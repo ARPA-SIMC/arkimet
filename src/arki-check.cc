@@ -304,15 +304,13 @@ int main(int argc, const char* argv[])
         {
             if (opts.op_remove->stringValue().empty())
                 throw commandline::BadOption("you need to give a file name to --remove");
-			WritableDatasetPool pool(cfg);
-			// Read all metadata from the file specified in --remove
-			runtime::Input input(opts.op_remove->stringValue());
-			// Collect metadata to delete
-			metadata::Collection todolist;
-			for (size_t count = 1; ; ++count)
-			{
-                unique_ptr<Metadata> md(new Metadata);
-                if (!md->read(input.stream(), input.name())) break;
+            WritableDatasetPool pool(cfg);
+            // Read all metadata from the file specified in --remove
+            metadata::Collection todolist(opts.op_remove->stringValue());
+            // Verify that all metadata items have AssignedDataset set
+            unsigned count = 1;
+            for (const auto& md: todolist)
+            {
                 const types::AssignedDataset* ad = md->get<types::AssignedDataset>();
                 if (!ad)
                 {
@@ -320,26 +318,26 @@ int main(int argc, const char* argv[])
                    ss << "cannot read information on data to remove: the metadata #" << count << " is not assigned to any dataset";
                    throw std::runtime_error(ss.str());
                 }
-                todolist.acquire(move(md));
-			}
-			// Perform removals
-			size_t count = 1;
-			for (metadata::Collection::const_iterator i = todolist.begin();
-					i != todolist.end(); ++i, ++count)
-			{
-                const types::AssignedDataset* ad = (*i)->get<types::AssignedDataset>();
+                ++count;
+            }
+            // Perform removals
+            count = 1;
+            for (const auto& md: todolist)
+            {
+                const types::AssignedDataset* ad = md->get<types::AssignedDataset>();
                 WritableDataset* ds = pool.get(ad->name);
-				if (!ds)
-				{
-					cerr << "Message #" << count << " is not in any dataset: skipped" << endl;
-					continue;
-				}
-				try {
-                    ds->remove(**i);
-				} catch (std::exception& e) {
-					cerr << "Message #" << count << ": " << e.what() << endl;
-				}
-			}
+                if (!ds)
+                {
+                    cerr << "Message #" << count << " is not in any dataset: skipped" << endl;
+                    continue;
+                }
+                try {
+                    ds->remove(*md);
+                } catch (std::exception& e) {
+                    cerr << "Message #" << count << ": " << e.what() << endl;
+                }
+                ++count;
+            }
 		} else {
 			if (opts.stats->boolValue())
 				// worker.reset(new Statistician());

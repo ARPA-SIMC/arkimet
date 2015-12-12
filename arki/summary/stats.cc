@@ -114,7 +114,7 @@ void Stats::encodeWithoutEnvelope(Encoder& enc) const
 {
     unique_ptr<types::Reftime> reftime(Reftime::create(begin, end));
     enc.addUInt(count, 4);
-    enc.addString(reftime->encodeBinary());
+    reftime->encodeBinary(enc);
     enc.addULInt(size, 8);
 }
 

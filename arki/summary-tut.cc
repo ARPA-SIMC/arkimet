@@ -125,16 +125,16 @@ template<> template<>
 void to::test<6>()
 {
     {
-        string encoded = s.encode();
-        stringstream stream(encoded, ios_base::in);
+        vector<uint8_t> encoded = s.encode();
+        stringstream stream(string(encoded.begin(), encoded.end()), ios_base::in);
         Summary s1;
         ensure(s1.read(stream, "(test memory buffer)"));
         ensure(s1 == s);
     }
 
     {
-        string encoded = s.encode(true);
-        stringstream stream(encoded, ios_base::in);
+        vector<uint8_t> encoded = s.encode(true);
+        stringstream stream(string(encoded.begin(), encoded.end()), ios_base::in);
         Summary s1;
         ensure(s1.read(stream, "(test memory buffer)"));
         ensure(s1 == s);
@@ -186,8 +186,8 @@ template<> template<>
 void to::test<10>()
 {
     Summary s;
-    string encoded = s.encode();
-    stringstream stream(encoded, ios_base::in);
+    vector<uint8_t> encoded = s.encode();
+    stringstream stream(string(encoded.begin(), encoded.end()), ios_base::in);
     Summary s1;
     ensure(s1.read(stream, "(test memory buffer)"));
     ensure(s1 == s);
@@ -286,8 +286,8 @@ void to::test<13>()
 	ensure(!scanner.next(md));
 
     // Serialisation to binary
-    string encoded = s1.encode();
-    stringstream stream(encoded, ios_base::in);
+    vector<uint8_t> encoded = s1.encode();
+    stringstream stream(string(encoded.begin(), encoded.end()), ios_base::in);
     Summary s2;
     ensure(s2.read(stream, "(test memory buffer)"));
     ensure(s1 == s2);
@@ -362,8 +362,8 @@ void to::test<16>()
 
     // Serialisation to binary
     {
-        string encoded = s.encode();
-        stringstream stream(encoded, ios_base::in);
+        vector<uint8_t> encoded = s.encode();
+        stringstream stream(string(encoded.begin(), encoded.end()), ios_base::in);
         Summary s2;
         ensure(s2.read(stream, "(test memory buffer)"));
         ensure(s == s2);

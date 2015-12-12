@@ -99,18 +99,25 @@ bool Type::operator==(const std::string& o) const
     return operator==(*other);
 }
 
-std::string Type::encodeBinary() const
+void Type::encodeBinary(utils::codec::Encoder& enc) const
 {
-	using namespace utils::codec;
-	string contents;
-	Encoder contentsenc(contents);
-	encodeWithoutEnvelope(contentsenc);
-	string res;
-	Encoder enc(res);
-	enc.addVarint((unsigned)type_code());
-	enc.addVarint(contents.size());
-	enc.addString(contents);
-	return res;
+    using namespace utils::codec;
+    vector<uint8_t> contents;
+    contents.reserve(256);
+    Encoder contentsenc(contents);
+    encodeWithoutEnvelope(contentsenc);
+
+    enc.addVarint((unsigned)type_code());
+    enc.addVarint(contents.size());
+    enc.addBuffer(contents);
+}
+
+std::vector<uint8_t> Type::encodeBinary() const
+{
+    vector<uint8_t> contents;
+    codec::Encoder enc(contents);
+    encodeBinary(enc);
+    return contents;
 }
 
 void Type::serialise(Emitter& e, const Formatter* f) const

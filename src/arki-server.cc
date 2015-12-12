@@ -439,7 +439,7 @@ struct RootSummaryHandler : public LocalHandler
         }
         else
         {
-            string res = sum.encode(true);
+            vector<uint8_t> res = sum.encode(true);
             req.send_result(res, "application/octet-stream", macroname + "-summary.bin");
         }
     }

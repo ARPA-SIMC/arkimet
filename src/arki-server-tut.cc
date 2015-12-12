@@ -11,12 +11,11 @@
 #include <arki/types/source/blob.h>
 #include <arki/utils.h>
 #include <arki/utils/sys.h>
+#include <arki/utils/codec.h>
 #include <arki/runtime/io.h>
 #include <arki/runtime/processor.h>
-
 #include <sstream>
 #include <iostream>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -258,7 +257,7 @@ void to::test<11>()
     using namespace arki::dataset;
 
     // Get the normal data
-    string plain;
+    vector<uint8_t> plain;
     {
         ConfigFile cfg;
         cfg.setValue("type", "test");
@@ -270,11 +269,11 @@ void to::test<11>()
         unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
 
         DataQuery dq(Matcher::parse(""), true);
+        codec::Encoder enc(plain);
         ds->query_data(dq, [&](unique_ptr<Metadata> md) {
             md->makeInline();
-            plain += md->encodeBinary();
-            const auto& data = md->getData();
-            plain.append((const char*)data.data(), data.size());
+            md->encodeBinary(enc);
+            enc.addBuffer(md->getData());
             return true;
         });
     }
@@ -313,11 +312,11 @@ void to::test<11>()
 
     metadata::Collection mdc1, mdc2;
     {
-        stringstream s(plain);
+        stringstream s(string((const char*)plain.data(), plain.size()));
         Metadata::read_file(s, metadata::ReadContext("", "plain"), mdc1.inserter_func());
     }
     {
-        stringstream s(postprocessed);
+        stringstream s(string((const char*)postprocessed.data(), postprocessed.size()));
         Metadata::read_file(s, metadata::ReadContext("", "postprocessed"), mdc2.inserter_func());
     }
 

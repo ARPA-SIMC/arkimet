@@ -695,12 +695,22 @@ std::string read_file(const std::string& file)
 
 void write_file(const std::string& file, const std::string& data, mode_t mode)
 {
+    write_file(file, data.data(), data.size(), mode);
+}
+
+void write_file(const std::string& file, const void* data, size_t size, mode_t mode)
+{
     File out(file, O_WRONLY | O_CREAT, mode);
-    out.write_all_or_retry(data.data(), data.size());
+    out.write_all_or_retry(data, size);
     out.close();
 }
 
 void write_file_atomically(const std::string& file, const std::string& data, mode_t mode)
+{
+    write_file_atomically(file, data.data(), data.size(), mode);
+}
+
+void write_file_atomically(const std::string& file, const void* data, size_t size, mode_t mode)
 {
     File out = File::mkstemp(file);
 
@@ -711,7 +721,7 @@ void write_file_atomically(const std::string& file, const std::string& data, mod
     // Set the file permissions, honoring umask
     out.fchmod(mode & ~mask);
 
-    out.write_all_or_retry(data.data(), data.size());
+    out.write_all_or_retry(data, size);
     out.close();
 
     if (rename(out.name().c_str(), file.c_str()) < 0)

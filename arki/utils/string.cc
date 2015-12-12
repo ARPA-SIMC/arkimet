@@ -364,21 +364,27 @@ static const char invbase64(const T& idx)
 
 std::string encode_base64(const std::string& str)
 {
-    std::string res;
+    return encode_base64(str.data(), str.size());
+}
 
-    for (size_t i = 0; i < str.size(); i += 3)
+std::string encode_base64(const void* data, size_t size)
+{
+    std::string res;
+    const uint8_t* str = (const uint8_t*)data;
+
+    for (size_t i = 0; i < size; i += 3)
     {
         // Pack every triplet into 24 bits
         unsigned int enc;
-        if (i + 3 < str.size())
-            enc = ((unsigned char)str[i] << 16) | ((unsigned char)str[i + 1] << 8) | (unsigned char)str[i + 2];
+        if (i + 3 < size)
+            enc = (str[i] << 16) | (str[i + 1] << 8) | str[i + 2];
         else
         {
-            enc = ((unsigned char)str[i] << 16);
-            if (i + 1 < str.size())
-                enc |= (unsigned char)str[i + 1] << 8;
-            if (i + 2 < str.size())
-                enc |= (unsigned char)str[i + 2];
+            enc = (str[i] << 16);
+            if (i + 1 < size)
+                enc |= str[i + 1] << 8;
+            if (i + 2 < size)
+                enc |= str[i + 2];
         }
 
         // Divide in 4 6-bit values and use them as indexes in the base64 char
@@ -388,8 +394,8 @@ std::string encode_base64(const std::string& str)
     }
 
     // Replace padding characters with '='
-    if (str.size() % 3)
-        for (size_t i = 0; i < 3 - (str.size() % 3); ++i)
+    if (size % 3)
+        for (size_t i = 0; i < 3 - (size % 3); ++i)
             res[res.size() - i - 1] = '=';
 
     return res;

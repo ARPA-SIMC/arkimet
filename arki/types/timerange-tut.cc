@@ -28,7 +28,7 @@ void to::test<1>()
     unique_ptr<Timerange> o = Timerange::createGRIB1(2, 254, 2, 3);
     wassert(actual(o->style()) == Timerange::GRIB1);
     const timerange::GRIB1* v = dynamic_cast<timerange::GRIB1*>(o.get());
-    wassert(actual(v->type()) == 2);
+    wassert(actual(v->type()) == 2u);
     wassert(actual(v->unit()) == 254);
     wassert(actual(v->p1()) == 2);
     wassert(actual(v->p2()) == 3);
@@ -271,7 +271,7 @@ void to::test<10>()
 
     wassert(actual(o1) != o2);
 
-    wassert(actual(o1->encodeBinary()) != o2->encodeBinary());
+    wassert(actual(o1->encodeBinary() != o2->encodeBinary()));
     //ensure(o1 < o2);
     //ensure(o2 > o1);
 }

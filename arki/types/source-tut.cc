@@ -125,15 +125,15 @@ void to::test<6>()
     unique_ptr<Source> o = Source::createBlob("test", "/tmp", "testfile", 21, 42);
 
     // Encode to binary, decode, we lose the root
-    string enc = o->encodeBinary();
-    unique_ptr<Source> decoded = downcast<Source>(types::decode((const unsigned char*)enc.data(), enc.size()));
+    vector<uint8_t> enc = o->encodeBinary();
+    unique_ptr<Source> decoded = downcast<Source>(types::decode(enc.data(), enc.size()));
     wassert(actual(decoded).is_source_blob("test", "", "testfile", 21, 42));
 
     // Encode to YAML, decode, basedir and filename have merged
     stringstream tmp;
     tmp << *o;
-    enc = tmp.str();
-    decoded = types::Source::decodeString(enc);
+    string enc1 = tmp.str();
+    decoded = types::Source::decodeString(enc1);
     wassert(actual(decoded).is_source_blob("test", "", "/tmp/testfile", 21, 42));
 
     // Encode to JSON, decode, we keep the root

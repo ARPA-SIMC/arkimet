@@ -2,7 +2,6 @@
 
 #include <arki/matcher/area.h>
 #include <arki/matcher/utils.h>
-#include <arki/metadata.h>
 #include <arki/utils/geosdef.h>
 #include <arki/wibble/regexp.h>
 #include <strings.h>

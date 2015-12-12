@@ -272,7 +272,7 @@ bool Postprocess::process(unique_ptr<Metadata>&& md)
     // we are sending that as well
     md->makeInline();
 
-    string encoded = md->encodeBinary();
+    auto encoded = md->encodeBinary();
     if (m_child->send(encoded) < encoded.size())
         return false;
 

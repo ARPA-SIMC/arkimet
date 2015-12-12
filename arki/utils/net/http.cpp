@@ -289,6 +289,18 @@ void Request::send(const std::string& buf)
     }
 }
 
+void Request::send(const std::vector<uint8_t>& buf)
+{
+    size_t pos = 0;
+    while (pos < buf.size())
+    {
+        ssize_t sent = write(sock, buf.data() + pos, buf.size() - pos);
+        if (sent < 0)
+            throw wibble::exception::System("writing data to client");
+        pos += sent;
+    }
+}
+
 void Request::send_status_line(int code, const std::string& msg, const std::string& version)
 {
     stringstream buf;
@@ -344,6 +356,22 @@ void Request::send_extra_response_headers()
 }
 
 void Request::send_result(const std::string& content, const std::string& content_type, const std::string& filename)
+{
+    send_status_line(200, "OK");
+    send_date_header();
+    send_server_header();
+    send_extra_response_headers();
+    stringstream ss;
+    ss << "Content-Type: " << content_type << "\r\n";
+    if (!filename.empty())
+        ss << "Content-Disposition: attachment; filename=" << filename << "\r\n";
+    ss << "Content-Length: " << content.size() << "\r\n";
+    ss << "\r\n";
+    send(ss.str());
+    send(content);
+}
+
+void Request::send_result(const std::vector<uint8_t>& content, const std::string& content_type, const std::string& filename)
 {
     send_status_line(200, "OK");
     send_date_header();

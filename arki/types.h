@@ -157,10 +157,11 @@ struct Type
 	 */
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const = 0;
 
-    /**
-     * Encode to compact binary representation, with identification envelope
-     */
-    virtual std::string encodeBinary() const;
+    /// Encode to compact binary representation, with identification envelope
+    void encodeBinary(utils::codec::Encoder& enc) const;
+
+    /// Encode to compact binary representation, with identification envelope
+    std::vector<uint8_t> encodeBinary() const;
 
 	/// Write as a string to an output stream
 	virtual std::ostream& writeToOstream(std::ostream& o) const = 0;

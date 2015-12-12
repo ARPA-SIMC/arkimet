@@ -266,7 +266,8 @@ bool EncodingVisitor::operator()(const std::vector<const Type*>& md, const Stats
 {
     vector<types::Code> removed;
     size_t added_count = 0;
-    string added;
+    vector<uint8_t> added;
+    codec::Encoder added_enc(added);
 
     // Prepare the diff between last and md
     for (size_t i = 0; i < Table::msoSize; ++i)
@@ -280,7 +281,7 @@ bool EncodingVisitor::operator()(const std::vector<const Type*>& md, const Stats
         } else if (md_has_it && (!last[i] || md[i] != last[i])) {
             // Enqueue md[i]
             ++added_count;
-            added += md[i]->encodeBinary();
+            md[i]->encodeBinary(added_enc);
             last[i] = md[i];
         }
     }
@@ -293,10 +294,10 @@ bool EncodingVisitor::operator()(const std::vector<const Type*>& md, const Stats
 
     // Encode the list of changed/added items
     enc.addVarint(added_count);
-    enc.addString(added);
+    enc.addBuffer(added);
 
     // Encode the stats
-    enc.addString(stats.encodeBinary());
+    stats.encodeBinary(enc);
 
     return true;
 }

@@ -633,8 +633,8 @@ Timerange::Style GRIB1::style() const { return Timerange::GRIB1; }
 
 void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
 {
-	Timerange::encodeWithoutEnvelope(enc);
-	enc.addUInt(m_type, 1).addUInt(m_unit, 1).addSInt(m_p1, 1).addSInt(m_p2, 1);
+    Timerange::encodeWithoutEnvelope(enc);
+    enc.addUInt(m_type, 1); enc.addUInt(m_unit, 1); enc.addSInt(m_p1, 1); enc.addSInt(m_p2, 1);
 }
 
 std::ostream& GRIB1::writeNumbers(std::ostream& o) const
@@ -1225,8 +1225,8 @@ Timerange::Style GRIB2::style() const { return Timerange::GRIB2; }
 
 void GRIB2::encodeWithoutEnvelope(Encoder& enc) const
 {
-	Timerange::encodeWithoutEnvelope(enc);
-	enc.addUInt(m_type, 1).addUInt(m_unit, 1).addSInt(m_p1, 4).addSInt(m_p2, 4);
+    Timerange::encodeWithoutEnvelope(enc);
+    enc.addUInt(m_type, 1); enc.addUInt(m_unit, 1); enc.addSInt(m_p1, 4); enc.addSInt(m_p2, 4);
 }
 
 std::ostream& GRIB2::writeToOstream(std::ostream& o) const

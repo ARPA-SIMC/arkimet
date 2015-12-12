@@ -164,20 +164,21 @@ void ActualType::serializes() const
     auto code = _actual->type_code();
 
     // Binary encoding, without envelope
-    std::string enc;
+    std::vector<uint8_t> enc;
     utils::codec::Encoder e(enc);
     _actual->encodeWithoutEnvelope(e);
     size_t inner_enc_size = enc.size();
-    wassert(actual(decodeInner(code, (const unsigned char*)enc.data(), enc.size())) == _actual);
+    wassert(actual(decodeInner(code, enc.data(), enc.size())) == _actual);
 
     // Binary encoding, with envelope
-    enc = _actual->encodeBinary();
+    enc.clear();
+    _actual->encodeBinary(e);
     // Rewritten in the next two lines due to, it seems, a bug in old gccs
     // inner_ensure_equals(types::decode((const unsigned char*)enc.data(), enc.size()).upcast<T>(), _actual);
-    unique_ptr<Type> decoded = types::decode((const unsigned char*)enc.data(), enc.size());
+    unique_ptr<Type> decoded = types::decode(enc.data(), enc.size());
     wassert(actual(decoded) == _actual);
 
-    const unsigned char* buf = (const unsigned char*)enc.data();
+    const uint8_t* buf = enc.data();
     size_t len = enc.size();
     wassert(actual(decodeEnvelope(buf, len)) == code);
     wassert(actual(len) == inner_enc_size);

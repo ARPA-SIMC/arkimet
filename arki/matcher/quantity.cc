@@ -2,7 +2,6 @@
 
 #include <arki/matcher/quantity.h>
 #include <arki/matcher/utils.h>
-#include <arki/metadata.h>
 #include <arki/types/utils.h>
 
 #include <set>

@@ -109,6 +109,12 @@ struct IODispatcher
         return send(data.data(), data.size());
     }
 
+    /// Shortcut to send a buffer
+    size_t send(const std::vector<uint8_t>& data)
+    {
+        return send(data.data(), data.size());
+    }
+
     /**
      * Keep running a select() loop on the child stdout and stderr for as long
      * as they stay open.

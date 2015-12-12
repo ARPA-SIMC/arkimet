@@ -160,7 +160,7 @@ template<> template<>
 void to::test<4>()
 {
     metadata::Collection source("inbound/wrongdate.bufr");
-    wassert(actual(source.size()) == 6);
+    wassert(actual(source.size()) == 6u);
 
     RealDispatcher dispatcher(config);
     metadata::Collection mdc;

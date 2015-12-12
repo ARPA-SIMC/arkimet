@@ -2,7 +2,6 @@
 
 #include <arki/matcher/timerange.h>
 #include <arki/matcher/utils.h>
-#include <arki/metadata.h>
 #include <arki/wibble/exception.h>
 
 using namespace std;

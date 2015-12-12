@@ -49,7 +49,7 @@ bool AssignedDataset::equals(const Type& o) const
 void AssignedDataset::encodeWithoutEnvelope(Encoder& enc) const
 {
     changed.encodeWithoutEnvelope(enc);
-    enc.addUInt(name.size(), 1).addString(name).addUInt(id.size(), 2).addString(id);
+    enc.addUInt(name.size(), 1); enc.addString(name); enc.addUInt(id.size(), 2); enc.addString(id);
 }
 
 //////////////////////////////////////

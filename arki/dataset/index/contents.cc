@@ -445,9 +445,9 @@ void Contents::build_md(Query& q, Metadata& md) const
             q.fetchString(1), m_root, q.fetchString(2),
             q.fetch<uint64_t>(3), q.fetch<uint64_t>(4)));
     // md.notes = mdq.fetchItems<types::Note>(5);
-    const void* notes_p = q.fetchBlob(5);
+    const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(5);
     int notes_l = q.fetchBytes(5);
-    md.set_notes_encoded(string((const char*)notes_p, notes_l));
+    md.set_notes_encoded(vector<uint8_t>(notes_p, notes_p + notes_l));
     md.set(Reftime::createPosition(Time::create_from_SQL(q.fetchString(6))));
     int j = 7;
     if (m_uniques)

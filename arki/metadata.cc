@@ -176,9 +176,9 @@ std::vector<types::Note> Metadata::notes() const
 	return res;
 }
 
-const std::string& Metadata::notes_encoded() const
+const std::vector<uint8_t>& Metadata::notes_encoded() const
 {
-	return m_notes;
+    return m_notes;
 }
 
 void Metadata::set_notes(const std::vector<types::Note>& notes)
@@ -188,19 +188,21 @@ void Metadata::set_notes(const std::vector<types::Note>& notes)
 		add_note(*i);
 }
 
-void Metadata::set_notes_encoded(const std::string& notes)
+void Metadata::set_notes_encoded(const std::vector<uint8_t>& notes)
 {
-	m_notes = notes;
+    m_notes = notes;
 }
 
 void Metadata::add_note(const types::Note& note)
 {
-    m_notes += note.encodeBinary();
+    codec::Encoder enc(m_notes);
+    note.encodeBinary(enc);
 }
 
 void Metadata::add_note(const std::string& note)
 {
-    m_notes += Note(note).encodeBinary();
+    codec::Encoder enc(m_notes);
+    Note(note).encodeBinary(enc);
 }
 
 void Metadata::clear()
@@ -223,6 +225,56 @@ int Metadata::compare(const Metadata& m) const
 {
     if (int res = ItemSet::compare(m)) return res;
     return Type::nullable_compare(m_source, m.m_source);
+}
+
+bool Metadata::read(int in, const std::string& filename, bool readInline)
+{
+    vector<uint8_t> buf;
+    string signature;
+    unsigned version;
+    if (!types::readBundle(in, filename, buf, signature, version))
+        return false;
+
+	// Ensure first 2 bytes are MD or !D
+	if (signature != "MD")
+		throw wibble::exception::Consistency("parsing file " + filename, "metadata entry does not start with 'MD'");
+
+	read(buf, version, filename);
+
+    // If the source is inline, then the data follows the metadata
+    if (readInline && source().style() == types::Source::INLINE)
+        readInlineData(in, filename);
+
+    return true;
+}
+
+bool Metadata::read(const std::vector<uint8_t>& in, const std::string& filename, bool readInline)
+{
+    const uint8_t* buf = in.data();
+    size_t len = in.size();
+    return read(buf, len, filename, readInline);
+}
+
+bool Metadata::read(const uint8_t*& inbuf, size_t& inlen, const std::string& filename, bool readInline)
+{
+    const uint8_t* buf;
+    size_t len;
+    string signature;
+    unsigned version;
+    if (!types::readBundle(inbuf, inlen, filename, buf, len, signature, version))
+        return false;
+
+    // Ensure first 2 bytes are MD or !D
+    if (signature != "MD")
+        throw wibble::exception::Consistency("parsing file " + filename, "metadata entry does not start with 'MD'");
+
+    read(buf, len, version, filename);
+
+    // If the source is inline, then the data follows the metadata
+    if (readInline && source().style() == types::Source::INLINE)
+        readInlineData(inbuf, inlen, filename);
+
+    return true;
 }
 
 bool Metadata::read(istream& in, const std::string& filename, bool readInline)
@@ -282,26 +334,56 @@ void Metadata::read(const unsigned char* buf, size_t len, unsigned version, cons
         throw runtime_error(s.str());
     }
 
-	// Parse the various elements
-	const unsigned char* end = buf + len;
-	for (const unsigned char* cur = buf; cur < end; )
-	{
-		const unsigned char* el_start = cur;
-		size_t el_len = end - cur;
-		// Fixme: replace with types::decode when fully available
-		types::Code el_type = types::decodeEnvelope(el_start, el_len);
+    // Parse the various elements
+    const uint8_t* end = buf + len;
+    for (const uint8_t* cur = buf; cur < end; )
+    {
+        const uint8_t* el_start = cur;
+        size_t el_len = end - cur;
+        // Fixme: replace with types::decode when fully available
+        types::Code el_type = types::decodeEnvelope(el_start, el_len);
 
         switch (el_type)
         {
-            case types::TYPE_NOTE: m_notes += string((const char*)cur, (el_start + el_len) - cur); break;
+            case types::TYPE_NOTE: m_notes.insert(m_notes.end(), cur, el_start + el_len); break;
             case types::TYPE_SOURCE: set_source(types::Source::decodeRelative(el_start, el_len, rc.basedir)); break;
             default:
                 m_vals.insert(make_pair(el_type, types::decodeInner(el_type, el_start, el_len).release()));
                 break;
         }
 
-		cur = el_start + el_len;
-	}
+        cur = el_start + el_len;
+    }
+}
+
+void Metadata::readInlineData(int infd, const std::string& filename)
+{
+    // If the source is inline, then the data follows the metadata
+    if (source().style() != types::Source::INLINE) return;
+
+    source::Inline* s = dynamic_cast<source::Inline*>(m_source);
+    vector<uint8_t> buf;
+    buf.resize(s->size);
+
+    iotrace::trace_file(filename, 0, s->size, "read inline data");
+
+    // Read the inline data
+    sys::NamedFileDescriptor in(infd, filename);
+    in.read_all_or_throw(buf.data(), s->size);
+    m_data = move(buf);
+}
+
+void Metadata::readInlineData(const uint8_t*& buf, size_t& len, const std::string& filename)
+{
+    // If the source is inline, then the data follows the metadata
+    if (source().style() != types::Source::INLINE) return;
+
+    source::Inline* s = dynamic_cast<source::Inline*>(m_source);
+
+    m_data.assign(buf, buf + s->size);
+
+    buf += s->size;
+    len -= s->size;
 }
 
 void Metadata::readInlineData(std::istream& in, const std::string& filename)
@@ -352,10 +434,10 @@ bool Metadata::readYaml(std::istream& in, const std::string& filename)
 void Metadata::write(std::ostream& out, const std::string& filename) const
 {
     // Prepare the encoded data
-    string encoded = encodeBinary();
+    vector<uint8_t> encoded = encodeBinary();
 
     // Write out
-    out.write(encoded.data(), encoded.size());
+    out.write((const char*)encoded.data(), encoded.size());
     if (out.fail())
     {
         stringstream ss;
@@ -385,10 +467,10 @@ void Metadata::write(std::ostream& out, const std::string& filename) const
 void Metadata::write(int outfd, const std::string& filename) const
 {
     // Prepare the encoded data
-    string encoded = encodeBinary();
+    vector<uint8_t> encoded = encodeBinary();
 
     // Write out
-    utils::fd::write_all(outfd, encoded);
+    utils::fd::write_all(outfd, encoded.data(), encoded.size());
 
     // If the source is inline, then the data follows the metadata
     if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
@@ -487,24 +569,31 @@ void Metadata::read(const emitter::memory::Mapping& val)
     }
 }
 
-string Metadata::encodeBinary() const
+std::vector<uint8_t> Metadata::encodeBinary() const
 {
-    using namespace utils::codec;
-    // Encode the various information
-    string encoded;
-    for (map<types::Code, types::Type*>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i)
-        encoded += i->second->encodeBinary();
-    encoded += m_notes;
-    if (m_source) encoded += m_source->encodeBinary();
+    vector<uint8_t> res;
+    codec::Encoder enc(res);
+    encodeBinary(enc);
+    return res;
+}
 
-	string res;
-	Encoder enc(res);
-	// Prepend header
-	enc.addString("MD");
-	enc.addUInt(0, 2);
-	enc.addUInt(encoded.size(), 4);
-	enc.addString(encoded);
-	return res;
+void Metadata::encodeBinary(utils::codec::Encoder& enc) const
+{
+    // Encode the various information
+    vector<uint8_t> encoded;
+    codec::Encoder subenc(encoded);
+    for (map<types::Code, types::Type*>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i)
+        i->second->encodeBinary(subenc);
+    encoded.insert(encoded.end(), m_notes.begin(), m_notes.end());
+    if (m_source)
+       m_source->encodeBinary(subenc);
+
+    // Prepend header
+    enc.addString("MD");
+    enc.addUInt(0, 2);
+#warning Make it a one pass only job, by writing zeroes here the first time round, then rewriting it with the actual length
+    enc.addUInt(encoded.size(), 4);
+    enc.addBuffer(encoded);
 }
 
 
@@ -526,8 +615,9 @@ const vector<uint8_t>& Metadata::getData()
     switch (m_source->style())
     {
         case Source::INLINE:
+            throw runtime_error("cannot retrieve data: data is not found on INLINE metadata");
         case Source::URL:
-            throw wibble::exception::Consistency("retrieving data", "data is not accessible");
+            throw runtime_error("cannot retrieve data: data is not accessible for URL metadata");
         case Source::BLOB:
         {
             // Do not directly use m_data so that if dataReader.read throws an

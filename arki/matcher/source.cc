@@ -2,7 +2,6 @@
 
 #include <arki/matcher/source.h>
 #include <arki/matcher/utils.h>
-#include <arki/metadata.h>
 #include <sstream>
 #include <iomanip>
 

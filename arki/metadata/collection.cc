@@ -56,43 +56,43 @@ struct AtomicWriter
 };
 
 
-static void compressAndWrite(const std::string& buf, std::ostream& out, const std::string& fname)
+static void compressAndWrite(const std::vector<uint8_t>& buf, std::ostream& out, const std::string& fname)
 {
     auto obuf = compress::lzo(buf.data(), buf.size());
-	if (obuf.size() + 8 < buf.size())
-	{
-		// Write a metadata group
-		string tmp;
-		codec::Encoder enc(tmp);
-		enc.addString("MG");
-		enc.addUInt(0, 2);	// Version 0: LZO compressed
-		enc.addUInt(obuf.size() + 4, 4); // Compressed len
-		enc.addUInt(buf.size(), 4); // Uncompressed len
-		out.write(tmp.data(), tmp.size());
-		out.write((const char*)obuf.data(), obuf.size());
-	} else
-		// Write the plain metadata
-		out.write(buf.data(), buf.size());
+    if (obuf.size() + 8 < buf.size())
+    {
+        // Write a metadata group
+        vector<uint8_t> tmp;
+        codec::Encoder enc(tmp);
+        enc.addString("MG");
+        enc.addUInt(0, 2);	// Version 0: LZO compressed
+        enc.addUInt(obuf.size() + 4, 4); // Compressed len
+        enc.addUInt(buf.size(), 4); // Uncompressed len
+        out.write((const char*)tmp.data(), tmp.size());
+        out.write((const char*)obuf.data(), obuf.size());
+    } else
+        // Write the plain metadata
+        out.write((const char*)buf.data(), buf.size());
 }
 
-static void compressAndWrite(const std::string& buf, int outfd, const std::string& fname)
+static void compressAndWrite(const std::vector<uint8_t>& buf, int outfd, const std::string& fname)
 {
     auto obuf = compress::lzo(buf.data(), buf.size());
     sys::NamedFileDescriptor out(outfd, fname);
-	if (obuf.size() + 8 < buf.size())
-	{
-		// Write a metadata group
-		string tmp;
-		codec::Encoder enc(tmp);
-		enc.addString("MG");
-		enc.addUInt(0, 2);	// Version 0: LZO compressed
-		enc.addUInt(obuf.size() + 4, 4); // Compressed len
-		enc.addUInt(buf.size(), 4); // Uncompressed len
-		out.write(tmp.data(), tmp.size());
-		out.write((const char*)obuf.data(), obuf.size());
-	} else
-		// Write the plain metadata
-		out.write(buf.data(), buf.size());
+    if (obuf.size() + 8 < buf.size())
+    {
+        // Write a metadata group
+        vector<uint8_t> tmp;
+        codec::Encoder enc(tmp);
+        enc.addString("MG");
+        enc.addUInt(0, 2);	// Version 0: LZO compressed
+        enc.addUInt(obuf.size() + 4, 4); // Compressed len
+        enc.addUInt(buf.size(), 4); // Uncompressed len
+        out.write(tmp.data(), tmp.size());
+        out.write((const char*)obuf.data(), obuf.size());
+    } else
+        // Write the plain metadata
+        out.write(buf.data(), buf.size());
 }
 
 Collection::Collection() {}
@@ -150,27 +150,10 @@ void Collection::acquire(unique_ptr<Metadata>&& md)
 
 void Collection::writeTo(std::ostream& out, const std::string& fname) const
 {
-	static const size_t blocksize = 256;
-
-	string buf;
-	for (size_t i = 0; i < vals.size(); ++i)
-	{
-		if (i > 0 && (i % blocksize) == 0)
-		{
-			compressAndWrite(buf, out, fname);
-			buf.clear();
-		}
-		buf += vals[i]->encodeBinary();
-	}
-	if (!buf.empty())
-		compressAndWrite(buf, out, fname);
-}
-
-void Collection::write_to(int out, const std::string& fname) const
-{
     static const size_t blocksize = 256;
 
-    string buf;
+    vector<uint8_t> buf;
+    codec::Encoder enc(buf);
     for (size_t i = 0; i < vals.size(); ++i)
     {
         if (i > 0 && (i % blocksize) == 0)
@@ -178,7 +161,26 @@ void Collection::write_to(int out, const std::string& fname) const
             compressAndWrite(buf, out, fname);
             buf.clear();
         }
-        buf += vals[i]->encodeBinary();
+        vals[i]->encodeBinary(enc);
+    }
+    if (!buf.empty())
+        compressAndWrite(buf, out, fname);
+}
+
+void Collection::write_to(int out, const std::string& fname) const
+{
+    static const size_t blocksize = 256;
+
+    vector<uint8_t> buf;
+    codec::Encoder enc(buf);
+    for (size_t i = 0; i < vals.size(); ++i)
+    {
+        if (i > 0 && (i % blocksize) == 0)
+        {
+            compressAndWrite(buf, out, fname);
+            buf.clear();
+        }
+        vals[i]->encodeBinary(enc);
     }
     if (!buf.empty())
         compressAndWrite(buf, out, fname);

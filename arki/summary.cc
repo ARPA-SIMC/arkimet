@@ -265,7 +265,7 @@ struct StatsHull : public ItemVisitor
 {
     ARKI_GEOS_GEOMETRYFACTORY& gf;
     vector<ARKI_GEOS_GEOMETRY*>* geoms;
-    std::set<string> seen;
+    std::set<std::vector<uint8_t>> seen;
 
     StatsHull(ARKI_GEOS_GEOMETRYFACTORY& gf) : gf(gf), geoms(new vector<ARKI_GEOS_GEOMETRY*>) {}
     virtual ~StatsHull()
@@ -281,7 +281,10 @@ struct StatsHull : public ItemVisitor
     virtual bool operator()(const Type& type)
     {
         const Area& a = *dynamic_cast<const Area*>(&type);
-        pair<set<string>::iterator, bool> i = seen.insert(a.encodeBinary());
+        vector<uint8_t> encoded;
+        codec::Encoder enc(encoded);
+        a.encodeBinary(enc);
+        pair<set<vector<uint8_t>>::iterator, bool> i = seen.insert(encoded);
         if (i.second)
         {
             const ARKI_GEOS_GEOMETRY* g = a.bbox();
@@ -460,12 +463,12 @@ void Summary::read(const std::vector<uint8_t>& buf, unsigned version, const std:
     summary::decode(buf, version, filename, *root);
 }
 
-std::string Summary::encode(bool compressed) const
+std::vector<uint8_t> Summary::encode(bool compressed) const
 {
     using namespace utils::codec;
 
     // Encode
-    string inner;
+    vector<uint8_t> inner;
     Encoder innerenc(inner);
     if (!root->empty())
     {
@@ -474,7 +477,7 @@ std::string Summary::encode(bool compressed) const
     }
 
     // Prepend header
-    string res;
+    vector<uint8_t> res;
     Encoder enc(res);
     // Signature
     enc.addString("SU", 2);
@@ -489,7 +492,7 @@ std::string Summary::encode(bool compressed) const
             enc.addUInt(inner.size() + 1, 4);
             // Add compression type (uncompressed)
             enc.addUInt(0, 1);
-            enc.addString(inner);
+            enc.addBuffer(inner);
         } else {
             // Compression makes sense
             // Add total size
@@ -504,7 +507,7 @@ std::string Summary::encode(bool compressed) const
     } else {
         enc.addUInt(inner.size() + 1, 4);
         enc.addUInt(0, 1);
-        enc.addString(inner);
+        enc.addBuffer(inner);
     }
     return res;
 }
@@ -512,12 +515,12 @@ std::string Summary::encode(bool compressed) const
 void Summary::write(std::ostream& out, const std::string& filename) const
 {
     // Prepare the encoded data
-    string encoded = encode(true);
+    vector<uint8_t> encoded = encode(true);
 
     iotrace::trace_file(filename, 0, encoded.size(), "write summary");
 
     // Write out
-    out.write(encoded.data(), encoded.size());
+    out.write((const char*)encoded.data(), encoded.size());
     if (out.fail())
     {
         stringstream ss;
@@ -529,7 +532,7 @@ void Summary::write(std::ostream& out, const std::string& filename) const
 void Summary::write(int outfd, const std::string& filename) const
 {
     // Prepare the encoded data
-    string encoded = encode(true);
+    vector<uint8_t> encoded = encode(true);
 
     iotrace::trace_file(filename, 0, encoded.size(), "write summary");
 
@@ -540,9 +543,9 @@ void Summary::write(int outfd, const std::string& filename) const
 
 void Summary::writeAtomically(const std::string& fname)
 {
-    string enc = encode(true);
+    vector<uint8_t> enc = encode(true);
     iotrace::trace_file(fname, 0, enc.size(), "write summary");
-    sys::write_file_atomically(fname, enc, 0666);
+    sys::write_file_atomically(fname, enc.data(), enc.size(), 0666);
 }
 
 namespace summary {

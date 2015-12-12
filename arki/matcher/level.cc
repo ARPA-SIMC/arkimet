@@ -2,7 +2,6 @@
 
 #include <arki/matcher/level.h>
 #include <arki/matcher/utils.h>
-#include <arki/metadata.h>
 
 #include <set>
 #include <stdexcept>

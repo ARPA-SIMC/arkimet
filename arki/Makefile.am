@@ -295,7 +295,7 @@ tests_arki_test_SOURCES += \
 		utils-tut.cc \
 		utils/tests.cc \
 		utils/accounting-tut.cc \
-		utils/codec-tut.cc \
+		utils/codec-test.cc \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \
 		utils/fd-tut.cc \

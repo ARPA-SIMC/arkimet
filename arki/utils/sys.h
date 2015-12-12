@@ -423,6 +423,14 @@ void write_file(const std::string& file, const std::string& data, mode_t mode=07
 /**
  * Write \a data to \a file, replacing existing contents if it already exists.
  *
+ * New files are created with the given permission mode, honoring umask.
+ * Permissions of existing files do not change.
+ */
+void write_file(const std::string& file, const void* data, size_t size, mode_t mode=0777);
+
+/**
+ * Write \a data to \a file, replacing existing contents if it already exists.
+ *
  * Files are created with the given permission mode, honoring umask. If the
  * file already exists, its mode is ignored.
  *
@@ -430,6 +438,17 @@ void write_file(const std::string& file, const std::string& data, mode_t mode=07
  * ensure an atomic operation.
  */
 void write_file_atomically(const std::string& file, const std::string& data, mode_t mode=0777);
+
+/**
+ * Write \a data to \a file, replacing existing contents if it already exists.
+ *
+ * Files are created with the given permission mode, honoring umask. If the
+ * file already exists, its mode is ignored.
+ *
+ * Data is written to a temporary file, then moved to its final destination, to
+ * ensure an atomic operation.
+ */
+void write_file_atomically(const std::string& file, const void* data, size_t size, mode_t mode=0777);
 
 #if 0
 // Create a temporary directory based on a template.

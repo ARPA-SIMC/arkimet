@@ -184,11 +184,11 @@ public:
 
     /// Serialise using an emitter
     void serialise(Emitter& e, const Formatter* f=0) const;
-	
-	/**
-	 * Encode to a string
-	 */
-	std::string encode(bool compressed = false) const;
+
+    /**
+     * Encode to a string
+     */
+    std::vector<uint8_t> encode(bool compressed = false) const;
 
     /**
      * Check if this summary matches the given matcher

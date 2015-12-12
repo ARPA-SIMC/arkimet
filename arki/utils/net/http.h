@@ -121,6 +121,9 @@ struct Request
     /// Send the content of buf, verbatim, to the client
     void send(const std::string& buf);
 
+    /// Send the content of buf, verbatim, to the client
+    void send(const std::vector<uint8_t>& buf);
+
     /// Send the HTTP status line
     void send_status_line(int code, const std::string& msg, const std::string& version = "HTTP/1.0");
 
@@ -135,6 +138,9 @@ struct Request
 
     /// Send a string as result
     void send_result(const std::string& content, const std::string& content_type="text/html; charset=utf-8", const std::string& filename=std::string());
+
+    /// Send a buffer as result
+    void send_result(const std::vector<uint8_t>& content, const std::string& content_type="text/html; charset=utf-8", const std::string& filename=std::string());
 
     /// Discard all input from the socket
     void discard_input();

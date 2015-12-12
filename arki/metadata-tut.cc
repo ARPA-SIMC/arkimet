@@ -110,18 +110,21 @@ static void dump(const char* name, const std::string& str)
 }
 #endif
 
-// Test encoding and decoding
+// Test binary encoding and decoding
 template<> template<>
 void to::test<2>()
 {
     md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
     fill(md);
 
-    string encoded = md.encodeBinary();
-    stringstream stream(encoded, ios_base::in);
+    vector<uint8_t> encoded = md.encodeBinary();
+    wassert(actual((char)encoded[0]) == 'M');
+    wassert(actual((char)encoded[1]) == 'D');
 
-	Metadata md1;
-	md1.read(stream, "(test memory buffer)");
+    Metadata md1;
+    const uint8_t* encdata = encoded.data();
+    size_t encsize = encoded.size();
+    wassert(md1.read(encdata, encsize, "(test memory buffer)"));
 
     wassert(actual(Source::createBlob("grib", "", "fname", 1, 2)) == md1.source());
     wassert(actual(md1.source().format) == "grib");
@@ -132,10 +135,8 @@ void to::test<2>()
     md.set(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
 
     encoded = md.encodeBinary();
-    stringstream stream1(encoded, ios_base::in);
-
-	Metadata md2;
-	md2.read(stream1, "(test memory buffer)");
+    Metadata md2;
+    wassert(md2.read(encoded, "(test memory buffer)", false));
 
     wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
 }
@@ -223,16 +224,17 @@ void to::test<5>()
     vector<uint8_t> buf = { 'c', 'i', 'a', 'o' };
     md.set_source_inline("test", vector<uint8_t>(buf));
 
-	// Encode
-	stringstream output;
-	md.write(output, "(test memory buffer)");
+    // Encode
+    stringstream output;
+    wassert(md.write(output, "(test memory buffer)"));
 
-	// Decode
-	stringstream input(output.str(), ios_base::in);
-	Metadata md1;
-	md1.read(input, "(test memory buffer)");
+    // Decode
+    Metadata md1;
+    string str = output.str();
+    vector<uint8_t> tbuf(str.begin(), str.end());
+    wassert(md1.read(tbuf, "(test memory buffer)", true));
 
-	ensure(md1.getData() == buf);
+    ensure(md1.getData() == buf);
 }
 
 // Ensure that serialisation to binary preserves the deleted flag
@@ -290,13 +292,13 @@ void to::test<8>()
     md.write(out, tmpfile);
     out.close();
 
-	// Decode
-	ifstream input(tmpfile);
-	Metadata md1;
-	md1.read(input, tmpfile);
-	input.close();
+    // Decode
+    sys::File in(tmpfile, O_RDONLY);
+    Metadata md1;
+    md1.read(in, tmpfile);
+    in.close();
 
-	ensure_equals(md, md1);
+    ensure_equals(md, md1);
 }
 
 }

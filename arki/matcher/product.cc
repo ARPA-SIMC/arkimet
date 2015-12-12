@@ -2,7 +2,6 @@
 
 #include <arki/matcher/product.h>
 #include <arki/matcher/utils.h>
-#include <arki/metadata.h>
 #include <limits>
 #include <algorithm>
 

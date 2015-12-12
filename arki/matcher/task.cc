@@ -2,7 +2,6 @@
 
 #include <arki/matcher/task.h>
 #include <arki/matcher/utils.h>
-#include <arki/metadata.h>
 #include <arki/utils/string.h>
 
 using namespace std;

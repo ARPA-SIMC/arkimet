@@ -814,9 +814,9 @@ Level::Style GRIB2D::style() const { return Level::GRIB2D; }
 
 void GRIB2D::encodeWithoutEnvelope(Encoder& enc) const
 {
-	Level::encodeWithoutEnvelope(enc);
-	enc.addUInt(m_type1, 1).addUInt(m_scale1, 1).addVarint(m_value1);
-	enc.addUInt(m_type2, 1).addUInt(m_scale2, 1).addVarint(m_value2);
+    Level::encodeWithoutEnvelope(enc);
+    enc.addUInt(m_type1, 1); enc.addUInt(m_scale1, 1); enc.addVarint(m_value1);
+    enc.addUInt(m_type2, 1); enc.addUInt(m_scale2, 1); enc.addVarint(m_value2);
 }
 std::ostream& GRIB2D::writeToOstream(std::ostream& o) const
 {

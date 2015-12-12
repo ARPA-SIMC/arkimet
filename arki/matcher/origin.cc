@@ -2,7 +2,6 @@
 
 #include <arki/matcher/origin.h>
 #include <arki/matcher/utils.h>
-#include <arki/metadata.h>
 
 using namespace std;
 using namespace arki::types;

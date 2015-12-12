@@ -40,7 +40,7 @@ struct StreamHeaders
     StreamHeaders(arki::utils::net::http::Request& req, const std::string& fname);
 
     void send_headers();
-    void send_result(const std::string& res);
+    void send_result(const std::vector<uint8_t>& res);
     void sendIfNotFired();
 };
 

@@ -294,6 +294,9 @@ std::string decode_url(const std::string& str);
 /// Encode a string in Base64
 std::string encode_base64(const std::string& str);
 
+/// Encode a buffer in Base64
+std::string encode_base64(const void* data, size_t size);
+
 /// Decode a string encoded in Base64
 std::string decode_base64(const std::string& str);
 

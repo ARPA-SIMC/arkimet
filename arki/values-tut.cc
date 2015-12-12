@@ -71,20 +71,20 @@ void to::test<2>()
 	std::unique_ptr<Value> minustenthousand(Value::createInteger(-10000));
 
 #define TESTENC(var, encsize) do { \
-		std::unique_ptr<Value> v; \
-		string enc; \
-		size_t decsize; \
-		Encoder e(enc); \
-		(var)->encode(e); \
-		ensure_equals(enc.size(), (encsize)); \
-		v.reset(Value::decode(enc.data(), enc.size(), decsize)); \
-		ensure_equals(decsize, (encsize)); \
-		ensure(*v == *(var)); \
-		\
-		enc = (var)->toString(); \
-		v.reset(Value::parse(enc)); \
-		ensure(*v == *(var)); \
-	} while (0)
+        std::unique_ptr<Value> v; \
+        vector<uint8_t> enc; \
+        size_t decsize; \
+        Encoder e(enc); \
+        (var)->encode(e); \
+        ensure_equals(enc.size(), (encsize)); \
+        v.reset(Value::decode(enc.data(), enc.size(), decsize)); \
+        ensure_equals(decsize, (encsize)); \
+        ensure(*v == *(var)); \
+        \
+        string enc1 = (var)->toString(); \
+        v.reset(Value::parse(enc1)); \
+        ensure(*v == *(var)); \
+    } while (0)
 
 	TESTENC(zero, 1u);
 	TESTENC(one, 1u);
@@ -144,9 +144,9 @@ void to::test<3>()
 	ensure_equals(v1.size(), 4u);
 	ensure_equals(v2.size(), 0u);
 
-	// Test encoding and decoding
-	std::string enc;
-	Encoder e(enc);
+    // Test encoding and decoding
+    std::vector<uint8_t> enc;
+    Encoder e(enc);
 
 	v1.encode(e);
 	v2 = ValueBag::decode(enc.data(), enc.size());
@@ -159,9 +159,9 @@ void to::test<3>()
 	ensure_equals(v1.size(), 4u);
 	ensure_equals(v2.size(), 0u);
 
-	enc = v1.toString();
-	ensure_equals(enc, "test1=1, test2=1000000, test3=-20, test4=\"1\"");
-	v2 = ValueBag::parse(enc);
+    string enc1 = v1.toString();
+    ensure_equals(enc1, "test1=1, test2=1000000, test3=-20, test4=\"1\"");
+    v2 = ValueBag::parse(enc1);
 
 	ensure_equals(v1.size(), 4u);
 	ensure_equals(v2.size(), 4u);

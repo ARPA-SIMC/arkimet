@@ -6,6 +6,7 @@
 #include "utils/files.h"
 #include "utils/fd.h"
 #include "utils/sys.h"
+#include "utils/codec.h"
 #include <sstream>
 #include <iostream>
 #include <cstdio>
@@ -98,13 +99,14 @@ template<> template<>
 void to::test<4>()
 {
     // Get the normal data
-    string plain;
+    vector<uint8_t> plain;
     {
+        codec::Encoder enc(plain);
         scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) {
             md->makeInline();
-            plain += md->encodeBinary();
+            md->encodeBinary(enc);
             const auto& data = md->getData();
-            plain.append((const char*)data.data(), data.size());
+            enc.addBuffer(data);
             return true;
         });
     }
@@ -118,7 +120,8 @@ void to::test<4>()
     p.flush();
     out.close();
 
-    wassert(actual(sys::read_file(out.name())) == plain);
+    string postprocessed = sys::read_file(out.name());
+    wassert(actual(vector<uint8_t>(postprocessed.begin(), postprocessed.end()) == plain));
 }
 
 // Try to shift a sizeable chunk of data to the postprocessor
@@ -153,7 +156,7 @@ void to::test<6>()
     produceGRIB(p);
     p.flush();
 
-    wassert(actual(sys::size(fname)) == 4096*1024);
+    wassert(actual(sys::size(fname)) == 4096*1024u);
 
     sys::unlink(fname);
 }
@@ -174,7 +177,7 @@ void to::test<7>()
         produceGRIB(p);
     p.flush();
 
-    wassert(actual(sys::size(fname)) == 4096*1024);
+    wassert(actual(sys::size(fname)) == 4096*1024u);
 
     sys::unlink(fname);
 }

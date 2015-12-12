@@ -123,6 +123,10 @@ static inline double decodeDouble(const unsigned char* val)
 	return res;
 }
 
+/**
+ * Collection of functions that encode data and append them to a vector of
+ * uint8_t.
+ */
 class Encoder
 {
 	/// Encode an unsigned integer in the given amount of bytes, big endian
@@ -132,100 +136,76 @@ class Encoder
 	void _addULInt(unsigned long long int val, unsigned int bytes);
 
 public:
-	std::string& buf;
+    std::vector<uint8_t>& buf;
 
-	Encoder(std::string& buf) : buf(buf) {}
-	
-	Encoder& addString(const char* str) { buf += str; return *this; }
-	Encoder& addString(const char* str, size_t n) { buf.append(str, n); return *this; }
-	Encoder& addString(const std::string& str) { buf += str; return *this; }
-	Encoder& addBuffer(const std::vector<uint8_t>& buf);
+    Encoder(std::vector<uint8_t>& buf) : buf(buf) {}
 
-	/// Encode an unsigned integer in the given amount of bytes, big endian
-	template<typename T>
-	Encoder& addU(T val, unsigned bytes)
-	{
+    void addString(const char* str) { while (*str) buf.push_back(*str++); }
+    void addString(const char* str, size_t n) { buf.insert(buf.end(), str, str + n); }
+    void addString(const std::string& str) { buf.insert(buf.end(), str.begin(), str.end()); }
+    void addBuffer(const std::vector<uint8_t>& o) { buf.insert(buf.end(), o.begin(), o.end()); }
+
+    /// Encode an unsigned integer in the given amount of bytes, big endian
+    template<typename T>
+    void addU(T val, unsigned bytes)
+    {
         // Only work with unsigned
         static_assert(std::is_unsigned<T>(), "source integer must be unsigned");
 
-		unsigned char data[bytes];
-		for (unsigned int i = 0; i < bytes; ++i)
-			data[i] = (val >> ((bytes - i - 1) * 8)) & 0xff;
-		buf.append((const char*)data, bytes);
-		return *this;
-	}
+        for (unsigned int i = 0; i < bytes; ++i)
+            buf.push_back((val >> ((bytes - i - 1) * 8)) & 0xff);
+    }
 
-	/// Encode an unsigned integer as a varint
-	template<typename T>
-	Encoder& addVarint(T val)
-	{
+    /// Encode an unsigned integer as a varint
+    template<typename T>
+    void addVarint(T val)
+    {
         // Only work with unsigned
         static_assert(std::is_unsigned<T>(), "source integer must be unsigned");
 
-		// Varint idea taken from Google's protocol buffers, and code based on
-		// protbuf's varint implementation
-		uint8_t bytes[sizeof(val)+2];
-		int size = 0;
-		while (val > 0x7F)
-		{
-			bytes[size++] = ((uint8_t)val & 0x7F) | 0x80;
-			val >>= 7;
-		}
-		bytes[size++] = (uint8_t)val & 0x7F;
-		buf.append((const char*)bytes, size);
-		return *this;
-	}
+        // Varint idea taken from Google's protocol buffers, and code based on
+        // protbuf's varint implementation
+        while (val > 0x7F)
+        {
+            buf.push_back(((uint8_t)val & 0x7F) | 0x80);
+            val >>= 7;
+        }
+        buf.push_back((uint8_t)val & 0x7F);
+    }
 
-	/// Encode an unsigned integer in the given amount of bytes, big endian
-	Encoder& addUInt(unsigned int val, unsigned int bytes)
-	{
-		return addU(val, bytes);
-	}
+    /// Encode an unsigned integer in the given amount of bytes, big endian
+    void addUInt(unsigned int val, unsigned int bytes) { addU(val, bytes); }
 
-	/// Encode an unsigned integer in the given amount of bytes, big endian
-	Encoder& addULInt(unsigned long long int val, unsigned int bytes)
-	{
-		return addU(val, bytes);
-	}
+    /// Encode an unsigned integer in the given amount of bytes, big endian
+    void addULInt(unsigned long long int val, unsigned int bytes) { return addU(val, bytes); }
 
-	/// Encode a signed integer in the given amount of bytes, big endian
-	Encoder& addSInt(signed int val, unsigned int bytes)
-	{
-		uint32_t uns;
-		if (val < 0)
-		{
-			// If it's negative, we encode the 2-complement of the positive value
-			uns = -val;
-			uns = ~uns + 1;
-		} else
-			uns = val;
-		return addU(uns, bytes);
-	}
+    /// Encode a signed integer in the given amount of bytes, big endian
+    void addSInt(signed int val, unsigned int bytes)
+    {
+        uint32_t uns;
+        if (val < 0)
+        {
+            // If it's negative, we encode the 2-complement of the positive value
+            uns = -val;
+            uns = ~uns + 1;
+        } else
+            uns = val;
+        addU(uns, bytes);
+    }
 
-	/// Encode a IEEE754 float
-	Encoder& addFloat(float val)
-	{
-		std::string res(sizeof(float), 0);
-		for (unsigned int i = 0; i < sizeof(float); ++i)
-			res[i] = ((const unsigned char*)&val)[i];
-		buf += res;
+    /// Encode a IEEE754 float
+    void addFloat(float val)
+    {
+        for (unsigned int i = 0; i < sizeof(float); ++i)
+            buf.push_back(((const uint8_t*)&val)[i]);
+    }
 
-		/*
-		//buf.append((const char*)&val, sizeof(float));
-		for (unsigned int i = 0; i < sizeof(float); ++i)
-			buf.append((const char*)&val + i, 1);
-		*/
-		return *this;
-	}
-
-	/// Encode a IEEE754 double
-	Encoder& addDouble(double val)
-	{
-		//buf.append((const char*)&val, sizeof(double));
-		for (unsigned int i = 0; i < sizeof(double); ++i)
-			buf.append((const char*)&val + i, 1);
-		return *this;
-	}
+    /// Encode a IEEE754 double
+    void addDouble(double val)
+    {
+        for (unsigned int i = 0; i < sizeof(double); ++i)
+            buf.push_back(((const uint8_t*)&val)[i]);
+    }
 };
 
 /// Convenient front-end to the various decoding functions

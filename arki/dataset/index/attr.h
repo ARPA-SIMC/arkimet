@@ -50,10 +50,10 @@ protected:
 	// This is just a copy of what is in the main index
 	utils::sqlite::SQLiteDB& m_db;
 
-	// Precompiled get id statement
-	mutable utils::sqlite::PrecompiledQuery* m_select_id;
-	// Return the database ID given a string blob. Returns -1 if not found
-	int q_select_id(const std::string& blob) const;
+    // Precompiled get id statement
+    mutable utils::sqlite::PrecompiledQuery* m_select_id;
+    // Return the database ID given a string blob. Returns -1 if not found
+    int q_select_id(const std::vector<uint8_t>& blob) const;
 
 	// Precompiled select one statement
 	mutable utils::sqlite::PrecompiledQuery* m_select_one;
@@ -63,20 +63,20 @@ protected:
 	// Precompiled select all statement
 	mutable utils::sqlite::PrecompiledQuery* m_select_all;
 
-	// Precompiled insert statement
-	utils::sqlite::PrecompiledQuery* m_insert;
-	// Insert the blob in the database and return its new ID
-	int q_insert(const std::string& blob);
+    // Precompiled insert statement
+    utils::sqlite::PrecompiledQuery* m_insert;
+    // Insert the blob in the database and return its new ID
+    int q_insert(const std::vector<uint8_t>& blob);
 
     /// Add an element to the cache
     void add_to_cache(int id, const types::Type& item) const;
-    void add_to_cache(int id, const types::Type& item, const std::string& encoded) const;
+    void add_to_cache(int id, const types::Type& item, const std::vector<uint8_t>& encoded) const;
 
 	// Parsed item cache
 	mutable std::map<int, types::Type*> m_cache;
 
-	// Cache of known IDs
-	mutable std::map<std::string, int> m_id_cache;
+    // Cache of known IDs
+    mutable std::map<std::vector<uint8_t>, int> m_id_cache;
 
 public:
 	AttrSubIndex(utils::sqlite::SQLiteDB& db, types::Code serCode);

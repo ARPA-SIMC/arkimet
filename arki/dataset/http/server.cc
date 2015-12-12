@@ -31,7 +31,7 @@ void StreamHeaders::send_headers()
     fired = true;
 }
 
-void StreamHeaders::send_result(const std::string& res)
+void StreamHeaders::send_result(const std::vector<uint8_t>& res)
 {
     req.send_result(res, content_type, fname + "." + ext);
 }
@@ -204,7 +204,7 @@ void ReadonlyDatasetServer::do_summary(const LegacySummaryParams& parms, net::ht
     }
     else
     {
-        string res = sum.encode(true);
+        vector<uint8_t> res = sum.encode(true);
         req.send_result(res, "application/octet-stream", dsname + "-summary.bin");
     }
 }

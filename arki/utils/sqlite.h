@@ -136,8 +136,14 @@ public:
         }
     }
 
-	/// Bind a query parameter
-	void bind(int idx, const std::string& str);
+    /// Bind a query parameter
+    void bind(int idx, const std::string& str);
+
+    /// Bind a Blob query parameter
+    void bind(int idx, const std::vector<uint8_t>& str);
+
+    /// Bind a buffer that will not exist until the query is performed
+    void bindTransient(int idx, const std::vector<uint8_t>& buf);
 
 	/// Bind a string that will not exist until the query is performed
 	void bindTransient(int idx, const std::string& str);

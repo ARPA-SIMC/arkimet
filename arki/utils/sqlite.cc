@@ -1,5 +1,6 @@
 #include "config.h"
 #include <arki/utils/sqlite.h>
+#include <arki/utils/codec.h>
 #include <sstream>
 #include <unistd.h>
 
@@ -147,13 +148,34 @@ void Query::bind(int idx, const char* str, int len)
 
 void Query::bind(int idx, const std::string& str)
 {
-    // Bind parameters.  We use SQLITE_STATIC even if the pointers will be
-    // pointing to invalid memory at exit of this function, because
-    // sqlite3_step will not be called again without rebinding parameters.
+    // Bind parameters.  We use SQLITE_STATIC assuming that the caller will
+    // keep the data alive until the end of the query
     if (sqlite3_bind_text(m_stm, idx, str.data(), str.size(), SQLITE_STATIC) != SQLITE_OK)
     {
         stringstream ss;
         ss << "cannot bind string to " << name << " query parameter #" << idx;
+        m_db.throwException(ss.str());
+    }
+}
+
+void Query::bind(int idx, const std::vector<uint8_t>& buf)
+{
+    // Bind parameters.  We use SQLITE_STATIC assuming that the caller will
+    // keep the data alive until the end of the query
+    if (sqlite3_bind_blob(m_stm, idx, buf.data(), buf.size(), SQLITE_STATIC) != SQLITE_OK)
+    {
+        stringstream ss;
+        ss << "cannot bind blob to " << name << " query parameter #" << idx;
+        m_db.throwException(ss.str());
+    }
+}
+
+void Query::bindTransient(int idx, const std::vector<uint8_t>& buf)
+{
+    if (sqlite3_bind_blob(m_stm, idx, buf.data(), buf.size(), SQLITE_TRANSIENT) != SQLITE_OK)
+    {
+        stringstream ss;
+        ss << "cannot bind buffer to " << name << " query parameter #" << idx;
         m_db.throwException(ss.str());
     }
 }
@@ -203,7 +225,10 @@ void Query::bindNull(int idx)
 
 void Query::bindType(int idx, const types::Type& item)
 {
-    bindTransient(idx, item.encodeBinary());
+    vector<uint8_t> buf;
+    utils::codec::Encoder enc(buf);
+    item.encodeBinary(enc);
+    bindTransient(idx, buf);
 }
 
 unique_ptr<types::Type> Query::fetchType(int column)
@@ -311,4 +336,3 @@ bool InsertQuery::step()
 }
 }
 }
-// vim:set ts=4 sw=4:
