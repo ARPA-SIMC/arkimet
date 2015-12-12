@@ -78,7 +78,7 @@ void ReadonlyDataset::query_bytes(const dataset::ByteQuery& q, int out)
             postproc.validate(cfg);
             postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
-            query_data(q, [&](unique_ptr<Metadata> md) { return postproc.eat(move(md)); });
+            query_data(q, [&](unique_ptr<Metadata> md) { return postproc.process(move(md)); });
             postproc.flush();
             break;
         }

@@ -43,9 +43,9 @@ struct arki_postprocess_shar {
         config.parse(incfg, "(memory)");
     }
 
-    void produceGRIB(metadata::Eater& c)
+    void produceGRIB(Postprocess& p)
     {
-        scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) { return c.eat(move(md)); });
+        scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) { return p.process(move(md)); });
     }
 };
 TESTGRP(arki_postprocess);
@@ -114,7 +114,7 @@ void to::test<4>()
     Postprocess p("cat");
     p.set_output(out);
     p.start();
-    scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) { return p.eat(move(md)); });
+    scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) { return p.process(move(md)); });
     p.flush();
     out.close();
 

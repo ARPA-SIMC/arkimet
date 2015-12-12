@@ -263,7 +263,7 @@ void Postprocess::start()
     m_child->start();
 }
 
-bool Postprocess::eat(unique_ptr<Metadata>&& md)
+bool Postprocess::process(unique_ptr<Metadata>&& md)
 {
     if (m_child->infd == -1)
         return false;
