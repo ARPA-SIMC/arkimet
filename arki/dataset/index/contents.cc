@@ -298,14 +298,14 @@ void Contents::scan_files(maintenance::IndexFileVisitor& v) const
         // Rebuild the Metadata
         unique_ptr<Metadata> md(new Metadata);
         build_md(mdq, *md);
-        mdc.eat(move(md));
+        mdc.acquire(move(md));
     }
 
     if (!last_file.empty())
         v(last_file, mdc);
 }
 
-void Contents::scan_file(const std::string& relname, metadata::Eater& consumer, const std::string& orderBy) const
+void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& orderBy) const
 {
 	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 	if (m_uniques) query += ", m.uniq";
@@ -323,7 +323,7 @@ void Contents::scan_file(const std::string& relname, metadata::Eater& consumer, 
         // Rebuild the Metadata
         unique_ptr<Metadata> md(new Metadata);
         build_md(mdq, *md);
-        consumer.eat(move(md));
+        dest(move(md));
     }
 }
 
@@ -537,7 +537,7 @@ bool Contents::query(const dataset::DataQuery& q, metadata_dest_func dest) const
             unique_ptr<Metadata> md(new Metadata);
             build_md(mdq, *md);
             // Buffer the results in memory, to release the database lock as soon as possible
-            mdbuf.eat(move(md));
+            mdbuf.acquire(move(md));
         }
 //fprintf(stderr, "POST %zd\n", mdbuf.size());
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
@@ -589,7 +589,7 @@ size_t Contents::produce_nth(metadata_dest_func consumer, size_t idx) const
                 // Rebuild the Metadata
                 unique_ptr<Metadata> md(new Metadata);
                 build_md(mdq, *md);
-                mdbuf.eat(move(md));
+                mdbuf.acquire(move(md));
             }
         }
     }

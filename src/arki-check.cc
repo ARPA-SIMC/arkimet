@@ -320,7 +320,7 @@ int main(int argc, const char* argv[])
                    ss << "cannot read information on data to remove: the metadata #" << count << " is not assigned to any dataset";
                    throw std::runtime_error(ss.str());
                 }
-                todolist.eat(move(md));
+                todolist.acquire(move(md));
 			}
 			// Perform removals
 			size_t count = 1;

@@ -3,7 +3,7 @@
 
 /// In-memory collection of metadata
 
-#include <arki/metadata/consumer.h>
+#include <arki/defs.h>
 #include <vector>
 #include <string>
 #include <iosfwd>
@@ -26,7 +26,7 @@ namespace metadata {
 /**
  * Consumer that collects all metadata into a vector
  */
-class Collection : public Eater
+class Collection
 {
 protected:
     std::vector<Metadata*> vals;
@@ -38,7 +38,7 @@ public:
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
     Collection(const std::string& pathname);
-    virtual ~Collection();
+    ~Collection();
 
     void clear();
     bool empty() const { return vals.empty(); }
@@ -65,7 +65,7 @@ public:
     void push_back(const Metadata& md);
 
     /// Append md
-    bool eat(std::unique_ptr<Metadata>&& md) override;
+    void acquire(std::unique_ptr<Metadata>&& md);
 
 	/**
 	 * Write all the metadata to a file, atomically, using AtomicWriter
@@ -92,14 +92,6 @@ public:
 
     /// Add all metadata to a summary
     void add_to_summary(Summary& out) const;
-
-    /**
-     * Send a copy of all metadata to an eater
-     */
-    bool copy_to_eater(Eater& out) const;
-
-    /// Send all metadata to an eater, emptying this Collection
-    bool move_to_eater(Eater& out);
 
     /// Send all metadata to a consumer function, emptying this Collection
     bool move_to(metadata_dest_func dest);

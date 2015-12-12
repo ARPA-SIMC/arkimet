@@ -66,7 +66,7 @@ void to::test<1>()
 {
     metadata::Collection mdc;
     unique_ptr<sort::Compare> cmp = sort::Compare::parse("hour:run,-reftime");
-    sort::Stream sorter(*cmp, [&](unique_ptr<Metadata> md) { return mdc.eat(move(md)); });
+    sort::Stream sorter(*cmp, mdc.inserter_func());
 
 	produce(0, 0, 10, sorter);
 	produce(0, 1, 9, sorter);
@@ -93,7 +93,7 @@ void to::test<2>()
 {
     metadata::Collection mdc;
     unique_ptr<sort::Compare> cmp = sort::Compare::parse("");
-    sort::Stream sorter(*cmp, [&](unique_ptr<Metadata> md) { return mdc.eat(move(md)); });
+    sort::Stream sorter(*cmp, mdc.inserter_func());
 
 	produce(1, 0, 8, sorter);
 	produce(1, 1, 9, sorter);

@@ -169,10 +169,10 @@ public:
 	 */
 	void scan_files(maintenance::IndexFileVisitor& v) const;
 
-	/**
-	 * Send the metadata of all data items inside a file to the given consumer
-	 */
-	void scan_file(const std::string& relname, metadata::Eater& consumer, const std::string& orderBy = "offset") const;
+    /**
+     * Send the metadata of all data items inside a file to the given consumer
+     */
+    void scan_file(const std::string& relname, metadata_dest_func consumer, const std::string& orderBy = "offset") const;
 
 	/**
 	 * Return the maximum reference time found in the given file.

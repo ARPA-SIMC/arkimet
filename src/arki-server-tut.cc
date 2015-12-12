@@ -99,7 +99,7 @@ void to::test<3>()
     proc->process(*testds, "test200");
     proc->end();
     mdc.clear();
-    Metadata::readFile(output.name(), mdc);
+    Metadata::read_file(output.name(), mdc.inserter_func());
     wassert(actual(mdc.size()) == 1);
     wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
     wassert(actual(mdc[0].getData().size()) == 7218);
@@ -314,11 +314,11 @@ void to::test<11>()
     metadata::Collection mdc1, mdc2;
     {
         stringstream s(plain);
-        Metadata::readFile(s, metadata::ReadContext("", "plain"), mdc1);
+        Metadata::read_file(s, metadata::ReadContext("", "plain"), mdc1.inserter_func());
     }
     {
         stringstream s(postprocessed);
-        Metadata::readFile(s, metadata::ReadContext("", "postprocessed"), mdc2);
+        Metadata::read_file(s, metadata::ReadContext("", "postprocessed"), mdc2.inserter_func());
     }
 
     // Remove those metadata that contain test-dependent timestamps

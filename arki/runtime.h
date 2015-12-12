@@ -147,7 +147,7 @@ struct CommandLine : public utils::commandline::StandardParserWithManpage
 };
 
 /// Dispatch metadata
-struct MetadataDispatch : public metadata::Eater
+struct MetadataDispatch
 {
 	const ConfigFile& cfg;
 	Dispatcher* dispatcher;
@@ -176,8 +176,8 @@ struct MetadataDispatch : public metadata::Eater
 	// it to 0 anytime.
 	int countNotImported;
 
-	MetadataDispatch(const ConfigFile& cfg, DatasetProcessor& next, bool test=false);
-	virtual ~MetadataDispatch();
+    MetadataDispatch(const ConfigFile& cfg, DatasetProcessor& next, bool test=false);
+    ~MetadataDispatch();
 
 	/**
 	 * Dispatch the data from one source
@@ -187,9 +187,6 @@ struct MetadataDispatch : public metadata::Eater
 	 */
 	bool process(ReadonlyDataset& ds, const std::string& name);
 
-    // Note: used only internally, but needs to be public
-    bool eat(std::unique_ptr<Metadata>&& md) override;
-
 	// Flush all imports done so far
 	void flush();
 
@@ -198,11 +195,12 @@ struct MetadataDispatch : public metadata::Eater
 
 	// Set startTime to the current time
 	void setStartTime();
+
+protected:
+    bool dispatch(std::unique_ptr<Metadata>&& md);
 };
 
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

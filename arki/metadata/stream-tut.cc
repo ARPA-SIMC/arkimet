@@ -109,7 +109,7 @@ void to::test<1>()
 	metadata::Collection results;
 
     // Stream for the decoding
-    metadata::Stream mdstream([&](unique_ptr<Metadata> md) { return results.eat(move(md)); }, "test stream");
+    metadata::Stream mdstream(results.inserter_func(), "test stream");
 
 	string input = str.str();
 	size_t cur = 0;
@@ -174,7 +174,7 @@ void to::test<2>()
     metadata::Collection results;
 
     // Stream for the decoding
-    metadata::Stream mdstream([&](unique_ptr<Metadata> md) { return results.eat(move(md)); }, "test stream");
+    metadata::Stream mdstream(results.inserter_func(), "test stream");
 
     // Send the data in two halves
     mdstream.readData(str.str().data(), str.str().size() / 2);

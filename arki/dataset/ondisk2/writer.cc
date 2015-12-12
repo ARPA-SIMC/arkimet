@@ -486,7 +486,7 @@ size_t Writer::repackFile(const std::string& relpath)
 	string pathname = str::joinpath(m_path, relpath);
 
     metadata::Collection mds;
-    m_idx.scan_file(relpath, mds, "reftime, offset");
+    m_idx.scan_file(relpath, mds.inserter_func(), "reftime, offset");
     Pending p_repack = m_segment_manager->repack(relpath, mds);
 
     // Reindex mds
@@ -536,10 +536,10 @@ void Writer::archiveFile(const std::string& relpath)
 	// Create the target directory in the archive
 	string pathname = str::joinpath(m_path, relpath);
 
-	// Rebuild the metadata
-	metadata::Collection mds;
-	m_idx.scan_file(relpath, mds);
-	mds.writeAtomically(pathname + ".metadata");
+    // Rebuild the metadata
+    metadata::Collection mds;
+    m_idx.scan_file(relpath, mds.inserter_func());
+    mds.writeAtomically(pathname + ".metadata");
 
 	// Remove from index
 	m_idx.reset(relpath);

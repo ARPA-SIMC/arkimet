@@ -58,7 +58,7 @@ void MdBuf::add(const Metadata& md)
     unique_ptr<Metadata> copy(md.clone());
     copy->set_source(Source::createBlob(os.format, dirname, basename, os.offset, os.size));
     sum.add(*copy);
-    mds.eat(move(copy));
+    mds.acquire(move(copy));
     flushed = false;
 }
 

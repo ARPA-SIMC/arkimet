@@ -555,7 +555,7 @@ bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
     results.clear();
 
     try {
-        ds.query_data(Matcher(), [&](unique_ptr<Metadata> md) { return this->eat(move(md)); });
+        ds.query_data(Matcher(), [&](unique_ptr<Metadata> md) { return this->dispatch(move(md)); });
     } catch (std::exception& e) {
         // FIXME: this is a quick experiment: a better message can
         // print some of the stats to document partial imports
@@ -591,10 +591,10 @@ bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
 	return success;
 }
 
-bool MetadataDispatch::eat(unique_ptr<Metadata>&& md)
+bool MetadataDispatch::dispatch(unique_ptr<Metadata>&& md)
 {
     // Dispatch to matching dataset
-    switch (dispatcher->dispatch(move(md), [&](unique_ptr<Metadata> md) { return results.eat(move(md)); }))
+    switch (dispatcher->dispatch(move(md), results.inserter_func()))
     {
         case Dispatcher::DISP_OK:
             ++countSuccessful;

@@ -2,6 +2,7 @@
 #include "config.h"
 #include <arki/wibble/exception.h>
 #include <arki/metadata.h>
+#include <arki/metadata/consumer.h>
 #include <arki/matcher.h>
 #include <arki/dataset.h>
 #include <arki/dataset/http.h>

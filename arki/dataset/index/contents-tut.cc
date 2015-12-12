@@ -79,7 +79,7 @@ TESTGRP(arki_dataset_index_contents);
 
 void query_index(WContents& idx, const dataset::DataQuery& q, metadata::Collection& dest)
 {
-    idx.query(q, [&](unique_ptr<Metadata> md) { return dest.eat(move(md)); });
+    idx.query(q, dest.inserter_func());
 }
 
 // Trying indexing a few metadata
@@ -333,11 +333,10 @@ void to::test<4>()
 
 	p.commit();
 
-	// Get the metadata corresponding to one file
-	metadata::Collection mdc;
-	test->scan_file("test-md", mdc);
-
-	ensure_equals(mdc.size(), 2u);
+    // Get the metadata corresponding to one file
+    metadata::Collection mdc;
+    test->scan_file("test-md", mdc.inserter_func());
+    ensure_equals(mdc.size(), 2u);
 
     // Check that the metadata came out fine
     mdc[0].unset(TYPE_ASSIGNEDDATASET);

@@ -104,7 +104,7 @@ Collection::Collection(ReadonlyDataset& ds, const dataset::DataQuery& q)
 
 Collection::Collection(const std::string& pathname)
 {
-    scan::scan(pathname, [&](unique_ptr<Metadata> md) { return eat(move(md)); });
+    scan::scan(pathname, [&](unique_ptr<Metadata> md) { acquire(move(md)); return true; });
 }
 
 Collection::~Collection()
@@ -129,24 +129,23 @@ void Collection::pop_back()
 
 metadata_dest_func Collection::inserter_func()
 {
-    return [=](unique_ptr<Metadata> md) { return eat(move(md)); };
+    return [=](unique_ptr<Metadata> md) { acquire(move(md)); return true; };
 }
 
 void Collection::add(ReadonlyDataset& ds, const dataset::DataQuery& q)
 {
-    ds.query_data(q, [=](unique_ptr<Metadata> md) { eat(move(md)); return true; });
+    ds.query_data(q, inserter_func());
 }
 
 void Collection::push_back(const Metadata& md)
 {
-    eat(Metadata::create_copy(md));
+    acquire(Metadata::create_copy(md));
 }
 
-bool Collection::eat(unique_ptr<Metadata>&& md)
+void Collection::acquire(unique_ptr<Metadata>&& md)
 {
     md->drop_cached_data();
     vals.push_back(md.release());
-    return true;
 }
 
 void Collection::writeTo(std::ostream& out, const std::string& fname) const
@@ -187,7 +186,7 @@ void Collection::write_to(int out, const std::string& fname) const
 
 void Collection::read_from_file(const std::string& pathname)
 {
-    Metadata::read_file(pathname, [&](unique_ptr<Metadata> md) { return eat(move(md)); });
+    Metadata::read_file(pathname, inserter_func());
 }
 
 void Collection::writeAtomically(const std::string& fname) const
@@ -264,14 +263,6 @@ void Collection::add_to_summary(Summary& out) const
         out.add(**i);
 }
 
-bool Collection::copy_to_eater(Eater& out) const
-{
-    for (const_iterator i = vals.begin(); i != vals.end(); ++i)
-        if (!out.eat(Metadata::create_copy(**i)))
-            return false;
-    return true;
-}
-
 namespace {
 struct ClearOnEnd
 {
@@ -284,24 +275,6 @@ struct ClearOnEnd
         vals.clear();
     }
 };
-}
-
-bool Collection::move_to_eater(Eater& out)
-{
-    // Ensure that at the end of this method we clear vals, deallocating all
-    // leftovers
-    ClearOnEnd coe(vals);
-
-    for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)
-    {
-        // Move the pointer to an unique_ptr
-        unique_ptr<Metadata> md(*i);
-        *i = 0;
-        // Pass it on to the eater
-        if (!out.eat(move(md)))
-            return false;
-    }
-    return true;
 }
 
 bool Collection::move_to(metadata_dest_func dest)

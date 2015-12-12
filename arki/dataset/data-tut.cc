@@ -109,7 +109,7 @@ struct TestSegments
             w->append(*md);
             wassert(actual(md->source().style()) == Source::BLOB);
             md->drop_cached_data();
-            mds.eat(move(md));
+            mds.acquire(move(md));
         }
 
         // Repack it
