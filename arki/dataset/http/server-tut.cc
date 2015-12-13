@@ -221,7 +221,7 @@ struct ServerTest : public arki::tests::DatasetTest
     void test_summary()
     {
         // Make the request
-        arki::tests::FakeRequest r;
+        arki::tests::BufferFakeRequest r;
         r.write_get("/foo");
 
         // Handle the request, server side
@@ -233,8 +233,7 @@ struct ServerTest : public arki::tests::DatasetTest
         wassert(actual(r.response_headers["content-disposition"]) == "attachment; filename=testds-summary.bin");
 
         Summary s;
-        stringstream sstream(r.response_body);
-        s.read(sstream, "response body");
+        s.read(r.response_body, "response body");
         wassert(actual(s.count()) == 3u);
     }
 
@@ -242,7 +241,7 @@ struct ServerTest : public arki::tests::DatasetTest
     void test_query()
     {
         // Make the request
-        arki::tests::FakeRequest r;
+        arki::tests::BufferFakeRequest r;
         r.write_get("/foo");
 
         // Handle the request, server side
@@ -253,9 +252,8 @@ struct ServerTest : public arki::tests::DatasetTest
         wassert(actual(r.response_headers["content-type"]) == "application/octet-stream");
         wassert(actual(r.response_headers["content-disposition"]) == "attachment; filename=testds.bin");
 
-        stringstream sstream(r.response_body);
         metadata::Collection mdc;
-        Metadata::read_file(sstream, metadata::ReadContext("", "(response body)"), mdc.inserter_func());
+        Metadata::read_buffer(r.response_body, metadata::ReadContext("", "(response body)"), mdc.inserter_func());
 
         wassert(actual(mdc.size()) == 3u);
     }
@@ -264,7 +262,7 @@ struct ServerTest : public arki::tests::DatasetTest
     void test_querydata()
     {
         // Make the request
-        arki::tests::FakeRequest r;
+        arki::tests::BufferFakeRequest r;
         r.write_get("/foo");
 
         // Handle the request, server side
@@ -275,9 +273,8 @@ struct ServerTest : public arki::tests::DatasetTest
         wassert(actual(r.response_headers["content-type"]) == "application/octet-stream");
         wassert(actual(r.response_headers["content-disposition"]) == "attachment; filename=testds.arkimet");
 
-        stringstream sstream(r.response_body);
         metadata::Collection mdc;
-        Metadata::read_file(sstream, metadata::ReadContext("", "(response body)"), mdc.inserter_func());
+        Metadata::read_buffer(r.response_body, metadata::ReadContext("", "(response body)"), mdc.inserter_func());
 
         wassert(actual(mdc.size()) == 3u);
     }
@@ -286,7 +283,7 @@ struct ServerTest : public arki::tests::DatasetTest
     void test_querybytes()
     {
         // Make the request
-        arki::tests::FakeRequest r;
+        arki::tests::BufferFakeRequest r;
         r.write_get("/foo");
 
         // Handle the request, server side
@@ -298,14 +295,17 @@ struct ServerTest : public arki::tests::DatasetTest
         wassert(actual(r.response_headers["content-disposition"]) == "attachment; filename=testds.txt");
 
         wassert(actual(r.response_body.size()) == 44412u);
-        wassert(actual(r.response_body.substr(0, 4)) == "GRIB");
+        wassert(actual(r.response_body[0]) == 'G');
+        wassert(actual(r.response_body[1]) == 'R');
+        wassert(actual(r.response_body[2]) == 'I');
+        wassert(actual(r.response_body[3]) == 'B');
     }
 
     // Test /config/
     void test_config()
     {
         // Make the request
-        arki::tests::FakeRequest r;
+        arki::tests::StringFakeRequest r;
         r.write_get("/foo");
 
         // Handle the request, server side

@@ -182,23 +182,24 @@ struct ReqState
     }
 };
 
-struct SStreamState : public ReqState
+template<typename Container>
+struct BufState : public ReqState
 {
-	std::stringstream buf;
+    Container buf;
 
-    SStreamState(http::CurlEasy& curl) : ReqState(curl)
+    BufState(http::CurlEasy& curl) : ReqState(curl)
     {
-        checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &SStreamState::writefunc));
+        checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &BufState::writefunc));
         checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, this));
     }
 
-	static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
-	{
-		SStreamState& s = *(SStreamState*)stream;
-		if (size_t res = s.check_error(ptr, size, nmemb)) return res;
-		s.buf.write((const char*)ptr, size * nmemb);
-		return size * nmemb;
-	}
+    static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
+    {
+        BufState& s = *(BufState*)stream;
+        if (size_t res = s.check_error(ptr, size, nmemb)) return res;
+        s.buf.insert(s.buf.end(), (uint8_t*)ptr, (uint8_t*)ptr + size * nmemb);
+        return size * nmemb;
+    }
 };
 
 struct OstreamState : public ReqState
@@ -309,8 +310,8 @@ void HTTP::querySummary(const Matcher& matcher, Summary& summary)
 	// Size of postfields argument if it's non text
 	checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
 
-	SStreamState s(m_curl);
-	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
+    BufState<std::vector<uint8_t>> s(m_curl);
+    // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
 	CURLcode code = curl_easy_perform(m_curl);
 	if (code != CURLE_OK)
@@ -319,8 +320,7 @@ void HTTP::querySummary(const Matcher& matcher, Summary& summary)
 	if (s.response_code >= 400)
 		s.throwError("querying summary from " + url);
 
-	s.buf.seekg(0);
-	summary.read(s.buf, url);
+    summary.read(s.buf, url);
 }
 
 void HTTP::query_bytes(const dataset::ByteQuery& q, int out)
@@ -399,7 +399,7 @@ void HTTP::readConfig(const std::string& path, ConfigFile& cfg)
 	m_curl.reset();
 
     string url = str::joinpath(path, "config");
-    SStreamState content(m_curl);
+    BufState<std::string> content(m_curl);
     checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
     // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
@@ -410,8 +410,8 @@ void HTTP::readConfig(const std::string& path, ConfigFile& cfg)
 	if (content.response_code >= 400)
 		content.throwError("querying configuration from " + url);
 
-	content.buf.seekg(0);
-	cfg.parse(content.buf, url);
+    stringstream cfgin(content.buf);
+    cfg.parse(cfgin, url);
 }
 
 void HTTP::produce_one_wrong_query()
@@ -432,7 +432,7 @@ std::string HTTP::expandMatcher(const std::string& matcher, const std::string& s
     string postdata = "query=" + str::encode_url(matcher) + "\n";
     checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
     checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
-    SStreamState content(m_curl);
+    BufState<std::string> content(m_curl);
     // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
 	CURLcode code = curl_easy_perform(m_curl);
@@ -442,8 +442,7 @@ std::string HTTP::expandMatcher(const std::string& matcher, const std::string& s
 	if (content.response_code >= 400)
 		content.throwError("expanding query at " + url);
 
-    content.buf.seekg(0);
-    return str::strip(content.buf.str());
+    return str::strip(content.buf);
 }
 
 void HTTP::getAliasDatabase(const std::string& server, ConfigFile& cfg)
@@ -455,7 +454,7 @@ void HTTP::getAliasDatabase(const std::string& server, ConfigFile& cfg)
 
     string url = str::joinpath(server, "aliases");
     checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
-    SStreamState content(m_curl);
+    BufState<string> content(m_curl);
     // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
 	CURLcode code = curl_easy_perform(m_curl);
@@ -465,9 +464,8 @@ void HTTP::getAliasDatabase(const std::string& server, ConfigFile& cfg)
 	if (content.response_code >= 400)
 		content.throwError("expanding query at " + url);
 
-	content.buf.seekg(0);
-
-	cfg.parse(content.buf, server);
+    stringstream cfgin(content.buf);
+    cfg.parse(cfgin, server);
 }
 
 static string geturlprefix(const std::string& s)
@@ -513,7 +511,7 @@ void HTTPInbound::list(std::vector<std::string>& files)
     checked("selecting GET method", curl_easy_setopt(m_curl, CURLOPT_HTTPGET, 1));
 
     // Store the results in memory
-    SStreamState s(m_curl);
+    BufState<string> s(m_curl);
 
     CURLcode code = curl_easy_perform(m_curl);
     if (code != CURLE_OK)
@@ -523,7 +521,7 @@ void HTTPInbound::list(std::vector<std::string>& files)
         s.throwError("querying inbound/list from " + url);
 
     // Parse the results
-    str::Split splitter(s.buf.str(), "\n");
+    str::Split splitter(s.buf, "\n");
     for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
         files.push_back(*i);
 }

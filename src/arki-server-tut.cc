@@ -312,12 +312,11 @@ void to::test<11>()
 
     metadata::Collection mdc1, mdc2;
     {
-        stringstream s(string((const char*)plain.data(), plain.size()));
-        Metadata::read_file(s, metadata::ReadContext("", "plain"), mdc1.inserter_func());
+        Metadata::read_buffer(plain, metadata::ReadContext("", "plain"), mdc1.inserter_func());
     }
     {
-        stringstream s(string((const char*)postprocessed.data(), postprocessed.size()));
-        Metadata::read_file(s, metadata::ReadContext("", "postprocessed"), mdc2.inserter_func());
+        vector<uint8_t> buf(postprocessed.begin(), postprocessed.end());
+        Metadata::read_buffer(buf, metadata::ReadContext("", "postprocessed"), mdc2.inserter_func());
     }
 
     // Remove those metadata that contain test-dependent timestamps

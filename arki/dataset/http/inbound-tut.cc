@@ -94,7 +94,7 @@ template<> template<>
 void to::test<1>()
 {
     // Make the request
-    arki::tests::FakeRequest r;
+    arki::tests::BufferFakeRequest r;
     r.write_get("/inbound/scan?file=test.grib1");
 
     // Handle the request, server side
@@ -105,9 +105,8 @@ void to::test<1>()
     ensure_equals(r.response_headers["content-type"], "application/octet-stream");
     ensure_equals(r.response_headers["content-disposition"], "attachment; filename=test.grib1.arkimet");
 
-    stringstream in(r.response_body);
     metadata::Collection mdc;
-    Metadata::read_file(in, metadata::ReadContext("", "(response body)"), mdc.inserter_func());
+    Metadata::read_buffer(r.response_body, metadata::ReadContext("", "(response body)"), mdc.inserter_func());
     ensure_equals(mdc.size(), 3u);
 }
 
@@ -116,7 +115,7 @@ template<> template<>
 void to::test<2>()
 {
     // Make the request
-    arki::tests::FakeRequest r;
+    arki::tests::StringFakeRequest r;
     r.write_get("/inbound/testdispatch?file=test.grib1");
 
     // Handle the request, server side
@@ -139,7 +138,7 @@ void to::test<3>()
     system("cp inbound/test.grib1 inbound/copy.grib1");
 
     // Make the request
-    arki::tests::FakeRequest r;
+    arki::tests::BufferFakeRequest r;
     r.write_get("/inbound/dispatch?file=copy.grib1");
 
     // Handle the request, server side
@@ -150,9 +149,8 @@ void to::test<3>()
     ensure_equals(r.response_headers["content-type"], "application/octet-stream");
     ensure_equals(r.response_headers["content-disposition"], "attachment; filename=copy.grib1.arkimet");
 
-    stringstream in(r.response_body);
     metadata::Collection mdc;
-    Metadata::read_file(in, metadata::ReadContext("(response body)", ""), mdc.inserter_func());
+    Metadata::read_buffer(r.response_body, metadata::ReadContext("(response body)", ""), mdc.inserter_func());
     ensure_equals(mdc.size(), 3u);
     ensure_equals(mdc[0].get<types::AssignedDataset>()->name, "testds");
     ensure_equals(mdc[1].get<types::AssignedDataset>()->name, "testds");

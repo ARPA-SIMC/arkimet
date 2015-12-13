@@ -18,7 +18,6 @@
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
 #include "arki/wibble/exception.h"
-#include <fstream>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -437,22 +436,28 @@ bool Summary::read(int fd, const std::string& filename)
     return true;
 }
 
-bool Summary::read(std::istream& in, const std::string& filename)
+bool Summary::read(const std::vector<uint8_t>& in, const std::string& filename)
 {
-    vector<uint8_t> buf;
+    const uint8_t* buf = in.data();
+    size_t len = in.size();
+    return read(buf, len, filename);
+}
+
+bool Summary::read(const uint8_t*& inbuf, size_t& inlen, const std::string& filename)
+{
+    const uint8_t* buf;
+    size_t len;
     string signature;
     unsigned version;
-
-    iotrace::trace_file(filename, 0, 0, "read summary");
-
-    if (!types::readBundle(in, filename, buf, signature, version))
+    if (!types::readBundle(inbuf, inlen, filename, buf, len, signature, version))
         return false;
 
     // Ensure first 2 bytes are SU
     if (signature != "SU")
         throw wibble::exception::Consistency("parsing file " + filename, "summary entry does not start with 'SU'");
 
-    read(buf, version, filename);
+    vector<uint8_t> inner(buf, buf + len);
+    read(inner, version, filename);
 
     return true;
 }
@@ -661,13 +666,8 @@ void Summary::read(const emitter::memory::Mapping& val)
 void Summary::readFile(const std::string& fname)
 {
     // Read all the metadata
-    std::ifstream in;
-    in.open(fname.c_str(), ios::in);
-    if (!in.is_open() || in.fail())
-        throw wibble::exception::File(fname, "opening file for reading");
-
+    sys::File in(fname, O_RDONLY);
     read(in, fname);
-
     in.close();
 }
 

@@ -183,11 +183,6 @@ public:
     void readInlineData(const uint8_t*& buf, size_t& len, const std::string& filename);
 
     /**
-     * Read the inline data from the given stream
-     */
-    void readInlineData(std::istream& in, const std::string& filename);
-
-    /**
      * Read a metadata document encoded in Yaml from the given file descriptor.
      *
      * The filename string is used to generate nicer parse error messages when
@@ -196,18 +191,6 @@ public:
      * @returns false when end-of-file is reached
      */
     bool readYaml(LineReader& in, const std::string& filename);
-
-#if 0
-	/**
-	 * Read a metadata document encoded in Yaml from the given input stream.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 *
-	 * @returns false when end-of-file is reached
-	 */
-	bool readYaml(std::istream& in, const std::string& filename);
-#endif
 
 	/**
 	 * Write the metadata to the given output stream.
@@ -291,6 +274,9 @@ public:
     static std::unique_ptr<Metadata> create_from_yaml(std::istream& in, const std::string& filename);
 #endif
 
+    /// Read all metadata from a buffer into the given consumer
+    static void read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& fname, metadata_dest_func dest);
+
     /// Read all metadata from a file into the given consumer
     static void read_file(const std::string& fname, metadata_dest_func dest);
 
@@ -299,14 +285,12 @@ public:
     static void read_file(const metadata::ReadContext& fname, metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
-    [[deprecated("use read_file instead")]] static void readFile(std::istream& in, const metadata::ReadContext& file, metadata::Eater& mdc);
-    [[deprecated("use file descriptors instead")]] static void read_file(std::istream& in, const metadata::ReadContext& file, metadata_dest_func mdc);
     static void read_file(int in, const metadata::ReadContext& file, metadata_dest_func mdc);
 
     /**
      * Read a metadata group into the given consumer
      */
-    static void read_group(const std::vector<uint8_t>& buf, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest);
+    static void read_group(const uint8_t*& data, size_t& size, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest);
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Metadata

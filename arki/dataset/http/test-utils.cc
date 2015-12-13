@@ -88,12 +88,12 @@ void FakeRequest::read_response()
     // Read the rest as reponse body
     while (true)
     {
-        char buf[4096];
+        uint8_t buf[4096];
         ssize_t res = read(fd, buf, 4096);
         if (res < 0)
             throw wibble::exception::File(fname, "reading response body");
         if (res == 0) break;
-        response_body.append(buf, res);
+        append_body(buf, res);
     }
 }
 
@@ -104,6 +104,15 @@ void FakeRequest::dump_headers(std::ostream& out)
         out << "header " << i->first << ": " << i->second << endl;
 }
 
+void StringFakeRequest::append_body(const uint8_t* buf, size_t len)
+{
+    response_body.append((const char*)buf, len);
+}
+
+void BufferFakeRequest::append_body(const uint8_t* buf, size_t len)
+{
+    response_body.insert(response_body.end(), buf, buf + len);
+}
+
 }
 }
-// vim:set ts=4 sw=4:

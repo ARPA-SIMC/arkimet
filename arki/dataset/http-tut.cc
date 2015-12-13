@@ -173,5 +173,3 @@ void to::test<1>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

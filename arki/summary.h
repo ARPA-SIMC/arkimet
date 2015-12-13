@@ -118,15 +118,25 @@ public:
 	 */
 	bool read(int fd, const std::string& filename);
 
-	/**
-	 * Read a summary from the given input stream.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 *
-	 * @returns false when end-of-file is reached
-	 */
-	bool read(std::istream& in, const std::string& filename);
+    /**
+     * Read a summary from a buffer.
+     *
+     * The filename string is used to generate nicer parse error messages when
+     * throwing exceptions, and can be anything.
+     *
+     * @returns false when end-of-file is reached
+     */
+    bool read(const std::vector<uint8_t>& in, const std::string& filename);
+
+    /**
+     * Read a summary from a buffer.
+     *
+     * The filename string is used to generate nicer parse error messages when
+     * throwing exceptions, and can be anything.
+     *
+     * @returns false when end-of-file is reached
+     */
+    bool read(const uint8_t*& inbuf, size_t& inlen, const std::string& filename);
 
     /**
      * Decode the summary, without the outer bundle headers, from the given buffer.

@@ -104,7 +104,9 @@ static void addToSummary(sys::NamedFileDescriptor& in, Summary& s)
 		}
         else if (signature == "MG")
         {
-            Metadata::read_group(buf, version, in.name(), [&](unique_ptr<Metadata> md) { s.add(*md); return true; });
+            const uint8_t* pbuf = buf.data();
+            size_t psize = buf.size();
+            Metadata::read_group(pbuf, psize, version, in.name(), [&](unique_ptr<Metadata> md) { s.add(*md); return true; });
         }
     }
 }
@@ -298,7 +300,9 @@ int main(int argc, const char* argv[])
                 }
                 else if (signature == "MG")
                 {
-                    Metadata::read_group(buf, version, in->name(), [&](unique_ptr<Metadata> md) { return writer.eat(move(md)); });
+                    const uint8_t* pbuf = buf.data();
+                    size_t psize = buf.size();
+                    Metadata::read_group(pbuf, psize, version, in->name(), [&](unique_ptr<Metadata> md) { return writer.eat(move(md)); });
                 }
             }
 // Uncomment as a quick hack to check memory usage at this point:
