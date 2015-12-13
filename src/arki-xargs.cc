@@ -66,10 +66,10 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-static void process(metadata::Eater& consumer, runtime::Input& in)
+static void process(metadata::Eater& consumer, sys::NamedFileDescriptor& in)
 {
     metadata::ReadContext rc(sys::getcwd(), in.name());
-    Metadata::readFile(in.stream(), rc, consumer);
+    Metadata::read_file(in, rc, [&](unique_ptr<Metadata> md) { return consumer.eat(move(md)); });
 }
 
 int main(int argc, const char* argv[])
@@ -99,19 +99,19 @@ int main(int argc, const char* argv[])
 		if (opts.split_timerange->boolValue())
 			consumer.split_timerange = true;
 
-		if (opts.inputfiles->values().empty())
-		{
-			// Process stdin
-			runtime::Input in("-");
-			process(consumer, in);
-			consumer.flush();
-		} else {
-			// Process the files
-			for (vector<string>::const_iterator i = opts.inputfiles->values().begin();
-					i != opts.inputfiles->values().end(); ++i)
-			{
-				runtime::Input in(i->c_str());
-				process(consumer, in);
+        if (opts.inputfiles->values().empty())
+        {
+            // Process stdin
+            runtime::Stdin in;
+            process(consumer, in);
+            consumer.flush();
+        } else {
+            // Process the files
+            for (vector<string>::const_iterator i = opts.inputfiles->values().begin();
+                    i != opts.inputfiles->values().end(); ++i)
+            {
+                runtime::InputFile in(i->c_str());
+                process(consumer, in);
             }
             consumer.flush();
         }

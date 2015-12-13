@@ -108,12 +108,14 @@ unique_ptr<Metadata> Metadata::create_copy(const Metadata& md)
     return unique_ptr<Metadata>(md.clone());
 }
 
+#if 0
 unique_ptr<Metadata> Metadata::create_from_yaml(std::istream& in, const std::string& filename)
 {
     unique_ptr<Metadata> res(create_empty());
     res->readYaml(in, filename);
     return res;
 }
+#endif
 
 const Source& Metadata::source() const
 {
@@ -277,27 +279,6 @@ bool Metadata::read(const uint8_t*& inbuf, size_t& inlen, const std::string& fil
     return true;
 }
 
-bool Metadata::read(istream& in, const std::string& filename, bool readInline)
-{
-    vector<uint8_t> buf;
-    string signature;
-    unsigned version;
-    if (!types::readBundle(in, filename, buf, signature, version))
-        return false;
-
-	// Ensure first 2 bytes are MD or !D
-	if (signature != "MD")
-		throw wibble::exception::Consistency("parsing file " + filename, "metadata entry does not start with 'MD'");
-
-	read(buf, version, filename);
-
-    // If the source is inline, then the data follows the metadata
-    if (readInline && source().style() == types::Source::INLINE)
-        readInlineData(in, filename);
-
-    return true;
-}
-
 bool Metadata::read(const unsigned char*& buf, size_t& len, const metadata::ReadContext& rc)
 {
 	const unsigned char* obuf;
@@ -410,6 +391,28 @@ void Metadata::readInlineData(std::istream& in, const std::string& filename)
     }
 }
 
+bool Metadata::readYaml(LineReader& in, const std::string& filename)
+{
+    clear();
+
+    YamlStream yamlStream;
+    for (YamlStream::const_iterator i = yamlStream.begin(in);
+            i != yamlStream.end(); ++i)
+    {
+        types::Code type = types::parseCodeName(i->first);
+        string val = str::strip(i->second);
+        switch (type)
+        {
+            case types::TYPE_NOTE: add_note(*types::Note::decodeString(val)); break;
+            case types::TYPE_SOURCE: set_source(types::Source::decodeString(val)); break;
+            default:
+                m_vals.insert(make_pair(type, types::decodeString(type, val).release()));
+        }
+    }
+    return !in.eof();
+}
+
+#if 0
 bool Metadata::readYaml(std::istream& in, const std::string& filename)
 {
     clear();
@@ -430,6 +433,7 @@ bool Metadata::readYaml(std::istream& in, const std::string& filename)
     }
     return !in.eof();
 }
+#endif
 
 void Metadata::write(std::ostream& out, const std::string& filename) const
 {
@@ -720,6 +724,38 @@ void Metadata::read_file(const metadata::ReadContext& file, metadata_dest_func d
     read_file(in, file, dest);
 
     in.close();
+}
+
+void Metadata::read_file(int in, const metadata::ReadContext& file, metadata_dest_func dest)
+{
+    bool canceled = false;
+    vector<uint8_t> buf;
+    string signature;
+    unsigned version;
+    while (types::readBundle(in, file.pathname, buf, signature, version))
+    {
+        if (canceled) continue;
+
+        // Ensure first 2 bytes are MD or !D
+        if (signature != "MD" && signature != "!D" && signature != "MG")
+            throw wibble::exception::Consistency("parsing file " + file.pathname, "metadata entry does not start with 'MD', '!D' or 'MG'");
+
+        if (signature == "MG")
+        {
+            // Handle metadata group
+            iotrace::trace_file(file.pathname, 0, 0, "read metadata group");
+            Metadata::read_group(buf, version, file, dest);
+        } else {
+            unique_ptr<Metadata> md(new Metadata);
+            iotrace::trace_file(file.pathname, 0, 0, "read metadata");
+            md->read(buf, version, file);
+
+            // If the source is inline, then the data follows the metadata
+            if (md->source().style() == types::Source::INLINE)
+                md->readInlineData(in, file.pathname);
+            canceled = !dest(move(md));
+        }
+    }
 }
 
 void Metadata::readFile(std::istream& in, const metadata::ReadContext& file, metadata::Eater& mdc)

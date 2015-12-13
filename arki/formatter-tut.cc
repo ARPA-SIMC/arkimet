@@ -1,9 +1,8 @@
 #include "config.h"
-
 #include <arki/metadata/tests.h>
 #include <arki/formatter.h>
 #include <arki/metadata.h>
-
+#include <arki/utils/files.h>
 #include <memory>
 #include <sstream>
 #include <iostream>
@@ -19,6 +18,7 @@ static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::utils;
 using namespace arki::tests;
 
 struct arki_formatter_shar {
@@ -52,13 +52,15 @@ void to::test<1>()
     // Read back the two metadatas
     Metadata md1;
     {
-        stringstream str(str1.str(), ios_base::in);
-        md1.readYaml(str, "(test memory buffer)");
+        string s(str1.str());
+        auto reader = files::linereader_from_chars(s.data(), s.size());
+        md1.readYaml(*reader, "(test memory buffer)");
     }
     Metadata md2;
     {
-        stringstream str(str2.str(), ios_base::in);
-        md2.readYaml(str, "(test memory buffer)");
+        string s(str2.str());
+        auto reader = files::linereader_from_chars(s.data(), s.size());
+        md2.readYaml(*reader, "(test memory buffer)");
     }
 
 	// Once reparsed, they should have the same content
@@ -67,5 +69,3 @@ void to::test<1>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

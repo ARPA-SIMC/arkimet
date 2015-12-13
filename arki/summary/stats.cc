@@ -4,6 +4,7 @@
 #include <arki/utils/codec.h>
 #include <arki/utils/lua.h>
 #include <arki/utils/string.h>
+#include <arki/utils/files.h>
 #include <arki/utils/yaml.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
@@ -214,9 +215,9 @@ unique_ptr<Stats> Stats::decode(const unsigned char* buf, size_t len)
 unique_ptr<Stats> Stats::decodeString(const std::string& str)
 {
     unique_ptr<Stats> res(new Stats);
-    stringstream in(str, ios_base::in);
+    auto reader = files::linereader_from_chars(str.data(), str.size());
     YamlStream yamlStream;
-    for (YamlStream::const_iterator i = yamlStream.begin(in);
+    for (YamlStream::const_iterator i = yamlStream.begin(*reader);
             i != yamlStream.end(); ++i)
     {
         string name = str::lower(i->first);

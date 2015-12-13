@@ -13,6 +13,7 @@
 #include <arki/emitter/json.h>
 #include <arki/emitter/memory.h>
 #include <arki/utils/sys.h>
+#include <arki/utils/files.h>
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -148,12 +149,12 @@ void to::test<3>()
     md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
     fill(md);
 
-	stringstream output;
-	md.writeYaml(output);
-	stringstream stream(output.str(), ios_base::in);
-
-	Metadata md1;
-	md1.readYaml(stream, "(test memory buffer)");
+    stringstream output;
+    md.writeYaml(output);
+    Metadata md1;
+    string s(output.str());
+    auto reader = files::linereader_from_chars(s.data(), s.size());
+    md1.readYaml(*reader, "(test memory buffer)");
 
     wassert(actual(Source::createBlob("grib", "", "fname", 1, 2)) == md1.source());
     wassert(actual(md1.source().format) == "grib");
@@ -162,12 +163,12 @@ void to::test<3>()
     // Test PERIOD reference times
     md.set(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
 
-	stringstream output1;
-	md.writeYaml(output1);
-	stringstream stream1(output1.str(), ios_base::in);
-
-	Metadata md2;
-	md2.readYaml(stream1, "(test memory buffer)");
+    stringstream output1;
+    md.writeYaml(output1);
+    Metadata md2;
+    s = output1.str();
+    reader = files::linereader_from_chars(s.data(), s.size());
+    md2.readYaml(*reader, "(test memory buffer)");
 
     wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
 }

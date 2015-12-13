@@ -21,12 +21,13 @@ static std::string stripYamlComment(const std::string& str)
     return res;
 }
 
-YamlStream::const_iterator::const_iterator(std::istream& sin)
+YamlStream::const_iterator::const_iterator(LineReader& sin)
     : in(&sin)
 {
     // Read the next line to parse, skipping leading empty lines
-    while (std::getline(*in, line))
+    while (!in->eof())
     {
+        in->getline(line);
         line = stripYamlComment(line);
         if (!line.empty())
             break;
@@ -78,7 +79,7 @@ YamlStream::const_iterator& YamlStream::const_iterator::operator++()
     {
         line.clear();
         if (in->eof()) break;
-        if (!getline(*in, line)) break;
+        in->getline(line);
         // End of record
         if (line.empty()) break;
         // Full comment line: ignore it

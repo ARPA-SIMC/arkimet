@@ -6,7 +6,6 @@
 #include <arki/utils/commandline/parser.h>
 #include <arki/utils/sys.h>
 #include <arki/defs.h>
-#include <fstream>
 #include <string>
 
 namespace arki {
@@ -15,24 +14,14 @@ struct Hook;
 }
 namespace runtime {
 
-/**
- * Open an input file.
- *
- * If there is a commandline parameter available in the parser, use that as a
- * file name; else use the standard input.
- */
-class Input
+struct InputFile : public utils::sys::File
 {
-	std::istream* m_in;
-	std::ifstream m_file_in;
-	std::string m_name;
+    InputFile(const std::string& file);
+};
 
-public:
-	Input(arki::utils::commandline::Parser& opts);
-	Input(const std::string& file);
-
-	std::istream& stream() { return *m_in; }
-	const std::string& name() const { return m_name; }
+struct Stdin : public utils::sys::NamedFileDescriptor
+{
+    Stdin();
 };
 
 struct Stdout : public utils::sys::NamedFileDescriptor
@@ -50,6 +39,13 @@ struct File : public utils::sys::File
     File(const std::string pathname, bool append=false);
 };
 
+/**
+ * Open an input file.
+ *
+ * If there is a commandline parameter available in the parser, use that as a
+ * file name; else use the standard input.
+ */
+std::unique_ptr<utils::sys::NamedFileDescriptor> make_input(utils::commandline::Parser& opts);
 std::unique_ptr<utils::sys::NamedFileDescriptor> make_output(utils::commandline::Parser& opts);
 std::unique_ptr<utils::sys::NamedFileDescriptor> make_output(utils::commandline::StringOption& opt);
 

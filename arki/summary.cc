@@ -671,7 +671,7 @@ void Summary::readFile(const std::string& fname)
     in.close();
 }
 
-bool Summary::readYaml(std::istream& in, const std::string& filename)
+bool Summary::readYaml(LineReader& in, const std::string& filename)
 {
     return root->merge_yaml(in, filename);
 }

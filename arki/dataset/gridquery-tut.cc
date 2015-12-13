@@ -10,6 +10,7 @@
 #include <arki/scan/grib.h>
 #include <arki/dispatcher.h>
 #include <arki/runtime/config.h>
+#include <arki/utils/files.h>
 
 #include <sstream>
 #include <iostream>
@@ -106,20 +107,23 @@ void to::test<2>()
 {
 	runtime::readMatcherAliasDatabase();
 
-	// Build a test dataset
-	stringstream md_yaml(
-		"Source: BLOB(grib1,/dev/null:0+186196)\n"
-		"Origin: GRIB1(200, 255, 047)\n"
-		"Product: GRIB1(200, 002, 061)\n"
-		"Level: GRIB1(001)\n"
-		"Timerange: GRIB1(004, 000h, 012h)\n"
-		"Reftime: 2010-05-03T00:00:00Z\n"
-		"Area: GRIB(Ni=297, Nj=313, latfirst=-25000000, latlast=-5500000, latp=-32500000, lonfirst=-8500000, lonlast=10000000, lonp=10000000, rot=0, type=10)\n"
-		"Run: MINUTE(00:00)\n"
-	);
+    // Build a test dataset
+    string md_yaml(
+        "Source: BLOB(grib1,/dev/null:0+186196)\n"
+        "Origin: GRIB1(200, 255, 047)\n"
+        "Product: GRIB1(200, 002, 061)\n"
+        "Level: GRIB1(001)\n"
+        "Timerange: GRIB1(004, 000h, 012h)\n"
+        "Reftime: 2010-05-03T00:00:00Z\n"
+        "Area: GRIB(Ni=297, Nj=313, latfirst=-25000000, latlast=-5500000, latp=-32500000, lonfirst=-8500000, lonlast=10000000, lonp=10000000, rot=0, type=10)\n"
+        "Run: MINUTE(00:00)\n"
+    );
+    auto reader = utils::files::linereader_from_chars(md_yaml.data(), md_yaml.size());
+    unique_ptr<Metadata> md = Metadata::create_empty();
+    md->readYaml(*reader, "(test memory buffer)");
 
     dataset::Memory ds;
-    ds.acquire(Metadata::create_from_yaml(md_yaml, "(memory)"));
+    ds.acquire(move(md));
 
     // Build the grid query
     dataset::GridQuery gq(ds);

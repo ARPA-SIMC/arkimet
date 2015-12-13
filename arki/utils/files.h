@@ -1,32 +1,13 @@
 #ifndef ARKI_UTILS_FILES_H
 #define ARKI_UTILS_FILES_H
 
-/*
- * utils/files - arkimet-specific file functions
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// utils/files - arkimet-specific file functions
 
+#include <arki/defs.h>
 #include <string>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <iosfwd>
+#include <memory>
 
 #define FLAGFILE_REBUILD ".needs-rebuild"
 #define FLAGFILE_PACK ".needs-pack"
@@ -132,9 +113,29 @@ struct PreserveFileTimes
     ~PreserveFileTimes();
 };
 
-}
-}
-}
+/**
+ * Create a LineReader from a file descriptor.
+ *
+ * The file descriptor is not managed by the LineReader, and will ned to be
+ * kept open by the caller for as long as the line reader is used, then closed
+ * at the end.
+ *
+ * Note that a LineReader on a file descriptor needs to do read ahead to avoid
+ * reading one character at a time, so if the caller stops calling getline(),
+ * the file descriptor is likely to be positioned further ahead than the last
+ * line read.
+ */
+std::unique_ptr<LineReader> linereader_from_fd(int fd, const std::string& pathname);
 
-// vim:set ts=4 sw=4:
+/**
+ * Create a LineReader from a buffer on a string.
+ *
+ * No copy is made of the data: the buffer must remain valid for as long as the
+ * line reader is used.
+ */
+std::unique_ptr<LineReader> linereader_from_chars(const char* buf, size_t size);
+
+}
+}
+}
 #endif

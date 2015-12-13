@@ -175,23 +175,6 @@ public:
      */
     bool read(const unsigned char*& buf, size_t& len, const std::string& filename, bool readInline=true);
 
-protected:
-	/**
-	 * Read a metadata document from the given input stream.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 *
-	 * If readInline is true, in case the data is transmitted inline, it reads
-	 * the data as well: this is what you expect.
-	 *
-	 * If it's false, then the reader needs to check from the Metadata source
-	 * if it is inline, and in that case proceed to read the inline data.
-	 *
-	 * @returns false when end-of-file is reached
-	 */
-	bool read(std::istream& in, const std::string& filename, bool readInline=true);
-
 public:
     /// Read the inline data from the given file handle
     void readInlineData(int in, const std::string& filename);
@@ -204,6 +187,17 @@ public:
      */
     void readInlineData(std::istream& in, const std::string& filename);
 
+    /**
+     * Read a metadata document encoded in Yaml from the given file descriptor.
+     *
+     * The filename string is used to generate nicer parse error messages when
+     * throwing exceptions, and can be anything.
+     *
+     * @returns false when end-of-file is reached
+     */
+    bool readYaml(LineReader& in, const std::string& filename);
+
+#if 0
 	/**
 	 * Read a metadata document encoded in Yaml from the given input stream.
 	 *
@@ -213,6 +207,7 @@ public:
 	 * @returns false when end-of-file is reached
 	 */
 	bool readYaml(std::istream& in, const std::string& filename);
+#endif
 
 	/**
 	 * Write the metadata to the given output stream.
@@ -291,8 +286,10 @@ public:
     /// Create a copy of a Metadata
     static std::unique_ptr<Metadata> create_copy(const Metadata& md);
 
+#if 0
     /// Read one Metadata from a Yaml stream and return it
     static std::unique_ptr<Metadata> create_from_yaml(std::istream& in, const std::string& filename);
+#endif
 
     /// Read all metadata from a file into the given consumer
     static void read_file(const std::string& fname, metadata_dest_func dest);
@@ -303,7 +300,8 @@ public:
 
     /// Read all metadata from a file into the given consumer
     [[deprecated("use read_file instead")]] static void readFile(std::istream& in, const metadata::ReadContext& file, metadata::Eater& mdc);
-    static void read_file(std::istream& in, const metadata::ReadContext& file, metadata_dest_func mdc);
+    [[deprecated("use file descriptors instead")]] static void read_file(std::istream& in, const metadata::ReadContext& file, metadata_dest_func mdc);
+    static void read_file(int in, const metadata::ReadContext& file, metadata_dest_func mdc);
 
     /**
      * Read a metadata group into the given consumer

@@ -6,6 +6,7 @@
 #include "arki/emitter/memory.h"
 #include "arki/summary.h"
 #include "arki/utils/yaml.h"
+#include "arki/utils/files.h"
 #include <algorithm>
 #include <iostream>
 
@@ -200,7 +201,7 @@ void Table::merge(const emitter::memory::Mapping& m)
     merge(new_row);
 }
 
-bool Table::merge_yaml(std::istream& in, const std::string& filename)
+bool Table::merge_yaml(LineReader& in, const std::string& filename)
 {
     Row new_row;
     new_row.set_to_zero();
@@ -212,9 +213,9 @@ bool Table::merge_yaml(std::istream& in, const std::string& filename)
         {
             case types::TYPE_SUMMARYITEM:
                 {
-                    stringstream in(i->second, ios_base::in);
+                    auto in = files::linereader_from_chars(i->second.data(), i->second.size());
                     YamlStream yamlStream;
-                    for (YamlStream::const_iterator i = yamlStream.begin(in); i != yamlStream.end(); ++i)
+                    for (YamlStream::const_iterator i = yamlStream.begin(*in); i != yamlStream.end(); ++i)
                     {
                         types::Code type = types::parseCodeName(i->first);
                         int pos = summary::Visitor::posForCode(type);

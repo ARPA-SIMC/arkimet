@@ -141,15 +141,15 @@ public:
 	 */
 	void readFile(const std::string& fname);
 
-	/**
-	 * Read a summary document encoded in Yaml from the given input stream.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 *
-	 * Summary items are read from the file until the end of file is found.
-	 */
-	bool readYaml(std::istream& in, const std::string& filename);
+    /**
+     * Read a summary document encoded in Yaml from the given file descriptor.
+     *
+     * The filename string is used to generate nicer parse error messages when
+     * throwing exceptions, and can be anything.
+     *
+     * Summary items are read from the file until the end of file is found.
+     */
+    bool readYaml(LineReader& in, const std::string& filename);
 
 	/**
 	 * Write the summary to the given output stream.

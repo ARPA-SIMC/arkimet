@@ -11,8 +11,10 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/wibble/exception.h"
+#include <sys/types.h>
 #include <sys/stat.h>
-#include <iostream>
+#include <fcntl.h>
+#include <unistd.h>
 
 #ifdef HAVE_LUA
 #include <arki/report.h>
@@ -111,25 +113,21 @@ File::File(const ConfigFile& cfg)
 	m_format = cfg.value("format");
 }
 
-IfstreamFile::IfstreamFile(const ConfigFile& cfg) : File(cfg), m_file(0), m_close(false)
+FdFile::FdFile(const ConfigFile& cfg) : File(cfg), fd(-1)
 {
-	if (m_pathname == "-")
-	{
-		m_file = &std::cin;
-	} else {
-		m_file = new std::ifstream(m_pathname.c_str(), ios::in);
-		if (/*!m_file->is_open() ||*/ m_file->fail())
-			throw wibble::exception::File(m_pathname, "opening file for reading");
-		m_close = true;
-	}
+    if (m_pathname == "-")
+    {
+        fd = 0;
+    } else {
+        fd = ::open(m_pathname.c_str(), O_RDONLY);
+        if (fd == -1)
+            throw std::system_error(errno, std::system_category(), "cannot open " + m_pathname);
+    }
 }
 
-IfstreamFile::~IfstreamFile()
+FdFile::~FdFile()
 {
-	if (m_file && m_close)
-	{
-		delete m_file;
-	}
+    if (fd != -1) ::close(fd);
 }
 
 void File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
@@ -161,17 +159,17 @@ static shared_ptr<sort::Stream> wrap_with_query(const dataset::DataQuery& q, met
     return sorter;
 }
 
-ArkimetFile::ArkimetFile(const ConfigFile& cfg) : IfstreamFile(cfg) {}
+ArkimetFile::ArkimetFile(const ConfigFile& cfg) : FdFile(cfg) {}
 ArkimetFile::~ArkimetFile() {}
 void ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     auto sorter = wrap_with_query(q, dest);
-    Metadata::read_file(*m_file, m_pathname, dest);
+    Metadata::read_file(fd, m_pathname, dest);
     if (sorter) sorter->flush();
 }
 
-YamlFile::YamlFile(const ConfigFile& cfg) : IfstreamFile(cfg) {}
-YamlFile::~YamlFile() {}
+YamlFile::YamlFile(const ConfigFile& cfg) : FdFile(cfg), reader(files::linereader_from_fd(fd, m_pathname).release()) {}
+YamlFile::~YamlFile() { delete reader; }
 void YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     auto sorter = wrap_with_query(q, dest);
@@ -179,7 +177,7 @@ void YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
     while (true)
     {
         unique_ptr<Metadata> md(new Metadata);
-        if (!md->readYaml(*m_file, m_pathname))
+        if (!md->readYaml(*reader, m_pathname))
             break;
         if (!q.matcher(*md))
             continue;

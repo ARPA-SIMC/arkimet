@@ -17,39 +17,26 @@ using namespace arki::utils;
 namespace arki {
 namespace runtime {
 
-Input::Input(commandline::Parser& opts)
-	: m_in(&cin), m_name("(stdin)")
+InputFile::InputFile(const std::string& pathname)
+    : sys::File(pathname, O_RDONLY)
 {
-	if (opts.hasNext())
-	{
-		string file = opts.next();
-		if (file != "-")
-		{
-			m_file_in.open(file.c_str(), ios::in);
-			if (!m_file_in.is_open() || m_file_in.fail())
-				throw wibble::exception::File(file, "opening file for reading");
-			m_in = &m_file_in;
-			m_name = file;
-		}
-	}
 }
 
-Input::Input(const std::string& file)
-	: m_in(&cin), m_name("(stdin)")
+std::unique_ptr<utils::sys::NamedFileDescriptor> make_input(utils::commandline::Parser& opts)
 {
-	if (file != "-")
-	{
-		m_file_in.open(file.c_str(), ios::in);
-		if (!m_file_in.is_open() || m_file_in.fail())
-			throw wibble::exception::File(file, "opening file for reading");
-		m_in = &m_file_in;
-		m_name = file;
-	}
+    if (!opts.hasNext())
+        return std::unique_ptr<utils::sys::NamedFileDescriptor>(new Stdin);
+
+    string pathname = opts.next();
+    if (pathname == "-")
+        return std::unique_ptr<utils::sys::NamedFileDescriptor>(new Stdin);
+
+    return std::unique_ptr<utils::sys::NamedFileDescriptor>(new InputFile(pathname));
 }
 
+Stdin::Stdin() : NamedFileDescriptor(0, "(stdin)") {}
 Stdout::Stdout() : NamedFileDescriptor(1, "(stdout)") {}
-
-Stderr::Stderr() : NamedFileDescriptor(1, "(stdout)") {}
+Stderr::Stderr() : NamedFileDescriptor(2, "(stderr)") {}
 
 File::File(const std::string pathname, bool append)
     : sys::File(pathname, O_WRONLY | O_CREAT | (append ? O_APPEND : O_TRUNC), 0666)

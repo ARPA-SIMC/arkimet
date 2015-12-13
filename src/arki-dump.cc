@@ -10,6 +10,7 @@
 #include <arki/summary.h>
 #include <arki/formatter.h>
 #include <arki/utils/geosdef.h>
+#include <arki/utils/files.h>
 #include <arki/runtime.h>
 
 #include <fstream>
@@ -78,22 +79,22 @@ struct Options : public StandardParserWithManpage
 }
 
 // Add to \a s the info from all data read from \a in
-static void addToSummary(runtime::Input& in, Summary& s)
+static void addToSummary(sys::NamedFileDescriptor& in, Summary& s)
 {
-	Metadata md;
-	Summary summary;
+    Metadata md;
+    Summary summary;
 
     vector<uint8_t> buf;
     string signature;
     unsigned version;
 
-	while (types::readBundle(in.stream(), in.name(), buf, signature, version))
-	{
+    while (types::readBundle(in, in.name(), buf, signature, version))
+    {
 		if (signature == "MD" || signature == "!D")
 		{
             md.read(buf, version, in.name());
             if (md.source().style() == Source::INLINE)
-                md.readInlineData(in.stream(), in.name());
+                md.readInlineData(in, in.name());
             s.add(md);
 		}
 		else if (signature == "SU")
@@ -217,11 +218,11 @@ int main(int argc, const char* argv[])
         if (opts.bbox->boolValue())
         {
             // Open the input file
-            runtime::Input in(opts);
+            auto in = runtime::make_input(opts);
 
             // Read everything into a single summary
             Summary summary;
-            addToSummary(in, summary);
+            addToSummary(*in, summary);
 
             // Get the bounding box
             ARKI_GEOS_GEOMETRYFACTORY gf;
@@ -251,7 +252,7 @@ int main(int argc, const char* argv[])
         }
 
         // Open the input file
-        runtime::Input in(opts);
+        auto in = runtime::make_input(opts);
 
         // Open the output channel
         unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
@@ -259,13 +260,15 @@ int main(int argc, const char* argv[])
         if (opts.reverse_data->boolValue())
         {
             Metadata md;
-            while (md.readYaml(in.stream(), in.name()))
+            auto reader = files::linereader_from_fd(*in, in->name());
+            while (md.readYaml(*reader, in->name()))
                 md.write(*out, out->name());
         }
         else if (opts.reverse_summary->boolValue())
         {
             Summary summary;
-            while (summary.readYaml(in.stream(), in.name()))
+            auto reader = files::linereader_from_fd(*in, in->name());
+            while (summary.readYaml(*reader, in->name()))
                 summary.write(*out, out->name());
         }
         else
@@ -279,23 +282,23 @@ int main(int argc, const char* argv[])
             string signature;
             unsigned version;
 
-            while (types::readBundle(in.stream(), in.name(), buf, signature, version))
+            while (types::readBundle(*in, in->name(), buf, signature, version))
             {
                 if (signature == "MD" || signature == "!D")
                 {
-                    md.read(buf, version, in.name());
+                    md.read(buf, version, in->name());
                     if (md.source().style() == Source::INLINE)
-                        md.readInlineData(in.stream(), in.name());
+                        md.readInlineData(*in, in->name());
                     writer.observe(md);
                 }
                 else if (signature == "SU")
                 {
-                    summary.read(buf, version, in.name());
+                    summary.read(buf, version, in->name());
                     writer.observe_summary(summary);
                 }
                 else if (signature == "MG")
                 {
-                    Metadata::read_group(buf, version, in.name(), [&](unique_ptr<Metadata> md) { return writer.eat(move(md)); });
+                    Metadata::read_group(buf, version, in->name(), [&](unique_ptr<Metadata> md) { return writer.eat(move(md)); });
                 }
             }
 // Uncomment as a quick hack to check memory usage at this point:

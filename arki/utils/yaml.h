@@ -4,8 +4,8 @@
 
 /// Yaml decoding functions
 
+#include <arki/defs.h>
 #include <string>
-#include <iosfwd>
 
 namespace arki {
 namespace utils {
@@ -30,13 +30,13 @@ public:
     // TODO: add iterator_traits
     class const_iterator
     {
-        std::istream* in;
+        LineReader* in = nullptr;
         std::pair<std::string, std::string> value;
         std::string line;
 
     public:
-        const_iterator(std::istream& in);
-        const_iterator() : in(0) {}
+        const_iterator(LineReader& in);
+        const_iterator() {}
 
         const_iterator& operator++();
 
@@ -58,7 +58,7 @@ public:
         }
     };
 
-    const_iterator begin(std::istream& in) { return const_iterator(in); }
+    const_iterator begin(LineReader& in) { return const_iterator(in); }
     const_iterator end() { return const_iterator(); }
 };
 

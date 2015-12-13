@@ -1,4 +1,5 @@
 #include "arki/tests/tests.h"
+#include "files.h"
 #include "yaml.h"
 
 using namespace std;
@@ -25,9 +26,9 @@ class Tests : public TestCase
                 "   continue val2\n"
                 "\n"
                 "Name: second record\n";
-            stringstream input(data, ios_base::in);
+            auto reader = files::linereader_from_chars(data.data(), data.size());
             YamlStream yamlStream;
-            YamlStream::const_iterator i = yamlStream.begin(input);
+            YamlStream::const_iterator i = yamlStream.begin(*reader);
             wassert(actual(i != yamlStream.end()));
             wassert(actual(i->first) == "Name");
             wassert(actual(i->second) == "value");
@@ -51,7 +52,7 @@ class Tests : public TestCase
             ++i;
             wassert(actual(i == yamlStream.end()));
 
-            i = yamlStream.begin(input);
+            i = yamlStream.begin(*reader);
             wassert(actual(i != yamlStream.end()));
             wassert(actual(i->first) == "Name");
             wassert(actual(i->second) == "second record");
@@ -59,11 +60,11 @@ class Tests : public TestCase
             ++i;
             wassert(actual(i == yamlStream.end()));
 
-            i = yamlStream.begin(input);
+            i = yamlStream.begin(*reader);
             wassert(actual(i == yamlStream.end()));
         });
         add_method("comments", []() {
-            string data = 
+            string data =
                 "# comment\n"
                 "Name: value # comment\n"
                 "# comment\n"
@@ -74,9 +75,9 @@ class Tests : public TestCase
                 "# comment\n"
                 "\n"
                 "Name: second record\n";
-            stringstream input(data, ios_base::in);
+            auto reader = files::linereader_from_chars(data.data(), data.size());
             YamlStream yamlStream;
-            YamlStream::const_iterator i = yamlStream.begin(input);
+            YamlStream::const_iterator i = yamlStream.begin(*reader);
             wassert(actual(i != yamlStream.end()));
             wassert(actual(i->first) == "Name");
             wassert(actual(i->second) == "value");
@@ -92,7 +93,7 @@ class Tests : public TestCase
             ++i;
             wassert(actual(i == yamlStream.end()));
 
-            i = yamlStream.begin(input);
+            i = yamlStream.begin(*reader);
             wassert(actual(i != yamlStream.end()));
             wassert(actual(i->first) == "Name");
             wassert(actual(i->second) == "second record");
@@ -100,7 +101,7 @@ class Tests : public TestCase
             ++i;
             wassert(actual(i == yamlStream.end()));
 
-            i = yamlStream.begin(input);
+            i = yamlStream.begin(*reader);
             wassert(actual(i == yamlStream.end()));
         });
     }

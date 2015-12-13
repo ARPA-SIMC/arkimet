@@ -13,6 +13,7 @@
 #include "emitter/memory.h"
 #include "matcher.h"
 #include "utils.h"
+#include "utils/files.h"
 
 #include <sstream>
 
@@ -147,9 +148,10 @@ void to::test<7>()
 {
     stringstream stream1;
     s.writeYaml(stream1);
-    stringstream stream2(stream1.str(), ios_base::in);
     Summary s2;
-    s2.readYaml(stream2, "(test memory buffer)");
+    string st(stream1.str());
+    auto reader = utils::files::linereader_from_chars(st.data(), st.size());
+    s2.readYaml(*reader, "(test memory buffer)");
     ensure(s2 == s);
 }
 
@@ -295,9 +297,10 @@ void to::test<13>()
     // Serialisation to Yaml
     stringstream stream1;
     s1.writeYaml(stream1);
-    stringstream stream2(stream1.str(), ios_base::in);
     Summary s3;
-    s3.readYaml(stream2, "(test memory buffer)");
+    string st2(stream1.str());
+    auto reader = utils::files::linereader_from_chars(st2.data(), st2.size());
+    s3.readYaml(*reader, "(test memory buffer)");
     ensure(s3 == s1);
 #endif
 }
@@ -373,10 +376,11 @@ void to::test<16>()
     {
         stringstream stream;
         s.writeYaml(stream);
-        stream.seekg(0);
+        string st = stream.str();
+        auto reader = utils::files::linereader_from_chars(st.data(), st.size());
         Summary s2;
-        s2.readYaml(stream, "(test memory buffer)");
-        ensure(s == s2);
+        s2.readYaml(*reader, "(test memory buffer)");
+        wassert(actual(s == s2));
     }
 }
 
