@@ -89,7 +89,7 @@ void ActualMetadata::is_similar(const Metadata& expected)
 {
     for (Metadata::const_iterator i = expected.begin(); i != expected.end(); ++i)
     {
-        if (i->first == types::TYPE_ASSIGNEDDATASET) continue;
+        if (i->first == TYPE_ASSIGNEDDATASET) continue;
 
         const Type* other = _actual.get(i->first);
         if (!other)
@@ -109,7 +109,7 @@ void ActualMetadata::is_similar(const Metadata& expected)
 
     for (Metadata::const_iterator i = _actual.begin(); i != _actual.end(); ++i)
     {
-        if (i->first == types::TYPE_ASSIGNEDDATASET) continue;
+        if (i->first == TYPE_ASSIGNEDDATASET) continue;
 
         if (!expected.has(i->first))
         {

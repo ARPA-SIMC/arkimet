@@ -1,7 +1,7 @@
 #include <arki/wibble/exception.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include "config.h"
@@ -12,13 +12,12 @@
 #include <arki/utils/lua.h>
 #endif
 
-#define CODE types::TYPE_ASSIGNEDDATASET
+#define CODE TYPE_ASSIGNEDDATASET
 #define TAG "assigneddataset"
 #define SERSIZELEN 2
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -46,24 +45,20 @@ bool AssignedDataset::equals(const Type& o) const
 	return name == v->name && id == v->id;
 }
 
-void AssignedDataset::encodeWithoutEnvelope(Encoder& enc) const
+void AssignedDataset::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
     changed.encodeWithoutEnvelope(enc);
-    enc.addUInt(name.size(), 1); enc.addString(name); enc.addUInt(id.size(), 2); enc.addString(id);
+    enc.add_unsigned(name.size(), 1); enc.add_raw(name);
+    enc.add_unsigned(id.size(), 2); enc.add_raw(id);
 }
 
-//////////////////////////////////////
-
-unique_ptr<AssignedDataset> AssignedDataset::decode(const unsigned char* buf, size_t len)
+unique_ptr<AssignedDataset> AssignedDataset::decode(BinaryDecoder& dec)
 {
-    using namespace utils::codec;
-    ensureSize(len, 8, "AssignedDataset");
-    unique_ptr<Time> changed = Time::decode(buf, 5);
-    Decoder dec(buf + 5, len - 5);
-    size_t name_len = dec.popUInt(1, "length of dataset name");
-    string name = dec.popString(name_len, "dataset name");
-    size_t id_len = dec.popUInt(2, "length of dataset id");
-    string id = dec.popString(id_len, "dataset id");
+    unique_ptr<Time> changed = Time::decode(dec);
+    size_t name_len = dec.pop_uint(1, "length of dataset name");
+    string name = dec.pop_string(name_len, "dataset name");
+    size_t id_len = dec.pop_uint(2, "length of dataset id");
+    string id = dec.pop_string(id_len, "dataset id");
     return AssignedDataset::create(*changed, name, id);
 }
 

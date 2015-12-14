@@ -1,7 +1,7 @@
 #include <arki/wibble/exception.h>
 #include <arki/types/quantity.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
@@ -13,24 +13,20 @@
 #include <arki/utils/lua.h>
 #endif
 
-#define CODE 		types::TYPE_QUANTITY
-#define TAG 		"quantity"
+#define CODE TYPE_QUANTITY
+#define TAG "quantity"
 #define SERSIZELEN 	1
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
-namespace arki { namespace types {
+namespace arki {
+namespace types {
 
-/*============================================================================*/
-
-const char* 		traits<Quantity>::type_tag 		= TAG;
-const types::Code 	traits<Quantity>::type_code 		= CODE;
-const size_t 		traits<Quantity>::type_sersize_bytes 	= SERSIZELEN;
-const char* 		traits<Quantity>::type_lua_tag 		= LUATAG_TYPES ".quantity";
-
-/*============================================================================*/
+const char* traits<Quantity>::type_tag = TAG;
+const types::Code traits<Quantity>::type_code = CODE;
+const size_t traits<Quantity>::type_sersize_bytes = SERSIZELEN;
+const char* traits<Quantity>::type_lua_tag = LUATAG_TYPES ".quantity";
 
 int Quantity::compare(const Type& o) const
 {
@@ -61,36 +57,30 @@ bool Quantity::equals(const Type& o) const
 	return compare(*v) == 0;
 }
 
-void Quantity::encodeWithoutEnvelope(Encoder& enc) const
+void Quantity::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-    enc.addVarint(values.size());
+    enc.add_varint(values.size());
 
-    for (std::set<std::string>::const_iterator i = values.begin();
-            i != values.end(); ++i)
+    for (const auto& v: values)
     {
-        enc.addVarint((*i).size());
-        enc.addString((*i));
+        enc.add_varint(v.size());
+        enc.add_raw(v);
     }
 }
 
-unique_ptr<Quantity> Quantity::decode(const unsigned char* buf, size_t len)
+unique_ptr<Quantity> Quantity::decode(BinaryDecoder& dec)
 {
-	using namespace utils::codec;
+    size_t num = dec.pop_varint<size_t>("quantity num elemetns");
+    std::set<std::string> vals;
 
-	ensureSize(len, 1, "quantity");
-	Decoder dec(buf, len);
-	size_t num 	= dec.popVarint<size_t>("quantity num elemetns");
+    for (size_t i=0; i<num; i++)
+    {
+        size_t vallen = dec.pop_varint<size_t>("quantity name len");
+        string val = dec.pop_string(vallen, "quantity name");
+        vals.insert(val);
+    }
 
-	std::set<std::string> vals;
-
-	for (size_t i=0; i<num; i++)
-	{
-		size_t vallen 	= dec.popVarint<size_t>("quantity name len");
-		string val 	= dec.popString(vallen, "quantity name");
-		vals.insert(val);
-	}
-
-	return Quantity::create(vals);
+    return Quantity::create(vals);
 }
 
 std::ostream& Quantity::writeToOstream(std::ostream& o) const
@@ -202,6 +192,4 @@ void Quantity::init()
 
 }
 }
-
 #include <arki/types.tcc>
-// vim:set ts=4 sw=4:

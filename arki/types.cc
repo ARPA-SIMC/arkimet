@@ -1,7 +1,7 @@
 #include "config.h"
 #include <arki/types.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/utils/sys.h>
 #include <arki/utils/string.h>
 #include <arki/emitter.h>
@@ -99,23 +99,22 @@ bool Type::operator==(const std::string& o) const
     return operator==(*other);
 }
 
-void Type::encodeBinary(utils::codec::Encoder& enc) const
+void Type::encodeBinary(BinaryEncoder& enc) const
 {
-    using namespace utils::codec;
     vector<uint8_t> contents;
     contents.reserve(256);
-    Encoder contentsenc(contents);
+    BinaryEncoder contentsenc(contents);
     encodeWithoutEnvelope(contentsenc);
 
-    enc.addVarint((unsigned)type_code());
-    enc.addVarint(contents.size());
-    enc.addBuffer(contents);
+    enc.add_varint((unsigned)type_code());
+    enc.add_varint(contents.size());
+    enc.add_raw(contents);
 }
 
 std::vector<uint8_t> Type::encodeBinary() const
 {
     vector<uint8_t> contents;
-    codec::Encoder enc(contents);
+    BinaryEncoder enc(contents);
     encodeBinary(enc);
     return contents;
 }
@@ -279,51 +278,16 @@ void Type::lua_loadlib(lua_State* L)
 }
 #endif
 
-types::Code decodeEnvelope(const unsigned char*& buf, size_t& len)
+unique_ptr<Type> decode(BinaryDecoder& dec)
 {
-	using namespace utils::codec;
-	using namespace str;
-
-	Decoder dec(buf, len);
-
-	// Decode the element type
-	Code code = (Code)dec.popVarint<unsigned>("element code");
-	// Decode the element size
-	size_t size = dec.popVarint<size_t>("element size");
-
-	// Finally decode the element body
-	ensureSize(dec.len, size, "element body");
-	buf = dec.buf;
-	len = size;
-	return code;
+    types::Code code;
+    BinaryDecoder inner = dec.pop_type_envelope(code);
+    return decodeInner(code, inner);
 }
 
-unique_ptr<Type> decode(const unsigned char* buf, size_t len)
+unique_ptr<Type> decodeInner(types::Code code, BinaryDecoder& dec)
 {
-	types::Code code = decodeEnvelope(buf, len);
-	return types::MetadataType::get(code)->decode_func(buf, len);
-}
-
-unique_ptr<Type> decode(utils::codec::Decoder& dec)
-{
-    using namespace utils::codec;
-
-    // Decode the element type
-    Code code = (Code)dec.popVarint<unsigned>("element code");
-    // Decode the element size
-    size_t size = dec.popVarint<size_t>("element size");
-
-    // Finally decode the element body
-    ensureSize(dec.len, size, "element body");
-    unique_ptr<Type> res = decodeInner(code, dec.buf, size);
-    dec.buf += size;
-    dec.len -= size;
-    return res;
-}
-
-unique_ptr<Type> decodeInner(types::Code code, const unsigned char* buf, size_t len)
-{
-	return types::MetadataType::get(code)->decode_func(buf, len);
+    return types::MetadataType::get(code)->decode_func(dec);
 }
 
 unique_ptr<Type> decodeString(types::Code code, const std::string& val)
@@ -351,7 +315,6 @@ std::string tag(types::Code code)
 
 bool readBundle(int fd, const std::string& filename, std::vector<uint8_t>& buf, std::string& signature, unsigned& version)
 {
-    using namespace utils::codec;
     sys::NamedFileDescriptor f(fd, filename);
 
     // Skip all leading blank bytes
@@ -369,130 +332,22 @@ bool readBundle(int fd, const std::string& filename, std::vector<uint8_t>& buf, 
     size_t res = f.read(hdr + 1, 7);
     if (res < 7) return false; // EOF
 
-	// Read the signature
-	signature.resize(2);
-	signature[0] = hdr[0];
-	signature[1] = hdr[1];
+    BinaryDecoder dec(hdr, 8);
+
+    // Read the signature
+    signature = dec.pop_string(2, "header of metadata bundle");
 
     // Get the version in next 2 bytes
-    version = decodeUInt(hdr + 2, 2);
+    version = dec.pop_uint(2, "version of metadata bundle");
 
     // Get length from next 4 bytes
-    unsigned int len = decodeUInt(hdr + 4, 4);
+    size_t len = dec.pop_uint(4, "size of metadata bundle");
 
     // Read the metadata body
     buf.resize(len);
-    res = f.read(buf.data(), len);
-    if ((unsigned)res != len)
-    {
-        stringstream ss;
-        ss << "incomplete read from " << filename << " read only " << res << " of " << len << " bytes: either the file is corrupted or it does not contain arkimet metadata";
-        throw std::runtime_error(ss.str());
-    }
-
-    return true;
-}
-bool readBundle(std::istream& in, const std::string& filename, std::vector<uint8_t>& buf, std::string& signature, unsigned& version)
-{
-	using namespace utils::codec;
-
-	// Skip all leading blank bytes
-	int c;
-	while ((c = in.get()) == 0 && !in.eof())
-		;
-
-	if (in.eof())
-		return false;
-
-	if (in.fail())
-		throw wibble::exception::File(filename, "reading first byte of header");
-
-	// Read the rest of the first 8 bytes
-	unsigned char hdr[8];
-	hdr[0] = c;
-	in.read((char*)hdr + 1, 7);
-	if (in.fail())
-	{
-		if (in.eof())
-			return false;
-		else
-			throw wibble::exception::File(filename, "reading 7 more bytes");
-	}
-
-	// Read the signature
-	signature.resize(2);
-	signature[0] = hdr[0];
-	signature[1] = hdr[1];
-
-	// Get the version in next 2 bytes
-	version = decodeUInt(hdr+2, 2);
-
-	// Get length from next 4 bytes
-	unsigned int len = decodeUInt(hdr+4, 4);
-
-    // Read the metadata body
-    buf.resize(len);
-    in.read((char*)buf.data(), len);
-    if (in.fail() && in.eof())
-    {
-        stringstream ss;
-        ss << "incomplete read from " << filename << ": read less than " << len << " bytes: either the file is corrupted or it does not contain arkimet metadata";
-        throw std::runtime_error(ss.str());
-    }
-    if (in.bad())
-    {
-        stringstream ss;
-        ss << "cannot read " << len << " bytes from " << filename;
-        throw std::system_error(errno, std::system_category(), ss.str());
-    }
-
+    f.read_all_or_throw(buf.data(), len);
     return true;
 }
 
-bool readBundle(const unsigned char*& buf, size_t& len, const std::string& filename, const unsigned char*& obuf, size_t& olen, std::string& signature, unsigned& version)
-{
-	using namespace utils::codec;
-
-	// Skip all leading blank bytes
-	while (len > 0 && *buf == 0)
-	{
-		++buf;
-		--len;
-	}
-	if (len == 0)
-		return false;
-
-    if (len < 8)
-    {
-        stringstream ss;
-        ss << "cannot parse " << filename << ": partial data encountered: 8 bytes of header needed, " << len << " found";
-        throw std::runtime_error(ss.str());
-    }
-
-	// Read the signature
-	signature.resize(2);
-	signature[0] = buf[0];
-	signature[1] = buf[1];
-	buf += 2; len -= 2;
-
-	// Get the version in next 2 bytes
-	version = decodeUInt(buf, 2);
-	buf += 2; len -= 2;
-	
-	// Get length from next 4 bytes
-	olen = decodeUInt(buf, 4);
-	buf += 4; len -= 4;
-
-	// Save the start of the inner data
-	obuf = buf;
-
-	// Move to the end of the inner data
-	buf += olen;
-	len -= olen;
-
-	return true;
-}
-
 }
 }
-// vim:set ts=4 sw=4:

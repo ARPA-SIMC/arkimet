@@ -28,9 +28,9 @@ template<> template<>
 void to::test<1>()
 {
 	set<types::Code> members;
-	members.insert(types::TYPE_ORIGIN);
-	members.insert(types::TYPE_PRODUCT);
-	members.insert(types::TYPE_LEVEL);
+	members.insert(TYPE_ORIGIN);
+	members.insert(TYPE_PRODUCT);
+	members.insert(TYPE_LEVEL);
 	Aggregate u(db, "test", members);
 	u.initDB(members);
 	u.initQueries();

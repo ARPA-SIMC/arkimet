@@ -1,6 +1,6 @@
 #include <arki/dataset/index/attr.h>
 #include <arki/matcher.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/wibble/exception.h>
 #include <sstream>
 
@@ -47,13 +47,14 @@ unique_ptr<Type> AttrSubIndex::q_select_one(int id) const
 
     // Decode every blob and run the matcher on it
     unique_ptr<Type> res;
-	while (m_select_one->step())
-	{
-		const void* buf = m_select_one->fetchBlob(0);
-		int len = m_select_one->fetchBytes(0);
-		res = types::decodeInner(code, (const unsigned char*)buf, len);
-	}
-	return res;
+    while (m_select_one->step())
+    {
+        const void* buf = m_select_one->fetchBlob(0);
+        int len = m_select_one->fetchBytes(0);
+        BinaryDecoder dec((const uint8_t*)buf, len);
+        res = types::decodeInner(code, dec);
+    }
+    return res;
 }
 
 int AttrSubIndex::q_insert(const std::vector<uint8_t>& blob)
@@ -92,7 +93,7 @@ AttrSubIndex::~AttrSubIndex()
 void AttrSubIndex::add_to_cache(int id, const types::Type& item) const
 {
     vector<uint8_t> encoded;
-    utils::codec::Encoder enc(encoded);
+    BinaryEncoder enc(encoded);
     item.encodeWithoutEnvelope(enc);
     add_to_cache(id, item, encoded);
 }
@@ -117,7 +118,7 @@ int AttrSubIndex::id(const Metadata& md) const
 
     // Encode the item
     vector<uint8_t> encoded;
-    utils::codec::Encoder enc(encoded);
+    BinaryEncoder enc(encoded);
     item->encodeWithoutEnvelope(enc);
 
     // First look up in cache
@@ -162,13 +163,14 @@ std::vector<int> AttrSubIndex::query(const matcher::OR& m) const
 
 	std::vector<int> ids;
 
-	// Decode every blob in the database and run the matcher on it
-	m_select_all->reset();
-	while (m_select_all->step())
-	{
-		const void* buf = m_select_all->fetchBlob(1);
-		int len = m_select_all->fetchBytes(1);
-        unique_ptr<Type> t = types::decodeInner(code, (const unsigned char*)buf, len);
+    // Decode every blob in the database and run the matcher on it
+    m_select_all->reset();
+    while (m_select_all->step())
+    {
+        const void* buf = m_select_all->fetchBlob(1);
+        int len = m_select_all->fetchBytes(1);
+        BinaryDecoder dec((const uint8_t*)buf, len);
+        unique_ptr<Type> t = types::decodeInner(code, dec);
         if (m.matchItem(*t))
             ids.push_back(m_select_all->fetch<int>(0));
     }
@@ -192,7 +194,7 @@ int AttrSubIndex::insert(const Metadata& md)
 
     // Extract the blob to insert
     std::vector<uint8_t> blob;
-    utils::codec::Encoder enc(blob);
+    BinaryEncoder enc(blob);
     item->encodeWithoutEnvelope(enc);
 
     // Try to serve it from cache if possible
@@ -217,7 +219,7 @@ Attrs::Attrs(utils::sqlite::SQLiteDB& db, const std::set<types::Code>& attrs)
 	for (set<types::Code>::const_iterator i = attrs.begin();
 			i != attrs.end(); ++i)
 	{
-		if (*i == types::TYPE_REFTIME) continue;
+		if (*i == TYPE_REFTIME) continue;
 		m_attrs.push_back(new AttrSubIndex(db, *i));
 	}
 }

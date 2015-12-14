@@ -2,22 +2,21 @@
 #include "source/blob.h"
 #include "source/inline.h"
 #include "source/url.h"
+#include <arki/binary.h>
 #include <arki/wibble/exception.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
 #include <arki/utils/lua.h>
 #include <arki/utils/datareader.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include <sstream>
 
-#define CODE types::TYPE_SOURCE
+#define CODE TYPE_SOURCE
 #define TAG "source"
 #define SERSIZELEN 2
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -63,11 +62,11 @@ int Source::compare_local(const Source& o) const
 	return 0;
 }
 
-void Source::encodeWithoutEnvelope(Encoder& enc) const
+void Source::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	StyledType<Source>::encodeWithoutEnvelope(enc);
-	enc.addUInt(format.size(), 1);
-	enc.addString(format);
+    StyledType<Source>::encodeWithoutEnvelope(enc);
+    enc.add_unsigned(format.size(), 1);
+    enc.add_raw(format);
 }
 
 void Source::serialiseLocal(Emitter& e, const Formatter* f) const
@@ -76,34 +75,32 @@ void Source::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("f"); e.add(format);
 }
 
-unique_ptr<Source> Source::decode(const unsigned char* buf, size_t len)
+unique_ptr<Source> Source::decode(BinaryDecoder& dec)
 {
-    return decodeRelative(buf, len, string());
+    return decodeRelative(dec, string());
 }
 
-unique_ptr<Source> Source::decodeRelative(const unsigned char* buf, size_t len, const std::string& basedir)
+unique_ptr<Source> Source::decodeRelative(BinaryDecoder& dec, const std::string& basedir)
 {
-	using namespace utils::codec;
-	Decoder dec(buf, len);
-	Style s = (Style)dec.popUInt(1, "source style");
-	unsigned int format_len = dec.popUInt(1, "source format length");
-	string format = dec.popString(format_len, "source format name");
+    Style s = (Style)dec.pop_uint(1, "source style");
+    unsigned int format_len = dec.pop_uint(1, "source format length");
+    string format = dec.pop_string(format_len, "source format name");
     switch (s)
     {
         case BLOB: {
-            unsigned fname_len = dec.popVarint<unsigned>("blob source file name length");
-            string fname = dec.popString(fname_len, "blob source file name");
-            uint64_t offset = dec.popVarint<uint64_t>("blob source offset");
-            uint64_t size = dec.popVarint<uint64_t>("blob source size");
+            unsigned fname_len = dec.pop_varint<unsigned>("blob source file name length");
+            string fname = dec.pop_string(fname_len, "blob source file name");
+            uint64_t offset = dec.pop_varint<uint64_t>("blob source offset");
+            uint64_t size = dec.pop_varint<uint64_t>("blob source size");
             return createBlob(format, basedir, fname, offset, size);
         }
         case URL: {
-            unsigned fname_len = dec.popVarint<unsigned>("url source file name length");
-            string url = dec.popString(fname_len, "url source url");
+            unsigned fname_len = dec.pop_varint<unsigned>("url source file name length");
+            string url = dec.pop_string(fname_len, "url source url");
             return createURL(format, url);
         }
         case INLINE: {
-            uint64_t size = dec.popVarint<uint64_t>("inline source size");
+            uint64_t size = dec.pop_varint<uint64_t>("inline source size");
             return createInline(format, size);
         }
         default:

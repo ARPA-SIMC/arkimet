@@ -3,6 +3,7 @@
 
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
+#include <arki/binary.h>
 #include "config.h"
 #ifdef HAVE_LUA
 #include <arki/utils/lua.h>
@@ -18,9 +19,9 @@ void CoreType<BASE>::lua_loadlib(lua_State* L)
 }
 
 template<typename BASE>
-void StyledType<BASE>::encodeWithoutEnvelope(utils::codec::Encoder& enc) const
+void StyledType<BASE>::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	enc.addUInt(this->style(), 1);
+    enc.add_unsigned((unsigned)this->style(), 1);
 }
 
 template<typename BASE>

@@ -1,5 +1,5 @@
 #include "url.h"
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/utils/lua.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
@@ -7,7 +7,6 @@
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -15,11 +14,11 @@ namespace source {
 
 Source::Style URL::style() const { return Source::URL; }
 
-void URL::encodeWithoutEnvelope(Encoder& enc) const
+void URL::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Source::encodeWithoutEnvelope(enc);
-	enc.addVarint(url.size());
-	enc.addString(url);
+    Source::encodeWithoutEnvelope(enc);
+    enc.add_varint(url.size());
+    enc.add_raw(url);
 }
 
 std::ostream& URL::writeToOstream(std::ostream& o) const

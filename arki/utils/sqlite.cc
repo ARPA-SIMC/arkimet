@@ -1,6 +1,6 @@
 #include "config.h"
 #include <arki/utils/sqlite.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <sstream>
 #include <unistd.h>
 
@@ -226,21 +226,23 @@ void Query::bindNull(int idx)
 void Query::bindType(int idx, const types::Type& item)
 {
     vector<uint8_t> buf;
-    utils::codec::Encoder enc(buf);
+    BinaryEncoder enc(buf);
     item.encodeBinary(enc);
     bindTransient(idx, buf);
 }
 
 unique_ptr<types::Type> Query::fetchType(int column)
 {
-    const unsigned char* buf = (const unsigned char*)fetchBlob(column);
+    const uint8_t* buf = (const uint8_t*)fetchBlob(column);
     int len = fetchBytes(column);
     if (len == 0) return unique_ptr<types::Type>();
 
-    const unsigned char* el_start = buf;
-    size_t el_len = len;
-    types::Code el_type = types::decodeEnvelope(el_start, el_len);
-    return types::decodeInner(el_type, el_start, el_len);
+    BinaryDecoder dec(buf, len);
+
+    TypeCode el_type;
+    BinaryDecoder inner = dec.pop_type_envelope(el_type);
+
+    return types::decodeInner(el_type, inner);
 }
 
 bool Query::step()

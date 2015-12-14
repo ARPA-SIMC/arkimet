@@ -1,7 +1,7 @@
 #include <arki/wibble/exception.h>
 #include <arki/types/task.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include "config.h"
@@ -12,24 +12,20 @@
 #include <arki/utils/lua.h>
 #endif
 
-#define CODE 		types::TYPE_TASK
-#define TAG 		"task"
+#define CODE TYPE_TASK
+#define TAG "task"
 #define SERSIZELEN 	1
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
-namespace arki { namespace types {
+namespace arki {
+namespace types {
 
-/*============================================================================*/
-
-const char* 		traits<Task>::type_tag 			= TAG;
-const types::Code 	traits<Task>::type_code 		= CODE;
-const size_t 		traits<Task>::type_sersize_bytes 	= SERSIZELEN;
-const char* 		traits<Task>::type_lua_tag 		= LUATAG_TYPES ".task";
-
-/*============================================================================*/
+const char* traits<Task>::type_tag = TAG;
+const types::Code traits<Task>::type_code = CODE;
+const size_t traits<Task>::type_sersize_bytes = SERSIZELEN;
+const char* traits<Task>::type_lua_tag = LUATAG_TYPES ".task";
 
 int Task::compare(const Type& o) const
 {
@@ -53,21 +49,17 @@ bool Task::equals(const Type& o) const
 	return task == v->task;
 }
 
-void Task::encodeWithoutEnvelope(Encoder& enc) const
+void Task::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	enc.addVarint(task.size());
-	enc.addString(task);
+    enc.add_varint(task.size());
+    enc.add_raw(task);
 }
 
-unique_ptr<Task> Task::decode(const unsigned char* buf, size_t len)
+unique_ptr<Task> Task::decode(BinaryDecoder& dec)
 {
-	using namespace utils::codec;
-
-	ensureSize(len, 1, "task");
-	Decoder dec(buf, len);
-	size_t vallen 	= dec.popVarint<size_t>("task text size");
-	string val 	= dec.popString(vallen, "task text");
-	return Task::create(val);
+    size_t vallen = dec.pop_varint<size_t>("task text size");
+    string val = dec.pop_string(vallen, "task text");
+    return Task::create(val);
 }
 
 std::ostream& Task::writeToOstream(std::ostream& o) const

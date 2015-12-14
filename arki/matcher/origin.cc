@@ -155,7 +155,7 @@ unique_ptr<MatchOrigin> MatchOrigin::parse(const std::string& pattern)
 
 void MatchOrigin::init()
 {
-    Matcher::register_matcher("origin", types::TYPE_ORIGIN, (MatcherType::subexpr_parser)MatchOrigin::parse);
+    Matcher::register_matcher("origin", TYPE_ORIGIN, (MatcherType::subexpr_parser)MatchOrigin::parse);
 }
 
 }

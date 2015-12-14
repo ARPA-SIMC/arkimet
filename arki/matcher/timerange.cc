@@ -422,7 +422,7 @@ unique_ptr<MatchTimerange> MatchTimerange::parse(const std::string& pattern)
 
 void MatchTimerange::init()
 {
-    Matcher::register_matcher("timerange", types::TYPE_TIMERANGE, (MatcherType::subexpr_parser)MatchTimerange::parse);
+    Matcher::register_matcher("timerange", TYPE_TIMERANGE, (MatcherType::subexpr_parser)MatchTimerange::parse);
 }
 
 }

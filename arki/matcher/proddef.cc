@@ -50,7 +50,7 @@ unique_ptr<MatchProddef> MatchProddef::parse(const std::string& pattern)
 
 void MatchProddef::init()
 {
-    Matcher::register_matcher("proddef", types::TYPE_PRODDEF, (MatcherType::subexpr_parser)MatchProddef::parse);
+    Matcher::register_matcher("proddef", TYPE_PRODDEF, (MatcherType::subexpr_parser)MatchProddef::parse);
 }
 
 }

@@ -2,7 +2,6 @@
 
 #include <arki/types.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
 #include <arki/utils/string.h>
 #include <cstring>
 
@@ -105,4 +104,3 @@ void split(const std::string& str, std::vector<std::string>& result, const std::
 
 }
 }
-// vim:set ts=4 sw=4:

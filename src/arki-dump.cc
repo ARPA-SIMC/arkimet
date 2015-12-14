@@ -11,6 +11,7 @@
 #include <arki/formatter.h>
 #include <arki/utils/geosdef.h>
 #include <arki/utils/files.h>
+#include <arki/binary.h>
 #include <arki/runtime.h>
 
 #include <fstream>
@@ -97,16 +98,16 @@ static void addToSummary(sys::NamedFileDescriptor& in, Summary& s)
                 md.readInlineData(in, in.name());
             s.add(md);
 		}
-		else if (signature == "SU")
-		{
-			summary.read(buf, version, in.name());
-			s.add(summary);
-		}
+        else if (signature == "SU")
+        {
+            BinaryDecoder dec(buf);
+            summary.read(dec, version, in.name());
+            s.add(summary);
+        }
         else if (signature == "MG")
         {
-            const uint8_t* pbuf = buf.data();
-            size_t psize = buf.size();
-            Metadata::read_group(pbuf, psize, version, in.name(), [&](unique_ptr<Metadata> md) { s.add(*md); return true; });
+            BinaryDecoder dec(buf);
+            Metadata::read_group(dec, version, in.name(), [&](unique_ptr<Metadata> md) { s.add(*md); return true; });
         }
     }
 }
@@ -295,14 +296,14 @@ int main(int argc, const char* argv[])
                 }
                 else if (signature == "SU")
                 {
-                    summary.read(buf, version, in->name());
+                    BinaryDecoder dec(buf);
+                    summary.read(dec, version, in->name());
                     writer.observe_summary(summary);
                 }
                 else if (signature == "MG")
                 {
-                    const uint8_t* pbuf = buf.data();
-                    size_t psize = buf.size();
-                    Metadata::read_group(pbuf, psize, version, in->name(), [&](unique_ptr<Metadata> md) { return writer.eat(move(md)); });
+                    BinaryDecoder dec(buf);
+                    Metadata::read_group(dec, version, in->name(), [&](unique_ptr<Metadata> md) { return writer.eat(move(md)); });
                 }
             }
 // Uncomment as a quick hack to check memory usage at this point:

@@ -63,12 +63,12 @@ template<> template<>
 void to::test<5>()
 {
     test::Generator g("grib1");
-    g.add(types::TYPE_ORIGIN, "GRIB1(98, 0, 10)");
-    g.add(types::TYPE_ORIGIN, "GRIB1(200, 0, 10)");
-    g.add(types::TYPE_ORIGIN, "GRIB1(80, 0, 10)");
-    g.add(types::TYPE_PRODUCT, "GRIB1(98, 1, 22)");
-    g.add(types::TYPE_PRODUCT, "GRIB1(98, 1, 33)");
-    g.add(types::TYPE_LEVEL, "GRIB1(100, 0)");
+    g.add(TYPE_ORIGIN, "GRIB1(98, 0, 10)");
+    g.add(TYPE_ORIGIN, "GRIB1(200, 0, 10)");
+    g.add(TYPE_ORIGIN, "GRIB1(80, 0, 10)");
+    g.add(TYPE_PRODUCT, "GRIB1(98, 1, 22)");
+    g.add(TYPE_PRODUCT, "GRIB1(98, 1, 33)");
+    g.add(TYPE_LEVEL, "GRIB1(100, 0)");
 
     Collection c;
     g.generate(c.inserter_func());

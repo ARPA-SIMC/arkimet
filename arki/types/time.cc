@@ -1,7 +1,7 @@
 #include <arki/wibble/exception.h>
 #include <arki/types/time.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include <arki/formatter.h>
@@ -17,13 +17,12 @@
 #include <arki/utils/lua.h>
 #endif
 
-#define CODE types::TYPE_TIME
+#define CODE TYPE_TIME
 #define TAG "time"
 #define SERSIZELEN 1
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -101,12 +100,10 @@ std::string Time::toSQL() const
 	return buf;
 }
 
-unique_ptr<Time> Time::decode(const unsigned char* buf, size_t len)
+unique_ptr<Time> Time::decode(BinaryDecoder& dec)
 {
-    using namespace utils::codec;
-    ensureSize(len, 5, "Time");
-    uint32_t a = decodeUInt(buf, 4);
-    uint32_t b = decodeUInt(buf + 4, 1);
+    uint32_t a = dec.pop_uint(4, "first 32 bits of encoded time");
+    uint32_t b = dec.pop_uint(1, "last 8 bits of encoded time");
     return Time::create(
         a >> 18,
         (a >> 14) & 0xf,
@@ -145,17 +142,17 @@ unique_ptr<Time> Time::decodeList(const emitter::memory::List& val)
     return res;
 }
 
-void Time::encodeWithoutEnvelope(Encoder& enc) const
+void Time::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	uint32_t a = ((vals[0] & 0x3fff) << 18)
-	           | ((vals[1] & 0xf)    << 14)
-			   | ((vals[2] & 0x1f)   << 9)
-			   | ((vals[3] & 0x1f)   << 4)
-			   | ((vals[4] >> 2) & 0xf);
-	uint32_t b = ((vals[4] & 0x3) << 6)
-	           | (vals[5] & 0x3f);
-	enc.addUInt(a, 4);
-	enc.addUInt(b, 1);
+    uint32_t a = ((vals[0] & 0x3fff) << 18)
+               | ((vals[1] & 0xf)    << 14)
+               | ((vals[2] & 0x1f)   << 9)
+               | ((vals[3] & 0x1f)   << 4)
+               | ((vals[4] >> 2) & 0xf);
+    uint32_t b = ((vals[4] & 0x3) << 6)
+               | (vals[5] & 0x3f);
+    enc.add_unsigned(a, 4);
+    enc.add_unsigned(b, 1);
 }
 
 std::ostream& Time::writeToOstream(std::ostream& o) const
@@ -458,7 +455,4 @@ void Time::init()
 
 }
 }
-
 #include <arki/types.tcc>
-
-// vim:set ts=4 sw=4:

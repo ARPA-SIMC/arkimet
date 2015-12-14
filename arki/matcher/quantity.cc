@@ -58,7 +58,7 @@ unique_ptr<MatchQuantity> MatchQuantity::parse(const std::string& pattern)
 
 void MatchQuantity::init()
 {
-    Matcher::register_matcher("quantity", types::TYPE_QUANTITY, (MatcherType::subexpr_parser)MatchQuantity::parse);
+    Matcher::register_matcher("quantity", TYPE_QUANTITY, (MatcherType::subexpr_parser)MatchQuantity::parse);
 }
 
 }

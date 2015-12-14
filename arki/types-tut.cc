@@ -1,23 +1,3 @@
-/*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #include <arki/tests/tests.h>
@@ -46,9 +26,9 @@ struct TestImpl : public types::Type
     TestImpl* clone() const override = 0;
     bool equals(const Type& o) const override { return false; }
     std::string tag() const override { return string(); }
-    types::Code type_code() const override { return types::TYPE_INVALID; }
+    types::Code type_code() const override { return TYPE_INVALID; }
     size_t serialisationSizeLength() const override { return 1; }
-    void encodeWithoutEnvelope(utils::codec::Encoder&) const override {}
+    void encodeWithoutEnvelope(BinaryEncoder&) const override {}
     std::ostream& writeToOstream(std::ostream& o) const override { return o; }
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override {}
     const char* lua_type_name() const override { return "arki.types.testimpl"; }

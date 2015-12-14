@@ -11,7 +11,7 @@
 #include <arki/types/source/blob.h>
 #include <arki/utils.h>
 #include <arki/utils/sys.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/runtime/io.h>
 #include <arki/runtime/processor.h>
 #include <sstream>
@@ -269,11 +269,11 @@ void to::test<11>()
         unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
 
         DataQuery dq(Matcher::parse(""), true);
-        codec::Encoder enc(plain);
+        BinaryEncoder enc(plain);
         ds->query_data(dq, [&](unique_ptr<Metadata> md) {
             md->makeInline();
             md->encodeBinary(enc);
-            enc.addBuffer(md->getData());
+            enc.add_raw(md->getData());
             return true;
         });
     }
@@ -321,8 +321,8 @@ void to::test<11>()
 
     // Remove those metadata that contain test-dependent timestamps
     std::vector<Note> nonotes;
-    mdc1[0].unset(types::TYPE_ASSIGNEDDATASET);
-    mdc2[0].unset(types::TYPE_ASSIGNEDDATASET);
+    mdc1[0].unset(TYPE_ASSIGNEDDATASET);
+    mdc2[0].unset(TYPE_ASSIGNEDDATASET);
     mdc1[0].set_notes(nonotes);
     mdc2[0].set_notes(nonotes);
 

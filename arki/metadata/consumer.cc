@@ -11,7 +11,6 @@ extern "C" {
 #endif
 
 using namespace std;
-using namespace arki::utils;
 
 namespace arki {
 namespace metadata {

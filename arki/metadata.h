@@ -100,26 +100,26 @@ public:
     /// Clear all the contents of this Metadata
     void clear();
 
-	/**
-	 * Read a metadata document from the given memory buffer
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 *
-	 * If readInline is true, in case the data is transmitted inline, it reads
-	 * the data as well: this is what you expect.
-	 *
-	 * If it's false, then the reader needs to check from the Metadata source
-	 * if it is inline, and in that case proceed to read the inline data.
-	 *
-	 * @returns false when the end of the buffer is reached
-	 */
-	bool read(const unsigned char*& buf, size_t& len, const metadata::ReadContext& filename);
+    /**
+     * Read a metadata document from the given memory buffer
+     *
+     * The filename string is used to generate nicer parse error messages when
+     * throwing exceptions, and can be anything.
+     *
+     * If readInline is true, in case the data is transmitted inline, it reads
+     * the data as well: this is what you expect.
+     *
+     * If it's false, then the reader needs to check from the Metadata source
+     * if it is inline, and in that case proceed to read the inline data.
+     *
+     * @returns false when the end of the buffer is reached
+     */
+    bool read(BinaryDecoder& dec, const metadata::ReadContext& filename);
 
-	/**
-	 * Decode the metadata, without the outer bundle headers, from the given buffer.
-	 */
-	void read(const unsigned char* buf, size_t len, unsigned version, const metadata::ReadContext& filename);
+    /**
+     * Decode the metadata, without the outer bundle headers, from the given buffer.
+     */
+    void read(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& filename);
 
     /// Decode the metadata, without the outer bundle headers, from the given buffer.
     void read(const std::vector<uint8_t>& buf, unsigned version, const metadata::ReadContext& filename);
@@ -173,14 +173,14 @@ public:
      *
      * @returns false when end-of-file is reached
      */
-    bool read(const unsigned char*& buf, size_t& len, const std::string& filename, bool readInline=true);
+    bool read(BinaryDecoder& dec, const std::string& filename, bool readInline=true);
 
 public:
     /// Read the inline data from the given file handle
     void readInlineData(int in, const std::string& filename);
 
     /// Read the inline data from the given memory buffer
-    void readInlineData(const uint8_t*& buf, size_t& len, const std::string& filename);
+    void readInlineData(BinaryDecoder& dec, const std::string& filename);
 
     /**
      * Read a metadata document encoded in Yaml from the given file descriptor.
@@ -220,7 +220,7 @@ public:
     std::vector<uint8_t> encodeBinary() const;
 
     /// Encode to an Encoder. Inline data will not be added.
-    void encodeBinary(utils::codec::Encoder& enc) const;
+    void encodeBinary(BinaryEncoder& enc) const;
 
 
     /// Get the raw data described by this metadata
@@ -290,7 +290,7 @@ public:
     /**
      * Read a metadata group into the given consumer
      */
-    static void read_group(const uint8_t*& data, size_t& size, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest);
+    static void read_group(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest);
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Metadata

@@ -1,7 +1,7 @@
 #include <arki/wibble/exception.h>
 #include <arki/types/bbox.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include "config.h"
@@ -12,33 +12,12 @@
 #include <arki/utils/lua.h>
 #endif
 
-#ifdef HAVE_GEOS
-#include <memory>
-#if GEOS_VERSION < 3
-#include <geos/geom.h>
-
-using namespace geos;
-
-typedef DefaultCoordinateSequence CoordinateArraySequence;
-#else
-#include <geos/geom/Coordinate.h>
-#include <geos/geom/CoordinateArraySequence.h>
-#include <geos/geom/GeometryFactory.h>
-#include <geos/geom/Point.h>
-#include <geos/geom/LinearRing.h>
-#include <geos/geom/Polygon.h>
-
-using namespace geos::geom;
-#endif
-#endif
-
-#define CODE types::TYPE_BBOX
+#define CODE TYPE_BBOX
 #define TAG "bbox"
 #define SERSIZELEN 1
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -80,29 +59,25 @@ std::string BBox::formatStyle(BBox::Style s)
 	}
 }
 
-unique_ptr<BBox> BBox::decode(const unsigned char* buf, size_t len)
+unique_ptr<BBox> BBox::decode(BinaryDecoder& dec)
 {
-	using namespace utils::codec;
-	ensureSize(len, 1, "BBox");
-	Style s = (Style)decodeUInt(buf, 1);
+    Style s = (Style)dec.pop_uint(1, "bbox style");
     switch (s)
     {
         case INVALID:
             return createInvalid();
         case POINT:
-            ensureSize(len, 9, "BBox");
-            decodeFloat(buf+1), decodeFloat(buf+5);
+            for (int i = 0; i < 2; ++i)
+                dec.pop_float("old POINT bbox value");
             return createInvalid();
         case BOX:
-            ensureSize(len, 17, "BBox");
-            decodeFloat(buf+1), decodeFloat(buf+5), decodeFloat(buf+9), decodeFloat(buf+13);
+            for (int i = 0; i < 4; ++i)
+                dec.pop_float("old BOX bbox value");
             return createInvalid();
         case HULL: {
-            ensureSize(len, 3, "BBox");
-            size_t pointCount = decodeUInt(buf+1, 2);
-            ensureSize(len, 3+pointCount*8, "BBox");
-            for (size_t i = 0; i < pointCount; ++i)
-                decodeFloat(buf+3+i*8), decodeFloat(buf+3+i*8+4);
+            size_t pointCount = dec.pop_uint(2, "HULL bbox vertex count");
+            for (size_t i = 0; i < pointCount * 2; ++i)
+                dec.pop_float("old HULL bbox vertex data");
             return createInvalid();
         }
         default:
@@ -130,9 +105,9 @@ namespace bbox {
 
 BBox::Style INVALID::style() const { return BBox::INVALID; }
 
-void INVALID::encodeWithoutEnvelope(Encoder& enc) const
+void INVALID::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	BBox::encodeWithoutEnvelope(enc);
+    BBox::encodeWithoutEnvelope(enc);
 }
 std::ostream& INVALID::writeToOstream(std::ostream& o) const
 {

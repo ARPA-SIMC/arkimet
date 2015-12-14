@@ -1,5 +1,5 @@
 #include "blob.h"
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/utils/lua.h>
 #include <arki/utils/string.h>
 #include <arki/emitter.h>
@@ -8,7 +8,6 @@
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -16,13 +15,13 @@ namespace source {
 
 Source::Style Blob::style() const { return Source::BLOB; }
 
-void Blob::encodeWithoutEnvelope(Encoder& enc) const
+void Blob::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
     Source::encodeWithoutEnvelope(enc);
-    enc.addVarint(filename.size());
-    enc.addString(filename);
-    enc.addVarint(offset);
-    enc.addVarint(size);
+    enc.add_varint(filename.size());
+    enc.add_raw(filename);
+    enc.add_varint(offset);
+    enc.add_varint(size);
 }
 
 std::ostream& Blob::writeToOstream(std::ostream& o) const

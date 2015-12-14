@@ -24,6 +24,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		wibble/tests/tut.h \
 		wibble/tests/tut_restartable.h \
 		wibble/grcal/grcal.h \
+		binary.h \
 		defs.h \
 		bbox.h \
 		configfile.h \
@@ -143,7 +144,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		types/typevector.h \
 		types/typeset.h \
 		utils/accounting.h \
-		utils/codec.h \
 		utils/gzip.h \
 		utils/compress.h \
 		utils/datareader.h \
@@ -216,11 +216,9 @@ libarkimet_la_SOURCES += \
 		nag.cc \
 		utils.cc \
 		utils/accounting.cc \
-		utils/codec.cc \
 		utils/gzip.cc \
 		utils/fd.cc \
 		utils/files.cc \
-		utils/h5.cc \
 		utils/intern.cc \
 		utils/pcounter.cc \
 		utils/process.cc \
@@ -237,6 +235,7 @@ libarkimet_la_SOURCES += \
 		utils/net/mime.cpp \
 		utils/net/server.cpp \
 		utils/net/http.cpp \
+		binary.cc \
 		configfile.cc \
 		transaction.cc \
 		emitter.cc \
@@ -295,7 +294,6 @@ tests_arki_test_SOURCES += \
 		utils-tut.cc \
 		utils/tests.cc \
 		utils/accounting-tut.cc \
-		utils/codec-test.cc \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \
 		utils/fd-tut.cc \
@@ -304,6 +302,7 @@ tests_arki_test_SOURCES += \
 		utils/pcounter-tut.cc \
 		utils/process-tut.cc \
 		utils/raii-tut.cc \
+		binary-test.cc \
 		configfile-tut.cc \
 		transaction-tut.cc \
 		emitter/memory-tut.cc \
@@ -371,6 +370,7 @@ endif
 #
 if DEVEL_DO_METADATA
 libarkimet_la_SOURCES += \
+		utils/h5.cc \
 		utils/datareader.cc \
 		utils/compress.cc \
 		utils/sqlite.cc \

@@ -1,28 +1,7 @@
 #ifndef ARKI_SUMMARY_STATS_H
 #define ARKI_SUMMARY_STATS_H
 
-/*
- * summary/stats - Implementation of a summary stats payload
- *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+/// summary/stats - Implementation of a summary stats payload
 
 #include <arki/types.h>
 #include <arki/types/reftime.h>
@@ -78,12 +57,12 @@ struct Stats : public types::CoreType<Stats>
 
     std::unique_ptr<types::Reftime> make_reftime() const;
 
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string toYaml(size_t indent = 0) const;
     void toYaml(std::ostream& out, size_t indent = 0) const;
-    static std::unique_ptr<Stats> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Stats> decode(BinaryDecoder& dec);
     static std::unique_ptr<Stats> decodeString(const std::string& str);
     static std::unique_ptr<Stats> decodeMapping(const emitter::memory::Mapping& val);
 

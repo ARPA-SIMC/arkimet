@@ -3,7 +3,7 @@
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/utils/string.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/wibble/regexp.h>
 #include <sstream>
 #include <ctime>
@@ -55,7 +55,7 @@ struct Adder
 std::string IDMaker::id(const Metadata& md) const
 {
     vector<uint8_t> res;
-    codec::Encoder enc(res);
+    BinaryEncoder enc(res);
     for (set<types::Code>::const_iterator i = components.begin(); i != components.end(); ++i)
         if (const Type* t = md.get(*i))
             t->encodeBinary(enc);

@@ -1,7 +1,7 @@
 #include <arki/wibble/exception.h>
 #include <arki/types/area.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/utils/geosdef.h>
 #include <arki/utils/string.h>
 #include <arki/emitter.h>
@@ -19,13 +19,12 @@
 #include <arki/utils/vm2.h>
 #endif
 
-#define CODE types::TYPE_AREA
+#define CODE TYPE_AREA
 #define TAG "area"
 #define SERSIZELEN 2
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -87,21 +86,19 @@ const ARKI_GEOS_GEOMETRY* Area::bbox() const
 	return cached_bbox;
 }
 
-unique_ptr<Area> Area::decode(const unsigned char* buf, size_t len)
+unique_ptr<Area> Area::decode(BinaryDecoder& dec)
 {
-	using namespace utils::codec;
-	Decoder dec(buf, len);
-	Style s = (Style)dec.popUInt(1, "area");
+    Style s = (Style)dec.pop_uint(1, "area");
     switch (s)
     {
         case GRIB:
-            return createGRIB(ValueBag::decode(dec.buf, dec.len));
+            return createGRIB(ValueBag::decode(dec));
         case ODIMH5:
-            return createODIMH5(ValueBag::decode(dec.buf, dec.len));
+            return createODIMH5(ValueBag::decode(dec));
         case VM2:
-            return createVM2(dec.popUInt(4, "VM station id"));
+            return createVM2(dec.pop_uint(4, "VM station id"));
         default:
-            throw wibble::exception::Consistency("parsing Area", "style is " + formatStyle(s) + " but we can only decode GRIB");
+            throw std::runtime_error("cannot parse Area: style is " + formatStyle(s) + " but we can only decode GRIB, ODIMH5 and VM2");
     }
 }
 
@@ -199,10 +196,10 @@ GRIB::~GRIB() { /* cache_grib.uncache(this); */ }
 
 Area::Style GRIB::style() const { return Area::GRIB; }
 
-void GRIB::encodeWithoutEnvelope(Encoder& enc) const
+void GRIB::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Area::encodeWithoutEnvelope(enc);
-	m_values.encode(enc);
+    Area::encodeWithoutEnvelope(enc);
+    m_values.encode(enc);
 }
 std::ostream& GRIB::writeToOstream(std::ostream& o) const
 {
@@ -273,10 +270,10 @@ ODIMH5::~ODIMH5() { /* cache_odimh5.uncache(this); */ }
 
 Area::Style ODIMH5::style() const { return Area::ODIMH5; }
 
-void ODIMH5::encodeWithoutEnvelope(Encoder& enc) const
+void ODIMH5::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Area::encodeWithoutEnvelope(enc);
-	m_values.encode(enc);
+    Area::encodeWithoutEnvelope(enc);
+    m_values.encode(enc);
 }
 std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 {
@@ -358,10 +355,10 @@ const ValueBag& VM2::derived_values() const {
 
 Area::Style VM2::style() const { return Area::VM2; }
 
-void VM2::encodeWithoutEnvelope(Encoder& enc) const
+void VM2::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Area::encodeWithoutEnvelope(enc);
-	enc.addUInt(m_station_id, 4);
+    Area::encodeWithoutEnvelope(enc);
+    enc.add_unsigned(m_station_id, 4);
     derived_values().encode(enc);
 }
 std::ostream& VM2::writeToOstream(std::ostream& o) const

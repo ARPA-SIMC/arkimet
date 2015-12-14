@@ -194,7 +194,7 @@ struct Ondisk2Archived : public Ondisk2Scenario
         {
             char buf[32];
             snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
-            gen.add(types::TYPE_REFTIME, buf);
+            gen.add(TYPE_REFTIME, buf);
         }
         gen.generate(make_importer(*ds));
         ds->flush();
@@ -250,7 +250,7 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
         {
             char buf[32];
             snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
-            gen.add(types::TYPE_REFTIME, buf);
+            gen.add(TYPE_REFTIME, buf);
         }
         gen.generate(make_importer(*ds));
         ds->flush();

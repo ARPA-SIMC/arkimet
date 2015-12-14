@@ -6,7 +6,7 @@
 #include "utils/files.h"
 #include "utils/fd.h"
 #include "utils/sys.h"
-#include "utils/codec.h"
+#include "binary.h"
 #include <sstream>
 #include <iostream>
 #include <cstdio>
@@ -101,12 +101,12 @@ void to::test<4>()
     // Get the normal data
     vector<uint8_t> plain;
     {
-        codec::Encoder enc(plain);
+        BinaryEncoder enc(plain);
         scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) {
             md->makeInline();
             md->encodeBinary(enc);
             const auto& data = md->getData();
-            enc.addBuffer(data);
+            enc.add_raw(data);
             return true;
         });
     }

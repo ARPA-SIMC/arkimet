@@ -1,7 +1,7 @@
 #include "collection.h"
 #include <arki/types/source/blob.h>
 #include <arki/utils/compress.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/utils/sys.h>
 #include <arki/utils.h>
 #include <arki/summary.h>
@@ -63,11 +63,11 @@ static void compressAndWrite(const std::vector<uint8_t>& buf, std::ostream& out,
     {
         // Write a metadata group
         vector<uint8_t> tmp;
-        codec::Encoder enc(tmp);
-        enc.addString("MG");
-        enc.addUInt(0, 2);	// Version 0: LZO compressed
-        enc.addUInt(obuf.size() + 4, 4); // Compressed len
-        enc.addUInt(buf.size(), 4); // Uncompressed len
+        BinaryEncoder enc(tmp);
+        enc.add_string("MG");
+        enc.add_unsigned(0u, 2);	// Version 0: LZO compressed
+        enc.add_unsigned(obuf.size() + 4, 4); // Compressed len
+        enc.add_unsigned(buf.size(), 4); // Uncompressed len
         out.write((const char*)tmp.data(), tmp.size());
         out.write((const char*)obuf.data(), obuf.size());
     } else
@@ -83,11 +83,11 @@ static void compressAndWrite(const std::vector<uint8_t>& buf, int outfd, const s
     {
         // Write a metadata group
         vector<uint8_t> tmp;
-        codec::Encoder enc(tmp);
-        enc.addString("MG");
-        enc.addUInt(0, 2);	// Version 0: LZO compressed
-        enc.addUInt(obuf.size() + 4, 4); // Compressed len
-        enc.addUInt(buf.size(), 4); // Uncompressed len
+        BinaryEncoder enc(tmp);
+        enc.add_string("MG");
+        enc.add_unsigned(0u, 2);	// Version 0: LZO compressed
+        enc.add_unsigned(obuf.size() + 4, 4); // Compressed len
+        enc.add_unsigned(buf.size(), 4); // Uncompressed len
         out.write(tmp.data(), tmp.size());
         out.write((const char*)obuf.data(), obuf.size());
     } else
@@ -153,7 +153,7 @@ void Collection::writeTo(std::ostream& out, const std::string& fname) const
     static const size_t blocksize = 256;
 
     vector<uint8_t> buf;
-    codec::Encoder enc(buf);
+    BinaryEncoder enc(buf);
     for (size_t i = 0; i < vals.size(); ++i)
     {
         if (i > 0 && (i % blocksize) == 0)
@@ -172,7 +172,7 @@ void Collection::write_to(int out, const std::string& fname) const
     static const size_t blocksize = 256;
 
     vector<uint8_t> buf;
-    codec::Encoder enc(buf);
+    BinaryEncoder enc(buf);
     for (size_t i = 0; i < vals.size(); ++i)
     {
         if (i > 0 && (i % blocksize) == 0)

@@ -214,7 +214,7 @@ unique_ptr<MatchProduct> MatchProduct::parse(const std::string& pattern)
 
 void MatchProduct::init()
 {
-    Matcher::register_matcher("product", types::TYPE_PRODUCT, (MatcherType::subexpr_parser)MatchProduct::parse);
+    Matcher::register_matcher("product", TYPE_PRODUCT, (MatcherType::subexpr_parser)MatchProduct::parse);
 }
 
 }

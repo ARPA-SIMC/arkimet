@@ -1,7 +1,7 @@
 #include <arki/wibble/exception.h>
 #include <arki/types/proddef.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include "config.h"
@@ -12,13 +12,12 @@
 #include <arki/utils/lua.h>
 #endif
 
-#define CODE types::TYPE_PRODDEF
+#define CODE TYPE_PRODDEF
 #define TAG "proddef"
 #define SERSIZELEN 2
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -49,15 +48,13 @@ std::string Proddef::formatStyle(Proddef::Style s)
 	}
 }
 
-unique_ptr<Proddef> Proddef::decode(const unsigned char* buf, size_t len)
+unique_ptr<Proddef> Proddef::decode(BinaryDecoder& dec)
 {
-    using namespace utils::codec;
-    ensureSize(len, 1, "Proddef");
-    Style s = (Style)decodeUInt(buf, 1);
+    Style s = (Style)dec.pop_uint(1, "proddef style");
     switch (s)
     {
         case GRIB:
-            return createGRIB(ValueBag::decode(buf+1, len-1));
+            return createGRIB(ValueBag::decode(dec));
         default:
             throw wibble::exception::Consistency("parsing Proddef", "style is " + formatStyle(s) + " but we can only decode GRIB");
     }
@@ -118,10 +115,10 @@ GRIB::~GRIB() { /* cache_grib.uncache(this); */ }
 
 Proddef::Style GRIB::style() const { return Proddef::GRIB; }
 
-void GRIB::encodeWithoutEnvelope(Encoder& enc) const
+void GRIB::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Proddef::encodeWithoutEnvelope(enc);
-	m_values.encode(enc);
+    Proddef::encodeWithoutEnvelope(enc);
+    m_values.encode(enc);
 }
 std::ostream& GRIB::writeToOstream(std::ostream& o) const
 {

@@ -1,28 +1,6 @@
 #ifndef ARKI_TYPES_RUN_H
 #define ARKI_TYPES_RUN_H
 
-/*
- * types/run - Daily run identification for a periodic data source
- *
- * Copyright (C) 2008--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/types.h>
 
 struct lua_State;
@@ -61,7 +39,7 @@ struct Run : public types::StyledType<Run>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::unique_ptr<Run> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Run> decode(BinaryDecoder& dec);
     static std::unique_ptr<Run> decodeString(const std::string& val);
     static std::unique_ptr<Run> decodeMapping(const emitter::memory::Mapping& val);
 
@@ -83,7 +61,7 @@ public:
 	unsigned minute() const { return m_minute; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -102,8 +80,4 @@ public:
 
 }
 }
-
-#undef ARKI_GEOS_GEOMETRY
-
-// vim:set ts=4 sw=4:
 #endif

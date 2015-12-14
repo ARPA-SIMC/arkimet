@@ -144,7 +144,7 @@ void Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 void Manifest::querySummary(const Matcher& matcher, Summary& summary)
 {
     // Check if the matcher discriminates on reference times
-    auto rtmatch = matcher.get(types::TYPE_REFTIME);
+    auto rtmatch = matcher.get(TYPE_REFTIME);
 
 	if (!rtmatch)
 	{

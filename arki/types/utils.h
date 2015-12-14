@@ -19,6 +19,7 @@
 struct lua_State;
 
 namespace arki {
+struct BinaryDecoder;
 
 namespace emitter {
 namespace memory {
@@ -28,6 +29,21 @@ struct Mapping;
 
 namespace types {
 
+template<class F>
+struct is_item_decoder;
+
+template<class R, class... Args>
+struct is_item_decoder<R(Args...)>
+{
+    static constexpr bool value = false;
+};
+
+template<class R>
+struct is_item_decoder<R(BinaryDecoder&)>
+{
+    static constexpr bool value = true;
+};
+
 /**
  * This class is used to register types with the arkimet metadata type system.
  *
@@ -36,7 +52,7 @@ namespace types {
  */
 struct MetadataType
 {
-    typedef std::unique_ptr<Type> (*item_decoder)(const unsigned char* start, size_t len);
+    typedef std::unique_ptr<Type> (*item_decoder)(BinaryDecoder& dec);
     typedef std::unique_ptr<Type> (*string_decoder)(const std::string& val);
     typedef std::unique_ptr<Type> (*mapping_decoder)(const emitter::memory::Mapping& val);
     typedef void (*lua_libloader)(lua_State* L);
@@ -66,24 +82,25 @@ struct MetadataType
 	// Get information about the given metadata
 	static const MetadataType* get(types::Code);
 
-	template<typename T>
-	static MetadataType create(intern_stats intern_stats_func = 0)
-	{
-		return MetadataType(
-			traits<T>::type_code,
-			traits<T>::type_sersize_bytes,
-			traits<T>::type_tag,
-			(MetadataType::item_decoder)T::decode,
-			(MetadataType::string_decoder)T::decodeString,
-			(MetadataType::mapping_decoder)T::decodeMapping,
-			T::lua_loadlib,
-			intern_stats_func
-		);
-	}
+    template<typename T>
+    static MetadataType create(intern_stats intern_stats_func = 0)
+    {
+        return MetadataType(
+            traits<T>::type_code,
+            traits<T>::type_sersize_bytes,
+            traits<T>::type_tag,
+            (MetadataType::item_decoder)T::decode,
+            (MetadataType::string_decoder)T::decodeString,
+            (MetadataType::mapping_decoder)T::decodeMapping,
+            T::lua_loadlib,
+            intern_stats_func
+        );
+    }
 
     template<typename T>
     static void register_type(intern_stats intern_stats_func = 0)
     {
+        static_assert(is_item_decoder<decltype(T::decode)>::value, "decode function must take a BinaryDecoder as argument");
         // FIXME: when we remove create() we can make MetadataType not register
         // itself and remove the need of this awkward new
         new MetadataType(

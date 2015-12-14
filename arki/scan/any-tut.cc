@@ -132,7 +132,7 @@ void to::test<2>()
     wassert(actual(mdc[0]).contains("reftime", "2005-12-01T18:00:00Z"));
 
 	// Check run
-	ensure(not mdc[0].has(types::TYPE_RUN));
+	ensure(not mdc[0].has(TYPE_RUN));
 
 
     // Check the source info
@@ -152,7 +152,7 @@ void to::test<2>()
     wassert(actual(mdc[1]).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
-	ensure(not mdc[1].has(types::TYPE_RUN));
+	ensure(not mdc[1].has(TYPE_RUN));
 
 
     // Check the source info
@@ -172,7 +172,7 @@ void to::test<2>()
     wassert(actual(mdc[2]).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
-	ensure(not mdc[2].has(types::TYPE_RUN));
+	ensure(not mdc[2].has(TYPE_RUN));
 #endif
 }
 

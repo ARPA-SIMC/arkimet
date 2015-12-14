@@ -3,7 +3,7 @@
 #include <arki/types/timerange.h>
 #include <arki/types/utils.h>
 #include <arki/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include "config.h"
@@ -16,7 +16,7 @@
 #include <arki/utils/lua.h>
 #endif
 
-#define CODE types::TYPE_TIMERANGE
+#define CODE TYPE_TIMERANGE
 #define TAG "timerange"
 #define SERSIZELEN 1
 #define LUATAG_TIMERANGE LUATAG_TYPES ".timerange"
@@ -25,7 +25,6 @@
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -162,47 +161,45 @@ std::string Timerange::formatStyle(Timerange::Style s)
 	}
 }
 
-unique_ptr<Timerange> Timerange::decode(const unsigned char* buf, size_t len)
+unique_ptr<Timerange> Timerange::decode(BinaryDecoder& dec)
 {
-	using namespace utils::codec;
-	Decoder dec(buf, len);
-	Style s = (Style)dec.popUInt(1, "timerange");
-	switch (s)
-	{
+    Style s = (Style)dec.pop_uint(1, "timerange");
+    switch (s)
+    {
         case GRIB1: {
-            uint8_t type = dec.popUInt(1, "GRIB1 type"),
-                unit = dec.popUInt(1, "GRIB1 unit");
-            int8_t  p1   = dec.popSInt(1, "GRIB1 p1"),
-                    p2   = dec.popSInt(1, "GRIB1 p2");
+            uint8_t type = dec.pop_uint(1, "GRIB1 type"),
+                unit = dec.pop_uint(1, "GRIB1 unit");
+            int8_t  p1   = dec.pop_sint(1, "GRIB1 p1"),
+                    p2   = dec.pop_sint(1, "GRIB1 p2");
             return createGRIB1(type, unit, p1, p2);
             }
         case GRIB2: {
-            uint8_t type = dec.popUInt(1, "GRIB2 type"),
-                unit = dec.popUInt(1, "GRIB2 unit");
-            int32_t p1   = dec.popSInt(4, "GRIB2 p1"),
-                    p2   = dec.popSInt(4, "GRIB2 p2");
+            uint8_t type = dec.pop_uint(1, "GRIB2 type"),
+                unit = dec.pop_uint(1, "GRIB2 unit");
+            int32_t p1   = dec.pop_sint(4, "GRIB2 p1"),
+                    p2   = dec.pop_sint(4, "GRIB2 p2");
             return createGRIB2(type, unit, p1, p2);
         }
         case TIMEDEF: {
-            uint8_t step_unit = dec.popUInt(1, "timedef forecast step unit");
+            uint8_t step_unit = dec.pop_uint(1, "timedef forecast step unit");
             uint32_t step_len = 0;
             if (step_unit != 255)
-                step_len = dec.popVarint<uint32_t>("timedef forecast step length");
-            uint8_t stat_type = dec.popUInt(1, "timedef statistical processing type");
+                step_len = dec.pop_varint<uint32_t>("timedef forecast step length");
+            uint8_t stat_type = dec.pop_uint(1, "timedef statistical processing type");
             uint8_t stat_unit = 255;
             uint32_t stat_len = 0;
             if (stat_type != 255)
             {
-                stat_unit = dec.popUInt(1, "timedef statistical processing unit");
+                stat_unit = dec.pop_uint(1, "timedef statistical processing unit");
                 if (stat_unit != 255)
-                    stat_len = dec.popVarint<uint32_t>("timedef statistical processing length");
+                    stat_len = dec.pop_varint<uint32_t>("timedef statistical processing length");
             }
             return createTimedef(step_len, (timerange::TimedefUnit)step_unit,
                                             stat_type, stat_len, (timerange::TimedefUnit)stat_unit);
         }
         case BUFR: {
-            uint8_t unit   = dec.popUInt(1, "BUFR unit");
-            unsigned value = dec.popVarint<unsigned>("BUFR value");
+            uint8_t unit   = dec.pop_uint(1, "BUFR unit");
+            unsigned value = dec.pop_varint<unsigned>("BUFR value");
             return createBUFR(value, unit);
         }
 		default:
@@ -631,10 +628,10 @@ namespace timerange {
 
 Timerange::Style GRIB1::style() const { return Timerange::GRIB1; }
 
-void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
+void GRIB1::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
     Timerange::encodeWithoutEnvelope(enc);
-    enc.addUInt(m_type, 1); enc.addUInt(m_unit, 1); enc.addSInt(m_p1, 1); enc.addSInt(m_p2, 1);
+    enc.add_unsigned(m_type, 1); enc.add_unsigned(m_unit, 1); enc.add_signed(m_p1, 1); enc.add_signed(m_p2, 1);
 }
 
 std::ostream& GRIB1::writeNumbers(std::ostream& o) const
@@ -1223,10 +1220,10 @@ void GRIB1::arg_significance(unsigned type, bool& use_p1, bool& use_p2)
 
 Timerange::Style GRIB2::style() const { return Timerange::GRIB2; }
 
-void GRIB2::encodeWithoutEnvelope(Encoder& enc) const
+void GRIB2::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
     Timerange::encodeWithoutEnvelope(enc);
-    enc.addUInt(m_type, 1); enc.addUInt(m_unit, 1); enc.addSInt(m_p1, 4); enc.addSInt(m_p2, 4);
+    enc.add_unsigned(m_type, 1); enc.add_unsigned(m_unit, 1); enc.add_signed(m_p1, 4); enc.add_signed(m_p2, 4);
 }
 
 std::ostream& GRIB2::writeToOstream(std::ostream& o) const
@@ -1351,20 +1348,20 @@ unique_ptr<GRIB2> GRIB2::create(unsigned char type, unsigned char unit, signed l
 
 Timerange::Style Timedef::style() const { return Timerange::TIMEDEF; }
 
-void Timedef::encodeWithoutEnvelope(Encoder& enc) const
+void Timedef::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
     Timerange::encodeWithoutEnvelope(enc);
 
-    enc.addUInt(m_step_unit, 1);
+    enc.add_unsigned((unsigned)m_step_unit, 1);
     if (m_step_unit != 255)
-        enc.addVarint(m_step_len);
+        enc.add_varint(m_step_len);
 
-    enc.addUInt(m_stat_type, 1);
+    enc.add_unsigned(m_stat_type, 1);
     if (m_stat_type != 255)
     {
-        enc.addUInt(m_stat_unit, 1);
+        enc.add_unsigned((unsigned)m_stat_unit, 1);
         if (m_stat_unit != 255)
-            enc.addVarint(m_stat_len);
+            enc.add_varint(m_stat_len);
     }
 }
 
@@ -1898,11 +1895,11 @@ unsigned BUFR::months() const
 
 Timerange::Style BUFR::style() const { return Timerange::BUFR; }
 
-void BUFR::encodeWithoutEnvelope(Encoder& enc) const
+void BUFR::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Timerange::encodeWithoutEnvelope(enc);
-	enc.addUInt(m_unit, 1);
-	enc.addVarint(m_value);
+    Timerange::encodeWithoutEnvelope(enc);
+    enc.add_unsigned(m_unit, 1);
+    enc.add_varint(m_value);
 }
 
 std::ostream& BUFR::writeToOstream(std::ostream& o) const

@@ -70,7 +70,7 @@ unique_ptr<MatchRun> MatchRun::parse(const std::string& pattern)
 
 void MatchRun::init()
 {
-    Matcher::register_matcher("run", types::TYPE_RUN, (MatcherType::subexpr_parser)MatchRun::parse);
+    Matcher::register_matcher("run", TYPE_RUN, (MatcherType::subexpr_parser)MatchRun::parse);
 }
 
 }

@@ -1,7 +1,7 @@
 #include <arki/wibble/exception.h>
 #include <arki/types/note.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include "config.h"
@@ -12,13 +12,12 @@
 #include <arki/utils/lua.h>
 #endif
 
-#define CODE types::TYPE_NOTE
+#define CODE TYPE_NOTE
 #define TAG "note"
 #define SERSIZELEN 2
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -58,22 +57,18 @@ bool Note::equals(const Type& o) const
 	return time == v->time && content == v->content;
 }
 
-void Note::encodeWithoutEnvelope(Encoder& enc) const
+void Note::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
     time.encodeWithoutEnvelope(enc);
-    enc.addVarint(content.size());
-    enc.addString(content);
+    enc.add_varint(content.size());
+    enc.add_raw(content);
 }
 
-unique_ptr<Note> Note::decode(const unsigned char* buf, size_t len)
+unique_ptr<Note> Note::decode(BinaryDecoder& dec)
 {
-    using namespace utils::codec;
-
-    ensureSize(len, 5, "note time");
-    unique_ptr<Time> t = Time::decode(buf, 5);
-    Decoder dec(buf+5, len-5);
-    size_t msg_len = dec.popVarint<size_t>("note text size");
-    string msg = dec.popString(msg_len, "note text");
+    unique_ptr<Time> t = Time::decode(dec);
+    size_t msg_len = dec.pop_varint<size_t>("note text size");
+    string msg = dec.pop_string(msg_len, "note text");
     return Note::create(*t, msg);
 }
 

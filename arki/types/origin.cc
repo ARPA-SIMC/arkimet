@@ -1,7 +1,7 @@
 #include <arki/wibble/exception.h>
 #include <arki/types/origin.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
@@ -11,7 +11,7 @@
 #include <cstring>
 #include <stdexcept>
 
-#define CODE types::TYPE_ORIGIN
+#define CODE TYPE_ORIGIN
 #define TAG "origin"
 #define SERSIZELEN 1
 #define LUATAG_ORIGIN LUATAG_TYPES ".origin"
@@ -22,7 +22,6 @@
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -68,39 +67,43 @@ std::string Origin::formatStyle(Origin::Style s)
 	}
 }
 
-unique_ptr<Origin> Origin::decode(const unsigned char* buf, size_t len)
+unique_ptr<Origin> Origin::decode(BinaryDecoder& dec)
 {
-    using namespace utils::codec;
-    ensureSize(len, 1, "Origin");
-    Style s = (Style)decodeUInt(buf, 1);
+    Style s = (Style)dec.pop_uint(1, "origin style");
     switch (s)
     {
         case GRIB1:
-            ensureSize(len, 4, "Origin");
-            return upcast<Origin>(origin::GRIB1::create(decodeUInt(buf+1, 1), decodeUInt(buf+2, 1), decodeUInt(buf+3, 1)));
+        {
+            uint8_t ce = dec.pop_uint(1, "GRIB1 origin centre");
+            uint8_t sc = dec.pop_uint(1, "GRIB1 origin subcentre");
+            uint8_t pr = dec.pop_uint(1, "GRIB1 origin process");
+            return upcast<Origin>(origin::GRIB1::create(ce, sc, pr));
+        }
         case GRIB2:
-            ensureSize(len, 8, "Origin");
-            return upcast<Origin>(origin::GRIB2::create(
-                        decodeUInt(buf+1, 2), decodeUInt(buf+3, 2), decodeUInt(buf+5, 1),
-                        decodeUInt(buf+6, 1), decodeUInt(buf+7, 1)));
+        {
+            unsigned short ce = dec.pop_uint(2, "GRIB2 origin centre");
+            unsigned short sc = dec.pop_uint(2, "GRIB2 origin subcentre");
+            unsigned char pt = dec.pop_uint(1, "GRIB2 origin process type");
+            unsigned char bgid = dec.pop_uint(1, "GRIB2 origin background process ID");
+            unsigned char prid = dec.pop_uint(1, "GRIB2 origin process ID");
+            return upcast<Origin>(origin::GRIB2::create(ce, sc, pt, bgid, prid));
+        }
         case BUFR:
-            ensureSize(len, 3, "Origin");
-            return upcast<Origin>(origin::BUFR::create(decodeUInt(buf+1, 1), decodeUInt(buf+2, 1)));
+        {
+            uint8_t ce = dec.pop_uint(1, "BUFR origin centre");
+            uint8_t sc = dec.pop_uint(1, "BUFR origin subcentre");
+            return upcast<Origin>(origin::BUFR::create(ce, sc));
+        }
         case ODIMH5:
         {
-			ensureSize(len, 4, "Origin");
-			Decoder dec(buf, len);
+            uint16_t wmosize = dec.pop_varint<uint16_t>("ODIMH5 wmo length");
+            std::string wmo = dec.pop_string(wmosize, "ODIMH5 wmo");
 
-			Style s2 = (Style)dec.popUInt(1, "product"); //saltiamo il primo byte
+            uint16_t radsize = dec.pop_varint<uint16_t>("ODIMH5 rad length");
+            std::string rad = dec.pop_string(radsize, "ODIMH5 rad");
 
-			uint16_t 	wmosize = dec.popVarint<uint16_t>("ODIMH5 wmo length");
-			std::string 	wmo 	= dec.popString(wmosize, "ODIMH5 wmo");
-
-			uint16_t 	radsize = dec.popVarint<uint16_t>("ODIMH5 rad length");
-			std::string 	rad 	= dec.popString(radsize, "ODIMH5 rad");
-
-			uint16_t 	plcsize = dec.popVarint<uint16_t>("ODIMH5 plc length");
-			std::string 	plc 	= dec.popString(plcsize, "ODIMH5 plc");
+            uint16_t plcsize = dec.pop_varint<uint16_t>("ODIMH5 plc length");
+            std::string plc = dec.pop_string(plcsize, "ODIMH5 plc");
 
             return upcast<Origin>(origin::ODIMH5::create(wmo, rad, plc));
         }
@@ -236,12 +239,12 @@ GRIB1::~GRIB1() { /* cache_grib1.uncache(this); */ }
 
 Origin::Style GRIB1::style() const { return Origin::GRIB1; }
 
-void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
+void GRIB1::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Origin::encodeWithoutEnvelope(enc);
-	enc.addUInt(m_centre, 1);
-	enc.addUInt(m_subcentre, 1);
-	enc.addUInt(m_process, 1);
+    Origin::encodeWithoutEnvelope(enc);
+    enc.add_unsigned(m_centre, 1);
+    enc.add_unsigned(m_subcentre, 1);
+    enc.add_unsigned(m_process, 1);
 }
 std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 {
@@ -340,14 +343,14 @@ GRIB2::~GRIB2() { /* cache_grib2.uncache(this); */ }
 
 Origin::Style GRIB2::style() const { return Origin::GRIB2; }
 
-void GRIB2::encodeWithoutEnvelope(Encoder& enc) const
+void GRIB2::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Origin::encodeWithoutEnvelope(enc);
-	enc.addUInt(m_centre, 2);
-	enc.addUInt(m_subcentre, 2);
-	enc.addUInt(m_processtype, 1);
-	enc.addUInt(m_bgprocessid, 1);
-	enc.addUInt(m_processid, 1);
+    Origin::encodeWithoutEnvelope(enc);
+    enc.add_unsigned(m_centre, 2);
+    enc.add_unsigned(m_subcentre, 2);
+    enc.add_unsigned(m_processtype, 1);
+    enc.add_unsigned(m_bgprocessid, 1);
+    enc.add_unsigned(m_processid, 1);
 }
 std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 {
@@ -467,11 +470,11 @@ BUFR::~BUFR() { /* cache_bufr.uncache(this); */ }
 
 Origin::Style BUFR::style() const { return Origin::BUFR; }
 
-void BUFR::encodeWithoutEnvelope(Encoder& enc) const
+void BUFR::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Origin::encodeWithoutEnvelope(enc);
-	enc.addUInt(m_centre, 1);
-	enc.addUInt(m_subcentre, 1);
+    Origin::encodeWithoutEnvelope(enc);
+    enc.add_unsigned(m_centre, 1);
+    enc.add_unsigned(m_subcentre, 1);
 }
 std::ostream& BUFR::writeToOstream(std::ostream& o) const
 {
@@ -562,15 +565,15 @@ ODIMH5::~ODIMH5() { /* cache_grib1.uncache(this); */ }
 
 Origin::Style ODIMH5::style() const { return Origin::ODIMH5; }
 
-void ODIMH5::encodeWithoutEnvelope(Encoder& enc) const
+void ODIMH5::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Origin::encodeWithoutEnvelope(enc);
-	enc.addVarint(m_WMO.size());
-	enc.addString(m_WMO);
-	enc.addVarint(m_RAD.size());
-	enc.addString(m_RAD);
-	enc.addVarint(m_PLC.size());
-	enc.addString(m_PLC);
+    Origin::encodeWithoutEnvelope(enc);
+    enc.add_varint(m_WMO.size());
+    enc.add_raw(m_WMO);
+    enc.add_varint(m_RAD.size());
+    enc.add_raw(m_RAD);
+    enc.add_varint(m_PLC.size());
+    enc.add_raw(m_PLC);
 }
 std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 {

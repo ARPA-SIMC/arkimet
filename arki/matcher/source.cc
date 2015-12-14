@@ -73,7 +73,7 @@ unique_ptr<MatchSource> MatchSource::parse(const std::string& pattern)
 
 void MatchSource::init()
 {
-    Matcher::register_matcher("source", types::TYPE_SOURCE, (MatcherType::subexpr_parser)MatchSource::parse);
+    Matcher::register_matcher("source", TYPE_SOURCE, (MatcherType::subexpr_parser)MatchSource::parse);
 }
 
 }

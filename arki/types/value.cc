@@ -1,7 +1,7 @@
 #include <arki/wibble/exception.h>
 #include <arki/types/value.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
@@ -13,13 +13,12 @@
 #include <arki/utils/lua.h>
 #endif
 
-#define CODE types::TYPE_VALUE
+#define CODE TYPE_VALUE
 #define TAG "value"
 #define SERSIZELEN 0   // Not supported in version 1
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -58,9 +57,9 @@ int Value::compare(const Type& o) const
     return 1;
 }
 
-void Value::encodeWithoutEnvelope(Encoder& enc) const
+void Value::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-    enc.addString(buffer);
+    enc.add_raw(buffer);
 }
 
 std::ostream& Value::writeToOstream(std::ostream& o) const
@@ -73,9 +72,9 @@ void Value::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("va", buffer);
 }
 
-unique_ptr<Value> Value::decode(const unsigned char* buf, size_t len)
+unique_ptr<Value> Value::decode(BinaryDecoder& dec)
 {
-    return Value::create(string((const char*)buf, len));
+    return Value::create(dec.pop_string(dec.size, "'value' metadata type"));
 }
 
 unique_ptr<Value> Value::decodeString(const std::string& val)

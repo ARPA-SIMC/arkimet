@@ -43,16 +43,16 @@ struct IndexGlobalData
 	std::set<types::Code> all_components;
 
 	IndexGlobalData() {
-		all_components.insert(types::TYPE_ORIGIN);
-		all_components.insert(types::TYPE_PRODUCT);
-		all_components.insert(types::TYPE_LEVEL);
-		all_components.insert(types::TYPE_TIMERANGE);
-		all_components.insert(types::TYPE_AREA);
-		all_components.insert(types::TYPE_PRODDEF);
-		all_components.insert(types::TYPE_RUN);
-		//all_components.insert(types::TYPE_REFTIME);
-		all_components.insert(types::TYPE_QUANTITY);
-		all_components.insert(types::TYPE_TASK);
+		all_components.insert(TYPE_ORIGIN);
+		all_components.insert(TYPE_PRODUCT);
+		all_components.insert(TYPE_LEVEL);
+		all_components.insert(TYPE_TIMERANGE);
+		all_components.insert(TYPE_AREA);
+		all_components.insert(TYPE_PRODDEF);
+		all_components.insert(TYPE_RUN);
+		//all_components.insert(TYPE_REFTIME);
+		all_components.insert(TYPE_QUANTITY);
+		all_components.insert(TYPE_TASK);
 	}
 };
 static IndexGlobalData igd;
@@ -81,7 +81,7 @@ Contents::Contents(const ConfigFile& cfg)
 
 	// What metadata components we use to create a unique id
 	std::set<types::Code> unique_members = parseMetadataBitmask(cfg.value("unique"));
-	unique_members.erase(types::TYPE_REFTIME);
+	unique_members.erase(TYPE_REFTIME);
 	if (not unique_members.empty())
 		m_uniques = new Aggregate(m_db, "mduniq", unique_members);
 
@@ -171,7 +171,7 @@ std::set<types::Code> Contents::unique_codes() const
 {
 	std::set<types::Code> res;
 	if (m_uniques) res = m_uniques->members();
-	res.insert(types::TYPE_REFTIME);
+	res.insert(TYPE_REFTIME);
 	return res;
 }
 
@@ -404,7 +404,7 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
                 }
             }
 
-            if (auto reftime = m.get(types::TYPE_REFTIME))
+            if (auto reftime = m.get(TYPE_REFTIME))
                 constraints.push_back(reftime->toReftimeSQL("reftime"));
         }
 

@@ -1,7 +1,7 @@
 #include <arki/wibble/exception.h>
 #include <arki/types/product.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
@@ -20,13 +20,12 @@
 #include <arki/utils/vm2.h>
 #endif
 
-#define CODE types::TYPE_PRODUCT
+#define CODE TYPE_PRODUCT
 #define TAG "product"
 #define SERSIZELEN 1
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -73,55 +72,45 @@ std::string Product::formatStyle(Product::Style s)
 	}
 }
 
-unique_ptr<Product> Product::decode(const unsigned char* buf, size_t len)
+unique_ptr<Product> Product::decode(BinaryDecoder& dec)
 {
-	using namespace utils::codec;
-	Decoder dec(buf, len);
-	Style s = (Style)dec.popUInt(1, "product");
-	switch (s)
-	{
-		case GRIB1: {
-			uint8_t origin  = dec.popUInt(1, "GRIB1 origin"),
-				table   = dec.popUInt(1, "GRIB1 table"),
-				product = dec.popUInt(1, "GRIB1 product");
-			return createGRIB1(origin, table, product);
-		}
-		case GRIB2: {
-			uint16_t centre     = dec.popUInt(2, "GRIB2 centre");
-            uint8_t discipline = dec.popUInt(1, "GRIB2 discipline");
-            uint8_t category   = dec.popUInt(1, "GRIB2 category");
-            uint8_t number     = dec.popUInt(1, "GRIB2 number");
+    Style s = (Style)dec.pop_uint(1, "product");
+    switch (s)
+    {
+        case GRIB1: {
+            uint8_t origin  = dec.pop_uint(1, "GRIB1 origin");
+            uint8_t table   = dec.pop_uint(1, "GRIB1 table");
+            uint8_t product = dec.pop_uint(1, "GRIB1 product");
+            return createGRIB1(origin, table, product);
+        }
+        case GRIB2: {
+            uint16_t centre    = dec.pop_uint(2, "GRIB2 centre");
+            uint8_t discipline = dec.pop_uint(1, "GRIB2 discipline");
+            uint8_t category   = dec.pop_uint(1, "GRIB2 category");
+            uint8_t number     = dec.pop_uint(1, "GRIB2 number");
             uint8_t table_version = 4;
-            if (dec.len > 0) table_version = dec.popUInt(1, "GRIB2 table version");
+            if (dec) table_version = dec.pop_uint(1, "GRIB2 table version");
             uint8_t local_table_version = 255;
-            if (dec.len > 0) local_table_version = dec.popUInt(1, "GRIB2 local table version");
+            if (dec) local_table_version = dec.pop_uint(1, "GRIB2 local table version");
             return createGRIB2(centre, discipline, category, number, table_version, local_table_version);
         }
-		case BUFR: {
-			uint8_t type         = dec.popUInt(1, "GRIB1 type"),
-				subtype      = dec.popUInt(1, "GRIB1 subtype"),
-				localsubtype = dec.popUInt(1, "GRIB1 localsubtype");
-			ValueBag values = ValueBag::decode(dec.buf, dec.len);
+        case BUFR: {
+            uint8_t type         = dec.pop_uint(1, "GRIB1 type");
+            uint8_t subtype      = dec.pop_uint(1, "GRIB1 subtype");
+            uint8_t localsubtype = dec.pop_uint(1, "GRIB1 localsubtype");
+            ValueBag values = ValueBag::decode(dec);
             return createBUFR(type, subtype, localsubtype, values);
         }
-		case ODIMH5: {
-			size_t 			len;
-			std::string 	o;
-			std::string 	p;
-			/*REMOVED: double 		p1; */
-			/*REMOVED: double 		p2; */
-
-			len 	= dec.popVarint<size_t>("ODIMH5 obj len");
-			o	= dec.popString(len, "ODIMH5 obj");
-			len 	= dec.popVarint<size_t>("ODIMH5 product len");
-			p	= dec.popString(len, "ODIMH5 product ");
-			/*REMOVED: p1 	= dec.popDouble("ODIMH5 prodpar1"); */
-			/*REMOVED: p2	= dec.popDouble("ODIMH5 prodpar2"); */
-
+        case ODIMH5: {
+            size_t len;
+            len = dec.pop_varint<size_t>("ODIMH5 obj len");
+            string o = dec.pop_string(len, "ODIMH5 obj");
+            len = dec.pop_varint<size_t>("ODIMH5 product len");
+            string p = dec.pop_string(len, "ODIMH5 product ");
             return createODIMH5(o, p);
         }
         case VM2: {
-            return createVM2(dec.popUInt(4, "VM2 variable id"));
+            return createVM2(dec.pop_uint(4, "VM2 variable id"));
         }
 		default:
 			throw wibble::exception::Consistency("parsing Product", "style is " + formatStyle(s) + "but we can only decode GRIB1, GRIB2 and BUFR");
@@ -312,12 +301,12 @@ std::unique_ptr<Product> Product::createVM2(unsigned variable_id)
 namespace product {
 
 Product::Style GRIB1::style() const { return Product::GRIB1; }
-void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
+void GRIB1::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Product::encodeWithoutEnvelope(enc);
-	enc.addUInt(m_origin, 1);
-	enc.addUInt(m_table, 1);
-	enc.addUInt(m_product, 1);
+    Product::encodeWithoutEnvelope(enc);
+    enc.add_unsigned(m_origin, 1);
+    enc.add_unsigned(m_table, 1);
+    enc.add_unsigned(m_product, 1);
 }
 std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 {
@@ -416,18 +405,18 @@ bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 
 
 Product::Style GRIB2::style() const { return Product::GRIB2; }
-void GRIB2::encodeWithoutEnvelope(Encoder& enc) const
+void GRIB2::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Product::encodeWithoutEnvelope(enc);
-	enc.addUInt(m_centre, 2);
-	enc.addUInt(m_discipline, 1);
-	enc.addUInt(m_category, 1);
-    enc.addUInt(m_number, 1);
+    Product::encodeWithoutEnvelope(enc);
+    enc.add_unsigned(m_centre, 2);
+    enc.add_unsigned(m_discipline, 1);
+    enc.add_unsigned(m_category, 1);
+    enc.add_unsigned(m_number, 1);
     if (m_table_version != 4 || m_local_table_version != 255)
     {
-        enc.addUInt(m_table_version, 1);
+        enc.add_unsigned(m_table_version, 1);
         if (m_local_table_version != 255)
-            enc.addUInt(m_local_table_version, 1);
+            enc.add_unsigned(m_local_table_version, 1);
     }
 }
 std::ostream& GRIB2::writeToOstream(std::ostream& o) const
@@ -574,13 +563,13 @@ bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
 
 Product::Style BUFR::style() const { return Product::BUFR; }
 
-void BUFR::encodeWithoutEnvelope(Encoder& enc) const
+void BUFR::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Product::encodeWithoutEnvelope(enc);
-	enc.addUInt(m_type, 1);
-	enc.addUInt(m_subtype, 1);
-	enc.addUInt(m_localsubtype, 1);
-	m_values.encode(enc);
+    Product::encodeWithoutEnvelope(enc);
+    enc.add_unsigned(m_type, 1);
+    enc.add_unsigned(m_subtype, 1);
+    enc.add_unsigned(m_localsubtype, 1);
+    m_values.encode(enc);
 }
 std::ostream& BUFR::writeToOstream(std::ostream& o) const
 {
@@ -745,15 +734,15 @@ Product::Style ODIMH5::style() const
 	return Product::ODIMH5;
 }
 
-void ODIMH5::encodeWithoutEnvelope(Encoder& enc) const
+void ODIMH5::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Product::encodeWithoutEnvelope(enc);
-	enc.addVarint(m_obj.size());
-	enc.addString(m_obj);
-	enc.addVarint(m_prod.size());
-	enc.addString(m_prod);
-	/*REMOVED: enc.addDouble(m_prodpar1); */
-	/*REMOVED: enc.addDouble(m_prodpar2); */
+    Product::encodeWithoutEnvelope(enc);
+    enc.add_varint(m_obj.size());
+    enc.add_raw(m_obj);
+    enc.add_varint(m_prod.size());
+    enc.add_raw(m_prod);
+    /*REMOVED: enc.addDouble(m_prodpar1); */
+    /*REMOVED: enc.addDouble(m_prodpar2); */
 }
 
 std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
@@ -890,10 +879,10 @@ Product::Style VM2::style() const
 {
 	return Product::VM2;
 }
-void VM2::encodeWithoutEnvelope(Encoder& enc) const
+void VM2::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Product::encodeWithoutEnvelope(enc);
-	enc.addUInt(m_variable_id, 4);
+    Product::encodeWithoutEnvelope(enc);
+    enc.add_unsigned(m_variable_id, 4);
     derived_values().encode(enc);
 }
 std::ostream& VM2::writeToOstream(std::ostream& o) const

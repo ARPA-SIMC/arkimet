@@ -1,7 +1,7 @@
 #include <arki/wibble/exception.h>
 #include <arki/types/reftime.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
@@ -14,13 +14,12 @@
 #include <arki/utils/lua.h>
 #endif
 
-#define CODE types::TYPE_REFTIME
+#define CODE TYPE_REFTIME
 #define TAG "reftime"
 #define SERSIZELEN 1
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -54,19 +53,18 @@ std::string Reftime::formatStyle(Reftime::Style s)
 	}
 }
 
-unique_ptr<Reftime> Reftime::decode(const unsigned char* buf, size_t len)
+unique_ptr<Reftime> Reftime::decode(BinaryDecoder& dec)
 {
-	using namespace utils::codec;
-	ensureSize(len, 1, "Reftime");
-	Style s = (Style)decodeUInt(buf, 1);
+    Style s = (Style)dec.pop_uint(1, "reftime style");
     switch (s)
     {
-        case POSITION:
-            ensureSize(len, 6, "Reftime");
-            return Reftime::createPosition(*Time::decode(buf+1, 5));
+        case POSITION: return Reftime::createPosition(*Time::decode(dec));
         case PERIOD:
-            ensureSize(len, 11, "Reftime");
-            return Reftime::createPeriod(*Time::decode(buf+1, 5), *Time::decode(buf+6, 5));
+        {
+            auto begin = Time::decode(dec);
+            auto until = Time::decode(dec);
+            return Reftime::createPeriod(*begin, *until);
+        }
         default:
         {
             stringstream ss;
@@ -149,7 +147,7 @@ Position::Position(const Time& time) : time(time) {}
 
 Reftime::Style Position::style() const { return Reftime::POSITION; }
 
-void Position::encodeWithoutEnvelope(Encoder& enc) const
+void Position::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
     Reftime::encodeWithoutEnvelope(enc);
     time.encodeWithoutEnvelope(enc);
@@ -238,7 +236,7 @@ Period::Period(const Time& begin, const Time& end)
 
 Reftime::Style Period::style() const { return Reftime::PERIOD; }
 
-void Period::encodeWithoutEnvelope(Encoder& enc) const
+void Period::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
     Reftime::encodeWithoutEnvelope(enc);
     begin.encodeWithoutEnvelope(enc);

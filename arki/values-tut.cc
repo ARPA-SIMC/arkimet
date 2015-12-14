@@ -2,7 +2,7 @@
 
 #include <arki/types/tests.h>
 #include <arki/values.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 
 #include <memory>
 #include <sstream>
@@ -12,7 +12,6 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
-using namespace arki::utils::codec;
 
 struct arki_values_shar {
 };
@@ -70,38 +69,39 @@ void to::test<2>()
 	std::unique_ptr<Value> tenthousand(Value::createInteger(10000));
 	std::unique_ptr<Value> minustenthousand(Value::createInteger(-10000));
 
-#define TESTENC(var, encsize) do { \
-        std::unique_ptr<Value> v; \
-        vector<uint8_t> enc; \
-        size_t decsize; \
-        Encoder e(enc); \
-        (var)->encode(e); \
-        ensure_equals(enc.size(), (encsize)); \
-        v.reset(Value::decode(enc.data(), enc.size(), decsize)); \
-        ensure_equals(decsize, (encsize)); \
-        ensure(*v == *(var)); \
-        \
-        string enc1 = (var)->toString(); \
-        v.reset(Value::parse(enc1)); \
-        ensure(*v == *(var)); \
-    } while (0)
+    auto test = [](const Value& var, unsigned encsize) {
+        std::unique_ptr<Value> v;
+        vector<uint8_t> enc;
+        BinaryEncoder e(enc);
+        var.encode(e);
+        ensure_equals(enc.size(), (encsize));
+        BinaryDecoder dec(enc);
+        v.reset(Value::decode(dec));
+        size_t decsize = dec.buf - enc.data();
+        ensure_equals(decsize, (encsize));
+        ensure(*v == var);
 
-	TESTENC(zero, 1u);
-	TESTENC(one, 1u);
-	TESTENC(minusOne, 1u);
-	TESTENC(u6bit, 1u);
-	TESTENC(s6bit, 1u);
-	TESTENC(onemillion, 4u);
-	TESTENC(bignegative, 4u);
-	TESTENC(empty, 1u);
-	TESTENC(onechar, 2u);
-	TESTENC(numstr, 3u);
-	TESTENC(longname, 56u);
-	TESTENC(escaped, 9u);
-	TESTENC(fourtythree, 2u);
-	TESTENC(minusfourtythree, 2u);
-	TESTENC(tenthousand, 3u);
-	TESTENC(minustenthousand, 3u);
+        string enc1 = var.toString();
+        v.reset(Value::parse(enc1));
+        ensure(*v == var);
+    };
+
+    test(*zero, 1u);
+    test(*one, 1u);
+    test(*minusOne, 1u);
+    test(*u6bit, 1u);
+    test(*s6bit, 1u);
+    test(*onemillion, 4u);
+    test(*bignegative, 4u);
+    test(*empty, 1u);
+    test(*onechar, 2u);
+    test(*numstr, 3u);
+    test(*longname, 56u);
+    test(*escaped, 9u);
+    test(*fourtythree, 2u);
+    test(*minusfourtythree, 2u);
+    test(*tenthousand, 3u);
+    test(*minustenthousand, 3u);
 }
 
 // Check ValueBag
@@ -146,11 +146,12 @@ void to::test<3>()
 
     // Test encoding and decoding
     std::vector<uint8_t> enc;
-    Encoder e(enc);
+    BinaryEncoder e(enc);
 
-	v1.encode(e);
-	v2 = ValueBag::decode(enc.data(), enc.size());
-	ensure_equals(v1, v2);
+    v1.encode(e);
+    BinaryDecoder dec(enc);
+    v2 = ValueBag::decode(dec);
+    ensure_equals(v1, v2);
 
 	ensure_equals(v1.size(), 4u);
 	ensure_equals(v2.size(), 4u);

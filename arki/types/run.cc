@@ -2,7 +2,7 @@
 #include <arki/types/run.h>
 #include <arki/types/utils.h>
 #include <arki/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include "config.h"
@@ -13,13 +13,12 @@
 #include <arki/utils/lua.h>
 #endif
 
-#define CODE types::TYPE_RUN
+#define CODE TYPE_RUN
 #define TAG "run"
 #define SERSIZELEN 1
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -52,22 +51,20 @@ std::string Run::formatStyle(Run::Style s)
 	}
 }
 
-unique_ptr<Run> Run::decode(const unsigned char* buf, size_t len)
+unique_ptr<Run> Run::decode(BinaryDecoder& dec)
 {
-	using namespace utils::codec;
-	Decoder dec(buf, len);
-	Style s = (Style)dec.popUInt(1, "run style");
-	switch (s)
-	{
+    Style s = (Style)dec.pop_uint(1, "run style");
+    switch (s)
+    {
         case MINUTE: {
-            unsigned int m = dec.popVarint<unsigned>("run minute");
+            unsigned int m = dec.pop_varint<unsigned>("run minute");
             return createMinute(m / 60, m % 60);
         }
-		default:
-			throw wibble::exception::Consistency("parsing Run", "style is " + formatStyle(s) + " but we can only decode MINUTE");
-	}
+        default:
+            throw wibble::exception::Consistency("parsing Run", "style is " + formatStyle(s) + " but we can only decode MINUTE");
+    }
 }
-    
+
 unique_ptr<Run> Run::decodeString(const std::string& val)
 {
 	string inner;
@@ -138,10 +135,10 @@ namespace run {
 
 Run::Style Minute::style() const { return Run::MINUTE; }
 
-void Minute::encodeWithoutEnvelope(Encoder& enc) const
+void Minute::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Run::encodeWithoutEnvelope(enc);
-	enc.addVarint(m_minute);
+    Run::encodeWithoutEnvelope(enc);
+    enc.add_varint(m_minute);
 }
 std::ostream& Minute::writeToOstream(std::ostream& o) const
 {

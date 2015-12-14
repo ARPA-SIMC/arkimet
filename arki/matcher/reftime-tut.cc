@@ -27,7 +27,7 @@ TESTGRP(arki_matcher_reftime);
 namespace {
 std::string sql(const Matcher& m, const std::string& name)
 {
-    auto o = m.get(types::TYPE_REFTIME);
+    auto o = m.get(TYPE_REFTIME);
     if (!o) throw std::runtime_error("no reftime matcher found");
     return o->toReftimeSQL(name);
 }

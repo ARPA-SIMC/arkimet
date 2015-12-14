@@ -683,7 +683,7 @@ void to::test<18>()
     // Check contents
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(IMAGE,NEW:LBM_ARPA)"));
-    ensure(!md.get(types::TYPE_LEVEL));
+    ensure(!md.get(TYPE_LEVEL));
     wassert(actual(md).contains("reftime", "2013-03-18T10:00:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
@@ -720,7 +720,7 @@ void to::test<19>()
     // Check contents
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(XSEC,XSEC)"));
-    ensure(!md.get(types::TYPE_LEVEL));
+    ensure(!md.get(TYPE_LEVEL));
     wassert(actual(md).contains("reftime", "2013-11-04T14:10:00Z"));
     wassert(actual(md).contains("task", "XZS"));
     wassert(actual(md).contains("quantity", "DBZH"));

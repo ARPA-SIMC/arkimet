@@ -334,8 +334,8 @@ void to::test<15>()
 
     ItemSet& is = res[0];
     wassert(actual(is.size()) == 2u);
-    wassert(actual(Origin::createGRIB1(1, 2, 3)) == is.get(types::TYPE_ORIGIN));
-    wassert(actual(Product::createGRIB1(1, 2, 3)) == is.get(types::TYPE_PRODUCT));
+    wassert(actual(Origin::createGRIB1(1, 2, 3)) == is.get(TYPE_ORIGIN));
+    wassert(actual(Product::createGRIB1(1, 2, 3)) == is.get(TYPE_PRODUCT));
 }
 
 // Test loading an old summary

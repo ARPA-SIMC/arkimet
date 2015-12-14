@@ -1,7 +1,7 @@
 #include <arki/summary/stats.h>
 #include <arki/metadata.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/utils/lua.h>
 #include <arki/utils/string.h>
 #include <arki/utils/files.h>
@@ -12,14 +12,13 @@
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 using namespace arki::types;
 
 namespace arki {
 
 namespace types {
 const char* traits<summary::Stats>::type_tag = "summarystats";
-const types::Code traits<summary::Stats>::type_code = types::TYPE_SUMMARYSTATS;
+const types::Code traits<summary::Stats>::type_code = TYPE_SUMMARYSTATS;
 const size_t traits<summary::Stats>::type_sersize_bytes = 2;
 const char* traits<summary::Stats>::type_lua_tag = LUATAG_TYPES ".summary.stats";
 }
@@ -111,12 +110,12 @@ std::unique_ptr<types::Reftime> Stats::make_reftime() const
     return Reftime::create(begin, end);
 }
 
-void Stats::encodeWithoutEnvelope(Encoder& enc) const
+void Stats::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
     unique_ptr<types::Reftime> reftime(Reftime::create(begin, end));
-    enc.addUInt(count, 4);
+    enc.add_unsigned(count, 4);
     reftime->encodeBinary(enc);
-    enc.addULInt(size, 8);
+    enc.add_unsigned(size, 8);
 }
 
 std::ostream& Stats::writeToOstream(std::ostream& o) const
@@ -165,49 +164,34 @@ void Stats::toYaml(std::ostream& out, size_t indent) const
     out << ind << "Reftime: " << *reftime << endl;
 }
 
-unique_ptr<Stats> Stats::decode(const unsigned char* buf, size_t len)
+unique_ptr<Stats> Stats::decode(BinaryDecoder& dec)
 {
-    using namespace utils::codec;
-
     unique_ptr<Stats> res(new Stats);
 
     // First decode the count
-    if (len < 4)
-    {
-        stringstream ss;
-        ss << "cannot parse summary stats: size is " << len << " but at least 4 bytes are needed";
-        throw std::runtime_error(ss.str());
-    }
-    res->count = decodeUInt(buf, 4);
-    buf += 4; len -= 4;
+    res->count = dec.pop_uint(4, "summary stats (count)");
 
     // Then decode the reftime
-    const unsigned char* el_start = buf;
-    size_t el_len = len;
-    types::Code el_type = types::decodeEnvelope(el_start, el_len);
-    if (el_type == types::TYPE_REFTIME)
+    TypeCode code;
+    BinaryDecoder inner = dec.pop_type_envelope(code);
+    if (code == TYPE_REFTIME)
     {
-        unique_ptr<Reftime> rt(Reftime::decode(el_start, el_len));
+        unique_ptr<Reftime> rt(Reftime::decode(inner));
         res->begin = rt->period_begin();
         res->end = rt->period_end();
     }
     else
     {
         stringstream ss;
-        ss << "cannot parse summary stats: cannot handle element " << el_type;
+        ss << "cannot parse summary stats: cannot handle element " << formatCode(code);
         throw std::runtime_error(ss.str());
     }
-    len -= el_start + el_len - buf;
-    buf = el_start + el_len;
 
     // Then decode the size (optional, for backward compatibility)
-    if (len < 8)
+    if (dec.size < 8)
         res->size = 0;
     else
-    {
-        res->size = decodeULInt(buf, 8);
-        buf += 8; len -= 8;
-    }
+        res->size = dec.pop_ulint(8, "summary stats (size)");
 
     return res;
 }

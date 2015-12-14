@@ -277,7 +277,7 @@ unique_ptr<MatchLevel> MatchLevel::parse(const std::string& pattern)
 
 void MatchLevel::init()
 {
-    Matcher::register_matcher("level", types::TYPE_LEVEL, (MatcherType::subexpr_parser)MatchLevel::parse);
+    Matcher::register_matcher("level", TYPE_LEVEL, (MatcherType::subexpr_parser)MatchLevel::parse);
 }
 
 }

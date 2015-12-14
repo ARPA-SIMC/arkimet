@@ -97,10 +97,8 @@ std::unique_ptr<MatchReftime> MatchReftime::parse(const std::string& pattern)
 
 void MatchReftime::init()
 {
-    Matcher::register_matcher("reftime", types::TYPE_REFTIME, (MatcherType::subexpr_parser)MatchReftime::parse);
+    Matcher::register_matcher("reftime", TYPE_REFTIME, (MatcherType::subexpr_parser)MatchReftime::parse);
 }
 
 }
 }
-
-// vim:set ts=4 sw=4:

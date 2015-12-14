@@ -76,7 +76,7 @@ void to::test<2>()
 
     metadata::Collection mdc;
     scan::scan("inbound/test.vm2", mdc.inserter_func());
-    mdc[0].unset(types::TYPE_VALUE);
+    mdc[0].unset(TYPE_VALUE);
     buf = mdc[0].getData();
 
     v.validate(buf.data(), buf.size());

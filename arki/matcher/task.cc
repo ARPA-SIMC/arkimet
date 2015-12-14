@@ -48,10 +48,8 @@ unique_ptr<MatchTask> MatchTask::parse(const std::string& pattern)
 
 void MatchTask::init()
 {
-    Matcher::register_matcher("task", types::TYPE_TASK, (MatcherType::subexpr_parser)MatchTask::parse);
+    Matcher::register_matcher("task", TYPE_TASK, (MatcherType::subexpr_parser)MatchTask::parse);
 }
 
 }
 }
-
-// vim:set ts=4 sw=4:

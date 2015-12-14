@@ -136,12 +136,12 @@ public:
      *
      * @returns false when end-of-file is reached
      */
-    bool read(const uint8_t*& inbuf, size_t& inlen, const std::string& filename);
+    bool read(BinaryDecoder& dec, const std::string& filename);
 
     /**
      * Decode the summary, without the outer bundle headers, from the given buffer.
      */
-    void read(const std::vector<uint8_t>& buf, unsigned version, const std::string& filename);
+    void read(BinaryDecoder& dec, unsigned version, const std::string& filename);
 
     /// Decode from structured data
 	void read(const emitter::memory::Mapping& val);

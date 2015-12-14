@@ -1,8 +1,8 @@
 #include <arki/wibble/exception.h>
+#include <arki/binary.h>
 #include <arki/utils.h>
 #include <arki/types/level.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include "config.h"
@@ -14,13 +14,12 @@
 #include <arki/utils/lua.h>
 #endif
 
-#define CODE types::TYPE_LEVEL
+#define CODE TYPE_LEVEL
 #define TAG "level"
 #define SERSIZELEN 1
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -111,48 +110,46 @@ std::string Level::formatStyle(Level::Style s)
 	}
 }
 
-unique_ptr<Level> Level::decode(const unsigned char* buf, size_t len)
+unique_ptr<Level> Level::decode(BinaryDecoder& dec)
 {
-	using namespace utils::codec;
-	Decoder dec(buf, len);
-	Style s = (Style)dec.popUInt(1, "level style");
-	switch (s)
-	{
+    Style s = (Style)dec.pop_uint(1, "level style");
+    switch (s)
+    {
         case GRIB1: {
-            unsigned char ltype = dec.popUInt(1, "level type");
+            unsigned char ltype = dec.pop_uint(1, "level type");
             switch (level::GRIB1::getValType(ltype))
             {
                 case 0:
                     return createGRIB1(ltype);
                 case 1: {
-                    unsigned short l1 = dec.popVarint<unsigned short>("GRIB1 level l1");
+                    unsigned short l1 = dec.pop_varint<unsigned short>("GRIB1 level l1");
                     return createGRIB1(ltype, l1);
                 }
                 default: {
-                    unsigned char l1 = dec.popUInt(1, "GRIB1 layer l1");
-                    unsigned char l2 = dec.popUInt(1, "GRIB1 layer l2");
+                    unsigned char l1 = dec.pop_uint(1, "GRIB1 layer l1");
+                    unsigned char l2 = dec.pop_uint(1, "GRIB1 layer l2");
                     return createGRIB1(ltype, l1, l2);
                 }
             }
         }
         case GRIB2S: {
-            uint8_t type = dec.popUInt(1, "GRIB2S level type");
-            uint8_t scale = dec.popUInt(1, "GRIB2S level scale");
-            uint32_t value = dec.popVarint<uint32_t>("GRIB2S level value");
+            uint8_t type = dec.pop_uint(1, "GRIB2S level type");
+            uint8_t scale = dec.pop_uint(1, "GRIB2S level scale");
+            uint32_t value = dec.pop_varint<uint32_t>("GRIB2S level value");
             return createGRIB2S(type, scale, value);
         }
         case GRIB2D: {
-            uint8_t type1 = dec.popUInt(1, "GRIB2D level type1");
-            uint8_t scale1 = dec.popUInt(1, "GRIB2D level scale1");
-            uint32_t value1 = dec.popVarint<uint32_t>("GRIB2D level value1");
-            uint8_t type2 = dec.popUInt(1, "GRIB2D level type2");
-            uint8_t scale2 = dec.popUInt(1, "GRIB2D level scale2");
-            uint32_t value2 = dec.popVarint<uint32_t>("GRIB2D level value2");
+            uint8_t type1 = dec.pop_uint(1, "GRIB2D level type1");
+            uint8_t scale1 = dec.pop_uint(1, "GRIB2D level scale1");
+            uint32_t value1 = dec.pop_varint<uint32_t>("GRIB2D level value1");
+            uint8_t type2 = dec.pop_uint(1, "GRIB2D level type2");
+            uint8_t scale2 = dec.pop_uint(1, "GRIB2D level scale2");
+            uint32_t value2 = dec.pop_varint<uint32_t>("GRIB2D level value2");
             return createGRIB2D(type1, scale1, value1, type2, scale2, value2);
         }
         case ODIMH5: {
-            double min = dec.popDouble("ODIMH5 min");
-            double max = dec.popDouble("ODIMH5 max");
+            double min = dec.pop_double("ODIMH5 min");
+            double max = dec.pop_double("ODIMH5 max");
             return createODIMH5(min, max);
         }
 		default:
@@ -444,19 +441,19 @@ namespace level {
 
 Level::Style GRIB1::style() const { return Level::GRIB1; }
 
-void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
+void GRIB1::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Level::encodeWithoutEnvelope(enc) ;
-	enc.addUInt(m_type, 1);
-	switch (valType())
-	{
-		case 0: break;
-		case 1: enc.addVarint(m_l1); break;
-		default:
-			enc.addUInt(m_l1, 1);
-			enc.addUInt(m_l2, 1);
-			break;
-	}
+    Level::encodeWithoutEnvelope(enc) ;
+    enc.add_unsigned(m_type, 1);
+    switch (valType())
+    {
+        case 0: break;
+        case 1: enc.add_varint(m_l1); break;
+        default:
+            enc.add_unsigned(m_l1, 1);
+            enc.add_unsigned(m_l2, 1);
+            break;
+    }
 }
 std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 {
@@ -657,12 +654,12 @@ const uint32_t GRIB2S::MISSING_VALUE = 0xffffffff;
 
 Level::Style GRIB2S::style() const { return Level::GRIB2S; }
 
-void GRIB2S::encodeWithoutEnvelope(Encoder& enc) const
+void GRIB2S::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Level::encodeWithoutEnvelope(enc);
-	enc.addUInt(m_type, 1);
-	enc.addUInt(m_scale, 1);
-	enc.addVarint(m_value);
+    Level::encodeWithoutEnvelope(enc);
+    enc.add_unsigned(m_type, 1);
+    enc.add_unsigned(m_scale, 1);
+    enc.add_varint(m_value);
 }
 std::ostream& GRIB2S::writeToOstream(std::ostream& o) const
 {
@@ -812,11 +809,11 @@ unique_ptr<GRIB2S> GRIB2S::create(unsigned char type, unsigned char scale, unsig
 
 Level::Style GRIB2D::style() const { return Level::GRIB2D; }
 
-void GRIB2D::encodeWithoutEnvelope(Encoder& enc) const
+void GRIB2D::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
     Level::encodeWithoutEnvelope(enc);
-    enc.addUInt(m_type1, 1); enc.addUInt(m_scale1, 1); enc.addVarint(m_value1);
-    enc.addUInt(m_type2, 1); enc.addUInt(m_scale2, 1); enc.addVarint(m_value2);
+    enc.add_unsigned(m_type1, 1); enc.add_unsigned(m_scale1, 1); enc.add_varint(m_value1);
+    enc.add_unsigned(m_type2, 1); enc.add_unsigned(m_scale2, 1); enc.add_varint(m_value2);
 }
 std::ostream& GRIB2D::writeToOstream(std::ostream& o) const
 {
@@ -1026,11 +1023,11 @@ unique_ptr<GRIB2D> GRIB2D::create(
 
 Level::Style ODIMH5::style() const { return Level::ODIMH5; }
 
-void ODIMH5::encodeWithoutEnvelope(Encoder& enc) const
+void ODIMH5::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Level::encodeWithoutEnvelope(enc);
-	enc.addDouble(m_min);
-	enc.addDouble(m_max);
+    Level::encodeWithoutEnvelope(enc);
+    enc.add_double(m_min);
+    enc.add_double(m_max);
 }
 std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 {

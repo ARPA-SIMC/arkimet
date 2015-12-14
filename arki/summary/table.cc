@@ -19,16 +19,16 @@ namespace summary {
 
 // Metadata Scan Order
 const types::Code Table::mso[] = {
-        types::TYPE_ORIGIN,
-        types::TYPE_PRODUCT,
-        types::TYPE_LEVEL,
-        types::TYPE_TIMERANGE,
-        types::TYPE_AREA,
-        types::TYPE_PRODDEF,
-        types::TYPE_BBOX,
-        types::TYPE_RUN,
-        types::TYPE_QUANTITY,
-        types::TYPE_TASK
+        TYPE_ORIGIN,
+        TYPE_PRODUCT,
+        TYPE_LEVEL,
+        TYPE_TIMERANGE,
+        TYPE_AREA,
+        TYPE_PRODDEF,
+        TYPE_BBOX,
+        TYPE_RUN,
+        TYPE_QUANTITY,
+        TYPE_TASK
 
 };
 const size_t Table::msoSize = sizeof(mso) / sizeof(Code);
@@ -59,7 +59,7 @@ bool Row::matches(const Matcher& matcher) const
         if (!items[i]) return false;
         if (!item_matcher->matchItem(*items[i])) return false;
     }
-    shared_ptr<matcher::OR> reftime_matcher = matcher.get(types::TYPE_REFTIME);
+    shared_ptr<matcher::OR> reftime_matcher = matcher.get(TYPE_REFTIME);
     if (reftime_matcher && !reftime_matcher->matchItem(*stats.make_reftime()))
         return false;
     return true;
@@ -211,7 +211,7 @@ bool Table::merge_yaml(LineReader& in, const std::string& filename)
         types::Code type = types::parseCodeName(i->first);
         switch (type)
         {
-            case types::TYPE_SUMMARYITEM:
+            case TYPE_SUMMARYITEM:
                 {
                     auto in = files::linereader_from_chars(i->second.data(), i->second.size());
                     YamlStream yamlStream;
@@ -225,7 +225,7 @@ bool Table::merge_yaml(LineReader& in, const std::string& filename)
                     }
                 }
                 break;
-            case types::TYPE_SUMMARYSTATS:
+            case TYPE_SUMMARYSTATS:
             {
                 new_row.stats = *Stats::decodeString(i->second);
                 merge(new_row);

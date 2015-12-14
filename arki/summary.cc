@@ -4,7 +4,7 @@
 #include <arki/summary/stats.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/formatter.h>
 #include <arki/types/utils.h>
 #include <arki/types/area.h>
@@ -25,7 +25,6 @@
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 using namespace arki::types;
 using namespace arki::summary;
 
@@ -281,7 +280,7 @@ struct StatsHull : public ItemVisitor
     {
         const Area& a = *dynamic_cast<const Area*>(&type);
         vector<uint8_t> encoded;
-        codec::Encoder enc(encoded);
+        BinaryEncoder enc(encoded);
         a.encodeBinary(enc);
         pair<set<vector<uint8_t>>::iterator, bool> i = seen.insert(encoded);
         if (i.second)
@@ -408,7 +407,7 @@ std::unique_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull(ARKI_GEOS_GEOMETRYFAC
 {
 #ifdef HAVE_GEOS
     summary::StatsHull merger(gf);
-    root->visitItem(summary::Visitor::posForCode(types::TYPE_AREA), merger);
+    root->visitItem(summary::Visitor::posForCode(TYPE_AREA), merger);
     return merger.makeBBox();
 #else
     return std::unique_ptr<ARKI_GEOS_GEOMETRY>(0);
@@ -431,50 +430,44 @@ bool Summary::read(int fd, const std::string& filename)
     if (signature != "SU")
         throw wibble::exception::Consistency("parsing file " + filename, "summary entry does not start with 'SU'");
 
-    read(buf, version, filename);
+    BinaryDecoder dec(buf);
+    read(dec, version, filename);
 
     return true;
 }
 
 bool Summary::read(const std::vector<uint8_t>& in, const std::string& filename)
 {
-    const uint8_t* buf = in.data();
-    size_t len = in.size();
-    return read(buf, len, filename);
+    BinaryDecoder dec(in);
+    return read(dec, filename);
 }
 
-bool Summary::read(const uint8_t*& inbuf, size_t& inlen, const std::string& filename)
+bool Summary::read(BinaryDecoder& dec, const std::string& filename)
 {
-    const uint8_t* buf;
-    size_t len;
     string signature;
     unsigned version;
-    if (!types::readBundle(inbuf, inlen, filename, buf, len, signature, version))
-        return false;
+    BinaryDecoder inner = dec.pop_metadata_bundle(signature, version);
 
     // Ensure first 2 bytes are SU
     if (signature != "SU")
-        throw wibble::exception::Consistency("parsing file " + filename, "summary entry does not start with 'SU'");
+        throw std::runtime_error("cannot parse file " + filename + ": summary entry does not start with 'SU'");
 
-    vector<uint8_t> inner(buf, buf + len);
     read(inner, version, filename);
 
     return true;
 }
 
-void Summary::read(const std::vector<uint8_t>& buf, unsigned version, const std::string& filename)
+void Summary::read(BinaryDecoder& dec, unsigned version, const std::string& filename)
 {
     using namespace summary;
-    summary::decode(buf, version, filename, *root);
+    summary::decode(dec, version, filename, *root);
 }
 
 std::vector<uint8_t> Summary::encode(bool compressed) const
 {
-    using namespace utils::codec;
-
     // Encode
     vector<uint8_t> inner;
-    Encoder innerenc(inner);
+    BinaryEncoder innerenc(inner);
     if (!root->empty())
     {
         EncodingVisitor visitor(innerenc);
@@ -483,36 +476,36 @@ std::vector<uint8_t> Summary::encode(bool compressed) const
 
     // Prepend header
     vector<uint8_t> res;
-    Encoder enc(res);
+    BinaryEncoder enc(res);
     // Signature
-    enc.addString("SU", 2);
+    enc.add_string("SU");
     // Version
-    enc.addUInt(3, 2);
+    enc.add_unsigned(3u, 2);
     if (compressed)
     {
         vector<uint8_t> comp = utils::compress::lzo(inner.data(), inner.size());
         if (comp.size() + 4 >= inner.size())
         {
             // No point in compressing
-            enc.addUInt(inner.size() + 1, 4);
+            enc.add_unsigned(inner.size() + 1, 4);
             // Add compression type (uncompressed)
-            enc.addUInt(0, 1);
-            enc.addBuffer(inner);
+            enc.add_unsigned(0u, 1);
+            enc.add_raw(inner);
         } else {
             // Compression makes sense
             // Add total size
-            enc.addUInt(comp.size() + 5, 4);
+            enc.add_unsigned(comp.size() + 5, 4);
             // Add compression type (LZO)
-            enc.addUInt(1, 1);
+            enc.add_unsigned(1u, 1);
             // Add uncompressed size
-            enc.addUInt(inner.size(), 4);
+            enc.add_unsigned(inner.size(), 4);
             // Add compressed data
-            enc.addBuffer(comp);
+            enc.add_raw(comp);
         }
     } else {
-        enc.addUInt(inner.size() + 1, 4);
-        enc.addUInt(0, 1);
-        enc.addBuffer(inner);
+        enc.add_unsigned(inner.size() + 1, 4);
+        enc.add_unsigned(0u, 1);
+        enc.add_raw(inner);
     }
     return res;
 }

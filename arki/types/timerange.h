@@ -1,28 +1,6 @@
 #ifndef ARKI_TYPES_TIMERANGE_H
 #define ARKI_TYPES_TIMERANGE_H
 
-/*
- * types/timerange - Time span information
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/types.h>
 #include <arki/types/reftime.h>
 #include <stdint.h>
@@ -134,7 +112,7 @@ struct Timerange : public types::StyledType<Timerange>
     virtual std::unique_ptr<timerange::Timedef> to_timedef() const;
 
     /// CODEC functions
-    static std::unique_ptr<Timerange> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Timerange> decode(BinaryDecoder& dec);
     static std::unique_ptr<Timerange> decodeString(const std::string& val);
     static std::unique_ptr<Timerange> decodeMapping(const emitter::memory::Mapping& val);
 
@@ -180,7 +158,7 @@ public:
 	unsigned p2() const { return m_p2; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -215,7 +193,7 @@ public:
 	signed p2() const { return m_p2; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -258,7 +236,7 @@ public:
     unsigned stat_len() const { return m_stat_len; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -325,7 +303,7 @@ public:
 	unsigned months() const;
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;

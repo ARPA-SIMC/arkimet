@@ -38,32 +38,32 @@ struct arki_summary_table_shar {
     void fill_with_6_samples(Table& root) const
     {
         metadata::test::Generator gen("grib1");
-        gen.add(types::TYPE_ORIGIN, "GRIB1(200, 0, 1)");
-        gen.add(types::TYPE_ORIGIN, "GRIB1(98, 0, 1)");
-        gen.add(types::TYPE_PRODUCT, "GRIB1(200, 0, 1)");
-        gen.add(types::TYPE_PRODUCT, "GRIB1(98, 0, 1)");
-        gen.add(types::TYPE_PRODUCT, "GRIB1(98, 0, 2)");
-        gen.add(types::TYPE_REFTIME, "2010-09-08T00:00:00");
-        gen.add(types::TYPE_REFTIME, "2010-09-09T00:00:00");
-        gen.add(types::TYPE_REFTIME, "2010-09-10T00:00:00");
+        gen.add(TYPE_ORIGIN, "GRIB1(200, 0, 1)");
+        gen.add(TYPE_ORIGIN, "GRIB1(98, 0, 1)");
+        gen.add(TYPE_PRODUCT, "GRIB1(200, 0, 1)");
+        gen.add(TYPE_PRODUCT, "GRIB1(98, 0, 1)");
+        gen.add(TYPE_PRODUCT, "GRIB1(98, 0, 2)");
+        gen.add(TYPE_REFTIME, "2010-09-08T00:00:00");
+        gen.add(TYPE_REFTIME, "2010-09-09T00:00:00");
+        gen.add(TYPE_REFTIME, "2010-09-10T00:00:00");
         gen.generate(make_adder(root));
     }
 
     void fill_with_27_samples(Table& root) const
     {
         metadata::test::Generator gen("grib1");
-        gen.add(types::TYPE_ORIGIN, "GRIB1(200, 0, 1)");
-        gen.add(types::TYPE_ORIGIN, "GRIB1(98, 0, 1)");
-        gen.add(types::TYPE_ORIGIN, "GRIB1(98, 0, 2)");
-        gen.add(types::TYPE_PRODUCT, "GRIB1(200, 0, 1)");
-        gen.add(types::TYPE_PRODUCT, "GRIB1(98, 0, 1)");
-        gen.add(types::TYPE_PRODUCT, "GRIB1(98, 0, 2)");
-        gen.add(types::TYPE_LEVEL, "GRIB1(0, 0, 0)");
-        gen.add(types::TYPE_LEVEL, "GRIB1(1)");
-        gen.add(types::TYPE_LEVEL, "GRIB1(2)");
-        gen.add(types::TYPE_REFTIME, "2010-09-08T00:00:00");
-        gen.add(types::TYPE_REFTIME, "2010-09-09T00:00:00");
-        gen.add(types::TYPE_REFTIME, "2010-09-10T00:00:00");
+        gen.add(TYPE_ORIGIN, "GRIB1(200, 0, 1)");
+        gen.add(TYPE_ORIGIN, "GRIB1(98, 0, 1)");
+        gen.add(TYPE_ORIGIN, "GRIB1(98, 0, 2)");
+        gen.add(TYPE_PRODUCT, "GRIB1(200, 0, 1)");
+        gen.add(TYPE_PRODUCT, "GRIB1(98, 0, 1)");
+        gen.add(TYPE_PRODUCT, "GRIB1(98, 0, 2)");
+        gen.add(TYPE_LEVEL, "GRIB1(0, 0, 0)");
+        gen.add(TYPE_LEVEL, "GRIB1(1)");
+        gen.add(TYPE_LEVEL, "GRIB1(2)");
+        gen.add(TYPE_REFTIME, "2010-09-08T00:00:00");
+        gen.add(TYPE_REFTIME, "2010-09-09T00:00:00");
+        gen.add(TYPE_REFTIME, "2010-09-10T00:00:00");
         gen.generate(make_adder(root));
     }
 };

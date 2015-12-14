@@ -60,7 +60,7 @@ void to::test<1>()
     wassert(actual(md).contains("reftime", "2005-12-01T18:00:00Z"));
 
 	// Check run
-	ensure(not md.has(types::TYPE_RUN));
+	ensure(not md.has(TYPE_RUN));
 
 
 	// Next bufr
@@ -83,7 +83,7 @@ void to::test<1>()
     wassert(actual(md).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
-	ensure(not md.has(types::TYPE_RUN));
+	ensure(not md.has(TYPE_RUN));
 
 
 	// Last bufr
@@ -106,7 +106,7 @@ void to::test<1>()
     wassert(actual(md).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
-	ensure(not md.has(types::TYPE_RUN));
+	ensure(not md.has(TYPE_RUN));
 
 
 	// No more bufrs
@@ -144,7 +144,7 @@ void to::test<2>()
     wassert(actual(md).contains("reftime", "2005-12-01T18:00:00Z"));
 
 	// Check run
-	ensure(not md.has(types::TYPE_RUN));
+	ensure(not md.has(TYPE_RUN));
 
 
 	// Next bufr
@@ -167,7 +167,7 @@ void to::test<2>()
     wassert(actual(md).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
-	ensure(not md.has(types::TYPE_RUN));
+	ensure(not md.has(TYPE_RUN));
 
 
 	// Last bufr
@@ -190,7 +190,7 @@ void to::test<2>()
     wassert(actual(md).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
-	ensure(not md.has(types::TYPE_RUN));
+	ensure(not md.has(TYPE_RUN));
 
 	// No more bufrs
 	ensure(not scanner.next(md));
@@ -263,10 +263,10 @@ void to::test<4>()
     wassert(actual(md).contains("reftime", "2010-07-21T23:00:00Z"));
 
 	// Check area
-	ensure(md.has(types::TYPE_AREA));
+	ensure(md.has(TYPE_AREA));
 
 	// Check run
-	ensure(not md.has(types::TYPE_RUN));
+	ensure(not md.has(TYPE_RUN));
 
 
 	// No more bufrs
@@ -303,7 +303,7 @@ void to::test<5>()
     wassert(actual(md).contains("reftime", "2010-08-08T23:00:00Z"));
 
 	// Check run
-	ensure(not md.has(types::TYPE_RUN));
+	ensure(not md.has(TYPE_RUN));
 
 
 	// No more bufrs

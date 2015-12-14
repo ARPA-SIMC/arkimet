@@ -391,7 +391,7 @@ bool Matcher::restrict_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end
     // We have nothing to match: we match the open range
     if (!m_impl) return true;
 
-    reftime = m_impl->get(types::TYPE_REFTIME);
+    reftime = m_impl->get(TYPE_REFTIME);
 
     // We have no reftime to match: we match the open range
     if (!reftime) return true;

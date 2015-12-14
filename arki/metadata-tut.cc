@@ -10,6 +10,7 @@
 #include <arki/types/proddef.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/types/source/blob.h>
+#include <arki/binary.h>
 #include <arki/emitter/json.h>
 #include <arki/emitter/memory.h>
 #include <arki/utils/sys.h>
@@ -123,9 +124,8 @@ void to::test<2>()
     wassert(actual((char)encoded[1]) == 'D');
 
     Metadata md1;
-    const uint8_t* encdata = encoded.data();
-    size_t encsize = encoded.size();
-    wassert(md1.read(encdata, encsize, "(test memory buffer)"));
+    BinaryDecoder dec(encoded);
+    wassert(md1.read(dec, "(test memory buffer)"));
 
     wassert(actual(Source::createBlob("grib", "", "fname", 1, 2)) == md1.source());
     wassert(actual(md1.source().format) == "grib");

@@ -305,12 +305,12 @@ bool Bufr::do_scan(Metadata& md)
     if (rt)
     {
         if (rt->time.vals[0] <= 0)
-            md.unset(types::TYPE_REFTIME);
+            md.unset(TYPE_REFTIME);
         else
         {
             types::Time t = rt->time;
             wibble::grcal::date::normalise(t.vals);
-            if (t != rt->time) md.unset(types::TYPE_REFTIME);
+            if (t != rt->time) md.unset(TYPE_REFTIME);
         }
     }
 

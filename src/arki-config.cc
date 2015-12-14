@@ -205,14 +205,14 @@ struct Wizard
 	Wizard(commandline::Options& opts) : out(cout), finished(false)
    	{
 		// Initialise the metadata descriptions
-		md_descs[types::TYPE_ORIGIN] = "description of the source of the data";
-		md_descs[types::TYPE_PRODUCT] = "product type";
-		md_descs[types::TYPE_LEVEL] = "vertical level";
-		md_descs[types::TYPE_TIMERANGE] = "time range of statistical aggregation";
-		md_descs[types::TYPE_REFTIME] = "reference time";
-		md_descs[types::TYPE_AREA] = "geographical area";
-		md_descs[types::TYPE_PRODDEF] = "product definition";
-		md_descs[types::TYPE_RUN] = "identification of the forecast run within a day";
+		md_descs[TYPE_ORIGIN] = "description of the source of the data";
+		md_descs[TYPE_PRODUCT] = "product type";
+		md_descs[TYPE_LEVEL] = "vertical level";
+		md_descs[TYPE_TIMERANGE] = "time range of statistical aggregation";
+		md_descs[TYPE_REFTIME] = "reference time";
+		md_descs[TYPE_AREA] = "geographical area";
+		md_descs[TYPE_PRODDEF] = "product definition";
+		md_descs[TYPE_RUN] = "identification of the forecast run within a day";
 
         if (opts.hasNext())
         {
@@ -409,14 +409,14 @@ public:
 	MDListAction(Wizard& state, const std::string& key, const std::string& desc)
 	   	: Action(state), key(key), desc(desc)
    	{
-		metadatas.push_back(types::TYPE_ORIGIN);
-    	metadatas.push_back(types::TYPE_PRODUCT);
-    	metadatas.push_back(types::TYPE_LEVEL);
-    	metadatas.push_back(types::TYPE_TIMERANGE);
-    	metadatas.push_back(types::TYPE_REFTIME);
-    	metadatas.push_back(types::TYPE_AREA);
-    	metadatas.push_back(types::TYPE_PRODDEF);
-    	metadatas.push_back(types::TYPE_RUN);
+		metadatas.push_back(TYPE_ORIGIN);
+    	metadatas.push_back(TYPE_PRODUCT);
+    	metadatas.push_back(TYPE_LEVEL);
+    	metadatas.push_back(TYPE_TIMERANGE);
+    	metadatas.push_back(TYPE_REFTIME);
+    	metadatas.push_back(TYPE_AREA);
+    	metadatas.push_back(TYPE_PRODDEF);
+    	metadatas.push_back(TYPE_RUN);
 	}
 
     bool enabled() const override
@@ -441,9 +441,9 @@ public:
 			vector<AnnotatedChoice> types;
             for (vector<types::Code>::const_iterator i = metadatas.begin(); i != metadatas.end(); ++i)
                 if (codes.find(*i) == codes.end())
-                    types.push_back(AnnotatedChoice(str::lower(formatCode(*i)), w.md_descs[*i]));
+                    types.push_back(AnnotatedChoice(str::lower(types::formatCode(*i)), w.md_descs[*i]));
                 else
-                    types.push_back(AnnotatedChoice("*" + str::lower(formatCode(*i)), w.md_descs[*i]));
+                    types.push_back(AnnotatedChoice("*" + str::lower(types::formatCode(*i)), w.md_descs[*i]));
             types.push_back(end);
 
 			string sel = ask_choice(
@@ -453,7 +453,7 @@ public:
 			if (sel == "quit")
 				break;
 			types::Code c = types::parseCodeName(sel);
-			if (c == types::TYPE_INVALID)
+			if (c == TYPE_INVALID)
 				continue;
 
 			if (codes.find(c) == codes.end())
@@ -466,7 +466,7 @@ public:
             {
                 if (!cur.empty())
                     cur += ", ";
-                cur += str::lower(formatCode(*i));
+                cur += str::lower(types::formatCode(*i));
             }
         }
         w.cfg.setValue(key, cur);
@@ -495,7 +495,7 @@ class FilterAction : public Action
 public:
 	FilterAction(Wizard& state) : Action(state), end("quit", "No more changes to perform")
    	{
-		filter_help[types::TYPE_ORIGIN] = 
+		filter_help[TYPE_ORIGIN] = 
 			"Syntax:\n"
 			" - GRIB1,centre,subcentre,process\n"
 			" - GRIB2,centre,subcentre,processtype,bgprocessid,processid\n"
@@ -508,7 +508,7 @@ public:
 			" - GRIB2,98,1,2,,4\n"
 			" - BUFR,98,1\n"
 			;
-    	filter_help[types::TYPE_PRODUCT] = 
+    	filter_help[TYPE_PRODUCT] = 
 			"Syntax:\n"
 			" - GRIB1,centre,table,product\n"
 			" - GRIB2,centre,discipline,category,number\n"
@@ -521,7 +521,7 @@ public:
 			" - GRIB2,98,1,2\n"
 			" - BUFR,1,,0\n"
 			;
-    	filter_help[types::TYPE_LEVEL] = 
+    	filter_help[TYPE_LEVEL] = 
 			"Syntax:\n"
 			" - GRIB1,type,l1,l2\n"
 			" - GRIB2S,type,scale,value\n"
@@ -533,7 +533,7 @@ public:
 			" - GRIB2S,110,12,13\n"
 			" - GRIB2D,110,12,13,114,15,16\n"
 			;
-    	filter_help[types::TYPE_TIMERANGE] = 
+    	filter_help[TYPE_TIMERANGE] = 
 			"Syntax:\n"
 			" - GRIB1,type,p1,p2\n"
 			"   p1 and p2 are numbers with units, for example: 30s, 6h\n"
@@ -545,7 +545,7 @@ public:
 			" - GRIB1,2,0,6h\n"
 			" - GRIB2,1,2,3,4\n"
 			;
-    	filter_help[types::TYPE_REFTIME] = 
+    	filter_help[TYPE_REFTIME] = 
 			"Syntax:\n"
 			" - {>=|>|<=|<|=} Date: match the absolute time\n"
 			"   '=2009-01-20 12:00:00'\n"
@@ -573,7 +573,7 @@ public:
 			" - '>= 1 year ago, every 6 hours'\n"
 			" - '>= 3 weeks before today, < tomorrow'\n"
 			;
-    	filter_help[types::TYPE_AREA] = 
+    	filter_help[TYPE_AREA] = 
 			"Syntax:\n"
 			" - style:key=val[,key=val[,...]]\n"
 			" - style can be only GRIB, for now.\n"
@@ -596,7 +596,7 @@ public:
 			" - area:bbox coveredby POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))\n"
 			" - area:bbox intersects LINESTRING(10 43, 10 45, 13 45, 13 43)\n"
 			;
-    	filter_help[types::TYPE_PRODDEF] = 
+    	filter_help[TYPE_PRODDEF] = 
 			"Syntax:\n"
 			" - style:key=val[,key=val[,...]]\n"
 			" - style can be only GRIB, for now.\n"
@@ -605,7 +605,7 @@ public:
 			" - GRIB:ld=11,mt=10,nn=12\n"
 			" - GRIB:ty=1,pf=5,tf=32\n"
 			;
-    	filter_help[types::TYPE_RUN] = 
+    	filter_help[TYPE_RUN] = 
 			"Syntax:\n"
 			" - MINUTE,hour[:min]\n"
 			"Examples:\n"
@@ -617,7 +617,7 @@ public:
                 i != matchers.end(); ++i)
         {
             matcher::MatcherType* info = matcher::MatcherType::find(*i);
-            types.push_back(AnnotatedChoice(str::lower(formatCode(info->code)), w.md_descs[info->code]));
+            types.push_back(AnnotatedChoice(str::lower(types::formatCode(info->code)), w.md_descs[info->code]));
         }
         types.push_back(end);
     }
@@ -701,9 +701,9 @@ public:
 			if (sel == "quit")
 				break;
 			types::Code c = types::parseCodeName(sel);
-			if (c == types::TYPE_INVALID) continue;
+			if (c == TYPE_INVALID) continue;
 
-            matcher::MatcherType* info = matcher::MatcherType::find(str::lower(formatCode(c)));
+            matcher::MatcherType* info = matcher::MatcherType::find(str::lower(types::formatCode(c)));
             if (!info) continue;
 			
 			// Invoke the editor
