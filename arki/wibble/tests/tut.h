@@ -8,11 +8,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <typeinfo>
-
-#if defined(TUT_USE_SEH)
-#include <windows.h>
-#include <winbase.h>
-#endif
+#include <arki/utils/tests.h>
 
 /**
  * Template Unit Tests Framework for C++.
@@ -605,23 +601,9 @@ namespace tut
 
       bool delete_obj()
       {
-#if defined(TUT_USE_SEH)
-        __try
-        {
-#endif
           T* p = p_; 
           p_ = 0;
           delete p;
-#if defined(TUT_USE_SEH)
-        }
-        __except(handle_seh_(::GetExceptionCode()))
-        {
-          if( permit_throw_in_dtor )
-          {
-            return false;
-          }
-        }
-#endif
         return true;
       }
     };
@@ -779,29 +761,13 @@ namespace tut
      */
     bool run_test_seh_(testmethod tm,safe_holder<object>& obj)
     {
-#if defined(TUT_USE_SEH)
-      __try
-      {
-#endif
         if( obj.get() == 0 ) 
 	{
           reset_holder_(obj);
 	}
         obj->called_method_was_a_dummy_test_ = false;
 
-#if defined(TUT_USE_SEH)
-        __try
-        {
-#endif
           (obj.get()->*tm)();
-#if defined(TUT_USE_SEH)
-        }
-        __except(handle_seh_(::GetExceptionCode()))
-        {
-          // throw seh("SEH");
-          return false;
-        }
-#endif
 
         if( obj->called_method_was_a_dummy_test_ )
         {
@@ -811,13 +777,6 @@ namespace tut
 
         obj.permit_throw();
         obj.release();
-#if defined(TUT_USE_SEH)
-      }
-      __except(handle_seh_(::GetExceptionCode()))
-      {
-        return false;
-      }
-#endif
       return true;
     }
 
@@ -837,44 +796,5 @@ namespace tut
       }
     }
   };
-
-#if defined(TUT_USE_SEH)
-  /**
-   * Decides should we execute handler or ignore SE.
-   */
-  inline int handle_seh_(DWORD excode)
-  {
-    switch(excode)
-    {
-      case EXCEPTION_ACCESS_VIOLATION:
-      case EXCEPTION_DATATYPE_MISALIGNMENT:
-      case EXCEPTION_BREAKPOINT:
-      case EXCEPTION_SINGLE_STEP:
-      case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
-      case EXCEPTION_FLT_DENORMAL_OPERAND:     
-      case EXCEPTION_FLT_DIVIDE_BY_ZERO:
-      case EXCEPTION_FLT_INEXACT_RESULT:        
-      case EXCEPTION_FLT_INVALID_OPERATION:
-      case EXCEPTION_FLT_OVERFLOW:
-      case EXCEPTION_FLT_STACK_CHECK:
-      case EXCEPTION_FLT_UNDERFLOW:
-      case EXCEPTION_INT_DIVIDE_BY_ZERO:
-      case EXCEPTION_INT_OVERFLOW:
-      case EXCEPTION_PRIV_INSTRUCTION:
-      case EXCEPTION_IN_PAGE_ERROR:
-      case EXCEPTION_ILLEGAL_INSTRUCTION:
-      case EXCEPTION_NONCONTINUABLE_EXCEPTION:
-      case EXCEPTION_STACK_OVERFLOW:
-      case EXCEPTION_INVALID_DISPOSITION:
-      case EXCEPTION_GUARD_PAGE:
-      case EXCEPTION_INVALID_HANDLE:
-        return EXCEPTION_EXECUTE_HANDLER;
-    };    
-
-    return EXCEPTION_CONTINUE_SEARCH;
-  }
-#endif
 }
-
 #endif
-
