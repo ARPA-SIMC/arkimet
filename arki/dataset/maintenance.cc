@@ -108,7 +108,7 @@ void Tee::operator()(const std::string& file, data::FileState state)
 
 // Agent
 
-Agent::Agent(std::ostream& log, WritableLocal& w)
+Agent::Agent(std::ostream& log, WritableSegmented& w)
 	: m_log(log), w(w), lineStart(true)
 {
 }
@@ -142,7 +142,7 @@ void Agent::logEnd()
 
 // FailsafeRepacker
 
-FailsafeRepacker::FailsafeRepacker(std::ostream& log, WritableLocal& w)
+FailsafeRepacker::FailsafeRepacker(std::ostream& log, WritableSegmented& w)
 	: Agent(log, w), m_count_deleted(0)
 {
 }
@@ -162,7 +162,7 @@ void FailsafeRepacker::end()
 
 // MockRepacker
 
-MockRepacker::MockRepacker(std::ostream& log, WritableLocal& w)
+MockRepacker::MockRepacker(std::ostream& log, WritableSegmented& w)
 	: Agent(log, w), m_count_packed(0), m_count_archived(0),
 	  m_count_deleted(0), m_count_deindexed(0), m_count_rescanned(0)
 {
@@ -225,7 +225,7 @@ void MockRepacker::end()
 
 // MockFixer
 
-MockFixer::MockFixer(std::ostream& log, WritableLocal& w)
+MockFixer::MockFixer(std::ostream& log, WritableSegmented& w)
 	: Agent(log, w), m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0)
 {
 }
@@ -269,7 +269,7 @@ void MockFixer::end()
 
 // RealRepacker
 
-RealRepacker::RealRepacker(std::ostream& log, WritableLocal& w)
+RealRepacker::RealRepacker(std::ostream& log, WritableSegmented& w)
 	: Agent(log, w), m_count_packed(0), m_count_archived(0),
 	  m_count_deleted(0), m_count_deindexed(0), m_count_rescanned(0),
 	  m_count_freed(0), m_touched_archive(false), m_redo_summary(false)
@@ -377,7 +377,7 @@ void RealRepacker::end()
 
 // RealFixer
 
-RealFixer::RealFixer(std::ostream& log, WritableLocal& w)
+RealFixer::RealFixer(std::ostream& log, WritableSegmented& w)
 	: Agent(log, w), 
           m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0),
 	  m_touched_archive(false), m_redo_summary(false)

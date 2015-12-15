@@ -1,27 +1,7 @@
 #ifndef ARKI_DATASET_MAINTENANCE_H
 #define ARKI_DATASET_MAINTENANCE_H
 
-/*
- * dataset/maintenance - Dataset maintenance utilities
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// dataset/maintenance - Dataset maintenance utilities
 
 #include <arki/dataset/data.h>
 #include <string>
@@ -39,7 +19,7 @@ struct Validator;
 }
 
 namespace dataset {
-class WritableLocal;
+class WritableSegmented;
 
 namespace maintenance {
 
@@ -106,10 +86,10 @@ struct Tee : public MaintFileVisitor
 struct Agent : public maintenance::MaintFileVisitor
 {
 	std::ostream& m_log;
-	WritableLocal& w;
+	WritableSegmented& w;
 	bool lineStart;
 
-	Agent(std::ostream& log, WritableLocal& w);
+	Agent(std::ostream& log, WritableSegmented& w);
 
 	std::ostream& log();
 
@@ -132,7 +112,7 @@ struct FailsafeRepacker : public Agent
 {
 	size_t m_count_deleted;
 
-	FailsafeRepacker(std::ostream& log, WritableLocal& w);
+	FailsafeRepacker(std::ostream& log, WritableSegmented& w);
 
 	void operator()(const std::string& file, data::FileState state);
 	void end();
@@ -149,7 +129,7 @@ struct MockRepacker : public Agent
 	size_t m_count_deindexed;
 	size_t m_count_rescanned;
 
-	MockRepacker(std::ostream& log, WritableLocal& w);
+	MockRepacker(std::ostream& log, WritableSegmented& w);
 
 	void operator()(const std::string& file, data::FileState state);
 	void end();
@@ -164,7 +144,7 @@ struct MockFixer : public Agent
 	size_t m_count_rescanned;
 	size_t m_count_deindexed;
 
-	MockFixer(std::ostream& log, WritableLocal& w);
+	MockFixer(std::ostream& log, WritableSegmented& w);
 
 	void operator()(const std::string& file, data::FileState state);
 	void end();
@@ -184,7 +164,7 @@ struct RealRepacker : public maintenance::Agent
 	bool m_touched_archive;
 	bool m_redo_summary;
 
-	RealRepacker(std::ostream& log, WritableLocal& w);
+	RealRepacker(std::ostream& log, WritableSegmented& w);
 
 	void operator()(const std::string& file, data::FileState state);
 	void end();
@@ -201,7 +181,7 @@ struct RealFixer : public maintenance::Agent
 	bool m_touched_archive;
 	bool m_redo_summary;
 
-	RealFixer(std::ostream& log, WritableLocal& w);
+	RealFixer(std::ostream& log, WritableSegmented& w);
 
 	void operator()(const std::string& file, data::FileState state);
 	void end();

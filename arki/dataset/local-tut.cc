@@ -63,31 +63,31 @@ template<> template<> void to::test<1>()
         ensure_equals(count, 3u);
     }
 
-	// Check if files to archive are detected
-	{
-		unique_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+    // Check if files to archive are detected
+    {
+        unique_ptr<WritableSegmented> writer(makeLocalWriter(&cfg));
 
-		MaintenanceCollector c;
-		writer->maintenance(c);
+        MaintenanceCollector c;
+        writer->maintenance(c);
 
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_OK), 1u);
-		ensure_equals(c.count(COUNTED_TO_ARCHIVE), 2u);
-		ensure_equals(c.remaining(), "");
-		ensure(not c.isClean());
-	}
+        ensure_equals(c.fileStates.size(), 3u);
+        ensure_equals(c.count(COUNTED_OK), 1u);
+        ensure_equals(c.count(COUNTED_TO_ARCHIVE), 2u);
+        ensure_equals(c.remaining(), "");
+        ensure(not c.isClean());
+    }
 
-	// Perform packing and check that things are still ok afterwards
-	{
-		unique_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-		OutputChecker s;
-		writer->repack(s, true);
-		s.ensure_line_contains(": archived 2007/07-07.grib1");
-		s.ensure_line_contains(": archived 2007/07-08.grib1");
-		s.ensure_line_contains(": archive cleaned up");
-		s.ensure_line_contains(": 2 files archived");
-		s.ensure_all_lines_seen();
-	}
+    // Perform packing and check that things are still ok afterwards
+    {
+        unique_ptr<WritableSegmented> writer(makeLocalWriter(&cfg));
+        OutputChecker s;
+        writer->repack(s, true);
+        s.ensure_line_contains(": archived 2007/07-07.grib1");
+        s.ensure_line_contains(": archived 2007/07-08.grib1");
+        s.ensure_line_contains(": archive cleaned up");
+        s.ensure_line_contains(": 2 files archived");
+        s.ensure_all_lines_seen();
+    }
 
     // Check that the files have been moved to the archive
     ensure(!sys::exists("testds/.archive/last/2007/07-07.grib1"));
@@ -111,24 +111,24 @@ template<> template<> void to::test<1>()
     ensure(!sys::exists("testds/2007/07-08.grib1.metadata"));
     ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
 
-	// Maintenance should now show a normal situation
-	{
-		unique_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(COUNTED_OK), 1u);
-		ensure_equals(c.count(COUNTED_ARC_OK), 2u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
-	}
+    // Maintenance should now show a normal situation
+    {
+        unique_ptr<WritableSegmented> writer(makeLocalWriter(&cfg));
+        MaintenanceCollector c;
+        writer->maintenance(c);
+        ensure_equals(c.count(COUNTED_OK), 1u);
+        ensure_equals(c.count(COUNTED_ARC_OK), 2u);
+        ensure_equals(c.remaining(), "");
+        ensure(c.isClean());
+    }
 
-	// Perform full maintenance and check that things are still ok afterwards
-	{
-		unique_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-		stringstream s;
-		s.str(std::string());
-		writer->check(s, true, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
+    // Perform full maintenance and check that things are still ok afterwards
+    {
+        unique_ptr<WritableSegmented> writer(makeLocalWriter(&cfg));
+        stringstream s;
+        s.str(std::string());
+        writer->check(s, true, true);
+        ensure_equals(s.str(), string()); // Nothing should have happened
 
 		MaintenanceCollector c;
 		c.clear();
@@ -200,7 +200,7 @@ template<> template<> void to::test<4>()
 
     // Check that data is accessible
     const auto& buf = mdc[0].getData();
-    ensure_equals(buf.size(), 7218);
+    ensure_equals(buf.size(), 7218u);
 
     mdc.clear();
     mdc.add(*reader, Matcher::parse("origin:GRIB1,80"));
@@ -323,7 +323,7 @@ template<> template<> void to::test<6>()
     bq.setData(Matcher::parse(""));
     reader->query_bytes(bq, out);
     out.close();
-    wassert(actual(sys::size(out.name())) == 0);
+    wassert(actual(sys::size(out.name())) == 0u);
 }
 
 // Test querying with lots of data, to trigger on disk metadata buffering

@@ -125,7 +125,7 @@ struct DatasetTest
 	ReadonlyDataset* makeReader(const ConfigFile* wcfg = 0);
 	WritableDataset* makeWriter(const ConfigFile* wcfg = 0);
 	dataset::Local* makeLocalReader(const ConfigFile* wcfg = 0);
-	dataset::WritableLocal* makeLocalWriter(const ConfigFile* wcfg = 0);
+	dataset::WritableSegmented* makeLocalWriter(const ConfigFile* wcfg = 0);
 	dataset::ondisk2::Reader* makeOndisk2Reader(const ConfigFile* wcfg = 0);
 	dataset::ondisk2::Writer* makeOndisk2Writer(const ConfigFile* wcfg = 0);
 	dataset::simple::Reader* makeSimpleReader(const ConfigFile* wcfg = 0);
@@ -359,17 +359,24 @@ struct MaintenanceResults
     }
 };
 
-struct ActualWritableLocal : public arki::utils::tests::Actual<dataset::WritableLocal*>
+template<typename Dataset>
+struct ActualWritableLocal : public arki::utils::tests::Actual<Dataset*>
 {
-    ActualWritableLocal(dataset::WritableLocal* s) : Actual<dataset::WritableLocal*>(s) {}
+    ActualWritableLocal(Dataset* s) : Actual<Dataset*>(s) {}
 
-    /// Run maintenance and see that the results are as expected
-    void maintenance(const MaintenanceResults& expected, bool quick=true);
-    void maintenance_clean(unsigned data_count, bool quick=true);
     void repack(const LineChecker& expected, bool write=false);
     void repack_clean(bool write=false);
     void check(const LineChecker& expected, bool write=false, bool quick=true);
     void check_clean(bool write=false);
+};
+
+struct ActualWritableSegmented : public ActualWritableLocal<dataset::WritableSegmented>
+{
+    ActualWritableSegmented(dataset::WritableSegmented* s) : ActualWritableLocal<dataset::WritableSegmented>(s) {}
+
+    /// Run maintenance and see that the results are as expected
+    void maintenance(const MaintenanceResults& expected, bool quick=true);
+    void maintenance_clean(unsigned data_count, bool quick=true);
 };
 
 /// Corrupt a datafile by overwriting the first 4 bytes of its first data
@@ -379,7 +386,11 @@ void corrupt_datafile(const std::string& absname);
 void test_append_transaction_ok(dataset::data::Segment* dw, Metadata& md, int append_amount_adjust=0);
 void test_append_transaction_rollback(dataset::data::Segment* dw, Metadata& md);
 
-inline arki::tests::ActualWritableLocal actual(arki::dataset::WritableLocal* actual) { return arki::tests::ActualWritableLocal(actual); }
+inline arki::tests::ActualWritableLocal<dataset::WritableLocal> actual(arki::dataset::WritableLocal* actual)
+{
+    return arki::tests::ActualWritableLocal<dataset::WritableLocal>(actual);
+}
+inline arki::tests::ActualWritableSegmented actual(arki::dataset::WritableSegmented* actual) { return arki::tests::ActualWritableSegmented(actual); }
 
 }
 }

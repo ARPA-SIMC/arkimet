@@ -199,12 +199,21 @@ SegmentedLocal::~SegmentedLocal()
 
 WritableLocal::WritableLocal(const ConfigFile& cfg)
     : m_path(cfg.value("path")),
-      m_archive(0), m_archive_age(-1), m_delete_age(-1),
+      m_archive(0), m_archive_age(-1), m_delete_age(-1)
+{
+    m_name = cfg.value("name");
+}
+
+WritableLocal::~WritableLocal()
+{
+}
+
+WritableSegmented::WritableSegmented(const ConfigFile& cfg)
+    : WritableLocal(cfg),
       m_default_replace_strategy(REPLACE_NEVER),
       m_tf(TargetFile::create(cfg)),
       m_segment_manager(data::SegmentManager::get(cfg).release())
 {
-    m_name = cfg.value("name");
     string repl = cfg.value("replace");
     if (repl == "yes" || repl == "true" || repl == "always")
         m_default_replace_strategy = REPLACE_ALWAYS;
@@ -223,7 +232,7 @@ WritableLocal::WritableLocal(const ConfigFile& cfg)
 		m_delete_age = strtoul(tmp.c_str(), 0, 10);
 }
 
-WritableLocal::~WritableLocal()
+WritableSegmented::~WritableSegmented()
 {
     if (m_segment_manager) delete m_segment_manager;
     if (m_tf) delete m_tf;
@@ -250,18 +259,18 @@ const Archives& WritableLocal::archive() const
 	return *m_archive;
 }
 
-data::Segment* WritableLocal::file(const Metadata& md, const std::string& format)
+data::Segment* WritableSegmented::file(const Metadata& md, const std::string& format)
 {
     string relname = (*m_tf)(md) + "." + md.source().format;
     return m_segment_manager->get_segment(format, relname);
 }
 
-void WritableLocal::flush()
+void WritableSegmented::flush()
 {
     m_segment_manager->flush_writers();
 }
 
-void WritableLocal::archiveFile(const std::string& relpath)
+void WritableSegmented::archiveFile(const std::string& relpath)
 {
     string pathname = str::joinpath(m_path, relpath);
     string arcrelname = str::joinpath("last", relpath);
@@ -312,7 +321,7 @@ void WritableLocal::archiveFile(const std::string& relpath)
 	archive().acquire(arcrelname);
 }
 
-size_t WritableLocal::removeFile(const std::string& relpath, bool withData)
+size_t WritableSegmented::removeFile(const std::string& relpath, bool withData)
 {
     if (withData)
         return m_segment_manager->remove(relpath);
@@ -320,24 +329,24 @@ size_t WritableLocal::removeFile(const std::string& relpath, bool withData)
         return 0;
 }
 
-void WritableLocal::maintenance(maintenance::MaintFileVisitor& v, bool quick)
+void WritableSegmented::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 {
 	if (hasArchive())
 		archive().maintenance(v);
 }
 
-void WritableLocal::removeAll(std::ostream& log, bool writable)
+void WritableSegmented::removeAll(std::ostream& log, bool writable)
 {
 	// TODO: decide if we're removing archives at all
 	// TODO: if (hasArchive())
 	// TODO: 	archive().removeAll(log, writable);
 }
 
-void WritableLocal::sanityChecks(std::ostream& log, bool writable)
+void WritableSegmented::sanityChecks(std::ostream& log, bool writable)
 {
 }
 
-void WritableLocal::repack(std::ostream& log, bool writable)
+void WritableSegmented::repack(std::ostream& log, bool writable)
 {
 	if (files::hasDontpackFlagfile(m_path))
 	{
@@ -362,7 +371,7 @@ void WritableLocal::repack(std::ostream& log, bool writable)
 	}
 }
 
-void WritableLocal::check(std::ostream& log, bool fix, bool quick)
+void WritableSegmented::check(std::ostream& log, bool fix, bool quick)
 {
 	if (fix)
 	{
@@ -386,6 +395,11 @@ void WritableLocal::check(std::ostream& log, bool fix, bool quick)
 }
 
 WritableLocal* WritableLocal::create(const ConfigFile& cfg)
+{
+    return WritableSegmented::create(cfg);
+}
+
+WritableSegmented* WritableSegmented::create(const ConfigFile& cfg)
 {
     string type = str::lower(cfg.value("type"));
     if (type.empty())
@@ -416,4 +430,3 @@ WritableLocal::AcquireResult WritableLocal::testAcquire(const ConfigFile& cfg, c
 
 }
 }
-// vim:set ts=4 sw=4:

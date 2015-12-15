@@ -70,7 +70,7 @@ ConfigFile Scenario::clone(const std::string& newpath) const
 
 namespace {
 
-metadata_dest_func make_importer(dataset::WritableLocal& ds)
+metadata_dest_func make_importer(dataset::WritableSegmented& ds)
 {
     return [&](unique_ptr<Metadata> md) {
         WritableDataset::AcquireResult r = ds.acquire(*md);
@@ -100,7 +100,7 @@ struct Ondisk2Scenario : public Scenario
         dataset::ondisk2::TestOverrideCurrentDateForMaintenance od(t_start + 3600*24*(curday-1));
 
         // Pack and archive
-        unique_ptr<WritableLocal> ds(WritableLocal::create(cfg));
+        unique_ptr<WritableSegmented> ds(WritableSegmented::create(cfg));
         stringstream packlog;
         ds->repack(packlog, true);
         char expected[32];
@@ -153,7 +153,7 @@ struct Ondisk2TestGrib1 : public Ondisk2Scenario
         Ondisk2Scenario::build();
 
         // Generate a dataset with archived data
-        unique_ptr<WritableLocal> ds(WritableLocal::create(cfg));
+        unique_ptr<WritableSegmented> ds(WritableSegmented::create(cfg));
 
         scan::scan("inbound/test.grib1", make_importer(*ds));
         ds->flush();
@@ -186,7 +186,7 @@ struct Ondisk2Archived : public Ondisk2Scenario
         Ondisk2Scenario::build();
 
         // Generate a dataset with archived data
-        unique_ptr<WritableLocal> ds(WritableLocal::create(cfg));
+        unique_ptr<WritableSegmented> ds(WritableSegmented::create(cfg));
 
         // Import several metadata items
         metadata::test::Generator gen("grib1");
@@ -242,7 +242,7 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
         Ondisk2Scenario::build();
 
         // Generate a dataset with archived data
-        unique_ptr<WritableLocal> ds(WritableLocal::create(cfg));
+        unique_ptr<WritableSegmented> ds(WritableSegmented::create(cfg));
 
         // Import several metadata items
         metadata::test::Generator gen("grib1");

@@ -19,10 +19,10 @@ namespace dataset {
  * This dataset is not used for archival, but only to store data as an outbound
  * area.
  */
-class Outbound : public WritableLocal
+class Outbound : public WritableSegmented
 {
 protected:
-	void storeBlob(Metadata& md, const std::string& reldest);
+    void storeBlob(Metadata& md, const std::string& reldest);
 
 public:
 	// Initialise the dataset with the information from the configurationa in 'cfg'

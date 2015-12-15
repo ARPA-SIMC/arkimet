@@ -36,7 +36,7 @@ namespace dataset {
 namespace ondisk2 {
 
 Writer::Writer(const ConfigFile& cfg)
-    : WritableLocal(cfg), m_cfg(cfg), m_idx(cfg)
+    : WritableSegmented(cfg), m_cfg(cfg), m_idx(cfg)
 {
     // Create the directory if it does not exist
     sys::makedirs(m_path);
@@ -234,7 +234,7 @@ void Writer::remove(const std::string& str_id)
 
 void Writer::flush()
 {
-    WritableLocal::flush();
+    WritableSegmented::flush();
     m_idx.flush();
 }
 
@@ -245,13 +245,13 @@ Pending Writer::test_writelock()
 
 void Writer::sanityChecks(std::ostream& log, bool writable)
 {
-	WritableLocal::sanityChecks(log, writable);
+    WritableSegmented::sanityChecks(log, writable);
 
-	if (!m_idx.checkSummaryCache(log) && writable)
-	{
-		log << name() << ": rebuilding summary cache." << endl;
-		m_idx.rebuildSummaryCache();
-	}
+    if (!m_idx.checkSummaryCache(log) && writable)
+    {
+        log << name() << ": rebuilding summary cache." << endl;
+        m_idx.rebuildSummaryCache();
+    }
 }
 
 static time_t override_now = 0;
@@ -378,9 +378,9 @@ void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 	vector<string> files = scan::dir(m_path);
 	maintenance::FindMissing fm(ca, files);
     FileChecker checker(*m_segment_manager, quick, fm);
-	m_idx.scan_files(checker);
-	fm.end();
-	WritableLocal::maintenance(v, quick);
+    m_idx.scan_files(checker);
+    fm.end();
+    WritableSegmented::maintenance(v, quick);
 }
 
 void Writer::removeAll(std::ostream& log, bool writable)
@@ -394,8 +394,8 @@ void Writer::removeAll(std::ostream& log, bool writable)
     } else
         log << m_name << ": would clear index" << endl;
 
-	// TODO: empty the index
-	WritableLocal::removeAll(log, writable);
+    // TODO: empty the index
+    WritableSegmented::removeAll(log, writable);
 }
 
 
@@ -528,7 +528,7 @@ size_t Writer::removeFile(const std::string& relpath, bool withData)
 {
     m_idx.reset(relpath);
     // TODO: also remove .metadata and .summary files
-    return WritableLocal::removeFile(relpath, withData);
+    return WritableSegmented::removeFile(relpath, withData);
 }
 
 void Writer::archiveFile(const std::string& relpath)
@@ -541,11 +541,11 @@ void Writer::archiveFile(const std::string& relpath)
     m_idx.scan_file(relpath, mds.inserter_func());
     mds.writeAtomically(pathname + ".metadata");
 
-	// Remove from index
-	m_idx.reset(relpath);
+    // Remove from index
+    m_idx.reset(relpath);
 
-	// Delegate the rest to WritableLocal
-	WritableLocal::archiveFile(relpath);
+    // Delegate the rest to WritableSegmented
+    WritableSegmented::archiveFile(relpath);
 }
 
 size_t Writer::vacuum()
