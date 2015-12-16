@@ -295,12 +295,12 @@ ReadonlyDataset* DatasetTest::makeReader(const ConfigFile* wcfg)
 	return ds;
 }
 
-WritableDataset* DatasetTest::makeWriter(const ConfigFile* wcfg)
+Writer* DatasetTest::makeWriter(const ConfigFile* wcfg)
 {
-	if (!wcfg) wcfg = &cfg;
-	WritableDataset* ds = WritableDataset::create(*wcfg);
-	ensure(ds);
-	return ds;
+    if (!wcfg) wcfg = &cfg;
+    Writer* ds = Writer::create(*wcfg);
+    ensure(ds);
+    return ds;
 }
 
 dataset::LocalReader* DatasetTest::makeLocalReader(const ConfigFile* wcfg)
@@ -315,7 +315,7 @@ dataset::LocalReader* DatasetTest::makeLocalReader(const ConfigFile* wcfg)
 dataset::SegmentedWriter* DatasetTest::makeLocalWriter(const ConfigFile* wcfg)
 {
     using namespace arki::dataset;
-    WritableDataset* ds = makeWriter(wcfg);
+    Writer* ds = makeWriter(wcfg);
     SegmentedWriter* wl = dynamic_cast<SegmentedWriter*>(ds);
     ensure(wl);
     return wl;
@@ -331,10 +331,10 @@ dataset::ondisk2::Reader* DatasetTest::makeOndisk2Reader(const ConfigFile* wcfg)
 
 dataset::ondisk2::Writer* DatasetTest::makeOndisk2Writer(const ConfigFile* wcfg)
 {
-	WritableDataset* ds = makeWriter(wcfg);
-	dataset::ondisk2::Writer* wl = dynamic_cast<dataset::ondisk2::Writer*>(ds);
-	ensure(wl);
-	return wl;
+    Writer* ds = makeWriter(wcfg);
+    dataset::ondisk2::Writer* wl = dynamic_cast<dataset::ondisk2::Writer*>(ds);
+    ensure(wl);
+    return wl;
 }
 
 dataset::simple::Reader* DatasetTest::makeSimpleReader(const ConfigFile* wcfg)
@@ -347,10 +347,10 @@ dataset::simple::Reader* DatasetTest::makeSimpleReader(const ConfigFile* wcfg)
 
 dataset::simple::Writer* DatasetTest::makeSimpleWriter(const ConfigFile* wcfg)
 {
-	WritableDataset* ds = makeWriter(wcfg);
-	dataset::simple::Writer* wl = dynamic_cast<dataset::simple::Writer*>(ds);
-	ensure(wl);
-	return wl;
+    Writer* ds = makeWriter(wcfg);
+    dataset::simple::Writer* wl = dynamic_cast<dataset::simple::Writer*>(ds);
+    ensure(wl);
+    return wl;
 }
 
 void DatasetTest::clean(const ConfigFile* wcfg)
@@ -363,10 +363,10 @@ void DatasetTest::clean(const ConfigFile* wcfg)
 
 void DatasetTest::import(const ConfigFile* wcfg, const std::string& testfile)
 {
-	if (!wcfg) wcfg = &cfg;
+    if (!wcfg) wcfg = &cfg;
 
-	{
-		std::unique_ptr<WritableDataset> writer(makeWriter(wcfg));
+    {
+        std::unique_ptr<Writer> writer(makeWriter(wcfg));
 
         if (str::endswith(testfile, ".vm2")) {
             scan::Vm2 scanner;
@@ -375,24 +375,24 @@ void DatasetTest::import(const ConfigFile* wcfg, const std::string& testfile)
             Metadata md;
             while (scanner.next(md))
             {
-                WritableDataset::AcquireResult res = writer->acquire(md);
-                ensure_equals(res, WritableDataset::ACQ_OK);
+                Writer::AcquireResult res = writer->acquire(md);
+                ensure_equals(res, Writer::ACQ_OK);
             }
         } else {
 
-			scan::Grib scanner;
-			scanner.open(testfile);
+            scan::Grib scanner;
+            scanner.open(testfile);
 
-			Metadata md;
-			while (scanner.next(md))
-			{
-				WritableDataset::AcquireResult res = writer->acquire(md);
-				ensure_equals(res, WritableDataset::ACQ_OK);
-			}
-		}
-	}
+            Metadata md;
+            while (scanner.next(md))
+            {
+                Writer::AcquireResult res = writer->acquire(md);
+                ensure_equals(res, Writer::ACQ_OK);
+            }
+        }
+    }
 
-	utils::files::removeDontpackFlagfile(wcfg->value("path"));
+    utils::files::removeDontpackFlagfile(wcfg->value("path"));
 }
 
 void DatasetTest::clean_and_import(const ConfigFile* wcfg, const std::string& testfile)
@@ -432,8 +432,8 @@ void DatasetTest::import_all(const testdata::Fixture& fixture)
     for (int i = 0; i < 3; ++i)
     {
         import_results[i] = fixture.test_data[i].md;
-        WritableDataset::AcquireResult res = writer->acquire(import_results[i]);
-        wassert(actual(res) == WritableDataset::ACQ_OK);
+        Writer::AcquireResult res = writer->acquire(import_results[i]);
+        wassert(actual(res) == Writer::ACQ_OK);
     }
 
     utils::files::removeDontpackFlagfile(cfg.value("path"));

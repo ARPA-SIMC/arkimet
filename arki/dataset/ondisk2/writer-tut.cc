@@ -24,8 +24,6 @@ using namespace arki;
 using namespace arki::tests;
 using namespace arki::types;
 using namespace arki::dataset;
-using namespace arki::dataset::ondisk2;
-using namespace arki::dataset::ondisk2::writer;
 using namespace arki::utils;
 
 namespace std {
@@ -48,18 +46,18 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 		cfg.setValue("unique", "origin, reftime");
 	}
 
-	void acquireSamples()
-	{
-		Metadata md;
-		scan::Grib scanner;
-		Writer writer(cfg);
-		scanner.open("inbound/test.grib1");
-		size_t count = 0;
-		for ( ; scanner.next(md); ++count)
-			ensure_equals(writer.acquire(md), WritableDataset::ACQ_OK);
-		ensure_equals(count, 3u);
-		writer.flush();
-	}
+    void acquireSamples()
+    {
+        Metadata md;
+        scan::Grib scanner;
+        ondisk2::Writer writer(cfg);
+        scanner.open("inbound/test.grib1");
+        size_t count = 0;
+        for ( ; scanner.next(md); ++count)
+            ensure_equals(writer.acquire(md), Writer::ACQ_OK);
+        ensure_equals(count, 3u);
+        writer.flush();
+    }
 
     Metadata& find_imported_second_in_file()
     {
@@ -418,7 +416,7 @@ void to::test<6>()
     {
         // Test querying: reindexing should have chosen the last version of
         // duplicate items
-        Reader reader(cfg);
+        ondisk2::Reader reader(cfg);
         ensure(reader.hasWorkingIndex());
         metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,80"));
         ensure_equals(mdc.size(), 1u);
@@ -445,7 +443,7 @@ void to::test<6>()
     wassert(actual(sys::size("testdir/foo/bar/test.grib1")) == 44412);
 
     // Test querying, and see that things have moved to the beginning
-    Reader reader(cfg);
+    ondisk2::Reader reader(cfg);
     ensure(reader.hasWorkingIndex());
     metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,80"));
     ensure_equals(mdc.size(), 1u);
@@ -519,7 +517,7 @@ void to::test<8>()
 
     // Compress one data file
     {
-        Reader reader(cfg);
+        ondisk2::Reader reader(cfg);
         metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,200"));
         ensure_equals(mdc.size(), 1u);
         mdc.compressDataFile(1024, "metadata file testdir/2007/07-08.grib1");
@@ -685,26 +683,26 @@ void to::test<10>()
 		ensure(c.isClean());
 	}
 
-	// Query the summary, there should be no data
-	{
-		Reader reader(cfg);
-		ensure(reader.hasWorkingIndex());
-		Summary s;
-		reader.querySummary(Matcher(), s);
-		ensure_equals(s.count(), 0u);
-	}
+    // Query the summary, there should be no data
+    {
+        ondisk2::Reader reader(cfg);
+        ensure(reader.hasWorkingIndex());
+        Summary s;
+        reader.querySummary(Matcher(), s);
+        ensure_equals(s.count(), 0u);
+    }
 
-	// Acquire files
-	acquireSamples();
+    // Acquire files
+    acquireSamples();
 
-	// Query the summary again, there should be data
-	{
-		Reader reader(cfg);
-		ensure(reader.hasWorkingIndex());
-		Summary s;
-		reader.querySummary(Matcher(), s);
-		ensure_equals(s.count(), 3u);
-	}
+    // Query the summary again, there should be data
+    {
+        ondisk2::Reader reader(cfg);
+        ensure(reader.hasWorkingIndex());
+        Summary s;
+        reader.querySummary(Matcher(), s);
+        ensure_equals(s.count(), 3u);
+    }
 }
 
 // Try to reproduce a bug where two conflicting BUFR files were not properly
@@ -723,11 +721,11 @@ void to::test<11>()
 
     Metadata md;
     scan::Bufr scanner;
-    Writer writer(cfg);
+    ondisk2::Writer writer(cfg);
     scanner.open("inbound/conflicting-temp-same-usn.bufr");
     size_t count = 0;
     for ( ; scanner.next(md); ++count)
-        ensure_equals(writer.acquire(md), WritableDataset::ACQ_OK);
+        ensure_equals(writer.acquire(md), Writer::ACQ_OK);
     ensure_equals(count, 2u);
     writer.flush();
 }
@@ -739,9 +737,9 @@ void to::test<12>()
 
     {
         // Import files
-        Writer writer(cfg);
+        ondisk2::Writer writer(cfg);
         for (metadata::Collection::const_iterator i = mdc.begin(); i != mdc.end(); ++i)
-            wassert(actual(writer.acquire(**i)) == WritableDataset::ACQ_OK);
+            wassert(actual(writer.acquire(**i)) == Writer::ACQ_OK);
     }
 
     // Append one of the GRIBs to the wrong file
@@ -754,7 +752,7 @@ void to::test<12>()
 
     // A simple rescanFile throws "manual fix is required" error
     {
-        Writer writer(cfg);
+        ondisk2::Writer writer(cfg);
         try {
             writer.rescanFile("2007/10-09.grib1");
             wassert(throw std::runtime_error("rescanFile should have thrown at this point"));
@@ -768,7 +766,7 @@ void to::test<12>()
 
     // Run maintenance check
     {
-        Writer writer(cfg);
+        ondisk2::Writer writer(cfg);
         MaintenanceCollector c;
         writer.maintenance(c);
 
@@ -781,7 +779,7 @@ void to::test<12>()
 
     {
         // Perform full maintenance and check that things are still ok afterwards
-        Writer writer(cfg);
+        ondisk2::Writer writer(cfg);
         stringstream s;
         try {
             writer.check(s, true, true);
@@ -799,9 +797,9 @@ void to::test<13>()
 
     {
         // Import files
-        Writer writer(cfg);
+        ondisk2::Writer writer(cfg);
         for (metadata::Collection::const_iterator i = mdc.begin(); i != mdc.end(); ++i)
-            wassert(actual(writer.acquire(**i)) == WritableDataset::ACQ_OK);
+            wassert(actual(writer.acquire(**i)) == Writer::ACQ_OK);
     }
 
     // Append one of the GRIBs to the wrong file
@@ -817,7 +815,7 @@ void to::test<13>()
 
     // A simple rescanFile throws "manual fix is required" error
     {
-        Writer writer(cfg);
+        ondisk2::Writer writer(cfg);
         try {
             writer.rescanFile("2007/06-06.grib1");
             wassert(throw std::runtime_error("rescanFile should have thrown at this point"));
@@ -828,7 +826,7 @@ void to::test<13>()
 
     // Run maintenance check
     {
-        Writer writer(cfg);
+        ondisk2::Writer writer(cfg);
         MaintenanceCollector c;
         writer.maintenance(c);
 
@@ -841,7 +839,7 @@ void to::test<13>()
 
     {
         // Perform full maintenance and check that things are still ok afterwards
-        Writer writer(cfg);
+        ondisk2::Writer writer(cfg);
         stringstream s;
         try {
             writer.check(s, true, true);

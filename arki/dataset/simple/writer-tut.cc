@@ -15,7 +15,7 @@ namespace tut {
 using namespace std;
 using namespace arki::tests;
 using namespace arki;
-using namespace arki::dataset::simple;
+using namespace arki::dataset;
 using namespace arki::types;
 using namespace arki::tests;
 using namespace arki::utils;
@@ -57,29 +57,29 @@ void to::test<1>()
 	scan::Grib scanner;
 	scanner.open("inbound/test.grib1");
 
-	Writer writer(cfg);
-	ensure(scanner.next(md));
+    simple::Writer writer(cfg);
+    ensure(scanner.next(md));
 
-	// Import once in the empty dataset
-	WritableDataset::AcquireResult res = writer.acquire(md);
-	ensure_equals(res, WritableDataset::ACQ_OK);
-	#if 0
-	for (vector<Note>::const_iterator i = md.notes.begin();
-			i != md.notes.end(); ++i)
-		cerr << *i << endl;
-	#endif
+    // Import once in the empty dataset
+    Writer::AcquireResult res = writer.acquire(md);
+    ensure_equals(res, Writer::ACQ_OK);
+    #if 0
+    for (vector<Note>::const_iterator i = md.notes.begin();
+            i != md.notes.end(); ++i)
+        cerr << *i << endl;
+    #endif
     const AssignedDataset* ds = getDataset(md);
     ensure_equals(ds->name, "testds");
     ensure_equals(ds->id, "");
 
     wassert(actual_type(md.source()).is_source_blob("grib1", "", "testds/2007/07-08.grib1", 0, 7218));
 
-	// Import again works fine
-	res = writer.acquire(md);
-	ensure_equals(res, WritableDataset::ACQ_OK);
-	ds = getDataset(md);
-	ensure_equals(ds->name, "testds");
-	ensure_equals(ds->id, "");
+    // Import again works fine
+    res = writer.acquire(md);
+    ensure_equals(res, Writer::ACQ_OK);
+    ds = getDataset(md);
+    ensure_equals(ds->name, "testds");
+    ensure_equals(ds->id, "");
 
     wassert(actual_type(md.source()).is_source_blob("grib1", "", "testds/2007/07-08.grib1", 7218, 7218));
 
@@ -115,22 +115,22 @@ void to::test<2>()
 	scan::Grib scanner;
 	scanner.open("inbound/test-sorted.grib1");
 
-	// Import once in the empty dataset
-	{
-		dataset::simple::Writer writer(cfg);
-		ensure(scanner.next(md));
+    // Import once in the empty dataset
+    {
+        dataset::simple::Writer writer(cfg);
+        ensure(scanner.next(md));
 
-		WritableDataset::AcquireResult res = writer.acquire(md);
-		ensure_equals(res, WritableDataset::ACQ_OK);
-	}
+        Writer::AcquireResult res = writer.acquire(md);
+        ensure_equals(res, Writer::ACQ_OK);
+    }
 
-	// Import another one, appending to the file
-	{
-		dataset::simple::Writer writer(cfg);
-		ensure(scanner.next(md));
+    // Import another one, appending to the file
+    {
+        dataset::simple::Writer writer(cfg);
+        ensure(scanner.next(md));
 
-		WritableDataset::AcquireResult res = writer.acquire(md);
-		ensure_equals(res, WritableDataset::ACQ_OK);
+        Writer::AcquireResult res = writer.acquire(md);
+        ensure_equals(res, Writer::ACQ_OK);
 
         const AssignedDataset* ds = getDataset(md);
         ensure(ds);
@@ -170,26 +170,26 @@ void to::test<3>()
 
     // Query now is ok, but empty
     {
-        unique_ptr<Reader> reader(makeSimpleReader());
+        unique_ptr<simple::Reader> reader(makeSimpleReader());
         metadata::Collection mdc(*reader, Matcher());
         ensure_equals(mdc.size(), 0u);
     }
 
-	// Maintenance should show one file to index
-	{
-		MaintenanceCollector c;
-		dataset::simple::Writer writer(cfg);
-		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(COUNTED_TO_INDEX), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-		ensure(files::hasDontpackFlagfile("testds"));
-	}
+    // Maintenance should show one file to index
+    {
+        MaintenanceCollector c;
+        dataset::simple::Writer writer(cfg);
+        writer.maintenance(c);
+        ensure_equals(c.fileStates.size(), 1u);
+        ensure_equals(c.count(COUNTED_TO_INDEX), 1u);
+        ensure_equals(c.remaining(), string());
+        ensure(not c.isClean());
+        ensure(files::hasDontpackFlagfile("testds"));
+    }
 
-	{
-		stringstream s;
-		dataset::simple::Writer writer(cfg);
+    {
+        stringstream s;
+        dataset::simple::Writer writer(cfg);
 
 		// Check should reindex the file
 		writer.check(s, true, true);
@@ -207,16 +207,16 @@ void to::test<3>()
 	// Everything should be fine now
 	ensure_localds_clean(1, 3);
 
-	// Remove the file from the index
-	{
-		dataset::simple::Writer writer(cfg);
-		writer.removeFile("2007/07-08.grib1", false);
-	}
+    // Remove the file from the index
+    {
+        dataset::simple::Writer writer(cfg);
+        writer.removeFile("2007/07-08.grib1", false);
+    }
 
-	// Repack should delete the files not in index
-	{
-		stringstream s;
-		dataset::simple::Writer writer(cfg);
+    // Repack should delete the files not in index
+    {
+        stringstream s;
+        dataset::simple::Writer writer(cfg);
 
 		s.str(std::string());
 		writer.repack(s, true);
@@ -255,22 +255,22 @@ void to::test<4>()
         ensure_equals(mdc.size(), 3u);
     }
 
-	// Maintenance should show one file to rescan
-	{
-		MaintenanceCollector c;
-		Writer writer(cfg);
-		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_OK), 2u);
-		ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-	}
+    // Maintenance should show one file to rescan
+    {
+        MaintenanceCollector c;
+        simple::Writer writer(cfg);
+        writer.maintenance(c);
+        ensure_equals(c.fileStates.size(), 3u);
+        ensure_equals(c.count(COUNTED_OK), 2u);
+        ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
+        ensure_equals(c.remaining(), string());
+        ensure(not c.isClean());
+    }
 
-	// Fix the dataset
-	{
-		stringstream s;
-		Writer writer(cfg);
+    // Fix the dataset
+    {
+        stringstream s;
+        simple::Writer writer(cfg);
 
 		// Check should reindex the file
 		writer.check(s, true, true);
@@ -298,10 +298,10 @@ void to::test<4>()
     files::removeDontpackFlagfile("testds");
     ensure(sys::exists("testds/" + idxfname()));
 
-	// Repack here should act as if the dataset were empty
-	{
-		stringstream s;
-		Writer writer(cfg);
+    // Repack here should act as if the dataset were empty
+    {
+        stringstream s;
+        simple::Writer writer(cfg);
 
 		// Repack should find nothing to repack
 		s.str(std::string());
@@ -346,22 +346,22 @@ void to::test<5>()
         ensure_equals(mdc.size(), 3u);
     }
 
-	// Maintenance should show one file to rescan
-	{
-		MaintenanceCollector c;
-		Writer writer(cfg);
-		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_OK), 2u);
-		ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-	}
+    // Maintenance should show one file to rescan
+    {
+        MaintenanceCollector c;
+        simple::Writer writer(cfg);
+        writer.maintenance(c);
+        ensure_equals(c.fileStates.size(), 3u);
+        ensure_equals(c.count(COUNTED_OK), 2u);
+        ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
+        ensure_equals(c.remaining(), string());
+        ensure(not c.isClean());
+    }
 
-	// Fix the dataset
-	{
-		stringstream s;
-		Writer writer(cfg);
+    // Fix the dataset
+    {
+        stringstream s;
+        simple::Writer writer(cfg);
 
 		// Check should reindex the file
 		writer.check(s, true, true);
@@ -389,10 +389,10 @@ void to::test<5>()
     files::removeDontpackFlagfile("testds");
     ensure(sys::exists("testds/" + idxfname()));
 
-	// Repack here should act as if the dataset were empty
-	{
-		stringstream s;
-		Writer writer(cfg);
+    // Repack here should act as if the dataset were empty
+    {
+        stringstream s;
+        simple::Writer writer(cfg);
 
 		// Repack should find nothing to repack
 		s.str(std::string());
@@ -455,7 +455,7 @@ void to::test<6>()
     // Cannot query anymore
     {
         metadata::Collection mdc;
-        Reader reader(cfg);
+        simple::Reader reader(cfg);
         try {
             mdc.add(reader, Matcher());
             ensure(false);
@@ -464,22 +464,22 @@ void to::test<6>()
         }
     }
 
-	// Maintenance should show one file to rescan
-	{
-		MaintenanceCollector c;
-		Writer writer(cfg);
-		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_OK), 2u);
-		ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-	}
+    // Maintenance should show one file to rescan
+    {
+        MaintenanceCollector c;
+        simple::Writer writer(cfg);
+        writer.maintenance(c);
+        ensure_equals(c.fileStates.size(), 3u);
+        ensure_equals(c.count(COUNTED_OK), 2u);
+        ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
+        ensure_equals(c.remaining(), string());
+        ensure(not c.isClean());
+    }
 
-	// Fix the dataset
-	{
-		stringstream s;
-		Writer writer(cfg);
+    // Fix the dataset
+    {
+        stringstream s;
+        simple::Writer writer(cfg);
 
 		// Check should reindex the file
 		writer.check(s, true, true);
@@ -510,10 +510,10 @@ void to::test<6>()
     ensure(sys::exists("testds/" + idxfname()));
     setup.removemd();
 
-	// Repack here should act as if the dataset were empty
-	{
-		stringstream s;
-		Writer writer(cfg);
+    // Repack here should act as if the dataset were empty
+    {
+        stringstream s;
+        simple::Writer writer(cfg);
 
 		// Repack should find nothing to repack
 		s.str(std::string());
@@ -524,7 +524,7 @@ void to::test<6>()
     // And repack should have changed nothing
     {
         metadata::Collection mdc;
-        Reader reader(cfg);
+        simple::Reader reader(cfg);
         try {
             mdc.add(reader, Matcher());
             ensure(false);
@@ -564,22 +564,22 @@ void to::test<7>()
         ensure_equals(mdc.size(), 2u);
     }
 
-	// Maintenance should show one file to rescan
-	{
-		MaintenanceCollector c;
-		Writer writer(cfg);
-		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_OK), 2u);
-		ensure_equals(c.count(COUNTED_TO_DEINDEX), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-	}
+    // Maintenance should show one file to rescan
+    {
+        MaintenanceCollector c;
+        simple::Writer writer(cfg);
+        writer.maintenance(c);
+        ensure_equals(c.fileStates.size(), 3u);
+        ensure_equals(c.count(COUNTED_OK), 2u);
+        ensure_equals(c.count(COUNTED_TO_DEINDEX), 1u);
+        ensure_equals(c.remaining(), string());
+        ensure(not c.isClean());
+    }
 
-	// Fix the dataset
-	{
-		stringstream s;
-		Writer writer(cfg);
+    // Fix the dataset
+    {
+        stringstream s;
+        simple::Writer writer(cfg);
 
 		// Check should reindex the file
 		writer.check(s, true, true);
@@ -604,10 +604,10 @@ void to::test<7>()
     files::removeDontpackFlagfile("testds");
     ensure(sys::exists("testds/" + idxfname()));
 
-	// Repack here should act as if the dataset were empty
-	{
-		stringstream s;
-		Writer writer(cfg);
+    // Repack here should act as if the dataset were empty
+    {
+        stringstream s;
+        simple::Writer writer(cfg);
 
 		// Repack should tidy up the index
 		s.str(std::string());

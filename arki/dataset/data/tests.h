@@ -11,7 +11,7 @@ namespace arki {
 struct Metadata;
 struct Dispatcher;
 struct ReadonlyDataset;
-struct WritableDataset;
+struct Writer;
 
 namespace tests {
 

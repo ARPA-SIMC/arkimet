@@ -304,7 +304,7 @@ int main(int argc, const char* argv[])
         {
             if (opts.op_remove->stringValue().empty())
                 throw commandline::BadOption("you need to give a file name to --remove");
-            WritableDatasetPool pool(cfg);
+            WriterPool pool(cfg);
             // Read all metadata from the file specified in --remove
             metadata::Collection todolist(opts.op_remove->stringValue());
             // Verify that all metadata items have AssignedDataset set
@@ -325,7 +325,7 @@ int main(int argc, const char* argv[])
             for (const auto& md: todolist)
             {
                 const types::AssignedDataset* ad = md->get<types::AssignedDataset>();
-                WritableDataset* ds = pool.get(ad->name);
+                Writer* ds = pool.get(ad->name);
                 if (!ds)
                 {
                     cerr << "Message #" << count << " is not in any dataset: skipped" << endl;

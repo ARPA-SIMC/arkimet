@@ -183,7 +183,7 @@ public:
 	static void readConfig(const std::string& path, ConfigFile& cfg);
 };
 
-class WritableDataset
+class Writer
 {
 public:
 	/// Possible outcomes of acquire
@@ -225,8 +225,8 @@ protected:
 	//virtual bool replace(Metadata& md) = 0;
 
 public:
-    WritableDataset();
-    virtual ~WritableDataset();
+    Writer();
+    virtual ~Writer();
 
 	// Return the dataset name
 	const std::string& name() const { return m_name; }
@@ -268,7 +268,7 @@ public:
 	/**
 	 * Instantiate an appropriate Dataset for the given configuration
 	 */
-	static WritableDataset* create(const ConfigFile& cfg);
+	static Writer* create(const ConfigFile& cfg);
 
 	/**
 	 * Simulate acquiring the given metadata item (and related data) in this
@@ -284,6 +284,4 @@ public:
 };
 
 }
-
-// vim:set ts=4 sw=4:
 #endif

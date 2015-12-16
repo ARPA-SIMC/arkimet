@@ -21,7 +21,7 @@ namespace arki {
 struct Metadata;
 struct Dispatcher;
 struct ReadonlyDataset;
-struct WritableDataset;
+struct Writer;
 
 namespace dataset {
 struct LocalReader;
@@ -122,10 +122,10 @@ struct DatasetTest
 	// Return the file name of the archive index of the current dataset
 	std::string arcidxfname() const;
 
-	ReadonlyDataset* makeReader(const ConfigFile* wcfg = 0);
-	WritableDataset* makeWriter(const ConfigFile* wcfg = 0);
-	dataset::LocalReader* makeLocalReader(const ConfigFile* wcfg = 0);
-	dataset::SegmentedWriter* makeLocalWriter(const ConfigFile* wcfg = 0);
+    ReadonlyDataset* makeReader(const ConfigFile* wcfg = 0);
+    Writer* makeWriter(const ConfigFile* wcfg = 0);
+    dataset::LocalReader* makeLocalReader(const ConfigFile* wcfg = 0);
+    dataset::SegmentedWriter* makeLocalWriter(const ConfigFile* wcfg = 0);
 	dataset::ondisk2::Reader* makeOndisk2Reader(const ConfigFile* wcfg = 0);
 	dataset::ondisk2::Writer* makeOndisk2Writer(const ConfigFile* wcfg = 0);
 	dataset::simple::Reader* makeSimpleReader(const ConfigFile* wcfg = 0);

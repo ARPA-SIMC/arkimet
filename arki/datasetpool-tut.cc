@@ -57,13 +57,11 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	WritableDatasetPool pool(config);
-	ensure(pool.get("error") != 0);
-	ensure(pool.get("test200") != 0);
-	ensure(pool.get("test80") != 0);
-	ensure(pool.get("duplicates") == 0);
+    WriterPool pool(config);
+    ensure(pool.get("error") != 0);
+    ensure(pool.get("test200") != 0);
+    ensure(pool.get("test80") != 0);
+    ensure(pool.get("duplicates") == 0);
 }
 
 }
-
-// vim:set ts=4 sw=4:

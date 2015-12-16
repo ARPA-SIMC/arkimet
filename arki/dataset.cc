@@ -40,17 +40,17 @@ DataQuery::~DataQuery() {}
 
 }
 
-WritableDataset::WritableDataset()
+Writer::Writer()
 {
 }
 
-WritableDataset::~WritableDataset()
+Writer::~Writer()
 {
 }
 
-void WritableDataset::flush() {}
+void Writer::flush() {}
 
-Pending WritableDataset::test_writelock() { return Pending(); }
+Pending Writer::test_writelock() { return Pending(); }
 
 void ReadonlyDataset::query_bytes(const dataset::ByteQuery& q, int out)
 {
@@ -253,7 +253,7 @@ void ReadonlyDataset::readConfig(const std::string& path, ConfigFile& cfg)
         return dataset::File::readConfig(path, cfg);
 }
 
-WritableDataset* WritableDataset::create(const ConfigFile& cfg)
+Writer* Writer::create(const ConfigFile& cfg)
 {
     string type = str::lower(cfg.value("type"));
     if (type == "remote")
@@ -268,7 +268,7 @@ WritableDataset* WritableDataset::create(const ConfigFile& cfg)
     return dataset::LocalWriter::create(cfg);
 }
 
-WritableDataset::AcquireResult WritableDataset::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
     string type = str::lower(cfg.value("type"));
     if (type == "remote")

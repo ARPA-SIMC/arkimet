@@ -333,7 +333,7 @@ template<> template<> void to::test<7>()
 
     clean();
     {
-        std::unique_ptr<WritableDataset> writer(makeWriter());
+        std::unique_ptr<Writer> writer(makeWriter());
 
         // Reverse order of import, so we can check if things get sorted properly when querying
         for (int month = 12; month >= 1; --month)
@@ -354,8 +354,8 @@ template<> template<> void to::test<7>()
                             md.set(Product::createVM2(varid));
                             snprintf(buf, 40, "%d,,,000000000", value);
                             md.set(types::Value::create(buf));
-                            WritableDataset::AcquireResult res = writer->acquire(md);
-                            wassert(actual(res) == WritableDataset::ACQ_OK);
+                            Writer::AcquireResult res = writer->acquire(md);
+                            wassert(actual(res) == Writer::ACQ_OK);
                         }
     }
 

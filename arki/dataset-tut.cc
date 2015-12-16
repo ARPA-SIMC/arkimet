@@ -114,7 +114,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("error")));
+	unique_ptr<Writer> testds(Writer::create(*config.section("error")));
 	ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
 }
 
@@ -128,7 +128,7 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("duplicates")));
+	unique_ptr<Writer> testds(Writer::create(*config.section("duplicates")));
 	ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
 }
 
@@ -142,7 +142,7 @@ void to::test<5>()
 template<> template<>
 void to::test<6>()
 {
-	unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("outbound")));
+	unique_ptr<Writer> testds(Writer::create(*config.section("outbound")));
 	ensure(dynamic_cast<dataset::Outbound*>(testds.get()) != 0);
 }
 
@@ -156,7 +156,7 @@ void to::test<7>()
 template<> template<>
 void to::test<8>()
 {
-	unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("discard")));
+	unique_ptr<Writer> testds(Writer::create(*config.section("discard")));
 	ensure(dynamic_cast<dataset::Discard*>(testds.get()) != 0);
 }
 
@@ -170,7 +170,7 @@ void to::test<9>()
 template<> template<>
 void to::test<10>()
 {
-	unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("simple")));
+	unique_ptr<Writer> testds(Writer::create(*config.section("simple")));
 	ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
 }
 
@@ -184,14 +184,14 @@ void to::test<11>()
 template<> template<>
 void to::test<12>()
 {
-	unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("ondisk2")));
+	unique_ptr<Writer> testds(Writer::create(*config.section("ondisk2")));
 	ensure(dynamic_cast<dataset::ondisk2::Writer*>(testds.get()) != 0);
 }
 
 template<> template<>
 void to::test<13>()
 {
-	unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test")));
+	unique_ptr<Writer> testds(Writer::create(*config.section("test")));
 	ensure(dynamic_cast<dataset::ondisk2::Writer*>(testds.get()) != 0);
 }
 
@@ -219,12 +219,12 @@ struct TestDataset
         // Clear everything
         if (sys::isdir(path)) sys::rmtree(path);
 
-        unique_ptr<WritableDataset> ds(WritableDataset::create(*cfgtest));
+        unique_ptr<Writer> ds(Writer::create(*cfgtest));
 
         for (unsigned i = 0; i < 3; ++i)
         {
             Metadata md = td.test_data[i].md;
-            wassert(actual(ds->acquire(md)) == WritableDataset::ACQ_OK);
+            wassert(actual(ds->acquire(md)) == Writer::ACQ_OK);
             wassert(actual_file(str::joinpath(path, td.test_data[i].destfile)).exists());
             wassert(actual(md.sourceBlob().filename).endswith(td.test_data[i].destfile));
         }
@@ -380,7 +380,7 @@ struct TestDataset
     void test_locked()
     {
         // Lock a dataset for writing
-        unique_ptr<WritableDataset> wds(WritableDataset::create(*cfgtest));
+        unique_ptr<Writer> wds(Writer::create(*cfgtest));
         Pending p = wds->test_writelock();
 
         // Try to read from it, it should still work with WAL

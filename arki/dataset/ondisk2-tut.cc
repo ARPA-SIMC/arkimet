@@ -25,7 +25,7 @@ using namespace std;
 using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
-using namespace arki::dataset::ondisk2;
+using namespace arki::dataset;
 using namespace arki::utils;
 using namespace arki::tests;
 
@@ -110,14 +110,14 @@ struct arki_dataset_ondisk2_shar {
 		dataset::ondisk2::Writer d200(*config.section("test200"));
 		dataset::ondisk2::Writer d80(*config.section("test80"));
 		dataset::ondisk2::Writer d98(*config.section("test98"));
-		scanner.open("inbound/test.grib1");
-		ensure(scanner.next(md));
-		ensure_equals(d200.acquire(md), WritableDataset::ACQ_OK);
-		ensure(scanner.next(md));
-		ensure_equals(d80.acquire(md), WritableDataset::ACQ_OK);
-		ensure(scanner.next(md));
-		ensure_equals(d98.acquire(md), WritableDataset::ACQ_OK);
-		ensure(!scanner.next(md));
+        scanner.open("inbound/test.grib1");
+        ensure(scanner.next(md));
+        ensure_equals(d200.acquire(md), Writer::ACQ_OK);
+        ensure(scanner.next(md));
+        ensure_equals(d80.acquire(md), Writer::ACQ_OK);
+        ensure(scanner.next(md));
+        ensure_equals(d98.acquire(md), Writer::ACQ_OK);
+        ensure(!scanner.next(md));
 
 		// Finalise
 		d200.flush();
@@ -130,22 +130,22 @@ struct arki_dataset_ondisk2_shar {
 		// Cleanup the test datasets
 		system("rm -rf testall/*");
 
-		// Import data into the datasets
-		Metadata md;
-		scan::Grib scanner;
-		dataset::ondisk2::Writer all(*configAll.section("testall"));
-		scanner.open("inbound/test.grib1");
-		ensure(scanner.next(md));
-		ensure_equals(all.acquire(md), WritableDataset::ACQ_OK);
-		ensure(scanner.next(md));
-		ensure_equals(all.acquire(md), WritableDataset::ACQ_OK);
-		ensure(scanner.next(md));
-		ensure_equals(all.acquire(md), WritableDataset::ACQ_OK);
-		ensure(!scanner.next(md));
+        // Import data into the datasets
+        Metadata md;
+        scan::Grib scanner;
+        dataset::ondisk2::Writer all(*configAll.section("testall"));
+        scanner.open("inbound/test.grib1");
+        ensure(scanner.next(md));
+        ensure_equals(all.acquire(md), Writer::ACQ_OK);
+        ensure(scanner.next(md));
+        ensure_equals(all.acquire(md), Writer::ACQ_OK);
+        ensure(scanner.next(md));
+        ensure_equals(all.acquire(md), Writer::ACQ_OK);
+        ensure(!scanner.next(md));
 
-		// Finalise
-		all.flush();
-	}
+        // Finalise
+        all.flush();
+    }
 };
 TESTGRP(arki_dataset_ondisk2);
 
@@ -164,16 +164,16 @@ void to::test<1>()
 
     metadata::Collection mdc("inbound/test.grib1");
 
-	dataset::ondisk2::Writer d200(*config.section("test200"));
+    dataset::ondisk2::Writer d200(*config.section("test200"));
 
-	// Import once in the empty dataset
-	WritableDataset::AcquireResult res = d200.acquire(mdc[0]);
-	ensure_equals(res, WritableDataset::ACQ_OK);
-	#if 0
-	for (vector<Note>::const_iterator i = md.notes.begin();
-			i != md.notes.end(); ++i)
-		cerr << *i << endl;
-	#endif
+    // Import once in the empty dataset
+    Writer::AcquireResult res = d200.acquire(mdc[0]);
+    ensure_equals(res, Writer::ACQ_OK);
+#if 0
+    for (vector<Note>::const_iterator i = md.notes.begin();
+            i != md.notes.end(); ++i)
+        cerr << *i << endl;
+#endif
     const AssignedDataset* ds = getDataset(mdc[0]);
     ensure_equals(ds->name, "test200");
     ensure_equals(ds->id, "1");
@@ -181,7 +181,7 @@ void to::test<1>()
     // See if we catch duplicate imports
     mdc[0].unset(TYPE_ASSIGNEDDATASET);
     res = d200.acquire(mdc[0]);
-    ensure_equals(res, WritableDataset::ACQ_ERROR_DUPLICATE);
+    ensure_equals(res, Writer::ACQ_ERROR_DUPLICATE);
     ds = getDataset(mdc[0]);
     ensure(!ds);
 
@@ -280,18 +280,18 @@ void to::test<5>()
     // Take note of the original source
     unique_ptr<source::Blob> blob1(mdc[0].sourceBlob().clone());
 
-	{
-		unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test80")));
-		// Replace it
-		if (testds->acquire(mdc[0], WritableDataset::REPLACE_ALWAYS) != WritableDataset::ACQ_OK)
-		{
+    {
+        unique_ptr<Writer> testds(Writer::create(*config.section("test80")));
+        // Replace it
+        if (testds->acquire(mdc[0], Writer::REPLACE_ALWAYS) != Writer::ACQ_OK)
+        {
             std::vector<Note> notes = mdc[0].notes();
-			for (size_t i = 0; i < notes.size(); ++i)
-				cerr << " md note: " << notes[i] << endl;
-			ensure(false);
-		}
-		testds->flush();
-	}
+            for (size_t i = 0; i < notes.size(); ++i)
+                cerr << " md note: " << notes[i] << endl;
+            ensure(false);
+        }
+        testds->flush();
+    }
 
     {
         unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
@@ -336,7 +336,7 @@ void to::test<6>()
     wassert(actual(mdc[0].has_source_blob()).istrue());
 
     {
-        unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test200")));
+        unique_ptr<Writer> testds(Writer::create(*config.section("test200")));
         ensure(!sys::exists("test200/2007/07-08.grib1.needs-pack"));
         // Remove it
         testds->remove(mdc[0]);
@@ -368,7 +368,7 @@ void to::test<7>()
 
 	// Try a query
 	{
-		Reader reader(*config.section("test200"));
+        ondisk2::Reader reader(*config.section("test200"));
 		ensure(reader.hasWorkingIndex());
 		metadata::Collection mdc;
 		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
@@ -389,7 +389,7 @@ void to::test<7>()
 
 	// See that the query still works
 	{
-		Reader reader(*config.section("test200"));
+        ondisk2::Reader reader(*config.section("test200"));
 		ensure(reader.hasWorkingIndex());
 		metadata::Collection mdc;
 		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
@@ -402,23 +402,23 @@ void to::test<7>()
 template<> template<>
 void to::test<8>()
 {
-	acquireSamples();
-	Reader reader(*config.section("test200"));
-	Summary summary;
-	reader.querySummary(Matcher::parse("origin:GRIB1,200"), summary);
-	ensure_equals(summary.count(), 1u);
+    acquireSamples();
+    ondisk2::Reader reader(*config.section("test200"));
+    Summary summary;
+    reader.querySummary(Matcher::parse("origin:GRIB1,200"), summary);
+    ensure_equals(summary.count(), 1u);
 }
 
 // Test querying the summary by reftime
 template<> template<>
 void to::test<9>()
 {
-	acquireSamples();
-	Reader reader(*config.section("test200"));
-	Summary summary;
-	//system("bash");
-	reader.querySummary(Matcher::parse("reftime:>=2007-07"), summary);
-	ensure_equals(summary.count(), 1u);
+    acquireSamples();
+    ondisk2::Reader reader(*config.section("test200"));
+    Summary summary;
+    //system("bash");
+    reader.querySummary(Matcher::parse("reftime:>=2007-07"), summary);
+    ensure_equals(summary.count(), 1u);
 }
 
 // Test acquiring data with replace=1
@@ -435,41 +435,41 @@ void to::test<10>()
 		scan::Grib scanner;
 		scanner.open("inbound/test.grib1");
 
-		dataset::ondisk2::Writer d200(*config.section("test200"));
-		size_t count;
-		for (count = 0; scanner.next(md); ++count)
-			ensure(d200.acquire(md) == WritableDataset::ACQ_OK);
-		ensure_equals(count, 3u);
-		d200.flush();
-	}
+        dataset::ondisk2::Writer d200(*config.section("test200"));
+        size_t count;
+        for (count = 0; scanner.next(md); ++count)
+            ensure(d200.acquire(md) == Writer::ACQ_OK);
+        ensure_equals(count, 3u);
+        d200.flush();
+    }
 
 	// Import again, make sure they're all duplicates
 	{
 		scan::Grib scanner;
 		scanner.open("inbound/test.grib1");
 
-		dataset::ondisk2::Writer d200(*config.section("test200"));
-		size_t count;
-		for (count = 0; scanner.next(md); ++count)
-			ensure(d200.acquire(md) == WritableDataset::ACQ_ERROR_DUPLICATE);
-		ensure_equals(count, 3u);
-		d200.flush();
-	}
+        dataset::ondisk2::Writer d200(*config.section("test200"));
+        size_t count;
+        for (count = 0; scanner.next(md); ++count)
+            ensure(d200.acquire(md) == Writer::ACQ_ERROR_DUPLICATE);
+        ensure_equals(count, 3u);
+        d200.flush();
+    }
 
 	// Import again with replace=true, make sure they're all ok
 	{
 		scan::Grib scanner;
 		scanner.open("inbound/test.grib1");
 
-		ConfigFile cfg = *config.section("test200");
-		cfg.setValue("replace", "true");
-		dataset::ondisk2::Writer d200(cfg);
-		size_t count;
-		for (count = 0; scanner.next(md); ++count)
-			ensure(d200.acquire(md) == WritableDataset::ACQ_OK);
-		ensure_equals(count, 3u);
-		d200.flush();
-	}
+        ConfigFile cfg = *config.section("test200");
+        cfg.setValue("replace", "true");
+        dataset::ondisk2::Writer d200(cfg);
+        size_t count;
+        for (count = 0; scanner.next(md); ++count)
+            ensure(d200.acquire(md) == Writer::ACQ_OK);
+        ensure_equals(count, 3u);
+        d200.flush();
+    }
 
 	// Make sure all the data files need repack, as they now have got deleted data inside
 	//ensure(hasPackFlagfile("test200/2007/07-08.grib1"));
@@ -478,7 +478,7 @@ void to::test<10>()
 
     // Test querying the dataset
     {
-        Reader reader(*config.section("test200"));
+        ondisk2::Reader reader(*config.section("test200"));
         metadata::Collection mdc(reader, Matcher());
         ensure_equals(mdc.size(), 3u);
 
@@ -491,24 +491,24 @@ void to::test<10>()
         ensure(blob2.offset > 0);
     }
 
-	// Test querying the summary
-	{
-		Reader reader(*config.section("test200"));
-		Summary summary;
-		reader.querySummary(Matcher(), summary);
-		ensure_equals(summary.count(), 3u);
-	}
+    // Test querying the summary
+    {
+        ondisk2::Reader reader(*config.section("test200"));
+        Summary summary;
+        reader.querySummary(Matcher(), summary);
+        ensure_equals(summary.count(), 3u);
+    }
 }
 
 // Test querying the first reftime extreme of the summary
 template<> template<>
 void to::test<11>()
 {
-	acquireSamplesAllInOne();
-	Reader reader(*configAll.section("testall"));
-	Summary summary;
-	reader.querySummary(Matcher(), summary);
-	ensure_equals(summary.count(), 3u);
+    acquireSamplesAllInOne();
+    ondisk2::Reader reader(*configAll.section("testall"));
+    Summary summary;
+    reader.querySummary(Matcher(), summary);
+    ensure_equals(summary.count(), 3u);
 
     unique_ptr<Reftime> rt = summary.getReferenceTime();
     ensure_equals(rt->style(), Reftime::PERIOD);
@@ -526,7 +526,7 @@ template<> template<>
 void to::test<12>()
 {
     acquireSamplesAllInOne();
-    Reader reader(*configAll.section("testall"));
+    ondisk2::Reader reader(*configAll.section("testall"));
     sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
     bq.setData(Matcher::parse("reftime:=2007"));
@@ -556,7 +556,7 @@ struct ReadHang : public wibble::sys::ChildProcess, public metadata::Eater
     virtual int main()
     {
         try {
-            Reader reader(cfg);
+            ondisk2::Reader reader(cfg);
             reader.query_data(Matcher(), [&](unique_ptr<Metadata> md) { return eat(move(md)); });
         } catch (std::exception& e) {
 			cerr << e.what() << endl;
@@ -595,11 +595,11 @@ void to::test<13>()
 		scan::Grib scanner;
 		scanner.open("inbound/test.grib1");
 
-		dataset::ondisk2::Writer d200(*config.section("test200"));
-		scanner.next(md);
-		ensure(d200.acquire(md) == WritableDataset::ACQ_OK);
-		d200.flush();
-	}
+        dataset::ondisk2::Writer d200(*config.section("test200"));
+        scanner.next(md);
+        ensure(d200.acquire(md) == Writer::ACQ_OK);
+        d200.flush();
+    }
 
 	// Query the index and hang
 	ReadHang readHang(*config.section("test200"));
@@ -611,12 +611,12 @@ void to::test<13>()
 		scan::Grib scanner;
 		scanner.open("inbound/test.grib1");
 
-		dataset::ondisk2::Writer d200(*config.section("test200"));
-		scanner.next(md);
-		scanner.next(md);
-		ensure(d200.acquire(md) == WritableDataset::ACQ_OK);
-		d200.flush();
-	}
+        dataset::ondisk2::Writer d200(*config.section("test200"));
+        scanner.next(md);
+        scanner.next(md);
+        ensure(d200.acquire(md) == Writer::ACQ_OK);
+        d200.flush();
+    }
 
 	readHang.kill(9);
 	readHang.wait();
@@ -650,13 +650,13 @@ void to::test<14>()
     {
         dataset::ondisk2::Writer all(*config.section("testall"));
         ensure(scanner.next(md));
-        ensure_equals(all.acquire(md), WritableDataset::ACQ_OK);
+        ensure_equals(all.acquire(md), Writer::ACQ_OK);
     }
     ensure(sys::exists("testall/20/2007.grib1"));
 
     // Compress what is imported so far
     {
-        Reader reader(*config.section("testall"));
+        ondisk2::Reader reader(*config.section("testall"));
         metadata::Collection mdc(reader, Matcher::parse(""));
         ensure_equals(mdc.size(), 1u);
         mdc.compressDataFile(1024, "metadata file testall/20/2007.grib1");
@@ -669,7 +669,7 @@ void to::test<14>()
         dataset::ondisk2::Writer all(*config.section("testall"));
         ensure(scanner.next(md));
         try {
-            ensure_equals(all.acquire(md), WritableDataset::ACQ_OK);
+            ensure_equals(all.acquire(md), Writer::ACQ_OK);
         } catch (std::exception& e) {
             ensure(string(e.what()).find("cannot update compressed data files") != string::npos);
         }
@@ -701,28 +701,28 @@ void to::test<15>()
     metadata::Collection mdc_upd("inbound/synop-gts-usn2.bufr");
 
     // Acquire
-    ensure_equals(bd.acquire(mdc[0]), WritableDataset::ACQ_OK);
+    ensure_equals(bd.acquire(mdc[0]), Writer::ACQ_OK);
 
     // Acquire again: it fails
-    ensure_equals(bd.acquire(mdc[0]), WritableDataset::ACQ_ERROR_DUPLICATE);
+    ensure_equals(bd.acquire(mdc[0]), Writer::ACQ_ERROR_DUPLICATE);
 
     // Acquire again: it fails even with a higher USN
-    ensure_equals(bd.acquire(mdc_upd[0]), WritableDataset::ACQ_ERROR_DUPLICATE);
+    ensure_equals(bd.acquire(mdc_upd[0]), Writer::ACQ_ERROR_DUPLICATE);
 
     // Acquire with replace: it works
-    ensure_equals(bd.acquire(mdc[0], WritableDataset::REPLACE_ALWAYS), WritableDataset::ACQ_OK);
+    ensure_equals(bd.acquire(mdc[0], Writer::REPLACE_ALWAYS), Writer::ACQ_OK);
 
     // Acquire with USN: it works, since USNs the same as the existing ones do overwrite
-    ensure_equals(bd.acquire(mdc[0], WritableDataset::REPLACE_HIGHER_USN), WritableDataset::ACQ_OK);
+    ensure_equals(bd.acquire(mdc[0], Writer::REPLACE_HIGHER_USN), Writer::ACQ_OK);
 
     // Acquire with a newer USN: it works
-    ensure_equals(bd.acquire(mdc_upd[0], WritableDataset::REPLACE_HIGHER_USN), WritableDataset::ACQ_OK);
+    ensure_equals(bd.acquire(mdc_upd[0], Writer::REPLACE_HIGHER_USN), Writer::ACQ_OK);
 
     // Acquire with the lower USN: it fails
-    ensure_equals(bd.acquire(mdc[0], WritableDataset::REPLACE_HIGHER_USN), WritableDataset::ACQ_ERROR_DUPLICATE);
+    ensure_equals(bd.acquire(mdc[0], Writer::REPLACE_HIGHER_USN), Writer::ACQ_ERROR_DUPLICATE);
 
     // Acquire with the same high USN: it works, since USNs the same as the existing ones do overwrite
-    ensure_equals(bd.acquire(mdc_upd[0], WritableDataset::REPLACE_HIGHER_USN), WritableDataset::ACQ_OK);
+    ensure_equals(bd.acquire(mdc_upd[0], Writer::REPLACE_HIGHER_USN), Writer::ACQ_OK);
 
     // Try to query the element and see if it is the right one
     {
@@ -756,8 +756,8 @@ void to::test<16>()
         for (unsigned hour = 0; hour < 24; ++hour)
         {
             Metadata md = testdata::make_large_mock("grib", 10*1024*1024, 12, day, hour);
-            WritableDataset::AcquireResult res = writer->acquire(md);
-            wassert(actual(res) == WritableDataset::ACQ_OK);
+            Writer::AcquireResult res = writer->acquire(md);
+            wassert(actual(res) == Writer::ACQ_OK);
         }
     }
     writer->flush();

@@ -56,12 +56,10 @@ Writer::~Writer()
 
 std::unique_ptr<AssignedDataset> Writer::make_assigneddataset(int id)
 {
-    stringstream sid;
-    sid << id;
-    return types::AssignedDataset::create(m_name, sid.str());
+    return types::AssignedDataset::create(m_name, to_string(id));
 }
 
-WritableDataset::AcquireResult Writer::acquire_replace_never(Metadata& md)
+Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
     data::Segment* w = file(md, md.source().format);
     off_t ofs;
@@ -86,7 +84,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_never(Metadata& md)
     }
 }
 
-WritableDataset::AcquireResult Writer::acquire_replace_always(Metadata& md)
+Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 {
     data::Segment* w = file(md, md.source().format);
     off_t ofs;
@@ -111,7 +109,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_always(Metadata& md)
     }
 }
 
-WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
+Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     // Try to acquire without replacing
     data::Segment* w = file(md, md.source().format);
@@ -180,7 +178,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
     }
 }
 
-WritableDataset::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
+Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
     if (replace == REPLACE_DEFAULT) replace = m_default_replace_strategy;
 
@@ -570,7 +568,7 @@ size_t Writer::vacuum()
     return size_pre > size_post ? size_pre - size_post : 0;
 }
 
-WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
 	// TODO
 #if 0

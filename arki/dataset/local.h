@@ -119,7 +119,7 @@ public:
 };
 
 
-class LocalWriter : public WritableDataset
+class LocalWriter : public Writer
 {
 protected:
     std::string m_path;

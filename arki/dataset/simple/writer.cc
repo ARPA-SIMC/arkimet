@@ -65,7 +65,7 @@ data::Segment* Writer::file(const Metadata& md, const std::string& format)
     return writer;
 }
 
-WritableDataset::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
+Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
     // TODO: refuse if md is before "archive age"
     data::Segment* writer = file(md, md.source().format);
@@ -287,7 +287,7 @@ Pending Writer::test_writelock()
     return m_mft->test_writelock();
 }
 
-WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
 	// TODO
 #if 0

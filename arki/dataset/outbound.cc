@@ -37,26 +37,26 @@ void Outbound::storeBlob(Metadata& md, const std::string& reldest)
     w->append(md);
 }
 
-WritableDataset::AcquireResult Outbound::acquire(Metadata& md, ReplaceStrategy replace)
+Writer::AcquireResult Outbound::acquire(Metadata& md, ReplaceStrategy replace)
 {
-	string reldest = (*m_tf)(md);
-	string dest = m_path + "/" + reldest;
+    string reldest = (*m_tf)(md);
+    string dest = m_path + "/" + reldest;
 
     sys::makedirs(str::dirname(dest));
 
-	md.set(types::AssignedDataset::create(m_name, ""));
+    md.set(types::AssignedDataset::create(m_name, ""));
 
-	try {
-		storeBlob(md, reldest);
-		return ACQ_OK;
+    try {
+        storeBlob(md, reldest);
+        return ACQ_OK;
     } catch (std::exception& e) {
         md.add_note("Failed to store in dataset '"+m_name+"': " + e.what());
         return ACQ_ERROR;
     }
 
-	// This should never be reached, but we throw an exception to avoid a
-	// warning from the compiler
-	throw wibble::exception::Consistency("this code is here to appease a compiler warning", "this code path should never be reached");
+    // This should never be reached, but we throw an exception to avoid a
+    // warning from the compiler
+    throw wibble::exception::Consistency("this code is here to appease a compiler warning", "this code path should never be reached");
 }
 
 void Outbound::remove(Metadata&)
@@ -66,7 +66,7 @@ void Outbound::remove(Metadata&)
 
 void Outbound::removeAll(std::ostream& log, bool writable)
 {
-	log << m_name << ": cleaning dataset not implemented" << endl;
+    log << m_name << ": cleaning dataset not implemented" << endl;
 }
 
 size_t Outbound::repackFile(const std::string& relpath)
@@ -89,7 +89,7 @@ size_t Outbound::vacuum()
     return 0;
 }
 
-WritableDataset::AcquireResult Outbound::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+Writer::AcquireResult Outbound::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
     unique_ptr<TargetFile> tf(TargetFile::create(cfg));
     string dest = cfg.value("path") + "/" + (*tf)(md) + "." + md.source().format;
@@ -99,4 +99,3 @@ WritableDataset::AcquireResult Outbound::testAcquire(const ConfigFile& cfg, cons
 
 }
 }
-// vim:set ts=4 sw=4:

@@ -133,60 +133,60 @@ struct DSBenchmark : public Benchmark
 	BenchmarkInfo& info;
 	ConfigFile& cfg;
 
-	template<typename SCANNER>
-	struct Importer : public Benchmark
-	{
-		DSBenchmark& b;
-		WritableDataset* ds;
-		const vector<string>& files;
-		SCANNER scanner;
+    template<typename SCANNER>
+        struct Importer : public Benchmark
+    {
+        DSBenchmark& b;
+        Writer* ds;
+        const vector<string>& files;
+        SCANNER scanner;
 
-		Importer(DSBenchmark& b, const std::string& name, const vector<string>& files)
-			: Benchmark(name), b(b), ds(0), files(files), scanner()
+        Importer(DSBenchmark& b, const std::string& name, const vector<string>& files)
+            : Benchmark(name), b(b), ds(0), files(files), scanner()
               // FIXME: it used to be scanner(true) to request inline data; it
               // should not matter now since we use caches, but since this code
               // is old and unused and at the moment I'm not sure anymore what
               // it should do, I at least annotate that I removed the 'true' to
               // make it compile.
-		{
-			ds = WritableDataset::create(b.cfg);
-		}
-		~Importer()
-		{
-			if (ds) delete ds;
-		}
+        {
+            ds = Writer::create(b.cfg);
+        }
+        ~Importer()
+        {
+            if (ds) delete ds;
+        }
 
-		virtual void main()
-		{
-			using namespace wibble::sys;
+        virtual void main()
+        {
+            using namespace wibble::sys;
 
             Metadata md;
 
-			// Import the files
-			size_t filecount = 0;
-			size_t count = 0;
-			size_t res_ok = 0, res_dup = 0, res_err = 0, res_unk = 0;
-			off_t size = 0;
-			for (vector<string>::const_iterator i = files.begin();
-					i != files.end(); ++i)
-			{
-				++filecount;
-				size += sys::stat(*i)->st_size;
-				scanner.open(*i);
-				while (scanner.next(md))
-				{
-					WritableDataset::AcquireResult res = ds->acquire(md);
-					switch (res)
-					{
-						case WritableDataset::ACQ_OK: ++res_ok; break;
-						case WritableDataset::ACQ_ERROR_DUPLICATE: ++res_dup; break;
-						case WritableDataset::ACQ_ERROR: ++res_err; break;
-						default: ++res_unk; break;
-					}
-					++count;
-				}
-				scanner.close();
-			}
+            // Import the files
+            size_t filecount = 0;
+            size_t count = 0;
+            size_t res_ok = 0, res_dup = 0, res_err = 0, res_unk = 0;
+            off_t size = 0;
+            for (vector<string>::const_iterator i = files.begin();
+                    i != files.end(); ++i)
+            {
+                ++filecount;
+                size += sys::stat(*i)->st_size;
+                scanner.open(*i);
+                while (scanner.next(md))
+                {
+                    Writer::AcquireResult res = ds->acquire(md);
+                    switch (res)
+                    {
+                        case Writer::ACQ_OK: ++res_ok; break;
+                        case Writer::ACQ_ERROR_DUPLICATE: ++res_dup; break;
+                        case Writer::ACQ_ERROR: ++res_err; break;
+                        default: ++res_unk; break;
+                    }
+                    ++count;
+                }
+                scanner.close();
+            }
 			double user, system, total;
 			elapsed(user, system, total);
 			double mps = count / total;

@@ -587,7 +587,7 @@ void to::test<19>()
     // If dir.summary exists, don't complain if dir is missing or if there are
     // problems inside dir
     {
-        unique_ptr<WritableDataset> ds(WritableDataset::create(scen.cfg));
+        unique_ptr<Writer> ds(Writer::create(scen.cfg));
         // TODO: maintenance
     }
 }

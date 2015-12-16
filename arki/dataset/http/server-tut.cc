@@ -325,7 +325,7 @@ struct ServerTest : public arki::tests::DatasetTest
     // Test /config/ with a locked DB
     void test_configlocked()
     {
-        unique_ptr<WritableDataset> ds(makeWriter());
+        unique_ptr<Writer> ds(makeWriter());
         Pending p = ds->test_writelock();
 
         wruntest(test_config);

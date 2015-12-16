@@ -44,19 +44,19 @@ DATASET* DatasetPool<DATASET>::get(const std::string& name)
 ReadonlyDatasetPool::ReadonlyDatasetPool(const ConfigFile& cfg)
 	: DatasetPool<ReadonlyDataset>(cfg) {}
 
-WritableDatasetPool::WritableDatasetPool(const ConfigFile& cfg)
-	: DatasetPool<WritableDataset>(cfg) {}
+WriterPool::WriterPool(const ConfigFile& cfg)
+    : DatasetPool<Writer>(cfg) {}
 
-void WritableDatasetPool::flush()
+void WriterPool::flush()
 {
-	for (std::map<std::string, WritableDataset*>::iterator i = cache.begin();
-			i != cache.end(); ++i)
-		i->second->flush();
+    for (std::map<std::string, Writer*>::iterator i = cache.begin();
+            i != cache.end(); ++i)
+        i->second->flush();
 }
 
 // Explicit template instantiations
 template class DatasetPool<ReadonlyDataset>;
-template class DatasetPool<WritableDataset>;
+template class DatasetPool<Writer>;
 
 }
 // vim:set ts=4 sw=4:

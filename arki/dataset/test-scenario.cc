@@ -73,8 +73,8 @@ namespace {
 metadata_dest_func make_importer(dataset::SegmentedWriter& ds)
 {
     return [&](unique_ptr<Metadata> md) {
-        WritableDataset::AcquireResult r = ds.acquire(*md);
-        if (r != WritableDataset::ACQ_OK)
+        Writer::AcquireResult r = ds.acquire(*md);
+        if (r != Writer::ACQ_OK)
             throw wibble::exception::Consistency("building test scenario", "metadata was not imported successfully");
         return true;
     };
