@@ -259,7 +259,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         // Query everything when the dataset is in a clean state
         metadata::Collection mdc_pre;
         {
-            std::unique_ptr<ReadonlyDataset> reader(makeReader());
+            std::unique_ptr<Reader> reader(makeReader());
             mdc_pre.add(*reader, Matcher());
             wassert(actual(mdc_pre.size()) == 3u);
         }
@@ -294,7 +294,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         // still there
         metadata::Collection mdc_post;
         {
-            std::unique_ptr<ReadonlyDataset> reader(makeReader());
+            std::unique_ptr<Reader> reader(makeReader());
             mdc_post.add(*reader, Matcher());
             wassert(actual(mdc_post.size()) == 3u);
         }
@@ -858,7 +858,7 @@ template<> template<> void to::test<14>()
     // Read everything
     metadata::Collection mdc_imported;
     {
-        unique_ptr<ReadonlyDataset> reader(makeReader());
+        unique_ptr<Reader> reader(makeReader());
         mdc_imported.add(*reader, Matcher());
     }
 
@@ -914,7 +914,7 @@ template<> template<> void to::test<14>()
     // Ensure that the data hasn't been corrupted
     metadata::Collection mdc_packed;
     {
-        unique_ptr<ReadonlyDataset> reader(makeReader());
+        unique_ptr<Reader> reader(makeReader());
         mdc_packed.add(*reader, Matcher());
     }
     wassert(actual(mdc_packed[0]).is_similar(mdc_imported[1]));

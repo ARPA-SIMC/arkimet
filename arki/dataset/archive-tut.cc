@@ -528,7 +528,7 @@ void to::test<18>()
 
     const test::Scenario& scen = test::Scenario::get("ondisk2-archived");
 
-    unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(scen.cfg));
+    unique_ptr<Reader> ds(Reader::create(scen.cfg));
 
     // Query summary
     Summary s1;
@@ -571,7 +571,7 @@ void to::test<19>()
 
     // Query the summary of the whole dataset and ensure it also spans .archive/offline
     {
-        unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(scen.cfg));
+        unique_ptr<Reader> ds(Reader::create(scen.cfg));
         Summary s;
         iotrace::Collector ioc;
         ds->querySummary(Matcher::parse(""), s);
@@ -601,7 +601,7 @@ void to::test<20>()
     const test::Scenario& scen = test::Scenario::get("ondisk2-manyarchivestates");
 
     // Check that archive cache works
-    unique_ptr<ReadonlyDataset> d(ReadonlyDataset::create(scen.cfg));
+    unique_ptr<Reader> d(Reader::create(scen.cfg));
     Summary s;
 
     // Access the datasets so we don't count manifest reads in the iostats below

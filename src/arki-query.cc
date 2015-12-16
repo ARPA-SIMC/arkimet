@@ -64,10 +64,10 @@ int main(int argc, const char* argv[])
 			size_t dscount = opts.inputInfo.sectionSize();
 			
 			// Create an unique_ptr array to take care of memory management
-			// It used to be just: unique_ptr<ReadonlyDataset> datasets[dscount];
+			// It used to be just: unique_ptr<Reader> datasets[dscount];
 			// but xlC does not seem to like it
-			unique_ptr<ReadonlyDataset>* datasets = new unique_ptr<ReadonlyDataset>[dscount];
-			RAIIArrayDeleter< unique_ptr<ReadonlyDataset> > datasets_mman(datasets);
+			unique_ptr<Reader>* datasets = new unique_ptr<Reader>[dscount];
+			RAIIArrayDeleter< unique_ptr<Reader> > datasets_mman(datasets);
 
 			// Instantiate the datasets and add them to the merger
 			int idx = 0;
@@ -90,7 +90,7 @@ int main(int argc, const char* argv[])
                 opts.closeSource(move(datasets[i]), all_successful);
         } else if (opts.qmacro->isSet()) {
             // Create the virtual qmacro dataset
-			unique_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
+			unique_ptr<Reader> ds = runtime::make_qmacro_dataset(
                     opts.inputInfo, 
                     opts.qmacro->stringValue(),
                     opts.strquery);
@@ -102,7 +102,7 @@ int main(int argc, const char* argv[])
 			for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
 					i != opts.inputInfo.sectionEnd(); ++i)
 			{
-				unique_ptr<ReadonlyDataset> ds = opts.openSource(*i->second);
+				unique_ptr<Reader> ds = opts.openSource(*i->second);
 				nag::verbose("Processing %s...", i->second->value("path").c_str());
 				bool success = opts.processSource(*ds, i->second->value("path"));
                 opts.closeSource(move(ds), success);

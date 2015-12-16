@@ -186,7 +186,7 @@ std::string Targetfile::Func::operator()(Metadata& md)
 	return res;
 }
 
-TargetfileSpy::TargetfileSpy(ReadonlyDataset& ds, sys::NamedFileDescriptor& output, const std::string& def)
+TargetfileSpy::TargetfileSpy(Reader& ds, sys::NamedFileDescriptor& output, const std::string& def)
     : func(Targetfile::instance().get(def)), ds(ds), output(output)
 {
 }

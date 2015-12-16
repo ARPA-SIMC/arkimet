@@ -139,7 +139,7 @@ struct DataProcessor : public SingleOutputProcessor
         }
     }
 
-    void process(ReadonlyDataset& ds, const std::string& name) override
+    void process(Reader& ds, const std::string& name) override
     {
         if (data_inline)
         {
@@ -206,7 +206,7 @@ struct SummaryProcessor : public SingleOutputProcessor
         return res;
     }
 
-    void process(ReadonlyDataset& ds, const std::string& name) override
+    void process(Reader& ds, const std::string& name) override
     {
         ds.querySummary(matcher, summary);
     }
@@ -274,7 +274,7 @@ struct BinaryProcessor : public SingleOutputProcessor
         return res;
     }
 
-    void process(ReadonlyDataset& ds, const std::string& name) override
+    void process(Reader& ds, const std::string& name) override
     {
         // TODO: validate query's postprocessor with ds' config
         ds.query_bytes(query, output);
@@ -306,7 +306,7 @@ std::string TargetFileProcessor::describe() const
     return res;
 }
 
-void TargetFileProcessor::process(ReadonlyDataset& ds, const std::string& name)
+void TargetFileProcessor::process(Reader& ds, const std::string& name)
 {
     TargetfileSpy spy(ds, next->output, pattern);
     next->process(spy, name);

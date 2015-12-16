@@ -96,7 +96,7 @@ public:
 class MetadataReader
 {
 public:
-    ReadonlyDataset* dataset = 0;
+    Reader* dataset = 0;
     const DataQuery* query = 0;
     string errorbuf;
     SyncBuffer mdbuf;
@@ -120,7 +120,7 @@ public:
         }
     }
 
-	void init(ReadonlyDataset& dataset, const DataQuery* query)
+	void init(Reader& dataset, const DataQuery* query)
 	{
 		this->dataset = &dataset;
 		this->query = query;
@@ -131,7 +131,7 @@ class SummaryReader
 {
 public:
     const Matcher* matcher = 0;
-    ReadonlyDataset* dataset = 0;
+    Reader* dataset = 0;
     Summary summary;
     string errorbuf;
 
@@ -146,7 +146,7 @@ public:
         }
     }
 
-	void init(const Matcher& matcher, ReadonlyDataset& dataset)
+	void init(const Matcher& matcher, Reader& dataset)
 	{
 		this->matcher = &matcher;
 		this->dataset = &dataset;
@@ -161,7 +161,7 @@ Merged::~Merged()
 {
 }
 
-void Merged::addDataset(ReadonlyDataset& ds)
+void Merged::addDataset(Reader& ds)
 {
 	datasets.push_back(&ds);
 }
@@ -283,11 +283,11 @@ AutoMerged::AutoMerged(const ConfigFile& cfg)
 {
     for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
             i != cfg.sectionEnd(); ++i)
-        datasets.push_back(ReadonlyDataset::create(*(i->second)));
+        datasets.push_back(Reader::create(*(i->second)));
 }
 AutoMerged::~AutoMerged()
 {
-    for (std::vector<ReadonlyDataset*>::iterator i = datasets.begin();
+    for (std::vector<Reader*>::iterator i = datasets.begin();
             i != datasets.end(); ++i)
         delete *i;
 }

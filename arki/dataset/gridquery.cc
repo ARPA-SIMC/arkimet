@@ -22,7 +22,7 @@ using namespace arki::types;
 namespace arki {
 namespace dataset {
 
-GridQuery::GridQuery(ReadonlyDataset& ds) : ds(ds)
+GridQuery::GridQuery(Reader& ds) : ds(ds)
 {
 	// Initialise with the global summary
 	ds.querySummary(Matcher(), summary);
@@ -257,7 +257,7 @@ static void arkilua_getmetatable(lua_State* L);
 // Memory management of the copy will be done by Lua
 static int arkilua_new(lua_State* L)
 {
-	ReadonlyDataset* ds = ReadonlyDataset::lua_check(L, 1);
+	Reader* ds = Reader::lua_check(L, 1);
 	GridQueryUD::create(L, new GridQuery(*ds), true);
 
 	// Set the summary for the userdata

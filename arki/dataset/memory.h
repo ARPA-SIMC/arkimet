@@ -38,7 +38,7 @@ namespace dataset {
 /**
  * Consumer that collects all metadata into a vector
  */
-struct Memory : public metadata::Collection, public ReadonlyDataset
+struct Memory : public metadata::Collection, public Reader
 {
 public:
     Memory();

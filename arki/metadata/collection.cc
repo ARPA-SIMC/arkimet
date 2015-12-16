@@ -97,7 +97,7 @@ static void compressAndWrite(const std::vector<uint8_t>& buf, int outfd, const s
 
 Collection::Collection() {}
 
-Collection::Collection(ReadonlyDataset& ds, const dataset::DataQuery& q)
+Collection::Collection(Reader& ds, const dataset::DataQuery& q)
 {
     add(ds, q);
 }
@@ -132,7 +132,7 @@ metadata_dest_func Collection::inserter_func()
     return [=](unique_ptr<Metadata> md) { acquire(move(md)); return true; };
 }
 
-void Collection::add(ReadonlyDataset& ds, const dataset::DataQuery& q)
+void Collection::add(Reader& ds, const dataset::DataQuery& q)
 {
     ds.query_data(q, inserter_func());
 }

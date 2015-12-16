@@ -23,7 +23,7 @@ using namespace arki::tests;
 
 struct arki_dataset_gridquery_shar {
 	ConfigFile config;
-	ReadonlyDataset* ds;
+	Reader* ds;
 
 	arki_dataset_gridquery_shar() : ds(0)
 	{
@@ -64,7 +64,7 @@ struct arki_dataset_gridquery_shar {
         ensure(!scanner.next(md));
         dispatcher.flush();
 
-        ds = ReadonlyDataset::create(*config.section("testds"));
+        ds = Reader::create(*config.section("testds"));
     }
 
 	~arki_dataset_gridquery_shar()

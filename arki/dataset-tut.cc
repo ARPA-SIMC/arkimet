@@ -107,7 +107,7 @@ TESTGRP(arki_dataset);
 template<> template<>
 void to::test<1>()
 {
-	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("error")));
+	unique_ptr<Reader> testds(Reader::create(*config.section("error")));
 	ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
 }
 
@@ -121,7 +121,7 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("duplicates")));
+	unique_ptr<Reader> testds(Reader::create(*config.section("duplicates")));
 	ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
 }
 
@@ -135,7 +135,7 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("outbound")));
+	unique_ptr<Reader> testds(Reader::create(*config.section("outbound")));
 	ensure(dynamic_cast<dataset::Empty*>(testds.get()) != 0);
 }
 
@@ -149,7 +149,7 @@ void to::test<6>()
 template<> template<>
 void to::test<7>()
 {
-	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("discard")));
+	unique_ptr<Reader> testds(Reader::create(*config.section("discard")));
 	ensure(dynamic_cast<dataset::Empty*>(testds.get()) != 0);
 }
 
@@ -163,7 +163,7 @@ void to::test<8>()
 template<> template<>
 void to::test<9>()
 {
-	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("simple")));
+	unique_ptr<Reader> testds(Reader::create(*config.section("simple")));
 	ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
 }
 
@@ -177,7 +177,7 @@ void to::test<10>()
 template<> template<>
 void to::test<11>()
 {
-	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("ondisk2")));
+	unique_ptr<Reader> testds(Reader::create(*config.section("ondisk2")));
 	ensure(dynamic_cast<dataset::ondisk2::Reader*>(testds.get()) != 0);
 }
 
@@ -232,7 +232,7 @@ struct TestDataset
 
     void test_querydata()
     {
-        unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
+        unique_ptr<Reader> ds(Reader::create(*cfgtest));
 
         acct::plain_data_read_count.reset();
 
@@ -274,7 +274,7 @@ struct TestDataset
 
     void test_querysummary()
     {
-        unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
+        unique_ptr<Reader> ds(Reader::create(*cfgtest));
 
         // Query summary of everything
         {
@@ -300,7 +300,7 @@ struct TestDataset
 
     void test_querybytes()
     {
-        unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
+        unique_ptr<Reader> ds(Reader::create(*cfgtest));
 
         for (unsigned i = 0; i < 3; ++i)
         {
@@ -328,7 +328,7 @@ struct TestDataset
 
     void test_querybytes_integrity()
     {
-        unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
+        unique_ptr<Reader> ds(Reader::create(*cfgtest));
 
         // Query everything
         dataset::ByteQuery bq;
@@ -354,7 +354,7 @@ struct TestDataset
 
     void test_postprocess()
     {
-        unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
+        unique_ptr<Reader> ds(Reader::create(*cfgtest));
 
         // Do a simple export first, to get the exact metadata that would come
         // out
@@ -384,7 +384,7 @@ struct TestDataset
         Pending p = wds->test_writelock();
 
         // Try to read from it, it should still work with WAL
-        unique_ptr<ReadonlyDataset> rds(ReadonlyDataset::create(*cfgtest));
+        unique_ptr<Reader> rds(Reader::create(*cfgtest));
         dataset::ByteQuery bq;
         bq.setData(Matcher());
         sys::File out("/dev/null", O_WRONLY);

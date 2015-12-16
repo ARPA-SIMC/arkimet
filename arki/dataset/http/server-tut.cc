@@ -35,11 +35,11 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<ReadonlyDataset> ds(makeReader());
+        unique_ptr<Reader> ds(makeReader());
         dataset::http::LegacySummaryParams params;
         params.parse_get_or_post(req);
 
-        dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+        dataset::http::ReaderServer srv(*ds, dsname);
         srv.do_summary(params, req);
 
         r.read_response();
@@ -52,12 +52,12 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<ReadonlyDataset> ds(makeReader());
+        unique_ptr<Reader> ds(makeReader());
 
         dataset::http::LegacyQueryParams params(".");
         params.parse_get_or_post(req);
 
-        dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+        dataset::http::ReaderServer srv(*ds, dsname);
         srv.do_query(params, req);
 
         r.read_response();
@@ -70,12 +70,12 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<ReadonlyDataset> ds(makeReader());
+        unique_ptr<Reader> ds(makeReader());
 
         dataset::http::QueryDataParams params;
         params.parse_get_or_post(req);
 
-        dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+        dataset::http::ReaderServer srv(*ds, dsname);
         srv.do_queryData(params, req);
 
         r.read_response();
@@ -88,12 +88,12 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<ReadonlyDataset> ds(makeReader());
+        unique_ptr<Reader> ds(makeReader());
 
         dataset::http::QueryBytesParams params(".");
         params.parse_get_or_post(req);
 
-        dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+        dataset::http::ReaderServer srv(*ds, dsname);
         srv.do_queryBytes(params, req);
 
         r.read_response();
@@ -106,9 +106,9 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<ReadonlyDataset> ds(makeReader());
+        unique_ptr<Reader> ds(makeReader());
 
-        dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+        dataset::http::ReaderServer srv(*ds, dsname);
         srv.do_config(cfg, req);
 
         r.read_response();
@@ -138,11 +138,11 @@ struct ServerTest : public arki::tests::DatasetTest
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<ReadonlyDataset> ds(makeReader());
+        unique_ptr<Reader> ds(makeReader());
         dataset::http::LegacySummaryParams params;
         params.parse_get_or_post(req);
 
-        dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+        dataset::http::ReaderServer srv(*ds, dsname);
         srv.do_summary(params, req);
 
         r.read_response();
@@ -155,12 +155,12 @@ struct ServerTest : public arki::tests::DatasetTest
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<ReadonlyDataset> ds(makeReader());
+        unique_ptr<Reader> ds(makeReader());
 
         dataset::http::LegacyQueryParams params(".");
         params.parse_get_or_post(req);
 
-        dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+        dataset::http::ReaderServer srv(*ds, dsname);
         srv.do_query(params, req);
 
         r.read_response();
@@ -173,12 +173,12 @@ struct ServerTest : public arki::tests::DatasetTest
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<ReadonlyDataset> ds(makeReader());
+        unique_ptr<Reader> ds(makeReader());
 
         dataset::http::QueryDataParams params;
         params.parse_get_or_post(req);
 
-        dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+        dataset::http::ReaderServer srv(*ds, dsname);
         srv.do_queryData(params, req);
 
         r.read_response();
@@ -191,12 +191,12 @@ struct ServerTest : public arki::tests::DatasetTest
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<ReadonlyDataset> ds(makeReader());
+        unique_ptr<Reader> ds(makeReader());
 
         dataset::http::QueryBytesParams params(".");
         params.parse_get_or_post(req);
 
-        dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+        dataset::http::ReaderServer srv(*ds, dsname);
         srv.do_queryBytes(params, req);
 
         r.read_response();
@@ -209,9 +209,9 @@ struct ServerTest : public arki::tests::DatasetTest
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<ReadonlyDataset> ds(makeReader());
+        unique_ptr<Reader> ds(makeReader());
 
-        dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+        dataset::http::ReaderServer srv(*ds, dsname);
         srv.do_config(cfg, req);
 
         r.read_response();

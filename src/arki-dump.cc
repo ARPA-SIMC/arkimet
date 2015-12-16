@@ -205,7 +205,7 @@ int main(int argc, const char* argv[])
             ConfigFile cfg;
             while (opts.hasNext())
             {
-                ReadonlyDataset::readConfig(opts.next(), cfg);
+                Reader::readConfig(opts.next(), cfg);
             }
 
             // Output the merged configuration

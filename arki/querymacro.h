@@ -11,12 +11,12 @@
 namespace arki {
 class ConfigFile;
 class Metadata;
-class ReadonlyDataset;
+class Reader;
 
-class Querymacro : public ReadonlyDataset
+class Querymacro : public Reader
 {
 protected:
-	std::map<std::string, ReadonlyDataset*> ds_cache;
+	std::map<std::string, Reader*> ds_cache;
 	// std::map<std::string, int> ref_cache;
 
 public:
@@ -39,7 +39,7 @@ public:
 	 * Get a dataset from the querymacro dataset cache, instantiating it in
 	 * the cache if it is not already there
 	 */
-	ReadonlyDataset* dataset(const std::string& name);
+	Reader* dataset(const std::string& name);
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;

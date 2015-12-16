@@ -79,7 +79,7 @@ void to::test<2>()
 {
     ConfigFile cfg;
     dataset::File::readConfig("inbound/test.grib1", cfg);
-    unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfg.section("test.grib1")));
+    unique_ptr<Reader> ds(Reader::create(*cfg.section("test.grib1")));
 
     // Scan it to be sure it can be read
     dataset::ByteQuery q;

@@ -73,7 +73,7 @@ int main(int argc, const char* argv[])
         } else if (opts.do_writelock->boolValue()) {
             string dspath = opts.next();
             ConfigFile cfg;
-            ReadonlyDataset::readConfig(dspath, cfg);
+            Reader::readConfig(dspath, cfg);
             cout << "Dataset config:" << endl;
             ConfigFile* dsconfig = cfg.sectionBegin()->second;
             dsconfig->output(cout, "stdout");

@@ -46,7 +46,7 @@ TESTGRP(arki_datasetpool);
 template<> template<>
 void to::test<1>()
 {
-	ReadonlyDatasetPool pool(config);
+	ReaderPool pool(config);
 	ensure(pool.get("error") != 0);
 	ensure(pool.get("test200") != 0);
 	ensure(pool.get("test80") != 0);

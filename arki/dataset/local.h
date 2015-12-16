@@ -28,7 +28,7 @@ class MaintFileVisitor;
 /**
  * Base class for local datasets
  */
-class LocalReader : public ReadonlyDataset
+class LocalReader : public Reader
 {
 protected:
     std::string m_name;

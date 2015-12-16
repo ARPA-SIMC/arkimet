@@ -145,7 +145,7 @@ void to::test<1>()
 		ensure_equals(HTTP::allSameRemoteServer(cfg), "");
 	}
 #if 0
-	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+	unique_ptr<Reader> testds(Reader::create(*config.section("test200")));
 	MetadataCollector mdc;
 
 	testds->query(Matcher::parse("origin:GRIB1,200"), false, mdc);

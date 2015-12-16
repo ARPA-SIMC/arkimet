@@ -58,7 +58,7 @@ template<> template<> void to::test<1>()
 
     // Test that querying returns all items
     {
-        std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
+        std::unique_ptr<Reader> reader(makeReader(&cfg));
         unsigned count = count_results(*reader, Matcher());
         ensure_equals(count, 3u);
     }
@@ -141,7 +141,7 @@ template<> template<> void to::test<1>()
 
     // Test that querying returns all items
     {
-        std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
+        std::unique_ptr<Reader> reader(makeReader(&cfg));
         ensure_equals(count_results(*reader, Matcher()), 3u);
     }
 }
@@ -152,7 +152,7 @@ template<> template<> void to::test<2>()
 	using namespace arki::types;
 
     clean_and_import();
-    std::unique_ptr<ReadonlyDataset> reader(makeReader());
+    std::unique_ptr<Reader> reader(makeReader());
 
     metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 1u);
@@ -173,7 +173,7 @@ template<> template<> void to::test<2>()
 template<> template<> void to::test<3>()
 {
 	clean_and_import();
-	std::unique_ptr<ReadonlyDataset> reader(makeReader());
+	std::unique_ptr<Reader> reader(makeReader());
 
     sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
@@ -190,7 +190,7 @@ template<> template<> void to::test<4>()
 	using namespace arki::types;
 
     clean_and_import();
-    std::unique_ptr<ReadonlyDataset> reader(makeReader());
+    std::unique_ptr<Reader> reader(makeReader());
 
     metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 1u);
@@ -230,7 +230,7 @@ template<> template<> void to::test<5>()
 		s.ensure_all_lines_seen();
 	}
 
-    std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
+    std::unique_ptr<Reader> reader(makeReader(&cfg));
     metadata::Collection mdc(*reader, Matcher::parse(""));
     ensure_equals(mdc.size(), 3u);
 
@@ -309,7 +309,7 @@ template<> template<> void to::test<6>()
 	system("rm -rf testds");
 	system("mkdir testds");
 
-	std::unique_ptr<ReadonlyDataset> reader(makeReader());
+	std::unique_ptr<Reader> reader(makeReader());
 
     metadata::Collection mdc(*reader, Matcher());
     ensure(mdc.empty());
@@ -400,14 +400,14 @@ template<> template<> void to::test<7>()
     };
 
     {
-        std::unique_ptr<ReadonlyDataset> reader(makeReader());
+        std::unique_ptr<Reader> reader(makeReader());
         CheckReftimeSortOrder cso;
         reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { return cso.eat(move(md)); });
         wassert(actual(cso.seen) == 16128u);
     }
 
     {
-        std::unique_ptr<ReadonlyDataset> reader(makeReader());
+        std::unique_ptr<Reader> reader(makeReader());
         CheckAllSortOrder cso;
         dataset::DataQuery dq(Matcher::parse(""));
         dq.sorter = sort::Compare::parse("reftime,area,product");

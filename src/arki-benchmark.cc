@@ -210,14 +210,14 @@ struct DSBenchmark : public Benchmark
 	struct Query : public Benchmark
 	{
 		DSBenchmark& b;
-		ReadonlyDataset* ds;
+		Reader* ds;
 		const Matcher& query;
 		bool withData;
 
 		Query(DSBenchmark& b, const std::string& name, const Matcher& query, bool withData = true)
 			: Benchmark(name), b(b), ds(0), query(query), withData(withData)
 		{
-			ds = ReadonlyDataset::create(b.cfg);
+			ds = Reader::create(b.cfg);
 		}
 		~Query()
 		{

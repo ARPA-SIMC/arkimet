@@ -41,8 +41,8 @@ DATASET* DatasetPool<DATASET>::get(const std::string& name)
 	}
 }
 
-ReadonlyDatasetPool::ReadonlyDatasetPool(const ConfigFile& cfg)
-	: DatasetPool<ReadonlyDataset>(cfg) {}
+ReaderPool::ReaderPool(const ConfigFile& cfg)
+	: DatasetPool<Reader>(cfg) {}
 
 WriterPool::WriterPool(const ConfigFile& cfg)
     : DatasetPool<Writer>(cfg) {}
@@ -55,7 +55,7 @@ void WriterPool::flush()
 }
 
 // Explicit template instantiations
-template class DatasetPool<ReadonlyDataset>;
+template class DatasetPool<Reader>;
 template class DatasetPool<Writer>;
 
 }

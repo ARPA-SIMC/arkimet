@@ -62,15 +62,15 @@ public:
  * Wrap a dataset. As query results arrive, use arki::Targetfile to generate a
  * file name for their output, and open/reopen an Output accordingly.
  */
-class TargetfileSpy : public ReadonlyDataset
+class TargetfileSpy : public Reader
 {
     Targetfile::Func func;
-    ReadonlyDataset& ds;
+    Reader& ds;
     utils::sys::NamedFileDescriptor& output;
     utils::sys::File* cur_output = nullptr;
 
 public:
-    TargetfileSpy(ReadonlyDataset& ds, utils::sys::NamedFileDescriptor& output, const std::string& def);
+    TargetfileSpy(Reader& ds, utils::sys::NamedFileDescriptor& output, const std::string& def);
     ~TargetfileSpy();
 
     void redirect(Metadata& md);

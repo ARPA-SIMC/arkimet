@@ -160,7 +160,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
 
         // Test that querying returns all items
         {
-            std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
+            std::unique_ptr<Reader> reader(makeReader(&cfg));
 
             unsigned count = 0;
             reader->query_data(Matcher(), [&](unique_ptr<Metadata>) { ++count; return true; });
@@ -245,7 +245,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
 
         // Try querying and make sure we get the two files
         {
-            std::unique_ptr<ReadonlyDataset> reader(makeReader());
+            std::unique_ptr<Reader> reader(makeReader());
 
             unsigned count = 0;
             reader->query_data(Matcher(), [&](unique_ptr<Metadata>) { ++count; return true; });
@@ -648,7 +648,7 @@ template<> template<> void to::test<10>()
 
     // Test querying
     {
-        std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
+        std::unique_ptr<Reader> reader(makeReader(&cfg));
         metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,200"));
         ensure_equals(mdc.size(), 1u);
         wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testds"), "foo/bar/test.grib1", 34960, 7218));

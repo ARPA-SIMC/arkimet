@@ -151,18 +151,18 @@ struct Request : public net::http::Request
         return *cfg;
     }
 
-    unique_ptr<ReadonlyDataset> get_dataset(const std::string& dsname)
+    unique_ptr<Reader> get_dataset(const std::string& dsname)
     {
         return get_dataset(get_config(dsname));
     }
 
-    unique_ptr<ReadonlyDataset> get_dataset(const ConfigFile& cfg)
+    unique_ptr<Reader> get_dataset(const ConfigFile& cfg)
     {
         ConfigFile localcfg(cfg);
         string url(server_name);
         url += script_name;
         localcfg.setValue("url", url);
-        return unique_ptr<ReadonlyDataset>(ReadonlyDataset::create(localcfg));
+        return unique_ptr<Reader>(Reader::create(localcfg));
     }
 
     void log_action(const std::string& action)
@@ -383,7 +383,7 @@ struct RootQueryHandler : public LocalHandler
         string macroname = str::strip(*qmacro);
         if (macroname.empty())
             throw error400("root-level query without qmacro parameter");
-        unique_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
+        unique_ptr<Reader> ds = runtime::make_qmacro_dataset(
                 req.arki_conf, macroname, *params.query, req.server_name);
 
         // params.query contains the qmacro query body; we need to clear the
@@ -391,7 +391,7 @@ struct RootQueryHandler : public LocalHandler
         params.query->clear();
 
         // Serve the result
-        dataset::http::ReadonlyDatasetServer srv(*ds, macroname);
+        dataset::http::ReaderServer srv(*ds, macroname);
         srv.do_query(params, req);
     }
 };
@@ -411,7 +411,7 @@ struct RootSummaryHandler : public LocalHandler
 
         string macroname = str::strip(*qmacro);
 
-        unique_ptr<ReadonlyDataset> ds;
+        unique_ptr<Reader> ds;
         if (macroname.empty())
             // Create a merge dataset with all we have
             ds.reset(new dataset::AutoMerged(req.arki_conf));
@@ -453,7 +453,7 @@ struct DatasetHandler : public LocalHandler
     }
 
     // Show the summary of a dataset
-    void do_index(ReadonlyDataset& ds, const std::string& dsname, Request& req)
+    void do_index(Reader& ds, const std::string& dsname, Request& req)
     {
         req.log_action("index of dataset " + dsname);
 
@@ -527,7 +527,7 @@ struct DatasetHandler : public LocalHandler
         if (action.empty())
             action = "index";
 
-        unique_ptr<ReadonlyDataset> ds = req.get_dataset(dsname);
+        unique_ptr<Reader> ds = req.get_dataset(dsname);
 
         if (action == "index")
             do_index(*ds, dsname, req);
@@ -536,13 +536,13 @@ struct DatasetHandler : public LocalHandler
         else if (action == "config")
         {
             req.log_action("configuration for dataset " + dsname);
-            dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+            dataset::http::ReaderServer srv(*ds, dsname);
             srv.do_config(req.get_config_remote(dsname), req);
         }
         else if (action == "summary")
         {
             req.log_action("summary for dataset " + dsname);
-            dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+            dataset::http::ReaderServer srv(*ds, dsname);
             dataset::http::LegacySummaryParams params;
             params.parse_get_or_post(req);
             srv.do_summary(params, req);
@@ -550,7 +550,7 @@ struct DatasetHandler : public LocalHandler
         else if (action == "query")
         {
             req.log_action("query dataset " + dsname);
-            dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+            dataset::http::ReaderServer srv(*ds, dsname);
             utils::MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
             dataset::http::LegacyQueryParams params(tempdir.tmp_dir);
             params.parse_get_or_post(req);
@@ -559,7 +559,7 @@ struct DatasetHandler : public LocalHandler
         else if (action == "querydata")
         {
             req.log_action("querydata in dataset " + dsname);
-            dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+            dataset::http::ReaderServer srv(*ds, dsname);
             dataset::http::QueryDataParams params;
             params.parse_get_or_post(req);
             srv.do_queryData(params, req);
@@ -567,7 +567,7 @@ struct DatasetHandler : public LocalHandler
         else if (action == "querysummary")
         {
             req.log_action("querysummary in dataset " + dsname);
-            dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+            dataset::http::ReaderServer srv(*ds, dsname);
             dataset::http::QuerySummaryParams params;
             params.parse_get_or_post(req);
             srv.do_querySummary(params, req);
@@ -575,7 +575,7 @@ struct DatasetHandler : public LocalHandler
         else if (action == "querybytes")
         {
             req.log_action("querybytes in dataset " + dsname);
-            dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+            dataset::http::ReaderServer srv(*ds, dsname);
             utils::MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
             dataset::http::QueryBytesParams params(tempdir.tmp_dir);
             params.parse_get_or_post(req);
@@ -682,7 +682,7 @@ struct InboundHandler : public LocalHandler
             ConfigFile cfg;
             dataset::File::readConfig(str::joinpath(dir, *file), cfg);
             const ConfigFile *info = cfg.sectionBegin()->second;
-            unique_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+            unique_ptr<Reader> ds(dataset::File::create(*info));
 
             stringstream res;
             res << "<html><body>" << endl;
@@ -722,7 +722,7 @@ struct InboundHandler : public LocalHandler
             ConfigFile cfg;
             dataset::File::readConfig(str::joinpath(dir, *file), cfg);
             const ConfigFile *info = cfg.sectionBegin()->second;
-            unique_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+            unique_ptr<Reader> ds(dataset::File::create(*info));
 
             stringstream res;
             res << "<html><body>" << endl;

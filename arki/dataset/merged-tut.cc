@@ -17,9 +17,9 @@ using namespace arki::tests;
 
 struct arki_dataset_merged_shar {
 	ConfigFile config;
-	ReadonlyDataset* ds1;
-	ReadonlyDataset* ds2;
-	ReadonlyDataset* ds3;
+	Reader* ds1;
+	Reader* ds2;
+	Reader* ds3;
 	dataset::Merged ds;
 
 	arki_dataset_merged_shar() : ds1(0), ds2(0), ds3(0)
@@ -70,9 +70,9 @@ struct arki_dataset_merged_shar {
         ensure(!scanner.next(md));
         dispatcher.flush();
 
-		ds.addDataset(*(ds1 = ReadonlyDataset::create(*config.section("test200"))));
-		ds.addDataset(*(ds2 = ReadonlyDataset::create(*config.section("test80"))));
-		ds.addDataset(*(ds3 = ReadonlyDataset::create(*config.section("error"))));
+		ds.addDataset(*(ds1 = Reader::create(*config.section("test200"))));
+		ds.addDataset(*(ds2 = Reader::create(*config.section("test80"))));
+		ds.addDataset(*(ds3 = Reader::create(*config.section("error"))));
 	}
 
 	~arki_dataset_merged_shar()
@@ -92,7 +92,7 @@ void to::test<1>()
     ensure_equals(mdc.size(), 3u);
 
 #if 0
-	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+	unique_ptr<Reader> testds(Reader::create(*config.section("test200")));
 	metadata::Collection mdc;
 
 	testds->query(Matcher::parse("origin:GRIB1,200"), false, mdc);

@@ -169,7 +169,7 @@ void QueryBytesParams::set_into(ByteQuery& dq) const
 }
 
 
-void ReadonlyDatasetServer::do_config(const ConfigFile& remote_config, net::http::Request& req)
+void ReaderServer::do_config(const ConfigFile& remote_config, net::http::Request& req)
 {
     // args = Args()
     // if "json" in args:
@@ -181,7 +181,7 @@ void ReadonlyDatasetServer::do_config(const ConfigFile& remote_config, net::http
     req.send_result(res.str(), "text/plain");
 }
 
-void ReadonlyDatasetServer::do_summary(const LegacySummaryParams& parms, net::http::Request& req)
+void ReaderServer::do_summary(const LegacySummaryParams& parms, net::http::Request& req)
 {
     using namespace net::http;
 
@@ -209,7 +209,7 @@ void ReadonlyDatasetServer::do_summary(const LegacySummaryParams& parms, net::ht
     }
 }
 
-void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, net::http::Request& req)
+void ReaderServer::do_query(const LegacyQueryParams& parms, net::http::Request& req)
 {
     // Validate query
     Matcher matcher;
@@ -269,7 +269,7 @@ void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, net::http::
     // End of streaming
 }
 
-void ReadonlyDatasetServer::do_queryData(const QueryDataParams& parms, net::http::Request& req)
+void ReaderServer::do_queryData(const QueryDataParams& parms, net::http::Request& req)
 {
     // Response header generator
     StreamHeaders headers(req, dsname);
@@ -287,7 +287,7 @@ void ReadonlyDatasetServer::do_queryData(const QueryDataParams& parms, net::http
     headers.sendIfNotFired();
 }
 
-void ReadonlyDatasetServer::do_querySummary(const QuerySummaryParams& parms, net::http::Request& req)
+void ReaderServer::do_querySummary(const QuerySummaryParams& parms, net::http::Request& req)
 {
     StreamHeaders headers(req, dsname);
     headers.ext = "summary";
@@ -296,7 +296,7 @@ void ReadonlyDatasetServer::do_querySummary(const QuerySummaryParams& parms, net
     headers.send_result(s.encode());
 }
 
-void ReadonlyDatasetServer::do_queryBytes(const QueryBytesParams& parms, net::http::Request& req)
+void ReaderServer::do_queryBytes(const QueryBytesParams& parms, net::http::Request& req)
 {
     // Response header generator
     StreamHeaders headers(req, dsname);

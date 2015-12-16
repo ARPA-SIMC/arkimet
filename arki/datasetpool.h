@@ -9,7 +9,7 @@
 namespace arki {
 
 class ConfigFile;
-class ReadonlyDataset;
+class Reader;
 class Writer;
 
 /**
@@ -37,10 +37,10 @@ public:
 	DATASET* get(const std::string& name);
 };
 
-class ReadonlyDatasetPool : public DatasetPool<ReadonlyDataset>
+class ReaderPool : public DatasetPool<Reader>
 {
 public:	
-	ReadonlyDatasetPool(const ConfigFile& cfg);
+	ReaderPool(const ConfigFile& cfg);
 };
 
 class WriterPool : public DatasetPool<Writer>

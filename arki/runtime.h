@@ -31,7 +31,7 @@ class MetadataDispatch;
  */
 void init();
 
-std::unique_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query, const std::string& url=std::string());
+std::unique_ptr<Reader> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query, const std::string& url=std::string());
 
 /**
  * Exception raised when the command line parser has handled the current
@@ -125,7 +125,7 @@ struct CommandLine : public utils::commandline::StandardParserWithManpage
 	 *
 	 * @return the pointer to the datasource, or 0 for no more datasets
 	 */
-	std::unique_ptr<ReadonlyDataset> openSource(ConfigFile& info);
+	std::unique_ptr<Reader> openSource(ConfigFile& info);
 
 	/**
 	 * Process one data source
@@ -133,7 +133,7 @@ struct CommandLine : public utils::commandline::StandardParserWithManpage
 	 * If everything went perfectly well, returns true, else false. It can
 	 * still throw an exception if things go wrong.
 	 */
-	bool processSource(ReadonlyDataset& ds, const std::string& name);
+	bool processSource(Reader& ds, const std::string& name);
 
 	/**
 	 * Done working with one data source
@@ -143,7 +143,7 @@ struct CommandLine : public utils::commandline::StandardParserWithManpage
 	 * FIXME: put something that contains a status report instead, for
 	 * FIXME: --status, as well as a boolean for moveok/moveko
 	 */
-	void closeSource(std::unique_ptr<ReadonlyDataset> ds, bool successful = true);
+	void closeSource(std::unique_ptr<Reader> ds, bool successful = true);
 };
 
 /// Dispatch metadata
@@ -185,7 +185,7 @@ struct MetadataDispatch
 	 * @returns true if all went well, false if any problem happend.
 	 * It can still throw in case of big trouble.
 	 */
-	bool process(ReadonlyDataset& ds, const std::string& name);
+	bool process(Reader& ds, const std::string& name);
 
 	// Flush all imports done so far
 	void flush();

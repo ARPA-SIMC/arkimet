@@ -49,7 +49,7 @@ struct GridQuery
 {
 protected:
     // Dataset we query
-    ReadonlyDataset& ds;
+    Reader& ds;
     // Global summary of ds
     Summary summary;
     // Metadata grid of requested items per every reference time
@@ -69,7 +69,7 @@ protected:
     std::vector<Matcher> filters;
 
 public:
-    GridQuery(ReadonlyDataset& ds);
+    GridQuery(Reader& ds);
 
     /// Add metadata resulting from the matcher expansion
     void add(const Matcher& m);

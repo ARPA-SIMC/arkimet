@@ -86,7 +86,7 @@ struct Options : public StandardParserWithManpage
         bool found = false;
         while (hasNext())
         {
-            ReadonlyDataset::readConfig(next(), cfg);
+            Reader::readConfig(next(), cfg);
             found = true;
         }
         return found;
@@ -193,7 +193,7 @@ struct ScanTest : public Worker
 
     void process(const ConfigFile& cfg) override
     {
-        unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
+        unique_ptr<Reader> ds(Reader::create(cfg));
         if (dataset::LocalReader* ld = dynamic_cast<dataset::LocalReader*>(ds.get()))
         {
             size_t count = 0;

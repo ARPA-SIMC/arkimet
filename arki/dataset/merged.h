@@ -37,17 +37,17 @@ namespace dataset {
 /**
  * Access multiple datasets together
  */
-class Merged : public ReadonlyDataset
+class Merged : public Reader
 {
 protected:
-	std::vector<ReadonlyDataset*> datasets;
+	std::vector<Reader*> datasets;
 
 public:
 	Merged();
 	virtual ~Merged();
 
 	/// Add a dataset to the group of datasets to merge
-	void addDataset(ReadonlyDataset& ds);
+	void addDataset(Reader& ds);
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
@@ -59,7 +59,7 @@ public:
  */
 class AutoMerged : public Merged
 {
-	void addDataset(ReadonlyDataset& ds);
+	void addDataset(Reader& ds);
 
 public:
 	AutoMerged();

@@ -33,7 +33,7 @@ namespace simple {
 class Reader;
 }
 
-class Archive : public ReadonlyDataset
+class Archive : public Reader
 {
 public:
     virtual ~Archive();
@@ -148,7 +148,7 @@ struct OfflineArchive : public Archive
  * When querying, all archives are queried, following the archive order:
  * alphabetical order except the archive named "last" is queried last.
  */
-class Archives : public ReadonlyDataset
+class Archives : public Reader
 {
 protected:
 	std::string m_scache_root;

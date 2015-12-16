@@ -18,7 +18,7 @@ namespace dataset {
 /**
  * Dataset on a single file
  */
-class File : public ReadonlyDataset
+class File : public Reader
 {
 protected:
 	std::string m_pathname;

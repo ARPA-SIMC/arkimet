@@ -232,7 +232,7 @@ bool parseConfigFiles(ConfigFile& cfg, const commandline::VectorOption<commandli
                        i != files.values().end(); ++i)
        {
                parseConfigFile(cfg, *i);
-               //ReadonlyDataset::readConfig(*i, cfg);
+               //Reader::readConfig(*i, cfg);
                found = true;
        }
        return found;

@@ -38,7 +38,7 @@ using namespace arki::dataset;
 namespace arki {
 namespace tests {
 
-unsigned count_results(ReadonlyDataset& ds, const dataset::DataQuery& dq)
+unsigned count_results(Reader& ds, const dataset::DataQuery& dq)
 {
     unsigned count = 0;
     ds.query_data(dq, [&](unique_ptr<Metadata>) { ++count; return true; });
@@ -287,10 +287,10 @@ std::string DatasetTest::arcidxfname() const
 	return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
-ReadonlyDataset* DatasetTest::makeReader(const ConfigFile* wcfg)
+Reader* DatasetTest::makeReader(const ConfigFile* wcfg)
 {
 	if (!wcfg) wcfg = &cfg;
-	ReadonlyDataset* ds = ReadonlyDataset::create(*wcfg);
+	Reader* ds = Reader::create(*wcfg);
 	ensure(ds);
 	return ds;
 }
@@ -306,7 +306,7 @@ Writer* DatasetTest::makeWriter(const ConfigFile* wcfg)
 dataset::LocalReader* DatasetTest::makeLocalReader(const ConfigFile* wcfg)
 {
 	using namespace arki::dataset;
-	ReadonlyDataset* ds = makeReader(wcfg);
+	Reader* ds = makeReader(wcfg);
 	LocalReader* wl = dynamic_cast<LocalReader*>(ds);
 	ensure(wl);
 	return wl;
@@ -323,7 +323,7 @@ dataset::SegmentedWriter* DatasetTest::makeLocalWriter(const ConfigFile* wcfg)
 
 dataset::ondisk2::Reader* DatasetTest::makeOndisk2Reader(const ConfigFile* wcfg)
 {
-	ReadonlyDataset* ds = makeReader(wcfg);
+	Reader* ds = makeReader(wcfg);
 	dataset::ondisk2::Reader* wl = dynamic_cast<dataset::ondisk2::Reader*>(ds);
 	ensure(wl);
 	return wl;
@@ -339,7 +339,7 @@ dataset::ondisk2::Writer* DatasetTest::makeOndisk2Writer(const ConfigFile* wcfg)
 
 dataset::simple::Reader* DatasetTest::makeSimpleReader(const ConfigFile* wcfg)
 {
-	ReadonlyDataset* ds = makeReader(wcfg);
+	Reader* ds = makeReader(wcfg);
 	dataset::simple::Reader* wl = dynamic_cast<dataset::simple::Reader*>(ds);
 	ensure(wl);
 	return wl;
@@ -668,7 +668,7 @@ std::unique_ptr<dataset::LocalWriter> make_dataset_writer(const std::string& cfg
     return ds;
 }
 
-std::unique_ptr<ReadonlyDataset> make_dataset_reader(const std::string& cfgstr)
+std::unique_ptr<Reader> make_dataset_reader(const std::string& cfgstr)
 {
     // Parse configuration
     stringstream incfg(cfgstr);
@@ -676,7 +676,7 @@ std::unique_ptr<ReadonlyDataset> make_dataset_reader(const std::string& cfgstr)
     cfg.parse(incfg, "(memory)");
     wassert(actual(cfg.value("path").empty()).isfalse());
 
-    unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
+    unique_ptr<Reader> ds(Reader::create(cfg));
     wassert(actual(ds.get()).istrue());
     return ds;
 }

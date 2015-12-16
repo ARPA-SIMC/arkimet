@@ -20,7 +20,7 @@
 namespace arki {
 struct Metadata;
 struct Dispatcher;
-struct ReadonlyDataset;
+struct Reader;
 struct Writer;
 
 namespace dataset {
@@ -46,7 +46,7 @@ namespace tests {
 #define ensure_dispatches(x, y, z) wassert(impl_ensure_dispatches((x), (y), (z)))
 void impl_ensure_dispatches(Dispatcher& dispatcher, std::unique_ptr<Metadata> md, metadata_dest_func mdc);
 
-unsigned count_results(ReadonlyDataset& ds, const dataset::DataQuery& dq);
+unsigned count_results(Reader& ds, const dataset::DataQuery& dq);
 
 struct OutputChecker : public std::stringstream
 {
@@ -122,7 +122,7 @@ struct DatasetTest
 	// Return the file name of the archive index of the current dataset
 	std::string arcidxfname() const;
 
-    ReadonlyDataset* makeReader(const ConfigFile* wcfg = 0);
+    Reader* makeReader(const ConfigFile* wcfg = 0);
     Writer* makeWriter(const ConfigFile* wcfg = 0);
     dataset::LocalReader* makeLocalReader(const ConfigFile* wcfg = 0);
     dataset::SegmentedWriter* makeLocalWriter(const ConfigFile* wcfg = 0);
@@ -178,7 +178,7 @@ struct dataset_tg : public tut::test_group<T>
 };
 
 std::unique_ptr<dataset::LocalWriter> make_dataset_writer(const std::string& cfg, bool empty=true);
-std::unique_ptr<ReadonlyDataset> make_dataset_reader(const std::string& cfg);
+std::unique_ptr<Reader> make_dataset_reader(const std::string& cfg);
 
 }
 

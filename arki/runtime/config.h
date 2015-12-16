@@ -107,7 +107,7 @@ struct Config
 /**
  * Parse the config file with the given name into the ConfigFile object 'cfg'.
  *
- * Note: use ReadonlyDataset::readConfig to read dataset configuration
+ * Note: use Reader::readConfig to read dataset configuration
  */
 void parseConfigFile(ConfigFile& cfg, const std::string& fileName);
 

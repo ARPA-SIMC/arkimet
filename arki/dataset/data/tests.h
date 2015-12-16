@@ -10,7 +10,7 @@
 namespace arki {
 struct Metadata;
 struct Dispatcher;
-struct ReadonlyDataset;
+struct Reader;
 struct Writer;
 
 namespace tests {

@@ -11,7 +11,7 @@
 namespace arki {
 struct Metadata;
 struct Summary;
-struct ReadonlyDataset;
+struct Reader;
 
 namespace dataset {
 struct DataQuery;
@@ -34,7 +34,7 @@ protected:
 public:
     Collection();
     /// Construct a collection filled by the results of query_data
-    Collection(ReadonlyDataset& ds, const dataset::DataQuery& q);
+    Collection(Reader& ds, const dataset::DataQuery& q);
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
     Collection(const std::string& pathname);
@@ -59,7 +59,7 @@ public:
     metadata_dest_func inserter_func();
 
     /// Append results from a query_data
-    void add(ReadonlyDataset& ds, const dataset::DataQuery& q);
+    void add(Reader& ds, const dataset::DataQuery& q);
 
     /// Append a copy of md
     void push_back(const Metadata& md);

@@ -52,7 +52,7 @@ void Writer::flush() {}
 
 Pending Writer::test_writelock() { return Pending(); }
 
-void ReadonlyDataset::query_bytes(const dataset::ByteQuery& q, int out)
+void Reader::query_bytes(const dataset::ByteQuery& q, int out)
 {
     switch (q.type)
     {
@@ -114,9 +114,9 @@ void ReadonlyDataset::query_bytes(const dataset::ByteQuery& q, int out)
 }
 
 #ifdef HAVE_LUA
-ReadonlyDataset* ReadonlyDataset::lua_check(lua_State* L, int idx)
+Reader* Reader::lua_check(lua_State* L, int idx)
 {
-	return *(ReadonlyDataset**)luaL_checkudata(L, idx, "arki.rodataset");
+	return *(Reader**)luaL_checkudata(L, idx, "arki.rodataset");
 }
 
 namespace dataset {
@@ -169,7 +169,7 @@ void DataQuery::lua_push_table(lua_State* L, int idx) const
 static int arkilua_queryData(lua_State *L)
 {
 	// queryData(self, { matcher="", withdata=false, sorter="" }, consumer_func)
-	ReadonlyDataset* rd = ReadonlyDataset::lua_check(L, 1);
+	Reader* rd = Reader::lua_check(L, 1);
 	luaL_argcheck(L, lua_istable(L, 2), 2, "`table' expected");
 	luaL_argcheck(L, lua_isfunction(L, 3), 3, "`function' expected");
 
@@ -189,7 +189,7 @@ static int arkilua_queryData(lua_State *L)
 static int arkilua_querySummary(lua_State *L)
 {
 	// querySummary(self, matcher="", summary)
-	ReadonlyDataset* rd = ReadonlyDataset::lua_check(L, 1);
+	Reader* rd = Reader::lua_check(L, 1);
 	Matcher matcher = Matcher::lua_check(L, 2);
 	Summary* sum = Summary::lua_check(L, 3);
 	luaL_argcheck(L, sum != NULL, 3, "`arki.summary' expected");
@@ -210,14 +210,14 @@ static const struct luaL_Reg readonlydatasetlib [] = {
 	{NULL, NULL}
 };
 
-void ReadonlyDataset::lua_push(lua_State* L)
+void Reader::lua_push(lua_State* L)
 {
     utils::lua::push_object_ptr(L, this, "arki.rodataset", readonlydatasetlib);
 }
 #endif
 
 
-ReadonlyDataset* ReadonlyDataset::create(const ConfigFile& cfg)
+Reader* Reader::create(const ConfigFile& cfg)
 {
     string type = str::lower(cfg.value("type"));
     if (type.empty())
@@ -241,7 +241,7 @@ ReadonlyDataset* ReadonlyDataset::create(const ConfigFile& cfg)
     throw std::runtime_error("cannot create dataset: unknown dataset type \""+type+"\"");
 }
 
-void ReadonlyDataset::readConfig(const std::string& path, ConfigFile& cfg)
+void Reader::readConfig(const std::string& path, ConfigFile& cfg)
 {
 #ifdef HAVE_LIBCURL
     if (str::startswith(path, "http://") || str::startswith(path, "https://"))

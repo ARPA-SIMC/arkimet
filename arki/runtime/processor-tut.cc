@@ -14,7 +14,7 @@ using namespace arki::runtime;
 using namespace arki::utils;
 
 struct arki_processor_shar {
-    unique_ptr<ReadonlyDataset> build_dataset()
+    unique_ptr<Reader> build_dataset()
     {
         DatasetTest dt;
         if (sys::isdir("test")) sys::rmtree("test");
@@ -26,12 +26,12 @@ struct arki_processor_shar {
 
         testdata::GRIBData fixture;
         wruntest(dt.import_all, fixture);
-        return unique_ptr<ReadonlyDataset>(dt.makeReader());
+        return unique_ptr<Reader>(dt.makeReader());
     }
 
     void run_maker(ProcessorMaker& pm, Matcher matcher=Matcher())
     {
-        unique_ptr<ReadonlyDataset> ds(build_dataset());
+        unique_ptr<Reader> ds(build_dataset());
 
         if (sys::exists("pm-out"))
             sys::unlink("pm-out");

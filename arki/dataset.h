@@ -132,13 +132,13 @@ struct ByteQuery : public DataQuery
 
 }
 
-class ReadonlyDataset
+class Reader
 {
 public:
 	// Configuration items (normally extracted from ConfigFile)
 	std::map<std::string, std::string> cfg;
 
-	virtual ~ReadonlyDataset() {}
+	virtual ~Reader() {}
 
     /**
      * Query the dataset using the given matcher, and sending the results to
@@ -156,7 +156,7 @@ public:
      * Query the dataset obtaining a byte stream, that gets written to a file
      * descriptor.
      *
-     * The default implementation in ReadonlyDataset is based on queryData.
+     * The default implementation in Reader is based on queryData.
      */
     virtual void query_bytes(const dataset::ByteQuery& q, int out);
 
@@ -165,16 +165,16 @@ public:
 	void lua_push(lua_State* L);
 
 	/**
-	 * Check that the element at \a idx is a ReadonlyDataset userdata
+	 * Check that the element at \a idx is a Reader userdata
 	 *
-	 * @return the ReadonlyDataset element, or 0 if the check failed
+	 * @return the Reader element, or 0 if the check failed
 	 */
-	static ReadonlyDataset* lua_check(lua_State* L, int idx);
+	static Reader* lua_check(lua_State* L, int idx);
 
 	/**
 	 * Instantiate an appropriate Dataset for the given configuration
 	 */
-	static ReadonlyDataset* create(const ConfigFile& cfg);
+	static Reader* create(const ConfigFile& cfg);
 
 	/**
 	 * Read the configuration of the dataset(s) at the given path or URL,

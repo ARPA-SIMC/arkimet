@@ -80,7 +80,7 @@ int main(int argc, const char* argv[])
                 continue;
             }
 			try {
-				ReadonlyDataset::readConfig(file, cfg);
+				Reader::readConfig(file, cfg);
 				foundConfig = true;
 			} catch (std::exception& e) {
 				cerr << file << " skipped: " << e.what() << endl;
@@ -128,7 +128,7 @@ int main(int argc, const char* argv[])
 					i != cfg.sectionEnd(); ++i)
 			{
 				// Instantiate the dataset
-				unique_ptr<ReadonlyDataset> d(ReadonlyDataset::create(*i->second));
+				unique_ptr<Reader> d(Reader::create(*i->second));
 				// Get the summary
 				Summary sum;
 				d->querySummary(Matcher(), sum);

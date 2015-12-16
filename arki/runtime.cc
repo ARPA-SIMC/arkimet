@@ -63,9 +63,9 @@ void init()
 HandledByCommandLineParser::HandledByCommandLineParser(int status) : status(status) {}
 HandledByCommandLineParser::~HandledByCommandLineParser() {}
 
-std::unique_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query, const std::string& url)
+std::unique_ptr<Reader> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query, const std::string& url)
 {
-    unique_ptr<ReadonlyDataset> ds;
+    unique_ptr<Reader> ds;
     string baseurl = dataset::HTTP::allSameRemoteServer(cfg);
     if (baseurl.empty())
     {
@@ -82,7 +82,7 @@ std::unique_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, cons
         cfg.setValue("qmacro", query);
         if (!url.empty())
             cfg.setValue("url", url);
-        ds.reset(ReadonlyDataset::create(cfg));
+        ds.reset(Reader::create(cfg));
     }
     return ds;
 }
@@ -320,12 +320,12 @@ void CommandLine::setupProcessing()
             line = str::strip(line);
             if (line.empty())
                 continue;
-            ReadonlyDataset::readConfig(line, inputInfo);
+            Reader::readConfig(line, inputInfo);
         }
     }
 
     while (hasNext())	// From command line arguments, looking for data files or datasets
-        ReadonlyDataset::readConfig(next(), inputInfo);
+        Reader::readConfig(next(), inputInfo);
 
     if (inputInfo.sectionSize() == 0)
         throw commandline::BadOption("you need to specify at least one input file or dataset");
@@ -492,7 +492,7 @@ static std::string moveFile(const std::string& source, const std::string& target
 	return targetFile;
 }
 
-static std::string moveFile(const ReadonlyDataset& ds, const std::string& targetdir)
+static std::string moveFile(const Reader& ds, const std::string& targetdir)
 {
 	if (const dataset::File* d = dynamic_cast<const dataset::File*>(&ds))
 		return moveFile(d->pathname(), targetdir);
@@ -500,15 +500,15 @@ static std::string moveFile(const ReadonlyDataset& ds, const std::string& target
 		return string();
 }
 
-std::unique_ptr<ReadonlyDataset> CommandLine::openSource(ConfigFile& info)
+std::unique_ptr<Reader> CommandLine::openSource(ConfigFile& info)
 {
 	if (movework && movework->isSet() && info.value("type") == "file")
 		info.setValue("path", moveFile(info.value("path"), movework->stringValue()));
 
-	return unique_ptr<ReadonlyDataset>(ReadonlyDataset::create(info));
+	return unique_ptr<Reader>(Reader::create(info));
 }
 
-bool CommandLine::processSource(ReadonlyDataset& ds, const std::string& name)
+bool CommandLine::processSource(Reader& ds, const std::string& name)
 {
 	if (dispatcher)
 		return dispatcher->process(ds, name);
@@ -516,7 +516,7 @@ bool CommandLine::processSource(ReadonlyDataset& ds, const std::string& name)
 	return true;
 }
 
-void CommandLine::closeSource(std::unique_ptr<ReadonlyDataset> ds, bool successful)
+void CommandLine::closeSource(std::unique_ptr<Reader> ds, bool successful)
 {
 	if (successful && moveok && moveok->isSet())
 	{
@@ -549,7 +549,7 @@ MetadataDispatch::~MetadataDispatch()
 		delete dispatcher;
 }
 
-bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
+bool MetadataDispatch::process(Reader& ds, const std::string& name)
 {
     setStartTime();
     results.clear();

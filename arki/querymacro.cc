@@ -28,7 +28,7 @@ static int arkilua_dataset(lua_State *L)
 {
 	Querymacro* rd = checkqmacro(L);
 	const char* name = luaL_checkstring(L, 2);
-	ReadonlyDataset* ds = rd->dataset(name);
+	Reader* ds = rd->dataset(name);
 	if (ds) 
 	{
 		ds->lua_push(L);
@@ -131,20 +131,20 @@ Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std
 Querymacro::~Querymacro()
 {
 	if (L) delete L;
-	for (std::map<std::string, ReadonlyDataset*>::iterator i = ds_cache.begin();
+	for (std::map<std::string, Reader*>::iterator i = ds_cache.begin();
 			i != ds_cache.end(); ++i)
 		delete i->second;
 }
 
-ReadonlyDataset* Querymacro::dataset(const std::string& name)
+Reader* Querymacro::dataset(const std::string& name)
 {
-	std::map<std::string, ReadonlyDataset*>::iterator i = ds_cache.find(name);
+	std::map<std::string, Reader*>::iterator i = ds_cache.find(name);
 	if (i == ds_cache.end())
 	{
 		ConfigFile* dscfg = cfg.section(name);
 		if (!dscfg) return 0;
-		ReadonlyDataset* ds = ReadonlyDataset::create(*dscfg);
-		pair<map<string, ReadonlyDataset*>::iterator, bool> res = ds_cache.insert(make_pair(name, ds));
+		Reader* ds = Reader::create(*dscfg);
+		pair<map<string, Reader*>::iterator, bool> res = ds_cache.insert(make_pair(name, ds));
 		i = res.first;
 	}
 	return i->second;

@@ -8,7 +8,7 @@
 #include <memory>
 
 namespace arki {
-class ReadonlyDataset;
+class Reader;
 class Matcher;
 
 namespace runtime {
@@ -17,7 +17,7 @@ struct DatasetProcessor
 {
     virtual ~DatasetProcessor() {}
 
-    virtual void process(ReadonlyDataset& ds, const std::string& name) = 0;
+    virtual void process(Reader& ds, const std::string& name) = 0;
     virtual void end() {}
     virtual std::string describe() const = 0;
 };
@@ -40,7 +40,7 @@ struct TargetFileProcessor : public DatasetProcessor
     virtual ~TargetFileProcessor();
 
     virtual std::string describe() const;
-    virtual void process(ReadonlyDataset& ds, const std::string& name);
+    virtual void process(Reader& ds, const std::string& name);
     virtual void end();
 };
 

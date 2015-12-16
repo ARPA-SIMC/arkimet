@@ -103,15 +103,15 @@ struct QueryBytesParams : public QueryDataParams
 };
 
 /**
- * Server-side endpoint of the ReadonlyDataset interface exported via HTTP
+ * Server-side endpoint of the Reader interface exported via HTTP
  */
-struct ReadonlyDatasetServer
+struct ReaderServer
 {
-    ReadonlyDataset& ds;
+    Reader& ds;
     std::string dsname;
 
-    ReadonlyDatasetServer(
-            arki::ReadonlyDataset& ds,
+    ReaderServer(
+            arki::Reader& ds,
             const std::string& dsname)
         : ds(ds), dsname(dsname)
     {

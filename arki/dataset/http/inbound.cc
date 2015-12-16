@@ -45,7 +45,7 @@ void InboundServer::do_scan(const InboundParams& parms, net::http::Request& req)
         info->setValue("format", *parms.format);
 
     // Build a dataset to scan the file
-    unique_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+    unique_ptr<Reader> ds(dataset::File::create(*info));
 
     // Response header generator
     StreamHeaders headers(req, str::basename(*parms.file));
@@ -82,7 +82,7 @@ void InboundServer::do_testdispatch(const InboundParams& parms, net::http::Reque
         info->setValue("format", *parms.format);
 
     // Build a dataset to scan the file
-    unique_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+    unique_ptr<Reader> ds(dataset::File::create(*info));
 
     stringstream str;
     TestDispatcher td(import_config, str);
@@ -126,7 +126,7 @@ void InboundServer::do_dispatch(const InboundParams& parms, net::http::Request& 
         info->setValue("format", *parms.format);
 
     // Build a dataset to scan the file
-    unique_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+    unique_ptr<Reader> ds(dataset::File::create(*info));
 
     // Response header generator
     StreamHeaders headers(req, str::basename(*parms.file));

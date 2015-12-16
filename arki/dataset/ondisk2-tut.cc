@@ -200,7 +200,7 @@ template<> template<>
 void to::test<2>()
 {
 	acquireSamples();
-	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+	unique_ptr<Reader> testds(Reader::create(*config.section("test200")));
 	metadata::Collection mdc;
 
     mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
@@ -223,7 +223,7 @@ template<> template<>
 void to::test<3>()
 {
     acquireSamples();
-    unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
+    unique_ptr<Reader> testds(Reader::create(*config.section("test80")));
     metadata::Collection mdc;
     mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 0u);
@@ -245,7 +245,7 @@ template<> template<>
 void to::test<4>()
 {
     acquireSamples();
-    unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test98")));
+    unique_ptr<Reader> testds(Reader::create(*config.section("test98")));
     metadata::Collection mdc;
     mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 0u);
@@ -270,7 +270,7 @@ void to::test<5>()
 
 	metadata::Collection mdc;
 	{
-		unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
+		unique_ptr<Reader> testds(Reader::create(*config.section("test80")));
 
         // Fetch an element
         mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
@@ -294,7 +294,7 @@ void to::test<5>()
     }
 
     {
-        unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
+        unique_ptr<Reader> testds(Reader::create(*config.section("test80")));
 
         // Fetch the element again
         mdc.clear();
@@ -322,7 +322,7 @@ void to::test<6>()
 	acquireSamples();
 	metadata::Collection mdc;
 	{
-		unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+		unique_ptr<Reader> testds(Reader::create(*config.section("test200")));
 
         // Fetch an element
         mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
@@ -351,7 +351,7 @@ void to::test<6>()
 
     // Try to fetch the element again
     {
-        unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+        unique_ptr<Reader> testds(Reader::create(*config.section("test200")));
         mdc.clear();
         mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
         ensure_equals(mdc.size(), 0u);
@@ -726,7 +726,7 @@ void to::test<15>()
 
     // Try to query the element and see if it is the right one
     {
-        unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*cfg.section("testbufr")));
+        unique_ptr<Reader> testds(Reader::create(*cfg.section("testbufr")));
         metadata::Collection mdc_read(*testds, Matcher::parse("origin:BUFR"));
         ensure_equals(mdc_read.size(), 1u);
         int usn;
@@ -764,7 +764,7 @@ void to::test<16>()
     wassert(actual(writer.get()).check_clean());
 
     // Query it, without data
-    std::unique_ptr<ReadonlyDataset> reader(make_dataset_reader(conf));
+    std::unique_ptr<Reader> reader(make_dataset_reader(conf));
     metadata::Collection mdc;
     mdc.add(*reader, Matcher::parse(""));
     wassert(actual(mdc.size()) == 720u);
