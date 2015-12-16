@@ -27,6 +27,8 @@ struct Index
      * query does not use the index and a full scan should be used instead
      */
     virtual bool query_summary(const Matcher& matcher, Summary& summary) = 0;
+
+    virtual size_t produce_nth(metadata_dest_func cons, size_t idx=0) = 0;
 };
 
 }

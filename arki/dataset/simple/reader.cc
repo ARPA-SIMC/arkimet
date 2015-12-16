@@ -1,29 +1,9 @@
 #include "config.h"
-#include "arki/dataset/simple/reader.h"
+#include "reader.h"
 #include "arki/dataset/index/manifest.h"
-#include "arki/configfile.h"
-#include "arki/summary.h"
-#include "arki/types/reftime.h"
-#include "arki/matcher.h"
-#include "arki/metadata/collection.h"
-#include "arki/utils/files.h"
-#include "arki/utils/compress.h"
-#include "arki/scan/any.h"
-#include "arki/postprocess.h"
-#include "arki/sort.h"
-#include "arki/nag.h"
 #include "arki/utils/sys.h"
-#include "arki/utils/string.h"
-#include <fstream>
-#include <ctime>
-#include <cstdio>
-#ifdef HAVE_LUA
-#include "arki/report.h"
-#endif
 
 using namespace std;
-using namespace arki;
-using namespace arki::types;
 using namespace arki::utils;
 
 namespace arki {
@@ -31,7 +11,7 @@ namespace dataset {
 namespace simple {
 
 Reader::Reader(const ConfigFile& cfg)
-    : SegmentedReader(cfg), m_mft(0)
+    : IndexedReader(cfg)
 {
     // Create the directory if it does not exist
     sys::makedirs(m_path);
@@ -39,48 +19,18 @@ Reader::Reader(const ConfigFile& cfg)
     if (index::Manifest::exists(m_path))
     {
         unique_ptr<index::Manifest> mft = index::Manifest::create(m_path);
-
-		m_mft = mft.release();
-		m_mft->openRO();
-	}
+        mft->openRO();
+        m_idx = mft.release();
+    }
 }
 
 Reader::~Reader()
 {
-	if (m_mft) delete m_mft;
 }
 
 bool Reader::is_dataset(const std::string& dir)
 {
     return index::Manifest::exists(dir);
-}
-
-void Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
-{
-    LocalReader::query_data(q, dest);
-    if (!m_mft) return;
-    m_mft->query_data(q, dest);
-}
-
-void Reader::querySummary(const Matcher& matcher, Summary& summary)
-{
-    LocalReader::querySummary(matcher, summary);
-    if (!m_mft) return;
-    m_mft->query_summary(matcher, summary);
-}
-
-size_t Reader::produce_nth(metadata_dest_func cons, size_t idx)
-{
-    size_t res = LocalReader::produce_nth(cons, idx);
-    if (m_mft)
-        res += m_mft->produce_nth(cons, idx);
-    return res;
-}
-
-void Reader::maintenance(maintenance::MaintFileVisitor& v)
-{
-    if (!m_mft) return;
-    m_mft->check(*m_segment_manager, v);
 }
 
 }

@@ -9,34 +9,14 @@
 #include <iosfwd>
 
 namespace arki {
-class ConfigFile;
-class Matcher;
-
 namespace dataset {
-namespace maintenance {
-class MaintFileVisitor;
-}
-
-namespace index {
-struct Manifest;
-}
-
 namespace simple {
 
-class Reader : public SegmentedReader
+class Reader : public IndexedReader
 {
-protected:
-    index::Manifest* m_mft;
-
 public:
     Reader(const ConfigFile& cfg);
     virtual ~Reader();
-
-    void query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
-    void querySummary(const Matcher& matcher, Summary& summary) override;
-    size_t produce_nth(metadata_dest_func cons, size_t idx=0) override;
-
-    void maintenance(maintenance::MaintFileVisitor& v);
 
     static bool is_dataset(const std::string& dir);
 };
