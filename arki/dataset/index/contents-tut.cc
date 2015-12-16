@@ -79,7 +79,7 @@ TESTGRP(arki_dataset_index_contents);
 
 void query_index(WContents& idx, const dataset::DataQuery& q, metadata::Collection& dest)
 {
-    idx.query(q, dest.inserter_func());
+    idx.query_data(q, dest.inserter_func());
 }
 
 // Trying indexing a few metadata
@@ -217,7 +217,7 @@ struct ReadHang : public wibble::sys::ChildProcess
         try {
             RContents idx(cfg);
             idx.open();
-            idx.query(Matcher::parse("origin:GRIB1"), [&](unique_ptr<Metadata> md) {
+            idx.query_data(Matcher::parse("origin:GRIB1"), [&](unique_ptr<Metadata> md) {
                 cout << "H" << endl;
                 usleep(100000);
                 return true;
@@ -382,27 +382,27 @@ void to::test<5>()
     md2.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
     test->index(md2, "test-md1", 0);
 
-	p.commit();
+    p.commit();
 
-	// Query an interval with a partial month only
-	Summary summary;
-	test->querySummary(Matcher::parse("reftime:>=2005-01-10,<=2005-01-25"), summary);
-	ensure_equals(summary.count(), 1u);
+    // Query an interval with a partial month only
+    Summary summary;
+    test->query_summary(Matcher::parse("reftime:>=2005-01-10,<=2005-01-25"), summary);
+    ensure_equals(summary.count(), 1u);
 
-	// Query an interval with a partial month and a full month
-	summary.clear();
-	test->querySummary(Matcher::parse("reftime:>=2004-12-10,<=2005-01-31"), summary);
-	ensure_equals(summary.count(), 1u);
+    // Query an interval with a partial month and a full month
+    summary.clear();
+    test->query_summary(Matcher::parse("reftime:>=2004-12-10,<=2005-01-31"), summary);
+    ensure_equals(summary.count(), 1u);
 
-	// Query an interval with a full month and a partial month
-	summary.clear();
-	test->querySummary(Matcher::parse("reftime:>=2005-01-01,<=2005-02-15"), summary);
-	ensure_equals(summary.count(), 1u);
+    // Query an interval with a full month and a partial month
+    summary.clear();
+    test->query_summary(Matcher::parse("reftime:>=2005-01-01,<=2005-02-15"), summary);
+    ensure_equals(summary.count(), 1u);
 
-	// Query an interval with a partial month, a full month and a partial month
-	summary.clear();
-	test->querySummary(Matcher::parse("reftime:>=2004-12-10,<=2005-02-15"), summary);
-	ensure_equals(summary.count(), 1u);
+    // Query an interval with a partial month, a full month and a partial month
+    summary.clear();
+    test->query_summary(Matcher::parse("reftime:>=2004-12-10,<=2005-02-15"), summary);
+    ensure_equals(summary.count(), 1u);
 
 }
 

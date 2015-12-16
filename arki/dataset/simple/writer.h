@@ -27,7 +27,7 @@ namespace simple {
 class Reader;
 class Datafile;
 
-class Writer : public WritableSegmented
+class Writer : public SegmentedWriter
 {
 protected:
     index::Manifest* m_mft;

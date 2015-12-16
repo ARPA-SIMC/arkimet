@@ -31,7 +31,7 @@ namespace dataset {
 namespace simple {
 
 Reader::Reader(const ConfigFile& cfg)
-    : SegmentedLocal(cfg), m_mft(0)
+    : SegmentedReader(cfg), m_mft(0)
 {
     // Create the directory if it does not exist
     sys::makedirs(m_path);
@@ -57,21 +57,21 @@ bool Reader::is_dataset(const std::string& dir)
 
 void Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    Local::query_data(q, dest);
+    LocalReader::query_data(q, dest);
     if (!m_mft) return;
     m_mft->query_data(q, dest);
 }
 
 void Reader::querySummary(const Matcher& matcher, Summary& summary)
 {
-	Local::querySummary(matcher, summary);
-	if (!m_mft) return;
-	m_mft->querySummary(matcher, summary);
+    LocalReader::querySummary(matcher, summary);
+    if (!m_mft) return;
+    m_mft->query_summary(matcher, summary);
 }
 
 size_t Reader::produce_nth(metadata_dest_func cons, size_t idx)
 {
-    size_t res = Local::produce_nth(cons, idx);
+    size_t res = LocalReader::produce_nth(cons, idx);
     if (m_mft)
         res += m_mft->produce_nth(cons, idx);
     return res;

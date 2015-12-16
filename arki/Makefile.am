@@ -44,6 +44,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/http/inbound.h \
 		dataset/http/server.h \
 		dataset/http/test-utils.h \
+		dataset/index.h \
 		dataset/index/attr.h \
 		dataset/index/base.h \
 		dataset/index/aggregate.h \
@@ -489,6 +490,7 @@ libarkimet_la_SOURCES += \
 		dataset/data/dir.cc \
 		dataset/maintenance.cc \
 		dataset/memory.cc \
+		dataset/index.cc \
 		dataset/index/base.cc \
 		dataset/index/attr.cc \
 		dataset/index/manifest.cc \
@@ -530,6 +532,7 @@ tests_arki_test_SOURCES += \
 		dataset/data/dir-tut.cc \
 		dataset/maintenance-tut.cc \
 		dataset/memory-tut.cc \
+		dataset/index-test.cc \
 		dataset/index/base-tut.cc \
 		dataset/index/attr-tut.cc \
 		dataset/index/manifest-tut.cc \

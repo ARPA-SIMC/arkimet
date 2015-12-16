@@ -248,7 +248,7 @@ void ReadonlyDataset::readConfig(const std::string& path, ConfigFile& cfg)
         return dataset::HTTP::readConfig(path, cfg);
 #endif
     if (sys::isdir(path))
-        return dataset::Local::readConfig(path, cfg);
+        return dataset::LocalReader::readConfig(path, cfg);
     else
         return dataset::File::readConfig(path, cfg);
 }
@@ -265,7 +265,7 @@ WritableDataset* WritableDataset::create(const ConfigFile& cfg)
     /*
     // TODO: create remote ones once implemented
     */
-    return dataset::WritableLocal::create(cfg);
+    return dataset::LocalWriter::create(cfg);
 }
 
 WritableDataset::AcquireResult WritableDataset::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
@@ -278,7 +278,7 @@ WritableDataset::AcquireResult WritableDataset::testAcquire(const ConfigFile& cf
     if (type == "discard")
         return dataset::Discard::testAcquire(cfg, md, out);
 
-    return dataset::WritableLocal::testAcquire(cfg, md, out);
+    return dataset::LocalWriter::testAcquire(cfg, md, out);
 }
 
 }

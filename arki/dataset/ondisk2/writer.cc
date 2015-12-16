@@ -36,7 +36,7 @@ namespace dataset {
 namespace ondisk2 {
 
 Writer::Writer(const ConfigFile& cfg)
-    : WritableSegmented(cfg), m_cfg(cfg), m_idx(cfg)
+    : SegmentedWriter(cfg), m_cfg(cfg), m_idx(cfg)
 {
     // Create the directory if it does not exist
     sys::makedirs(m_path);
@@ -234,7 +234,7 @@ void Writer::remove(const std::string& str_id)
 
 void Writer::flush()
 {
-    WritableSegmented::flush();
+    SegmentedWriter::flush();
     m_idx.flush();
 }
 
@@ -245,7 +245,7 @@ Pending Writer::test_writelock()
 
 void Writer::sanityChecks(std::ostream& log, bool writable)
 {
-    WritableSegmented::sanityChecks(log, writable);
+    SegmentedWriter::sanityChecks(log, writable);
 
     if (!m_idx.checkSummaryCache(log) && writable)
     {
@@ -380,7 +380,7 @@ void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
     FileChecker checker(*m_segment_manager, quick, fm);
     m_idx.scan_files(checker);
     fm.end();
-    WritableSegmented::maintenance(v, quick);
+    SegmentedWriter::maintenance(v, quick);
 }
 
 void Writer::removeAll(std::ostream& log, bool writable)
@@ -395,7 +395,7 @@ void Writer::removeAll(std::ostream& log, bool writable)
         log << m_name << ": would clear index" << endl;
 
     // TODO: empty the index
-    WritableSegmented::removeAll(log, writable);
+    SegmentedWriter::removeAll(log, writable);
 }
 
 
@@ -528,7 +528,7 @@ size_t Writer::removeFile(const std::string& relpath, bool withData)
 {
     m_idx.reset(relpath);
     // TODO: also remove .metadata and .summary files
-    return WritableSegmented::removeFile(relpath, withData);
+    return SegmentedWriter::removeFile(relpath, withData);
 }
 
 void Writer::archiveFile(const std::string& relpath)
@@ -544,8 +544,8 @@ void Writer::archiveFile(const std::string& relpath)
     // Remove from index
     m_idx.reset(relpath);
 
-    // Delegate the rest to WritableSegmented
-    WritableSegmented::archiveFile(relpath);
+    // Delegate the rest to SegmentedWriter
+    SegmentedWriter::archiveFile(relpath);
 }
 
 size_t Writer::vacuum()

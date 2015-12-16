@@ -19,7 +19,7 @@ struct Validator;
 }
 
 namespace dataset {
-class WritableSegmented;
+class SegmentedWriter;
 
 namespace maintenance {
 
@@ -86,10 +86,10 @@ struct Tee : public MaintFileVisitor
 struct Agent : public maintenance::MaintFileVisitor
 {
 	std::ostream& m_log;
-	WritableSegmented& w;
+	SegmentedWriter& w;
 	bool lineStart;
 
-	Agent(std::ostream& log, WritableSegmented& w);
+	Agent(std::ostream& log, SegmentedWriter& w);
 
 	std::ostream& log();
 
@@ -112,7 +112,7 @@ struct FailsafeRepacker : public Agent
 {
 	size_t m_count_deleted;
 
-	FailsafeRepacker(std::ostream& log, WritableSegmented& w);
+	FailsafeRepacker(std::ostream& log, SegmentedWriter& w);
 
 	void operator()(const std::string& file, data::FileState state);
 	void end();
@@ -129,7 +129,7 @@ struct MockRepacker : public Agent
 	size_t m_count_deindexed;
 	size_t m_count_rescanned;
 
-	MockRepacker(std::ostream& log, WritableSegmented& w);
+	MockRepacker(std::ostream& log, SegmentedWriter& w);
 
 	void operator()(const std::string& file, data::FileState state);
 	void end();
@@ -144,7 +144,7 @@ struct MockFixer : public Agent
 	size_t m_count_rescanned;
 	size_t m_count_deindexed;
 
-	MockFixer(std::ostream& log, WritableSegmented& w);
+	MockFixer(std::ostream& log, SegmentedWriter& w);
 
 	void operator()(const std::string& file, data::FileState state);
 	void end();
@@ -164,7 +164,7 @@ struct RealRepacker : public maintenance::Agent
 	bool m_touched_archive;
 	bool m_redo_summary;
 
-	RealRepacker(std::ostream& log, WritableSegmented& w);
+	RealRepacker(std::ostream& log, SegmentedWriter& w);
 
 	void operator()(const std::string& file, data::FileState state);
 	void end();
@@ -181,7 +181,7 @@ struct RealFixer : public maintenance::Agent
 	bool m_touched_archive;
 	bool m_redo_summary;
 
-	RealFixer(std::ostream& log, WritableSegmented& w);
+	RealFixer(std::ostream& log, SegmentedWriter& w);
 
 	void operator()(const std::string& file, data::FileState state);
 	void end();

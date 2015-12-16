@@ -65,7 +65,7 @@ template<> template<> void to::test<1>()
 
     // Check if files to archive are detected
     {
-        unique_ptr<WritableSegmented> writer(makeLocalWriter(&cfg));
+        unique_ptr<SegmentedWriter> writer(makeLocalWriter(&cfg));
 
         MaintenanceCollector c;
         writer->maintenance(c);
@@ -79,7 +79,7 @@ template<> template<> void to::test<1>()
 
     // Perform packing and check that things are still ok afterwards
     {
-        unique_ptr<WritableSegmented> writer(makeLocalWriter(&cfg));
+        unique_ptr<SegmentedWriter> writer(makeLocalWriter(&cfg));
         OutputChecker s;
         writer->repack(s, true);
         s.ensure_line_contains(": archived 2007/07-07.grib1");
@@ -113,7 +113,7 @@ template<> template<> void to::test<1>()
 
     // Maintenance should now show a normal situation
     {
-        unique_ptr<WritableSegmented> writer(makeLocalWriter(&cfg));
+        unique_ptr<SegmentedWriter> writer(makeLocalWriter(&cfg));
         MaintenanceCollector c;
         writer->maintenance(c);
         ensure_equals(c.count(COUNTED_OK), 1u);
@@ -124,7 +124,7 @@ template<> template<> void to::test<1>()
 
     // Perform full maintenance and check that things are still ok afterwards
     {
-        unique_ptr<WritableSegmented> writer(makeLocalWriter(&cfg));
+        unique_ptr<SegmentedWriter> writer(makeLocalWriter(&cfg));
         stringstream s;
         s.str(std::string());
         writer->check(s, true, true);
@@ -220,7 +220,7 @@ template<> template<> void to::test<5>()
     cfg.setValue("archive age", days_since(2007, 9, 1));
     clean_and_import(&cfg);
 	{
-		unique_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+		unique_ptr<LocalWriter> writer(makeLocalWriter(&cfg));
 		OutputChecker s;
 		writer->repack(s, true);
 		s.ensure_line_contains(": archived 2007/07-07.grib1");

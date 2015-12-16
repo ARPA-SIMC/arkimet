@@ -34,7 +34,7 @@ namespace dataset {
 namespace simple {
 
 Writer::Writer(const ConfigFile& cfg)
-    : WritableSegmented(cfg), m_mft(0)
+    : SegmentedWriter(cfg), m_mft(0)
 {
     m_name = cfg.value("name");
 
@@ -59,7 +59,7 @@ Writer::~Writer()
 
 data::Segment* Writer::file(const Metadata& md, const std::string& format)
 {
-    data::Segment* writer = WritableSegmented::file(md, format);
+    data::Segment* writer = SegmentedWriter::file(md, format);
     if (!writer->payload)
         writer->payload = new datafile::MdBuf(writer->absname);
     return writer;
@@ -187,7 +187,7 @@ void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 
     CheckAge ca(v, *m_mft, m_archive_age, m_delete_age);
     m_mft->check(*m_segment_manager, ca, quick);
-    WritableSegmented::maintenance(v, quick);
+    SegmentedWriter::maintenance(v, quick);
 }
 
 void Writer::removeAll(std::ostream& log, bool writable)
@@ -195,12 +195,12 @@ void Writer::removeAll(std::ostream& log, bool writable)
     Deleter deleter(m_name, log, writable);
     m_mft->check(*m_segment_manager, deleter, true);
     // TODO: empty manifest
-    WritableSegmented::removeAll(log, writable);
+    SegmentedWriter::removeAll(log, writable);
 }
 
 void Writer::flush()
 {
-    WritableSegmented::flush();
+    SegmentedWriter::flush();
     m_mft->flush();
 }
 
@@ -264,7 +264,7 @@ size_t Writer::repackFile(const std::string& relpath)
 size_t Writer::removeFile(const std::string& relpath, bool withData)
 {
     m_mft->remove(relpath);
-    return WritableSegmented::removeFile(relpath, withData);
+    return SegmentedWriter::removeFile(relpath, withData);
 }
 
 void Writer::archiveFile(const std::string& relpath)
@@ -272,8 +272,8 @@ void Writer::archiveFile(const std::string& relpath)
     // Remove from index
     m_mft->remove(relpath);
 
-    // Delegate the rest to WritableSegmented
-    WritableSegmented::archiveFile(relpath);
+    // Delegate the rest to SegmentedWriter
+    SegmentedWriter::archiveFile(relpath);
 }
 
 size_t Writer::vacuum()

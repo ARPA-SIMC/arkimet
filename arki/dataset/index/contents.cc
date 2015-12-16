@@ -473,7 +473,7 @@ void Contents::build_md(Query& q, Metadata& md) const
     }
 }
 
-bool Contents::query(const dataset::DataQuery& q, metadata_dest_func dest) const
+bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 
@@ -788,7 +788,7 @@ static inline bool range_envelopes_full_month(const Time& begin, const Time& end
         end.vals[1] == (begin.vals[1] % 12) + 1;
 }
 
-bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
+bool Contents::query_summary(const Matcher& matcher, Summary& summary)
 {
     // Check if the matcher discriminates on reference times
     unique_ptr<Time> begin;

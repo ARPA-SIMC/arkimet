@@ -748,7 +748,7 @@ void to::test<16>()
         "mockdata = true\n"
         "name = testholes\n"
         "path = testholes\n";
-    unique_ptr<dataset::WritableLocal> writer(make_dataset_writer(conf));
+    unique_ptr<dataset::LocalWriter> writer(make_dataset_writer(conf));
 
     // Import 24*30*10Mb=7.2Gb of data
     for (unsigned day = 1; day <= 30; ++day)

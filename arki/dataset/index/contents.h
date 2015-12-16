@@ -1,28 +1,9 @@
 #ifndef ARKI_DATASET_INDEX_CONTENTS_H
 #define ARKI_DATASET_INDEX_CONTENTS_H
 
-/*
- * dataset/index/contents - Index for data files and their contents
- *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Index for data files and their contents
 
+#include <arki/dataset/index.h>
 #include <arki/transaction.h>
 #include <arki/utils/sqlite.h>
 #include <arki/dataset/index/attr.h>
@@ -68,7 +49,7 @@ struct Others;
  * It must be possible to completely regenerate the dataset index by
  * rescanning all the data stored in the dataset.
  */
-class Contents
+class Contents : public dataset::Index
 {
 protected:
     /// Dataset name
@@ -181,23 +162,8 @@ public:
 	 */
 	std::string max_file_reftime(const std::string& relname) const;
 
-    /**
-     * Query this index, returning metadata
-     *
-     * @return true if the index could be used for the query, false if the
-     * query does not use the index and a full scan should be used instead
-     */
-    bool query(const dataset::DataQuery& q, metadata_dest_func dest) const;
-
-	/**
-	 * Query this index, returning a summary
-	 *
-	 * Summary caches are used if available.
-	 *
-	 * @return true if the index could be used for the query, false if the
-	 * query does not use the index and a full scan should be used instead
-	 */
-	bool querySummary(const Matcher& m, Summary& summary) const;
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    bool query_summary(const Matcher& m, Summary& summary) override;
 
 	/**
 	 * Query this index, returning a summary

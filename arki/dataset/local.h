@@ -27,7 +27,7 @@ class MaintFileVisitor;
 /**
  * Base class for local datasets
  */
-class Local : public ReadonlyDataset
+class LocalReader : public ReadonlyDataset
 {
 protected:
     std::string m_name;
@@ -35,8 +35,8 @@ protected:
     mutable Archives* m_archive;
 
 public:
-    Local(const ConfigFile& cfg);
-    ~Local();
+    LocalReader(const ConfigFile& cfg);
+    ~LocalReader();
 
     // Return the dataset name
     const std::string& name() const { return m_name; }
@@ -80,20 +80,28 @@ public:
     static void readConfig(const std::string& path, ConfigFile& cfg);
 };
 
+
 /**
- * Local dataset with data stored in segment files
+ * LocalReader dataset with data stored in segment files
  */
-class SegmentedLocal : public Local
+class SegmentedReader : public LocalReader
 {
 protected:
     data::SegmentManager* m_segment_manager;
 
 public:
-    SegmentedLocal(const ConfigFile& cfg);
-    ~SegmentedLocal();
+    SegmentedReader(const ConfigFile& cfg);
+    ~SegmentedReader();
 };
 
-class WritableLocal : public WritableDataset
+
+/// SegmentedReader that can make use of an index
+class IndexedReader : public SegmentedReader
+{
+};
+
+
+class LocalWriter : public WritableDataset
 {
 protected:
     std::string m_path;
@@ -102,8 +110,8 @@ protected:
     int m_delete_age;
 
 public:
-    WritableLocal(const ConfigFile& cfg);
-    ~WritableLocal();
+    LocalWriter(const ConfigFile& cfg);
+    ~LocalWriter();
 
     // Return the dataset path
     const std::string& path() const { return m_path; }
@@ -131,7 +139,7 @@ public:
     /**
      * Instantiate an appropriate Dataset for the given configuration
      */
-    static WritableLocal* create(const ConfigFile& cfg);
+    static LocalWriter* create(const ConfigFile& cfg);
 
     /**
      * Simulate acquiring the given metadata item (and related data) in this
@@ -146,7 +154,7 @@ public:
     static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
-class WritableSegmented : public WritableLocal
+class SegmentedWriter : public LocalWriter
 {
 protected:
     ReplaceStrategy m_default_replace_strategy;
@@ -160,8 +168,8 @@ protected:
     data::Segment* file(const Metadata& md, const std::string& format);
 
 public:
-    WritableSegmented(const ConfigFile& cfg);
-    ~WritableSegmented();
+    SegmentedWriter(const ConfigFile& cfg);
+    ~SegmentedWriter();
 
     void repack(std::ostream& log, bool writable=false) override;
     void check(std::ostream& log, bool fix, bool quick) override;
@@ -173,7 +181,7 @@ public:
     /**
      * Perform dataset maintenance, sending information to \a v
      *
-     * Subclassers should call WritableLocal's maintenance method at the
+     * Subclassers should call LocalWriter's maintenance method at the
      * end of their own maintenance, as it takes care of performing
      * maintainance of archives, if present.
      *
@@ -238,7 +246,7 @@ public:
     /**
      * Instantiate an appropriate Dataset for the given configuration
      */
-    static WritableSegmented* create(const ConfigFile& cfg);
+    static SegmentedWriter* create(const ConfigFile& cfg);
 };
 
 }

@@ -1,7 +1,6 @@
 #include "config.h"
 #include "arki/dataset/ondisk2/reader.h"
 #include "arki/dataset/index/contents.h"
-#include "arki/dataset/targetfile.h"
 #include "arki/dataset/archive.h"
 #include "arki/types/assigneddataset.h"
 #include "arki/configfile.h"
@@ -34,10 +33,9 @@ namespace dataset {
 namespace ondisk2 {
 
 Reader::Reader(const ConfigFile& cfg)
-    : Local(cfg), m_idx(0), m_tf(0)
+    : LocalReader(cfg), m_idx(0)
 {
     this->cfg = cfg.values();
-    m_tf = TargetFile::create(cfg);
     if (sys::access(str::joinpath(m_path, "index.sqlite"), F_OK))
     {
         m_idx = new index::RContents(cfg);
@@ -47,20 +45,19 @@ Reader::Reader(const ConfigFile& cfg)
 
 Reader::~Reader()
 {
-	if (m_idx) delete m_idx;
-	if (m_tf) delete m_tf;
+    if (m_idx) delete m_idx;
 }
 
 void Reader::queryLocalData(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    if (!m_idx || !m_idx->query(q, dest))
+    if (!m_idx || !m_idx->query_data(q, dest))
         throw wibble::exception::Consistency("querying " + m_path, "index could not be used");
 }
 
 void Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     // Query the archives first
-    Local::query_data(q, dest);
+    LocalReader::query_data(q, dest);
     if (!m_idx) return;
     queryLocalData(q, dest);
 }
@@ -68,15 +65,15 @@ void Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 void Reader::querySummary(const Matcher& matcher, Summary& summary)
 {
     // Query the archives first
-    Local::querySummary(matcher, summary);
+    LocalReader::querySummary(matcher, summary);
     if (!m_idx) return;
-    if (!m_idx || !m_idx->querySummary(matcher, summary))
+    if (!m_idx || !m_idx->query_summary(matcher, summary))
         throw wibble::exception::Consistency("querying " + m_path, "index could not be used");
 }
 
 size_t Reader::produce_nth(metadata_dest_func cons, size_t idx)
 {
-    size_t res = Local::produce_nth(cons, idx);
+    size_t res = LocalReader::produce_nth(cons, idx);
     if (m_idx)
     {
         //ds::MakeAbsolute mkabs(cons);

@@ -16,7 +16,7 @@ namespace dataset {
 /**
  * Dataset that is always empty
  */
-class Empty : public Local
+class Empty : public LocalReader
 {
 public:
     // Initialise the dataset with the information from the configurationa in 'cfg'

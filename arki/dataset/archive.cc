@@ -98,14 +98,9 @@ void OnlineArchive::query_data(const dataset::DataQuery& q, metadata_dest_func d
     m_mft->query_data(q, dest);
 }
 
-void OnlineArchive::query_bytes(const dataset::ByteQuery& q, int out)
-{
-    m_mft->query_bytes(q, out);
-}
-
 void OnlineArchive::querySummary(const Matcher& matcher, Summary& summary)
 {
-	m_mft->querySummary(matcher, summary);
+    m_mft->query_summary(matcher, summary);
 }
 
 size_t OnlineArchive::produce_nth(metadata_dest_func cons, size_t idx)
@@ -231,11 +226,11 @@ void OnlineArchive::vacuum()
     // If archive dir is not writable, skip this section
     if (!sys::exists(m_dir)) return;
 
-	m_mft->vacuum();
+    m_mft->vacuum();
 
-	// Regenerate summary cache if needed
-	Summary s;
-	m_mft->querySummary(Matcher(), s);
+    // Regenerate summary cache if needed
+    Summary s;
+    m_mft->query_summary(Matcher(), s);
 }
 
 
@@ -252,11 +247,6 @@ OfflineArchive::~OfflineArchive()
 void OfflineArchive::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     // If the matcher would match the summary, output some kind of note about it
-}
-
-void OfflineArchive::query_bytes(const dataset::ByteQuery& q, int out)
-{
-    // We can't do anything here, as we cannot post a note to a raw stream
 }
 
 void OfflineArchive::querySummary(const Matcher& matcher, Summary& summary)

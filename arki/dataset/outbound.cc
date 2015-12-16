@@ -22,7 +22,7 @@ namespace arki {
 namespace dataset {
 
 Outbound::Outbound(const ConfigFile& cfg)
-    : WritableSegmented(cfg)
+    : SegmentedWriter(cfg)
 {
 }
 

@@ -13,7 +13,6 @@ class Matcher;
 class Summary;
 
 namespace dataset {
-class TargetFile;
 
 namespace index {
 class RContents;
@@ -21,11 +20,10 @@ class RContents;
 
 namespace ondisk2 {
 
-class Reader : public Local
+class Reader : public LocalReader
 {
 protected:
     index::RContents* m_idx;
-	TargetFile* m_tf;
 
     // Query only the data in the dataset, without the archives
     void queryLocalData(const dataset::DataQuery& q, metadata_dest_func dest);

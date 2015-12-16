@@ -99,7 +99,7 @@ void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
 	}
 }
 
-void Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     vector<string> files;
     fileList(q.matcher, files);
@@ -139,9 +139,11 @@ void Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         scan::scan(absdir, *i, fixed_dest);
         sorter.flush();
     }
+
+    return true;
 }
 
-void Manifest::querySummary(const Matcher& matcher, Summary& summary)
+bool Manifest::query_summary(const Matcher& matcher, Summary& summary)
 {
     // Check if the matcher discriminates on reference times
     auto rtmatch = matcher.get(TYPE_REFTIME);
@@ -173,6 +175,8 @@ void Manifest::querySummary(const Matcher& matcher, Summary& summary)
 	} else {
 		querySummaries(matcher, summary);
 	}
+
+    return true;
 }
 
 size_t Manifest::produce_nth(metadata_dest_func cons, size_t idx)
@@ -635,7 +639,7 @@ public:
         if (rw && ! sys::exists(str::joinpath(m_path, "summary")))
         {
             Summary s;
-            querySummary(Matcher(), s);
+            query_summary(Matcher(), s);
         }
     }
 

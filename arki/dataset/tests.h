@@ -24,8 +24,8 @@ struct ReadonlyDataset;
 struct WritableDataset;
 
 namespace dataset {
-struct Local;
-struct WritableLocal;
+struct LocalReader;
+struct LocalWriter;
 
 namespace ondisk2 {
 struct Reader;
@@ -124,8 +124,8 @@ struct DatasetTest
 
 	ReadonlyDataset* makeReader(const ConfigFile* wcfg = 0);
 	WritableDataset* makeWriter(const ConfigFile* wcfg = 0);
-	dataset::Local* makeLocalReader(const ConfigFile* wcfg = 0);
-	dataset::WritableSegmented* makeLocalWriter(const ConfigFile* wcfg = 0);
+	dataset::LocalReader* makeLocalReader(const ConfigFile* wcfg = 0);
+	dataset::SegmentedWriter* makeLocalWriter(const ConfigFile* wcfg = 0);
 	dataset::ondisk2::Reader* makeOndisk2Reader(const ConfigFile* wcfg = 0);
 	dataset::ondisk2::Writer* makeOndisk2Writer(const ConfigFile* wcfg = 0);
 	dataset::simple::Reader* makeSimpleReader(const ConfigFile* wcfg = 0);
@@ -177,7 +177,7 @@ struct dataset_tg : public tut::test_group<T>
     }
 };
 
-std::unique_ptr<dataset::WritableLocal> make_dataset_writer(const std::string& cfg, bool empty=true);
+std::unique_ptr<dataset::LocalWriter> make_dataset_writer(const std::string& cfg, bool empty=true);
 std::unique_ptr<ReadonlyDataset> make_dataset_reader(const std::string& cfg);
 
 }
@@ -359,10 +359,10 @@ struct MaintenanceResults
     }
 };
 
-template<typename Dataset>
-struct ActualWritableLocal : public arki::utils::tests::Actual<Dataset*>
+template<typename DatasetWriter>
+struct ActualLocalWriter : public arki::utils::tests::Actual<DatasetWriter*>
 {
-    ActualWritableLocal(Dataset* s) : Actual<Dataset*>(s) {}
+    ActualLocalWriter(DatasetWriter* s) : Actual<DatasetWriter*>(s) {}
 
     void repack(const LineChecker& expected, bool write=false);
     void repack_clean(bool write=false);
@@ -370,9 +370,9 @@ struct ActualWritableLocal : public arki::utils::tests::Actual<Dataset*>
     void check_clean(bool write=false);
 };
 
-struct ActualWritableSegmented : public ActualWritableLocal<dataset::WritableSegmented>
+struct ActualSegmentedWriter : public ActualLocalWriter<dataset::SegmentedWriter>
 {
-    ActualWritableSegmented(dataset::WritableSegmented* s) : ActualWritableLocal<dataset::WritableSegmented>(s) {}
+    ActualSegmentedWriter(dataset::SegmentedWriter* s) : ActualLocalWriter<dataset::SegmentedWriter>(s) {}
 
     /// Run maintenance and see that the results are as expected
     void maintenance(const MaintenanceResults& expected, bool quick=true);
@@ -386,11 +386,11 @@ void corrupt_datafile(const std::string& absname);
 void test_append_transaction_ok(dataset::data::Segment* dw, Metadata& md, int append_amount_adjust=0);
 void test_append_transaction_rollback(dataset::data::Segment* dw, Metadata& md);
 
-inline arki::tests::ActualWritableLocal<dataset::WritableLocal> actual(arki::dataset::WritableLocal* actual)
+inline arki::tests::ActualLocalWriter<dataset::LocalWriter> actual(arki::dataset::LocalWriter* actual)
 {
-    return arki::tests::ActualWritableLocal<dataset::WritableLocal>(actual);
+    return arki::tests::ActualLocalWriter<dataset::LocalWriter>(actual);
 }
-inline arki::tests::ActualWritableSegmented actual(arki::dataset::WritableSegmented* actual) { return arki::tests::ActualWritableSegmented(actual); }
+inline arki::tests::ActualSegmentedWriter actual(arki::dataset::SegmentedWriter* actual) { return arki::tests::ActualSegmentedWriter(actual); }
 
 }
 }

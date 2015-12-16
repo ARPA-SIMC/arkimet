@@ -119,15 +119,15 @@ struct WorkerOnWritable : public Worker
 {
     virtual void process(const ConfigFile& cfg)
     {
-        unique_ptr<dataset::WritableLocal> ds;
+        unique_ptr<dataset::LocalWriter> ds;
         try {
-            ds.reset(dataset::WritableLocal::create(cfg));
+            ds.reset(dataset::LocalWriter::create(cfg));
         } catch (std::exception& e) {
             throw SkipDataset(e.what());
         }
         operator()(*ds);
     }
-    virtual void operator()(dataset::WritableLocal& w) = 0;
+    virtual void operator()(dataset::LocalWriter& w) = 0;
 };
 
 struct Maintainer : public WorkerOnWritable
@@ -139,7 +139,7 @@ struct Maintainer : public WorkerOnWritable
 	{
 	}
 
-	virtual void operator()(dataset::WritableLocal& w)
+	virtual void operator()(dataset::LocalWriter& w)
 	{
 		w.check(cerr, fix, quick);
 	}
@@ -155,7 +155,7 @@ struct Repacker : public WorkerOnWritable
 
 	Repacker(bool fix) : fix(fix) {}
 
-	virtual void operator()(dataset::WritableLocal& w)
+	virtual void operator()(dataset::LocalWriter& w)
 	{
 		w.repack(cout, fix);
 		w.flush();
@@ -172,7 +172,7 @@ struct RemoveAller : public WorkerOnWritable
 
 	RemoveAller(bool fix) : fix(fix) {}
 
-	virtual void operator()(dataset::WritableLocal& w)
+	virtual void operator()(dataset::LocalWriter& w)
 	{
 		w.removeAll(cout, fix);
 		w.flush();
@@ -194,7 +194,7 @@ struct ScanTest : public Worker
     void process(const ConfigFile& cfg) override
     {
         unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
-        if (dataset::Local* ld = dynamic_cast<dataset::Local*>(ds.get()))
+        if (dataset::LocalReader* ld = dynamic_cast<dataset::LocalReader*>(ds.get()))
         {
             size_t count = 0;
             size_t total = ld->scan_test([&](unique_ptr<Metadata> md) {
@@ -224,7 +224,7 @@ struct ScanTest : public Worker
 #if 0
 struct Invalidator : public Worker
 {
-	virtual void operator()(dataset::WritableLocal& w)
+	virtual void operator()(dataset::LocalWriter& w)
 	{
 		dataset::ondisk::Writer* ow = dynamic_cast<dataset::ondisk::Writer*>(&w);
 		if (ow == 0)
@@ -244,7 +244,7 @@ struct Statistician : public Worker
 {
 	Stats st;
 
-	virtual void operator()(dataset::WritableLocal& w)
+	virtual void operator()(dataset::LocalWriter& w)
 	{
 		dataset::ondisk::Writer* ow = dynamic_cast<dataset::ondisk::Writer*>(&w);
 		if (ow == 0)

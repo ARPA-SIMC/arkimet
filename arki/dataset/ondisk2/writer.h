@@ -32,7 +32,7 @@ class RealRepacker;
 class RealFixer;
 }
 
-class Writer : public WritableSegmented
+class Writer : public SegmentedWriter
 {
 protected:
 	ConfigFile m_cfg;

@@ -25,58 +25,58 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-Local::Local(const ConfigFile& cfg)
+LocalReader::LocalReader(const ConfigFile& cfg)
     : m_name(cfg.value("name")),
       m_path(cfg.value("path")),
       m_archive(0)
 {
 }
 
-Local::~Local()
+LocalReader::~LocalReader()
 {
     if (m_archive) delete m_archive;
 }
 
-bool Local::hasArchive() const
+bool LocalReader::hasArchive() const
 {
     string arcdir = str::joinpath(m_path, ".archive");
     return sys::exists(arcdir);
 }
 
-Archives& Local::archive()
+Archives& LocalReader::archive()
 {
 	if (!m_archive)
 		m_archive = new Archives(m_path, str::joinpath(m_path, ".archive"));
 	return *m_archive;
 }
 
-const Archives& Local::archive() const
+const Archives& LocalReader::archive() const
 {
 	if (!m_archive)
 		m_archive = new Archives(m_path, str::joinpath(m_path, ".archive"));
 	return *m_archive;
 }
 
-void Local::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest)
+void LocalReader::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest)
 {
     if (hasArchive())
         archive().query_data(q, dest);
 }
 
-void Local::querySummary(const Matcher& matcher, Summary& summary)
+void LocalReader::querySummary(const Matcher& matcher, Summary& summary)
 {
 	if (hasArchive())
 		archive().querySummary(matcher, summary);
 }
 
-size_t Local::produce_nth(metadata_dest_func cons, size_t idx)
+size_t LocalReader::produce_nth(metadata_dest_func cons, size_t idx)
 {
     if (hasArchive())
         return archive().produce_nth(cons, idx);
     return 0;
 }
 
-size_t Local::scan_test(metadata_dest_func cons, size_t idx)
+size_t LocalReader::scan_test(metadata_dest_func cons, size_t idx)
 {
     std::map<std::string, std::string>::const_iterator i = cfg.find("filter");
     // No point in running a scan_test if there is no filter
@@ -128,7 +128,7 @@ size_t Local::scan_test(metadata_dest_func cons, size_t idx)
     }, idx);
 }
 
-void Local::readConfig(const std::string& path, ConfigFile& cfg)
+void LocalReader::readConfig(const std::string& path, ConfigFile& cfg)
 {
 	if (path == "-")
 	{
@@ -187,29 +187,29 @@ void Local::readConfig(const std::string& path, ConfigFile& cfg)
     }
 }
 
-SegmentedLocal::SegmentedLocal(const ConfigFile& cfg)
-    : Local(cfg), m_segment_manager(data::SegmentManager::get(cfg).release())
+SegmentedReader::SegmentedReader(const ConfigFile& cfg)
+    : LocalReader(cfg), m_segment_manager(data::SegmentManager::get(cfg).release())
 {
 }
 
-SegmentedLocal::~SegmentedLocal()
+SegmentedReader::~SegmentedReader()
 {
     if (m_segment_manager) delete m_segment_manager;
 }
 
-WritableLocal::WritableLocal(const ConfigFile& cfg)
+LocalWriter::LocalWriter(const ConfigFile& cfg)
     : m_path(cfg.value("path")),
       m_archive(0), m_archive_age(-1), m_delete_age(-1)
 {
     m_name = cfg.value("name");
 }
 
-WritableLocal::~WritableLocal()
+LocalWriter::~LocalWriter()
 {
 }
 
-WritableSegmented::WritableSegmented(const ConfigFile& cfg)
-    : WritableLocal(cfg),
+SegmentedWriter::SegmentedWriter(const ConfigFile& cfg)
+    : LocalWriter(cfg),
       m_default_replace_strategy(REPLACE_NEVER),
       m_tf(TargetFile::create(cfg)),
       m_segment_manager(data::SegmentManager::get(cfg).release())
@@ -232,45 +232,45 @@ WritableSegmented::WritableSegmented(const ConfigFile& cfg)
 		m_delete_age = strtoul(tmp.c_str(), 0, 10);
 }
 
-WritableSegmented::~WritableSegmented()
+SegmentedWriter::~SegmentedWriter()
 {
     if (m_segment_manager) delete m_segment_manager;
     if (m_tf) delete m_tf;
     if (m_archive) delete m_archive;
 }
 
-bool WritableLocal::hasArchive() const
+bool LocalWriter::hasArchive() const
 {
     string arcdir = str::joinpath(m_path, ".archive");
     return sys::exists(arcdir);
 }
 
-Archives& WritableLocal::archive()
+Archives& LocalWriter::archive()
 {
 	if (!m_archive)
 		m_archive = new Archives(m_path, str::joinpath(m_path, ".archive"), false);
 	return *m_archive;
 }
 
-const Archives& WritableLocal::archive() const
+const Archives& LocalWriter::archive() const
 {
 	if (!m_archive)
 		m_archive = new Archives(m_path, str::joinpath(m_path, ".archive"), false);
 	return *m_archive;
 }
 
-data::Segment* WritableSegmented::file(const Metadata& md, const std::string& format)
+data::Segment* SegmentedWriter::file(const Metadata& md, const std::string& format)
 {
     string relname = (*m_tf)(md) + "." + md.source().format;
     return m_segment_manager->get_segment(format, relname);
 }
 
-void WritableSegmented::flush()
+void SegmentedWriter::flush()
 {
     m_segment_manager->flush_writers();
 }
 
-void WritableSegmented::archiveFile(const std::string& relpath)
+void SegmentedWriter::archiveFile(const std::string& relpath)
 {
     string pathname = str::joinpath(m_path, relpath);
     string arcrelname = str::joinpath("last", relpath);
@@ -321,7 +321,7 @@ void WritableSegmented::archiveFile(const std::string& relpath)
 	archive().acquire(arcrelname);
 }
 
-size_t WritableSegmented::removeFile(const std::string& relpath, bool withData)
+size_t SegmentedWriter::removeFile(const std::string& relpath, bool withData)
 {
     if (withData)
         return m_segment_manager->remove(relpath);
@@ -329,24 +329,24 @@ size_t WritableSegmented::removeFile(const std::string& relpath, bool withData)
         return 0;
 }
 
-void WritableSegmented::maintenance(maintenance::MaintFileVisitor& v, bool quick)
+void SegmentedWriter::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 {
 	if (hasArchive())
 		archive().maintenance(v);
 }
 
-void WritableSegmented::removeAll(std::ostream& log, bool writable)
+void SegmentedWriter::removeAll(std::ostream& log, bool writable)
 {
 	// TODO: decide if we're removing archives at all
 	// TODO: if (hasArchive())
 	// TODO: 	archive().removeAll(log, writable);
 }
 
-void WritableSegmented::sanityChecks(std::ostream& log, bool writable)
+void SegmentedWriter::sanityChecks(std::ostream& log, bool writable)
 {
 }
 
-void WritableSegmented::repack(std::ostream& log, bool writable)
+void SegmentedWriter::repack(std::ostream& log, bool writable)
 {
 	if (files::hasDontpackFlagfile(m_path))
 	{
@@ -371,7 +371,7 @@ void WritableSegmented::repack(std::ostream& log, bool writable)
 	}
 }
 
-void WritableSegmented::check(std::ostream& log, bool fix, bool quick)
+void SegmentedWriter::check(std::ostream& log, bool fix, bool quick)
 {
 	if (fix)
 	{
@@ -394,12 +394,12 @@ void WritableSegmented::check(std::ostream& log, bool fix, bool quick)
 	sanityChecks(log, fix);
 }
 
-WritableLocal* WritableLocal::create(const ConfigFile& cfg)
+LocalWriter* LocalWriter::create(const ConfigFile& cfg)
 {
-    return WritableSegmented::create(cfg);
+    return SegmentedWriter::create(cfg);
 }
 
-WritableSegmented* WritableSegmented::create(const ConfigFile& cfg)
+SegmentedWriter* SegmentedWriter::create(const ConfigFile& cfg)
 {
     string type = str::lower(cfg.value("type"));
     if (type.empty())
@@ -413,7 +413,7 @@ WritableSegmented* WritableSegmented::create(const ConfigFile& cfg)
 	throw wibble::exception::Consistency("creating a dataset", "unknown dataset type \""+type+"\"");
 }
 
-WritableLocal::AcquireResult WritableLocal::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+LocalWriter::AcquireResult LocalWriter::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
     string type = str::lower(cfg.value("type"));
     if (type.empty())

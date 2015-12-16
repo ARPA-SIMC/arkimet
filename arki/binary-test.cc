@@ -214,7 +214,7 @@ class Tests : public TestCase
             TEST_CSTRING("foo bar baz");
         });
     }
-} test("arki_utils_codec");
+} test("arki_binary");
 
 }
 
