@@ -81,6 +81,9 @@ struct arki_dataset_ondisk2_shar {
 			"path = test98\n";
 		stringstream incfg(conf);
 		config.parse(incfg, "(memory)");
+        config.section("test200")->setValue("path", sys::abspath("test200"));
+        config.section("test80")->setValue("path", sys::abspath("test80"));
+        config.section("test98")->setValue("path", sys::abspath("test98"));
 
 
 		// In-memory dataset configuration
@@ -176,7 +179,7 @@ void to::test<1>()
 #endif
     const AssignedDataset* ds = getDataset(mdc[0]);
     ensure_equals(ds->name, "test200");
-    ensure_equals(ds->id, "1");
+    ensure_equals(ds->id, "2007/07-08.grib1:0");
 
     // See if we catch duplicate imports
     mdc[0].unset(TYPE_ASSIGNEDDATASET);

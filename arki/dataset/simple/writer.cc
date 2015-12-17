@@ -72,20 +72,18 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     datafile::MdBuf* mdbuf = static_cast<datafile::MdBuf*>(writer->payload);
 
     // Try appending
-    const AssignedDataset* oldads = md.get<AssignedDataset>();
-    md.set(AssignedDataset::create(m_name, ""));
-
     try {
-        writer->append(md);
+        off_t offset = writer->append(md);
+        auto assigned_dataset = types::AssignedDataset::create(m_name, writer->relname + ":" + to_string(offset));
+        auto source = types::source::Blob::create(md.source().format, m_path, writer->relname, offset, md.data_size());
+        md.set_source(move(source));
         mdbuf->add(md);
         m_mft->acquire(writer->relname, sys::timestamp(mdbuf->pathname, 0), mdbuf->sum);
+        md.set(move(assigned_dataset));
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        if (oldads)
-            md.set(*oldads);
-        else
-            md.unset(TYPE_ASSIGNEDDATASET);
+        md.unset(TYPE_ASSIGNEDDATASET);
         md.add_note("Failed to store in dataset '"+m_name+"': " + e.what());
         return ACQ_ERROR;
     }

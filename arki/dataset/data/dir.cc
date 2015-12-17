@@ -239,7 +239,7 @@ size_t Segment::write_file(Metadata& md, int fd, const std::string& absname)
     }
 }
 
-void Segment::append(Metadata& md)
+off_t Segment::append(Metadata& md)
 {
     open();
 
@@ -250,7 +250,8 @@ void Segment::append(Metadata& md)
     size_t size = write_file(md, fd, dest);
 
     // Set the source information that we are writing in the metadata
-    md.set_source(Source::createBlob(md.source().format, "", absname, pos, size));
+    // md.set_source(Source::createBlob(md.source().format, "", absname, pos, size));
+    return pos;
 }
 
 off_t Segment::append(const std::vector<uint8_t>& buf)

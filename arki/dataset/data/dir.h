@@ -73,7 +73,7 @@ public:
     void open();
     void close();
 
-    void append(Metadata& md) override;
+    off_t append(Metadata& md) override;
     off_t append(const std::vector<uint8_t>& buf) override;
     Pending append(Metadata& md, off_t* ofs) override;
 

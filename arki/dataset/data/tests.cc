@@ -38,7 +38,10 @@ unique_ptr<data::Segment> SegmentTest::make_full_segment()
 {
     unique_ptr<data::Segment> res(make_empty_segment());
     for (unsigned i = 0; i < mdc.size(); ++i)
-        res->append(mdc[i]);
+    {
+        off_t ofs = res->append(mdc[i]);
+        mdc[i].set_source(types::Source::createBlob("grib", sys::abspath("."), relname, ofs, mdc[i].data_size()));
+    }
     return res;
 }
 
@@ -125,7 +128,7 @@ void SegmentRemoveTest::run()
 
     wassert(actual(sys::exists(absname)).istrue());
 
-    wassert(actual(segment->remove()) >= 44412);
+    wassert(actual(segment->remove()) >= 44412u);
 
     wassert(actual(sys::exists(absname)).isfalse());
 }

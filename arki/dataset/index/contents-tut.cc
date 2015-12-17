@@ -156,9 +156,9 @@ void to::test<2>()
 	} catch (utils::sqlite::DuplicateInsert& e) {
 	}
 
-	// Index a second one
-	test->index(md1, "test-md1", 0);
-	int id1 = test->id(md1);
+    // Index a second one
+    test->index(md1, "test-md1", 0);
+    int id1 = test->id(md1);
 
     // Ensure that we have two items
     metadata::Collection mdc;
@@ -167,18 +167,16 @@ void to::test<2>()
     mdc.clear();
 
     // Remove a nonexisting item and see that it fails
-    string file;
     try {
-        test->remove(100, file);
+        test->remove("test-md1", 1);
         ensure(false);
     } catch (std::runtime_error) {
     }
 
-	// Remove the first item
-	test->remove(id, file);
-	ensure((bool)p);
-	ensure_equals(file, "test-md");
-	p.commit();
+    // Remove the first item
+    test->remove("test-md", 0);
+    ensure((bool)p);
+    p.commit();
 
     // There should be only one result now
     query_index(*test, Matcher::parse("origin:GRIB1"), mdc);

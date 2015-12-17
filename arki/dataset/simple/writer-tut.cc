@@ -28,13 +28,13 @@ static inline const types::AssignedDataset* getDataset(const Metadata& md)
 }
 
 struct arki_dataset_simple_writer_shar : public DatasetTest {
-	arki_dataset_simple_writer_shar()
-	{
-		cfg.setValue("path", "testds");
-		cfg.setValue("name", "testds");
-		cfg.setValue("type", "simple");
-		cfg.setValue("step", "daily");
-	}
+    arki_dataset_simple_writer_shar()
+    {
+        cfg.setValue("path", sys::abspath("testds"));
+        cfg.setValue("name", "testds");
+        cfg.setValue("type", "simple");
+        cfg.setValue("step", "daily");
+    }
 
 	// Recreate the dataset importing data into it
 	void clean_and_import(const ConfigFile* wcfg = 0, const std::string& testfile = "inbound/test.grib1")
@@ -70,18 +70,18 @@ void to::test<1>()
     #endif
     const AssignedDataset* ds = getDataset(md);
     ensure_equals(ds->name, "testds");
-    ensure_equals(ds->id, "");
+    ensure_equals(ds->id, "2007/07-08.grib1:0");
 
-    wassert(actual_type(md.source()).is_source_blob("grib1", "", "testds/2007/07-08.grib1", 0, 7218));
+    wassert(actual_type(md.source()).is_source_blob("grib1", sys::abspath("./testds"), "2007/07-08.grib1", 0, 7218));
 
     // Import again works fine
     res = writer.acquire(md);
     ensure_equals(res, Writer::ACQ_OK);
     ds = getDataset(md);
     ensure_equals(ds->name, "testds");
-    ensure_equals(ds->id, "");
+    ensure_equals(ds->id, "2007/07-08.grib1:7218");
 
-    wassert(actual_type(md.source()).is_source_blob("grib1", "", "testds/2007/07-08.grib1", 7218, 7218));
+    wassert(actual_type(md.source()).is_source_blob("grib1", sys::abspath("./testds"), "2007/07-08.grib1", 7218, 7218));
 
     // Flush the changes and check that everything is allright
     writer.flush();
@@ -101,11 +101,11 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	ConfigFile cfg;
-	cfg.setValue("path", "testds");
-	cfg.setValue("name", "testds");
-	cfg.setValue("type", "simple");
-	cfg.setValue("step", "yearly");
+    ConfigFile cfg;
+    cfg.setValue("path", sys::abspath("testds"));
+    cfg.setValue("name", "testds");
+    cfg.setValue("type", "simple");
+    cfg.setValue("step", "yearly");
 
 	// Clean the dataset
 	system("rm -rf testds");
@@ -135,9 +135,9 @@ void to::test<2>()
         const AssignedDataset* ds = getDataset(md);
         ensure(ds);
         ensure_equals(ds->name, "testds");
-        ensure_equals(ds->id, "");
+        ensure_equals(ds->id, "20/2007.grib1:34960");
 
-        wassert(actual_type(md.source()).is_source_blob("grib1", "", "testds/20/2007.grib1", 34960, 7218));
+        wassert(actual_type(md.source()).is_source_blob("grib1", sys::abspath("testds"), "20/2007.grib1", 34960, 7218));
     }
 
     ensure(sys::exists("testds/20/2007.grib1"));

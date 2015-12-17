@@ -36,15 +36,15 @@ static ostream& operator<<(ostream& out, const vector<uint8_t>& buf)
 namespace tut {
 
 struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
-	arki_dataset_ondisk2_writer_shar()
-	{
+    arki_dataset_ondisk2_writer_shar()
+    {
         system("rm -rf testdir");
-		cfg.setValue("path", "testdir");
-		cfg.setValue("name", "testdir");
-		cfg.setValue("type", "ondisk2");
-		cfg.setValue("step", "daily");
-		cfg.setValue("unique", "origin, reftime");
-	}
+        cfg.setValue("path", sys::abspath("testdir"));
+        cfg.setValue("name", "testdir");
+        cfg.setValue("type", "ondisk2");
+        cfg.setValue("step", "daily");
+        cfg.setValue("unique", "origin, reftime");
+    }
 
     void acquireSamples()
     {
@@ -75,7 +75,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         wruntest(import_all, fixture);
         Metadata& md = find_imported_second_in_file();
         const source::Blob& second_in_segment = md.sourceBlob();
-        holed_fname = second_in_segment.filename.substr(8);
+        holed_fname = second_in_segment.filename;
 
         {
             // Remove one element

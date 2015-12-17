@@ -241,7 +241,7 @@ public:
      * In case of write errors (for example, disk full) it tries to truncate
      * the file as it was before, before raising an exception.
      */
-    virtual void append(Metadata& md) = 0;
+    virtual off_t append(Metadata& md) = 0;
 
     /**
      * Append raw data to the file, wrapping it with the right envelope if

@@ -106,8 +106,12 @@ struct TestSegments
         for (unsigned i = 0; i < 2048; ++i)
         {
             unique_ptr<Metadata> md(new Metadata(testdata::make_large_mock("grib", 1024*1024, i / (30 * 24), (i/24) % 30, i % 24)));
-            w->append(*md);
-            wassert(actual(md->source().style()) == Source::BLOB);
+            unique_ptr<types::Source> old_source(md->source().clone());
+            off_t ofs = w->append(*md);
+            //wassert(actual(md->source().style()) == Source::BLOB);
+            // Source does not get modified
+            wassert(actual_type(md->source()) == *old_source);
+            md->set_source(types::Source::createBlob(md->source().format, cfg.value("path"), w->relname, ofs, md->data_size()));
             md->drop_cached_data();
             mds.acquire(move(md));
         }

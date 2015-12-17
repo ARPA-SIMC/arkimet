@@ -49,7 +49,7 @@ void to::test<1>()
     reader->query_bytes(bq, 2);
 
     string out = sys::read_file("testcountbytes.out");
-    ensure_equals(out, "7415\n");
+    ensure_equals(out, "7399\n");
 }
 
 #if 0

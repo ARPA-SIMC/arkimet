@@ -54,11 +54,6 @@ Writer::~Writer()
 	flush();
 }
 
-std::unique_ptr<AssignedDataset> Writer::make_assigneddataset(int id)
-{
-    return types::AssignedDataset::create(m_name, to_string(id));
-}
-
 Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
     data::Segment* w = file(md, md.source().format);
@@ -66,13 +61,16 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 
     Pending p_idx = m_idx.beginTransaction();
     Pending p_df = w->append(md, &ofs);
+    auto assigned_dataset = types::AssignedDataset::create(m_name, w->relname + ":" + to_string(ofs));
+    auto source = types::source::Blob::create(md.source().format, m_path, w->relname, ofs, md.data_size());
 
     try {
         int id;
         m_idx.index(md, w->relname, ofs, &id);
         p_df.commit();
         p_idx.commit();
-        md.set(make_assigneddataset(id));
+        md.set(move(assigned_dataset));
+        md.set_source(move(source));
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
         md.add_note("Failed to store in dataset '" + m_name + "' because the dataset already has the data: " + di.what());
@@ -91,6 +89,8 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 
     Pending p_idx = m_idx.beginTransaction();
     Pending p_df = w->append(md, &ofs);
+    auto assigned_dataset = types::AssignedDataset::create(m_name, w->relname + ":" + to_string(ofs));
+    auto source = types::source::Blob::create(md.source().format, m_path, w->relname, ofs, md.data_size());
 
     try {
         int id;
@@ -100,7 +100,8 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
         //createPackFlagfile(df->pathname);
         p_df.commit();
         p_idx.commit();
-        md.set(make_assigneddataset(id));
+        md.set(move(assigned_dataset));
+        md.set_source(move(source));
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
@@ -117,13 +118,16 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 
     Pending p_idx = m_idx.beginTransaction();
     Pending p_df = w->append(md, &ofs);
+    auto assigned_dataset = types::AssignedDataset::create(m_name, w->relname + ":" + to_string(ofs));
+    auto source = types::source::Blob::create(md.source().format, m_path, w->relname, ofs, md.data_size());
 
     try {
         int id;
         m_idx.index(md, w->relname, ofs, &id);
         p_df.commit();
         p_idx.commit();
-        md.set(make_assigneddataset(id));
+        md.set(move(assigned_dataset));
+        md.set_source(move(source));
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
         // It already exists, so we keep p_df uncommitted and check Update Sequence Numbers
@@ -169,7 +173,8 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
         //createPackFlagfile(df->pathname);
         p_df.commit();
         p_idx.commit();
-        md.set(make_assigneddataset(id));
+        md.set(move(assigned_dataset));
+        md.set_source(move(source));
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
@@ -200,34 +205,28 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 
 void Writer::remove(Metadata& md)
 {
-    const AssignedDataset* ds = md.get<AssignedDataset>();
-    if (!ds)
-        throw wibble::exception::Consistency("removing metadata from dataset", "the metadata is not assigned to this dataset");
+    const types::source::Blob* source = md.has_source_blob();
+    if (!source)
+        throw std::runtime_error("cannot remove metadata from dataset, because it has no Blob source");
 
-    remove(ds->id);
+    if (source->basedir != m_path)
+        throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir + " but this dataset is at " + m_path);
+
+    // TODO: refuse if md is in the archive
+
+    // Delete from DB, and get file name
+    Pending p_del = m_idx.beginTransaction();
+    m_idx.remove(source->filename, source->offset);
+
+    // Create flagfile
+    //createPackFlagfile(str::joinpath(m_path, file));
+
+    // Commit delete from DB
+    p_del.commit();
 
     // reset source and dataset in the metadata
     md.unset_source();
     md.unset(TYPE_ASSIGNEDDATASET);
-}
-
-void Writer::remove(const std::string& str_id)
-{
-	// TODO: refuse if md is in the archive
-
-	if (str_id.empty()) return;
-	int id = strtoul(str_id.c_str(), 0, 10);
-
-	// Delete from DB, and get file name
-	Pending p_del = m_idx.beginTransaction();
-	string file;
-	m_idx.remove(id, file);
-
-	// Create flagfile
-	//createPackFlagfile(str::joinpath(m_path, file));
-
-	// Commit delete from DB
-	p_del.commit();
 }
 
 void Writer::flush()

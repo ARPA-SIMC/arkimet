@@ -440,7 +440,7 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
 void Contents::build_md(Query& q, Metadata& md) const
 {
     // Rebuild the Metadata
-    md.set(types::AssignedDataset::create(m_name, q.fetchString(0)));
+    md.set(types::AssignedDataset::create(m_name, q.fetchString(2) + ":" + to_string(q.fetch<uint64_t>(3))));
     md.set_source(Source::createBlob(
             q.fetchString(1), m_root, q.fetchString(2),
             q.fetch<uint64_t>(3), q.fetch<uint64_t>(4)));
@@ -1124,21 +1124,23 @@ void WContents::replace(Metadata& md, const std::string& file, uint64_t ofs, int
     scache.invalidate(md);
 }
 
-void WContents::remove(int id, std::string& file)
+void WContents::remove(const std::string& relname, off_t ofs)
 {
-	Query fetch_by_id("byid", m_db);
-	fetch_by_id.compile("SELECT file, reftime FROM md WHERE id=?");
-	fetch_by_id.bind(1, id);
-	string reftime;
-	while (fetch_by_id.step())
-	{
-		file = fetch_by_id.fetchString(0);
-		reftime = fetch_by_id.fetchString(1);
-	}
+    Query fetch_id("byfile", m_db);
+    fetch_id.compile("SELECT id, reftime FROM md WHERE file=? AND offset=?");
+    fetch_id.bind(1, relname);
+    fetch_id.bind(2, ofs);
+    int id;
+    string reftime;
+    while (fetch_id.step())
+    {
+        id = fetch_id.fetch<int>(0);
+        reftime = fetch_id.fetchString(1);
+    }
     if (reftime.empty())
     {
         stringstream ss;
-        ss << "cannot remove item with id " << id << " because it does not exist in the index";
+        ss << "cannot remove item " << relname << ":" << ofs << " because it does not exist in the index";
         throw runtime_error(ss.str());
     }
 
@@ -1146,11 +1148,11 @@ void WContents::remove(int id, std::string& file)
     Time rt(Time::create_from_SQL(reftime));
     scache.invalidate(rt.vals[0], rt.vals[1]);
 
-	// DELETE FROM md WHERE id=?
-	m_delete.reset();
-	m_delete.bind(1, id);
-	while (m_delete.step())
-		;
+    // DELETE FROM md WHERE id=?
+    m_delete.reset();
+    m_delete.bind(1, id);
+    while (m_delete.step())
+        ;
 }
 
 void WContents::reset()

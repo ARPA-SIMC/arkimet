@@ -41,7 +41,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
             if (second_in_segment.offset > 0)
                 return second_in_segment;
         }
-        throw wibble::exception::Consistency("second in file not found");
+        throw std::runtime_error("second in file not found");
     }
 
     void test_preconditions(const testdata::Fixture& fixture)
@@ -208,7 +208,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         wassert(actual(second_in_segment.offset) > 0);
 
         // Truncate at the position in second_in_segment
-        string truncated_fname = second_in_segment.filename.substr(7);
+        string truncated_fname = second_in_segment.filename;
         segments().truncate(truncated_fname, second_in_segment.offset);
 
         // See that the truncated file is detected
@@ -285,7 +285,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         {
             unique_ptr<SegmentedWriter> writer(makeLocalWriter(&cfg));
             LineChecker s;
-            s.require_line_contains(": rescanned " + second_in_segment.filename.substr(7));
+            s.require_line_contains(": rescanned " + second_in_segment.filename);
             s.require_line_contains(": 1 file rescanned");
             wassert(actual(writer.get()).check(s, true, false));
 
@@ -300,7 +300,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         {
             unique_ptr<SegmentedWriter> writer(makeLocalWriter(&cfg));
             LineChecker s;
-            s.require_line_contains(": packed " + second_in_segment.filename.substr(7));
+            s.require_line_contains(": packed " + second_in_segment.filename);
             s.require_line_contains(": 1 file packed");
             wassert(actual(writer.get()).repack(s, true));
         }
@@ -316,7 +316,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
     void test_deleted_datafile_repack(const testdata::Fixture& fixture)
     {
         wruntest(import_all_packed, fixture);
-        string deleted_fname = import_results[0].sourceBlob().filename.substr(7);
+        string deleted_fname = import_results[0].sourceBlob().filename;
         unsigned file_count = fixture.count_dataset_files();
         segments().remove(deleted_fname);
 
@@ -358,7 +358,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
     void test_deleted_datafile_check(const testdata::Fixture& fixture)
     {
         wruntest(import_all_packed, fixture);
-        string deleted_fname = import_results[0].sourceBlob().filename.substr(7);
+        string deleted_fname = import_results[0].sourceBlob().filename;
         unsigned file_count = fixture.count_dataset_files();
         segments().remove(deleted_fname);
 

@@ -291,13 +291,13 @@ public:
 	 */
 	void replace(Metadata& md, const std::string& file, uint64_t ofs, int* id = 0);
 
-	/**
-	 * Remove the given metadata item from the index.
-	 *
-	 * The removal will only take place when the commit() method will be called
-	 * on the Pending object.
-	 */
-	void remove(int id, std::string& file);
+    /**
+     * Remove the given metadata item from the index.
+     *
+     * The removal will only take place when the commit() method will be called
+     * on the Pending object.
+     */
+    void remove(const std::string& relname, off_t ofs);
 
 	/**
 	 * Remove all entries from the index

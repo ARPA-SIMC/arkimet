@@ -42,9 +42,6 @@ protected:
     AcquireResult acquire_replace_always(Metadata& md);
     AcquireResult acquire_replace_higher_usn(Metadata& md);
 
-    /// Make an assigneddataset entry for this dataset with the given database ID
-    std::unique_ptr<types::AssignedDataset> make_assigneddataset(int id);
-
 public:
 	// Initialise the dataset with the information from the configurationa in 'cfg'
 	Writer(const ConfigFile& cfg);
@@ -64,7 +61,6 @@ public:
      */
     virtual AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT);
 
-	void remove(const std::string& id);
     virtual void remove(Metadata& md);
 
     virtual void flush();

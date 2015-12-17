@@ -102,7 +102,7 @@ void Segment::write(const std::vector<uint8_t>& buf)
         throw wibble::exception::File(absname, "flushing write");
 }
 
-void Segment::append(Metadata& md)
+off_t Segment::append(Metadata& md)
 {
     open();
 
@@ -130,7 +130,8 @@ void Segment::append(Metadata& md)
     unlock();
 
     // Set the source information that we are writing in the metadata
-    md.set_source(Source::createBlob(md.source().format, "", absname, pos, buf.size()));
+    //md.set_source(Source::createBlob(md.source().format, "", absname, pos, buf.size()));
+    return pos;
 }
 
 off_t Segment::append(const std::vector<uint8_t>& buf)
