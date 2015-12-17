@@ -1,5 +1,3 @@
-#include <arki/wibble/tests/tut.h>
-#include <arki/wibble/tests/tut_reporter.h>
 #include <arki/utils/tests.h>
 #include <arki/types-init.h>
 #include <signal.h>
@@ -7,81 +5,12 @@
 #include <cstdlib>
 #include <arki/nag.h>
 
-namespace tut {
-  test_runner_singleton runner;
-}
-
 using namespace std;
 
 void signal_to_exception(int)
 {
     throw std::runtime_error("killing signal catched");
 }
-
-struct TutRunner
-{
-    tut::reporter visi;
-    bool run_all = false;
-    string wanted_group;
-    int wanted_test = -1;
-    bool success = true;
-
-    // Setup the test runner. Returns true if program invocation has been
-    // fully handled and execution should stop after this
-    bool setup(int argc, const char* argv[])
-    {
-        if ( (argc == 2 && (! strcmp ("help", argv[1]))) || argc > 3 )
-        {
-            std::cout << argv[0] << " test runner." << std::endl;
-            std::cout << "Usage: " << argv[0] << " [group] [test] (runs all tests)" << std::endl;
-            std::cout << "Usage: " << argv[0] << " list (lists all test groups)" << std::endl;
-            return true;
-        }
-
-        if (argc == 2 && std::string(argv[1]) == "list")
-        {
-            std::cout << "registered test groups:" << std::endl;
-            tut::groupnames gl = tut::runner.get().list_groups();
-            tut::groupnames::const_iterator i = gl.begin();
-            tut::groupnames::const_iterator e = gl.end();
-            while( i != e )
-            {
-                std::cout << "  " << *i << std::endl;
-                ++i;
-            }
-            return true;
-        }
-
-        if (argc > 1)
-            wanted_group = argv[1];
-        else
-            run_all = true;
-        if (argc > 2)
-            wanted_test = ::atoi(argv[2]);
-
-        tut::runner.get().set_callback(&visi);
-        return false;
-    }
-
-    void run()
-    {
-        try
-        {
-            if (wanted_group.empty())
-                tut::runner.get().run_tests();
-            else if (wanted_test == -1)
-                tut::runner.get().run_tests(wanted_group);
-            else
-                tut::runner.get().run_test(wanted_group, wanted_test);
-        }
-        catch( const std::exception& ex )
-        {
-            std::cerr << "tut raised exception: " << ex.what() << std::endl;
-        }
-
-        success = !visi.failures_count && !visi.exceptions_count;
-    }
-};
 
 struct ArkiRunner
 {
@@ -176,21 +105,13 @@ int main(int argc,const char* argv[])
     signal(SIGSEGV,signal_to_exception);
     signal(SIGILL,signal_to_exception);
 
-    // Run tut-based tests
-    TutRunner tut_runner;
-    if (tut_runner.setup(argc, argv))
-        return 0;
-
     // Run arki::tests based tests
     ArkiRunner arki_runner;
     if (arki_runner.setup())
         return 0;
 
-    if (arki_runner.run_all)
-        tut_runner.run();
-    if (tut_runner.run_all)
-        arki_runner.run();
+    arki_runner.run();
 
-    if (!arki_runner.success || !tut_runner.success) return 1;
+    if (!arki_runner.success) return 1;
     return 0;
 }

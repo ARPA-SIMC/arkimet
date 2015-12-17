@@ -3,6 +3,7 @@
 #include <arki/metadata.h>
 #include <arki/types.h>
 #include <arki/utils/sys.h>
+#include <iostream>
 
 namespace tut {
 

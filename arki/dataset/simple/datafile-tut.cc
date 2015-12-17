@@ -46,7 +46,7 @@ TESTGRP(arki_dataset_simple_datafile);
 template<> template<>
 void to::test<1>()
 {
-	system(("rm -f " + fname).c_str());
+	system(("rm -rf " + fname).c_str());
 	ino_t inomd;
 	ino_t inosum;
 
@@ -173,5 +173,3 @@ void to::test<2>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

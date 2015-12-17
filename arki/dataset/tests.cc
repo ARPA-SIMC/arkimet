@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <iostream>
 
 using namespace std;
 using namespace arki;
@@ -242,6 +243,7 @@ int days_since(int year, int month, int day)
     return duration/(3600*24);
 }
 
+#if 0
 namespace {
 const ConfigFile* default_datasettest_config = 0;
 }
@@ -254,12 +256,12 @@ DatasetTestDefaultConfig::~DatasetTestDefaultConfig()
 {
     default_datasettest_config = 0;
 }
+#endif
 
 DatasetTest::DatasetTest()
-    : segment_manager(0)
 {
-    if (default_datasettest_config)
-        cfg = *default_datasettest_config;
+    //if (default_datasettest_config)
+        //cfg = *default_datasettest_config;
 }
 DatasetTest::~DatasetTest()
 {

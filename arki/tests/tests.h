@@ -3,7 +3,6 @@
 
 #include <arki/utils/tests.h>
 #include <arki/wibble/tests/tut.h>
-#include <arki/wibble/tests/tut_reporter.h>
 #include <memory>
 
 #define TESTGRP(name) \

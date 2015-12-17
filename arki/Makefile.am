@@ -18,7 +18,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		wibble/sys/fs.h \
 		wibble/sys/signal.h \
 		wibble/sys/filelock.h \
-		wibble/tests/tut_reporter.h \
 		wibble/tests/tut.h \
 		wibble/grcal/grcal.h \
 		binary.h \
@@ -289,8 +288,9 @@ libarkimet_la_SOURCES += \
 
 tests_arki_test_SOURCES += \
 		tests/tests-tut.cc \
-		utils-tut.cc \
+		types/tests.cc \
 		utils/tests.cc \
+		utils-tut.cc \
 		utils/accounting-tut.cc \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \
@@ -307,7 +307,6 @@ tests_arki_test_SOURCES += \
 		emitter/json-tut.cc \
 		values-tut.cc \
 		types-tut.cc \
-		types/tests.cc \
 		types/utils-tut.cc \
 		types/source-tut.cc \
 		types/time-tut.cc \
@@ -391,6 +390,8 @@ libarkimet_la_SOURCES += \
 		scan/dir.cc
 
 tests_arki_test_SOURCES += \
+		metadata/tests.cc \
+		matcher/tests.cc \
 		utils/datareader-tut.cc \
 		utils/compress-tut.cc \
 		utils/sqlite-tut.cc \
@@ -403,14 +404,12 @@ tests_arki_test_SOURCES += \
 		metadata/collection-tut.cc \
 		metadata/clusterer-tut.cc \
 		metadata/stream-tut.cc \
-		metadata/tests.cc \
 		metadata/test-generator-tut.cc \
 		summary-tut.cc \
 		summary/intern-tut.cc \
 		summary/table-tut.cc \
 		summary/stats-tut.cc \
 		matcher-tut.cc \
-		matcher/tests.cc \
 		matcher/utils-tut.cc \
 		matcher/origin-tut.cc \
 		matcher/product-tut.cc \

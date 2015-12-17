@@ -90,7 +90,7 @@ struct ForceSqlite
 int days_since(int year, int month, int day);
 
 // Base class for dataset tests
-struct DatasetTest
+struct DatasetTest : public Fixture
 {
     enum Counted {
         COUNTED_OK,
@@ -107,9 +107,9 @@ struct DatasetTest
         COUNTED_MAX,
     };
 
-	// Default dataset configuration (to be filled by subclasser)
-	ConfigFile cfg;
-    dataset::data::SegmentManager* segment_manager;
+    // Default dataset configuration (to be filled by subclasser)
+    ConfigFile cfg;
+    dataset::data::SegmentManager* segment_manager = nullptr;
     Metadata import_results[3];
 
     DatasetTest();
@@ -147,6 +147,7 @@ struct DatasetTest
     void import_all_packed(const testdata::Fixture& fixture);
 };
 
+#if 0
 struct DatasetTestDefaultConfig
 {
     DatasetTestDefaultConfig(const ConfigFile& cfg);
@@ -176,6 +177,7 @@ struct dataset_tg : public tut::test_group<T>
         return tut::test_group<T>::run_test(n);
     }
 };
+#endif
 
 std::unique_ptr<dataset::LocalWriter> make_dataset_writer(const std::string& cfg, bool empty=true);
 std::unique_ptr<Reader> make_dataset_reader(const std::string& cfg);

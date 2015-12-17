@@ -10,6 +10,7 @@
 #include <arki/types/area.h>
 #include <arki/types/proddef.h>
 #include <arki/types/assigneddataset.h>
+#include <iostream>
 
 namespace std {
 static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)

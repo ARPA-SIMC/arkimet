@@ -23,13 +23,29 @@ using namespace arki::utils;
 
 namespace {
 
-struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
-    arki_dataset_maintenance_base()
+struct Fixture : public DatasetTest {
+    string extracfg;
+
+    Fixture(const std::string& extracfg)
+        : extracfg(extracfg)
     {
-        cfg.setValue("path", "testds");
+    }
+
+    void test_setup()
+    {
+        std::stringstream in(extracfg);
+        cfg.clear();
+        cfg.parse(in, "(memory)");
+        cfg.setValue("path", sys::abspath("testds"));
         cfg.setValue("name", "testds");
         cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
         cfg.setValue("step", "daily");
+    }
+
+    void test_teardown()
+    {
+        delete segment_manager;
+        segment_manager = nullptr;
     }
 
     const source::Blob& find_imported_second_in_file()
@@ -46,8 +62,8 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
 
     void test_preconditions(const testdata::Fixture& fixture)
     {
-        wassert(actual(fixture.fnames_before_cutoff.size()) > 0);
-        wassert(actual(fixture.fnames_after_cutoff.size()) > 0);
+        wassert(actual(fixture.fnames_before_cutoff.size()) > 0u);
+        wassert(actual(fixture.fnames_after_cutoff.size()) > 0u);
         wassert(actual(fixture.fnames_before_cutoff.size() + fixture.fnames_after_cutoff.size()) == fixture.count_dataset_files());
     }
 
@@ -205,7 +221,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
 
         // Find the imported_result element whose offset is > 0
         const source::Blob& second_in_segment = find_imported_second_in_file();
-        wassert(actual(second_in_segment.offset) > 0);
+        wassert(actual(second_in_segment.offset) > 0u);
 
         // Truncate at the position in second_in_segment
         string truncated_fname = second_in_segment.filename;
@@ -249,7 +265,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
 
             unsigned count = 0;
             reader->query_data(Matcher(), [&](unique_ptr<Metadata>) { ++count; return true; });
-            wassert(actual(count) == 2);
+            wassert(actual(count) == 2u);
         }
     }
 
@@ -260,7 +276,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
 
         // Find the imported_result element whose offset is > 0
         const source::Blob& second_in_segment = find_imported_second_in_file();
-        wassert(actual(second_in_segment.offset) > 0);
+        wassert(actual(second_in_segment.offset) > 0u);
 
         // Corrupt the first datum in the file
         corrupt_datafile(second_in_segment.absolutePathname());
@@ -424,386 +440,360 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
     }
 };
 
-}
-
-namespace tut {
-
-typedef dataset_tg<arki_dataset_maintenance_base> tg;
-typedef tg::object to;
-
-// Test accuracy of maintenance scan, on perfect dataset
-template<> template<> void to::test<1>()
+class Tests : public FixtureTestCase<Fixture>
 {
-    wruntest(test_preconditions, testdata::GRIBData());
-    wruntest(test_preconditions, testdata::BUFRData());
-    wruntest(test_preconditions, testdata::VM2Data());
-    wruntest(test_preconditions, testdata::ODIMData());
+    using FixtureTestCase::FixtureTestCase;
 
-    wruntest(test_maintenance_on_clean, testdata::GRIBData());
-    wruntest(test_maintenance_on_clean, testdata::BUFRData());
-    wruntest(test_maintenance_on_clean, testdata::VM2Data());
-    wruntest(test_maintenance_on_clean, testdata::ODIMData());
-}
+    void register_tests() override
+    {
+        add_method("scan_clean", [](Fixture& f) {
+            // Test accuracy of maintenance scan, on perfect dataset
+            wruntest(f.test_preconditions, testdata::GRIBData());
+            wruntest(f.test_preconditions, testdata::BUFRData());
+            wruntest(f.test_preconditions, testdata::VM2Data());
+            wruntest(f.test_preconditions, testdata::ODIMData());
 
-// Test accuracy of maintenance scan, on perfect dataset, with data to archive
-template<> template<> void to::test<2>()
-{
-    nag::TestCollect tc;
-    wruntest(test_move_to_archive, testdata::GRIBData());
-    wruntest(test_move_to_archive, testdata::BUFRData());
-    wruntest(test_move_to_archive, testdata::VM2Data());
-    wruntest(test_move_to_archive, testdata::ODIMData());
-    tc.clear();
-}
+            wruntest(f.test_maintenance_on_clean, testdata::GRIBData());
+            wruntest(f.test_maintenance_on_clean, testdata::BUFRData());
+            wruntest(f.test_maintenance_on_clean, testdata::VM2Data());
+            wruntest(f.test_maintenance_on_clean, testdata::ODIMData());
+        });
+        add_method("scan_archive", [](Fixture& f) {
+            // Test accuracy of maintenance scan, on perfect dataset, with data to archive
+            nag::TestCollect tc;
+            wruntest(f.test_move_to_archive, testdata::GRIBData());
+            wruntest(f.test_move_to_archive, testdata::BUFRData());
+            wruntest(f.test_move_to_archive, testdata::VM2Data());
+            wruntest(f.test_move_to_archive, testdata::ODIMData());
+            tc.clear();
+        });
+        add_method("scan_todelete", [](Fixture& f) {
+            // Test accuracy of maintenance scan, on perfect dataset, with data to delete
+            wruntest(f.test_delete_age, testdata::GRIBData());
+            wruntest(f.test_delete_age, testdata::BUFRData());
+            wruntest(f.test_delete_age, testdata::VM2Data());
+            wruntest(f.test_delete_age, testdata::ODIMData());
+        });
+        add_method("scan_truncated", [](Fixture& f) {
+            // Test accuracy of maintenance scan, on perfect dataset, with a truncated data file
+            wruntest(f.test_truncated_datafile_at_data_boundary, testdata::GRIBData());
+            wruntest(f.test_truncated_datafile_at_data_boundary, testdata::BUFRData());
+            wruntest(f.test_truncated_datafile_at_data_boundary, testdata::VM2Data());
+            wruntest(f.test_truncated_datafile_at_data_boundary, testdata::ODIMData());
+        });
+        add_method("scan_corrupted", [](Fixture& f) {
+            // Test accuracy of maintenance scan, on a dataset with a corrupted data file
+            /**
+             * Here we have inconsistent behaviou across segment types and data types,
+             * because:
+             *  - some formats detect corruption, some formats skip garbage
+             *  - concatenated data in files may skip corrupted data as garbage, but
+             *  directory segments are already split in separate data units and will
+             *  load, instead of skipping, corrupted data
+             */
+            wruntest(f.test_corrupted_datafile, testdata::GRIBData());
+            wruntest(f.test_corrupted_datafile, testdata::BUFRData());
+            // TODO: VM2 scanning does not yet deal gracefully with corruption
+            wruntest(f.test_corrupted_datafile, testdata::VM2Data());
+            // TODO: ODIM scanning does not yet deal gracefully with corruption
+            wruntest(f.test_corrupted_datafile, testdata::ODIMData());
+        });
+        add_method("scan_hugefile", [](Fixture& f) {
+            // Test accuracy of maintenance scan, on a dataset with a data file larger than 2**31
+            if (f.cfg.value("type") == "simple") return; // TODO: we need to avoid the SLOOOOW rescan done by simple on the data file
+            f.clean();
 
-// Test accuracy of maintenance scan, on perfect dataset, with data to delete
-template<> template<> void to::test<3>()
-{
-    wruntest(test_delete_age, testdata::GRIBData());
-    wruntest(test_delete_age, testdata::BUFRData());
-    wruntest(test_delete_age, testdata::VM2Data());
-    wruntest(test_delete_age, testdata::ODIMData());
-}
+            // Simulate 2007/07-07.grib1 to be 6G already
+            system("mkdir -p testds/2007");
+            system("touch testds/2007/07-07.grib1");
+            // Truncate the last grib out of a file
+            if (truncate("testds/2007/07-07.grib1", 6000000000LLU) < 0)
+                throw wibble::exception::System("truncating testds/2007/07-07.grib1");
 
-// Test accuracy of maintenance scan, on perfect dataset, with a truncated data file
-template<> template<> void to::test<4>()
-{
-    wruntest(test_truncated_datafile_at_data_boundary, testdata::GRIBData());
-    wruntest(test_truncated_datafile_at_data_boundary, testdata::BUFRData());
-    wruntest(test_truncated_datafile_at_data_boundary, testdata::VM2Data());
-    wruntest(test_truncated_datafile_at_data_boundary, testdata::ODIMData());
-}
+            f.import();
 
-// Test accuracy of maintenance scan, on a dataset with a corrupted data file
-template<> template<> void to::test<5>()
-{
-    /**
-     * Here we have inconsistent behaviou across segment types and data types,
-     * because:
-     *  - some formats detect corruption, some formats skip garbage
-     *  - concatenated data in files may skip corrupted data as garbage, but
-     *  directory segments are already split in separate data units and will
-     *  load, instead of skipping, corrupted data
-     */
-    wruntest(test_corrupted_datafile, testdata::GRIBData());
-    wruntest(test_corrupted_datafile, testdata::BUFRData());
-    // TODO: VM2 scanning does not yet deal gracefully with corruption
-    wruntest(test_corrupted_datafile, testdata::VM2Data());
-    // TODO: ODIM scanning does not yet deal gracefully with corruption
-    wruntest(test_corrupted_datafile, testdata::ODIMData());
-}
-
-// Test accuracy of maintenance scan, on a dataset with a data file larger than 2**31
-template<> template<> void to::test<6>()
-{
-	if (cfg.value("type") == "simple") return; // TODO: we need to avoid the SLOOOOW rescan done by simple on the data file
-	clean();
-
-	// Simulate 2007/07-07.grib1 to be 6G already
-	system("mkdir -p testds/2007");
-	system("touch testds/2007/07-07.grib1");
-	// Truncate the last grib out of a file
-	if (truncate("testds/2007/07-07.grib1", 6000000000LLU) < 0)
-		throw wibble::exception::System("truncating testds/2007/07-07.grib1");
-
-	import();
-
-	{
-		unique_ptr<SegmentedWriter> writer(makeLocalWriter());
-		MaintenanceCollector c;
-		writer->maintenance(c, false);
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_OK), 2u);
-		ensure_equals(c.count(COUNTED_TO_PACK), 1u);
-		ensure_equals(c.remaining(), "");
-		ensure(not c.isClean());
-	}
+            {
+                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter());
+                MaintenanceCollector c;
+                writer->maintenance(c, false);
+                ensure_equals(c.fileStates.size(), 3u);
+                ensure_equals(c.count(DatasetTest::COUNTED_OK), 2u);
+                ensure_equals(c.count(DatasetTest::COUNTED_TO_PACK), 1u);
+                ensure_equals(c.remaining(), "");
+                ensure(not c.isClean());
+            }
 
 #if 0
-	stringstream s;
+            stringstream s;
 
-// Rescanning a 6G+ file with grib_api is SLOW!
+        // Rescanning a 6G+ file with grib_api is SLOW!
 
-	// Perform full maintenance and check that things are still ok afterwards
-	writer.check(s, true, false);
-	ensure_equals(s.str(),
-		"testdir: rescanned 2007/07.grib1\n"
-		"testdir: 1 file rescanned, 7736 bytes reclaimed cleaning the index.\n");
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(COUNTED_OK), 1u);
-	ensure_equals(c.count(COUNTED_TO_PACK), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(not c.isClean());
+            // Perform full maintenance and check that things are still ok afterwards
+            writer.check(s, true, false);
+            ensure_equals(s.str(),
+                "testdir: rescanned 2007/07.grib1\n"
+                "testdir: 1 file rescanned, 7736 bytes reclaimed cleaning the index.\n");
+            c.clear();
+            writer.maintenance(c);
+            ensure_equals(c.count(COUNTED_OK), 1u);
+            ensure_equals(c.count(COUNTED_TO_PACK), 1u);
+            ensure_equals(c.remaining(), "");
+            ensure(not c.isClean());
 
-	// Perform packing and check that things are still ok afterwards
-	s.str(std::string());
-	writer.repack(s, true);
-	ensure_equals(s.str(), 
-		"testdir: packed 2007/07.grib1 (34960 saved)\n"
-		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 37536 total bytes freed.\n");
-	c.clear();
+            // Perform packing and check that things are still ok afterwards
+            s.str(std::string());
+            writer.repack(s, true);
+            ensure_equals(s.str(), 
+                "testdir: packed 2007/07.grib1 (34960 saved)\n"
+                "testdir: 1 file packed, 2576 bytes reclaimed on the index, 37536 total bytes freed.\n");
+            c.clear();
 
-	// Maintenance and pack are ok now
-	writer.maintenance(c, false);
-	ensure_equals(c.count(COUNTED_OK), 2u);
-	ensure_equals(c.remaining(), "");
-	ensure(c.isClean());
-        s.str(std::string());
-        writer.repack(s, true);
-        ensure_equals(s.str(), string()); // Nothing should have happened
-        c.clear();
+            // Maintenance and pack are ok now
+            writer.maintenance(c, false);
+            ensure_equals(c.count(COUNTED_OK), 2u);
+            ensure_equals(c.remaining(), "");
+            ensure(c.isClean());
+                s.str(std::string());
+                writer.repack(s, true);
+                ensure_equals(s.str(), string()); // Nothing should have happened
+                c.clear();
 
-	// Ensure that we have the summary cache
-	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
+            // Ensure that we have the summary cache
+            ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+            ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+            ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 #endif
-}
+        });
+        add_method("repack_deleted", [](Fixture& f) {
+            // Test accuracy of maintenance scan, on dataset with one file deleted,
+            // performing repack
+            wruntest(f.test_deleted_datafile_repack, testdata::GRIBData());
+            wruntest(f.test_deleted_datafile_repack, testdata::BUFRData());
+            wruntest(f.test_deleted_datafile_repack, testdata::VM2Data());
+            wruntest(f.test_deleted_datafile_repack, testdata::ODIMData());
+        });
+        add_method("check_deleted", [](Fixture& f) {
+            // Test accuracy of maintenance scan, on dataset with one file deleted,
+            // performing check
+            wruntest(f.test_deleted_datafile_check, testdata::GRIBData());
+            wruntest(f.test_deleted_datafile_check, testdata::BUFRData());
+            wruntest(f.test_deleted_datafile_check, testdata::VM2Data());
+            wruntest(f.test_deleted_datafile_check, testdata::ODIMData());
+        });
+        add_method("scan_noindex", [](Fixture& f) {
+            // Test accuracy of maintenance scan, after deleting the index, with some
+            // spurious extra files in the dataset
+            wruntest(f.test_deleted_index_check, testdata::GRIBData());
+            wruntest(f.test_deleted_index_check, testdata::BUFRData());
+            wruntest(f.test_deleted_index_check, testdata::VM2Data());
+            wruntest(f.test_deleted_index_check, testdata::ODIMData());
+        });
+        add_method("scan_randomfiles", [](Fixture& f) {
+            // Test recreating a dataset from random datafiles
+            system("rm -rf testds");
+            system("mkdir testds");
+            system("mkdir testds/foo");
+            system("mkdir testds/foo/bar");
+            system("cp inbound/test.grib1 testds/foo/bar/");
+            system("echo 'GRIB garbage 7777' > testds/foo/bar/test.grib1.tmp");
 
-// Test accuracy of maintenance scan, on dataset with one file deleted,
-// performing repack
-template<> template<> void to::test<7>()
-{
-    wruntest(test_deleted_datafile_repack, testdata::GRIBData());
-    wruntest(test_deleted_datafile_repack, testdata::BUFRData());
-    wruntest(test_deleted_datafile_repack, testdata::VM2Data());
-    wruntest(test_deleted_datafile_repack, testdata::ODIMData());
-}
+            // See if the files to index are detected in the correct number
+            {
+                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter());
+                MaintenanceCollector c;
+                writer->maintenance(c);
 
-// Test accuracy of maintenance scan, on dataset with one file deleted,
-// performing check
-template<> template<> void to::test<8>()
-{
-    wruntest(test_deleted_datafile_check, testdata::GRIBData());
-    wruntest(test_deleted_datafile_check, testdata::BUFRData());
-    wruntest(test_deleted_datafile_check, testdata::VM2Data());
-    wruntest(test_deleted_datafile_check, testdata::ODIMData());
-}
+                ensure_equals(c.fileStates.size(), 1u);
+                ensure_equals(c.count(DatasetTest::COUNTED_TO_INDEX), 1u);
+                ensure_equals(c.remaining(), "");
+                ensure(not c.isClean());
+            }
 
-// Test accuracy of maintenance scan, after deleting the index, with some
-// spurious extra files in the dataset
-template<> template<> void to::test<9>()
-{
-    wruntest(test_deleted_index_check, testdata::GRIBData());
-    wruntest(test_deleted_index_check, testdata::BUFRData());
-    wruntest(test_deleted_index_check, testdata::VM2Data());
-    wruntest(test_deleted_index_check, testdata::ODIMData());
-}
+            // Perform full maintenance and check that things are still ok afterwards
+            {
+                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter());
+                OutputChecker s;
+                writer->check(s, true, true);
+                s.ensure_line_contains(": rescanned foo/bar/test.grib1");
+                s.ensure_line_contains("1 file rescanned");
+                s.ensure_all_lines_seen();
 
-// Test recreating a dataset from random datafiles
-template<> template<> void to::test<10>()
-{
-	system("rm -rf testds");
-	system("mkdir testds");
-	system("mkdir testds/foo");
-	system("mkdir testds/foo/bar");
-	system("cp inbound/test.grib1 testds/foo/bar/");
-	system("echo 'GRIB garbage 7777' > testds/foo/bar/test.grib1.tmp");
+                MaintenanceCollector c;
+                writer->maintenance(c);
+                // A repack is still needed because the data is not sorted by reftime
+                ensure_equals(c.fileStates.size(), 1u);
+                ensure_equals(c.count(DatasetTest::COUNTED_TO_PACK), 1u);
+                ensure_equals(c.remaining(), "");
+                ensure(not c.isClean());
+            }
 
-	// See if the files to index are detected in the correct number
-	{
-		unique_ptr<SegmentedWriter> writer(makeLocalWriter());
-		MaintenanceCollector c;
-		writer->maintenance(c);
+            ensure(sys::exists("testds/foo/bar/test.grib1.tmp"));
+            ensure_equals(sys::size("testds/foo/bar/test.grib1"), 44412u);
 
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(COUNTED_TO_INDEX), 1u);
-		ensure_equals(c.remaining(), "");
-		ensure(not c.isClean());
-	}
+            // Perform packing and check that things are still ok afterwards
+            {
+                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter());
+                OutputChecker s;
+                writer->repack(s, true);
+                s.ensure_line_contains(": packed foo/bar/test.grib1");
+                s.ensure_line_contains(": 1 file packed");
+            }
+            f.ensure_maint_clean(1);
 
-	// Perform full maintenance and check that things are still ok afterwards
-	{
-		unique_ptr<SegmentedWriter> writer(makeLocalWriter());
-		OutputChecker s;
-		writer->check(s, true, true);
-		s.ensure_line_contains(": rescanned foo/bar/test.grib1");
-		s.ensure_line_contains("1 file rescanned");
-		s.ensure_all_lines_seen();
+            ensure_equals(sys::size("testds/foo/bar/test.grib1"), 44412u);
 
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		// A repack is still needed because the data is not sorted by reftime
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(COUNTED_TO_PACK), 1u);
-		ensure_equals(c.remaining(), "");
-		ensure(not c.isClean());
-	}
+            // Test querying
+            {
+                std::unique_ptr<Reader> reader(f.makeReader(&f.cfg));
+                metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,200"));
+                ensure_equals(mdc.size(), 1u);
+                wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testds"), "foo/bar/test.grib1", 34960, 7218));
+            }
+        });
+        add_method("repack_timestamps", [](Fixture& f) {
+            // Ensure that if repacking changes the data file timestamp, it reindexes it properly
+            f.clean_and_import();
 
-    ensure(sys::exists("testds/foo/bar/test.grib1.tmp"));
-    ensure_equals(sys::size("testds/foo/bar/test.grib1"), 44412u);
+            // Ensure the archive appears clean
+            f.ensure_maint_clean(3);
 
-	// Perform packing and check that things are still ok afterwards
-	{
-		unique_ptr<SegmentedWriter> writer(makeLocalWriter());
-		OutputChecker s;
-		writer->repack(s, true);
-		s.ensure_line_contains(": packed foo/bar/test.grib1");
-		s.ensure_line_contains(": 1 file packed");
-	}
-	ensure_maint_clean(1);
+            // Change timestamp and rescan the file
+            {
+                struct utimbuf oldts = { 199926000, 199926000 };
+                ensure(utime("testds/2007/07-08.grib1", &oldts) == 0);
 
-    ensure_equals(sys::size("testds/foo/bar/test.grib1"), 44412u);
+                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter());
+                writer->rescanFile("2007/07-08.grib1");
+            }
 
-    // Test querying
-    {
-        std::unique_ptr<Reader> reader(makeReader(&cfg));
-        metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,200"));
-        ensure_equals(mdc.size(), 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testds"), "foo/bar/test.grib1", 34960, 7218));
+            // Ensure that the archive is still clean
+            f.ensure_maint_clean(3);
+
+            // Repack the file
+            {
+                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter());
+                ensure_equals(writer->repackFile("2007/07-08.grib1"), 0u);
+            }
+
+            // Ensure that the archive is still clean
+            f.ensure_maint_clean(3);
+        });
+        add_method("repack_timestamps", [](Fixture& f) {
+            // Test accuracy of maintenance scan, on a dataset with one file to both repack and delete
+
+            // Data are from 07, 08, 10 2007
+            int treshold[6] = { 2008, 1, 1, 0, 0, 0 };
+            int now[6];
+            wibble::grcal::date::now(now);
+            long long int duration = wibble::grcal::date::duration(treshold, now);
+
+            system("rm -rf testds");
+            system("mkdir testds");
+            system("mkdir testds/2007");
+            system("cp inbound/test.grib1 testds/2007/");
+
+            ConfigFile cfg = f.cfg;
+            cfg.setValue("step", "yearly");
+            cfg.setValue("delete age", duration/(3600*24));
+
+            // Run maintenance to build the dataset
+            {
+                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter(&cfg));
+                OutputChecker s;
+                writer->check(s, true, true);
+                s.ensure_line_contains(": rescanned 2007/test.grib1");
+                s.ensure_line_contains("1 file rescanned");
+                s.ensure_all_lines_seen();
+
+                arki::tests::MaintenanceResults expected(false, 1);
+                // A repack is still needed because the data is not sorted by reftime
+                expected.by_type[DatasetTest::COUNTED_TO_PACK] = 1;
+                // And the same file is also old enough to be deleted
+                expected.by_type[DatasetTest::COUNTED_TO_DELETE] = 1;
+                wassert(actual(writer.get()).maintenance(expected));
+            }
+
+            // Perform packing and check that things are still ok afterwards
+            {
+                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter(&cfg));
+
+                OutputChecker s;
+                writer->repack(s, true);
+                s.ensure_line_contains(": deleted 2007/test.grib1");
+                s.ensure_line_contains(": 1 file deleted, 1 file removed from index, 44412 total bytes freed.");
+                s.ensure_all_lines_seen();
+            }
+            f.ensure_maint_clean(0);
+
+            // Perform full maintenance and check that things are still ok afterwards
+            {
+                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter(&cfg));
+                stringstream s;
+                writer->check(s, true, true);
+                ensure_equals(s.str(), string()); // Nothing should have happened
+
+                f.ensure_maint_clean(0);
+            }
+        });
+        add_method("scan_repack_archive", [](Fixture& f) {
+            // Test accuracy of maintenance scan, on a dataset with one file to both repack and archive
+
+            // Data are from 07, 08, 10 2007
+            int treshold[6] = { 2008, 1, 1, 0, 0, 0 };
+            int now[6];
+            wibble::grcal::date::now(now);
+            long long int duration = wibble::grcal::date::duration(treshold, now);
+
+            system("rm -rf testds");
+            system("mkdir testds");
+            system("mkdir testds/2007");
+            system("cp inbound/test.grib1 testds/2007/");
+
+            ConfigFile cfg = f.cfg;
+            cfg.setValue("step", "yearly");
+            cfg.setValue("archive age", duration/(3600*24));
+
+            // Run maintenance to build the dataset
+            {
+                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter(&cfg));
+                OutputChecker s;
+                writer->check(s, true, true);
+                s.ensure_line_contains(": rescanned 2007/test.grib1");
+                s.ensure_line_contains("1 file rescanned");
+                s.ensure_all_lines_seen();
+
+                MaintenanceCollector c;
+                writer->maintenance(c);
+                ensure_equals(c.fileStates.size(), 1u);
+                // A repack is still needed because the data is not sorted by reftime
+                ensure_equals(c.count(DatasetTest::COUNTED_TO_PACK), 1u);
+                // And the same file is also old enough to be deleted
+                ensure_equals(c.count(DatasetTest::COUNTED_TO_ARCHIVE), 1u);
+                ensure_equals(c.remaining(), "");
+                ensure(not c.isClean());
+            }
+
+            // Perform packing and check that things are still ok afterwards
+            {
+                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter(&cfg));
+
+                OutputChecker s;
+                writer->repack(s, true);
+                s.ensure_line_contains(": packed 2007/test.grib1");
+                s.ensure_line_contains(": archived 2007/test.grib1");
+                s.ensure_line_contains(": 1 file packed, 1 file archived.");
+                s.ensure_line_contains(": archive cleaned up");
+                s.ensure_all_lines_seen();
+            }
+        });
     }
-}
+};
 
-// Ensure that if repacking changes the data file timestamp, it reindexes it properly
-template<> template<> void to::test<11>()
-{
-	clean_and_import();
-
-	// Ensure the archive appears clean
-	ensure_maint_clean(3);
-
-	// Change timestamp and rescan the file
-	{
-		struct utimbuf oldts = { 199926000, 199926000 };
-		ensure(utime("testds/2007/07-08.grib1", &oldts) == 0);
-
-		unique_ptr<SegmentedWriter> writer(makeLocalWriter());
-		writer->rescanFile("2007/07-08.grib1");
-	}
-
-	// Ensure that the archive is still clean
-	ensure_maint_clean(3);
-
-	// Repack the file
-	{
-		unique_ptr<SegmentedWriter> writer(makeLocalWriter());
-		ensure_equals(writer->repackFile("2007/07-08.grib1"), 0u);
-	}
-
-	// Ensure that the archive is still clean
-	ensure_maint_clean(3);
-}
-
-// Test accuracy of maintenance scan, on a dataset with one file to both repack and delete
-template<> template<> void to::test<12>()
-{
-    // Data are from 07, 08, 10 2007
-    int treshold[6] = { 2008, 1, 1, 0, 0, 0 };
-    int now[6];
-    wibble::grcal::date::now(now);
-    long long int duration = wibble::grcal::date::duration(treshold, now);
-
-    system("rm -rf testds");
-    system("mkdir testds");
-    system("mkdir testds/2007");
-    system("cp inbound/test.grib1 testds/2007/");
-
-    ConfigFile cfg = this->cfg;
-    cfg.setValue("step", "yearly");
-    cfg.setValue("delete age", duration/(3600*24));
-
-    // Run maintenance to build the dataset
-    {
-        unique_ptr<SegmentedWriter> writer(makeLocalWriter(&cfg));
-        OutputChecker s;
-        writer->check(s, true, true);
-        s.ensure_line_contains(": rescanned 2007/test.grib1");
-        s.ensure_line_contains("1 file rescanned");
-        s.ensure_all_lines_seen();
-
-        arki::tests::MaintenanceResults expected(false, 1);
-        // A repack is still needed because the data is not sorted by reftime
-        expected.by_type[COUNTED_TO_PACK] = 1;
-        // And the same file is also old enough to be deleted
-        expected.by_type[COUNTED_TO_DELETE] = 1;
-        wassert(actual(writer.get()).maintenance(expected));
-    }
-
-    // Perform packing and check that things are still ok afterwards
-    {
-        unique_ptr<SegmentedWriter> writer(makeLocalWriter(&cfg));
-
-        OutputChecker s;
-        writer->repack(s, true);
-        s.ensure_line_contains(": deleted 2007/test.grib1");
-        s.ensure_line_contains(": 1 file deleted, 1 file removed from index, 44412 total bytes freed.");
-        s.ensure_all_lines_seen();
-    }
-    ensure_maint_clean(0);
-
-    // Perform full maintenance and check that things are still ok afterwards
-    {
-        unique_ptr<SegmentedWriter> writer(makeLocalWriter(&cfg));
-        stringstream s;
-        writer->check(s, true, true);
-        ensure_equals(s.str(), string()); // Nothing should have happened
-
-        ensure_maint_clean(0);
-    }
-}
-
-// Test accuracy of maintenance scan, on a dataset with one file to both repack and archive
-template<> template<> void to::test<13>()
-{
-    // Data are from 07, 08, 10 2007
-    int treshold[6] = { 2008, 1, 1, 0, 0, 0 };
-    int now[6];
-    wibble::grcal::date::now(now);
-    long long int duration = wibble::grcal::date::duration(treshold, now);
-
-    system("rm -rf testds");
-    system("mkdir testds");
-    system("mkdir testds/2007");
-    system("cp inbound/test.grib1 testds/2007/");
-
-    ConfigFile cfg = this->cfg;
-    cfg.setValue("step", "yearly");
-    cfg.setValue("archive age", duration/(3600*24));
-
-    // Run maintenance to build the dataset
-    {
-        unique_ptr<SegmentedWriter> writer(makeLocalWriter(&cfg));
-        OutputChecker s;
-        writer->check(s, true, true);
-        s.ensure_line_contains(": rescanned 2007/test.grib1");
-        s.ensure_line_contains("1 file rescanned");
-        s.ensure_all_lines_seen();
-
-        MaintenanceCollector c;
-        writer->maintenance(c);
-        ensure_equals(c.fileStates.size(), 1u);
-        // A repack is still needed because the data is not sorted by reftime
-        ensure_equals(c.count(COUNTED_TO_PACK), 1u);
-        // And the same file is also old enough to be deleted
-        ensure_equals(c.count(COUNTED_TO_ARCHIVE), 1u);
-        ensure_equals(c.remaining(), "");
-        ensure(not c.isClean());
-    }
-
-    // Perform packing and check that things are still ok afterwards
-    {
-        unique_ptr<SegmentedWriter> writer(makeLocalWriter(&cfg));
-
-        OutputChecker s;
-        writer->repack(s, true);
-        s.ensure_line_contains(": packed 2007/test.grib1");
-        s.ensure_line_contains(": archived 2007/test.grib1");
-        s.ensure_line_contains(": 1 file packed, 1 file archived.");
-        s.ensure_line_contains(": archive cleaned up");
-        s.ensure_all_lines_seen();
-    }
-}
-
-}
-
-namespace {
-
-tut::tg test_ondisk2("arki_dataset_maintenance_ondisk2", "type=ondisk2\n");
-tut::tg test_simple_plain("arki_dataset_maintenance_simple_plain", "type=simple\nindex_type=plain\n");
-tut::tg test_simple_sqlite("arki_dataset_maintenance_simple_sqlite", "type=simple\nindex_type=sqlite");
-tut::tg test_ondisk2_dir("arki_dataset_maintenance_ondisk2_dirs", "type=ondisk2\nsegments=dir\n");
-tut::tg test_simple_plain_dir("arki_dataset_maintenance_simple_plain_dirs", "type=simple\nindex_type=plain\nsegments=dir\n");
-tut::tg test_simple_sqlite_dir("arki_dataset_maintenance_simple_sqlite_dirs", "type=simple\nindex_type=sqlite\nsegments=dir\n");
+Tests test_ondisk2("arki_dataset_maintenance_ondisk2", "type=ondisk2\n");
+Tests test_simple_plain("arki_dataset_maintenance_simple_plain", "type=simple\nindex_type=plain\n");
+Tests test_simple_sqlite("arki_dataset_maintenance_simple_sqlite", "type=simple\nindex_type=sqlite");
+Tests test_ondisk2_dir("arki_dataset_maintenance_ondisk2_dirs", "type=ondisk2\nsegments=dir\n");
+Tests test_simple_plain_dir("arki_dataset_maintenance_simple_plain_dirs", "type=simple\nindex_type=plain\nsegments=dir\n");
+Tests test_simple_sqlite_dir("arki_dataset_maintenance_simple_sqlite_dirs", "type=simple\nindex_type=sqlite\nsegments=dir\n");
 
 }

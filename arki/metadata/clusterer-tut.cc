@@ -103,7 +103,7 @@ void to::test<2>()
         clusterer.eat(wrap(mdc[2]));
         clusterer.flush();
 
-        wassert(actual(clusterer.clusters_processed) == 3);
+        wassert(actual(clusterer.clusters_processed) == 3u);
     }
 }
 
