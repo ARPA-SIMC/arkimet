@@ -20,7 +20,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		wibble/sys/filelock.h \
 		wibble/tests/tut-prereq.h \
 		wibble/tests/tut_reporter.h \
-		wibble/tests/tut-wibble.h \
 		wibble/tests/tut.h \
 		wibble/tests/tut_restartable.h \
 		wibble/grcal/grcal.h \
