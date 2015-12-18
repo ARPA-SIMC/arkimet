@@ -79,7 +79,7 @@ struct arki_metadata_shar {
         wassert(actual(Area::createGRIB(testValues)) == md.get<Area>());
         wassert(actual(Proddef::createGRIB(testValues)) == md.get<Proddef>());
         wassert(actual(AssignedDataset::create("dsname", "dsid")) == md.get<AssignedDataset>());
-        wassert(actual(md.notes().size()) == 1);
+        wassert(actual(md.notes().size()) == 1u);
         wassert(actual((*md.notes().begin()).content) == "test note");
     }
 };
@@ -226,14 +226,15 @@ void to::test<5>()
     md.set_source_inline("test", vector<uint8_t>(buf));
 
     // Encode
-    stringstream output;
-    wassert(md.write(output, "(test memory buffer)"));
+    sys::File temp("testfile", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    wassert(md.write(temp, "testfile"));
+    temp.close();
 
     // Decode
     Metadata md1;
-    string str = output.str();
-    vector<uint8_t> tbuf(str.begin(), str.end());
-    wassert(md1.read(tbuf, "(test memory buffer)", true));
+    sys::File temp1("testfile", O_RDONLY);
+    wassert(md1.read(temp1, "testfile", true));
+    temp1.close();
 
     ensure(md1.getData() == buf);
 }

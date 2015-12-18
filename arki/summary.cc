@@ -510,23 +510,6 @@ std::vector<uint8_t> Summary::encode(bool compressed) const
     return res;
 }
 
-void Summary::write(std::ostream& out, const std::string& filename) const
-{
-    // Prepare the encoded data
-    vector<uint8_t> encoded = encode(true);
-
-    iotrace::trace_file(filename, 0, encoded.size(), "write summary");
-
-    // Write out
-    out.write((const char*)encoded.data(), encoded.size());
-    if (out.fail())
-    {
-        stringstream ss;
-        ss << "cannot write " << encoded.size() << " bytes to the file " << filename;
-        throw std::system_error(errno, std::system_category(), ss.str());
-    }
-}
-
 void Summary::write(int outfd, const std::string& filename) const
 {
     // Prepare the encoded data

@@ -11,6 +11,13 @@ typedef tg::object to; \
 tg name ## _tg (#name);
 
 namespace arki {
+
+namespace utils {
+namespace sys {
+struct NamedFileDescriptor;
+}
+}
+
 namespace tests {
 
 using namespace arki::utils::tests;
@@ -26,6 +33,14 @@ inline void ensure_equals(const Q& _actual, const T& expected)
 {
     wassert(actual(_actual) == expected);
 }
+
+/**
+ * Creates a tempfile, runs body and returns the contents of the temp file after that.
+ *
+ * The temp file is created in the current directory with a fixed name; this is
+ * ok for tests that run on a temp dir, and is not to be used outside tests.
+ */
+std::string tempfile_to_string(std::function<void(arki::utils::sys::NamedFileDescriptor& out)> body);
 
 #define wruntest(func, ...) wassert(func(__VA_ARGS__))
 

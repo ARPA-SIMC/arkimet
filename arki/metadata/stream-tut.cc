@@ -10,6 +10,7 @@
 #include <arki/types/area.h>
 #include <arki/types/proddef.h>
 #include <arki/types/assigneddataset.h>
+#include <arki/utils/sys.h>
 #include <iostream>
 
 namespace std {
@@ -24,6 +25,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::utils;
 using namespace arki::tests;
 
 struct arki_metadata_stream_shar {
@@ -99,12 +101,14 @@ void to::test<1>()
     const char* teststr = "this is a test";
     md1.set_source_inline("test", vector<uint8_t>(teststr, teststr + 14));
 
-	// Encode everything in a buffer
-	stringstream str;
-	md1.write(str, "(memory)");
-	size_t end1 = str.tellp();
-	md2.write(str, "(memory)");
-	size_t end2 = str.tellp();
+    // Encode everything in a buffer
+    size_t end1, end2;
+    std::string input = tempfile_to_string([&](sys::NamedFileDescriptor& out) {
+        md1.write(out, "(memory)");
+        end1 = out.lseek(0, SEEK_CUR);
+        md2.write(out, "(memory)");
+        end2 = out.lseek(0, SEEK_CUR);
+    });
 
 	// Where we collect the decoded metadata
 	metadata::Collection results;
@@ -112,7 +116,6 @@ void to::test<1>()
     // Stream for the decoding
     metadata::Stream mdstream(results.inserter_func(), "test stream");
 
-	string input = str.str();
 	size_t cur = 0;
 
 	// Not a full metadata yet
@@ -166,10 +169,11 @@ void to::test<2>()
     this->fill(md);
 
     // Encode it in a buffer 3 times
-    stringstream str;
-    md.write(str, "(memory)");
-    md.write(str, "(memory)");
-    md.write(str, "(memory)");
+    std::string str = tempfile_to_string([&](sys::NamedFileDescriptor& out) {
+        md.write(out, "(memory)");
+        md.write(out, "(memory)");
+        md.write(out, "(memory)");
+    });
 
     // Where we collect the decoded metadata
     metadata::Collection results;
@@ -178,9 +182,9 @@ void to::test<2>()
     metadata::Stream mdstream(results.inserter_func(), "test stream");
 
     // Send the data in two halves
-    mdstream.readData(str.str().data(), str.str().size() / 2);
+    mdstream.readData(str.data(), str.size() / 2);
     ensure_equals(results.size(), 1u);
-    mdstream.readData(str.str().data() + str.str().size() / 2, str.str().size() - (str.str().size() / 2));
+    mdstream.readData(str.data() + str.size() / 2, str.size() - (str.size() / 2));
 
     // No bytes must be left to decode
     ensure_equals(mdstream.countBytesUnprocessed(), 0u);

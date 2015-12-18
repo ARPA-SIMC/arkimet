@@ -14,7 +14,8 @@
 #include "matcher.h"
 #include "utils.h"
 #include "utils/files.h"
-
+#include "utils/sys.h"
+#include <sys/fcntl.h>
 #include <sstream>
 
 #ifdef HAVE_GRIBAPI
@@ -436,8 +437,8 @@ void to::test<20>()
     stringstream out_yaml;
     out_yaml << *rt << endl;
 
-    stringstream out_bin;
-    s.write(out_bin, "memory");
+    utils::sys::File out("/dev/null", O_WRONLY);
+    s.write(out, "memory");
 }
 
 }

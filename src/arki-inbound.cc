@@ -56,7 +56,7 @@ struct BinaryPrinter : public Printer
 {
     bool eat(unique_ptr<Metadata>&& md) override
     {
-        md->write(cout, "(stdout)");
+        md->write(1, "(stdout)");
         return true;
     }
 };

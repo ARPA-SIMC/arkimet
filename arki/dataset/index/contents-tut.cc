@@ -15,7 +15,7 @@
 #include <arki/wibble/sys/childprocess.h>
 #include <memory>
 #include <sstream>
-#include <fstream>
+#include <sys/fcntl.h>
 #include <iostream>
 #include <unistd.h>
 
@@ -54,10 +54,11 @@ struct arki_dataset_index_contents_shar {
         md.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
         md.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
         md.add_note("this is a test");
-		ofstream out("test-md.metadata");
-		if (out.fail()) throw wibble::exception::File("test-md.metadata", "opening file");
-		md.write(out, "test-md.metadata");
-		out.close();
+        {
+            sys::File out("test-md.metadata", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            md.write(out, "test-md.metadata");
+            out.close();
+        }
 
         md1.set_source(Source::createBlob("grib", "", "blinda", 20, 40000));
         md1.set("origin", "GRIB1(201, 11, 3)");
@@ -67,13 +68,13 @@ struct arki_dataset_index_contents_shar {
         md1.set("reftime", "2003-04-05T06:07:08Z");
         md1.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
         md1.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
-		// Index one without notes
-		//md1.notes.push_back("this is another test");
-		out.open("test-md1.metadata");
-		if (out.fail()) throw wibble::exception::File("test-md1.metadata", "opening file");
-		md1.write(out, "test-md1.metadata");
-		out.close();
-	}
+        {
+            // Index one without notes
+            sys::File out("test-md1.metadata", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            md1.write(out, "test-md1.metadata");
+            out.close();
+        }
+    }
 };
 TESTGRP(arki_dataset_index_contents);
 
