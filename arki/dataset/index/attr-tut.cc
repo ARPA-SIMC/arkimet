@@ -4,9 +4,6 @@
 #include "arki/types/origin.h"
 #include "arki/metadata.h"
 #include "arki/matcher.h"
-#include <sstream>
-#include <fstream>
-#include <iostream>
 
 namespace tut {
 using namespace std;

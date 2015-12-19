@@ -15,13 +15,7 @@
 #include <arki/emitter/memory.h>
 #include <arki/utils/sys.h>
 #include <arki/utils/files.h>
-#include <sstream>
-#include <iostream>
-#include <fstream>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
 
 namespace std {
 static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)

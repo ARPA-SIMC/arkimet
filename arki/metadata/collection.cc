@@ -11,10 +11,7 @@
 #include <arki/scan/any.h>
 #include "arki/wibble/exception.h"
 #include <algorithm>
-#include <fstream>
 #include <memory>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <utime.h>
@@ -42,38 +39,35 @@ namespace metadata {
  */
 struct AtomicWriter
 {
-	std::string fname;
-	std::string tmpfname;
-	std::ofstream* outmd;
+    std::string destfname;
+    sys::File out;
 
-	AtomicWriter(const std::string& fname);
-	~AtomicWriter();
+    AtomicWriter(const std::string& fname)
+        : destfname(fname), out(fname + ".tmp", O_WRONLY | O_TRUNC | O_CREAT | O_EXCL, 0666)
+    {
+    }
 
-	std::ofstream& out() { return *outmd; }
+    ~AtomicWriter()
+    {
+        rollback();
+    }
 
-	void commit();
-	void rollback();
+    void commit()
+    {
+        if (!out) return;
+        out.close();
+        if (::rename(out.name().c_str(), destfname.c_str()) < 0)
+            throw wibble::exception::System("Renaming " + out.name() + " to " + destfname);
+    }
+
+    void rollback()
+    {
+        if (!out) return;
+        out.close();
+        ::unlink(out.name().c_str());
+    }
 };
 
-
-static void compressAndWrite(const std::vector<uint8_t>& buf, std::ostream& out, const std::string& fname)
-{
-    auto obuf = compress::lzo(buf.data(), buf.size());
-    if (obuf.size() + 8 < buf.size())
-    {
-        // Write a metadata group
-        vector<uint8_t> tmp;
-        BinaryEncoder enc(tmp);
-        enc.add_string("MG");
-        enc.add_unsigned(0u, 2);	// Version 0: LZO compressed
-        enc.add_unsigned(obuf.size() + 4, 4); // Compressed len
-        enc.add_unsigned(buf.size(), 4); // Uncompressed len
-        out.write((const char*)tmp.data(), tmp.size());
-        out.write((const char*)obuf.data(), obuf.size());
-    } else
-        // Write the plain metadata
-        out.write((const char*)buf.data(), buf.size());
-}
 
 static void compressAndWrite(const std::vector<uint8_t>& buf, int outfd, const std::string& fname)
 {
@@ -148,25 +142,6 @@ void Collection::acquire(unique_ptr<Metadata>&& md)
     vals.push_back(md.release());
 }
 
-void Collection::writeTo(std::ostream& out, const std::string& fname) const
-{
-    static const size_t blocksize = 256;
-
-    vector<uint8_t> buf;
-    BinaryEncoder enc(buf);
-    for (size_t i = 0; i < vals.size(); ++i)
-    {
-        if (i > 0 && (i % blocksize) == 0)
-        {
-            compressAndWrite(buf, out, fname);
-            buf.clear();
-        }
-        vals[i]->encodeBinary(enc);
-    }
-    if (!buf.empty())
-        compressAndWrite(buf, out, fname);
-}
-
 void Collection::write_to(int out, const std::string& fname) const
 {
     static const size_t blocksize = 256;
@@ -193,19 +168,16 @@ void Collection::read_from_file(const std::string& pathname)
 
 void Collection::writeAtomically(const std::string& fname) const
 {
-	AtomicWriter writer(fname);
-	writeTo(writer.out(), writer.tmpfname);
-	writer.commit();
+    AtomicWriter writer(fname);
+    write_to(writer.out, writer.out.name());
+    writer.commit();
 }
 
 void Collection::appendTo(const std::string& fname) const
 {
-	std::ofstream outmd;
-	outmd.open(fname.c_str(), ios::out | ios::app);
-	if (!outmd.is_open() || outmd.fail())
-		throw wibble::exception::File(fname, "opening file for appending");
-	writeTo(outmd, fname);
-	outmd.close();
+    sys::File out(fname, O_APPEND | O_CREAT, 0666);
+    write_to(out, fname);
+    out.close();
 }
 
 std::string Collection::ensureContiguousData(const std::string& source) const
@@ -320,57 +292,6 @@ void Collection::sort(const std::string& cmp)
 void Collection::sort()
 {
 	sort("");
-}
-
-AtomicWriter::AtomicWriter(const std::string& fname)
-	: fname(fname), tmpfname(fname + ".tmp"), outmd(0)
-{
-	outmd = new std::ofstream;
-	outmd->open(tmpfname.c_str(), ios::out | ios::trunc);
-	if (!outmd->is_open() || outmd->fail())
-		throw wibble::exception::File(tmpfname, "opening file for writing");
-}
-
-AtomicWriter::~AtomicWriter()
-{
-	rollback();
-}
-
-/*
-bool AtomicWriter::operator()(Metadata& md)
-{
-	md.write(*outmd, tmpfname);
-	return true;
-}
-
-bool AtomicWriter::operator()(const Metadata& md)
-{
-	md.write(*outmd, tmpfname);
-	return true;
-}
-*/
-
-void AtomicWriter::commit()
-{
-	if (outmd)
-	{
-		outmd->close();
-		delete outmd;
-		outmd = 0;
-		if (rename(tmpfname.c_str(), fname.c_str()) < 0)
-			throw wibble::exception::System("Renaming " + tmpfname + " to " + fname);
-	}
-}
-
-void AtomicWriter::rollback()
-{
-	if (outmd)
-	{
-		outmd->close();
-		delete outmd;
-		outmd = 0;
-		::unlink(tmpfname.c_str());
-	}
 }
 
 }

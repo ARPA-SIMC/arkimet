@@ -6,7 +6,6 @@
 #include <arki/defs.h>
 #include <vector>
 #include <string>
-#include <iosfwd>
 
 namespace arki {
 struct Metadata;
@@ -76,11 +75,6 @@ public:
 	 * Append all metadata to the given file
 	 */
 	void appendTo(const std::string& fname) const;
-
-	/**
-	 * Write all metadata to the given output stream
-	 */
-	void writeTo(std::ostream& out, const std::string& fname) const;
 
     /**
      * Write all metadata to the given output file
