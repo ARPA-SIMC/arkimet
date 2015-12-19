@@ -18,8 +18,7 @@ struct arki_dataset_empty_shar {
 TESTGRP(arki_dataset_empty);
 
 // Test accessing the data
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     ConfigFile cfg;
     dataset::Empty ds(cfg);

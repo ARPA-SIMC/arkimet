@@ -119,8 +119,7 @@ void test_append_transaction_rollback(LOCPRM, data::Writer dw, Metadata& md)
 #endif
 
 // Try to append some data
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 #if 0
     wtest(not_file_exists, fname);
@@ -156,8 +155,7 @@ void to::test<1>()
 }
 
 // Test with large files
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 #if 0
     {

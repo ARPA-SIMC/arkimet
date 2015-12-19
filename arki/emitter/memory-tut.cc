@@ -34,8 +34,7 @@ struct arki_emitter_memory_shar {
 TESTGRP(arki_emitter_memory);
 
 // null value
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     Memory m;
     m.add_null();
@@ -45,8 +44,7 @@ void to::test<1>()
 }
 
 // bool value
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     {
         Memory m;
@@ -65,8 +63,7 @@ void to::test<2>()
 }
 
 // int value
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     Memory m;
     m.add(42);
@@ -76,8 +73,7 @@ void to::test<3>()
 }
 
 // double value
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     {
         Memory m;
@@ -97,8 +93,7 @@ void to::test<4>()
 }
 
 // string value
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     {
         Memory m;
@@ -118,8 +113,7 @@ void to::test<5>()
 }
 
 // list value
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     Memory m;
     m.start_list();
@@ -148,8 +142,7 @@ void to::test<6>()
 }
 
 // mapping value
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     Memory m;
     m.start_mapping();

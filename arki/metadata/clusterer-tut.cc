@@ -42,8 +42,7 @@ inline unique_ptr<Metadata> wrap(const Metadata& md)
 }
 
 // Test clustering by count
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     ARKI_UTILS_TEST_INFO(info);
     unsigned items[] = { 0, 1, 10, 11, 20, 21, 121 };
@@ -62,8 +61,7 @@ void to::test<1>()
 }
 
 // Test clustering by size
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     // mdc[0] has 7218b of data
     // mdc[1] has 34960b of data
@@ -108,8 +106,7 @@ void to::test<2>()
 }
 
 // Test clustering by interval
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     ClusterCounter clusterer;
     clusterer.max_interval = 2; // month
@@ -122,8 +119,7 @@ void to::test<3>()
 }
 
 // Test clustering by timerange
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     ClusterCounter clusterer;
     clusterer.split_timerange = true;

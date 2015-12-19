@@ -15,8 +15,7 @@ struct arki_runtime_io_shar {
 };
 TESTGRP(arki_runtime_io);
 
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     string name;
     {

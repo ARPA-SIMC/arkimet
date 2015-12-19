@@ -39,8 +39,7 @@ TESTGRP(arki_dataset_simple_reader);
 
 
 // Test querying with postprocessing
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     unique_ptr<simple::Reader> reader(makeSimpleReader());
 
@@ -54,8 +53,7 @@ void to::test<1>()
 
 #if 0
 // Acquire and query
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	Archive arc("testds/.archive/last");
 	arc.openRW();
@@ -91,8 +89,7 @@ void to::test<1>()
 
 #if 0
 // Test handling of empty archive dirs (such as last with everything moved away)
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
 	// Import a file in a secondary archive
 	{
@@ -121,8 +118,7 @@ void to::test<7>()
 }
 
 // Tolerate empty dirs
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
 	// Start with an empty dir
 	system("rm -rf testds");
@@ -147,14 +143,6 @@ void to::test<8>()
 
 
 // Retest with sqlite
-template<> template<> void to::test<9>() { ForceSqlite fs; test<1>(); }
-template<> template<> void to::test<10>() { ForceSqlite fs; test<2>(); }
-template<> template<> void to::test<11>() { ForceSqlite fs; test<3>(); }
-template<> template<> void to::test<12>() { ForceSqlite fs; test<4>(); }
-template<> template<> void to::test<13>() { ForceSqlite fs; test<5>(); }
-template<> template<> void to::test<14>() { ForceSqlite fs; test<6>(); }
-template<> template<> void to::test<15>() { ForceSqlite fs; test<7>(); }
-template<> template<> void to::test<16>() { ForceSqlite fs; test<8>(); }
 
 #endif
 

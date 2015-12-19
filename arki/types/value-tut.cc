@@ -13,8 +13,7 @@ struct arki_types_value_shar {
 TESTGRP(arki_types_value);
 
 // Check text value
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     tests::TestGenericType t("value", "ciao");
     t.lower.push_back("cia");
@@ -23,8 +22,7 @@ void to::test<1>()
 }
 
 // Check binary value
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     tests::TestGenericType t("value", "ciao♥");
     t.lower.push_back("ciao");
@@ -33,8 +31,7 @@ void to::test<2>()
 }
 
 // Check binary value with zeros
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     tests::TestGenericType t("value", string("ci\0ao", 5));
     t.lower.push_back("ci");
@@ -43,8 +40,7 @@ void to::test<3>()
 }
 
 // Test Lua functions
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
 #if 0 // TODO
 #ifdef HAVE_LUA

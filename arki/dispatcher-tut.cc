@@ -70,8 +70,7 @@ inline unique_ptr<Metadata> wrap(const Metadata& md)
 }
 
 // Test simple dispatching
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     using namespace arki::utils::acct;
 
@@ -99,8 +98,7 @@ void to::test<1>()
 }
 
 // Test a case where dispatch is known to fail
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 #ifdef HAVE_DBALLE
 	// In-memory dataset configuration
@@ -132,8 +130,7 @@ void to::test<2>()
 }
 
 // Test dispatch to error datasets after validation errors
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     Metadata md;
     metadata::Collection mdc;
@@ -156,8 +153,7 @@ void to::test<3>()
 }
 
 // Test dispatching files with no reftime, they should end up in the error dataset
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     metadata::Collection source("inbound/wrongdate.bufr");
     wassert(actual(source.size()) == 6u);

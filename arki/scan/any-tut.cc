@@ -30,8 +30,7 @@ struct arki_scan_any_shar {
 TESTGRP(arki_scan_any);
 
 // Scan a well-known grib file, with no padding between messages
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     metadata::Collection mdc;
 #ifndef HAVE_GRIBAPI
@@ -102,8 +101,7 @@ void to::test<1>()
 }
 
 // Scan a well-known bufr file, with no padding between BUFRs
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     metadata::Collection mdc;
 #ifndef HAVE_DBALLE
@@ -177,8 +175,7 @@ void to::test<2>()
 }
 
 // Test compression
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 	// Create a test file with 9 gribs inside
 	system("cat inbound/test.grib1 inbound/test.grib1 inbound/test.grib1 > a.grib1");
@@ -197,8 +194,7 @@ void to::test<3>()
 }
 
 // Test reading update sequence numbers
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     {
         // Gribs don't have update sequence numbrs, and the usn parameter must
@@ -228,8 +224,7 @@ void to::test<4>()
 }
 
 // Test reading NetCDF files
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     metadata::Collection mdc;
     wassert(actual(scan::scan("inbound/example_1.nc", mdc.inserter_func())).istrue());

@@ -25,8 +25,7 @@ struct arki_scan_dir_shar {
 TESTGRP(arki_scan_dir);
 
 // Test DirScanner on an empty directory
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	system("rm -rf dirscanner");
 	mkdir("dirscanner", 0777);
@@ -36,8 +35,7 @@ void to::test<1>()
 }
 
 // Test DirScanner on a populated directory
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	system("rm -rf dirscanner");
 	mkdir("dirscanner", 0777);
@@ -65,8 +63,7 @@ void to::test<2>()
 }
 
 // Test file names interspersed with directory names
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 	system("rm -rf dirscanner");
 	mkdir("dirscanner", 0777);

@@ -73,8 +73,7 @@ struct arki_querymacro_shar {
 TESTGRP(arki_querymacro);
 
 // Test running queries from Lua
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	Querymacro qm(cfg, "test0", "foo");
 
@@ -91,8 +90,7 @@ void to::test<1>()
 }
 
 // Lua script that simply passes through the queries
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     Querymacro qm(cfg, "noop", "testds");
 
@@ -108,8 +106,7 @@ void to::test<2>()
 }
 
 // Lua script that simply passes through the queries, making temporary copies of data
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     Querymacro qm(cfg, "noopcopy", "testds");
 
@@ -125,8 +122,7 @@ void to::test<3>()
 }
 
 // Try "expa" matchers
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
 	Querymacro qm(cfg, "expa", 
 			"ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
@@ -145,8 +141,7 @@ void to::test<4>()
 }
 
 // Try "expa" matchers with parameter
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
 	Querymacro qm(cfg, "expa 2009-08-08", 
 			"ds:testds. d:@. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
@@ -166,8 +161,7 @@ void to::test<5>()
 
 
 // Try "gridspace" matchers
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
 	{
 		Querymacro qm(cfg, "gridspace", 
@@ -206,8 +200,7 @@ void to::test<6>()
 }
 
 // Try "expa" matchers with inline option
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     Querymacro qm(cfg, "expa",
             "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
@@ -227,8 +220,7 @@ void to::test<7>()
 
 // Try "expa" matchers with sort option
 // TODO: ensure sorting
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
     Querymacro qm(cfg, "expa",
             "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"

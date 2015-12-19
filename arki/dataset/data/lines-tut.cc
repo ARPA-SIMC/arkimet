@@ -60,8 +60,7 @@ inline size_t datasize(const Metadata& md)
 }
 
 // Try to append some data
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     wassert(actual_file(fname).not_exists());
     {
@@ -94,8 +93,7 @@ void to::test<1>()
 }
 
 // Test with large files
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     {
         unique_ptr<lines::Segment> dw(make_w(fname));
@@ -122,8 +120,7 @@ void to::test<2>()
 }
 
 // Test stream writer
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     std::stringstream out;
     const OstreamWriter* w = OstreamWriter::get("vm2");
@@ -132,8 +129,7 @@ void to::test<3>()
 }
 
 // Test raw append
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     wassert(actual_file(fname).not_exists());
     {
@@ -148,8 +144,7 @@ void to::test<4>()
 
 // Common segment tests
 
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     struct Test : public SegmentCheckTest
     {
@@ -161,8 +156,7 @@ void to::test<5>()
 
     wruntest(test.run);
 }
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     struct Test : public SegmentRemoveTest
     {

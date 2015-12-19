@@ -86,8 +86,7 @@ inline bool cmpmd(Metadata& md1, Metadata& md2)
 }
 
 // Test metadata stream
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     // Create test metadata
     Metadata md1;
@@ -160,8 +159,7 @@ void to::test<1>()
 }
 
 // Send data split in less chunks than we have metadata
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     // Create test metadata
     Metadata md;

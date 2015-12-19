@@ -36,8 +36,7 @@ struct arki_dataset_memory_shar {
 TESTGRP(arki_dataset_memory);
 
 // Test querying
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     acquireSamples();
 
@@ -58,8 +57,7 @@ void to::test<1>()
 }
 
 // Test querying the summary
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     acquireSamples();
     Summary summary;
@@ -68,8 +66,7 @@ void to::test<2>()
 }
 
 // Test querying the summary by reftime
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     acquireSamples();
     Summary summary;

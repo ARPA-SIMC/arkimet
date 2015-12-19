@@ -11,8 +11,7 @@ struct arki_utils_shar {
 TESTGRP(arki_utils);
 
 // Check compareMaps
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 }
 

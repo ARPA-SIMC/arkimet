@@ -59,8 +59,7 @@ inline const matcher::OR& mimpl(const Matcher& m)
 }
 }
 
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	unique_ptr<TargetFile> tf(TargetFile::create(*config.section("yearly")));
 
@@ -71,40 +70,35 @@ void to::test<1>()
 	ensure(not tf->pathMatches("20/2007.test", mimpl(Matcher::parse("reftime:<2007"))));
 }
 
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	unique_ptr<TargetFile> tf(TargetFile::create(*config.section("monthly")));
 
 	ensure_equals((*tf)(md), "2007/06");
 }
 
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 	unique_ptr<TargetFile> tf(TargetFile::create(*config.section("biweekly")));
 
 	ensure_equals((*tf)(md), "2007/06-1");
 }
 
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
 	unique_ptr<TargetFile> tf(TargetFile::create(*config.section("weekly")));
 
 	ensure_equals((*tf)(md), "2007/06-1");
 }
 
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
 	unique_ptr<TargetFile> tf(TargetFile::create(*config.section("daily")));
 
 	ensure_equals((*tf)(md), "2007/06-05");
 }
 
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
 	unique_ptr<TargetFile> tf(TargetFile::create(*config.section("singlefile")));
 

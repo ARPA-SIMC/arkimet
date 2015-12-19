@@ -33,8 +33,7 @@ struct arki_types_note_shar {
 TESTGRP(arki_types_note);
 
 // Check Note, created with arbitrary time
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     tests::TestGenericType t("note", "[2015-01-03T00:00:00]foo");
     t.lower.push_back("[2015-01-02T00:00:00]foo");
@@ -46,8 +45,7 @@ void to::test<1>()
 
 #ifdef HAVE_LUA
 // Test Lua functions
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     unique_ptr<Note> o = Note::create(Time(2007, 6, 5, 4, 3, 2), "test");
 

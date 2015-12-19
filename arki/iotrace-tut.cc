@@ -31,8 +31,7 @@ struct arki_iotrace_shar {
 };
 TESTGRP(arki_iotrace);
 
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 }
 

@@ -15,8 +15,7 @@ struct arki_dsindex_base_shar {
 };
 TESTGRP(arki_dsindex_base);
 
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 }
 

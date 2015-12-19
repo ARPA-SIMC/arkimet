@@ -33,8 +33,7 @@ struct arki_types_assigneddataset_shar {
 TESTGRP(arki_types_assigneddataset);
 
 // Check AssignedDataset, created with current time
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     tests::TestGenericType t("assigneddataset", "testname as testid imported on 2015-01-03T00:00:00");
     // Comparison should not care about the attribution time
@@ -49,8 +48,7 @@ void to::test<1>()
 
 #ifdef HAVE_LUA
 // Test Lua functions
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     unique_ptr<AssignedDataset> o = AssignedDataset::create(Time(2007, 6, 5, 4, 3, 2), "testname", "testid");
 

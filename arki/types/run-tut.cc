@@ -33,8 +33,7 @@ struct arki_types_run_shar {
 TESTGRP(arki_types_run);
 
 // Check MINUTE
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     tests::TestGenericType t("run", "MINUTE(12:00)");
     t.alternates.push_back("MINUTE(12)");
@@ -48,8 +47,7 @@ void to::test<1>()
 }
 
 // Test Lua functions
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 #ifdef HAVE_LUA
     unique_ptr<Run> o = Run::createMinute(12, 30);

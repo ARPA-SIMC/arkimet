@@ -34,8 +34,7 @@ struct arki_types_typeset_shar {
 };
 TESTGRP(arki_types_typeset);
 
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     TypeSet v;
     // Operations on empty

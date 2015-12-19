@@ -33,8 +33,7 @@ struct arki_types_origin_shar {
 TESTGRP(arki_types_origin);
 
 // Check GRIB1
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     tests::TestGenericType t("origin", "GRIB1(1, 2, 3)");
     t.lower.push_back("GRIB1(1, 1, 1)");
@@ -55,8 +54,7 @@ void to::test<1>()
 }
 
 // Check GRIB2
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     tests::TestGenericType t("origin", "GRIB2(1, 2, 3, 4, 5)");
     t.lower.push_back("GRIB1(1, 2, 3)");
@@ -78,8 +76,7 @@ void to::test<2>()
 }
 
 // Check BUFR
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     tests::TestGenericType t("origin", "BUFR(1, 2)");
     t.lower.push_back("GRIB1(1, 2, 3)");
@@ -100,8 +97,7 @@ void to::test<3>()
 
 #ifdef HAVE_LUA
 // Test Lua functions
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     unique_ptr<Origin> o = Origin::createGRIB1(1, 2, 3);
 
@@ -123,8 +119,7 @@ void to::test<4>()
 #endif
 
 // Check ODIMH5
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     tests::TestGenericType t("origin", "ODIMH5(1, 2, 3)");
     t.lower.push_back("GRIB1(1, 2, 3)");
@@ -146,8 +141,7 @@ void to::test<5>()
 }
 
 // Check ODIMH5 with empty strings
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     tests::TestGenericType t("origin", "ODIMH5(, 2, 3)");
     t.lower.push_back("GRIB1(1, 2, 3)");

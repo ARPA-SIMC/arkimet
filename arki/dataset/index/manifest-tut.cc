@@ -36,8 +36,7 @@ struct arki_dataset_index_manifest_shar : public DatasetTest {
 TESTGRP(arki_dataset_index_manifest);
 
 // Acquire and query
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     // Empty dirs do not show up as having a manifest
     ensure(!Manifest::exists("testds/.archive/last"));
@@ -55,8 +54,7 @@ void to::test<1>()
 
 
 // Test accessing empty manifests
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	// Opening a missing manifest read only fails
 	{
@@ -85,11 +83,9 @@ void to::test<2>()
 }
 
 // Retest with sqlite
-template<> template<> void to::test<3>() { ForceSqlite fs; test<2>(); }
 
 // Test creating a new manifest
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     // Opening a missing manifest read-write creates a new one
     ensure(!sys::exists("testds/.archive/last/" + idxfname()));
@@ -109,12 +105,10 @@ void to::test<4>()
 }
 
 // Retest with sqlite
-template<> template<> void to::test<5>() { ForceSqlite fs; test<4>(); }
 
 
 // Test adding and removing files
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
 	system("cp inbound/test.grib1 testds/.archive/last/a.grib1");
 	system("mkdir testds/.archive/last/foo");
@@ -143,7 +137,6 @@ void to::test<6>()
 }
 
 // Retest with sqlite
-template<> template<> void to::test<7>() { ForceSqlite fs; test<6>(); }
 
 namespace {
 struct IndexingCollector : public MaintenanceCollector
@@ -175,8 +168,7 @@ struct IndexingCollector : public MaintenanceCollector
 }
 
 // Test modifying index during maintenance
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
     // Start with 4 data files
     system("cp -a inbound/test-sorted.grib1 testds/.archive/last/10.grib1");
@@ -239,6 +231,5 @@ void to::test<8>()
 }
 
 // Retest with sqlite
-template<> template<> void to::test<9>() { ForceSqlite fs; test<8>(); }
 
 }

@@ -14,8 +14,7 @@ struct arki_runtime_config_shar {
 TESTGRP(arki_runtime_config);
 
 // Test restrict functions
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	ConfigFile empty_cfg;
 	ConfigFile allowed_cfg;

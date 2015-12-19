@@ -52,16 +52,14 @@ struct arki_targetfile_shar {
 TESTGRP(arki_targetfile);
 
 // Empty or unsupported area should give 0
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	Targetfile::Func f = tf.get("echo:foo");
 	ensure_equals(f(md), "foo");
 }
 
 // Test MARS expansion
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	Targetfile::Func f = tf.get("mars:foo[DATE][TIME]+[STEP].grib");
 	ensure_equals(f(md), "foo200701020304+00.grib");

@@ -32,8 +32,7 @@ public:
 }
 
 // Test the item cache
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     data::impl::Cache<TestItem, 3> cache;
 
@@ -122,15 +121,13 @@ struct TestSegments
 };
 }
 
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     TestSegments ts;
     wruntest(ts.test_repack);
 }
 
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     TestSegments ts("dir");
     wruntest(ts.test_repack);

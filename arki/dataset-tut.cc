@@ -104,92 +104,79 @@ struct arki_dataset_shar {
 };
 TESTGRP(arki_dataset);
 
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	unique_ptr<Reader> testds(Reader::create(*config.section("error")));
 	ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
 }
 
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	unique_ptr<Writer> testds(Writer::create(*config.section("error")));
 	ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
 }
 
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 	unique_ptr<Reader> testds(Reader::create(*config.section("duplicates")));
 	ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
 }
 
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
 	unique_ptr<Writer> testds(Writer::create(*config.section("duplicates")));
 	ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
 }
 
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
 	unique_ptr<Reader> testds(Reader::create(*config.section("outbound")));
 	ensure(dynamic_cast<dataset::Empty*>(testds.get()) != 0);
 }
 
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
 	unique_ptr<Writer> testds(Writer::create(*config.section("outbound")));
 	ensure(dynamic_cast<dataset::Outbound*>(testds.get()) != 0);
 }
 
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
 	unique_ptr<Reader> testds(Reader::create(*config.section("discard")));
 	ensure(dynamic_cast<dataset::Empty*>(testds.get()) != 0);
 }
 
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
 	unique_ptr<Writer> testds(Writer::create(*config.section("discard")));
 	ensure(dynamic_cast<dataset::Discard*>(testds.get()) != 0);
 }
 
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
 	unique_ptr<Reader> testds(Reader::create(*config.section("simple")));
 	ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
 }
 
-template<> template<>
-void to::test<10>()
+def_test(10)
 {
 	unique_ptr<Writer> testds(Writer::create(*config.section("simple")));
 	ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
 }
 
-template<> template<>
-void to::test<11>()
+def_test(11)
 {
 	unique_ptr<Reader> testds(Reader::create(*config.section("ondisk2")));
 	ensure(dynamic_cast<dataset::ondisk2::Reader*>(testds.get()) != 0);
 }
 
-template<> template<>
-void to::test<12>()
+def_test(12)
 {
 	unique_ptr<Writer> testds(Writer::create(*config.section("ondisk2")));
 	ensure(dynamic_cast<dataset::ondisk2::Writer*>(testds.get()) != 0);
 }
 
-template<> template<>
-void to::test<13>()
+def_test(13)
 {
 	unique_ptr<Writer> testds(Writer::create(*config.section("test")));
 	ensure(dynamic_cast<dataset::ondisk2::Writer*>(testds.get()) != 0);
@@ -404,8 +391,7 @@ struct TestDataset
 };
 
 // ondisk2 GRIB
-template<> template<>
-void to::test<14>()
+def_test(14)
 {
     TestDataset tds(tdata_grib,
         "[test]\n"
@@ -420,8 +406,7 @@ void to::test<14>()
 }
 
 // ondisk2 GRIB dirsegments
-template<> template<>
-void to::test<15>()
+def_test(15)
 {
     TestDataset tds(tdata_grib,
         "[test]\n"
@@ -437,8 +422,7 @@ void to::test<15>()
 }
 
 // ondisk2 BUFR
-template<> template<>
-void to::test<16>()
+def_test(16)
 {
     TestDataset tds(tdata_bufr,
         "[test]\n"
@@ -453,8 +437,7 @@ void to::test<16>()
 }
 
 // ondisk2 BUFR dirsegments
-template<> template<>
-void to::test<17>()
+def_test(17)
 {
     TestDataset tds(tdata_bufr,
         "[test]\n"
@@ -470,8 +453,7 @@ void to::test<17>()
 }
 
 // ondisk2 VM2
-template<> template<>
-void to::test<18>()
+def_test(18)
 {
     TestDataset tds(tdata_vm2,
         "[test]\n"
@@ -487,8 +469,7 @@ void to::test<18>()
 }
 
 // ondisk2 VM2 dirsegments
-template<> template<>
-void to::test<19>()
+def_test(19)
 {
     TestDataset tds(tdata_vm2,
         "[test]\n"
@@ -505,8 +486,7 @@ void to::test<19>()
 }
 
 // ondisk2 ODIM
-template<> template<>
-void to::test<20>()
+def_test(20)
 {
     TestDataset tds(tdata_odim,
         "[test]\n"
@@ -521,8 +501,7 @@ void to::test<20>()
 }
 
 // ondisk2 ODIM dirsegments
-template<> template<>
-void to::test<21>()
+def_test(21)
 {
     TestDataset tds(tdata_odim,
         "[test]\n"
@@ -538,8 +517,7 @@ void to::test<21>()
 }
 
 // simple plainmft GRIB
-template<> template<>
-void to::test<22>()
+def_test(22)
 {
     TestDataset tds(tdata_grib,
         "[test]\n"
@@ -554,8 +532,7 @@ void to::test<22>()
 }
 
 // simple plainmft GRIB dirsegments
-template<> template<>
-void to::test<23>()
+def_test(23)
 {
     TestDataset tds(tdata_grib,
         "[test]\n"
@@ -571,8 +548,7 @@ void to::test<23>()
 }
 
 // simple sqlitemft GRIB
-template<> template<>
-void to::test<24>()
+def_test(24)
 {
     TestDataset tds(tdata_grib,
         "[test]\n"
@@ -588,8 +564,7 @@ void to::test<24>()
 }
 
 // simple sqlitemft GRIB dirsegments
-template<> template<>
-void to::test<25>()
+def_test(25)
 {
     TestDataset tds(tdata_grib,
         "[test]\n"
@@ -606,8 +581,7 @@ void to::test<25>()
 }
 
 // simple plainmft BUFR
-template<> template<>
-void to::test<26>()
+def_test(26)
 {
     TestDataset tds(tdata_bufr,
         "[test]\n"
@@ -622,8 +596,7 @@ void to::test<26>()
 }
 
 // simple plainmft BUFR dirsegments
-template<> template<>
-void to::test<27>()
+def_test(27)
 {
     TestDataset tds(tdata_bufr,
         "[test]\n"
@@ -639,8 +612,7 @@ void to::test<27>()
 }
 
 // simple sqlitemft BUFR
-template<> template<>
-void to::test<28>()
+def_test(28)
 {
     TestDataset tds(tdata_bufr,
         "[test]\n"
@@ -656,8 +628,7 @@ void to::test<28>()
 }
 
 // simple sqlitemft BUFR dirsegments
-template<> template<>
-void to::test<29>()
+def_test(29)
 {
     TestDataset tds(tdata_bufr,
         "[test]\n"
@@ -674,8 +645,7 @@ void to::test<29>()
 }
 
 // simple plainmft VM2
-template<> template<>
-void to::test<30>()
+def_test(30)
 {
     TestDataset tds(tdata_vm2,
         "[test]\n"
@@ -690,8 +660,7 @@ void to::test<30>()
 }
 
 // simple plainmft VM2 dirsegments
-template<> template<>
-void to::test<31>()
+def_test(31)
 {
     TestDataset tds(tdata_vm2,
         "[test]\n"
@@ -707,8 +676,7 @@ void to::test<31>()
 }
 
 // simple sqlitemft VM2
-template<> template<>
-void to::test<32>()
+def_test(32)
 {
     TestDataset tds(tdata_vm2,
         "[test]\n"
@@ -724,8 +692,7 @@ void to::test<32>()
 }
 
 // simple sqlitemft VM2 dirsegments
-template<> template<>
-void to::test<33>()
+def_test(33)
 {
     TestDataset tds(tdata_vm2,
         "[test]\n"
@@ -742,8 +709,7 @@ void to::test<33>()
 }
 
 // simple plainmft ODIM
-template<> template<>
-void to::test<34>()
+def_test(34)
 {
     TestDataset tds(tdata_odim,
         "[test]\n"
@@ -758,8 +724,7 @@ void to::test<34>()
 }
 
 // simple plainmft ODIM dirsegments
-template<> template<>
-void to::test<35>()
+def_test(35)
 {
     TestDataset tds(tdata_odim,
         "[test]\n"
@@ -775,8 +740,7 @@ void to::test<35>()
 }
 
 // simple sqlitemft ODIM
-template<> template<>
-void to::test<36>()
+def_test(36)
 {
     TestDataset tds(tdata_odim,
         "[test]\n"
@@ -792,8 +756,7 @@ void to::test<36>()
 }
 
 // simple sqlitemft ODIM dirsegments
-template<> template<>
-void to::test<37>()
+def_test(37)
 {
     TestDataset tds(tdata_odim,
         "[test]\n"

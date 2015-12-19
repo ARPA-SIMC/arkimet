@@ -18,15 +18,13 @@ struct arki_dataset_test_scenario_shar {
 TESTGRP(arki_dataset_test_scenario);
 
 // Simple generation
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     using namespace dataset;
     /* const test::Scenario& scen = */ test::Scenario::get("ondisk2-archived");
 }
 
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     using namespace dataset;
     const test::Scenario& scen = test::Scenario::get("ondisk2-manyarchivestates");

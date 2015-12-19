@@ -90,8 +90,7 @@ struct arki_dataset_http_inbound_shar : public arki::tests::DatasetTest {
 TESTGRP(arki_dataset_http_inbound);
 
 // Test /inbound/scan/
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     // Make the request
     arki::tests::BufferFakeRequest r;
@@ -111,8 +110,7 @@ void to::test<1>()
 }
 
 // Test /inbound/testdispatch/
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     // Make the request
     arki::tests::StringFakeRequest r;
@@ -132,8 +130,7 @@ void to::test<2>()
 }
 
 // Test /inbound/dispatch/
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     system("cp inbound/test.grib1 inbound/copy.grib1");
 

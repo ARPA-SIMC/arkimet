@@ -30,8 +30,7 @@ inline unique_ptr<Metadata> wrap(const Metadata& md)
 }
 
 // Test what happens with children's stdin
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     sys::unlink_ifexists("tmp-xargs");
     metadata::Xargs xargs;
@@ -51,8 +50,7 @@ void to::test<1>()
 }
 
 // Test that env vars are set
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     sys::unlink_ifexists("tmp-xargs");
     metadata::Xargs xargs;

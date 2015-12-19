@@ -44,6 +44,8 @@ std::string tempfile_to_string(std::function<void(arki::utils::sys::NamedFileDes
 
 #define wruntest(func, ...) wassert(func(__VA_ARGS__))
 
+#define def_test(num) template<> template<> void to::test<num>()
+
 }
 }
 #endif

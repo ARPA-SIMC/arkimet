@@ -34,8 +34,7 @@ struct arki_types_typevector_shar {
 };
 TESTGRP(arki_types_typevector);
 
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     TypeVector v;
     // Operations on empty

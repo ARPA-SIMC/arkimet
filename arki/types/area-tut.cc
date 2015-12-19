@@ -33,8 +33,7 @@ struct arki_types_area_shar {
 TESTGRP(arki_types_area);
 
 // Check GRIB
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     tests::TestGenericType t("area", "GRIB(uno=1,due=2,tre=-3,supercazzola=-1234567,pippo=pippo,pluto=\"12\",cippo=)");
     t.higher.push_back("GRIB(dieci=10,undici=11,dodici=-12)");
@@ -43,8 +42,7 @@ void to::test<1>()
 }
 
 // Test Lua functions
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 #ifdef HAVE_LUA
     ValueBag test1;
@@ -70,8 +68,7 @@ void to::test<2>()
 }
 
 // Check two more samples
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     tests::TestGenericType t("area", "GRIB(count=1,pippo=pippo)");
     t.higher.push_back("GRIB(count=2,pippo=pippo)");
@@ -79,8 +76,7 @@ void to::test<3>()
 }
 
 // Check ODIMH5
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     tests::TestGenericType t("area", "ODIMH5(uno=1,due=2,tre=-3,supercazzola=-1234567,pippo=pippo,pluto=\"12\",cippo=)");
     t.higher.push_back("ODIMH5(dieci=10,undici=11,dodici=-12)");
@@ -89,8 +85,7 @@ void to::test<4>()
 }
 
 // Check VM2
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     tests::TestGenericType t("area", "VM2(1)");
     t.higher.push_back("VM2(2)");

@@ -38,8 +38,7 @@ struct arki_metadata_collection_shar {
 TESTGRP(arki_metadata_collection);
 
 // Test compression
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 #ifdef HAVE_DBALLE
     static const int repeats = 1024;
@@ -120,8 +119,7 @@ void to::test<1>()
 }
 
 // Test compression when the data don't compress
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 #ifdef HAVE_DBALLE
     // Create a collector with only one small metadata inside

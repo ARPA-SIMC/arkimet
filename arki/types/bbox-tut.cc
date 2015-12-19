@@ -33,8 +33,7 @@ struct arki_types_bbox_shar {
 TESTGRP(arki_types_bbox);
 
 // Check INVALID
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     tests::TestGenericType t("bbox", "INVALID");
     wassert(t.check());
@@ -42,8 +41,7 @@ void to::test<1>()
 
 #ifdef HAVE_LUA
 // Test Lua functions
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     unique_ptr<BBox> o = BBox::createInvalid();
 

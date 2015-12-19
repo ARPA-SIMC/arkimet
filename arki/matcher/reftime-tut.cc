@@ -34,8 +34,7 @@ std::string sql(const Matcher& m, const std::string& name)
 }
 
 // Try matching reference times
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	// md.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
 
@@ -115,8 +114,7 @@ void to::test<1>()
 }
 
 // Try matching reference time intervals
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     md.set(Reftime::createPeriod(Time(2007, 1, 2, 3, 4, 5), Time(2007, 2, 3, 4, 5, 6)));
 
@@ -205,8 +203,7 @@ void to::test<2>()
 }
 
 // Try matching open ended reference time intervals
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     // FIXME: are open ended Period reftimes still supported at all?
 #if 0
@@ -230,8 +227,7 @@ void to::test<3>()
 }
 
 // Special cases that caused bugs
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     Metadata md;
 
@@ -241,8 +237,7 @@ void to::test<4>()
 }
 
 // Try matching times
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
 	// 2007-01-02 03:04:05
 
@@ -299,8 +294,7 @@ void to::test<5>()
 }
 
 // Try matching time repetitions
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
 	// 2007-01-02 03:04:05
 	ensure_matches("reftime:>2007-01-02 00:04:05%3h", md);
@@ -310,8 +304,7 @@ void to::test<6>()
 }
 
 // Try matching times
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     Matcher m;
     md.set(Reftime::createPeriod(Time(2007, 1, 2, 9, 0, 0), Time(2007, 1, 2, 15, 0, 0)));
@@ -332,8 +325,7 @@ void to::test<7>()
 }
 
 // Try matching times
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
     Matcher m;
     md.set(Reftime::createPeriod(Time(2007, 1, 2, 21, 0, 0), Time(2007, 1, 3, 3, 0, 0)));

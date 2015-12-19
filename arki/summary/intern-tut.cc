@@ -37,8 +37,7 @@ struct arki_summary_intern_shar {
 TESTGRP(arki_summary_intern);
 
 // Test basic operations
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     TypeIntern intern;
 

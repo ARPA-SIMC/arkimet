@@ -18,8 +18,7 @@ struct arki_types_source_shar {
 TESTGRP(arki_types_source);
 
 // Check Blob
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     unique_ptr<Source> o = Source::createBlob("test", "", "testfile", 21, 42);
     wassert(actual(o).is_source_blob("test", "", "testfile", 21u, 42u));
@@ -43,8 +42,7 @@ void to::test<1>()
 }
 
 // Check URL
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     unique_ptr<Source> o = Source::createURL("test", "http://foobar");
     wassert(actual(o).is_source_url("test", "http://foobar"));
@@ -59,8 +57,7 @@ void to::test<2>()
 }
 
 // Check Inline
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     unique_ptr<Source> o = Source::createInline("test", 12345);
     wassert(actual(o).is_source_inline("test", 12345u));
@@ -75,8 +72,7 @@ void to::test<3>()
 }
 
 // Check Blob on big files
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     unique_ptr<Source> o = Source::createBlob("test", "", "testfile", 0x8000FFFFffffFFFFLLU, 42);
     wassert(actual(o).is_source_blob("test", "", "testfile", 0x8000FFFFffffFFFFLLU, 42u));
@@ -86,8 +82,7 @@ void to::test<4>()
 }
 
 // Check Blob and pathnames handling
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     unique_ptr<source::Blob> o = source::Blob::create("test", "", "testfile", 21, 42);
     wassert(actual(o->absolutePathname()) == "testfile");
@@ -100,8 +95,7 @@ void to::test<5>()
 }
 
 // Check Blob and pathnames handling in serialization
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     unique_ptr<Source> o = Source::createBlob("test", "/tmp", "testfile", 21, 42);
 
@@ -133,8 +127,7 @@ void to::test<6>()
 }
 
 // Test basic type ops
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     arki::tests::TestGenericType tblob("source", "BLOB(bufr,testfile:100+50)");
     tblob.lower.push_back("BLOB(aaa,testfile:100+50)");

@@ -80,8 +80,7 @@ struct arki_dataset_http_shar {
 TESTGRP(arki_dataset_http);
 
 // Test allSameRemoteServer
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	using namespace arki::dataset;
 

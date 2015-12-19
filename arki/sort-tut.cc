@@ -61,8 +61,7 @@ vector<int> mdvals(int h, int m, int r)
 }
 
 // Test a simple case
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     metadata::Collection mdc;
     unique_ptr<sort::Compare> cmp = sort::Compare::parse("hour:run,-reftime");
@@ -88,8 +87,7 @@ void to::test<1>()
 }
 
 // An empty expression sorts by reference time
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     metadata::Collection mdc;
     unique_ptr<sort::Compare> cmp = sort::Compare::parse("");

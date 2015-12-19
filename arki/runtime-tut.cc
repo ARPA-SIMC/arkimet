@@ -32,8 +32,7 @@ struct arki_runtime_shar {
 };
 TESTGRP(arki_runtime);
 
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 }
 

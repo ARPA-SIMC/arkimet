@@ -20,8 +20,7 @@ struct arki_bbox_shar {
 TESTGRP(arki_bbox);
 
 // Empty or unsupported area should give 0
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	BBox bbox;
 	ValueBag vb;
@@ -32,8 +31,7 @@ void to::test<1>()
 }
 
 // Test normal latlon areas
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 #ifdef HAVE_GEOS
 	BBox bbox;
@@ -74,8 +72,7 @@ void to::test<2>()
 }
 
 // Test UTM areas
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 #ifdef HAVE_GEOS
 	BBox bbox;
@@ -117,8 +114,7 @@ void to::test<3>()
 }
 
 // Test rotated latlon areas
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
 #ifdef HAVE_GEOS
 	BBox bbox;
@@ -179,8 +175,7 @@ void to::test<4>()
 }
 
 // Test that latlon areas are reported with the right amount of significant digits
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
 #ifdef HAVE_GEOS
 	BBox bbox;
@@ -221,8 +216,7 @@ void to::test<5>()
 }
 
 // Simplified BUFR mobile station areas
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
 #ifdef HAVE_GEOS
     BBox bbox;
@@ -257,8 +251,7 @@ void to::test<6>()
 }
 
 // Experimental UTM areas
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
 #ifdef HAVE_GEOS
     BBox bbox;

@@ -43,8 +43,7 @@ struct arki_datasetpool_shar {
 TESTGRP(arki_datasetpool);
 
 // Test instantiating readonly datasets
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	ReaderPool pool(config);
 	ensure(pool.get("error") != 0);
@@ -54,8 +53,7 @@ void to::test<1>()
 }
 
 // Test instantiating writable datasets
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     WriterPool pool(config);
     ensure(pool.get("error") != 0);

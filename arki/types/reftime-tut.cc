@@ -17,8 +17,7 @@ struct arki_types_reftime_shar {
 TESTGRP(arki_types_reftime);
 
 // Check Position
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     arki::tests::TestGenericType t("reftime", "2015-01-02T03:04:05Z");
     t.lower.push_back("2014-01-01T00:00:00");
@@ -39,8 +38,7 @@ void to::test<1>()
 }
 
 // Check Period
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     arki::tests::TestGenericType t("reftime", "2015-01-02T00:00:00Z to 2015-01-03T00:00:00Z");
     t.lower.push_back("2015-01-01T00:00:00");
@@ -62,8 +60,7 @@ void to::test<2>()
 }
 
 // Check range expansion
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     unique_ptr<Time> begin;
     unique_ptr<Time> end;
@@ -91,8 +88,7 @@ void to::test<3>()
 }
 
 // Test Lua functions
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
 #ifdef HAVE_LUA
     unique_ptr<Reftime> o = Reftime::createPosition(Time(2007, 6, 5, 4, 3, 2));
@@ -119,8 +115,7 @@ void to::test<4>()
 }
 
 // Reproduce bugs
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     unique_ptr<Type> decoded = decodeString(TYPE_REFTIME, "2005-12-01T18:00:00Z");
     stringstream ss;

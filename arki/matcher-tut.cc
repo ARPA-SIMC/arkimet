@@ -33,8 +33,7 @@ struct arki_matcher_shar
 TESTGRP(arki_matcher);
 
 // Try OR matches
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	Matcher m;
 
@@ -49,8 +48,7 @@ void to::test<1>()
 }
 
 // Try using aliases
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	// Configuration file with alias definitions
 	string test =
@@ -93,8 +91,7 @@ void to::test<2>()
 
 // Test toString()
 // Kind of pointless now, since it just returns the original unparsed string
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     wassert(actual(Matcher::parse("origin:GRIB1,1,,3 or BUFR,1").toString()) == "origin:GRIB1,1,,3 or BUFR,1");
     wassert(actual(Matcher::parse("reftime:>2015-06-01 09:00:00 % 24h").toStringExpanded()) == "reftime:>2015-06-01 09:00:00 % 24");
@@ -105,8 +102,7 @@ void to::test<3>()
 }
 
 // Aliases that refer to aliases
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
 	// Configuration file with alias definitions
 	string test =
@@ -128,8 +124,7 @@ void to::test<4>()
 }
 
 // Recursive aliases should fail
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
 	string test =
 		"[origin]\n"
@@ -146,8 +141,7 @@ void to::test<5>()
 }
 
 // Recursive aliases should fail
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
 	string test =
 		"[origin]\n"
@@ -165,8 +159,7 @@ void to::test<6>()
 }
 
 // Recursive aliases should fail
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
 	string test =
 		"[origin]\n"
@@ -185,8 +178,7 @@ void to::test<7>()
 }
 
 // Load a file with aliases referring to other aliases
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
 	ifstream in("misc/rec-ts-alias.conf");
 	ConfigFile conf;
@@ -199,8 +191,7 @@ void to::test<8>()
 }
 
 // Run matcher/*.txt files, doctest style
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
 	runtime::readMatcherAliasDatabase();
 	Lua L;
@@ -246,8 +237,7 @@ void to::test<9>()
     }
 }
 
-template<> template<>
-void to::test<10>()
+def_test(10)
 {
 	Matcher m1, m2;
 

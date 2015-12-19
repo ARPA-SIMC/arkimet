@@ -20,8 +20,7 @@ struct arki_scan_odimh5_shar
 TESTGRP(arki_scan_odimh5);
 
 // Scan an ODIMH5 polar volume
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -59,8 +58,7 @@ void to::test<1>()
 	ensure(not scanner.next(md));
 }
 
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -96,8 +94,7 @@ void to::test<2>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -133,8 +130,7 @@ void to::test<3>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -170,8 +166,7 @@ void to::test<4>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -207,8 +202,7 @@ void to::test<5>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -244,8 +238,7 @@ void to::test<6>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -281,8 +274,7 @@ void to::test<7>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -319,8 +311,7 @@ void to::test<8>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -357,8 +348,7 @@ void to::test<9>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<10>()
+def_test(10)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -395,8 +385,7 @@ void to::test<10>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<11>()
+def_test(11)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -432,8 +421,7 @@ void to::test<11>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<12>()
+def_test(12)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -469,8 +457,7 @@ void to::test<12>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<13>()
+def_test(13)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -506,8 +493,7 @@ void to::test<13>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<14>()
+def_test(14)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -543,8 +529,7 @@ void to::test<14>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<15>()
+def_test(15)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -580,8 +565,7 @@ void to::test<15>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<16>()
+def_test(16)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -618,8 +602,7 @@ void to::test<16>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<17>()
+def_test(17)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -655,8 +638,7 @@ void to::test<17>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<18>()
+def_test(18)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -692,8 +674,7 @@ void to::test<18>()
 
 	ensure(not scanner.next(md));
 }
-template<> template<>
-void to::test<19>()
+def_test(19)
 {
     Metadata md;
     scan::OdimH5 scanner;
@@ -731,8 +712,7 @@ void to::test<19>()
 }
 
 // Check that the scanner silently discard an empty file
-template<> template<>
-void to::test<20>()
+def_test(20)
 {
     Metadata md;
     scan::OdimH5 scanner;

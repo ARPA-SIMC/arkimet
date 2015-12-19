@@ -27,8 +27,7 @@ TESTGRP(arki_dataset_metadatagrid);
 
 
 // Test querying the datasets
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     // Create a 2x2 metadata grid
     MetadataGrid mdg;

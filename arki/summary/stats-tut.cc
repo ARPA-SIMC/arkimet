@@ -20,8 +20,7 @@ struct arki_summary_stats_shar {
 TESTGRP(arki_summary_stats);
 
 // Basic stats tests
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     using namespace arki::summary;
 
@@ -42,8 +41,7 @@ void to::test<1>()
 }
 
 // Basic encode/decode tests
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     using namespace arki::summary;
 
@@ -53,8 +51,7 @@ void to::test<2>()
 }
 
 // Basic encode/decode tests with large numbers
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     using namespace arki::summary;
 

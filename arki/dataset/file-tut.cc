@@ -21,8 +21,7 @@ struct arki_dataset_file_shar {
 };
 TESTGRP(arki_dataset_file);
 
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	ConfigFile cfg;
 	dataset::File::readConfig("inbound/test.grib1", cfg);
@@ -35,8 +34,7 @@ void to::test<1>()
 	ensure_equals(s->value("format"), "grib");
 }
 
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	ConfigFile cfg;
 	dataset::File::readConfig("bUFr:inbound/test.grib1", cfg);
@@ -49,8 +47,7 @@ void to::test<2>()
 	ensure_equals(s->value("format"), "bufr");
 }
 
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 	ConfigFile cfg;
 	system("cp inbound/test.grib1 strangename");
@@ -69,8 +66,7 @@ void to::test<3>()
     ensure_equals(mdc.size(), 3u);
 }
 
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     ConfigFile cfg;
     dataset::File::readConfig("inbound/odim1.arkimet", cfg);

@@ -43,8 +43,7 @@ struct arki_dataset_simple_datafile_shar {
 TESTGRP(arki_dataset_simple_datafile);
 
 // Try to append some data
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	system(("rm -rf " + fname).c_str());
 	ino_t inomd;
@@ -117,8 +116,7 @@ void to::test<1>()
 }
 
 // Test remove and pack
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 #if 0
 	appendData();

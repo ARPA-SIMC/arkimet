@@ -309,8 +309,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 };
 TESTGRP(arki_dataset_ondisk2_writer);
 
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     wruntest(test_hole_file_and_repack, testdata::GRIBData());
     wruntest(test_hole_file_and_repack, testdata::BUFRData());
@@ -323,8 +322,7 @@ void to::test<1>()
     wruntest(test_hole_file_and_repack, testdata::ODIMData());
 }
 
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     wruntest(test_delete_file_and_repack, testdata::GRIBData());
     wruntest(test_delete_file_and_repack, testdata::BUFRData());
@@ -337,8 +335,7 @@ void to::test<2>()
     wruntest(test_delete_file_and_repack, testdata::ODIMData());
 }
 
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     wruntest(test_hole_file_and_check, testdata::GRIBData());
     wruntest(test_hole_file_and_check, testdata::BUFRData());
@@ -351,8 +348,7 @@ void to::test<3>()
     wruntest(test_hole_file_and_check, testdata::ODIMData());
 }
 
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     wruntest(test_delete_file_and_check, testdata::GRIBData());
     wruntest(test_delete_file_and_check, testdata::BUFRData());
@@ -365,8 +361,7 @@ void to::test<4>()
     wruntest(test_delete_file_and_check, testdata::ODIMData());
 }
 
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     wruntest(test_delete_index_and_check, testdata::GRIBData());
     wruntest(test_delete_index_and_check, testdata::BUFRData());
@@ -380,8 +375,7 @@ void to::test<5>()
 }
 
 // Test recreating a dataset from just a datafile with duplicate data and a rebuild flagfile
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
 	system("mkdir testdir");
 	system("mkdir testdir/foo");
@@ -465,8 +459,7 @@ void to::test<6>()
 
 // Test accuracy of maintenance scan, with index, on dataset with some
 // rebuild flagfiles, and duplicate items inside
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
 	acquireSamples();
 	system("cat inbound/test.grib1 >> testdir/2007/07-08.grib1");
@@ -510,8 +503,7 @@ void to::test<7>()
 
 // Test accuracy of maintenance scan, with index, on dataset with some
 // rebuild flagfiles, and duplicate items inside
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
 	acquireSamples();
 
@@ -598,8 +590,7 @@ void to::test<8>()
 
 
 // Test sanity checks on summary cache
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
 	// If we are root we can always write the summary cache, so the tests
 	// will fail
@@ -669,8 +660,7 @@ void to::test<9>()
 }
 
 // Test that the summary cache is properly invalidated on import
-template<> template<>
-void to::test<10>()
+def_test(10)
 {
 	// Perform maintenance on empty dir, creating an empty summary cache
 	{
@@ -707,8 +697,7 @@ void to::test<10>()
 
 // Try to reproduce a bug where two conflicting BUFR files were not properly
 // imported with USN handling
-template<> template<>
-void to::test<11>()
+def_test(11)
 {
     ConfigFile cfg;
     cfg.setValue("path", "gts_temp");
@@ -730,8 +719,7 @@ void to::test<11>()
     writer.flush();
 }
 
-template<> template<>
-void to::test<12>()
+def_test(12)
 {
     metadata::Collection mdc("inbound/test.grib1");
 
@@ -790,8 +778,7 @@ void to::test<12>()
     }
 }
 
-template<> template<>
-void to::test<13>()
+def_test(13)
 {
     metadata::Collection mdc("inbound/test.grib1");
 
@@ -851,7 +838,7 @@ void to::test<13>()
 }
 
 // Test packing a dataset with VM2 data
-template<> template<> void to::test<14>()
+def_test(14)
 {
     clean_and_import(&cfg, "inbound/test.vm2");
 
@@ -922,6 +909,5 @@ template<> template<> void to::test<14>()
     wassert(actual(mdc_packed[0].getData()) == orig_data[1]);
     wassert(actual(mdc_packed[1].getData()) == orig_data[3]);
 }
-
 
 }

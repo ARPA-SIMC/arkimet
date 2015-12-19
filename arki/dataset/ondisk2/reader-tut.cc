@@ -30,8 +30,7 @@ struct arki_dataset_ondisk2_reader_shar {
 TESTGRP(arki_dataset_ondisk2_reader);
 
 // Test querying with postprocessing
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     const test::Scenario& s = test::Scenario::get("ondisk2-testgrib1");
     unique_ptr<ondisk2::Reader> reader(new ondisk2::Reader(s.cfg));
@@ -47,8 +46,7 @@ void to::test<1>()
 
 // Test that summary files are not created for all the extent of the query, but
 // only for data present in the dataset
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     const test::Scenario& scen = test::Scenario::get("ondisk2-testgrib1");
     ConfigFile cfg = scen.clone("testds");
@@ -82,8 +80,7 @@ void to::test<2>()
 }
 
 // Test produce_nth
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     const test::Scenario& s = test::Scenario::get("ondisk2-testgrib1");
     unique_ptr<ondisk2::Reader> reader(new ondisk2::Reader(s.cfg));

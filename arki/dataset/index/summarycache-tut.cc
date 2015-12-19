@@ -13,8 +13,7 @@ struct arki_dataset_index_summarycache_shar {
 TESTGRP(arki_dataset_index_summarycache);
 
 // Trying indexing a few metadata
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 }
 

@@ -38,8 +38,7 @@ struct arki_dsindex_pending_shar {
 };
 TESTGRP(arki_dsindex_pending);
 
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 }
 

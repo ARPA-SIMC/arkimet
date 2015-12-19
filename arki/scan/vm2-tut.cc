@@ -21,8 +21,7 @@ struct arki_scan_vm2_shar {
 TESTGRP(arki_scan_vm2);
 
 // Scan a well-known vm2 sample
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     Metadata md;
     scan::Vm2 scanner;
@@ -49,8 +48,7 @@ void to::test<1>()
     ensure_equals(string((const char*)buf.data(), 34), "198710310000,1,227,1.2,,,000000000");
 }
 
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     Metadata md;
     vector<uint8_t> buf;
@@ -91,8 +89,7 @@ void to::test<2>()
 }
 
 // Scan a well-known vm2 sample (with seconds)
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     Metadata md;
     scan::Vm2 scanner;
@@ -123,8 +120,7 @@ void to::test<3>()
 }
 
 // Scan and reconstruct a VM2 sample
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     const types::Value* value;
     vector<uint8_t> buf;
@@ -142,8 +138,7 @@ void to::test<4>()
 }
 
 // Scan a corrupted VM2
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     system("cp inbound/test.vm2 inbound/test-corrupted.vm2");
     system("dd if=/dev/zero of=inbound/test-corrupted.vm2 bs=1 seek=71 count=33 conv=notrunc 2>/dev/null");

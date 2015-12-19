@@ -32,8 +32,7 @@ struct arki_scan_grib_shar {
 TESTGRP(arki_scan_grib);
 
 // Scan a well-known grib file, with no padding between messages
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     Metadata md;
     scan::Grib scanner;
@@ -122,8 +121,7 @@ void to::test<1>()
 
 
 // Scan a well-known grib file, with extra padding data between messages
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     Metadata md;
     scan::Grib scanner;
@@ -202,8 +200,7 @@ void to::test<2>()
 }
 
 // Scan a well-known grib file, with no padding between GRIBs
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     Metadata md;
     scan::Grib scanner("", R"(
@@ -240,8 +237,7 @@ arki.bbox = { { 45.00, 11.00 }, { 46.00, 11.00 }, { 46.00, 12.00 }, { 47.00, 13.
 }
 
 // Test validation
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     Metadata md;
     vector<uint8_t> buf;
@@ -276,8 +272,7 @@ void to::test<4>()
 }
 
 // Test scanning layers instead of levels
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     Metadata md;
     scan::Grib scanner;
@@ -312,8 +307,7 @@ void to::test<5>()
 }
 
 // Scan a know item for which grib_api changed behaviour
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     Metadata md;
     scan::Grib scanner;
@@ -348,8 +342,7 @@ void to::test<6>()
 }
 
 // Scan a know item for which grib_api changed behaviour
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     Metadata md;
     scan::Grib scanner;
@@ -383,8 +376,7 @@ void to::test<7>()
 }
 
 // Scan a GRIB2 with experimental UTM areas
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
     Metadata md;
     scan::Grib scanner;
@@ -405,8 +397,7 @@ void to::test<8>()
 }
 
 // Check scanning of some Timedef cases
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
     {
         Metadata md;
@@ -427,8 +418,7 @@ void to::test<9>()
 }
 
 // Check scanning COSMO nudging timeranges
-template<> template<>
-void to::test<10>()
+def_test(10)
 {
     ARKI_UTILS_TEST_INFO(info);
 
@@ -555,8 +545,7 @@ void to::test<10>()
 }
 
 // Check scanning a GRIB2 with a bug in level scanning code
-template<> template<>
-void to::test<11>()
+def_test(11)
 {
     // FIXME: It is unsure what is the correct expected behaviour here, across
     // different versions of grib_api
@@ -569,8 +558,7 @@ void to::test<11>()
 }
 
 // Check opening very long GRIB files for scanning
-template<> template<>
-void to::test<12>()
+def_test(12)
 {
 	scan::Grib scanner;
 	int fd = open("bigfile.grib1", O_WRONLY | O_CREAT, 0644);

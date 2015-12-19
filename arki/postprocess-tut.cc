@@ -52,8 +52,7 @@ struct arki_postprocess_shar {
 TESTGRP(arki_postprocess);
 
 // See if the postprocess makes a difference
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     Postprocess p("null");
     p.set_output(STDERR_FILENO);
@@ -66,8 +65,7 @@ void to::test<1>()
 }
 
 // Check that it works without validation, too
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     Postprocess p("null");
     p.set_output(STDERR_FILENO);
@@ -79,8 +77,7 @@ void to::test<2>()
 }
 
 // Test actually sending some data
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     sys::File out(sys::File::mkstemp("test"));
     Postprocess p("countbytes");
@@ -95,8 +92,7 @@ void to::test<3>()
 }
 
 // Test actually sending some data
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     // Get the normal data
     vector<uint8_t> plain;
@@ -125,8 +121,7 @@ void to::test<4>()
 }
 
 // Try to shift a sizeable chunk of data to the postprocessor
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     sys::File out(sys::File::mkstemp("test"));
     Postprocess p("countbytes");
@@ -142,8 +137,7 @@ void to::test<5>()
 }
 
 // Try to shift a sizeable chunk of data out of the postprocessor
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     const char* fname = "postprocess_output";
     stringstream str;
@@ -162,8 +156,7 @@ void to::test<6>()
 }
 
 // Try to shift a sizeable chunk of data to and out of the postprocessor
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     const char* fname = "postprocess_output";
     stringstream str;

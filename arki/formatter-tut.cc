@@ -32,8 +32,7 @@ struct arki_formatter_shar {
 TESTGRP(arki_formatter);
 
 // See if the formatter makes a difference
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	unique_ptr<Formatter> formatter(Formatter::create());
 

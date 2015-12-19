@@ -21,8 +21,7 @@ struct arki_tests_shar {
 TESTGRP(arki_tests);
 
 // Check compareMaps
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     wassert(actual(true).istrue());
     wassert(actual(false).isfalse());

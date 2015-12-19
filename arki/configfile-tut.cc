@@ -16,8 +16,7 @@ struct arki_configfile_shar {
 TESTGRP(arki_configfile);
 
 // Check that simple key = val items are parsed correctly
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	string test =
 		"\n" // Empty line

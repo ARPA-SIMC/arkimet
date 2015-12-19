@@ -36,8 +36,7 @@ inline unique_ptr<Metadata> wrap(const Metadata& md)
 }
 
 // Test a simple case
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	Report rep;
 	std::stringstream res;
@@ -74,8 +73,7 @@ void to::test<1>()
 }
 
 // Test a case of mdreport that used to fail
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     ConfigFile cfg;
     dataset::File::readConfig("inbound/test.grib1", cfg);

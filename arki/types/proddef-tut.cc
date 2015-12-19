@@ -42,8 +42,7 @@ struct arki_types_proddef_shar {
 TESTGRP(arki_types_proddef);
 
 // Check GRIB
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     tests::TestGenericType t("proddef", "GRIB(uno=1,due=2,tre=-3,supercazzola=-1234567,pippo=pippo,pluto=\"12\",cippo=)");
     t.higher.push_back("GRIB(dieci=10,undici=11,dodici=-12)");
@@ -52,8 +51,7 @@ void to::test<1>()
 }
 
 // Test Lua functions
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 #ifdef HAVE_LUA
     ValueBag test1;
@@ -79,8 +77,7 @@ void to::test<2>()
 }
 
 // Check two more samples
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     tests::TestGenericType t("proddef", "GRIB(count=1,pippo=pippo)");
     t.higher.push_back("GRIB(count=2,pippo=pippo)");

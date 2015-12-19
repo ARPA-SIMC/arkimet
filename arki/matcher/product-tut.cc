@@ -27,8 +27,7 @@ struct arki_matcher_product_shar
 TESTGRP(arki_matcher_product);
 
 // Try matching GRIB product
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	Matcher m;
 
@@ -52,8 +51,7 @@ void to::test<1>()
 }
 
 // Try matching BUFR product
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	ValueBag vb;
 	vb.set("name", Value::createString("antani"));
@@ -86,8 +84,7 @@ void to::test<2>()
     }
 }
 // Try matching VM2 product
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 	md.set(product::VM2::create(1));
 

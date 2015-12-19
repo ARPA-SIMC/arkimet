@@ -50,8 +50,7 @@ struct ImplASub : public ImplA
 };
 
 // Check downcast and ucpast
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     unique_ptr<ImplA> top(new ImplA);
     unique_ptr<ImplASub> sub(new ImplASub);
@@ -64,8 +63,7 @@ void to::test<1>()
 }
 
 // Check specific item assignments
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 #if 0
 	Item<ImplA> a(new ImplA);
@@ -81,8 +79,7 @@ void to::test<2>()
 }
 
 // Check copying around
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 #if 0
 	Item<ImplA> a(new ImplA);
@@ -119,8 +116,7 @@ void to::test<3>()
 }
 
 // Check UItem
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
 #if 0
 	UItem<ImplA> a;
@@ -136,8 +132,7 @@ void to::test<4>()
 }
 
 // Check that assignment works
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
 #if 0
 	Item<TestImpl> a(new TestImpl);

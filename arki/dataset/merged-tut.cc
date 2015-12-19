@@ -85,8 +85,7 @@ struct arki_dataset_merged_shar {
 TESTGRP(arki_dataset_merged);
 
 // Test querying the datasets
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     metadata::Collection mdc(ds, Matcher());
     ensure_equals(mdc.size(), 3u);

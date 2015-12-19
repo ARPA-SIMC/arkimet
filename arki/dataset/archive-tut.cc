@@ -67,8 +67,7 @@ struct arki_dataset_archive_shar : public DatasetTest {
 TESTGRP(arki_dataset_archive);
 
 // Acquire and query
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	metadata::Collection mdc;
 	{
@@ -101,8 +100,7 @@ void to::test<1>()
 }
 
 // Test maintenance scan on non-indexed files
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	MaintenanceCollector c;
 	{
@@ -154,8 +152,7 @@ void to::test<2>()
 }
 
 // Test maintenance scan on missing metadata
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     MaintenanceCollector c;
     {
@@ -216,8 +213,7 @@ void to::test<3>()
 }
 
 // Test maintenance scan on missing summary
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     MaintenanceCollector c;
     {
@@ -276,8 +272,7 @@ void to::test<4>()
 }
 
 // Test maintenance scan on missing metadata
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
 	{
 		unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
@@ -353,8 +348,7 @@ void to::test<5>()
 }
 
 // Test maintenance scan on compressed archives
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
 	MaintenanceCollector c;
 	{
@@ -436,8 +430,7 @@ void to::test<6>()
 }
 
 // Test handling of empty archive dirs (such as last with everything moved away)
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
 	// Import a file in a secondary archive
 	{
@@ -452,8 +445,7 @@ void to::test<7>()
     wassert(ensure_dataset_clean(arc, 1, 3));
 }
 
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
     using namespace arki::dataset;
 
@@ -511,18 +503,8 @@ void to::test<8>()
 }
 
 // Retest with sqlite
-template<> template<> void to::test<9>() { ForceSqlite fs; test<1>(); }
-template<> template<> void to::test<10>() { ForceSqlite fs; test<2>(); }
-template<> template<> void to::test<11>() { ForceSqlite fs; test<3>(); }
-template<> template<> void to::test<12>() { ForceSqlite fs; test<4>(); }
-template<> template<> void to::test<13>() { ForceSqlite fs; test<5>(); }
-template<> template<> void to::test<14>() { ForceSqlite fs; test<6>(); }
-template<> template<> void to::test<15>() { ForceSqlite fs; test<7>(); }
-template<> template<> void to::test<16>() { ForceSqlite fs; test<8>(); }
-template<> template<> void to::test<17>() { ForceSqlite fs; test<9>(); }
 
-template<> template<>
-void to::test<18>()
+def_test(18)
 {
     using namespace arki::dataset;
 
@@ -546,8 +528,7 @@ void to::test<18>()
     ensure(s1 == s2);
 }
 
-template<> template<>
-void to::test<19>()
+def_test(19)
 {
     using namespace arki::dataset;
 
@@ -593,8 +574,7 @@ void to::test<19>()
 }
 
 // Check behaviour of global archive summary cache
-template<> template<>
-void to::test<20>()
+def_test(20)
 {
     using namespace arki::dataset;
 

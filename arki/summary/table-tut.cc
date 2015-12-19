@@ -70,8 +70,7 @@ struct arki_summary_table_shar {
 TESTGRP(arki_summary_table);
 
 // Test basic operations
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     // Test the empty table
     Table table;
@@ -93,8 +92,7 @@ void to::test<1>()
     wassert(actual(table1.equals(table)).istrue());
 }
 
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     Table table;
     // Add the same item twice, they should get merged
@@ -106,8 +104,7 @@ void to::test<2>()
 }
 
 // Build a table a bit larger, still no reallocs triggered
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     // Look at a bigger table
     Table table;
@@ -116,8 +113,7 @@ void to::test<3>()
 }
 
 // Build a table large enough to trigger a realloc
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     // Look at an even bigger table, this should trigger a realloc
     Table table3;
@@ -128,8 +124,7 @@ void to::test<4>()
 }
 
 // Test Row
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     Row row1;
     wassert(actual(row1.stats.count) == 0);

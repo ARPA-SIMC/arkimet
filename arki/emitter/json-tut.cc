@@ -17,8 +17,7 @@ struct arki_emitter_json_shar {
 TESTGRP(arki_emitter_json);
 
 // null value
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     stringstream str;
     JSON json(str);
@@ -32,8 +31,7 @@ void to::test<1>()
 }
 
 // bool value
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     {
         stringstream str;
@@ -63,8 +61,7 @@ void to::test<2>()
 }
 
 // int value
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     {
         stringstream str;
@@ -94,8 +91,7 @@ void to::test<3>()
 }
 
 // double value
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     {
         stringstream str;
@@ -151,8 +147,7 @@ void to::test<4>()
 }
 
 // string value
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     {
         stringstream str;
@@ -182,8 +177,7 @@ void to::test<5>()
 }
 
 // list value
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     {
         stringstream str;
@@ -209,8 +203,7 @@ void to::test<6>()
 }
 
 // mapping value
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     {
         stringstream str;

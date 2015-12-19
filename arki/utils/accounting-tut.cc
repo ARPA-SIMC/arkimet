@@ -19,8 +19,7 @@ struct arki_utils_accounting_shar {
 TESTGRP(arki_utils_accounting);
 
 // Simple counter test
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     wassert(actual(counter.name()) == "foo");
     wassert(actual(counter.val()) == 0u);

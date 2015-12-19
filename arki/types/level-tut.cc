@@ -33,8 +33,7 @@ struct arki_types_level_shar {
 TESTGRP(arki_types_level);
 
 // Check GRIB1 without l1 and l2
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     tests::TestGenericType t("level", "GRIB1(1)");
     t.alternates.push_back("GRIB1(1, 0)");
@@ -56,8 +55,7 @@ void to::test<1>()
 }
 
 // Check GRIB1 with an 8 bit l1
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     tests::TestGenericType t("level", "GRIB1(103, 132)");
     t.lower.push_back("GRIB1(1)");
@@ -81,8 +79,7 @@ void to::test<2>()
 }
 
 // Check GRIB1 with a 16 bit l1
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     tests::TestGenericType t("level", "GRIB1(103, 13200)");
     t.lower.push_back("GRIB1(1)");
@@ -102,8 +99,7 @@ void to::test<3>()
 }
 
 // Check GRIB1 with a layer
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     tests::TestGenericType t("level", "GRIB1(104, 132, 231)");
     t.lower.push_back("GRIB1(1)");
@@ -125,8 +121,7 @@ void to::test<4>()
 }
 
 // Check GRIB2S
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     tests::TestGenericType t("level", "GRIB2S(100, 100, 500)");
     t.lower.push_back("GRIB1(1)");
@@ -148,8 +143,7 @@ void to::test<5>()
 }
 
 // Check GRIB2S with missing values
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     tests::TestGenericType t("level", "GRIB2S(-, -, -)");
     t.lower.push_back("GRIB1(1)");
@@ -171,8 +165,7 @@ void to::test<6>()
 }
 
 // Check GRIB2D
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     tests::TestGenericType t("level", "GRIB2D(100, 100, 500, 100, 100, 1000)");
     t.lower.push_back("GRIB1(1)");
@@ -198,8 +191,7 @@ void to::test<7>()
 }
 
 // Check GRIB2D with missing values
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
     tests::TestGenericType t("level", "GRIB2D(-, -, -, -, -, -)");
     t.lower.push_back("GRIB1(1)");
@@ -232,8 +224,7 @@ void to::test<8>()
 
 
 // Check ODIMH5
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
     tests::TestGenericType t("level", "ODIMH5(10.123, 20.123)");
     t.lower.push_back("GRIB1(1)");
@@ -253,8 +244,7 @@ void to::test<9>()
 }
 
 // Test Lua functions
-template<> template<>
-void to::test<10>()
+def_test(10)
 {
 #ifdef HAVE_LUA
     unique_ptr<Level> o = Level::createGRIB1(104, 132, 231);

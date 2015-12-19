@@ -72,8 +72,7 @@ struct arki_dataset_outbound_shar {
 TESTGRP(arki_dataset_outbound);
 
 // Test acquiring the data
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	// Import data into the datasets
 	Metadata md;

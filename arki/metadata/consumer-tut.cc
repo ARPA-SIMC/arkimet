@@ -48,8 +48,7 @@ struct arki_metadata_consumer_shar {
 TESTGRP(arki_metadata_consumer);
 
 // Test boilerplate
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 #ifdef HAVE_LUA
 

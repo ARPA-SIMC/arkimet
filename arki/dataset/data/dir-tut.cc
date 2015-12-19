@@ -60,8 +60,7 @@ struct arki_data_dir_shar {
 TESTGRP(arki_data_dir);
 
 // Try to append some data
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     typedef types::source::Blob Blob;
 
@@ -156,8 +155,7 @@ void to::test<1>()
 
 // Common segment tests
 
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     struct Test : public SegmentCheckTest
     {
@@ -169,8 +167,7 @@ void to::test<2>()
 
     wruntest(test.run);
 }
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     struct Test : public SegmentRemoveTest
     {

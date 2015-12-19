@@ -76,8 +76,7 @@ TESTGRP(arki_dataset_gridquery);
 
 
 // Test GridQuery
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	dataset::GridQuery gq(*ds);
 
@@ -102,8 +101,7 @@ void to::test<1>()
 }
 
 // Test adding an entry which does not expand to anything
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	runtime::readMatcherAliasDatabase();
 

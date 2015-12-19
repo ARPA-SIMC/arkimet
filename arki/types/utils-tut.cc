@@ -34,8 +34,7 @@ struct arki_types_utils_shar {
 };
 TESTGRP(arki_types_utils);
 
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 }
 

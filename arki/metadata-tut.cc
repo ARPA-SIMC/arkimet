@@ -81,8 +81,7 @@ TESTGRP(arki_metadata);
 
 
 // Test sources
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
     wassert(actual(md.source().style()) == Source::BLOB);
@@ -107,8 +106,7 @@ static void dump(const char* name, const std::string& str)
 #endif
 
 // Test binary encoding and decoding
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
     fill(md);
@@ -137,8 +135,7 @@ void to::test<2>()
 }
 
 // Test Yaml encoding and decoding
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
     fill(md);
@@ -168,8 +165,7 @@ void to::test<3>()
 }
 
 // Test JSON encoding and decoding
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
     fill(md);
@@ -212,8 +208,7 @@ void to::test<4>()
 }
 
 // Test encoding and decoding with inline data
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     // Here is some data
     vector<uint8_t> buf = { 'c', 'i', 'a', 'o' };
@@ -234,15 +229,13 @@ void to::test<5>()
 }
 
 // Ensure that serialisation to binary preserves the deleted flag
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
 	// Skip: there is no deleted flag anymore
 }
 
 // Test Lua functions
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
 #ifdef HAVE_LUA
     md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
@@ -276,8 +269,7 @@ void to::test<7>()
 }
 
 // Serialise using unix file descriptors
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
 	const char* tmpfile = "testmd.tmp";
 	fill(md);

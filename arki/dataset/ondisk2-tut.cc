@@ -159,8 +159,7 @@ static string emptystring;
 #endif
 
 // Test acquiring data
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	// Clean the dataset
 	system("rm -rf test200/*");
@@ -199,8 +198,7 @@ void to::test<1>()
 }
 
 // Test querying the datasets
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	acquireSamples();
 	unique_ptr<Reader> testds(Reader::create(*config.section("test200")));
@@ -222,8 +220,7 @@ void to::test<2>()
 }
 
 // Test querying the datasets
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     acquireSamples();
     unique_ptr<Reader> testds(Reader::create(*config.section("test80")));
@@ -244,8 +241,7 @@ void to::test<3>()
 }
 
 // Test querying the datasets
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     acquireSamples();
     unique_ptr<Reader> testds(Reader::create(*config.section("test98")));
@@ -266,8 +262,7 @@ void to::test<4>()
 }
 
 // Test replacing an element
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
 	acquireSamples();
 
@@ -319,8 +314,7 @@ void to::test<5>()
 }
 
 // Test removing an element
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
 	acquireSamples();
 	metadata::Collection mdc;
@@ -362,8 +356,7 @@ void to::test<6>()
 }
 
 // Test reindexing
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
 	// TODO
 #if 0
@@ -402,8 +395,7 @@ void to::test<7>()
 }
 
 // Test querying the summary
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
     acquireSamples();
     ondisk2::Reader reader(*config.section("test200"));
@@ -413,8 +405,7 @@ void to::test<8>()
 }
 
 // Test querying the summary by reftime
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
     acquireSamples();
     ondisk2::Reader reader(*config.section("test200"));
@@ -425,8 +416,7 @@ void to::test<9>()
 }
 
 // Test acquiring data with replace=1
-template<> template<>
-void to::test<10>()
+def_test(10)
 {
 	// Clean the dataset
 	system("rm -rf test200/*");
@@ -504,8 +494,7 @@ void to::test<10>()
 }
 
 // Test querying the first reftime extreme of the summary
-template<> template<>
-void to::test<11>()
+def_test(11)
 {
     acquireSamplesAllInOne();
     ondisk2::Reader reader(*configAll.section("testall"));
@@ -525,8 +514,7 @@ void to::test<11>()
 }
 
 // Test querying data using index
-template<> template<>
-void to::test<12>()
+def_test(12)
 {
     acquireSamplesAllInOne();
     ondisk2::Reader reader(*configAll.section("testall"));
@@ -585,8 +573,7 @@ struct ReadHang : public wibble::sys::ChildProcess, public metadata::Eater
 }
 
 // Test acquiring with a reader who's stuck on output
-template<> template<>
-void to::test<13>()
+def_test(13)
 {
 	// Clean the dataset
 	system("rm -rf test200/*");
@@ -626,8 +613,7 @@ void to::test<13>()
 }
 
 // Test acquiring data on a compressed file
-template<> template<>
-void to::test<14>()
+def_test(14)
 {
 	// In-memory dataset configuration
 	string conf =
@@ -681,8 +667,7 @@ void to::test<14>()
 }
 
 // Test Update Sequence Number replacement strategy
-template<> template<>
-void to::test<15>()
+def_test(15)
 {
     // Configure a BUFR dataset
     system("rm -rf testbufr/*");
@@ -739,8 +724,7 @@ void to::test<15>()
 }
 
 // Test a dataset with very large mock files in it
-template<> template<>
-void to::test<16>()
+def_test(16)
 {
     // A dataset with hole files
     string conf =

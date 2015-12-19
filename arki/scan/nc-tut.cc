@@ -16,8 +16,7 @@ struct arki_scan_nc_shar {
 TESTGRP(arki_scan_nc);
 
 // Scan a well-known nc sample
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     Metadata md;
     scan::NetCDF scanner;

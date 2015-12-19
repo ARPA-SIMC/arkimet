@@ -24,8 +24,7 @@ struct arki_dataset_index_attr_shar {
 };
 TESTGRP(arki_dataset_index_attr);
 
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     Metadata md;
     unique_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
@@ -67,8 +66,7 @@ void to::test<1>()
 }
 
 // Same as <1> but instantiates attr every time to always test with a cold cache
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     Metadata md;
     unique_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
@@ -108,8 +106,7 @@ void to::test<2>()
     ensure_equals(ids[0], 1);
 }
 
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 	set<types::Code> members;
 	members.insert(TYPE_ORIGIN);
@@ -126,5 +123,3 @@ void to::test<3>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

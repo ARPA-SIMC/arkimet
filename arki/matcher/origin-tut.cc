@@ -26,8 +26,7 @@ struct arki_matcher_origin_shar
 TESTGRP(arki_matcher_origin);
 
 // Try matching GRIB origin
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	Matcher m;
 
@@ -47,8 +46,7 @@ void to::test<1>()
 }
 
 // Try matching BUFR origin
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	Matcher m;
 	md.set(origin::BUFR::create(1, 2));
@@ -67,7 +65,7 @@ void to::test<2>()
 }
 
 // Try matching ODIMH5 origin
-template<> template<> void to::test<3>()
+def_test(3)
 {
 	Matcher m;
 	md.set(origin::ODIMH5::create("wmo", "rad", "plc"));
@@ -83,7 +81,7 @@ template<> template<> void to::test<3>()
 }
 
 // Try matching ODIMH5 origin
-template<> template<> void to::test<4>()
+def_test(4)
 {
 	Matcher m;
 	md.set(origin::ODIMH5::create("wmo", "rad", "plc"));
@@ -97,5 +95,3 @@ template<> template<> void to::test<4>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

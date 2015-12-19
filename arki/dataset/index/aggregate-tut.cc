@@ -24,8 +24,7 @@ struct arki_dataset_index_aggregate_shar {
 };
 TESTGRP(arki_dataset_index_aggregate);
 
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	set<types::Code> members;
 	members.insert(TYPE_ORIGIN);

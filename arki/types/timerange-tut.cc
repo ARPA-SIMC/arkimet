@@ -13,8 +13,7 @@ struct arki_types_timerange_shar {
 TESTGRP(arki_types_timerange);
 
 // Check GRIB1 with seconds
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     tests::TestGenericType tgt("timerange", "GRIB1(2, 2s, 3s)");
     tgt.lower.push_back("GRIB1(2, 2s, 2s)");
@@ -44,8 +43,7 @@ void to::test<1>()
 }
 
 // Check GRIB1 with hours
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     tests::TestGenericType tgt("timerange", "GRIB1(2, 2h, 3h)");
     tgt.lower.push_back("GRIB1(2, 3s, 4s)");
@@ -73,8 +71,7 @@ void to::test<2>()
 }
 
 // Check GRIB1 with years
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     tests::TestGenericType tgt("timerange", "GRIB1(2, 2y, 3y)");
     tgt.lower.push_back("GRIB1(2, 2s, 3s)");
@@ -104,8 +101,7 @@ void to::test<3>()
 }
 
 // Check GRIB1 with unknown values
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     tests::TestGenericType tgt("timerange", "GRIB1(250, 124h, 127h)");
     tgt.lower.push_back("GRIB1(250, 125s, 126s)");
@@ -134,8 +130,7 @@ void to::test<4>()
 }
 
 // Check GRIB2 with seconds
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     tests::TestGenericType tgt("timerange", "GRIB2(2, 254, 2s, 3s)");
     tgt.lower.push_back("GRIB1(2, 2y, 3y)");
@@ -156,8 +151,7 @@ void to::test<5>()
 }
 
 // Check GRIB2 with hours
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     tests::TestGenericType tgt("timerange", "GRIB2(2, 1, 2h, 3h)");
     tgt.lower.push_back("GRIB1(2, 1s, 3s)");
@@ -182,8 +176,7 @@ void to::test<6>()
 }
 
 // Check GRIB2 with years
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     tests::TestGenericType tgt("timerange", "GRIB2(2, 4, 2y, 3y)");
     tgt.lower.push_back("GRIB1(2, 5y, 5y)");
@@ -205,8 +198,7 @@ void to::test<7>()
 }
 
 // Check GRIB2 with negative values
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
     tests::TestGenericType tgt("timerange", "GRIB2(2, 1, -2h, -3h)");
     tgt.lower.push_back("GRIB1(2, 2y, 3y)");
@@ -231,8 +223,7 @@ void to::test<8>()
 }
 
 // Check GRIB2 with unknown values
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
     tests::TestGenericType tgt("timerange", "GRIB2(250, 1, -2h, -3h)");
     tgt.lower.push_back("GRIB1(250, -2y, -3y)");
@@ -253,8 +244,7 @@ void to::test<9>()
 }
 
 // Check GRIB2 with some values that used to fail
-template<> template<>
-void to::test<10>()
+def_test(10)
 {
     unique_ptr<Timerange> o1 = Timerange::createGRIB2(11, 1, 3, 3);
     unique_ptr<Timerange> o2 = Timerange::createGRIB2(11, 1, 3, 6);
@@ -277,8 +267,7 @@ void to::test<10>()
 }
 
 // Check Timedef with step and statistical processing
-template<> template<>
-void to::test<11>()
+def_test(11)
 {
     tests::TestGenericType tgt("timerange", "Timedef(6h,2,60m)");
     tgt.alternates.push_back("Timedef(360m, 2, 1h)");
@@ -309,8 +298,7 @@ void to::test<11>()
 }
 
 // Check Timedef with step and statistical processing, in months
-template<> template<>
-void to::test<12>()
+def_test(12)
 {
     tests::TestGenericType tgt("timerange", "Timedef(1y,2,3mo)");
     tgt.lower.push_back("GRIB1(2, 2h, 3h)");
@@ -342,8 +330,7 @@ void to::test<12>()
 }
 
 // Check Timedef with step only
-template<> template<>
-void to::test<13>()
+def_test(13)
 {
     tests::TestGenericType tgt("timerange", "Timedef(1d)");
     tgt.alternates.push_back("Timedef(24h)");
@@ -374,8 +361,7 @@ void to::test<13>()
 }
 
 // Check Timedef with step only, in months
-template<> template<>
-void to::test<14>()
+def_test(14)
 {
     tests::TestGenericType tgt("timerange", "Timedef(2ce)");
     tgt.alternates.push_back("Timedef(20de)");
@@ -406,8 +392,7 @@ void to::test<14>()
 }
 
 // Check Timedef2 with step, and only statistical process type
-template<> template<>
-void to::test<15>()
+def_test(15)
 {
     tests::TestGenericType tgt("timerange", "Timedef(6h,2)");
     tgt.alternates.push_back("Timedef(360m, 2)");
@@ -436,8 +421,7 @@ void to::test<15>()
 }
 
 // Check Timedef with step in months, and only statistical process type
-template<> template<>
-void to::test<16>()
+def_test(16)
 {
     tests::TestGenericType tgt("timerange", "Timedef(6no,2)");
     tgt.alternates.push_back("Timedef(180y, 2)");
@@ -469,8 +453,7 @@ void to::test<16>()
 }
 
 // Check Timedef with step and statistical processing, one in seconds and one in months
-template<> template<>
-void to::test<17>()
+def_test(17)
 {
     tests::TestGenericType tgt("timerange", "Timedef(1y,2,3d)");
     tgt.alternates.push_back("Timedef(12mo,2,72h)");
@@ -502,8 +485,7 @@ void to::test<17>()
 }
 
 // Check BUFR
-template<> template<>
-void to::test<18>()
+def_test(18)
 {
     tests::TestGenericType tgt("timerange", "BUFR(6h)");
     tgt.lower.push_back("GRIB1(2, 2h, 3h)");
@@ -526,8 +508,7 @@ void to::test<18>()
 
 
 // Test Lua functions
-template<> template<>
-void to::test<19>()
+def_test(19)
 {
 #ifdef HAVE_LUA
     unique_ptr<Timerange> o = Timerange::createGRIB1(2, 254, 2, 3);
@@ -551,8 +532,7 @@ void to::test<19>()
 }
 
 // Test computing timedef information
-template<> template<>
-void to::test<20>()
+def_test(20)
 {
     int val;
     bool issec;
@@ -589,8 +569,7 @@ void to::test<20>()
 }
 
 // Test Timedef's validity_time_to_emission_time
-template<> template<>
-void to::test<21>()
+def_test(21)
 {
     using namespace timerange;
     using namespace reftime;

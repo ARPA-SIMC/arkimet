@@ -30,8 +30,7 @@ struct arki_utils_compress_shar {
 TESTGRP(arki_utils_compress);
 
 // Test compressing data that do not compress
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     vector<uint8_t> orig = { 'c', 'i', 'a', 'o' };
     vector<uint8_t> comp = lzo(orig.data(), orig.size());
@@ -41,8 +40,7 @@ void to::test<1>()
 }
 
 // Test a compression/decompression cycle
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	using namespace utils::compress;
 
@@ -56,8 +54,7 @@ void to::test<2>()
 }
 
 // Test a compression/decompression cycle on a large buffer
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 	using namespace utils::compress;
 
@@ -71,8 +68,7 @@ void to::test<3>()
 }
 
 // Test SeekIndex
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
 	SeekIndex idx;
 
@@ -82,8 +78,7 @@ void to::test<4>()
 }
 
 // Test SeekIndex lookup
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
 	SeekIndex idx;
 

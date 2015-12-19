@@ -20,8 +20,7 @@ struct arki_matcher_utils_shar {
 TESTGRP(arki_matcher_utils);
 
 // Check OptionalCommaList
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	OptionalCommaList l("CIAO,,1,2,,3");
 	ensure(l.has(0));
@@ -43,8 +42,7 @@ void to::test<1>()
 }
 
 // Check CommaJoiner
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	CommaJoiner j;
 	j.add("ciao");
@@ -57,8 +55,7 @@ void to::test<2>()
 	ensure_equals(j.join(), "ciao,,3,3.14");
 }
 
-template<> template<> 
-void to::test<3>()
+def_test(3)
 {
 	OptionalCommaList l("CIAO,,1,2,,3");
 	ensure_equals(l.getDouble(1,100), 	100.0);

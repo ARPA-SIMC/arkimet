@@ -135,8 +135,7 @@ static inline void test_basic_itemset_ops(const std::string& vlower, const std::
  */
 
 // Test with several item types
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     wassert(test_basic_itemset_ops<Origin>("GRIB1(1, 2, 3)", "GRIB1(2, 3, 4)"));
     wassert(test_basic_itemset_ops<Origin>("BUFR(1, 2)", "BUFR(2, 3)"));
@@ -175,8 +174,7 @@ void to::test<1>()
 
 #if 0
 // Test areas
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
 	ValueBag test1;
 	test1.set("foo", Value::createInteger(5));
@@ -198,8 +196,7 @@ void to::test<9>()
 }
 
 // Test proddefs
-template<> template<>
-void to::test<10>()
+def_test(10)
 {
 	ValueBag test1;
 	test1.set("foo", Value::createInteger(5));
@@ -221,8 +218,7 @@ void to::test<10>()
 }
 
 // Test dataset info
-template<> template<>
-void to::test<11>()
+def_test(11)
 {
 	Item<> val(AssignedDataset::create("test", "abcdefg"));
 	Item<> val1(AssignedDataset::create("test1", "abcdefgh"));
@@ -230,8 +226,7 @@ void to::test<11>()
 }
 
 // Check compareMaps
-template<> template<>
-void to::test<12>()
+def_test(12)
 {
 	using namespace utils;
 	map<string, UItem<> > a;

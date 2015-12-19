@@ -54,8 +54,7 @@ struct arki_summary_shar {
 TESTGRP(arki_summary);
 
 // Test that it contains the right things
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	// Check that it contains 2 metadata
 	ensure_equals(s.count(), 2u);
@@ -63,8 +62,7 @@ void to::test<1>()
 }
 
 // Test assignment and comparison
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     Summary s1;
     s1.add(s);
@@ -74,8 +72,7 @@ void to::test<2>()
 }
 
 // Test matching
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     Summary s1;
     wassert(actual(s.match(Matcher::parse("origin:GRIB1,1"))).istrue());
@@ -87,8 +84,7 @@ void to::test<3>()
 }
 
 // Test matching runs
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
 	md1.set(run::Minute::create(0, 0));
 	md2.set(run::Minute::create(12, 0));
@@ -106,8 +102,7 @@ void to::test<4>()
 }
 
 // Test filtering
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     Summary s1;
     s.filter(Matcher::parse("origin:GRIB1,1"), s1);
@@ -123,8 +118,7 @@ void to::test<5>()
 }
 
 // Test serialisation to binary
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     {
         vector<uint8_t> encoded = s.encode();
@@ -142,8 +136,7 @@ void to::test<6>()
 }
 
 // Test serialisation to Yaml
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     stringstream stream1;
     s.writeYaml(stream1);
@@ -155,8 +148,7 @@ void to::test<7>()
 }
 
 // Test serialisation to JSON
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
     // Serialise to JSON;
     stringstream stream1;
@@ -174,8 +166,7 @@ void to::test<8>()
 }
 
 // Test merging summaries
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
     Summary s1;
     s1.add(s);
@@ -183,8 +174,7 @@ void to::test<9>()
 }
 
 // Test serialisation of empty summary
-template<> template<>
-void to::test<10>()
+def_test(10)
 {
     Summary s;
     vector<uint8_t> encoded = s.encode();
@@ -194,8 +184,7 @@ void to::test<10>()
 }
 
 // Test a case of metadata wrongly considered the same
-template<> template<>
-void to::test<11>()
+def_test(11)
 {
 	Metadata tmd1;
 	Metadata tmd2;
@@ -228,8 +217,7 @@ void to::test<11>()
 }
 
 // Test Lua functions
-template<> template<>
-void to::test<12>()
+def_test(12)
 {
 #ifdef HAVE_LUA
 	s.add(md2);
@@ -268,8 +256,7 @@ void to::test<12>()
 }
 
 // Summarise the test gribs
-template<> template<>
-void to::test<13>()
+def_test(13)
 {
 #ifdef HAVE_GRIBAPI
 	Summary s1;
@@ -303,8 +290,7 @@ void to::test<13>()
 }
 
 // Test adding a metadata plus stats
-template<> template<>
-void to::test<14>()
+def_test(14)
 {
     Metadata md3;
     md3.set(Origin::createGRIB1(5, 6, 7));
@@ -326,8 +312,7 @@ void to::test<14>()
 }
 
 // Test resolveMatcher
-template<> template<>
-void to::test<15>()
+def_test(15)
 {
 	std::vector<ItemSet> res = s.resolveMatcher(Matcher::parse("origin:GRIB1,1,2,3; product:GRIB1,1,2,3 or GRIB1,2,3,4"));
 
@@ -340,8 +325,7 @@ void to::test<15>()
 }
 
 // Test loading an old summary
-template<> template<>
-void to::test<16>()
+def_test(16)
 {
     Summary s;
     s.readFile("inbound/old.summary");
@@ -381,8 +365,7 @@ void to::test<16>()
 }
 
 // Test a case where adding a metadata twice duplicated some nodes
-template<> template<>
-void to::test<17>()
+def_test(17)
 {
     s.add(md2);
     struct Counter : public summary::Visitor
@@ -401,8 +384,7 @@ void to::test<17>()
 }
 
 // Test loading an old summary
-template<> template<>
-void to::test<18>()
+def_test(18)
 {
     Summary s;
     s.readFile("inbound/all.summary");
@@ -410,8 +392,7 @@ void to::test<18>()
 }
 
 // Test filtering with an empty matcher
-template<> template<>
-void to::test<19>()
+def_test(19)
 {
     Summary s1;
     s.filter(Matcher(), s1);
@@ -422,8 +403,7 @@ void to::test<19>()
 
 // Test loading and saving summaries that summarise data where
 // 0000-00-00T00:00:00Z is a valid timestamp
-template<> template<>
-void to::test<20>()
+def_test(20)
 {
     Summary s;
     s.readFile("inbound/00-00.bufr.summary");

@@ -18,8 +18,7 @@ struct arki_types_time_shar {
 TESTGRP(arki_types_time);
 
 // Check 'now' time
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     unique_ptr<Time> o(new Time(0, 0, 0));
     wassert(actual(o).is_time(0, 0, 0, 0, 0, 0));
@@ -43,8 +42,7 @@ void to::test<1>()
 }
 
 // Check an arbitrary time
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     unique_ptr<Time> o = Time::create(1, 2, 3, 4, 5, 6);
     wassert(actual(o).is_time(1, 2, 3, 4, 5, 6));
@@ -68,8 +66,7 @@ void to::test<2>()
 }
 
 // Check time differences
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 #if 0
     unique_ptr<Time> t = Time::createDifference(Time(2007, 6, 5, 4, 3, 2), Time(2006, 5, 4, 3, 2, 1));
@@ -90,8 +87,7 @@ void to::test<3>()
 }
 
 // Check various type operations
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     tests::TestGenericType t("time", "2014-01-01T12:00:00Z");
     t.lower.push_back("0000-00-00T00:00:00Z");
@@ -102,8 +98,7 @@ void to::test<4>()
 }
 
 // Test Lua functions
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
 #ifdef HAVE_LUA
     unique_ptr<Time> o = Time::create(1, 2, 3, 4, 5, 6);
@@ -134,16 +129,14 @@ void to::test<5>()
 }
 
 // Test Time::generate
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     vector<Time> v = Time::generate(Time(2009, 1, 1, 0, 0, 0), Time(2009, 2, 1, 0, 0, 0), 3600);
     wassert(actual(v.size()) == 31u*24u);
 }
 
 // Test Time::range_overlaps
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     unique_ptr<Time> topen;
     unique_ptr<Time> t2000(new Time(2000, 1, 1, 0, 0, 0));
@@ -166,8 +159,7 @@ void to::test<7>()
 }
 
 // Reproduce bugs
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
     unique_ptr<Type> decoded = decodeString(TYPE_TIME, "2005-12-01T18:00:00Z");
     stringstream ss;

@@ -46,8 +46,7 @@ struct arki_dataset_simple_writer_shar : public DatasetTest {
 TESTGRP(arki_dataset_simple_writer);
 
 // Test acquiring data
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	// Clean the dataset
 	system("rm -rf testds");
@@ -98,8 +97,7 @@ void to::test<1>()
 }
 
 // Test appending to existing files
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     ConfigFile cfg;
     cfg.setValue("path", sys::abspath("testds"));
@@ -153,8 +151,7 @@ void to::test<2>()
 }
 
 // Test maintenance scan on non-indexed files
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 	struct Setup {
 		void operator() ()
@@ -230,8 +227,7 @@ void to::test<3>()
 }
 
 // Test maintenance scan with missing metadata and summary
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     struct Setup {
         void operator() ()
@@ -322,8 +318,7 @@ void to::test<4>()
 }
 
 // Test maintenance scan on missing summary
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     struct Setup {
         void operator() ()
@@ -413,8 +408,7 @@ void to::test<5>()
 }
 
 // Test maintenance scan on compressed archives
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
 	struct Setup {
         void operator() ()
@@ -541,8 +535,7 @@ void to::test<6>()
 }
 
 // Test maintenance scan on dataset with a file indexed but missing
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     struct Setup {
         void operator() ()
@@ -624,8 +617,7 @@ void to::test<7>()
 
 #if 0
 // Test handling of empty archive dirs (such as last with everything moved away)
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
 	// Import a file in a secondary archive
 	{
@@ -644,12 +636,5 @@ void to::test<7>()
 #endif
 
 // Retest with sqlite
-template<> template<> void to::test<8>() { ForceSqlite fs; test<1>(); }
-template<> template<> void to::test<9>() { ForceSqlite fs; test<2>(); }
-template<> template<> void to::test<10>() { ForceSqlite fs; test<3>(); }
-template<> template<> void to::test<11>() { ForceSqlite fs; test<4>(); }
-template<> template<> void to::test<12>() { ForceSqlite fs; test<5>(); }
-template<> template<> void to::test<13>() { ForceSqlite fs; test<6>(); }
-template<> template<> void to::test<14>() { ForceSqlite fs; test<7>(); }
 
 }

@@ -84,8 +84,7 @@ void query_index(WContents& idx, const dataset::DataQuery& q, metadata::Collecti
 }
 
 // Trying indexing a few metadata
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	unique_ptr<WContents> test = createIndex<WContents>(
 		"type = ondisk2\n"
@@ -130,8 +129,7 @@ void to::test<1>()
 }
 
 // See if remove works
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	unique_ptr<WContents> test = createIndex<WContents>(
 		"type = ondisk2\n"
@@ -245,8 +243,7 @@ struct ReadHang : public wibble::sys::ChildProcess
 }
 
 // Test concurrent read and update
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 	string cfg = 
 		"type = ondisk2\n"
@@ -298,8 +295,7 @@ void to::test<3>()
 }
 
 // Test getting the metadata corresponding to a file
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
 	// Remove index if it exists
 	unlink("file1");
@@ -348,8 +344,7 @@ void to::test<4>()
 }
 
 // Try a summary query that used to be badly generated
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
 	// Remove index if it exists
 	unlink("file1");
@@ -406,8 +401,7 @@ void to::test<5>()
 }
 
 // Trying indexing a few metadata in a large file
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     // Pretend the data is in a very big file
     md.set_source(Source::createBlob("grib", "", "antani", 0x100000000LLU, 2000));
@@ -450,8 +444,7 @@ void to::test<6>()
 }
 
 // Test smallfiles support
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     metadata::Collection src;
     scan::scan("inbound/test.vm2", src.inserter_func());

@@ -31,8 +31,7 @@ struct arki_scan_bufr_shar {
 TESTGRP(arki_scan_bufr);
 
 // Scan a well-known bufr file, with no padding between BUFRs
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -115,8 +114,7 @@ void to::test<1>()
 
 
 // Scan a well-known bufr file, with extra padding data between messages
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -197,8 +195,7 @@ void to::test<2>()
 }
 
 // Test validation
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     Metadata md;
     vector<uint8_t> buf;
@@ -234,8 +231,7 @@ void to::test<3>()
 
 // Test scanning a BUFR file that can only be decoded partially
 // (note: it can now be fully decoded)
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -274,8 +270,7 @@ void to::test<4>()
 }
 
 // Test scanning a pollution BUFR file
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -311,8 +306,7 @@ void to::test<5>()
 }
 
 // Test scanning a BUFR file with undefined dates
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -325,8 +319,7 @@ void to::test<6>()
 }
 
 // Test scanning a ship
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -337,8 +330,7 @@ void to::test<7>()
 }
 
 // Test scanning an amdar
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -349,8 +341,7 @@ void to::test<8>()
 }
 
 // Test scanning an airep
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -361,8 +352,7 @@ void to::test<9>()
 }
 
 // Test scanning an acars
-template<> template<>
-void to::test<10>()
+def_test(10)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -373,8 +363,7 @@ void to::test<10>()
 }
 
 // Test scanning a GTS synop
-template<> template<>
-void to::test<11>()
+def_test(11)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -385,8 +374,7 @@ void to::test<11>()
 }
 
 // Test scanning a message with a different date in the header than in its contents
-template<> template<>
-void to::test<12>()
+def_test(12)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -397,8 +385,7 @@ void to::test<12>()
 }
 
 // Test scanning a message which raises domain errors when interpreted
-template<> template<>
-void to::test<13>()
+def_test(13)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -409,8 +396,7 @@ void to::test<13>()
 }
 
 // Test scanning a temp forecast, to see if we got the right reftime
-template<> template<>
-void to::test<14>()
+def_test(14)
 {
     // BUFR has datetime 2009-02-13 12:00:00, timerange instant
     Metadata md;
@@ -427,8 +413,7 @@ void to::test<14>()
 }
 
 // Test scanning a bufr with all sorts of wrong dates
-template<> template<>
-void to::test<15>()
+def_test(15)
 {
     Metadata md;
     scan::Bufr scanner;

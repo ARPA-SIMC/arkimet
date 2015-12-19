@@ -33,8 +33,7 @@ struct arki_types_product_shar {
 TESTGRP(arki_types_product);
 
 // Check GRIB1
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     tests::TestGenericType t("product", "GRIB1(1, 2, 3)");
     t.lower.push_back("GRIB1(1, 1, 1)");
@@ -56,8 +55,7 @@ void to::test<1>()
 }
 
 // Check GRIB2
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     tests::TestGenericType t("product", "GRIB2(1, 2, 3, 4)");
     t.lower.push_back("GRIB1(1, 2, 3)");
@@ -80,8 +78,7 @@ void to::test<2>()
 }
 
 // Check GRIB2 with different table version
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     tests::TestGenericType t("product", "GRIB2(1, 2, 3, 4, 5)");
     t.lower.push_back("GRIB1(1, 2, 3)");
@@ -105,8 +102,7 @@ void to::test<3>()
 }
 
 // Check GRIB2 with different table version or local table version
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     tests::TestGenericType t("product", "GRIB2(1, 2, 3, 4, 4, 5)");
     t.lower.push_back("GRIB1(1, 2, 3)");
@@ -131,8 +127,7 @@ void to::test<4>()
 }
 
 // Check BUFR
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     tests::TestGenericType t("product", "BUFR(1, 2, 3, name=antani)");
     t.lower.push_back("GRIB1(1, 2, 3)");
@@ -162,8 +157,7 @@ void to::test<5>()
 }
 
 // Check VM2
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     tests::TestGenericType t("product", "VM2(1)");
     t.lower.push_back("GRIB1(1, 2, 3)");
@@ -187,8 +181,7 @@ void to::test<6>()
 }
 
 // Test Lua functions
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
 #ifdef HAVE_LUA
     unique_ptr<Product> o = Product::createGRIB1(1, 2, 3);
@@ -211,8 +204,7 @@ void to::test<7>()
 }
 
 // Test GRIB2 Lua constructor
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
 #ifdef HAVE_LUA
     arki::tests::Lua test(

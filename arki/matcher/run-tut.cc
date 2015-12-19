@@ -26,8 +26,7 @@ struct arki_matcher_run_shar
 TESTGRP(arki_matcher_run);
 
 // Try matching Minute run
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	Matcher m;
 
