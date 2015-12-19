@@ -6,18 +6,17 @@
 #include <sstream>
 #include <iostream>
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
 
-struct arki_configfile_shar {
-};
-TESTGRP(arki_configfile);
+def_tests(arki_configfile);
 
-// Check that simple key = val items are parsed correctly
-def_test(1)
-{
+void Tests::register_tests() {
+
+add_method("parse", [] {
+    // Check that simple key = val items are parsed correctly
 	string test =
 		"\n" // Empty line
 		"#\n" // Empty comment
@@ -67,8 +66,8 @@ def_test(1)
 	conf.setValue("due", "DUE");
 	ensure_equals(conf.value("due"), "DUE");
 	ensure_equals(conf.valueInfo("due"), (void*)NULL);
-}
+});
 
 }
 
-// vim:set ts=4 sw=4:
+}

@@ -8,19 +8,17 @@
 #include <sstream>
 #include <iostream>
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
 
-struct arki_values_shar {
-};
-TESTGRP(arki_values);
+def_tests(arki_values);
+
+void Tests::register_tests() {
 
 // Check comparison
-template<> template<>
-void to::test<1>()
-{
+add_method("comparison", [] {
 	std::unique_ptr<Value> vi1(Value::createInteger(-1));
 	std::unique_ptr<Value> vi2(Value::createInteger(-1));
 	std::unique_ptr<Value> vi3(Value::createInteger(1));
@@ -44,12 +42,10 @@ void to::test<1>()
     ensure(*vs1 < *vs3);
     ensure(not (*vs1 < *vs1));
     ensure(not (*vs3 < *vs1));
-}
+});
 
 // Check encoding
-template<> template<>
-void to::test<2>()
-{
+add_method("encoding", [] {
 	std::unique_ptr<Value> zero(Value::createInteger(0));
 	std::unique_ptr<Value> one(Value::createInteger(1));
 	std::unique_ptr<Value> minusOne(Value::createInteger(-1));
@@ -102,12 +98,10 @@ void to::test<2>()
     test(*minusfourtythree, 2u);
     test(*tenthousand, 3u);
     test(*minustenthousand, 3u);
-}
+});
 
 // Check ValueBag
-template<> template<>
-void to::test<3>()
-{
+add_method("valuebag", [] {
 	ValueBag v1;
 	ValueBag v2;
 	unique_ptr<Value> val;
@@ -168,13 +162,11 @@ void to::test<3>()
 	ensure_equals(v2.size(), 4u);
 
 	ensure_equals(v2, v1);
-}
+});
 
 // Check a case where ValueBag seemed to fail (but it actually didn't, the
 // problem was elsewhere)
-template<> template<>
-void to::test<4>()
-{
+add_method("regression1", [] {
 	ValueBag v1;
 	ValueBag v2;
 
@@ -186,8 +178,8 @@ void to::test<4>()
 	v2.set("sta", Value::createInteger(88));
 
 	ensure(!v1.contains(v2));
-}
+});
 
 }
 
-// vim:set ts=4 sw=4:
+}

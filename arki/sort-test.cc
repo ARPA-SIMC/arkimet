@@ -15,22 +15,14 @@ static ostream& operator<<(ostream& out, const vector<int>& v)
 }
 }
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 
-struct arki_sort_shar {
-    arki_sort_shar()
-    {
-    }
+def_tests(arki_sort);
 
-
-};
-TESTGRP(arki_sort);
-
-namespace {
 void produce(int hour, int minute, int run, sort::Stream& c)
 {
     unique_ptr<Metadata> md(new Metadata);
@@ -58,11 +50,11 @@ vector<int> mdvals(int h, int m, int r)
 	res.push_back(r);
 	return res;
 }
-}
+
+void Tests::register_tests() {
 
 // Test a simple case
-def_test(1)
-{
+add_method("simple", [] {
     metadata::Collection mdc;
     unique_ptr<sort::Compare> cmp = sort::Compare::parse("hour:run,-reftime");
     sort::Stream sorter(*cmp, mdc.inserter_func());
@@ -84,11 +76,10 @@ def_test(1)
 	ensure_equals(mdvals(mdc[4]), mdvals(1, 2, 7));
 	ensure_equals(mdvals(mdc[5]), mdvals(1, 0, 8));
 	ensure_equals(mdvals(mdc[6]), mdvals(1, 1, 9));
-}
+});
 
 // An empty expression sorts by reference time
-def_test(2)
-{
+add_method("empty", [] {
     metadata::Collection mdc;
     unique_ptr<sort::Compare> cmp = sort::Compare::parse("");
     sort::Stream sorter(*cmp, mdc.inserter_func());
@@ -110,6 +101,8 @@ def_test(2)
 	ensure_equals(mdvals(mdc[4]), mdvals(1, 0, 8));
 	ensure_equals(mdvals(mdc[5]), mdvals(1, 1, 9));
 	ensure_equals(mdvals(mdc[6]), mdvals(1, 2, 7));
+});
+
 }
 
 }

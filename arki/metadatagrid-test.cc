@@ -8,27 +8,18 @@
 #include <sstream>
 #include <iostream>
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::tests;
 
-struct arki_dataset_metadatagrid_shar {
-	arki_dataset_metadatagrid_shar()
-	{
-	}
+def_tests(arki_dataset_metadatagrid);
 
-	~arki_dataset_metadatagrid_shar()
-	{
-	}
-};
-TESTGRP(arki_dataset_metadatagrid);
-
+void Tests::register_tests() {
 
 // Test querying the datasets
-def_test(1)
-{
+add_method("query", [] {
     // Create a 2x2 metadata grid
     MetadataGrid mdg;
     mdg.add(*Origin::createGRIB1(200, 0, 101));
@@ -44,8 +35,8 @@ def_test(1)
     md.set("product", "GRIB1(200, 140, 229)");
 
     ensure_equals(mdg.index(md), 0);
-}
+});
 
 }
 
-// vim:set ts=4 sw=4:
+}

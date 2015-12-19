@@ -290,7 +290,7 @@ tests_arki_test_SOURCES += \
 		tests/tests-tut.cc \
 		types/tests.cc \
 		utils/tests.cc \
-		utils-tut.cc \
+		utils-test.cc \
 		utils/accounting-tut.cc \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \
@@ -301,12 +301,12 @@ tests_arki_test_SOURCES += \
 		utils/process-tut.cc \
 		utils/raii-tut.cc \
 		binary-test.cc \
-		configfile-tut.cc \
-		transaction-tut.cc \
+		configfile-test.cc \
+		transaction-test.cc \
 		emitter/memory-tut.cc \
 		emitter/json-tut.cc \
-		values-tut.cc \
-		types-tut.cc \
+		values-test.cc \
+		types-test.cc \
 		types/utils-tut.cc \
 		types/source-tut.cc \
 		types/time-tut.cc \
@@ -319,7 +319,7 @@ tests_arki_test_SOURCES += \
 		types/proddef-tut.cc \
 		types/note-tut.cc \
 		types/assigneddataset-tut.cc \
-		types/bbox-tut.cc \
+		types/bbox-test.cc \
 		types/run-tut.cc \
 		types/task-tut.cc \
 		types/quantity-tut.cc \
@@ -330,7 +330,7 @@ tests_arki_test_SOURCES += \
 
 if IOTRACE
 libarkimet_la_SOURCES += iotrace.cc
-tests_arki_test_SOURCES += iotrace-tut.cc
+tests_arki_test_SOURCES += iotrace-test.cc
 endif
 
 if LZO
@@ -395,10 +395,10 @@ tests_arki_test_SOURCES += \
 		utils/datareader-tut.cc \
 		utils/compress-tut.cc \
 		utils/sqlite-tut.cc \
-		sort-tut.cc \
+		sort-test.cc \
 		formatter-tut.cc \
-		validator-tut.cc \
-		bbox-tut.cc \
+		validator-test.cc \
+		bbox-test.cc \
 		metadata-tut.cc \
 		metadata/consumer-tut.cc \
 		metadata/collection-tut.cc \
@@ -556,13 +556,13 @@ tests_arki_test_SOURCES += \
 		dataset/gridquery-tut.cc \
 		dataset/test-scenario-tut.cc \
 		dataset-tut.cc \
-		metadatagrid-tut.cc \
+		metadatagrid-test.cc \
 		postprocess-tut.cc \
 		querymacro-tut.cc \
 		datasetpool-tut.cc \
 		dispatcher-tut.cc \
 		runtime/processor-tut.cc \
-		runtime-tut.cc
+		runtime-test.cc
 
 if CURL
 AM_CPPFLAGS += @LIBCURL_CPPFLAGS@

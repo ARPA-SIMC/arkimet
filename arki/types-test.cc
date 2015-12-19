@@ -7,14 +7,12 @@
 #include <sstream>
 #include <iostream>
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
 
-struct arki_types_shar {
-};
-TESTGRP(arki_types);
+def_tests(arki_types);
 
 struct TestImpl : public types::Type
 {
@@ -50,8 +48,9 @@ struct ImplASub : public ImplA
 };
 
 // Check downcast and ucpast
-def_test(1)
-{
+void Tests::register_tests() {
+
+add_method("cast", [] {
     unique_ptr<ImplA> top(new ImplA);
     unique_ptr<ImplASub> sub(new ImplASub);
 
@@ -60,11 +59,10 @@ def_test(1)
 
     unique_ptr<ImplASub> back_to_top(downcast<ImplASub>(move(from_sub)));
     wassert(actual(back_to_top.get()).istrue());
-}
+});
 
 // Check specific item assignments
-def_test(2)
-{
+add_method("assign", [] {
 #if 0
 	Item<ImplA> a(new ImplA);
 	Item<ImplB> b(new ImplB);
@@ -76,11 +74,10 @@ def_test(2)
 	// This is not supposed to compile
 	//tmp = b;
 #endif
-}
+});
 
 // Check copying around
-def_test(3)
-{
+add_method("copy", [] {
 #if 0
 	Item<ImplA> a(new ImplA);
 	ensure_equals(a->val, 0);
@@ -113,11 +110,10 @@ def_test(3)
 
 	ensure_equals(a->val, 0);
 #endif
-}
+});
 
 // Check UItem
-def_test(4)
-{
+add_method("uitem", [] {
 #if 0
 	UItem<ImplA> a;
 	UItem<ImplA> b;
@@ -129,11 +125,10 @@ def_test(4)
 	a = b;
 	ensure_equals(a, b);
 #endif
-}
+});
 
 // Check that assignment works
-def_test(5)
-{
+add_method("assign1", [] {
 #if 0
 	Item<TestImpl> a(new TestImpl);
 	Item<TestImpl> b(new TestImpl(1));
@@ -148,8 +143,8 @@ def_test(5)
 	a = b;
 	ensure_equals(a->val, 3);
 #endif
-}
+});
 
 }
 
-// vim:set ts=4 sw=4:
+}

@@ -16,31 +16,11 @@ static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 }
 }
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::tests;
-
-struct arki_validator_shar {
-    arki_validator_shar()
-    {
-    }
-};
-TESTGRP(arki_validator);
-
-// Test FailAlways
-template<> template<>
-void to::test<1>()
-{
-    Metadata md;
-    arki::tests::fill(md);
-
-    validators::FailAlways v;
-    vector<string> errors;
-    ensure(!v(md, errors));
-    ensure_equals(errors.size(), 1u);
-}
 
 static void dump_errors(const vector<string>& errors)
 {
@@ -51,6 +31,21 @@ static void dump_errors(const vector<string>& errors)
         cerr << "Error " << count << ": " << *i << endl;
     }
 }
+
+def_tests(arki_validator);
+
+void Tests::register_tests() {
+
+// Test FailAlways
+add_method("fail_always", [] {
+    Metadata md;
+    arki::tests::fill(md);
+
+    validators::FailAlways v;
+    vector<string> errors;
+    ensure(!v(md, errors));
+    ensure_equals(errors.size(), 1u);
+});
 
 #define ensure_no_errors() \
     do { \
@@ -71,9 +66,7 @@ static void dump_errors(const vector<string>& errors)
 
 
 // Test DailyImport
-template<> template<>
-void to::test<2>()
-{
+add_method("daily_import", [] {
     Metadata md;
     arki::tests::fill(md);
 
@@ -111,8 +104,8 @@ void to::test<2>()
     localtime_r(&ts, &t);
     md.set(Reftime::createPosition(Time(t)));
     ensure_errors(1u);
-}
+});
 
 }
 
-// vim:set ts=4 sw=4:
+}

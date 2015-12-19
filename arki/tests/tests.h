@@ -46,6 +46,12 @@ std::string tempfile_to_string(std::function<void(arki::utils::sys::NamedFileDes
 
 #define def_test(num) template<> template<> void to::test<num>()
 
+#define def_tests(name) \
+  class Tests : public TestCase { \
+      using TestCase::TestCase; \
+      void register_tests() override; \
+  } test##name(#name);
+
 }
 }
 #endif

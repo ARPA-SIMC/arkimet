@@ -9,30 +9,28 @@
 #include <iostream>
 #include <memory>
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::tests;
 
-struct arki_bbox_shar {
-};
-TESTGRP(arki_bbox);
+def_tests(arki_bbox);
+
+void Tests::register_tests() {
 
 // Empty or unsupported area should give 0
-def_test(1)
-{
-	BBox bbox;
-	ValueBag vb;
+add_method("1", [] {
+    BBox bbox;
+    ValueBag vb;
     unique_ptr<Area> area(Area::createGRIB(vb));
     unique_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
 
-	ensure(g.get() == 0);
-}
+    ensure(g.get() == 0);
+});
 
 // Test normal latlon areas
-def_test(2)
-{
+add_method("2", [] {
 #ifdef HAVE_GEOS
 	BBox bbox;
 	ValueBag vb;
@@ -69,11 +67,10 @@ def_test(2)
 
 	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
 #endif
-}
+});
 
 // Test UTM areas
-def_test(3)
-{
+add_method("3", [] {
 #ifdef HAVE_GEOS
 	BBox bbox;
 	ValueBag vb;
@@ -111,11 +108,10 @@ def_test(3)
 
     //ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
 #endif
-}
+});
 
 // Test rotated latlon areas
-def_test(4)
-{
+add_method("4", [] {
 #ifdef HAVE_GEOS
 	BBox bbox;
 	ValueBag vb;
@@ -172,11 +168,10 @@ def_test(4)
     wassert(actual(cs->getAt(27).x).almost_equal( 6.0124, 4)); wassert(actual(cs->getAt(27).y).almost_equal(35.4723, 4));
     //ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
 #endif
-}
+});
 
 // Test that latlon areas are reported with the right amount of significant digits
-def_test(5)
-{
+add_method("5", [] {
 #ifdef HAVE_GEOS
 	BBox bbox;
 	ValueBag vb;
@@ -213,11 +208,10 @@ def_test(5)
 
 	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
 #endif
-}
+});
 
 // Simplified BUFR mobile station areas
-def_test(6)
-{
+add_method("6", [] {
 #ifdef HAVE_GEOS
     BBox bbox;
     ValueBag vb;
@@ -248,11 +242,10 @@ def_test(6)
     ensure_equals(cs->getAt(4).x, 11.0);
     ensure_equals(cs->getAt(4).y, 45.0);
 #endif
-}
+});
 
 // Experimental UTM areas
-def_test(7)
-{
+add_method("7", [] {
 #ifdef HAVE_GEOS
     BBox bbox;
     unique_ptr<Area> area = Area::decodeString("GRIB(fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)");
@@ -279,8 +272,8 @@ def_test(7)
     ensure_equals(floor(cs->getAt(4).x * 1000), 13996);
     ensure_equals(floor(cs->getAt(4).y * 1000), 43718);
 #endif
-}
+});
 
 }
 
-// vim:set ts=4 sw=4:
+}
