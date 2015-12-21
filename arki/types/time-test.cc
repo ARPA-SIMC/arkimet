@@ -1,25 +1,28 @@
 #include "tests.h"
 #include "time.h"
 #include <sstream>
-#include <iostream>
 
-#ifdef HAVE_LUA
-#include <arki/tests/lua.h>
-#endif
-
-namespace tut {
+namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
+using namespace arki::tests;
+
+class Tests : public TypeTestCase<types::Time>
+{
+    using TypeTestCase::TypeTestCase;
+    void register_tests() override;
+} test("arki_types_time");
+
+void Tests::register_tests() {
 using namespace arki::types;
 
-struct arki_types_time_shar {
-};
-TESTGRP(arki_types_time);
+add_generic_test("time",
+    { "0000-00-00T00:00:00Z", "1789-07-14T12:00:00Z", },
+    "2014-01-01T12:00:00Z",
+    { "2015-01-01T00:00:00Z", "2115-01-01T00:00:00Z", });
 
 // Check 'now' time
-def_test(1)
-{
+add_method("now", [] {
     unique_ptr<Time> o(new Time(0, 0, 0));
     wassert(actual(o).is_time(0, 0, 0, 0, 0, 0));
     wassert(actual(o) == Time(0, 0, 0));
@@ -39,11 +42,10 @@ def_test(1)
     wassert(actual(o) == Time::create_from_SQL(o->toSQL()));
 
     wassert(actual(o).serializes());
-}
+});
 
 // Check an arbitrary time
-def_test(2)
-{
+add_method("arbitrary", [] {
     unique_ptr<Time> o = Time::create(1, 2, 3, 4, 5, 6);
     wassert(actual(o).is_time(1, 2, 3, 4, 5, 6));
 
@@ -63,81 +65,16 @@ def_test(2)
     wassert(actual(o) == Time::create_from_SQL(o->toSQL()));
 
     wassert(actual(o).serializes());
-}
-
-// Check time differences
-def_test(3)
-{
-#if 0
-    unique_ptr<Time> t = Time::createDifference(Time(2007, 6, 5, 4, 3, 2), Time(2006, 5, 4, 3, 2, 1));
-    wasssert(actual(t) == Time::create(1, 1, 1, 1, 1, 1));
-
-    t = Time::createDifference(Time(2007, 3, 1, 0, 0, 0), Time(2007, 2, 28, 0, 0, 0));
-    wassert(actual(t) == Time::create(0, 0, 1, 0, 0, 0));
-
-    t = Time::createDifference(create(2008, 3, 1, 0, 0, 0), create(2008, 2, 28, 0, 0, 0));
-    wassert(actual(t) == Time::create(0, 0, 2, 0, 0, 0));
-
-    t = Time::createDifference(create(2008, 3, 1, 0, 0, 0), create(2007, 12, 20, 0, 0, 0));
-    wassert(actual(t) == Time::create(0, 2, 10, 0, 0, 0));
-
-    t = Time::createDifference(create(2007, 2, 28, 0, 0, 0), create(2008, 3, 1, 0, 0, 0));
-    wassert(actual(t) == Time::create(0, 0, 0, 0, 0, 0));
-#endif
-}
-
-// Check various type operations
-def_test(4)
-{
-    tests::TestGenericType t("time", "2014-01-01T12:00:00Z");
-    t.lower.push_back("0000-00-00T00:00:00Z");
-    t.lower.push_back("1789-07-14T12:00:00Z");
-    t.higher.push_back("2015-01-01T00:00:00Z");
-    t.higher.push_back("2115-01-01T00:00:00Z");
-    wassert(t.check());
-}
-
-// Test Lua functions
-def_test(5)
-{
-#ifdef HAVE_LUA
-    unique_ptr<Time> o = Time::create(1, 2, 3, 4, 5, 6);
-
-	tests::Lua test(
-		"function test(o) \n"
-		"  if o.year ~= 1 then return 'o.year is '..o.year..' instead of 1' end \n"
-		"  if o.month ~= 2 then return 'o.month is '..o.month..' instead of 2' end \n"
-		"  if o.day ~= 3 then return 'o.day is '..o.day..' instead of 3' end \n"
-		"  if o.hour ~= 4 then return 'o.hour is '..o.hour..' instead of 4' end \n"
-		"  if o.minute ~= 5 then return 'o.minute is '..o.minute..' instead of 5' end \n"
-		"  if o.second ~= 6 then return 'o.second is '..o.second..' instead of 6' end \n"
-		"  if tostring(o) ~= '0001-02-03T04:05:06Z' then return 'tostring gave '..tostring(o)..' instead of 0001-02-03T04:05:06Z' end \n"
-		"  o1 = arki_time.time(1, 2, 3, 4, 5, 6)\n"
-		"  if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end\n"
-		"  o1 = arki_time.iso8601('1-2-3T4:5:6Z')\n"
-		"  if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end\n"
-		"  o1 = arki_time.sql('1-2-3 4:5:6')\n"
-		"  if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end\n"
-		"  o2 = arki_time.now()\n"
-		"  if o2 <= o1 then return 'time now is '..tostring(o2)..' which is not later than '..tostring(o1) end\n"
-		"end \n"
-	);
-
-	test.pusharg(*o);
-    wassert(actual(test.run()) == "");
-#endif
-}
+});
 
 // Test Time::generate
-def_test(6)
-{
+add_method("generate", [] {
     vector<Time> v = Time::generate(Time(2009, 1, 1, 0, 0, 0), Time(2009, 2, 1, 0, 0, 0), 3600);
     wassert(actual(v.size()) == 31u*24u);
-}
+});
 
 // Test Time::range_overlaps
-def_test(7)
-{
+add_method("range_overlaps", [] {
     unique_ptr<Time> topen;
     unique_ptr<Time> t2000(new Time(2000, 1, 1, 0, 0, 0));
     unique_ptr<Time> t2005(new Time(2005, 1, 1, 0, 0, 0));
@@ -156,15 +93,58 @@ def_test(7)
     wassert(actual(Time::range_overlaps(t2000.get(), t2005.get(), t2007.get(), t2010.get())).isfalse());
     wassert(actual(Time::range_overlaps(t2007.get(), t2010.get(), t2000.get(), t2005.get())).isfalse());
     wassert(actual(Time::range_overlaps(t2010.get(), topen.get(), topen.get(), t2005.get())).isfalse());
-}
+});
 
 // Reproduce bugs
-def_test(8)
-{
+add_method("regression1", [] {
     unique_ptr<Type> decoded = decodeString(TYPE_TIME, "2005-12-01T18:00:00Z");
     stringstream ss;
     ss << *decoded;
     wassert(actual(ss.str()) == "2005-12-01T18:00:00Z");
+});
+
+#if 0
+// Check time differences
+def_test(3)
+{
+    unique_ptr<Time> t = Time::createDifference(Time(2007, 6, 5, 4, 3, 2), Time(2006, 5, 4, 3, 2, 1));
+    wasssert(actual(t) == Time::create(1, 1, 1, 1, 1, 1));
+
+    t = Time::createDifference(Time(2007, 3, 1, 0, 0, 0), Time(2007, 2, 28, 0, 0, 0));
+    wassert(actual(t) == Time::create(0, 0, 1, 0, 0, 0));
+
+    t = Time::createDifference(create(2008, 3, 1, 0, 0, 0), create(2008, 2, 28, 0, 0, 0));
+    wassert(actual(t) == Time::create(0, 0, 2, 0, 0, 0));
+
+    t = Time::createDifference(create(2008, 3, 1, 0, 0, 0), create(2007, 12, 20, 0, 0, 0));
+    wassert(actual(t) == Time::create(0, 2, 10, 0, 0, 0));
+
+    t = Time::createDifference(create(2007, 2, 28, 0, 0, 0), create(2008, 3, 1, 0, 0, 0));
+    wassert(actual(t) == Time::create(0, 0, 0, 0, 0, 0));
+}
+#endif
+
+// Test Lua functions
+add_lua_test("lua", "00001-02-03T04:05:06Z", R"(
+    function test(o)
+      if o.year ~= 1 then return 'o.year is '..o.year..' instead of 1' end
+      if o.month ~= 2 then return 'o.month is '..o.month..' instead of 2' end
+      if o.day ~= 3 then return 'o.day is '..o.day..' instead of 3' end
+      if o.hour ~= 4 then return 'o.hour is '..o.hour..' instead of 4' end
+      if o.minute ~= 5 then return 'o.minute is '..o.minute..' instead of 5' end
+      if o.second ~= 6 then return 'o.second is '..o.second..' instead of 6' end
+      if tostring(o) ~= '0001-02-03T04:05:06Z' then return 'tostring gave '..tostring(o)..' instead of 0001-02-03T04:05:06Z' end
+      o1 = arki_time.time(1, 2, 3, 4, 5, 6)
+      if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end
+      o1 = arki_time.iso8601('1-2-3T4:5:6Z')
+      if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end
+      o1 = arki_time.sql('1-2-3 4:5:6')
+      if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end
+      o2 = arki_time.now()
+      if o2 <= o1 then return 'time now is '..tostring(o2)..' which is not later than '..tostring(o1) end
+    end
+)");
+
 }
 
 }

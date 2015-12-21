@@ -18,7 +18,7 @@ void Tests::register_tests() {
 add_generic_test(
         "grib1",
         { "GRIB1(1, 1, 1)", "GRIB1(1, 2, 2)", },
-        { "GRIB1(1, 2, 3)", },
+        "GRIB1(1, 2, 3)",
         { "GRIB1(1, 2, 4)", "GRIB1(2, 3, 4)", "GRIB2(1, 2, 3, 4, 5)", "BUFR(1, 2)", },
         "GRIB1,1,2,3");
 
@@ -36,7 +36,7 @@ add_method("grib1_details", [] {
 add_generic_test(
     "grib2",
     { "GRIB1(1, 2, 3)", "GRIB2(1, 2, 3, 4, 4)", },
-    { "GRIB2(1, 2, 3, 4, 5)", },
+    "GRIB2(1, 2, 3, 4, 5)",
     { "GRIB2(1, 2, 3, 4, 6)", "GRIB2(2, 3, 4, 5, 6)", "BUFR(1, 2)", },
     "GRIB2,1,2,3,4,5");
 
@@ -56,7 +56,7 @@ add_method("grib2_details", [] {
 add_generic_test(
     "bufr",
     { "GRIB1(1, 2, 3)", "GRIB2(1, 2, 3, 4, 5)", "BUFR(0, 2)", "BUFR(1, 1)", },
-    { "BUFR(1, 2)", },
+    "BUFR(1, 2)",
     { "BUFR(1, 3)", "BUFR(2, 1)", },
     "BUFR,1,2");
 
@@ -73,7 +73,7 @@ add_method("bufr_details", [] {
 add_generic_test(
     "odimh5",
     { "GRIB1(1, 2, 3)", "GRIB2(1, 2, 3, 4, 5)", "BUFR(0, 2)", },
-    { "ODIMH5(1, 2, 3)", },
+    "ODIMH5(1, 2, 3)",
     { "ODIMH5(1a, 2, 3)", "ODIMH5(1, 2a, 3)", "ODIMH5(1, 2, 3a)", "ODIMH5(1a, 2a, 3a)", },
     "ODIMH5,1,2,3");
 
@@ -81,7 +81,7 @@ add_generic_test(
 add_generic_test(
     "odimh5_empty",
     { "GRIB1(1, 2, 3)", "GRIB2(1, 2, 3, 4, 5)", "BUFR(0, 2)", },
-    { "ODIMH5(, 2, 3)", },
+    "ODIMH5(, 2, 3)",
     { "ODIMH5(1a, 2, 3)", "ODIMH5(1, 2a, 3)", "ODIMH5(1, 2, 3a)", "ODIMH5(1a, 2a, 3a)", },
     "ODIMH5,,2,3");
 

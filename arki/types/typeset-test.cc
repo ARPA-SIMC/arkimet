@@ -1,45 +1,26 @@
-/*
- * Copyright (C) 2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <arki/types/tests.h>
+#include "tests.h"
 #include "typeset.h"
 
-namespace tut {
+namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
+using namespace arki::tests;
 using namespace arki::types;
 
-struct arki_types_typeset_shar {
-    arki_types_typeset_shar()
-    {
-    }
-};
-TESTGRP(arki_types_typeset);
-
-def_test(1)
+class Tests : public TestCase
 {
+    using TestCase::TestCase;
+
+    void register_tests() override;
+} test("arki_types_typeset");
+
+void Tests::register_tests() {
+
+add_method("typeset", []() {
     TypeSet v;
     // Operations on empty
     wassert(actual(v.empty()).istrue());
-    wassert(actual(v.size()) == 0);
+    wassert(actual(v.size()) == 0u);
     wassert(actual(v == TypeSet()).istrue());
     wassert(actual(v.begin() == v.end()).istrue());
 
@@ -49,7 +30,7 @@ def_test(1)
     wassert(actual(v.insert(move(type)) == sample).istrue());
     wassert(actual(type.get()).isfalse());
     wassert(actual(v.empty()).isfalse());
-    wassert(actual(v.size()) == 1);
+    wassert(actual(v.size()) == 1u);
     wassert(actual(v != TypeSet()).istrue());
 
     // Lookup
@@ -71,9 +52,11 @@ def_test(1)
     // Unset, we are again empty
     v.erase(*sample);
     wassert(actual(v.empty()).istrue());
-    wassert(actual(v.size()) == 0);
+    wassert(actual(v.size()) == 0u);
     wassert(actual(v == TypeSet()).istrue());
     wassert(actual(v.begin() == v.end()).istrue());
+});
+
 }
 
 }

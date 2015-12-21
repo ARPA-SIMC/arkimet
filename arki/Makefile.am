@@ -307,25 +307,25 @@ tests_arki_test_SOURCES += \
 		emitter/json-tut.cc \
 		values-test.cc \
 		types-test.cc \
-		types/utils-tut.cc \
-		types/source-tut.cc \
-		types/time-tut.cc \
+		types/utils-test.cc \
+		types/source-test.cc \
+		types/time-test.cc \
 		types/reftime-test.cc \
 		types/origin-test.cc \
-		types/product-tut.cc \
-		types/level-tut.cc \
-		types/timerange-tut.cc \
+		types/product-test.cc \
+		types/level-test.cc \
+		types/timerange-test.cc \
 		types/area-test.cc \
-		types/proddef-tut.cc \
-		types/note-tut.cc \
-		types/assigneddataset-tut.cc \
+		types/proddef-test.cc \
+		types/note-test.cc \
+		types/assigneddataset-test.cc \
 		types/bbox-test.cc \
-		types/run-tut.cc \
-		types/task-tut.cc \
-		types/quantity-tut.cc \
-		types/value-tut.cc \
-		types/typevector-tut.cc \
-		types/typeset-tut.cc \
+		types/run-test.cc \
+		types/task-test.cc \
+		types/quantity-test.cc \
+		types/value-test.cc \
+		types/typevector-test.cc \
+		types/typeset-test.cc \
 		itemset-tut.cc
 
 if IOTRACE
