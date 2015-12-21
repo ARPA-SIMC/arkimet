@@ -1,27 +1,12 @@
-/**
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #ifndef ARKI_TYPES_TESTUTILS_H
 #define ARKI_TYPES_TESTUTILS_H
 
 #include <arki/tests/tests.h>
 #include <arki/types/time.h>
+#include <arki/libconfig.h>
+#ifdef HAVE_LUA
+#include <arki/tests/lua.h>
+#endif
 #include <vector>
 #include <string>
 #include <cstdint>
@@ -123,6 +108,42 @@ inline arki::tests::ActualType actual_type(const arki::types::Type* actual) { re
 inline arki::tests::ActualType actual(const arki::types::Type& actual) { return arki::tests::ActualType(&actual); }
 template<typename T>
 inline arki::tests::ActualType actual(const std::unique_ptr<T>& actual) { return arki::tests::ActualType(actual.get()); }
+
+template<typename TYPE>
+struct TypeTestCase : public TestCase
+{
+    using TestCase::TestCase;
+
+    static std::unique_ptr<TYPE> parse(const std::string& encoded)
+    {
+        auto res = wcallchecked(types::decodeString(types::traits<TYPE>::type_code, encoded));
+        return downcast<TYPE>(move(res));
+    }
+
+    void add_generic_test(const char* name, const std::vector<std::string>& lower, const std::vector<std::string>& exact, const std::vector<std::string>& higher, const std::string& exact_match=std::string())
+    {
+        add_method(name, [=] {
+            TestGenericType t(types::traits<TYPE>::type_tag, exact[0]);
+            for (size_t i = 1; i < exact.size(); ++i)
+                t.alternates.push_back(exact[i]);
+            t.lower = lower;
+            t.higher = higher;
+            wassert(t.check());
+        });
+    }
+
+    void add_lua_test(const char* name, const std::string& sample, const std::string& lua_code)
+    {
+#ifdef HAVE_LUA
+        add_method(name, [=] {
+            auto o = parse(sample);
+            tests::Lua test(lua_code);
+            test.pusharg(*o);
+            wassert(actual(test.run()) == "");
+        });
+#endif
+    }
+};
 
 }
 }

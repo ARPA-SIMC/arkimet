@@ -193,8 +193,8 @@ def_test(8)
 // Run matcher/*.txt files, doctest style
 def_test(9)
 {
-	runtime::readMatcherAliasDatabase();
-	Lua L;
+    runtime::readMatcherAliasDatabase();
+    arki::Lua L;
 
 	// Define 'ensure' function
 	string lua_ensure = "function ensure_matches(val, expr)\n"
@@ -247,5 +247,3 @@ def_test(10)
 }
 
 }
-
-// vim:set ts=4 sw=4:

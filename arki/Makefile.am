@@ -310,12 +310,12 @@ tests_arki_test_SOURCES += \
 		types/utils-tut.cc \
 		types/source-tut.cc \
 		types/time-tut.cc \
-		types/reftime-tut.cc \
-		types/origin-tut.cc \
+		types/reftime-test.cc \
+		types/origin-test.cc \
 		types/product-tut.cc \
 		types/level-tut.cc \
 		types/timerange-tut.cc \
-		types/area-tut.cc \
+		types/area-test.cc \
 		types/proddef-tut.cc \
 		types/note-tut.cc \
 		types/assigneddataset-tut.cc \
