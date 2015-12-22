@@ -84,7 +84,7 @@ void to::test<3>()
 
     // Check that the source record that comes out is ok
     wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
-    wassert(actual(mdc[0].getData().size()) == 7218);
+    wassert(actual(mdc[0].getData().size()) == 7218u);
 
     mdc.clear();
     mdc.add(*testds, dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true));
@@ -99,9 +99,9 @@ void to::test<3>()
     proc->end();
     mdc.clear();
     Metadata::read_file(output.name(), mdc.inserter_func());
-    wassert(actual(mdc.size()) == 1);
+    wassert(actual(mdc.size()) == 1u);
     wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
-    wassert(actual(mdc[0].getData().size()) == 7218);
+    wassert(actual(mdc[0].getData().size()) == 7218u);
 }
 
 // Test querying the summary
@@ -176,7 +176,7 @@ void to::test<6>()
         ensure(false);
     } catch (std::exception& e) {}
     out.close();
-    wassert(actual(sys::size(out.name())) == 0);
+    wassert(actual(sys::size(out.name())) == 0u);
 }
 
 // Test expanding a query

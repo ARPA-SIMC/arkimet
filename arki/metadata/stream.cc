@@ -38,7 +38,7 @@ bool Stream::checkMetadata()
 
     metadata::ReadContext rc("http-connection", streamname);
     md.reset(new Metadata);
-    md->read(inner, version, rc);
+    md->read_inner(inner, version, rc);
 
     buffer = vector<uint8_t>(dec.buf, dec.buf + dec.size);
     if (md->source().style() == types::Source::INLINE)

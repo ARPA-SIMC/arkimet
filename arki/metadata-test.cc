@@ -25,30 +25,30 @@ static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 }
 }
 
-namespace tut {
+namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
+using namespace arki::tests;
 using namespace arki::types;
 using namespace arki::utils;
 
-struct arki_metadata_shar {
-	Metadata md;
-	ValueBag testValues;
+struct Fixture : public arki::utils::tests::Fixture
+{
+    ValueBag testValues;
 
-	arki_metadata_shar()
-	{
-		testValues.set("foo", Value::createInteger(5));
-		testValues.set("bar", Value::createInteger(5000));
-		testValues.set("baz", Value::createInteger(-200));
-		testValues.set("moo", Value::createInteger(0x5ffffff));
-		testValues.set("antani", Value::createInteger(-1));
-		testValues.set("blinda", Value::createInteger(0));
-		testValues.set("supercazzola", Value::createInteger(-1234567));
-		testValues.set("pippo", Value::createString("pippo"));
-		testValues.set("pluto", Value::createString("12"));
-		testValues.set("cippo", Value::createString(""));
-	}
+    Fixture()
+    {
+        testValues.set("foo", Value::createInteger(5));
+        testValues.set("bar", Value::createInteger(5000));
+        testValues.set("baz", Value::createInteger(-200));
+        testValues.set("moo", Value::createInteger(0x5ffffff));
+        testValues.set("antani", Value::createInteger(-1));
+        testValues.set("blinda", Value::createInteger(0));
+        testValues.set("supercazzola", Value::createInteger(-1234567));
+        testValues.set("pippo", Value::createString("pippo"));
+        testValues.set("pluto", Value::createString("12"));
+        testValues.set("cippo", Value::createString(""));
+    }
 
     void fill(Metadata& md)
     {
@@ -77,12 +77,20 @@ struct arki_metadata_shar {
         wassert(actual((*md.notes().begin()).content) == "test note");
     }
 };
-TESTGRP(arki_metadata);
 
+class Tests : public FixtureTestCase<Fixture>
+{
+    using FixtureTestCase::FixtureTestCase;
+
+    void register_tests() override;
+} tests("arki_metadata");
+
+
+void Tests::register_tests() {
 
 // Test sources
-def_test(1)
-{
+add_method("sources", [](Fixture& f) {
+    Metadata md;
     md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
     wassert(actual(md.source().style()) == Source::BLOB);
     wassert(actual(md.source().format) == "grib");
@@ -91,7 +99,7 @@ def_test(1)
     wassert(actual(blob.filename) == "fname");
     wassert(actual(blob.offset) == 1u);
     wassert(actual(blob.size) == 2u);
-}
+});
 
 #if 0
 static void dump(const char* name, const std::string& str)
@@ -106,10 +114,10 @@ static void dump(const char* name, const std::string& str)
 #endif
 
 // Test binary encoding and decoding
-def_test(2)
-{
+add_method("binary", [](Fixture& f) {
+    Metadata md;
     md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
-    fill(md);
+    f.fill(md);
 
     vector<uint8_t> encoded = md.encodeBinary();
     wassert(actual((char)encoded[0]) == 'M');
@@ -117,11 +125,11 @@ def_test(2)
 
     Metadata md1;
     BinaryDecoder dec(encoded);
-    wassert(md1.read(dec, "(test memory buffer)"));
+    wassert(md1.read(dec, metadata::ReadContext("(test memory buffer)")));
 
     wassert(actual(Source::createBlob("grib", "", "fname", 1, 2)) == md1.source());
     wassert(actual(md1.source().format) == "grib");
-    wassert(ensure_md_matches_prefill(md1));
+    wassert(f.ensure_md_matches_prefill(md1));
 
 
     // Test PERIOD reference times
@@ -129,16 +137,17 @@ def_test(2)
 
     encoded = md.encodeBinary();
     Metadata md2;
-    wassert(md2.read(encoded, "(test memory buffer)", false));
+    BinaryDecoder dec1(encoded);
+    wassert(md2.read(dec1, metadata::ReadContext("(test memory buffer)"), false));
 
     wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
-}
+});
 
 // Test Yaml encoding and decoding
-def_test(3)
-{
+add_method("yaml", [](Fixture& f) {
+    Metadata md;
     md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
-    fill(md);
+    f.fill(md);
 
     stringstream output;
     md.writeYaml(output);
@@ -149,7 +158,7 @@ def_test(3)
 
     wassert(actual(Source::createBlob("grib", "", "fname", 1, 2)) == md1.source());
     wassert(actual(md1.source().format) == "grib");
-    wruntest(ensure_md_matches_prefill, md1);
+    wruntest(f.ensure_md_matches_prefill, md1);
 
     // Test PERIOD reference times
     md.set(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
@@ -162,13 +171,13 @@ def_test(3)
     md2.readYaml(*reader, "(test memory buffer)");
 
     wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
-}
+});
 
 // Test JSON encoding and decoding
-def_test(4)
-{
+add_method("json", [](Fixture& f) {
+    Metadata md;
     md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
-    fill(md);
+    f.fill(md);
 
     // Serialise to JSON;
     stringstream output;
@@ -185,7 +194,7 @@ def_test(4)
 
     wassert(actual(Source::createBlob("grib", "", "fname", 1, 2)) == md1.source());
     wassert(actual(md1.source().format) == "grib");
-    wruntest(ensure_md_matches_prefill, md1);
+    wruntest(f.ensure_md_matches_prefill, md1);
 
 
     // Test PERIOD reference times
@@ -205,11 +214,11 @@ def_test(4)
     md2.read(parsed1.root().want_mapping("parsing metadata"));
 
     wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
-}
+});
 
 // Test encoding and decoding with inline data
-def_test(5)
-{
+add_method("binary_inline", [](Fixture& f) {
+    Metadata md;
     // Here is some data
     vector<uint8_t> buf = { 'c', 'i', 'a', 'o' };
     md.set_source_inline("test", vector<uint8_t>(buf));
@@ -222,24 +231,39 @@ def_test(5)
     // Decode
     Metadata md1;
     sys::File temp1("testfile", O_RDONLY);
-    wassert(md1.read(temp1, "testfile", true));
+    wassert(md1.read(temp1, metadata::ReadContext("testfile"), true));
     temp1.close();
 
     ensure(md1.getData() == buf);
-}
+});
 
-// Ensure that serialisation to binary preserves the deleted flag
-def_test(6)
-{
-	// Skip: there is no deleted flag anymore
-}
+// Serialise using unix file descriptors
+add_method("binary_fd", [](Fixture& f) {
+    Metadata md;
+    const char* tmpfile = "testmd.tmp";
+    f.fill(md);
+    md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
+
+    // Encode
+    sys::File out(tmpfile, O_WRONLY | O_CREAT, 0666);
+    md.write(out, tmpfile);
+    out.close();
+
+    // Decode
+    sys::File in(tmpfile, O_RDONLY);
+    Metadata md1;
+    md1.read(in, metadata::ReadContext(tmpfile));
+    in.close();
+
+    ensure_equals(md, md1);
+});
 
 // Test Lua functions
-def_test(7)
-{
+add_method("lua", [](Fixture& f) {
+    Metadata md;
 #ifdef HAVE_LUA
     md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
-    fill(md);
+    f.fill(md);
 
     arki::tests::Lua test(
 		"function test(md) \n"
@@ -266,27 +290,8 @@ def_test(7)
 	test.pusharg(md);
 	ensure_equals(test.run(), "");
 #endif
-}
+});
 
-// Serialise using unix file descriptors
-def_test(8)
-{
-	const char* tmpfile = "testmd.tmp";
-	fill(md);
-    md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
-
-    // Encode
-    sys::File out(tmpfile, O_WRONLY | O_CREAT, 0666);
-    md.write(out, tmpfile);
-    out.close();
-
-    // Decode
-    sys::File in(tmpfile, O_RDONLY);
-    Metadata md1;
-    md1.read(in, tmpfile);
-    in.close();
-
-    ensure_equals(md, md1);
 }
 
 }

@@ -399,13 +399,13 @@ tests_arki_test_SOURCES += \
 		formatter-tut.cc \
 		validator-test.cc \
 		bbox-test.cc \
-		metadata-tut.cc \
+		metadata-test.cc \
 		metadata/consumer-tut.cc \
 		metadata/collection-tut.cc \
 		metadata/clusterer-tut.cc \
 		metadata/stream-tut.cc \
 		metadata/test-generator-tut.cc \
-		summary-tut.cc \
+		summary-test.cc \
 		summary/intern-tut.cc \
 		summary/table-tut.cc \
 		summary/stats-tut.cc \
@@ -526,7 +526,7 @@ tests_arki_test_SOURCES += \
 		dataset/data/concat-tut.cc \
 		dataset/data/lines-tut.cc \
 		dataset/data/dir-tut.cc \
-		dataset/maintenance-tut.cc \
+		dataset/maintenance-test.cc \
 		dataset/memory-tut.cc \
 		dataset/index-test.cc \
 		dataset/index/base-tut.cc \
@@ -536,7 +536,7 @@ tests_arki_test_SOURCES += \
 		dataset/index/summarycache-tut.cc \
 		dataset/index/contents-tut.cc \
 		dataset/targetfile-tut.cc \
-		dataset/local-tut.cc \
+		dataset/local-test.cc \
 		dataset/file-tut.cc \
 		dataset/archive-tut.cc \
 		dataset/simple/datafile-tut.cc \

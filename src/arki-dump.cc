@@ -91,17 +91,18 @@ static void addToSummary(sys::NamedFileDescriptor& in, Summary& s)
 
     while (types::readBundle(in, in.name(), buf, signature, version))
     {
-		if (signature == "MD" || signature == "!D")
-		{
-            md.read(buf, version, in.name());
+        if (signature == "MD" || signature == "!D")
+        {
+            BinaryDecoder dec(buf);
+            md.read_inner(dec, version, in.name());
             if (md.source().style() == Source::INLINE)
                 md.readInlineData(in, in.name());
             s.add(md);
-		}
+        }
         else if (signature == "SU")
         {
             BinaryDecoder dec(buf);
-            summary.read(dec, version, in.name());
+            summary.read_inner(dec, version, in.name());
             s.add(summary);
         }
         else if (signature == "MG")
@@ -289,7 +290,8 @@ int main(int argc, const char* argv[])
             {
                 if (signature == "MD" || signature == "!D")
                 {
-                    md.read(buf, version, in->name());
+                    BinaryDecoder dec(buf);
+                    md.read_inner(dec, version, in->name());
                     if (md.source().style() == Source::INLINE)
                         md.readInlineData(*in, in->name());
                     writer.observe(md);
@@ -297,7 +299,7 @@ int main(int argc, const char* argv[])
                 else if (signature == "SU")
                 {
                     BinaryDecoder dec(buf);
-                    summary.read(dec, version, in->name());
+                    summary.read_inner(dec, version, in->name());
                     writer.observe_summary(summary);
                 }
                 else if (signature == "MG")

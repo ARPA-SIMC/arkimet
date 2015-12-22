@@ -431,15 +431,9 @@ bool Summary::read(int fd, const std::string& filename)
         throw wibble::exception::Consistency("parsing file " + filename, "summary entry does not start with 'SU'");
 
     BinaryDecoder dec(buf);
-    read(dec, version, filename);
+    read_inner(dec, version, filename);
 
     return true;
-}
-
-bool Summary::read(const std::vector<uint8_t>& in, const std::string& filename)
-{
-    BinaryDecoder dec(in);
-    return read(dec, filename);
 }
 
 bool Summary::read(BinaryDecoder& dec, const std::string& filename)
@@ -452,12 +446,12 @@ bool Summary::read(BinaryDecoder& dec, const std::string& filename)
     if (signature != "SU")
         throw std::runtime_error("cannot parse file " + filename + ": summary entry does not start with 'SU'");
 
-    read(inner, version, filename);
+    read_inner(inner, version, filename);
 
     return true;
 }
 
-void Summary::read(BinaryDecoder& dec, unsigned version, const std::string& filename)
+void Summary::read_inner(BinaryDecoder& dec, unsigned version, const std::string& filename)
 {
     using namespace summary;
     summary::decode(dec, version, filename, *root);

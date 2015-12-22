@@ -8,6 +8,7 @@
 #include <arki/sort.h>
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
+#include <arki/binary.h>
 #include <cstdlib>
 #include <sstream>
 
@@ -320,7 +321,8 @@ void HTTP::querySummary(const Matcher& matcher, Summary& summary)
 	if (s.response_code >= 400)
 		s.throwError("querying summary from " + url);
 
-    summary.read(s.buf, url);
+    BinaryDecoder dec(s.buf);
+    summary.read(dec, url);
 }
 
 void HTTP::query_bytes(const dataset::ByteQuery& q, int out)

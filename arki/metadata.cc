@@ -224,34 +224,30 @@ int Metadata::compare(const Metadata& m) const
     return Type::nullable_compare(m_source, m.m_source);
 }
 
-bool Metadata::read(int in, const std::string& filename, bool readInline)
+bool Metadata::read(int in, const metadata::ReadContext& filename, bool readInline)
 {
     vector<uint8_t> buf;
     string signature;
     unsigned version;
-    if (!types::readBundle(in, filename, buf, signature, version))
+    if (!types::readBundle(in, filename.pathname, buf, signature, version))
         return false;
 
-	// Ensure first 2 bytes are MD or !D
-	if (signature != "MD")
-		throw wibble::exception::Consistency("parsing file " + filename, "metadata entry does not start with 'MD'");
+    BinaryDecoder inner(buf);
 
-	read(buf, version, filename);
+    // Ensure first 2 bytes are MD or !D
+    if (signature != "MD")
+        throw wibble::exception::Consistency("parsing file " + filename.pathname, "metadata entry does not start with 'MD'");
+
+    read_inner(inner, version, filename);
 
     // If the source is inline, then the data follows the metadata
     if (readInline && source().style() == types::Source::INLINE)
-        readInlineData(in, filename);
+        readInlineData(in, filename.pathname);
 
     return true;
 }
 
-bool Metadata::read(const std::vector<uint8_t>& in, const std::string& filename, bool readInline)
-{
-    BinaryDecoder dec(in);
-    return read(dec, filename, readInline);
-}
-
-bool Metadata::read(BinaryDecoder& dec, const std::string& filename, bool readInline)
+bool Metadata::read(BinaryDecoder& dec, const metadata::ReadContext& filename, bool readInline)
 {
     if (!dec) return false;
 
@@ -261,41 +257,18 @@ bool Metadata::read(BinaryDecoder& dec, const std::string& filename, bool readIn
 
     // Ensure first 2 bytes are MD or !D
     if (signature != "MD")
-        throw std::runtime_error("cannot parse " + filename + ": metadata entry does not start with 'MD'");
+        throw std::runtime_error("cannot parse " + filename.pathname + ": metadata entry does not start with 'MD'");
 
-    read(inner, version, filename);
+    read_inner(inner, version, filename);
 
     // If the source is inline, then the data follows the metadata
     if (readInline && source().style() == types::Source::INLINE)
-        readInlineData(dec, filename);
+        readInlineData(dec, filename.pathname);
 
     return true;
 }
 
-bool Metadata::read(BinaryDecoder& dec, const metadata::ReadContext& rc)
-{
-    if (!dec) return false;
-
-    string signature;
-    unsigned version;
-    BinaryDecoder inner = dec.pop_metadata_bundle(signature, version);
-
-    // Ensure the signature is MD or !D
-    if (signature != "MD")
-        throw std::runtime_error("cannot parse " + rc.pathname + ": metadata entry does not start with 'MD'");
-
-    read(inner, version, rc);
-
-    return true;
-}
-
-void Metadata::read(const std::vector<uint8_t>& buf, unsigned version, const metadata::ReadContext& rc)
-{
-    BinaryDecoder dec(buf);
-    read(dec, version, rc);
-}
-
-void Metadata::read(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& rc)
+void Metadata::read_inner(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& rc)
 {
     clear();
 
@@ -631,7 +604,7 @@ void Metadata::read_buffer(const std::vector<uint8_t>& buf, const metadata::Read
         } else {
             unique_ptr<Metadata> md(new Metadata);
             iotrace::trace_file(file.pathname, 0, 0, "read metadata");
-            md->read(inner, version, file);
+            md->read_inner(inner, version, file);
 
             // If the source is inline, then the data follows the metadata
             if (md->source().style() == types::Source::INLINE)
@@ -683,7 +656,8 @@ void Metadata::read_file(int in, const metadata::ReadContext& file, metadata_des
         } else {
             unique_ptr<Metadata> md(new Metadata);
             iotrace::trace_file(file.pathname, 0, 0, "read metadata");
-            md->read(buf, version, file);
+            BinaryDecoder dec(buf);
+            md->read_inner(dec, version, file.pathname);
 
             // If the source is inline, then the data follows the metadata
             if (md->source().style() == types::Source::INLINE)
@@ -719,7 +693,7 @@ void Metadata::read_group(BinaryDecoder& dec, unsigned version, const metadata::
     {
         BinaryDecoder inner = unenc.pop_metadata_bundle(isig, iver);
         unique_ptr<Metadata> md(new Metadata);
-        md->read(inner, iver, file);
+        md->read_inner(inner, iver, file.pathname);
         canceled = !dest(move(md));
     }
 }

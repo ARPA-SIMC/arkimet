@@ -126,22 +126,12 @@ public:
      *
      * @returns false when end-of-file is reached
      */
-    bool read(const std::vector<uint8_t>& in, const std::string& filename);
-
-    /**
-     * Read a summary from a buffer.
-     *
-     * The filename string is used to generate nicer parse error messages when
-     * throwing exceptions, and can be anything.
-     *
-     * @returns false when end-of-file is reached
-     */
     bool read(BinaryDecoder& dec, const std::string& filename);
 
     /**
      * Decode the summary, without the outer bundle headers, from the given buffer.
      */
-    void read(BinaryDecoder& dec, unsigned version, const std::string& filename);
+    void read_inner(BinaryDecoder& dec, unsigned version, const std::string& filename);
 
     /// Decode from structured data
 	void read(const emitter::memory::Mapping& val);

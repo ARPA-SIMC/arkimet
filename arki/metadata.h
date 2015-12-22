@@ -100,32 +100,8 @@ public:
     /// Clear all the contents of this Metadata
     void clear();
 
-    /**
-     * Read a metadata document from the given memory buffer
-     *
-     * The filename string is used to generate nicer parse error messages when
-     * throwing exceptions, and can be anything.
-     *
-     * If readInline is true, in case the data is transmitted inline, it reads
-     * the data as well: this is what you expect.
-     *
-     * If it's false, then the reader needs to check from the Metadata source
-     * if it is inline, and in that case proceed to read the inline data.
-     *
-     * @returns false when the end of the buffer is reached
-     */
-    bool read(BinaryDecoder& dec, const metadata::ReadContext& filename);
-
-    /**
-     * Decode the metadata, without the outer bundle headers, from the given buffer.
-     */
-    void read(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& filename);
-
-    /// Decode the metadata, without the outer bundle headers, from the given buffer.
-    void read(const std::vector<uint8_t>& buf, unsigned version, const metadata::ReadContext& filename);
-
     /// Decode from structured data
-	void read(const emitter::memory::Mapping& val);
+    void read(const emitter::memory::Mapping& val);
 
     /**
      * Read a metadata document from the given input stream.
@@ -141,23 +117,7 @@ public:
      *
      * @returns false when end-of-file is reached
      */
-    bool read(int in, const std::string& filename, bool readInline=true);
-
-    /**
-     * Read a metadata document from the given buffer.
-     *
-     * The filename string is used to generate nicer parse error messages when
-     * throwing exceptions, and can be anything.
-     *
-     * If readInline is true, in case the data is transmitted inline, it reads
-     * the data as well: this is what you expect.
-     *
-     * If it's false, then the reader needs to check from the Metadata source
-     * if it is inline, and in that case proceed to read the inline data.
-     *
-     * @returns false when end-of-file is reached
-     */
-    bool read(const std::vector<uint8_t>& in, const std::string& filename, bool readInline=true);
+    bool read(int in, const metadata::ReadContext& filename, bool readInline=true);
 
     /**
      * Read a metadata document from the given memory buffer.
@@ -173,9 +133,13 @@ public:
      *
      * @returns false when end-of-file is reached
      */
-    bool read(BinaryDecoder& dec, const std::string& filename, bool readInline=true);
+    bool read(BinaryDecoder& dec, const metadata::ReadContext& filename, bool readInline=true);
 
-public:
+    /**
+     * Decode the metadata, without the outer bundle headers, from the given buffer.
+     */
+    void read_inner(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& filename);
+
     /// Read the inline data from the given file handle
     void readInlineData(int in, const std::string& filename);
 
@@ -308,6 +272,4 @@ public:
 };
 
 }
-
-// vim:set ts=4 sw=4:
 #endif

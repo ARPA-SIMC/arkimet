@@ -1,12 +1,9 @@
-#include "config.h"
-
 #include <arki/dataset/http/test-utils.h>
 #include <arki/dataset/http/server.h>
 #include <arki/summary.h>
 #include <arki/metadata/collection.h>
-
+#include <arki/binary.h>
 #include <sstream>
-#include <iostream>
 
 namespace tut {
 using namespace std;
@@ -233,7 +230,8 @@ struct ServerTest : public arki::tests::DatasetTest
         wassert(actual(r.response_headers["content-disposition"]) == "attachment; filename=testds-summary.bin");
 
         Summary s;
-        s.read(r.response_body, "response body");
+        BinaryDecoder dec(r.response_body);
+        s.read(dec, "response body");
         wassert(actual(s.count()) == 3u);
     }
 
