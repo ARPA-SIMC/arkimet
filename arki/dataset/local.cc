@@ -465,6 +465,16 @@ LocalWriter::AcquireResult LocalWriter::testAcquire(const ConfigFile& cfg, const
 	throw wibble::exception::Consistency("simulating dataset acquisition", "unknown dataset type \""+type+"\"");
 }
 
+IndexedWriter::IndexedWriter(const ConfigFile& cfg)
+    : SegmentedWriter(cfg)
+{
+}
+
+IndexedWriter::~IndexedWriter()
+{
+    delete m_idx;
+}
+
 
 }
 }

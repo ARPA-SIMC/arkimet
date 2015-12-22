@@ -32,21 +32,20 @@ class RealRepacker;
 class RealFixer;
 }
 
-class Writer : public SegmentedWriter
+class Writer : public IndexedWriter
 {
 protected:
 	ConfigFile m_cfg;
-    index::WContents m_idx;
+    index::WContents* idx;
 
     AcquireResult acquire_replace_never(Metadata& md);
     AcquireResult acquire_replace_always(Metadata& md);
     AcquireResult acquire_replace_higher_usn(Metadata& md);
 
 public:
-	// Initialise the dataset with the information from the configurationa in 'cfg'
-	Writer(const ConfigFile& cfg);
-
-	virtual ~Writer();
+    // Initialise the dataset with the information from the configurationa in 'cfg'
+    Writer(const ConfigFile& cfg);
+    virtual ~Writer();
 
     /**
      * Acquire the given metadata item (and related data) in this dataset.

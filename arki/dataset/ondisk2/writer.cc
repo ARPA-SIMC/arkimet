@@ -36,8 +36,10 @@ namespace dataset {
 namespace ondisk2 {
 
 Writer::Writer(const ConfigFile& cfg)
-    : SegmentedWriter(cfg), m_cfg(cfg), m_idx(cfg)
+    : IndexedWriter(cfg), m_cfg(cfg), idx(new index::WContents(cfg))
 {
+    m_idx = idx;
+
     // Create the directory if it does not exist
     sys::makedirs(m_path);
 
@@ -46,12 +48,12 @@ Writer::Writer(const ConfigFile& cfg)
     if (!sys::exists(str::joinpath(m_path, "index.sqlite")))
         files::createDontpackFlagfile(m_path);
 
-    m_idx.open();
+    idx->open();
 }
 
 Writer::~Writer()
 {
-	flush();
+    flush();
 }
 
 Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
@@ -59,14 +61,14 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
     data::Segment* w = file(md, md.source().format);
     off_t ofs;
 
-    Pending p_idx = m_idx.beginTransaction();
+    Pending p_idx = idx->beginTransaction();
     Pending p_df = w->append(md, &ofs);
     auto assigned_dataset = types::AssignedDataset::create(m_name, w->relname + ":" + to_string(ofs));
     auto source = types::source::Blob::create(md.source().format, m_path, w->relname, ofs, md.data_size());
 
     try {
         int id;
-        m_idx.index(md, w->relname, ofs, &id);
+        idx->index(md, w->relname, ofs, &id);
         p_df.commit();
         p_idx.commit();
         md.set(move(assigned_dataset));
@@ -87,14 +89,14 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
     data::Segment* w = file(md, md.source().format);
     off_t ofs;
 
-    Pending p_idx = m_idx.beginTransaction();
+    Pending p_idx = idx->beginTransaction();
     Pending p_df = w->append(md, &ofs);
     auto assigned_dataset = types::AssignedDataset::create(m_name, w->relname + ":" + to_string(ofs));
     auto source = types::source::Blob::create(md.source().format, m_path, w->relname, ofs, md.data_size());
 
     try {
         int id;
-        m_idx.replace(md, w->relname, ofs, &id);
+        idx->replace(md, w->relname, ofs, &id);
         // In a replace, we necessarily replace inside the same file,
         // as it depends on the metadata reftime
         //createPackFlagfile(df->pathname);
@@ -116,14 +118,14 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
     data::Segment* w = file(md, md.source().format);
     off_t ofs;
 
-    Pending p_idx = m_idx.beginTransaction();
+    Pending p_idx = idx->beginTransaction();
     Pending p_df = w->append(md, &ofs);
     auto assigned_dataset = types::AssignedDataset::create(m_name, w->relname + ":" + to_string(ofs));
     auto source = types::source::Blob::create(md.source().format, m_path, w->relname, ofs, md.data_size());
 
     try {
         int id;
-        m_idx.index(md, w->relname, ofs, &id);
+        idx->index(md, w->relname, ofs, &id);
         p_df.commit();
         p_idx.commit();
         md.set(move(assigned_dataset));
@@ -144,7 +146,7 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 
     // Read the metadata of the existing BUFR
     Metadata old_md;
-    if (!m_idx.get_current(md, old_md))
+    if (!idx->get_current(md, old_md))
     {
         stringstream ss;
         ss << "cannot acquire into dataset " << m_name << ": insert reported a conflict, the index failed to find the original version";
@@ -167,7 +169,7 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
     // Replace, reusing the pending datafile transaction from earlier
     try {
         int id;
-        m_idx.replace(md, w->relname, ofs, &id);
+        idx->replace(md, w->relname, ofs, &id);
         // In a replace, we necessarily replace inside the same file,
         // as it depends on the metadata reftime
         //createPackFlagfile(df->pathname);
@@ -215,8 +217,8 @@ void Writer::remove(Metadata& md)
     // TODO: refuse if md is in the archive
 
     // Delete from DB, and get file name
-    Pending p_del = m_idx.beginTransaction();
-    m_idx.remove(source->filename, source->offset);
+    Pending p_del = idx->beginTransaction();
+    idx->remove(source->filename, source->offset);
 
     // Create flagfile
     //createPackFlagfile(str::joinpath(m_path, file));
@@ -232,22 +234,22 @@ void Writer::remove(Metadata& md)
 void Writer::flush()
 {
     SegmentedWriter::flush();
-    m_idx.flush();
+    idx->flush();
 }
 
 Pending Writer::test_writelock()
 {
-    return m_idx.beginExclusiveTransaction();
+    return idx->beginExclusiveTransaction();
 }
 
 void Writer::sanityChecks(std::ostream& log, bool writable)
 {
     SegmentedWriter::sanityChecks(log, writable);
 
-    if (!m_idx.checkSummaryCache(log) && writable)
+    if (!idx->checkSummaryCache(log) && writable)
     {
         log << name() << ": rebuilding summary cache." << endl;
-        m_idx.rebuildSummaryCache();
+        idx->rebuildSummaryCache();
     }
 }
 
@@ -311,7 +313,6 @@ CheckAge::CheckAge(MaintFileVisitor& next, const index::Contents& idx, int archi
     : next(next), idx(idx)
 {
     time_t now = override_now ? override_now : time(NULL);
-    struct tm t;
 
     // Go to the beginning of the day
     now -= (now % (3600*24));
@@ -365,17 +366,17 @@ struct FileChecker : public maintenance::IndexFileVisitor
 
 void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 {
-	// TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
-	// and delete the index if it fails
+    // TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
+    // and delete the index if it fails
 
-	// Iterate subdirs in sorted order
-	// Also iterate files on index in sorted order
-	// Check each file for need to reindex or repack
-	CheckAge ca(v, m_idx, m_archive_age, m_delete_age);
-	vector<string> files = scan::dir(m_path);
-	maintenance::FindMissing fm(ca, files);
+    // Iterate subdirs in sorted order
+    // Also iterate files on index in sorted order
+    // Check each file for need to reindex or repack
+    CheckAge ca(v, *idx, m_archive_age, m_delete_age);
+    vector<string> files = scan::dir(m_path);
+    maintenance::FindMissing fm(ca, files);
     FileChecker checker(*m_segment_manager, quick, fm);
-    m_idx.scan_files(checker);
+    idx->scan_files(checker);
     fm.end();
     SegmentedWriter::maintenance(v, quick);
 }
@@ -383,11 +384,11 @@ void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 void Writer::removeAll(std::ostream& log, bool writable)
 {
     Deleter deleter(m_name, log, writable);
-    m_idx.scan_files(deleter);
+    idx->scan_files(deleter);
     if (writable)
     {
         log << m_name << ": clearing index" << endl;
-        m_idx.reset();
+        idx->reset();
     } else
         log << m_name << ": would clear index" << endl;
 
@@ -411,17 +412,17 @@ void Writer::rescanFile(const std::string& relpath)
         throw wibble::exception::Consistency("rescanning " + pathname, "file format unknown");
     // cerr << " SCANNED " << pathname << ": " << mds.size() << endl;
 
-	// Lock away writes and reads
-	Pending p = m_idx.beginExclusiveTransaction();
-	// cerr << "LOCK" << endl;
+    // Lock away writes and reads
+    Pending p = idx->beginExclusiveTransaction();
+    // cerr << "LOCK" << endl;
 
-	// Remove from the index all data about the file
-	m_idx.reset(relpath);
-	// cerr << " RESET " << file << endl;
+    // Remove from the index all data about the file
+    idx->reset(relpath);
+    // cerr << " RESET " << file << endl;
 
-	// Scan the list of metadata, looking for duplicates and marking all
-	// the duplicates except the last one as deleted
-	index::IDMaker id_maker(m_idx.unique_codes());
+    // Scan the list of metadata, looking for duplicates and marking all
+    // the duplicates except the last one as deleted
+    index::IDMaker id_maker(idx->unique_codes());
 
     map<string, const Metadata*> finddupes;
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
@@ -434,8 +435,8 @@ void Writer::rescanFile(const std::string& relpath)
             finddupes.insert(make_pair(id, *i));
         else
             dup->second = *i;
-	}
-	// cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
+    }
+    // cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
 
     // Send the remaining metadata to the reindexer
     std::string basename = str::basename(relpath);
@@ -448,7 +449,7 @@ void Writer::rescanFile(const std::string& relpath)
             int id;
             if (str::basename(blob.filename) != basename)
                 throw std::runtime_error("cannot rescan " + relpath + ": metadata points to the wrong file: " + blob.filename);
-            m_idx.index(md, relpath, blob.offset, &id);
+            idx->index(md, relpath, blob.offset, &id);
         } catch (utils::sqlite::DuplicateInsert& di) {
             stringstream ss;
             ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate elsewhere in the dataset: manual fix is required";
@@ -475,23 +476,23 @@ void Writer::rescanFile(const std::string& relpath)
 
 size_t Writer::repackFile(const std::string& relpath)
 {
-	// Lock away writes and reads
-	Pending p = m_idx.beginExclusiveTransaction();
+    // Lock away writes and reads
+    Pending p = idx->beginExclusiveTransaction();
 
-	// Make a copy of the file with the right data in it, sorted by
-	// reftime, and update the offsets in the index
-	string pathname = str::joinpath(m_path, relpath);
+    // Make a copy of the file with the right data in it, sorted by
+    // reftime, and update the offsets in the index
+    string pathname = str::joinpath(m_path, relpath);
 
     metadata::Collection mds;
-    m_idx.scan_file(relpath, mds.inserter_func(), "reftime, offset");
+    idx->scan_file(relpath, mds.inserter_func(), "reftime, offset");
     Pending p_repack = m_segment_manager->repack(relpath, mds);
 
     // Reindex mds
-    m_idx.reset(relpath);
+    idx->reset(relpath);
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         const source::Blob& source = (*i)->sourceBlob();
-        m_idx.index(**i, source.filename, source.offset);
+        idx->index(**i, source.filename, source.offset);
     }
 
     size_t size_pre = sys::size(pathname);
@@ -523,23 +524,23 @@ size_t Writer::repackFile(const std::string& relpath)
 
 size_t Writer::removeFile(const std::string& relpath, bool withData)
 {
-    m_idx.reset(relpath);
+    idx->reset(relpath);
     // TODO: also remove .metadata and .summary files
     return SegmentedWriter::removeFile(relpath, withData);
 }
 
 void Writer::archiveFile(const std::string& relpath)
 {
-	// Create the target directory in the archive
-	string pathname = str::joinpath(m_path, relpath);
+    // Create the target directory in the archive
+    string pathname = str::joinpath(m_path, relpath);
 
     // Rebuild the metadata
     metadata::Collection mds;
-    m_idx.scan_file(relpath, mds.inserter_func());
+    idx->scan_file(relpath, mds.inserter_func());
     mds.writeAtomically(pathname + ".metadata");
 
     // Remove from index
-    m_idx.reset(relpath);
+    idx->reset(relpath);
 
     // Delegate the rest to SegmentedWriter
     SegmentedWriter::archiveFile(relpath);
@@ -548,20 +549,20 @@ void Writer::archiveFile(const std::string& relpath)
 size_t Writer::vacuum()
 {
     size_t size_pre = 0, size_post = 0;
-    if (sys::size(m_idx.pathname(), 0) > 0)
+    if (sys::size(idx->pathname(), 0) > 0)
     {
-        size_pre = sys::size(m_idx.pathname(), 0)
-                 + sys::size(m_idx.pathname() + "-journal", 0);
-        m_idx.vacuum();
-        size_post = sys::size(m_idx.pathname(), 0)
-                  + sys::size(m_idx.pathname() + "-journal", 0);
+        size_pre = sys::size(idx->pathname(), 0)
+                 + sys::size(idx->pathname() + "-journal", 0);
+        idx->vacuum();
+        size_post = sys::size(idx->pathname(), 0)
+                  + sys::size(idx->pathname() + "-journal", 0);
     }
 
     // Rebuild the cached summaries, if needed
     if (!sys::exists(str::joinpath(m_path, ".summaries/all.summary")))
     {
         Summary s;
-        m_idx.summaryForAll(s);
+        idx->summaryForAll(s);
     }
 
     return size_pre > size_post ? size_pre - size_post : 0;
@@ -601,6 +602,7 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
 		return ACQ_ERROR;
 	}
 #endif
+    throw std::runtime_error("testAcquire not implemented for ondisk2 datasets");
 }
 
 }

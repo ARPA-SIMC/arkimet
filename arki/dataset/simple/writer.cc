@@ -34,7 +34,7 @@ namespace dataset {
 namespace simple {
 
 Writer::Writer(const ConfigFile& cfg)
-    : SegmentedWriter(cfg), m_mft(0)
+    : IndexedWriter(cfg), m_mft(0)
 {
     m_name = cfg.value("name");
 
@@ -47,14 +47,14 @@ Writer::Writer(const ConfigFile& cfg)
         files::createDontpackFlagfile(m_path);
 
     unique_ptr<index::Manifest> mft = index::Manifest::create(m_path, &cfg);
-	m_mft = mft.release();
-	m_mft->openRW();
+    m_mft = mft.release();
+    m_mft->openRW();
+    m_idx = m_mft;
 }
 
 Writer::~Writer()
 {
-	flush();
-	if (m_mft) delete m_mft;
+    flush();
 }
 
 data::Segment* Writer::file(const Metadata& md, const std::string& format)

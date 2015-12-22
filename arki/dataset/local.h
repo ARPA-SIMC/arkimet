@@ -267,6 +267,16 @@ public:
     static SegmentedWriter* create(const ConfigFile& cfg);
 };
 
+class IndexedWriter : public SegmentedWriter
+{
+protected:
+    Index* m_idx = nullptr;
+
+public:
+    IndexedWriter(const ConfigFile& cfg);
+    ~IndexedWriter();
+};
+
 }
 }
 #endif
