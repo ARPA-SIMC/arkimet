@@ -36,12 +36,7 @@ public:
 	virtual void openRO() = 0;
 	virtual void openRW() = 0;
 	virtual void fileList(const Matcher& matcher, std::vector<std::string>& files) = 0;
-    /**
-     * Set start_time and end_time to the reftime span of the given file.
-     *
-     * If the file does not exist in the manifest, return false
-     */
-    virtual bool fileTimespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const = 0;
+    bool segment_timespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const override = 0;
 	virtual void vacuum() = 0;
 	virtual void acquire(const std::string& relname, time_t mtime, const Summary& sum) = 0;
 	virtual void remove(const std::string& relname) = 0;

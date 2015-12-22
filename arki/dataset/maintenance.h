@@ -4,6 +4,7 @@
 /// dataset/maintenance - Dataset maintenance utilities
 
 #include <arki/dataset/data.h>
+#include <arki/types/time.h>
 #include <string>
 #include <vector>
 #include <sys/types.h>
@@ -15,11 +16,12 @@ class Collection;
 }
 
 namespace scan {
-struct Validator;
+class Validator;
 }
 
 namespace dataset {
 class SegmentedWriter;
+class TargetFile;
 
 namespace maintenance {
 
@@ -62,6 +64,22 @@ struct FindMissing : public MaintFileVisitor
 
 	void operator()(const std::string& file, data::FileState state);
 	void end();
+};
+
+/**
+ * Check the age of files in a dataset, to detect those that need to be deleted
+ * or archived. It adds FILE_TO_DELETE or FILE_TO_ARCHIVE as needed.
+ */
+struct CheckAge : public MaintFileVisitor
+{
+    MaintFileVisitor& next;
+    const TargetFile& tf;
+    types::Time archive_threshold;
+    types::Time delete_threshold;
+
+    CheckAge(MaintFileVisitor& next, const TargetFile& tf, int archive_age=-1, int delete_age=-1);
+
+    void operator()(const std::string& file, data::FileState state);
 };
 
 /**

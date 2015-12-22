@@ -118,72 +118,12 @@ struct Deleter : public maintenance::MaintFileVisitor
     }
 };
 
-struct CheckAge : public maintenance::MaintFileVisitor
-{
-	maintenance::MaintFileVisitor& next;
-    const index::Manifest& idx;
-    Time archive_threshold;
-    Time delete_threshold;
-
-    CheckAge(MaintFileVisitor& next, const index::Manifest& idx, int archive_age=-1, int delete_age=-1);
-
-    void operator()(const std::string& file, data::FileState state);
-};
-
-CheckAge::CheckAge(MaintFileVisitor& next, const index::Manifest& idx, int archive_age, int delete_age)
-	: next(next), idx(idx), archive_threshold(0, 0, 0), delete_threshold(0, 0, 0)
-{
-	time_t now = time(NULL);
-	struct tm t;
-
-	// Go to the beginning of the day
-	now -= (now % (3600*24));
-
-    if (archive_age != -1)
-    {
-        time_t arc_thr = now - archive_age * 3600 * 24;
-        gmtime_r(&arc_thr, &t);
-        archive_threshold.set(t);
-    }
-    if (delete_age != -1)
-    {
-        time_t del_thr = now - delete_age * 3600 * 24;
-        gmtime_r(&del_thr, &t);
-        delete_threshold.set(t);
-    }
-}
-
-void CheckAge::operator()(const std::string& file, data::FileState state)
-{
-    if (archive_threshold.vals[0] == 0 and delete_threshold.vals[0] == 0)
-        next(file, state);
-    else
-    {
-        Time start_time(0, 0, 0);
-        Time end_time(0, 0, 0);
-        if (!idx.fileTimespan(file, start_time, end_time))
-            next(file, state);
-        else if (delete_threshold.vals[0] != 0 && delete_threshold > end_time)
-        {
-            nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
-            next(file, state + FILE_TO_DELETE);
-        }
-        else if (archive_threshold.vals[0] != 0 && archive_threshold > end_time)
-        {
-            nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
-            next(file, state + FILE_TO_ARCHIVE);
-        }
-        else
-            next(file, state);
-    }
-}
 }
 
 void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 {
     // TODO Detect if data is not in reftime order
-
-    CheckAge ca(v, *m_mft, m_archive_age, m_delete_age);
+    maintenance::CheckAge ca(v, *m_tf, m_archive_age, m_delete_age);
     m_mft->check(*m_segment_manager, ca, quick);
     SegmentedWriter::maintenance(v, quick);
 }

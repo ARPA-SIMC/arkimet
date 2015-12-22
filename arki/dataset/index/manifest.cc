@@ -462,7 +462,7 @@ public:
         }
     }
 
-    bool fileTimespan(const std::string& relname, Time& start_time, Time& end_time) const override
+    bool segment_timespan(const std::string& relname, Time& start_time, Time& end_time) const override
     {
         // Lookup the file (FIXME: reimplement binary search so we
         // don't need to create a temporary Info)
@@ -778,7 +778,7 @@ public:
 			files.push_back(q.fetchString(0));
 	}
 
-    bool fileTimespan(const std::string& relname, Time& start_time, Time& end_time) const override
+    bool segment_timespan(const std::string& relname, Time& start_time, Time& end_time) const override
     {
 		Query q("sel_file_ts", m_db);
 		q.compile("SELECT start_time, end_time FROM files WHERE file=?");

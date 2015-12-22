@@ -29,9 +29,15 @@ struct Index
     virtual bool query_summary(const Matcher& matcher, Summary& summary) = 0;
 
     virtual size_t produce_nth(metadata_dest_func cons, size_t idx=0) = 0;
+
+    /**
+     * Get the lowest and highest reference time for files in the given segment.
+     *
+     * If the segment does not exist in the index, return false
+     */
+    virtual bool segment_timespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const = 0;
 };
 
 }
 }
-
 #endif

@@ -5,6 +5,7 @@
 #include <arki/dataset/archive.h>
 #include <arki/metadata/collection.h>
 #include <arki/dataset/data.h>
+#include <arki/dataset/targetfile.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/compress.h>
@@ -90,6 +91,54 @@ void FindMissing::end()
         nag::verbose("FindMissing: %s is not in index", disk.back().c_str());
         next(disk.back(), FILE_TO_INDEX);
         disk.pop_back();
+    }
+}
+
+CheckAge::CheckAge(MaintFileVisitor& next, const TargetFile& tf, int archive_age, int delete_age)
+    : next(next), tf(tf), archive_threshold(0, 0, 0), delete_threshold(0, 0, 0)
+{
+    time_t now = time(NULL);
+    struct tm t;
+
+    // Go to the beginning of the day
+    now -= (now % (3600*24));
+
+    if (archive_age != -1)
+    {
+        time_t arc_thr = now - archive_age * 3600 * 24;
+        gmtime_r(&arc_thr, &t);
+        archive_threshold.set(t);
+    }
+    if (delete_age != -1)
+    {
+        time_t del_thr = now - delete_age * 3600 * 24;
+        gmtime_r(&del_thr, &t);
+        delete_threshold.set(t);
+    }
+}
+
+void CheckAge::operator()(const std::string& file, data::FileState state)
+{
+    if (archive_threshold.vals[0] == 0 and delete_threshold.vals[0] == 0)
+        next(file, state);
+    else
+    {
+        types::Time start_time;
+        types::Time end_time;
+#warning if the path is invalid, path_timespan throws, and the exception is not currently handled. Handle it setting the file in a "needs manual recovery" status
+        tf.path_timespan(file, start_time, end_time);
+        if (delete_threshold.vals[0] != 0 && delete_threshold > end_time)
+        {
+            nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
+            next(file, state + FILE_TO_DELETE);
+        }
+        else if (archive_threshold.vals[0] != 0 && archive_threshold > end_time)
+        {
+            nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
+            next(file, state + FILE_TO_ARCHIVE);
+        }
+        else
+            next(file, state);
     }
 }
 

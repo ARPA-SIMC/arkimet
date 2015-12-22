@@ -286,66 +286,6 @@ struct Deleter : public maintenance::IndexFileVisitor
     }
 };
 
-struct CheckAge : public maintenance::MaintFileVisitor
-{
-	maintenance::MaintFileVisitor& next;
-	const index::Contents& idx;
-	std::string archive_threshold;
-	std::string delete_threshold;
-
-    CheckAge(MaintFileVisitor& next, const index::Contents& idx, int archive_age=-1, int delete_age=-1);
-
-    std::string format_ts(time_t ts)
-    {
-        struct tm t;
-        gmtime_r(&ts, &t);
-        char buf[25];
-        snprintf(buf, 25, "%04d-%02d-%02d %02d:%02d:%02d",
-                t.tm_year + 1900, t.tm_mon+1, t.tm_mday,
-                t.tm_hour, t.tm_min, t.tm_sec);
-        return buf;
-    }
-
-    void operator()(const std::string& file, data::FileState state);
-};
-
-CheckAge::CheckAge(MaintFileVisitor& next, const index::Contents& idx, int archive_age, int delete_age)
-    : next(next), idx(idx)
-{
-    time_t now = override_now ? override_now : time(NULL);
-
-    // Go to the beginning of the day
-    now -= (now % (3600*24));
-
-    if (archive_age != -1)
-        archive_threshold = format_ts(now - archive_age * 3600 * 24);
-    if (delete_age != -1)
-        delete_threshold = format_ts(now - delete_age * 3600 * 24);
-}
-
-void CheckAge::operator()(const std::string& file, data::FileState state)
-{
-    if (archive_threshold.empty() and delete_threshold.empty())
-        next(file, state);
-    else
-    {
-        string maxdate = idx.max_file_reftime(file);
-        //cerr << "TEST " << maxdate << " WITH " << delete_threshold << " AND " << archive_threshold << endl;
-        if (not delete_threshold.empty() && delete_threshold >= maxdate)
-        {
-            nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
-            next(file, state + FILE_TO_DELETE);
-        }
-        else if (not archive_threshold.empty() && archive_threshold >= maxdate)
-        {
-            nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
-            next(file, state + FILE_TO_ARCHIVE);
-        }
-        else
-            next(file, state);
-    }
-}
-
 struct FileChecker : public maintenance::IndexFileVisitor
 {
     data::SegmentManager& sm;
@@ -372,7 +312,7 @@ void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
     // Iterate subdirs in sorted order
     // Also iterate files on index in sorted order
     // Check each file for need to reindex or repack
-    CheckAge ca(v, *idx, m_archive_age, m_delete_age);
+    maintenance::CheckAge ca(v, *m_tf, m_archive_age, m_delete_age);
     vector<string> files = scan::dir(m_path);
     maintenance::FindMissing fm(ca, files);
     FileChecker checker(*m_segment_manager, quick, fm);

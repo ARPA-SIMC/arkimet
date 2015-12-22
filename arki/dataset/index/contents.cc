@@ -327,15 +327,19 @@ void Contents::scan_file(const std::string& relname, metadata_dest_func dest, co
     }
 }
 
-std::string Contents::max_file_reftime(const std::string& relname) const
+bool Contents::segment_timespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const
 {
-	Query sq("max_file_reftime", m_db);
-	sq.compile("SELECT MAX(reftime) FROM md WHERE file=?");
-	sq.bind(1, relname);
-	string res;
-	while (sq.step())
-		res = sq.fetchString(0);
-	return res;
+    Query sq("max_file_reftime", m_db);
+    sq.compile("SELECT MIN(reftime), MAX(reftime) FROM md WHERE file=?");
+    sq.bind(1, relname);
+    bool res = false;
+    while (sq.step())
+    {
+        start_time.setFromSQL(sq.fetchString(0));
+        end_time.setFromSQL(sq.fetchString(1));
+        res = true;
+    }
+    return res;
 }
 
 static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begin, unique_ptr<Time>& end)

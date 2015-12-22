@@ -155,12 +155,7 @@ public:
      */
     void scan_file(const std::string& relname, metadata_dest_func consumer, const std::string& orderBy = "offset") const;
 
-	/**
-	 * Return the maximum reference time found in the given file.
-	 *
-	 * Return the empty string if the file is not in the index.
-	 */
-	std::string max_file_reftime(const std::string& relname) const;
+    bool segment_timespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const override;
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     bool query_summary(const Matcher& m, Summary& summary) override;
