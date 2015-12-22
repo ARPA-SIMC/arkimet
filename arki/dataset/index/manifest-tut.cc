@@ -17,6 +17,7 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::tests;
 using namespace arki::utils;
+using namespace arki::dataset;
 using namespace arki::dataset::index;
 
 struct arki_dataset_index_manifest_shar : public DatasetTest {
@@ -96,12 +97,12 @@ def_test(4)
 
     MaintenanceCollector c;
     unique_ptr<dataset::data::SegmentManager> sm(dataset::data::SegmentManager::get("testds/.archive/last"));
-    m->check(*sm, c);
-	ensure_equals(c.fileStates.size(), 0u);
-	ensure_equals(c.remaining(), string());
-	ensure(c.isClean());
+    m->check(*sm, [&](const std::string& relpath, data::FileState state) { c(relpath, state); });
+    ensure_equals(c.fileStates.size(), 0u);
+    ensure_equals(c.remaining(), string());
+    ensure(c.isClean());
 
-	m->vacuum();
+    m->vacuum();
 }
 
 // Retest with sqlite
@@ -208,7 +209,7 @@ def_test(8)
 		IndexingCollector c(*m, s, mtime);
 		m->openRW();
         unique_ptr<dataset::data::SegmentManager> sm(dataset::data::SegmentManager::get("testds/.archive/last"));
-        m->check(*sm, c);
+        m->check(*sm, [&](const std::string& relpath, data::FileState state) { c(relpath, state); });
 		ensure_equals(c.fileStates.size(), 5u);
 		ensure_equals(c.count(COUNTED_TO_INDEX), 2u);
 		ensure_equals(c.count(COUNTED_OK), 3u);
@@ -222,7 +223,7 @@ def_test(8)
 		MaintenanceCollector c;
 		m->openRO();
         unique_ptr<dataset::data::SegmentManager> sm(dataset::data::SegmentManager::get("testds/.archive/last"));
-        m->check(*sm, c);
+        m->check(*sm, [&](const std::string& relpath, data::FileState state) { c(relpath, state); });
 		ensure_equals(c.fileStates.size(), 5u);
 		ensure_equals(c.count(COUNTED_OK), 5u);
 		ensure_equals(c.remaining(), string());

@@ -26,38 +26,18 @@ class TargetFile;
 namespace maintenance {
 
 /**
- * Visitor interface for scanning information about the files indexed in the database
- */
-struct MaintFileVisitor
-{
-    virtual ~MaintFileVisitor() {}
-
-    virtual void operator()(const std::string& file, data::FileState state) = 0;
-};
-
-/**
- * Visitor interface for scanning information about the files indexed in the database
- */
-struct IndexFileVisitor
-{
-	virtual ~IndexFileVisitor() {}
-
-    virtual void operator()(const std::string& file, const metadata::Collection& mdc) = 0;
-};
-
-/**
  * MaintFileVisitor that feeds a MaintFileVisitor with TO_INDEX status.
  *
  * The input feed is assumed to come from the index, and is checked against the
  * files found on disk in order to detect files that are on disk but not in the
  * index.
  */
-struct FindMissing : public MaintFileVisitor
+struct FindMissing
 {
-	MaintFileVisitor& next;
-	std::vector<std::string> disk;
+    data::state_func& next;
+    std::vector<std::string> disk;
 
-	FindMissing(MaintFileVisitor& next, const std::vector<std::string>& files);
+    FindMissing(data::state_func next, const std::vector<std::string>& files);
 
 	// files: a, b, c,    e, f, g
 	// index:       c, d, e, f, g
@@ -70,14 +50,14 @@ struct FindMissing : public MaintFileVisitor
  * Check the age of files in a dataset, to detect those that need to be deleted
  * or archived. It adds FILE_TO_DELETE or FILE_TO_ARCHIVE as needed.
  */
-struct CheckAge : public MaintFileVisitor
+struct CheckAge
 {
-    MaintFileVisitor& next;
+    data::state_func& next;
     const TargetFile& tf;
     types::Time archive_threshold;
     types::Time delete_threshold;
 
-    CheckAge(MaintFileVisitor& next, const TargetFile& tf, int archive_age=-1, int delete_age=-1);
+    CheckAge(data::state_func& next, const TargetFile& tf, int archive_age=-1, int delete_age=-1);
 
     void operator()(const std::string& file, data::FileState state);
 };
@@ -85,29 +65,33 @@ struct CheckAge : public MaintFileVisitor
 /**
  * Print out the maintenance state for each file
  */
-struct Dumper : public MaintFileVisitor
+struct Dumper
 {
 	void operator()(const std::string& file, data::FileState state);
 };
 
-struct Tee : public MaintFileVisitor
+struct Tee
 {
-	MaintFileVisitor& one;
-	MaintFileVisitor& two;
+    data::state_func& one;
+    data::state_func& two;
 
-	Tee(MaintFileVisitor& one, MaintFileVisitor& two);
-	virtual ~Tee();
-	void operator()(const std::string& file, data::FileState state);
+    Tee(data::state_func& one, data::state_func& two);
+    virtual ~Tee();
+    void operator()(const std::string& file, data::FileState state);
 };
 
 /// Base class for all repackers and rebuilders
-struct Agent : public maintenance::MaintFileVisitor
+struct Agent
 {
 	std::ostream& m_log;
 	SegmentedWriter& w;
 	bool lineStart;
 
 	Agent(std::ostream& log, SegmentedWriter& w);
+    Agent(const Agent&) = delete;
+    Agent& operator=(const Agent&) = delete;
+
+    virtual void operator()(const std::string& file, data::FileState state) = 0;
 
 	std::ostream& log();
 
@@ -208,6 +192,4 @@ struct RealFixer : public maintenance::Agent
 }
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

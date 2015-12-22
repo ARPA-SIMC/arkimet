@@ -2,6 +2,7 @@
 #define ARKI_DATASET_INDEX_MANIFEST_H
 
 #include <arki/dataset/index.h>
+#include <arki/dataset/data.h>
 #include <vector>
 #include <string>
 #include <memory>
@@ -37,11 +38,11 @@ public:
 	virtual void openRW() = 0;
 	virtual void fileList(const Matcher& matcher, std::vector<std::string>& files) = 0;
     bool segment_timespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const override = 0;
-	virtual void vacuum() = 0;
-	virtual void acquire(const std::string& relname, time_t mtime, const Summary& sum) = 0;
-	virtual void remove(const std::string& relname) = 0;
-	virtual void check(data::SegmentManager& sm, maintenance::MaintFileVisitor& v, bool quick=true) = 0;
-	virtual void flush() = 0;
+    virtual void vacuum() = 0;
+    virtual void acquire(const std::string& relname, time_t mtime, const Summary& sum) = 0;
+    virtual void remove(const std::string& relname) = 0;
+    virtual void check(data::SegmentManager& sm, data::state_func v, bool quick=true) = 0;
+    virtual void flush() = 0;
 
     virtual Pending test_writelock() = 0;
 

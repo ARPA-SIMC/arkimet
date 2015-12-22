@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include <arki/dataset/maintenance.h>
-#include <arki/dataset/local.h>
+#include <arki/dataset/segmented.h>
 #include <arki/dataset/archive.h>
 #include <arki/metadata/collection.h>
 #include <arki/dataset/data.h>
@@ -52,7 +52,7 @@ static bool sorter(const std::string& a, const std::string& b)
 	return b < a;
 }
 
-FindMissing::FindMissing(MaintFileVisitor& next, const std::vector<std::string>& files)
+FindMissing::FindMissing(data::state_func next, const std::vector<std::string>& files)
 	: next(next), disk(files)
 {
 	// Sort backwards because we read from the end
@@ -94,7 +94,7 @@ void FindMissing::end()
     }
 }
 
-CheckAge::CheckAge(MaintFileVisitor& next, const TargetFile& tf, int archive_age, int delete_age)
+CheckAge::CheckAge(data::state_func& next, const TargetFile& tf, int archive_age, int delete_age)
     : next(next), tf(tf), archive_threshold(0, 0, 0), delete_threshold(0, 0, 0)
 {
     time_t now = time(NULL);
@@ -147,7 +147,7 @@ void Dumper::operator()(const std::string& file, data::FileState state)
     cerr << file << " " << state.to_string() << endl;
 }
 
-Tee::Tee(MaintFileVisitor& one, MaintFileVisitor& two) : one(one), two(two) {}
+Tee::Tee(data::state_func& one, data::state_func& two) : one(one), two(two) {}
 Tee::~Tee() {}
 void Tee::operator()(const std::string& file, data::FileState state)
 {

@@ -3,7 +3,7 @@
 
 /// Reader for simple datasets with no duplicate checks
 
-#include <arki/dataset/local.h>
+#include <arki/dataset/indexed.h>
 
 #include <string>
 #include <iosfwd>

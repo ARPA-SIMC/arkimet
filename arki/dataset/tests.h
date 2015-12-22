@@ -184,7 +184,7 @@ std::unique_ptr<Reader> make_dataset_reader(const std::string& cfg);
 
 }
 
-struct MaintenanceCollector : public dataset::maintenance::MaintFileVisitor
+struct MaintenanceCollector
 {
     typedef tests::DatasetTest::Counted Counted;
 
@@ -194,10 +194,12 @@ struct MaintenanceCollector : public dataset::maintenance::MaintFileVisitor
     std::set<Counted> checked;
 
     MaintenanceCollector();
+    MaintenanceCollector(const MaintenanceCollector&) = delete;
+    MaintenanceCollector& operator=(const MaintenanceCollector&) = delete;
 
     void clear();
     bool isClean() const;
-    virtual void operator()(const std::string& file, dataset::data::FileState state);
+    void operator()(const std::string& file, dataset::data::FileState state);
     void dump(std::ostream& out) const;
     size_t count(tests::DatasetTest::Counted state);
     std::string remaining() const;
@@ -393,6 +395,9 @@ inline arki::tests::ActualLocalWriter<dataset::LocalWriter> actual(arki::dataset
     return arki::tests::ActualLocalWriter<dataset::LocalWriter>(actual);
 }
 inline arki::tests::ActualSegmentedWriter actual(arki::dataset::SegmentedWriter* actual) { return arki::tests::ActualSegmentedWriter(actual); }
+inline arki::tests::ActualSegmentedWriter actual(arki::dataset::SegmentedWriter& actual) { return arki::tests::ActualSegmentedWriter(&actual); }
+inline arki::tests::ActualSegmentedWriter actual(arki::dataset::simple::Writer& actual) { return arki::tests::ActualSegmentedWriter((arki::dataset::SegmentedWriter*)&actual); }
+inline arki::tests::ActualSegmentedWriter actual(arki::dataset::ondisk2::Writer& actual) { return arki::tests::ActualSegmentedWriter((arki::dataset::SegmentedWriter*)&actual); }
 
 }
 }

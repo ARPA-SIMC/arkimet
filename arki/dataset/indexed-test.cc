@@ -1,5 +1,5 @@
 #include "tests.h"
-#include "local.h"
+#include "indexed.h"
 
 namespace {
 using namespace std;
@@ -16,6 +16,7 @@ class Tests : public TestCase
         add_method("empty", [] {
         });
     }
-} test("arki_dataset_local");
+} test("arki_dataset_indexed");
 
 }
+

@@ -153,31 +153,18 @@ void OnlineArchive::flush()
 	if (m_mft) m_mft->flush();
 }
 
-namespace {
-struct ToArchiveState : public maintenance::MaintFileVisitor
+void OnlineArchive::maintenance(data::state_func v)
 {
-    maintenance::MaintFileVisitor& next;
-
-    ToArchiveState(maintenance::MaintFileVisitor& next) : next(next) {}
-
-    virtual void operator()(const std::string& file, data::FileState state)
-    {
+    unique_ptr<data::SegmentManager> segment_manager(data::SegmentManager::get(m_dir));
+    m_mft->check(*segment_manager, [&](const std::string& relpath, data::FileState state) {
         // Add the archived bit
         // Remove the TO_PACK bit, since once a file is archived it's not
         //   touched anymore, so there's no point packing it
         // Remove the TO_ARCHIVE bit, since we're already in the archive
         // Remove the TO_DELETE bit, since delete age doesn't affect the
         //   archive
-        next(file, state - FILE_TO_PACK - FILE_TO_ARCHIVE - FILE_TO_DELETE + FILE_ARCHIVED);
-    }
-};
-}
-
-void OnlineArchive::maintenance(maintenance::MaintFileVisitor& v)
-{
-    unique_ptr<data::SegmentManager> segment_manager(data::SegmentManager::get(m_dir));
-    ToArchiveState tas(v);
-    m_mft->check(*segment_manager, tas);
+        v(relpath, state - FILE_TO_PACK - FILE_TO_ARCHIVE - FILE_TO_DELETE + FILE_ARCHIVED);
+    });
     m_mft->flush();
 }
 
@@ -289,7 +276,7 @@ void OfflineArchive::flush()
 {
     // Nothing to flush
 }
-void OfflineArchive::maintenance(maintenance::MaintFileVisitor& v)
+void OfflineArchive::maintenance(data::state_func v)
 {
     // No files, nothing to do
 }
@@ -603,35 +590,21 @@ void Archives::rescan(const std::string& relname)
     invalidate_summary_cache();
 }
 
-namespace {
-struct MaintPathPrepender : public maintenance::MaintFileVisitor
+void Archives::maintenance(data::state_func v)
 {
-	MaintFileVisitor& next;
-	std::string prefix;
-
-	MaintPathPrepender(MaintFileVisitor& next, const std::string& prefix)
-		: next(next), prefix(prefix) {}
-
-    virtual void operator()(const std::string& file, data::FileState state)
+    for (map<string, Archive*>::iterator i = m_archives.begin();
+            i != m_archives.end(); ++i)
     {
-        next(str::joinpath(prefix, file), state);
+        i->second->maintenance([&](const std::string& file, data::FileState state) {
+            v(str::joinpath(i->first, file), state);
+        });
     }
-};
-}
-
-void Archives::maintenance(maintenance::MaintFileVisitor& v)
-{
-	for (map<string, Archive*>::iterator i = m_archives.begin();
-			i != m_archives.end(); ++i)
-	{
-		MaintPathPrepender p(v, i->first);
-		i->second->maintenance(p);
-	}
-	if (m_last)
-	{
-		MaintPathPrepender p(v, "last");
-		m_last->maintenance(p);
-	}
+    if (m_last)
+    {
+        m_last->maintenance([&](const std::string& file, data::FileState state) {
+            v(str::joinpath("last", file), state);
+        });
+    }
 }
 
 void Archives::vacuum()

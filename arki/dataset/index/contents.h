@@ -6,6 +6,7 @@
 #include <arki/dataset/index.h>
 #include <arki/transaction.h>
 #include <arki/utils/sqlite.h>
+#include <arki/dataset/data.h>
 #include <arki/dataset/index/attr.h>
 #include <arki/dataset/index/aggregate.h>
 #include <arki/dataset/index/summarycache.h>
@@ -22,10 +23,6 @@ class ConfigFile;
 
 namespace dataset {
 struct DataQuery;
-
-namespace maintenance {
-struct IndexFileVisitor;
-}
 
 namespace index {
 
@@ -145,10 +142,10 @@ public:
 	/// Return the number of items currently indexed by this index
 	size_t count() const;
 
-	/**
-	 * Scan all file info in the database, sorted by file and offset
-	 */
-	void scan_files(maintenance::IndexFileVisitor& v) const;
+    /**
+     * Scan all file info in the database, sorted by file and offset
+     */
+    void scan_files(data::contents_func v) const;
 
     /**
      * Send the metadata of all data items inside a file to the given consumer

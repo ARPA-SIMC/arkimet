@@ -25,7 +25,7 @@ template<typename DS>
 static void ensure_dataset_clean(DS& ds, size_t filecount, size_t resultcount)
 {
     MaintenanceCollector c;
-    ds.maintenance(c);
+    ds.maintenance([&](const std::string& relpath, data::FileState state) { c(relpath, state); });
     wassert(actual(c.fileStates.size()) == filecount);
     wassert(actual(c.count(DatasetTest::COUNTED_ARC_OK)) == filecount);
     wassert(actual(c.remaining()) == string());
@@ -114,23 +114,19 @@ def_test(2)
         metadata::Collection mdc(*arc, dataset::DataQuery(Matcher()));
         ensure_equals(mdc.size(), 0u);
 
-		// Maintenance should show one file to index
-		arc->maintenance(c);
+        // Maintenance should show one file to index
+        arc->maintenance([&](const std::string& relpath, data::FileState state) { c(relpath, state); });
 		ensure_equals(c.fileStates.size(), 1u);
 		ensure_equals(c.count(COUNTED_ARC_TO_INDEX), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
 
-	{
-		ondisk2::Writer writer(cfg);
-
-		c.clear();
-		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(COUNTED_ARC_TO_INDEX), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
+    {
+        ondisk2::Writer writer(cfg);
+        MaintenanceResults expected(false, 1);
+        expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
+        wassert(actual(writer).maintenance(expected));
 
 		stringstream s;
 
@@ -174,24 +170,20 @@ def_test(3)
         metadata::Collection mdc(*arc, dataset::DataQuery(Matcher()));
         ensure_equals(mdc.size(), 3u);
 
-		// Maintenance should show one file to rescan
-		arc->maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-	}
+        // Maintenance should show one file to rescan
+        arc->maintenance([&](const std::string& relpath, data::FileState state) { c(relpath, state); });
+        ensure_equals(c.fileStates.size(), 1u);
+        ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
+        ensure_equals(c.remaining(), string());
+        ensure(not c.isClean());
+    }
 
-	// Fix the database
-	{
-		ondisk2::Writer writer(cfg);
-
-		c.clear();
-		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
+    // Fix the database
+    {
+        ondisk2::Writer writer(cfg);
+        MaintenanceResults expected(false, 1);
+        expected.by_type[DatasetTest::COUNTED_TO_RESCAN] = 1;
+        wassert(actual(writer).maintenance(expected));
 
 		stringstream s;
 
@@ -228,29 +220,25 @@ def_test(4)
         ensure(sys::exists("testds/.archive/last/" + arcidxfname()));
     }
 
-	// Query now is ok
+    // Query now is ok
     {
         unique_ptr<Archive> arc(Archive::create("testds/.archive/last"));
         metadata::Collection mdc(*arc, dataset::DataQuery(Matcher()));
         ensure_equals(mdc.size(), 3u);
 
-		// Maintenance should show one file to rescan
-		arc->maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-	}
+        // Maintenance should show one file to rescan
+        arc->maintenance([&](const std::string& relpath, data::FileState state) { c(relpath, state); });
+        ensure_equals(c.fileStates.size(), 1u);
+        ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
+        ensure_equals(c.remaining(), string());
+        ensure(not c.isClean());
+    }
 
-	{
-		ondisk2::Writer writer(cfg);
-
-		c.clear();
-		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
+    {
+        ondisk2::Writer writer(cfg);
+        MaintenanceResults expected(false, 1);
+        expected.by_type[DatasetTest::COUNTED_TO_RESCAN] = 1;
+        wassert(actual(writer).maintenance(expected));
 
 		stringstream s;
 
@@ -298,28 +286,26 @@ def_test(5)
         ensure_equals(mdc.size(), 9u);
     }
 
-	// Maintenance should show one file to rescan
-	{
-		unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
-		MaintenanceCollector c;
-		arc->maintenance(c);
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
-		ensure_equals(c.count(COUNTED_ARC_OK), 2u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-	}
+    // Maintenance should show one file to rescan
+    {
+        unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
+        MaintenanceCollector c;
+        arc->maintenance([&](const std::string& relpath, data::FileState state) { c(relpath, state); });
+        ensure_equals(c.fileStates.size(), 3u);
+        ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
+        ensure_equals(c.count(COUNTED_ARC_OK), 2u);
+        ensure_equals(c.remaining(), string());
+        ensure(not c.isClean());
+    }
 
-	{
-		ondisk2::Writer writer(cfg);
-
-		MaintenanceCollector c;
-		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
-		ensure_equals(c.count(COUNTED_ARC_OK), 2u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
+    {
+        ondisk2::Writer writer(cfg);
+        {
+            MaintenanceResults expected(false, 3);
+            expected.by_type[DatasetTest::COUNTED_ARC_TO_RESCAN] = 1;
+            expected.by_type[DatasetTest::COUNTED_ARC_OK] = 2;
+            wassert(actual(writer).maintenance(expected));
+        }
 
 		stringstream s;
 
@@ -330,12 +316,11 @@ def_test(5)
 			"testds: archive cleaned up\n"
 			"testds: 1 file rescanned.\n");
 
-		c.clear();
-		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_ARC_OK), 3u);
-		ensure_equals(c.remaining(), string());
-		ensure(c.isClean());
+        {
+            MaintenanceResults expected(true, 3);
+            expected.by_type[DatasetTest::COUNTED_ARC_OK] = 3;
+            wassert(actual(writer).maintenance(expected));
+        }
 
 		// Repack should do nothing
 		s.str(std::string());
@@ -391,24 +376,20 @@ def_test(6)
             ensure(str::endswith(e.what(), "file needs to be manually decompressed before scanning"));
         }
 
-		// Maintenance should show one file to rescan
-		c.clear();
-		arc->maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-	}
+        // Maintenance should show one file to rescan
+        c.clear();
+        arc->maintenance([&](const std::string& relpath, data::FileState state) { c(relpath, state); });
+        ensure_equals(c.fileStates.size(), 1u);
+        ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
+        ensure_equals(c.remaining(), string());
+        ensure(not c.isClean());
+    }
 
-	{
-		ondisk2::Writer writer(cfg);
-
-		c.clear();
-		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
+    {
+        ondisk2::Writer writer(cfg);
+        MaintenanceResults expected(false, 1);
+        expected.by_type[DatasetTest::COUNTED_ARC_TO_RESCAN] = 1;
+        wassert(actual(writer).maintenance(expected));
 
 		stringstream s;
 
@@ -538,7 +519,7 @@ def_test(19)
     {
         unique_ptr<Archive> a(Archive::create(str::joinpath(scen.path, ".archive/offline")));
         MaintenanceCollector c;
-        a->maintenance(c);
+        a->maintenance([&](const std::string& relpath, data::FileState state) { c(relpath, state); });
         ensure(c.isClean());
     }
 

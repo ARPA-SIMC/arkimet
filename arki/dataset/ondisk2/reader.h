@@ -1,7 +1,7 @@
 #ifndef ARKI_DATASET_ONDISK2_READER_H
 #define ARKI_DATASET_ONDISK2_READER_H
 
-#include <arki/dataset/local.h>
+#include <arki/dataset/indexed.h>
 #include <string>
 #include <map>
 #include <vector>

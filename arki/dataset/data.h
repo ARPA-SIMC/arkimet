@@ -68,6 +68,16 @@ struct FileState
     std::string to_string() const;
 };
 
+/**
+ * Visitor interface for scanning information about the segments in the database
+ */
+typedef std::function<void(const std::string&, data::FileState)> state_func;
+
+/**
+ * Visitor interface for scanning information about the contents of segments in the database
+ */
+typedef std::function<void(const std::string&, const metadata::Collection&)> contents_func;
+
 namespace impl {
 
 template<typename T, unsigned max_size=3>

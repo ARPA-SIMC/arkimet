@@ -48,6 +48,8 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/index/manifest.h \
 		dataset/index/contents.h \
 		dataset/local.h \
+		dataset/segmented.h \
+		dataset/indexed.h \
 		dataset/maintenance.h \
 		dataset/memory.h \
 		dataset/merged.h \
@@ -495,6 +497,8 @@ libarkimet_la_SOURCES += \
 		dataset/index/contents.cc \
 		dataset/targetfile.cc \
 		dataset/local.cc \
+		dataset/segmented.cc \
+		dataset/indexed.cc \
 		dataset/file.cc \
 		dataset/archive.cc \
 		dataset/simple/datafile.cc \
@@ -537,6 +541,8 @@ tests_arki_test_SOURCES += \
 		dataset/index/contents-tut.cc \
 		dataset/targetfile-tut.cc \
 		dataset/local-test.cc \
+		dataset/segmented-test.cc \
+		dataset/indexed-test.cc \
 		dataset/file-tut.cc \
 		dataset/archive-tut.cc \
 		dataset/simple/datafile-tut.cc \

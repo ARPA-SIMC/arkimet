@@ -1,6 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset/maintenance.h"
-#include "arki/dataset/local.h"
+#include "arki/dataset/segmented.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
@@ -514,13 +514,10 @@ class Tests : public FixtureTestCase<Fixture>
 
             {
                 unique_ptr<SegmentedWriter> writer(f.makeLocalWriter());
-                MaintenanceCollector c;
-                writer->maintenance(c, false);
-                ensure_equals(c.fileStates.size(), 3u);
-                ensure_equals(c.count(DatasetTest::COUNTED_OK), 2u);
-                ensure_equals(c.count(DatasetTest::COUNTED_TO_PACK), 1u);
-                ensure_equals(c.remaining(), "");
-                ensure(not c.isClean());
+                MaintenanceResults expected(3, false);
+                expected.by_type[DatasetTest::COUNTED_OK] = 2;
+                expected.by_type[DatasetTest::COUNTED_TO_PACK] = 1;
+                wassert(actual(writer.get()).maintenance(expected));
             }
 
 #if 0
@@ -600,13 +597,9 @@ class Tests : public FixtureTestCase<Fixture>
             // See if the files to index are detected in the correct number
             {
                 unique_ptr<SegmentedWriter> writer(f.makeLocalWriter());
-                MaintenanceCollector c;
-                writer->maintenance(c);
-
-                ensure_equals(c.fileStates.size(), 1u);
-                ensure_equals(c.count(DatasetTest::COUNTED_TO_INDEX), 1u);
-                ensure_equals(c.remaining(), "");
-                ensure(not c.isClean());
+                MaintenanceResults expected(false, 1);
+                expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
+                wassert(actual(writer.get()).maintenance(expected));
             }
 
             // Perform full maintenance and check that things are still ok afterwards
@@ -618,13 +611,10 @@ class Tests : public FixtureTestCase<Fixture>
                 s.ensure_line_contains("1 file rescanned");
                 s.ensure_all_lines_seen();
 
-                MaintenanceCollector c;
-                writer->maintenance(c);
                 // A repack is still needed because the data is not sorted by reftime
-                ensure_equals(c.fileStates.size(), 1u);
-                ensure_equals(c.count(DatasetTest::COUNTED_TO_PACK), 1u);
-                ensure_equals(c.remaining(), "");
-                ensure(not c.isClean());
+                MaintenanceResults expected(false, 1);
+                expected.by_type[DatasetTest::COUNTED_TO_PACK] = 1;
+                wassert(actual(writer.get()).maintenance(expected));
             }
 
             ensure(sys::exists("testds/foo/bar/test.grib1.tmp"));
@@ -762,15 +752,12 @@ class Tests : public FixtureTestCase<Fixture>
                 s.ensure_line_contains("1 file rescanned");
                 s.ensure_all_lines_seen();
 
-                MaintenanceCollector c;
-                writer->maintenance(c);
-                ensure_equals(c.fileStates.size(), 1u);
+                MaintenanceResults expected(false, 1);
                 // A repack is still needed because the data is not sorted by reftime
-                ensure_equals(c.count(DatasetTest::COUNTED_TO_PACK), 1u);
+                expected.by_type[DatasetTest::COUNTED_TO_PACK] = 1;
                 // And the same file is also old enough to be deleted
-                ensure_equals(c.count(DatasetTest::COUNTED_TO_ARCHIVE), 1u);
-                ensure_equals(c.remaining(), "");
-                ensure(not c.isClean());
+                expected.by_type[DatasetTest::COUNTED_TO_ARCHIVE] = 1;
+                wassert(actual(writer.get()).maintenance(expected));
             }
 
             // Perform packing and check that things are still ok afterwards

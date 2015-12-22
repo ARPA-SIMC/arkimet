@@ -99,11 +99,11 @@ void Writer::remove(Metadata& id)
 }
 
 namespace {
-struct Deleter : public maintenance::MaintFileVisitor
+struct Deleter
 {
-	std::string name;
-	std::ostream& log;
-	bool writable;
+    std::string name;
+    std::ostream& log;
+    bool writable;
 
     Deleter(const std::string& name, std::ostream& log, bool writable)
         : name(name), log(log), writable(writable) {}
@@ -117,10 +117,9 @@ struct Deleter : public maintenance::MaintFileVisitor
             log << name << ": would delete file " << file << endl;
     }
 };
-
 }
 
-void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
+void Writer::maintenance(data::state_func v, bool quick)
 {
     // TODO Detect if data is not in reftime order
     maintenance::CheckAge ca(v, *m_tf, m_archive_age, m_delete_age);

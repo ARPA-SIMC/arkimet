@@ -734,7 +734,7 @@ void test_append_transaction_rollback(dataset::data::Segment* dw, Metadata& md)
 void ActualSegmentedWriter::maintenance(const MaintenanceResults& expected, bool quick)
 {
     MaintenanceCollector c;
-    wassert(_actual->maintenance(c, quick));
+    wassert(_actual->maintenance([&](const std::string& relpath, data::FileState state) { c(relpath, state); }, quick));
 
     bool ok = true;
     if (expected.files_seen != -1 && c.fileStates.size() != (unsigned)expected.files_seen)

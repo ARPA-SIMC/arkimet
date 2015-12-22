@@ -266,14 +266,14 @@ TestOverrideCurrentDateForMaintenance::~TestOverrideCurrentDateForMaintenance()
 }
 
 namespace {
-struct Deleter : public maintenance::IndexFileVisitor
+struct Deleter
 {
-	std::string name;
-	std::ostream& log;
-	bool writable;
+    std::string name;
+    std::ostream& log;
+    bool writable;
 
-	Deleter(const std::string& name, std::ostream& log, bool writable)
-		: name(name), log(log), writable(writable) {}
+    Deleter(const std::string& name, std::ostream& log, bool writable)
+        : name(name), log(log), writable(writable) {}
 
     void operator()(const std::string& file, const metadata::Collection& mdc)
     {
@@ -285,26 +285,9 @@ struct Deleter : public maintenance::IndexFileVisitor
             log << name << ": would delete file " << file << endl;
     }
 };
-
-struct FileChecker : public maintenance::IndexFileVisitor
-{
-    data::SegmentManager& sm;
-    bool quick;
-    maintenance::MaintFileVisitor& next;
-
-    FileChecker(data::SegmentManager& sm, bool quick, maintenance::MaintFileVisitor& next)
-        : sm(sm), quick(quick), next(next)
-    {
-    }
-
-    virtual void operator()(const std::string& relname, const metadata::Collection& mds)
-    {
-        next(relname, sm.check(relname, mds, quick));
-    }
-};
 }
 
-void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
+void Writer::maintenance(data::state_func v, bool quick)
 {
     // TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
     // and delete the index if it fails
@@ -314,9 +297,10 @@ void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
     // Check each file for need to reindex or repack
     maintenance::CheckAge ca(v, *m_tf, m_archive_age, m_delete_age);
     vector<string> files = scan::dir(m_path);
-    maintenance::FindMissing fm(ca, files);
-    FileChecker checker(*m_segment_manager, quick, fm);
-    idx->scan_files(checker);
+    maintenance::FindMissing fm([&](const std::string& relname, data::FileState state) { ca(relname, state); }, files);
+    idx->scan_files([&](const std::string& relname, const metadata::Collection& mds) {
+        fm(relname, m_segment_manager->check(relname, mds, quick));
+    });
     fm.end();
     SegmentedWriter::maintenance(v, quick);
 }

@@ -12,18 +12,7 @@ class Metadata;
 class Matcher;
 
 namespace dataset {
-class TargetFile;
 class Archives;
-class Index;
-
-namespace data {
-class SegmentManager;
-class Segment;
-}
-
-namespace maintenance {
-class MaintFileVisitor;
-}
 
 /**
  * Base class for local datasets
@@ -33,7 +22,7 @@ class LocalReader : public Reader
 protected:
     std::string m_name;
     std::string m_path;
-    mutable Archives* m_archive;
+    Archives* m_archive;
 
 public:
     LocalReader(const ConfigFile& cfg);
@@ -76,48 +65,9 @@ public:
 
     bool hasArchive() const;
     Archives& archive();
-    const Archives& archive() const;
 
     static void readConfig(const std::string& path, ConfigFile& cfg);
 };
-
-
-/**
- * LocalReader dataset with data stored in segment files
- */
-class SegmentedReader : public LocalReader
-{
-protected:
-    data::SegmentManager* m_segment_manager;
-
-public:
-    SegmentedReader(const ConfigFile& cfg);
-    ~SegmentedReader();
-};
-
-
-/// SegmentedReader that can make use of an index
-class IndexedReader : public SegmentedReader
-{
-protected:
-    Index* m_idx = nullptr;
-
-public:
-    IndexedReader(const ConfigFile& cfg);
-    ~IndexedReader();
-
-    void query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
-    void querySummary(const Matcher& matcher, Summary& summary) override;
-    size_t produce_nth(metadata_dest_func cons, size_t idx=0) override;
-
-    /**
-     * Return true if this dataset has a working index.
-     *
-     * This method is mostly used for tests.
-     */
-    bool hasWorkingIndex() const { return m_idx != 0; }
-};
-
 
 class LocalWriter : public Writer
 {
@@ -170,111 +120,6 @@ public:
      * @return The outcome of the operation.
      */
     static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
-};
-
-class SegmentedWriter : public LocalWriter
-{
-protected:
-    ReplaceStrategy m_default_replace_strategy;
-    TargetFile* m_tf;
-    data::SegmentManager* m_segment_manager;
-
-    /**
-     * Return an instance of the Segment for the file where the given metadata
-     * should be written
-     */
-    data::Segment* file(const Metadata& md, const std::string& format);
-
-public:
-    SegmentedWriter(const ConfigFile& cfg);
-    ~SegmentedWriter();
-
-    void repack(std::ostream& log, bool writable=false) override;
-    void check(std::ostream& log, bool fix, bool quick) override;
-
-    virtual void flush();
-
-    // Maintenance functions
-
-    /**
-     * Perform dataset maintenance, sending information to \a v
-     *
-     * Subclassers should call LocalWriter's maintenance method at the
-     * end of their own maintenance, as it takes care of performing
-     * maintainance of archives, if present.
-     *
-     * @params v
-     *   The visitor-style class that gets notified of the state of the
-     *   various files in the dataset
-     * @params quick
-     *   If false, contents of the data files will also be checked for
-     *   consistency
-     */
-    virtual void maintenance(maintenance::MaintFileVisitor& v, bool quick=true);
-
-    /**
-     * Perform general sanity checks on the dataset, reporting to \a log.
-     *
-     * If \a writable is true, try to fix issues.
-     */
-    virtual void sanityChecks(std::ostream& log, bool writable=false);
-
-    /// Remove all data from the dataset
-    void removeAll(std::ostream& log, bool writable);
-
-    /**
-     * Consider all existing metadata about a file as invalid and rebuild
-     * them by rescanning the file
-     */
-    virtual void rescanFile(const std::string& relpath) = 0;
-
-    /**
-     * Optimise the contents of a data file
-     *
-     * In the resulting file, there are no holes for deleted data and all
-     * the data is sorted by reference time
-     *
-     * @returns The number of bytes freed on disk with this operation
-     */
-    virtual size_t repackFile(const std::string& relpath) = 0;
-
-    /**
-     * Remove the file from the dataset
-     *
-     * @returns The number of bytes freed on disk with this operation
-     */
-    virtual size_t removeFile(const std::string& relpath, bool withData=false) = 0;
-
-    /**
-     * Move the file to archive
-     *
-     * The default implementation moves the file and its associated
-     * metadata and summaries (if found) to the "last" archive, and adds it
-     * to its manifest
-     */
-    virtual void archiveFile(const std::string& relpath);
-
-    /**
-     * Perform generic packing and optimisations
-     *
-     * @returns The number of bytes freed on disk with this operation
-     */
-    virtual size_t vacuum() = 0;
-
-    /**
-     * Instantiate an appropriate Dataset for the given configuration
-     */
-    static SegmentedWriter* create(const ConfigFile& cfg);
-};
-
-class IndexedWriter : public SegmentedWriter
-{
-protected:
-    Index* m_idx = nullptr;
-
-public:
-    IndexedWriter(const ConfigFile& cfg);
-    ~IndexedWriter();
 };
 
 }

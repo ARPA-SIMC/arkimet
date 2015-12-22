@@ -174,13 +174,10 @@ def_test(3)
 
     // Maintenance should show one file to index
     {
-        MaintenanceCollector c;
         dataset::simple::Writer writer(cfg);
-        writer.maintenance(c);
-        ensure_equals(c.fileStates.size(), 1u);
-        ensure_equals(c.count(COUNTED_TO_INDEX), 1u);
-        ensure_equals(c.remaining(), string());
-        ensure(not c.isClean());
+        MaintenanceResults expected(false, 1);
+        expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
+        wassert(actual(writer).maintenance(expected));
         ensure(files::hasDontpackFlagfile("testds"));
     }
 
@@ -253,14 +250,11 @@ def_test(4)
 
     // Maintenance should show one file to rescan
     {
-        MaintenanceCollector c;
         simple::Writer writer(cfg);
-        writer.maintenance(c);
-        ensure_equals(c.fileStates.size(), 3u);
-        ensure_equals(c.count(COUNTED_OK), 2u);
-        ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
-        ensure_equals(c.remaining(), string());
-        ensure(not c.isClean());
+        MaintenanceResults expected(false, 3);
+        expected.by_type[DatasetTest::COUNTED_OK] = 2;
+        expected.by_type[DatasetTest::COUNTED_TO_RESCAN] = 1;
+        wassert(actual(writer).maintenance(expected));
     }
 
     // Fix the dataset
@@ -343,14 +337,11 @@ def_test(5)
 
     // Maintenance should show one file to rescan
     {
-        MaintenanceCollector c;
         simple::Writer writer(cfg);
-        writer.maintenance(c);
-        ensure_equals(c.fileStates.size(), 3u);
-        ensure_equals(c.count(COUNTED_OK), 2u);
-        ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
-        ensure_equals(c.remaining(), string());
-        ensure(not c.isClean());
+        MaintenanceResults expected(false, 3);
+        expected.by_type[DatasetTest::COUNTED_OK] = 2;
+        expected.by_type[DatasetTest::COUNTED_TO_RESCAN] = 1;
+        wassert(actual(writer).maintenance(expected));
     }
 
     // Fix the dataset
@@ -460,14 +451,11 @@ def_test(6)
 
     // Maintenance should show one file to rescan
     {
-        MaintenanceCollector c;
         simple::Writer writer(cfg);
-        writer.maintenance(c);
-        ensure_equals(c.fileStates.size(), 3u);
-        ensure_equals(c.count(COUNTED_OK), 2u);
-        ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
-        ensure_equals(c.remaining(), string());
-        ensure(not c.isClean());
+        MaintenanceResults expected(false, 3);
+        expected.by_type[DatasetTest::COUNTED_OK] = 2;
+        expected.by_type[DatasetTest::COUNTED_TO_RESCAN] = 1;
+        wassert(actual(writer).maintenance(expected));
     }
 
     // Fix the dataset
@@ -559,14 +547,11 @@ def_test(7)
 
     // Maintenance should show one file to rescan
     {
-        MaintenanceCollector c;
         simple::Writer writer(cfg);
-        writer.maintenance(c);
-        ensure_equals(c.fileStates.size(), 3u);
-        ensure_equals(c.count(COUNTED_OK), 2u);
-        ensure_equals(c.count(COUNTED_TO_DEINDEX), 1u);
-        ensure_equals(c.remaining(), string());
-        ensure(not c.isClean());
+        MaintenanceResults expected(false, 3);
+        expected.by_type[DatasetTest::COUNTED_OK] = 2;
+        expected.by_type[DatasetTest::COUNTED_TO_DEINDEX] = 1;
+        wassert(actual(writer).maintenance(expected));
     }
 
     // Fix the dataset

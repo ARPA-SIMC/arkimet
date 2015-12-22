@@ -382,28 +382,26 @@ def_test(6)
 	system("mkdir testdir/foo/bar");
 	system("cat inbound/test.grib1 inbound/test.grib1 > testdir/foo/bar/test.grib1");
 
-	arki::dataset::ondisk2::Writer writer(cfg);
-	MaintenanceCollector c;
-	writer.maintenance(c);
-
-	ensure_equals(c.fileStates.size(), 1u);
-	ensure_equals(c.count(COUNTED_TO_INDEX), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(not c.isClean());
+    arki::dataset::ondisk2::Writer writer(cfg);
+    {
+        MaintenanceResults expected(false, 1);
+        expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
+        wassert(actual(writer).maintenance(expected));
+    }
 
 	stringstream s;
 
-	// Perform full maintenance and check that things are still ok afterwards
-	writer.check(s, true, true);
-	ensure_equals(s.str(),
-		"testdir: rescanned foo/bar/test.grib1\n"
-		"testdir: 1 file rescanned.\n");
+    // Perform full maintenance and check that things are still ok afterwards
+    writer.check(s, true, true);
+    wassert(actual(s.str()) ==
+            "testdir: rescanned foo/bar/test.grib1\n"
+            "testdir: 1 file rescanned.\n");
 
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(COUNTED_TO_PACK), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(not c.isClean());
+    {
+        MaintenanceResults expected(false, 1);
+        expected.by_type[DatasetTest::COUNTED_TO_PACK] = 1;
+        wassert(actual(writer).maintenance(expected));
+    }
 
     wassert(actual(sys::size("testdir/foo/bar/test.grib1")) == 44412*2u);
 
@@ -427,14 +425,10 @@ def_test(6)
     writer.repack(s, true);
     wassert(actual(s.str()).contains("testdir: packed foo/bar/test.grib1 (44412 saved)"));
     wassert(actual(s.str()).matches("testdir: 1 file packed, [0-9]+ total bytes freed."));
-    c.clear();
 
-	writer.maintenance(c);
-	ensure_equals(c.count(COUNTED_OK), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(c.isClean());
+    wassert(actual(writer).maintenance_clean(1));
 
-    wassert(actual(sys::size("testdir/foo/bar/test.grib1")) == 44412);
+    wassert(actual(sys::size("testdir/foo/bar/test.grib1")) == 44412u);
 
     // Test querying, and see that things have moved to the beginning
     ondisk2::Reader reader(cfg);
@@ -469,17 +463,13 @@ def_test(7)
         index.reset("2007/07-08.grib1");
     }
 
-	arki::dataset::ondisk2::Writer writer(cfg);
-	MaintenanceCollector c;
-	writer.maintenance(c);
+    arki::dataset::ondisk2::Writer writer(cfg);
+    MaintenanceResults expected(false, 3);
+    expected.by_type[DatasetTest::COUNTED_OK] = 2;
+    expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
+    wassert(actual(writer).maintenance(expected));
 
-	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count(COUNTED_OK), 2u);
-	ensure_equals(c.count(COUNTED_TO_INDEX), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(not c.isClean());
-
-	stringstream s;
+    stringstream s;
 
     // Perform full maintenance and check that things are still ok afterwards
 
@@ -516,70 +506,45 @@ def_test(8)
         sys::unlink_ifexists("testdir/2007/07-08.grib1");
     }
 
-	// The dataset should still be clean
-	{
-		arki::dataset::ondisk2::Writer writer(cfg);
-		MaintenanceCollector c;
-		writer.maintenance(c);
+    // The dataset should still be clean
+    {
+        arki::dataset::ondisk2::Writer writer(cfg);
+        wassert(actual(writer).maintenance_clean(3));
+    }
 
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_OK), 3u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
-	}
-
-	// The dataset should still be clean even with an accurate scan
-	{
-		arki::dataset::ondisk2::Writer writer(cfg);
-		MaintenanceCollector c;
-		writer.maintenance(c, false);
-
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_OK), 3u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
-	}
+    // The dataset should still be clean even with an accurate scan
+    {
+        arki::dataset::ondisk2::Writer writer(cfg);
+        wassert(actual(writer).maintenance_clean(3, false));
+    }
 
 	// Remove the index
 	system("rm testdir/index.sqlite");
 
-	// See how maintenance scan copes
-	{
-		arki::dataset::ondisk2::Writer writer(cfg);
-		MaintenanceCollector c;
-		writer.maintenance(c);
-
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_OK), 0u);
-		ensure_equals(c.count(COUNTED_TO_INDEX), 3u);
-		ensure_equals(c.remaining(), "");
-		ensure(not c.isClean());
+    // See how maintenance scan copes
+    {
+        arki::dataset::ondisk2::Writer writer(cfg);
+        MaintenanceResults expected(false, 3);
+        expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 3;
+        wassert(actual(writer).maintenance(expected));
 
 		stringstream s;
 
-		// Perform full maintenance and check that things are still ok afterwards
-		writer.check(s, true, true);
-		ensure_equals(s.str(),
-			"testdir: rescanned 2007/07-07.grib1\n"
-			"testdir: rescanned 2007/07-08.grib1\n"
-			"testdir: rescanned 2007/10-09.grib1\n"
-			"testdir: 3 files rescanned.\n");
-		c.clear();
-		writer.maintenance(c);
-		ensure_equals(c.count(COUNTED_OK), 3u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
+        // Perform full maintenance and check that things are still ok afterwards
+        writer.check(s, true, true);
+        wassert(actual(s.str()) ==
+                "testdir: rescanned 2007/07-07.grib1\n"
+                "testdir: rescanned 2007/07-08.grib1\n"
+                "testdir: rescanned 2007/10-09.grib1\n"
+                "testdir: 3 files rescanned.\n");
+        wassert(actual(writer).maintenance_clean(3));
 
-		// Perform packing and check that things are still ok afterwards
-		s.str(std::string());
-		writer.repack(s, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
-		c.clear();
+        // Perform packing and check that things are still ok afterwards
+        s.str(std::string());
+        writer.repack(s, true);
+        wassert(actual(s.str()) == string()); // Nothing should have happened
 
-		writer.maintenance(c);
-		ensure_equals(c.count(COUNTED_OK), 3u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
+        wassert(actual(writer).maintenance_clean(3));
 
         // Ensure that we have the summary cache
         ensure(sys::exists("testdir/.summaries/all.summary"));
@@ -602,16 +567,8 @@ def_test(9)
 
 	arki::dataset::ondisk2::Writer writer(cfg);
 
-	// Dataset is ok
-	{
-		MaintenanceCollector c;
-		writer.maintenance(c);
-
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_OK), 3u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
-	}
+    // Dataset is ok
+    wassert(actual(writer).maintenance_clean(3));
 
     // Perform packing to regenerate the summary cache
     {
@@ -662,16 +619,11 @@ def_test(9)
 // Test that the summary cache is properly invalidated on import
 def_test(10)
 {
-	// Perform maintenance on empty dir, creating an empty summary cache
-	{
-		arki::dataset::ondisk2::Writer writer(cfg);
-		MaintenanceCollector c;
-		writer.maintenance(c);
-
-		ensure_equals(c.fileStates.size(), 0u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
-	}
+    // Perform maintenance on empty dir, creating an empty summary cache
+    {
+        arki::dataset::ondisk2::Writer writer(cfg);
+        wassert(actual(writer).maintenance_clean(0));
+    }
 
     // Query the summary, there should be no data
     {
@@ -732,10 +684,10 @@ def_test(12)
 
     // Append one of the GRIBs to the wrong file
     const auto& buf = mdc[1].getData();
-    wassert(actual(buf.size()) == 34960);
+    wassert(actual(buf.size()) == 34960u);
     FILE* fd = fopen("testdir/2007/10-09.grib1", "ab");
     wassert(actual(fd != NULL).istrue());
-    wassert(actual(fwrite(buf.data(), buf.size(), 1, fd)) == 1);
+    wassert(actual(fwrite(buf.data(), buf.size(), 1, fd)) == 1u);
     wassert(actual(fclose(fd)) == 0);
 
     // A simple rescanFile throws "manual fix is required" error
@@ -755,14 +707,9 @@ def_test(12)
     // Run maintenance check
     {
         ondisk2::Writer writer(cfg);
-        MaintenanceCollector c;
-        writer.maintenance(c);
-
-        wassert(actual(c.fileStates.size()) == 3u);
-        wassert(actual(c.count(COUNTED_OK)) == 0u);
-        wassert(actual(c.count(COUNTED_TO_INDEX)) == 3u);
-        wassert(actual(c.remaining()) == "");
-        wassert(actual(c.isClean()).isfalse());
+        arki::tests::MaintenanceResults expected(false, 3);
+        expected.by_type[COUNTED_TO_INDEX] = 3;
+        wassert(actual(writer).maintenance(expected));
     }
 
     {
@@ -792,12 +739,12 @@ def_test(13)
     // Append one of the GRIBs to the wrong file
     const auto& buf1 = mdc[1].getData();
     const auto& buf2 = mdc[2].getData();
-    wassert(actual(buf1.size()) == 34960);
-    wassert(actual(buf2.size()) == 2234);
+    wassert(actual(buf1.size()) == 34960u);
+    wassert(actual(buf2.size()) == 2234u);
     FILE* fd = fopen("testdir/2007/06-06.grib1", "ab");
     wassert(actual(fd != NULL).istrue());
-    wassert(actual(fwrite(buf1.data(), buf1.size(), 1, fd)) == 1);
-    wassert(actual(fwrite(buf2.data(), buf2.size(), 1, fd)) == 1);
+    wassert(actual(fwrite(buf1.data(), buf1.size(), 1, fd)) == 1u);
+    wassert(actual(fwrite(buf2.data(), buf2.size(), 1, fd)) == 1u);
     wassert(actual(fclose(fd)) == 0);
 
     // A simple rescanFile throws "manual fix is required" error
@@ -814,14 +761,11 @@ def_test(13)
     // Run maintenance check
     {
         ondisk2::Writer writer(cfg);
-        MaintenanceCollector c;
-        writer.maintenance(c);
 
-        wassert(actual(c.fileStates.size()) == 4u);
-        wassert(actual(c.count(COUNTED_OK)) == 3u);
-        wassert(actual(c.count(COUNTED_TO_INDEX)) == 1u);
-        wassert(actual(c.remaining()) == "");
-        wassert(actual(c.isClean()).isfalse());
+        arki::tests::MaintenanceResults expected(false, 4);
+        expected.by_type[COUNTED_OK] = 3;
+        expected.by_type[COUNTED_TO_INDEX] = 1;
+        wassert(actual(writer).maintenance(expected));
     }
 
     {

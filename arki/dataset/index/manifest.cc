@@ -40,7 +40,7 @@ namespace dataset {
 namespace index {
 
 namespace {
-void scan_file(data::SegmentManager& sm, const std::string& root, const std::string& relname, MaintFileVisitor& visitor, bool quick=true)
+void scan_file(data::SegmentManager& sm, const std::string& root, const std::string& relname, data::state_func visitor, bool quick=true)
 {
     struct HFSorter : public sort::Compare
     {
@@ -534,8 +534,8 @@ public:
 		dirty = true;
 	}
 
-	virtual void check(data::SegmentManager& sm, MaintFileVisitor& v, bool quick=true)
-	{
+    void check(data::SegmentManager& sm, data::state_func v, bool quick=true) override
+    {
 #if 0
 	// TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
 	// and delete the index if it fails
@@ -871,7 +871,7 @@ public:
 			;
 	}
 
-	virtual void check(data::SegmentManager& sm, MaintFileVisitor& v, bool quick=true)
+	virtual void check(data::SegmentManager& sm, data::state_func v, bool quick=true)
 	{
 		// List of files existing on disk
 		std::vector<std::string> disk = scan::dir(m_path, true);
