@@ -6,7 +6,7 @@
 #include <arki/dataset/index.h>
 #include <arki/transaction.h>
 #include <arki/utils/sqlite.h>
-#include <arki/dataset/data.h>
+#include <arki/dataset/segment.h>
 #include <arki/dataset/index/attr.h>
 #include <arki/dataset/index/aggregate.h>
 #include <arki/dataset/index/summarycache.h>
@@ -25,7 +25,6 @@ namespace dataset {
 struct DataQuery;
 
 namespace index {
-
 struct Uniques;
 struct Others;
 
@@ -145,7 +144,7 @@ public:
     /**
      * Scan all file info in the database, sorted by file and offset
      */
-    void scan_files(data::contents_func v) const;
+    void scan_files(segment::contents_func v) const;
 
     /**
      * Send the metadata of all data items inside a file to the given consumer
@@ -311,6 +310,4 @@ public:
 }
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

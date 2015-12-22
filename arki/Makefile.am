@@ -26,12 +26,12 @@ nobase_dist_arkiinclude_HEADERS = \
 		configfile.h \
 		libconfig.h \
 		dataset/archive.h \
-		dataset/data.h \
-		dataset/data/fd.h \
-		dataset/data/concat.h \
-		dataset/data/lines.h \
-		dataset/data/dir.h \
-		dataset/data/tests.h \
+		dataset/segment.h \
+		dataset/segment/fd.h \
+		dataset/segment/concat.h \
+		dataset/segment/lines.h \
+		dataset/segment/dir.h \
+		dataset/segment/tests.h \
 		dataset/discard.h \
 		dataset/empty.h \
 		dataset/file.h \
@@ -481,11 +481,11 @@ libarkimet_la_SOURCES += \
 		metadata/xargs.cc \
 		targetfile.cc \
 		dataset.cc \
-		dataset/data.cc \
-		dataset/data/fd.cc \
-		dataset/data/concat.cc \
-		dataset/data/lines.cc \
-		dataset/data/dir.cc \
+		dataset/segment.cc \
+		dataset/segment/fd.cc \
+		dataset/segment/concat.cc \
+		dataset/segment/lines.cc \
+		dataset/segment/dir.cc \
 		dataset/maintenance.cc \
 		dataset/memory.cc \
 		dataset/index.cc \
@@ -524,12 +524,12 @@ tests_arki_test_SOURCES += \
 		targetfile-tut.cc \
 		metadata/xargs-tut.cc \
 		dataset/tests.cc \
-		dataset/data-tut.cc \
-		dataset/data/tests.cc \
-		dataset/data/fd-tut.cc \
-		dataset/data/concat-tut.cc \
-		dataset/data/lines-tut.cc \
-		dataset/data/dir-tut.cc \
+		dataset/segment-tut.cc \
+		dataset/segment/tests.cc \
+		dataset/segment/fd-tut.cc \
+		dataset/segment/concat-tut.cc \
+		dataset/segment/lines-tut.cc \
+		dataset/segment/dir-tut.cc \
 		dataset/maintenance-test.cc \
 		dataset/memory-tut.cc \
 		dataset/index-test.cc \

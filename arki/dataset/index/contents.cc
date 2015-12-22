@@ -268,7 +268,7 @@ size_t Contents::count() const
 	return res;
 }
 
-void Contents::scan_files(data::contents_func v) const
+void Contents::scan_files(segment::contents_func v) const
 {
     string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
     if (m_uniques) query += ", m.uniq";

@@ -4,13 +4,13 @@
 /// Directory based data collection
 
 #include <arki/defs.h>
-#include <arki/dataset/data.h>
+#include <arki/dataset/segment.h>
 
 namespace arki {
 class Metadata;
 
 namespace dataset {
-namespace data {
+namespace segment {
 namespace dir {
 
 struct SequenceFile
@@ -53,7 +53,7 @@ struct SequenceFile
     static std::string data_fname(size_t pos, const std::string& format);
 };
 
-class Segment : public data::Segment
+class Segment : public segment::Segment
 {
 public:
     std::string format;
@@ -119,7 +119,7 @@ protected:
     std::unique_ptr<dir::Segment> make_segment(const std::string& format, const std::string& relname, const std::string& absname) override;
 };
 
-class OstreamWriter : public data::OstreamWriter
+class OstreamWriter : public segment::OstreamWriter
 {
 protected:
     sigset_t blocked;

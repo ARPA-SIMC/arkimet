@@ -1,7 +1,7 @@
-#include "data.h"
-#include "data/concat.h"
-#include "data/lines.h"
-#include "data/dir.h"
+#include "segment.h"
+#include "segment/concat.h"
+#include "segment/lines.h"
+#include "segment/dir.h"
 #include "arki/configfile.h"
 #include "arki/scan/any.h"
 #include "arki/metadata/collection.h"
@@ -15,7 +15,7 @@ using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
-namespace data {
+namespace segment {
 
 std::string FileState::to_string() const
 {
@@ -106,16 +106,16 @@ struct BaseSegmentManager : public SegmentManager
                     "cannot update compressed data files: please manually uncompress it first");
 
         // Else we need to create an appropriate one
-        unique_ptr<data::Segment> new_writer(create_for_format(format, relname, absname));
+        unique_ptr<segment::Segment> new_writer(create_for_format(format, relname, absname));
         return segments.add(move(new_writer));
     }
 
     // Instantiate the right Segment implementation for a segment that already
     // exists. Returns 0 if the segment does not exist.
-    unique_ptr<data::Segment> create_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname)
+    unique_ptr<segment::Segment> create_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname)
     {
         std::unique_ptr<struct stat> st = sys::stat(absname);
-        unique_ptr<data::Segment> res;
+        unique_ptr<segment::Segment> res;
         if (!st.get())
             return res;
 
@@ -151,13 +151,13 @@ struct BaseSegmentManager : public SegmentManager
         return res;
     }
 
-    virtual unique_ptr<data::Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
+    virtual unique_ptr<segment::Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
 
     Pending repack(const std::string& relname, metadata::Collection& mds)
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
-        unique_ptr<data::Segment> maint(create_for_format(format, relname, absname));
+        unique_ptr<segment::Segment> maint(create_for_format(format, relname, absname));
         return maint->repack(root, mds);
     }
 
@@ -165,7 +165,7 @@ struct BaseSegmentManager : public SegmentManager
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
-        unique_ptr<data::Segment> maint(create_for_format(format, relname, absname));
+        unique_ptr<segment::Segment> maint(create_for_format(format, relname, absname));
         return maint->check(mds, quick);
     }
 
@@ -173,7 +173,7 @@ struct BaseSegmentManager : public SegmentManager
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
-        unique_ptr<data::Segment> maint(create_for_format(format, relname, absname));
+        unique_ptr<segment::Segment> maint(create_for_format(format, relname, absname));
         return maint->remove();
     }
 
@@ -181,7 +181,7 @@ struct BaseSegmentManager : public SegmentManager
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
-        unique_ptr<data::Segment> maint(create_for_format(format, relname, absname));
+        unique_ptr<segment::Segment> maint(create_for_format(format, relname, absname));
         return maint->truncate(offset);
     }
 };
@@ -192,9 +192,9 @@ struct AutoSegmentManager : public BaseSegmentManager
     AutoSegmentManager(const std::string& root, bool mockdata=false)
         : BaseSegmentManager(root, mockdata) {}
 
-    unique_ptr<data::Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname)
+    unique_ptr<segment::Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname)
     {
-        unique_ptr<data::Segment> res(create_for_existing_segment(format, relname, absname));
+        unique_ptr<segment::Segment> res(create_for_existing_segment(format, relname, absname));
         if (res.get()) return res;
 
         if (format == "grib" || format == "grib1" || format == "grib2")
@@ -232,11 +232,11 @@ struct ForceDirSegmentManager : public BaseSegmentManager
 {
     ForceDirSegmentManager(const std::string& root) : BaseSegmentManager(root) {}
 
-    unique_ptr<data::Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname)
+    unique_ptr<segment::Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname)
     {
-        unique_ptr<data::Segment> res(create_for_existing_segment(format, relname, absname));
+        unique_ptr<segment::Segment> res(create_for_existing_segment(format, relname, absname));
         if (res.get()) return res;
-        return unique_ptr<data::Segment>(new dir::Segment(format, relname, absname));
+        return unique_ptr<segment::Segment>(new dir::Segment(format, relname, absname));
     }
 };
 
@@ -245,9 +245,9 @@ struct HoleDirSegmentManager : public BaseSegmentManager
 {
     HoleDirSegmentManager(const std::string& root) : BaseSegmentManager(root) {}
 
-    unique_ptr<data::Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname)
+    unique_ptr<segment::Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname)
     {
-        return unique_ptr<data::Segment>(new dir::HoleSegment(format, relname, absname));
+        return unique_ptr<segment::Segment>(new dir::HoleSegment(format, relname, absname));
     }
 };
 

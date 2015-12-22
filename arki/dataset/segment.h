@@ -1,7 +1,7 @@
 #ifndef ARKI_DATASET_DATA_H
 #define ARKI_DATASET_DATA_H
 
-/// Dataset read/write functions for data blobs
+/// Dataset segment read/write functions
 
 #include <arki/libconfig.h>
 #include <arki/defs.h>
@@ -31,7 +31,7 @@ static const unsigned FILE_TO_RESCAN  = 1 << 4; /// File contents are inconsiste
 static const unsigned FILE_TO_DEINDEX = 1 << 5; /// File does not exist but has entries in the index
 static const unsigned FILE_ARCHIVED   = 1 << 6; /// File is in the archive
 
-namespace data {
+namespace segment {
 class Segment;
 
 /**
@@ -71,7 +71,7 @@ struct FileState
 /**
  * Visitor interface for scanning information about the segments in the database
  */
-typedef std::function<void(const std::string&, data::FileState)> state_func;
+typedef std::function<void(const std::string&, segment::FileState)> state_func;
 
 /**
  * Visitor interface for scanning information about the contents of segments in the database

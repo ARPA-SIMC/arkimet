@@ -26,7 +26,7 @@ using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
-namespace data {
+namespace segment {
 namespace dir {
 
 namespace {
@@ -195,7 +195,7 @@ std::string SequenceFile::data_fname(size_t pos, const std::string& format)
 }
 
 Segment::Segment(const std::string& format, const std::string& relname, const std::string& absname)
-    : data::Segment(relname, absname), format(format), seqfile(absname)
+    : segment::Segment(relname, absname), format(format), seqfile(absname)
 {
 }
 

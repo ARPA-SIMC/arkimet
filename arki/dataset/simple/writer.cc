@@ -2,7 +2,7 @@
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/simple/datafile.h"
 #include "arki/dataset/maintenance.h"
-#include "arki/dataset/data.h"
+#include "arki/dataset/segment.h"
 #include "arki/types/assigneddataset.h"
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
@@ -57,9 +57,9 @@ Writer::~Writer()
     flush();
 }
 
-data::Segment* Writer::file(const Metadata& md, const std::string& format)
+segment::Segment* Writer::file(const Metadata& md, const std::string& format)
 {
-    data::Segment* writer = SegmentedWriter::file(md, format);
+    segment::Segment* writer = SegmentedWriter::file(md, format);
     if (!writer->payload)
         writer->payload = new datafile::MdBuf(writer->absname);
     return writer;
@@ -68,7 +68,7 @@ data::Segment* Writer::file(const Metadata& md, const std::string& format)
 Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
     // TODO: refuse if md is before "archive age"
-    data::Segment* writer = file(md, md.source().format);
+    segment::Segment* writer = file(md, md.source().format);
     datafile::MdBuf* mdbuf = static_cast<datafile::MdBuf*>(writer->payload);
 
     // Try appending
@@ -107,7 +107,7 @@ struct Deleter
 
     Deleter(const std::string& name, std::ostream& log, bool writable)
         : name(name), log(log), writable(writable) {}
-    void operator()(const std::string& file, data::FileState state)
+    void operator()(const std::string& file, segment::FileState state)
     {
         if (writable)
         {
@@ -119,7 +119,7 @@ struct Deleter
 };
 }
 
-void Writer::maintenance(data::state_func v, bool quick)
+void Writer::maintenance(segment::state_func v, bool quick)
 {
     // TODO Detect if data is not in reftime order
     maintenance::CheckAge ca(v, *m_tf, m_archive_age, m_delete_age);

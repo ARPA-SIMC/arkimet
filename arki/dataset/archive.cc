@@ -153,10 +153,10 @@ void OnlineArchive::flush()
 	if (m_mft) m_mft->flush();
 }
 
-void OnlineArchive::maintenance(data::state_func v)
+void OnlineArchive::maintenance(segment::state_func v)
 {
-    unique_ptr<data::SegmentManager> segment_manager(data::SegmentManager::get(m_dir));
-    m_mft->check(*segment_manager, [&](const std::string& relpath, data::FileState state) {
+    unique_ptr<segment::SegmentManager> segment_manager(segment::SegmentManager::get(m_dir));
+    m_mft->check(*segment_manager, [&](const std::string& relpath, segment::FileState state) {
         // Add the archived bit
         // Remove the TO_PACK bit, since once a file is archived it's not
         //   touched anymore, so there's no point packing it
@@ -276,7 +276,7 @@ void OfflineArchive::flush()
 {
     // Nothing to flush
 }
-void OfflineArchive::maintenance(data::state_func v)
+void OfflineArchive::maintenance(segment::state_func v)
 {
     // No files, nothing to do
 }
@@ -590,18 +590,18 @@ void Archives::rescan(const std::string& relname)
     invalidate_summary_cache();
 }
 
-void Archives::maintenance(data::state_func v)
+void Archives::maintenance(segment::state_func v)
 {
     for (map<string, Archive*>::iterator i = m_archives.begin();
             i != m_archives.end(); ++i)
     {
-        i->second->maintenance([&](const std::string& file, data::FileState state) {
+        i->second->maintenance([&](const std::string& file, segment::FileState state) {
             v(str::joinpath(i->first, file), state);
         });
     }
     if (m_last)
     {
-        m_last->maintenance([&](const std::string& file, data::FileState state) {
+        m_last->maintenance([&](const std::string& file, segment::FileState state) {
             v(str::joinpath("last", file), state);
         });
     }

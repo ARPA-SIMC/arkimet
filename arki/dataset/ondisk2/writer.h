@@ -42,7 +42,7 @@ public:
     void flush() override;
     virtual Pending test_writelock();
 
-    void maintenance(data::state_func v, bool quick=true) override;
+    void maintenance(segment::state_func v, bool quick=true) override;
     void sanityChecks(std::ostream& log, bool writable=false) override;
     void removeAll(std::ostream& log, bool writable) override;
 

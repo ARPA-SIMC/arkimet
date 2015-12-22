@@ -268,10 +268,10 @@ DatasetTest::~DatasetTest()
     if (segment_manager) delete segment_manager;
 }
 
-dataset::data::SegmentManager& DatasetTest::segments()
+dataset::segment::SegmentManager& DatasetTest::segments()
 {
     if (!segment_manager)
-        segment_manager = dataset::data::SegmentManager::get(cfg).release();
+        segment_manager = dataset::segment::SegmentManager::get(cfg).release();
     return *segment_manager;
 }
 
@@ -478,7 +478,7 @@ bool MaintenanceCollector::isClean() const
 	return true;
 }
 
-void MaintenanceCollector::operator()(const std::string& file, dataset::data::FileState state)
+void MaintenanceCollector::operator()(const std::string& file, dataset::segment::FileState state)
 {
     using namespace arki::dataset;
 
@@ -683,7 +683,7 @@ std::unique_ptr<Reader> make_dataset_reader(const std::string& cfgstr)
     return ds;
 }
 
-void test_append_transaction_ok(dataset::data::Segment* dw, Metadata& md, int append_amount_adjust)
+void test_append_transaction_ok(dataset::segment::Segment* dw, Metadata& md, int append_amount_adjust)
 {
     typedef types::source::Blob Blob;
 
@@ -709,7 +709,7 @@ void test_append_transaction_ok(dataset::data::Segment* dw, Metadata& md, int ap
     wassert(actual_type(md.source()).is_source_blob("grib1", "", dw->absname, orig_fsize, data_size));
 }
 
-void test_append_transaction_rollback(dataset::data::Segment* dw, Metadata& md)
+void test_append_transaction_rollback(dataset::segment::Segment* dw, Metadata& md)
 {
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());
@@ -734,7 +734,7 @@ void test_append_transaction_rollback(dataset::data::Segment* dw, Metadata& md)
 void ActualSegmentedWriter::maintenance(const MaintenanceResults& expected, bool quick)
 {
     MaintenanceCollector c;
-    wassert(_actual->maintenance([&](const std::string& relpath, data::FileState state) { c(relpath, state); }, quick));
+    wassert(_actual->maintenance([&](const std::string& relpath, segment::FileState state) { c(relpath, state); }, quick));
 
     bool ok = true;
     if (expected.files_seen != -1 && c.fileStates.size() != (unsigned)expected.files_seen)

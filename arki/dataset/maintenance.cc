@@ -4,7 +4,6 @@
 #include <arki/dataset/segmented.h>
 #include <arki/dataset/archive.h>
 #include <arki/metadata/collection.h>
-#include <arki/dataset/data.h>
 #include <arki/dataset/targetfile.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
@@ -52,14 +51,14 @@ static bool sorter(const std::string& a, const std::string& b)
 	return b < a;
 }
 
-FindMissing::FindMissing(data::state_func next, const std::vector<std::string>& files)
+FindMissing::FindMissing(segment::state_func next, const std::vector<std::string>& files)
 	: next(next), disk(files)
 {
 	// Sort backwards because we read from the end
 	std::sort(disk.begin(), disk.end(), sorter);
 }
 
-void FindMissing::operator()(const std::string& file, data::FileState state)
+void FindMissing::operator()(const std::string& file, segment::FileState state)
 {
     while (not disk.empty() and disk.back() < file)
     {
@@ -94,7 +93,7 @@ void FindMissing::end()
     }
 }
 
-CheckAge::CheckAge(data::state_func& next, const TargetFile& tf, int archive_age, int delete_age)
+CheckAge::CheckAge(segment::state_func& next, const TargetFile& tf, int archive_age, int delete_age)
     : next(next), tf(tf), archive_threshold(0, 0, 0), delete_threshold(0, 0, 0)
 {
     time_t now = time(NULL);
@@ -117,7 +116,7 @@ CheckAge::CheckAge(data::state_func& next, const TargetFile& tf, int archive_age
     }
 }
 
-void CheckAge::operator()(const std::string& file, data::FileState state)
+void CheckAge::operator()(const std::string& file, segment::FileState state)
 {
     if (archive_threshold.vals[0] == 0 and delete_threshold.vals[0] == 0)
         next(file, state);
@@ -142,14 +141,14 @@ void CheckAge::operator()(const std::string& file, data::FileState state)
     }
 }
 
-void Dumper::operator()(const std::string& file, data::FileState state)
+void Dumper::operator()(const std::string& file, segment::FileState state)
 {
     cerr << file << " " << state.to_string() << endl;
 }
 
-Tee::Tee(data::state_func& one, data::state_func& two) : one(one), two(two) {}
+Tee::Tee(segment::state_func& one, segment::state_func& two) : one(one), two(two) {}
 Tee::~Tee() {}
-void Tee::operator()(const std::string& file, data::FileState state)
+void Tee::operator()(const std::string& file, segment::FileState state)
 {
 	one(file, state);
 	two(file, state);
@@ -196,7 +195,7 @@ FailsafeRepacker::FailsafeRepacker(std::ostream& log, SegmentedWriter& w)
 {
 }
 
-void FailsafeRepacker::operator()(const std::string& file, data::FileState state)
+void FailsafeRepacker::operator()(const std::string& file, segment::FileState state)
 {
     if (state.has(FILE_TO_INDEX)) ++m_count_deleted;
 }
@@ -217,7 +216,7 @@ MockRepacker::MockRepacker(std::ostream& log, SegmentedWriter& w)
 {
 }
 
-void MockRepacker::operator()(const std::string& file, data::FileState state)
+void MockRepacker::operator()(const std::string& file, segment::FileState state)
 {
     if (state.has(FILE_TO_PACK) && !state.has(FILE_TO_DELETE))
     {
@@ -279,7 +278,7 @@ MockFixer::MockFixer(std::ostream& log, SegmentedWriter& w)
 {
 }
 
-void MockFixer::operator()(const std::string& file, data::FileState state)
+void MockFixer::operator()(const std::string& file, segment::FileState state)
 {
     if (state.has(FILE_TO_PACK))
     {
@@ -325,7 +324,7 @@ RealRepacker::RealRepacker(std::ostream& log, SegmentedWriter& w)
 {
 }
 
-void RealRepacker::operator()(const std::string& file, data::FileState state)
+void RealRepacker::operator()(const std::string& file, segment::FileState state)
 {
     if (state.has(FILE_TO_PACK) && !state.has(FILE_TO_DELETE))
     {
@@ -433,7 +432,7 @@ RealFixer::RealFixer(std::ostream& log, SegmentedWriter& w)
 {
 }
 
-void RealFixer::operator()(const std::string& file, data::FileState state)
+void RealFixer::operator()(const std::string& file, segment::FileState state)
 {
     /* Packing is left to the repacker, during check we do not
      * mangle the data files

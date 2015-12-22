@@ -1,6 +1,6 @@
 #include "config.h"
 #include "dir.h"
-#include "arki/dataset/data/tests.h"
+#include "arki/dataset/segment/tests.h"
 #include "arki/metadata/tests.h"
 #include "arki/metadata/collection.h"
 #include "arki/scan/any.h"
@@ -28,7 +28,7 @@ inline size_t datasize(const arki::Metadata& md)
 namespace tut {
 using namespace std;
 using namespace arki;
-using namespace arki::dataset::data;
+using namespace arki::dataset::segment;
 using namespace arki::utils;
 using namespace arki::tests;
 using namespace arki::tests;
@@ -159,7 +159,7 @@ def_test(2)
 {
     struct Test : public SegmentCheckTest
     {
-        dataset::data::Segment* make_segment() override
+        dataset::segment::Segment* make_segment() override
         {
             return new dir::Segment(format, relname, absname);
         }
@@ -171,7 +171,7 @@ def_test(3)
 {
     struct Test : public SegmentRemoveTest
     {
-        dataset::data::Segment* make_segment() override
+        dataset::segment::Segment* make_segment() override
         {
             return new dir::Segment(format, relname, absname);
         }

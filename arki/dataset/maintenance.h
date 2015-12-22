@@ -3,7 +3,7 @@
 
 /// dataset/maintenance - Dataset maintenance utilities
 
-#include <arki/dataset/data.h>
+#include <arki/dataset/segment.h>
 #include <arki/types/time.h>
 #include <string>
 #include <vector>
@@ -34,15 +34,15 @@ namespace maintenance {
  */
 struct FindMissing
 {
-    data::state_func& next;
+    segment::state_func& next;
     std::vector<std::string> disk;
 
-    FindMissing(data::state_func next, const std::vector<std::string>& files);
+    FindMissing(segment::state_func next, const std::vector<std::string>& files);
 
 	// files: a, b, c,    e, f, g
 	// index:       c, d, e, f, g
 
-	void operator()(const std::string& file, data::FileState state);
+	void operator()(const std::string& file, segment::FileState state);
 	void end();
 };
 
@@ -52,14 +52,14 @@ struct FindMissing
  */
 struct CheckAge
 {
-    data::state_func& next;
+    segment::state_func& next;
     const TargetFile& tf;
     types::Time archive_threshold;
     types::Time delete_threshold;
 
-    CheckAge(data::state_func& next, const TargetFile& tf, int archive_age=-1, int delete_age=-1);
+    CheckAge(segment::state_func& next, const TargetFile& tf, int archive_age=-1, int delete_age=-1);
 
-    void operator()(const std::string& file, data::FileState state);
+    void operator()(const std::string& file, segment::FileState state);
 };
 
 /**
@@ -67,17 +67,17 @@ struct CheckAge
  */
 struct Dumper
 {
-	void operator()(const std::string& file, data::FileState state);
+	void operator()(const std::string& file, segment::FileState state);
 };
 
 struct Tee
 {
-    data::state_func& one;
-    data::state_func& two;
+    segment::state_func& one;
+    segment::state_func& two;
 
-    Tee(data::state_func& one, data::state_func& two);
+    Tee(segment::state_func& one, segment::state_func& two);
     virtual ~Tee();
-    void operator()(const std::string& file, data::FileState state);
+    void operator()(const std::string& file, segment::FileState state);
 };
 
 /// Base class for all repackers and rebuilders
@@ -91,7 +91,7 @@ struct Agent
     Agent(const Agent&) = delete;
     Agent& operator=(const Agent&) = delete;
 
-    virtual void operator()(const std::string& file, data::FileState state) = 0;
+    virtual void operator()(const std::string& file, segment::FileState state) = 0;
 
 	std::ostream& log();
 
@@ -116,7 +116,7 @@ struct FailsafeRepacker : public Agent
 
 	FailsafeRepacker(std::ostream& log, SegmentedWriter& w);
 
-	void operator()(const std::string& file, data::FileState state);
+	void operator()(const std::string& file, segment::FileState state);
 	void end();
 };
 
@@ -133,7 +133,7 @@ struct MockRepacker : public Agent
 
 	MockRepacker(std::ostream& log, SegmentedWriter& w);
 
-	void operator()(const std::string& file, data::FileState state);
+	void operator()(const std::string& file, segment::FileState state);
 	void end();
 };
 
@@ -148,7 +148,7 @@ struct MockFixer : public Agent
 
 	MockFixer(std::ostream& log, SegmentedWriter& w);
 
-	void operator()(const std::string& file, data::FileState state);
+	void operator()(const std::string& file, segment::FileState state);
 	void end();
 };
 
@@ -168,7 +168,7 @@ struct RealRepacker : public maintenance::Agent
 
 	RealRepacker(std::ostream& log, SegmentedWriter& w);
 
-	void operator()(const std::string& file, data::FileState state);
+	void operator()(const std::string& file, segment::FileState state);
 	void end();
 };
 
@@ -185,7 +185,7 @@ struct RealFixer : public maintenance::Agent
 
 	RealFixer(std::ostream& log, SegmentedWriter& w);
 
-	void operator()(const std::string& file, data::FileState state);
+	void operator()(const std::string& file, segment::FileState state);
 	void end();
 };
 

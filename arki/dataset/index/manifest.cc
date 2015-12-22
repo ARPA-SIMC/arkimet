@@ -40,7 +40,7 @@ namespace dataset {
 namespace index {
 
 namespace {
-void scan_file(data::SegmentManager& sm, const std::string& root, const std::string& relname, data::state_func visitor, bool quick=true)
+void scan_file(segment::SegmentManager& sm, const std::string& root, const std::string& relname, segment::state_func visitor, bool quick=true)
 {
     struct HFSorter : public sort::Compare
     {
@@ -57,7 +57,7 @@ void scan_file(data::SegmentManager& sm, const std::string& root, const std::str
 
     string absname = str::joinpath(root, relname);
 
-    // If the data file is compressed, create a temporary uncompressed copy
+    // If the segment file is compressed, create a temporary uncompressed copy
     unique_ptr<utils::compress::TempUnzip> tu;
     if (!quick && scan::isCompressed(absname))
         tu.reset(new utils::compress::TempUnzip(absname));
@@ -68,7 +68,7 @@ void scan_file(data::SegmentManager& sm, const std::string& root, const std::str
     mdc.sort(cmp); // Sort by reftime and by offset
 
     // Check the state of the file
-    data::FileState state = sm.check(relname, mdc, quick);
+    segment::FileState state = sm.check(relname, mdc, quick);
 
     // Pass on the file state to the visitor
     visitor(relname, state);
@@ -110,7 +110,7 @@ bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     if (q.sorter)
         compare = q.sorter;
     else
-        // If no sorter is provided, sort by reftime in case data files have
+        // If no sorter is provided, sort by reftime in case segment files have
         // not been sorted before archiving
         compare = sort::Compare::parse("reftime");
 
@@ -534,7 +534,7 @@ public:
 		dirty = true;
 	}
 
-    void check(data::SegmentManager& sm, data::state_func v, bool quick=true) override
+    void check(segment::SegmentManager& sm, segment::state_func v, bool quick=true) override
     {
 #if 0
 	// TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
@@ -871,7 +871,7 @@ public:
 			;
 	}
 
-	virtual void check(data::SegmentManager& sm, data::state_func v, bool quick=true)
+	virtual void check(segment::SegmentManager& sm, segment::state_func v, bool quick=true)
 	{
 		// List of files existing on disk
 		std::vector<std::string> disk = scan::dir(m_path, true);

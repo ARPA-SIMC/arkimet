@@ -3,7 +3,6 @@
 #include "ondisk2.h"
 #include "simple/writer.h"
 #include "maintenance.h"
-#include "data.h"
 #include "archive.h"
 #include "arki/metadata.h"
 #include "arki/scan/any.h"
@@ -19,7 +18,7 @@ namespace arki {
 namespace dataset {
 
 SegmentedReader::SegmentedReader(const ConfigFile& cfg)
-    : LocalReader(cfg), m_segment_manager(data::SegmentManager::get(cfg).release())
+    : LocalReader(cfg), m_segment_manager(segment::SegmentManager::get(cfg).release())
 {
 }
 
@@ -33,7 +32,7 @@ SegmentedWriter::SegmentedWriter(const ConfigFile& cfg)
     : LocalWriter(cfg),
       m_default_replace_strategy(REPLACE_NEVER),
       m_tf(TargetFile::create(cfg)),
-      m_segment_manager(data::SegmentManager::get(cfg).release())
+      m_segment_manager(segment::SegmentManager::get(cfg).release())
 {
     string repl = cfg.value("replace");
     if (repl == "yes" || repl == "true" || repl == "always")
@@ -59,7 +58,7 @@ SegmentedWriter::~SegmentedWriter()
     if (m_tf) delete m_tf;
 }
 
-data::Segment* SegmentedWriter::file(const Metadata& md, const std::string& format)
+segment::Segment* SegmentedWriter::file(const Metadata& md, const std::string& format)
 {
     string relname = (*m_tf)(md) + "." + md.source().format;
     return m_segment_manager->get_segment(format, relname);
@@ -129,7 +128,7 @@ size_t SegmentedWriter::removeFile(const std::string& relpath, bool withData)
         return 0;
 }
 
-void SegmentedWriter::maintenance(data::state_func v, bool quick)
+void SegmentedWriter::maintenance(segment::state_func v, bool quick)
 {
     if (hasArchive())
         archive().maintenance(v);
@@ -163,7 +162,7 @@ void SegmentedWriter::repack(std::ostream& log, bool writable)
     else
         repacker.reset(new maintenance::MockRepacker(log, *this));
     try {
-        maintenance([&](const std::string& relpath, data::FileState state) {
+        maintenance([&](const std::string& relpath, segment::FileState state) {
             (*repacker)(relpath, state);
         });
         repacker->end();
@@ -179,7 +178,7 @@ void SegmentedWriter::check(std::ostream& log, bool fix, bool quick)
     {
         maintenance::RealFixer fixer(log, *this);
         try {
-            maintenance([&](const std::string& relpath, data::FileState state) {
+            maintenance([&](const std::string& relpath, segment::FileState state) {
                 fixer(relpath, state);
             }, quick);
             fixer.end();
@@ -191,7 +190,7 @@ void SegmentedWriter::check(std::ostream& log, bool fix, bool quick)
         files::removeDontpackFlagfile(m_path);
     } else {
         maintenance::MockFixer fixer(log, *this);
-        maintenance([&](const std::string& relpath, data::FileState state) {
+        maintenance([&](const std::string& relpath, segment::FileState state) {
             fixer(relpath, state);
         }, quick);
         fixer.end();

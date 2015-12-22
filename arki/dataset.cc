@@ -7,7 +7,7 @@
 #include <arki/dataset/outbound.h>
 #include <arki/dataset/discard.h>
 #include <arki/dataset/empty.h>
-#include <arki/dataset/data.h>
+#include <arki/dataset/segment.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/sort.h>
@@ -57,7 +57,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, int out)
     switch (q.type)
     {
         case dataset::ByteQuery::BQ_DATA: {
-            const dataset::data::OstreamWriter* writer = nullptr;
+            const dataset::segment::OstreamWriter* writer = nullptr;
             bool first = true;
             query_data(q, [&](unique_ptr<Metadata> md) {
                 if (first)
@@ -66,7 +66,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, int out)
                     first = false;
                 }
                 if (!writer)
-                    writer = dataset::data::OstreamWriter::get(md->source().format);
+                    writer = dataset::segment::OstreamWriter::get(md->source().format);
                 writer->stream(*md, out);
                 return true;
             });

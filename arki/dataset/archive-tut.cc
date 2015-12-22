@@ -25,7 +25,7 @@ template<typename DS>
 static void ensure_dataset_clean(DS& ds, size_t filecount, size_t resultcount)
 {
     MaintenanceCollector c;
-    ds.maintenance([&](const std::string& relpath, data::FileState state) { c(relpath, state); });
+    ds.maintenance([&](const std::string& relpath, segment::FileState state) { c(relpath, state); });
     wassert(actual(c.fileStates.size()) == filecount);
     wassert(actual(c.count(DatasetTest::COUNTED_ARC_OK)) == filecount);
     wassert(actual(c.remaining()) == string());
@@ -115,7 +115,7 @@ def_test(2)
         ensure_equals(mdc.size(), 0u);
 
         // Maintenance should show one file to index
-        arc->maintenance([&](const std::string& relpath, data::FileState state) { c(relpath, state); });
+        arc->maintenance([&](const std::string& relpath, segment::FileState state) { c(relpath, state); });
 		ensure_equals(c.fileStates.size(), 1u);
 		ensure_equals(c.count(COUNTED_ARC_TO_INDEX), 1u);
 		ensure_equals(c.remaining(), string());
@@ -171,7 +171,7 @@ def_test(3)
         ensure_equals(mdc.size(), 3u);
 
         // Maintenance should show one file to rescan
-        arc->maintenance([&](const std::string& relpath, data::FileState state) { c(relpath, state); });
+        arc->maintenance([&](const std::string& relpath, segment::FileState state) { c(relpath, state); });
         ensure_equals(c.fileStates.size(), 1u);
         ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
         ensure_equals(c.remaining(), string());
@@ -227,7 +227,7 @@ def_test(4)
         ensure_equals(mdc.size(), 3u);
 
         // Maintenance should show one file to rescan
-        arc->maintenance([&](const std::string& relpath, data::FileState state) { c(relpath, state); });
+        arc->maintenance([&](const std::string& relpath, segment::FileState state) { c(relpath, state); });
         ensure_equals(c.fileStates.size(), 1u);
         ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
         ensure_equals(c.remaining(), string());
@@ -290,7 +290,7 @@ def_test(5)
     {
         unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
         MaintenanceCollector c;
-        arc->maintenance([&](const std::string& relpath, data::FileState state) { c(relpath, state); });
+        arc->maintenance([&](const std::string& relpath, segment::FileState state) { c(relpath, state); });
         ensure_equals(c.fileStates.size(), 3u);
         ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
         ensure_equals(c.count(COUNTED_ARC_OK), 2u);
@@ -378,7 +378,7 @@ def_test(6)
 
         // Maintenance should show one file to rescan
         c.clear();
-        arc->maintenance([&](const std::string& relpath, data::FileState state) { c(relpath, state); });
+        arc->maintenance([&](const std::string& relpath, segment::FileState state) { c(relpath, state); });
         ensure_equals(c.fileStates.size(), 1u);
         ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
         ensure_equals(c.remaining(), string());
@@ -519,7 +519,7 @@ def_test(19)
     {
         unique_ptr<Archive> a(Archive::create(str::joinpath(scen.path, ".archive/offline")));
         MaintenanceCollector c;
-        a->maintenance([&](const std::string& relpath, data::FileState state) { c(relpath, state); });
+        a->maintenance([&](const std::string& relpath, segment::FileState state) { c(relpath, state); });
         ensure(c.isClean());
     }
 

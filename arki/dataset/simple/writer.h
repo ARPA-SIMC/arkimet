@@ -29,7 +29,7 @@ protected:
     index::Manifest* m_mft;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
-    data::Segment* file(const Metadata& md, const std::string& format);
+    segment::Segment* file(const Metadata& md, const std::string& format);
 
 public:
     Writer(const ConfigFile& cfg);
@@ -38,7 +38,7 @@ public:
     AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
     void remove(Metadata& id);
     void flush() override;
-    void maintenance(data::state_func v, bool quick=true) override;
+    void maintenance(segment::state_func v, bool quick=true) override;
     void removeAll(std::ostream& log, bool writable) override;
     void rescanFile(const std::string& relpath) override;
     size_t repackFile(const std::string& relpath) override;

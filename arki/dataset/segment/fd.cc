@@ -22,11 +22,11 @@ using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
-namespace data {
+namespace segment {
 namespace fd {
 
 Segment::Segment(const std::string& relname, const std::string& absname)
-    : data::Segment(relname, absname), fd(-1)
+    : segment::Segment(relname, absname), fd(-1)
 {
 }
 
@@ -230,7 +230,7 @@ Pending Segment::repack(
         const std::string& rootdir,
         const std::string& relname,
         metadata::Collection& mds,
-        data::Segment* make_repack_segment(const std::string&, const std::string&),
+        segment::Segment* make_repack_segment(const std::string&, const std::string&),
         bool skip_validation)
 {
     struct Rename : public Transaction
@@ -274,7 +274,7 @@ Pending Segment::repack(
     const scan::Validator& validator = scan::Validator::by_filename(absname);
 
     // Create a writer for the temp file
-    unique_ptr<data::Segment> writer(make_repack_segment(tmprelname, tmpabsname));
+    unique_ptr<segment::Segment> writer(make_repack_segment(tmprelname, tmpabsname));
 
     // Fill the temp file with all the data in the right order
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)

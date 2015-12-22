@@ -2,7 +2,7 @@
 #define ARKI_DATASET_INDEX_MANIFEST_H
 
 #include <arki/dataset/index.h>
-#include <arki/dataset/data.h>
+#include <arki/dataset/segment.h>
 #include <vector>
 #include <string>
 #include <memory>
@@ -12,15 +12,6 @@ class Matcher;
 class Summary;
 
 namespace dataset {
-
-namespace data {
-class SegmentManager;
-}
-
-namespace maintenance {
-class MaintFileVisitor;
-}
-
 namespace index {
 
 class Manifest : public dataset::Index
@@ -41,7 +32,7 @@ public:
     virtual void vacuum() = 0;
     virtual void acquire(const std::string& relname, time_t mtime, const Summary& sum) = 0;
     virtual void remove(const std::string& relname) = 0;
-    virtual void check(data::SegmentManager& sm, data::state_func v, bool quick=true) = 0;
+    virtual void check(segment::SegmentManager& sm, segment::state_func v, bool quick=true) = 0;
     virtual void flush() = 0;
 
     virtual Pending test_writelock() = 0;

@@ -1,7 +1,7 @@
 #include "arki/dataset/ondisk2/writer.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/archive.h"
-#include "arki/dataset/data.h"
+#include "arki/dataset/segment.h"
 #include "arki/types/assigneddataset.h"
 #include "arki/types/source/blob.h"
 #include "arki/configfile.h"
@@ -58,7 +58,7 @@ Writer::~Writer()
 
 Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
-    data::Segment* w = file(md, md.source().format);
+    segment::Segment* w = file(md, md.source().format);
     off_t ofs;
 
     Pending p_idx = idx->beginTransaction();
@@ -86,7 +86,7 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 
 Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 {
-    data::Segment* w = file(md, md.source().format);
+    segment::Segment* w = file(md, md.source().format);
     off_t ofs;
 
     Pending p_idx = idx->beginTransaction();
@@ -115,7 +115,7 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     // Try to acquire without replacing
-    data::Segment* w = file(md, md.source().format);
+    segment::Segment* w = file(md, md.source().format);
     off_t ofs;
 
     Pending p_idx = idx->beginTransaction();
@@ -287,7 +287,7 @@ struct Deleter
 };
 }
 
-void Writer::maintenance(data::state_func v, bool quick)
+void Writer::maintenance(segment::state_func v, bool quick)
 {
     // TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
     // and delete the index if it fails
@@ -297,7 +297,7 @@ void Writer::maintenance(data::state_func v, bool quick)
     // Check each file for need to reindex or repack
     maintenance::CheckAge ca(v, *m_tf, m_archive_age, m_delete_age);
     vector<string> files = scan::dir(m_path);
-    maintenance::FindMissing fm([&](const std::string& relname, data::FileState state) { ca(relname, state); }, files);
+    maintenance::FindMissing fm([&](const std::string& relname, segment::FileState state) { ca(relname, state); }, files);
     idx->scan_files([&](const std::string& relname, const metadata::Collection& mds) {
         fm(relname, m_segment_manager->check(relname, mds, quick));
     });

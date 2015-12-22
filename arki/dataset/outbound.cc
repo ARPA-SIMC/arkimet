@@ -5,7 +5,7 @@
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/types/assigneddataset.h>
-#include <arki/dataset/data.h>
+#include <arki/dataset/segment.h>
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
 #include <arki/wibble/exception.h>
@@ -32,8 +32,8 @@ Outbound::~Outbound()
 
 void Outbound::storeBlob(Metadata& md, const std::string& reldest)
 {
-    // Write using data::Writer
-    data::Segment* w = file(md, md.source().format);
+    // Write using segment::Writer
+    segment::Segment* w = file(md, md.source().format);
     w->append(md);
 }
 

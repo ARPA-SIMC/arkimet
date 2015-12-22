@@ -9,7 +9,7 @@
 #include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/dataset/maintenance.h>
-#include <arki/dataset/data.h>
+#include <arki/dataset/segment.h>
 #include <arki/sort.h>
 #include <arki/scan/any.h>
 #include <arki/utils/string.h>
@@ -109,13 +109,13 @@ struct DatasetTest : public Fixture
 
     // Default dataset configuration (to be filled by subclasser)
     ConfigFile cfg;
-    dataset::data::SegmentManager* segment_manager = nullptr;
+    dataset::segment::SegmentManager* segment_manager = nullptr;
     Metadata import_results[3];
 
     DatasetTest();
     ~DatasetTest();
 
-    dataset::data::SegmentManager& segments();
+    dataset::segment::SegmentManager& segments();
 
 	// Return the file name of the index of the current dataset
 	std::string idxfname(const ConfigFile* wcfg = 0) const;
@@ -188,7 +188,7 @@ struct MaintenanceCollector
 {
     typedef tests::DatasetTest::Counted Counted;
 
-    std::map <std::string, dataset::data::FileState> fileStates;
+    std::map <std::string, dataset::segment::FileState> fileStates;
     size_t counts[tests::DatasetTest::COUNTED_MAX];
     static const char* names[];
     std::set<Counted> checked;
@@ -199,7 +199,7 @@ struct MaintenanceCollector
 
     void clear();
     bool isClean() const;
-    void operator()(const std::string& file, dataset::data::FileState state);
+    void operator()(const std::string& file, dataset::segment::FileState state);
     void dump(std::ostream& out) const;
     size_t count(tests::DatasetTest::Counted state);
     std::string remaining() const;
@@ -387,8 +387,8 @@ struct ActualSegmentedWriter : public ActualLocalWriter<dataset::SegmentedWriter
 /// element with zeros
 void corrupt_datafile(const std::string& absname);
 
-void test_append_transaction_ok(dataset::data::Segment* dw, Metadata& md, int append_amount_adjust=0);
-void test_append_transaction_rollback(dataset::data::Segment* dw, Metadata& md);
+void test_append_transaction_ok(dataset::segment::Segment* dw, Metadata& md, int append_amount_adjust=0);
+void test_append_transaction_rollback(dataset::segment::Segment* dw, Metadata& md);
 
 inline arki::tests::ActualLocalWriter<dataset::LocalWriter> actual(arki::dataset::LocalWriter* actual)
 {

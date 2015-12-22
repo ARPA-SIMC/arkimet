@@ -2,17 +2,11 @@
 #define ARKI_DATASET_SEGMENTED_H
 
 #include <arki/dataset/local.h>
-#include <arki/dataset/data.h>
+#include <arki/dataset/segment.h>
 
 namespace arki {
 namespace dataset {
 class TargetFile;
-
-namespace data {
-class SegmentManager;
-class Segment;
-}
-
 
 /**
  * LocalReader dataset with data stored in segment files
@@ -20,7 +14,7 @@ class Segment;
 class SegmentedReader : public LocalReader
 {
 protected:
-    data::SegmentManager* m_segment_manager;
+    segment::SegmentManager* m_segment_manager;
 
 public:
     SegmentedReader(const ConfigFile& cfg);
@@ -35,13 +29,13 @@ class SegmentedWriter : public LocalWriter
 protected:
     ReplaceStrategy m_default_replace_strategy;
     TargetFile* m_tf;
-    data::SegmentManager* m_segment_manager;
+    segment::SegmentManager* m_segment_manager;
 
     /**
      * Return an instance of the Segment for the file where the given metadata
      * should be written
      */
-    data::Segment* file(const Metadata& md, const std::string& format);
+    segment::Segment* file(const Metadata& md, const std::string& format);
 
 public:
     SegmentedWriter(const ConfigFile& cfg);
@@ -68,7 +62,7 @@ public:
      *   If false, contents of the data files will also be checked for
      *   consistency
      */
-    virtual void maintenance(data::state_func dest, bool quick=true);
+    virtual void maintenance(segment::state_func dest, bool quick=true);
 
     /**
      * Perform general sanity checks on the dataset, reporting to \a log.

@@ -5,7 +5,7 @@
 
 #include <arki/dataset.h>
 #include <arki/summary.h>
-#include <arki/dataset/data.h>
+#include <arki/dataset/segment.h>
 #include <string>
 #include <map>
 #include <iosfwd>
@@ -41,7 +41,7 @@ public:
     virtual void rescan(const std::string& relname) = 0;
     virtual void deindex(const std::string& relname) = 0;
     virtual void flush() = 0;
-    virtual void maintenance(data::state_func v) = 0;
+    virtual void maintenance(segment::state_func v) = 0;
     virtual void vacuum() = 0;
     /**
      * Expand the given begin and end ranges to include the datetime extremes
@@ -89,7 +89,7 @@ public:
     void rescan(const std::string& relname) override;
     void deindex(const std::string& relname) override;
     void flush() override;
-    void maintenance(data::state_func v) override;
+    void maintenance(segment::state_func v) override;
     void vacuum() override;
 
     /*
@@ -120,7 +120,7 @@ struct OfflineArchive : public Archive
     void rescan(const std::string& relname) override;
     void deindex(const std::string& relname) override;
     void flush() override;
-    void maintenance(data::state_func v) override;
+    void maintenance(segment::state_func v) override;
     void vacuum() override;
 };
 
@@ -188,7 +188,7 @@ public:
 
 	void flush();
 
-    void maintenance(data::state_func v);
+    void maintenance(segment::state_func v);
 
 	void vacuum();
 };

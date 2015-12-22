@@ -4,15 +4,15 @@
 /// Base class for unix fd based read/write functions
 
 #include <arki/libconfig.h>
-#include <arki/dataset/data.h>
+#include <arki/dataset/segment.h>
 #include <string>
 
 namespace arki {
 namespace dataset {
-namespace data {
+namespace segment {
 namespace fd {
 
-class Segment : public data::Segment
+class Segment : public segment::Segment
 {
 protected:
     int fd;
@@ -47,7 +47,7 @@ public:
             const std::string& rootdir,
             const std::string& relname,
             metadata::Collection& mds,
-            data::Segment* make_repack_segment(const std::string&, const std::string&),
+            segment::Segment* make_repack_segment(const std::string&, const std::string&),
             bool skip_validation=false);
 };
 
