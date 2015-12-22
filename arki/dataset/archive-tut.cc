@@ -125,7 +125,7 @@ def_test(2)
     {
         ondisk2::Writer writer(cfg);
         MaintenanceResults expected(false, 1);
-        expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
+        expected.by_type[DatasetTest::COUNTED_ARC_TO_INDEX] = 1;
         wassert(actual(writer).maintenance(expected));
 
 		stringstream s;
@@ -182,7 +182,7 @@ def_test(3)
     {
         ondisk2::Writer writer(cfg);
         MaintenanceResults expected(false, 1);
-        expected.by_type[DatasetTest::COUNTED_TO_RESCAN] = 1;
+        expected.by_type[DatasetTest::COUNTED_ARC_TO_RESCAN] = 1;
         wassert(actual(writer).maintenance(expected));
 
 		stringstream s;
@@ -237,7 +237,7 @@ def_test(4)
     {
         ondisk2::Writer writer(cfg);
         MaintenanceResults expected(false, 1);
-        expected.by_type[DatasetTest::COUNTED_TO_RESCAN] = 1;
+        expected.by_type[DatasetTest::COUNTED_ARC_TO_RESCAN] = 1;
         wassert(actual(writer).maintenance(expected));
 
 		stringstream s;
