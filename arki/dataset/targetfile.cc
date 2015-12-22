@@ -4,12 +4,13 @@
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/types/reftime.h>
+#include <arki/types/time.h>
 #include <arki/utils/pcounter.h>
 #include <arki/utils/string.h>
 #include <arki/wibble/exception.h>
 #include <arki/wibble/grcal/grcal.h>
-
-#include <stdint.h>
+#include <cstdint>
+#include <inttypes.h>
 #include <sstream>
 #include <cstdio>
 
@@ -24,32 +25,29 @@ namespace dataset {
 
 struct BaseTargetFile : public TargetFile
 {
-    virtual unique_ptr<Reftime> reftimeForPath(const std::string& path) const = 0;
-
     bool pathMatches(const std::string& path, const matcher::OR& m) const override
     {
-        unique_ptr<Reftime> rt = reftimeForPath(path);
-        if (!rt.get()) return false;
+        types::Time min;
+        types::Time max;
+        path_timespan(path, min, max);
+        auto rt = Reftime::createPeriod(min, max);
         return m.matchItem(*rt);
     }
 };
 
 struct Yearly : public BaseTargetFile
 {
-	static const char* name() { return "yearly"; }
+    static const char* name() { return "yearly"; }
 
-    unique_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    void path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
     {
-		int dummy;
-		int base[6] = { -1, -1, -1, -1, -1, -1 };
-		int min[6];
-		int max[6];
+        int dummy;
+        int base[6] = { -1, -1, -1, -1, -1, -1 };
         if (sscanf(path.c_str(), "%02d/%04d", &dummy, &base[0]) != 2)
-            return unique_ptr<Reftime>();
+            throw std::runtime_error("cannt parse path " + path + " as a yearly segment");
 
-        gd::lowerbound(base, min);
-        gd::upperbound(base, max);
-        return Reftime::createPeriod(Time(min), Time(max));
+        gd::lowerbound(base, start_time.vals);
+        gd::upperbound(base, end_time.vals);
     }
 
     std::string operator()(const Metadata& md) override
@@ -63,19 +61,16 @@ struct Yearly : public BaseTargetFile
 
 struct Monthly : public BaseTargetFile
 {
-	static const char* name() { return "monthly"; }
+    static const char* name() { return "monthly"; }
 
-    unique_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    void path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
     {
-		int base[6] = { -1, -1, -1, -1, -1, -1 };
-		int min[6];
-		int max[6];
+        int base[6] = { -1, -1, -1, -1, -1, -1 };
         if (sscanf(path.c_str(), "%04d/%02d", &base[0], &base[1]) == 0)
-            return unique_ptr<Reftime>();
+            throw std::runtime_error("cannt parse path " + path + " as a monthly segment");
 
-		gd::lowerbound(base, min);
-		gd::upperbound(base, max);
-        return Reftime::createPeriod(Time(min), Time(max));
+        gd::lowerbound(base, start_time.vals);
+        gd::upperbound(base, end_time.vals);
     }
 
     std::string operator()(const Metadata& md) override
@@ -89,26 +84,27 @@ struct Monthly : public BaseTargetFile
 
 struct Biweekly : public BaseTargetFile
 {
-	static const char* name() { return "biweekly"; }
+    static const char* name() { return "biweekly"; }
 
-    unique_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    void path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
     {
-		int year, month = -1, biweek = -1;
-		int min[6] = { -1, -1, -1, -1, -1, -1 };
-		int max[6] = { -1, -1, -1, -1, -1, -1 };
-		if (sscanf(path.c_str(), "%04d/%02d-%d", &year, &month, &biweek) == 0)
-			return unique_ptr<Reftime>();
-		min[0] = max[0] = year;
-		min[1] = max[1] = month;
+        int year, month = -1, biweek = -1;
+        int min[6] = { -1, -1, -1, -1, -1, -1 };
+        int max[6] = { -1, -1, -1, -1, -1, -1 };
+        if (sscanf(path.c_str(), "%04d/%02d-%d", &year, &month, &biweek) == 0)
+            throw std::runtime_error("cannt parse path " + path + " as a biweekly segment");
+        min[0] = max[0] = year;
+        min[1] = max[1] = month;
 		switch (biweek)
 		{
 			case 1: min[2] = 1; max[2] = 14; break;
 			case 2: min[2] = 15; max[2] = -1; break;
 			default: break;
 		}
-		gd::lowerbound(min);
-		gd::upperbound(max);
-        return Reftime::createPeriod(Time(min), Time(max));
+        gd::lowerbound(min);
+        gd::upperbound(max);
+        start_time.set(min);
+        end_time.set(max);
     }
 
     std::string operator()(const Metadata& md) override
@@ -125,25 +121,26 @@ struct Biweekly : public BaseTargetFile
 
 struct Weekly : public BaseTargetFile
 {
-	static const char* name() { return "weekly"; }
+    static const char* name() { return "weekly"; }
 
-    unique_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    void path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
     {
 		int year, month = -1, week = -1;
 		int min[6] = { -1, -1, -1, -1, -1, -1 };
 		int max[6] = { -1, -1, -1, -1, -1, -1 };
         if (sscanf(path.c_str(), "%04d/%02d-%d", &year, &month, &week) == 0)
-            return unique_ptr<Reftime>();
-		min[0] = max[0] = year;
-		min[1] = max[1] = month;
+            throw std::runtime_error("cannt parse path " + path + " as a weekly segment");
+        min[0] = max[0] = year;
+        min[1] = max[1] = month;
 		if (week != -1)
 		{
 			min[2] = (week - 1) * 7 + 1;
 			max[2] = min[2] + 6;
 		}
-		gd::lowerbound(min);
-		gd::upperbound(max);
-        return Reftime::createPeriod(Time(min), Time(max));
+        gd::lowerbound(min);
+        gd::upperbound(max);
+        start_time.set(min);
+        end_time.set(max);
     }
 
     std::string operator()(const Metadata& md) override
@@ -160,19 +157,15 @@ struct Weekly : public BaseTargetFile
 
 struct Daily : public BaseTargetFile
 {
-	static const char* name() { return "daily"; }
+    static const char* name() { return "daily"; }
 
-    unique_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    void path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
     {
-		int base[6] = { -1, -1, -1, -1, -1, -1 };
-		int min[6];
-		int max[6];
+        int base[6] = { -1, -1, -1, -1, -1, -1 };
         if (sscanf(path.c_str(), "%04d/%02d-%02d", &base[0], &base[1], &base[2]) == 0)
-            return unique_ptr<Reftime>();
-
-		gd::lowerbound(base, min);
-		gd::upperbound(base, max);
-        return Reftime::createPeriod(Time(min), Time(max));
+            throw std::runtime_error("cannt parse path " + path + " as a daily segment");
+        gd::lowerbound(base, start_time.vals);
+        gd::upperbound(base, end_time.vals);
     }
 
     std::string operator()(const Metadata& md) override
@@ -207,19 +200,14 @@ struct SingleFile : public BaseTargetFile
 
     virtual ~SingleFile() {}
 
-    unique_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    void path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
     {
-		int base[6] = { -1, -1, -1, -1, -1, -1 };
-		int min[6];
-		int max[6];
-		uint64_t counter;	   
-								
-		if (sscanf(path.c_str(), "%04d/%02d/%02d/%02d/%Lu",	&base[0], &base[1], &base[2], &base[3], &counter) == 0)
-			return unique_ptr<Reftime>();
-
-		gd::lowerbound(base, min);
-		gd::upperbound(base, max);
-        return Reftime::createPeriod(Time(min), Time(max));
+        int base[6] = { -1, -1, -1, -1, -1, -1 };
+        uint64_t counter;
+        if (sscanf(path.c_str(), "%04d/%02d/%02d/%02d/%" SCNu64, &base[0], &base[1], &base[2], &base[3], &counter) == 0)
+            throw std::runtime_error("cannt parse path " + path + " as a singlefile segment");
+        gd::lowerbound(base, start_time.vals);
+        gd::upperbound(base, end_time.vals);
     }
 
     std::string operator()(const Metadata& md) override
@@ -227,7 +215,7 @@ struct SingleFile : public BaseTargetFile
         const Time& tt = md.get<reftime::Position>()->time;
 		uint64_t num = m_counter.inc();
 		char buf[50];
-        snprintf(buf, 50, "%04d/%02d/%02d/%02d/%Lu", tt.vals[0], tt.vals[1], tt.vals[2], tt.vals[3], num);
+        snprintf(buf, 50, "%04d/%02d/%02d/%02d/%" SCNu64, tt.vals[0], tt.vals[1], tt.vals[2], tt.vals[3], num);
         return buf;
     }
 
@@ -269,4 +257,3 @@ std::vector<std::string> TargetFile::stepList()
 
 }
 }
-// vim:set ts=4 sw=4:

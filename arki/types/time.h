@@ -33,13 +33,11 @@ struct traits<Time>
  */
 class Time : public types::CoreType<Time>
 {
-protected:
-    /// An uninitialized time
-    Time();
-
 public:
     int vals[6];
 
+    /// An uninitialized time
+    Time();
     Time(int ye, int mo, int da, int ho=0, int mi=0, int se=0);
     Time(const int (&vals)[6]);
     Time(const Time& t);

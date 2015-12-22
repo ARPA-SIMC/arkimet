@@ -391,6 +391,7 @@ Time Time::createNow()
     return Time(now);
 }
 
+#if 0
 static int _daysinmonth(int month, int year)
 {
 	switch (month)
@@ -417,6 +418,7 @@ static int _daysinmonth(int month, int year)
 		}
 	}
 }
+#endif
 
 bool Time::range_overlaps(
         const Time* ts1, const Time* te1,

@@ -7,9 +7,12 @@
 #include <vector>
 
 namespace arki {
-
 class Metadata;
 class ConfigFile;
+
+namespace types {
+class Time;
+}
 
 namespace matcher {
 class OR;
@@ -24,6 +27,8 @@ struct TargetFile
 {
 	virtual ~TargetFile() {}
 	virtual std::string operator()(const Metadata& md) = 0;
+
+    virtual void path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const = 0;
 
     /**
      * Check if a given path (even a partial path) can contain things that
