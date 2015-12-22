@@ -93,10 +93,23 @@ void FindMissing::end()
     }
 }
 
+static time_t override_now = 0;
+
+TestOverrideCurrentDateForMaintenance::TestOverrideCurrentDateForMaintenance(time_t ts)
+{
+    old_ts = override_now;
+    override_now = ts;
+}
+TestOverrideCurrentDateForMaintenance::~TestOverrideCurrentDateForMaintenance()
+{
+    override_now = old_ts;
+}
+
+
 CheckAge::CheckAge(segment::state_func& next, const TargetFile& tf, int archive_age, int delete_age)
     : next(next), tf(tf), archive_threshold(0, 0, 0), delete_threshold(0, 0, 0)
 {
-    time_t now = time(NULL);
+    time_t now = override_now ? override_now : time(NULL);
     struct tm t;
 
     // Go to the beginning of the day

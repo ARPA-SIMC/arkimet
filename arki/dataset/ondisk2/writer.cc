@@ -253,18 +253,6 @@ void Writer::sanityChecks(std::ostream& log, bool writable)
     }
 }
 
-static time_t override_now = 0;
-
-TestOverrideCurrentDateForMaintenance::TestOverrideCurrentDateForMaintenance(time_t ts)
-{
-    old_ts = override_now;
-    override_now = ts;
-}
-TestOverrideCurrentDateForMaintenance::~TestOverrideCurrentDateForMaintenance()
-{
-    override_now = old_ts;
-}
-
 namespace {
 struct Deleter
 {
