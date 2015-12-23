@@ -109,9 +109,9 @@ class Tests : public FixtureTestCase<Fixture>
             // Maintenance should now show a normal situation
             {
                 unique_ptr<SegmentedWriter> writer(f.makeLocalWriter(&cfg));
-                MaintenanceResults expected(false, 3);
+                MaintenanceResults expected(true, 3);
                 expected.by_type[DatasetTest::COUNTED_OK] = 1;
-                expected.by_type[DatasetTest::COUNTED_TO_ARCHIVE] = 2;
+                expected.by_type[DatasetTest::COUNTED_ARC_OK] = 2;
                 wassert(actual(writer.get()).maintenance(expected));
             }
 
@@ -123,9 +123,9 @@ class Tests : public FixtureTestCase<Fixture>
                 writer->check(s, true, true);
                 ensure_equals(s.str(), string()); // Nothing should have happened
 
-                MaintenanceResults expected(false, 3);
+                MaintenanceResults expected(true, 3);
                 expected.by_type[DatasetTest::COUNTED_OK] = 1;
-                expected.by_type[DatasetTest::COUNTED_TO_ARCHIVE] = 2;
+                expected.by_type[DatasetTest::COUNTED_ARC_OK] = 2;
                 wassert(actual(writer.get()).maintenance(expected));
             }
 

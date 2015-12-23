@@ -207,11 +207,11 @@ struct Ondisk2Archived : public Ondisk2Scenario
             throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
 
         // Pack to build 'older' archive
-        run_repack(15, 8);
+        run_repack(16, 8);
         mvlast("older");
 
         // Pack to build 'last' archive
-        run_repack(30, 15);
+        run_repack(31, 15);
     }
 };
 
@@ -263,7 +263,7 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
             throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
 
         // Pack and build 'offline' archive
-        run_repack(6, 3);
+        run_repack(7, 3);
         ds->archive().rescan_archives();
         mvlast("offline");
         // same as ro, but only the toplevel summary is present
@@ -274,7 +274,7 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
         sys::rmtree(str::joinpath(path, ".archive/offline"));
 
         // Pack and build 'wrongro' archive
-        run_repack(9, 3);
+        run_repack(10, 3);
         ds->archive().rescan_archives();
         mvlast("wrongro");
         // same as ro, but toplevel summary does not match the data
@@ -283,7 +283,7 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
                 ofsum);
 
         // Pack and build 'ro' archive
-        run_repack(12, 3);
+        run_repack(13, 3);
         ds->archive().rescan_archives();
         mvlast("ro");
         // normal archive dir archived to mounted readonly media with dir.summary at the top
@@ -292,12 +292,12 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
                 sys::read_file(str::joinpath(path, ".archive/ro/summary")));
 
         // Pack and build 'old' archive
-        run_repack(15, 3);
+        run_repack(16, 3);
         ds->archive().rescan_archives();
         mvlast("old");
 
         // Pack and build 'last' archive
-        run_repack(18, 3);
+        run_repack(19, 3);
         ds->archive().rescan_archives();
     }
 };

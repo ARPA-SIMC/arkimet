@@ -139,12 +139,12 @@ void CheckAge::operator()(const std::string& file, segment::FileState state)
         types::Time end_time;
 #warning if the path is invalid, path_timespan throws, and the exception is not currently handled. Handle it setting the file in a "needs manual recovery" status
         tf.path_timespan(file, start_time, end_time);
-        if (delete_threshold.vals[0] != 0 && delete_threshold > end_time)
+        if (delete_threshold.vals[0] != 0 && delete_threshold >= end_time)
         {
             nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
             next(file, state + FILE_TO_DELETE);
         }
-        else if (archive_threshold.vals[0] != 0 && archive_threshold > end_time)
+        else if (archive_threshold.vals[0] != 0 && archive_threshold >= end_time)
         {
             nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
             next(file, state + FILE_TO_ARCHIVE);
