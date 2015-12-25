@@ -22,19 +22,26 @@ struct Metadata;
 struct Dispatcher;
 struct Reader;
 struct Writer;
+struct Checker;
 
 namespace dataset {
 struct LocalReader;
 struct LocalWriter;
+struct LocalChecker;
+struct SegmentedReader;
+struct SegmentedWriter;
+struct SegmentedChecker;
 
 namespace ondisk2 {
 struct Reader;
 struct Writer;
+struct Checker;
 }
 
 namespace simple {
 struct Reader;
 struct Writer;
+struct Checker;
 }
 }
 
@@ -122,14 +129,18 @@ struct DatasetTest : public Fixture
 	// Return the file name of the archive index of the current dataset
 	std::string arcidxfname() const;
 
-    Reader* makeReader(const ConfigFile* wcfg = 0);
-    Writer* makeWriter(const ConfigFile* wcfg = 0);
-    dataset::LocalReader* makeLocalReader(const ConfigFile* wcfg = 0);
-    dataset::SegmentedWriter* makeLocalWriter(const ConfigFile* wcfg = 0);
-	dataset::ondisk2::Reader* makeOndisk2Reader(const ConfigFile* wcfg = 0);
-	dataset::ondisk2::Writer* makeOndisk2Writer(const ConfigFile* wcfg = 0);
-	dataset::simple::Reader* makeSimpleReader(const ConfigFile* wcfg = 0);
-	dataset::simple::Writer* makeSimpleWriter(const ConfigFile* wcfg = 0);
+    std::unique_ptr<Reader> makeReader(const ConfigFile* wcfg=0);
+    std::unique_ptr<Writer> makeWriter(const ConfigFile* wcfg=0);
+    std::unique_ptr<Checker> makeChecker(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::SegmentedReader> makeLocalReader(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::SegmentedWriter> makeLocalWriter(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::SegmentedChecker> makeLocalChecker(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::ondisk2::Reader> makeOndisk2Reader(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::ondisk2::Writer> makeOndisk2Writer(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::ondisk2::Checker> makeOndisk2Checker(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::simple::Reader> makeSimpleReader(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::simple::Writer> makeSimpleWriter(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::simple::Checker> makeSimpleChecker(const ConfigFile* wcfg=0);
 
 	// Clean the dataset directory
 	void clean(const ConfigFile* wcfg = 0);
@@ -180,6 +191,7 @@ struct dataset_tg : public tut::test_group<T>
 #endif
 
 std::unique_ptr<dataset::LocalWriter> make_dataset_writer(const std::string& cfg, bool empty=true);
+std::unique_ptr<dataset::LocalChecker> make_dataset_checker(const std::string& cfg);
 std::unique_ptr<Reader> make_dataset_reader(const std::string& cfg);
 
 }
@@ -363,10 +375,10 @@ struct MaintenanceResults
     }
 };
 
-template<typename DatasetWriter>
-struct ActualLocalWriter : public arki::utils::tests::Actual<DatasetWriter*>
+template<typename DatasetChecker>
+struct ActualLocalChecker : public arki::utils::tests::Actual<DatasetChecker*>
 {
-    ActualLocalWriter(DatasetWriter* s) : Actual<DatasetWriter*>(s) {}
+    ActualLocalChecker(DatasetChecker* s) : Actual<DatasetChecker*>(s) {}
 
     void repack(const LineChecker& expected, bool write=false);
     void repack_clean(bool write=false);
@@ -374,9 +386,9 @@ struct ActualLocalWriter : public arki::utils::tests::Actual<DatasetWriter*>
     void check_clean(bool write=false);
 };
 
-struct ActualSegmentedWriter : public ActualLocalWriter<dataset::SegmentedWriter>
+struct ActualSegmentedChecker : public ActualLocalChecker<dataset::SegmentedChecker>
 {
-    ActualSegmentedWriter(dataset::SegmentedWriter* s) : ActualLocalWriter<dataset::SegmentedWriter>(s) {}
+    ActualSegmentedChecker(dataset::SegmentedChecker* s) : ActualLocalChecker<dataset::SegmentedChecker>(s) {}
 
     /// Run maintenance and see that the results are as expected
     void maintenance(const MaintenanceResults& expected, bool quick=true);
@@ -390,14 +402,14 @@ void corrupt_datafile(const std::string& absname);
 void test_append_transaction_ok(dataset::segment::Segment* dw, Metadata& md, int append_amount_adjust=0);
 void test_append_transaction_rollback(dataset::segment::Segment* dw, Metadata& md);
 
-inline arki::tests::ActualLocalWriter<dataset::LocalWriter> actual(arki::dataset::LocalWriter* actual)
+inline arki::tests::ActualLocalChecker<dataset::LocalChecker> actual(arki::dataset::LocalChecker* actual)
 {
-    return arki::tests::ActualLocalWriter<dataset::LocalWriter>(actual);
+    return arki::tests::ActualLocalChecker<dataset::LocalChecker>(actual);
 }
-inline arki::tests::ActualSegmentedWriter actual(arki::dataset::SegmentedWriter* actual) { return arki::tests::ActualSegmentedWriter(actual); }
-inline arki::tests::ActualSegmentedWriter actual(arki::dataset::SegmentedWriter& actual) { return arki::tests::ActualSegmentedWriter(&actual); }
-inline arki::tests::ActualSegmentedWriter actual(arki::dataset::simple::Writer& actual) { return arki::tests::ActualSegmentedWriter((arki::dataset::SegmentedWriter*)&actual); }
-inline arki::tests::ActualSegmentedWriter actual(arki::dataset::ondisk2::Writer& actual) { return arki::tests::ActualSegmentedWriter((arki::dataset::SegmentedWriter*)&actual); }
+inline arki::tests::ActualSegmentedChecker actual(arki::dataset::SegmentedChecker* actual) { return arki::tests::ActualSegmentedChecker(actual); }
+inline arki::tests::ActualSegmentedChecker actual(arki::dataset::SegmentedChecker& actual) { return arki::tests::ActualSegmentedChecker(&actual); }
+inline arki::tests::ActualSegmentedChecker actual(arki::dataset::simple::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::SegmentedChecker*)&actual); }
+inline arki::tests::ActualSegmentedChecker actual(arki::dataset::ondisk2::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::SegmentedChecker*)&actual); }
 
 }
 }

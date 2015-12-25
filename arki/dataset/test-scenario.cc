@@ -101,7 +101,7 @@ struct Ondisk2Scenario : public Scenario
         dataset::maintenance::TestOverrideCurrentDateForMaintenance od(t_start + 3600*24*(curday-1));
 
         // Pack and archive
-        unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
+        unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
         stringstream packlog;
         ds->repack(packlog, true);
         char expected[32];
@@ -112,7 +112,6 @@ struct Ondisk2Scenario : public Scenario
             ss << "cannot check that only " << expected_archived << " files have been archived: archive output is: " << packlog.str();
             throw std::runtime_error(ss.str());
         }
-        ds->flush();
     }
 
     /// Rename the 'last' archive to the given name
@@ -153,17 +152,22 @@ struct Ondisk2TestGrib1 : public Ondisk2Scenario
 
         Ondisk2Scenario::build();
 
-        // Generate a dataset with archived data
-        unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
+        {
+            unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
+            scan::scan("inbound/test.grib1", make_importer(*ds));
+            ds->flush();
+        }
 
-        scan::scan("inbound/test.grib1", make_importer(*ds));
-        ds->flush();
+        {
+            // Generate a dataset with archived data
+            unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
 
-        // Run a check to remove new dataset marker
-        stringstream checklog;
-        ds->check(checklog, true, true);
-        if (checklog.str() != "")
-            throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
+            // Run a check to remove new dataset marker
+            stringstream checklog;
+            ds->check(checklog, true, true);
+            if (checklog.str() != "")
+                throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
+        }
     }
 };
 
@@ -186,21 +190,24 @@ struct Ondisk2Archived : public Ondisk2Scenario
 
         Ondisk2Scenario::build();
 
-        // Generate a dataset with archived data
-        unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
-
-        // Import several metadata items
-        metadata::test::Generator gen("grib1");
-        for (int i = 1; i <= 30; ++i)
         {
-            char buf[32];
-            snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
-            gen.add(TYPE_REFTIME, buf);
+            // Generate a dataset with archived data
+            unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
+
+            // Import several metadata items
+            metadata::test::Generator gen("grib1");
+            for (int i = 1; i <= 30; ++i)
+            {
+                char buf[32];
+                snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
+                gen.add(TYPE_REFTIME, buf);
+            }
+            gen.generate(make_importer(*ds));
+            ds->flush();
         }
-        gen.generate(make_importer(*ds));
-        ds->flush();
 
         // Run a check to remove new dataset marker
+        unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
         stringstream checklog;
         ds->check(checklog, true, true);
         if (checklog.str() != "")
@@ -243,20 +250,23 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
         Ondisk2Scenario::build();
 
         // Generate a dataset with archived data
-        unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
-
-        // Import several metadata items
-        metadata::test::Generator gen("grib1");
-        for (int i = 1; i <= 18; ++i)
         {
-            char buf[32];
-            snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
-            gen.add(TYPE_REFTIME, buf);
+            unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
+
+            // Import several metadata items
+            metadata::test::Generator gen("grib1");
+            for (int i = 1; i <= 18; ++i)
+            {
+                char buf[32];
+                snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
+                gen.add(TYPE_REFTIME, buf);
+            }
+            gen.generate(make_importer(*ds));
+            ds->flush();
         }
-        gen.generate(make_importer(*ds));
-        ds->flush();
 
         // Run a check to remove new dataset marker
+        unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
         stringstream checklog;
         ds->check(checklog, true, true);
         if (checklog.str() != "")

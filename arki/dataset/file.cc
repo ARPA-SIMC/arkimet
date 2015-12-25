@@ -108,9 +108,10 @@ File* File::create(const ConfigFile& cfg)
 }
 
 File::File(const ConfigFile& cfg)
+    : Reader(str::basename(cfg.value("path")), cfg)
 {
-	m_pathname = cfg.value("path");
-	m_format = cfg.value("format");
+    m_pathname = cfg.value("path");
+    m_format = cfg.value("format");
 }
 
 FdFile::FdFile(const ConfigFile& cfg) : File(cfg), fd(-1)

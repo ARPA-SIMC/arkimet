@@ -49,11 +49,10 @@ struct CurlEasy
 class HTTP : public Reader
 {
 protected:
-	std::string m_name;
-	std::string m_baseurl;
-	std::string m_qmacro;
-	mutable http::CurlEasy m_curl;
-	bool m_mischief;
+    std::string m_baseurl;
+    std::string m_qmacro;
+    http::CurlEasy m_curl;
+    bool m_mischief;
 
 public:
 	// Initialise the dataset with the information from the configurationa in 'cfg'

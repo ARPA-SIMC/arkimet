@@ -20,7 +20,7 @@ class Validator;
 }
 
 namespace dataset {
-class SegmentedWriter;
+class SegmentedChecker;
 class TargetFile;
 
 namespace maintenance {
@@ -98,11 +98,11 @@ struct Tee
 /// Base class for all repackers and rebuilders
 struct Agent
 {
-	std::ostream& m_log;
-	SegmentedWriter& w;
-	bool lineStart;
+    std::ostream& m_log;
+    SegmentedChecker& w;
+    bool lineStart;
 
-	Agent(std::ostream& log, SegmentedWriter& w);
+    Agent(std::ostream& log, SegmentedChecker& w);
     Agent(const Agent&) = delete;
     Agent& operator=(const Agent&) = delete;
 
@@ -129,7 +129,7 @@ struct FailsafeRepacker : public Agent
 {
 	size_t m_count_deleted;
 
-	FailsafeRepacker(std::ostream& log, SegmentedWriter& w);
+    FailsafeRepacker(std::ostream& log, SegmentedChecker& w);
 
 	void operator()(const std::string& file, segment::FileState state);
 	void end();
@@ -146,7 +146,7 @@ struct MockRepacker : public Agent
 	size_t m_count_deindexed;
 	size_t m_count_rescanned;
 
-	MockRepacker(std::ostream& log, SegmentedWriter& w);
+    MockRepacker(std::ostream& log, SegmentedChecker& w);
 
 	void operator()(const std::string& file, segment::FileState state);
 	void end();
@@ -161,7 +161,7 @@ struct MockFixer : public Agent
 	size_t m_count_rescanned;
 	size_t m_count_deindexed;
 
-	MockFixer(std::ostream& log, SegmentedWriter& w);
+    MockFixer(std::ostream& log, SegmentedChecker& w);
 
 	void operator()(const std::string& file, segment::FileState state);
 	void end();
@@ -181,7 +181,7 @@ struct RealRepacker : public maintenance::Agent
 	bool m_touched_archive;
 	bool m_redo_summary;
 
-	RealRepacker(std::ostream& log, SegmentedWriter& w);
+    RealRepacker(std::ostream& log, SegmentedChecker& w);
 
 	void operator()(const std::string& file, segment::FileState state);
 	void end();
@@ -198,7 +198,7 @@ struct RealFixer : public maintenance::Agent
 	bool m_touched_archive;
 	bool m_redo_summary;
 
-	RealFixer(std::ostream& log, SegmentedWriter& w);
+    RealFixer(std::ostream& log, SegmentedChecker& w);
 
 	void operator()(const std::string& file, segment::FileState state);
 	void end();

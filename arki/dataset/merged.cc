@@ -154,6 +154,7 @@ public:
 };
 
 Merged::Merged()
+    : Reader("merged")
 {
 }
 

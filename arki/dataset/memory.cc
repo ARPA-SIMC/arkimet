@@ -7,7 +7,7 @@ using namespace std;
 namespace arki {
 namespace dataset {
 
-Memory::Memory() {}
+Memory::Memory() : Reader("memory") {}
 Memory::~Memory() {}
 
 void Memory::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest)

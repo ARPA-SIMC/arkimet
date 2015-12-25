@@ -52,6 +52,17 @@ IndexedWriter::~IndexedWriter()
     delete m_idx;
 }
 
+
+IndexedChecker::IndexedChecker(const ConfigFile& cfg)
+    : SegmentedChecker(cfg)
+{
+}
+
+IndexedChecker::~IndexedChecker()
+{
+    delete m_idx;
+}
+
 }
 }
 

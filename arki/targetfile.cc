@@ -187,7 +187,7 @@ std::string Targetfile::Func::operator()(Metadata& md)
 }
 
 TargetfileSpy::TargetfileSpy(Reader& ds, sys::NamedFileDescriptor& output, const std::string& def)
-    : func(Targetfile::instance().get(def)), ds(ds), output(output)
+    : Reader(ds.name()), func(Targetfile::instance().get(def)), ds(ds), output(output)
 {
 }
 

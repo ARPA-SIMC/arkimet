@@ -33,7 +33,6 @@ protected:
     AcquireResult acquire_replace_higher_usn(Metadata& md);
 
 public:
-    // Initialise the dataset with the information from the configurationa in 'cfg'
     Writer(const ConfigFile& cfg);
     virtual ~Writer();
 
@@ -41,6 +40,24 @@ public:
     void remove(Metadata& md) override;
     void flush() override;
     virtual Pending test_writelock();
+
+	/**
+	 * Iterate through the contents of the dataset, in depth-first order.
+	 */
+	//void depthFirstVisit(Visitor& v);
+
+	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
+
+};
+
+class Checker : public IndexedChecker
+{
+protected:
+    ConfigFile m_cfg;
+    index::WContents* idx;
+
+public:
+    Checker(const ConfigFile& cfg);
 
     void maintenance(segment::state_func v, bool quick=true) override;
     void sanityChecks(std::ostream& log, bool writable=false) override;
@@ -52,15 +69,8 @@ public:
     void archiveFile(const std::string& relpath) override;
     size_t vacuum() override;
 
-	/**
-	 * Iterate through the contents of the dataset, in depth-first order.
-	 */
-	//void depthFirstVisit(Visitor& v);
-
-	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
-
-	friend class writer::RealRepacker;
-	friend class writer::RealFixer;
+    friend class writer::RealRepacker;
+    friend class writer::RealFixer;
 };
 
 }

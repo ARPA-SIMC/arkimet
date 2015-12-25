@@ -36,8 +36,26 @@ public:
     virtual ~Writer();
 
     AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
-    void remove(Metadata& id);
+    void remove(Metadata& md);
     void flush() override;
+
+    virtual Pending test_writelock();
+
+    static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
+};
+
+class Checker : public IndexedChecker
+{
+protected:
+    index::Manifest* m_mft;
+
+    /// Return a (shared) instance of the Datafile for the given relative pathname
+    segment::Segment* file(const Metadata& md, const std::string& format);
+
+public:
+    Checker(const ConfigFile& cfg);
+    virtual ~Checker();
+
     void maintenance(segment::state_func v, bool quick=true) override;
     void removeAll(std::ostream& log, bool writable) override;
     void rescanFile(const std::string& relpath) override;
@@ -45,10 +63,6 @@ public:
     void archiveFile(const std::string& relpath) override;
     size_t removeFile(const std::string& relpath, bool withData=false) override;
     size_t vacuum() override;
-
-    virtual Pending test_writelock();
-
-    static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
 }

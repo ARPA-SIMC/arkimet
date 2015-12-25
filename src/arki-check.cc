@@ -117,17 +117,17 @@ struct Worker
 
 struct WorkerOnWritable : public Worker
 {
-    virtual void process(const ConfigFile& cfg)
+    void process(const ConfigFile& cfg) override
     {
-        unique_ptr<dataset::LocalWriter> ds;
+        unique_ptr<dataset::LocalChecker> ds;
         try {
-            ds.reset(dataset::LocalWriter::create(cfg));
+            ds.reset(dataset::LocalChecker::create(cfg));
         } catch (std::exception& e) {
             throw SkipDataset(e.what());
         }
         operator()(*ds);
     }
-    virtual void operator()(dataset::LocalWriter& w) = 0;
+    virtual void operator()(dataset::LocalChecker& w) = 0;
 };
 
 struct Maintainer : public WorkerOnWritable
@@ -139,14 +139,12 @@ struct Maintainer : public WorkerOnWritable
 	{
 	}
 
-	virtual void operator()(dataset::LocalWriter& w)
-	{
-		w.check(cerr, fix, quick);
-	}
+    void operator()(dataset::LocalChecker& w) override
+    {
+        w.check(cerr, fix, quick);
+    }
 
-	virtual void done()
-	{
-	}
+    void done() override {}
 };
 
 struct Repacker : public WorkerOnWritable
@@ -155,15 +153,12 @@ struct Repacker : public WorkerOnWritable
 
 	Repacker(bool fix) : fix(fix) {}
 
-	virtual void operator()(dataset::LocalWriter& w)
-	{
-		w.repack(cout, fix);
-		w.flush();
-	}
+    void operator()(dataset::LocalChecker& w) override
+    {
+        w.repack(cout, fix);
+    }
 
-	virtual void done()
-	{
-	}
+    void done() override {}
 };
 
 struct RemoveAller : public WorkerOnWritable
@@ -172,15 +167,12 @@ struct RemoveAller : public WorkerOnWritable
 
 	RemoveAller(bool fix) : fix(fix) {}
 
-	virtual void operator()(dataset::LocalWriter& w)
-	{
-		w.removeAll(cout, fix);
-		w.flush();
-	}
+    void operator()(dataset::LocalChecker& w) override
+    {
+        w.removeAll(cout, fix);
+    }
 
-	virtual void done()
-	{
-	}
+    void done() {}
 };
 
 struct ScanTest : public Worker

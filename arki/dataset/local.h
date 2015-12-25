@@ -14,25 +14,37 @@ class Matcher;
 namespace dataset {
 class Archives;
 
+template<typename Archives, bool read_only=false>
+class LocalBase
+{
+protected:
+    std::string m_path;
+    Archives* m_archive = nullptr;
+    int m_archive_age = -1;
+    int m_delete_age = -1;
+
+public:
+    LocalBase(const ConfigFile& cfg);
+    ~LocalBase();
+
+    /// Return the dataset path
+    const std::string& path() const { return m_path; }
+
+    /// Check if the dataset has archived data
+    bool hasArchive() const;
+
+    /// Return the Archives for this dataset
+    Archives& archive();
+};
+
 /**
  * Base class for local datasets
  */
-class LocalReader : public Reader
+class LocalReader : public Reader, public LocalBase<Archives, true>
 {
-protected:
-    std::string m_name;
-    std::string m_path;
-    Archives* m_archive;
-
 public:
     LocalReader(const ConfigFile& cfg);
     ~LocalReader();
-
-    // Return the dataset name
-    const std::string& name() const { return m_name; }
-
-    // Return the dataset path
-    const std::string& path() const { return m_path; }
 
     // Base implementations that queries the archives if they exist
     void query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest) override;
@@ -63,46 +75,14 @@ public:
      */
     size_t scan_test(metadata_dest_func cons, size_t idx=0);
 
-    bool hasArchive() const;
-    Archives& archive();
-
     static void readConfig(const std::string& path, ConfigFile& cfg);
 };
 
-class LocalWriter : public Writer
+class LocalWriter : public Writer, public LocalBase<Archives, false>
 {
-protected:
-    std::string m_path;
-    mutable Archives* m_archive;
-    int m_archive_age;
-    int m_delete_age;
-
 public:
     LocalWriter(const ConfigFile& cfg);
     ~LocalWriter();
-
-    // Return the dataset path
-    const std::string& path() const { return m_path; }
-
-    bool hasArchive() const;
-    Archives& archive();
-    const Archives& archive() const;
-
-    /**
-     * Repack the dataset, logging status to the given file.
-     *
-     * If writable is false, the process is simulated but no changes are
-     * saved.
-     */
-    virtual void repack(std::ostream& log, bool writable=false) = 0;
-
-    /**
-     * Check the dataset for errors, logging status to the given file.
-     *
-     * If \a fix is false, the process is simulated but no changes are saved.
-     * If \a fix is true, errors are fixed.
-     */
-    virtual void check(std::ostream& log, bool fix, bool quick) = 0;
 
     /**
      * Instantiate an appropriate Dataset for the given configuration
@@ -120,6 +100,17 @@ public:
      * @return The outcome of the operation.
      */
     static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
+};
+
+struct LocalChecker : public Checker, public LocalBase<Archives, false>
+{
+    LocalChecker(const ConfigFile& cfg);
+    ~LocalChecker();
+
+    /**
+     * Instantiate an appropriate Dataset for the given configuration
+     */
+    static LocalChecker* create(const ConfigFile& cfg);
 };
 
 }

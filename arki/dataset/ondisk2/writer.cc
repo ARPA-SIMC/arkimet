@@ -242,15 +242,31 @@ Pending Writer::test_writelock()
     return idx->beginExclusiveTransaction();
 }
 
-void Writer::sanityChecks(std::ostream& log, bool writable)
+void Checker::sanityChecks(std::ostream& log, bool writable)
 {
-    SegmentedWriter::sanityChecks(log, writable);
+    SegmentedChecker::sanityChecks(log, writable);
 
     if (!idx->checkSummaryCache(log) && writable)
     {
         log << name() << ": rebuilding summary cache." << endl;
         idx->rebuildSummaryCache();
     }
+}
+
+Checker::Checker(const ConfigFile& cfg)
+    : IndexedChecker(cfg), m_cfg(cfg), idx(new index::WContents(cfg))
+{
+    m_idx = idx;
+
+    // Create the directory if it does not exist
+    sys::makedirs(m_path);
+
+    // If the index is missing, take note not to perform a repack until a
+    // check is made
+    if (!sys::exists(str::joinpath(m_path, "index.sqlite")))
+        files::createDontpackFlagfile(m_path);
+
+    idx->open();
 }
 
 namespace {
@@ -275,7 +291,7 @@ struct Deleter
 };
 }
 
-void Writer::maintenance(segment::state_func v, bool quick)
+void Checker::maintenance(segment::state_func v, bool quick)
 {
     // TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
     // and delete the index if it fails
@@ -290,10 +306,10 @@ void Writer::maintenance(segment::state_func v, bool quick)
         fm(relname, m_segment_manager->check(relname, mds, quick));
     });
     fm.end();
-    SegmentedWriter::maintenance(v, quick);
+    SegmentedChecker::maintenance(v, quick);
 }
 
-void Writer::removeAll(std::ostream& log, bool writable)
+void Checker::removeAll(std::ostream& log, bool writable)
 {
     Deleter deleter(m_name, log, writable);
     idx->scan_files(deleter);
@@ -305,11 +321,11 @@ void Writer::removeAll(std::ostream& log, bool writable)
         log << m_name << ": would clear index" << endl;
 
     // TODO: empty the index
-    SegmentedWriter::removeAll(log, writable);
+    SegmentedChecker::removeAll(log, writable);
 }
 
 
-void Writer::rescanFile(const std::string& relpath)
+void Checker::rescanFile(const std::string& relpath)
 {
     string pathname = str::joinpath(m_path, relpath);
 
@@ -386,7 +402,7 @@ void Writer::rescanFile(const std::string& relpath)
 }
 
 
-size_t Writer::repackFile(const std::string& relpath)
+size_t Checker::repackFile(const std::string& relpath)
 {
     // Lock away writes and reads
     Pending p = idx->beginExclusiveTransaction();
@@ -434,14 +450,14 @@ size_t Writer::repackFile(const std::string& relpath)
     return size_pre - size_post;
 }
 
-size_t Writer::removeFile(const std::string& relpath, bool withData)
+size_t Checker::removeFile(const std::string& relpath, bool withData)
 {
     idx->reset(relpath);
     // TODO: also remove .metadata and .summary files
-    return SegmentedWriter::removeFile(relpath, withData);
+    return SegmentedChecker::removeFile(relpath, withData);
 }
 
-void Writer::archiveFile(const std::string& relpath)
+void Checker::archiveFile(const std::string& relpath)
 {
     // Create the target directory in the archive
     string pathname = str::joinpath(m_path, relpath);
@@ -454,11 +470,11 @@ void Writer::archiveFile(const std::string& relpath)
     // Remove from index
     idx->reset(relpath);
 
-    // Delegate the rest to SegmentedWriter
-    SegmentedWriter::archiveFile(relpath);
+    // Delegate the rest to SegmentedChecker
+    SegmentedChecker::archiveFile(relpath);
 }
 
-size_t Writer::vacuum()
+size_t Checker::vacuum()
 {
     size_t size_pre = 0, size_post = 0;
     if (sys::size(idx->pathname(), 0) > 0)

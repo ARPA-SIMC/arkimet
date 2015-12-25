@@ -17,22 +17,31 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
+SegmentedBase::SegmentedBase(const ConfigFile& cfg)
+    : m_segment_manager(segment::SegmentManager::get(cfg).release())
+{
+}
+
+SegmentedBase::~SegmentedBase()
+{
+    delete m_segment_manager;
+}
+
+
 SegmentedReader::SegmentedReader(const ConfigFile& cfg)
-    : LocalReader(cfg), m_segment_manager(segment::SegmentManager::get(cfg).release())
+    : LocalReader(cfg), SegmentedBase(cfg)
 {
 }
 
 SegmentedReader::~SegmentedReader()
 {
-    if (m_segment_manager) delete m_segment_manager;
 }
 
 
 SegmentedWriter::SegmentedWriter(const ConfigFile& cfg)
-    : LocalWriter(cfg),
+    : LocalWriter(cfg), SegmentedBase(cfg),
       m_default_replace_strategy(REPLACE_NEVER),
-      m_tf(TargetFile::create(cfg)),
-      m_segment_manager(segment::SegmentManager::get(cfg).release())
+      m_tf(TargetFile::create(cfg))
 {
     string repl = cfg.value("replace");
     if (repl == "yes" || repl == "true" || repl == "always")
@@ -43,19 +52,11 @@ SegmentedWriter::SegmentedWriter(const ConfigFile& cfg)
         m_default_replace_strategy = REPLACE_NEVER;
     else
         throw std::runtime_error("Replace strategy '" + repl + "' is not recognised in configuration for dataset " + m_name);
-
-    string tmp = cfg.value("archive age");
-    if (!tmp.empty())
-        m_archive_age = strtoul(tmp.c_str(), 0, 10);
-    tmp = cfg.value("delete age");
-    if (!tmp.empty())
-        m_delete_age = strtoul(tmp.c_str(), 0, 10);
 }
 
 SegmentedWriter::~SegmentedWriter()
 {
-    if (m_segment_manager) delete m_segment_manager;
-    if (m_tf) delete m_tf;
+    delete m_tf;
 }
 
 segment::Segment* SegmentedWriter::file(const Metadata& md, const std::string& format)
@@ -69,7 +70,47 @@ void SegmentedWriter::flush()
     m_segment_manager->flush_writers();
 }
 
-void SegmentedWriter::archiveFile(const std::string& relpath)
+SegmentedWriter* SegmentedWriter::create(const ConfigFile& cfg)
+{
+    string type = str::lower(cfg.value("type"));
+    if (type.empty())
+        type = "local";
+
+    if (type == "ondisk2" || type == "test")
+        return new dataset::ondisk2::Writer(cfg);
+    if (type == "simple" || type == "error" || type == "duplicates")
+        return new dataset::simple::Writer(cfg);
+
+    throw std::runtime_error("cannot create dataset: unknown dataset type \""+type+"\"");
+}
+
+LocalWriter::AcquireResult SegmentedWriter::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+{
+    string type = str::lower(cfg.value("type"));
+    if (type.empty())
+        type = "local";
+
+    if (type == "ondisk2" || type == "test")
+        return dataset::ondisk2::Writer::testAcquire(cfg, md, out);
+    if (type == "simple" || type == "error" || type == "duplicates")
+        return dataset::simple::Writer::testAcquire(cfg, md, out);
+
+    throw std::runtime_error("cannot simulate dataset acquisition: unknown dataset type \""+type+"\"");
+}
+
+
+
+SegmentedChecker::SegmentedChecker(const ConfigFile& cfg)
+    : LocalChecker(cfg), SegmentedBase(cfg), m_tf(TargetFile::create(cfg))
+{
+}
+
+SegmentedChecker::~SegmentedChecker()
+{
+    delete m_tf;
+}
+
+void SegmentedChecker::archiveFile(const std::string& relpath)
 {
     string pathname = str::joinpath(m_path, relpath);
     string arcrelname = str::joinpath("last", relpath);
@@ -120,7 +161,7 @@ void SegmentedWriter::archiveFile(const std::string& relpath)
     archive().acquire(arcrelname);
 }
 
-size_t SegmentedWriter::removeFile(const std::string& relpath, bool withData)
+size_t SegmentedChecker::removeFile(const std::string& relpath, bool withData)
 {
     if (withData)
         return m_segment_manager->remove(relpath);
@@ -128,24 +169,24 @@ size_t SegmentedWriter::removeFile(const std::string& relpath, bool withData)
         return 0;
 }
 
-void SegmentedWriter::maintenance(segment::state_func v, bool quick)
+void SegmentedChecker::maintenance(segment::state_func v, bool quick)
 {
     if (hasArchive())
         archive().maintenance(v);
 }
 
-void SegmentedWriter::removeAll(std::ostream& log, bool writable)
+void SegmentedChecker::removeAll(std::ostream& log, bool writable)
 {
     // TODO: decide if we're removing archives at all
     // TODO: if (hasArchive())
     // TODO:    archive().removeAll(log, writable);
 }
 
-void SegmentedWriter::sanityChecks(std::ostream& log, bool writable)
+void SegmentedChecker::sanityChecks(std::ostream& log, bool writable)
 {
 }
 
-void SegmentedWriter::repack(std::ostream& log, bool writable)
+void SegmentedChecker::repack(std::ostream& log, bool writable)
 {
     if (files::hasDontpackFlagfile(m_path))
     {
@@ -172,7 +213,7 @@ void SegmentedWriter::repack(std::ostream& log, bool writable)
     }
 }
 
-void SegmentedWriter::check(std::ostream& log, bool fix, bool quick)
+void SegmentedChecker::check(std::ostream& log, bool fix, bool quick)
 {
     if (fix)
     {
@@ -199,32 +240,18 @@ void SegmentedWriter::check(std::ostream& log, bool fix, bool quick)
     sanityChecks(log, fix);
 }
 
-SegmentedWriter* SegmentedWriter::create(const ConfigFile& cfg)
+SegmentedChecker* SegmentedChecker::create(const ConfigFile& cfg)
 {
     string type = str::lower(cfg.value("type"));
     if (type.empty())
         type = "local";
 
     if (type == "ondisk2" || type == "test")
-        return new dataset::ondisk2::Writer(cfg);
+        return new dataset::ondisk2::Checker(cfg);
     if (type == "simple" || type == "error" || type == "duplicates")
-        return new dataset::simple::Writer(cfg);
+        return new dataset::simple::Checker(cfg);
 
     throw std::runtime_error("cannot create dataset: unknown dataset type \""+type+"\"");
-}
-
-LocalWriter::AcquireResult SegmentedWriter::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
-{
-    string type = str::lower(cfg.value("type"));
-    if (type.empty())
-        type = "local";
-
-    if (type == "ondisk2" || type == "test")
-        return dataset::ondisk2::Writer::testAcquire(cfg, md, out);
-    if (type == "simple" || type == "error" || type == "duplicates")
-        return dataset::simple::Writer::testAcquire(cfg, md, out);
-
-    throw std::runtime_error("cannot simulate dataset acquisition: unknown dataset type \""+type+"\"");
 }
 
 }

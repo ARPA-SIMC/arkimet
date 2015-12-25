@@ -39,6 +39,16 @@ public:
     ~IndexedWriter();
 };
 
+class IndexedChecker : public SegmentedChecker
+{
+protected:
+    Index* m_idx = nullptr;
+
+public:
+    IndexedChecker(const ConfigFile& cfg);
+    ~IndexedChecker();
+};
+
 }
 }
 #endif

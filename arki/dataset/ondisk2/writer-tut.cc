@@ -85,7 +85,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         }
 
         {
-            std::unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, 2);
             expected.by_type[COUNTED_OK] = 1;
             expected.by_type[COUNTED_TO_PACK] = 1;
@@ -110,7 +110,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         removed_fname = fixture.test_data[0].destfile;
 
         {
-            std::unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, fixture.count_dataset_files());
             expected.by_type[COUNTED_OK] = fixture.count_dataset_files() - 1;
             expected.by_type[COUNTED_TO_INDEX] = 1;
@@ -126,7 +126,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         {
             // Test packing has something to report
-            std::unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             LineChecker s;
             s.require_line_contains(": " + holed_fname + " should be packed");
             s.require_line_contains(": 1 file should be packed");
@@ -135,7 +135,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         // Perform packing and check that things are still ok afterwards
         {
-            std::unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             LineChecker s;
             s.require_line_contains(": packed " + holed_fname);
             s.require_line_contains(": 1 file packed");
@@ -158,7 +158,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         {
             // Test packing has something to report
-            std::unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             LineChecker s;
             s.require_line_contains(": " + removed_fname + " should be deleted");
             s.require_line_contains(": 1 file should be deleted");
@@ -167,7 +167,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         // Perform packing and check that things are still ok afterwards
         {
-            std::unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             LineChecker s;
             s.require_line_contains(": deleted " + removed_fname);
             s.require_line_contains(": 1 file deleted");
@@ -190,7 +190,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         {
             // Test check has something to report
-            std::unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             LineChecker s;
             s.require_line_contains(": " + holed_fname + " should be packed");
             s.require_line_contains(": 1 file should be packed");
@@ -199,13 +199,13 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         // Check refuses to potentially lose data, so it does nothing in this case
         {
-            std::unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             wassert(actual(writer.get()).check_clean(true));
         }
 
         // In the end, we are stil left with one file to pack
         {
-            std::unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, 2);
             expected.by_type[COUNTED_OK] = 1;
             expected.by_type[COUNTED_TO_PACK] = 1;
@@ -226,7 +226,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         {
             // Test packing has something to report
-            std::unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             LineChecker s;
             s.require_line_contains(": " + removed_fname + " should be rescanned");
             s.require_line_contains(": 1 file should be rescanned");
@@ -235,7 +235,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         // Perform packing and check that things are still ok afterwards
         {
-            std::unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             LineChecker s;
             s.require_line_contains(": rescanned " + removed_fname);
             s.require_line_contains(": 1 file rescanned");
@@ -268,7 +268,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         // All files are found as files to be indexed
         {
-            std::unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, fixture.count_dataset_files());
             expected.by_type[COUNTED_TO_INDEX] = fixture.count_dataset_files();
             wassert(actual(writer.get()).maintenance(expected));
@@ -276,7 +276,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         // A check rebuilds the index
         {
-            std::unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             LineChecker s;
             for (set<string>::const_iterator i = fixture.fnames.begin();
                     i != fixture.fnames.end(); ++i)
@@ -382,7 +382,7 @@ def_test(6)
 	system("mkdir testdir/foo/bar");
 	system("cat inbound/test.grib1 inbound/test.grib1 > testdir/foo/bar/test.grib1");
 
-    arki::dataset::ondisk2::Writer writer(cfg);
+    arki::dataset::ondisk2::Checker writer(cfg);
     {
         MaintenanceResults expected(false, 1);
         expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
@@ -463,7 +463,7 @@ def_test(7)
         index.reset("2007/07-08.grib1");
     }
 
-    arki::dataset::ondisk2::Writer writer(cfg);
+    arki::dataset::ondisk2::Checker writer(cfg);
     MaintenanceResults expected(false, 3);
     expected.by_type[DatasetTest::COUNTED_OK] = 2;
     expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
@@ -508,22 +508,22 @@ def_test(8)
 
     // The dataset should still be clean
     {
-        arki::dataset::ondisk2::Writer writer(cfg);
+        arki::dataset::ondisk2::Checker writer(cfg);
         wassert(actual(writer).maintenance_clean(3));
     }
 
     // The dataset should still be clean even with an accurate scan
     {
-        arki::dataset::ondisk2::Writer writer(cfg);
+        arki::dataset::ondisk2::Checker writer(cfg);
         wassert(actual(writer).maintenance_clean(3, false));
     }
 
-	// Remove the index
-	system("rm testdir/index.sqlite");
+    // Remove the index
+    system("rm testdir/index.sqlite");
 
     // See how maintenance scan copes
     {
-        arki::dataset::ondisk2::Writer writer(cfg);
+        arki::dataset::ondisk2::Checker writer(cfg);
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 3;
         wassert(actual(writer).maintenance(expected));
@@ -562,10 +562,10 @@ def_test(9)
 	if (getuid() == 0)
 		return;
 
-	acquireSamples();
-	files::removeDontpackFlagfile("testdir");
+    acquireSamples();
+    files::removeDontpackFlagfile("testdir");
 
-	arki::dataset::ondisk2::Writer writer(cfg);
+    arki::dataset::ondisk2::Checker writer(cfg);
 
     // Dataset is ok
     wassert(actual(writer).maintenance_clean(3));
@@ -621,7 +621,7 @@ def_test(10)
 {
     // Perform maintenance on empty dir, creating an empty summary cache
     {
-        arki::dataset::ondisk2::Writer writer(cfg);
+        arki::dataset::ondisk2::Checker writer(cfg);
         wassert(actual(writer).maintenance_clean(0));
     }
 
@@ -692,7 +692,7 @@ def_test(12)
 
     // A simple rescanFile throws "manual fix is required" error
     {
-        ondisk2::Writer writer(cfg);
+        ondisk2::Checker writer(cfg);
         try {
             writer.rescanFile("2007/10-09.grib1");
             wassert(throw std::runtime_error("rescanFile should have thrown at this point"));
@@ -706,7 +706,7 @@ def_test(12)
 
     // Run maintenance check
     {
-        ondisk2::Writer writer(cfg);
+        ondisk2::Checker writer(cfg);
         arki::tests::MaintenanceResults expected(false, 3);
         expected.by_type[COUNTED_TO_INDEX] = 3;
         wassert(actual(writer).maintenance(expected));
@@ -714,7 +714,7 @@ def_test(12)
 
     {
         // Perform full maintenance and check that things are still ok afterwards
-        ondisk2::Writer writer(cfg);
+        ondisk2::Checker writer(cfg);
         stringstream s;
         try {
             writer.check(s, true, true);
@@ -749,7 +749,7 @@ def_test(13)
 
     // A simple rescanFile throws "manual fix is required" error
     {
-        ondisk2::Writer writer(cfg);
+        ondisk2::Checker writer(cfg);
         try {
             writer.rescanFile("2007/06-06.grib1");
             wassert(throw std::runtime_error("rescanFile should have thrown at this point"));
@@ -760,7 +760,7 @@ def_test(13)
 
     // Run maintenance check
     {
-        ondisk2::Writer writer(cfg);
+        ondisk2::Checker writer(cfg);
 
         arki::tests::MaintenanceResults expected(false, 4);
         expected.by_type[COUNTED_OK] = 3;
@@ -770,7 +770,7 @@ def_test(13)
 
     {
         // Perform full maintenance and check that things are still ok afterwards
-        ondisk2::Writer writer(cfg);
+        ondisk2::Checker writer(cfg);
         stringstream s;
         try {
             writer.check(s, true, true);
@@ -801,7 +801,7 @@ def_test(14)
 
     // Delete every second item
     {
-        unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+        auto writer(makeLocalWriter());
         for (unsigned i = 0; i < mdc_imported.size(); ++i)
             if (i % 2 == 0)
                 writer->remove(mdc_imported[i]);
@@ -809,7 +809,7 @@ def_test(14)
 
     // Ensure the archive has items to pack
     {
-        unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+        auto writer(makeLocalChecker());
         arki::tests::MaintenanceResults expected(false, 2);
         expected.by_type[COUNTED_TO_PACK] = 2;
         wassert(actual(writer.get()).maintenance(expected));
@@ -819,7 +819,7 @@ def_test(14)
 
     // Perform packing and check that things are still ok afterwards
     {
-        unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+        auto writer(makeLocalChecker());
         OutputChecker s;
         writer->repack(s, true);
         s.ensure_line_contains(": packed 1987/10-31.vm2");
@@ -834,7 +834,7 @@ def_test(14)
 
     // Ensure the archive is now clean
     {
-        unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+        auto writer(makeLocalChecker());
         arki::tests::MaintenanceResults expected(true, 2);
         expected.by_type[COUNTED_OK] = 2;
         wassert(actual(writer.get()).maintenance(expected));

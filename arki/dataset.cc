@@ -40,11 +40,18 @@ DataQuery::~DataQuery() {}
 
 }
 
-Writer::Writer()
+Base::Base(const std::string& name)
+    : m_name(name)
 {
 }
 
-Writer::~Writer()
+Base::Base(const std::string& name, const ConfigFile& cfg)
+    : m_name(name), m_cfg(cfg.values())
+{
+}
+
+Base::Base(const ConfigFile& cfg)
+    : m_name(cfg.value("name")), m_cfg(cfg.values())
 {
 }
 
@@ -75,7 +82,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, int out)
         case dataset::ByteQuery::BQ_POSTPROCESS: {
             Postprocess postproc(q.param);
             postproc.set_output(out);
-            postproc.validate(cfg);
+            postproc.validate(m_cfg);
             postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
             query_data(q, [&](unique_ptr<Metadata> md) { return postproc.process(move(md)); });
@@ -258,13 +265,10 @@ Writer* Writer::create(const ConfigFile& cfg)
     string type = str::lower(cfg.value("type"));
     if (type == "remote")
         throw std::runtime_error("cannot create dataset: remote datasets are not writable");
-	if (type == "outbound")
-		return new dataset::Outbound(cfg);
-	if (type == "discard")
-		return new dataset::Discard(cfg);
-    /*
-    // TODO: create remote ones once implemented
-    */
+    if (type == "outbound")
+        return new dataset::Outbound(cfg);
+    if (type == "discard")
+        return new dataset::Discard(cfg);
     return dataset::LocalWriter::create(cfg);
 }
 
@@ -279,6 +283,15 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
         return dataset::Discard::testAcquire(cfg, md, out);
 
     return dataset::LocalWriter::testAcquire(cfg, md, out);
+}
+
+Checker* Checker::create(const ConfigFile& cfg)
+{
+    string type = str::lower(cfg.value("type"));
+    // TODO: create and return a null checker instead
+    if (type == "remote" || type == "outbound" || type == "discard")
+        throw std::runtime_error("cannot create dataset checker: " + type + " datasets are not checkable");
+    return dataset::LocalChecker::create(cfg);
 }
 
 }

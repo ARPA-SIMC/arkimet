@@ -169,8 +169,8 @@ void Tee::operator()(const std::string& file, segment::FileState state)
 
 // Agent
 
-Agent::Agent(std::ostream& log, SegmentedWriter& w)
-	: m_log(log), w(w), lineStart(true)
+Agent::Agent(std::ostream& log, SegmentedChecker& w)
+    : m_log(log), w(w), lineStart(true)
 {
 }
 
@@ -203,8 +203,8 @@ void Agent::logEnd()
 
 // FailsafeRepacker
 
-FailsafeRepacker::FailsafeRepacker(std::ostream& log, SegmentedWriter& w)
-	: Agent(log, w), m_count_deleted(0)
+FailsafeRepacker::FailsafeRepacker(std::ostream& log, SegmentedChecker& w)
+    : Agent(log, w), m_count_deleted(0)
 {
 }
 
@@ -223,8 +223,8 @@ void FailsafeRepacker::end()
 
 // MockRepacker
 
-MockRepacker::MockRepacker(std::ostream& log, SegmentedWriter& w)
-	: Agent(log, w), m_count_packed(0), m_count_archived(0),
+MockRepacker::MockRepacker(std::ostream& log, SegmentedChecker& w)
+    : Agent(log, w), m_count_packed(0), m_count_archived(0),
 	  m_count_deleted(0), m_count_deindexed(0), m_count_rescanned(0)
 {
 }
@@ -286,8 +286,8 @@ void MockRepacker::end()
 
 // MockFixer
 
-MockFixer::MockFixer(std::ostream& log, SegmentedWriter& w)
-	: Agent(log, w), m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0)
+MockFixer::MockFixer(std::ostream& log, SegmentedChecker& w)
+    : Agent(log, w), m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0)
 {
 }
 
@@ -330,10 +330,10 @@ void MockFixer::end()
 
 // RealRepacker
 
-RealRepacker::RealRepacker(std::ostream& log, SegmentedWriter& w)
-	: Agent(log, w), m_count_packed(0), m_count_archived(0),
-	  m_count_deleted(0), m_count_deindexed(0), m_count_rescanned(0),
-	  m_count_freed(0), m_touched_archive(false), m_redo_summary(false)
+RealRepacker::RealRepacker(std::ostream& log, SegmentedChecker& w)
+    : Agent(log, w), m_count_packed(0), m_count_archived(0),
+      m_count_deleted(0), m_count_deindexed(0), m_count_rescanned(0),
+      m_count_freed(0), m_touched_archive(false), m_redo_summary(false)
 {
 }
 
@@ -438,10 +438,9 @@ void RealRepacker::end()
 
 // RealFixer
 
-RealFixer::RealFixer(std::ostream& log, SegmentedWriter& w)
-	: Agent(log, w), 
-          m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0),
-	  m_touched_archive(false), m_redo_summary(false)
+RealFixer::RealFixer(std::ostream& log, SegmentedChecker& w)
+    : Agent(log, w), m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0),
+      m_touched_archive(false), m_redo_summary(false)
 {
 }
 

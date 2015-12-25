@@ -174,7 +174,7 @@ def_test(3)
 
     // Maintenance should show one file to index
     {
-        dataset::simple::Writer writer(cfg);
+        dataset::simple::Checker writer(cfg);
         MaintenanceResults expected(false, 1);
         expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
         wassert(actual(writer).maintenance(expected));
@@ -183,7 +183,7 @@ def_test(3)
 
     {
         stringstream s;
-        dataset::simple::Writer writer(cfg);
+        dataset::simple::Checker writer(cfg);
 
 		// Check should reindex the file
 		writer.check(s, true, true);
@@ -203,14 +203,14 @@ def_test(3)
 
     // Remove the file from the index
     {
-        dataset::simple::Writer writer(cfg);
+        dataset::simple::Checker writer(cfg);
         writer.removeFile("2007/07-08.grib1", false);
     }
 
     // Repack should delete the files not in index
     {
         stringstream s;
-        dataset::simple::Writer writer(cfg);
+        dataset::simple::Checker writer(cfg);
 
 		s.str(std::string());
 		writer.repack(s, true);
@@ -250,7 +250,7 @@ def_test(4)
 
     // Maintenance should show one file to rescan
     {
-        simple::Writer writer(cfg);
+        simple::Checker writer(cfg);
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
         expected.by_type[DatasetTest::COUNTED_TO_RESCAN] = 1;
@@ -260,7 +260,7 @@ def_test(4)
     // Fix the dataset
     {
         stringstream s;
-        simple::Writer writer(cfg);
+        simple::Checker writer(cfg);
 
 		// Check should reindex the file
 		writer.check(s, true, true);
@@ -291,7 +291,7 @@ def_test(4)
     // Repack here should act as if the dataset were empty
     {
         stringstream s;
-        simple::Writer writer(cfg);
+        simple::Checker writer(cfg);
 
 		// Repack should find nothing to repack
 		s.str(std::string());
@@ -337,7 +337,7 @@ def_test(5)
 
     // Maintenance should show one file to rescan
     {
-        simple::Writer writer(cfg);
+        simple::Checker writer(cfg);
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
         expected.by_type[DatasetTest::COUNTED_TO_RESCAN] = 1;
@@ -347,7 +347,7 @@ def_test(5)
     // Fix the dataset
     {
         stringstream s;
-        simple::Writer writer(cfg);
+        simple::Checker writer(cfg);
 
 		// Check should reindex the file
 		writer.check(s, true, true);
@@ -378,7 +378,7 @@ def_test(5)
     // Repack here should act as if the dataset were empty
     {
         stringstream s;
-        simple::Writer writer(cfg);
+        simple::Checker writer(cfg);
 
 		// Repack should find nothing to repack
 		s.str(std::string());
@@ -451,7 +451,7 @@ def_test(6)
 
     // Maintenance should show one file to rescan
     {
-        simple::Writer writer(cfg);
+        simple::Checker writer(cfg);
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
         expected.by_type[DatasetTest::COUNTED_TO_RESCAN] = 1;
@@ -461,7 +461,7 @@ def_test(6)
     // Fix the dataset
     {
         stringstream s;
-        simple::Writer writer(cfg);
+        simple::Checker writer(cfg);
 
 		// Check should reindex the file
 		writer.check(s, true, true);
@@ -495,7 +495,7 @@ def_test(6)
     // Repack here should act as if the dataset were empty
     {
         stringstream s;
-        simple::Writer writer(cfg);
+        simple::Checker writer(cfg);
 
 		// Repack should find nothing to repack
 		s.str(std::string());
@@ -547,7 +547,7 @@ def_test(7)
 
     // Maintenance should show one file to rescan
     {
-        simple::Writer writer(cfg);
+        simple::Checker writer(cfg);
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
         expected.by_type[DatasetTest::COUNTED_TO_DEINDEX] = 1;
@@ -557,7 +557,7 @@ def_test(7)
     // Fix the dataset
     {
         stringstream s;
-        simple::Writer writer(cfg);
+        simple::Checker writer(cfg);
 
 		// Check should reindex the file
 		writer.check(s, true, true);
@@ -585,7 +585,7 @@ def_test(7)
     // Repack here should act as if the dataset were empty
     {
         stringstream s;
-        simple::Writer writer(cfg);
+        simple::Checker writer(cfg);
 
 		// Repack should tidy up the index
 		s.str(std::string());

@@ -132,13 +132,33 @@ struct ByteQuery : public DataQuery
 
 }
 
-class Reader
+struct Base
+{
+protected:
+    /// Dataset name
+    std::string m_name;
+
+    /// Dataset configuration key-value pairs (normally extracted from ConfigFile)
+    std::map<std::string, std::string> m_cfg;
+
+public:
+    Base(const std::string& name);
+    Base(const std::string& name, const ConfigFile& cfg);
+    Base(const ConfigFile& cfg);
+    virtual ~Base() {}
+
+    /// Return the dataset configuration
+    const std::map<std::string, std::string>& cfg() const { return m_cfg; }
+
+    /// Return the dataset name
+    const std::string& name() const { return m_name; }
+
+};
+
+class Reader : public Base
 {
 public:
-	// Configuration items (normally extracted from ConfigFile)
-	std::map<std::string, std::string> cfg;
-
-	virtual ~Reader() {}
+    using Base::Base;
 
     /**
      * Query the dataset using the given matcher, and sending the results to
@@ -171,10 +191,10 @@ public:
 	 */
 	static Reader* lua_check(lua_State* L, int idx);
 
-	/**
-	 * Instantiate an appropriate Dataset for the given configuration
-	 */
-	static Reader* create(const ConfigFile& cfg);
+    /**
+     * Instantiate an appropriate Reader for the given configuration
+     */
+    static Reader* create(const ConfigFile& cfg);
 
 	/**
 	 * Read the configuration of the dataset(s) at the given path or URL,
@@ -183,7 +203,7 @@ public:
 	static void readConfig(const std::string& path, ConfigFile& cfg);
 };
 
-class Writer
+class Writer : public Base
 {
 public:
 	/// Possible outcomes of acquire
@@ -211,8 +231,6 @@ public:
     };
 
 protected:
-    std::string m_name;
-
 	/**
 	 * Insert the given metadata in the dataset.
 	 *
@@ -225,11 +243,7 @@ protected:
 	//virtual bool replace(Metadata& md) = 0;
 
 public:
-    Writer();
-    virtual ~Writer();
-
-	// Return the dataset name
-	const std::string& name() const { return m_name; }
+    using Base::Base;
 
 	/**
 	 * Acquire the given metadata item (and related data) in this dataset.
@@ -248,11 +262,6 @@ public:
 	virtual void remove(Metadata& md) = 0;
 
 	/**
-	 * Reset this dataset, removing all data, indices and caches
-	 */
-	virtual void removeAll(std::ostream& log, bool writable=false) = 0;
-
-	/**
 	 * Flush pending changes to disk
 	 */
 	virtual void flush();
@@ -265,10 +274,10 @@ public:
      */
     virtual Pending test_writelock();
 
-	/**
-	 * Instantiate an appropriate Dataset for the given configuration
-	 */
-	static Writer* create(const ConfigFile& cfg);
+    /**
+     * Instantiate an appropriate Writer for the given configuration
+     */
+    static Writer* create(const ConfigFile& cfg);
 
 	/**
 	 * Simulate acquiring the given metadata item (and related data) in this
@@ -283,8 +292,35 @@ public:
 	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
-class Checker
+struct Checker : public Base
 {
+    using Base::Base;
+
+    /**
+     * Reset this dataset, removing all data, indices and caches
+     */
+    virtual void removeAll(std::ostream& log, bool writable=false) = 0;
+
+    /**
+     * Repack the dataset, logging status to the given file.
+     *
+     * If writable is false, the process is simulated but no changes are
+     * saved.
+     */
+    virtual void repack(std::ostream& log, bool writable=false) = 0;
+
+    /**
+     * Check the dataset for errors, logging status to the given file.
+     *
+     * If \a fix is false, the process is simulated but no changes are saved.
+     * If \a fix is true, errors are fixed.
+     */
+    virtual void check(std::ostream& log, bool fix, bool quick) = 0;
+
+    /**
+     * Instantiate an appropriate Checker for the given configuration
+     */
+    static Checker* create(const ConfigFile& cfg);
 };
 
 }

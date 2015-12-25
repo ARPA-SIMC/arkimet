@@ -64,7 +64,7 @@ class Tests : public FixtureTestCase<Fixture>
 
             // Check if files to archive are detected
             {
-                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter(&cfg));
+                auto writer(f.makeLocalChecker(&cfg));
 
                 MaintenanceResults expected(false, 3);
                 expected.by_type[DatasetTest::COUNTED_OK] = 1;
@@ -74,7 +74,7 @@ class Tests : public FixtureTestCase<Fixture>
 
             // Perform packing and check that things are still ok afterwards
             {
-                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter(&cfg));
+                auto writer(f.makeLocalChecker(&cfg));
                 OutputChecker s;
                 writer->repack(s, true);
                 s.ensure_line_contains(": archived 2007/07-07.grib1");
@@ -108,7 +108,7 @@ class Tests : public FixtureTestCase<Fixture>
 
             // Maintenance should now show a normal situation
             {
-                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter(&cfg));
+                auto writer(f.makeLocalChecker(&cfg));
                 MaintenanceResults expected(true, 3);
                 expected.by_type[DatasetTest::COUNTED_OK] = 1;
                 expected.by_type[DatasetTest::COUNTED_ARC_OK] = 2;
@@ -117,7 +117,7 @@ class Tests : public FixtureTestCase<Fixture>
 
             // Perform full maintenance and check that things are still ok afterwards
             {
-                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter(&cfg));
+                auto writer(f.makeLocalChecker(&cfg));
                 stringstream s;
                 s.str(std::string());
                 writer->check(s, true, true);
@@ -202,7 +202,7 @@ class Tests : public FixtureTestCase<Fixture>
             cfg.setValue("archive age", days_since(2007, 9, 1));
             f.clean_and_import(&cfg);
             {
-                unique_ptr<LocalWriter> writer(f.makeLocalWriter(&cfg));
+                auto writer(f.makeLocalChecker(&cfg));
                 OutputChecker s;
                 writer->repack(s, true);
                 s.ensure_line_contains(": archived 2007/07-07.grib1");

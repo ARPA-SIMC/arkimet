@@ -289,69 +289,108 @@ std::string DatasetTest::arcidxfname() const
 	return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
-Reader* DatasetTest::makeReader(const ConfigFile* wcfg)
-{
-	if (!wcfg) wcfg = &cfg;
-	Reader* ds = Reader::create(*wcfg);
-	ensure(ds);
-	return ds;
-}
-
-Writer* DatasetTest::makeWriter(const ConfigFile* wcfg)
+std::unique_ptr<Reader> DatasetTest::makeReader(const ConfigFile* wcfg)
 {
     if (!wcfg) wcfg = &cfg;
-    Writer* ds = Writer::create(*wcfg);
-    ensure(ds);
+    unique_ptr<Reader> ds(Reader::create(*wcfg));
+    wassert(actual(ds.get()));
     return ds;
 }
 
-dataset::LocalReader* DatasetTest::makeLocalReader(const ConfigFile* wcfg)
+std::unique_ptr<Writer> DatasetTest::makeWriter(const ConfigFile* wcfg)
 {
-	using namespace arki::dataset;
-	Reader* ds = makeReader(wcfg);
-	LocalReader* wl = dynamic_cast<LocalReader*>(ds);
-	ensure(wl);
-	return wl;
+    if (!wcfg) wcfg = &cfg;
+    unique_ptr<Writer> ds(Writer::create(*wcfg));
+    wassert(actual(ds.get()));
+    return ds;
 }
 
-dataset::SegmentedWriter* DatasetTest::makeLocalWriter(const ConfigFile* wcfg)
+std::unique_ptr<Checker> DatasetTest::makeChecker(const ConfigFile* wcfg)
 {
-    using namespace arki::dataset;
-    Writer* ds = makeWriter(wcfg);
-    SegmentedWriter* wl = dynamic_cast<SegmentedWriter*>(ds);
-    ensure(wl);
+    if (!wcfg) wcfg = &cfg;
+    unique_ptr<Checker> ds(Checker::create(*wcfg));
+    wassert(actual(ds.get()));
+    return ds;
+}
+
+std::unique_ptr<dataset::SegmentedReader> DatasetTest::makeLocalReader(const ConfigFile* wcfg)
+{
+    auto ds = makeReader(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::SegmentedReader> wl(dynamic_cast<dataset::SegmentedReader*>(ds.release()));
+    wassert(actual(wl.get()));
     return wl;
 }
 
-dataset::ondisk2::Reader* DatasetTest::makeOndisk2Reader(const ConfigFile* wcfg)
+std::unique_ptr<dataset::SegmentedWriter> DatasetTest::makeLocalWriter(const ConfigFile* wcfg)
 {
-	Reader* ds = makeReader(wcfg);
-	dataset::ondisk2::Reader* wl = dynamic_cast<dataset::ondisk2::Reader*>(ds);
-	ensure(wl);
-	return wl;
-}
-
-dataset::ondisk2::Writer* DatasetTest::makeOndisk2Writer(const ConfigFile* wcfg)
-{
-    Writer* ds = makeWriter(wcfg);
-    dataset::ondisk2::Writer* wl = dynamic_cast<dataset::ondisk2::Writer*>(ds);
-    ensure(wl);
+    auto ds = makeWriter(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::SegmentedWriter> wl(dynamic_cast<dataset::SegmentedWriter*>(ds.release()));
+    wassert(actual(wl.get()));
     return wl;
 }
 
-dataset::simple::Reader* DatasetTest::makeSimpleReader(const ConfigFile* wcfg)
+std::unique_ptr<dataset::SegmentedChecker> DatasetTest::makeLocalChecker(const ConfigFile* wcfg)
 {
-	Reader* ds = makeReader(wcfg);
-	dataset::simple::Reader* wl = dynamic_cast<dataset::simple::Reader*>(ds);
-	ensure(wl);
-	return wl;
+    auto ds = makeChecker(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::SegmentedChecker> wl(dynamic_cast<dataset::SegmentedChecker*>(ds.release()));
+    wassert(actual(wl.get()));
+    return wl;
 }
 
-dataset::simple::Writer* DatasetTest::makeSimpleWriter(const ConfigFile* wcfg)
+std::unique_ptr<dataset::ondisk2::Reader> DatasetTest::makeOndisk2Reader(const ConfigFile* wcfg)
 {
-    Writer* ds = makeWriter(wcfg);
-    dataset::simple::Writer* wl = dynamic_cast<dataset::simple::Writer*>(ds);
-    ensure(wl);
+    auto ds = makeReader(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::ondisk2::Reader> wl(dynamic_cast<dataset::ondisk2::Reader*>(ds.release()));
+    wassert(actual(wl.get()));
+    return wl;
+}
+
+std::unique_ptr<dataset::ondisk2::Writer> DatasetTest::makeOndisk2Writer(const ConfigFile* wcfg)
+{
+    auto ds = makeWriter(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::ondisk2::Writer> wl(dynamic_cast<dataset::ondisk2::Writer*>(ds.release()));
+    wassert(actual(wl.get()));
+    return wl;
+}
+
+std::unique_ptr<dataset::ondisk2::Checker> DatasetTest::makeOndisk2Checker(const ConfigFile* wcfg)
+{
+    auto ds = makeChecker(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::ondisk2::Checker> wl(dynamic_cast<dataset::ondisk2::Checker*>(ds.release()));
+    wassert(actual(wl.get()));
+    return wl;
+}
+
+std::unique_ptr<dataset::simple::Reader> DatasetTest::makeSimpleReader(const ConfigFile* wcfg)
+{
+    auto ds = makeReader(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::simple::Reader> wl(dynamic_cast<dataset::simple::Reader*>(ds.release()));
+    wassert(actual(wl.get()));
+    return wl;
+}
+
+std::unique_ptr<dataset::simple::Writer> DatasetTest::makeSimpleWriter(const ConfigFile* wcfg)
+{
+    auto ds = makeWriter(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::simple::Writer> wl(dynamic_cast<dataset::simple::Writer*>(ds.release()));
+    wassert(actual(wl.get()));
+    return wl;
+}
+
+std::unique_ptr<dataset::simple::Checker> DatasetTest::makeSimpleChecker(const ConfigFile* wcfg)
+{
+    auto ds = makeChecker(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::simple::Checker> wl(dynamic_cast<dataset::simple::Checker*>(ds.release()));
+    wassert(actual(wl.get()));
     return wl;
 }
 
@@ -407,7 +446,7 @@ void DatasetTest::clean_and_import(const ConfigFile* wcfg, const std::string& te
 
 void DatasetTest::ensure_maint_clean(size_t filecount, const ConfigFile* wcfg)
 {
-    unique_ptr<dataset::SegmentedWriter> writer(makeLocalWriter(wcfg));
+    unique_ptr<dataset::SegmentedChecker> writer(makeLocalChecker(wcfg));
     arki::tests::MaintenanceResults expected(true, filecount);
     expected.by_type[COUNTED_OK] = filecount;
     wassert(actual(writer.get()).maintenance(expected));
@@ -447,7 +486,7 @@ void DatasetTest::import_all_packed(const testdata::Fixture& fixture)
 
     // Pack the dataset in case something imported data out of order
     {
-        unique_ptr<LocalWriter> writer(makeLocalWriter());
+        unique_ptr<LocalChecker> writer(makeLocalChecker());
         LineChecker checker;
         checker.ignore_regexp(": packed ");
         checker.ignore_regexp(": [0-9]+ files? packed");
@@ -683,6 +722,19 @@ std::unique_ptr<Reader> make_dataset_reader(const std::string& cfgstr)
     return ds;
 }
 
+std::unique_ptr<dataset::LocalChecker> make_dataset_checker(const std::string& cfgstr)
+{
+    // Parse configuration
+    stringstream incfg(cfgstr);
+    ConfigFile cfg;
+    cfg.parse(incfg, "(memory)");
+    wassert(actual(cfg.value("path").empty()).isfalse());
+
+    unique_ptr<dataset::LocalChecker> ds(dataset::LocalChecker::create(cfg));
+    wassert(actual(ds.get()).istrue());
+    return ds;
+}
+
 void test_append_transaction_ok(dataset::segment::Segment* dw, Metadata& md, int append_amount_adjust)
 {
     typedef types::source::Blob Blob;
@@ -731,7 +783,7 @@ void test_append_transaction_rollback(dataset::segment::Segment* dw, Metadata& m
 }
 
 /// Run maintenance and see that the results are as expected
-void ActualSegmentedWriter::maintenance(const MaintenanceResults& expected, bool quick)
+void ActualSegmentedChecker::maintenance(const MaintenanceResults& expected, bool quick)
 {
     MaintenanceCollector c;
     wassert(_actual->maintenance([&](const std::string& relpath, segment::FileState state) { c(relpath, state); }, quick));
@@ -763,7 +815,7 @@ void ActualSegmentedWriter::maintenance(const MaintenanceResults& expected, bool
     throw TestFailed(ss.str());
 }
 
-void ActualSegmentedWriter::maintenance_clean(unsigned data_count, bool quick)
+void ActualSegmentedChecker::maintenance_clean(unsigned data_count, bool quick)
 {
     MaintenanceResults expected(true, data_count);
     expected.by_type[tests::DatasetTest::COUNTED_OK] = data_count;
@@ -771,7 +823,7 @@ void ActualSegmentedWriter::maintenance_clean(unsigned data_count, bool quick)
 }
 
 template<typename Dataset>
-void ActualLocalWriter<Dataset>::repack(const LineChecker& expected, bool write)
+void ActualLocalChecker<Dataset>::repack(const LineChecker& expected, bool write)
 {
     stringstream s;
     wassert(this->_actual->repack(s, write));
@@ -779,7 +831,7 @@ void ActualLocalWriter<Dataset>::repack(const LineChecker& expected, bool write)
 }
 
 template<typename Dataset>
-void ActualLocalWriter<Dataset>::repack_clean(bool write)
+void ActualLocalChecker<Dataset>::repack_clean(bool write)
 {
     LineChecker expected;
     expected.ignore_regexp("total bytes freed.");
@@ -787,7 +839,7 @@ void ActualLocalWriter<Dataset>::repack_clean(bool write)
 }
 
 template<typename Dataset>
-void ActualLocalWriter<Dataset>::check(const LineChecker& expected, bool write, bool quick)
+void ActualLocalChecker<Dataset>::check(const LineChecker& expected, bool write, bool quick)
 {
     stringstream s;
     wassert(this->_actual->check(s, write, quick));
@@ -795,7 +847,7 @@ void ActualLocalWriter<Dataset>::check(const LineChecker& expected, bool write, 
 }
 
 template<typename Dataset>
-void ActualLocalWriter<Dataset>::check_clean(bool write)
+void ActualLocalChecker<Dataset>::check_clean(bool write)
 {
     LineChecker expected;
     check(expected, write);
@@ -858,6 +910,6 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
 
 }
 
-template class ActualLocalWriter<dataset::LocalWriter>;
-template class ActualLocalWriter<dataset::SegmentedWriter>;
+template class ActualLocalChecker<dataset::LocalChecker>;
+template class ActualLocalChecker<dataset::SegmentedChecker>;
 }

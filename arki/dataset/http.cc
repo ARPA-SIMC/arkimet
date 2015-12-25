@@ -96,12 +96,10 @@ struct CurlForm
 }
 
 HTTP::HTTP(const ConfigFile& cfg)
-	: m_mischief(false)
+    : Reader(cfg), m_mischief(false)
 {
-	this->cfg = cfg.values();
-	m_name = cfg.value("name");
-	m_baseurl = cfg.value("path");
-	m_qmacro = cfg.value("qmacro");
+    m_baseurl = cfg.value("path");
+    m_qmacro = cfg.value("qmacro");
 }
 
 HTTP::~HTTP()

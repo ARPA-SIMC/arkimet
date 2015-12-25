@@ -145,8 +145,8 @@ struct DataProcessor : public SingleOutputProcessor
         {
             ds.query_data(query, [&](unique_ptr<Metadata> md) { check_hooks(); md->makeInline(); printer(*md); return true; });
         } else if (server_side) {
-            map<string, string>::const_iterator iurl = ds.cfg.find("url");
-            if (iurl == ds.cfg.end())
+            map<string, string>::const_iterator iurl = ds.cfg().find("url");
+            if (iurl == ds.cfg().end())
             {
                 ds.query_data(query, [&](unique_ptr<Metadata> md) {
                     check_hooks();

@@ -8,14 +8,21 @@ namespace arki {
 namespace dataset {
 class TargetFile;
 
-/**
- * LocalReader dataset with data stored in segment files
- */
-class SegmentedReader : public LocalReader
+struct SegmentedBase
 {
 protected:
     segment::SegmentManager* m_segment_manager;
 
+public:
+    SegmentedBase(const ConfigFile& cfg);
+    ~SegmentedBase();
+};
+
+/**
+ * LocalReader dataset with data stored in segment files
+ */
+class SegmentedReader : public LocalReader, public SegmentedBase
+{
 public:
     SegmentedReader(const ConfigFile& cfg);
     ~SegmentedReader();
@@ -24,12 +31,11 @@ public:
 /**
  * LocalWriter dataset with data stored in segment files
  */
-class SegmentedWriter : public LocalWriter
+class SegmentedWriter : public LocalWriter, public SegmentedBase
 {
 protected:
     ReplaceStrategy m_default_replace_strategy;
     TargetFile* m_tf;
-    segment::SegmentManager* m_segment_manager;
 
     /**
      * Return an instance of the Segment for the file where the given metadata
@@ -41,12 +47,35 @@ public:
     SegmentedWriter(const ConfigFile& cfg);
     ~SegmentedWriter();
 
+    virtual void flush();
+
+    /**
+     * Instantiate an appropriate Writer for the given configuration
+     */
+    static SegmentedWriter* create(const ConfigFile& cfg);
+
+    static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
+};
+
+/**
+ * LocalChecker with data stored in segment files
+ */
+class SegmentedChecker : public LocalChecker, public SegmentedBase
+{
+protected:
+    TargetFile* m_tf;
+
+public:
+    SegmentedChecker(const ConfigFile& cfg);
+    ~SegmentedChecker();
+
     void repack(std::ostream& log, bool writable=false) override;
     void check(std::ostream& log, bool fix, bool quick) override;
 
-    virtual void flush();
-
-    // Maintenance functions
+    /**
+     * Instantiate an appropriate SegmentedChecker for the given configuration
+     */
+    static SegmentedChecker* create(const ConfigFile& cfg);
 
     /**
      * Perform dataset maintenance, sending information to \a v
@@ -71,8 +100,9 @@ public:
      */
     virtual void sanityChecks(std::ostream& log, bool writable=false);
 
+
     /// Remove all data from the dataset
-    void removeAll(std::ostream& log, bool writable);
+    virtual void removeAll(std::ostream& log, bool writable);
 
     /**
      * Consider all existing metadata about a file as invalid and rebuild
@@ -112,13 +142,6 @@ public:
      * @returns The number of bytes freed on disk with this operation
      */
     virtual size_t vacuum() = 0;
-
-    /**
-     * Instantiate an appropriate Dataset for the given configuration
-     */
-    static SegmentedWriter* create(const ConfigFile& cfg);
-
-    static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
 

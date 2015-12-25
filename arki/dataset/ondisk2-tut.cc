@@ -735,19 +735,23 @@ def_test(16)
         "mockdata = true\n"
         "name = testholes\n"
         "path = testholes\n";
-    unique_ptr<dataset::LocalWriter> writer(make_dataset_writer(conf));
-
-    // Import 24*30*10Mb=7.2Gb of data
-    for (unsigned day = 1; day <= 30; ++day)
     {
-        for (unsigned hour = 0; hour < 24; ++hour)
+        unique_ptr<dataset::LocalWriter> writer(make_dataset_writer(conf));
+
+        // Import 24*30*10Mb=7.2Gb of data
+        for (unsigned day = 1; day <= 30; ++day)
         {
-            Metadata md = testdata::make_large_mock("grib", 10*1024*1024, 12, day, hour);
-            Writer::AcquireResult res = writer->acquire(md);
-            wassert(actual(res) == Writer::ACQ_OK);
+            for (unsigned hour = 0; hour < 24; ++hour)
+            {
+                Metadata md = testdata::make_large_mock("grib", 10*1024*1024, 12, day, hour);
+                Writer::AcquireResult res = writer->acquire(md);
+                wassert(actual(res) == Writer::ACQ_OK);
+            }
         }
+        writer->flush();
     }
-    writer->flush();
+
+    unique_ptr<dataset::LocalChecker> writer(make_dataset_checker(conf));
     wassert(actual(writer.get()).check_clean());
 
     // Query it, without data

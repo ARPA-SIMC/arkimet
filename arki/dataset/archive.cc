@@ -68,7 +68,7 @@ Archive* Archive::create(const std::string& dir, bool writable)
 }
 
 OnlineArchive::OnlineArchive(const std::string& dir)
-: m_dir(dir), m_mft(0)
+    : Archive(str::basename(dir)), m_dir(dir), m_mft(0)
 {
     // Create the directory if it does not exist
     sys::makedirs(m_dir);
@@ -222,7 +222,7 @@ void OnlineArchive::vacuum()
 
 
 OfflineArchive::OfflineArchive(const std::string& fname)
-    : fname(fname)
+    : Archive(str::basename(fname)), fname(fname)
 {
     sum.readFile(fname);
 }
@@ -287,7 +287,7 @@ void OfflineArchive::vacuum()
 
 
 Archives::Archives(const std::string& root, const std::string& dir, bool read_only)
-    : m_scache_root(str::joinpath(root, ".summaries")), m_dir(dir), m_read_only(read_only), m_last(0)
+    : Reader("archives"), m_scache_root(str::joinpath(root, ".summaries")), m_dir(dir), m_read_only(read_only), m_last(0)
 {
     // Create the directory if it does not exist
     sys::makedirs(m_dir);
@@ -357,7 +357,6 @@ void Archives::rescan_archives()
     // if not read only
     if (!m_read_only && !m_last)
     {
-
         OnlineArchive* o;
         m_last = o = new OnlineArchive(str::joinpath(m_dir, "last"));
         o->openRW();

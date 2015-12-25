@@ -33,6 +33,7 @@ class Reader;
 class Archive : public Reader
 {
 public:
+    using Reader::Reader;
     virtual ~Archive();
 
     virtual void acquire(const std::string& relname) = 0;

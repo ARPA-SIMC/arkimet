@@ -75,7 +75,7 @@ struct Fixture : public DatasetTest {
 
         // Ensure everything appears clean
         {
-            std::unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             wassert(actual(writer.get()).maintenance_clean(file_count));
 
             // Check that maintenance does not accidentally create an archive
@@ -84,7 +84,7 @@ struct Fixture : public DatasetTest {
 
         // Ensure packing has nothing to report
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             stringstream s;
             writer->repack(s, false);
             wassert(actual(s.str()) == "");
@@ -94,7 +94,7 @@ struct Fixture : public DatasetTest {
 
         // Perform packing and check that things are still ok afterwards
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             stringstream s;
             writer->repack(s, true);
             wassert(actual(s.str()) == "");
@@ -104,7 +104,7 @@ struct Fixture : public DatasetTest {
 
         // Perform full maintenance and check that things are still ok afterwards
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             stringstream s;
             writer->check(s, true, true);
             wassert(actual(s.str()) == ""); // Nothing should have happened
@@ -120,7 +120,7 @@ struct Fixture : public DatasetTest {
 
         // Check if files to archive are detected
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, fixture.count_dataset_files());
             expected.by_type[COUNTED_OK] = fixture.fnames_after_cutoff.size();
             expected.by_type[COUNTED_TO_ARCHIVE] = fixture.fnames_before_cutoff.size();
@@ -129,7 +129,7 @@ struct Fixture : public DatasetTest {
 
         // Perform packing and check that things are still ok afterwards
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             LineChecker s;
             for (set<string>::const_iterator i = fixture.fnames_before_cutoff.begin();
                     i != fixture.fnames_before_cutoff.end(); ++i)
@@ -153,7 +153,7 @@ struct Fixture : public DatasetTest {
 
         // Maintenance should now show a normal situation
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(true, fixture.count_dataset_files());
             expected.by_type[COUNTED_OK] = fixture.fnames_after_cutoff.size();
             expected.by_type[COUNTED_ARC_OK] = fixture.fnames_before_cutoff.size();
@@ -162,7 +162,7 @@ struct Fixture : public DatasetTest {
 
         // Perform full maintenance and check that things are still ok afterwards
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             stringstream s;
             s.str(std::string());
             writer->check(s, true, true);
@@ -191,7 +191,7 @@ struct Fixture : public DatasetTest {
 
         // Check if files to delete are detected
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, fixture.count_dataset_files());
             expected.by_type[COUNTED_OK] = fixture.fnames_after_cutoff.size();
             expected.by_type[COUNTED_TO_DELETE] = fixture.fnames_before_cutoff.size();
@@ -199,7 +199,7 @@ struct Fixture : public DatasetTest {
         }
         // Perform packing and check that things are still ok afterwards
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             LineChecker s;
             for (set<string>::const_iterator i = fixture.fnames_before_cutoff.begin();
                     i != fixture.fnames_before_cutoff.end(); ++i)
@@ -210,7 +210,7 @@ struct Fixture : public DatasetTest {
             wassert(actual(writer.get()).repack(s, true));
         }
 
-        unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+        auto writer(makeLocalChecker());
         wassert(actual(writer.get()).maintenance_clean(fixture.fnames_after_cutoff.size()));
     }
 
@@ -229,7 +229,7 @@ struct Fixture : public DatasetTest {
 
         // See that the truncated file is detected
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, 2);
             expected.by_type[COUNTED_OK] = 1;
             expected.by_type[COUNTED_TO_RESCAN] = 1;
@@ -238,7 +238,7 @@ struct Fixture : public DatasetTest {
 
         // Perform packing and check that nothing has happened
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             wassert(actual(writer.get()).repack_clean(true));
 
             arki::tests::MaintenanceResults expected(false, 2);
@@ -249,7 +249,7 @@ struct Fixture : public DatasetTest {
 
         // Perform full maintenance and check that things are still ok afterwards
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
 
             LineChecker s;
             s.require_line_contains(": rescanned " + truncated_fname);
@@ -283,14 +283,14 @@ struct Fixture : public DatasetTest {
 
         // A quick check has nothing to complain
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             wassert(actual(writer.get()).maintenance_clean(2));
         }
 
         // A thorough check should find the corruption
         {
             //nag::TestCollect tc;
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, 2);
             expected.by_type[COUNTED_OK] = 1;
             expected.by_type[COUNTED_TO_RESCAN] = 1;
@@ -299,7 +299,7 @@ struct Fixture : public DatasetTest {
 
         // Perform full maintenance and check that things are still ok afterwards
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter(&cfg));
+            auto writer(makeLocalChecker(&cfg));
             LineChecker s;
             s.require_line_contains(": rescanned " + second_in_segment.filename);
             s.require_line_contains(": 1 file rescanned");
@@ -314,7 +314,7 @@ struct Fixture : public DatasetTest {
 
         // Perform packing and check that things are still ok afterwards
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter(&cfg));
+            auto writer(makeLocalChecker(&cfg));
             LineChecker s;
             s.require_line_contains(": packed " + second_in_segment.filename);
             s.require_line_contains(": 1 file packed");
@@ -323,7 +323,7 @@ struct Fixture : public DatasetTest {
 
         // Maintenance and pack are ok now
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             wassert(actual(writer.get()).maintenance_clean(2));
             wassert(actual(writer.get()).maintenance_clean(2, false));
         }
@@ -338,7 +338,7 @@ struct Fixture : public DatasetTest {
 
         // Initial check finds the deleted file
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, file_count);
             expected.by_type[COUNTED_OK] = file_count - 1;
             expected.by_type[COUNTED_TO_DEINDEX] = 1;
@@ -347,7 +347,7 @@ struct Fixture : public DatasetTest {
 
         // Packing should notice the problem and do nothing
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter(&cfg));
+            auto writer(makeLocalChecker(&cfg));
             LineChecker s;
             s.require_line_contains(": " + deleted_fname + " should be removed from the index");
             s.require_line_contains(": 1 file should be removed from the index");
@@ -361,7 +361,7 @@ struct Fixture : public DatasetTest {
 
         // Perform packing and check that things are still ok afterwards
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter(&cfg));
+            auto writer(makeLocalChecker(&cfg));
             LineChecker s;
             s.require_line_contains(": deleted from index " + deleted_fname);
             s.require_line_contains(": 1 file removed from index");
@@ -380,7 +380,7 @@ struct Fixture : public DatasetTest {
 
         // Initial check finds the deleted file
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, file_count);
             expected.by_type[COUNTED_OK] = file_count - 1;
             expected.by_type[COUNTED_TO_DEINDEX] = 1;
@@ -389,7 +389,7 @@ struct Fixture : public DatasetTest {
 
         // Perform full maintenance and check that things are still ok afterwards
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             LineChecker s;
             s.require_line_contains(": deindexed " + deleted_fname);
             s.require_line_contains(": 1 file removed from index");
@@ -410,7 +410,7 @@ struct Fixture : public DatasetTest {
 
         // See if the files to index are detected in the correct number
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, file_count);
             expected.by_type[COUNTED_TO_INDEX] = file_count;
             wassert(actual(writer.get()).maintenance(expected));
@@ -418,7 +418,7 @@ struct Fixture : public DatasetTest {
 
         // Perform full maintenance and check that things are still ok afterwards
         {
-            unique_ptr<SegmentedWriter> writer(makeLocalWriter());
+            auto writer(makeLocalChecker());
             LineChecker s;
             for (set<string>::const_iterator i = fixture.fnames_before_cutoff.begin();
                     i != fixture.fnames_before_cutoff.end(); ++i)
@@ -513,7 +513,7 @@ class Tests : public FixtureTestCase<Fixture>
             f.import();
 
             {
-                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter());
+                auto writer(f.makeLocalChecker());
                 MaintenanceResults expected(3, false);
                 expected.by_type[DatasetTest::COUNTED_OK] = 2;
                 expected.by_type[DatasetTest::COUNTED_TO_PACK] = 1;
@@ -596,7 +596,7 @@ class Tests : public FixtureTestCase<Fixture>
 
             // See if the files to index are detected in the correct number
             {
-                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter());
+                auto writer(f.makeLocalChecker());
                 MaintenanceResults expected(false, 1);
                 expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
                 wassert(actual(writer.get()).maintenance(expected));
@@ -604,7 +604,7 @@ class Tests : public FixtureTestCase<Fixture>
 
             // Perform full maintenance and check that things are still ok afterwards
             {
-                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter());
+                auto writer(f.makeLocalChecker());
                 OutputChecker s;
                 writer->check(s, true, true);
                 s.ensure_line_contains(": rescanned foo/bar/test.grib1");
@@ -622,7 +622,7 @@ class Tests : public FixtureTestCase<Fixture>
 
             // Perform packing and check that things are still ok afterwards
             {
-                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter());
+                auto writer(f.makeLocalChecker());
                 OutputChecker s;
                 writer->repack(s, true);
                 s.ensure_line_contains(": packed foo/bar/test.grib1");
@@ -652,7 +652,7 @@ class Tests : public FixtureTestCase<Fixture>
                 struct utimbuf oldts = { 199926000, 199926000 };
                 ensure(utime("testds/2007/07-08.grib1", &oldts) == 0);
 
-                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter());
+                auto writer(f.makeLocalChecker());
                 writer->rescanFile("2007/07-08.grib1");
             }
 
@@ -661,7 +661,7 @@ class Tests : public FixtureTestCase<Fixture>
 
             // Repack the file
             {
-                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter());
+                auto writer(f.makeLocalChecker());
                 ensure_equals(writer->repackFile("2007/07-08.grib1"), 0u);
             }
 
@@ -688,7 +688,7 @@ class Tests : public FixtureTestCase<Fixture>
 
             // Run maintenance to build the dataset
             {
-                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter(&cfg));
+                auto writer(f.makeLocalChecker(&cfg));
                 OutputChecker s;
                 writer->check(s, true, true);
                 s.ensure_line_contains(": rescanned 2007/test.grib1");
@@ -705,7 +705,7 @@ class Tests : public FixtureTestCase<Fixture>
 
             // Perform packing and check that things are still ok afterwards
             {
-                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter(&cfg));
+                auto writer(f.makeLocalChecker(&cfg));
 
                 OutputChecker s;
                 writer->repack(s, true);
@@ -717,7 +717,7 @@ class Tests : public FixtureTestCase<Fixture>
 
             // Perform full maintenance and check that things are still ok afterwards
             {
-                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter(&cfg));
+                auto writer(f.makeLocalChecker(&cfg));
                 stringstream s;
                 writer->check(s, true, true);
                 ensure_equals(s.str(), string()); // Nothing should have happened
@@ -745,7 +745,7 @@ class Tests : public FixtureTestCase<Fixture>
 
             // Run maintenance to build the dataset
             {
-                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter(&cfg));
+                auto writer(f.makeLocalChecker(&cfg));
                 OutputChecker s;
                 writer->check(s, true, true);
                 s.ensure_line_contains(": rescanned 2007/test.grib1");
@@ -762,7 +762,7 @@ class Tests : public FixtureTestCase<Fixture>
 
             // Perform packing and check that things are still ok afterwards
             {
-                unique_ptr<SegmentedWriter> writer(f.makeLocalWriter(&cfg));
+                auto writer(f.makeLocalChecker(&cfg));
 
                 OutputChecker s;
                 writer->repack(s, true);

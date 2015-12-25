@@ -67,7 +67,7 @@ static const struct luaL_Reg querymacrolib[] = {
 };
 
 Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std::string& query)
-	: cfg(cfg), L(new Lua), funcid_querydata(-1), funcid_querysummary(-1)
+    : Reader(cfg), cfg(cfg), L(new Lua), funcid_querydata(-1), funcid_querysummary(-1)
 {
 	Summary::lua_openlib(*L);
 	Matcher::lua_openlib(*L);

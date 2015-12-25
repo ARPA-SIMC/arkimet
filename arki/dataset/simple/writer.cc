@@ -36,11 +36,6 @@ namespace simple {
 Writer::Writer(const ConfigFile& cfg)
     : IndexedWriter(cfg), m_mft(0)
 {
-    m_name = cfg.value("name");
-
-    // Create the directory if it does not exist
-    sys::makedirs(m_path);
-
     // If the index is missing, take note not to perform a repack until a
     // check is made
     if (!index::Manifest::exists(m_path))
@@ -92,10 +87,77 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 	// flush when the Datafile structures are deallocated
 }
 
-void Writer::remove(Metadata& id)
+void Writer::remove(Metadata& md)
 {
     // Nothing to do
     throw std::runtime_error("cannot remove data from simple dataset: dataset does not support removing items");
+}
+
+void Writer::flush()
+{
+    SegmentedWriter::flush();
+    m_mft->flush();
+}
+
+Pending Writer::test_writelock()
+{
+    return m_mft->test_writelock();
+}
+
+Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+{
+	// TODO
+#if 0
+	wibble::sys::fs::Lockfile lockfile(wibble::str::joinpath(cfg.value("path"), "lock"));
+
+	string name = cfg.value("name");
+	try {
+		if (ConfigFile::boolValue(cfg.value("replace")))
+		{
+			if (cfg.value("index") != string())
+				ondisk::writer::IndexedRootDirectory::testReplace(cfg, md, out);
+			else
+				ondisk::writer::RootDirectory::testReplace(cfg, md, out);
+			return ACQ_OK;
+		} else {
+			try {
+				if (cfg.value("index") != string())
+					ondisk::writer::IndexedRootDirectory::testAcquire(cfg, md, out);
+				else
+					ondisk::writer::RootDirectory::testAcquire(cfg, md, out);
+				return ACQ_OK;
+			} catch (Index::DuplicateInsert& di) {
+				out << "Source information restored to original value" << endl;
+				out << "Failed to store in dataset '"+name+"' because the dataset already has the data: " + di.what() << endl;
+				return ACQ_ERROR_DUPLICATE;
+			}
+		}
+	} catch (std::exception& e) {
+		out << "Source information restored to original value" << endl;
+		out << "Failed to store in dataset '"+name+"': " + e.what() << endl;
+		return ACQ_ERROR;
+	}
+#endif
+}
+
+
+
+Checker::Checker(const ConfigFile& cfg)
+    : IndexedChecker(cfg), m_mft(0)
+{
+    // If the index is missing, take note not to perform a repack until a
+    // check is made
+    if (!index::Manifest::exists(m_path))
+        files::createDontpackFlagfile(m_path);
+
+    unique_ptr<index::Manifest> mft = index::Manifest::create(m_path, &cfg);
+    m_mft = mft.release();
+    m_mft->openRW();
+    m_idx = m_mft;
+}
+
+Checker::~Checker()
+{
 }
 
 namespace {
@@ -119,29 +181,23 @@ struct Deleter
 };
 }
 
-void Writer::maintenance(segment::state_func v, bool quick)
+void Checker::maintenance(segment::state_func v, bool quick)
 {
     // TODO Detect if data is not in reftime order
     maintenance::CheckAge ca(v, *m_tf, m_archive_age, m_delete_age);
     m_mft->check(*m_segment_manager, ca, quick);
-    SegmentedWriter::maintenance(v, quick);
+    SegmentedChecker::maintenance(v, quick);
 }
 
-void Writer::removeAll(std::ostream& log, bool writable)
+void Checker::removeAll(std::ostream& log, bool writable)
 {
     Deleter deleter(m_name, log, writable);
     m_mft->check(*m_segment_manager, deleter, true);
     // TODO: empty manifest
-    SegmentedWriter::removeAll(log, writable);
+    SegmentedChecker::removeAll(log, writable);
 }
 
-void Writer::flush()
-{
-    SegmentedWriter::flush();
-    m_mft->flush();
-}
-
-void Writer::rescanFile(const std::string& relpath)
+void Checker::rescanFile(const std::string& relpath)
 {
     // Delete cached info to force a full rescan
     string pathname = str::joinpath(m_path, relpath);
@@ -152,7 +208,7 @@ void Writer::rescanFile(const std::string& relpath)
 }
 
 
-size_t Writer::repackFile(const std::string& relpath)
+size_t Checker::repackFile(const std::string& relpath)
 {
     string pathname = str::joinpath(m_path, relpath);
 
@@ -198,66 +254,25 @@ size_t Writer::repackFile(const std::string& relpath)
 	return size_pre - size_post;
 }
 
-size_t Writer::removeFile(const std::string& relpath, bool withData)
+size_t Checker::removeFile(const std::string& relpath, bool withData)
 {
     m_mft->remove(relpath);
-    return SegmentedWriter::removeFile(relpath, withData);
+    return SegmentedChecker::removeFile(relpath, withData);
 }
 
-void Writer::archiveFile(const std::string& relpath)
+void Checker::archiveFile(const std::string& relpath)
 {
     // Remove from index
     m_mft->remove(relpath);
 
-    // Delegate the rest to SegmentedWriter
-    SegmentedWriter::archiveFile(relpath);
+    // Delegate the rest to SegmentedChecker
+    SegmentedChecker::archiveFile(relpath);
 }
 
-size_t Writer::vacuum()
+size_t Checker::vacuum()
 {
 	// Nothing to do here really
 	return 0;
-}
-
-Pending Writer::test_writelock()
-{
-    return m_mft->test_writelock();
-}
-
-Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
-{
-	// TODO
-#if 0
-	wibble::sys::fs::Lockfile lockfile(wibble::str::joinpath(cfg.value("path"), "lock"));
-
-	string name = cfg.value("name");
-	try {
-		if (ConfigFile::boolValue(cfg.value("replace")))
-		{
-			if (cfg.value("index") != string())
-				ondisk::writer::IndexedRootDirectory::testReplace(cfg, md, out);
-			else
-				ondisk::writer::RootDirectory::testReplace(cfg, md, out);
-			return ACQ_OK;
-		} else {
-			try {
-				if (cfg.value("index") != string())
-					ondisk::writer::IndexedRootDirectory::testAcquire(cfg, md, out);
-				else
-					ondisk::writer::RootDirectory::testAcquire(cfg, md, out);
-				return ACQ_OK;
-			} catch (Index::DuplicateInsert& di) {
-				out << "Source information restored to original value" << endl;
-				out << "Failed to store in dataset '"+name+"' because the dataset already has the data: " + di.what() << endl;
-				return ACQ_ERROR_DUPLICATE;
-			}
-		}
-	} catch (std::exception& e) {
-		out << "Source information restored to original value" << endl;
-		out << "Failed to store in dataset '"+name+"': " + e.what() << endl;
-		return ACQ_ERROR;
-	}
-#endif
 }
 
 

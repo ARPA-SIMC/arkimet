@@ -21,30 +21,49 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-LocalReader::LocalReader(const ConfigFile& cfg)
-    : m_name(cfg.value("name")),
-      m_path(cfg.value("path")),
-      m_archive(0)
+template<typename Archive, bool read_only>
+LocalBase<Archive, read_only>::LocalBase(const ConfigFile& cfg)
+    : m_path(cfg.value("path"))
 {
-    this->cfg = cfg.values();
+    string tmp = cfg.value("archive age");
+    if (!tmp.empty())
+        m_archive_age = std::stoi(tmp);
+
+    tmp = cfg.value("delete age");
+    if (!tmp.empty())
+        m_delete_age = std::stoi(tmp);
 }
 
-LocalReader::~LocalReader()
+template<typename Archive, bool read_only>
+LocalBase<Archive, read_only>::~LocalBase()
 {
-    if (m_archive) delete m_archive;
+    delete m_archive;
 }
 
-bool LocalReader::hasArchive() const
+template<typename Archive, bool read_only>
+bool LocalBase<Archive, read_only>::hasArchive() const
 {
     string arcdir = str::joinpath(m_path, ".archive");
     return sys::exists(arcdir);
 }
 
-Archives& LocalReader::archive()
+template<typename Archive, bool read_only>
+Archive& LocalBase<Archive, read_only>::archive()
 {
-	if (!m_archive)
-		m_archive = new Archives(m_path, str::joinpath(m_path, ".archive"));
-	return *m_archive;
+    if (!m_archive)
+#warning TODO: this is a hack, in the future we distinguish by template argument what kind of archive to instantiate
+        m_archive = new Archive(m_path, str::joinpath(m_path, ".archive"), read_only);
+    return *m_archive;
+}
+
+
+LocalReader::LocalReader(const ConfigFile& cfg)
+    : Reader(cfg.value("name"), cfg), LocalBase(cfg)
+{
+}
+
+LocalReader::~LocalReader()
+{
 }
 
 void LocalReader::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest)
@@ -68,9 +87,9 @@ size_t LocalReader::produce_nth(metadata_dest_func cons, size_t idx)
 
 size_t LocalReader::scan_test(metadata_dest_func cons, size_t idx)
 {
-    std::map<std::string, std::string>::const_iterator i = cfg.find("filter");
+    std::map<std::string, std::string>::const_iterator i = m_cfg.find("filter");
     // No point in running a scan_test if there is no filter
-    if (i == cfg.end())
+    if (i == m_cfg.end())
         return 0;
     // Dataset filter that we use to validate produce_nth output
     Matcher filter = Matcher::parse(i->second);
@@ -178,35 +197,15 @@ void LocalReader::readConfig(const std::string& path, ConfigFile& cfg)
 }
 
 LocalWriter::LocalWriter(const ConfigFile& cfg)
-    : m_path(cfg.value("path")),
-      m_archive(0), m_archive_age(-1), m_delete_age(-1)
+    : Writer(cfg.value("name"), cfg), LocalBase(cfg)
 {
-    m_name = cfg.value("name");
+    // Create the directory if it does not exist
+    sys::makedirs(m_path);
 }
 
 LocalWriter::~LocalWriter()
 {
     delete m_archive;
-}
-
-bool LocalWriter::hasArchive() const
-{
-    string arcdir = str::joinpath(m_path, ".archive");
-    return sys::exists(arcdir);
-}
-
-Archives& LocalWriter::archive()
-{
-	if (!m_archive)
-		m_archive = new Archives(m_path, str::joinpath(m_path, ".archive"), false);
-	return *m_archive;
-}
-
-const Archives& LocalWriter::archive() const
-{
-	if (!m_archive)
-		m_archive = new Archives(m_path, str::joinpath(m_path, ".archive"), false);
-	return *m_archive;
 }
 
 LocalWriter* LocalWriter::create(const ConfigFile& cfg)
@@ -219,5 +218,25 @@ LocalWriter::AcquireResult LocalWriter::testAcquire(const ConfigFile& cfg, const
     return SegmentedWriter::testAcquire(cfg, md, out);
 }
 
+
+LocalChecker::LocalChecker(const ConfigFile& cfg)
+    : Checker(cfg.value("name"), cfg), LocalBase(cfg)
+{
+    // Create the directory if it does not exist
+    sys::makedirs(m_path);
+}
+
+LocalChecker::~LocalChecker()
+{
+}
+
+LocalChecker* LocalChecker::create(const ConfigFile& cfg)
+{
+    return SegmentedChecker::create(cfg);
+}
+
+
+template class LocalBase<Archives, true>;
+template class LocalBase<Archives, false>;
 }
 }

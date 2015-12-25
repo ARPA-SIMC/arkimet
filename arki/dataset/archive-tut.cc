@@ -123,7 +123,7 @@ def_test(2)
 	}
 
     {
-        ondisk2::Writer writer(cfg);
+        ondisk2::Checker writer(cfg);
         MaintenanceResults expected(false, 1);
         expected.by_type[DatasetTest::COUNTED_ARC_TO_INDEX] = 1;
         wassert(actual(writer).maintenance(expected));
@@ -180,7 +180,7 @@ def_test(3)
 
     // Fix the database
     {
-        ondisk2::Writer writer(cfg);
+        ondisk2::Checker writer(cfg);
         MaintenanceResults expected(false, 1);
         expected.by_type[DatasetTest::COUNTED_ARC_TO_RESCAN] = 1;
         wassert(actual(writer).maintenance(expected));
@@ -235,7 +235,7 @@ def_test(4)
     }
 
     {
-        ondisk2::Writer writer(cfg);
+        ondisk2::Checker writer(cfg);
         MaintenanceResults expected(false, 1);
         expected.by_type[DatasetTest::COUNTED_ARC_TO_RESCAN] = 1;
         wassert(actual(writer).maintenance(expected));
@@ -299,7 +299,7 @@ def_test(5)
     }
 
     {
-        ondisk2::Writer writer(cfg);
+        ondisk2::Checker writer(cfg);
         {
             MaintenanceResults expected(false, 3);
             expected.by_type[DatasetTest::COUNTED_ARC_TO_RESCAN] = 1;
@@ -386,7 +386,7 @@ def_test(6)
     }
 
     {
-        ondisk2::Writer writer(cfg);
+        ondisk2::Checker writer(cfg);
         MaintenanceResults expected(false, 1);
         expected.by_type[DatasetTest::COUNTED_ARC_TO_RESCAN] = 1;
         wassert(actual(writer).maintenance(expected));
