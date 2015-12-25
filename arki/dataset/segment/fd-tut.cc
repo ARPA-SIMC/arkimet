@@ -16,7 +16,6 @@ static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 namespace tut {
 using namespace std;
 using namespace arki;
-using namespace arki::dataset::data;
 using namespace arki::utils;
 
 struct arki_data_fd_shar {
