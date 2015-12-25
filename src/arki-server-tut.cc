@@ -112,7 +112,7 @@ void to::test<4>()
     unique_ptr<Reader> testds(Reader::create(*config.section("test200")));
 
     Summary summary;
-    testds->querySummary(Matcher::parse("origin:GRIB1,200"), summary);
+    testds->query_summary(Matcher::parse("origin:GRIB1,200"), summary);
     ensure_equals(summary.count(), 1u);
 }
 
@@ -161,7 +161,7 @@ void to::test<6>()
     Summary summary;
     htd->produce_one_wrong_query();
     try {
-        testds->querySummary(Matcher::parse("origin:GRIB1,200"), summary);
+        testds->query_summary(Matcher::parse("origin:GRIB1,200"), summary);
         ensure(false);
     } catch (std::exception& e) {}
     ensure_equals(summary.count(), 0u);
@@ -221,7 +221,7 @@ void to::test<9>()
     unique_ptr<Reader> testds(Reader::create(cfg));
 
     Summary summary;
-    testds->querySummary(Matcher(), summary);
+    testds->query_summary(Matcher(), summary);
     ensure_equals(summary.count(), 1u);
 }
 

@@ -422,7 +422,7 @@ struct RootSummaryHandler : public LocalHandler
 
         // Query the summary
         Summary sum;
-        ds->querySummary(Matcher(), sum);
+        ds->query_summary(Matcher(), sum);
 
         if (*style == "yaml")
         {
@@ -459,7 +459,7 @@ struct DatasetHandler : public LocalHandler
 
         // Query the summary
         Summary sum;
-        ds.querySummary(Matcher(), sum);
+        ds.query_summary(Matcher(), sum);
 
         // Create the output page
         stringstream res;

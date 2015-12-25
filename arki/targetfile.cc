@@ -204,9 +204,9 @@ void TargetfileSpy::query_data(const dataset::DataQuery& q, metadata_dest_func d
     });
 }
 
-void TargetfileSpy::querySummary(const Matcher& matcher, Summary& summary)
+void TargetfileSpy::query_summary(const Matcher& matcher, Summary& summary)
 {
-    ds.querySummary(matcher, summary);
+    ds.query_summary(matcher, summary);
 }
 
 void TargetfileSpy::redirect(Metadata& md)

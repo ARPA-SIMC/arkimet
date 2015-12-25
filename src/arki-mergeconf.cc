@@ -126,12 +126,12 @@ int main(int argc, const char* argv[])
 
 			for (ConfigFile::section_iterator i = cfg.sectionBegin();
 					i != cfg.sectionEnd(); ++i)
-			{
-				// Instantiate the dataset
-				unique_ptr<Reader> d(Reader::create(*i->second));
-				// Get the summary
-				Summary sum;
-				d->querySummary(Matcher(), sum);
+            {
+                // Instantiate the dataset
+                unique_ptr<Reader> d(Reader::create(*i->second));
+                // Get the summary
+                Summary sum;
+                d->query_summary(Matcher(), sum);
 
 #ifdef HAVE_GEOS
 				// Compute bounding box, and store the WKT in bounding

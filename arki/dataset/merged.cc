@@ -140,7 +140,7 @@ public:
     void main()
     {
         try {
-            dataset->querySummary(*matcher, summary);
+            dataset->query_summary(*matcher, summary);
         } catch (std::exception& e) {
             errorbuf = e.what();
         }
@@ -228,14 +228,14 @@ void Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 		throw wibble::exception::Consistency("running metadata queries on multiple datasets", str::join("; ", errors.begin(), errors.end()));
 }
 
-void Merged::querySummary(const Matcher& matcher, Summary& summary)
+void Merged::query_summary(const Matcher& matcher, Summary& summary)
 {
-	// Handle the trivial case of only one dataset
-	if (datasets.size() == 1)
-	{
-		datasets[0]->querySummary(matcher, summary);
-		return;
-	}
+    // Handle the trivial case of only one dataset
+    if (datasets.size() == 1)
+    {
+        datasets[0]->query_summary(matcher, summary);
+        return;
+    }
 
     vector<SummaryReader> readers(datasets.size());
     vector<std::thread> threads;

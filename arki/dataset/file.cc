@@ -135,7 +135,7 @@ void File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     scan(q, dest);
 }
 
-void File::querySummary(const Matcher& matcher, Summary& summary)
+void File::query_summary(const Matcher& matcher, Summary& summary)
 {
     scan(DataQuery(matcher), [&](unique_ptr<Metadata> md) { summary.add(*md); return true; });
 }

@@ -80,7 +80,7 @@ public:
     void openRW();
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
-    void querySummary(const Matcher& matcher, Summary& summary) override;
+    void query_summary(const Matcher& matcher, Summary& summary) override;
     void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override;
     size_t produce_nth(metadata_dest_func cons, size_t idx=0) override;
     void acquire(const std::string& relname) override;
@@ -110,7 +110,7 @@ struct OfflineArchive : public Archive
     ~OfflineArchive();
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
-    void querySummary(const Matcher& matcher, Summary& summary) override;
+    void query_summary(const Matcher& matcher, Summary& summary) override;
     void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override;
     virtual size_t produce_nth(metadata_dest_func cons, size_t idx=0) override;
 
@@ -177,7 +177,7 @@ public:
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void query_bytes(const dataset::ByteQuery& q, int out) override;
-    void querySummary(const Matcher& matcher, Summary& summary) override;
+    void query_summary(const Matcher& matcher, Summary& summary) override;
     virtual size_t produce_nth(metadata_dest_func cons, size_t idx=0);
     void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;
 

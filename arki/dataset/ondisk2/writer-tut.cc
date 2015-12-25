@@ -630,7 +630,7 @@ def_test(10)
         ondisk2::Reader reader(cfg);
         ensure(reader.hasWorkingIndex());
         Summary s;
-        reader.querySummary(Matcher(), s);
+        reader.query_summary(Matcher(), s);
         ensure_equals(s.count(), 0u);
     }
 
@@ -642,7 +642,7 @@ def_test(10)
         ondisk2::Reader reader(cfg);
         ensure(reader.hasWorkingIndex());
         Summary s;
-        reader.querySummary(Matcher(), s);
+        reader.query_summary(Matcher(), s);
         ensure_equals(s.count(), 3u);
     }
 }

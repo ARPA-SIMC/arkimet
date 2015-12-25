@@ -288,7 +288,7 @@ void HTTP::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 		s.throwError("querying summary from " + url);
 }
 
-void HTTP::querySummary(const Matcher& matcher, Summary& summary)
+void HTTP::query_summary(const Matcher& matcher, Summary& summary)
 {
     m_curl.reset();
 

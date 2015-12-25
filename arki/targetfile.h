@@ -76,7 +76,7 @@ public:
     void redirect(Metadata& md);
 
     virtual void query_data(const dataset::DataQuery& q, metadata_dest_func dest);
-    virtual void querySummary(const Matcher& matcher, Summary& summary);
+    virtual void query_summary(const Matcher& matcher, Summary& summary);
 };
 
 }

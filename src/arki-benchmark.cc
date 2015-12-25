@@ -239,9 +239,9 @@ struct DSBenchmark : public Benchmark
             timing("query: %dm, %.0fmps, %.0fbpm, %.0fKbps",
                     count, mps, avgsize, kbps);
 
-			Summary summary;
-			ds->querySummary(query, summary);
-			timing("querySummary: count %d", summary.count());
+            Summary summary;
+            ds->query_summary(query, summary);
+            timing("querySummary: count %d", summary.count());
 
 			delete ds;
 			ds = 0;

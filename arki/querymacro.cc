@@ -180,7 +180,7 @@ void Querymacro::query_data(const dataset::DataQuery& q, metadata_dest_func dest
     }
 }
 
-void Querymacro::querySummary(const Matcher& matcher, Summary& summary)
+void Querymacro::query_summary(const Matcher& matcher, Summary& summary)
 {
 	if (funcid_querysummary == -1) return;
 

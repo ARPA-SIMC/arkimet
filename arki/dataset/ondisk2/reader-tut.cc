@@ -55,10 +55,10 @@ def_test(2)
 
     unique_ptr<ondisk2::Reader> reader(new ondisk2::Reader(cfg));
 
-	Summary s;
-	reader->querySummary(Matcher::parse("reftime:=2007"), s);
-	ensure_equals(s.count(), 3u);
-	ensure_equals(s.size(), 44412u);
+    Summary s;
+    reader->query_summary(Matcher::parse("reftime:=2007"), s);
+    ensure_equals(s.count(), 3u);
+    ensure_equals(s.size(), 44412u);
 
     // Global summary is not built because we only query specific months
     ensure(!sys::access("testds/.summaries/all.summary", F_OK));

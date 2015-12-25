@@ -264,22 +264,22 @@ class Tests : public FixtureTestCase<Fixture>
                 case BQ_POSTPROCESS:
                 case BQ_REP_METADATA:
                 case BQ_REP_SUMMARY:
-            virtual void querySummary(const Matcher& matcher, Summary& summary);
+            virtual void query_summary(const Matcher& matcher, Summary& summary);
             */
 
             // Query summary
             Summary s;
-            reader->querySummary(Matcher::parse(""), s);
+            reader->query_summary(Matcher::parse(""), s);
             ensure_equals(s.count(), 3u);
             ensure_equals(s.size(), 44412u);
 
             s.clear();
-            reader->querySummary(Matcher::parse("origin:GRIB1,200"), s);
+            reader->query_summary(Matcher::parse("origin:GRIB1,200"), s);
             ensure_equals(s.count(), 1u);
             ensure_equals(s.size(), 7218u);
 
             s.clear();
-            reader->querySummary(Matcher::parse("reftime:=2007-07-08"), s);
+            reader->query_summary(Matcher::parse("reftime:=2007-07-08"), s);
             ensure_equals(s.count(), 1u);
             ensure_equals(s.size(), 7218u);
         });
@@ -295,7 +295,7 @@ class Tests : public FixtureTestCase<Fixture>
             ensure(mdc.empty());
 
             Summary s;
-            reader->querySummary(Matcher::parse(""), s);
+            reader->query_summary(Matcher::parse(""), s);
             ensure_equals(s.count(), 0u);
 
             sys::File out(sys::File::mkstemp("test"));

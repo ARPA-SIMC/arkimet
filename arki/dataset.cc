@@ -98,7 +98,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, int out)
             rep.captureOutput(out);
             rep.load(q.param);
             Summary s;
-            querySummary(q.matcher, s);
+            query_summary(q.matcher, s);
             rep(s);
             rep.report();
 #endif
@@ -186,14 +186,14 @@ static int arkilua_queryData(lua_State *L)
     return 0;
 }
 
-static int arkilua_querySummary(lua_State *L)
+static int arkilua_query_summary(lua_State *L)
 {
-	// querySummary(self, matcher="", summary)
+	// query_summary(self, matcher="", summary)
 	Reader* rd = Reader::lua_check(L, 1);
 	Matcher matcher = Matcher::lua_check(L, 2);
 	Summary* sum = Summary::lua_check(L, 3);
 	luaL_argcheck(L, sum != NULL, 3, "`arki.summary' expected");
-	rd->querySummary(matcher, *sum);
+	rd->query_summary(matcher, *sum);
 	return 0;
 }
 
@@ -205,7 +205,7 @@ static int arkilua_tostring(lua_State *L)
 
 static const struct luaL_Reg readonlydatasetlib [] = {
 	{ "queryData", arkilua_queryData },
-	{ "querySummary", arkilua_querySummary },
+	{ "querySummary", arkilua_query_summary },
 	{ "__tostring", arkilua_tostring },
 	{NULL, NULL}
 };

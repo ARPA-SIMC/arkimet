@@ -21,7 +21,7 @@ void Memory::query_data(const dataset::DataQuery& q, std::function<bool(std::uni
                 break;
 }
 
-void Memory::querySummary(const Matcher& matcher, Summary& summary)
+void Memory::query_summary(const Matcher& matcher, Summary& summary)
 {
     for (const_iterator i = begin(); i != end(); ++i)
         if (matcher(**i))

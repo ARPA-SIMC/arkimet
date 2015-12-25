@@ -42,10 +42,8 @@ public:
 	Reader* dataset(const std::string& name);
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
-    void querySummary(const Matcher& matcher, Summary& summary) override;
+    void query_summary(const Matcher& matcher, Summary& summary) override;
 };
 
 }
-
-// vim:set ts=4 sw=4:
 #endif

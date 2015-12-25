@@ -38,7 +38,7 @@ public:
     void query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest) override;
 
     // Base implementations that queries the archives if they exist
-    void querySummary(const Matcher& matcher, Summary& summary) override;
+    void query_summary(const Matcher& matcher, Summary& summary) override;
 
     /**
      * For each file in the archive, output to \a cons the data at position

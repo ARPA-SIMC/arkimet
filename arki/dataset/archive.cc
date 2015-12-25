@@ -98,7 +98,7 @@ void OnlineArchive::query_data(const dataset::DataQuery& q, metadata_dest_func d
     m_mft->query_data(q, dest);
 }
 
-void OnlineArchive::querySummary(const Matcher& matcher, Summary& summary)
+void OnlineArchive::query_summary(const Matcher& matcher, Summary& summary)
 {
     m_mft->query_summary(matcher, summary);
 }
@@ -236,7 +236,7 @@ void OfflineArchive::query_data(const dataset::DataQuery& q, metadata_dest_func 
     // If the matcher would match the summary, output some kind of note about it
 }
 
-void OfflineArchive::querySummary(const Matcher& matcher, Summary& summary)
+void OfflineArchive::query_summary(const Matcher& matcher, Summary& summary)
 {
     sum.filter(matcher, summary);
 }
@@ -424,9 +424,9 @@ void Archives::summary_for_all(Summary& out)
         // Query the summaries of all archives
         for (map<string, Archive*>::iterator i = m_archives.begin();
                 i != m_archives.end(); ++i)
-            i->second->querySummary(m, out);
+            i->second->query_summary(m, out);
         if (m_last)
-            m_last->querySummary(m, out);
+            m_last->query_summary(m, out);
     }
 }
 
@@ -445,9 +445,9 @@ void Archives::rebuild_summary_cache()
     // Query the summaries of all archives
     for (map<string, Archive*>::iterator i = m_archives.begin();
             i != m_archives.end(); ++i)
-        i->second->querySummary(m, s);
+        i->second->query_summary(m, s);
     if (m_last)
-        m_last->querySummary(m, s);
+        m_last->query_summary(m, s);
 
     // Add all summaries in toplevel dirs
     sys::Path d(m_dir);
@@ -465,7 +465,7 @@ void Archives::rebuild_summary_cache()
             s.writeAtomically(sum_file);
 }
 
-void Archives::querySummary(const Matcher& matcher, Summary& summary)
+void Archives::query_summary(const Matcher& matcher, Summary& summary)
 {
     unique_ptr<Time> matcher_begin;
     unique_ptr<Time> matcher_end;
@@ -491,7 +491,7 @@ void Archives::querySummary(const Matcher& matcher, Summary& summary)
         unique_ptr<Time> arc_end;
         i->second->expand_date_range(arc_begin, arc_end);
         if (Time::range_overlaps(matcher_begin.get(), matcher_end.get(), arc_begin.get(), arc_end.get()))
-            i->second->querySummary(matcher, summary);
+            i->second->query_summary(matcher, summary);
     }
     if (m_last)
     {
@@ -499,7 +499,7 @@ void Archives::querySummary(const Matcher& matcher, Summary& summary)
         unique_ptr<Time> arc_end;
         m_last->expand_date_range(arc_begin, arc_end);
         if (Time::range_overlaps(matcher_begin.get(), matcher_end.get(), arc_begin.get(), arc_end.get()))
-            m_last->querySummary(matcher, summary);
+            m_last->query_summary(matcher, summary);
     }
 }
 

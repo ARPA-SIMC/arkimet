@@ -400,7 +400,7 @@ def_test(8)
     acquireSamples();
     ondisk2::Reader reader(*config.section("test200"));
     Summary summary;
-    reader.querySummary(Matcher::parse("origin:GRIB1,200"), summary);
+    reader.query_summary(Matcher::parse("origin:GRIB1,200"), summary);
     ensure_equals(summary.count(), 1u);
 }
 
@@ -411,7 +411,7 @@ def_test(9)
     ondisk2::Reader reader(*config.section("test200"));
     Summary summary;
     //system("bash");
-    reader.querySummary(Matcher::parse("reftime:>=2007-07"), summary);
+    reader.query_summary(Matcher::parse("reftime:>=2007-07"), summary);
     ensure_equals(summary.count(), 1u);
 }
 
@@ -488,7 +488,7 @@ def_test(10)
     {
         ondisk2::Reader reader(*config.section("test200"));
         Summary summary;
-        reader.querySummary(Matcher(), summary);
+        reader.query_summary(Matcher(), summary);
         ensure_equals(summary.count(), 3u);
     }
 }
@@ -499,7 +499,7 @@ def_test(11)
     acquireSamplesAllInOne();
     ondisk2::Reader reader(*configAll.section("testall"));
     Summary summary;
-    reader.querySummary(Matcher(), summary);
+    reader.query_summary(Matcher(), summary);
     ensure_equals(summary.count(), 3u);
 
     unique_ptr<Reftime> rt = summary.getReferenceTime();

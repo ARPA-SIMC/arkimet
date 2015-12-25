@@ -23,10 +23,10 @@ void IndexedReader::query_data(const dataset::DataQuery& q, metadata_dest_func d
         throw std::runtime_error("cannot query " + m_path + ": index could not be used");
 }
 
-void IndexedReader::querySummary(const Matcher& matcher, Summary& summary)
+void IndexedReader::query_summary(const Matcher& matcher, Summary& summary)
 {
     // Query the archives first
-    LocalReader::querySummary(matcher, summary);
+    LocalReader::query_summary(matcher, summary);
     if (!m_idx) return;
     // FIXME: this is cargo culted from the old ondisk2 reader: what is the use case for this?
     if (!m_idx->query_summary(matcher, summary))

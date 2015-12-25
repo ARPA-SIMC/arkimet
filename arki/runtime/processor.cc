@@ -208,7 +208,7 @@ struct SummaryProcessor : public SingleOutputProcessor
 
     void process(Reader& ds, const std::string& name) override
     {
-        ds.querySummary(matcher, summary);
+        ds.query_summary(matcher, summary);
     }
 
     void end() override

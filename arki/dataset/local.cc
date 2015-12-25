@@ -53,10 +53,10 @@ void LocalReader::query_data(const dataset::DataQuery& q, std::function<bool(std
         archive().query_data(q, dest);
 }
 
-void LocalReader::querySummary(const Matcher& matcher, Summary& summary)
+void LocalReader::query_summary(const Matcher& matcher, Summary& summary)
 {
-	if (hasArchive())
-		archive().querySummary(matcher, summary);
+    if (hasArchive())
+        archive().query_summary(matcher, summary);
 }
 
 size_t LocalReader::produce_nth(metadata_dest_func cons, size_t idx)

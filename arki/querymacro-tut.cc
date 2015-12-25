@@ -100,9 +100,9 @@ def_test(2)
     ensure(mdc[1].has_source());
     ensure(mdc[2].has_source());
 
-	Summary s;
-	qm.querySummary(Matcher::parse(""), s);
-	ensure_equals(s.count(), 9u);
+    Summary s;
+    qm.query_summary(Matcher::parse(""), s);
+    ensure_equals(s.count(), 9u);
 }
 
 // Lua script that simply passes through the queries, making temporary copies of data
@@ -116,9 +116,9 @@ def_test(3)
     ensure(mdc[1].has_source());
     ensure(mdc[2].has_source());
 
-	Summary s;
-	qm.querySummary(Matcher::parse(""), s);
-	ensure_equals(s.count(), 9u);
+    Summary s;
+    qm.query_summary(Matcher::parse(""), s);
+    ensure_equals(s.count(), 9u);
 }
 
 // Try "expa" matchers
@@ -135,9 +135,9 @@ def_test(4)
     ensure(mdc[0].has_source());
     ensure(mdc[1].has_source());
 
-	Summary s;
-	qm.querySummary(Matcher::parse(""), s);
-	ensure_equals(s.count(), 2u);
+    Summary s;
+    qm.query_summary(Matcher::parse(""), s);
+    ensure_equals(s.count(), 2u);
 }
 
 // Try "expa" matchers with parameter
@@ -154,9 +154,9 @@ def_test(5)
     ensure(mdc[0].has_source());
     ensure(mdc[1].has_source());
 
-	Summary s;
-	qm.querySummary(Matcher::parse(""), s);
-	ensure_equals(s.count(), 2u);
+    Summary s;
+    qm.query_summary(Matcher::parse(""), s);
+    ensure_equals(s.count(), 2u);
 }
 
 
@@ -176,10 +176,10 @@ def_test(6)
         ensure(mdc[0].has_source());
         ensure(mdc[1].has_source());
 
-		Summary s;
-		qm.querySummary(Matcher::parse(""), s);
-		ensure_equals(s.count(), 2u);
-	}
+        Summary s;
+        qm.query_summary(Matcher::parse(""), s);
+        ensure_equals(s.count(), 2u);
+    }
 	{
 		Querymacro qm(cfg, "gridspace", 
 				"dataset: testds\n"
@@ -193,10 +193,10 @@ def_test(6)
         ensure(mdc[0].has_source());
         ensure(mdc[1].has_source());
 
-		Summary s;
-		qm.querySummary(Matcher::parse(""), s);
-		ensure_equals(s.count(), 2u);
-	}
+        Summary s;
+        qm.query_summary(Matcher::parse(""), s);
+        ensure_equals(s.count(), 2u);
+    }
 }
 
 // Try "expa" matchers with inline option
@@ -214,7 +214,7 @@ def_test(7)
     wassert(actual(mdc[1].getData().size()) == mdc[1].data_size());
 
     Summary s;
-    qm.querySummary(Matcher::parse(""), s);
+    qm.query_summary(Matcher::parse(""), s);
     ensure_equals(s.count(), 2u);
 }
 
@@ -237,7 +237,7 @@ def_test(8)
     wassert(actual_type(mdc[1].get(TYPE_REFTIME)) == Reftime::decodeString("2009-08-07 00:00:00"));
 
     Summary s;
-    qm.querySummary(Matcher::parse(""), s);
+    qm.query_summary(Matcher::parse(""), s);
     ensure_equals(s.count(), 2u);
 }
 

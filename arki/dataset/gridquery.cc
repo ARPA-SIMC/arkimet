@@ -24,8 +24,8 @@ namespace dataset {
 
 GridQuery::GridQuery(Reader& ds) : ds(ds)
 {
-	// Initialise with the global summary
-	ds.querySummary(Matcher(), summary);
+    // Initialise with the global summary
+    ds.query_summary(Matcher(), summary);
 }
 
 void GridQuery::add(const Matcher& m)

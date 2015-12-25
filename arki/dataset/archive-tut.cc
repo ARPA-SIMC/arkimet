@@ -495,7 +495,7 @@ def_test(18)
 
     // Query summary
     Summary s1;
-    ds->querySummary(Matcher::parse(""), s1);
+    ds->query_summary(Matcher::parse(""), s1);
 
     // Query data and summarise the results
     Summary s2;
@@ -527,7 +527,7 @@ def_test(19)
     {
         unique_ptr<Archive> a(Archive::create(str::joinpath(scen.path, ".archive/offline")));
         Summary s;
-        a->querySummary(Matcher::parse(""), s);
+        a->query_summary(Matcher::parse(""), s);
         ensure(s.count() > 0);
     }
 
@@ -536,7 +536,7 @@ def_test(19)
         unique_ptr<Reader> ds(Reader::create(scen.cfg));
         Summary s;
         iotrace::Collector ioc;
-        ds->querySummary(Matcher::parse(""), s);
+        ds->query_summary(Matcher::parse(""), s);
 
         unique_ptr<reftime::Period> p = downcast<reftime::Period>(s.getReferenceTime());
         ensure_equals(p->begin, Time(2010, 9, 1, 0, 0, 0));
@@ -566,13 +566,13 @@ def_test(20)
     Summary s;
 
     // Access the datasets so we don't count manifest reads in the iostats below
-    d->querySummary(Matcher(), s);
+    d->query_summary(Matcher(), s);
 
     // Query once without cache, it should scan all the archives
     sys::unlink_ifexists(str::joinpath(scen.path, ".summaries/archives.summary"));
     {
         iotrace::Collector ioc;
-        d->querySummary(Matcher(), s);
+        d->query_summary(Matcher(), s);
         ensure_equals(ioc.events.size(), 5u);
     }
 
@@ -585,14 +585,14 @@ def_test(20)
     // Query again, now we have the cache and it should do much less I/O
     {
         iotrace::Collector ioc;
-        d->querySummary(Matcher(), s);
+        d->query_summary(Matcher(), s);
         ensure_equals(ioc.events.size(), 2u);
     }
 
     // Query without cache and with a reftime bound, it should still scan the datasets
     {
         iotrace::Collector ioc;
-        d->querySummary(Matcher::parse("reftime:>=2010-09-10"), s);
+        d->query_summary(Matcher::parse("reftime:>=2010-09-10"), s);
         ensure_equals(ioc.events.size(), 6u);
     }
 }

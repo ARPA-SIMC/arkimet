@@ -266,7 +266,7 @@ struct TestDataset
         // Query summary of everything
         {
             Summary s;
-            ds->querySummary(Matcher(), s);
+            ds->query_summary(Matcher(), s);
             wassert(actual(s.count()) == 3);
         }
 
@@ -276,7 +276,7 @@ struct TestDataset
 
             // Query summary of single items
             Summary s;
-            ds->querySummary(td.test_data[i].matcher, s);
+            ds->query_summary(td.test_data[i].matcher, s);
 
             wassert(actual(s.count()) == 1u);
 

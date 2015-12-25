@@ -146,11 +146,11 @@ public:
      */
     virtual void query_data(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
 
-	/**
-	 * Add to summary the summary of the data that would be extracted with the
-	 * given query.
-	 */
-	virtual void querySummary(const Matcher& matcher, Summary& summary) = 0;
+    /**
+     * Add to summary the summary of the data that would be extracted with the
+     * given query.
+     */
+    virtual void query_summary(const Matcher& matcher, Summary& summary) = 0;
 
     /**
      * Query the dataset obtaining a byte stream, that gets written to a file
@@ -281,6 +281,10 @@ public:
 	 * @return The outcome of the operation.
 	 */
 	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
+};
+
+class Checker
+{
 };
 
 }

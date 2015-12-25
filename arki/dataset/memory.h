@@ -45,7 +45,7 @@ public:
     virtual ~Memory();
 
     void query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest) override;
-    void querySummary(const Matcher& matcher, Summary& summary) override;
+    void query_summary(const Matcher& matcher, Summary& summary) override;
 };
 
 }
