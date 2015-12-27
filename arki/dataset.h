@@ -130,8 +130,6 @@ struct ByteQuery : public DataQuery
     }
 };
 
-}
-
 /**
  * Base class for all dataset Readers, Writers and Checkers.
  */
@@ -177,7 +175,10 @@ public:
     void set_parent(Base& p);
 };
 
-class Reader : public Base
+}
+
+
+class Reader : public dataset::Base
 {
 public:
     using Base::Base;
@@ -234,7 +235,7 @@ public:
 	static void readConfig(const std::string& path, ConfigFile& cfg);
 };
 
-class Writer : public Base
+class Writer : public dataset::Base
 {
 public:
 	/// Possible outcomes of acquire
@@ -323,7 +324,7 @@ public:
 	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
-struct Checker : public Base
+struct Checker : public dataset::Base
 {
     using Base::Base;
 

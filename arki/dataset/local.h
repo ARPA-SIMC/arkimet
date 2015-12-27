@@ -15,8 +15,8 @@ namespace dataset {
 class ArchivesReader;
 class ArchivesChecker;
 
-template<typename Archives>
-class LocalBase
+template<typename Parent, typename Archives>
+class LocalBase : public Parent
 {
 protected:
     std::string m_path;
@@ -41,7 +41,7 @@ public:
 /**
  * Base class for local datasets
  */
-class LocalReader : public Reader, public LocalBase<ArchivesReader>
+class LocalReader : public LocalBase<Reader, ArchivesReader>
 {
 public:
     LocalReader(const ConfigFile& cfg);
@@ -109,7 +109,7 @@ public:
     static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
-struct LocalChecker : public Checker, public LocalBase<ArchivesChecker>
+struct LocalChecker : public LocalBase<Checker, ArchivesChecker>
 {
     LocalChecker(const ConfigFile& cfg);
     ~LocalChecker();

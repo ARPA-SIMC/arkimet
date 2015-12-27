@@ -21,9 +21,9 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-template<typename Archive>
-LocalBase<Archive>::LocalBase(const ConfigFile& cfg)
-    : m_path(cfg.value("path"))
+template<typename Parent, typename Archive>
+LocalBase<Parent, Archive>::LocalBase(const ConfigFile& cfg)
+    : Parent(cfg.value("name"), cfg), m_path(cfg.value("path"))
 {
     string tmp = cfg.value("archive age");
     if (!tmp.empty())
@@ -34,30 +34,32 @@ LocalBase<Archive>::LocalBase(const ConfigFile& cfg)
         m_delete_age = std::stoi(tmp);
 }
 
-template<typename Archive>
-LocalBase<Archive>::~LocalBase()
+template<typename Parent, typename Archive>
+LocalBase<Parent, Archive>::~LocalBase()
 {
     delete m_archive;
 }
 
-template<typename Archive>
-bool LocalBase<Archive>::hasArchive() const
+template<typename Parent, typename Archive>
+bool LocalBase<Parent, Archive>::hasArchive() const
 {
     string arcdir = str::joinpath(m_path, ".archive");
     return sys::exists(arcdir);
 }
 
-template<typename Archive>
-Archive& LocalBase<Archive>::archive()
+template<typename Parent, typename Archive>
+Archive& LocalBase<Parent, Archive>::archive()
 {
     if (!m_archive)
+    {
         m_archive = new Archive(m_path);
+        m_archive->set_parent(*this);
+    }
     return *m_archive;
 }
 
 
-LocalReader::LocalReader(const ConfigFile& cfg)
-    : Reader(cfg.value("name"), cfg), LocalBase(cfg)
+LocalReader::LocalReader(const ConfigFile& cfg) : LocalBase(cfg)
 {
 }
 
@@ -219,8 +221,7 @@ LocalWriter::AcquireResult LocalWriter::testAcquire(const ConfigFile& cfg, const
 }
 
 
-LocalChecker::LocalChecker(const ConfigFile& cfg)
-    : Checker(cfg.value("name"), cfg), LocalBase(cfg)
+LocalChecker::LocalChecker(const ConfigFile& cfg) : LocalBase(cfg)
 {
     // Create the directory if it does not exist
     sys::makedirs(m_path);
@@ -236,7 +237,7 @@ LocalChecker* LocalChecker::create(const ConfigFile& cfg)
 }
 
 
-template class LocalBase<ArchivesReader>;
-template class LocalBase<ArchivesChecker>;
+template class LocalBase<Reader, ArchivesReader>;
+template class LocalBase<Checker, ArchivesChecker>;
 }
 }

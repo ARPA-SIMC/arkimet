@@ -71,12 +71,13 @@ struct ArchivesRoot
 {
     std::string dataset_root;
     std::string archive_root;
+    dataset::Base& parent;
 
     std::map<std::string, Archive*> archives;
     Archive* last = nullptr;
 
-    ArchivesRoot(const std::string& dataset_root)
-        : dataset_root(dataset_root), archive_root(str::joinpath(dataset_root, ".archive"))
+    ArchivesRoot(const std::string& dataset_root, dataset::Base& parent)
+        : dataset_root(dataset_root), archive_root(str::joinpath(dataset_root, ".archive")), parent(parent)
           // m_scache_root(str::joinpath(root, ".summaries"))
     {
         // Create the directory if it does not exist
@@ -188,14 +189,17 @@ struct ArchivesRoot
     std::unique_ptr<Reader> instantiate_reader(const std::string& name)
     {
         string pathname = str::joinpath(archive_root, name);
+        unique_ptr<Reader> res;
         if (sys::exists(pathname + ".summary"))
         {
             if (index::Manifest::exists(pathname))
-                return unique_ptr<Reader>(new simple::Reader(make_config(pathname)));
+                res.reset(new simple::Reader(make_config(pathname)));
             else
-                return unique_ptr<Reader>(new OfflineReader(pathname + ".summary"));
+                res.reset(new OfflineReader(pathname + ".summary"));
         } else
-            return unique_ptr<Reader>(new simple::Reader(make_config(pathname)));
+            res.reset(new simple::Reader(make_config(pathname)));
+        res->set_parent(parent);
+        return res;
     }
 
     virtual std::unique_ptr<Archive> instantiate(const std::string& name) = 0;
@@ -218,14 +222,17 @@ struct ArchivesCheckerRoot: public ArchivesRoot<SegmentedChecker>
     std::unique_ptr<SegmentedChecker> instantiate(const std::string& name) override
     {
         string pathname = str::joinpath(archive_root, name);
+        unique_ptr<SegmentedChecker> res;
         if (sys::exists(pathname + ".summary"))
         {
             if (index::Manifest::exists(pathname))
-                return unique_ptr<SegmentedChecker>(new simple::Checker(make_config(pathname)));
+                res.reset(new simple::Checker(make_config(pathname)));
             else
-                return unique_ptr<SegmentedChecker>(new NullSegmentedChecker(make_config(pathname)));
+                res.reset(new NullSegmentedChecker(make_config(pathname)));
         } else
-            return unique_ptr<SegmentedChecker>(new simple::Checker(make_config(pathname)));
+            res.reset(new simple::Checker(make_config(pathname)));
+        res->set_parent(parent);
+        return res;
     }
 };
 
@@ -233,7 +240,7 @@ struct ArchivesCheckerRoot: public ArchivesRoot<SegmentedChecker>
 
 
 ArchivesReader::ArchivesReader(const std::string& root)
-    : Reader("archives"), archives(new archive::ArchivesReaderRoot(root))
+    : Reader("archives"), archives(new archive::ArchivesReaderRoot(root, *this))
 {
     archives->rescan();
 }
@@ -304,7 +311,7 @@ void ArchivesReader::query_summary(const Matcher& matcher, Summary& summary)
 
 
 ArchivesChecker::ArchivesChecker(const std::string& root)
-    : SegmentedChecker(archive::make_config("archives", root)), archives(new archive::ArchivesCheckerRoot(root))
+    : SegmentedChecker(archive::make_config("archives", root)), archives(new archive::ArchivesCheckerRoot(root, *this))
 {
     archives->rescan();
 }

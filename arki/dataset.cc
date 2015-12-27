@@ -38,8 +38,6 @@ DataQuery::DataQuery() : with_data(false) {}
 DataQuery::DataQuery(const Matcher& matcher, bool with_data) : matcher(matcher), with_data(with_data), sorter(0) {}
 DataQuery::~DataQuery() {}
 
-}
-
 Base::Base(const std::string& name)
     : m_name(name)
 {
@@ -66,6 +64,8 @@ std::string Base::name() const
 void Base::set_parent(Base& p)
 {
     m_parent = &p;
+}
+
 }
 
 
