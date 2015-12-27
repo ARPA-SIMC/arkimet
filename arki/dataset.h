@@ -132,6 +132,9 @@ struct ByteQuery : public DataQuery
 
 }
 
+/**
+ * Base class for all dataset Readers, Writers and Checkers.
+ */
 struct Base
 {
 protected:
@@ -141,18 +144,37 @@ protected:
     /// Dataset configuration key-value pairs (normally extracted from ConfigFile)
     std::map<std::string, std::string> m_cfg;
 
+    /**
+     * Parent dataset.
+     *
+     * If nullptr, this dataset has no parent.
+     */
+    Base* m_parent = nullptr;
+
 public:
     Base(const std::string& name);
     Base(const std::string& name, const ConfigFile& cfg);
     Base(const ConfigFile& cfg);
+    Base(const Base&) = delete;
+    Base(const Base&&) = delete;
     virtual ~Base() {}
+    Base& operator=(const Base&) = delete;
+    Base& operator=(Base&&) = delete;
 
     /// Return the dataset configuration
     const std::map<std::string, std::string>& cfg() const { return m_cfg; }
 
     /// Return the dataset name
-    const std::string& name() const { return m_name; }
+    std::string name() const;
 
+    /**
+     * Set a parent dataset.
+     *
+     * Datasets can be nested to delegate management of part of the dataset
+     * contents to a separate dataset. Hierarchy is tracked so that at least a
+     * full dataset name can be computed in error messages.
+     */
+    void set_parent(Base& p);
 };
 
 class Reader : public Base

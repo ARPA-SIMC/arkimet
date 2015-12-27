@@ -55,6 +55,20 @@ Base::Base(const ConfigFile& cfg)
 {
 }
 
+std::string Base::name() const
+{
+    if (m_parent)
+        return m_parent->name() + "." + m_name;
+    else
+        return m_name;
+}
+
+void Base::set_parent(Base& p)
+{
+    m_parent = &p;
+}
+
+
 void Writer::flush() {}
 
 Pending Writer::test_writelock() { return Pending(); }
