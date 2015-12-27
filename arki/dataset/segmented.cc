@@ -5,6 +5,7 @@
 #include "maintenance.h"
 #include "archive.h"
 #include "arki/metadata.h"
+#include "arki/metadata/collection.h"
 #include "arki/scan/any.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -158,7 +159,8 @@ void SegmentedChecker::archiveFile(const std::string& relpath)
     sys::rename_ifexists(pathname + ".summary", arcabsname + ".summary");
 
     // Acquire in the achive
-    archive().acquire(arcrelname);
+    metadata::Collection mdc(arcabsname);
+    archive().indexFile(arcrelname, move(mdc));
 }
 
 size_t SegmentedChecker::removeFile(const std::string& relpath, bool withData)

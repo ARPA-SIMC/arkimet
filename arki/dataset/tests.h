@@ -31,6 +31,8 @@ struct LocalChecker;
 struct SegmentedReader;
 struct SegmentedWriter;
 struct SegmentedChecker;
+struct ArchivesReader;
+struct ArchivesChecker;
 
 namespace ondisk2 {
 struct Reader;
@@ -95,6 +97,9 @@ struct ForceSqlite
 
 // Return the number of days passed from the given date until today
 int days_since(int year, int month, int day);
+
+// Return the file name of the Manifest index
+std::string manifest_idx_fname();
 
 // Base class for dataset tests
 struct DatasetTest : public Fixture
@@ -410,6 +415,7 @@ inline arki::tests::ActualSegmentedChecker actual(arki::dataset::SegmentedChecke
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::SegmentedChecker& actual) { return arki::tests::ActualSegmentedChecker(&actual); }
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::simple::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::SegmentedChecker*)&actual); }
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::ondisk2::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::SegmentedChecker*)&actual); }
+inline arki::tests::ActualSegmentedChecker actual(arki::dataset::ArchivesChecker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::SegmentedChecker*)&actual); }
 
 }
 }

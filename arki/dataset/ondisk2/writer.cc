@@ -450,6 +450,11 @@ size_t Checker::repackFile(const std::string& relpath)
     return size_pre - size_post;
 }
 
+void Checker::indexFile(const std::string& relpath, metadata::Collection&& contents)
+{
+    throw std::runtime_error("cannot index " + relpath + ": the operation is not implemented in ondisk2 datasets");
+}
+
 size_t Checker::removeFile(const std::string& relpath, bool withData)
 {
     idx->reset(relpath);

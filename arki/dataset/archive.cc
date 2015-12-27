@@ -1,7 +1,10 @@
 #include "config.h"
+#include "arki/configfile.h"
 #include "arki/dataset/archive.h"
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/simple/reader.h"
+#include "arki/dataset/simple/writer.h"
+#include "arki/dataset/offline.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
@@ -36,123 +39,67 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-Archive::~Archive() {}
+namespace archive {
 
-bool Archive::is_archive(const std::string& dir)
+bool is_archive(const std::string& dir)
 {
     return index::Manifest::exists(dir);
 }
 
-Archive* Archive::create(const std::string& dir, bool writable)
+static ConfigFile make_config(const std::string& dir)
 {
-    if (sys::exists(dir + ".summary"))
+    ConfigFile cfg;
+    cfg.setValue("name", str::basename(dir));
+    cfg.setValue("path", dir);
+    return cfg;
+}
+
+static ConfigFile make_config(const std::string& name, const std::string& dir)
+{
+    ConfigFile cfg;
+    cfg.setValue("name", name);
+    cfg.setValue("path", dir);
+    return cfg;
+}
+
+}
+
+#if 0
+class OnlineArchiveChecker : public simple::Checker
+{
+public:
+    OnlineArchiveChecker(const std::string& dir)
     {
-        // Writable is not allowed on archives that have been archived offline
-        if (writable) return 0;
-
-        if (index::Manifest::exists(dir))
-        {
-            unique_ptr<OnlineArchive> res(new OnlineArchive(dir));
-            res->openRO();
-            return res.release();
-        } else
-            return new OfflineArchive(dir + ".summary");
-    } else {
-        unique_ptr<OnlineArchive> res(new OnlineArchive(dir));
-        if (writable)
-            res->openRW();
-        else
-            res->openRO();
-        return res.release();
     }
-}
 
-OnlineArchive::OnlineArchive(const std::string& dir)
-    : Archive(str::basename(dir)), m_dir(dir), m_mft(0)
-{
-    // Create the directory if it does not exist
-    sys::makedirs(m_dir);
-}
+    //const std::string& path() const { return m_dir; }
 
-OnlineArchive::~OnlineArchive()
-{
-    if (m_mft) delete m_mft;
-}
+#if 0
+    void indexFile(const std::string& relname)
+    {
+        if (!m_mft) throw wibble::exception::Consistency("acquiring into archive " + m_dir, "archive opened in read only mode");
+        // Scan file, reusing .metadata if still valid
+        metadata::Collection mdc;
+        string pathname = str::joinpath(m_dir, relname);
+        if (!scan::scan(pathname, mdc.inserter_func()))
+            throw wibble::exception::Consistency("acquiring " + pathname, "it does not look like a file we can acquire");
+        acquire(relname, mdc);
+    }
+#endif
 
-void OnlineArchive::openRO()
-{
-    unique_ptr<index::Manifest> mft = index::Manifest::create(m_dir);
-    m_mft = mft.release();
-    m_mft->openRO();
-}
 
-void OnlineArchive::openRW()
-{
-    unique_ptr<index::Manifest> mft = index::Manifest::create(m_dir);
-    m_mft = mft.release();
-    m_mft->openRW();
-}
+#if 0
+    void flush() override
+    {
+        if (m_mft) m_mft->flush();
+    }
+#endif
+};
+#endif
 
-void OnlineArchive::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
-{
-    m_mft->query_data(q, dest);
-}
 
-void OnlineArchive::query_summary(const Matcher& matcher, Summary& summary)
-{
-    m_mft->query_summary(matcher, summary);
-}
-
-size_t OnlineArchive::produce_nth(metadata_dest_func cons, size_t idx)
-{
-    return m_mft->produce_nth(cons, idx);
-}
-
-void OnlineArchive::expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
-{
-    m_mft->expand_date_range(begin, end);
-}
-
-void OnlineArchive::acquire(const std::string& relname)
-{
-    if (!m_mft) throw wibble::exception::Consistency("acquiring into archive " + m_dir, "archive opened in read only mode");
-    // Scan file, reusing .metadata if still valid
-    metadata::Collection mdc;
-    string pathname = str::joinpath(m_dir, relname);
-    if (!scan::scan(pathname, mdc.inserter_func()))
-        throw wibble::exception::Consistency("acquiring " + pathname, "it does not look like a file we can acquire");
-    acquire(relname, mdc);
-}
-
-void OnlineArchive::acquire(const std::string& relname, metadata::Collection& mds)
-{
-	if (!m_mft) throw wibble::exception::Consistency("acquiring into archive " + m_dir, "archive opened in read only mode");
-	string pathname = str::joinpath(m_dir, relname);
-	time_t mtime = scan::timestamp(pathname);
-	if (mtime == 0)
-		throw wibble::exception::Consistency("acquiring " + pathname, "file does not exist");
-
-	// Iterate the metadata, computing the summary and making the data
-	// paths relative
-    mds.strip_source_paths();
-    Summary sum;
-    mds.add_to_summary(sum);
-
-	// Regenerate .metadata
-	mds.writeAtomically(pathname + ".metadata");
-
-	// Regenerate .summary
-	sum.writeAtomically(pathname + ".summary");
-
-	// Add to manifest
-	m_mft->acquire(relname, mtime, sum);
-}
-
-void OnlineArchive::flush()
-{
-	if (m_mft) m_mft->flush();
-}
-
+#if 0
+#warning TODO: move to LocalChecker, wrapping all checks of local archives with this
 void OnlineArchive::maintenance(segment::state_func v)
 {
     unique_ptr<segment::SegmentManager> segment_manager(segment::SegmentManager::get(m_dir));
@@ -167,16 +114,6 @@ void OnlineArchive::maintenance(segment::state_func v)
     });
     m_mft->flush();
 }
-
-/*
-void Archive::repack(std::ostream& log, bool writable)
-{
-}
-
-void Archive::check(std::ostream& log)
-{
-}
-*/
 
 void OnlineArchive::remove(const std::string& relname)
 {
@@ -219,252 +156,206 @@ void OnlineArchive::vacuum()
     Summary s;
     m_mft->query_summary(Matcher(), s);
 }
+#endif
 
-
-OfflineArchive::OfflineArchive(const std::string& fname)
-    : Archive(str::basename(fname)), fname(fname)
-{
-    sum.readFile(fname);
-}
-
-OfflineArchive::~OfflineArchive()
-{
-}
-
-void OfflineArchive::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
-{
-    // If the matcher would match the summary, output some kind of note about it
-}
-
-void OfflineArchive::query_summary(const Matcher& matcher, Summary& summary)
-{
-    sum.filter(matcher, summary);
-}
-
-size_t OfflineArchive::produce_nth(metadata_dest_func cons, size_t idx)
+#if 0
+size_t OfflineArchiveReader::produce_nth(metadata_dest_func cons, size_t idx)
 {
     // All files are offline, so there is nothing we can produce
     return 0;
 }
+#endif
 
-void OfflineArchive::expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
-{
-    sum.expand_date_range(begin, end);
-}
+namespace archive {
 
-void OfflineArchive::acquire(const std::string& relname)
+template<typename Archive>
+struct ArchivesRoot
 {
-    throw wibble::exception::Consistency("running acquire on offline archive", "operation does not make sense");
-}
-void OfflineArchive::acquire(const std::string& relname, metadata::Collection& mds)
-{
-    throw wibble::exception::Consistency("running acquire on offline archive", "operation does not make sense");
-}
-void OfflineArchive::remove(const std::string& relname)
-{
-    throw wibble::exception::Consistency("running remove on offline archive", "operation does not make sense");
-}
-void OfflineArchive::rescan(const std::string& relname)
-{
-    throw wibble::exception::Consistency("running rescan on offline archive", "operation does not make sense");
-}
-void OfflineArchive::deindex(const std::string& relname)
-{
-    throw wibble::exception::Consistency("running deindex on offline archive", "operation does not make sense");
-}
-void OfflineArchive::flush()
-{
-    // Nothing to flush
-}
-void OfflineArchive::maintenance(segment::state_func v)
-{
-    // No files, nothing to do
-}
-void OfflineArchive::vacuum()
-{
-    // Nothing to vacuum
-}
+    std::string dataset_root;
+    std::string archive_root;
 
+    std::map<std::string, Archive*> archives;
+    Archive* last = nullptr;
 
-Archives::Archives(const std::string& root, const std::string& dir, bool read_only)
-    : Reader("archives"), m_scache_root(str::joinpath(root, ".summaries")), m_dir(dir), m_read_only(read_only), m_last(0)
-{
-    // Create the directory if it does not exist
-    sys::makedirs(m_dir);
-
-    // Look for other archives other than 'last'
-    rescan_archives();
-}
-
-Archives::~Archives()
-{
-	for (map<string, Archive*>::iterator i = m_archives.begin();
-			i != m_archives.end(); ++i)
-		delete i->second;
-	if (m_last)
-		delete m_last;
-}
-
-void Archives::rescan_archives()
-{
-    // Clean up existing archives and restart from scratch
-    if (m_last)
+    ArchivesRoot(const std::string& dataset_root)
+        : dataset_root(dataset_root), archive_root(str::joinpath(dataset_root, ".archive"))
+          // m_scache_root(str::joinpath(root, ".summaries"))
     {
-        delete m_last;
-        m_last = 0;
+        // Create the directory if it does not exist
+        sys::makedirs(archive_root);
+
+        // Look for other archives other than 'last'
+        rescan();
     }
-    for (std::map<std::string, Archive*>::const_iterator i = m_archives.begin();
-            i != m_archives.end(); ++i)
-        delete i->second;
-    m_archives.clear();
 
-    // Look for subdirectories: they are archives
-    sys::Path d(m_dir);
-    set<string> names;
-    for (sys::Path::iterator i = d.begin(); i != d.end(); ++i)
+    virtual ~ArchivesRoot()
     {
-        // Skip '.', '..' and hidden files
-        if (i->d_name[0] == '.') continue;
-        if (!i.isdir())
+        for (auto& i: archives)
+            delete i.second;
+        if (last)
+            delete last;
+    }
+
+    void rescan()
+    {
+        // Clean up existing archives and restart from scratch
+        if (last)
         {
-            // Add .summary files
-            string name = i->d_name;
-            if (str::endswith(name, ".summary"))
-                names.insert(name.substr(0, name.size() - 8));
-        } else {
-            // Add directory with a manifest inside
-            string pathname = str::joinpath(m_dir, i->d_name);
-            if (!m_read_only || Archive::is_archive(pathname))
-                names.insert(i->d_name);
+            delete last;
+            last = 0;
         }
-    }
+        for (auto& i: archives)
+            delete i.second;
+        archives.clear();
 
-    // Look for existing archives
-    for (set<string>::const_iterator i = names.begin();
-            i != names.end(); ++i)
-    {
-        unique_ptr<Archive> a(Archive::create(str::joinpath(m_dir, *i), !m_read_only));
-        if (a.get())
+        // Look for subdirectories: they are archives
+        sys::Path d(archive_root);
+        set<string> names;
+        for (sys::Path::iterator i = d.begin(); i != d.end(); ++i)
         {
-            if (*i == "last")
-                m_last = a.release();
-            else
-                m_archives.insert(make_pair(*i, a.release()));
+            // Skip '.', '..' and hidden files
+            if (i->d_name[0] == '.') continue;
+            if (!i.isdir())
+            {
+                // Add .summary files
+                string name = i->d_name;
+                if (str::endswith(name, ".summary"))
+                    names.insert(name.substr(0, name.size() - 8));
+            } else {
+                // Add directory with a manifest inside
+                string pathname = str::joinpath(archive_root, i->d_name);
+                if (archive::is_archive(pathname))
+                    names.insert(i->d_name);
+            }
         }
+
+        // Look for existing archives
+        for (const auto& i: names)
+        {
+            unique_ptr<Archive> a(this->instantiate(i));
+            if (a.get())
+            {
+                if (i == "last")
+                    last = a.release();
+                else
+                    archives.insert(make_pair(i, a.release()));
+            }
+        }
+
+        // Instantiate the 'last' archive even if the directory does not exist,
+        // if not read only
+        if (!last)
+            last = this->instantiate("last").release();
     }
 
-    // Instantiate the 'last' archive even if the directory does not exist,
-    // if not read only
-    if (!m_read_only && !m_last)
+    void iter(std::function<void(Archive&)> f)
     {
-        OnlineArchive* o;
-        m_last = o = new OnlineArchive(str::joinpath(m_dir, "last"));
-        o->openRW();
+        for (auto& i: archives)
+            f(*i.second);
+        if (last)
+            f(*last);
     }
-}
 
-void Archives::flush()
-{
-	for (map<string, Archive*>::iterator i = m_archives.begin();
-			i != m_archives.end(); ++i)
-		i->second->flush();
-	if (m_last)
-		m_last->flush();
-}
-
-Archive* Archives::lookup(const std::string& name)
-{
-	if (name == "last")
-		return m_last;
-
-	std::map<std::string, Archive*>::iterator i = m_archives.find(name);
-	if (i == m_archives.end())
-		return 0;
-	return i->second;
-}
-
-void Archives::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
-{
-    for (map<string, Archive*>::iterator i = m_archives.begin();
-            i != m_archives.end(); ++i)
-        i->second->query_data(q, dest);
-    if (m_last)
-        m_last->query_data(q, dest);
-}
-
-void Archives::query_bytes(const dataset::ByteQuery& q, int out)
-{
-    for (map<string, Archive*>::iterator i = m_archives.begin();
-            i != m_archives.end(); ++i)
-        i->second->query_bytes(q, out);
-    if (m_last)
-        m_last->query_bytes(q, out);
-}
-
-void Archives::summary_for_all(Summary& out)
-{
-    string sum_file = str::joinpath(m_scache_root, "archives.summary");
-    bool has_cache = true;
-    int fd = open(sum_file.c_str(), O_RDONLY);
-    if (fd < 0)
+    // Look up an archive, returns 0 if not found
+    Archive* lookup(const std::string& name)
     {
-        if (errno == ENOENT)
-            has_cache = false;
-        else
-            throw wibble::exception::System("opening file " + sum_file);
-    }
-    utils::fd::HandleWatch hw(sum_file, fd);
+        if (name == "last")
+            return last;
 
-    if (has_cache)
+        auto i = archives.find(name);
+        if (i == archives.end())
+            return nullptr;
+        return i->second;
+    }
+
+    void invalidate_summary_cache()
+    {
+        sys::unlink_ifexists(str::joinpath(dataset_root, ".summaries/archives.summary"));
+    }
+
+    void rebuild_summary_cache()
+    {
+        string sum_file = str::joinpath(dataset_root, ".summaries/archives.summary");
+        Summary s;
+        Matcher m;
+
+        // Query the summaries of all archives
+        iter([&](Archive& a) {
+            unique_ptr<Reader> r(archive::create_reader(str::joinpath(archive_root, a.name())));
+            r->query_summary(m, s);
+        });
+
+        // Write back to the cache directory, if allowed
+        if (sys::access(str::joinpath(dataset_root, ".summaries"), W_OK))
+            s.writeAtomically(sum_file);
+    }
+
+    virtual std::unique_ptr<Archive> instantiate(const std::string& name) = 0;
+};
+
+struct ArchivesReaderRoot: public ArchivesRoot<Reader>
+{
+    using ArchivesRoot::ArchivesRoot;
+
+    std::unique_ptr<Reader> instantiate(const std::string& name) override
+    {
+        return create_reader(str::joinpath(archive_root, name));
+    }
+};
+struct ArchivesCheckerRoot: public ArchivesRoot<SegmentedChecker>
+{
+    using ArchivesRoot::ArchivesRoot;
+
+    std::unique_ptr<SegmentedChecker> instantiate(const std::string& name) override
+    {
+        return create_checker(str::joinpath(archive_root, name));
+    }
+};
+
+}
+
+
+ArchivesReader::ArchivesReader(const std::string& root)
+    : Reader("archives"), archives(new archive::ArchivesReaderRoot(root))
+{
+}
+
+ArchivesReader::~ArchivesReader()
+{
+    delete archives;
+}
+
+void ArchivesReader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+{
+    archives->iter([&](Reader& r) {
+        r.query_data(q, dest);
+    });
+}
+
+void ArchivesReader::query_bytes(const dataset::ByteQuery& q, int out)
+{
+    archives->iter([&](Reader& r) {
+        r.query_bytes(q, out);
+    });
+}
+
+void ArchivesReader::summary_for_all(Summary& out)
+{
+    string sum_file = str::joinpath(archives->dataset_root, ".summaries/archives.summary");
+    sys::File fd(sum_file);
+    if (fd.open_ifexists(O_RDONLY))
         out.read(fd, sum_file);
     else
     {
-        Matcher m;
         // Query the summaries of all archives
-        for (map<string, Archive*>::iterator i = m_archives.begin();
-                i != m_archives.end(); ++i)
-            i->second->query_summary(m, out);
-        if (m_last)
-            m_last->query_summary(m, out);
+        Matcher m;
+        archives->iter([&](Reader& a) {
+            a.query_summary(m, out);
+        });
     }
 }
 
-void Archives::rebuild_summary_cache()
-{
-    // Only when writable
-    if (m_read_only)
-        throw wibble::exception::Consistency(
-                "rebuilding summary cache for archives in " + m_dir,
-                "archive opened in read only mode");
-
-    string sum_file = str::joinpath(m_scache_root, "archives.summary");
-    Summary s;
-    Matcher m;
-
-    // Query the summaries of all archives
-    for (map<string, Archive*>::iterator i = m_archives.begin();
-            i != m_archives.end(); ++i)
-        i->second->query_summary(m, s);
-    if (m_last)
-        m_last->query_summary(m, s);
-
-    // Add all summaries in toplevel dirs
-    sys::Path d(m_dir);
-    for (sys::Path::iterator i = d.begin(); i != d.end(); ++i)
-    {
-        // Skip '.', '..' and hidden files
-        if (i->d_name[0] == '.') continue;
-        if (!str::endswith(i->d_name, ".summary")) continue;
-        s.readFile(str::joinpath(m_dir, i->d_name));
-    }
-
-    // Write back to the cache directory, if allowed
-    if (!m_read_only)
-        if (sys::access(m_scache_root, W_OK))
-            s.writeAtomically(sum_file);
-}
-
-void Archives::query_summary(const Matcher& matcher, Summary& summary)
+void ArchivesReader::query_summary(const Matcher& matcher, Summary& summary)
 {
     unique_ptr<Time> matcher_begin;
     unique_ptr<Time> matcher_end;
@@ -483,46 +374,37 @@ void Archives::query_summary(const Matcher& matcher, Summary& summary)
     }
 
     // Query only archives that fit that date range
-    for (map<string, Archive*>::iterator i = m_archives.begin();
-            i != m_archives.end(); ++i)
-    {
+    archives->iter([&](Reader& a) {
         unique_ptr<Time> arc_begin;
         unique_ptr<Time> arc_end;
-        i->second->expand_date_range(arc_begin, arc_end);
+        a.expand_date_range(arc_begin, arc_end);
         if (Time::range_overlaps(matcher_begin.get(), matcher_end.get(), arc_begin.get(), arc_end.get()))
-            i->second->query_summary(matcher, summary);
-    }
-    if (m_last)
-    {
-        unique_ptr<Time> arc_begin;
-        unique_ptr<Time> arc_end;
-        m_last->expand_date_range(arc_begin, arc_end);
-        if (Time::range_overlaps(matcher_begin.get(), matcher_end.get(), arc_begin.get(), arc_end.get()))
-            m_last->query_summary(matcher, summary);
-    }
+            a.query_summary(matcher, summary);
+    });
 }
 
-void Archives::expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
+
+
+ArchivesChecker::ArchivesChecker(const std::string& root)
+    : SegmentedChecker(archive::make_config("archives", str::joinpath(root, ".archive"))), archives(new archive::ArchivesCheckerRoot(root))
 {
-    for (map<string, Archive*>::const_iterator i = m_archives.begin();
-            i != m_archives.end(); ++i)
-        i->second->expand_date_range(begin, end);
 }
 
-size_t Archives::produce_nth(metadata_dest_func cons, size_t idx)
+ArchivesChecker::~ArchivesChecker()
 {
-    size_t res = 0;
-    for (map<string, Archive*>::iterator i = m_archives.begin();
-            i != m_archives.end(); ++i)
-        res += i->second->produce_nth(cons, idx);
-    if (m_last)
-        res += m_last->produce_nth(cons, idx);
-    return res;
+    delete archives;
 }
 
-void Archives::invalidate_summary_cache()
+void ArchivesChecker::removeAll(std::ostream& log, bool writable)
 {
-    sys::unlink_ifexists(str::joinpath(m_scache_root, "archives.summary"));
+    archives->iter([&](SegmentedChecker& a) {
+        a.removeAll(log, writable);
+    });
+}
+
+void ArchivesChecker::archiveFile(const std::string& relpath)
+{
+    throw std::runtime_error("cannot archive " + relpath + ": file is already in the archive");
 }
 
 static std::string poppath(std::string& path)
@@ -541,80 +423,94 @@ static std::string poppath(std::string& path)
 	return res;
 }
 
-void Archives::acquire(const std::string& relname)
+size_t ArchivesChecker::repackFile(const std::string& relname)
 {
-	string path = relname;
-	string name = poppath(path);
-	if (Archive* a = lookup(name))
-		a->acquire(path);
-	else
-		throw wibble::exception::Consistency("acquiring " + relname,
-				"archive " + name + " does not exist in " + m_dir);
-    invalidate_summary_cache();
+    string path = relname;
+    string name = poppath(path);
+    if (SegmentedChecker* a = archives->lookup(name))
+        a->repackFile(path);
+    else
+        throw std::runtime_error("cannot repack " + relname + ": archive " + name + " does not exist in " + archives->archive_root);
+    archives->invalidate_summary_cache();
 }
 
-void Archives::acquire(const std::string& relname, metadata::Collection& mds)
+void ArchivesChecker::indexFile(const std::string& relname, metadata::Collection&& mds)
 {
-	string path = relname;
-	string name = poppath(path);
-	if (Archive* a = lookup(name))
-		a->acquire(path, mds);
-	else
-		throw wibble::exception::Consistency("acquiring " + relname,
-				"archive " + name + " does not exist in " + m_dir);
-    invalidate_summary_cache();
+    string path = relname;
+    string name = poppath(path);
+    if (SegmentedChecker* a = archives->lookup(name))
+        a->indexFile(path, move(mds));
+    else
+        throw std::runtime_error("cannot acquire " + relname + ":archive " + name + " does not exist in " + archives->archive_root);
+    archives->invalidate_summary_cache();
 }
 
-void Archives::remove(const std::string& relname)
+size_t ArchivesChecker::removeFile(const std::string& relname, bool with_data)
 {
-	string path = relname;
-	string name = poppath(path);
-	if (Archive* a = lookup(name))
-		a->remove(path);
-	else
-		throw wibble::exception::Consistency("removing " + relname,
-				"archive " + name + " does not exist in " + m_dir);
-    invalidate_summary_cache();
+    size_t res;
+    string path = relname;
+    string name = poppath(path);
+    if (SegmentedChecker* a = archives->lookup(name))
+        res = a->removeFile(path, with_data);
+    else
+        throw std::runtime_error("cannot remove " + relname + ": archive " + name + " does not exist in " + archives->archive_root);
+    archives->invalidate_summary_cache();
+    return res;
 }
 
-void Archives::rescan(const std::string& relname)
+void ArchivesChecker::rescanFile(const std::string& relname)
 {
-	string path = relname;
-	string name = poppath(path);
-	if (Archive* a = lookup(name))
-		a->rescan(path);
-	else
-		throw wibble::exception::Consistency("rescanning " + relname,
-				"archive " + name + " does not exist in " + m_dir);
-    invalidate_summary_cache();
+    string path = relname;
+    string name = poppath(path);
+    if (SegmentedChecker* a = archives->lookup(name))
+        a->rescanFile(path);
+    else
+        throw std::runtime_error("cannot rescan " + relname + ": archive " + name + " does not exist in " + archives->archive_root);
+    archives->invalidate_summary_cache();
 }
 
-void Archives::maintenance(segment::state_func v)
+void ArchivesChecker::maintenance(segment::state_func v, bool quick)
 {
-    for (map<string, Archive*>::iterator i = m_archives.begin();
-            i != m_archives.end(); ++i)
+    archives->iter([&](SegmentedChecker& a) {
+        a.maintenance([&](const std::string& file, segment::FileState state) {
+            v(str::joinpath(a.name(), file), state);
+        }, quick);
+    });
+}
+
+size_t ArchivesChecker::vacuum()
+{
+    size_t res = 0;
+    archives->iter([&](SegmentedChecker& a) { res += a.vacuum(); });
+    archives->rebuild_summary_cache();
+    return res;
+}
+
+namespace archive {
+
+unique_ptr<Reader> create_reader(const std::string& dir)
+{
+    if (sys::exists(dir + ".summary"))
     {
-        i->second->maintenance([&](const std::string& file, segment::FileState state) {
-            v(str::joinpath(i->first, file), state);
-        });
-    }
-    if (m_last)
-    {
-        m_last->maintenance([&](const std::string& file, segment::FileState state) {
-            v(str::joinpath("last", file), state);
-        });
-    }
+        if (index::Manifest::exists(dir))
+            return unique_ptr<Reader>(new simple::Reader(make_config(dir)));
+        else
+            return unique_ptr<Reader>(new OfflineReader(dir + ".summary"));
+    } else
+        return unique_ptr<Reader>(new simple::Reader(make_config(dir)));
 }
 
-void Archives::vacuum()
+unique_ptr<SegmentedChecker> create_checker(const std::string& dir)
 {
-	for (map<string, Archive*>::iterator i = m_archives.begin();
-			i != m_archives.end(); ++i)
-		i->second->vacuum();
-	if (m_last)
-		m_last->vacuum();
-    if (!m_read_only)
-        rebuild_summary_cache();
+    if (sys::exists(dir + ".summary"))
+    {
+        if (index::Manifest::exists(dir))
+            return unique_ptr<SegmentedChecker>(new simple::Checker(make_config(dir)));
+        else
+            return unique_ptr<SegmentedChecker>(new NullSegmentedChecker(make_config(dir)));
+    } else
+        return unique_ptr<SegmentedChecker>(new simple::Checker(make_config(dir)));
+}
 }
 
 }

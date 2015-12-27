@@ -20,7 +20,7 @@ Reader::Reader(const ConfigFile& cfg)
     {
         unique_ptr<index::Manifest> mft = index::Manifest::create(m_path);
         mft->openRO();
-        m_idx = mft.release();
+        m_idx = m_mft = mft.release();
     }
 }
 
@@ -31,6 +31,11 @@ Reader::~Reader()
 bool Reader::is_dataset(const std::string& dir)
 {
     return index::Manifest::exists(dir);
+}
+
+void Reader::expand_date_range(unique_ptr<types::Time>& begin, unique_ptr<types::Time>& end)
+{
+    m_mft->expand_date_range(begin, end);
 }
 
 }

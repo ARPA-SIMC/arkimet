@@ -58,6 +58,7 @@ public:
 
     void maintenance(segment::state_func v, bool quick=true) override;
     void removeAll(std::ostream& log, bool writable) override;
+    void indexFile(const std::string& relpath, metadata::Collection&& contents) override;
     void rescanFile(const std::string& relpath) override;
     size_t repackFile(const std::string& relpath) override;
     void archiveFile(const std::string& relpath) override;

@@ -197,6 +197,30 @@ void Checker::removeAll(std::ostream& log, bool writable)
     SegmentedChecker::removeAll(log, writable);
 }
 
+void Checker::indexFile(const std::string& relname, metadata::Collection&& mds)
+{
+    string pathname = str::joinpath(m_path, relname);
+    time_t mtime = scan::timestamp(pathname);
+    if (mtime == 0)
+        throw std::runtime_error("cannot acquire " + pathname + ": file does not exist");
+
+    // Iterate the metadata, computing the summary and making the data
+    // paths relative
+    mds.strip_source_paths();
+    Summary sum;
+    mds.add_to_summary(sum);
+
+    // Regenerate .metadata
+    mds.writeAtomically(pathname + ".metadata");
+
+    // Regenerate .summary
+    sum.writeAtomically(pathname + ".summary");
+
+    // Add to manifest
+    m_mft->acquire(relname, mtime, sum);
+    m_mft->flush();
+}
+
 void Checker::rescanFile(const std::string& relpath)
 {
     // Delete cached info to force a full rescan

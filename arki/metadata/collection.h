@@ -32,12 +32,19 @@ protected:
 
 public:
     Collection();
+    Collection(const Collection& o);
+    Collection(Collection&& o) = default;
     /// Construct a collection filled by the results of query_data
     Collection(Reader& ds, const dataset::DataQuery& q);
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
     Collection(const std::string& pathname);
     ~Collection();
+
+    Collection& operator=(const Collection& o);
+    Collection& operator=(Collection&& o) = default;
+
+    bool operator==(const Collection& o) const;
 
     void clear();
     bool empty() const { return vals.empty(); }

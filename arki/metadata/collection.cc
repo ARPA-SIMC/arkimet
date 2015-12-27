@@ -91,6 +91,23 @@ static void compressAndWrite(const std::vector<uint8_t>& buf, int outfd, const s
 
 Collection::Collection() {}
 
+Collection::Collection(const Collection& o)
+{
+    for (const auto& i: o.vals)
+        vals.push_back(i->clone());
+}
+
+Collection& Collection::operator=(const Collection& o)
+{
+    if (this == &o) return *this;
+
+    clear();
+    for (const auto& i: o.vals)
+        vals.push_back(i->clone());
+
+    return *this;
+}
+
 Collection::Collection(Reader& ds, const dataset::DataQuery& q)
 {
     add(ds, q);
@@ -105,6 +122,16 @@ Collection::~Collection()
 {
     for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)
         delete *i;
+}
+
+bool Collection::operator==(const Collection& o) const
+{
+    if (vals.size() != o.vals.size()) return false;
+    auto i = vals.begin();
+    auto oi = o.vals.begin();
+    for ( ; i != vals.end() && oi != o.vals.end(); ++i, ++oi)
+        if (**i != **oi) return false;
+    return true;
 }
 
 void Collection::clear()

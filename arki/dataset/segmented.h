@@ -105,6 +105,11 @@ public:
     virtual void removeAll(std::ostream& log, bool writable);
 
     /**
+     * Add information about a file to the index
+     */
+    virtual void indexFile(const std::string& relpath, metadata::Collection&& contents) = 0;
+
+    /**
      * Consider all existing metadata about a file as invalid and rebuild
      * them by rescanning the file
      */
@@ -142,6 +147,22 @@ public:
      * @returns The number of bytes freed on disk with this operation
      */
     virtual size_t vacuum() = 0;
+};
+
+class NullSegmentedChecker : public SegmentedChecker
+{
+public:
+    using SegmentedChecker::SegmentedChecker;
+
+    void maintenance(segment::state_func dest, bool quick=true) override {}
+    void sanityChecks(std::ostream& log, bool writable=false) override {}
+    void removeAll(std::ostream& log, bool writable) override {}
+    void indexFile(const std::string& relpath, metadata::Collection&& contents) override {}
+    void rescanFile(const std::string& relpath) override {}
+    size_t repackFile(const std::string& relpath) override { return 0; }
+    size_t removeFile(const std::string& relpath, bool withData=false) override { return 0; }
+    void archiveFile(const std::string& relpath) override {}
+    size_t vacuum() override { return 0; }
 };
 
 

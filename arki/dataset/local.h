@@ -12,9 +12,10 @@ class Metadata;
 class Matcher;
 
 namespace dataset {
-class Archives;
+class ArchivesReader;
+class ArchivesChecker;
 
-template<typename Archives, bool read_only=false>
+template<typename Archives>
 class LocalBase
 {
 protected:
@@ -40,7 +41,7 @@ public:
 /**
  * Base class for local datasets
  */
-class LocalReader : public Reader, public LocalBase<Archives, true>
+class LocalReader : public Reader, public LocalBase<ArchivesReader>
 {
 public:
     LocalReader(const ConfigFile& cfg);
@@ -78,11 +79,17 @@ public:
     static void readConfig(const std::string& path, ConfigFile& cfg);
 };
 
-class LocalWriter : public Writer, public LocalBase<Archives, false>
+class LocalWriter : public Writer
 {
+protected:
+    std::string m_path;
+
 public:
     LocalWriter(const ConfigFile& cfg);
     ~LocalWriter();
+
+    /// Return the dataset path
+    const std::string& path() const { return m_path; }
 
     /**
      * Instantiate an appropriate Dataset for the given configuration
@@ -102,7 +109,7 @@ public:
     static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
-struct LocalChecker : public Checker, public LocalBase<Archives, false>
+struct LocalChecker : public Checker, public LocalBase<ArchivesChecker>
 {
     LocalChecker(const ConfigFile& cfg);
     ~LocalChecker();

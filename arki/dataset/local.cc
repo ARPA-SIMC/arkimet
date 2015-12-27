@@ -21,8 +21,8 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-template<typename Archive, bool read_only>
-LocalBase<Archive, read_only>::LocalBase(const ConfigFile& cfg)
+template<typename Archive>
+LocalBase<Archive>::LocalBase(const ConfigFile& cfg)
     : m_path(cfg.value("path"))
 {
     string tmp = cfg.value("archive age");
@@ -34,25 +34,24 @@ LocalBase<Archive, read_only>::LocalBase(const ConfigFile& cfg)
         m_delete_age = std::stoi(tmp);
 }
 
-template<typename Archive, bool read_only>
-LocalBase<Archive, read_only>::~LocalBase()
+template<typename Archive>
+LocalBase<Archive>::~LocalBase()
 {
     delete m_archive;
 }
 
-template<typename Archive, bool read_only>
-bool LocalBase<Archive, read_only>::hasArchive() const
+template<typename Archive>
+bool LocalBase<Archive>::hasArchive() const
 {
     string arcdir = str::joinpath(m_path, ".archive");
     return sys::exists(arcdir);
 }
 
-template<typename Archive, bool read_only>
-Archive& LocalBase<Archive, read_only>::archive()
+template<typename Archive>
+Archive& LocalBase<Archive>::archive()
 {
     if (!m_archive)
-#warning TODO: this is a hack, in the future we distinguish by template argument what kind of archive to instantiate
-        m_archive = new Archive(m_path, str::joinpath(m_path, ".archive"), read_only);
+        m_archive = new Archive(m_path);
     return *m_archive;
 }
 
@@ -80,8 +79,10 @@ void LocalReader::query_summary(const Matcher& matcher, Summary& summary)
 
 size_t LocalReader::produce_nth(metadata_dest_func cons, size_t idx)
 {
+#if 0
     if (hasArchive())
         return archive().produce_nth(cons, idx);
+#endif
     return 0;
 }
 
@@ -197,7 +198,7 @@ void LocalReader::readConfig(const std::string& path, ConfigFile& cfg)
 }
 
 LocalWriter::LocalWriter(const ConfigFile& cfg)
-    : Writer(cfg.value("name"), cfg), LocalBase(cfg)
+    : Writer(cfg.value("name"), cfg), m_path(cfg.value("path"))
 {
     // Create the directory if it does not exist
     sys::makedirs(m_path);
@@ -205,7 +206,6 @@ LocalWriter::LocalWriter(const ConfigFile& cfg)
 
 LocalWriter::~LocalWriter()
 {
-    delete m_archive;
 }
 
 LocalWriter* LocalWriter::create(const ConfigFile& cfg)
@@ -236,7 +236,7 @@ LocalChecker* LocalChecker::create(const ConfigFile& cfg)
 }
 
 
-template class LocalBase<Archives, true>;
-template class LocalBase<Archives, false>;
+template class LocalBase<ArchivesReader>;
+template class LocalBase<ArchivesChecker>;
 }
 }

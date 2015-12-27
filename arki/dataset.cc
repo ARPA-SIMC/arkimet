@@ -120,6 +120,10 @@ void Reader::query_bytes(const dataset::ByteQuery& q, int out)
     }
 }
 
+void Reader::expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end)
+{
+}
+
 #ifdef HAVE_LUA
 Reader* Reader::lua_check(lua_State* L, int idx)
 {

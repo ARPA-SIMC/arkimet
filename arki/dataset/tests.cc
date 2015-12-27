@@ -284,6 +284,11 @@ std::string DatasetTest::idxfname(const ConfigFile* wcfg) const
 		return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
+std::string manifest_idx_fname()
+{
+    return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
+}
+
 std::string DatasetTest::arcidxfname() const
 {
 	return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";

@@ -5,7 +5,7 @@
 
 #include <arki/dataset.h>
 #include <arki/summary.h>
-#include <arki/dataset/segment.h>
+#include <arki/dataset/segmented.h>
 #include <string>
 #include <map>
 #include <iosfwd>
@@ -14,7 +14,7 @@ namespace arki {
 class Summary;
 class Matcher;
 
-namespace metadata{
+namespace metadata {
 class Collection;
 }
 
@@ -30,100 +30,17 @@ namespace simple {
 class Reader;
 }
 
-class Archive : public Reader
-{
-public:
-    using Reader::Reader;
-    virtual ~Archive();
+namespace archive {
 
-    virtual void acquire(const std::string& relname) = 0;
-    virtual void acquire(const std::string& relname, metadata::Collection& mds) = 0;
-    virtual void remove(const std::string& relname) = 0;
-    virtual void rescan(const std::string& relname) = 0;
-    virtual void deindex(const std::string& relname) = 0;
-    virtual void flush() = 0;
-    virtual void maintenance(segment::state_func v) = 0;
-    virtual void vacuum() = 0;
-    /**
-     * Expand the given begin and end ranges to include the datetime extremes
-     * of this manifest.
-     *
-     * If begin and end are unset, set them to the datetime extremes of this
-     * manifest.
-     */
-    virtual void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const = 0;
-    /**
-     * Output to \a cons the idx-th element of each file
-     *
-     * @return true if something was produced, else false
-     */
-    virtual size_t produce_nth(metadata_dest_func cons, size_t idx=0) = 0;
+class ArchivesReaderRoot;
+class ArchivesCheckerRoot;
 
-    static bool is_archive(const std::string& dir);
-    static Archive* create(const std::string& dir, bool writable=false);
-};
+bool is_archive(const std::string& dir);
 
-class OnlineArchive : public Archive
-{
-protected:
-    std::string m_dir;
-    index::Manifest* m_mft;
+std::unique_ptr<Reader> create_reader(const std::string& dir);
+std::unique_ptr<SegmentedChecker> create_checker(const std::string& dir);
 
-    void querySummaries(const Matcher& matcher, Summary& summary);
-
-public:
-    OnlineArchive(const std::string& dir);
-    ~OnlineArchive();
-
-    const std::string& path() const { return m_dir; }
-
-    void openRO();
-    void openRW();
-
-    void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
-    void query_summary(const Matcher& matcher, Summary& summary) override;
-    void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override;
-    size_t produce_nth(metadata_dest_func cons, size_t idx=0) override;
-    void acquire(const std::string& relname) override;
-    void acquire(const std::string& relname, metadata::Collection& mds) override;
-    void remove(const std::string& relname) override;
-    void rescan(const std::string& relname) override;
-    void deindex(const std::string& relname) override;
-    void flush() override;
-    void maintenance(segment::state_func v) override;
-    void vacuum() override;
-
-    /*
-       void repack(std::ostream& log, bool writable=false);
-       void check(std::ostream& log);
-       */
-};
-
-/**
- * Archive that has been put offline (only a summary file is left)
- */
-struct OfflineArchive : public Archive
-{
-    std::string fname;
-    Summary sum;
-
-    OfflineArchive(const std::string& fname);
-    ~OfflineArchive();
-
-    void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
-    void query_summary(const Matcher& matcher, Summary& summary) override;
-    void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override;
-    virtual size_t produce_nth(metadata_dest_func cons, size_t idx=0) override;
-
-    void acquire(const std::string& relname) override;
-    void acquire(const std::string& relname, metadata::Collection& mds) override;
-    void remove(const std::string& relname) override;
-    void rescan(const std::string& relname) override;
-    void deindex(const std::string& relname) override;
-    void flush() override;
-    void maintenance(segment::state_func v) override;
-    void vacuum() override;
-};
+}
 
 /**
  * Set of archives.
@@ -146,52 +63,44 @@ struct OfflineArchive : public Archive
  * When querying, all archives are queried, following the archive order:
  * alphabetical order except the archive named "last" is queried last.
  */
-class Archives : public Reader
+class ArchivesReader : public Reader
 {
 protected:
-	std::string m_scache_root;
-	std::string m_dir;
-	bool m_read_only;
+    archive::ArchivesReaderRoot* archives = nullptr;
 
-	std::map<std::string, Archive*> m_archives;
-	Archive* m_last;
-
-	// Look up an archive, returns 0 if not found
-	Archive* lookup(const std::string& name);
-
-    void invalidate_summary_cache();
     void summary_for_all(Summary& out);
-    void rebuild_summary_cache();
 
 public:
-	Archives(const std::string& root, const std::string& dir, bool read_only = true);
-	virtual ~Archives();
+    ArchivesReader(const std::string& root);
+    virtual ~ArchivesReader();
 
-    /**
-     * Update the list of archives
-     *
-     * It can be called to update the archive view after some have been moved.
-     */
-    void rescan_archives();
-
-	const std::string& path() const { return m_dir; }
-
+    void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void query_bytes(const dataset::ByteQuery& q, int out) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
-    virtual size_t produce_nth(metadata_dest_func cons, size_t idx=0);
-    void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;
+    //size_t produce_nth(metadata_dest_func cons, size_t idx=0) override;
+};
 
-	void acquire(const std::string& relname);
-	void acquire(const std::string& relname, metadata::Collection& mds);
-	void remove(const std::string& relname);
-	void rescan(const std::string& relname);
+class ArchivesChecker : public SegmentedChecker
+{
+protected:
+    archive::ArchivesCheckerRoot* archives = nullptr;
 
-	void flush();
+public:
+    /// Create an archive for the dataset at the given root dir.
+    ArchivesChecker(const std::string& root);
+    virtual ~ArchivesChecker();
 
-    void maintenance(segment::state_func v);
+    //void indexFile(const std::string& relname);
+    void indexFile(const std::string& relname, metadata::Collection&& mds) override;
 
-	void vacuum();
+    void maintenance(segment::state_func dest, bool quick=true) override;
+    void removeAll(std::ostream& log, bool writable) override;
+    void rescanFile(const std::string& relpath) override;
+    size_t repackFile(const std::string& relpath) override;
+    size_t removeFile(const std::string& relpath, bool withData=false) override;
+    void archiveFile(const std::string& relpath) override;
+    size_t vacuum() override;
 };
 
 }

@@ -372,14 +372,14 @@ void RealRepacker::operator()(const std::string& file, segment::FileState state)
         {
             /// File is not present in the archive index
             /// File contents need reindexing in the archive
-            w.archive().rescan(file);
+            w.archive().rescanFile(file);
             log() << "rescanned in archive " << file << endl;
             ++m_count_rescanned;
             m_touched_archive = true;
         }
         if (state.has(FILE_TO_DEINDEX))
         {
-            w.archive().remove(file);
+            w.archive().removeFile(file);
             log() << "deleted from archive index " << file << endl;
             ++m_count_deindexed;
             m_touched_archive = true;
@@ -462,7 +462,7 @@ void RealFixer::operator()(const std::string& file, segment::FileState state)
         {
             /// File is not present in the archive index
             /// File contents need reindexing in the archive
-            w.archive().rescan(file);
+            w.archive().rescanFile(file);
             log() << "rescanned in archive " << file << endl;
             ++m_count_rescanned;
             m_touched_archive = true;
@@ -470,7 +470,7 @@ void RealFixer::operator()(const std::string& file, segment::FileState state)
         if (state.has(FILE_TO_DEINDEX))
         {
             /// File does not exist, but has entries in the archive index
-            w.archive().remove(file);
+            w.archive().removeFile(file);
             log() << "deindexed in archive " << file << endl;
             ++m_count_deindexed;
             m_touched_archive = true;

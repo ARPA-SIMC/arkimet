@@ -180,6 +180,15 @@ public:
      */
     virtual void query_bytes(const dataset::ByteQuery& q, int out);
 
+    /**
+     * Expand the given begin and end ranges to include the datetime extremes
+     * of this manifest.
+     *
+     * If begin and end are unset, set them to the datetime extremes of this
+     * manifest.
+     */
+    virtual void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end);
+
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this dataset
 	void lua_push(lua_State* L);
@@ -321,6 +330,14 @@ struct Checker : public Base
      * Instantiate an appropriate Checker for the given configuration
      */
     static Checker* create(const ConfigFile& cfg);
+};
+
+struct NullChecker : public Checker
+{
+    using Checker::Checker;
+    void removeAll(std::ostream& log, bool writable=false) override {}
+    void repack(std::ostream& log, bool writable=false) override {}
+    void check(std::ostream& log, bool fix, bool quick) override {}
 };
 
 }
