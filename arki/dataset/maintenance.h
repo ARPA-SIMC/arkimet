@@ -21,7 +21,7 @@ class Validator;
 
 namespace dataset {
 class SegmentedChecker;
-class TargetFile;
+class Step;
 
 namespace maintenance {
 
@@ -53,11 +53,11 @@ struct FindMissing
 struct CheckAge
 {
     segment::state_func& next;
-    const TargetFile& tf;
+    const Step& step;
     types::Time archive_threshold;
     types::Time delete_threshold;
 
-    CheckAge(segment::state_func& next, const TargetFile& tf, int archive_age=-1, int delete_age=-1);
+    CheckAge(segment::state_func& next, const Step& step, int archive_age=-1, int delete_age=-1);
 
     void operator()(const std::string& file, segment::FileState state);
 };

@@ -1,14 +1,12 @@
-#include "config.h"
-#include "targetfile.h"
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/matcher.h>
-#include <arki/types/reftime.h>
-#include <arki/types/time.h>
-#include <arki/utils/pcounter.h>
-#include <arki/utils/string.h>
-#include <arki/wibble/exception.h>
-#include <arki/wibble/grcal/grcal.h>
+#include "step.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/matcher.h"
+#include "arki/types/reftime.h"
+#include "arki/types/time.h"
+#include "arki/utils/pcounter.h"
+#include "arki/utils/string.h"
+#include "arki/wibble/grcal/grcal.h"
 #include <cstdint>
 #include <inttypes.h>
 #include <sstream>
@@ -23,7 +21,7 @@ namespace gd = wibble::grcal::date;
 namespace arki {
 namespace dataset {
 
-struct BaseTargetFile : public TargetFile
+struct BaseStep : public Step
 {
     bool pathMatches(const std::string& path, const matcher::OR& m) const override
     {
@@ -35,7 +33,7 @@ struct BaseTargetFile : public TargetFile
     }
 };
 
-struct Yearly : public BaseTargetFile
+struct Yearly : public BaseStep
 {
     static const char* name() { return "yearly"; }
 
@@ -59,7 +57,7 @@ struct Yearly : public BaseTargetFile
     }
 };
 
-struct Monthly : public BaseTargetFile
+struct Monthly : public BaseStep
 {
     static const char* name() { return "monthly"; }
 
@@ -82,7 +80,7 @@ struct Monthly : public BaseTargetFile
     }
 };
 
-struct Biweekly : public BaseTargetFile
+struct Biweekly : public BaseStep
 {
     static const char* name() { return "biweekly"; }
 
@@ -119,7 +117,7 @@ struct Biweekly : public BaseTargetFile
     }
 };
 
-struct Weekly : public BaseTargetFile
+struct Weekly : public BaseStep
 {
     static const char* name() { return "weekly"; }
 
@@ -155,7 +153,7 @@ struct Weekly : public BaseTargetFile
     }
 };
 
-struct Daily : public BaseTargetFile
+struct Daily : public BaseStep
 {
     static const char* name() { return "daily"; }
 
@@ -177,7 +175,7 @@ struct Daily : public BaseTargetFile
     }
 };
 
-struct SingleFile : public BaseTargetFile
+struct SingleFile : public BaseStep
 {
 	/* produce un nome di percorso di file nel formato <YYYYY>/<MM>/<DD>/<hh>/<progressivo> */
 	/* in base al metadato "reftime". */
@@ -221,9 +219,10 @@ struct SingleFile : public BaseTargetFile
 
 };
 
-TargetFile* TargetFile::create(const ConfigFile& cfg)
+Step* Step::create(const ConfigFile& cfg)
 {
     string step = str::lower(cfg.value("step"));
+    if (step.empty()) return nullptr;
 
 	if (step == Daily::name())
 		return new Daily;
@@ -237,22 +236,21 @@ TargetFile* TargetFile::create(const ConfigFile& cfg)
 		return new Yearly;
 	else if (step == SingleFile::name())
 		return new SingleFile(cfg);
-	else
-		throw wibble::exception::Consistency(
-			"step '"+step+"' is not supported.  Valid values are daily, weekly, biweekly, monthly and yearly.",
-			"parsing dataset time step");
+    else
+        throw std::runtime_error("step '"+step+"' is not supported.  Valid values are daily, weekly, biweekly, monthly and yearly.");
 }
 
-std::vector<std::string> TargetFile::stepList()
+std::vector<std::string> Step::list()
 {
-	vector<string> res;
-	res.push_back(Daily::name());
-	res.push_back(Weekly::name());
-	res.push_back(Biweekly::name());
-	res.push_back(Monthly::name());
-	res.push_back(Yearly::name());
-	res.push_back(SingleFile::name());
-	return res;
+    vector<string> res {
+        Daily::name(),
+        Weekly::name(),
+        Biweekly::name(),
+        Monthly::name(),
+        Yearly::name(),
+        SingleFile::name(),
+    };
+    return res;
 }
 
 }

@@ -1,5 +1,5 @@
 #include "segmented.h"
-#include "targetfile.h"
+#include "step.h"
 #include "ondisk2.h"
 #include "simple/writer.h"
 #include "maintenance.h"
@@ -42,8 +42,11 @@ SegmentedReader::~SegmentedReader()
 SegmentedWriter::SegmentedWriter(const ConfigFile& cfg)
     : LocalWriter(cfg), SegmentedBase(cfg),
       m_default_replace_strategy(REPLACE_NEVER),
-      m_tf(TargetFile::create(cfg))
+      m_step(Step::create(cfg))
 {
+    if (!m_step)
+        throw std::runtime_error("cannot create a writer for dataset " + m_name + ": no step has been configured");
+
     string repl = cfg.value("replace");
     if (repl == "yes" || repl == "true" || repl == "always")
         m_default_replace_strategy = REPLACE_ALWAYS;
@@ -57,12 +60,12 @@ SegmentedWriter::SegmentedWriter(const ConfigFile& cfg)
 
 SegmentedWriter::~SegmentedWriter()
 {
-    delete m_tf;
+    delete m_step;
 }
 
 segment::Segment* SegmentedWriter::file(const Metadata& md, const std::string& format)
 {
-    string relname = (*m_tf)(md) + "." + md.source().format;
+    string relname = (*m_step)(md) + "." + md.source().format;
     return m_segment_manager->get_segment(format, relname);
 }
 
@@ -102,13 +105,13 @@ LocalWriter::AcquireResult SegmentedWriter::testAcquire(const ConfigFile& cfg, c
 
 
 SegmentedChecker::SegmentedChecker(const ConfigFile& cfg)
-    : LocalChecker(cfg), SegmentedBase(cfg), m_tf(TargetFile::create(cfg))
+    : LocalChecker(cfg), SegmentedBase(cfg), m_step(Step::create(cfg))
 {
 }
 
 SegmentedChecker::~SegmentedChecker()
 {
-    delete m_tf;
+    delete m_step;
 }
 
 void SegmentedChecker::archiveFile(const std::string& relpath)

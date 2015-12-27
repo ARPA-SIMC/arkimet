@@ -6,7 +6,7 @@
 
 namespace arki {
 namespace dataset {
-class TargetFile;
+class Step;
 
 struct SegmentedBase
 {
@@ -35,7 +35,7 @@ class SegmentedWriter : public LocalWriter, public SegmentedBase
 {
 protected:
     ReplaceStrategy m_default_replace_strategy;
-    TargetFile* m_tf;
+    Step* m_step;
 
     /**
      * Return an instance of the Segment for the file where the given metadata
@@ -63,7 +63,7 @@ public:
 class SegmentedChecker : public LocalChecker, public SegmentedBase
 {
 protected:
-    TargetFile* m_tf;
+    Step* m_step;
 
 public:
     SegmentedChecker(const ConfigFile& cfg);

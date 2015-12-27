@@ -184,7 +184,7 @@ struct Deleter
 void Checker::maintenance(segment::state_func v, bool quick)
 {
     // TODO Detect if data is not in reftime order
-    maintenance::CheckAge ca(v, *m_tf, m_archive_age, m_delete_age);
+    maintenance::CheckAge ca(v, *m_step, m_archive_age, m_delete_age);
     m_mft->check(*m_segment_manager, ca, quick);
     SegmentedChecker::maintenance(v, quick);
 }

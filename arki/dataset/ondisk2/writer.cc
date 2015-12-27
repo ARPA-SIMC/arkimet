@@ -299,7 +299,7 @@ void Checker::maintenance(segment::state_func v, bool quick)
     // Iterate subdirs in sorted order
     // Also iterate files on index in sorted order
     // Check each file for need to reindex or repack
-    maintenance::CheckAge ca(v, *m_tf, m_archive_age, m_delete_age);
+    maintenance::CheckAge ca(v, *m_step, m_archive_age, m_delete_age);
     vector<string> files = scan::dir(m_path);
     maintenance::FindMissing fm([&](const std::string& relname, segment::FileState state) { ca(relname, state); }, files);
     idx->scan_files([&](const std::string& relname, const metadata::Collection& mds) {

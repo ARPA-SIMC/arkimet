@@ -63,7 +63,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/simple/datafile.h \
 		dataset/simple/reader.h \
 		dataset/simple/writer.h \
-		dataset/targetfile.h \
+		dataset/step.h \
 		dataset/test-scenario.h \
 		dataset/tests.h \
 		dispatcher.h \
@@ -496,7 +496,7 @@ libarkimet_la_SOURCES += \
 		dataset/index/aggregate.cc \
 		dataset/index/summarycache.cc \
 		dataset/index/contents.cc \
-		dataset/targetfile.cc \
+		dataset/step.cc \
 		dataset/local.cc \
 		dataset/segmented.cc \
 		dataset/indexed.cc \
@@ -541,7 +541,7 @@ tests_arki_test_SOURCES += \
 		dataset/index/aggregate-tut.cc \
 		dataset/index/summarycache-tut.cc \
 		dataset/index/contents-tut.cc \
-		dataset/targetfile-tut.cc \
+		dataset/step-test.cc \
 		dataset/local-test.cc \
 		dataset/segmented-test.cc \
 		dataset/indexed-test.cc \

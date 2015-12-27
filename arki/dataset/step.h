@@ -1,5 +1,5 @@
-#ifndef ARKI_DATASET_TARGETFILE_H
-#define ARKI_DATASET_TARGETFILE_H
+#ifndef ARKI_DATASET_STEP_H
+#define ARKI_DATASET_STEP_H
 
 /// Compute names for segments in an arkimet dataset
 
@@ -23,10 +23,10 @@ namespace dataset {
 /**
  * Generator for filenames the dataset in which to store a metadata
  */
-struct TargetFile
+struct Step
 {
-	virtual ~TargetFile() {}
-	virtual std::string operator()(const Metadata& md) = 0;
+    virtual ~Step() {}
+    virtual std::string operator()(const Metadata& md) = 0;
 
     virtual void path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const = 0;
 
@@ -38,17 +38,19 @@ struct TargetFile
      */
     virtual bool pathMatches(const std::string& path, const matcher::OR& m) const = 0;
 
-	/**
-	 * Create a TargetFile according to the given configuration.
-	 *
-	 * Usually, only the 'step' configuration key is considered.
-	 */
-	static TargetFile* create(const ConfigFile& cfg);
+    /**
+     * Create a TargetFile according to the given configuration.
+     *
+     * Returns nullptr if no 'step' was requested in the configuration.
+     *
+     * Usually, only the 'step' configuration key is considered.
+     */
+    static Step* create(const ConfigFile& cfg);
 
-	/**
-	 * Return the list of available steps
-	 */
-	static std::vector<std::string> stepList();
+    /**
+     * Return the list of available steps
+     */
+    static std::vector<std::string> list();
 };
 
 }

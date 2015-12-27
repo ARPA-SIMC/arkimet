@@ -37,9 +37,6 @@ class ArchivesCheckerRoot;
 
 bool is_archive(const std::string& dir);
 
-std::unique_ptr<Reader> create_reader(const std::string& dir);
-std::unique_ptr<SegmentedChecker> create_checker(const std::string& dir);
-
 }
 
 /**

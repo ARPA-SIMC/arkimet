@@ -4,7 +4,7 @@
 #include <arki/dataset/segmented.h>
 #include <arki/dataset/archive.h>
 #include <arki/metadata/collection.h>
-#include <arki/dataset/targetfile.h>
+#include <arki/dataset/step.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/compress.h>
@@ -106,8 +106,8 @@ TestOverrideCurrentDateForMaintenance::~TestOverrideCurrentDateForMaintenance()
 }
 
 
-CheckAge::CheckAge(segment::state_func& next, const TargetFile& tf, int archive_age, int delete_age)
-    : next(next), tf(tf), archive_threshold(0, 0, 0), delete_threshold(0, 0, 0)
+CheckAge::CheckAge(segment::state_func& next, const Step& step, int archive_age, int delete_age)
+    : next(next), step(step), archive_threshold(0, 0, 0), delete_threshold(0, 0, 0)
 {
     time_t now = override_now ? override_now : time(NULL);
     struct tm t;
@@ -138,7 +138,7 @@ void CheckAge::operator()(const std::string& file, segment::FileState state)
         types::Time start_time;
         types::Time end_time;
 #warning if the path is invalid, path_timespan throws, and the exception is not currently handled. Handle it setting the file in a "needs manual recovery" status
-        tf.path_timespan(file, start_time, end_time);
+        step.path_timespan(file, start_time, end_time);
         if (delete_threshold.vals[0] != 0 && delete_threshold >= end_time)
         {
             nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
