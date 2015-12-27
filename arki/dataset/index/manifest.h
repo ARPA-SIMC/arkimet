@@ -29,7 +29,7 @@ public:
 	virtual void openRW() = 0;
 	virtual void fileList(const Matcher& matcher, std::vector<std::string>& files) = 0;
     bool segment_timespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const override = 0;
-    virtual void vacuum() = 0;
+    virtual size_t vacuum() = 0;
     virtual void acquire(const std::string& relname, time_t mtime, const Summary& sum) = 0;
     virtual void remove(const std::string& relname) = 0;
     virtual void check(segment::SegmentManager& sm, segment::state_func v, bool quick=true) = 0;

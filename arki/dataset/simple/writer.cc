@@ -158,6 +158,7 @@ Checker::Checker(const ConfigFile& cfg)
 
 Checker::~Checker()
 {
+    m_mft->flush();
 }
 
 namespace {
@@ -295,8 +296,7 @@ void Checker::archiveFile(const std::string& relpath)
 
 size_t Checker::vacuum()
 {
-	// Nothing to do here really
-	return 0;
+    return m_mft->vacuum();
 }
 
 

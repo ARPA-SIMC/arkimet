@@ -1,7 +1,7 @@
-#include "arki/dataset/tests.h"
-#include "arki/dataset/archive.h"
-#include "arki/dataset/ondisk2/writer.h"
-#include "arki/dataset/test-scenario.h"
+#include "tests.h"
+#include "archive.h"
+#include "simple/writer.h"
+#include "test-scenario.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -51,7 +51,9 @@ struct Fixture : public arki::utils::tests::Fixture
     void archive_clean(const std::string& dir, size_t filecount)
     {
         ArchivesChecker checker(dir);
-        wassert(actual(checker).maintenance_clean(filecount));
+        arki::tests::MaintenanceResults expected(true, filecount);
+        expected.by_type[DatasetTest::COUNTED_ARC_OK] = 1;
+        wassert(actual(checker).maintenance(expected));
         //wassert(actual_file(str::joinpath(dir, arcidxfname())).exists());
     }
 };
@@ -70,14 +72,15 @@ add_method("acquire_last", [](Fixture& f) {
     // Acquire
     {
         ArchivesChecker checker("testds");
-        f.orig.writeAtomically("testds/.archive/last/test.grib1");
-        checker.indexFile(".archive/last/test.grib1", metadata::Collection(f.orig));
+        system("cp -a inbound/test.grib1 testds/.archive/last/");
+        wassert(checker.indexFile("last/test.grib1", metadata::Collection(f.orig)));
         wassert(actual_file("testds/.archive/last/test.grib1").exists());
         wassert(actual_file("testds/.archive/last/test.grib1.metadata").exists());
         wassert(actual_file("testds/.archive/last/test.grib1.summary").exists());
         wassert(actual_file("testds/.archive/last/" + manifest_idx_fname()).exists());
 
-        metadata::Collection mdc("testds/.archive/last/test.grib1.metadata");
+        metadata::Collection mdc;
+        Metadata::read_file("testds/.archive/last/test.grib1.metadata", mdc.inserter_func());
         wassert(actual(mdc.size()) == 3u);
         wassert(actual(mdc[0].sourceBlob().filename) == "test.grib1");
     }
@@ -116,9 +119,12 @@ add_method("maintenance_nonindexed", [](Fixture& f) {
         // Checker should reindex
         ArchivesChecker checker("testds");
         LineChecker s;
-        s.require_line_contains("testds: rescanned in archive .archive/last/test.grib1");
-        s.require_line_contains("testds: 1 file rescanned.");
+        s.require_line_contains("archives: rescanned in archive last/test.grib1");
+        s.require_line_contains("archives: archive cleaned up");
+        s.require_line_contains("archives: 1 file rescanned.");
         wassert(actual(checker).check(s, true, true));
+
+        wassert(f.archive_clean("testds", 1));
 
         // Repack should do nothing
         wassert(actual(checker).repack_clean(true));
@@ -137,7 +143,7 @@ add_method("maintenance_missing_metadata", [](Fixture& f) {
     {
         ArchivesChecker checker("testds");
         system("cp inbound/test.grib1 testds/.archive/last/");
-        checker.indexFile(".archive/last/test.grib1", metadata::Collection(f.orig));
+        wassert(checker.indexFile("last/test.grib1", metadata::Collection(f.orig)));
         sys::unlink("testds/.archive/last/test.grib1.metadata");
         sys::unlink("testds/.archive/last/test.grib1.summary");
     }
@@ -160,9 +166,12 @@ add_method("maintenance_missing_metadata", [](Fixture& f) {
         // Checker should reindex
         ArchivesChecker checker("testds");
         LineChecker s;
-        s.require_line_contains("testds: rescanned in archive .archive/last/test.grib1");
-        s.require_line_contains("testds: 1 file rescanned.");
+        s.require_line_contains("archives: rescanned in archive last/test.grib1");
+        s.require_line_contains("archives: archive cleaned up");
+        s.require_line_contains("archives: 1 file rescanned.");
         wassert(actual(checker).check(s, true, true));
+
+        wassert(f.archive_clean("testds", 1));
 
         // Repack should do nothing
         wassert(actual(checker).repack_clean(true));
@@ -178,13 +187,24 @@ add_method("maintenance_missing_metadata", [](Fixture& f) {
 
 // Test handling of empty archive dirs (such as last with everything moved away)
 add_method("reader_empty_last", [](Fixture& f) {
-    // Import a file in a secondary archive
+    // Create a secondary archive
     {
-        ArchivesChecker checker("testds");
-        system("cp inbound/test.grib1 testds/.archive/foo/");
-        checker.indexFile(".archive/foo/test.grib1", metadata::Collection(f.orig));
+        ConfigFile cfg;
+        cfg.setValue("name", "foo");
+        cfg.setValue("path", sys::abspath("testds/.archive/foo"));
+        cfg.setValue("step", "daily");
+        dataset::simple::Writer writer(cfg);
+        writer.flush();
+    }
 
-        wassert(actual(checker).maintenance_clean(1));
+    // Import a file in the secondary archive
+    {
+        system("cp inbound/test.grib1 testds/.archive/foo/");
+
+        ArchivesChecker checker("testds");
+        wassert(checker.indexFile("foo/test.grib1", metadata::Collection(f.orig)));
+
+        wassert(f.archive_clean("testds", 1));
         wassert(actual(checker).repack_clean(true));
     }
 

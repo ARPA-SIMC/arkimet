@@ -489,9 +489,10 @@ public:
         }
     }
 
-	void vacuum()
-	{
-	}
+    size_t vacuum()
+    {
+        return 0;
+    }
 
     Pending test_writelock()
     {
@@ -811,16 +812,17 @@ public:
         }
     }
 
-	void vacuum()
-	{
-		// Vacuum the database
-		try {
-			m_db.exec("VACUUM");
-			m_db.exec("ANALYZE");
-		} catch (std::exception& e) {
-			nag::warning("ignoring failed attempt to optimize database: %s", e.what());
-		}
-	}
+    size_t vacuum()
+    {
+        // Vacuum the database
+        try {
+            m_db.exec("VACUUM");
+            m_db.exec("ANALYZE");
+        } catch (std::exception& e) {
+            nag::warning("ignoring failed attempt to optimize database: %s", e.what());
+        }
+        return 0;
+    }
 
     Pending test_writelock()
     {

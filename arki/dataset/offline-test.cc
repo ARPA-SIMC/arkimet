@@ -36,8 +36,8 @@ add_method("read", []() {
 
     unique_ptr<types::Time> begin, end;
     reader.expand_date_range(begin, end);
-    wassert(actual(*begin) == "2014-03-04T01:02:03Z");
-    wassert(actual(*end) == "2014-03-04T01:02:03Z");
+    wassert(actual(*begin) == "2007-07-07T00:00:00Z");
+    wassert(actual(*end) == "2007-10-09T00:00:00Z");
 });
 
 }

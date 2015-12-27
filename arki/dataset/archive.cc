@@ -41,10 +41,6 @@ namespace dataset {
 
 namespace archive {
 
-std::unique_ptr<Reader> create_reader(const std::string& dir);
-std::unique_ptr<SegmentedChecker> create_checker(const std::string& dir);
-
-
 bool is_archive(const std::string& dir)
 {
     return index::Manifest::exists(dir);
@@ -68,108 +64,6 @@ static ConfigFile make_config(const std::string& name, const std::string& dir)
 
 }
 
-#if 0
-class OnlineArchiveChecker : public simple::Checker
-{
-public:
-    OnlineArchiveChecker(const std::string& dir)
-    {
-    }
-
-    //const std::string& path() const { return m_dir; }
-
-#if 0
-    void indexFile(const std::string& relname)
-    {
-        if (!m_mft) throw wibble::exception::Consistency("acquiring into archive " + m_dir, "archive opened in read only mode");
-        // Scan file, reusing .metadata if still valid
-        metadata::Collection mdc;
-        string pathname = str::joinpath(m_dir, relname);
-        if (!scan::scan(pathname, mdc.inserter_func()))
-            throw wibble::exception::Consistency("acquiring " + pathname, "it does not look like a file we can acquire");
-        acquire(relname, mdc);
-    }
-#endif
-
-
-#if 0
-    void flush() override
-    {
-        if (m_mft) m_mft->flush();
-    }
-#endif
-};
-#endif
-
-
-#if 0
-#warning TODO: move to LocalChecker, wrapping all checks of local archives with this
-void OnlineArchive::maintenance(segment::state_func v)
-{
-    unique_ptr<segment::SegmentManager> segment_manager(segment::SegmentManager::get(m_dir));
-    m_mft->check(*segment_manager, [&](const std::string& relpath, segment::FileState state) {
-        // Add the archived bit
-        // Remove the TO_PACK bit, since once a file is archived it's not
-        //   touched anymore, so there's no point packing it
-        // Remove the TO_ARCHIVE bit, since we're already in the archive
-        // Remove the TO_DELETE bit, since delete age doesn't affect the
-        //   archive
-        v(relpath, state - FILE_TO_PACK - FILE_TO_ARCHIVE - FILE_TO_DELETE + FILE_ARCHIVED);
-    });
-    m_mft->flush();
-}
-
-void OnlineArchive::remove(const std::string& relname)
-{
-	if (!m_mft) throw wibble::exception::Consistency("removing file from " + m_dir, "archive opened in read only mode");
-	// Remove from index and from file system, including attached .metadata
-	// and .summary, if they exist
-	string pathname = str::joinpath(m_dir, relname);
-
-    sys::unlink_ifexists(pathname + ".summary");
-    sys::unlink_ifexists(pathname + ".metadata");
-    //sys::fs::deleteIfExists(pathname);
-    deindex(relname);
-
-    m_mft->invalidate_summary();
-}
-
-void OnlineArchive::deindex(const std::string& relname)
-{
-    if (!m_mft) throw wibble::exception::Consistency("deindexing file from " + m_dir, "archive opened in read only mode");
-    m_mft->remove(relname);
-    m_mft->invalidate_summary();
-}
-
-void OnlineArchive::rescan(const std::string& relname)
-{
-    if (!m_mft) throw wibble::exception::Consistency("rescanning file in " + m_dir, "archive opened in read only mode");
-    m_mft->rescanFile(m_dir, relname);
-    m_mft->invalidate_summary();
-}
-
-void OnlineArchive::vacuum()
-{
-    if (!m_mft) throw wibble::exception::Consistency("vacuuming " + m_dir, "archive opened in read only mode");
-    // If archive dir is not writable, skip this section
-    if (!sys::exists(m_dir)) return;
-
-    m_mft->vacuum();
-
-    // Regenerate summary cache if needed
-    Summary s;
-    m_mft->query_summary(Matcher(), s);
-}
-#endif
-
-#if 0
-size_t OfflineArchiveReader::produce_nth(metadata_dest_func cons, size_t idx)
-{
-    // All files are offline, so there is nothing we can produce
-    return 0;
-}
-#endif
-
 namespace archive {
 
 template<typename Archive>
@@ -187,30 +81,27 @@ struct ArchivesRoot
     {
         // Create the directory if it does not exist
         sys::makedirs(archive_root);
-
-        // Look for other archives other than 'last'
-        rescan();
     }
 
     virtual ~ArchivesRoot()
     {
+        clear();
+    }
+
+    void clear()
+    {
         for (auto& i: archives)
             delete i.second;
+        archives.clear();
         if (last)
             delete last;
+        last = nullptr;
     }
 
     void rescan()
     {
         // Clean up existing archives and restart from scratch
-        if (last)
-        {
-            delete last;
-            last = 0;
-        }
-        for (auto& i: archives)
-            delete i.second;
-        archives.clear();
+        clear();
 
         // Look for subdirectories: they are archives
         sys::Path d(archive_root);
@@ -285,13 +176,26 @@ struct ArchivesRoot
 
         // Query the summaries of all archives
         iter([&](Archive& a) {
-            unique_ptr<Reader> r(archive::create_reader(str::joinpath(archive_root, a.name())));
+            unique_ptr<Reader> r(instantiate_reader(a.name()));
             r->query_summary(m, s);
         });
 
         // Write back to the cache directory, if allowed
         if (sys::access(str::joinpath(dataset_root, ".summaries"), W_OK))
             s.writeAtomically(sum_file);
+    }
+
+    std::unique_ptr<Reader> instantiate_reader(const std::string& name)
+    {
+        string pathname = str::joinpath(archive_root, name);
+        if (sys::exists(pathname + ".summary"))
+        {
+            if (index::Manifest::exists(pathname))
+                return unique_ptr<Reader>(new simple::Reader(make_config(pathname)));
+            else
+                return unique_ptr<Reader>(new OfflineReader(pathname + ".summary"));
+        } else
+            return unique_ptr<Reader>(new simple::Reader(make_config(pathname)));
     }
 
     virtual std::unique_ptr<Archive> instantiate(const std::string& name) = 0;
@@ -303,16 +207,25 @@ struct ArchivesReaderRoot: public ArchivesRoot<Reader>
 
     std::unique_ptr<Reader> instantiate(const std::string& name) override
     {
-        return create_reader(str::joinpath(archive_root, name));
+        return instantiate_reader(name);
     }
 };
+
 struct ArchivesCheckerRoot: public ArchivesRoot<SegmentedChecker>
 {
     using ArchivesRoot::ArchivesRoot;
 
     std::unique_ptr<SegmentedChecker> instantiate(const std::string& name) override
     {
-        return create_checker(str::joinpath(archive_root, name));
+        string pathname = str::joinpath(archive_root, name);
+        if (sys::exists(pathname + ".summary"))
+        {
+            if (index::Manifest::exists(pathname))
+                return unique_ptr<SegmentedChecker>(new simple::Checker(make_config(pathname)));
+            else
+                return unique_ptr<SegmentedChecker>(new NullSegmentedChecker(make_config(pathname)));
+        } else
+            return unique_ptr<SegmentedChecker>(new simple::Checker(make_config(pathname)));
     }
 };
 
@@ -322,6 +235,7 @@ struct ArchivesCheckerRoot: public ArchivesRoot<SegmentedChecker>
 ArchivesReader::ArchivesReader(const std::string& root)
     : Reader("archives"), archives(new archive::ArchivesReaderRoot(root))
 {
+    archives->rescan();
 }
 
 ArchivesReader::~ArchivesReader()
@@ -390,8 +304,9 @@ void ArchivesReader::query_summary(const Matcher& matcher, Summary& summary)
 
 
 ArchivesChecker::ArchivesChecker(const std::string& root)
-    : SegmentedChecker(archive::make_config("archives", str::joinpath(root, ".archive"))), archives(new archive::ArchivesCheckerRoot(root))
+    : SegmentedChecker(archive::make_config("archives", root)), archives(new archive::ArchivesCheckerRoot(root))
 {
+    archives->rescan();
 }
 
 ArchivesChecker::~ArchivesChecker()
@@ -429,13 +344,15 @@ static std::string poppath(std::string& path)
 
 size_t ArchivesChecker::repackFile(const std::string& relname)
 {
+    size_t res;
     string path = relname;
     string name = poppath(path);
     if (SegmentedChecker* a = archives->lookup(name))
-        a->repackFile(path);
+        res = a->repackFile(path);
     else
         throw std::runtime_error("cannot repack " + relname + ": archive " + name + " does not exist in " + archives->archive_root);
     archives->invalidate_summary_cache();
+    return res;
 }
 
 void ArchivesChecker::indexFile(const std::string& relname, metadata::Collection&& mds)
@@ -445,7 +362,7 @@ void ArchivesChecker::indexFile(const std::string& relname, metadata::Collection
     if (SegmentedChecker* a = archives->lookup(name))
         a->indexFile(path, move(mds));
     else
-        throw std::runtime_error("cannot acquire " + relname + ":archive " + name + " does not exist in " + archives->archive_root);
+        throw std::runtime_error("cannot acquire " + relname + ": archive " + name + " does not exist in " + archives->archive_root);
     archives->invalidate_summary_cache();
 }
 
@@ -477,6 +394,13 @@ void ArchivesChecker::maintenance(segment::state_func v, bool quick)
 {
     archives->iter([&](SegmentedChecker& a) {
         a.maintenance([&](const std::string& file, segment::FileState state) {
+            // Add the archived bit
+            // Remove the TO_PACK bit, since once a file is archived it's not
+            //   touched anymore, so there's no point packing it
+            // Remove the TO_ARCHIVE bit, since we're already in the archive
+            // Remove the TO_DELETE bit, since delete age doesn't affect the
+            //   archive
+            state = state - FILE_TO_PACK - FILE_TO_ARCHIVE - FILE_TO_DELETE + FILE_ARCHIVED;
             v(str::joinpath(a.name(), file), state);
         }, quick);
     });
@@ -488,33 +412,6 @@ size_t ArchivesChecker::vacuum()
     archives->iter([&](SegmentedChecker& a) { res += a.vacuum(); });
     archives->rebuild_summary_cache();
     return res;
-}
-
-namespace archive {
-
-unique_ptr<Reader> create_reader(const std::string& dir)
-{
-    if (sys::exists(dir + ".summary"))
-    {
-        if (index::Manifest::exists(dir))
-            return unique_ptr<Reader>(new simple::Reader(make_config(dir)));
-        else
-            return unique_ptr<Reader>(new OfflineReader(dir + ".summary"));
-    } else
-        return unique_ptr<Reader>(new simple::Reader(make_config(dir)));
-}
-
-unique_ptr<SegmentedChecker> create_checker(const std::string& dir)
-{
-    if (sys::exists(dir + ".summary"))
-    {
-        if (index::Manifest::exists(dir))
-            return unique_ptr<SegmentedChecker>(new simple::Checker(make_config(dir)));
-        else
-            return unique_ptr<SegmentedChecker>(new NullSegmentedChecker(make_config(dir)));
-    } else
-        return unique_ptr<SegmentedChecker>(new simple::Checker(make_config(dir)));
-}
 }
 
 }
