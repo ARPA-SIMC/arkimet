@@ -193,7 +193,7 @@ struct MaintenanceCollector
 {
     typedef tests::DatasetTest::Counted Counted;
 
-    std::map <std::string, dataset::segment::FileState> fileStates;
+    std::map <std::string, dataset::segment::State> fileStates;
     size_t counts[tests::DatasetTest::COUNTED_MAX];
     static const char* names[];
     std::set<Counted> checked;
@@ -204,7 +204,7 @@ struct MaintenanceCollector
 
     void clear();
     bool isClean() const;
-    void operator()(const std::string& file, dataset::segment::FileState state);
+    void operator()(const std::string& file, dataset::segment::State state);
     void dump(std::ostream& out) const;
     size_t count(tests::DatasetTest::Counted state);
     std::string remaining() const;

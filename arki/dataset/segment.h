@@ -36,12 +36,12 @@ class Segment;
 /**
  * State of a file in a dataset, as one or more of the FILE_* flags
  */
-struct FileState
+struct State
 {
     unsigned value;
 
-    FileState() : value(FILE_OK) {}
-    FileState(unsigned value) : value(value) {}
+    State() : value(FILE_OK) {}
+    State(unsigned value) : value(value) {}
 
     bool is_ok() const { return value == FILE_OK; }
 
@@ -50,15 +50,15 @@ struct FileState
         return value & state;
     }
 
-    FileState operator+(const FileState& fs) const
+    State operator+(const State& fs) const
     {
-        return FileState(value + fs.value);
+        return State(value + fs.value);
 
     }
 
-    FileState operator-(const FileState& fs) const
+    State operator-(const State& fs) const
     {
-        return FileState(value & ~fs.value);
+        return State(value & ~fs.value);
 
     }
 
@@ -69,7 +69,7 @@ struct FileState
 /**
  * Visitor interface for scanning information about the segments in the database
  */
-typedef std::function<void(const std::string&, segment::FileState)> state_func;
+typedef std::function<void(const std::string&, segment::State)> state_func;
 
 /**
  * Visitor interface for scanning information about the contents of segments in the database
@@ -193,9 +193,9 @@ public:
     /**
      * Check the given file against its expected set of contents.
      *
-     * @returns the FileState with the state of the file
+     * @returns the State with the state of the file
      */
-    virtual FileState check(const std::string& relname, const metadata::Collection& mds, bool quick=true) = 0;
+    virtual State check(const std::string& relname, const metadata::Collection& mds, bool quick=true) = 0;
 
     /**
      * Remove a file, returning its size
@@ -274,7 +274,7 @@ public:
      */
     virtual Pending append(Metadata& md, off_t* ofs) = 0;
 
-    virtual FileState check(const metadata::Collection& mds, bool quick=true) = 0;
+    virtual State check(const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
     virtual void truncate(size_t offset) = 0;
     virtual Pending repack(const std::string& rootdir, metadata::Collection& mds) = 0;

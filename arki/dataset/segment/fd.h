@@ -33,7 +33,7 @@ public:
     size_t remove();
     void truncate(size_t offset);
 
-    virtual FileState check(const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
+    virtual State check(const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
 
     /**
      * If skip_validation is true, repack will skip validating the data that is

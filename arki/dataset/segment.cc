@@ -17,7 +17,7 @@ namespace arki {
 namespace dataset {
 namespace segment {
 
-std::string FileState::to_string() const
+std::string State::to_string() const
 {
     vector<const char*> res;
     if (value == FILE_OK)        res.push_back("OK");
@@ -160,7 +160,7 @@ struct BaseSegmentManager : public SegmentManager
         return maint->repack(root, mds);
     }
 
-    FileState check(const std::string& relname, const metadata::Collection& mds, bool quick=true)
+    State check(const std::string& relname, const metadata::Collection& mds, bool quick=true)
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);

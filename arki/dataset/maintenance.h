@@ -43,7 +43,7 @@ struct FindMissing
     // files: a, b, c,    e, f, g
     // index:       c, d, e, f, g
 
-    void operator()(const std::string& relpath, segment::FileState state);
+    void operator()(const std::string& relpath, segment::State state);
     void end();
 };
 
@@ -60,7 +60,7 @@ struct CheckAge
 
     CheckAge(segment::state_func& next, const Step& step, int archive_age=-1, int delete_age=-1);
 
-    void operator()(const std::string& relpath, segment::FileState state);
+    void operator()(const std::string& relpath, segment::State state);
 };
 
 /**
@@ -83,7 +83,7 @@ struct TestOverrideCurrentDateForMaintenance
  */
 struct Dumper
 {
-    void operator()(const std::string& relpath, segment::FileState state);
+    void operator()(const std::string& relpath, segment::State state);
 };
 
 struct Tee
@@ -93,7 +93,7 @@ struct Tee
 
     Tee(segment::state_func& one, segment::state_func& two);
     virtual ~Tee();
-    void operator()(const std::string& relpath, segment::FileState state);
+    void operator()(const std::string& relpath, segment::State state);
 };
 
 /// Base class for all repackers and rebuilders
@@ -107,7 +107,7 @@ struct Agent
     Agent(const Agent&) = delete;
     Agent& operator=(const Agent&) = delete;
 
-    virtual void operator()(const std::string& relpath, segment::FileState state) = 0;
+    virtual void operator()(const std::string& relpath, segment::State state) = 0;
 
     virtual void end() {}
 };
@@ -123,7 +123,7 @@ struct FailsafeRepacker : public Agent
 
     size_t m_count_deleted = 0;
 
-    void operator()(const std::string& relpath, segment::FileState state);
+    void operator()(const std::string& relpath, segment::State state);
     void end();
 };
 
@@ -141,7 +141,7 @@ struct MockRepacker : public Agent
     size_t m_count_deindexed = 0;
     size_t m_count_rescanned = 0;
 
-    void operator()(const std::string& relpath, segment::FileState state);
+    void operator()(const std::string& relpath, segment::State state);
     void end();
 };
 
@@ -157,7 +157,7 @@ struct MockFixer : public Agent
     size_t m_count_rescanned = 0;
     size_t m_count_deindexed = 0;
 
-    void operator()(const std::string& relpath, segment::FileState state);
+    void operator()(const std::string& relpath, segment::State state);
     void end();
 };
 
@@ -178,7 +178,7 @@ struct RealRepacker : public Agent
     bool m_touched_archive = false;
     bool m_redo_summary = false;
 
-    void operator()(const std::string& relpath, segment::FileState state);
+    void operator()(const std::string& relpath, segment::State state);
     void end();
 };
 
@@ -196,7 +196,7 @@ struct RealFixer : public Agent
     bool m_touched_archive = 0;
     bool m_redo_summary = 0;
 
-    void operator()(const std::string& relpath, segment::FileState state);
+    void operator()(const std::string& relpath, segment::State state);
     void end();
 };
 

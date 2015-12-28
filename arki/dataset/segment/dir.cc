@@ -291,7 +291,7 @@ off_t Segment::link(const std::string& srcabsname)
     return pos;
 }
 
-FileState Segment::check(const metadata::Collection& mds, bool quick)
+State Segment::check(const metadata::Collection& mds, bool quick)
 {
     close();
 
@@ -503,7 +503,7 @@ unique_ptr<dir::Segment> Segment::make_segment(const std::string& format, const 
     return res;
 }
 
-FileState HoleSegment::check(const metadata::Collection& mds, bool quick)
+State HoleSegment::check(const metadata::Collection& mds, bool quick)
 {
     // Force quick, since the file contents are fake
     return Segment::check(mds, true);

@@ -48,7 +48,7 @@ unique_ptr<segment::Segment> SegmentTest::make_full_segment()
 void SegmentCheckTest::run()
 {
     unique_ptr<segment::Segment> segment(make_full_segment());
-    dataset::segment::FileState state;
+    dataset::segment::State state;
 
     // A simple segment freshly imported is ok
     state = segment->check(mdc);

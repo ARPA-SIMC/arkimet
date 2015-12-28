@@ -152,7 +152,7 @@ Pending Segment::append(Metadata& md, off_t* ofs)
     return res;
 }
 
-FileState Segment::check(const metadata::Collection& mds, bool quick)
+State Segment::check(const metadata::Collection& mds, bool quick)
 {
     return fd::Segment::check(mds, 2, quick);
 }

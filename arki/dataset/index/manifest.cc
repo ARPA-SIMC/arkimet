@@ -68,7 +68,7 @@ void scan_file(segment::SegmentManager& sm, const std::string& root, const std::
     mdc.sort(cmp); // Sort by reftime and by offset
 
     // Check the state of the file
-    segment::FileState state = sm.check(relname, mdc, quick);
+    segment::State state = sm.check(relname, mdc, quick);
 
     // Pass on the file state to the visitor
     visitor(relname, state);

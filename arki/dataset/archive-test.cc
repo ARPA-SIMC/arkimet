@@ -238,7 +238,7 @@ def_test(19)
     {
         unique_ptr<Archive> a(Archive::create(str::joinpath(scen.path, ".archive/offline")));
         MaintenanceCollector c;
-        a->maintenance([&](const std::string& relpath, segment::FileState state) { c(relpath, state); });
+        a->maintenance([&](const std::string& relpath, segment::State state) { c(relpath, state); });
         ensure(c.isClean());
     }
 

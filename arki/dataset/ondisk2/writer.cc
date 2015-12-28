@@ -301,7 +301,7 @@ void Checker::maintenance(segment::state_func v, bool quick)
     // Check each file for need to reindex or repack
     maintenance::CheckAge ca(v, *m_step, m_archive_age, m_delete_age);
     vector<string> files = scan::dir(m_path);
-    maintenance::FindMissing fm([&](const std::string& relname, segment::FileState state) { ca(relname, state); }, files);
+    maintenance::FindMissing fm([&](const std::string& relname, segment::State state) { ca(relname, state); }, files);
     idx->scan_files([&](const std::string& relname, const metadata::Collection& mds) {
         fm(relname, m_segment_manager->check(relname, mds, quick));
     });

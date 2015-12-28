@@ -97,7 +97,7 @@ def_test(4)
 
     MaintenanceCollector c;
     unique_ptr<dataset::segment::SegmentManager> sm(dataset::segment::SegmentManager::get("testds/.archive/last"));
-    m->check(*sm, [&](const std::string& relpath, segment::FileState state) { c(relpath, state); });
+    m->check(*sm, [&](const std::string& relpath, segment::State state) { c(relpath, state); });
     ensure_equals(c.fileStates.size(), 0u);
     ensure_equals(c.remaining(), string());
     ensure(c.isClean());
@@ -148,7 +148,7 @@ struct IndexingCollector : public MaintenanceCollector
 
 	IndexingCollector(Manifest& m, const Summary& s, time_t mtime) : m(m), s(s), mtime(mtime) {}
 
-    virtual void operator()(const std::string& file, dataset::segment::FileState state)
+    virtual void operator()(const std::string& file, dataset::segment::State state)
     {
         MaintenanceCollector::operator()(file, state);
         int n = atoi(file.c_str());
@@ -209,7 +209,7 @@ def_test(8)
 		IndexingCollector c(*m, s, mtime);
 		m->openRW();
         unique_ptr<dataset::segment::SegmentManager> sm(dataset::segment::SegmentManager::get("testds/.archive/last"));
-        m->check(*sm, [&](const std::string& relpath, segment::FileState state) { c(relpath, state); });
+        m->check(*sm, [&](const std::string& relpath, segment::State state) { c(relpath, state); });
 		ensure_equals(c.fileStates.size(), 5u);
 		ensure_equals(c.count(COUNTED_TO_INDEX), 2u);
 		ensure_equals(c.count(COUNTED_OK), 3u);
@@ -223,7 +223,7 @@ def_test(8)
 		MaintenanceCollector c;
 		m->openRO();
         unique_ptr<dataset::segment::SegmentManager> sm(dataset::segment::SegmentManager::get("testds/.archive/last"));
-        m->check(*sm, [&](const std::string& relpath, segment::FileState state) { c(relpath, state); });
+        m->check(*sm, [&](const std::string& relpath, segment::State state) { c(relpath, state); });
 		ensure_equals(c.fileStates.size(), 5u);
 		ensure_equals(c.count(COUNTED_OK), 5u);
 		ensure_equals(c.remaining(), string());

@@ -171,7 +171,7 @@ struct Deleter
     Deleter(Checker& checker, Reporter& reporter, bool writable)
         : checker(checker), reporter(reporter), writable(writable) {}
 
-    void operator()(const std::string& relpath, segment::FileState state)
+    void operator()(const std::string& relpath, segment::State state)
     {
         if (writable)
         {

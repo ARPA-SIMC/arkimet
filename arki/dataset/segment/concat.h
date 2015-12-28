@@ -19,7 +19,7 @@ public:
     off_t append(const std::vector<uint8_t>& buf) override;
     Pending append(Metadata& md, off_t* ofs) override;
 
-    FileState check(const metadata::Collection& mds, bool quick=true) override;
+    State check(const metadata::Collection& mds, bool quick=true) override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds) override;
 };
 

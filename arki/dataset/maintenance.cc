@@ -58,7 +58,7 @@ FindMissing::FindMissing(segment::state_func next, const std::vector<std::string
 	std::sort(disk.begin(), disk.end(), sorter);
 }
 
-void FindMissing::operator()(const std::string& file, segment::FileState state)
+void FindMissing::operator()(const std::string& file, segment::State state)
 {
     while (not disk.empty() and disk.back() < file)
     {
@@ -129,7 +129,7 @@ CheckAge::CheckAge(segment::state_func& next, const Step& step, int archive_age,
     }
 }
 
-void CheckAge::operator()(const std::string& file, segment::FileState state)
+void CheckAge::operator()(const std::string& file, segment::State state)
 {
     if (archive_threshold.vals[0] == 0 and delete_threshold.vals[0] == 0)
         next(file, state);
@@ -154,14 +154,14 @@ void CheckAge::operator()(const std::string& file, segment::FileState state)
     }
 }
 
-void Dumper::operator()(const std::string& file, segment::FileState state)
+void Dumper::operator()(const std::string& file, segment::State state)
 {
     cerr << file << " " << state.to_string() << endl;
 }
 
 Tee::Tee(segment::state_func& one, segment::state_func& two) : one(one), two(two) {}
 Tee::~Tee() {}
-void Tee::operator()(const std::string& file, segment::FileState state)
+void Tee::operator()(const std::string& file, segment::State state)
 {
 	one(file, state);
 	two(file, state);
@@ -176,7 +176,7 @@ Agent::Agent(dataset::Reporter& reporter, SegmentedChecker& w)
 
 // FailsafeRepacker
 
-void FailsafeRepacker::operator()(const std::string& file, segment::FileState state)
+void FailsafeRepacker::operator()(const std::string& file, segment::State state)
 {
     if (state.has(FILE_TO_INDEX)) ++m_count_deleted;
 }
@@ -189,7 +189,7 @@ void FailsafeRepacker::end()
 
 // MockRepacker
 
-void MockRepacker::operator()(const std::string& relpath, segment::FileState state)
+void MockRepacker::operator()(const std::string& relpath, segment::State state)
 {
     if (state.has(FILE_TO_PACK) && !state.has(FILE_TO_DELETE))
     {
@@ -239,7 +239,7 @@ void MockRepacker::end()
 
 // MockFixer
 
-void MockFixer::operator()(const std::string& relpath, segment::FileState state)
+void MockFixer::operator()(const std::string& relpath, segment::State state)
 {
     if (state.has(FILE_TO_PACK))
     {
@@ -271,7 +271,7 @@ void MockFixer::end()
 
 // RealRepacker
 
-void RealRepacker::operator()(const std::string& relpath, segment::FileState state)
+void RealRepacker::operator()(const std::string& relpath, segment::State state)
 {
     if (state.has(FILE_TO_PACK) && !state.has(FILE_TO_DELETE))
     {
@@ -342,7 +342,7 @@ void RealRepacker::end()
 
 // RealFixer
 
-void RealFixer::operator()(const std::string& relpath, segment::FileState state)
+void RealFixer::operator()(const std::string& relpath, segment::State state)
 {
     /* Packing is left to the repacker, during check we do not
      * mangle the data files

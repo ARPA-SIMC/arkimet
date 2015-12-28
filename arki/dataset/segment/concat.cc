@@ -146,7 +146,7 @@ void HoleSegment::write(const std::vector<uint8_t>& buf)
     }
 }
 
-FileState Segment::check(const metadata::Collection& mds, bool quick)
+State Segment::check(const metadata::Collection& mds, bool quick)
 {
     return fd::Segment::check(mds, 0, quick);
 }

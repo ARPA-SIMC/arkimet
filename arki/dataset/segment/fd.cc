@@ -123,7 +123,7 @@ void Segment::write(const std::vector<uint8_t>& buf)
     }
 }
 
-FileState Segment::check(const metadata::Collection& mds, unsigned max_gap, bool quick)
+State Segment::check(const metadata::Collection& mds, unsigned max_gap, bool quick)
 {
     close();
 
@@ -155,7 +155,7 @@ FileState Segment::check(const metadata::Collection& mds, unsigned max_gap, bool
     std::sort(spans.begin(), spans.end());
 
     // Check for overlaps
-    size_t end_of_last_data_checked = 0;
+    off_t end_of_last_data_checked = 0;
     for (vector< pair<off_t, size_t> >::const_iterator i = spans.begin(); i != spans.end(); ++i)
     {
         // If an item begins after the end of another, they overlap and the file needs rescanning
@@ -166,7 +166,7 @@ FileState Segment::check(const metadata::Collection& mds, unsigned max_gap, bool
     }
 
     // Check for truncation
-    size_t file_size = utils::compress::filesize(absname);
+    off_t file_size = utils::compress::filesize(absname);
     if (file_size < end_of_last_data_checked)
     {
         nag::warning("%s: file looks truncated: its size is %zd but data is known to exist until %zd bytes", absname.c_str(), file_size, (size_t)end_of_last_data_checked);
@@ -184,10 +184,10 @@ FileState Segment::check(const metadata::Collection& mds, unsigned max_gap, bool
     {
         const source::Blob& source = (*i)->sourceBlob();
 
-        if (source.offset < end_of_last_data_checked || source.offset > end_of_last_data_checked + max_gap)
+        if (source.offset < (size_t)end_of_last_data_checked || source.offset > (size_t)end_of_last_data_checked + max_gap)
             has_hole = true;
 
-        end_of_last_data_checked = max(end_of_last_data_checked, (size_t)(source.offset + source.size));
+        end_of_last_data_checked = max(end_of_last_data_checked, (off_t)(source.offset + source.size));
     }
 
     // Take note of files with holes

@@ -420,7 +420,7 @@ bool MaintenanceCollector::isClean() const
 	return true;
 }
 
-void MaintenanceCollector::operator()(const std::string& file, dataset::segment::FileState state)
+void MaintenanceCollector::operator()(const std::string& file, dataset::segment::State state)
 {
     using namespace arki::dataset;
 
@@ -679,7 +679,7 @@ void test_append_transaction_rollback(dataset::segment::Segment* dw, Metadata& m
 void ActualSegmentedChecker::maintenance(const MaintenanceResults& expected, bool quick)
 {
     MaintenanceCollector c;
-    wassert(_actual->maintenance([&](const std::string& relpath, segment::FileState state) { c(relpath, state); }, quick));
+    wassert(_actual->maintenance([&](const std::string& relpath, segment::State state) { c(relpath, state); }, quick));
 
     bool ok = true;
     if (expected.files_seen != -1 && c.fileStates.size() != (unsigned)expected.files_seen)
