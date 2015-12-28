@@ -141,7 +141,8 @@ struct Maintainer : public WorkerOnWritable
 
     void operator()(dataset::LocalChecker& w) override
     {
-        w.check(cerr, fix, quick);
+        dataset::OstreamReporter r(cerr);
+        w.check(r, fix, quick);
     }
 
     void done() override {}
@@ -155,7 +156,8 @@ struct Repacker : public WorkerOnWritable
 
     void operator()(dataset::LocalChecker& w) override
     {
-        w.repack(cout, fix);
+        dataset::OstreamReporter r(cout);
+        w.repack(r, fix);
     }
 
     void done() override {}
@@ -169,7 +171,8 @@ struct RemoveAller : public WorkerOnWritable
 
     void operator()(dataset::LocalChecker& w) override
     {
-        w.removeAll(cout, fix);
+        dataset::OstreamReporter r(cout);
+        w.removeAll(r, fix);
     }
 
     void done() {}

@@ -5,7 +5,7 @@
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
 #include <arki/configfile.h>
-#include <arki/dataset/targetfile.h>
+#include <arki/dataset/step.h>
 #include <arki/dataset/index/base.h>
 #include <arki/matcher.h>
 #include <arki/runtime.h>
@@ -336,7 +336,7 @@ public:
     void activate() override
     {
         string cur = str::lower(w.cfg.value("step"));
-        vector<string> steps = dataset::TargetFile::stepList();
+        vector<string> steps = dataset::Step::list();
         w.cfg.setValue("step",
                 ask_choice(
                     "Please choose a step for the dataset '" + w.datasetName + "':",
