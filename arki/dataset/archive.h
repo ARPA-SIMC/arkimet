@@ -92,7 +92,7 @@ public:
     void indexFile(const std::string& relname, metadata::Collection&& mds) override;
 
     void maintenance(segment::state_func dest, bool quick=true) override;
-    void removeAll(std::ostream& log, bool writable) override;
+    void removeAll(dataset::Reporter& reporter, bool writable) override;
     void rescanFile(const std::string& relpath) override;
     size_t repackFile(const std::string& relpath) override;
     size_t removeFile(const std::string& relpath, bool withData=false) override;

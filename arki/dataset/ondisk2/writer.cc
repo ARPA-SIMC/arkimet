@@ -242,13 +242,13 @@ Pending Writer::test_writelock()
     return idx->beginExclusiveTransaction();
 }
 
-void Checker::sanityChecks(std::ostream& log, bool writable)
+void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
-    SegmentedChecker::sanityChecks(log, writable);
+    SegmentedChecker::check(reporter, fix, quick);
 
-    if (!idx->checkSummaryCache(log) && writable)
+    if (!idx->checkSummaryCache(*this, reporter) && fix)
     {
-        log << name() << ": rebuilding summary cache." << endl;
+        reporter.operation_progress(*this, "check", "rebuilding summary cache");
         idx->rebuildSummaryCache();
     }
 }
@@ -272,21 +272,21 @@ Checker::Checker(const ConfigFile& cfg)
 namespace {
 struct Deleter
 {
-    std::string name;
-    std::ostream& log;
+    Checker& checker;
+    Reporter& reporter;
     bool writable;
 
-    Deleter(const std::string& name, std::ostream& log, bool writable)
-        : name(name), log(log), writable(writable) {}
+    Deleter(Checker& checker, Reporter& reporter, bool writable)
+        : checker(checker), reporter(reporter), writable(writable) {}
 
-    void operator()(const std::string& file, const metadata::Collection& mdc)
+    void remove(const std::string& relpath)
     {
         if (writable)
         {
-            log << name << ": deleting file " << file << endl;
-            sys::unlink_ifexists(file);
+            sys::unlink_ifexists(relpath);
+            reporter.segment_delete(checker, relpath, "deleted");
         } else
-            log << name << ": would delete file " << file << endl;
+            reporter.segment_delete(checker, relpath, "would be deleted");
     }
 };
 }
@@ -309,19 +309,19 @@ void Checker::maintenance(segment::state_func v, bool quick)
     SegmentedChecker::maintenance(v, quick);
 }
 
-void Checker::removeAll(std::ostream& log, bool writable)
+void Checker::removeAll(Reporter& reporter, bool writable)
 {
-    Deleter deleter(m_name, log, writable);
-    idx->scan_files(deleter);
+    Deleter deleter(*this, reporter, writable);
+    idx->list_segments([&](const std::string& relpath) { deleter.remove(relpath); });
     if (writable)
     {
-        log << m_name << ": clearing index" << endl;
+        //log << m_name << ": clearing index" << endl;
         idx->reset();
-    } else
-        log << m_name << ": would clear index" << endl;
+    } //else
+        //log << m_name << ": would clear index" << endl;
 
     // TODO: empty the index
-    SegmentedChecker::removeAll(log, writable);
+    SegmentedChecker::removeAll(reporter, writable);
 }
 
 

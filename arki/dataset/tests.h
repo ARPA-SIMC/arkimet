@@ -75,18 +75,6 @@ struct OutputChecker : public std::stringstream
     void ensure_all_lines_seen();
 };
 
-struct LineChecker
-{
-    std::vector<std::string> ignore_regexps;
-    std::vector<std::string> require_contains;
-    std::vector<std::string> require_contains_re;
-
-    void ignore_regexp(const std::string& regexp);
-    void require_line_contains(const std::string& needle);
-    void require_line_contains_re(const std::string& needle);
-    void check(const std::string& s) const;
-};
-
 struct ForceSqlite
 {
 	bool old;
@@ -344,6 +332,45 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
 
 namespace tests {
 
+struct ReporterExpected
+{
+    struct OperationMatch
+    {
+        std::string dsname;
+        std::string operation;
+        std::string message;
+
+        OperationMatch(const std::string& dsname, const std::string& operation, const std::string& message=std::string());
+        std::string error_unmatched(const std::string& type) const;
+    };
+
+    struct SegmentMatch
+    {
+        std::string dsname;
+        std::string relpath;
+        std::string message;
+
+        SegmentMatch(const std::string& dsname, const std::string& relpath, const std::string& message=std::string());
+        std::string error_unmatched(const std::string& operation) const;
+    };
+
+    std::vector<OperationMatch> progress;
+    std::vector<OperationMatch> manual_intervention;
+    std::vector<OperationMatch> aborted;
+    std::vector<OperationMatch> report;
+
+    std::vector<SegmentMatch> repacked;
+    std::vector<SegmentMatch> archived;
+    std::vector<SegmentMatch> deleted;
+    std::vector<SegmentMatch> deindexed;
+    std::vector<SegmentMatch> rescanned;
+
+    int count_repacked = -1;
+    int count_archived = -1;
+    int count_deleted = -1;
+    int count_deindexed = -1;
+    int count_rescanned = -1;
+};
 
 
 struct MaintenanceResults
@@ -381,19 +408,19 @@ struct MaintenanceResults
 };
 
 template<typename DatasetChecker>
-struct ActualLocalChecker : public arki::utils::tests::Actual<DatasetChecker*>
+struct ActualChecker : public arki::utils::tests::Actual<DatasetChecker*>
 {
-    ActualLocalChecker(DatasetChecker* s) : Actual<DatasetChecker*>(s) {}
+    ActualChecker(DatasetChecker* s) : Actual<DatasetChecker*>(s) {}
 
-    void repack(const LineChecker& expected, bool write=false);
+    void repack(const ReporterExpected& expected, bool write=false);
     void repack_clean(bool write=false);
-    void check(const LineChecker& expected, bool write=false, bool quick=true);
-    void check_clean(bool write=false);
+    void check(const ReporterExpected& expected, bool write=false, bool quick=true);
+    void check_clean(bool write=false, bool quick=true);
 };
 
-struct ActualSegmentedChecker : public ActualLocalChecker<dataset::SegmentedChecker>
+struct ActualSegmentedChecker : public ActualChecker<dataset::SegmentedChecker>
 {
-    ActualSegmentedChecker(dataset::SegmentedChecker* s) : ActualLocalChecker<dataset::SegmentedChecker>(s) {}
+    ActualSegmentedChecker(dataset::SegmentedChecker* s) : ActualChecker<dataset::SegmentedChecker>(s) {}
 
     /// Run maintenance and see that the results are as expected
     void maintenance(const MaintenanceResults& expected, bool quick=true);
@@ -407,9 +434,9 @@ void corrupt_datafile(const std::string& absname);
 void test_append_transaction_ok(dataset::segment::Segment* dw, Metadata& md, int append_amount_adjust=0);
 void test_append_transaction_rollback(dataset::segment::Segment* dw, Metadata& md);
 
-inline arki::tests::ActualLocalChecker<dataset::LocalChecker> actual(arki::dataset::LocalChecker* actual)
+inline arki::tests::ActualChecker<dataset::LocalChecker> actual(arki::dataset::LocalChecker* actual)
 {
-    return arki::tests::ActualLocalChecker<dataset::LocalChecker>(actual);
+    return arki::tests::ActualChecker<dataset::LocalChecker>(actual);
 }
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::SegmentedChecker* actual) { return arki::tests::ActualSegmentedChecker(actual); }
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::SegmentedChecker& actual) { return arki::tests::ActualSegmentedChecker(&actual); }

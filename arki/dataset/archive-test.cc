@@ -118,11 +118,9 @@ add_method("maintenance_nonindexed", [](Fixture& f) {
     {
         // Checker should reindex
         ArchivesChecker checker("testds");
-        LineChecker s;
-        s.require_line_contains("archives: rescanned in archive last/test.grib1");
-        s.require_line_contains("archives: archive cleaned up");
-        s.require_line_contains("archives: 1 file rescanned.");
-        wassert(actual(checker).check(s, true, true));
+        ReporterExpected e;
+        e.rescanned.emplace_back("archives.last", "test.grib1");
+        wassert(actual(checker).check(e, true, true));
 
         wassert(f.archive_clean("testds", 1));
 
@@ -165,11 +163,9 @@ add_method("maintenance_missing_metadata", [](Fixture& f) {
     {
         // Checker should reindex
         ArchivesChecker checker("testds");
-        LineChecker s;
-        s.require_line_contains("archives: rescanned in archive last/test.grib1");
-        s.require_line_contains("archives: archive cleaned up");
-        s.require_line_contains("archives: 1 file rescanned.");
-        wassert(actual(checker).check(s, true, true));
+        ReporterExpected e;
+        e.rescanned.emplace_back("archives.last", "test.grib1");
+        wassert(actual(checker).check(e, true, true));
 
         wassert(f.archive_clean("testds", 1));
 

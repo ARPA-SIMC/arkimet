@@ -169,44 +169,12 @@ void Tee::operator()(const std::string& file, segment::FileState state)
 
 // Agent
 
-Agent::Agent(std::ostream& log, SegmentedChecker& w)
-    : m_log(log), w(w), lineStart(true)
+Agent::Agent(dataset::Reporter& reporter, SegmentedChecker& w)
+    : reporter(reporter), w(w), lineStart(true)
 {
-}
-
-std::ostream& Agent::log()
-{
-	return m_log << w.name() << ": ";
-}
-
-void Agent::logStart()
-{
-	lineStart = true;
-}
-
-std::ostream& Agent::logAdd()
-{
-	if (lineStart)
-	{
-		lineStart = false;
-		return m_log << w.name() << ": ";
-	}
-	else
-		return m_log << ", ";
-}
-
-void Agent::logEnd()
-{
-	if (! lineStart)
-		m_log << "." << endl;
 }
 
 // FailsafeRepacker
-
-FailsafeRepacker::FailsafeRepacker(std::ostream& log, SegmentedChecker& w)
-    : Agent(log, w), m_count_deleted(0)
-{
-}
 
 void FailsafeRepacker::operator()(const std::string& file, segment::FileState state)
 {
@@ -215,143 +183,120 @@ void FailsafeRepacker::operator()(const std::string& file, segment::FileState st
 
 void FailsafeRepacker::end()
 {
-	if (m_count_deleted == 0) return;
-	log() << "index is empty, skipping deletion of "
-	      << m_count_deleted << " files."
-	      << endl;
+    if (m_count_deleted == 0) return;
+    reporter.operation_report(w, "repack", "index is empty, skipping deletion of " + std::to_string(m_count_deleted) + " files.");
 }
 
 // MockRepacker
 
-MockRepacker::MockRepacker(std::ostream& log, SegmentedChecker& w)
-    : Agent(log, w), m_count_packed(0), m_count_archived(0),
-	  m_count_deleted(0), m_count_deindexed(0), m_count_rescanned(0)
-{
-}
-
-void MockRepacker::operator()(const std::string& file, segment::FileState state)
+void MockRepacker::operator()(const std::string& relpath, segment::FileState state)
 {
     if (state.has(FILE_TO_PACK) && !state.has(FILE_TO_DELETE))
     {
-        log() << file << " should be packed" << endl;
+        reporter.segment_repack(w, relpath, "should be packed");
         ++m_count_packed;
     }
     if (state.has(FILE_TO_ARCHIVE))
     {
-        log() << file << " should be archived" << endl;
+        reporter.segment_archive(w, relpath, "should be archived");
         ++m_count_archived;
     }
     if (state.has(FILE_TO_DELETE))
     {
-        log() << file << " should be deleted and removed from the index" << endl;
+        reporter.segment_delete(w, relpath, "should be deleted and removed from the index");
         ++m_count_deleted;
         ++m_count_deindexed;
     }
     if (state.has(FILE_TO_INDEX))
     {
-        ostream& l = log() << file << " should be deleted";
-        if (state.has(FILE_ARCHIVED)) l << " from the archive" << endl;
-        l << endl;
+        if (state.has(FILE_ARCHIVED))
+            reporter.segment_delete(w, relpath, "should be deleted from the archive");
+        else
+            reporter.segment_delete(w, relpath, "should be deleted");
         ++m_count_deleted;
     }
     if (state.has(FILE_TO_DEINDEX))
     {
-        ostream& l = log() << file << " should be removed from the";
-        if (state.has(FILE_ARCHIVED)) l << " archive";
-        l << " index" << endl;
+        if (state.has(FILE_ARCHIVED))
+            reporter.segment_deindex(w, relpath, "should be removed from the archive index");
+        else
+            reporter.segment_deindex(w, relpath, "should be removed from the index");
         ++m_count_deindexed;
     }
-    if (state.has(FILE_TO_RESCAN) || state.has(FILE_ARCHIVED))
+    if (state.has(FILE_TO_RESCAN))
     {
-        log() << file << " should be rescanned by the archive" << endl;
+        if (state.has(FILE_ARCHIVED))
+            reporter.segment_rescan(w, relpath, "should be rescanned by the archive");
+        else
+            reporter.segment_rescan(w, relpath, "should be rescanned");
         ++m_count_rescanned;
     }
 }
 
 void MockRepacker::end()
 {
-	logStart();
-	if (m_count_packed)
-		logAdd() << nfiles(m_count_packed) << " should be packed";
-	if (m_count_archived)
-		logAdd() << nfiles(m_count_archived) << " should be archived";
-	if (m_count_deleted)
-		logAdd() << nfiles(m_count_deleted) << " should be deleted";
-	if (m_count_deindexed)
-		logAdd() << nfiles(m_count_deindexed) << " should be removed from the index";
-	if (m_count_rescanned)
-		logAdd() << nfiles(m_count_rescanned) << " should be rescanned";
-	logEnd();
+    vector<string> reports;
+    if (m_count_packed) reports.emplace_back(nfiles(m_count_packed) + " should be packed");
+    if (m_count_archived) reports.emplace_back(nfiles(m_count_archived) + " should be archived");
+    if (m_count_deleted) reports.emplace_back(nfiles(m_count_deleted) + " should be deleted");
+    if (m_count_deindexed) reports.emplace_back(nfiles(m_count_deindexed) + " should be removed from the index");
+    if (m_count_rescanned) reports.emplace_back(nfiles(m_count_rescanned) + " should be rescanned");
+    reporter.operation_report(w, "repack", str::join(", ", reports));
 }
 
 // MockFixer
 
-MockFixer::MockFixer(std::ostream& log, SegmentedChecker& w)
-    : Agent(log, w), m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0)
-{
-}
-
-void MockFixer::operator()(const std::string& file, segment::FileState state)
+void MockFixer::operator()(const std::string& relpath, segment::FileState state)
 {
     if (state.has(FILE_TO_PACK))
     {
-        log() << file << " should be packed" << endl;
+        reporter.segment_repack(w, relpath, "should be packed");
         ++m_count_packed;
     }
     if (state.has(FILE_TO_INDEX) || state.has(FILE_TO_RESCAN))
     {
-        ostream& l = log() << file << " should be rescanned";
         if (state.has(FILE_ARCHIVED))
-            l << " by the archive";
-        l << endl;
+            reporter.segment_rescan(w, relpath, "should be rescanned by the archive");
+        else
+            reporter.segment_rescan(w, relpath, "should be rescanned");
         ++m_count_rescanned;
     }
     if (state.has(FILE_TO_DEINDEX))
     {
-        ostream& l = log() << file << " should be removed";
         if (state.has(FILE_ARCHIVED))
-            l << " from the archive";
-        l << endl;
+            reporter.segment_deindex(w, relpath, "should be removed from the archive index");
+        else
+            reporter.segment_deindex(w, relpath, "should be removed from the index");
         ++m_count_deindexed;
     }
 }
 
 void MockFixer::end()
 {
-	logStart();
-	if (m_count_packed)
-		logAdd() << nfiles(m_count_packed) << " should be packed";
-	if (m_count_rescanned)
-		logAdd() << nfiles(m_count_rescanned) << " should be rescanned";
-	if (m_count_deindexed)
-		logAdd() << nfiles(m_count_deindexed) << " should be removed from the index";
-	logEnd();
+    vector<string> reports;
+    if (m_count_packed) reports.emplace_back(nfiles(m_count_packed) + " should be packed");
+    if (m_count_rescanned) reports.emplace_back(nfiles(m_count_rescanned) + " should be rescanned");
+    if (m_count_deindexed) reports.emplace_back(nfiles(m_count_deindexed) + " should be removed from the index");
+    reporter.operation_report(w, "check", str::join(", ", reports));
 }
 
 // RealRepacker
 
-RealRepacker::RealRepacker(std::ostream& log, SegmentedChecker& w)
-    : Agent(log, w), m_count_packed(0), m_count_archived(0),
-      m_count_deleted(0), m_count_deindexed(0), m_count_rescanned(0),
-      m_count_freed(0), m_touched_archive(false), m_redo_summary(false)
-{
-}
-
-void RealRepacker::operator()(const std::string& file, segment::FileState state)
+void RealRepacker::operator()(const std::string& relpath, segment::FileState state)
 {
     if (state.has(FILE_TO_PACK) && !state.has(FILE_TO_DELETE))
     {
         // Repack the file
-        size_t saved = w.repackFile(file);
-        log() << "packed " << file << " (" << saved << " saved)" << endl;
+        size_t saved = w.repackFile(relpath);
+        reporter.segment_repack(w, relpath, "repacked (" + std::to_string(saved) + " freed)");
         ++m_count_packed;
         m_count_freed += saved;
     }
     if (state.has(FILE_TO_ARCHIVE))
     {
         // Create the target directory in the archive
-        w.archiveFile(file);
-        log() << "archived " << file << endl;
+        w.archiveFile(relpath);
+        reporter.segment_archive(w, relpath, "archived");
         ++m_count_archived;
         m_touched_archive = true;
         m_redo_summary = true;
@@ -359,8 +304,8 @@ void RealRepacker::operator()(const std::string& file, segment::FileState state)
     if (state.has(FILE_TO_DELETE))
     {
         // Delete obsolete files
-        size_t size = w.removeFile(file, true);
-        log() << "deleted " << file << " (" << size << " freed)" << endl;
+        size_t size = w.removeFile(relpath, true);
+        reporter.segment_delete(w, relpath, "deleted (" + std::to_string(size) + " freed)");
         ++m_count_deleted;
         ++m_count_deindexed;
         m_count_freed += size;
@@ -372,15 +317,15 @@ void RealRepacker::operator()(const std::string& file, segment::FileState state)
         {
             /// File is not present in the archive index
             /// File contents need reindexing in the archive
-            w.archive().rescanFile(file);
-            log() << "rescanned in archive " << file << endl;
+            w.archive().rescanFile(relpath);
+            reporter.segment_rescan(w, relpath, "rescanned in archive");
             ++m_count_rescanned;
             m_touched_archive = true;
         }
         if (state.has(FILE_TO_DEINDEX))
         {
-            w.archive().removeFile(file);
-            log() << "deleted from archive index " << file << endl;
+            w.archive().removeFile(relpath);
+            reporter.segment_deindex(w, relpath, "removed from archive index");
             ++m_count_deindexed;
             m_touched_archive = true;
         }
@@ -388,16 +333,16 @@ void RealRepacker::operator()(const std::string& file, segment::FileState state)
         if (state.has(FILE_TO_INDEX))
         {
             // Delete all files not indexed
-            size_t size = w.removeFile(file, true);
-            log() << "deleted " << file << " (" << size << " freed)" << endl;
+            size_t size = w.removeFile(relpath, true);
+            reporter.segment_delete(w, relpath, "deleted (" + std::to_string(size) + " freed)");
             ++m_count_deleted;
             m_count_freed += size;
         }
         if (state.has(FILE_TO_DEINDEX))
         {
             // Remove from index those files that have been deleted
-            w.removeFile(file, false);
-            log() << "deleted from index " << file << endl;
+            w.removeFile(relpath, false);
+            reporter.segment_deindex(w, relpath, "removed from index");
             ++m_count_deindexed;
             m_redo_summary = true;
         }
@@ -406,45 +351,30 @@ void RealRepacker::operator()(const std::string& file, segment::FileState state)
 
 void RealRepacker::end()
 {
-	if (m_touched_archive)
-	{
-		w.archive().vacuum();
-		log() << "archive cleaned up" << endl;
-	}
+    if (m_touched_archive)
+        w.archive().vacuum();
 
-	// Finally, tidy up the database
-	size_t size_vacuum = w.vacuum();
+    // Finally, tidy up the database
+    size_t size_vacuum = w.vacuum();
 
-	logStart();
-	if (m_count_packed)
-		logAdd() << nfiles(m_count_packed) << " packed";
-	if (m_count_archived)
-		logAdd() << nfiles(m_count_archived) << " archived";
-	if (m_count_deleted)
-		logAdd() << nfiles(m_count_deleted) << " deleted";
-	if (m_count_deindexed)
-		logAdd() << nfiles(m_count_deindexed) << " removed from index";
-	if (m_count_rescanned)
-		logAdd() << nfiles(m_count_rescanned) << " rescanned";
-	if (size_vacuum)
-	{
-		//logAdd() << size_vacuum << " bytes reclaimed on the index";
-		m_count_freed += size_vacuum;
-	}
-	if (m_count_freed > 0)
-		logAdd() << m_count_freed << " total bytes freed";
-	logEnd();
+    vector<string> reports;
+    if (m_count_packed) reports.emplace_back(nfiles(m_count_packed) + " packed");
+    if (m_count_archived) reports.emplace_back(nfiles(m_count_archived) + " archived");
+    if (m_count_deleted) reports.emplace_back(nfiles(m_count_deleted) + " deleted");
+    if (m_count_deindexed) reports.emplace_back(nfiles(m_count_deindexed) + " removed from index");
+    if (m_count_rescanned) reports.emplace_back(nfiles(m_count_rescanned) + " rescanned");
+    if (size_vacuum)
+    {
+        //logAdd() + size_vacuum << " bytes reclaimed on the index";
+        m_count_freed += size_vacuum;
+    }
+    if (m_count_freed > 0) reports.emplace_back(std::to_string(m_count_freed) + " total bytes freed");
+    reporter.operation_report(w, "repack", str::join(", ", reports));
 }
 
 // RealFixer
 
-RealFixer::RealFixer(std::ostream& log, SegmentedChecker& w)
-    : Agent(log, w), m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0),
-      m_touched_archive(false), m_redo_summary(false)
-{
-}
-
-void RealFixer::operator()(const std::string& file, segment::FileState state)
+void RealFixer::operator()(const std::string& relpath, segment::FileState state)
 {
     /* Packing is left to the repacker, during check we do not
      * mangle the data files
@@ -462,32 +392,32 @@ void RealFixer::operator()(const std::string& file, segment::FileState state)
         {
             /// File is not present in the archive index
             /// File contents need reindexing in the archive
-            w.archive().rescanFile(file);
-            log() << "rescanned in archive " << file << endl;
+            w.archive().rescanFile(relpath);
+            reporter.segment_rescan(w, relpath, "rescanned by the archive");
             ++m_count_rescanned;
             m_touched_archive = true;
         }
         if (state.has(FILE_TO_DEINDEX))
         {
             /// File does not exist, but has entries in the archive index
-            w.archive().removeFile(file);
-            log() << "deindexed in archive " << file << endl;
+            w.archive().removeFile(relpath);
+            reporter.segment_deindex(w, relpath, "removed from the archive index");
             ++m_count_deindexed;
             m_touched_archive = true;
         }
     } else {
         if (state.has(FILE_TO_INDEX) || state.has(FILE_TO_RESCAN))
         {
-            w.rescanFile(file);
-            log() << "rescanned " << file << endl;
+            w.rescanFile(relpath);
+            reporter.segment_rescan(w, relpath, "rescanned");
             ++m_count_rescanned;
             m_redo_summary = true;
         }
         if (state.has(FILE_TO_DEINDEX))
         {
             // Remove from index those files that have been deleted
-            w.removeFile(file, false);
-            log() << "deindexed " << file << endl;
+            w.removeFile(relpath, false);
+            reporter.segment_deindex(w, relpath, "removed from the index");
             ++m_count_deindexed;
             m_redo_summary = true;
         }
@@ -496,28 +426,21 @@ void RealFixer::operator()(const std::string& file, segment::FileState state)
 
 void RealFixer::end()
 {
-	if (m_touched_archive)
-	{
-		w.archive().vacuum();
-		log() << "archive cleaned up" << endl;
-	}
+    if (m_touched_archive)
+        w.archive().vacuum();
 
-	// Finally, tidy up the database
-	size_t size_vacuum = w.vacuum();
+    // Finally, tidy up the database
+    /*size_t size_vacuum =*/ w.vacuum();
 
-	logStart();
-	if (m_count_packed)
-		logAdd() << nfiles(m_count_packed) << " packed";
-	if (m_count_rescanned)
-		logAdd() << nfiles(m_count_rescanned) << " rescanned";
-	if (m_count_deindexed)
-		logAdd() << nfiles(m_count_deindexed) << " removed from index";
-	//if (size_vacuum)
-		//logAdd() << size_vacuum << " bytes reclaimed cleaning the index";
-	logEnd();
+    vector<string> reports;
+    if (m_count_packed) reports.emplace_back(nfiles(m_count_packed) + " packed");
+    if (m_count_rescanned) reports.emplace_back(nfiles(m_count_rescanned) + " rescanned");
+    if (m_count_deindexed) reports.emplace_back(nfiles(m_count_deindexed) + " removed from index");
+    reporter.operation_report(w, "check", str::join(", ", reports));
+    //if (size_vacuum)
+    //  logAdd() << size_vacuum << " bytes reclaimed cleaning the index";
 }
 
 }
 }
 }
-// vim:set ts=4 sw=4:

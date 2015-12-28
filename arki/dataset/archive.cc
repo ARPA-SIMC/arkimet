@@ -321,10 +321,10 @@ ArchivesChecker::~ArchivesChecker()
     delete archives;
 }
 
-void ArchivesChecker::removeAll(std::ostream& log, bool writable)
+void ArchivesChecker::removeAll(Reporter& reporter, bool writable)
 {
     archives->iter([&](SegmentedChecker& a) {
-        a.removeAll(log, writable);
+        a.removeAll(reporter, writable);
     });
 }
 

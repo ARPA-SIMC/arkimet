@@ -69,8 +69,8 @@ public:
     SegmentedChecker(const ConfigFile& cfg);
     ~SegmentedChecker();
 
-    void repack(std::ostream& log, bool writable=false) override;
-    void check(std::ostream& log, bool fix, bool quick) override;
+    void repack(dataset::Reporter& reporter, bool writable=false) override;
+    void check(dataset::Reporter& reporter, bool fix, bool quick) override;
 
     /**
      * Instantiate an appropriate SegmentedChecker for the given configuration
@@ -93,16 +93,8 @@ public:
      */
     virtual void maintenance(segment::state_func dest, bool quick=true);
 
-    /**
-     * Perform general sanity checks on the dataset, reporting to \a log.
-     *
-     * If \a writable is true, try to fix issues.
-     */
-    virtual void sanityChecks(std::ostream& log, bool writable=false);
-
-
     /// Remove all data from the dataset
-    virtual void removeAll(std::ostream& log, bool writable);
+    void removeAll(dataset::Reporter& reporter, bool writable) override;
 
     /**
      * Add information about a file to the index
@@ -149,14 +141,15 @@ public:
     virtual size_t vacuum() = 0;
 };
 
-class NullSegmentedChecker : public SegmentedChecker
+class [[deprecated("Use the main Checker interface if possible, now that we have Reporter we do not need this for nesting")]] NullSegmentedChecker : public SegmentedChecker
 {
 public:
     using SegmentedChecker::SegmentedChecker;
 
+    void repack(dataset::Reporter& reporter, bool writable=false) override {}
+    void check(dataset::Reporter& reporter, bool fix, bool quick) override {}
+    void removeAll(dataset::Reporter&, bool writable) override {}
     void maintenance(segment::state_func dest, bool quick=true) override {}
-    void sanityChecks(std::ostream& log, bool writable=false) override {}
-    void removeAll(std::ostream& log, bool writable) override {}
     void indexFile(const std::string& relpath, metadata::Collection&& contents) override {}
     void rescanFile(const std::string& relpath) override {}
     size_t repackFile(const std::string& relpath) override { return 0; }

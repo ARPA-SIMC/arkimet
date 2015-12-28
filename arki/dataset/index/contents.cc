@@ -268,6 +268,14 @@ size_t Contents::count() const
 	return res;
 }
 
+void Contents::list_segments(std::function<void(const std::string&)> dest)
+{
+    Query sq("list_segments", m_db);
+    sq.compile("SELECT DISTINCT file FROM md ORDER BY file");
+    while (sq.step())
+        dest(sq.fetchString(0));
+}
+
 void Contents::scan_files(segment::contents_func v) const
 {
     string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
@@ -892,9 +900,9 @@ bool Contents::query_summary(const Matcher& matcher, Summary& summary)
     return true;
 }
 
-bool Contents::checkSummaryCache(std::ostream& log) const
+bool Contents::checkSummaryCache(const dataset::Base& ds, Reporter& reporter) const
 {
-    return scache.check(m_name, log);
+    return scache.check(ds, reporter);
 }
 
 RContents::RContents(const ConfigFile& cfg)

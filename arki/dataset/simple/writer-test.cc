@@ -11,7 +11,6 @@
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 
-namespace tut {
 using namespace std;
 using namespace arki::tests;
 using namespace arki;
@@ -21,43 +20,52 @@ using namespace arki::tests;
 using namespace arki::utils;
 
 namespace {
+
 static inline const types::AssignedDataset* getDataset(const Metadata& md)
 {
     return md.get<AssignedDataset>();
 }
-}
 
-struct arki_dataset_simple_writer_shar : public DatasetTest {
-    arki_dataset_simple_writer_shar()
+struct Fixture : public DatasetTest {
+    Fixture() {}
+
+    void test_setup()
     {
+        cfg.clear();
         cfg.setValue("path", sys::abspath("testds"));
         cfg.setValue("name", "testds");
         cfg.setValue("type", "simple");
         cfg.setValue("step", "daily");
     }
 
-	// Recreate the dataset importing data into it
-	void clean_and_import(const ConfigFile* wcfg = 0, const std::string& testfile = "inbound/test.grib1")
-	{
-		DatasetTest::clean_and_import(wcfg, testfile);
-		ensure_localds_clean(3, 3, wcfg);
-	}
+    // Recreate the dataset importing data into it
+    void clean_and_import(const ConfigFile* wcfg=0, const std::string& testfile="inbound/test.grib1")
+    {
+        DatasetTest::clean_and_import(wcfg, testfile);
+        ensure_localds_clean(3, 3, wcfg);
+    }
 };
-TESTGRP(arki_dataset_simple_writer);
+
+
+class Tests : public FixtureTestCase<Fixture>
+{
+    using FixtureTestCase::FixtureTestCase;
+
+    void register_tests() override;
+} test("arki_dataset_simple_writer");
+
+void Tests::register_tests() {
 
 // Test acquiring data
-def_test(1)
-{
-	// Clean the dataset
-	system("rm -rf testds");
-	system("mkdir testds");
+add_method("acquire", [](Fixture& f) {
+    // Clean the dataset
+    system("rm -rf testds");
+    system("mkdir testds");
 
-	Metadata md;
-	scan::Grib scanner;
-	scanner.open("inbound/test.grib1");
+    metadata::Collection mdc("inbound/test.grib1");
+    Metadata& md = mdc[0];
 
-    simple::Writer writer(cfg);
-    ensure(scanner.next(md));
+    simple::Writer writer(f.cfg);
 
     // Import once in the empty dataset
     Writer::AcquireResult res = writer.acquire(md);
@@ -87,18 +95,17 @@ def_test(1)
     ensure(sys::exists("testds/2007/07-08.grib1"));
     ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
     ensure(sys::exists("testds/2007/07-08.grib1.summary"));
-    ensure(sys::exists("testds/" + idxfname()));
+    ensure(sys::exists("testds/" + f.idxfname()));
     ensure(sys::timestamp("testds/2007/07-08.grib1") <= sys::timestamp("testds/2007/07-08.grib1.metadata"));
     ensure(sys::timestamp("testds/2007/07-08.grib1.metadata") <= sys::timestamp("testds/2007/07-08.grib1.summary"));
-    ensure(sys::timestamp("testds/2007/07-08.grib1.summary") <= sys::timestamp("testds/" + idxfname()));
+    ensure(sys::timestamp("testds/2007/07-08.grib1.summary") <= sys::timestamp("testds/" + f.idxfname()));
     ensure(files::hasDontpackFlagfile("testds"));
 
-	ensure_localds_clean(1, 2);
-}
+    f.ensure_localds_clean(1, 2);
+});
 
 // Test appending to existing files
-def_test(2)
-{
+add_method("append", [](Fixture& f) {
     ConfigFile cfg;
     cfg.setValue("path", sys::abspath("testds"));
     cfg.setValue("name", "testds");
@@ -109,50 +116,43 @@ def_test(2)
 	system("rm -rf testds");
 	system("mkdir testds");
 
-	Metadata md;
-	scan::Grib scanner;
-	scanner.open("inbound/test-sorted.grib1");
+    metadata::Collection mdc("inbound/test-sorted.grib1");
 
     // Import once in the empty dataset
     {
         dataset::simple::Writer writer(cfg);
-        ensure(scanner.next(md));
-
-        Writer::AcquireResult res = writer.acquire(md);
+        Writer::AcquireResult res = writer.acquire(mdc[0]);
         ensure_equals(res, Writer::ACQ_OK);
     }
 
     // Import another one, appending to the file
     {
         dataset::simple::Writer writer(cfg);
-        ensure(scanner.next(md));
-
-        Writer::AcquireResult res = writer.acquire(md);
+        Writer::AcquireResult res = writer.acquire(mdc[1]);
         ensure_equals(res, Writer::ACQ_OK);
 
-        const AssignedDataset* ds = getDataset(md);
+        const AssignedDataset* ds = getDataset(mdc[1]);
         ensure(ds);
         ensure_equals(ds->name, "testds");
         ensure_equals(ds->id, "20/2007.grib1:34960");
 
-        wassert(actual_type(md.source()).is_source_blob("grib1", sys::abspath("testds"), "20/2007.grib1", 34960, 7218));
+        wassert(actual_type(mdc[1].source()).is_source_blob("grib1", sys::abspath("testds"), "20/2007.grib1", 34960, 7218));
     }
 
     ensure(sys::exists("testds/20/2007.grib1"));
     ensure(sys::exists("testds/20/2007.grib1.metadata"));
     ensure(sys::exists("testds/20/2007.grib1.summary"));
-    ensure(sys::exists("testds/" + idxfname()));
+    ensure(sys::exists("testds/" + f.idxfname()));
     ensure(sys::timestamp("testds/20/2007.grib1") <= sys::timestamp("testds/20/2007.grib1.metadata"));
     ensure(sys::timestamp("testds/20/2007.grib1.metadata") <= sys::timestamp("testds/20/2007.grib1.summary"));
-    ensure(sys::timestamp("testds/20/2007.grib1.summary") <= sys::timestamp("testds/" + idxfname()));
+    ensure(sys::timestamp("testds/20/2007.grib1.summary") <= sys::timestamp("testds/" + f.idxfname()));
 
     // Dataset is fine and clean
-    ensure_localds_clean(1, 2, &cfg);
-}
+    f.ensure_localds_clean(1, 2, &cfg);
+});
 
 // Test maintenance scan on non-indexed files
-def_test(3)
-{
+add_method("scan_nonindexed", [](Fixture& f) {
 	struct Setup {
 		void operator() ()
 		{
@@ -167,14 +167,14 @@ def_test(3)
 
     // Query now is ok, but empty
     {
-        unique_ptr<simple::Reader> reader(makeSimpleReader());
+        unique_ptr<simple::Reader> reader(f.makeSimpleReader());
         metadata::Collection mdc(*reader, Matcher());
         ensure_equals(mdc.size(), 0u);
     }
 
     // Maintenance should show one file to index
     {
-        dataset::simple::Checker writer(cfg);
+        dataset::simple::Checker writer(f.cfg);
         MaintenanceResults expected(false, 1);
         expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
         wassert(actual(writer).maintenance(expected));
@@ -182,50 +182,44 @@ def_test(3)
     }
 
     {
-        stringstream s;
-        dataset::simple::Checker writer(cfg);
+        dataset::simple::Checker writer(f.cfg);
 
-		// Check should reindex the file
-		writer.check(s, true, true);
-		ensure_equals(s.str(),
-				"testds: rescanned 2007/07-08.grib1\n"
-				"testds: 1 file rescanned.\n");
+        // Check should reindex the file
+        {
+            ReporterExpected e;
+            e.rescanned.emplace_back("testds", "2007/07-08.grib1");
+            wassert(actual(writer).check(e, true, true));
+        }
 
-		// Repack should find nothing to repack
-		s.str(std::string());
-		writer.repack(s, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
-		ensure(not files::hasDontpackFlagfile("testds"));
-	}
+        // Repack should find nothing to repack
+        wassert(actual(writer).repack_clean(true));
+        wassert(actual(not files::hasDontpackFlagfile("testds")));
+    }
 
-	// Everything should be fine now
-	ensure_localds_clean(1, 3);
+    // Everything should be fine now
+    f.ensure_localds_clean(1, 3);
 
     // Remove the file from the index
     {
-        dataset::simple::Checker writer(cfg);
+        dataset::simple::Checker writer(f.cfg);
         writer.removeFile("2007/07-08.grib1", false);
     }
 
     // Repack should delete the files not in index
     {
-        stringstream s;
-        dataset::simple::Checker writer(cfg);
+        dataset::simple::Checker writer(f.cfg);
 
-		s.str(std::string());
-		writer.repack(s, true);
-		ensure_equals(s.str(), string(
-				"testds: deleted 2007/07-08.grib1 (44412 freed)\n"
-				"testds: 1 file deleted, 44412 total bytes freed.\n"));
-	}
+        ReporterExpected e;
+        e.deleted.emplace_back("testds", "2007/07-08.grib1", "44412 freed");
+        wassert(actual(writer).repack(e, true));
+    }
 
-	// Query is still ok, but empty
-	ensure_localds_clean(0, 0);
-}
+    // Query is still ok, but empty
+    f.ensure_localds_clean(0, 0);
+});
 
 // Test maintenance scan with missing metadata and summary
-def_test(4)
-{
+add_method("scan_missing_md_summary", [](Fixture& f) {
     struct Setup {
         void operator() ()
         {
@@ -237,20 +231,20 @@ def_test(4)
         }
     } setup;
 
-    clean_and_import();
+    f.clean_and_import();
     setup();
-    ensure(sys::exists("testds/" + idxfname()));
+    ensure(sys::exists("testds/" + f.idxfname()));
 
     // Query is ok
     {
-        dataset::simple::Reader reader(cfg);
+        dataset::simple::Reader reader(f.cfg);
         metadata::Collection mdc(reader, Matcher());
         ensure_equals(mdc.size(), 3u);
     }
 
     // Maintenance should show one file to rescan
     {
-        simple::Checker writer(cfg);
+        simple::Checker writer(f.cfg);
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
         expected.by_type[DatasetTest::COUNTED_TO_RESCAN] = 1;
@@ -259,61 +253,53 @@ def_test(4)
 
     // Fix the dataset
     {
-        stringstream s;
-        simple::Checker writer(cfg);
+        simple::Checker writer(f.cfg);
 
-		// Check should reindex the file
-		writer.check(s, true, true);
-		ensure_equals(s.str(),
-			"testds: rescanned 2007/07-08.grib1\n"
-			"testds: 1 file rescanned.\n");
+        // Check should reindex the file
+        ReporterExpected e;
+        e.rescanned.emplace_back("testds", "2007/07-08.grib1");
+        wassert(actual(writer).check(e, true, true));
 
-		// Repack should do nothing
-		s.str(std::string());
-		writer.repack(s, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
-	}
+        // Repack should do nothing
+        wassert(actual(writer).repack_clean(true));
+    }
 
     // Everything should be fine now
-    ensure_localds_clean(3, 3);
+    f.ensure_localds_clean(3, 3);
     ensure(sys::exists("testds/2007/07-08.grib1"));
     ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
     ensure(sys::exists("testds/2007/07-08.grib1.summary"));
-    ensure(sys::exists("testds/" + idxfname()));
+    ensure(sys::exists("testds/" + f.idxfname()));
 
 
     // Restart again
-    clean_and_import();
+    f.clean_and_import();
     setup();
     files::removeDontpackFlagfile("testds");
-    ensure(sys::exists("testds/" + idxfname()));
+    ensure(sys::exists("testds/" + f.idxfname()));
 
     // Repack here should act as if the dataset were empty
     {
-        stringstream s;
-        simple::Checker writer(cfg);
+        simple::Checker writer(f.cfg);
 
-		// Repack should find nothing to repack
-		s.str(std::string());
-		writer.repack(s, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
-	}
+        // Repack should find nothing to repack
+        wassert(actual(writer).repack_clean(true));
+    }
 
     // And repack should have changed nothing
     {
-        dataset::simple::Reader reader(cfg);
+        dataset::simple::Reader reader(f.cfg);
         metadata::Collection mdc(reader, Matcher());
         ensure_equals(mdc.size(), 3u);
     }
     ensure(sys::exists("testds/2007/07-08.grib1"));
     ensure(!sys::exists("testds/2007/07-08.grib1.metadata"));
     ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
-    ensure(sys::exists("testds/" + idxfname()));
-}
+    ensure(sys::exists("testds/" + f.idxfname()));
+});
 
 // Test maintenance scan on missing summary
-def_test(5)
-{
+add_method("scan_missing_summary", [](Fixture& f) {
     struct Setup {
         void operator() ()
         {
@@ -324,20 +310,20 @@ def_test(5)
         }
     } setup;
 
-    clean_and_import();
+    f.clean_and_import();
     setup();
-    ensure(sys::exists("testds/" + idxfname()));
+    ensure(sys::exists("testds/" + f.idxfname()));
 
     // Query is ok
     {
-        dataset::simple::Reader reader(cfg);
+        dataset::simple::Reader reader(f.cfg);
         metadata::Collection mdc(reader, Matcher());
         ensure_equals(mdc.size(), 3u);
     }
 
     // Maintenance should show one file to rescan
     {
-        simple::Checker writer(cfg);
+        simple::Checker writer(f.cfg);
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
         expected.by_type[DatasetTest::COUNTED_TO_RESCAN] = 1;
@@ -346,62 +332,52 @@ def_test(5)
 
     // Fix the dataset
     {
-        stringstream s;
-        simple::Checker writer(cfg);
+        simple::Checker writer(f.cfg);
 
-		// Check should reindex the file
-		writer.check(s, true, true);
-		ensure_equals(s.str(),
-			"testds: rescanned 2007/07-08.grib1\n"
-			"testds: 1 file rescanned.\n");
+        // Check should reindex the file
+        ReporterExpected e;
+        e.rescanned.emplace_back("testds", "2007/07-08.grib1");
+        wassert(actual(writer).check(e, true, true));
 
-		// Repack should do nothing
-		s.str(std::string());
-		writer.repack(s, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
-	}
+        // Repack should do nothing
+        wassert(actual(writer).repack_clean(true));
+    }
 
     // Everything should be fine now
-    ensure_localds_clean(3, 3);
+    f.ensure_localds_clean(3, 3);
     ensure(sys::exists("testds/2007/07-08.grib1"));
     ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
     ensure(sys::exists("testds/2007/07-08.grib1.summary"));
-    ensure(sys::exists("testds/" + idxfname()));
+    ensure(sys::exists("testds/" + f.idxfname()));
 
 
     // Restart again
-    clean_and_import();
+    f.clean_and_import();
     setup();
     files::removeDontpackFlagfile("testds");
-    ensure(sys::exists("testds/" + idxfname()));
+    ensure(sys::exists("testds/" + f.idxfname()));
 
     // Repack here should act as if the dataset were empty
     {
-        stringstream s;
-        simple::Checker writer(cfg);
-
-		// Repack should find nothing to repack
-		s.str(std::string());
-		writer.repack(s, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
-	}
+        simple::Checker writer(f.cfg);
+        wassert(actual(writer).repack_clean(true));
+    }
 
     // And repack should have changed nothing
     {
-        dataset::simple::Reader reader(cfg);
+        dataset::simple::Reader reader(f.cfg);
         metadata::Collection mdc(reader, Matcher());
         ensure_equals(mdc.size(), 3u);
     }
     ensure(sys::exists("testds/2007/07-08.grib1"));
     ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
     ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
-    ensure(sys::exists("testds/" + idxfname()));
-}
+    ensure(sys::exists("testds/" + f.idxfname()));
+});
 
 // Test maintenance scan on compressed archives
-def_test(6)
-{
-	struct Setup {
+add_method("scan_compressed", [](Fixture& f) {
+    struct Setup {
         void operator() ()
         {
             // Compress one file
@@ -427,12 +403,12 @@ def_test(6)
         }
     } setup;
 
-    clean_and_import();
+    f.clean_and_import();
     setup();
-    ensure(sys::exists("testds/" + idxfname()));
+    ensure(sys::exists("testds/" + f.idxfname()));
 
-	// Query is ok
-	ensure_localds_clean(3, 3);
+    // Query is ok
+    f.ensure_localds_clean(3, 3);
 
 	// Try removing summary and metadata
 	setup.removemd();
@@ -440,7 +416,7 @@ def_test(6)
     // Cannot query anymore
     {
         metadata::Collection mdc;
-        simple::Reader reader(cfg);
+        simple::Reader reader(f.cfg);
         try {
             mdc.add(reader, Matcher());
             ensure(false);
@@ -451,7 +427,7 @@ def_test(6)
 
     // Maintenance should show one file to rescan
     {
-        simple::Checker writer(cfg);
+        simple::Checker writer(f.cfg);
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
         expected.by_type[DatasetTest::COUNTED_TO_RESCAN] = 1;
@@ -460,53 +436,45 @@ def_test(6)
 
     // Fix the dataset
     {
-        stringstream s;
-        simple::Checker writer(cfg);
+        simple::Checker writer(f.cfg);
 
-		// Check should reindex the file
-		writer.check(s, true, true);
-		ensure_equals(s.str(),
-			"testds: rescanned 2007/07-08.grib1\n"
-			"testds: 1 file rescanned.\n");
+        // Check should reindex the file
+        ReporterExpected e;
+        e.rescanned.emplace_back("testds", "2007/07-08.grib1");
+        wassert(actual(writer).check(e, true, true));
 
-		// Repack should do nothing
-		s.str(std::string());
-		writer.repack(s, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
-	}
+        // Repack should do nothing
+        wassert(actual(writer).repack_clean(true));
+    }
 
     // Everything should be fine now
-    ensure_localds_clean(3, 3);
+    f.ensure_localds_clean(3, 3);
     ensure(!sys::exists("testds/2007/07-08.grib1"));
     ensure(sys::exists("testds/2007/07-08.grib1.gz"));
     ensure(sys::exists("testds/2007/07-08.grib1.gz.idx"));
     ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
     ensure(sys::exists("testds/2007/07-08.grib1.summary"));
-    ensure(sys::exists("testds/" + idxfname()));
+    ensure(sys::exists("testds/" + f.idxfname()));
 
 
     // Restart again
-    clean_and_import();
+    f.clean_and_import();
     setup();
     files::removeDontpackFlagfile("testds");
-    ensure(sys::exists("testds/" + idxfname()));
+    ensure(sys::exists("testds/" + f.idxfname()));
     setup.removemd();
 
     // Repack here should act as if the dataset were empty
     {
-        stringstream s;
-        simple::Checker writer(cfg);
-
-		// Repack should find nothing to repack
-		s.str(std::string());
-		writer.repack(s, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
-	}
+        // Repack should find nothing to repack
+        simple::Checker writer(f.cfg);
+        wassert(actual(writer).repack_clean(true));
+    }
 
     // And repack should have changed nothing
     {
         metadata::Collection mdc;
-        simple::Reader reader(cfg);
+        simple::Reader reader(f.cfg);
         try {
             mdc.add(reader, Matcher());
             ensure(false);
@@ -519,12 +487,11 @@ def_test(6)
     ensure(sys::exists("testds/2007/07-08.grib1.gz.idx"));
     ensure(!sys::exists("testds/2007/07-08.grib1.metadata"));
     ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
-    ensure(sys::exists("testds/" + idxfname()));
-}
+    ensure(sys::exists("testds/" + f.idxfname()));
+});
 
 // Test maintenance scan on dataset with a file indexed but missing
-def_test(7)
-{
+add_method("scan_missingdata", [](Fixture& f) {
     struct Setup {
         void operator() ()
         {
@@ -534,20 +501,20 @@ def_test(7)
         }
     } setup;
 
-    clean_and_import();
+    f.clean_and_import();
     setup();
-    ensure(sys::exists("testds/" + idxfname()));
+    ensure(sys::exists("testds/" + f.idxfname()));
 
     // Query is ok
     {
-        dataset::simple::Reader reader(cfg);
+        dataset::simple::Reader reader(f.cfg);
         metadata::Collection mdc(reader, Matcher());
         ensure_equals(mdc.size(), 2u);
     }
 
     // Maintenance should show one file to rescan
     {
-        simple::Checker writer(cfg);
+        simple::Checker writer(f.cfg);
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
         expected.by_type[DatasetTest::COUNTED_TO_DEINDEX] = 1;
@@ -556,49 +523,42 @@ def_test(7)
 
     // Fix the dataset
     {
-        stringstream s;
-        simple::Checker writer(cfg);
+        simple::Checker writer(f.cfg);
 
-		// Check should reindex the file
-		writer.check(s, true, true);
-		ensure_equals(s.str(),
-			"testds: deindexed 2007/07-08.grib1\n"
-			"testds: 1 file removed from index.\n");
+        // Check should reindex the file
+        ReporterExpected e;
+        e.deindexed.emplace_back("testds", "2007/07-08.grib1");
+        wassert(actual(writer).check(e, true, true));
 
-		// Repack should do nothing
-		s.str(std::string());
-		writer.repack(s, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
-	}
+        // Repack should do nothing
+        wassert(actual(writer).repack_clean(true));
+    }
 
     // Everything should be fine now
-    ensure_localds_clean(2, 2);
-    ensure(sys::exists("testds/" + idxfname()));
+    f.ensure_localds_clean(2, 2);
+    ensure(sys::exists("testds/" + f.idxfname()));
 
 
     // Restart again
-    clean_and_import();
+    f.clean_and_import();
     setup();
     files::removeDontpackFlagfile("testds");
-    ensure(sys::exists("testds/" + idxfname()));
+    ensure(sys::exists("testds/" + f.idxfname()));
 
     // Repack here should act as if the dataset were empty
     {
-        stringstream s;
-        simple::Checker writer(cfg);
+        simple::Checker writer(f.cfg);
 
-		// Repack should tidy up the index
-		s.str(std::string());
-		writer.repack(s, true);
-		ensure_equals(s.str(),
-			"testds: deleted from index 2007/07-08.grib1\n"
-			"testds: 1 file removed from index.\n");
-	}
+        // Repack should tidy up the index
+        ReporterExpected e;
+        e.deindexed.emplace_back("testds", "2007/07-08.grib1");
+        wassert(actual(writer).repack(e, true));
+    }
 
     // And everything else should still be queriable
-    ensure_localds_clean(2, 2);
-    ensure(sys::exists("testds/" + idxfname()));
-}
+    f.ensure_localds_clean(2, 2);
+    ensure(sys::exists("testds/" + f.idxfname()));
+});
 
 #if 0
 // Test handling of empty archive dirs (such as last with everything moved away)
@@ -617,9 +577,8 @@ def_test(7)
 	Archives arc("testds/.archive");
 	ensure_dataset_clean(arc, 3, 3);
 }
-
 #endif
 
-// Retest with sqlite
+}
 
 }

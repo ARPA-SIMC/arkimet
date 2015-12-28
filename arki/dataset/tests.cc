@@ -139,89 +139,6 @@ void OutputChecker::ensure_all_lines_seen()
     }
 }
 
-void LineChecker::ignore_regexp(const std::string& regexp)
-{
-    ignore_regexps.push_back(regexp);
-}
-
-void LineChecker::require_line_contains(const std::string& needle)
-{
-    require_contains.push_back(needle);
-}
-
-void LineChecker::require_line_contains_re(const std::string& needle)
-{
-    require_contains_re.push_back(needle);
-}
-
-namespace {
-struct Line : public std::string
-{
-    bool seen;
-    Line() : seen(false) {}
-    Line(const std::string& s) : std::string(s), seen(false) {}
-};
-}
-
-void LineChecker::check(const std::string& s) const
-{
-    vector<Line> lines;
-    wibble::Splitter splitter("[\n\r]+", REG_EXTENDED);
-    for (wibble::Splitter::const_iterator i = splitter.begin(s); i != splitter.end(); ++i)
-        lines.push_back(" " + *i);
-
-    // Mark ignored lines as seen
-    for (vector<string>::const_iterator i = ignore_regexps.begin(); i != ignore_regexps.end(); ++i)
-    {
-        wibble::ERegexp re(*i);
-        for (vector<Line>::iterator j = lines.begin(); j != lines.end(); ++j)
-            if (re.match(*j))
-                j->seen = true;
-    }
-
-    stringstream complaints;
-
-    // Check required lines
-    for (vector<string>::const_iterator i = require_contains.begin(); i != require_contains.end(); ++i)
-    {
-        bool found = false;
-        for (vector<Line>::iterator j = lines.begin(); j != lines.end(); ++j)
-        {
-            if (j->find(*i) == string::npos) continue;
-            if (j->seen) continue;
-            j->seen = true;
-            found = true;
-            break;
-        }
-        // Complain about required line i not found
-        if (!found)
-            complaints << "Required match not found: \"" << *i << "\"" << endl;
-    }
-    for (vector<string>::const_iterator i = require_contains_re.begin(); i != require_contains_re.end(); ++i)
-    {
-        wibble::ERegexp re(*i);
-        bool found = false;
-        for (vector<Line>::iterator j = lines.begin(); j != lines.end(); ++j)
-        {
-            if (!re.match(*j)) continue;
-            if (j->seen) continue;
-            found = true;
-            j->seen = true;
-            break;
-        }
-        // Complain about required line i not found
-        if (!found)
-            complaints << "Required regexp not matched: \"" << *i << "\"" << endl;
-    }
-
-    for (vector<Line>::const_iterator i = lines.begin(); i != lines.end(); ++i)
-        if (!i->seen)
-            complaints << "Output line not checked: \"" << *i << "\"" << endl;
-
-    if (!complaints.str().empty())
-        throw TestFailed(complaints.str());
-}
-
 ForceSqlite::ForceSqlite(bool val) : old(dataset::index::Manifest::get_force_sqlite())
 {
 	dataset::index::Manifest::set_force_sqlite(val);
@@ -492,10 +409,8 @@ void DatasetTest::import_all_packed(const testdata::Fixture& fixture)
     // Pack the dataset in case something imported data out of order
     {
         unique_ptr<LocalChecker> writer(makeLocalChecker());
-        LineChecker checker;
-        checker.ignore_regexp(": packed ");
-        checker.ignore_regexp(": [0-9]+ files? packed");
-        wassert(actual(writer.get()).repack(checker, true));
+        NullReporter r;
+        wassert(writer->repack(r, true));
     }
 }
 
@@ -742,8 +657,6 @@ std::unique_ptr<dataset::LocalChecker> make_dataset_checker(const std::string& c
 
 void test_append_transaction_ok(dataset::segment::Segment* dw, Metadata& md, int append_amount_adjust)
 {
-    typedef types::source::Blob Blob;
-
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());
     size_t data_size = md.data_size();
@@ -827,35 +740,232 @@ void ActualSegmentedChecker::maintenance_clean(unsigned data_count, bool quick)
     maintenance(expected, quick);
 }
 
-template<typename Dataset>
-void ActualLocalChecker<Dataset>::repack(const LineChecker& expected, bool write)
+
+ReporterExpected::OperationMatch::OperationMatch(const std::string& dsname, const std::string& operation, const std::string& message)
+    : dsname(dsname), operation(operation), message(message)
 {
-    stringstream s;
-    wassert(this->_actual->repack(s, write));
-    wassert(expected.check(s.str()));
+}
+
+std::string ReporterExpected::OperationMatch::error_unmatched(const std::string& type) const
+{
+    string msg = "expected operation not matched: " + dsname + ":" + type + " not found in " + operation + " output";
+    if (!message.empty())
+        msg += " (matching '" + message + "')";
+    return msg;
+}
+
+ReporterExpected::SegmentMatch::SegmentMatch(const std::string& dsname, const std::string& relpath, const std::string& message)
+    : dsname(dsname), relpath(relpath), message(message)
+{
+}
+
+std::string ReporterExpected::SegmentMatch::error_unmatched(const std::string& operation) const
+{
+    string msg = "expected segment not matched: " + dsname + ":" + relpath + " not found in " + operation + " output";
+    if (!message.empty())
+        msg += " (matching '" + message + "')";
+    return msg;
+}
+
+struct MainteanceCheckResult
+{
+    std::string type;
+    bool matched = false;
+
+    MainteanceCheckResult(const std::string& type) : type(type) {}
+};
+
+struct OperationResult : public MainteanceCheckResult
+{
+    std::string dsname;
+    std::string operation;
+    std::string message;
+
+    OperationResult(const std::string& type, const std::string& dsname, const std::string& operation, const std::string& message=std::string())
+        : MainteanceCheckResult(type), dsname(dsname), operation(operation), message(message) {}
+
+    bool match(const ReporterExpected::OperationMatch& m) const
+    {
+        if (m.dsname != dsname) return false;
+        if (m.operation != operation) return false;
+        if (!m.message.empty() && message.find(m.message) == string::npos) return false;
+        return true;
+    }
+
+    string error_unmatched() const
+    {
+        return "operation output not matched: " + type + " on " + dsname + ":" + operation + ": " + message;
+    }
+};
+
+struct SegmentResult : public MainteanceCheckResult
+{
+    std::string dsname;
+    std::string relpath;
+    std::string message;
+
+    SegmentResult(const std::string& operation, const std::string& dsname, const std::string& relpath, const std::string& message=std::string())
+        : MainteanceCheckResult(operation), dsname(dsname), relpath(relpath), message(message) {}
+
+    bool match(const ReporterExpected::SegmentMatch& m) const
+    {
+        if (m.dsname != dsname) return false;
+        if (m.relpath != relpath) return false;
+        if (!m.message.empty() && message.find(m.message) == string::npos) return false;
+        return true;
+    }
+
+    string error_unmatched() const
+    {
+        return "segment output not matched: " + type + " on " + dsname + ":" + relpath + ": " + message;
+    }
+};
+
+template<typename Matcher, typename Result>
+struct MainteanceCheckResults : public std::vector<Result>
+{
+    void match(const std::string& type, const std::vector<Matcher>& matches, vector<string>& issues)
+    {
+        // Track which rules were not matched
+        std::set<const Matcher*> unmatched;
+        for (const auto& m: matches)
+            unmatched.insert(&m);
+
+        for (auto& r: *this)
+        {
+            if (r.type != type) continue;
+            for (const auto& m: matches)
+                if (r.match(m))
+                {
+                    r.matched = true;
+                    unmatched.erase(&m);
+                }
+        }
+
+        // Signal the unmatched rules for this operation
+        for (const auto& m: unmatched)
+            issues.emplace_back(m->error_unmatched(type));
+    }
+
+    void count_equals(const std::string& type, int expected, vector<string>& issues)
+    {
+        if (expected == -1) return;
+        size_t count = 0;
+        for (const auto& r: *this)
+        {
+            if (r.type != type) continue;
+            ++count;
+        }
+
+        // Signal the counts that differ
+        if (count != (unsigned)expected)
+            issues.emplace_back(type + " had " + std::to_string(count) + " results but " + std::to_string(expected) + " were expected");
+        else
+        {
+            // If the count is correct, mark all results for this operation as
+            // matched, so that one can just do a test matching count of files
+            // by operation type and not the details
+            for (auto& r: *this)
+                if (r.type == type)
+                    r.matched = true;
+        }
+    }
+
+    void report_unmatched(vector<string>& issues, const std::string& type_filter=std::string())
+    {
+        for (const auto& r: *this)
+        {
+            if (!type_filter.empty() && r.type != type_filter) continue;
+            if (r.matched) continue;
+            issues.emplace_back(r.error_unmatched());
+        }
+    }
+};
+
+struct CollectReporter : public dataset::Reporter
+{
+    typedef MainteanceCheckResults<ReporterExpected::OperationMatch, OperationResult> OperationResults;
+    typedef MainteanceCheckResults<ReporterExpected::SegmentMatch, SegmentResult> SegmentResults;
+
+    OperationResults op_results;
+    SegmentResults seg_results;
+
+    void operation_progress(const Base& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("progress", ds.name(), operation, message); }
+    void operation_manual_intervention(const Base& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("manual_intervention", ds.name(), operation, message); }
+    void operation_aborted(const Base& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("aborted", ds.name(), operation, message); }
+    void operation_report(const Base& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("report", ds.name(), operation, message); }
+
+    void segment_repack(const Base& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("repacked", ds.name(), relpath, message); }
+    void segment_archive(const Base& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("archived", ds.name(), relpath, message); }
+    void segment_delete(const Base& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("deleted", ds.name(), relpath, message); }
+    void segment_deindex(const Base& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("deindexed", ds.name(), relpath, message); }
+    void segment_rescan(const Base& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("rescanned", ds.name(), relpath, message); }
+
+    void check(const ReporterExpected& expected)
+    {
+        vector<string> issues;
+
+        op_results.match("progress", expected.progress, issues);
+        op_results.match("manual_intervention", expected.manual_intervention, issues);
+        op_results.match("aborted", expected.aborted, issues);
+        op_results.match("report", expected.report, issues);
+
+        op_results.report_unmatched(issues, "manual_intervention");
+        op_results.report_unmatched(issues, "aborted");
+
+        seg_results.match("repacked", expected.repacked, issues);
+        seg_results.match("archived", expected.archived, issues);
+        seg_results.match("deleted", expected.deleted, issues);
+        seg_results.match("deindexed", expected.deindexed, issues);
+        seg_results.match("rescanned", expected.rescanned, issues);
+
+        seg_results.count_equals("repacked", expected.count_repacked, issues);
+        seg_results.count_equals("archived", expected.count_archived, issues);
+        seg_results.count_equals("deleted", expected.count_deleted, issues);
+        seg_results.count_equals("deindexed", expected.count_deindexed, issues);
+        seg_results.count_equals("rescanned", expected.count_rescanned, issues);
+
+        seg_results.report_unmatched(issues);
+
+        if (!issues.empty())
+        {
+            std::stringstream ss;
+            ss << issues.size() << " mismatches in maintenance results:" << endl;
+            for (const auto& m: issues)
+                ss << "  " << m << endl;
+            throw TestFailed(ss.str());
+        }
+    }
+};
+
+template<typename Dataset>
+void ActualChecker<Dataset>::repack(const ReporterExpected& expected, bool write)
+{
+    CollectReporter reporter;
+    wassert(this->_actual->repack(reporter, write));
+    wassert(reporter.check(expected));
 }
 
 template<typename Dataset>
-void ActualLocalChecker<Dataset>::repack_clean(bool write)
+void ActualChecker<Dataset>::check(const ReporterExpected& expected, bool write, bool quick)
 {
-    LineChecker expected;
-    expected.ignore_regexp("total bytes freed.");
-    repack(expected, write);
+    CollectReporter reporter;
+    wassert(this->_actual->check(reporter, write, quick));
+    wassert(reporter.check(expected));
 }
 
 template<typename Dataset>
-void ActualLocalChecker<Dataset>::check(const LineChecker& expected, bool write, bool quick)
+void ActualChecker<Dataset>::repack_clean(bool write)
 {
-    stringstream s;
-    wassert(this->_actual->check(s, write, quick));
-    wassert(expected.check(s.str()));
+    ReporterExpected e;
+    repack(e, write);
 }
 
 template<typename Dataset>
-void ActualLocalChecker<Dataset>::check_clean(bool write)
+void ActualChecker<Dataset>::check_clean(bool write, bool quick)
 {
-    LineChecker expected;
-    check(expected, write);
+    ReporterExpected e;
+    check(e, write, quick);
 }
 
 }
@@ -915,6 +1025,7 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
 
 }
 
-template class ActualLocalChecker<dataset::LocalChecker>;
-template class ActualLocalChecker<dataset::SegmentedChecker>;
+template class ActualChecker<Checker>;
+template class ActualChecker<dataset::LocalChecker>;
+template class ActualChecker<dataset::SegmentedChecker>;
 }

@@ -164,20 +164,22 @@ Checker::~Checker()
 namespace {
 struct Deleter
 {
-    std::string name;
-    std::ostream& log;
+    Checker& checker;
+    Reporter& reporter;
     bool writable;
 
-    Deleter(const std::string& name, std::ostream& log, bool writable)
-        : name(name), log(log), writable(writable) {}
-    void operator()(const std::string& file, segment::FileState state)
+    Deleter(Checker& checker, Reporter& reporter, bool writable)
+        : checker(checker), reporter(reporter), writable(writable) {}
+
+    void operator()(const std::string& relpath, segment::FileState state)
     {
         if (writable)
         {
-            log << name << ": deleting file " << file << endl;
-            sys::unlink_ifexists(file);
+            sys::unlink_ifexists(relpath);
+            // TODO: should also delete .metadata and .summary files?
+            reporter.segment_delete(checker, relpath, "deleted");
         } else
-            log << name << ": would delete file " << file << endl;
+            reporter.segment_delete(checker, relpath, "would be deleted");
     }
 };
 }
@@ -190,12 +192,12 @@ void Checker::maintenance(segment::state_func v, bool quick)
     SegmentedChecker::maintenance(v, quick);
 }
 
-void Checker::removeAll(std::ostream& log, bool writable)
+void Checker::removeAll(Reporter& reporter, bool writable)
 {
-    Deleter deleter(m_name, log, writable);
+    Deleter deleter(*this, reporter, writable);
     m_mft->check(*m_segment_manager, deleter, true);
     // TODO: empty manifest
-    SegmentedChecker::removeAll(log, writable);
+    SegmentedChecker::removeAll(reporter, writable);
 }
 
 void Checker::indexFile(const std::string& relname, metadata::Collection&& mds)

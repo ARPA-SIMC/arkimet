@@ -85,30 +85,21 @@ struct Fixture : public DatasetTest {
         // Ensure packing has nothing to report
         {
             auto writer(makeLocalChecker());
-            stringstream s;
-            writer->repack(s, false);
-            wassert(actual(s.str()) == "");
-
+            wassert(actual(writer.get()).repack_clean(false));
             wassert(actual(writer.get()).maintenance_clean(file_count));
         }
 
         // Perform packing and check that things are still ok afterwards
         {
             auto writer(makeLocalChecker());
-            stringstream s;
-            writer->repack(s, true);
-            wassert(actual(s.str()) == "");
-
+            wassert(actual(writer.get()).repack_clean(true));
             wassert(actual(writer.get()).maintenance_clean(file_count));
         }
 
         // Perform full maintenance and check that things are still ok afterwards
         {
             auto writer(makeLocalChecker());
-            stringstream s;
-            writer->check(s, true, true);
-            wassert(actual(s.str()) == ""); // Nothing should have happened
-
+            wassert(actual(writer.get()).check_clean(true, true));
             wassert(actual(writer.get()).maintenance_clean(file_count));
         }
     }
@@ -130,15 +121,11 @@ struct Fixture : public DatasetTest {
         // Perform packing and check that things are still ok afterwards
         {
             auto writer(makeLocalChecker());
-            LineChecker s;
+            ReporterExpected e;
             for (set<string>::const_iterator i = fixture.fnames_before_cutoff.begin();
                     i != fixture.fnames_before_cutoff.end(); ++i)
-                s.require_line_contains(": archived " + *i);
-            s.require_line_contains(": archive cleaned up");
-            stringstream ss;
-            ss << ": " << fixture.fnames_before_cutoff.size() << " files? archived";
-            s.require_line_contains_re(ss.str());
-            wassert(actual(writer.get()).repack(s, true));
+                e.archived.emplace_back("testds", *i);
+            wassert(actual(writer.get()).repack(e, true));
         }
 
         // Check that the files have been moved to the archive
@@ -163,10 +150,7 @@ struct Fixture : public DatasetTest {
         // Perform full maintenance and check that things are still ok afterwards
         {
             auto writer(makeLocalChecker());
-            stringstream s;
-            s.str(std::string());
-            writer->check(s, true, true);
-            wassert(actual(s.str()) == ""); // Nothing should have happened
+            wassert(actual(writer.get()).check_clean(true, true));
 
             arki::tests::MaintenanceResults expected(true, fixture.count_dataset_files());
             expected.by_type[COUNTED_OK] = fixture.fnames_after_cutoff.size();
@@ -200,14 +184,11 @@ struct Fixture : public DatasetTest {
         // Perform packing and check that things are still ok afterwards
         {
             auto writer(makeLocalChecker());
-            LineChecker s;
+            ReporterExpected e;
             for (set<string>::const_iterator i = fixture.fnames_before_cutoff.begin();
                     i != fixture.fnames_before_cutoff.end(); ++i)
-                s.require_line_contains(": deleted " + *i);
-            stringstream ss;
-            ss << ": " << fixture.fnames_before_cutoff.size() << " files? deleted, " << fixture.fnames_before_cutoff.size() << " files? removed from index";
-            s.require_line_contains_re(ss.str());
-            wassert(actual(writer.get()).repack(s, true));
+                e.deleted.emplace_back("testds", *i);
+            wassert(actual(writer.get()).repack(e, true));
         }
 
         auto writer(makeLocalChecker());
@@ -250,11 +231,9 @@ struct Fixture : public DatasetTest {
         // Perform full maintenance and check that things are still ok afterwards
         {
             auto writer(makeLocalChecker());
-
-            LineChecker s;
-            s.require_line_contains(": rescanned " + truncated_fname);
-            s.require_line_contains(": 1 file rescanned");
-            wassert(actual(writer.get()).check(s, true, true));
+            ReporterExpected e;
+            e.rescanned.emplace_back("testds", truncated_fname);
+            wassert(actual(writer.get()).check(e, true, true));
 
             wassert(actual(writer.get()).maintenance_clean(2));
         }
@@ -300,10 +279,9 @@ struct Fixture : public DatasetTest {
         // Perform full maintenance and check that things are still ok afterwards
         {
             auto writer(makeLocalChecker(&cfg));
-            LineChecker s;
-            s.require_line_contains(": rescanned " + second_in_segment.filename);
-            s.require_line_contains(": 1 file rescanned");
-            wassert(actual(writer.get()).check(s, true, false));
+            ReporterExpected e;
+            e.rescanned.emplace_back("testds", second_in_segment.filename);
+            wassert(actual(writer.get()).check(e, true, false));
 
             // The corrupted file has been deindexed, now there is a gap in the data file
             arki::tests::MaintenanceResults expected(false, 2);
@@ -315,10 +293,9 @@ struct Fixture : public DatasetTest {
         // Perform packing and check that things are still ok afterwards
         {
             auto writer(makeLocalChecker(&cfg));
-            LineChecker s;
-            s.require_line_contains(": packed " + second_in_segment.filename);
-            s.require_line_contains(": 1 file packed");
-            wassert(actual(writer.get()).repack(s, true));
+            ReporterExpected e;
+            e.repacked.emplace_back("testds", second_in_segment.filename);
+            wassert(actual(writer.get()).repack(e, true));
         }
 
         // Maintenance and pack are ok now
@@ -348,10 +325,9 @@ struct Fixture : public DatasetTest {
         // Packing should notice the problem and do nothing
         {
             auto writer(makeLocalChecker(&cfg));
-            LineChecker s;
-            s.require_line_contains(": " + deleted_fname + " should be removed from the index");
-            s.require_line_contains(": 1 file should be removed from the index");
-            wassert(actual(writer.get()).repack(s, false));
+            ReporterExpected e;
+            e.deindexed.emplace_back("testds", deleted_fname);
+            wassert(actual(writer.get()).repack(e, false));
 
             arki::tests::MaintenanceResults expected(false, file_count);
             expected.by_type[COUNTED_OK] = file_count - 1;
@@ -362,10 +338,9 @@ struct Fixture : public DatasetTest {
         // Perform packing and check that things are still ok afterwards
         {
             auto writer(makeLocalChecker(&cfg));
-            LineChecker s;
-            s.require_line_contains(": deleted from index " + deleted_fname);
-            s.require_line_contains(": 1 file removed from index");
-            wassert(actual(writer.get()).repack(s, true));
+            ReporterExpected e;
+            e.deindexed.emplace_back("testds", deleted_fname);
+            wassert(actual(writer.get()).repack(e, true));
 
             wassert(actual(writer.get()).maintenance_clean(file_count - 1));
         }
@@ -390,10 +365,9 @@ struct Fixture : public DatasetTest {
         // Perform full maintenance and check that things are still ok afterwards
         {
             auto writer(makeLocalChecker());
-            LineChecker s;
-            s.require_line_contains(": deindexed " + deleted_fname);
-            s.require_line_contains(": 1 file removed from index");
-            wassert(actual(writer.get()).check(s, true, true));
+            ReporterExpected e;
+            e.deindexed.emplace_back("testds", deleted_fname);
+            wassert(actual(writer.get()).check(e, true, true));
 
             wassert(actual(writer.get()).maintenance_clean(file_count - 1));
         }
@@ -419,17 +393,14 @@ struct Fixture : public DatasetTest {
         // Perform full maintenance and check that things are still ok afterwards
         {
             auto writer(makeLocalChecker());
-            LineChecker s;
+            ReporterExpected e;
             for (set<string>::const_iterator i = fixture.fnames_before_cutoff.begin();
                     i != fixture.fnames_before_cutoff.end(); ++i)
-                s.require_line_contains(": rescanned " + *i);
+                e.rescanned.emplace_back("testds", *i);
             for (set<string>::const_iterator i = fixture.fnames_after_cutoff.begin();
                     i != fixture.fnames_after_cutoff.end(); ++i)
-                s.require_line_contains(": rescanned " + *i);
-            stringstream ss;
-            ss << ": " << file_count << " files rescanned";
-            s.require_line_contains(ss.str());
-            wassert(actual(writer.get()).check(s, true, true));
+                e.rescanned.emplace_back("testds", *i);
+            wassert(actual(writer.get()).check(e, true, true));
 
             wassert(actual(writer.get()).maintenance_clean(file_count));
             wassert(actual(writer.get()).repack_clean(true));
@@ -605,11 +576,9 @@ class Tests : public FixtureTestCase<Fixture>
             // Perform full maintenance and check that things are still ok afterwards
             {
                 auto writer(f.makeLocalChecker());
-                OutputChecker s;
-                writer->check(s, true, true);
-                s.ensure_line_contains(": rescanned foo/bar/test.grib1");
-                s.ensure_line_contains("1 file rescanned");
-                s.ensure_all_lines_seen();
+                ReporterExpected e;
+                e.rescanned.emplace_back("testds", "foo/bar/test.grib1");
+                wassert(actual(writer.get()).check(e, true, true));
 
                 // A repack is still needed because the data is not sorted by reftime
                 MaintenanceResults expected(false, 1);
@@ -623,10 +592,9 @@ class Tests : public FixtureTestCase<Fixture>
             // Perform packing and check that things are still ok afterwards
             {
                 auto writer(f.makeLocalChecker());
-                OutputChecker s;
-                writer->repack(s, true);
-                s.ensure_line_contains(": packed foo/bar/test.grib1");
-                s.ensure_line_contains(": 1 file packed");
+                ReporterExpected e;
+                e.repacked.emplace_back("testds", "foo/bar/test.grib1");
+                wassert(actual(writer.get()).repack(e, true));
             }
             f.ensure_maint_clean(1);
 
@@ -689,11 +657,9 @@ class Tests : public FixtureTestCase<Fixture>
             // Run maintenance to build the dataset
             {
                 auto writer(f.makeLocalChecker(&cfg));
-                OutputChecker s;
-                writer->check(s, true, true);
-                s.ensure_line_contains(": rescanned 2007/test.grib1");
-                s.ensure_line_contains("1 file rescanned");
-                s.ensure_all_lines_seen();
+                ReporterExpected e;
+                e.rescanned.emplace_back("", "2007/test.grib1");
+                wassert(actual(writer.get()).check(e, true, true));
 
                 arki::tests::MaintenanceResults expected(false, 1);
                 // A repack is still needed because the data is not sorted by reftime
@@ -706,22 +672,16 @@ class Tests : public FixtureTestCase<Fixture>
             // Perform packing and check that things are still ok afterwards
             {
                 auto writer(f.makeLocalChecker(&cfg));
-
-                OutputChecker s;
-                writer->repack(s, true);
-                s.ensure_line_contains(": deleted 2007/test.grib1");
-                s.ensure_line_contains(": 1 file deleted, 1 file removed from index, 44412 total bytes freed.");
-                s.ensure_all_lines_seen();
+                ReporterExpected e;
+                e.deleted.emplace_back("", "2007/test.grib1");
+                wassert(actual(writer.get()).repack(e, true));
             }
             f.ensure_maint_clean(0);
 
             // Perform full maintenance and check that things are still ok afterwards
             {
                 auto writer(f.makeLocalChecker(&cfg));
-                stringstream s;
-                writer->check(s, true, true);
-                ensure_equals(s.str(), string()); // Nothing should have happened
-
+                wassert(actual(writer.get()).check_clean(true, true));
                 f.ensure_maint_clean(0);
             }
         });
@@ -746,11 +706,10 @@ class Tests : public FixtureTestCase<Fixture>
             // Run maintenance to build the dataset
             {
                 auto writer(f.makeLocalChecker(&cfg));
-                OutputChecker s;
-                writer->check(s, true, true);
-                s.ensure_line_contains(": rescanned 2007/test.grib1");
-                s.ensure_line_contains("1 file rescanned");
-                s.ensure_all_lines_seen();
+
+                ReporterExpected e;
+                e.rescanned.emplace_back("", "2007/test.grib1");
+                wassert(actual(writer.get()).check(e, true, true));
 
                 MaintenanceResults expected(false, 1);
                 // A repack is still needed because the data is not sorted by reftime
@@ -764,13 +723,10 @@ class Tests : public FixtureTestCase<Fixture>
             {
                 auto writer(f.makeLocalChecker(&cfg));
 
-                OutputChecker s;
-                writer->repack(s, true);
-                s.ensure_line_contains(": packed 2007/test.grib1");
-                s.ensure_line_contains(": archived 2007/test.grib1");
-                s.ensure_line_contains(": 1 file packed, 1 file archived.");
-                s.ensure_line_contains(": archive cleaned up");
-                s.ensure_all_lines_seen();
+                ReporterExpected e;
+                e.repacked.emplace_back("", "2007/test.grib1");
+                e.archived.emplace_back("", "2007/test.grib1");
+                wassert(actual(writer.get()).repack(e, true));
             }
         });
     }

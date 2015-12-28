@@ -103,7 +103,8 @@ struct Ondisk2Scenario : public Scenario
         // Pack and archive
         unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
         stringstream packlog;
-        ds->repack(packlog, true);
+        OstreamReporter reporter(packlog);
+        ds->repack(reporter, true);
         char expected[32];
         snprintf(expected, 32, "%d files archived", expected_archived);
         if (packlog.str().find(expected) == string::npos)
@@ -164,7 +165,8 @@ struct Ondisk2TestGrib1 : public Ondisk2Scenario
 
             // Run a check to remove new dataset marker
             stringstream checklog;
-            ds->check(checklog, true, true);
+            OstreamReporter reporter(checklog);
+            ds->check(reporter, true, true);
             if (checklog.str() != "")
                 throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
         }
@@ -209,7 +211,8 @@ struct Ondisk2Archived : public Ondisk2Scenario
         // Run a check to remove new dataset marker
         unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
         stringstream checklog;
-        ds->check(checklog, true, true);
+        OstreamReporter reporter(checklog);
+        ds->check(reporter, true, true);
         if (checklog.str() != "")
             throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
 
@@ -269,7 +272,8 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
         {
             unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
             stringstream checklog;
-            ds->check(checklog, true, true);
+            OstreamReporter reporter(checklog);
+            ds->check(reporter, true, true);
             if (checklog.str() != "")
                 throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
         }

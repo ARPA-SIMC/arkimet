@@ -66,6 +66,58 @@ void Base::set_parent(Base& p)
     m_parent = &p;
 }
 
+
+Reporter::~Reporter()
+{
+}
+
+OstreamReporter::OstreamReporter(std::ostream& out) : out(out) {}
+
+void OstreamReporter::operation_progress(const Base& ds, const std::string& operation, const std::string& message)
+{
+    out << ds.name() << ": " << operation << ": " << message << endl;
+}
+
+void OstreamReporter::operation_manual_intervention(const Base& ds, const std::string& operation, const std::string& message)
+{
+    out << ds.name() << ": " << operation << " manual intervention required: " << message << endl;
+}
+
+void OstreamReporter::operation_aborted(const Base& ds, const std::string& operation, const std::string& message)
+{
+    out << ds.name() << ": " << operation << " aborted: " << message << endl;
+}
+
+void OstreamReporter::operation_report(const Base& ds, const std::string& operation, const std::string& message)
+{
+    out << ds.name() << ": " << operation << " " << message << endl;
+}
+
+void OstreamReporter::segment_repack(const Base& ds, const std::string& relpath, const std::string& message)
+{
+    out << ds.name() << ":" << relpath << ": " << message << endl;
+}
+
+void OstreamReporter::segment_archive(const Base& ds, const std::string& relpath, const std::string& message)
+{
+    out << ds.name() << ":" << relpath << ": " << message << endl;
+}
+
+void OstreamReporter::segment_delete(const Base& ds, const std::string& relpath, const std::string& message)
+{
+    out << ds.name() << ":" << relpath << ": " << message << endl;
+}
+
+void OstreamReporter::segment_deindex(const Base& ds, const std::string& relpath, const std::string& message)
+{
+    out << ds.name() << ":" << relpath << ": " << message << endl;
+}
+
+void OstreamReporter::segment_rescan(const Base& ds, const std::string& relpath, const std::string& message)
+{
+    out << ds.name() << ":" << relpath << ": " << message << endl;
+}
+
 }
 
 

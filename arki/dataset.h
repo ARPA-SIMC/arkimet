@@ -175,6 +175,55 @@ public:
     void set_parent(Base& p);
 };
 
+/**
+ * Interface for notifying the progress and results of check and repack
+ * activities for dataset Checkers
+ */
+struct Reporter
+{
+    virtual ~Reporter();
+
+    virtual void operation_progress(const Base& ds, const std::string& operation, const std::string& message) = 0;
+    virtual void operation_manual_intervention(const Base& ds, const std::string& operation, const std::string& message) = 0;
+    virtual void operation_aborted(const Base& ds, const std::string& operation, const std::string& message) = 0;
+    virtual void operation_report(const Base& ds, const std::string& operation, const std::string& message) = 0;
+    virtual void segment_repack(const Base& ds, const std::string& relpath, const std::string& message) = 0;
+    virtual void segment_archive(const Base& ds, const std::string& relpath, const std::string& message) = 0;
+    virtual void segment_delete(const Base& ds, const std::string& relpath, const std::string& message) = 0;
+    virtual void segment_deindex(const Base& ds, const std::string& relpath, const std::string& message) = 0;
+    virtual void segment_rescan(const Base& ds, const std::string& relpath, const std::string& message) = 0;
+};
+
+struct NullReporter : public Reporter
+{
+    void operation_progress(const Base& ds, const std::string& operation, const std::string& message) override {}
+    void operation_manual_intervention(const Base& ds, const std::string& operation, const std::string& message) override {}
+    void operation_aborted(const Base& ds, const std::string& operation, const std::string& message) override {}
+    void operation_report(const Base& ds, const std::string& operation, const std::string& message) override {}
+    void segment_repack(const Base& ds, const std::string& relpath, const std::string& message) override {}
+    void segment_archive(const Base& ds, const std::string& relpath, const std::string& message) override {}
+    void segment_delete(const Base& ds, const std::string& relpath, const std::string& message) override {}
+    void segment_deindex(const Base& ds, const std::string& relpath, const std::string& message) override {}
+    void segment_rescan(const Base& ds, const std::string& relpath, const std::string& message) override {}
+};
+
+struct OstreamReporter : public Reporter
+{
+    std::ostream& out;
+
+    OstreamReporter(std::ostream& out);
+
+    void operation_progress(const Base& ds, const std::string& operation, const std::string& message) override;
+    void operation_manual_intervention(const Base& ds, const std::string& operation, const std::string& message) override;
+    void operation_aborted(const Base& ds, const std::string& operation, const std::string& message) override;
+    void operation_report(const Base& ds, const std::string& operation, const std::string& message) override;
+    void segment_repack(const Base& ds, const std::string& relpath, const std::string& message) override;
+    void segment_archive(const Base& ds, const std::string& relpath, const std::string& message) override;
+    void segment_delete(const Base& ds, const std::string& relpath, const std::string& message) override;
+    void segment_deindex(const Base& ds, const std::string& relpath, const std::string& message) override;
+    void segment_rescan(const Base& ds, const std::string& relpath, const std::string& message) override;
+};
+
 }
 
 
@@ -331,7 +380,7 @@ struct Checker : public dataset::Base
     /**
      * Reset this dataset, removing all data, indices and caches
      */
-    virtual void removeAll(std::ostream& log, bool writable=false) = 0;
+    virtual void removeAll(dataset::Reporter& reporter, bool writable=false) = 0;
 
     /**
      * Repack the dataset, logging status to the given file.
@@ -339,7 +388,7 @@ struct Checker : public dataset::Base
      * If writable is false, the process is simulated but no changes are
      * saved.
      */
-    virtual void repack(std::ostream& log, bool writable=false) = 0;
+    virtual void repack(dataset::Reporter& reporter, bool writable=false) = 0;
 
     /**
      * Check the dataset for errors, logging status to the given file.
@@ -347,7 +396,7 @@ struct Checker : public dataset::Base
      * If \a fix is false, the process is simulated but no changes are saved.
      * If \a fix is true, errors are fixed.
      */
-    virtual void check(std::ostream& log, bool fix, bool quick) = 0;
+    virtual void check(dataset::Reporter& reporter, bool fix, bool quick) = 0;
 
     /**
      * Instantiate an appropriate Checker for the given configuration
@@ -358,9 +407,9 @@ struct Checker : public dataset::Base
 struct NullChecker : public Checker
 {
     using Checker::Checker;
-    void removeAll(std::ostream& log, bool writable=false) override {}
-    void repack(std::ostream& log, bool writable=false) override {}
-    void check(std::ostream& log, bool fix, bool quick) override {}
+    void removeAll(dataset::Reporter& reporter, bool writable=false) override {}
+    void repack(dataset::Reporter& reporter, bool writable=false) override {}
+    void check(dataset::Reporter& reporter, bool fix, bool quick) override {}
 };
 
 }

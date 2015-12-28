@@ -33,12 +33,15 @@ static ostream& operator<<(ostream& out, const vector<uint8_t>& buf)
 }
 }
 
-namespace tut {
+namespace {
 
-struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
-    arki_dataset_ondisk2_writer_shar()
+struct Fixture : public DatasetTest {
+    Fixture() {}
+
+    void test_setup()
     {
         system("rm -rf testdir");
+        cfg.clear();
         cfg.setValue("path", sys::abspath("testdir"));
         cfg.setValue("name", "testdir");
         cfg.setValue("type", "ondisk2");
@@ -127,19 +130,17 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         {
             // Test packing has something to report
             auto writer(makeLocalChecker());
-            LineChecker s;
-            s.require_line_contains(": " + holed_fname + " should be packed");
-            s.require_line_contains(": 1 file should be packed");
-            wassert(actual(writer.get()).repack(s, false));
+            ReporterExpected e;
+            e.repacked.emplace_back("testdir", holed_fname);
+            wassert(actual(writer.get()).repack(e, false));
         }
 
         // Perform packing and check that things are still ok afterwards
         {
             auto writer(makeLocalChecker());
-            LineChecker s;
-            s.require_line_contains(": packed " + holed_fname);
-            s.require_line_contains(": 1 file packed");
-            wassert(actual(writer.get()).repack(s, true));
+            ReporterExpected e;
+            e.repacked.emplace_back("testdir", holed_fname);
+            wassert(actual(writer.get()).repack(e, true));
 
             wassert(actual(writer.get()).maintenance_clean(2));
         }
@@ -159,19 +160,17 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         {
             // Test packing has something to report
             auto writer(makeLocalChecker());
-            LineChecker s;
-            s.require_line_contains(": " + removed_fname + " should be deleted");
-            s.require_line_contains(": 1 file should be deleted");
-            wassert(actual(writer.get()).repack(s, false));
+            ReporterExpected e;
+            e.deleted.emplace_back("testdir", removed_fname);
+            wassert(actual(writer.get()).repack(e, false));
         }
 
         // Perform packing and check that things are still ok afterwards
         {
             auto writer(makeLocalChecker());
-            LineChecker s;
-            s.require_line_contains(": deleted " + removed_fname);
-            s.require_line_contains(": 1 file deleted");
-            wassert(actual(writer.get()).repack(s, true));
+            ReporterExpected e;
+            e.deleted.emplace_back("testdir", removed_fname);
+            wassert(actual(writer.get()).repack(e, true));
 
             wassert(actual(writer.get()).maintenance_clean(fixture.count_dataset_files() - 1));
         }
@@ -191,10 +190,9 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         {
             // Test check has something to report
             auto writer(makeLocalChecker());
-            LineChecker s;
-            s.require_line_contains(": " + holed_fname + " should be packed");
-            s.require_line_contains(": 1 file should be packed");
-            wassert(actual(writer.get()).check(s, false));
+            ReporterExpected e;
+            e.repacked.emplace_back("testdir", holed_fname);
+            wassert(actual(writer.get()).check(e, false));
         }
 
         // Check refuses to potentially lose data, so it does nothing in this case
@@ -227,19 +225,17 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         {
             // Test packing has something to report
             auto writer(makeLocalChecker());
-            LineChecker s;
-            s.require_line_contains(": " + removed_fname + " should be rescanned");
-            s.require_line_contains(": 1 file should be rescanned");
-            wassert(actual(writer.get()).check(s, false));
+            ReporterExpected e;
+            e.rescanned.emplace_back("testdir", removed_fname);
+            wassert(actual(writer.get()).check(e, false));
         }
 
         // Perform packing and check that things are still ok afterwards
         {
             auto writer(makeLocalChecker());
-            LineChecker s;
-            s.require_line_contains(": rescanned " + removed_fname);
-            s.require_line_contains(": 1 file rescanned");
-            wassert(actual(writer.get()).check(s, true));
+            ReporterExpected e;
+            e.rescanned.emplace_back("testdir", removed_fname);
+            wassert(actual(writer.get()).check(e, true));
 
             wassert(actual(writer.get()).maintenance_clean(fixture.count_dataset_files()));
         }
@@ -277,14 +273,11 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         // A check rebuilds the index
         {
             auto writer(makeLocalChecker());
-            LineChecker s;
+            ReporterExpected e;
             for (set<string>::const_iterator i = fixture.fnames.begin();
                     i != fixture.fnames.end(); ++i)
-                s.require_line_contains(": rescanned " + *i);
-            char rebuf[32];
-            snprintf(rebuf, 32, ": %zd files rescanned", fixture.fnames.size());
-            s.require_line_contains(rebuf);
-            wassert(actual(writer.get()).check(s, true));
+                e.rescanned.emplace_back("testdir", *i);
+            wassert(actual(writer.get()).check(e, true));
 
             wassert(actual(writer.get()).maintenance_clean(fixture.fnames.size()));
             wassert(actual(writer.get()).repack_clean(true));
@@ -307,95 +300,97 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         wassert(actual_file("testdir/.summaries/all.summary").exists());
     }
 };
-TESTGRP(arki_dataset_ondisk2_writer);
 
-def_test(1)
-{
-    wruntest(test_hole_file_and_repack, testdata::GRIBData());
-    wruntest(test_hole_file_and_repack, testdata::BUFRData());
-    wruntest(test_hole_file_and_repack, testdata::VM2Data());
-    wruntest(test_hole_file_and_repack, testdata::ODIMData());
-    cfg.setValue("segments", "dir");
-    wruntest(test_hole_file_and_repack, testdata::GRIBData());
-    wruntest(test_hole_file_and_repack, testdata::BUFRData());
-    wruntest(test_hole_file_and_repack, testdata::VM2Data());
-    wruntest(test_hole_file_and_repack, testdata::ODIMData());
-}
 
-def_test(2)
+class Tests : public FixtureTestCase<Fixture>
 {
-    wruntest(test_delete_file_and_repack, testdata::GRIBData());
-    wruntest(test_delete_file_and_repack, testdata::BUFRData());
-    wruntest(test_delete_file_and_repack, testdata::VM2Data());
-    wruntest(test_delete_file_and_repack, testdata::ODIMData());
-    cfg.setValue("segments", "dir");
-    wruntest(test_delete_file_and_repack, testdata::GRIBData());
-    wruntest(test_delete_file_and_repack, testdata::BUFRData());
-    wruntest(test_delete_file_and_repack, testdata::VM2Data());
-    wruntest(test_delete_file_and_repack, testdata::ODIMData());
-}
+    using FixtureTestCase::FixtureTestCase;
 
-def_test(3)
-{
-    wruntest(test_hole_file_and_check, testdata::GRIBData());
-    wruntest(test_hole_file_and_check, testdata::BUFRData());
-    wruntest(test_hole_file_and_check, testdata::VM2Data());
-    wruntest(test_hole_file_and_check, testdata::ODIMData());
-    cfg.setValue("segments", "dir");
-    wruntest(test_hole_file_and_check, testdata::GRIBData());
-    wruntest(test_hole_file_and_check, testdata::BUFRData());
-    wruntest(test_hole_file_and_check, testdata::VM2Data());
-    wruntest(test_hole_file_and_check, testdata::ODIMData());
-}
+    void register_tests() override;
+} test("arki_dataset_ondisk2_writer");
 
-def_test(4)
-{
-    wruntest(test_delete_file_and_check, testdata::GRIBData());
-    wruntest(test_delete_file_and_check, testdata::BUFRData());
-    wruntest(test_delete_file_and_check, testdata::VM2Data());
-    wruntest(test_delete_file_and_check, testdata::ODIMData());
-    cfg.setValue("segments", "dir");
-    wruntest(test_delete_file_and_check, testdata::GRIBData());
-    wruntest(test_delete_file_and_check, testdata::BUFRData());
-    wruntest(test_delete_file_and_check, testdata::VM2Data());
-    wruntest(test_delete_file_and_check, testdata::ODIMData());
-}
+void Tests::register_tests() {
 
-def_test(5)
-{
-    wruntest(test_delete_index_and_check, testdata::GRIBData());
-    wruntest(test_delete_index_and_check, testdata::BUFRData());
-    wruntest(test_delete_index_and_check, testdata::VM2Data());
-    wruntest(test_delete_index_and_check, testdata::ODIMData());
-    cfg.setValue("segments", "dir");
-    wruntest(test_delete_index_and_check, testdata::GRIBData());
-    wruntest(test_delete_index_and_check, testdata::BUFRData());
-    wruntest(test_delete_index_and_check, testdata::VM2Data());
-    wruntest(test_delete_index_and_check, testdata::ODIMData());
-}
+add_method("hole_file_and_repack", [](Fixture& f) {
+    wruntest(f.test_hole_file_and_repack, testdata::GRIBData());
+    wruntest(f.test_hole_file_and_repack, testdata::BUFRData());
+    wruntest(f.test_hole_file_and_repack, testdata::VM2Data());
+    wruntest(f.test_hole_file_and_repack, testdata::ODIMData());
+    f.cfg.setValue("segments", "dir");
+    wruntest(f.test_hole_file_and_repack, testdata::GRIBData());
+    wruntest(f.test_hole_file_and_repack, testdata::BUFRData());
+    wruntest(f.test_hole_file_and_repack, testdata::VM2Data());
+    wruntest(f.test_hole_file_and_repack, testdata::ODIMData());
+});
+
+add_method("delete_file_and_repack", [](Fixture& f) {
+    wruntest(f.test_delete_file_and_repack, testdata::GRIBData());
+    wruntest(f.test_delete_file_and_repack, testdata::BUFRData());
+    wruntest(f.test_delete_file_and_repack, testdata::VM2Data());
+    wruntest(f.test_delete_file_and_repack, testdata::ODIMData());
+    f.cfg.setValue("segments", "dir");
+    wruntest(f.test_delete_file_and_repack, testdata::GRIBData());
+    wruntest(f.test_delete_file_and_repack, testdata::BUFRData());
+    wruntest(f.test_delete_file_and_repack, testdata::VM2Data());
+    wruntest(f.test_delete_file_and_repack, testdata::ODIMData());
+});
+
+add_method("hole_file_and_check", [](Fixture& f) {
+    wruntest(f.test_hole_file_and_check, testdata::GRIBData());
+    wruntest(f.test_hole_file_and_check, testdata::BUFRData());
+    wruntest(f.test_hole_file_and_check, testdata::VM2Data());
+    wruntest(f.test_hole_file_and_check, testdata::ODIMData());
+    f.cfg.setValue("segments", "dir");
+    wruntest(f.test_hole_file_and_check, testdata::GRIBData());
+    wruntest(f.test_hole_file_and_check, testdata::BUFRData());
+    wruntest(f.test_hole_file_and_check, testdata::VM2Data());
+    wruntest(f.test_hole_file_and_check, testdata::ODIMData());
+});
+
+add_method("delete_file_and_check", [](Fixture& f) {
+    wruntest(f.test_delete_file_and_check, testdata::GRIBData());
+    wruntest(f.test_delete_file_and_check, testdata::BUFRData());
+    wruntest(f.test_delete_file_and_check, testdata::VM2Data());
+    wruntest(f.test_delete_file_and_check, testdata::ODIMData());
+    f.cfg.setValue("segments", "dir");
+    wruntest(f.test_delete_file_and_check, testdata::GRIBData());
+    wruntest(f.test_delete_file_and_check, testdata::BUFRData());
+    wruntest(f.test_delete_file_and_check, testdata::VM2Data());
+    wruntest(f.test_delete_file_and_check, testdata::ODIMData());
+});
+
+add_method("delete_index_and_check", [](Fixture& f) {
+    wruntest(f.test_delete_index_and_check, testdata::GRIBData());
+    wruntest(f.test_delete_index_and_check, testdata::BUFRData());
+    wruntest(f.test_delete_index_and_check, testdata::VM2Data());
+    wruntest(f.test_delete_index_and_check, testdata::ODIMData());
+    f.cfg.setValue("segments", "dir");
+    wruntest(f.test_delete_index_and_check, testdata::GRIBData());
+    wruntest(f.test_delete_index_and_check, testdata::BUFRData());
+    wruntest(f.test_delete_index_and_check, testdata::VM2Data());
+    wruntest(f.test_delete_index_and_check, testdata::ODIMData());
+});
 
 // Test recreating a dataset from just a datafile with duplicate data and a rebuild flagfile
-def_test(6)
-{
+add_method("reindex_with_duplicates", [](Fixture& f) {
 	system("mkdir testdir");
 	system("mkdir testdir/foo");
 	system("mkdir testdir/foo/bar");
 	system("cat inbound/test.grib1 inbound/test.grib1 > testdir/foo/bar/test.grib1");
 
-    arki::dataset::ondisk2::Checker writer(cfg);
+    arki::dataset::ondisk2::Checker writer(f.cfg);
     {
         MaintenanceResults expected(false, 1);
         expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
         wassert(actual(writer).maintenance(expected));
     }
 
-	stringstream s;
-
     // Perform full maintenance and check that things are still ok afterwards
-    writer.check(s, true, true);
-    wassert(actual(s.str()) ==
-            "testdir: rescanned foo/bar/test.grib1\n"
-            "testdir: 1 file rescanned.\n");
+    {
+        ReporterExpected e;
+        e.rescanned.emplace_back("testdir", "foo/bar/test.grib1");
+        wassert(actual(writer).check(e, true, true));
+    }
 
     {
         MaintenanceResults expected(false, 1);
@@ -408,7 +403,7 @@ def_test(6)
     {
         // Test querying: reindexing should have chosen the last version of
         // duplicate items
-        ondisk2::Reader reader(cfg);
+        ondisk2::Reader reader(f.cfg);
         ensure(reader.hasWorkingIndex());
         metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,80"));
         ensure_equals(mdc.size(), 1u);
@@ -421,17 +416,18 @@ def_test(6)
     }
 
     // Perform packing and check that things are still ok afterwards
-    s.str(std::string());
-    writer.repack(s, true);
-    wassert(actual(s.str()).contains("testdir: packed foo/bar/test.grib1 (44412 saved)"));
-    wassert(actual(s.str()).matches("testdir: 1 file packed, [0-9]+ total bytes freed."));
+    {
+        ReporterExpected e;
+        e.repacked.emplace_back("testdir", "foo/bar/test.grib1", "44412 freed");
+        wassert(actual(writer).repack(e, true));
+    }
 
     wassert(actual(writer).maintenance_clean(1));
 
     wassert(actual(sys::size("testdir/foo/bar/test.grib1")) == 44412u);
 
     // Test querying, and see that things have moved to the beginning
-    ondisk2::Reader reader(cfg);
+    ondisk2::Reader reader(f.cfg);
     ensure(reader.hasWorkingIndex());
     metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,80"));
     ensure_equals(mdc.size(), 1u);
@@ -449,27 +445,24 @@ def_test(6)
     ensure(sys::exists("testdir/.summaries/all.summary"));
     ensure(sys::exists("testdir/.summaries/2007-07.summary"));
     ensure(sys::exists("testdir/.summaries/2007-10.summary"));
-}
+});
 
 // Test accuracy of maintenance scan, with index, on dataset with some
 // rebuild flagfiles, and duplicate items inside
-def_test(7)
-{
-	acquireSamples();
-	system("cat inbound/test.grib1 >> testdir/2007/07-08.grib1");
+add_method("scan_reindex", [](Fixture& f) {
+    f.acquireSamples();
+    system("cat inbound/test.grib1 >> testdir/2007/07-08.grib1");
     {
-        index::WContents index(cfg);
+        index::WContents index(f.cfg);
         index.open();
         index.reset("2007/07-08.grib1");
     }
 
-    arki::dataset::ondisk2::Checker writer(cfg);
+    arki::dataset::ondisk2::Checker writer(f.cfg);
     MaintenanceResults expected(false, 3);
     expected.by_type[DatasetTest::COUNTED_OK] = 2;
     expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
     wassert(actual(writer).maintenance(expected));
-
-    stringstream s;
 
     // Perform full maintenance and check that things are still ok afterwards
 
@@ -482,24 +475,22 @@ def_test(7)
     // away; therefore, we can only interrupt the maintenance and raise an
     // exception calling for manual fixing.
     try {
-        writer.check(s, true, true);
+        NullReporter r;
+        writer.check(r, true, true);
         ensure(false);
     } catch (std::runtime_error) {
         ensure(true);
     } catch (...) {
         ensure(false);
     }
-}
+});
 
-// Test accuracy of maintenance scan, with index, on dataset with some
-// rebuild flagfiles, and duplicate items inside
-def_test(8)
-{
-	acquireSamples();
+add_method("scan_reindex_compressed", [](Fixture& f) {
+    f.acquireSamples();
 
     // Compress one data file
     {
-        ondisk2::Reader reader(cfg);
+        ondisk2::Reader reader(f.cfg);
         metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,200"));
         ensure_equals(mdc.size(), 1u);
         mdc.compressDataFile(1024, "metadata file testdir/2007/07-08.grib1");
@@ -508,13 +499,13 @@ def_test(8)
 
     // The dataset should still be clean
     {
-        arki::dataset::ondisk2::Checker writer(cfg);
+        arki::dataset::ondisk2::Checker writer(f.cfg);
         wassert(actual(writer).maintenance_clean(3));
     }
 
     // The dataset should still be clean even with an accurate scan
     {
-        arki::dataset::ondisk2::Checker writer(cfg);
+        arki::dataset::ondisk2::Checker writer(f.cfg);
         wassert(actual(writer).maintenance_clean(3, false));
     }
 
@@ -523,59 +514,45 @@ def_test(8)
 
     // See how maintenance scan copes
     {
-        arki::dataset::ondisk2::Checker writer(cfg);
+        arki::dataset::ondisk2::Checker writer(f.cfg);
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 3;
         wassert(actual(writer).maintenance(expected));
 
-		stringstream s;
-
         // Perform full maintenance and check that things are still ok afterwards
-        writer.check(s, true, true);
-        wassert(actual(s.str()) ==
-                "testdir: rescanned 2007/07-07.grib1\n"
-                "testdir: rescanned 2007/07-08.grib1\n"
-                "testdir: rescanned 2007/10-09.grib1\n"
-                "testdir: 3 files rescanned.\n");
+        ReporterExpected e;
+        e.rescanned.emplace_back("testdir", "2007/07-07.grib1");
+        e.rescanned.emplace_back("testdir", "2007/07-08.grib1");
+        e.rescanned.emplace_back("testdir", "2007/10-09.grib1");
+        wassert(actual(writer).check(e, true, true));
         wassert(actual(writer).maintenance_clean(3));
-
-        // Perform packing and check that things are still ok afterwards
-        s.str(std::string());
-        writer.repack(s, true);
-        wassert(actual(s.str()) == string()); // Nothing should have happened
-
-        wassert(actual(writer).maintenance_clean(3));
+        wassert(actual(writer).check_clean(true, true));
+        wassert(actual(writer).repack_clean(true));
 
         // Ensure that we have the summary cache
         ensure(sys::exists("testdir/.summaries/all.summary"));
         ensure(sys::exists("testdir/.summaries/2007-07.summary"));
         ensure(sys::exists("testdir/.summaries/2007-10.summary"));
     }
-}
-
+});
 
 // Test sanity checks on summary cache
-def_test(9)
-{
-	// If we are root we can always write the summary cache, so the tests
-	// will fail
-	if (getuid() == 0)
-		return;
+add_method("summary_checks", [](Fixture& f) {
+    // If we are root we can always write the summary cache, so the tests
+    // will fail
+    if (getuid() == 0)
+        return;
 
-    acquireSamples();
+    f.acquireSamples();
     files::removeDontpackFlagfile("testdir");
 
-    arki::dataset::ondisk2::Checker writer(cfg);
+    arki::dataset::ondisk2::Checker writer(f.cfg);
 
     // Dataset is ok
     wassert(actual(writer).maintenance_clean(3));
 
     // Perform packing to regenerate the summary cache
-    {
-        stringstream s;
-        writer.repack(s, true);
-        wassert(actual(s.str()) == "");
-    }
+    wassert(actual(writer).repack_clean(true));
 
     // Ensure that we have the summary cache
     ensure(sys::exists("testdir/.summaries/all.summary"));
@@ -587,47 +564,34 @@ def_test(9)
 
     // Perform check and see that we detect it
     {
-        stringstream s;
-        writer.check(s, false, true);
-        ensure_equals(s.str(), "testdir: " + sys::abspath("testdir/.summaries/all.summary") + " is not writable.\n");
+        ReporterExpected e;
+        e.manual_intervention.emplace_back("testdir", "check", sys::abspath("testdir/.summaries/all.summary") + " is not writable");
+        wassert(actual(writer).check(e, false, true));
     }
 
-	// Fix it
-	{
-		stringstream s;
-		writer.check(s, true, true);
-		ensure_equals(s.str(),
-			"testdir: " + sys::abspath("testdir/.summaries/all.summary") + " is not writable.\n"
-			"testdir: rebuilding summary cache.\n");
-	}
+    // Fix it
+    {
+        ReporterExpected e;
+        e.manual_intervention.emplace_back("testdir", "check", sys::abspath("testdir/.summaries/all.summary") + " is not writable");
+        e.progress.emplace_back("testdir", "check", "rebuilding summary cache");
+        wassert(actual(writer).check(e, true, true));
+    }
 
-	// Check again and see that everything is fine
-	{
-		stringstream s;
-		writer.check(s, false, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
-	}
-#if 0
-
-	// Perform packing and check that things are still ok afterwards
-
-	// Perform full maintenance and check that things are still ok afterwards
-#endif
-
-}
+    // Check again and see that everything is fine
+    wassert(actual(writer).check_clean(false, true));
+});
 
 // Test that the summary cache is properly invalidated on import
-def_test(10)
-{
+add_method("summary_invalidate", [](Fixture& f) {
     // Perform maintenance on empty dir, creating an empty summary cache
     {
-        arki::dataset::ondisk2::Checker writer(cfg);
+        arki::dataset::ondisk2::Checker writer(f.cfg);
         wassert(actual(writer).maintenance_clean(0));
     }
 
     // Query the summary, there should be no data
     {
-        ondisk2::Reader reader(cfg);
+        ondisk2::Reader reader(f.cfg);
         ensure(reader.hasWorkingIndex());
         Summary s;
         reader.query_summary(Matcher(), s);
@@ -635,22 +599,21 @@ def_test(10)
     }
 
     // Acquire files
-    acquireSamples();
+    f.acquireSamples();
 
     // Query the summary again, there should be data
     {
-        ondisk2::Reader reader(cfg);
+        ondisk2::Reader reader(f.cfg);
         ensure(reader.hasWorkingIndex());
         Summary s;
         reader.query_summary(Matcher(), s);
         ensure_equals(s.count(), 3u);
     }
-}
+});
 
 // Try to reproduce a bug where two conflicting BUFR files were not properly
 // imported with USN handling
-def_test(11)
-{
+add_method("regression_0", [](Fixture& f) {
     ConfigFile cfg;
     cfg.setValue("path", "gts_temp");
     cfg.setValue("name", "gts_temp");
@@ -669,15 +632,14 @@ def_test(11)
         ensure_equals(writer.acquire(md), Writer::ACQ_OK);
     ensure_equals(count, 2u);
     writer.flush();
-}
+});
 
-def_test(12)
-{
+add_method("data_in_right_segment_reindex", [](Fixture& f) {
     metadata::Collection mdc("inbound/test.grib1");
 
     {
         // Import files
-        ondisk2::Writer writer(cfg);
+        ondisk2::Writer writer(f.cfg);
         for (metadata::Collection::const_iterator i = mdc.begin(); i != mdc.end(); ++i)
             wassert(actual(writer.acquire(**i)) == Writer::ACQ_OK);
     }
@@ -692,7 +654,7 @@ def_test(12)
 
     // A simple rescanFile throws "manual fix is required" error
     {
-        ondisk2::Checker writer(cfg);
+        ondisk2::Checker writer(f.cfg);
         try {
             writer.rescanFile("2007/10-09.grib1");
             wassert(throw std::runtime_error("rescanFile should have thrown at this point"));
@@ -706,32 +668,31 @@ def_test(12)
 
     // Run maintenance check
     {
-        ondisk2::Checker writer(cfg);
+        ondisk2::Checker writer(f.cfg);
         arki::tests::MaintenanceResults expected(false, 3);
-        expected.by_type[COUNTED_TO_INDEX] = 3;
+        expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 3;
         wassert(actual(writer).maintenance(expected));
     }
 
     {
         // Perform full maintenance and check that things are still ok afterwards
-        ondisk2::Checker writer(cfg);
-        stringstream s;
+        ondisk2::Checker writer(f.cfg);
         try {
-            writer.check(s, true, true);
+            NullReporter r;
+            writer.check(r, true, true);
             wassert(throw std::runtime_error("writer.check should have thrown at this point"));
         } catch (std::exception& e) {
             wassert(actual(e.what()).contains("manual fix is required"));
         }
     }
-}
+});
 
-def_test(13)
-{
+add_method("data_in_right_segment_rescan", [](Fixture& f) {
     metadata::Collection mdc("inbound/test.grib1");
 
     {
         // Import files
-        ondisk2::Writer writer(cfg);
+        ondisk2::Writer writer(f.cfg);
         for (metadata::Collection::const_iterator i = mdc.begin(); i != mdc.end(); ++i)
             wassert(actual(writer.acquire(**i)) == Writer::ACQ_OK);
     }
@@ -749,7 +710,7 @@ def_test(13)
 
     // A simple rescanFile throws "manual fix is required" error
     {
-        ondisk2::Checker writer(cfg);
+        ondisk2::Checker writer(f.cfg);
         try {
             writer.rescanFile("2007/06-06.grib1");
             wassert(throw std::runtime_error("rescanFile should have thrown at this point"));
@@ -760,36 +721,35 @@ def_test(13)
 
     // Run maintenance check
     {
-        ondisk2::Checker writer(cfg);
+        ondisk2::Checker writer(f.cfg);
 
         arki::tests::MaintenanceResults expected(false, 4);
-        expected.by_type[COUNTED_OK] = 3;
-        expected.by_type[COUNTED_TO_INDEX] = 1;
+        expected.by_type[DatasetTest::COUNTED_OK] = 3;
+        expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
         wassert(actual(writer).maintenance(expected));
     }
 
     {
         // Perform full maintenance and check that things are still ok afterwards
-        ondisk2::Checker writer(cfg);
-        stringstream s;
+        ondisk2::Checker writer(f.cfg);
         try {
-            writer.check(s, true, true);
+            NullReporter r;
+            writer.check(r, true, true);
             wassert(throw std::runtime_error("writer.check should have thrown at this point"));
         } catch (std::exception& e) {
             wassert(actual(e.what()).contains("manual fix is required"));
         }
     }
-}
+});
 
 // Test packing a dataset with VM2 data
-def_test(14)
-{
-    clean_and_import(&cfg, "inbound/test.vm2");
+add_method("pack_vm2", [](Fixture& f) {
+    f.clean_and_import(&f.cfg, "inbound/test.vm2");
 
     // Read everything
     metadata::Collection mdc_imported;
     {
-        unique_ptr<Reader> reader(makeReader());
+        unique_ptr<Reader> reader(f.makeReader());
         mdc_imported.add(*reader, Matcher());
     }
 
@@ -801,7 +761,7 @@ def_test(14)
 
     // Delete every second item
     {
-        auto writer(makeLocalWriter());
+        auto writer(f.makeLocalWriter());
         for (unsigned i = 0; i < mdc_imported.size(); ++i)
             if (i % 2 == 0)
                 writer->remove(mdc_imported[i]);
@@ -809,9 +769,9 @@ def_test(14)
 
     // Ensure the archive has items to pack
     {
-        auto writer(makeLocalChecker());
+        auto writer(f.makeLocalChecker());
         arki::tests::MaintenanceResults expected(false, 2);
-        expected.by_type[COUNTED_TO_PACK] = 2;
+        expected.by_type[DatasetTest::COUNTED_TO_PACK] = 2;
         wassert(actual(writer.get()).maintenance(expected));
 
         ensure(!sys::exists("testdir/.archive"));
@@ -819,13 +779,11 @@ def_test(14)
 
     // Perform packing and check that things are still ok afterwards
     {
-        auto writer(makeLocalChecker());
-        OutputChecker s;
-        writer->repack(s, true);
-        s.ensure_line_contains(": packed 1987/10-31.vm2");
-        s.ensure_line_contains(": packed 2011/01-01.vm2");
-        s.ensure_line_contains(": 2 files packed");
-        s.ensure_all_lines_seen();
+        auto writer(f.makeLocalChecker());
+        ReporterExpected e;
+        e.repacked.emplace_back("testdir", "1987/10-31.vm2");
+        e.repacked.emplace_back("testdir", "2011/01-01.vm2");
+        wassert(actual(writer.get()).repack(e, true));
     }
 
     // Check that the files have actually shrunk
@@ -834,9 +792,9 @@ def_test(14)
 
     // Ensure the archive is now clean
     {
-        auto writer(makeLocalChecker());
+        auto writer(f.makeLocalChecker());
         arki::tests::MaintenanceResults expected(true, 2);
-        expected.by_type[COUNTED_OK] = 2;
+        expected.by_type[DatasetTest::COUNTED_OK] = 2;
         wassert(actual(writer.get()).maintenance(expected));
 
         wassert(actual_file("testdir/.archive").not_exists());
@@ -845,13 +803,15 @@ def_test(14)
     // Ensure that the data hasn't been corrupted
     metadata::Collection mdc_packed;
     {
-        unique_ptr<Reader> reader(makeReader());
+        unique_ptr<Reader> reader(f.makeReader());
         mdc_packed.add(*reader, Matcher());
     }
     wassert(actual(mdc_packed[0]).is_similar(mdc_imported[1]));
     wassert(actual(mdc_packed[1]).is_similar(mdc_imported[3]));
     wassert(actual(mdc_packed[0].getData()) == orig_data[1]);
     wassert(actual(mdc_packed[1].getData()) == orig_data[3]);
+});
+
 }
 
 }

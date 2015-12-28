@@ -75,13 +75,10 @@ class Tests : public FixtureTestCase<Fixture>
             // Perform packing and check that things are still ok afterwards
             {
                 auto writer(f.makeLocalChecker(&cfg));
-                OutputChecker s;
-                writer->repack(s, true);
-                s.ensure_line_contains(": archived 2007/07-07.grib1");
-                s.ensure_line_contains(": archived 2007/07-08.grib1");
-                s.ensure_line_contains(": archive cleaned up");
-                s.ensure_line_contains(": 2 files archived");
-                s.ensure_all_lines_seen();
+                ReporterExpected e;
+                e.archived.emplace_back("testds", "2007/07-07.grib1");
+                e.archived.emplace_back("testds", "2007/07-08.grib1");
+                wassert(actual(writer.get()).repack(e, true));
             }
 
             // Check that the files have been moved to the archive
@@ -118,10 +115,7 @@ class Tests : public FixtureTestCase<Fixture>
             // Perform full maintenance and check that things are still ok afterwards
             {
                 auto writer(f.makeLocalChecker(&cfg));
-                stringstream s;
-                s.str(std::string());
-                writer->check(s, true, true);
-                ensure_equals(s.str(), string()); // Nothing should have happened
+                wassert(actual(writer.get()).check_clean(true, true));
 
                 MaintenanceResults expected(true, 3);
                 expected.by_type[DatasetTest::COUNTED_OK] = 1;
@@ -203,22 +197,19 @@ class Tests : public FixtureTestCase<Fixture>
             f.clean_and_import(&cfg);
             {
                 auto writer(f.makeLocalChecker(&cfg));
-                OutputChecker s;
-                writer->repack(s, true);
-                s.ensure_line_contains(": archived 2007/07-07.grib1");
-                s.ensure_line_contains(": archived 2007/07-08.grib1");
-                s.ignore_line_containing("archive cleaned up");
-                s.ensure_line_contains(": 2 files archived");
-                s.ensure_all_lines_seen();
+                ReporterExpected e;
+                e.archived.emplace_back("testds", "2007/07-07.grib1");
+                e.archived.emplace_back("testds", "2007/07-08.grib1");
+                wassert(actual(writer.get()).repack(e, true));
             }
 
             std::unique_ptr<Reader> reader(f.makeReader(&cfg));
             metadata::Collection mdc(*reader, Matcher::parse(""));
-            ensure_equals(mdc.size(), 3u);
+            wassert(actual(mdc.size()) == 3u);
 
             mdc.clear();
             mdc.add(*reader, Matcher::parse("origin:GRIB1,200"));
-            ensure_equals(mdc.size(), 1u);
+            wassert(actual(mdc.size()) == 1u);
 
             // Check that the source record that comes out is ok
             //wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
@@ -229,16 +220,16 @@ class Tests : public FixtureTestCase<Fixture>
 
             mdc.clear();
             mdc.add(*reader, Matcher::parse("reftime:=2007-07-08"));
-            ensure_equals(mdc.size(), 1u);
+            wassert(actual(mdc.size()) == 1u);
             wassert(actual(mdc[0].data_size()) == 7218u);
 
             mdc.clear();
             mdc.add(*reader, Matcher::parse("origin:GRIB1,80"));
-            ensure_equals(mdc.size(), 1u);
+            wassert(actual(mdc.size()) == 1u);
 
             mdc.clear();
             mdc.add(*reader, Matcher::parse("origin:GRIB1,98"));
-            ensure_equals(mdc.size(), 1u);
+            wassert(actual(mdc.size()) == 1u);
 
             // Query bytes
             sys::File out(sys::File::mkstemp("test"));
@@ -246,19 +237,19 @@ class Tests : public FixtureTestCase<Fixture>
             bq.setData(Matcher());
             reader->query_bytes(bq, out);
             string res = sys::read_file(out.name());
-            ensure_equals(res.size(), 44412u);
+            wassert(actual(res.size()) == 44412u);
 
             out.lseek(0); out.ftruncate(0);
             bq.matcher = Matcher::parse("origin:GRIB1,200");
             reader->query_bytes(bq, out);
             res = sys::read_file(out.name());
-            ensure_equals(res.size(), 7218u);
+            wassert(actual(res.size()) == 7218u);
 
             out.lseek(0); out.ftruncate(0);
             bq.matcher = Matcher::parse("reftime:=2007-07-08");
             reader->query_bytes(bq, out);
             res = sys::read_file(out.name());
-            ensure_equals(res.size(), 7218u);
+            wassert(actual(res.size()) == 7218u);
 
             /* TODO
                 case BQ_POSTPROCESS:
@@ -270,18 +261,18 @@ class Tests : public FixtureTestCase<Fixture>
             // Query summary
             Summary s;
             reader->query_summary(Matcher::parse(""), s);
-            ensure_equals(s.count(), 3u);
-            ensure_equals(s.size(), 44412u);
+            wassert(actual(s.count()) == 3u);
+            wassert(actual(s.size()) == 44412u);
 
             s.clear();
             reader->query_summary(Matcher::parse("origin:GRIB1,200"), s);
-            ensure_equals(s.count(), 1u);
-            ensure_equals(s.size(), 7218u);
+            wassert(actual(s.count()) == 1u);
+            wassert(actual(s.size()) == 7218u);
 
             s.clear();
             reader->query_summary(Matcher::parse("reftime:=2007-07-08"), s);
-            ensure_equals(s.count(), 1u);
-            ensure_equals(s.size(), 7218u);
+            wassert(actual(s.count()) == 1u);
+            wassert(actual(s.size()) == 7218u);
         });
         add_method("empty_dirs", [](Fixture& f) {
             // Tolerate empty dirs

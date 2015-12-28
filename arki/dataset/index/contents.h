@@ -146,6 +146,8 @@ public:
      */
     void scan_files(segment::contents_func v) const;
 
+    void list_segments(std::function<void(const std::string&)> dest);
+
     /**
      * Send the metadata of all data items inside a file to the given consumer
      */
@@ -173,15 +175,15 @@ public:
 
     size_t produce_nth(metadata_dest_func consumer, size_t idx) override;
 
-	/**
-	 * Run a consistency check on the summary cache, reporting issues
-	 * to \a log
-	 *
-	 * @return
-	 *   true if the summary cache looks ok
-	 *   false if problems have been found
-	 */
-	bool checkSummaryCache(std::ostream& log) const;
+    /**
+     * Run a consistency check on the summary cache, reporting issues
+     * to \a log
+     *
+     * @return
+     *   true if the summary cache looks ok
+     *   false if problems have been found
+     */
+    bool checkSummaryCache(const dataset::Base& ds, Reporter& reporter) const;
 
 	/**
 	 * Invalidate and rebuild the entire summary cache

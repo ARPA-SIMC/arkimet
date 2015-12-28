@@ -180,22 +180,18 @@ void SegmentedChecker::maintenance(segment::state_func v, bool quick)
         archive().maintenance(v);
 }
 
-void SegmentedChecker::removeAll(std::ostream& log, bool writable)
+void SegmentedChecker::removeAll(dataset::Reporter& reporter, bool writable)
 {
     // TODO: decide if we're removing archives at all
     // TODO: if (hasArchive())
-    // TODO:    archive().removeAll(log, writable);
+    // TODO:    archive().removeAll(reporter, writable);
 }
 
-void SegmentedChecker::sanityChecks(std::ostream& log, bool writable)
-{
-}
-
-void SegmentedChecker::repack(std::ostream& log, bool writable)
+void SegmentedChecker::repack(dataset::Reporter& reporter, bool writable)
 {
     if (files::hasDontpackFlagfile(m_path))
     {
-        log << m_path << ": dataset needs checking first" << endl;
+        reporter.operation_aborted(*this, "repack", "dataset needs checking first");
         return;
     }
 
@@ -204,9 +200,9 @@ void SegmentedChecker::repack(std::ostream& log, bool writable)
     if (writable)
         // No safeguard against a deleted index: we catch that in the
         // constructor and create the don't pack flagfile
-        repacker.reset(new maintenance::RealRepacker(log, *this));
+        repacker.reset(new maintenance::RealRepacker(reporter, *this));
     else
-        repacker.reset(new maintenance::MockRepacker(log, *this));
+        repacker.reset(new maintenance::MockRepacker(reporter, *this));
     try {
         maintenance([&](const std::string& relpath, segment::FileState state) {
             (*repacker)(relpath, state);
@@ -218,11 +214,11 @@ void SegmentedChecker::repack(std::ostream& log, bool writable)
     }
 }
 
-void SegmentedChecker::check(std::ostream& log, bool fix, bool quick)
+void SegmentedChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
     if (fix)
     {
-        maintenance::RealFixer fixer(log, *this);
+        maintenance::RealFixer fixer(reporter, *this);
         try {
             maintenance([&](const std::string& relpath, segment::FileState state) {
                 fixer(relpath, state);
@@ -235,14 +231,12 @@ void SegmentedChecker::check(std::ostream& log, bool fix, bool quick)
 
         files::removeDontpackFlagfile(m_path);
     } else {
-        maintenance::MockFixer fixer(log, *this);
+        maintenance::MockFixer fixer(reporter, *this);
         maintenance([&](const std::string& relpath, segment::FileState state) {
             fixer(relpath, state);
         }, quick);
         fixer.end();
     }
-
-    sanityChecks(log, fix);
 }
 
 SegmentedChecker* SegmentedChecker::create(const ConfigFile& cfg)
