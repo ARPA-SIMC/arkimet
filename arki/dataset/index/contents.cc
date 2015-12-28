@@ -576,45 +576,6 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 	return true;
 }
 
-size_t Contents::produce_nth(metadata_dest_func consumer, size_t idx)
-{
-    // Buffer results in RAM so we can free the index before starting to read the data
-    metadata::Collection mdbuf;
-    {
-        Query fq("fileq", m_db);
-        fq.compile("SELECT DISTINCT file FROM md ORDER BY file");
-        while (fq.step())
-        {
-            stringstream query;
-            query << "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
-            if (m_uniques) query << ", m.uniq";
-            if (m_others) query << ", m.other";
-            if (m_smallfiles) query << ", m.data";
-            query << " FROM md AS m WHERE m.file=? ORDER BY m.offset LIMIT 1 OFFSET " << idx;
-
-            Query mdq("mdq", m_db);
-            mdq.compile(query.str());
-            mdq.bindTransient(1, fq.fetchString(0));
-
-            while (mdq.step())
-            {
-                // Rebuild the Metadata
-                unique_ptr<Metadata> md(new Metadata);
-                build_md(mdq, *md);
-                mdbuf.acquire(move(md));
-            }
-        }
-    }
-
-    // Take note of the size, since mdbuf is about to be destroyed
-    size_t res = mdbuf.size();
-
-    // Pass it to consumer
-    mdbuf.move_to(consumer);
-
-    return res;
-}
-
 void Contents::rebuildSummaryCache()
 {
     scache.invalidate();

@@ -79,27 +79,4 @@ def_test(2)
     ensure(!sys::access("testds/.summaries/2008-01.summary", F_OK));
 }
 
-// Test produce_nth
-def_test(3)
-{
-    const test::Scenario& s = test::Scenario::get("ondisk2-testgrib1");
-    unique_ptr<ondisk2::Reader> reader(new ondisk2::Reader(s.cfg));
-
-    {
-        metadata::Collection mdc;
-        //iotrace::Collector c;
-        size_t count = reader->produce_nth(mdc.inserter_func(), 0);
-        wassert(actual(count) == 3u);
-        wassert(actual(mdc.size()) == 3u);
-        //c.dump(cerr);
-    }
-
-    {
-        metadata::Collection mdc;
-        size_t count = reader->produce_nth(mdc.inserter_func(), 1);
-        wassert(actual(count) == 0u);
-        wassert(actual(mdc.size()) == 0u);
-    }
-}
-
 }

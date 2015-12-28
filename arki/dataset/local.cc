@@ -79,67 +79,6 @@ void LocalReader::query_summary(const Matcher& matcher, Summary& summary)
         archive().query_summary(matcher, summary);
 }
 
-size_t LocalReader::produce_nth(metadata_dest_func cons, size_t idx)
-{
-#if 0
-    if (hasArchive())
-        return archive().produce_nth(cons, idx);
-#endif
-    return 0;
-}
-
-size_t LocalReader::scan_test(metadata_dest_func cons, size_t idx)
-{
-    std::map<std::string, std::string>::const_iterator i = m_cfg.find("filter");
-    // No point in running a scan_test if there is no filter
-    if (i == m_cfg.end())
-        return 0;
-    // Dataset filter that we use to validate produce_nth output
-    Matcher filter = Matcher::parse(i->second);
-    // Produce samples to be checked
-    return produce_nth([&](unique_ptr<Metadata> md) {
-        // Filter keeping only those data that, once rescanned, DO NOT match
-        metadata::Collection c;
-
-        // Inner scope to run cleanups before we produce anything
-        {
-            // Get the data
-            const auto& data = md->getData();
-
-            // Write the raw data to a temp file
-            runtime::Tempfile tf;
-            tf.write_all_or_throw((const char*)data.data(), data.size());
-
-            // Rescan the data
-            try {
-                scan::scan(tf.name(), c.inserter_func(), md->source().format);
-            } catch (std::exception& e) {
-                // If scanning now fails, clear c so later we output the offender
-                stringstream sstream;
-                sstream << md->source();
-                nag::verbose("%s: scanning failed: %s", sstream.str().c_str(), e.what());
-                c.clear();
-            }
-        }
-
-        // Check that collection has 1 element (not 0, not >1)
-        if (c.size() != 1)
-            return cons(move(md));
-
-        // Match on the rescanned, if it fails, output it
-        if (!filter(c[0]))
-        {
-            stringstream sstream;
-            sstream << md->source();
-            nag::verbose("%s: does not match filter");
-            return cons(move(md));
-        }
-
-        // All fine, ready for the next one
-        return true;
-    }, idx);
-}
-
 void LocalReader::readConfig(const std::string& path, ConfigFile& cfg)
 {
 	if (path == "-")

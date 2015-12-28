@@ -173,8 +173,6 @@ public:
 	 */
 	void querySummaryFromDB(const std::string& where, Summary& summary) const;
 
-    size_t produce_nth(metadata_dest_func consumer, size_t idx) override;
-
     /**
      * Run a consistency check on the summary cache, reporting issues
      * to \a log

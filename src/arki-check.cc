@@ -37,7 +37,6 @@ struct Options : public StandardParserWithManpage
 	BoolOption* invalidate;
 	BoolOption* remove_all;
 	BoolOption* stats;
-	OptvalIntOption* scantest;
 	StringOption* op_remove;
 	StringOption* restr;
 
@@ -69,10 +68,6 @@ struct Options : public StandardParserWithManpage
 			"Given metadata extracted from one or more datasets, remove it from the datasets where it is stored");
 		restr = add<StringOption>("restrict", 0, "restrict", "names",
 			"restrict operations to only those datasets that allow one of the given (comma separated) names");
-        scantest = add<OptvalIntOption>("scantest", 0, "scantest", "idx",
-            "Output metadata for data in the datasets that cannot be scanned or does not match the dataset filter."
-            " Sample the data at position idx (starting from 0) in each file in the dataset."
-            " If idx is omitted, it defaults to 0 (the first one)");
     }
 
     /**
@@ -177,44 +172,6 @@ struct RemoveAller : public WorkerOnWritable
 
     void done() {}
 };
-
-struct ScanTest : public Worker
-{
-    runtime::Stdout out; // Default output to stdout
-    metadata::BinaryPrinter printer;
-    size_t idx;
-
-    ScanTest(size_t idx=0) : printer(out), idx(idx) {}
-
-    void process(const ConfigFile& cfg) override
-    {
-        unique_ptr<dataset::Reader> ds(dataset::Reader::create(cfg));
-        if (dataset::LocalReader* ld = dynamic_cast<dataset::LocalReader*>(ds.get()))
-        {
-            size_t count = 0;
-            size_t total = ld->scan_test([&](unique_ptr<Metadata> md) {
-                ++count;
-                return printer.eat(move(md));
-            }, idx);
-            if (count)
-                nag::warning("%s: %zd/%zd samples with problems at index %zd",
-                        cfg.value("name").c_str(), count, total, idx);
-            else if (total)
-                nag::verbose("%s: %zd samples ok at index %zd",
-                        cfg.value("name").c_str(), total, idx);
-            else
-                nag::verbose("%s: no samples found at index %zd",
-                        cfg.value("name").c_str(), idx);
-        } else {
-            throw SkipDataset("dataset is not a local dataset");
-        }
-    }
-
-    void done() override
-    {
-    }
-};
-
 
 #if 0
 struct Invalidator : public Worker
@@ -344,13 +301,6 @@ int main(int argc, const char* argv[])
 				worker.reset(new RemoveAller(opts.fix->boolValue()));
 			else if (opts.repack->boolValue())
 				worker.reset(new Repacker(opts.fix->boolValue()));
-            else if (opts.scantest->isSet())
-            {
-                size_t idx = 0;
-                if (opts.scantest->hasValue())
-                    idx = opts.scantest->value();
-                worker.reset(new ScanTest(idx));
-            }
 			else
 				worker.reset(new Maintainer(opts.fix->boolValue(),
 						not opts.accurate->boolValue()));

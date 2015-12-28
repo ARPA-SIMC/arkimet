@@ -74,7 +74,6 @@ public:
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void query_bytes(const dataset::ByteQuery& q, int out) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
-    //size_t produce_nth(metadata_dest_func cons, size_t idx=0) override;
 };
 
 class ArchivesChecker : public Checker

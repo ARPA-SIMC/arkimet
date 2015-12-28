@@ -53,29 +53,6 @@ public:
     // Base implementations that queries the archives if they exist
     void query_summary(const Matcher& matcher, Summary& summary) override;
 
-    /**
-     * For each file in the archive, output to \a cons the data at position
-     * \a * idx
-     *
-     * @return the number of data produced. If 0, then all files in the archive
-     * have less than \a idx data inside.
-     */
-    virtual size_t produce_nth(metadata_dest_func cons, size_t idx=0);
-
-    /**
-     * For each file in the archive, rescan the \a idx data in it and and check
-     * if the result still fits with the dataset matcher.
-     *
-     * Send all the mismatching metadata to \a cons
-     *
-     * The base implementation only runs the scan_test in the archives if they
-     * exist
-     *
-     * @return the number of data scanned at this idx, or 0 if no files in the
-     * dataset have at least \a idx elements inside
-     */
-    size_t scan_test(metadata_dest_func cons, size_t idx=0);
-
     static void readConfig(const std::string& path, ConfigFile& cfg);
 };
 

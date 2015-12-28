@@ -53,7 +53,6 @@ public:
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     bool query_summary(const Matcher& matcher, Summary& summary) override;
-    size_t produce_nth(metadata_dest_func cons, size_t idx=0) override;
 
 	void rescanFile(const std::string& dir, const std::string& relpath);
 

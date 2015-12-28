@@ -179,45 +179,6 @@ bool Manifest::query_summary(const Matcher& matcher, Summary& summary)
     return true;
 }
 
-size_t Manifest::produce_nth(metadata_dest_func cons, size_t idx)
-{
-    size_t res = 0;
-    // List all files
-    vector<string> files;
-    fileList(Matcher(), files);
-
-    string absdir = sys::abspath(m_path);
-    //ds::MakeAbsolute mkabs(cons);
-
-    string prepend_fname;
-    metadata_dest_func fixed_dest = [&](unique_ptr<Metadata> md) {
-        // Tweak Blob sources replacing basedir and prepending a directory to the file name
-        if (const source::Blob* s = md->has_source_blob())
-            md->set_source(Source::createBlob(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
-        return cons(move(md));
-    };
-    for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-    {
-        prepend_fname = str::dirname(*i);
-        string fullpath = str::joinpath(absdir, *i);
-        if (!scan::exists(fullpath)) continue;
-
-        int file_idx = idx + 1;
-        scan::scan(absdir, *i, [&](unique_ptr<Metadata> md) {
-            switch (file_idx)
-            {
-                case 0: return false;
-                case 1: fixed_dest(move(md)); --file_idx; return false;
-                default: --file_idx; return true;
-            }
-        });
-        if (file_idx == 0)
-            ++res;
-    }
-
-    return res;
-}
-
 void Manifest::invalidate_summary()
 {
     sys::unlink_ifexists(str::joinpath(m_path, "summary"));

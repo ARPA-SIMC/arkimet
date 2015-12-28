@@ -33,14 +33,6 @@ void IndexedReader::query_summary(const Matcher& matcher, Summary& summary)
         throw std::runtime_error("cannot query " + m_path + ": index could not be used");
 }
 
-size_t IndexedReader::produce_nth(metadata_dest_func cons, size_t idx)
-{
-    size_t res = LocalReader::produce_nth(cons, idx);
-    if (m_idx)
-        res += m_idx->produce_nth(cons, idx);
-    return res;
-}
-
 
 IndexedWriter::IndexedWriter(const ConfigFile& cfg)
     : SegmentedWriter(cfg)
