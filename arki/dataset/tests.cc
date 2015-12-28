@@ -330,28 +330,11 @@ void DatasetTest::import(const ConfigFile* wcfg, const std::string& testfile)
 
     {
         std::unique_ptr<Writer> writer(makeWriter(wcfg));
-
-        if (str::endswith(testfile, ".vm2")) {
-            scan::Vm2 scanner;
-            scanner.open(testfile);
-
-            Metadata md;
-            while (scanner.next(md))
-            {
-                Writer::AcquireResult res = writer->acquire(md);
-                ensure_equals(res, Writer::ACQ_OK);
-            }
-        } else {
-
-            scan::Grib scanner;
-            scanner.open(testfile);
-
-            Metadata md;
-            while (scanner.next(md))
-            {
-                Writer::AcquireResult res = writer->acquire(md);
-                ensure_equals(res, Writer::ACQ_OK);
-            }
+        metadata::Collection data(testfile);
+        for (auto& md: data)
+        {
+            Writer::AcquireResult res = writer->acquire(*md);
+            ensure_equals(res, Writer::ACQ_OK);
         }
     }
 

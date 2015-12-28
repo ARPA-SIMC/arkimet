@@ -114,6 +114,9 @@ struct LocalChecker : public LocalBase<Checker, ArchivesChecker>
     LocalChecker(const ConfigFile& cfg);
     ~LocalChecker();
 
+    void repack(dataset::Reporter& reporter, bool writable=false) override;
+    void check(dataset::Reporter& reporter, bool fix, bool quick) override;
+
     /**
      * Instantiate an appropriate Dataset for the given configuration
      */

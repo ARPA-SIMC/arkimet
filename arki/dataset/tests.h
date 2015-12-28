@@ -332,6 +332,16 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
 
 namespace tests {
 
+template<typename T>
+static std::string nfiles(const T& val)
+{
+    if (val == 1)
+        return std::to_string(val) + " file";
+    else
+        return std::to_string(val) + " files";
+}
+
+
 struct ReporterExpected
 {
     struct OperationMatch
@@ -442,7 +452,7 @@ inline arki::tests::ActualSegmentedChecker actual(arki::dataset::SegmentedChecke
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::SegmentedChecker& actual) { return arki::tests::ActualSegmentedChecker(&actual); }
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::simple::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::SegmentedChecker*)&actual); }
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::ondisk2::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::SegmentedChecker*)&actual); }
-inline arki::tests::ActualSegmentedChecker actual(arki::dataset::ArchivesChecker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::SegmentedChecker*)&actual); }
+inline arki::tests::ActualChecker<Checker> actual(arki::dataset::ArchivesChecker& actual) { return arki::tests::ActualChecker<Checker>((Checker*)&actual); }
 
 }
 }

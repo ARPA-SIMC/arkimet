@@ -134,6 +134,7 @@ struct MockRepacker : public Agent
 {
     using Agent::Agent;
 
+    size_t m_count_ok = 0;
     size_t m_count_packed = 0;
     size_t m_count_archived = 0;
     size_t m_count_deleted = 0;
@@ -151,6 +152,7 @@ struct MockFixer : public Agent
 {
     using Agent::Agent;
 
+    size_t m_count_ok = 0;
     size_t m_count_packed = 0;
     size_t m_count_rescanned = 0;
     size_t m_count_deindexed = 0;
@@ -166,6 +168,7 @@ struct RealRepacker : public Agent
 {
     using Agent::Agent;
 
+    size_t m_count_ok = 0;
     size_t m_count_packed = 0;
     size_t m_count_archived = 0;
     size_t m_count_deleted = 0;
@@ -186,6 +189,7 @@ struct RealFixer : public Agent
 {
     using Agent::Agent;
 
+    size_t m_count_ok = 0;
     size_t m_count_packed = 0;
     size_t m_count_rescanned = 0;
     size_t m_count_deindexed = 0;

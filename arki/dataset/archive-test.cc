@@ -28,7 +28,7 @@ struct Fixture : public arki::utils::tests::Fixture
     metadata::Collection orig;
 
     Fixture()
-        : orig("inbound/test.grib1")
+        : orig("inbound/test-sorted.grib1")
     {
     }
 
@@ -47,15 +47,6 @@ struct Fixture : public arki::utils::tests::Fixture
 
         iotrace::init();
     }
-
-    void archive_clean(const std::string& dir, size_t filecount)
-    {
-        ArchivesChecker checker(dir);
-        arki::tests::MaintenanceResults expected(true, filecount);
-        expected.by_type[DatasetTest::COUNTED_ARC_OK] = 1;
-        wassert(actual(checker).maintenance(expected));
-        //wassert(actual_file(str::joinpath(dir, arcidxfname())).exists());
-    }
 };
 
 class Tests : public FixtureTestCase<Fixture>
@@ -72,26 +63,26 @@ add_method("acquire_last", [](Fixture& f) {
     // Acquire
     {
         ArchivesChecker checker("testds");
-        system("cp -a inbound/test.grib1 testds/.archive/last/");
-        wassert(checker.indexFile("last/test.grib1", metadata::Collection(f.orig)));
-        wassert(actual_file("testds/.archive/last/test.grib1").exists());
-        wassert(actual_file("testds/.archive/last/test.grib1.metadata").exists());
-        wassert(actual_file("testds/.archive/last/test.grib1.summary").exists());
+        system("cp -a inbound/test-sorted.grib1 testds/.archive/last/test-sorted.grib1");
+        wassert(checker.indexFile("last/test-sorted.grib1", metadata::Collection(f.orig)));
+        wassert(actual_file("testds/.archive/last/test-sorted.grib1").exists());
+        wassert(actual_file("testds/.archive/last/test-sorted.grib1.metadata").exists());
+        wassert(actual_file("testds/.archive/last/test-sorted.grib1.summary").exists());
         wassert(actual_file("testds/.archive/last/" + manifest_idx_fname()).exists());
 
         metadata::Collection mdc;
-        Metadata::read_file("testds/.archive/last/test.grib1.metadata", mdc.inserter_func());
+        Metadata::read_file("testds/.archive/last/test-sorted.grib1.metadata", mdc.inserter_func());
         wassert(actual(mdc.size()) == 3u);
-        wassert(actual(mdc[0].sourceBlob().filename) == "test.grib1");
-    }
+        wassert(actual(mdc[0].sourceBlob().filename) == "test-sorted.grib1");
 
-    wassert(f.archive_clean("testds", 1));
+        wassert(actual(checker).check_clean(false, true));
+    }
 
     // Query
     {
         ArchivesReader reader("testds");
         metadata::Collection res(reader, Matcher());
-        metadata::Collection orig("inbound/test.grib1");
+        metadata::Collection orig("inbound/test-sorted.grib1");
         // Results are in the same order as the files that have been indexed
         wassert(actual(res == orig));
     }
@@ -99,7 +90,7 @@ add_method("acquire_last", [](Fixture& f) {
 
 // Test maintenance scan on non-indexed files
 add_method("maintenance_nonindexed", [](Fixture& f) {
-    system("cp inbound/test.grib1 testds/.archive/last/");
+    system("cp inbound/test-sorted.grib1 testds/.archive/last/");
 
     // Query now has empty results
     {
@@ -109,9 +100,9 @@ add_method("maintenance_nonindexed", [](Fixture& f) {
 
         // Maintenance should show one file to index
         ArchivesChecker checker("testds");
-        arki::tests::MaintenanceResults expected(false, 1);
-        expected.by_type[DatasetTest::COUNTED_ARC_TO_INDEX] = 1;
-        wassert(actual(checker).maintenance(expected));
+        ReporterExpected e;
+        e.rescanned.emplace_back("archives.last", "test-sorted.grib1");
+        wassert(actual(checker).check(e, false, true));
     }
 
     // Reindex
@@ -119,10 +110,10 @@ add_method("maintenance_nonindexed", [](Fixture& f) {
         // Checker should reindex
         ArchivesChecker checker("testds");
         ReporterExpected e;
-        e.rescanned.emplace_back("archives.last", "test.grib1");
+        e.rescanned.emplace_back("archives.last", "test-sorted.grib1");
         wassert(actual(checker).check(e, true, true));
 
-        wassert(f.archive_clean("testds", 1));
+        wassert(actual(checker).check_clean(false, true));
 
         // Repack should do nothing
         wassert(actual(checker).repack_clean(true));
@@ -140,10 +131,10 @@ add_method("maintenance_nonindexed", [](Fixture& f) {
 add_method("maintenance_missing_metadata", [](Fixture& f) {
     {
         ArchivesChecker checker("testds");
-        system("cp inbound/test.grib1 testds/.archive/last/");
-        wassert(checker.indexFile("last/test.grib1", metadata::Collection(f.orig)));
-        sys::unlink("testds/.archive/last/test.grib1.metadata");
-        sys::unlink("testds/.archive/last/test.grib1.summary");
+        system("cp inbound/test-sorted.grib1 testds/.archive/last/");
+        wassert(checker.indexFile("last/test-sorted.grib1", metadata::Collection(f.orig)));
+        sys::unlink("testds/.archive/last/test-sorted.grib1.metadata");
+        sys::unlink("testds/.archive/last/test-sorted.grib1.summary");
     }
 
     // All data can be queried anyway
@@ -154,9 +145,9 @@ add_method("maintenance_missing_metadata", [](Fixture& f) {
 
         // Maintenance should show one file to rescan
         ArchivesChecker checker("testds");
-        arki::tests::MaintenanceResults expected(false, 1);
-        expected.by_type[DatasetTest::COUNTED_ARC_TO_RESCAN] = 1;
-        wassert(actual(checker).maintenance(expected));
+        ReporterExpected e;
+        e.rescanned.emplace_back("archives.last", "test-sorted.grib1");
+        wassert(actual(checker).check(e, false, true));
     }
 
     // Rescan
@@ -164,10 +155,10 @@ add_method("maintenance_missing_metadata", [](Fixture& f) {
         // Checker should reindex
         ArchivesChecker checker("testds");
         ReporterExpected e;
-        e.rescanned.emplace_back("archives.last", "test.grib1");
+        e.rescanned.emplace_back("archives.last", "test-sorted.grib1");
         wassert(actual(checker).check(e, true, true));
 
-        wassert(f.archive_clean("testds", 1));
+        wassert(actual(checker).check_clean(false, true));
 
         // Repack should do nothing
         wassert(actual(checker).repack_clean(true));
@@ -195,12 +186,12 @@ add_method("reader_empty_last", [](Fixture& f) {
 
     // Import a file in the secondary archive
     {
-        system("cp inbound/test.grib1 testds/.archive/foo/");
+        system("cp inbound/test-sorted.grib1 testds/.archive/foo/");
 
         ArchivesChecker checker("testds");
-        wassert(checker.indexFile("foo/test.grib1", metadata::Collection(f.orig)));
+        wassert(checker.indexFile("foo/test-sorted.grib1", metadata::Collection(f.orig)));
 
-        wassert(f.archive_clean("testds", 1));
+        wassert(actual(checker).check_clean(true, true));
         wassert(actual(checker).repack_clean(true));
     }
 

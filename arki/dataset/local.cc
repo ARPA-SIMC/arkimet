@@ -231,6 +231,18 @@ LocalChecker::~LocalChecker()
 {
 }
 
+void LocalChecker::repack(dataset::Reporter& reporter, bool writable)
+{
+    if (hasArchive())
+        archive().repack(reporter, writable);
+}
+
+void LocalChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
+{
+    if (hasArchive())
+        archive().check(reporter, fix, quick);
+}
+
 LocalChecker* LocalChecker::create(const ConfigFile& cfg)
 {
     return SegmentedChecker::create(cfg);

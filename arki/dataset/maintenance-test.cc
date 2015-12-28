@@ -112,10 +112,12 @@ struct Fixture : public DatasetTest {
         // Check if files to archive are detected
         {
             auto writer(makeLocalChecker());
-            arki::tests::MaintenanceResults expected(false, fixture.count_dataset_files());
-            expected.by_type[COUNTED_OK] = fixture.fnames_after_cutoff.size();
-            expected.by_type[COUNTED_TO_ARCHIVE] = fixture.fnames_before_cutoff.size();
-            wassert(actual(writer.get()).maintenance(expected));
+            ReporterExpected e;
+            //e.report.emplace_back("testds.archives.last", "check", nfiles(fixture.fnames_before_cutoff.size()) + " ok");
+            e.report.emplace_back("testds", "repack", nfiles(fixture.fnames_after_cutoff.size()) + " ok");
+            for (const auto& fn: fixture.fnames_before_cutoff)
+                e.archived.emplace_back("testds", fn);
+            wassert(actual(writer.get()).repack(e, false));
         }
 
         // Perform packing and check that things are still ok afterwards
@@ -141,21 +143,17 @@ struct Fixture : public DatasetTest {
         // Maintenance should now show a normal situation
         {
             auto writer(makeLocalChecker());
-            arki::tests::MaintenanceResults expected(true, fixture.count_dataset_files());
-            expected.by_type[COUNTED_OK] = fixture.fnames_after_cutoff.size();
-            expected.by_type[COUNTED_ARC_OK] = fixture.fnames_before_cutoff.size();
-            wassert(actual(writer.get()).maintenance(expected));
+            ReporterExpected e;
+            e.report.emplace_back("testds.archives.last", "check", nfiles(fixture.fnames_before_cutoff.size()) + " ok");
+            e.report.emplace_back("testds", "check", nfiles(fixture.fnames_after_cutoff.size()) + " ok");
+            wassert(actual(writer.get()).check(e, false, true));
         }
 
         // Perform full maintenance and check that things are still ok afterwards
         {
             auto writer(makeLocalChecker());
             wassert(actual(writer.get()).check_clean(true, true));
-
-            arki::tests::MaintenanceResults expected(true, fixture.count_dataset_files());
-            expected.by_type[COUNTED_OK] = fixture.fnames_after_cutoff.size();
-            expected.by_type[COUNTED_ARC_OK] = fixture.fnames_before_cutoff.size();
-            wassert(actual(writer.get()).maintenance(expected));
+            wassert(actual(writer.get()).repack_clean(false));
         }
 
         // Test that querying returns all items
@@ -341,7 +339,6 @@ struct Fixture : public DatasetTest {
             ReporterExpected e;
             e.deindexed.emplace_back("testds", deleted_fname);
             wassert(actual(writer.get()).repack(e, true));
-
             wassert(actual(writer.get()).maintenance_clean(file_count - 1));
         }
     }
@@ -485,10 +482,10 @@ class Tests : public FixtureTestCase<Fixture>
 
             {
                 auto writer(f.makeLocalChecker());
-                MaintenanceResults expected(3, false);
-                expected.by_type[DatasetTest::COUNTED_OK] = 2;
-                expected.by_type[DatasetTest::COUNTED_TO_PACK] = 1;
-                wassert(actual(writer.get()).maintenance(expected));
+                ReporterExpected e;
+                e.report.emplace_back("testds", "check", "2 files ok");
+                e.repacked.emplace_back("testds", "2007/07-07.grib1");
+                wassert(actual(writer.get()).check(e, false));
             }
 
 #if 0

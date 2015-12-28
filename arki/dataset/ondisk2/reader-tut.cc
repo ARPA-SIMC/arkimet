@@ -89,20 +89,17 @@ def_test(3)
         metadata::Collection mdc;
         //iotrace::Collector c;
         size_t count = reader->produce_nth(mdc.inserter_func(), 0);
-        ensure_equals(count, 3u);
-        ensure_equals(mdc.size(), 3u);
+        wassert(actual(count) == 3u);
+        wassert(actual(mdc.size()) == 3u);
         //c.dump(cerr);
     }
 
     {
         metadata::Collection mdc;
         size_t count = reader->produce_nth(mdc.inserter_func(), 1);
-        ensure_equals(count, 0u);
-        ensure_equals(mdc.size(), 0u);
+        wassert(actual(count) == 0u);
+        wassert(actual(mdc.size()) == 0u);
     }
 }
 
-
 }
-
-// vim:set ts=4 sw=4:

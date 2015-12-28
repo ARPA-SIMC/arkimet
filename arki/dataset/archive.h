@@ -5,7 +5,6 @@
 
 #include <arki/dataset.h>
 #include <arki/summary.h>
-#include <arki/dataset/segmented.h>
 #include <string>
 #include <map>
 #include <iosfwd>
@@ -78,7 +77,7 @@ public:
     //size_t produce_nth(metadata_dest_func cons, size_t idx=0) override;
 };
 
-class ArchivesChecker : public SegmentedChecker
+class ArchivesChecker : public Checker
 {
 protected:
     archive::ArchivesCheckerRoot* archives = nullptr;
@@ -89,15 +88,11 @@ public:
     virtual ~ArchivesChecker();
 
     //void indexFile(const std::string& relname);
-    void indexFile(const std::string& relname, metadata::Collection&& mds) override;
+    void indexFile(const std::string& relname, metadata::Collection&& mds);
 
-    void maintenance(segment::state_func dest, bool quick=true) override;
-    void removeAll(dataset::Reporter& reporter, bool writable) override;
-    void rescanFile(const std::string& relpath) override;
-    size_t repackFile(const std::string& relpath) override;
-    size_t removeFile(const std::string& relpath, bool withData=false) override;
-    void archiveFile(const std::string& relpath) override;
-    size_t vacuum() override;
+    void removeAll(dataset::Reporter& reporter, bool writable=false) override;
+    void repack(dataset::Reporter& reporter, bool writable=false) override;
+    void check(dataset::Reporter& reporter, bool fix, bool quick) override;
 };
 
 }

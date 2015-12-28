@@ -137,11 +137,6 @@ struct ArchivesRoot
                     archives.insert(make_pair(i, a.release()));
             }
         }
-
-        // Instantiate the 'last' archive even if the directory does not exist,
-        // if not read only
-        if (!last)
-            last = this->instantiate("last").release();
     }
 
     void iter(std::function<void(Archive&)> f)
@@ -215,20 +210,35 @@ struct ArchivesReaderRoot: public ArchivesRoot<Reader>
     }
 };
 
-struct ArchivesCheckerRoot: public ArchivesRoot<SegmentedChecker>
+struct ArchivesCheckerRoot: public ArchivesRoot<Checker>
 {
     using ArchivesRoot::ArchivesRoot;
 
-    std::unique_ptr<SegmentedChecker> instantiate(const std::string& name) override
+    void rescan()
+    {
+        ArchivesRoot<Checker>::rescan();
+
+        // Instantiate the 'last' archive even if the directory does not exist
+        if (!last)
+        {
+            last = instantiate("last").release();
+
+            // Run a check to remove needs-check-do-not-pack files
+            NullReporter r;
+            last->check(r, true, true);
+        }
+    }
+
+    std::unique_ptr<Checker> instantiate(const std::string& name) override
     {
         string pathname = str::joinpath(archive_root, name);
-        unique_ptr<SegmentedChecker> res;
+        unique_ptr<Checker> res;
         if (sys::exists(pathname + ".summary"))
         {
             if (index::Manifest::exists(pathname))
                 res.reset(new simple::Checker(make_config(pathname)));
             else
-                res.reset(new NullSegmentedChecker(make_config(pathname)));
+                res.reset(new NullChecker(make_config(pathname)));
         } else
             res.reset(new simple::Checker(make_config(pathname)));
         res->set_parent(parent);
@@ -311,7 +321,7 @@ void ArchivesReader::query_summary(const Matcher& matcher, Summary& summary)
 
 
 ArchivesChecker::ArchivesChecker(const std::string& root)
-    : SegmentedChecker(archive::make_config("archives", root)), archives(new archive::ArchivesCheckerRoot(root, *this))
+    : Checker(archive::make_config("archives", root)), archives(new archive::ArchivesCheckerRoot(root, *this))
 {
     archives->rescan();
 }
@@ -323,15 +333,42 @@ ArchivesChecker::~ArchivesChecker()
 
 void ArchivesChecker::removeAll(Reporter& reporter, bool writable)
 {
-    archives->iter([&](SegmentedChecker& a) {
+    archives->iter([&](Checker& a) {
         a.removeAll(reporter, writable);
     });
 }
 
-void ArchivesChecker::archiveFile(const std::string& relpath)
+void ArchivesChecker::repack(dataset::Reporter& reporter, bool writable)
 {
-    throw std::runtime_error("cannot archive " + relpath + ": file is already in the archive");
+    archives->iter([&](Checker& a) {
+        a.repack(reporter, writable);
+    });
 }
+
+void ArchivesChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
+{
+    archives->iter([&](Checker& a) {
+        a.check(reporter, fix, quick);
+    });
+}
+
+#if 0
+void ArchivesChecker::maintenance(segment::state_func v, bool quick)
+{
+    archives->iter([&](SegmentedChecker& a) {
+        a.maintenance([&](const std::string& file, segment::FileState state) {
+            // Add the archived bit
+            // Remove the TO_PACK bit, since once a file is archived it's not
+            //   touched anymore, so there's no point packing it
+            // Remove the TO_ARCHIVE bit, since we're already in the archive
+            // Remove the TO_DELETE bit, since delete age doesn't affect the
+            //   archive
+            state = state - FILE_TO_PACK - FILE_TO_ARCHIVE - FILE_TO_DELETE + FILE_ARCHIVED;
+            v(str::joinpath(a.name(), file), state);
+        }, quick);
+    });
+}
+#endif
 
 static std::string poppath(std::string& path)
 {
@@ -349,76 +386,20 @@ static std::string poppath(std::string& path)
 	return res;
 }
 
-size_t ArchivesChecker::repackFile(const std::string& relname)
-{
-    size_t res;
-    string path = relname;
-    string name = poppath(path);
-    if (SegmentedChecker* a = archives->lookup(name))
-        res = a->repackFile(path);
-    else
-        throw std::runtime_error("cannot repack " + relname + ": archive " + name + " does not exist in " + archives->archive_root);
-    archives->invalidate_summary_cache();
-    return res;
-}
-
 void ArchivesChecker::indexFile(const std::string& relname, metadata::Collection&& mds)
 {
     string path = relname;
     string name = poppath(path);
-    if (SegmentedChecker* a = archives->lookup(name))
-        a->indexFile(path, move(mds));
+    if (Checker* a = archives->lookup(name))
+    {
+        if (SegmentedChecker* sc = dynamic_cast<SegmentedChecker*>(a))
+            sc->indexFile(path, move(mds));
+        else
+            throw std::runtime_error(this->name() + ": cannot acquire " + relname + ": archive " + name + " is not writable");
+    }
     else
-        throw std::runtime_error("cannot acquire " + relname + ": archive " + name + " does not exist in " + archives->archive_root);
+        throw std::runtime_error(this->name() + ": cannot acquire " + relname + ": archive " + name + " does not exist in " + archives->archive_root);
     archives->invalidate_summary_cache();
-}
-
-size_t ArchivesChecker::removeFile(const std::string& relname, bool with_data)
-{
-    size_t res;
-    string path = relname;
-    string name = poppath(path);
-    if (SegmentedChecker* a = archives->lookup(name))
-        res = a->removeFile(path, with_data);
-    else
-        throw std::runtime_error("cannot remove " + relname + ": archive " + name + " does not exist in " + archives->archive_root);
-    archives->invalidate_summary_cache();
-    return res;
-}
-
-void ArchivesChecker::rescanFile(const std::string& relname)
-{
-    string path = relname;
-    string name = poppath(path);
-    if (SegmentedChecker* a = archives->lookup(name))
-        a->rescanFile(path);
-    else
-        throw std::runtime_error("cannot rescan " + relname + ": archive " + name + " does not exist in " + archives->archive_root);
-    archives->invalidate_summary_cache();
-}
-
-void ArchivesChecker::maintenance(segment::state_func v, bool quick)
-{
-    archives->iter([&](SegmentedChecker& a) {
-        a.maintenance([&](const std::string& file, segment::FileState state) {
-            // Add the archived bit
-            // Remove the TO_PACK bit, since once a file is archived it's not
-            //   touched anymore, so there's no point packing it
-            // Remove the TO_ARCHIVE bit, since we're already in the archive
-            // Remove the TO_DELETE bit, since delete age doesn't affect the
-            //   archive
-            state = state - FILE_TO_PACK - FILE_TO_ARCHIVE - FILE_TO_DELETE + FILE_ARCHIVED;
-            v(str::joinpath(a.name(), file), state);
-        }, quick);
-    });
-}
-
-size_t ArchivesChecker::vacuum()
-{
-    size_t res = 0;
-    archives->iter([&](SegmentedChecker& a) { res += a.vacuum(); });
-    archives->rebuild_summary_cache();
-    return res;
 }
 
 }

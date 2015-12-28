@@ -106,10 +106,10 @@ class Tests : public FixtureTestCase<Fixture>
             // Maintenance should now show a normal situation
             {
                 auto writer(f.makeLocalChecker(&cfg));
-                MaintenanceResults expected(true, 3);
-                expected.by_type[DatasetTest::COUNTED_OK] = 1;
-                expected.by_type[DatasetTest::COUNTED_ARC_OK] = 2;
-                wassert(actual(writer.get()).maintenance(expected));
+                ReporterExpected e;
+                e.report.emplace_back("testds", "check", "1 file ok");
+                e.report.emplace_back("testds.archives.last", "check", "2 files ok");
+                wassert(actual(writer.get()).check(e, false));
             }
 
             // Perform full maintenance and check that things are still ok afterwards
@@ -117,10 +117,10 @@ class Tests : public FixtureTestCase<Fixture>
                 auto writer(f.makeLocalChecker(&cfg));
                 wassert(actual(writer.get()).check_clean(true, true));
 
-                MaintenanceResults expected(true, 3);
-                expected.by_type[DatasetTest::COUNTED_OK] = 1;
-                expected.by_type[DatasetTest::COUNTED_ARC_OK] = 2;
-                wassert(actual(writer.get()).maintenance(expected));
+                ReporterExpected e;
+                e.report.emplace_back("testds", "check", "1 file ok");
+                e.report.emplace_back("testds.archives.last", "check", "2 files ok");
+                wassert(actual(writer.get()).check(e, false));
             }
 
             // Test that querying returns all items

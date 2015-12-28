@@ -141,25 +141,6 @@ public:
     virtual size_t vacuum() = 0;
 };
 
-class [[deprecated("Use the main Checker interface if possible, now that we have Reporter we do not need this for nesting")]] NullSegmentedChecker : public SegmentedChecker
-{
-public:
-    using SegmentedChecker::SegmentedChecker;
-
-    void repack(dataset::Reporter& reporter, bool writable=false) override {}
-    void check(dataset::Reporter& reporter, bool fix, bool quick) override {}
-    void removeAll(dataset::Reporter&, bool writable) override {}
-    void maintenance(segment::state_func dest, bool quick=true) override {}
-    void indexFile(const std::string& relpath, metadata::Collection&& contents) override {}
-    void rescanFile(const std::string& relpath) override {}
-    size_t repackFile(const std::string& relpath) override { return 0; }
-    size_t removeFile(const std::string& relpath, bool withData=false) override { return 0; }
-    void archiveFile(const std::string& relpath) override {}
-    size_t vacuum() override { return 0; }
-};
-
-
 }
 }
-
 #endif

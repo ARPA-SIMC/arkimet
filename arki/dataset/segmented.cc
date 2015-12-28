@@ -176,8 +176,6 @@ size_t SegmentedChecker::removeFile(const std::string& relpath, bool withData)
 
 void SegmentedChecker::maintenance(segment::state_func v, bool quick)
 {
-    if (hasArchive())
-        archive().maintenance(v);
 }
 
 void SegmentedChecker::removeAll(dataset::Reporter& reporter, bool writable)
@@ -212,6 +210,8 @@ void SegmentedChecker::repack(dataset::Reporter& reporter, bool writable)
         files::createDontpackFlagfile(m_path);
         throw;
     }
+
+    LocalChecker::repack(reporter, writable);
 }
 
 void SegmentedChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
@@ -237,6 +237,8 @@ void SegmentedChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
         }, quick);
         fixer.end();
     }
+
+    LocalChecker::check(reporter, fix, quick);
 }
 
 SegmentedChecker* SegmentedChecker::create(const ConfigFile& cfg)
