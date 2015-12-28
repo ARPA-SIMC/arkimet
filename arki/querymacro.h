@@ -11,9 +11,12 @@
 namespace arki {
 class ConfigFile;
 class Metadata;
-class Reader;
 
-class Querymacro : public Reader
+namespace dataset {
+class Reader;
+}
+
+class Querymacro : public dataset::Reader
 {
 protected:
 	std::map<std::string, Reader*> ds_cache;

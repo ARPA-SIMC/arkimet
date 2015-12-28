@@ -213,7 +213,7 @@ struct Ondisk2Archived : public Ondisk2Scenario
         stringstream checklog;
         OstreamReporter reporter(checklog);
         ds->check(reporter, true, true);
-        if (checklog.str() != "")
+        if (checklog.str() != "ondisk2-archived: check 0 files ok\n")
             throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
 
         // Pack to build 'older' archive
@@ -274,7 +274,7 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
             stringstream checklog;
             OstreamReporter reporter(checklog);
             ds->check(reporter, true, true);
-            if (checklog.str() != "")
+            if (checklog.str() != "ondisk2-manyarchivestates: check 0 files ok\n")
                 throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
         }
 

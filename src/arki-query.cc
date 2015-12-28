@@ -57,17 +57,17 @@ int main(int argc, const char* argv[])
 
 		opts.setupProcessing();
 
-		bool all_successful = true;
-		if (opts.merged->boolValue())
-		{
-			dataset::Merged merger;
-			size_t dscount = opts.inputInfo.sectionSize();
-			
-			// Create an unique_ptr array to take care of memory management
-			// It used to be just: unique_ptr<Reader> datasets[dscount];
-			// but xlC does not seem to like it
-			unique_ptr<Reader>* datasets = new unique_ptr<Reader>[dscount];
-			RAIIArrayDeleter< unique_ptr<Reader> > datasets_mman(datasets);
+        bool all_successful = true;
+        if (opts.merged->boolValue())
+        {
+            dataset::Merged merger;
+            size_t dscount = opts.inputInfo.sectionSize();
+
+            // Create an unique_ptr array to take care of memory management
+            // It used to be just: unique_ptr<Reader> datasets[dscount];
+            // but xlC does not seem to like it
+            unique_ptr<dataset::Reader>* datasets = new unique_ptr<dataset::Reader>[dscount];
+            RAIIArrayDeleter< unique_ptr<dataset::Reader> > datasets_mman(datasets);
 
 			// Instantiate the datasets and add them to the merger
 			int idx = 0;
@@ -90,21 +90,21 @@ int main(int argc, const char* argv[])
                 opts.closeSource(move(datasets[i]), all_successful);
         } else if (opts.qmacro->isSet()) {
             // Create the virtual qmacro dataset
-			unique_ptr<Reader> ds = runtime::make_qmacro_dataset(
-                    opts.inputInfo, 
+            unique_ptr<dataset::Reader> ds = runtime::make_qmacro_dataset(
+                    opts.inputInfo,
                     opts.qmacro->stringValue(),
                     opts.strquery);
 
-			// Perform the query
-			all_successful = opts.processSource(*ds, opts.qmacro->stringValue());
-		} else {
-			// Query all the datasets in sequence
-			for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
-					i != opts.inputInfo.sectionEnd(); ++i)
-			{
-				unique_ptr<Reader> ds = opts.openSource(*i->second);
-				nag::verbose("Processing %s...", i->second->value("path").c_str());
-				bool success = opts.processSource(*ds, i->second->value("path"));
+            // Perform the query
+            all_successful = opts.processSource(*ds, opts.qmacro->stringValue());
+        } else {
+            // Query all the datasets in sequence
+            for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
+                    i != opts.inputInfo.sectionEnd(); ++i)
+            {
+                unique_ptr<dataset::Reader> ds = opts.openSource(*i->second);
+                nag::verbose("Processing %s...", i->second->value("path").c_str());
+                bool success = opts.processSource(*ds, i->second->value("path"));
                 opts.closeSource(move(ds), success);
                 if (!success) all_successful = false;
             }

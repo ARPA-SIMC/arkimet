@@ -77,7 +77,7 @@ def_test(2)
 {
     ConfigFile cfg;
     dataset::File::readConfig("inbound/test.grib1", cfg);
-    unique_ptr<Reader> ds(Reader::create(*cfg.section("test.grib1")));
+    unique_ptr<dataset::Reader> ds(dataset::Reader::create(*cfg.section("test.grib1")));
 
     // Scan it to be sure it can be read
     dataset::ByteQuery q;

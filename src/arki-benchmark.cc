@@ -137,7 +137,7 @@ struct DSBenchmark : public Benchmark
         struct Importer : public Benchmark
     {
         DSBenchmark& b;
-        Writer* ds;
+        dataset::Writer* ds;
         const vector<string>& files;
         SCANNER scanner;
 
@@ -149,7 +149,7 @@ struct DSBenchmark : public Benchmark
               // it should do, I at least annotate that I removed the 'true' to
               // make it compile.
         {
-            ds = Writer::create(b.cfg);
+            ds = dataset::Writer::create(b.cfg);
         }
         ~Importer()
         {
@@ -175,12 +175,12 @@ struct DSBenchmark : public Benchmark
                 scanner.open(*i);
                 while (scanner.next(md))
                 {
-                    Writer::AcquireResult res = ds->acquire(md);
+                    dataset::Writer::AcquireResult res = ds->acquire(md);
                     switch (res)
                     {
-                        case Writer::ACQ_OK: ++res_ok; break;
-                        case Writer::ACQ_ERROR_DUPLICATE: ++res_dup; break;
-                        case Writer::ACQ_ERROR: ++res_err; break;
+                        case dataset::Writer::ACQ_OK: ++res_ok; break;
+                        case dataset::Writer::ACQ_ERROR_DUPLICATE: ++res_dup; break;
+                        case dataset::Writer::ACQ_ERROR: ++res_err; break;
                         default: ++res_unk; break;
                     }
                     ++count;
@@ -207,22 +207,22 @@ struct DSBenchmark : public Benchmark
 		}
 	};
 
-	struct Query : public Benchmark
-	{
-		DSBenchmark& b;
-		Reader* ds;
-		const Matcher& query;
-		bool withData;
+    struct Query : public Benchmark
+    {
+        DSBenchmark& b;
+        dataset::Reader* ds;
+        const Matcher& query;
+        bool withData;
 
-		Query(DSBenchmark& b, const std::string& name, const Matcher& query, bool withData = true)
-			: Benchmark(name), b(b), ds(0), query(query), withData(withData)
-		{
-			ds = Reader::create(b.cfg);
-		}
-		~Query()
-		{
-			if (ds) delete ds;
-		}
+        Query(DSBenchmark& b, const std::string& name, const Matcher& query, bool withData = true)
+            : Benchmark(name), b(b), ds(0), query(query), withData(withData)
+        {
+            ds = dataset::Reader::create(b.cfg);
+        }
+        ~Query()
+        {
+            if (ds) delete ds;
+        }
 
         void main() override
         {

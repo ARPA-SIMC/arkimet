@@ -31,7 +31,6 @@ using namespace std;
 using namespace arki::utils;
 
 namespace arki {
-
 namespace dataset {
 
 DataQuery::DataQuery() : with_data(false) {}
@@ -118,9 +117,6 @@ void OstreamReporter::segment_rescan(const Base& ds, const std::string& relpath,
     out << ds.name() << ":" << relpath << ": " << message << endl;
 }
 
-}
-
-
 void Writer::flush() {}
 
 Pending Writer::test_writelock() { return Pending(); }
@@ -196,7 +192,6 @@ Reader* Reader::lua_check(lua_State* L, int idx)
 	return *(Reader**)luaL_checkudata(L, idx, "arki.rodataset");
 }
 
-namespace dataset {
 void DataQuery::lua_from_table(lua_State* L, int idx)
 {
 	lua_pushstring(L, "matcher");
@@ -239,9 +234,6 @@ void DataQuery::lua_push_table(lua_State* L, int idx) const
 	}
 	lua_settable(L, idx);
 }
-
-}
-
 
 static int arkilua_queryData(lua_State *L)
 {
@@ -364,4 +356,5 @@ Checker* Checker::create(const ConfigFile& cfg)
     return dataset::LocalChecker::create(cfg);
 }
 
+}
 }

@@ -79,15 +79,15 @@ int main(int argc, const char* argv[])
                 cerr << file << " skipped: it does not look like a dataset" << endl;
                 continue;
             }
-			try {
-				Reader::readConfig(file, cfg);
-				foundConfig = true;
-			} catch (std::exception& e) {
-				cerr << file << " skipped: " << e.what() << endl;
-			}
-		}
-		if (!foundConfig)
-			throw commandline::BadOption("you need to specify at least one valid config file or dataset directory");
+            try {
+                dataset::Reader::readConfig(file, cfg);
+                foundConfig = true;
+            } catch (std::exception& e) {
+                cerr << file << " skipped: " << e.what() << endl;
+            }
+        }
+        if (!foundConfig)
+            throw commandline::BadOption("you need to specify at least one valid config file or dataset directory");
 
         // Validate the configuration
         bool hasErrors = false;
@@ -128,7 +128,7 @@ int main(int argc, const char* argv[])
 					i != cfg.sectionEnd(); ++i)
             {
                 // Instantiate the dataset
-                unique_ptr<Reader> d(Reader::create(*i->second));
+                unique_ptr<dataset::Reader> d(dataset::Reader::create(*i->second));
                 // Get the summary
                 Summary sum;
                 d->query_summary(Matcher(), sum);

@@ -42,21 +42,21 @@ DATASET* DatasetPool<DATASET>::get(const std::string& name)
 }
 
 ReaderPool::ReaderPool(const ConfigFile& cfg)
-	: DatasetPool<Reader>(cfg) {}
+    : DatasetPool<dataset::Reader>(cfg) {}
 
 WriterPool::WriterPool(const ConfigFile& cfg)
-    : DatasetPool<Writer>(cfg) {}
+    : DatasetPool<dataset::Writer>(cfg) {}
 
 void WriterPool::flush()
 {
-    for (std::map<std::string, Writer*>::iterator i = cache.begin();
+    for (std::map<std::string, dataset::Writer*>::iterator i = cache.begin();
             i != cache.end(); ++i)
         i->second->flush();
 }
 
 // Explicit template instantiations
-template class DatasetPool<Reader>;
-template class DatasetPool<Writer>;
+template class DatasetPool<dataset::Reader>;
+template class DatasetPool<dataset::Writer>;
 
 }
 // vim:set ts=4 sw=4:

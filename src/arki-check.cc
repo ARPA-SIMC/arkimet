@@ -86,7 +86,7 @@ struct Options : public StandardParserWithManpage
         bool found = false;
         while (hasNext())
         {
-            Reader::readConfig(next(), cfg);
+            dataset::Reader::readConfig(next(), cfg);
             found = true;
         }
         return found;
@@ -188,7 +188,7 @@ struct ScanTest : public Worker
 
     void process(const ConfigFile& cfg) override
     {
-        unique_ptr<Reader> ds(Reader::create(cfg));
+        unique_ptr<dataset::Reader> ds(dataset::Reader::create(cfg));
         if (dataset::LocalReader* ld = dynamic_cast<dataset::LocalReader*>(ds.get()))
         {
             size_t count = 0;
@@ -320,7 +320,7 @@ int main(int argc, const char* argv[])
             for (const auto& md: todolist)
             {
                 const types::AssignedDataset* ad = md->get<types::AssignedDataset>();
-                Writer* ds = pool.get(ad->name);
+                dataset::Writer* ds = pool.get(ad->name);
                 if (!ds)
                 {
                     cerr << "Message #" << count << " is not in any dataset: skipped" << endl;

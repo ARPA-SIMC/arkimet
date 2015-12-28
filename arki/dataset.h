@@ -224,9 +224,6 @@ struct OstreamReporter : public Reporter
     void segment_rescan(const Base& ds, const std::string& relpath, const std::string& message) override;
 };
 
-}
-
-
 class Reader : public dataset::Base
 {
 public:
@@ -413,4 +410,7 @@ struct NullChecker : public Checker
 };
 
 }
+}
+
+
 #endif

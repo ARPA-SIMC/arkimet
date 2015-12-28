@@ -108,7 +108,7 @@ Collection& Collection::operator=(const Collection& o)
     return *this;
 }
 
-Collection::Collection(Reader& ds, const dataset::DataQuery& q)
+Collection::Collection(dataset::Reader& ds, const dataset::DataQuery& q)
 {
     add(ds, q);
 }
@@ -153,7 +153,7 @@ metadata_dest_func Collection::inserter_func()
     return [=](unique_ptr<Metadata> md) { acquire(move(md)); return true; };
 }
 
-void Collection::add(Reader& ds, const dataset::DataQuery& q)
+void Collection::add(dataset::Reader& ds, const dataset::DataQuery& q)
 {
     ds.query_data(q, inserter_func());
 }

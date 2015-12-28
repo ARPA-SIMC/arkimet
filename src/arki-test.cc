@@ -73,11 +73,11 @@ int main(int argc, const char* argv[])
         } else if (opts.do_writelock->boolValue()) {
             string dspath = opts.next();
             ConfigFile cfg;
-            Reader::readConfig(dspath, cfg);
+            dataset::Reader::readConfig(dspath, cfg);
             cout << "Dataset config:" << endl;
             ConfigFile* dsconfig = cfg.sectionBegin()->second;
             dsconfig->output(cout, "stdout");
-            unique_ptr<Writer> ds(Writer::create(*dsconfig));
+            unique_ptr<dataset::Writer> ds(dataset::Writer::create(*dsconfig));
             Pending p = ds->test_writelock();
             printf("Press ENTER to unlock %s and quit...", dspath.c_str());
             fflush(stdout);

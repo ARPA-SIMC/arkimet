@@ -62,7 +62,7 @@ struct arki_querymacro_shar {
                     i != times.end(); ++i)
             {
                 md.set(Reftime::createPosition(*i));
-                ensure(testds.acquire(md) == Writer::ACQ_OK);
+                ensure(testds.acquire(md) == dataset::Writer::ACQ_OK);
             }
             ++count;
         }

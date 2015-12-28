@@ -205,9 +205,7 @@ int main(int argc, const char* argv[])
         {
             ConfigFile cfg;
             while (opts.hasNext())
-            {
-                Reader::readConfig(opts.next(), cfg);
-            }
+                dataset::Reader::readConfig(opts.next(), cfg);
 
             // Output the merged configuration
             string res = cfg.serialize();
