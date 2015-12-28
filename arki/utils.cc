@@ -1,12 +1,9 @@
 #include "config.h"
-
 #define _XOPEN_SOURCE 700
 #define _XOPEN_SOURCE_EXTENDED 1
-
 #include <arki/utils.h>
 #include <arki/utils/sys.h>
 #include <arki/wibble/sys/process.h>
-#include <fstream>
 #include <cctype>
 #include <cstdlib>
 #include <cstring>

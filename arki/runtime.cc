@@ -30,6 +30,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <iostream>
+#include <fstream>
 #include <cstdlib>
 #include <cassert>
 

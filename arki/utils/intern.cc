@@ -1,9 +1,7 @@
-#include "config.h"
-#include <arki/utils/intern.h>
+#include "intern.h"
 #include <vector>
 #include <set>
-#include <fstream>
-#include <stdint.h>
+#include <cstdint>
 
 using namespace std;
 

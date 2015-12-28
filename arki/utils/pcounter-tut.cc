@@ -1,10 +1,7 @@
 #include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/utils/pcounter.h>
-
 #include <sstream>
-#include <fstream>
 #include <iostream>
 
 using namespace arki;

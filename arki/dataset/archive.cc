@@ -19,13 +19,7 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/wibble/exception.h"
-#include <fstream>
 #include <ctime>
-#include <cstdio>
-#include <cerrno>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #ifdef HAVE_LUA
 #include "arki/report.h"

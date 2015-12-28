@@ -5,7 +5,6 @@
 
 #include <arki/defs.h>
 #include <arki/dataset.h>
-#include <fstream>
 #include <string>
 
 namespace arki {

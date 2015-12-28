@@ -16,7 +16,6 @@
 #include "arki/nag.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include <fstream>
 #include <ctime>
 #include <cstdio>
 #include <sys/types.h>

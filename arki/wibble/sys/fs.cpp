@@ -1,11 +1,6 @@
 #include <arki/wibble/sys/fs.h>
-#include <fstream>
-#include <dirent.h> // opendir, closedir
 #include <sys/stat.h>
 #include <unistd.h>
-#include <string.h>
-#include <errno.h>
-#include <malloc.h> // alloca on win32 seems to live there
 
 namespace wibble {
 namespace sys {
@@ -25,5 +20,3 @@ bool exists(const std::string& file)
 }
 }
 }
-
-// vim:set ts=4 sw=4:
