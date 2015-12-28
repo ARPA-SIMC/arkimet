@@ -27,7 +27,6 @@ std::string FileState::to_string() const
     if (value & FILE_TO_INDEX)   res.push_back("TO_INDEX");
     if (value & FILE_TO_RESCAN)  res.push_back("TO_RESCAN");
     if (value & FILE_TO_DEINDEX) res.push_back("TO_DEINDEX");
-    if (value & FILE_ARCHIVED)   res.push_back("ARCHIVED");
     return str::join(",", res.begin(), res.end());
 }
 

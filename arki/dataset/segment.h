@@ -29,7 +29,6 @@ static const unsigned FILE_TO_PACK    = 1 << 2; /// File contains data that has 
 static const unsigned FILE_TO_INDEX   = 1 << 3; /// File is not present in the index
 static const unsigned FILE_TO_RESCAN  = 1 << 4; /// File contents are inconsistent with the index
 static const unsigned FILE_TO_DEINDEX = 1 << 5; /// File does not exist but has entries in the index
-static const unsigned FILE_ARCHIVED   = 1 << 6; /// File is in the archive
 
 namespace segment {
 class Segment;
@@ -45,7 +44,6 @@ struct FileState
     FileState(unsigned value) : value(value) {}
 
     bool is_ok() const { return value == FILE_OK; }
-    bool is_archived_ok() const { return value == FILE_ARCHIVED; }
 
     bool has(unsigned state) const
     {

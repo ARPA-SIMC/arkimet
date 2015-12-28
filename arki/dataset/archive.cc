@@ -352,24 +352,6 @@ void ArchivesChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
     });
 }
 
-#if 0
-void ArchivesChecker::maintenance(segment::state_func v, bool quick)
-{
-    archives->iter([&](SegmentedChecker& a) {
-        a.maintenance([&](const std::string& file, segment::FileState state) {
-            // Add the archived bit
-            // Remove the TO_PACK bit, since once a file is archived it's not
-            //   touched anymore, so there's no point packing it
-            // Remove the TO_ARCHIVE bit, since we're already in the archive
-            // Remove the TO_DELETE bit, since delete age doesn't affect the
-            //   archive
-            state = state - FILE_TO_PACK - FILE_TO_ARCHIVE - FILE_TO_DELETE + FILE_ARCHIVED;
-            v(str::joinpath(a.name(), file), state);
-        }, quick);
-    });
-}
-#endif
-
 static std::string poppath(std::string& path)
 {
 	size_t start = 0;

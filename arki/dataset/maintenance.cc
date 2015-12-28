@@ -209,26 +209,17 @@ void MockRepacker::operator()(const std::string& relpath, segment::FileState sta
     }
     if (state.has(FILE_TO_INDEX))
     {
-        if (state.has(FILE_ARCHIVED))
-            reporter.segment_delete(w, relpath, "should be deleted from the archive");
-        else
-            reporter.segment_delete(w, relpath, "should be deleted");
+        reporter.segment_delete(w, relpath, "should be deleted");
         ++m_count_deleted;
     }
     if (state.has(FILE_TO_DEINDEX))
     {
-        if (state.has(FILE_ARCHIVED))
-            reporter.segment_deindex(w, relpath, "should be removed from the archive index");
-        else
-            reporter.segment_deindex(w, relpath, "should be removed from the index");
+        reporter.segment_deindex(w, relpath, "should be removed from the index");
         ++m_count_deindexed;
     }
     if (state.has(FILE_TO_RESCAN))
     {
-        if (state.has(FILE_ARCHIVED))
-            reporter.segment_rescan(w, relpath, "should be rescanned by the archive");
-        else
-            reporter.segment_rescan(w, relpath, "should be rescanned");
+        reporter.segment_rescan(w, relpath, "should be rescanned");
         ++m_count_rescanned;
     }
     if (state.is_ok()) ++m_count_ok;
@@ -257,18 +248,12 @@ void MockFixer::operator()(const std::string& relpath, segment::FileState state)
     }
     if (state.has(FILE_TO_INDEX) || state.has(FILE_TO_RESCAN))
     {
-        if (state.has(FILE_ARCHIVED))
-            reporter.segment_rescan(w, relpath, "should be rescanned by the archive");
-        else
-            reporter.segment_rescan(w, relpath, "should be rescanned");
+        reporter.segment_rescan(w, relpath, "should be rescanned");
         ++m_count_rescanned;
     }
     if (state.has(FILE_TO_DEINDEX))
     {
-        if (state.has(FILE_ARCHIVED))
-            reporter.segment_deindex(w, relpath, "should be removed from the archive index");
-        else
-            reporter.segment_deindex(w, relpath, "should be removed from the index");
+        reporter.segment_deindex(w, relpath, "should be removed from the index");
         ++m_count_deindexed;
     }
     if (state.is_ok()) ++m_count_ok;
