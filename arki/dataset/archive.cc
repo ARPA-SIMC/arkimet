@@ -217,6 +217,13 @@ struct ArchivesCheckerRoot: public ArchivesRoot<Checker>
         {
             last = instantiate("last").release();
 
+            // FIXME: this fails if a file has already been placed there.
+            // Use a new Checker::create function instead, that just makes sure
+            // a dataset is there without needs-check-do-not-pack (but then it
+            // should fail if the directory already exists).
+            // Ok, instead, when archiving a file, ensure that 'last' exists
+            // before starting moving files into it.
+
             // Run a check to remove needs-check-do-not-pack files
             NullReporter r;
             last->check(r, true, true);

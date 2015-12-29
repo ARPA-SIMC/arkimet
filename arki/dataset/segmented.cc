@@ -10,6 +10,7 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
+#include "arki/utils/compress.h"
 #include <sstream>
 
 using namespace std;
@@ -116,6 +117,9 @@ SegmentedChecker::~SegmentedChecker()
 
 void SegmentedChecker::archiveFile(const std::string& relpath)
 {
+#warning TODO: this is a hack to ensure that 'last' is created (and clean) before we start moving files into it.
+    archive();
+
     string pathname = str::joinpath(m_path, relpath);
     string arcrelname = str::joinpath("last", relpath);
     string arcabsname = str::joinpath(m_path, ".archive", arcrelname);
@@ -162,7 +166,15 @@ void SegmentedChecker::archiveFile(const std::string& relpath)
     sys::rename_ifexists(pathname + ".summary", arcabsname + ".summary");
 
     // Acquire in the achive
-    metadata::Collection mdc(arcabsname);
+    metadata::Collection mdc;
+    if (sys::exists(arcabsname + ".metadata"))
+        mdc.read_from_file(arcabsname + ".metadata");
+    else if (compressed) {
+        utils::compress::TempUnzip tu(arcabsname);
+        scan::scan(arcabsname, mdc.inserter_func());
+    } else
+        scan::scan(arcabsname, mdc.inserter_func());
+
     archive().indexFile(arcrelname, move(mdc));
 }
 
