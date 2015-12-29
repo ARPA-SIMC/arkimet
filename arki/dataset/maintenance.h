@@ -27,23 +27,33 @@ class Step;
 namespace maintenance {
 
 /**
- * MaintFileVisitor that feeds a MaintFileVisitor with TO_INDEX status.
+ * Scan the files actually present inside a directory and compare them with a
+ * stream of files known by an indexed, detecting new files and files that have
+ * been removed.
  *
- * The input feed is assumed to come from the index, and is checked against the
- * files found on disk in order to detect files that are on disk but not in the
- * index.
+ * Check needs to be called with relpaths in ascending alphabetical order.
+ *
+ * Results are sent to the \a next state_func. \a next can be called more times
+ * than check has been called, in case of segments found on disk that the index
+ * does not know about.
+ *
+ * end() needs to be called after all index information has been sent to
+ * check(), in order to generate data for the remaining files found on disk and
+ * not in the index.
  */
 struct FindMissing
 {
     segment::state_func& next;
     std::vector<std::string> disk;
 
-    FindMissing(segment::state_func next, const std::vector<std::string>& files);
+    FindMissing(const std::string& root, segment::state_func next);
+    FindMissing(const FindMissing&) = delete;
+    FindMissing& operator=(const FindMissing&) = delete;
 
     // files: a, b, c,    e, f, g
     // index:       c, d, e, f, g
 
-    void operator()(const std::string& relpath, segment::State state);
+    void check(const std::string& relpath, segment::State state);
     void end();
 };
 
@@ -53,12 +63,13 @@ struct FindMissing
  */
 struct CheckAge
 {
+    typedef std::function<bool(const std::string&, types::Time&, types::Time&)> segment_timespan_func;
     segment::state_func& next;
-    const Step& step;
+    segment_timespan_func get_segment_timespan;
     types::Time archive_threshold;
     types::Time delete_threshold;
 
-    CheckAge(segment::state_func& next, const Step& step, int archive_age=-1, int delete_age=-1);
+    CheckAge(segment::state_func& next, segment_timespan_func get_segment_timespan, int archive_age=-1, int delete_age=-1);
 
     void operator()(const std::string& relpath, segment::State state);
 };

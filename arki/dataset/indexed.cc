@@ -1,6 +1,7 @@
 #include "indexed.h"
 #include "index.h"
 #include "maintenance.h"
+#include "step.h"
 
 namespace arki {
 namespace dataset {
@@ -56,13 +57,27 @@ IndexedChecker::~IndexedChecker()
     delete m_idx;
 }
 
-#if 0
 void IndexedChecker::maintenance(segment::state_func v, bool quick)
 {
     // TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
     // and delete the index if it fails
 
-    maintenance::CheckAge ca(v, *m_tf, m_archive_age, m_delete_age);
+    maintenance::CheckAge::segment_timespan_func get_segment_timespan;
+    if (m_step)
+    {
+        // If we have a step, try and use it to get the timespan without hitting the index
+        get_segment_timespan = [&](const std::string& relpath, types::Time& begin, types::Time& until) {
+            if (m_step->path_timespan(relpath, begin, until))
+                return true;
+            return m_idx->segment_timespan(relpath, begin, until);
+        };
+    } else {
+        get_segment_timespan = [&](const std::string& relpath, types::Time& begin, types::Time& until) {
+            return m_idx->segment_timespan(relpath, begin, until);
+        };
+    }
+
+    maintenance::CheckAge ca(v, get_segment_timespan, m_archive_age, m_delete_age);
     maintenance::FindMissing fm(m_path, [&](const std::string& relname, segment::State state) { ca(relname, state); });
     m_idx->scan_files([&](const std::string& relname, segment::State state, const metadata::Collection& mds) {
         if (!state.is_ok())
@@ -72,9 +87,8 @@ void IndexedChecker::maintenance(segment::state_func v, bool quick)
     });
     fm.end();
 
-    SegmentedWriter::maintenance(v, quick);
+    SegmentedChecker::maintenance(v, quick);
 }
-#endif
 
 void IndexedChecker::removeAll(Reporter& reporter, bool writable)
 {

@@ -27,7 +27,8 @@ struct BaseStep : public Step
     {
         types::Time min;
         types::Time max;
-        path_timespan(path, min, max);
+        if (!path_timespan(path, min, max))
+            return false;
         auto rt = Reftime::createPeriod(min, max);
         return m.matchItem(*rt);
     }
@@ -37,15 +38,16 @@ struct Yearly : public BaseStep
 {
     static const char* name() { return "yearly"; }
 
-    void path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
+    bool path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
     {
         int dummy;
         int base[6] = { -1, -1, -1, -1, -1, -1 };
         if (sscanf(path.c_str(), "%02d/%04d", &dummy, &base[0]) != 2)
-            throw std::runtime_error("cannt parse path " + path + " as a yearly segment");
+            return false;
 
         gd::lowerbound(base, start_time.vals);
         gd::upperbound(base, end_time.vals);
+        return true;
     }
 
     std::string operator()(const Metadata& md) override
@@ -61,14 +63,15 @@ struct Monthly : public BaseStep
 {
     static const char* name() { return "monthly"; }
 
-    void path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
+    bool path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
     {
         int base[6] = { -1, -1, -1, -1, -1, -1 };
         if (sscanf(path.c_str(), "%04d/%02d", &base[0], &base[1]) == 0)
-            throw std::runtime_error("cannt parse path " + path + " as a monthly segment");
+            return false;
 
         gd::lowerbound(base, start_time.vals);
         gd::upperbound(base, end_time.vals);
+        return true;
     }
 
     std::string operator()(const Metadata& md) override
@@ -84,13 +87,13 @@ struct Biweekly : public BaseStep
 {
     static const char* name() { return "biweekly"; }
 
-    void path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
+    bool path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
     {
         int year, month = -1, biweek = -1;
         int min[6] = { -1, -1, -1, -1, -1, -1 };
         int max[6] = { -1, -1, -1, -1, -1, -1 };
         if (sscanf(path.c_str(), "%04d/%02d-%d", &year, &month, &biweek) == 0)
-            throw std::runtime_error("cannt parse path " + path + " as a biweekly segment");
+            return false;
         min[0] = max[0] = year;
         min[1] = max[1] = month;
 		switch (biweek)
@@ -103,6 +106,7 @@ struct Biweekly : public BaseStep
         gd::upperbound(max);
         start_time.set(min);
         end_time.set(max);
+        return true;
     }
 
     std::string operator()(const Metadata& md) override
@@ -121,13 +125,13 @@ struct Weekly : public BaseStep
 {
     static const char* name() { return "weekly"; }
 
-    void path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
+    bool path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
     {
 		int year, month = -1, week = -1;
 		int min[6] = { -1, -1, -1, -1, -1, -1 };
 		int max[6] = { -1, -1, -1, -1, -1, -1 };
         if (sscanf(path.c_str(), "%04d/%02d-%d", &year, &month, &week) == 0)
-            throw std::runtime_error("cannt parse path " + path + " as a weekly segment");
+            return false;
         min[0] = max[0] = year;
         min[1] = max[1] = month;
 		if (week != -1)
@@ -139,6 +143,7 @@ struct Weekly : public BaseStep
         gd::upperbound(max);
         start_time.set(min);
         end_time.set(max);
+        return true;
     }
 
     std::string operator()(const Metadata& md) override
@@ -157,13 +162,14 @@ struct Daily : public BaseStep
 {
     static const char* name() { return "daily"; }
 
-    void path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
+    bool path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
     {
         int base[6] = { -1, -1, -1, -1, -1, -1 };
         if (sscanf(path.c_str(), "%04d/%02d-%02d", &base[0], &base[1], &base[2]) == 0)
-            throw std::runtime_error("cannt parse path " + path + " as a daily segment");
+            return false;
         gd::lowerbound(base, start_time.vals);
         gd::upperbound(base, end_time.vals);
+        return true;
     }
 
     std::string operator()(const Metadata& md) override
@@ -198,14 +204,15 @@ struct SingleFile : public BaseStep
 
     virtual ~SingleFile() {}
 
-    void path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
+    bool path_timespan(const std::string& path, types::Time& start_time, types::Time& end_time) const override
     {
         int base[6] = { -1, -1, -1, -1, -1, -1 };
         uint64_t counter;
         if (sscanf(path.c_str(), "%04d/%02d/%02d/%02d/%" SCNu64, &base[0], &base[1], &base[2], &base[3], &counter) == 0)
-            throw std::runtime_error("cannt parse path " + path + " as a singlefile segment");
+            return false;
         gd::lowerbound(base, start_time.vals);
         gd::upperbound(base, end_time.vals);
+        return true;
     }
 
     std::string operator()(const Metadata& md) override

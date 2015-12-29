@@ -22,13 +22,14 @@ class Collection;
 }
 
 namespace dataset {
-static const unsigned FILE_OK    = 0;
-static const unsigned FILE_TO_ARCHIVE = 1 << 0; /// File is ok, but old enough to be archived
-static const unsigned FILE_TO_DELETE  = 1 << 1; /// File is ok, but old enough to be deleted
-static const unsigned FILE_TO_PACK    = 1 << 2; /// File contains data that has been deleted
-static const unsigned FILE_TO_INDEX   = 1 << 3; /// File is not present in the index
-static const unsigned FILE_TO_RESCAN  = 1 << 4; /// File contents are inconsistent with the index
-static const unsigned FILE_TO_DEINDEX = 1 << 5; /// File does not exist but has entries in the index
+static const unsigned FILE_OK              = 0;
+static const unsigned FILE_TO_ARCHIVE      = 1 << 0; /// File is ok, but old enough to be archived
+static const unsigned FILE_TO_DELETE       = 1 << 1; /// File is ok, but old enough to be deleted
+static const unsigned FILE_TO_PACK         = 1 << 2; /// File contains data that has been deleted
+static const unsigned FILE_TO_INDEX        = 1 << 3; /// File is not present in the index
+static const unsigned FILE_TO_RESCAN       = 1 << 4; /// File contents are inconsistent with the index
+static const unsigned FILE_TO_DEINDEX      = 1 << 5; /// File does not exist but has entries in the index
+static const unsigned FILE_TO_FIX_MANUALLY = 1 << 6; /// File is broken in a way that needs manual intervention
 
 namespace segment {
 class Segment;

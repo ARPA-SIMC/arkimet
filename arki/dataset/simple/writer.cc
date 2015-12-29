@@ -160,14 +160,6 @@ Checker::~Checker()
     m_mft->flush();
 }
 
-void Checker::maintenance(segment::state_func v, bool quick)
-{
-    // TODO Detect if data is not in reftime order
-    maintenance::CheckAge ca(v, *m_step, m_archive_age, m_delete_age);
-    m_mft->check(*m_segment_manager, ca, quick);
-    SegmentedChecker::maintenance(v, quick);
-}
-
 void Checker::indexFile(const std::string& relname, metadata::Collection&& mds)
 {
     string pathname = str::joinpath(m_path, relname);

@@ -268,28 +268,6 @@ Checker::Checker(const ConfigFile& cfg)
     idx->open();
 }
 
-void Checker::maintenance(segment::state_func v, bool quick)
-{
-    // TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
-    // and delete the index if it fails
-
-    // Iterate subdirs in sorted order
-    // Also iterate files on index in sorted order
-    // Check each file for need to reindex or repack
-    maintenance::CheckAge ca(v, *m_step, m_archive_age, m_delete_age);
-    vector<string> files = scan::dir(m_path);
-    maintenance::FindMissing fm([&](const std::string& relname, segment::State state) { ca(relname, state); }, files);
-    idx->scan_files([&](const std::string& relname, segment::State state, const metadata::Collection& mds) {
-        if (state.is_ok())
-            fm(relname, m_segment_manager->check(relname, mds, quick));
-        else
-            fm(relname, state);
-    });
-    fm.end();
-    SegmentedChecker::maintenance(v, quick);
-}
-
-
 void Checker::rescanFile(const std::string& relpath)
 {
     string pathname = str::joinpath(m_path, relpath);

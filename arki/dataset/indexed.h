@@ -47,7 +47,7 @@ public:
     IndexedChecker(const ConfigFile& cfg);
     ~IndexedChecker();
 
-    //void maintenance(segment::state_func v, bool quick=true) override;
+    void maintenance(segment::state_func v, bool quick=true) override;
     void removeAll(Reporter& reporter, bool writable) override;
 };
 

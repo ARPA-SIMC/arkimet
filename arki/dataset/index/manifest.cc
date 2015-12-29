@@ -53,29 +53,6 @@ struct HFSorter : public sort::Compare
     }
 };
 
-void scan_file(segment::SegmentManager& sm, const std::string& root, const std::string& relname, segment::state_func visitor, bool quick=true)
-{
-    HFSorter cmp;
-
-    string absname = str::joinpath(root, relname);
-
-    // If the segment file is compressed, create a temporary uncompressed copy
-    unique_ptr<utils::compress::TempUnzip> tu;
-    if (!quick && scan::isCompressed(absname))
-        tu.reset(new utils::compress::TempUnzip(absname));
-
-    metadata::Collection mdc;
-    scan::scan(absname, mdc.inserter_func());
-    //mdc.sort(""); // Sort by reftime, to find items out of order
-    mdc.sort(cmp); // Sort by reftime and by offset
-
-    // Check the state of the file
-    segment::State state = sm.check(relname, mdc, quick);
-
-    // Pass on the file state to the visitor
-    visitor(relname, state);
-}
-
 void scan_file(const std::string& root, const std::string& relname, segment::State state, segment::contents_func dest)
 {
     string absname = str::joinpath(root, relname);
@@ -263,11 +240,6 @@ void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
 
 namespace manifest {
 static bool mft_force_sqlite = false;
-
-static bool sorter(const std::string& a, const std::string& b)
-{
-	return b < a;
-}
 
 class PlainManifest : public Manifest
 {
@@ -557,84 +529,6 @@ public:
             scan_file(m_path, i.file, state, v);
         }
     }
-
-    void check(segment::SegmentManager& sm, segment::state_func v, bool quick=true) override
-    {
-#if 0
-	// TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
-	// and delete the index if it fails
-
-	// Iterate subdirs in sorted order
-	// Also iterate files on index in sorted order
-	// Check each file for need to reindex or repack
-	writer::CheckAge ca(v, m_idx, m_archive_age, m_delete_age);
-	vector<string> files = scan::dir(m_path);
-	maintenance::FindMissing fm(ca, files);
-	maintenance::HoleFinder hf(fm, m_path, quick);
-	m_idx.scan_files(hf);
-	hf.end();
-	fm.end();
-	if (hasArchive())
-		archive().maintenance(v);
-#endif
-		reread();
-
-		// List of files existing on disk
-		std::vector<std::string> disk = scan::dir(m_path, true);
-		std::sort(disk.begin(), disk.end(), sorter);
-
-		vector<Info> info = this->info;
-		for (vector<Info>::const_iterator i = info.begin(); i != info.end(); ++i)
-		{
-			while (not disk.empty() and disk.back() < i->file)
-			{
-				nag::verbose("%s: %s is not in index", m_path.c_str(), disk.back().c_str());
-				v(disk.back(), FILE_TO_INDEX);
-				disk.pop_back();
-			}
-			if (not disk.empty() and disk.back() == i->file)
-			{
-				disk.pop_back();
-
-				string pathname = str::joinpath(m_path, i->file);
-
-				time_t ts_data = scan::timestamp(pathname);
-				time_t ts_md = sys::timestamp(pathname + ".metadata", 0);
-				time_t ts_sum = sys::timestamp(pathname + ".summary", 0);
-				time_t ts_idx = i->mtime;
-
-				if (ts_idx != ts_data ||
-				    ts_md < ts_data ||
-				    ts_sum < ts_md)
-				{
-					// Check timestamp consistency
-					if (ts_idx != ts_data)
-						nag::verbose("%s: %s has a timestamp (%d) different than the one in the index (%d)",
-								m_path.c_str(), i->file.c_str(), ts_data, ts_idx);
-					if (ts_md < ts_data)
-						nag::verbose("%s: %s has a timestamp (%d) newer that its metadata (%d)",
-								m_path.c_str(), i->file.c_str(), ts_data, ts_md);
-					if (ts_md < ts_data)
-						nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
-								m_path.c_str(), i->file.c_str(), ts_md, ts_sum);
-					v(i->file, FILE_TO_RESCAN);
-				}
-				else
-                    scan_file(sm, m_path, i->file, v, quick);
-			}
-			else // if (disk.empty() or disk.back() > i->file)
-			{
-				nag::verbose("%s: %s has been deleted from the archive", m_path.c_str(), i->file.c_str());
-				v(i->file, FILE_TO_DEINDEX);
-			}
-		}
-		while (not disk.empty())
-		{
-			nag::verbose("%s: %s is not in index", m_path.c_str(), disk.back().c_str());
-			v(disk.back(), FILE_TO_INDEX);
-			disk.pop_back();
-		}
-	}
 
 	void flush()
 	{
@@ -945,74 +839,6 @@ public:
             scan_file(m_path, i.first, state, v);
         }
     }
-
-	void check(segment::SegmentManager& sm, segment::state_func v, bool quick=true) override
-	{
-		// List of files existing on disk
-		std::vector<std::string> disk = scan::dir(m_path, true);
-		std::sort(disk.begin(), disk.end(), sorter);
-
-		// Preread the file list, so it does not get modified as we scan
-		vector< pair<string, time_t> > files;
-		{
-			Query q("sel_archive", m_db);
-			q.compile("SELECT file, mtime FROM files ORDER BY file");
-
-			while (q.step())
-				files.push_back(make_pair(q.fetchString(0), q.fetch<time_t>(1)));
-		}
-
-		for (vector< pair<string, time_t> >::const_iterator i = files.begin(); i != files.end(); ++i)
-		{
-			while (not disk.empty() and disk.back() < i->first)
-			{
-				nag::verbose("%s: %s is not in index", m_path.c_str(), disk.back().c_str());
-				v(disk.back(), FILE_TO_INDEX);
-				disk.pop_back();
-			}
-			if (not disk.empty() and disk.back() == i->first)
-			{
-				disk.pop_back();
-
-                string pathname = str::joinpath(m_path, i->first);
-
-                time_t ts_data = scan::timestamp(pathname);
-                time_t ts_md = sys::timestamp(pathname + ".metadata", 0);
-                time_t ts_sum = sys::timestamp(pathname + ".summary", 0);
-                time_t ts_idx = i->second;
-
-				if (ts_idx != ts_data ||
-				    ts_md < ts_data ||
-				    ts_sum < ts_md)
-				{
-					// Check timestamp consistency
-					if (ts_idx != ts_data)
-						nag::verbose("%s: %s has a timestamp (%d) different than the one in the index (%d)",
-								m_path.c_str(), i->first.c_str(), ts_data, ts_idx);
-					if (ts_md < ts_data)
-						nag::verbose("%s: %s has a timestamp (%d) newer that its metadata (%d)",
-								m_path.c_str(), i->first.c_str(), ts_data, ts_md);
-					if (ts_md < ts_data)
-						nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
-								m_path.c_str(), i->first.c_str(), ts_md, ts_sum);
-					v(i->first, FILE_TO_RESCAN);
-				}
-				else
-                    scan_file(sm, m_path, i->first, v, quick);
-			}
-			else // if (disk.empty() or disk.back() > i->first)
-			{
-				nag::verbose("%s: %s has been deleted from the archive", m_path.c_str(), i->first.c_str());
-				v(i->first, FILE_TO_DEINDEX);
-			}
-		}
-		while (not disk.empty())
-		{
-			nag::verbose("%s: %s is not in index", m_path.c_str(), disk.back().c_str());
-			v(disk.back(), FILE_TO_INDEX);
-			disk.pop_back();
-		}
-	}
 
     static bool exists(const std::string& dir)
     {

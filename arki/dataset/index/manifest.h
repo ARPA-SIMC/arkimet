@@ -32,7 +32,6 @@ public:
     virtual size_t vacuum() = 0;
     virtual void acquire(const std::string& relname, time_t mtime, const Summary& sum) = 0;
     virtual void remove(const std::string& relname) = 0;
-    virtual void check(segment::SegmentManager& sm, segment::state_func v, bool quick=true) = 0;
     virtual void flush() = 0;
 
     virtual Pending test_writelock() = 0;

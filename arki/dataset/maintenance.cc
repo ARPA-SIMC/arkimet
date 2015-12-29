@@ -11,6 +11,7 @@
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
 #include <arki/scan/any.h>
+#include <arki/scan/dir.h>
 #include <arki/sort.h>
 #include <arki/nag.h>
 #include <algorithm>
@@ -46,40 +47,31 @@ namespace arki {
 namespace dataset {
 namespace maintenance {
 
-static bool sorter(const std::string& a, const std::string& b)
+FindMissing::FindMissing(const std::string& root, segment::state_func next)
+    : next(next), disk(scan::dir(root))
 {
-	return b < a;
+    // Sort backwards because we read from the end
+    auto sorter = [](const std::string& a, const std::string& b) { return b < a; };
+    std::sort(disk.begin(), disk.end(), sorter);
 }
 
-FindMissing::FindMissing(segment::state_func next, const std::vector<std::string>& files)
-	: next(next), disk(files)
+void FindMissing::check(const std::string& relpath, segment::State state)
 {
-	// Sort backwards because we read from the end
-	std::sort(disk.begin(), disk.end(), sorter);
-}
-
-void FindMissing::operator()(const std::string& file, segment::State state)
-{
-    while (not disk.empty() and disk.back() < file)
+    while (not disk.empty() and disk.back() < relpath)
     {
         nag::verbose("FindMissing: %s is not in index", disk.back().c_str());
-        next(disk.back(), state + FILE_TO_INDEX);
+        next(disk.back(), FILE_TO_INDEX);
         disk.pop_back();
     }
-    if (!disk.empty() && disk.back() == file)
+    if (!disk.empty() && disk.back() == relpath)
     {
-        // TODO: if requested, check for internal consistency
-        // TODO: it requires to have an infrastructure for quick
-        // TODO:   consistency checkers (like, "GRIB starts with GRIB
-        // TODO:   and ends with 7777")
-
         disk.pop_back();
-        next(file, state);
+        next(relpath, state);
     }
     else // if (disk.empty() || disk.back() > file)
     {
-        nag::verbose("FindMissing: %s has been deleted", file.c_str());
-        next(file, state - FILE_TO_RESCAN + FILE_TO_DEINDEX);
+        nag::verbose("FindMissing: %s has been deleted", relpath.c_str());
+        next(relpath, state - FILE_TO_RESCAN + FILE_TO_DEINDEX);
     }
 }
 
@@ -106,8 +98,8 @@ TestOverrideCurrentDateForMaintenance::~TestOverrideCurrentDateForMaintenance()
 }
 
 
-CheckAge::CheckAge(segment::state_func& next, const Step& step, int archive_age, int delete_age)
-    : next(next), step(step), archive_threshold(0, 0, 0), delete_threshold(0, 0, 0)
+CheckAge::CheckAge(segment::state_func& next, segment_timespan_func get_segment_timespan, int archive_age, int delete_age)
+    : next(next), get_segment_timespan(get_segment_timespan), archive_threshold(0, 0, 0), delete_threshold(0, 0, 0)
 {
     time_t now = override_now ? override_now : time(NULL);
     struct tm t;
@@ -129,28 +121,31 @@ CheckAge::CheckAge(segment::state_func& next, const Step& step, int archive_age,
     }
 }
 
-void CheckAge::operator()(const std::string& file, segment::State state)
+void CheckAge::operator()(const std::string& relpath, segment::State state)
 {
     if (archive_threshold.vals[0] == 0 and delete_threshold.vals[0] == 0)
-        next(file, state);
+        next(relpath, state);
     else
     {
         types::Time start_time;
         types::Time end_time;
-#warning if the path is invalid, path_timespan throws, and the exception is not currently handled. Handle it setting the file in a "needs manual recovery" status
-        step.path_timespan(file, start_time, end_time);
-        if (delete_threshold.vals[0] != 0 && delete_threshold >= end_time)
+        if (!get_segment_timespan(relpath, start_time, end_time))
         {
-            nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
-            next(file, state + FILE_TO_DELETE);
+            nag::verbose("CheckAge: cannot detect the timespan of segment %s", relpath.c_str());
+            next(relpath, state + FILE_TO_FIX_MANUALLY);
+        }
+        else if (delete_threshold.vals[0] != 0 && delete_threshold >= end_time)
+        {
+            nag::verbose("CheckAge: %s is old enough to be deleted", relpath.c_str());
+            next(relpath, state + FILE_TO_DELETE);
         }
         else if (archive_threshold.vals[0] != 0 && archive_threshold >= end_time)
         {
-            nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
-            next(file, state + FILE_TO_ARCHIVE);
+            nag::verbose("CheckAge: %s is old enough to be archived", relpath.c_str());
+            next(relpath, state + FILE_TO_ARCHIVE);
         }
         else
-            next(file, state);
+            next(relpath, state);
     }
 }
 

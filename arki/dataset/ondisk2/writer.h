@@ -59,7 +59,6 @@ protected:
 public:
     Checker(const ConfigFile& cfg);
 
-    void maintenance(segment::state_func v, bool quick=true) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
 
     void rescanFile(const std::string& relpath) override;
