@@ -63,12 +63,15 @@ void scan_file(const std::string& root, const std::string& relname, segment::Sta
     if (!quick && scan::isCompressed(absname))
         tu.reset(new utils::compress::TempUnzip(absname));
 #endif
-
     metadata::Collection contents;
     if (sys::exists(absname + ".metadata"))
         contents.read_from_file(absname + ".metadata");
-    else if (sys::exists(absname))
-        scan::scan(absname, contents.inserter_func());
+    else if (scan::exists(absname))
+        // If scan_file is called, the index know about the file, so instead of
+        // saying SEGMENT_NEW because we have data without metadata, we say
+        // SEGMENT_UNALIGNED because the metadata needs to be regenerated
+        // anyway
+        state += SEGMENT_UNALIGNED;
     else
         state += SEGMENT_DELETED;
 
