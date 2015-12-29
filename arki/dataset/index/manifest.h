@@ -53,6 +53,8 @@ public:
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     bool query_summary(const Matcher& matcher, Summary& summary) override;
+    void list_segments(std::function<void(const std::string&)> dest) override = 0;
+    void scan_files(segment::contents_func v) override = 0;
 
 	void rescanFile(const std::string& dir, const std::string& relpath);
 

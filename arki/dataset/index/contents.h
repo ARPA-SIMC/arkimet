@@ -144,9 +144,9 @@ public:
     /**
      * Scan all file info in the database, sorted by file and offset
      */
-    void scan_files(segment::contents_func v) const;
+    void scan_files(segment::contents_func v) override;
 
-    void list_segments(std::function<void(const std::string&)> dest);
+    void list_segments(std::function<void(const std::string&)> dest) override;
 
     /**
      * Send the metadata of all data items inside a file to the given consumer

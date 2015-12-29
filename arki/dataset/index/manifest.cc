@@ -40,20 +40,22 @@ namespace dataset {
 namespace index {
 
 namespace {
+struct HFSorter : public sort::Compare
+{
+    virtual int compare(const Metadata& a, const Metadata& b) const {
+        int res = Type::nullable_compare(a.get(TYPE_REFTIME), b.get(TYPE_REFTIME));
+        if (res == 0)
+            return a.source().compare(b.source());
+        return res;
+    }
+    virtual std::string toString() const {
+        return "HFSorter";
+    }
+};
+
 void scan_file(segment::SegmentManager& sm, const std::string& root, const std::string& relname, segment::state_func visitor, bool quick=true)
 {
-    struct HFSorter : public sort::Compare
-    {
-        virtual int compare(const Metadata& a, const Metadata& b) const {
-            int res = Type::nullable_compare(a.get(TYPE_REFTIME), b.get(TYPE_REFTIME));
-            if (res == 0)
-                return a.source().compare(b.source());
-            return res;
-        }
-        virtual std::string toString() const {
-            return "HFSorter";
-        }
-    } cmp;
+    HFSorter cmp;
 
     string absname = str::joinpath(root, relname);
 
@@ -72,6 +74,26 @@ void scan_file(segment::SegmentManager& sm, const std::string& root, const std::
 
     // Pass on the file state to the visitor
     visitor(relname, state);
+}
+
+void scan_file(const std::string& root, const std::string& relname, segment::State state, segment::contents_func dest)
+{
+    string absname = str::joinpath(root, relname);
+
+#if 0
+    // If the segment file is compressed, create a temporary uncompressed copy
+    unique_ptr<utils::compress::TempUnzip> tu;
+    if (!quick && scan::isCompressed(absname))
+        tu.reset(new utils::compress::TempUnzip(absname));
+#endif
+
+    metadata::Collection contents(absname);
+
+    HFSorter cmp;
+    contents.sort(cmp); // Sort by reftime and by offset
+
+    // Pass on the file state to the visitor
+    dest(relname, state, contents);
 }
 }
 
@@ -496,6 +518,46 @@ public:
 		dirty = true;
 	}
 
+    void list_segments(std::function<void(const std::string&)> dest) override
+    {
+        reread();
+        for (const auto& i: this->info)
+            dest(i.file);
+    }
+
+    void scan_files(segment::contents_func v) override
+    {
+        reread();
+
+        for (const auto& i: this->info)
+        {
+            string pathname = str::joinpath(m_path, i.file);
+
+            time_t ts_data = scan::timestamp(pathname);
+            time_t ts_md = sys::timestamp(pathname + ".metadata", 0);
+            time_t ts_sum = sys::timestamp(pathname + ".summary", 0);
+            time_t ts_idx = i.mtime;
+
+            segment::State state = FILE_OK;
+            if (ts_idx != ts_data || ts_md < ts_data || ts_sum < ts_md)
+            {
+                // Check timestamp consistency
+                if (ts_idx != ts_data)
+                    nag::verbose("%s: %s has a timestamp (%d) different than the one in the index (%d)",
+                            m_path.c_str(), i.file.c_str(), ts_data, ts_idx);
+                if (ts_md < ts_data)
+                    nag::verbose("%s: %s has a timestamp (%d) newer that its metadata (%d)",
+                            m_path.c_str(), i.file.c_str(), ts_data, ts_md);
+                if (ts_md < ts_data)
+                    nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
+                            m_path.c_str(), i.file.c_str(), ts_md, ts_sum);
+                state = FILE_TO_RESCAN;
+            }
+
+            scan_file(m_path, i.file, state, v);
+        }
+    }
+
     void check(segment::SegmentManager& sm, segment::state_func v, bool quick=true) override
     {
 #if 0
@@ -834,7 +896,57 @@ public:
 			;
 	}
 
-	virtual void check(segment::SegmentManager& sm, segment::state_func v, bool quick=true)
+    void list_segments(std::function<void(const std::string&)> dest) override
+    {
+        Query q("sel_archive", m_db);
+        q.compile("SELECT DISTINCT file FROM files ORDER BY file");
+
+        while (q.step())
+            dest(q.fetchString(0));
+    }
+
+    void scan_files(segment::contents_func v) override
+    {
+        // Preread the file list, so it does not get modified as we scan
+        vector< pair<string, time_t> > files;
+        {
+            Query q("sel_archive", m_db);
+            q.compile("SELECT file, mtime FROM files ORDER BY file");
+
+            while (q.step())
+                files.push_back(make_pair(q.fetchString(0), q.fetch<time_t>(1)));
+        }
+
+        for (const auto& i: files)
+        {
+            string pathname = str::joinpath(m_path, i.first);
+
+            time_t ts_data = scan::timestamp(pathname);
+            time_t ts_md = sys::timestamp(pathname + ".metadata", 0);
+            time_t ts_sum = sys::timestamp(pathname + ".summary", 0);
+            time_t ts_idx = i.second;
+
+            segment::State state = FILE_OK;
+            if (ts_idx != ts_data || ts_md < ts_data || ts_sum < ts_md)
+            {
+                // Check timestamp consistency
+                if (ts_idx != ts_data)
+                    nag::verbose("%s: %s has a timestamp (%d) different than the one in the index (%d)",
+                            m_path.c_str(), i.first.c_str(), ts_data, ts_idx);
+                if (ts_md < ts_data)
+                    nag::verbose("%s: %s has a timestamp (%d) newer that its metadata (%d)",
+                            m_path.c_str(), i.first.c_str(), ts_data, ts_md);
+                if (ts_md < ts_data)
+                    nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
+                            m_path.c_str(), i.first.c_str(), ts_md, ts_sum);
+                state = FILE_TO_RESCAN;
+            }
+
+            scan_file(m_path, i.first, state, v);
+        }
+    }
+
+	void check(segment::SegmentManager& sm, segment::state_func v, bool quick=true) override
 	{
 		// List of files existing on disk
 		std::vector<std::string> disk = scan::dir(m_path, true);

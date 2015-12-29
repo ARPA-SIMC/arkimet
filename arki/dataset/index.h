@@ -2,6 +2,7 @@
 #define ARKI_DATASET_INDEX_H
 
 #include <arki/dataset.h>
+#include <arki/dataset/segment.h>
 
 namespace arki {
 namespace dataset {
@@ -34,6 +35,22 @@ struct Index
      * If the segment does not exist in the index, return false
      */
     virtual bool segment_timespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const = 0;
+
+    /**
+     * List all segments known to the index.
+     *
+     * Segments are sorted alphabetically by relative paths.
+     */
+    virtual void list_segments(std::function<void(const std::string&)> dest) = 0;
+
+    /**
+     * Generate all segment info found in the index.
+     *
+     * Segments are sorted alphabetically by relative paths.
+     *
+     * Metadata in the collection are sorted by (reftime, offset).
+     */
+    virtual void scan_files(segment::contents_func v) = 0;
 };
 
 }

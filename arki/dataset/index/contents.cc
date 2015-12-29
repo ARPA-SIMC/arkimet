@@ -276,7 +276,7 @@ void Contents::list_segments(std::function<void(const std::string&)> dest)
         dest(sq.fetchString(0));
 }
 
-void Contents::scan_files(segment::contents_func v) const
+void Contents::scan_files(segment::contents_func v)
 {
     string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
     if (m_uniques) query += ", m.uniq";
@@ -297,7 +297,7 @@ void Contents::scan_files(segment::contents_func v) const
         {
             if (!last_file.empty())
             {
-                v(last_file, mdc);
+                v(last_file, FILE_OK, mdc);
                 mdc.clear();
             }
             last_file = file;
@@ -310,7 +310,7 @@ void Contents::scan_files(segment::contents_func v) const
     }
 
     if (!last_file.empty())
-        v(last_file, mdc);
+        v(last_file, FILE_OK, mdc);
 }
 
 void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& orderBy) const

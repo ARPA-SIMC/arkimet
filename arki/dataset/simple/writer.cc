@@ -160,43 +160,12 @@ Checker::~Checker()
     m_mft->flush();
 }
 
-namespace {
-struct Deleter
-{
-    Checker& checker;
-    Reporter& reporter;
-    bool writable;
-
-    Deleter(Checker& checker, Reporter& reporter, bool writable)
-        : checker(checker), reporter(reporter), writable(writable) {}
-
-    void operator()(const std::string& relpath, segment::State state)
-    {
-        if (writable)
-        {
-            sys::unlink_ifexists(relpath);
-            // TODO: should also delete .metadata and .summary files?
-            reporter.segment_delete(checker, relpath, "deleted");
-        } else
-            reporter.segment_delete(checker, relpath, "would be deleted");
-    }
-};
-}
-
 void Checker::maintenance(segment::state_func v, bool quick)
 {
     // TODO Detect if data is not in reftime order
     maintenance::CheckAge ca(v, *m_step, m_archive_age, m_delete_age);
     m_mft->check(*m_segment_manager, ca, quick);
     SegmentedChecker::maintenance(v, quick);
-}
-
-void Checker::removeAll(Reporter& reporter, bool writable)
-{
-    Deleter deleter(*this, reporter, writable);
-    m_mft->check(*m_segment_manager, deleter, true);
-    // TODO: empty manifest
-    SegmentedChecker::removeAll(reporter, writable);
 }
 
 void Checker::indexFile(const std::string& relname, metadata::Collection&& mds)

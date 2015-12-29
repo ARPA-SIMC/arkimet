@@ -74,7 +74,8 @@ typedef std::function<void(const std::string&, segment::State)> state_func;
 /**
  * Visitor interface for scanning information about the contents of segments in the database
  */
-typedef std::function<void(const std::string&, const metadata::Collection&)> contents_func;
+typedef std::function<void(const std::string&, segment::State, const metadata::Collection&)> contents_func;
+
 
 namespace impl {
 

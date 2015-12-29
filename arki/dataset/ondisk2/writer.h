@@ -61,7 +61,6 @@ public:
 
     void maintenance(segment::state_func v, bool quick=true) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
-    void removeAll(dataset::Reporter& reporter, bool writable) override;
 
     void rescanFile(const std::string& relpath) override;
     void indexFile(const std::string& relpath, metadata::Collection&& contents) override;

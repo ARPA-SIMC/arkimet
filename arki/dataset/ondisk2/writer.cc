@@ -268,28 +268,6 @@ Checker::Checker(const ConfigFile& cfg)
     idx->open();
 }
 
-namespace {
-struct Deleter
-{
-    Checker& checker;
-    Reporter& reporter;
-    bool writable;
-
-    Deleter(Checker& checker, Reporter& reporter, bool writable)
-        : checker(checker), reporter(reporter), writable(writable) {}
-
-    void remove(const std::string& relpath)
-    {
-        if (writable)
-        {
-            sys::unlink_ifexists(relpath);
-            reporter.segment_delete(checker, relpath, "deleted");
-        } else
-            reporter.segment_delete(checker, relpath, "would be deleted");
-    }
-};
-}
-
 void Checker::maintenance(segment::state_func v, bool quick)
 {
     // TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
@@ -301,26 +279,14 @@ void Checker::maintenance(segment::state_func v, bool quick)
     maintenance::CheckAge ca(v, *m_step, m_archive_age, m_delete_age);
     vector<string> files = scan::dir(m_path);
     maintenance::FindMissing fm([&](const std::string& relname, segment::State state) { ca(relname, state); }, files);
-    idx->scan_files([&](const std::string& relname, const metadata::Collection& mds) {
-        fm(relname, m_segment_manager->check(relname, mds, quick));
+    idx->scan_files([&](const std::string& relname, segment::State state, const metadata::Collection& mds) {
+        if (state.is_ok())
+            fm(relname, m_segment_manager->check(relname, mds, quick));
+        else
+            fm(relname, state);
     });
     fm.end();
     SegmentedChecker::maintenance(v, quick);
-}
-
-void Checker::removeAll(Reporter& reporter, bool writable)
-{
-    Deleter deleter(*this, reporter, writable);
-    idx->list_segments([&](const std::string& relpath) { deleter.remove(relpath); });
-    if (writable)
-    {
-        //log << m_name << ": clearing index" << endl;
-        idx->reset();
-    } //else
-        //log << m_name << ": would clear index" << endl;
-
-    // TODO: empty the index
-    SegmentedChecker::removeAll(reporter, writable);
 }
 
 
