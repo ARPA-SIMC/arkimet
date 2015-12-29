@@ -234,9 +234,8 @@ int main(int argc, const char* argv[])
         if (opts.repack->isSet()) ++actionCount;
         if (opts.remove_all->isSet()) ++actionCount;
         if (opts.op_remove->isSet()) ++actionCount;
-        if (opts.scantest->isSet()) ++actionCount;
         if (actionCount > 1)
-            throw commandline::BadOption("only one of --stats, --invalidate, --repack, --remove, --remove-all or --scantest can be given in one invocation");
+            throw commandline::BadOption("only one of --stats, --invalidate, --repack, --remove, or --remove-all can be given in one invocation");
 
         // Read the config file(s)
         ConfigFile cfg;
