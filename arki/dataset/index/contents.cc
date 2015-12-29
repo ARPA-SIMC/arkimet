@@ -297,7 +297,7 @@ void Contents::scan_files(segment::contents_func v)
         {
             if (!last_file.empty())
             {
-                v(last_file, FILE_OK, mdc);
+                v(last_file, SEGMENT_OK, mdc);
                 mdc.clear();
             }
             last_file = file;
@@ -310,7 +310,7 @@ void Contents::scan_files(segment::contents_func v)
     }
 
     if (!last_file.empty())
-        v(last_file, FILE_OK, mdc);
+        v(last_file, SEGMENT_OK, mdc);
 }
 
 void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& orderBy) const

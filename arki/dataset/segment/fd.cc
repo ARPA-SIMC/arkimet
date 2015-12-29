@@ -140,7 +140,7 @@ State Segment::check(const metadata::Collection& mds, unsigned max_gap, bool qui
                 stringstream out;
                 out << (*i)->source();
                 nag::warning("%s: validation failed at %s: %s", absname.c_str(), out.str().c_str(), e.what());
-                return FILE_TO_RESCAN;
+                return SEGMENT_UNALIGNED;
             }
         }
     }
@@ -160,7 +160,7 @@ State Segment::check(const metadata::Collection& mds, unsigned max_gap, bool qui
     {
         // If an item begins after the end of another, they overlap and the file needs rescanning
         if (i->first < end_of_last_data_checked)
-            return FILE_TO_RESCAN;
+            return SEGMENT_UNALIGNED;
 
         end_of_last_data_checked = i->first + i->second;
     }
@@ -170,7 +170,7 @@ State Segment::check(const metadata::Collection& mds, unsigned max_gap, bool qui
     if (file_size < end_of_last_data_checked)
     {
         nag::warning("%s: file looks truncated: its size is %zd but data is known to exist until %zd bytes", absname.c_str(), file_size, (size_t)end_of_last_data_checked);
-        return FILE_TO_RESCAN;
+        return SEGMENT_UNALIGNED;
     }
 
     // Check if file_size matches the expected file size
@@ -194,9 +194,9 @@ State Segment::check(const metadata::Collection& mds, unsigned max_gap, bool qui
     if (has_hole)
     {
         nag::verbose("%s: contains deleted data or data to be reordered", absname.c_str());
-        return FILE_TO_PACK;
+        return SEGMENT_DIRTY;
     } else {
-        return FILE_OK;
+        return SEGMENT_OK;
     }
 }
 

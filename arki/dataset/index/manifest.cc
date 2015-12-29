@@ -70,7 +70,7 @@ void scan_file(const std::string& root, const std::string& relname, segment::Sta
     else if (sys::exists(absname))
         scan::scan(absname, contents.inserter_func());
     else
-        state += FILE_TO_DEINDEX;
+        state += SEGMENT_DELETED;
 
     HFSorter cmp;
     contents.sort(cmp); // Sort by reftime and by offset
@@ -514,7 +514,7 @@ public:
             time_t ts_sum = sys::timestamp(pathname + ".summary", 0);
             time_t ts_idx = i.mtime;
 
-            segment::State state = FILE_OK;
+            segment::State state = SEGMENT_OK;
             if (ts_idx != ts_data || ts_md < ts_data || ts_sum < ts_md)
             {
                 // Check timestamp consistency
@@ -527,7 +527,7 @@ public:
                 if (ts_md < ts_data)
                     nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
                             m_path.c_str(), i.file.c_str(), ts_md, ts_sum);
-                state = FILE_TO_RESCAN;
+                state = SEGMENT_UNALIGNED;
             }
 
             scan_file(m_path, i.file, state, v);
@@ -824,7 +824,7 @@ public:
             time_t ts_sum = sys::timestamp(pathname + ".summary", 0);
             time_t ts_idx = i.second;
 
-            segment::State state = FILE_OK;
+            segment::State state = SEGMENT_OK;
             if (ts_idx != ts_data || ts_md < ts_data || ts_sum < ts_md)
             {
                 // Check timestamp consistency
@@ -837,7 +837,7 @@ public:
                 if (ts_md < ts_data)
                     nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
                             m_path.c_str(), i.first.c_str(), ts_md, ts_sum);
-                state = FILE_TO_RESCAN;
+                state = SEGMENT_UNALIGNED;
             }
 
             scan_file(m_path, i.first, state, v);

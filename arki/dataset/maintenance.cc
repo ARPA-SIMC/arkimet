@@ -60,7 +60,7 @@ void FindMissing::check(const std::string& relpath, segment::State state)
     while (not disk.empty() and disk.back() < relpath)
     {
         nag::verbose("FindMissing: %s is not in index", disk.back().c_str());
-        next(disk.back(), FILE_TO_INDEX);
+        next(disk.back(), SEGMENT_NEW);
         disk.pop_back();
     }
     if (!disk.empty() && disk.back() == relpath)
@@ -71,7 +71,7 @@ void FindMissing::check(const std::string& relpath, segment::State state)
     else // if (disk.empty() || disk.back() > file)
     {
         nag::verbose("FindMissing: %s has been deleted", relpath.c_str());
-        next(relpath, state - FILE_TO_RESCAN + FILE_TO_DEINDEX);
+        next(relpath, state - SEGMENT_UNALIGNED + SEGMENT_DELETED);
     }
 }
 
@@ -80,7 +80,7 @@ void FindMissing::end()
     while (not disk.empty())
     {
         nag::verbose("FindMissing: %s is not in index", disk.back().c_str());
-        next(disk.back(), FILE_TO_INDEX);
+        next(disk.back(), SEGMENT_NEW);
         disk.pop_back();
     }
 }
@@ -132,17 +132,17 @@ void CheckAge::operator()(const std::string& relpath, segment::State state)
         if (!get_segment_timespan(relpath, start_time, end_time))
         {
             nag::verbose("CheckAge: cannot detect the timespan of segment %s", relpath.c_str());
-            next(relpath, state + FILE_TO_FIX_MANUALLY);
+            next(relpath, state + SEGMENT_CORRUPTED);
         }
         else if (delete_threshold.vals[0] != 0 && delete_threshold >= end_time)
         {
             nag::verbose("CheckAge: %s is old enough to be deleted", relpath.c_str());
-            next(relpath, state + FILE_TO_DELETE);
+            next(relpath, state + SEGMENT_DELETE_AGE);
         }
         else if (archive_threshold.vals[0] != 0 && archive_threshold >= end_time)
         {
             nag::verbose("CheckAge: %s is old enough to be archived", relpath.c_str());
-            next(relpath, state + FILE_TO_ARCHIVE);
+            next(relpath, state + SEGMENT_ARCHIVE_AGE);
         }
         else
             next(relpath, state);
@@ -173,7 +173,7 @@ Agent::Agent(dataset::Reporter& reporter, SegmentedChecker& w)
 
 void FailsafeRepacker::operator()(const std::string& file, segment::State state)
 {
-    if (state.has(FILE_TO_INDEX)) ++m_count_deleted;
+    if (state.has(SEGMENT_NEW)) ++m_count_deleted;
 }
 
 void FailsafeRepacker::end()
@@ -186,33 +186,33 @@ void FailsafeRepacker::end()
 
 void MockRepacker::operator()(const std::string& relpath, segment::State state)
 {
-    if (state.has(FILE_TO_PACK) && !state.has(FILE_TO_DELETE))
+    if (state.has(SEGMENT_DIRTY) && !state.has(SEGMENT_DELETE_AGE))
     {
         reporter.segment_repack(w, relpath, "should be packed");
         ++m_count_packed;
     }
-    if (state.has(FILE_TO_ARCHIVE))
+    if (state.has(SEGMENT_ARCHIVE_AGE))
     {
         reporter.segment_archive(w, relpath, "should be archived");
         ++m_count_archived;
     }
-    if (state.has(FILE_TO_DELETE))
+    if (state.has(SEGMENT_DELETE_AGE))
     {
         reporter.segment_delete(w, relpath, "should be deleted and removed from the index");
         ++m_count_deleted;
         ++m_count_deindexed;
     }
-    if (state.has(FILE_TO_INDEX))
+    if (state.has(SEGMENT_NEW))
     {
         reporter.segment_delete(w, relpath, "should be deleted");
         ++m_count_deleted;
     }
-    if (state.has(FILE_TO_DEINDEX))
+    if (state.has(SEGMENT_DELETED))
     {
         reporter.segment_deindex(w, relpath, "should be removed from the index");
         ++m_count_deindexed;
     }
-    if (state.has(FILE_TO_RESCAN))
+    if (state.has(SEGMENT_UNALIGNED))
     {
         reporter.segment_rescan(w, relpath, "should be rescanned");
         ++m_count_rescanned;
@@ -236,17 +236,17 @@ void MockRepacker::end()
 
 void MockFixer::operator()(const std::string& relpath, segment::State state)
 {
-    if (state.has(FILE_TO_PACK))
+    if (state.has(SEGMENT_DIRTY))
     {
         reporter.segment_repack(w, relpath, "should be packed");
         ++m_count_packed;
     }
-    if (state.has(FILE_TO_INDEX) || state.has(FILE_TO_RESCAN))
+    if (state.has(SEGMENT_NEW) || state.has(SEGMENT_UNALIGNED))
     {
         reporter.segment_rescan(w, relpath, "should be rescanned");
         ++m_count_rescanned;
     }
-    if (state.has(FILE_TO_DEINDEX))
+    if (state.has(SEGMENT_DELETED))
     {
         reporter.segment_deindex(w, relpath, "should be removed from the index");
         ++m_count_deindexed;
@@ -268,7 +268,7 @@ void MockFixer::end()
 
 void RealRepacker::operator()(const std::string& relpath, segment::State state)
 {
-    if (state.has(FILE_TO_PACK) && !state.has(FILE_TO_DELETE))
+    if (state.has(SEGMENT_DIRTY) && !state.has(SEGMENT_DELETE_AGE))
     {
         // Repack the file
         size_t saved = w.repackFile(relpath);
@@ -276,7 +276,7 @@ void RealRepacker::operator()(const std::string& relpath, segment::State state)
         ++m_count_packed;
         m_count_freed += saved;
     }
-    if (state.has(FILE_TO_ARCHIVE))
+    if (state.has(SEGMENT_ARCHIVE_AGE))
     {
         // Create the target directory in the archive
         w.archiveFile(relpath);
@@ -285,7 +285,7 @@ void RealRepacker::operator()(const std::string& relpath, segment::State state)
         m_touched_archive = true;
         m_redo_summary = true;
     }
-    if (state.has(FILE_TO_DELETE))
+    if (state.has(SEGMENT_DELETE_AGE))
     {
         // Delete obsolete files
         size_t size = w.removeFile(relpath, true);
@@ -295,7 +295,7 @@ void RealRepacker::operator()(const std::string& relpath, segment::State state)
         m_count_freed += size;
         m_redo_summary = true;
     }
-    if (state.has(FILE_TO_INDEX))
+    if (state.has(SEGMENT_NEW))
     {
         // Delete all files not indexed
         size_t size = w.removeFile(relpath, true);
@@ -303,7 +303,7 @@ void RealRepacker::operator()(const std::string& relpath, segment::State state)
         ++m_count_deleted;
         m_count_freed += size;
     }
-    if (state.has(FILE_TO_DEINDEX))
+    if (state.has(SEGMENT_DELETED))
     {
         // Remove from index those files that have been deleted
         w.removeFile(relpath, false);
@@ -341,7 +341,7 @@ void RealFixer::operator()(const std::string& relpath, segment::State state)
 {
     /* Packing is left to the repacker, during check we do not
      * mangle the data files
-    case FILE_TO_PACK: {
+    case SEGMENT_DIRTY: {
             // Repack the file
             size_t saved = repack(w.path(), file, w.m_idx);
             log() << "packed " << file << " (" << saved << " saved)" << endl;
@@ -349,14 +349,14 @@ void RealFixer::operator()(const std::string& relpath, segment::State state)
             break;
     }
     */
-    if (state.has(FILE_TO_INDEX) || state.has(FILE_TO_RESCAN))
+    if (state.has(SEGMENT_NEW) || state.has(SEGMENT_UNALIGNED))
     {
         w.rescanFile(relpath);
         reporter.segment_rescan(w, relpath, "rescanned");
         ++m_count_rescanned;
         m_redo_summary = true;
     }
-    if (state.has(FILE_TO_DEINDEX))
+    if (state.has(SEGMENT_DELETED))
     {
         // Remove from index those files that have been deleted
         w.removeFile(relpath, false);

@@ -305,7 +305,7 @@ State Segment::check(const metadata::Collection& mds, bool quick)
 
     // Deal with segments that just do not exist
     if (!sys::exists(absname))
-        return FILE_TO_RESCAN;
+        return SEGMENT_UNALIGNED;
 
     // List the dir elements we know about
     set<size_t> expected;
@@ -329,7 +329,7 @@ State Segment::check(const metadata::Collection& mds, bool quick)
                 stringstream out;
                 out << (*i)->source();
                 nag::warning("%s: validation failed at %s: %s", absname.c_str(), out.str().c_str(), e.what());
-                return FILE_TO_RESCAN;
+                return SEGMENT_UNALIGNED;
             }
         }
 
@@ -342,7 +342,7 @@ State Segment::check(const metadata::Collection& mds, bool quick)
         if (ei == expected.end())
         {
             nag::warning("%s: expected file %zd not found in the file system", absname.c_str(), (size_t)source.offset);
-            return FILE_TO_RESCAN;
+            return SEGMENT_UNALIGNED;
         } else
             expected.erase(ei);
 
@@ -352,16 +352,16 @@ State Segment::check(const metadata::Collection& mds, bool quick)
     if (!expected.empty())
     {
         nag::warning("%s: found %zd file(s) that the index does now know about", absname.c_str(), expected.size());
-        return FILE_TO_PACK;
+        return SEGMENT_DIRTY;
     }
 
     // Take note of files with holes
     if (out_of_order)
     {
         nag::verbose("%s: contains deleted data or data to be reordered", absname.c_str());
-        return FILE_TO_PACK;
+        return SEGMENT_DIRTY;
     } else {
-        return FILE_OK;
+        return SEGMENT_OK;
     }
 }
 

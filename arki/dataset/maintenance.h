@@ -59,7 +59,7 @@ struct FindMissing
 
 /**
  * Check the age of segments in a dataset, to detect those that need to be
- * deleted or archived. It adds FILE_TO_DELETE or FILE_TO_ARCHIVE as needed.
+ * deleted or archived. It adds SEGMENT_DELETE_AGE or SEGMENT_ARCHIVE_AGE as needed.
  */
 struct CheckAge
 {

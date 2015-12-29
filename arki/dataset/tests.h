@@ -94,16 +94,13 @@ struct DatasetTest : public Fixture
 {
     enum Counted {
         COUNTED_OK,
-        COUNTED_ARC_OK,
-        COUNTED_TO_ARCHIVE,
-        COUNTED_TO_DELETE,
-        COUNTED_TO_PACK,
-        COUNTED_TO_INDEX,
-        COUNTED_TO_RESCAN,
-        COUNTED_TO_DEINDEX,
-        COUNTED_ARC_TO_INDEX,
-        COUNTED_ARC_TO_RESCAN,
-        COUNTED_ARC_TO_DEINDEX,
+        COUNTED_ARCHIVE_AGE,
+        COUNTED_DELETE_AGE,
+        COUNTED_DIRTY,
+        COUNTED_NEW,
+        COUNTED_UNALIGNED,
+        COUNTED_DELETED,
+        COUNTED_CORRUPTED,
         COUNTED_MAX,
     };
 

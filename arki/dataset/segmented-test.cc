@@ -68,7 +68,7 @@ class Tests : public FixtureTestCase<Fixture>
 
                 MaintenanceResults expected(false, 3);
                 expected.by_type[DatasetTest::COUNTED_OK] = 1;
-                expected.by_type[DatasetTest::COUNTED_TO_ARCHIVE] = 2;
+                expected.by_type[DatasetTest::COUNTED_ARCHIVE_AGE] = 2;
                 wassert(actual(writer.get()).maintenance(expected));
             }
 

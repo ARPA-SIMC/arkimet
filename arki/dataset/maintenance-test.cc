@@ -176,7 +176,7 @@ struct Fixture : public DatasetTest {
             auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, fixture.count_dataset_files());
             expected.by_type[COUNTED_OK] = fixture.fnames_after_cutoff.size();
-            expected.by_type[COUNTED_TO_DELETE] = fixture.fnames_before_cutoff.size();
+            expected.by_type[COUNTED_DELETE_AGE] = fixture.fnames_before_cutoff.size();
             wassert(actual(writer.get()).maintenance(expected));
         }
         // Perform packing and check that things are still ok afterwards
@@ -211,7 +211,7 @@ struct Fixture : public DatasetTest {
             auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, 2);
             expected.by_type[COUNTED_OK] = 1;
-            expected.by_type[COUNTED_TO_RESCAN] = 1;
+            expected.by_type[COUNTED_UNALIGNED] = 1;
             wassert(actual(writer.get()).maintenance(expected));
         }
 
@@ -222,7 +222,7 @@ struct Fixture : public DatasetTest {
 
             arki::tests::MaintenanceResults expected(false, 2);
             expected.by_type[COUNTED_OK] = 1;
-            expected.by_type[COUNTED_TO_RESCAN] = 1;
+            expected.by_type[COUNTED_UNALIGNED] = 1;
             wassert(actual(writer.get()).maintenance(expected));
         }
 
@@ -270,7 +270,7 @@ struct Fixture : public DatasetTest {
             auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, 2);
             expected.by_type[COUNTED_OK] = 1;
-            expected.by_type[COUNTED_TO_RESCAN] = 1;
+            expected.by_type[COUNTED_UNALIGNED] = 1;
             wassert(actual(writer.get()).maintenance(expected, false));
         }
 
@@ -284,7 +284,7 @@ struct Fixture : public DatasetTest {
             // The corrupted file has been deindexed, now there is a gap in the data file
             arki::tests::MaintenanceResults expected(false, 2);
             expected.by_type[COUNTED_OK] = 1;
-            expected.by_type[COUNTED_TO_PACK] = 1;
+            expected.by_type[COUNTED_DIRTY] = 1;
             wassert(actual(writer.get()).maintenance(expected, false));
         }
 
@@ -316,7 +316,7 @@ struct Fixture : public DatasetTest {
             auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, file_count);
             expected.by_type[COUNTED_OK] = file_count - 1;
-            expected.by_type[COUNTED_TO_DEINDEX] = 1;
+            expected.by_type[COUNTED_DELETED] = 1;
             wassert(actual(writer.get()).maintenance(expected));
         }
 
@@ -329,7 +329,7 @@ struct Fixture : public DatasetTest {
 
             arki::tests::MaintenanceResults expected(false, file_count);
             expected.by_type[COUNTED_OK] = file_count - 1;
-            expected.by_type[COUNTED_TO_DEINDEX] = 1;
+            expected.by_type[COUNTED_DELETED] = 1;
             wassert(actual(writer.get()).maintenance(expected));
         }
 
@@ -355,7 +355,7 @@ struct Fixture : public DatasetTest {
             auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, file_count);
             expected.by_type[COUNTED_OK] = file_count - 1;
-            expected.by_type[COUNTED_TO_DEINDEX] = 1;
+            expected.by_type[COUNTED_DELETED] = 1;
             wassert(actual(writer.get()).maintenance(expected));
         }
 
@@ -383,7 +383,7 @@ struct Fixture : public DatasetTest {
         {
             auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, file_count);
-            expected.by_type[COUNTED_TO_INDEX] = file_count;
+            expected.by_type[COUNTED_NEW] = file_count;
             wassert(actual(writer.get()).maintenance(expected));
         }
 
@@ -501,7 +501,7 @@ class Tests : public FixtureTestCase<Fixture>
             c.clear();
             writer.maintenance(c);
             ensure_equals(c.count(COUNTED_OK), 1u);
-            ensure_equals(c.count(COUNTED_TO_PACK), 1u);
+            ensure_equals(c.count(COUNTED_DIRTY), 1u);
             ensure_equals(c.remaining(), "");
             ensure(not c.isClean());
 
@@ -566,7 +566,7 @@ class Tests : public FixtureTestCase<Fixture>
             {
                 auto writer(f.makeLocalChecker());
                 MaintenanceResults expected(false, 1);
-                expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
+                expected.by_type[DatasetTest::COUNTED_NEW] = 1;
                 wassert(actual(writer.get()).maintenance(expected));
             }
 
@@ -579,7 +579,7 @@ class Tests : public FixtureTestCase<Fixture>
 
                 // A repack is still needed because the data is not sorted by reftime
                 MaintenanceResults expected(false, 1);
-                expected.by_type[DatasetTest::COUNTED_TO_PACK] = 1;
+                expected.by_type[DatasetTest::COUNTED_DIRTY] = 1;
                 wassert(actual(writer.get()).maintenance(expected));
             }
 
@@ -660,9 +660,9 @@ class Tests : public FixtureTestCase<Fixture>
 
                 arki::tests::MaintenanceResults expected(false, 1);
                 // A repack is still needed because the data is not sorted by reftime
-                expected.by_type[DatasetTest::COUNTED_TO_PACK] = 1;
+                expected.by_type[DatasetTest::COUNTED_DIRTY] = 1;
                 // And the same file is also old enough to be deleted
-                expected.by_type[DatasetTest::COUNTED_TO_DELETE] = 1;
+                expected.by_type[DatasetTest::COUNTED_DELETE_AGE] = 1;
                 wassert(actual(writer.get()).maintenance(expected));
             }
 
@@ -710,9 +710,9 @@ class Tests : public FixtureTestCase<Fixture>
 
                 MaintenanceResults expected(false, 1);
                 // A repack is still needed because the data is not sorted by reftime
-                expected.by_type[DatasetTest::COUNTED_TO_PACK] = 1;
+                expected.by_type[DatasetTest::COUNTED_DIRTY] = 1;
                 // And the same file is also old enough to be deleted
-                expected.by_type[DatasetTest::COUNTED_TO_ARCHIVE] = 1;
+                expected.by_type[DatasetTest::COUNTED_ARCHIVE_AGE] = 1;
                 wassert(actual(writer.get()).maintenance(expected));
             }
 

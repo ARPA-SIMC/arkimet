@@ -91,7 +91,7 @@ struct Fixture : public DatasetTest {
             auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, 2);
             expected.by_type[COUNTED_OK] = 1;
-            expected.by_type[COUNTED_TO_PACK] = 1;
+            expected.by_type[COUNTED_DIRTY] = 1;
             wassert(actual(writer.get()).maintenance(expected));
         }
     }
@@ -116,7 +116,7 @@ struct Fixture : public DatasetTest {
             auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, fixture.count_dataset_files());
             expected.by_type[COUNTED_OK] = fixture.count_dataset_files() - 1;
-            expected.by_type[COUNTED_TO_INDEX] = 1;
+            expected.by_type[COUNTED_NEW] = 1;
             wassert(actual(writer.get()).maintenance(expected));
         }
     }
@@ -206,7 +206,7 @@ struct Fixture : public DatasetTest {
             auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, 2);
             expected.by_type[COUNTED_OK] = 1;
-            expected.by_type[COUNTED_TO_PACK] = 1;
+            expected.by_type[COUNTED_DIRTY] = 1;
             wassert(actual(writer.get()).maintenance(expected));
         }
 
@@ -266,7 +266,7 @@ struct Fixture : public DatasetTest {
         {
             auto writer(makeLocalChecker());
             arki::tests::MaintenanceResults expected(false, fixture.count_dataset_files());
-            expected.by_type[COUNTED_TO_INDEX] = fixture.count_dataset_files();
+            expected.by_type[COUNTED_NEW] = fixture.count_dataset_files();
             wassert(actual(writer.get()).maintenance(expected));
         }
 
@@ -381,7 +381,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     arki::dataset::ondisk2::Checker writer(f.cfg);
     {
         MaintenanceResults expected(false, 1);
-        expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
+        expected.by_type[DatasetTest::COUNTED_NEW] = 1;
         wassert(actual(writer).maintenance(expected));
     }
 
@@ -394,7 +394,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
 
     {
         MaintenanceResults expected(false, 1);
-        expected.by_type[DatasetTest::COUNTED_TO_PACK] = 1;
+        expected.by_type[DatasetTest::COUNTED_DIRTY] = 1;
         wassert(actual(writer).maintenance(expected));
     }
 
@@ -461,7 +461,7 @@ add_method("scan_reindex", [](Fixture& f) {
     arki::dataset::ondisk2::Checker writer(f.cfg);
     MaintenanceResults expected(false, 3);
     expected.by_type[DatasetTest::COUNTED_OK] = 2;
-    expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
+    expected.by_type[DatasetTest::COUNTED_NEW] = 1;
     wassert(actual(writer).maintenance(expected));
 
     // Perform full maintenance and check that things are still ok afterwards
@@ -516,7 +516,7 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
     {
         arki::dataset::ondisk2::Checker writer(f.cfg);
         MaintenanceResults expected(false, 3);
-        expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 3;
+        expected.by_type[DatasetTest::COUNTED_NEW] = 3;
         wassert(actual(writer).maintenance(expected));
 
         // Perform full maintenance and check that things are still ok afterwards
@@ -670,7 +670,7 @@ add_method("data_in_right_segment_reindex", [](Fixture& f) {
     {
         ondisk2::Checker writer(f.cfg);
         arki::tests::MaintenanceResults expected(false, 3);
-        expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 3;
+        expected.by_type[DatasetTest::COUNTED_NEW] = 3;
         wassert(actual(writer).maintenance(expected));
     }
 
@@ -725,7 +725,7 @@ add_method("data_in_right_segment_rescan", [](Fixture& f) {
 
         arki::tests::MaintenanceResults expected(false, 4);
         expected.by_type[DatasetTest::COUNTED_OK] = 3;
-        expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
+        expected.by_type[DatasetTest::COUNTED_NEW] = 1;
         wassert(actual(writer).maintenance(expected));
     }
 
@@ -771,7 +771,7 @@ add_method("pack_vm2", [](Fixture& f) {
     {
         auto writer(f.makeLocalChecker());
         arki::tests::MaintenanceResults expected(false, 2);
-        expected.by_type[DatasetTest::COUNTED_TO_PACK] = 2;
+        expected.by_type[DatasetTest::COUNTED_DIRTY] = 2;
         wassert(actual(writer.get()).maintenance(expected));
 
         ensure(!sys::exists("testdir/.archive"));

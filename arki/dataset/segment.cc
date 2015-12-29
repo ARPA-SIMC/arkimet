@@ -20,14 +20,14 @@ namespace segment {
 std::string State::to_string() const
 {
     vector<const char*> res;
-    if (value == FILE_OK)             res.push_back("OK");
-    if (value & FILE_TO_ARCHIVE)      res.push_back("TO_ARCHIVE");
-    if (value & FILE_TO_DELETE)       res.push_back("TO_DELETE");
-    if (value & FILE_TO_PACK)         res.push_back("TO_PACK");
-    if (value & FILE_TO_INDEX)        res.push_back("TO_INDEX");
-    if (value & FILE_TO_RESCAN)       res.push_back("TO_RESCAN");
-    if (value & FILE_TO_DEINDEX)      res.push_back("TO_DEINDEX");
-    if (value & FILE_TO_FIX_MANUALLY) res.push_back("TO_FIX_MANUALLY");
+    if (value == SEGMENT_OK)         res.push_back("OK");
+    if (value & SEGMENT_DIRTY)       res.push_back("DIRTY");
+    if (value & SEGMENT_UNALIGNED)   res.push_back("UNALIGNED");
+    if (value & SEGMENT_DELETED)     res.push_back("DELETED");
+    if (value & SEGMENT_NEW)         res.push_back("NEW");
+    if (value & SEGMENT_CORRUPTED)   res.push_back("CORRUPTED");
+    if (value & SEGMENT_ARCHIVE_AGE) res.push_back("ARCHIVE_AGE");
+    if (value & SEGMENT_DELETE_AGE)  res.push_back("DELETE_AGE");
     return str::join(",", res.begin(), res.end());
 }
 

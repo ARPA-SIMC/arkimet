@@ -22,14 +22,14 @@ class Collection;
 }
 
 namespace dataset {
-static const unsigned FILE_OK              = 0;
-static const unsigned FILE_TO_ARCHIVE      = 1 << 0; /// File is ok, but old enough to be archived
-static const unsigned FILE_TO_DELETE       = 1 << 1; /// File is ok, but old enough to be deleted
-static const unsigned FILE_TO_PACK         = 1 << 2; /// File contains data that has been deleted
-static const unsigned FILE_TO_INDEX        = 1 << 3; /// File is not present in the index
-static const unsigned FILE_TO_RESCAN       = 1 << 4; /// File contents are inconsistent with the index
-static const unsigned FILE_TO_DEINDEX      = 1 << 5; /// File does not exist but has entries in the index
-static const unsigned FILE_TO_FIX_MANUALLY = 1 << 6; /// File is broken in a way that needs manual intervention
+static const unsigned SEGMENT_OK          = 0;
+static const unsigned SEGMENT_DIRTY       = 1 << 0; /// Segment contains data deleted or out of order
+static const unsigned SEGMENT_UNALIGNED   = 1 << 1; /// Segment contents are inconsistent with the index
+static const unsigned SEGMENT_DELETED     = 1 << 2; /// Segment is known to some index, but does not exist on disk
+static const unsigned SEGMENT_NEW         = 1 << 3; /// Segment exists on disk but is not known to any index
+static const unsigned SEGMENT_CORRUPTED   = 1 << 4; /// File is broken in a way that needs manual intervention
+static const unsigned SEGMENT_ARCHIVE_AGE = 1 << 5; /// File is ok, but old enough to be archived
+static const unsigned SEGMENT_DELETE_AGE  = 1 << 6; /// File is ok, but old enough to be deleted
 
 namespace segment {
 class Segment;
@@ -41,10 +41,10 @@ struct State
 {
     unsigned value;
 
-    State() : value(FILE_OK) {}
+    State() : value(SEGMENT_OK) {}
     State(unsigned value) : value(value) {}
 
-    bool is_ok() const { return value == FILE_OK; }
+    bool is_ok() const { return value == SEGMENT_OK; }
 
     bool has(unsigned state) const
     {

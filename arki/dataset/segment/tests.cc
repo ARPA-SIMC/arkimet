@@ -63,21 +63,21 @@ void SegmentCheckTest::run()
         mdc1.push_back(mdc[1]);
         mdc1.push_back(mdc[2]);
         state = segment->check(mdc1);
-        wassert(actual(state.value) == dataset::FILE_TO_PACK);
+        wassert(actual(state.value) == dataset::SEGMENT_DIRTY);
     }
     {
         metadata::Collection mdc1;
         mdc1.push_back(mdc[0]);
         mdc1.push_back(mdc[2]);
         state = segment->check(mdc1);
-        wassert(actual(state.value) == dataset::FILE_TO_PACK);
+        wassert(actual(state.value) == dataset::SEGMENT_DIRTY);
     }
     {
         metadata::Collection mdc1;
         mdc1.push_back(mdc[0]);
         mdc1.push_back(mdc[1]);
         state = segment->check(mdc1);
-        wassert(actual(state.value) == dataset::FILE_TO_PACK);
+        wassert(actual(state.value) == dataset::SEGMENT_DIRTY);
     }
 
     // Simulate elements out of order
@@ -87,14 +87,14 @@ void SegmentCheckTest::run()
         mdc1.push_back(mdc[2]);
         mdc1.push_back(mdc[1]);
         state = segment->check(mdc1);
-        wassert(actual(state.value) == dataset::FILE_TO_PACK);
+        wassert(actual(state.value) == dataset::SEGMENT_DIRTY);
     }
 
     // Simulate all elements deleted
     {
         metadata::Collection mdc1;
         state = segment->check(mdc1);
-        wassert(actual(state.value) == dataset::FILE_TO_PACK);
+        wassert(actual(state.value) == dataset::SEGMENT_DIRTY);
     }
 
     // Simulate corrupted file
@@ -107,7 +107,7 @@ void SegmentCheckTest::run()
         src->offset += 3;
         mdc1[0].set_source(unique_ptr<types::Source>(src.release()));
         state = segment->check(mdc1);
-        wassert(actual(state.value) == dataset::FILE_TO_RESCAN);
+        wassert(actual(state.value) == dataset::SEGMENT_UNALIGNED);
     }
     {
         metadata::Collection mdc1;
@@ -118,7 +118,7 @@ void SegmentCheckTest::run()
         src->offset += 3;
         mdc1[0].set_source(unique_ptr<types::Source>(src.release()));
         state = segment->check(mdc1, true);
-        wassert(actual(state.value) == dataset::FILE_TO_RESCAN);
+        wassert(actual(state.value) == dataset::SEGMENT_UNALIGNED);
     }
 }
 

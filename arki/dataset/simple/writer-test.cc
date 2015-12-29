@@ -176,7 +176,7 @@ add_method("scan_nonindexed", [](Fixture& f) {
     {
         dataset::simple::Checker writer(f.cfg);
         MaintenanceResults expected(false, 1);
-        expected.by_type[DatasetTest::COUNTED_TO_INDEX] = 1;
+        expected.by_type[DatasetTest::COUNTED_NEW] = 1;
         wassert(actual(writer).maintenance(expected));
         ensure(files::hasDontpackFlagfile("testds"));
     }
@@ -247,7 +247,7 @@ add_method("scan_missing_md_summary", [](Fixture& f) {
         simple::Checker writer(f.cfg);
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
-        expected.by_type[DatasetTest::COUNTED_TO_RESCAN] = 1;
+        expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 1;
         wassert(actual(writer).maintenance(expected));
     }
 
@@ -326,7 +326,7 @@ add_method("scan_missing_summary", [](Fixture& f) {
         simple::Checker writer(f.cfg);
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
-        expected.by_type[DatasetTest::COUNTED_TO_RESCAN] = 1;
+        expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 1;
         wassert(actual(writer).maintenance(expected));
     }
 
@@ -430,7 +430,7 @@ add_method("scan_compressed", [](Fixture& f) {
         simple::Checker writer(f.cfg);
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
-        expected.by_type[DatasetTest::COUNTED_TO_RESCAN] = 1;
+        expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 1;
         wassert(actual(writer).maintenance(expected));
     }
 
@@ -517,7 +517,7 @@ add_method("scan_missingdata", [](Fixture& f) {
         simple::Checker writer(f.cfg);
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
-        expected.by_type[DatasetTest::COUNTED_TO_DEINDEX] = 1;
+        expected.by_type[DatasetTest::COUNTED_DELETED] = 1;
         wassert(actual(writer).maintenance(expected));
     }
 

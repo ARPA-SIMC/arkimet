@@ -414,24 +414,24 @@ void MaintenanceCollector::clear()
 
 bool MaintenanceCollector::isClean() const
 {
-	for (size_t i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
-		if (i != tests::DatasetTest::COUNTED_OK && i != tests::DatasetTest::COUNTED_ARC_OK && counts[i])
-			return false;
-	return true;
+    for (size_t i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
+        if (i != tests::DatasetTest::COUNTED_OK && counts[i])
+            return false;
+    return true;
 }
 
 void MaintenanceCollector::operator()(const std::string& file, dataset::segment::State state)
 {
     using namespace arki::dataset;
-
     fileStates[file] = state;
-    if (state.is_ok())           ++counts[tests::DatasetTest::COUNTED_OK];
-    if (state.has(FILE_TO_ARCHIVE)) ++counts[tests::DatasetTest::COUNTED_TO_ARCHIVE];
-    if (state.has(FILE_TO_DELETE))  ++counts[tests::DatasetTest::COUNTED_TO_DELETE];
-    if (state.has(FILE_TO_PACK))    ++counts[tests::DatasetTest::COUNTED_TO_PACK];
-    if (state.has(FILE_TO_INDEX))   ++counts[tests::DatasetTest::COUNTED_TO_INDEX];
-    if (state.has(FILE_TO_RESCAN))  ++counts[tests::DatasetTest::COUNTED_TO_RESCAN];
-    if (state.has(FILE_TO_DEINDEX)) ++counts[tests::DatasetTest::COUNTED_TO_DEINDEX];
+    if (state.is_ok())                  ++counts[tests::DatasetTest::COUNTED_OK];
+    if (state.has(SEGMENT_ARCHIVE_AGE)) ++counts[tests::DatasetTest::COUNTED_ARCHIVE_AGE];
+    if (state.has(SEGMENT_DELETE_AGE))  ++counts[tests::DatasetTest::COUNTED_DELETE_AGE];
+    if (state.has(SEGMENT_DIRTY))       ++counts[tests::DatasetTest::COUNTED_DIRTY];
+    if (state.has(SEGMENT_NEW))         ++counts[tests::DatasetTest::COUNTED_NEW];
+    if (state.has(SEGMENT_UNALIGNED))   ++counts[tests::DatasetTest::COUNTED_UNALIGNED];
+    if (state.has(SEGMENT_DELETED))     ++counts[tests::DatasetTest::COUNTED_DELETED];
+    if (state.has(SEGMENT_CORRUPTED))   ++counts[tests::DatasetTest::COUNTED_CORRUPTED];
 }
 
 size_t MaintenanceCollector::count(tests::DatasetTest::Counted s)
@@ -471,16 +471,13 @@ void MaintenanceCollector::dump(std::ostream& out) const
 
 const char* MaintenanceCollector::names[] = {
     "ok",
-    "arc ok",
-    "to archive",
-    "to delete",
-    "to pack",
-    "to index",
-    "to rescan",
-    "to deindex",
-    "arc to index",
-    "arc to rescan",
-    "arc deindex",
+    "archive age",
+    "delete age",
+    "dirty",
+    "new",
+    "unaligned",
+    "deleted",
+    "corrupted",
     "counted_max",
 };
 
