@@ -53,19 +53,19 @@ struct State
 
     State& operator+=(const State& fs)
     {
-        value += fs.value;
+        value |= fs.value;
         return *this;
     }
 
     State& operator-=(const State& fs)
     {
-        value -= fs.value;
+        value &= ~fs.value;
         return *this;
     }
 
     State operator+(const State& fs) const
     {
-        return State(value + fs.value);
+        return State(value | fs.value);
 
     }
 
