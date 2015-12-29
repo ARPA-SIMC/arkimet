@@ -479,14 +479,12 @@ public:
 	virtual void remove(const std::string& relname)
 	{
 		reread();
-
 		vector<Info>::iterator i;
 		for (i = info.begin(); i != info.end(); ++i)
 			if (i->file == relname)
 				break;
 		if (i != info.end())
 			info.erase(i);
-
 		dirty = true;
 	}
 

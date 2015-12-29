@@ -655,7 +655,7 @@ class Tests : public FixtureTestCase<Fixture>
             {
                 auto writer(f.makeLocalChecker(&cfg));
                 ReporterExpected e;
-                e.rescanned.emplace_back("", "2007/test.grib1");
+                e.rescanned.emplace_back("testds", "2007/test.grib1");
                 wassert(actual(writer.get()).check(e, true, true));
 
                 arki::tests::MaintenanceResults expected(false, 1);
@@ -670,7 +670,7 @@ class Tests : public FixtureTestCase<Fixture>
             {
                 auto writer(f.makeLocalChecker(&cfg));
                 ReporterExpected e;
-                e.deleted.emplace_back("", "2007/test.grib1");
+                e.deleted.emplace_back("testds", "2007/test.grib1");
                 wassert(actual(writer.get()).repack(e, true));
             }
             f.ensure_maint_clean(0);
@@ -705,7 +705,7 @@ class Tests : public FixtureTestCase<Fixture>
                 auto writer(f.makeLocalChecker(&cfg));
 
                 ReporterExpected e;
-                e.rescanned.emplace_back("", "2007/test.grib1");
+                e.rescanned.emplace_back("testds", "2007/test.grib1");
                 wassert(actual(writer.get()).check(e, true, true));
 
                 MaintenanceResults expected(false, 1);
@@ -721,8 +721,8 @@ class Tests : public FixtureTestCase<Fixture>
                 auto writer(f.makeLocalChecker(&cfg));
 
                 ReporterExpected e;
-                e.repacked.emplace_back("", "2007/test.grib1");
-                e.archived.emplace_back("", "2007/test.grib1");
+                e.repacked.emplace_back("testds", "2007/test.grib1");
+                e.archived.emplace_back("testds", "2007/test.grib1");
                 wassert(actual(writer.get()).repack(e, true));
             }
         });

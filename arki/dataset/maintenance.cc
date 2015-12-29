@@ -98,7 +98,7 @@ TestOverrideCurrentDateForMaintenance::~TestOverrideCurrentDateForMaintenance()
 }
 
 
-CheckAge::CheckAge(segment::state_func& next, segment_timespan_func get_segment_timespan, int archive_age, int delete_age)
+CheckAge::CheckAge(segment::state_func next, segment_timespan_func get_segment_timespan, int archive_age, int delete_age)
     : next(next), get_segment_timespan(get_segment_timespan), archive_threshold(0, 0, 0), delete_threshold(0, 0, 0)
 {
     time_t now = override_now ? override_now : time(NULL);

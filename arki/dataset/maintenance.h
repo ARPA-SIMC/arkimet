@@ -64,12 +64,12 @@ struct FindMissing
 struct CheckAge
 {
     typedef std::function<bool(const std::string&, types::Time&, types::Time&)> segment_timespan_func;
-    segment::state_func& next;
+    segment::state_func next;
     segment_timespan_func get_segment_timespan;
     types::Time archive_threshold;
     types::Time delete_threshold;
 
-    CheckAge(segment::state_func& next, segment_timespan_func get_segment_timespan, int archive_age=-1, int delete_age=-1);
+    CheckAge(segment::state_func next, segment_timespan_func get_segment_timespan, int archive_age=-1, int delete_age=-1);
 
     void operator()(const std::string& relpath, segment::State state);
 };
