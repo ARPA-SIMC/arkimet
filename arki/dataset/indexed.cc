@@ -80,8 +80,12 @@ void IndexedChecker::maintenance(segment::state_func v, bool quick)
     // Accumulate states instead of acting on files right away, to avoid
     // modifying the index while it is being iterated
     std::vector<std::pair<std::string, segment::State>> states;
-    maintenance::CheckAge ca([&](const std::string& relname, segment::State state) { states.emplace_back(relname, state); }, get_segment_timespan, m_archive_age, m_delete_age);
-    maintenance::FindMissing fm(m_path, [&](const std::string& relname, segment::State state) { ca(relname, state); });
+    maintenance::CheckAge ca([&](const std::string& relname, segment::State state) {
+        states.emplace_back(relname, state);
+    }, get_segment_timespan, m_archive_age, m_delete_age);
+    maintenance::FindMissing fm(m_path, [&](const std::string& relname, segment::State state) {
+        ca(relname, state);
+    });
     m_idx->scan_files([&](const std::string& relname, segment::State state, const metadata::Collection& mds) {
         if (!state.is_ok())
             fm.check(relname, state);

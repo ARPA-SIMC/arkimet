@@ -48,7 +48,7 @@ namespace dataset {
 namespace maintenance {
 
 FindMissing::FindMissing(const std::string& root, segment::state_func next)
-    : next(next), disk(scan::dir(root))
+    : next(next), disk(scan::dir(root, true))
 {
     // Sort backwards because we read from the end
     auto sorter = [](const std::string& a, const std::string& b) { return b < a; };
