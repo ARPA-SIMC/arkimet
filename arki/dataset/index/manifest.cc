@@ -63,6 +63,7 @@ void scan_file(const std::string& root, const std::string& relname, segment::Sta
     if (!quick && scan::isCompressed(absname))
         tu.reset(new utils::compress::TempUnzip(absname));
 #endif
+    // TODO: turn this into a Segment::exists/Segment::scan
     metadata::Collection contents;
     if (sys::exists(absname + ".metadata"))
         contents.read_from_file(absname + ".metadata");
