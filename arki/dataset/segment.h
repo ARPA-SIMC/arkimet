@@ -51,6 +51,18 @@ struct State
         return value & state;
     }
 
+    State& operator+=(const State& fs)
+    {
+        value += fs.value;
+        return *this;
+    }
+
+    State& operator-=(const State& fs)
+    {
+        value -= fs.value;
+        return *this;
+    }
+
     State operator+(const State& fs) const
     {
         return State(value + fs.value);

@@ -64,7 +64,13 @@ void scan_file(const std::string& root, const std::string& relname, segment::Sta
         tu.reset(new utils::compress::TempUnzip(absname));
 #endif
 
-    metadata::Collection contents(absname);
+    metadata::Collection contents;
+    if (sys::exists(absname + ".metadata"))
+        contents.read_from_file(absname + ".metadata");
+    else if (sys::exists(absname))
+        scan::scan(absname, contents.inserter_func());
+    else
+        state += FILE_TO_DEINDEX;
 
     HFSorter cmp;
     contents.sort(cmp); // Sort by reftime and by offset
