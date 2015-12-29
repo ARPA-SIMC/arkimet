@@ -90,6 +90,10 @@ add_method("acquire_last", [](Fixture& f) {
 
 // Test maintenance scan on non-indexed files
 add_method("maintenance_nonindexed", [](Fixture& f) {
+    {
+#warning TODO: this is a hack to create the datasets before maintenance is called. Replace with a Checker::create() function
+        ArchivesChecker checker("testds");
+    }
     system("cp inbound/test-sorted.grib1 testds/.archive/last/");
 
     // Query now has empty results

@@ -167,8 +167,8 @@ struct Ondisk2TestGrib1 : public Ondisk2Scenario
             stringstream checklog;
             OstreamReporter reporter(checklog);
             ds->check(reporter, true, true);
-            if (checklog.str() != "")
-                throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
+            if (checklog.str() != "ondisk2-testgrib1: check 3 files ok\n")
+                throw std::runtime_error("check on new dataset failed: " + checklog.str());
         }
     }
 };
