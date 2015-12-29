@@ -4,34 +4,30 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::utils;
 using namespace arki::tests;
 
-struct arki_dataset_test_scenario_shar {
-    arki_dataset_test_scenario_shar()
-    {
-    }
-};
-TESTGRP(arki_dataset_test_scenario);
+def_tests(arki_dataset_test_scenario);
+
+void Tests::register_tests() {
 
 // Simple generation
-def_test(1)
-{
+add_method("archived", [] {
     using namespace dataset;
-    /* const test::Scenario& scen = */ test::Scenario::get("ondisk2-archived");
-}
+    /* const test::Scenario& scen = */ wcallchecked(test::Scenario::get("ondisk2-archived"));
+});
 
-def_test(2)
-{
+add_method("manyarchivestates", [] {
     using namespace dataset;
-    const test::Scenario& scen = test::Scenario::get("ondisk2-manyarchivestates");
+    const test::Scenario& scen = wcallchecked(test::Scenario::get("ondisk2-manyarchivestates"));
     ensure(sys::exists(str::joinpath(scen.path, ".archive/offline.summary")));
     ensure(!sys::exists(str::joinpath(scen.path, ".archive/offline")));
     ensure(sys::exists(str::joinpath(scen.path, ".archive/wrongro.summary")));
     ensure(sys::exists(str::joinpath(scen.path, ".archive/ro.summary")));
-}
+});
 
+}
 }

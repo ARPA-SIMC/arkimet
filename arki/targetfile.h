@@ -62,7 +62,7 @@ public:
  * Wrap a dataset. As query results arrive, use arki::Targetfile to generate a
  * file name for their output, and open/reopen an Output accordingly.
  */
-class TargetfileSpy : public Reader
+class TargetfileSpy : public dataset::Reader
 {
     Targetfile::Func func;
     Reader& ds;
@@ -76,7 +76,7 @@ public:
     void redirect(Metadata& md);
 
     virtual void query_data(const dataset::DataQuery& q, metadata_dest_func dest);
-    virtual void querySummary(const Matcher& matcher, Summary& summary);
+    virtual void query_summary(const Matcher& matcher, Summary& summary);
 };
 
 }

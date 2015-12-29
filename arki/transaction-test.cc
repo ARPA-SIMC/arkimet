@@ -1,11 +1,7 @@
 #include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/transaction.h>
-
 #include <sstream>
-#include <fstream>
-#include <iostream>
 
 namespace {
 using namespace std;

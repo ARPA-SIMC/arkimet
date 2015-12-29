@@ -16,7 +16,7 @@ using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
-namespace data {
+namespace segment {
 namespace lines {
 
 namespace {
@@ -152,12 +152,12 @@ Pending Segment::append(Metadata& md, off_t* ofs)
     return res;
 }
 
-FileState Segment::check(const metadata::Collection& mds, bool quick)
+State Segment::check(const metadata::Collection& mds, bool quick)
 {
     return fd::Segment::check(mds, 2, quick);
 }
 
-static data::Segment* make_repack_segment(const std::string& relname, const std::string& absname)
+static segment::Segment* make_repack_segment(const std::string& relname, const std::string& absname)
 {
     unique_ptr<lines::Segment> res(new lines::Segment(relname, absname));
     res->truncate_and_open();

@@ -25,18 +25,18 @@ SegmentTest::~SegmentTest()
 {
 }
 
-unique_ptr<data::Segment> SegmentTest::make_empty_segment()
+unique_ptr<segment::Segment> SegmentTest::make_empty_segment()
 {
     // Clear potentially existing segments
     system(("rm -rf " + absname).c_str());
 
-    unique_ptr<data::Segment> res(make_segment());
+    unique_ptr<segment::Segment> res(make_segment());
     return res;
 }
 
-unique_ptr<data::Segment> SegmentTest::make_full_segment()
+unique_ptr<segment::Segment> SegmentTest::make_full_segment()
 {
-    unique_ptr<data::Segment> res(make_empty_segment());
+    unique_ptr<segment::Segment> res(make_empty_segment());
     for (unsigned i = 0; i < mdc.size(); ++i)
     {
         off_t ofs = res->append(mdc[i]);
@@ -47,8 +47,8 @@ unique_ptr<data::Segment> SegmentTest::make_full_segment()
 
 void SegmentCheckTest::run()
 {
-    unique_ptr<data::Segment> segment(make_full_segment());
-    dataset::data::FileState state;
+    unique_ptr<segment::Segment> segment(make_full_segment());
+    dataset::segment::State state;
 
     // A simple segment freshly imported is ok
     state = segment->check(mdc);
@@ -63,21 +63,21 @@ void SegmentCheckTest::run()
         mdc1.push_back(mdc[1]);
         mdc1.push_back(mdc[2]);
         state = segment->check(mdc1);
-        wassert(actual(state.value) == dataset::FILE_TO_PACK);
+        wassert(actual(state.value) == dataset::SEGMENT_DIRTY);
     }
     {
         metadata::Collection mdc1;
         mdc1.push_back(mdc[0]);
         mdc1.push_back(mdc[2]);
         state = segment->check(mdc1);
-        wassert(actual(state.value) == dataset::FILE_TO_PACK);
+        wassert(actual(state.value) == dataset::SEGMENT_DIRTY);
     }
     {
         metadata::Collection mdc1;
         mdc1.push_back(mdc[0]);
         mdc1.push_back(mdc[1]);
         state = segment->check(mdc1);
-        wassert(actual(state.value) == dataset::FILE_TO_PACK);
+        wassert(actual(state.value) == dataset::SEGMENT_DIRTY);
     }
 
     // Simulate elements out of order
@@ -87,14 +87,14 @@ void SegmentCheckTest::run()
         mdc1.push_back(mdc[2]);
         mdc1.push_back(mdc[1]);
         state = segment->check(mdc1);
-        wassert(actual(state.value) == dataset::FILE_TO_PACK);
+        wassert(actual(state.value) == dataset::SEGMENT_DIRTY);
     }
 
     // Simulate all elements deleted
     {
         metadata::Collection mdc1;
         state = segment->check(mdc1);
-        wassert(actual(state.value) == dataset::FILE_TO_PACK);
+        wassert(actual(state.value) == dataset::SEGMENT_DIRTY);
     }
 
     // Simulate corrupted file
@@ -107,7 +107,7 @@ void SegmentCheckTest::run()
         src->offset += 3;
         mdc1[0].set_source(unique_ptr<types::Source>(src.release()));
         state = segment->check(mdc1);
-        wassert(actual(state.value) == dataset::FILE_TO_RESCAN);
+        wassert(actual(state.value) == dataset::SEGMENT_UNALIGNED);
     }
     {
         metadata::Collection mdc1;
@@ -118,13 +118,13 @@ void SegmentCheckTest::run()
         src->offset += 3;
         mdc1[0].set_source(unique_ptr<types::Source>(src.release()));
         state = segment->check(mdc1, true);
-        wassert(actual(state.value) == dataset::FILE_TO_RESCAN);
+        wassert(actual(state.value) == dataset::SEGMENT_UNALIGNED);
     }
 }
 
 void SegmentRemoveTest::run()
 {
-    unique_ptr<data::Segment> segment(make_full_segment());
+    unique_ptr<segment::Segment> segment(make_full_segment());
 
     wassert(actual(sys::exists(absname)).istrue());
 

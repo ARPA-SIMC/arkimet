@@ -26,7 +26,6 @@
 
 /*=============================================================================*/
 
-#include <fstream>
 #include <stdexcept>
 #include <iomanip>
 #include <limits>

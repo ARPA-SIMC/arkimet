@@ -37,7 +37,6 @@ struct Options : public StandardParserWithManpage
 	BoolOption* invalidate;
 	BoolOption* remove_all;
 	BoolOption* stats;
-	OptvalIntOption* scantest;
 	StringOption* op_remove;
 	StringOption* restr;
 
@@ -69,10 +68,6 @@ struct Options : public StandardParserWithManpage
 			"Given metadata extracted from one or more datasets, remove it from the datasets where it is stored");
 		restr = add<StringOption>("restrict", 0, "restrict", "names",
 			"restrict operations to only those datasets that allow one of the given (comma separated) names");
-        scantest = add<OptvalIntOption>("scantest", 0, "scantest", "idx",
-            "Output metadata for data in the datasets that cannot be scanned or does not match the dataset filter."
-            " Sample the data at position idx (starting from 0) in each file in the dataset."
-            " If idx is omitted, it defaults to 0 (the first one)");
     }
 
     /**
@@ -86,7 +81,7 @@ struct Options : public StandardParserWithManpage
         bool found = false;
         while (hasNext())
         {
-            Reader::readConfig(next(), cfg);
+            dataset::Reader::readConfig(next(), cfg);
             found = true;
         }
         return found;
@@ -117,17 +112,17 @@ struct Worker
 
 struct WorkerOnWritable : public Worker
 {
-    virtual void process(const ConfigFile& cfg)
+    void process(const ConfigFile& cfg) override
     {
-        unique_ptr<dataset::LocalWriter> ds;
+        unique_ptr<dataset::LocalChecker> ds;
         try {
-            ds.reset(dataset::LocalWriter::create(cfg));
+            ds.reset(dataset::LocalChecker::create(cfg));
         } catch (std::exception& e) {
             throw SkipDataset(e.what());
         }
         operator()(*ds);
     }
-    virtual void operator()(dataset::LocalWriter& w) = 0;
+    virtual void operator()(dataset::LocalChecker& w) = 0;
 };
 
 struct Maintainer : public WorkerOnWritable
@@ -139,14 +134,13 @@ struct Maintainer : public WorkerOnWritable
 	{
 	}
 
-	virtual void operator()(dataset::LocalWriter& w)
-	{
-		w.check(cerr, fix, quick);
-	}
+    void operator()(dataset::LocalChecker& w) override
+    {
+        dataset::OstreamReporter r(cerr);
+        w.check(r, fix, quick);
+    }
 
-	virtual void done()
-	{
-	}
+    void done() override {}
 };
 
 struct Repacker : public WorkerOnWritable
@@ -155,15 +149,13 @@ struct Repacker : public WorkerOnWritable
 
 	Repacker(bool fix) : fix(fix) {}
 
-	virtual void operator()(dataset::LocalWriter& w)
-	{
-		w.repack(cout, fix);
-		w.flush();
-	}
+    void operator()(dataset::LocalChecker& w) override
+    {
+        dataset::OstreamReporter r(cout);
+        w.repack(r, fix);
+    }
 
-	virtual void done()
-	{
-	}
+    void done() override {}
 };
 
 struct RemoveAller : public WorkerOnWritable
@@ -172,54 +164,14 @@ struct RemoveAller : public WorkerOnWritable
 
 	RemoveAller(bool fix) : fix(fix) {}
 
-	virtual void operator()(dataset::LocalWriter& w)
-	{
-		w.removeAll(cout, fix);
-		w.flush();
-	}
-
-	virtual void done()
-	{
-	}
-};
-
-struct ScanTest : public Worker
-{
-    runtime::Stdout out; // Default output to stdout
-    metadata::BinaryPrinter printer;
-    size_t idx;
-
-    ScanTest(size_t idx=0) : printer(out), idx(idx) {}
-
-    void process(const ConfigFile& cfg) override
+    void operator()(dataset::LocalChecker& w) override
     {
-        unique_ptr<Reader> ds(Reader::create(cfg));
-        if (dataset::LocalReader* ld = dynamic_cast<dataset::LocalReader*>(ds.get()))
-        {
-            size_t count = 0;
-            size_t total = ld->scan_test([&](unique_ptr<Metadata> md) {
-                ++count;
-                return printer.eat(move(md));
-            }, idx);
-            if (count)
-                nag::warning("%s: %zd/%zd samples with problems at index %zd",
-                        cfg.value("name").c_str(), count, total, idx);
-            else if (total)
-                nag::verbose("%s: %zd samples ok at index %zd",
-                        cfg.value("name").c_str(), total, idx);
-            else
-                nag::verbose("%s: no samples found at index %zd",
-                        cfg.value("name").c_str(), idx);
-        } else {
-            throw SkipDataset("dataset is not a local dataset");
-        }
+        dataset::OstreamReporter r(cout);
+        w.removeAll(r, fix);
     }
 
-    void done() override
-    {
-    }
+    void done() {}
 };
-
 
 #if 0
 struct Invalidator : public Worker
@@ -282,9 +234,8 @@ int main(int argc, const char* argv[])
         if (opts.repack->isSet()) ++actionCount;
         if (opts.remove_all->isSet()) ++actionCount;
         if (opts.op_remove->isSet()) ++actionCount;
-        if (opts.scantest->isSet()) ++actionCount;
         if (actionCount > 1)
-            throw commandline::BadOption("only one of --stats, --invalidate, --repack, --remove, --remove-all or --scantest can be given in one invocation");
+            throw commandline::BadOption("only one of --stats, --invalidate, --repack, --remove, or --remove-all can be given in one invocation");
 
         // Read the config file(s)
         ConfigFile cfg;
@@ -325,7 +276,7 @@ int main(int argc, const char* argv[])
             for (const auto& md: todolist)
             {
                 const types::AssignedDataset* ad = md->get<types::AssignedDataset>();
-                Writer* ds = pool.get(ad->name);
+                dataset::Writer* ds = pool.get(ad->name);
                 if (!ds)
                 {
                     cerr << "Message #" << count << " is not in any dataset: skipped" << endl;
@@ -349,13 +300,6 @@ int main(int argc, const char* argv[])
 				worker.reset(new RemoveAller(opts.fix->boolValue()));
 			else if (opts.repack->boolValue())
 				worker.reset(new Repacker(opts.fix->boolValue()));
-            else if (opts.scantest->isSet())
-            {
-                size_t idx = 0;
-                if (opts.scantest->hasValue())
-                    idx = opts.scantest->value();
-                worker.reset(new ScanTest(idx));
-            }
 			else
 				worker.reset(new Maintainer(opts.fix->boolValue(),
 						not opts.accurate->boolValue()));

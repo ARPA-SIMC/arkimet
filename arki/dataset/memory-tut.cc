@@ -61,7 +61,7 @@ def_test(2)
 {
     acquireSamples();
     Summary summary;
-    c.querySummary(Matcher::parse("origin:GRIB1,200"), summary);
+    c.query_summary(Matcher::parse("origin:GRIB1,200"), summary);
     ensure_equals(summary.count(), 1u);
 }
 
@@ -71,7 +71,7 @@ def_test(3)
     acquireSamples();
     Summary summary;
     //system("bash");
-    c.querySummary(Matcher::parse("reftime:>=2007-07"), summary);
+    c.query_summary(Matcher::parse("reftime:>=2007-07"), summary);
     ensure_equals(summary.count(), 3u);
 }
 

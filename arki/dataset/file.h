@@ -5,7 +5,6 @@
 
 #include <arki/defs.h>
 #include <arki/dataset.h>
-#include <fstream>
 #include <string>
 
 namespace arki {
@@ -32,7 +31,7 @@ public:
     virtual void scan(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
-    void querySummary(const Matcher& matcher, Summary& summary) override;
+    void query_summary(const Matcher& matcher, Summary& summary) override;
 
 	static void readConfig(const std::string& path, ConfigFile& cfg);
 

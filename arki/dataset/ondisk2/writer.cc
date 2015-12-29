@@ -1,7 +1,7 @@
 #include "arki/dataset/ondisk2/writer.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/archive.h"
-#include "arki/dataset/data.h"
+#include "arki/dataset/segment.h"
 #include "arki/types/assigneddataset.h"
 #include "arki/types/source/blob.h"
 #include "arki/configfile.h"
@@ -18,7 +18,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/wibble/exception.h"
-#include <fstream>
 #include <sstream>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -58,7 +57,7 @@ Writer::~Writer()
 
 Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
-    data::Segment* w = file(md, md.source().format);
+    segment::Segment* w = file(md, md.source().format);
     off_t ofs;
 
     Pending p_idx = idx->beginTransaction();
@@ -86,7 +85,7 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 
 Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 {
-    data::Segment* w = file(md, md.source().format);
+    segment::Segment* w = file(md, md.source().format);
     off_t ofs;
 
     Pending p_idx = idx->beginTransaction();
@@ -115,7 +114,7 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     // Try to acquire without replacing
-    data::Segment* w = file(md, md.source().format);
+    segment::Segment* w = file(md, md.source().format);
     off_t ofs;
 
     Pending p_idx = idx->beginTransaction();
@@ -242,162 +241,34 @@ Pending Writer::test_writelock()
     return idx->beginExclusiveTransaction();
 }
 
-void Writer::sanityChecks(std::ostream& log, bool writable)
+void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
-    SegmentedWriter::sanityChecks(log, writable);
+    SegmentedChecker::check(reporter, fix, quick);
 
-    if (!idx->checkSummaryCache(log) && writable)
+    if (!idx->checkSummaryCache(*this, reporter) && fix)
     {
-        log << name() << ": rebuilding summary cache." << endl;
+        reporter.operation_progress(*this, "check", "rebuilding summary cache");
         idx->rebuildSummaryCache();
     }
 }
 
-static time_t override_now = 0;
-
-TestOverrideCurrentDateForMaintenance::TestOverrideCurrentDateForMaintenance(time_t ts)
+Checker::Checker(const ConfigFile& cfg)
+    : IndexedChecker(cfg), m_cfg(cfg), idx(new index::WContents(cfg))
 {
-    old_ts = override_now;
-    override_now = ts;
-}
-TestOverrideCurrentDateForMaintenance::~TestOverrideCurrentDateForMaintenance()
-{
-    override_now = old_ts;
-}
+    m_idx = idx;
 
-namespace {
-struct Deleter : public maintenance::IndexFileVisitor
-{
-	std::string name;
-	std::ostream& log;
-	bool writable;
+    // Create the directory if it does not exist
+    sys::makedirs(m_path);
 
-	Deleter(const std::string& name, std::ostream& log, bool writable)
-		: name(name), log(log), writable(writable) {}
+    // If the index is missing, take note not to perform a repack until a
+    // check is made
+    if (!sys::exists(str::joinpath(m_path, "index.sqlite")))
+        files::createDontpackFlagfile(m_path);
 
-    void operator()(const std::string& file, const metadata::Collection& mdc)
-    {
-        if (writable)
-        {
-            log << name << ": deleting file " << file << endl;
-            sys::unlink_ifexists(file);
-        } else
-            log << name << ": would delete file " << file << endl;
-    }
-};
-
-struct CheckAge : public maintenance::MaintFileVisitor
-{
-	maintenance::MaintFileVisitor& next;
-	const index::Contents& idx;
-	std::string archive_threshold;
-	std::string delete_threshold;
-
-    CheckAge(MaintFileVisitor& next, const index::Contents& idx, int archive_age=-1, int delete_age=-1);
-
-    std::string format_ts(time_t ts)
-    {
-        struct tm t;
-        gmtime_r(&ts, &t);
-        char buf[25];
-        snprintf(buf, 25, "%04d-%02d-%02d %02d:%02d:%02d",
-                t.tm_year + 1900, t.tm_mon+1, t.tm_mday,
-                t.tm_hour, t.tm_min, t.tm_sec);
-        return buf;
-    }
-
-    void operator()(const std::string& file, data::FileState state);
-};
-
-CheckAge::CheckAge(MaintFileVisitor& next, const index::Contents& idx, int archive_age, int delete_age)
-    : next(next), idx(idx)
-{
-    time_t now = override_now ? override_now : time(NULL);
-
-    // Go to the beginning of the day
-    now -= (now % (3600*24));
-
-    if (archive_age != -1)
-        archive_threshold = format_ts(now - archive_age * 3600 * 24);
-    if (delete_age != -1)
-        delete_threshold = format_ts(now - delete_age * 3600 * 24);
+    idx->open();
 }
 
-void CheckAge::operator()(const std::string& file, data::FileState state)
-{
-    if (archive_threshold.empty() and delete_threshold.empty())
-        next(file, state);
-    else
-    {
-        string maxdate = idx.max_file_reftime(file);
-        //cerr << "TEST " << maxdate << " WITH " << delete_threshold << " AND " << archive_threshold << endl;
-        if (not delete_threshold.empty() && delete_threshold >= maxdate)
-        {
-            nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
-            next(file, state + FILE_TO_DELETE);
-        }
-        else if (not archive_threshold.empty() && archive_threshold >= maxdate)
-        {
-            nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
-            next(file, state + FILE_TO_ARCHIVE);
-        }
-        else
-            next(file, state);
-    }
-}
-
-struct FileChecker : public maintenance::IndexFileVisitor
-{
-    data::SegmentManager& sm;
-    bool quick;
-    maintenance::MaintFileVisitor& next;
-
-    FileChecker(data::SegmentManager& sm, bool quick, maintenance::MaintFileVisitor& next)
-        : sm(sm), quick(quick), next(next)
-    {
-    }
-
-    virtual void operator()(const std::string& relname, const metadata::Collection& mds)
-    {
-        next(relname, sm.check(relname, mds, quick));
-    }
-};
-}
-
-void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
-{
-    // TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
-    // and delete the index if it fails
-
-    // Iterate subdirs in sorted order
-    // Also iterate files on index in sorted order
-    // Check each file for need to reindex or repack
-    CheckAge ca(v, *idx, m_archive_age, m_delete_age);
-    vector<string> files = scan::dir(m_path);
-    maintenance::FindMissing fm(ca, files);
-    FileChecker checker(*m_segment_manager, quick, fm);
-    idx->scan_files(checker);
-    fm.end();
-    SegmentedWriter::maintenance(v, quick);
-}
-
-void Writer::removeAll(std::ostream& log, bool writable)
-{
-    Deleter deleter(m_name, log, writable);
-    idx->scan_files(deleter);
-    if (writable)
-    {
-        log << m_name << ": clearing index" << endl;
-        idx->reset();
-    } else
-        log << m_name << ": would clear index" << endl;
-
-    // TODO: empty the index
-    SegmentedWriter::removeAll(log, writable);
-}
-
-
-void Writer::rescanFile(const std::string& relpath)
+void Checker::rescanFile(const std::string& relpath)
 {
     string pathname = str::joinpath(m_path, relpath);
 
@@ -474,7 +345,7 @@ void Writer::rescanFile(const std::string& relpath)
 }
 
 
-size_t Writer::repackFile(const std::string& relpath)
+size_t Checker::repackFile(const std::string& relpath)
 {
     // Lock away writes and reads
     Pending p = idx->beginExclusiveTransaction();
@@ -522,14 +393,19 @@ size_t Writer::repackFile(const std::string& relpath)
     return size_pre - size_post;
 }
 
-size_t Writer::removeFile(const std::string& relpath, bool withData)
+void Checker::indexFile(const std::string& relpath, metadata::Collection&& contents)
+{
+    throw std::runtime_error("cannot index " + relpath + ": the operation is not implemented in ondisk2 datasets");
+}
+
+size_t Checker::removeFile(const std::string& relpath, bool withData)
 {
     idx->reset(relpath);
     // TODO: also remove .metadata and .summary files
-    return SegmentedWriter::removeFile(relpath, withData);
+    return SegmentedChecker::removeFile(relpath, withData);
 }
 
-void Writer::archiveFile(const std::string& relpath)
+void Checker::archiveFile(const std::string& relpath)
 {
     // Create the target directory in the archive
     string pathname = str::joinpath(m_path, relpath);
@@ -542,11 +418,11 @@ void Writer::archiveFile(const std::string& relpath)
     // Remove from index
     idx->reset(relpath);
 
-    // Delegate the rest to SegmentedWriter
-    SegmentedWriter::archiveFile(relpath);
+    // Delegate the rest to SegmentedChecker
+    SegmentedChecker::archiveFile(relpath);
 }
 
-size_t Writer::vacuum()
+size_t Checker::vacuum()
 {
     size_t size_pre = 0, size_post = 0;
     if (sys::size(idx->pathname(), 0) > 0)

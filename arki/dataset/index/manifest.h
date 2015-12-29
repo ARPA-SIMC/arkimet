@@ -2,6 +2,7 @@
 #define ARKI_DATASET_INDEX_MANIFEST_H
 
 #include <arki/dataset/index.h>
+#include <arki/dataset/segment.h>
 #include <vector>
 #include <string>
 #include <memory>
@@ -11,15 +12,6 @@ class Matcher;
 class Summary;
 
 namespace dataset {
-
-namespace data {
-class SegmentManager;
-}
-
-namespace maintenance {
-class MaintFileVisitor;
-}
-
 namespace index {
 
 class Manifest : public dataset::Index
@@ -36,17 +28,11 @@ public:
 	virtual void openRO() = 0;
 	virtual void openRW() = 0;
 	virtual void fileList(const Matcher& matcher, std::vector<std::string>& files) = 0;
-    /**
-     * Set start_time and end_time to the reftime span of the given file.
-     *
-     * If the file does not exist in the manifest, return false
-     */
-    virtual bool fileTimespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const = 0;
-	virtual void vacuum() = 0;
-	virtual void acquire(const std::string& relname, time_t mtime, const Summary& sum) = 0;
-	virtual void remove(const std::string& relname) = 0;
-	virtual void check(data::SegmentManager& sm, maintenance::MaintFileVisitor& v, bool quick=true) = 0;
-	virtual void flush() = 0;
+    bool segment_timespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const override = 0;
+    virtual size_t vacuum() = 0;
+    virtual void acquire(const std::string& relname, time_t mtime, const Summary& sum) = 0;
+    virtual void remove(const std::string& relname) = 0;
+    virtual void flush() = 0;
 
     virtual Pending test_writelock() = 0;
 
@@ -66,7 +52,8 @@ public:
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     bool query_summary(const Matcher& matcher, Summary& summary) override;
-    size_t produce_nth(metadata_dest_func cons, size_t idx=0) override;
+    void list_segments(std::function<void(const std::string&)> dest) override = 0;
+    void scan_files(segment::contents_func v) override = 0;
 
 	void rescanFile(const std::string& dir, const std::string& relpath);
 

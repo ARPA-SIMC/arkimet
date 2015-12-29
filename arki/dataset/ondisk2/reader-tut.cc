@@ -55,10 +55,10 @@ def_test(2)
 
     unique_ptr<ondisk2::Reader> reader(new ondisk2::Reader(cfg));
 
-	Summary s;
-	reader->querySummary(Matcher::parse("reftime:=2007"), s);
-	ensure_equals(s.count(), 3u);
-	ensure_equals(s.size(), 44412u);
+    Summary s;
+    reader->query_summary(Matcher::parse("reftime:=2007"), s);
+    ensure_equals(s.count(), 3u);
+    ensure_equals(s.size(), 44412u);
 
     // Global summary is not built because we only query specific months
     ensure(!sys::access("testds/.summaries/all.summary", F_OK));
@@ -79,30 +79,4 @@ def_test(2)
     ensure(!sys::access("testds/.summaries/2008-01.summary", F_OK));
 }
 
-// Test produce_nth
-def_test(3)
-{
-    const test::Scenario& s = test::Scenario::get("ondisk2-testgrib1");
-    unique_ptr<ondisk2::Reader> reader(new ondisk2::Reader(s.cfg));
-
-    {
-        metadata::Collection mdc;
-        //iotrace::Collector c;
-        size_t count = reader->produce_nth(mdc.inserter_func(), 0);
-        ensure_equals(count, 3u);
-        ensure_equals(mdc.size(), 3u);
-        //c.dump(cerr);
-    }
-
-    {
-        metadata::Collection mdc;
-        size_t count = reader->produce_nth(mdc.inserter_func(), 1);
-        ensure_equals(count, 0u);
-        ensure_equals(mdc.size(), 0u);
-    }
 }
-
-
-}
-
-// vim:set ts=4 sw=4:

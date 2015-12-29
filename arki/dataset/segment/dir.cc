@@ -26,7 +26,7 @@ using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
-namespace data {
+namespace segment {
 namespace dir {
 
 namespace {
@@ -195,7 +195,7 @@ std::string SequenceFile::data_fname(size_t pos, const std::string& format)
 }
 
 Segment::Segment(const std::string& format, const std::string& relname, const std::string& absname)
-    : data::Segment(relname, absname), format(format), seqfile(absname)
+    : segment::Segment(relname, absname), format(format), seqfile(absname)
 {
 }
 
@@ -291,7 +291,7 @@ off_t Segment::link(const std::string& srcabsname)
     return pos;
 }
 
-FileState Segment::check(const metadata::Collection& mds, bool quick)
+State Segment::check(const metadata::Collection& mds, bool quick)
 {
     close();
 
@@ -305,7 +305,7 @@ FileState Segment::check(const metadata::Collection& mds, bool quick)
 
     // Deal with segments that just do not exist
     if (!sys::exists(absname))
-        return FILE_TO_RESCAN;
+        return SEGMENT_UNALIGNED;
 
     // List the dir elements we know about
     set<size_t> expected;
@@ -329,7 +329,7 @@ FileState Segment::check(const metadata::Collection& mds, bool quick)
                 stringstream out;
                 out << (*i)->source();
                 nag::warning("%s: validation failed at %s: %s", absname.c_str(), out.str().c_str(), e.what());
-                return FILE_TO_RESCAN;
+                return SEGMENT_UNALIGNED;
             }
         }
 
@@ -342,7 +342,7 @@ FileState Segment::check(const metadata::Collection& mds, bool quick)
         if (ei == expected.end())
         {
             nag::warning("%s: expected file %zd not found in the file system", absname.c_str(), (size_t)source.offset);
-            return FILE_TO_RESCAN;
+            return SEGMENT_UNALIGNED;
         } else
             expected.erase(ei);
 
@@ -352,16 +352,16 @@ FileState Segment::check(const metadata::Collection& mds, bool quick)
     if (!expected.empty())
     {
         nag::warning("%s: found %zd file(s) that the index does now know about", absname.c_str(), expected.size());
-        return FILE_TO_PACK;
+        return SEGMENT_DIRTY;
     }
 
     // Take note of files with holes
     if (out_of_order)
     {
         nag::verbose("%s: contains deleted data or data to be reordered", absname.c_str());
-        return FILE_TO_PACK;
+        return SEGMENT_DIRTY;
     } else {
-        return FILE_OK;
+        return SEGMENT_OK;
     }
 }
 
@@ -503,7 +503,7 @@ unique_ptr<dir::Segment> Segment::make_segment(const std::string& format, const 
     return res;
 }
 
-FileState HoleSegment::check(const metadata::Collection& mds, bool quick)
+State HoleSegment::check(const metadata::Collection& mds, bool quick)
 {
     // Force quick, since the file contents are fake
     return Segment::check(mds, true);

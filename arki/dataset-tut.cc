@@ -106,80 +106,80 @@ TESTGRP(arki_dataset);
 
 def_test(1)
 {
-	unique_ptr<Reader> testds(Reader::create(*config.section("error")));
-	ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("error")));
+    ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
 }
 
 def_test(2)
 {
-	unique_ptr<Writer> testds(Writer::create(*config.section("error")));
-	ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
+    unique_ptr<dataset::Writer> testds(dataset::Writer::create(*config.section("error")));
+    ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
 }
 
 def_test(3)
 {
-	unique_ptr<Reader> testds(Reader::create(*config.section("duplicates")));
-	ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("duplicates")));
+    ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
 }
 
 def_test(4)
 {
-	unique_ptr<Writer> testds(Writer::create(*config.section("duplicates")));
-	ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
+    unique_ptr<dataset::Writer> testds(dataset::Writer::create(*config.section("duplicates")));
+    ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
 }
 
 def_test(5)
 {
-	unique_ptr<Reader> testds(Reader::create(*config.section("outbound")));
-	ensure(dynamic_cast<dataset::Empty*>(testds.get()) != 0);
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("outbound")));
+    ensure(dynamic_cast<dataset::Empty*>(testds.get()) != 0);
 }
 
 def_test(6)
 {
-	unique_ptr<Writer> testds(Writer::create(*config.section("outbound")));
-	ensure(dynamic_cast<dataset::Outbound*>(testds.get()) != 0);
+    unique_ptr<dataset::Writer> testds(dataset::Writer::create(*config.section("outbound")));
+    ensure(dynamic_cast<dataset::Outbound*>(testds.get()) != 0);
 }
 
 def_test(7)
 {
-	unique_ptr<Reader> testds(Reader::create(*config.section("discard")));
-	ensure(dynamic_cast<dataset::Empty*>(testds.get()) != 0);
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("discard")));
+    ensure(dynamic_cast<dataset::Empty*>(testds.get()) != 0);
 }
 
 def_test(8)
 {
-	unique_ptr<Writer> testds(Writer::create(*config.section("discard")));
-	ensure(dynamic_cast<dataset::Discard*>(testds.get()) != 0);
+    unique_ptr<dataset::Writer> testds(dataset::Writer::create(*config.section("discard")));
+    ensure(dynamic_cast<dataset::Discard*>(testds.get()) != 0);
 }
 
 def_test(9)
 {
-	unique_ptr<Reader> testds(Reader::create(*config.section("simple")));
-	ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("simple")));
+    ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
 }
 
 def_test(10)
 {
-	unique_ptr<Writer> testds(Writer::create(*config.section("simple")));
-	ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
+    unique_ptr<dataset::Writer> testds(dataset::Writer::create(*config.section("simple")));
+    ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
 }
 
 def_test(11)
 {
-	unique_ptr<Reader> testds(Reader::create(*config.section("ondisk2")));
-	ensure(dynamic_cast<dataset::ondisk2::Reader*>(testds.get()) != 0);
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("ondisk2")));
+    ensure(dynamic_cast<dataset::ondisk2::Reader*>(testds.get()) != 0);
 }
 
 def_test(12)
 {
-	unique_ptr<Writer> testds(Writer::create(*config.section("ondisk2")));
-	ensure(dynamic_cast<dataset::ondisk2::Writer*>(testds.get()) != 0);
+    unique_ptr<dataset::Writer> testds(dataset::Writer::create(*config.section("ondisk2")));
+    ensure(dynamic_cast<dataset::ondisk2::Writer*>(testds.get()) != 0);
 }
 
 def_test(13)
 {
-	unique_ptr<Writer> testds(Writer::create(*config.section("test")));
-	ensure(dynamic_cast<dataset::ondisk2::Writer*>(testds.get()) != 0);
+    unique_ptr<dataset::Writer> testds(dataset::Writer::create(*config.section("test")));
+    ensure(dynamic_cast<dataset::ondisk2::Writer*>(testds.get()) != 0);
 }
 
 struct TestDataset
@@ -206,12 +206,12 @@ struct TestDataset
         // Clear everything
         if (sys::isdir(path)) sys::rmtree(path);
 
-        unique_ptr<Writer> ds(Writer::create(*cfgtest));
+        unique_ptr<dataset::Writer> ds(dataset::Writer::create(*cfgtest));
 
         for (unsigned i = 0; i < 3; ++i)
         {
             Metadata md = td.test_data[i].md;
-            wassert(actual(ds->acquire(md)) == Writer::ACQ_OK);
+            wassert(actual(ds->acquire(md)) == dataset::Writer::ACQ_OK);
             wassert(actual_file(str::joinpath(path, td.test_data[i].destfile)).exists());
             wassert(actual(md.sourceBlob().filename).endswith(td.test_data[i].destfile));
         }
@@ -219,7 +219,7 @@ struct TestDataset
 
     void test_querydata()
     {
-        unique_ptr<Reader> ds(Reader::create(*cfgtest));
+        unique_ptr<dataset::Reader> ds(dataset::Reader::create(*cfgtest));
 
         acct::plain_data_read_count.reset();
 
@@ -261,12 +261,12 @@ struct TestDataset
 
     void test_querysummary()
     {
-        unique_ptr<Reader> ds(Reader::create(*cfgtest));
+        unique_ptr<dataset::Reader> ds(dataset::Reader::create(*cfgtest));
 
         // Query summary of everything
         {
             Summary s;
-            ds->querySummary(Matcher(), s);
+            ds->query_summary(Matcher(), s);
             wassert(actual(s.count()) == 3);
         }
 
@@ -276,7 +276,7 @@ struct TestDataset
 
             // Query summary of single items
             Summary s;
-            ds->querySummary(td.test_data[i].matcher, s);
+            ds->query_summary(td.test_data[i].matcher, s);
 
             wassert(actual(s.count()) == 1u);
 
@@ -287,7 +287,7 @@ struct TestDataset
 
     void test_querybytes()
     {
-        unique_ptr<Reader> ds(Reader::create(*cfgtest));
+        unique_ptr<dataset::Reader> ds(dataset::Reader::create(*cfgtest));
 
         for (unsigned i = 0; i < 3; ++i)
         {
@@ -315,7 +315,7 @@ struct TestDataset
 
     void test_querybytes_integrity()
     {
-        unique_ptr<Reader> ds(Reader::create(*cfgtest));
+        unique_ptr<dataset::Reader> ds(dataset::Reader::create(*cfgtest));
 
         // Query everything
         dataset::ByteQuery bq;
@@ -341,7 +341,7 @@ struct TestDataset
 
     void test_postprocess()
     {
-        unique_ptr<Reader> ds(Reader::create(*cfgtest));
+        unique_ptr<dataset::Reader> ds(dataset::Reader::create(*cfgtest));
 
         // Do a simple export first, to get the exact metadata that would come
         // out
@@ -367,11 +367,11 @@ struct TestDataset
     void test_locked()
     {
         // Lock a dataset for writing
-        unique_ptr<Writer> wds(Writer::create(*cfgtest));
+        unique_ptr<dataset::Writer> wds(dataset::Writer::create(*cfgtest));
         Pending p = wds->test_writelock();
 
         // Try to read from it, it should still work with WAL
-        unique_ptr<Reader> rds(Reader::create(*cfgtest));
+        unique_ptr<dataset::Reader> rds(dataset::Reader::create(*cfgtest));
         dataset::ByteQuery bq;
         bq.setData(Matcher());
         sys::File out("/dev/null", O_WRONLY);

@@ -49,11 +49,10 @@ struct CurlEasy
 class HTTP : public Reader
 {
 protected:
-	std::string m_name;
-	std::string m_baseurl;
-	std::string m_qmacro;
-	mutable http::CurlEasy m_curl;
-	bool m_mischief;
+    std::string m_baseurl;
+    std::string m_qmacro;
+    http::CurlEasy m_curl;
+    bool m_mischief;
 
 public:
 	// Initialise the dataset with the information from the configurationa in 'cfg'
@@ -61,7 +60,7 @@ public:
 	virtual ~HTTP();
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
-    void querySummary(const Matcher& matcher, Summary& summary) override;
+    void query_summary(const Matcher& matcher, Summary& summary) override;
     void query_bytes(const dataset::ByteQuery& q, int out) override;
 
 	static void readConfig(const std::string& path, ConfigFile& cfg);

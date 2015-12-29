@@ -1,15 +1,9 @@
-#include "config.h"
-#include <arki/tests/tests.h>
-#include <arki/scan/dir.h>
-#include <arki/utils.h>
-#include <arki/utils/sys.h>
-#include <arki/wibble/exception.h>
+#include "arki/tests/tests.h"
+#include "arki/scan/dir.h"
+#include "arki/utils.h"
+#include "arki/utils/sys.h"
+#include "arki/wibble/exception.h"
 #include <algorithm>
-#include <sstream>
-#include <iostream>
-#include <fstream>
-
-#include <sys/stat.h>
 
 namespace tut {
 using namespace std;
@@ -89,5 +83,3 @@ def_test(3)
 }
 
 }
-
-// vim:set ts=4 sw=4:

@@ -7,10 +7,12 @@
 #include <map>
 
 namespace arki {
-
 class ConfigFile;
+
+namespace dataset {
 class Reader;
 class Writer;
+}
 
 /**
  * Infrastructure to dispatch metadata into various datasets
@@ -37,13 +39,13 @@ public:
 	DATASET* get(const std::string& name);
 };
 
-class ReaderPool : public DatasetPool<Reader>
+class ReaderPool : public DatasetPool<dataset::Reader>
 {
 public:	
 	ReaderPool(const ConfigFile& cfg);
 };
 
-class WriterPool : public DatasetPool<Writer>
+class WriterPool : public DatasetPool<dataset::Writer>
 {
 public:
     WriterPool(const ConfigFile& cfg);

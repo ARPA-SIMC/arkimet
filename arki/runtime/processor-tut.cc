@@ -14,7 +14,7 @@ using namespace arki::runtime;
 using namespace arki::utils;
 
 struct arki_processor_shar {
-    unique_ptr<Reader> build_dataset()
+    unique_ptr<dataset::Reader> build_dataset()
     {
         DatasetTest dt;
         if (sys::isdir("test")) sys::rmtree("test");
@@ -26,12 +26,12 @@ struct arki_processor_shar {
 
         testdata::GRIBData fixture;
         wruntest(dt.import_all, fixture);
-        return unique_ptr<Reader>(dt.makeReader());
+        return unique_ptr<dataset::Reader>(dt.makeReader());
     }
 
     void run_maker(ProcessorMaker& pm, Matcher matcher=Matcher())
     {
-        unique_ptr<Reader> ds(build_dataset());
+        unique_ptr<dataset::Reader> ds(build_dataset());
 
         if (sys::exists("pm-out"))
             sys::unlink("pm-out");
@@ -53,7 +53,7 @@ def_test(1)
     metadata::Collection mdc;
     mdc.read_from_file("pm-out");
 
-    wassert(actual(mdc.size()) == 3);
+    wassert(actual(mdc.size()) == 3u);
     wassert(actual_type(mdc[0].source()).is_source_blob("grib1", ".", sys::abspath("test/2007/07-07.grib1"), 0, 34960));
     wassert(actual_type(mdc[1].source()).is_source_blob("grib1", ".", sys::abspath("test/2007/07-08.grib1"), 0, 7218));
     wassert(actual_type(mdc[2].source()).is_source_blob("grib1", ".", sys::abspath("test/2007/10-09.grib1"), 0, 2234));
@@ -69,13 +69,13 @@ def_test(2)
     metadata::Collection mdc;
     mdc.read_from_file("pm-out");
 
-    wassert(actual(mdc.size()) == 3);
+    wassert(actual(mdc.size()) == 3u);
     wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 34960));
     wassert(actual_type(mdc[1].source()).is_source_inline("grib1", 7218));
     wassert(actual_type(mdc[2].source()).is_source_inline("grib1", 2234));
-    wassert(actual(mdc[0].getData().size()) == 34960);
-    wassert(actual(mdc[1].getData().size()) == 7218);
-    wassert(actual(mdc[2].getData().size()) == 2234);
+    wassert(actual(mdc[0].getData().size()) == 34960u);
+    wassert(actual(mdc[1].getData().size()) == 7218u);
+    wassert(actual(mdc[2].getData().size()) == 2234u);
 }
 
 // Export data only
@@ -88,7 +88,7 @@ def_test(3)
     metadata::Collection mdc;
     scan::scan("pm-out", mdc.inserter_func(), "grib");
 
-    wassert(actual(mdc.size()) == 3);
+    wassert(actual(mdc.size()) == 3u);
     wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("."), "pm-out", 0, 34960));
     wassert(actual_type(mdc[1].source()).is_source_blob("grib1", sys::abspath("."), "pm-out", 34960, 7218));
     wassert(actual_type(mdc[2].source()).is_source_blob("grib1", sys::abspath("."), "pm-out", 34960 + 7218, 2234));

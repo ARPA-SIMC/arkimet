@@ -1,16 +1,13 @@
 #include "summarycache.h"
-#include <arki/metadata.h>
-#include <arki/summary.h>
-#include <arki/types/reftime.h>
-#include <arki/utils/fd.h>
-#include <arki/utils/string.h>
-#include <arki/utils/sys.h>
-#include <arki/wibble/exception.h>
+#include "arki/metadata.h"
+#include "arki/summary.h"
+#include "arki/dataset.h"
+#include "arki/types/reftime.h"
+#include "arki/utils/fd.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 #include <cerrno>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
 
 using namespace std;
 using namespace arki::types;
@@ -51,15 +48,9 @@ void SummaryCache::openRW()
 bool SummaryCache::read(Summary& s)
 {
     string sum_file = str::joinpath(m_scache_root, "all.summary");
-    int fd = open(sum_file.c_str(), O_RDONLY);
-    if (fd < 0)
-    {
-        if (errno == ENOENT)
-            return false;
-        else
-            throw wibble::exception::System("opening file " + sum_file);
-    }
-    utils::fd::HandleWatch hw(sum_file, fd);
+    sys::File fd(sum_file);
+    if (!fd.open_ifexists(O_RDONLY))
+        return false;
     s.read(fd, sum_file);
     return true;
 }
@@ -67,15 +58,9 @@ bool SummaryCache::read(Summary& s)
 bool SummaryCache::read(Summary& s, int year, int month)
 {
     string sum_file = summary_pathname(year, month);
-    int fd = open(sum_file.c_str(), O_RDONLY);
-    if (fd < 0)
-    {
-        if (errno == ENOENT)
-            return false;
-        else
-            throw wibble::exception::System("opening file " + sum_file);
-    }
-    utils::fd::HandleWatch hw(sum_file, fd);
+    sys::File fd(sum_file);
+    if (!fd.open_ifexists(O_RDONLY))
+        return false;
     s.read(fd, sum_file);
     return true;
 }
@@ -138,7 +123,7 @@ void SummaryCache::invalidate(const Time& tmin, const Time& tmax)
 }
 
 
-bool SummaryCache::check(const std::string& dsname, std::ostream& log) const
+bool SummaryCache::check(const dataset::Base& ds, Reporter& reporter) const
 {
     bool res = true;
 
@@ -151,7 +136,7 @@ bool SummaryCache::check(const std::string& dsname, std::ostream& log) const
         string pathname = str::joinpath(m_scache_root, i->d_name);
         if (!sys::access(pathname, W_OK))
         {
-            log << dsname << ": " << pathname << " is not writable." << endl;
+            reporter.operation_manual_intervention(ds, "check", pathname + " is not writable");
             res = false;
         }
     }

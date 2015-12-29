@@ -1,32 +1,40 @@
-#ifndef ARKI_DATA_LINES_H
-#define ARKI_DATA_LINES_H
+#ifndef ARKI_DATASET_DATA_CONCAT_H
+#define ARKI_DATASET_DATA_CONCAT_H
 
-/// Read/write functions for data blobs with newline separators
 #include <arki/libconfig.h>
-#include <arki/dataset/data/fd.h>
+#include <arki/dataset/segment/fd.h>
 #include <string>
 
 namespace arki {
 namespace dataset {
-namespace data {
-namespace lines {
+namespace segment {
+namespace concat {
 
 class Segment : public fd::Segment
 {
 public:
     Segment(const std::string& relname, const std::string& absname);
 
-    void write(const std::vector<uint8_t>& buf) override;
-
     off_t append(Metadata& md) override;
     off_t append(const std::vector<uint8_t>& buf) override;
     Pending append(Metadata& md, off_t* ofs) override;
 
-    FileState check(const metadata::Collection& mds, bool quick=true) override;
+    State check(const metadata::Collection& mds, bool quick=true) override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds) override;
 };
 
-class OstreamWriter : public data::OstreamWriter
+class HoleSegment : public Segment
+{
+public:
+    HoleSegment(const std::string& relname, const std::string& absname)
+        : Segment(relname, absname) {}
+
+    void write(const std::vector<uint8_t>& buf) override;
+
+    Pending repack(const std::string& rootdir, metadata::Collection& mds) override;
+};
+
+class OstreamWriter : public segment::OstreamWriter
 {
 protected:
     sigset_t blocked;
@@ -45,3 +53,4 @@ public:
 }
 
 #endif
+

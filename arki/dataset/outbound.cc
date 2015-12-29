@@ -1,17 +1,12 @@
-#include "config.h"
-
-#include <arki/dataset/outbound.h>
-#include <arki/dataset/targetfile.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/types/assigneddataset.h>
-#include <arki/dataset/data.h>
-#include <arki/utils/string.h>
-#include <arki/utils/sys.h>
-#include <arki/wibble/exception.h>
-
-#include <fstream>
-#include <sstream>
+#include "outbound.h"
+#include "step.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/types/assigneddataset.h"
+#include "arki/dataset/segment.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include "arki/wibble/exception.h"
 #include <sys/stat.h>
 
 using namespace std;
@@ -32,14 +27,14 @@ Outbound::~Outbound()
 
 void Outbound::storeBlob(Metadata& md, const std::string& reldest)
 {
-    // Write using data::Writer
-    data::Segment* w = file(md, md.source().format);
+    // Write using segment::Writer
+    segment::Segment* w = file(md, md.source().format);
     w->append(md);
 }
 
 Writer::AcquireResult Outbound::acquire(Metadata& md, ReplaceStrategy replace)
 {
-    string reldest = (*m_tf)(md);
+    string reldest = (*m_step)(md);
     string dest = m_path + "/" + reldest;
 
     sys::makedirs(str::dirname(dest));
@@ -91,7 +86,7 @@ size_t Outbound::vacuum()
 
 Writer::AcquireResult Outbound::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
-    unique_ptr<TargetFile> tf(TargetFile::create(cfg));
+    unique_ptr<Step> tf(Step::create(cfg));
     string dest = cfg.value("path") + "/" + (*tf)(md) + "." + md.source().format;
     out << "Assigning to dataset " << cfg.value("name") << " in file " << dest << endl;
     return ACQ_OK;

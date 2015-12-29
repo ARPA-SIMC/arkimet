@@ -3,8 +3,8 @@
 #include <arki/metadata.h>
 #include <arki/utils/sys.h>
 #include <arki/utils/string.h>
-#include "data.h"
-#include "data/lines.h"
+#include "segment.h"
+#include "segment/lines.h"
 
 namespace tut {
 using namespace std;
@@ -34,7 +34,7 @@ public:
 // Test the item cache
 def_test(1)
 {
-    data::impl::Cache<TestItem, 3> cache;
+    segment::impl::Cache<TestItem, 3> cache;
 
     // Empty cache does not return things
     wassert(actual(cache.get("foo") == 0).istrue());
@@ -97,11 +97,11 @@ struct TestSegments
     {
         ConfigFile cfg1(cfg);
         cfg1.setValue("mockdata", "true");
-        unique_ptr<data::SegmentManager> segment_manager(data::SegmentManager::get(cfg1));
+        unique_ptr<segment::SegmentManager> segment_manager(segment::SegmentManager::get(cfg1));
 
         // Import 2 gigabytes of data in a single segment
         metadata::Collection mds;
-        data::Segment* w = segment_manager->get_segment("test.grib");
+        segment::Segment* w = segment_manager->get_segment("test.grib");
         for (unsigned i = 0; i < 2048; ++i)
         {
             unique_ptr<Metadata> md(new Metadata(testdata::make_large_mock("grib", 1024*1024, i / (30 * 24), (i/24) % 30, i % 24)));

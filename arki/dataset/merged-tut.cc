@@ -16,11 +16,11 @@ using namespace arki;
 using namespace arki::tests;
 
 struct arki_dataset_merged_shar {
-	ConfigFile config;
-	Reader* ds1;
-	Reader* ds2;
-	Reader* ds3;
-	dataset::Merged ds;
+    ConfigFile config;
+    dataset::Reader* ds1;
+    dataset::Reader* ds2;
+    dataset::Reader* ds3;
+    dataset::Merged ds;
 
 	arki_dataset_merged_shar() : ds1(0), ds2(0), ds3(0)
 	{
@@ -70,10 +70,10 @@ struct arki_dataset_merged_shar {
         ensure(!scanner.next(md));
         dispatcher.flush();
 
-		ds.addDataset(*(ds1 = Reader::create(*config.section("test200"))));
-		ds.addDataset(*(ds2 = Reader::create(*config.section("test80"))));
-		ds.addDataset(*(ds3 = Reader::create(*config.section("error"))));
-	}
+        ds.addDataset(*(ds1 = dataset::Reader::create(*config.section("test200"))));
+        ds.addDataset(*(ds2 = dataset::Reader::create(*config.section("test80"))));
+        ds.addDataset(*(ds3 = dataset::Reader::create(*config.section("error"))));
+    }
 
 	~arki_dataset_merged_shar()
 	{
@@ -91,8 +91,8 @@ def_test(1)
     ensure_equals(mdc.size(), 3u);
 
 #if 0
-	unique_ptr<Reader> testds(Reader::create(*config.section("test200")));
-	metadata::Collection mdc;
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
+    metadata::Collection mdc;
 
 	testds->query(Matcher::parse("origin:GRIB1,200"), false, mdc);
 	ensure_equals(mdc.size(), 1u);

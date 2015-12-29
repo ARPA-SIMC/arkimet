@@ -2,7 +2,7 @@
 #define ARKI_DATASET_DATA_TESTS_H
 
 #include <arki/dataset/tests.h>
-#include <arki/dataset/data.h>
+#include <arki/dataset/segment.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <string>
@@ -26,15 +26,15 @@ struct SegmentTest
     virtual ~SegmentTest();
 
     /// Instantiate the segment to use for testing
-    virtual dataset::data::Segment* make_segment() = 0;
+    virtual dataset::segment::Segment* make_segment() = 0;
 
     virtual void run() = 0;
 
     /// Create a segment with no data on disk
-    std::unique_ptr<dataset::data::Segment> make_empty_segment();
+    std::unique_ptr<dataset::segment::Segment> make_empty_segment();
 
     /// Create a segment importing all mdc into it
-    std::unique_ptr<dataset::data::Segment> make_full_segment();
+    std::unique_ptr<dataset::segment::Segment> make_full_segment();
 
     void append_all();
 };
@@ -60,5 +60,4 @@ struct SegmentRemoveTest : public SegmentTest
 
 }
 }
-
 #endif

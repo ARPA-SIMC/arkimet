@@ -32,7 +32,7 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<Reader> ds(makeReader());
+        unique_ptr<dataset::Reader> ds(makeReader());
         dataset::http::LegacySummaryParams params;
         params.parse_get_or_post(req);
 
@@ -49,7 +49,7 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<Reader> ds(makeReader());
+        unique_ptr<dataset::Reader> ds(makeReader());
 
         dataset::http::LegacyQueryParams params(".");
         params.parse_get_or_post(req);
@@ -67,7 +67,7 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<Reader> ds(makeReader());
+        unique_ptr<dataset::Reader> ds(makeReader());
 
         dataset::http::QueryDataParams params;
         params.parse_get_or_post(req);
@@ -85,7 +85,7 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<Reader> ds(makeReader());
+        unique_ptr<dataset::Reader> ds(makeReader());
 
         dataset::http::QueryBytesParams params(".");
         params.parse_get_or_post(req);
@@ -103,7 +103,7 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<Reader> ds(makeReader());
+        unique_ptr<dataset::Reader> ds(makeReader());
 
         dataset::http::ReaderServer srv(*ds, dsname);
         srv.do_config(cfg, req);
@@ -135,7 +135,7 @@ struct ServerTest : public arki::tests::DatasetTest
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<Reader> ds(makeReader());
+        unique_ptr<dataset::Reader> ds(makeReader());
         dataset::http::LegacySummaryParams params;
         params.parse_get_or_post(req);
 
@@ -152,7 +152,7 @@ struct ServerTest : public arki::tests::DatasetTest
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<Reader> ds(makeReader());
+        unique_ptr<dataset::Reader> ds(makeReader());
 
         dataset::http::LegacyQueryParams params(".");
         params.parse_get_or_post(req);
@@ -170,7 +170,7 @@ struct ServerTest : public arki::tests::DatasetTest
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<Reader> ds(makeReader());
+        unique_ptr<dataset::Reader> ds(makeReader());
 
         dataset::http::QueryDataParams params;
         params.parse_get_or_post(req);
@@ -188,7 +188,7 @@ struct ServerTest : public arki::tests::DatasetTest
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<Reader> ds(makeReader());
+        unique_ptr<dataset::Reader> ds(makeReader());
 
         dataset::http::QueryBytesParams params(".");
         params.parse_get_or_post(req);
@@ -206,7 +206,7 @@ struct ServerTest : public arki::tests::DatasetTest
         r.setup_request(req);
 
         // Handle the request, server side
-        unique_ptr<Reader> ds(makeReader());
+        unique_ptr<dataset::Reader> ds(makeReader());
 
         dataset::http::ReaderServer srv(*ds, dsname);
         srv.do_config(cfg, req);
@@ -323,7 +323,7 @@ struct ServerTest : public arki::tests::DatasetTest
     // Test /config/ with a locked DB
     void test_configlocked()
     {
-        unique_ptr<Writer> ds(makeWriter());
+        unique_ptr<dataset::Writer> ds(makeWriter());
         Pending p = ds->test_writelock();
 
         wruntest(test_config);
@@ -364,5 +364,3 @@ def_test(3)
 }
 
 }
-
-// vim:set ts=4 sw=4:

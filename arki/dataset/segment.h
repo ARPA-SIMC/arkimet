@@ -1,7 +1,7 @@
 #ifndef ARKI_DATASET_DATA_H
 #define ARKI_DATASET_DATA_H
 
-/// Dataset read/write functions for data blobs
+/// Dataset segment read/write functions
 
 #include <arki/libconfig.h>
 #include <arki/defs.h>
@@ -22,51 +22,73 @@ class Collection;
 }
 
 namespace dataset {
-static const unsigned FILE_OK    = 0;
-static const unsigned FILE_TO_ARCHIVE = 1 << 0; /// File is ok, but old enough to be archived
-static const unsigned FILE_TO_DELETE  = 1 << 1; /// File is ok, but old enough to be deleted
-static const unsigned FILE_TO_PACK    = 1 << 2; /// File contains data that has been deleted
-static const unsigned FILE_TO_INDEX   = 1 << 3; /// File is not present in the index
-static const unsigned FILE_TO_RESCAN  = 1 << 4; /// File contents are inconsistent with the index
-static const unsigned FILE_TO_DEINDEX = 1 << 5; /// File does not exist but has entries in the index
-static const unsigned FILE_ARCHIVED   = 1 << 6; /// File is in the archive
+static const unsigned SEGMENT_OK          = 0;
+static const unsigned SEGMENT_DIRTY       = 1 << 0; /// Segment contains data deleted or out of order
+static const unsigned SEGMENT_UNALIGNED   = 1 << 1; /// Segment contents are inconsistent with the index
+static const unsigned SEGMENT_DELETED     = 1 << 2; /// Segment is known to some index, but does not exist on disk
+static const unsigned SEGMENT_NEW         = 1 << 3; /// Segment exists on disk but is not known to any index
+static const unsigned SEGMENT_CORRUPTED   = 1 << 4; /// File is broken in a way that needs manual intervention
+static const unsigned SEGMENT_ARCHIVE_AGE = 1 << 5; /// File is ok, but old enough to be archived
+static const unsigned SEGMENT_DELETE_AGE  = 1 << 6; /// File is ok, but old enough to be deleted
 
-namespace data {
+namespace segment {
 class Segment;
 
 /**
  * State of a file in a dataset, as one or more of the FILE_* flags
  */
-struct FileState
+struct State
 {
     unsigned value;
 
-    FileState() : value(FILE_OK) {}
-    FileState(unsigned value) : value(value) {}
+    State() : value(SEGMENT_OK) {}
+    State(unsigned value) : value(value) {}
 
-    bool is_ok() const { return value == FILE_OK; }
-    bool is_archived_ok() const { return value == FILE_ARCHIVED; }
+    bool is_ok() const { return value == SEGMENT_OK; }
 
     bool has(unsigned state) const
     {
         return value & state;
     }
 
-    FileState operator+(const FileState& fs) const
+    State& operator+=(const State& fs)
     {
-        return FileState(value + fs.value);
+        value |= fs.value;
+        return *this;
+    }
+
+    State& operator-=(const State& fs)
+    {
+        value &= ~fs.value;
+        return *this;
+    }
+
+    State operator+(const State& fs) const
+    {
+        return State(value | fs.value);
 
     }
 
-    FileState operator-(const FileState& fs) const
+    State operator-(const State& fs) const
     {
-        return FileState(value & ~fs.value);
+        return State(value & ~fs.value);
 
     }
 
     /// Return a text description of this file state
     std::string to_string() const;
 };
+
+/**
+ * Visitor interface for scanning information about the segments in the database
+ */
+typedef std::function<void(const std::string&, segment::State)> state_func;
+
+/**
+ * Visitor interface for scanning information about the contents of segments in the database
+ */
+typedef std::function<void(const std::string&, segment::State, const metadata::Collection&)> contents_func;
+
 
 namespace impl {
 
@@ -185,9 +207,9 @@ public:
     /**
      * Check the given file against its expected set of contents.
      *
-     * @returns the FileState with the state of the file
+     * @returns the State with the state of the file
      */
-    virtual FileState check(const std::string& relname, const metadata::Collection& mds, bool quick=true) = 0;
+    virtual State check(const std::string& relname, const metadata::Collection& mds, bool quick=true) = 0;
 
     /**
      * Remove a file, returning its size
@@ -266,7 +288,7 @@ public:
      */
     virtual Pending append(Metadata& md, off_t* ofs) = 0;
 
-    virtual FileState check(const metadata::Collection& mds, bool quick=true) = 0;
+    virtual State check(const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
     virtual void truncate(size_t offset) = 0;
     virtual Pending repack(const std::string& rootdir, metadata::Collection& mds) = 0;

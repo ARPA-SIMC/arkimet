@@ -108,9 +108,10 @@ File* File::create(const ConfigFile& cfg)
 }
 
 File::File(const ConfigFile& cfg)
+    : Reader(str::basename(cfg.value("path")), cfg)
 {
-	m_pathname = cfg.value("path");
-	m_format = cfg.value("format");
+    m_pathname = cfg.value("path");
+    m_format = cfg.value("format");
 }
 
 FdFile::FdFile(const ConfigFile& cfg) : File(cfg), fd(-1)
@@ -135,7 +136,7 @@ void File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     scan(q, dest);
 }
 
-void File::querySummary(const Matcher& matcher, Summary& summary)
+void File::query_summary(const Matcher& matcher, Summary& summary)
 {
     scan(DataQuery(matcher), [&](unique_ptr<Metadata> md) { summary.add(*md); return true; });
 }

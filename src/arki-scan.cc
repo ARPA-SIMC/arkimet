@@ -46,11 +46,11 @@ int main(int argc, const char* argv[])
 
 		opts.setupProcessing();
 
-		bool all_successful = true;
-		for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
-				i != opts.inputInfo.sectionEnd(); ++i)
-		{
-			unique_ptr<Reader> ds = opts.openSource(*i->second);
+        bool all_successful = true;
+        for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
+                i != opts.inputInfo.sectionEnd(); ++i)
+        {
+            unique_ptr<dataset::Reader> ds = opts.openSource(*i->second);
 
 			bool success = true;
 			try {

@@ -17,6 +17,7 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::tests;
 using namespace arki::utils;
+using namespace arki::dataset;
 using namespace arki::dataset::index;
 
 struct arki_dataset_index_manifest_shar : public DatasetTest {
@@ -94,14 +95,14 @@ def_test(4)
     m->flush();
     ensure(sys::exists("testds/.archive/last/" + idxfname()));
 
-    MaintenanceCollector c;
-    unique_ptr<dataset::data::SegmentManager> sm(dataset::data::SegmentManager::get("testds/.archive/last"));
-    m->check(*sm, c);
-	ensure_equals(c.fileStates.size(), 0u);
-	ensure_equals(c.remaining(), string());
-	ensure(c.isClean());
+    size_t count = 0;
+    m->list_segments([&](const std::string&) { ++count; });
+    wassert(actual(count) == 0u);
 
-	m->vacuum();
+    m->scan_files([&](const std::string&, segment::State, const metadata::Collection&) { ++count; });
+    wassert(actual(count) == 0u);
+
+    m->vacuum();
 }
 
 // Retest with sqlite
@@ -147,7 +148,7 @@ struct IndexingCollector : public MaintenanceCollector
 
 	IndexingCollector(Manifest& m, const Summary& s, time_t mtime) : m(m), s(s), mtime(mtime) {}
 
-    virtual void operator()(const std::string& file, dataset::data::FileState state)
+    virtual void operator()(const std::string& file, dataset::segment::State state)
     {
         MaintenanceCollector::operator()(file, state);
         int n = atoi(file.c_str());
@@ -167,69 +168,61 @@ struct IndexingCollector : public MaintenanceCollector
 };
 }
 
-// Test modifying index during maintenance
+// Test modifying index during scanning/listing of segments
 def_test(8)
 {
-    // Start with 4 data files
-    system("cp -a inbound/test-sorted.grib1 testds/.archive/last/10.grib1");
-    system("cp -a inbound/test-sorted.grib1 testds/.archive/last/20.grib1");
-    system("cp -a inbound/test-sorted.grib1 testds/.archive/last/30.grib1");
-    system("cp -a inbound/test-sorted.grib1 testds/.archive/last/40.grib1");
-    system("cp -a inbound/test-sorted.grib1 testds/.archive/last/50.grib1");
+#warning TODO: move to index-test once acquire is part of the index interface
+    // Index data about a sample file
     time_t mtime = sys::timestamp("inbound/test-sorted.grib1");
 
     // Generate their metadata and summary files
     metadata::Collection mdc("inbound/test-sorted.grib1");
     Summary s;
     for (const auto& md: mdc) s.add(*md);
-    for (int i = 10; i <= 50; i += 10)
+
+    // Build index
     {
-        char buf[128];
-        snprintf(buf, 128, "testds/.archive/last/%02d.grib1.metadata", i);
-        mdc.writeAtomically(buf);
-        snprintf(buf, 128, "testds/.archive/last/%02d.grib1.summary", i);
-        s.writeAtomically(buf);
+        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+        m->openRW();
+        m->acquire("10.grib1", mtime, s);
+        m->acquire("20.grib1", mtime, s);
+        m->acquire("30.grib1", mtime, s);
     }
 
-	// Build index
-	{
-		std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
-		m->openRW();
-		m->acquire("10.grib1", mtime, s);
-		//m->acquire("20.grib1", mtime, s);
-		m->acquire("30.grib1", mtime, s);
-		//m->acquire("40.grib1", mtime, s);
-		m->acquire("50.grib1", mtime, s);
-	}
+    // Enumerate with list_segments while adding files
+    {
+        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+        m->openRW();
+        size_t count = 0;
+        m->list_segments([&](const std::string&) {
+            ++count;
+            m->acquire("40.grib1", mtime, s);
+        });
+        // The enumeration should return only the files previously known
+        wassert(actual(count) == 3u);
+    }
 
-	// Check and messily fix
-	{
-		std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
-		IndexingCollector c(*m, s, mtime);
-		m->openRW();
-        unique_ptr<dataset::data::SegmentManager> sm(dataset::data::SegmentManager::get("testds/.archive/last"));
-        m->check(*sm, c);
-		ensure_equals(c.fileStates.size(), 5u);
-		ensure_equals(c.count(COUNTED_TO_INDEX), 2u);
-		ensure_equals(c.count(COUNTED_OK), 3u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-	}
+    // Enumerate with scan_files while adding files
+    {
+        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+        m->openRW();
+        size_t count = 0;
+        m->scan_files([&](const std::string&, segment::State, const metadata::Collection&) {
+            ++count;
+            m->acquire("50.grib1", mtime, s);
+        });
+        // The enumeration should return only the files previously known
+        wassert(actual(count) == 4u);
+    }
 
-	// Check again, everything should be fine
-	{
-		std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
-		MaintenanceCollector c;
-		m->openRO();
-        unique_ptr<dataset::data::SegmentManager> sm(dataset::data::SegmentManager::get("testds/.archive/last"));
-        m->check(*sm, c);
-		ensure_equals(c.fileStates.size(), 5u);
-		ensure_equals(c.count(COUNTED_OK), 5u);
-		ensure_equals(c.remaining(), string());
-		ensure(c.isClean());
-	}
+    // Check again, we should have all that we added so far
+    {
+        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+        m->openRW();
+        size_t count = 0;
+        m->list_segments([&](const std::string&) { ++count; });
+        wassert(actual(count) == 5u);
+    }
 }
-
-// Retest with sqlite
 
 }

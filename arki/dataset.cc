@@ -7,7 +7,7 @@
 #include <arki/dataset/outbound.h>
 #include <arki/dataset/discard.h>
 #include <arki/dataset/empty.h>
-#include <arki/dataset/data.h>
+#include <arki/dataset/segment.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/sort.h>
@@ -31,21 +31,90 @@ using namespace std;
 using namespace arki::utils;
 
 namespace arki {
-
 namespace dataset {
 
 DataQuery::DataQuery() : with_data(false) {}
 DataQuery::DataQuery(const Matcher& matcher, bool with_data) : matcher(matcher), with_data(with_data), sorter(0) {}
 DataQuery::~DataQuery() {}
 
-}
-
-Writer::Writer()
+Base::Base(const std::string& name)
+    : m_name(name)
 {
 }
 
-Writer::~Writer()
+Base::Base(const std::string& name, const ConfigFile& cfg)
+    : m_name(name), m_cfg(cfg.values())
 {
+}
+
+Base::Base(const ConfigFile& cfg)
+    : m_name(cfg.value("name")), m_cfg(cfg.values())
+{
+}
+
+std::string Base::name() const
+{
+    if (m_parent)
+        return m_parent->name() + "." + m_name;
+    else
+        return m_name;
+}
+
+void Base::set_parent(Base& p)
+{
+    m_parent = &p;
+}
+
+
+Reporter::~Reporter()
+{
+}
+
+OstreamReporter::OstreamReporter(std::ostream& out) : out(out) {}
+
+void OstreamReporter::operation_progress(const Base& ds, const std::string& operation, const std::string& message)
+{
+    out << ds.name() << ": " << operation << ": " << message << endl;
+}
+
+void OstreamReporter::operation_manual_intervention(const Base& ds, const std::string& operation, const std::string& message)
+{
+    out << ds.name() << ": " << operation << " manual intervention required: " << message << endl;
+}
+
+void OstreamReporter::operation_aborted(const Base& ds, const std::string& operation, const std::string& message)
+{
+    out << ds.name() << ": " << operation << " aborted: " << message << endl;
+}
+
+void OstreamReporter::operation_report(const Base& ds, const std::string& operation, const std::string& message)
+{
+    out << ds.name() << ": " << operation << " " << message << endl;
+}
+
+void OstreamReporter::segment_repack(const Base& ds, const std::string& relpath, const std::string& message)
+{
+    out << ds.name() << ":" << relpath << ": " << message << endl;
+}
+
+void OstreamReporter::segment_archive(const Base& ds, const std::string& relpath, const std::string& message)
+{
+    out << ds.name() << ":" << relpath << ": " << message << endl;
+}
+
+void OstreamReporter::segment_delete(const Base& ds, const std::string& relpath, const std::string& message)
+{
+    out << ds.name() << ":" << relpath << ": " << message << endl;
+}
+
+void OstreamReporter::segment_deindex(const Base& ds, const std::string& relpath, const std::string& message)
+{
+    out << ds.name() << ":" << relpath << ": " << message << endl;
+}
+
+void OstreamReporter::segment_rescan(const Base& ds, const std::string& relpath, const std::string& message)
+{
+    out << ds.name() << ":" << relpath << ": " << message << endl;
 }
 
 void Writer::flush() {}
@@ -57,7 +126,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, int out)
     switch (q.type)
     {
         case dataset::ByteQuery::BQ_DATA: {
-            const dataset::data::OstreamWriter* writer = nullptr;
+            const dataset::segment::OstreamWriter* writer = nullptr;
             bool first = true;
             query_data(q, [&](unique_ptr<Metadata> md) {
                 if (first)
@@ -66,7 +135,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, int out)
                     first = false;
                 }
                 if (!writer)
-                    writer = dataset::data::OstreamWriter::get(md->source().format);
+                    writer = dataset::segment::OstreamWriter::get(md->source().format);
                 writer->stream(*md, out);
                 return true;
             });
@@ -75,7 +144,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, int out)
         case dataset::ByteQuery::BQ_POSTPROCESS: {
             Postprocess postproc(q.param);
             postproc.set_output(out);
-            postproc.validate(cfg);
+            postproc.validate(m_cfg);
             postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
             query_data(q, [&](unique_ptr<Metadata> md) { return postproc.process(move(md)); });
@@ -98,7 +167,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, int out)
             rep.captureOutput(out);
             rep.load(q.param);
             Summary s;
-            querySummary(q.matcher, s);
+            query_summary(q.matcher, s);
             rep(s);
             rep.report();
 #endif
@@ -113,13 +182,16 @@ void Reader::query_bytes(const dataset::ByteQuery& q, int out)
     }
 }
 
+void Reader::expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end)
+{
+}
+
 #ifdef HAVE_LUA
 Reader* Reader::lua_check(lua_State* L, int idx)
 {
 	return *(Reader**)luaL_checkudata(L, idx, "arki.rodataset");
 }
 
-namespace dataset {
 void DataQuery::lua_from_table(lua_State* L, int idx)
 {
 	lua_pushstring(L, "matcher");
@@ -163,9 +235,6 @@ void DataQuery::lua_push_table(lua_State* L, int idx) const
 	lua_settable(L, idx);
 }
 
-}
-
-
 static int arkilua_queryData(lua_State *L)
 {
 	// queryData(self, { matcher="", withdata=false, sorter="" }, consumer_func)
@@ -186,14 +255,14 @@ static int arkilua_queryData(lua_State *L)
     return 0;
 }
 
-static int arkilua_querySummary(lua_State *L)
+static int arkilua_query_summary(lua_State *L)
 {
-	// querySummary(self, matcher="", summary)
+	// query_summary(self, matcher="", summary)
 	Reader* rd = Reader::lua_check(L, 1);
 	Matcher matcher = Matcher::lua_check(L, 2);
 	Summary* sum = Summary::lua_check(L, 3);
 	luaL_argcheck(L, sum != NULL, 3, "`arki.summary' expected");
-	rd->querySummary(matcher, *sum);
+	rd->query_summary(matcher, *sum);
 	return 0;
 }
 
@@ -205,7 +274,7 @@ static int arkilua_tostring(lua_State *L)
 
 static const struct luaL_Reg readonlydatasetlib [] = {
 	{ "queryData", arkilua_queryData },
-	{ "querySummary", arkilua_querySummary },
+	{ "querySummary", arkilua_query_summary },
 	{ "__tostring", arkilua_tostring },
 	{NULL, NULL}
 };
@@ -258,13 +327,10 @@ Writer* Writer::create(const ConfigFile& cfg)
     string type = str::lower(cfg.value("type"));
     if (type == "remote")
         throw std::runtime_error("cannot create dataset: remote datasets are not writable");
-	if (type == "outbound")
-		return new dataset::Outbound(cfg);
-	if (type == "discard")
-		return new dataset::Discard(cfg);
-    /*
-    // TODO: create remote ones once implemented
-    */
+    if (type == "outbound")
+        return new dataset::Outbound(cfg);
+    if (type == "discard")
+        return new dataset::Discard(cfg);
     return dataset::LocalWriter::create(cfg);
 }
 
@@ -281,4 +347,14 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
     return dataset::LocalWriter::testAcquire(cfg, md, out);
 }
 
+Checker* Checker::create(const ConfigFile& cfg)
+{
+    string type = str::lower(cfg.value("type"));
+    // TODO: create and return a null checker instead
+    if (type == "remote" || type == "outbound" || type == "discard")
+        throw std::runtime_error("cannot create dataset checker: " + type + " datasets are not checkable");
+    return dataset::LocalChecker::create(cfg);
+}
+
+}
 }

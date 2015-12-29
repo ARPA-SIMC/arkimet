@@ -1,6 +1,7 @@
 #include <arki/dataset/test-scenario.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/archive.h>
+#include <arki/dataset/maintenance.h>
 #include <arki/metadata/test-generator.h>
 #include <arki/metadata/consumer.h>
 #include <arki/scan/any.h>
@@ -97,12 +98,13 @@ struct Ondisk2Scenario : public Scenario
         using namespace dataset;
 
         // Override current date for maintenance to 2010-09-01 + curday
-        dataset::ondisk2::TestOverrideCurrentDateForMaintenance od(t_start + 3600*24*(curday-1));
+        dataset::maintenance::TestOverrideCurrentDateForMaintenance od(t_start + 3600*24*(curday-1));
 
         // Pack and archive
-        unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
+        unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
         stringstream packlog;
-        ds->repack(packlog, true);
+        OstreamReporter reporter(packlog);
+        ds->repack(reporter, true);
         char expected[32];
         snprintf(expected, 32, "%d files archived", expected_archived);
         if (packlog.str().find(expected) == string::npos)
@@ -111,7 +113,6 @@ struct Ondisk2Scenario : public Scenario
             ss << "cannot check that only " << expected_archived << " files have been archived: archive output is: " << packlog.str();
             throw std::runtime_error(ss.str());
         }
-        ds->flush();
     }
 
     /// Rename the 'last' archive to the given name
@@ -152,17 +153,23 @@ struct Ondisk2TestGrib1 : public Ondisk2Scenario
 
         Ondisk2Scenario::build();
 
-        // Generate a dataset with archived data
-        unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
+        {
+            unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
+            scan::scan("inbound/test.grib1", make_importer(*ds));
+            ds->flush();
+        }
 
-        scan::scan("inbound/test.grib1", make_importer(*ds));
-        ds->flush();
+        {
+            // Generate a dataset with archived data
+            unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
 
-        // Run a check to remove new dataset marker
-        stringstream checklog;
-        ds->check(checklog, true, true);
-        if (checklog.str() != "")
-            throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
+            // Run a check to remove new dataset marker
+            stringstream checklog;
+            OstreamReporter reporter(checklog);
+            ds->check(reporter, true, true);
+            if (checklog.str() != "ondisk2-testgrib1: check 3 files ok\n")
+                throw std::runtime_error("check on new dataset failed: " + checklog.str());
+        }
     }
 };
 
@@ -185,32 +192,36 @@ struct Ondisk2Archived : public Ondisk2Scenario
 
         Ondisk2Scenario::build();
 
-        // Generate a dataset with archived data
-        unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
-
-        // Import several metadata items
-        metadata::test::Generator gen("grib1");
-        for (int i = 1; i <= 30; ++i)
         {
-            char buf[32];
-            snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
-            gen.add(TYPE_REFTIME, buf);
+            // Generate a dataset with archived data
+            unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
+
+            // Import several metadata items
+            metadata::test::Generator gen("grib1");
+            for (int i = 1; i <= 30; ++i)
+            {
+                char buf[32];
+                snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
+                gen.add(TYPE_REFTIME, buf);
+            }
+            gen.generate(make_importer(*ds));
+            ds->flush();
         }
-        gen.generate(make_importer(*ds));
-        ds->flush();
 
         // Run a check to remove new dataset marker
+        unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
         stringstream checklog;
-        ds->check(checklog, true, true);
-        if (checklog.str() != "")
+        OstreamReporter reporter(checklog);
+        ds->check(reporter, true, true);
+        if (checklog.str() != "ondisk2-archived: check 0 files ok\n")
             throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
 
         // Pack to build 'older' archive
-        run_repack(15, 8);
+        run_repack(16, 8);
         mvlast("older");
 
         // Pack to build 'last' archive
-        run_repack(30, 15);
+        run_repack(31, 15);
     }
 };
 
@@ -242,28 +253,33 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
         Ondisk2Scenario::build();
 
         // Generate a dataset with archived data
-        unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
-
-        // Import several metadata items
-        metadata::test::Generator gen("grib1");
-        for (int i = 1; i <= 18; ++i)
         {
-            char buf[32];
-            snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
-            gen.add(TYPE_REFTIME, buf);
+            unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
+
+            // Import several metadata items
+            metadata::test::Generator gen("grib1");
+            for (int i = 1; i <= 18; ++i)
+            {
+                char buf[32];
+                snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
+                gen.add(TYPE_REFTIME, buf);
+            }
+            gen.generate(make_importer(*ds));
+            ds->flush();
         }
-        gen.generate(make_importer(*ds));
-        ds->flush();
 
         // Run a check to remove new dataset marker
-        stringstream checklog;
-        ds->check(checklog, true, true);
-        if (checklog.str() != "")
-            throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
+        {
+            unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
+            stringstream checklog;
+            OstreamReporter reporter(checklog);
+            ds->check(reporter, true, true);
+            if (checklog.str() != "ondisk2-manyarchivestates: check 0 files ok\n")
+                throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
+        }
 
         // Pack and build 'offline' archive
-        run_repack(6, 3);
-        ds->archive().rescan_archives();
+        run_repack(7, 3);
         mvlast("offline");
         // same as ro, but only the toplevel summary is present
         string ofsum = sys::read_file(str::joinpath(path, ".archive/offline/summary"));
@@ -273,8 +289,7 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
         sys::rmtree(str::joinpath(path, ".archive/offline"));
 
         // Pack and build 'wrongro' archive
-        run_repack(9, 3);
-        ds->archive().rescan_archives();
+        run_repack(10, 3);
         mvlast("wrongro");
         // same as ro, but toplevel summary does not match the data
         sys::write_file(
@@ -282,8 +297,7 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
                 ofsum);
 
         // Pack and build 'ro' archive
-        run_repack(12, 3);
-        ds->archive().rescan_archives();
+        run_repack(13, 3);
         mvlast("ro");
         // normal archive dir archived to mounted readonly media with dir.summary at the top
         sys::write_file(
@@ -291,13 +305,11 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
                 sys::read_file(str::joinpath(path, ".archive/ro/summary")));
 
         // Pack and build 'old' archive
-        run_repack(15, 3);
-        ds->archive().rescan_archives();
+        run_repack(16, 3);
         mvlast("old");
 
         // Pack and build 'last' archive
-        run_repack(18, 3);
-        ds->archive().rescan_archives();
+        run_repack(19, 3);
     }
 };
 

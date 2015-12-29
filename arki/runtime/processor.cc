@@ -139,14 +139,14 @@ struct DataProcessor : public SingleOutputProcessor
         }
     }
 
-    void process(Reader& ds, const std::string& name) override
+    void process(dataset::Reader& ds, const std::string& name) override
     {
         if (data_inline)
         {
             ds.query_data(query, [&](unique_ptr<Metadata> md) { check_hooks(); md->makeInline(); printer(*md); return true; });
         } else if (server_side) {
-            map<string, string>::const_iterator iurl = ds.cfg.find("url");
-            if (iurl == ds.cfg.end())
+            map<string, string>::const_iterator iurl = ds.cfg().find("url");
+            if (iurl == ds.cfg().end())
             {
                 ds.query_data(query, [&](unique_ptr<Metadata> md) {
                     check_hooks();
@@ -206,9 +206,9 @@ struct SummaryProcessor : public SingleOutputProcessor
         return res;
     }
 
-    void process(Reader& ds, const std::string& name) override
+    void process(dataset::Reader& ds, const std::string& name) override
     {
-        ds.querySummary(matcher, summary);
+        ds.query_summary(matcher, summary);
     }
 
     void end() override
@@ -274,7 +274,7 @@ struct BinaryProcessor : public SingleOutputProcessor
         return res;
     }
 
-    void process(Reader& ds, const std::string& name) override
+    void process(dataset::Reader& ds, const std::string& name) override
     {
         // TODO: validate query's postprocessor with ds' config
         ds.query_bytes(query, output);
@@ -306,7 +306,7 @@ std::string TargetFileProcessor::describe() const
     return res;
 }
 
-void TargetFileProcessor::process(Reader& ds, const std::string& name)
+void TargetFileProcessor::process(dataset::Reader& ds, const std::string& name)
 {
     TargetfileSpy spy(ds, next->output, pattern);
     next->process(spy, name);

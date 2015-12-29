@@ -19,14 +19,12 @@
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
-#include <fstream>
 #include <vector>
 #include <stdexcept>
 #include <set>
 #include <string>
 #include <sstream>
 #include <memory>
-#include <iostream>
 
 using namespace std;
 using namespace arki::types;

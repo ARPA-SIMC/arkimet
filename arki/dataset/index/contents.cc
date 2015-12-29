@@ -268,7 +268,15 @@ size_t Contents::count() const
 	return res;
 }
 
-void Contents::scan_files(maintenance::IndexFileVisitor& v) const
+void Contents::list_segments(std::function<void(const std::string&)> dest)
+{
+    Query sq("list_segments", m_db);
+    sq.compile("SELECT DISTINCT file FROM md ORDER BY file");
+    while (sq.step())
+        dest(sq.fetchString(0));
+}
+
+void Contents::scan_files(segment::contents_func v)
 {
     string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
     if (m_uniques) query += ", m.uniq";
@@ -289,7 +297,7 @@ void Contents::scan_files(maintenance::IndexFileVisitor& v) const
         {
             if (!last_file.empty())
             {
-                v(last_file, mdc);
+                v(last_file, SEGMENT_OK, mdc);
                 mdc.clear();
             }
             last_file = file;
@@ -302,7 +310,7 @@ void Contents::scan_files(maintenance::IndexFileVisitor& v) const
     }
 
     if (!last_file.empty())
-        v(last_file, mdc);
+        v(last_file, SEGMENT_OK, mdc);
 }
 
 void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& orderBy) const
@@ -327,15 +335,19 @@ void Contents::scan_file(const std::string& relname, metadata_dest_func dest, co
     }
 }
 
-std::string Contents::max_file_reftime(const std::string& relname) const
+bool Contents::segment_timespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const
 {
-	Query sq("max_file_reftime", m_db);
-	sq.compile("SELECT MAX(reftime) FROM md WHERE file=?");
-	sq.bind(1, relname);
-	string res;
-	while (sq.step())
-		res = sq.fetchString(0);
-	return res;
+    Query sq("max_file_reftime", m_db);
+    sq.compile("SELECT MIN(reftime), MAX(reftime) FROM md WHERE file=?");
+    sq.bind(1, relname);
+    bool res = false;
+    while (sq.step())
+    {
+        start_time.setFromSQL(sq.fetchString(0));
+        end_time.setFromSQL(sq.fetchString(1));
+        res = true;
+    }
+    return res;
 }
 
 static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begin, unique_ptr<Time>& end)
@@ -562,45 +574,6 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
 
 	return true;
-}
-
-size_t Contents::produce_nth(metadata_dest_func consumer, size_t idx)
-{
-    // Buffer results in RAM so we can free the index before starting to read the data
-    metadata::Collection mdbuf;
-    {
-        Query fq("fileq", m_db);
-        fq.compile("SELECT DISTINCT file FROM md ORDER BY file");
-        while (fq.step())
-        {
-            stringstream query;
-            query << "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
-            if (m_uniques) query << ", m.uniq";
-            if (m_others) query << ", m.other";
-            if (m_smallfiles) query << ", m.data";
-            query << " FROM md AS m WHERE m.file=? ORDER BY m.offset LIMIT 1 OFFSET " << idx;
-
-            Query mdq("mdq", m_db);
-            mdq.compile(query.str());
-            mdq.bindTransient(1, fq.fetchString(0));
-
-            while (mdq.step())
-            {
-                // Rebuild the Metadata
-                unique_ptr<Metadata> md(new Metadata);
-                build_md(mdq, *md);
-                mdbuf.acquire(move(md));
-            }
-        }
-    }
-
-    // Take note of the size, since mdbuf is about to be destroyed
-    size_t res = mdbuf.size();
-
-    // Pass it to consumer
-    mdbuf.move_to(consumer);
-
-    return res;
 }
 
 void Contents::rebuildSummaryCache()
@@ -888,9 +861,9 @@ bool Contents::query_summary(const Matcher& matcher, Summary& summary)
     return true;
 }
 
-bool Contents::checkSummaryCache(std::ostream& log) const
+bool Contents::checkSummaryCache(const dataset::Base& ds, Reporter& reporter) const
 {
-    return scache.check(m_name, log);
+    return scache.check(ds, reporter);
 }
 
 RContents::RContents(const ConfigFile& cfg)

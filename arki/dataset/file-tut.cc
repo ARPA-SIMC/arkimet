@@ -61,7 +61,7 @@ def_test(3)
 	ensure_equals(s->value("format"), "grib");
 
     // Scan it to be sure it can be read
-    unique_ptr<Reader> ds(Reader::create(*s));
+    unique_ptr<dataset::Reader> ds(dataset::Reader::create(*s));
     metadata::Collection mdc(*ds, Matcher());
     ensure_equals(mdc.size(), 3u);
 }
@@ -79,7 +79,7 @@ def_test(4)
     ensure_equals(s->value("format"), "arkimet");
 
     // Scan it to be sure it can be read
-    unique_ptr<Reader> ds(Reader::create(*s));
+    unique_ptr<dataset::Reader> ds(dataset::Reader::create(*s));
     metadata::Collection mdc(*ds, Matcher());
     ensure_equals(mdc.size(), 1u);
 }

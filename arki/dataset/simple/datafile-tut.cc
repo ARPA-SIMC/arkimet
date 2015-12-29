@@ -6,11 +6,8 @@
 #include <arki/types/source/blob.h>
 #include <arki/scan/grib.h>
 #include <arki/wibble/sys/process.h>
-
 #include <sstream>
 #include <iostream>
-#include <fstream>
-
 #include <sys/stat.h>
 
 namespace tut {

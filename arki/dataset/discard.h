@@ -18,8 +18,7 @@ namespace dataset {
 class Discard : public Writer
 {
 public:
-    Discard(const ConfigFile& cfg);
-    virtual ~Discard();
+    using Writer::Writer;
 
     AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
 
@@ -27,11 +26,6 @@ public:
     {
         // Of course, after this method is called, the metadata cannot be found
         // in the dataset
-    }
-
-    void removeAll(std::ostream& log, bool writable=false) override
-    {
-        // Nothing to remove: we're always clean
     }
 
     static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);

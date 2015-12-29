@@ -151,18 +151,18 @@ struct Request : public net::http::Request
         return *cfg;
     }
 
-    unique_ptr<Reader> get_dataset(const std::string& dsname)
+    unique_ptr<dataset::Reader> get_dataset(const std::string& dsname)
     {
         return get_dataset(get_config(dsname));
     }
 
-    unique_ptr<Reader> get_dataset(const ConfigFile& cfg)
+    unique_ptr<dataset::Reader> get_dataset(const ConfigFile& cfg)
     {
         ConfigFile localcfg(cfg);
         string url(server_name);
         url += script_name;
         localcfg.setValue("url", url);
-        return unique_ptr<Reader>(Reader::create(localcfg));
+        return unique_ptr<dataset::Reader>(dataset::Reader::create(localcfg));
     }
 
     void log_action(const std::string& action)
@@ -383,7 +383,7 @@ struct RootQueryHandler : public LocalHandler
         string macroname = str::strip(*qmacro);
         if (macroname.empty())
             throw error400("root-level query without qmacro parameter");
-        unique_ptr<Reader> ds = runtime::make_qmacro_dataset(
+        unique_ptr<dataset::Reader> ds = runtime::make_qmacro_dataset(
                 req.arki_conf, macroname, *params.query, req.server_name);
 
         // params.query contains the qmacro query body; we need to clear the
@@ -411,7 +411,7 @@ struct RootSummaryHandler : public LocalHandler
 
         string macroname = str::strip(*qmacro);
 
-        unique_ptr<Reader> ds;
+        unique_ptr<dataset::Reader> ds;
         if (macroname.empty())
             // Create a merge dataset with all we have
             ds.reset(new dataset::AutoMerged(req.arki_conf));
@@ -422,7 +422,7 @@ struct RootSummaryHandler : public LocalHandler
 
         // Query the summary
         Summary sum;
-        ds->querySummary(Matcher(), sum);
+        ds->query_summary(Matcher(), sum);
 
         if (*style == "yaml")
         {
@@ -453,13 +453,13 @@ struct DatasetHandler : public LocalHandler
     }
 
     // Show the summary of a dataset
-    void do_index(Reader& ds, const std::string& dsname, Request& req)
+    void do_index(dataset::Reader& ds, const std::string& dsname, Request& req)
     {
         req.log_action("index of dataset " + dsname);
 
         // Query the summary
         Summary sum;
-        ds.querySummary(Matcher(), sum);
+        ds.query_summary(Matcher(), sum);
 
         // Create the output page
         stringstream res;
@@ -527,7 +527,7 @@ struct DatasetHandler : public LocalHandler
         if (action.empty())
             action = "index";
 
-        unique_ptr<Reader> ds = req.get_dataset(dsname);
+        unique_ptr<dataset::Reader> ds = req.get_dataset(dsname);
 
         if (action == "index")
             do_index(*ds, dsname, req);
@@ -682,7 +682,7 @@ struct InboundHandler : public LocalHandler
             ConfigFile cfg;
             dataset::File::readConfig(str::joinpath(dir, *file), cfg);
             const ConfigFile *info = cfg.sectionBegin()->second;
-            unique_ptr<Reader> ds(dataset::File::create(*info));
+            unique_ptr<dataset::Reader> ds(dataset::File::create(*info));
 
             stringstream res;
             res << "<html><body>" << endl;
@@ -722,7 +722,7 @@ struct InboundHandler : public LocalHandler
             ConfigFile cfg;
             dataset::File::readConfig(str::joinpath(dir, *file), cfg);
             const ConfigFile *info = cfg.sectionBegin()->second;
-            unique_ptr<Reader> ds(dataset::File::create(*info));
+            unique_ptr<dataset::Reader> ds(dataset::File::create(*info));
 
             stringstream res;
             res << "<html><body>" << endl;

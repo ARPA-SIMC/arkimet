@@ -3,7 +3,7 @@
 
 /// Local, non queryable, on disk dataset
 
-#include <arki/dataset/local.h>
+#include <arki/dataset/segmented.h>
 #include <string>
 
 namespace arki {
@@ -52,6 +52,4 @@ public:
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

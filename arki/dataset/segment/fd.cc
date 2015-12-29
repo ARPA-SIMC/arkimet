@@ -22,11 +22,11 @@ using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
-namespace data {
+namespace segment {
 namespace fd {
 
 Segment::Segment(const std::string& relname, const std::string& absname)
-    : data::Segment(relname, absname), fd(-1)
+    : segment::Segment(relname, absname), fd(-1)
 {
 }
 
@@ -123,7 +123,7 @@ void Segment::write(const std::vector<uint8_t>& buf)
     }
 }
 
-FileState Segment::check(const metadata::Collection& mds, unsigned max_gap, bool quick)
+State Segment::check(const metadata::Collection& mds, unsigned max_gap, bool quick)
 {
     close();
 
@@ -140,7 +140,7 @@ FileState Segment::check(const metadata::Collection& mds, unsigned max_gap, bool
                 stringstream out;
                 out << (*i)->source();
                 nag::warning("%s: validation failed at %s: %s", absname.c_str(), out.str().c_str(), e.what());
-                return FILE_TO_RESCAN;
+                return SEGMENT_UNALIGNED;
             }
         }
     }
@@ -155,22 +155,22 @@ FileState Segment::check(const metadata::Collection& mds, unsigned max_gap, bool
     std::sort(spans.begin(), spans.end());
 
     // Check for overlaps
-    size_t end_of_last_data_checked = 0;
+    off_t end_of_last_data_checked = 0;
     for (vector< pair<off_t, size_t> >::const_iterator i = spans.begin(); i != spans.end(); ++i)
     {
         // If an item begins after the end of another, they overlap and the file needs rescanning
         if (i->first < end_of_last_data_checked)
-            return FILE_TO_RESCAN;
+            return SEGMENT_UNALIGNED;
 
         end_of_last_data_checked = i->first + i->second;
     }
 
     // Check for truncation
-    size_t file_size = utils::compress::filesize(absname);
+    off_t file_size = utils::compress::filesize(absname);
     if (file_size < end_of_last_data_checked)
     {
         nag::warning("%s: file looks truncated: its size is %zd but data is known to exist until %zd bytes", absname.c_str(), file_size, (size_t)end_of_last_data_checked);
-        return FILE_TO_RESCAN;
+        return SEGMENT_UNALIGNED;
     }
 
     // Check if file_size matches the expected file size
@@ -184,19 +184,19 @@ FileState Segment::check(const metadata::Collection& mds, unsigned max_gap, bool
     {
         const source::Blob& source = (*i)->sourceBlob();
 
-        if (source.offset < end_of_last_data_checked || source.offset > end_of_last_data_checked + max_gap)
+        if (source.offset < (size_t)end_of_last_data_checked || source.offset > (size_t)end_of_last_data_checked + max_gap)
             has_hole = true;
 
-        end_of_last_data_checked = max(end_of_last_data_checked, (size_t)(source.offset + source.size));
+        end_of_last_data_checked = max(end_of_last_data_checked, (off_t)(source.offset + source.size));
     }
 
     // Take note of files with holes
     if (has_hole)
     {
         nag::verbose("%s: contains deleted data or data to be reordered", absname.c_str());
-        return FILE_TO_PACK;
+        return SEGMENT_DIRTY;
     } else {
-        return FILE_OK;
+        return SEGMENT_OK;
     }
 }
 
@@ -230,7 +230,7 @@ Pending Segment::repack(
         const std::string& rootdir,
         const std::string& relname,
         metadata::Collection& mds,
-        data::Segment* make_repack_segment(const std::string&, const std::string&),
+        segment::Segment* make_repack_segment(const std::string&, const std::string&),
         bool skip_validation)
 {
     struct Rename : public Transaction
@@ -274,7 +274,7 @@ Pending Segment::repack(
     const scan::Validator& validator = scan::Validator::by_filename(absname);
 
     // Create a writer for the temp file
-    unique_ptr<data::Segment> writer(make_repack_segment(tmprelname, tmpabsname));
+    unique_ptr<segment::Segment> writer(make_repack_segment(tmprelname, tmpabsname));
 
     // Fill the temp file with all the data in the right order
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)

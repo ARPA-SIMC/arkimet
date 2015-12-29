@@ -1,5 +1,5 @@
 #include "concat.h"
-#include "arki/dataset/data/tests.h"
+#include "arki/dataset/segment/tests.h"
 #include "arki/metadata/tests.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
@@ -19,7 +19,7 @@ static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 namespace tut {
 using namespace std;
 using namespace arki;
-using namespace arki::dataset::data;
+using namespace arki::dataset::segment;
 using namespace arki::utils;
 using namespace arki::types;
 using namespace arki::tests;

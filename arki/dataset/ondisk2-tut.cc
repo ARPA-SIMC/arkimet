@@ -17,7 +17,6 @@
 #include <unistd.h>
 #include <sys/fcntl.h>
 #include <sstream>
-#include <fstream>
 #include <iostream>
 
 namespace tut {
@@ -400,7 +399,7 @@ def_test(8)
     acquireSamples();
     ondisk2::Reader reader(*config.section("test200"));
     Summary summary;
-    reader.querySummary(Matcher::parse("origin:GRIB1,200"), summary);
+    reader.query_summary(Matcher::parse("origin:GRIB1,200"), summary);
     ensure_equals(summary.count(), 1u);
 }
 
@@ -411,7 +410,7 @@ def_test(9)
     ondisk2::Reader reader(*config.section("test200"));
     Summary summary;
     //system("bash");
-    reader.querySummary(Matcher::parse("reftime:>=2007-07"), summary);
+    reader.query_summary(Matcher::parse("reftime:>=2007-07"), summary);
     ensure_equals(summary.count(), 1u);
 }
 
@@ -488,7 +487,7 @@ def_test(10)
     {
         ondisk2::Reader reader(*config.section("test200"));
         Summary summary;
-        reader.querySummary(Matcher(), summary);
+        reader.query_summary(Matcher(), summary);
         ensure_equals(summary.count(), 3u);
     }
 }
@@ -499,7 +498,7 @@ def_test(11)
     acquireSamplesAllInOne();
     ondisk2::Reader reader(*configAll.section("testall"));
     Summary summary;
-    reader.querySummary(Matcher(), summary);
+    reader.query_summary(Matcher(), summary);
     ensure_equals(summary.count(), 3u);
 
     unique_ptr<Reftime> rt = summary.getReferenceTime();
@@ -735,19 +734,23 @@ def_test(16)
         "mockdata = true\n"
         "name = testholes\n"
         "path = testholes\n";
-    unique_ptr<dataset::LocalWriter> writer(make_dataset_writer(conf));
-
-    // Import 24*30*10Mb=7.2Gb of data
-    for (unsigned day = 1; day <= 30; ++day)
     {
-        for (unsigned hour = 0; hour < 24; ++hour)
+        unique_ptr<dataset::LocalWriter> writer(make_dataset_writer(conf));
+
+        // Import 24*30*10Mb=7.2Gb of data
+        for (unsigned day = 1; day <= 30; ++day)
         {
-            Metadata md = testdata::make_large_mock("grib", 10*1024*1024, 12, day, hour);
-            Writer::AcquireResult res = writer->acquire(md);
-            wassert(actual(res) == Writer::ACQ_OK);
+            for (unsigned hour = 0; hour < 24; ++hour)
+            {
+                Metadata md = testdata::make_large_mock("grib", 10*1024*1024, 12, day, hour);
+                Writer::AcquireResult res = writer->acquire(md);
+                wassert(actual(res) == Writer::ACQ_OK);
+            }
         }
+        writer->flush();
     }
-    writer->flush();
+
+    unique_ptr<dataset::LocalChecker> writer(make_dataset_checker(conf));
     wassert(actual(writer.get()).check_clean());
 
     // Query it, without data

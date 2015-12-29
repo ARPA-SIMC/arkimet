@@ -31,7 +31,7 @@ class MetadataDispatch;
  */
 void init();
 
-std::unique_ptr<Reader> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query, const std::string& url=std::string());
+std::unique_ptr<dataset::Reader> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query, const std::string& url=std::string());
 
 /**
  * Exception raised when the command line parser has handled the current
@@ -120,30 +120,30 @@ struct CommandLine : public utils::commandline::StandardParserWithManpage
 	 */
 	void doneProcessing();
 
-	/**
-	 * Open the next data source to process
-	 *
-	 * @return the pointer to the datasource, or 0 for no more datasets
-	 */
-	std::unique_ptr<Reader> openSource(ConfigFile& info);
+    /**
+     * Open the next data source to process
+     *
+     * @return the pointer to the datasource, or 0 for no more datasets
+     */
+    std::unique_ptr<dataset::Reader> openSource(ConfigFile& info);
 
-	/**
-	 * Process one data source
-	 *
-	 * If everything went perfectly well, returns true, else false. It can
-	 * still throw an exception if things go wrong.
-	 */
-	bool processSource(Reader& ds, const std::string& name);
+    /**
+     * Process one data source
+     *
+     * If everything went perfectly well, returns true, else false. It can
+     * still throw an exception if things go wrong.
+     */
+    bool processSource(dataset::Reader& ds, const std::string& name);
 
-	/**
-	 * Done working with one data source
-	 *
-	 * @param successful
-	 *   true if everything went well, false if there were issues
-	 * FIXME: put something that contains a status report instead, for
-	 * FIXME: --status, as well as a boolean for moveok/moveko
-	 */
-	void closeSource(std::unique_ptr<Reader> ds, bool successful = true);
+    /**
+     * Done working with one data source
+     *
+     * @param successful
+     *   true if everything went well, false if there were issues
+     * FIXME: put something that contains a status report instead, for
+     * FIXME: --status, as well as a boolean for moveok/moveko
+     */
+    void closeSource(std::unique_ptr<dataset::Reader> ds, bool successful = true);
 };
 
 /// Dispatch metadata
@@ -179,13 +179,13 @@ struct MetadataDispatch
     MetadataDispatch(const ConfigFile& cfg, DatasetProcessor& next, bool test=false);
     ~MetadataDispatch();
 
-	/**
-	 * Dispatch the data from one source
-	 *
-	 * @returns true if all went well, false if any problem happend.
-	 * It can still throw in case of big trouble.
-	 */
-	bool process(Reader& ds, const std::string& name);
+    /**
+     * Dispatch the data from one source
+     *
+     * @returns true if all went well, false if any problem happend.
+     * It can still throw in case of big trouble.
+     */
+    bool process(dataset::Reader& ds, const std::string& name);
 
 	// Flush all imports done so far
 	void flush();

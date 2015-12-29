@@ -37,9 +37,9 @@ protected:
     /// Hook called to output the final metadata to a consumer
     virtual void hook_output(std::unique_ptr<Metadata> md, metadata_dest_func mdc);
 
-    virtual Writer::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) = 0;
-    virtual Writer::AcquireResult raw_dispatch_error(Metadata& md);
-    virtual Writer::AcquireResult raw_dispatch_duplicates(Metadata& md);
+    virtual dataset::Writer::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) = 0;
+    virtual dataset::Writer::AcquireResult raw_dispatch_error(Metadata& md);
+    virtual dataset::Writer::AcquireResult raw_dispatch_duplicates(Metadata& md);
 
 public:
 	enum Outcome {
@@ -109,15 +109,15 @@ protected:
     WriterPool pool;
 
     // Error dataset
-    Writer* dserror;
+    dataset::Writer* dserror;
 
     // Duplicates dataset
-    Writer* dsduplicates;
+    dataset::Writer* dsduplicates;
 
     void hook_output(std::unique_ptr<Metadata> md, metadata_dest_func mdc) override;
-    Writer::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) override;
-    Writer::AcquireResult raw_dispatch_error(Metadata& md) override;
-    Writer::AcquireResult raw_dispatch_duplicates(Metadata& md) override;
+    dataset::Writer::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) override;
+    dataset::Writer::AcquireResult raw_dispatch_error(Metadata& md) override;
+    dataset::Writer::AcquireResult raw_dispatch_duplicates(Metadata& md) override;
 
 public:
 	RealDispatcher(const ConfigFile& cfg);
@@ -148,7 +148,7 @@ protected:
 
     void hook_pre_dispatch(const Metadata& md) override;
     void hook_found_datasets(const Metadata& md, std::vector<std::string>& found) override;
-    Writer::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) override;
+    dataset::Writer::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) override;
 
 public:
 	TestDispatcher(const ConfigFile& cfg, std::ostream& out);

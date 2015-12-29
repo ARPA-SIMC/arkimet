@@ -111,7 +111,7 @@ struct ReaderServer
     std::string dsname;
 
     ReaderServer(
-            arki::Reader& ds,
+            arki::dataset::Reader& ds,
             const std::string& dsname)
         : ds(ds), dsname(dsname)
     {

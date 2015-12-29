@@ -10,15 +10,6 @@ using namespace std;
 namespace arki {
 namespace dataset {
 
-Discard::Discard(const ConfigFile& cfg)
-{
-    m_name = cfg.value("name");
-}
-
-Discard::~Discard()
-{
-}
-
 Writer::AcquireResult Discard::acquire(Metadata& md, ReplaceStrategy replace)
 {
     md.set(types::AssignedDataset::create(m_name, ""));

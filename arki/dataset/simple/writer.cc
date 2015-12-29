@@ -2,7 +2,7 @@
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/simple/datafile.h"
 #include "arki/dataset/maintenance.h"
-#include "arki/dataset/data.h"
+#include "arki/dataset/segment.h"
 #include "arki/types/assigneddataset.h"
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
@@ -16,7 +16,6 @@
 #include "arki/nag.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include <fstream>
 #include <ctime>
 #include <cstdio>
 #include <sys/types.h>
@@ -36,11 +35,6 @@ namespace simple {
 Writer::Writer(const ConfigFile& cfg)
     : IndexedWriter(cfg), m_mft(0)
 {
-    m_name = cfg.value("name");
-
-    // Create the directory if it does not exist
-    sys::makedirs(m_path);
-
     // If the index is missing, take note not to perform a repack until a
     // check is made
     if (!index::Manifest::exists(m_path))
@@ -57,9 +51,9 @@ Writer::~Writer()
     flush();
 }
 
-data::Segment* Writer::file(const Metadata& md, const std::string& format)
+segment::Segment* Writer::file(const Metadata& md, const std::string& format)
 {
-    data::Segment* writer = SegmentedWriter::file(md, format);
+    segment::Segment* writer = SegmentedWriter::file(md, format);
     if (!writer->payload)
         writer->payload = new datafile::MdBuf(writer->absname);
     return writer;
@@ -68,7 +62,7 @@ data::Segment* Writer::file(const Metadata& md, const std::string& format)
 Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
     // TODO: refuse if md is before "archive age"
-    data::Segment* writer = file(md, md.source().format);
+    segment::Segment* writer = file(md, md.source().format);
     datafile::MdBuf* mdbuf = static_cast<datafile::MdBuf*>(writer->payload);
 
     // Try appending
@@ -92,108 +86,10 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 	// flush when the Datafile structures are deallocated
 }
 
-void Writer::remove(Metadata& id)
+void Writer::remove(Metadata& md)
 {
     // Nothing to do
     throw std::runtime_error("cannot remove data from simple dataset: dataset does not support removing items");
-}
-
-namespace {
-struct Deleter : public maintenance::MaintFileVisitor
-{
-	std::string name;
-	std::ostream& log;
-	bool writable;
-
-    Deleter(const std::string& name, std::ostream& log, bool writable)
-        : name(name), log(log), writable(writable) {}
-    void operator()(const std::string& file, data::FileState state)
-    {
-        if (writable)
-        {
-            log << name << ": deleting file " << file << endl;
-            sys::unlink_ifexists(file);
-        } else
-            log << name << ": would delete file " << file << endl;
-    }
-};
-
-struct CheckAge : public maintenance::MaintFileVisitor
-{
-	maintenance::MaintFileVisitor& next;
-    const index::Manifest& idx;
-    Time archive_threshold;
-    Time delete_threshold;
-
-    CheckAge(MaintFileVisitor& next, const index::Manifest& idx, int archive_age=-1, int delete_age=-1);
-
-    void operator()(const std::string& file, data::FileState state);
-};
-
-CheckAge::CheckAge(MaintFileVisitor& next, const index::Manifest& idx, int archive_age, int delete_age)
-	: next(next), idx(idx), archive_threshold(0, 0, 0), delete_threshold(0, 0, 0)
-{
-	time_t now = time(NULL);
-	struct tm t;
-
-	// Go to the beginning of the day
-	now -= (now % (3600*24));
-
-    if (archive_age != -1)
-    {
-        time_t arc_thr = now - archive_age * 3600 * 24;
-        gmtime_r(&arc_thr, &t);
-        archive_threshold.set(t);
-    }
-    if (delete_age != -1)
-    {
-        time_t del_thr = now - delete_age * 3600 * 24;
-        gmtime_r(&del_thr, &t);
-        delete_threshold.set(t);
-    }
-}
-
-void CheckAge::operator()(const std::string& file, data::FileState state)
-{
-    if (archive_threshold.vals[0] == 0 and delete_threshold.vals[0] == 0)
-        next(file, state);
-    else
-    {
-        Time start_time(0, 0, 0);
-        Time end_time(0, 0, 0);
-        if (!idx.fileTimespan(file, start_time, end_time))
-            next(file, state);
-        else if (delete_threshold.vals[0] != 0 && delete_threshold > end_time)
-        {
-            nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
-            next(file, state + FILE_TO_DELETE);
-        }
-        else if (archive_threshold.vals[0] != 0 && archive_threshold > end_time)
-        {
-            nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
-            next(file, state + FILE_TO_ARCHIVE);
-        }
-        else
-            next(file, state);
-    }
-}
-}
-
-void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
-{
-    // TODO Detect if data is not in reftime order
-
-    CheckAge ca(v, *m_mft, m_archive_age, m_delete_age);
-    m_mft->check(*m_segment_manager, ca, quick);
-    SegmentedWriter::maintenance(v, quick);
-}
-
-void Writer::removeAll(std::ostream& log, bool writable)
-{
-    Deleter deleter(m_name, log, writable);
-    m_mft->check(*m_segment_manager, deleter, true);
-    // TODO: empty manifest
-    SegmentedWriter::removeAll(log, writable);
 }
 
 void Writer::flush()
@@ -202,7 +98,93 @@ void Writer::flush()
     m_mft->flush();
 }
 
-void Writer::rescanFile(const std::string& relpath)
+Pending Writer::test_writelock()
+{
+    return m_mft->test_writelock();
+}
+
+Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+{
+	// TODO
+#if 0
+	wibble::sys::fs::Lockfile lockfile(wibble::str::joinpath(cfg.value("path"), "lock"));
+
+	string name = cfg.value("name");
+	try {
+		if (ConfigFile::boolValue(cfg.value("replace")))
+		{
+			if (cfg.value("index") != string())
+				ondisk::writer::IndexedRootDirectory::testReplace(cfg, md, out);
+			else
+				ondisk::writer::RootDirectory::testReplace(cfg, md, out);
+			return ACQ_OK;
+		} else {
+			try {
+				if (cfg.value("index") != string())
+					ondisk::writer::IndexedRootDirectory::testAcquire(cfg, md, out);
+				else
+					ondisk::writer::RootDirectory::testAcquire(cfg, md, out);
+				return ACQ_OK;
+			} catch (Index::DuplicateInsert& di) {
+				out << "Source information restored to original value" << endl;
+				out << "Failed to store in dataset '"+name+"' because the dataset already has the data: " + di.what() << endl;
+				return ACQ_ERROR_DUPLICATE;
+			}
+		}
+	} catch (std::exception& e) {
+		out << "Source information restored to original value" << endl;
+		out << "Failed to store in dataset '"+name+"': " + e.what() << endl;
+		return ACQ_ERROR;
+	}
+#endif
+}
+
+
+
+Checker::Checker(const ConfigFile& cfg)
+    : IndexedChecker(cfg), m_mft(0)
+{
+    // If the index is missing, take note not to perform a repack until a
+    // check is made
+    if (!index::Manifest::exists(m_path))
+        files::createDontpackFlagfile(m_path);
+
+    unique_ptr<index::Manifest> mft = index::Manifest::create(m_path, &cfg);
+    m_mft = mft.release();
+    m_mft->openRW();
+    m_idx = m_mft;
+}
+
+Checker::~Checker()
+{
+    m_mft->flush();
+}
+
+void Checker::indexFile(const std::string& relname, metadata::Collection&& mds)
+{
+    string pathname = str::joinpath(m_path, relname);
+    time_t mtime = scan::timestamp(pathname);
+    if (mtime == 0)
+        throw std::runtime_error("cannot acquire " + pathname + ": file does not exist");
+
+    // Iterate the metadata, computing the summary and making the data
+    // paths relative
+    mds.strip_source_paths();
+    Summary sum;
+    mds.add_to_summary(sum);
+
+    // Regenerate .metadata
+    mds.writeAtomically(pathname + ".metadata");
+
+    // Regenerate .summary
+    sum.writeAtomically(pathname + ".summary");
+
+    // Add to manifest
+    m_mft->acquire(relname, mtime, sum);
+    m_mft->flush();
+}
+
+void Checker::rescanFile(const std::string& relpath)
 {
     // Delete cached info to force a full rescan
     string pathname = str::joinpath(m_path, relpath);
@@ -213,7 +195,7 @@ void Writer::rescanFile(const std::string& relpath)
 }
 
 
-size_t Writer::repackFile(const std::string& relpath)
+size_t Checker::repackFile(const std::string& relpath)
 {
     string pathname = str::joinpath(m_path, relpath);
 
@@ -259,66 +241,24 @@ size_t Writer::repackFile(const std::string& relpath)
 	return size_pre - size_post;
 }
 
-size_t Writer::removeFile(const std::string& relpath, bool withData)
+size_t Checker::removeFile(const std::string& relpath, bool withData)
 {
     m_mft->remove(relpath);
-    return SegmentedWriter::removeFile(relpath, withData);
+    return SegmentedChecker::removeFile(relpath, withData);
 }
 
-void Writer::archiveFile(const std::string& relpath)
+void Checker::archiveFile(const std::string& relpath)
 {
     // Remove from index
     m_mft->remove(relpath);
 
-    // Delegate the rest to SegmentedWriter
-    SegmentedWriter::archiveFile(relpath);
+    // Delegate the rest to SegmentedChecker
+    SegmentedChecker::archiveFile(relpath);
 }
 
-size_t Writer::vacuum()
+size_t Checker::vacuum()
 {
-	// Nothing to do here really
-	return 0;
-}
-
-Pending Writer::test_writelock()
-{
-    return m_mft->test_writelock();
-}
-
-Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
-{
-	// TODO
-#if 0
-	wibble::sys::fs::Lockfile lockfile(wibble::str::joinpath(cfg.value("path"), "lock"));
-
-	string name = cfg.value("name");
-	try {
-		if (ConfigFile::boolValue(cfg.value("replace")))
-		{
-			if (cfg.value("index") != string())
-				ondisk::writer::IndexedRootDirectory::testReplace(cfg, md, out);
-			else
-				ondisk::writer::RootDirectory::testReplace(cfg, md, out);
-			return ACQ_OK;
-		} else {
-			try {
-				if (cfg.value("index") != string())
-					ondisk::writer::IndexedRootDirectory::testAcquire(cfg, md, out);
-				else
-					ondisk::writer::RootDirectory::testAcquire(cfg, md, out);
-				return ACQ_OK;
-			} catch (Index::DuplicateInsert& di) {
-				out << "Source information restored to original value" << endl;
-				out << "Failed to store in dataset '"+name+"' because the dataset already has the data: " + di.what() << endl;
-				return ACQ_ERROR_DUPLICATE;
-			}
-		}
-	} catch (std::exception& e) {
-		out << "Source information restored to original value" << endl;
-		out << "Failed to store in dataset '"+name+"': " + e.what() << endl;
-		return ACQ_ERROR;
-	}
-#endif
+    return m_mft->vacuum();
 }
 
 

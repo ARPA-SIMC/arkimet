@@ -139,89 +139,6 @@ void OutputChecker::ensure_all_lines_seen()
     }
 }
 
-void LineChecker::ignore_regexp(const std::string& regexp)
-{
-    ignore_regexps.push_back(regexp);
-}
-
-void LineChecker::require_line_contains(const std::string& needle)
-{
-    require_contains.push_back(needle);
-}
-
-void LineChecker::require_line_contains_re(const std::string& needle)
-{
-    require_contains_re.push_back(needle);
-}
-
-namespace {
-struct Line : public std::string
-{
-    bool seen;
-    Line() : seen(false) {}
-    Line(const std::string& s) : std::string(s), seen(false) {}
-};
-}
-
-void LineChecker::check(const std::string& s) const
-{
-    vector<Line> lines;
-    wibble::Splitter splitter("[\n\r]+", REG_EXTENDED);
-    for (wibble::Splitter::const_iterator i = splitter.begin(s); i != splitter.end(); ++i)
-        lines.push_back(" " + *i);
-
-    // Mark ignored lines as seen
-    for (vector<string>::const_iterator i = ignore_regexps.begin(); i != ignore_regexps.end(); ++i)
-    {
-        wibble::ERegexp re(*i);
-        for (vector<Line>::iterator j = lines.begin(); j != lines.end(); ++j)
-            if (re.match(*j))
-                j->seen = true;
-    }
-
-    stringstream complaints;
-
-    // Check required lines
-    for (vector<string>::const_iterator i = require_contains.begin(); i != require_contains.end(); ++i)
-    {
-        bool found = false;
-        for (vector<Line>::iterator j = lines.begin(); j != lines.end(); ++j)
-        {
-            if (j->find(*i) == string::npos) continue;
-            if (j->seen) continue;
-            j->seen = true;
-            found = true;
-            break;
-        }
-        // Complain about required line i not found
-        if (!found)
-            complaints << "Required match not found: \"" << *i << "\"" << endl;
-    }
-    for (vector<string>::const_iterator i = require_contains_re.begin(); i != require_contains_re.end(); ++i)
-    {
-        wibble::ERegexp re(*i);
-        bool found = false;
-        for (vector<Line>::iterator j = lines.begin(); j != lines.end(); ++j)
-        {
-            if (!re.match(*j)) continue;
-            if (j->seen) continue;
-            found = true;
-            j->seen = true;
-            break;
-        }
-        // Complain about required line i not found
-        if (!found)
-            complaints << "Required regexp not matched: \"" << *i << "\"" << endl;
-    }
-
-    for (vector<Line>::const_iterator i = lines.begin(); i != lines.end(); ++i)
-        if (!i->seen)
-            complaints << "Output line not checked: \"" << *i << "\"" << endl;
-
-    if (!complaints.str().empty())
-        throw TestFailed(complaints.str());
-}
-
 ForceSqlite::ForceSqlite(bool val) : old(dataset::index::Manifest::get_force_sqlite())
 {
 	dataset::index::Manifest::set_force_sqlite(val);
@@ -268,10 +185,10 @@ DatasetTest::~DatasetTest()
     if (segment_manager) delete segment_manager;
 }
 
-dataset::data::SegmentManager& DatasetTest::segments()
+dataset::segment::SegmentManager& DatasetTest::segments()
 {
     if (!segment_manager)
-        segment_manager = dataset::data::SegmentManager::get(cfg).release();
+        segment_manager = dataset::segment::SegmentManager::get(cfg).release();
     return *segment_manager;
 }
 
@@ -284,74 +201,118 @@ std::string DatasetTest::idxfname(const ConfigFile* wcfg) const
 		return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
+std::string manifest_idx_fname()
+{
+    return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
+}
+
 std::string DatasetTest::arcidxfname() const
 {
 	return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
-Reader* DatasetTest::makeReader(const ConfigFile* wcfg)
-{
-	if (!wcfg) wcfg = &cfg;
-	Reader* ds = Reader::create(*wcfg);
-	ensure(ds);
-	return ds;
-}
-
-Writer* DatasetTest::makeWriter(const ConfigFile* wcfg)
+std::unique_ptr<Reader> DatasetTest::makeReader(const ConfigFile* wcfg)
 {
     if (!wcfg) wcfg = &cfg;
-    Writer* ds = Writer::create(*wcfg);
-    ensure(ds);
+    unique_ptr<Reader> ds(Reader::create(*wcfg));
+    wassert(actual(ds.get()));
     return ds;
 }
 
-dataset::LocalReader* DatasetTest::makeLocalReader(const ConfigFile* wcfg)
+std::unique_ptr<Writer> DatasetTest::makeWriter(const ConfigFile* wcfg)
 {
-	using namespace arki::dataset;
-	Reader* ds = makeReader(wcfg);
-	LocalReader* wl = dynamic_cast<LocalReader*>(ds);
-	ensure(wl);
-	return wl;
+    if (!wcfg) wcfg = &cfg;
+    unique_ptr<Writer> ds(Writer::create(*wcfg));
+    wassert(actual(ds.get()));
+    return ds;
 }
 
-dataset::SegmentedWriter* DatasetTest::makeLocalWriter(const ConfigFile* wcfg)
+std::unique_ptr<Checker> DatasetTest::makeChecker(const ConfigFile* wcfg)
 {
-    using namespace arki::dataset;
-    Writer* ds = makeWriter(wcfg);
-    SegmentedWriter* wl = dynamic_cast<SegmentedWriter*>(ds);
-    ensure(wl);
+    if (!wcfg) wcfg = &cfg;
+    unique_ptr<Checker> ds(Checker::create(*wcfg));
+    wassert(actual(ds.get()));
+    return ds;
+}
+
+std::unique_ptr<dataset::SegmentedReader> DatasetTest::makeLocalReader(const ConfigFile* wcfg)
+{
+    auto ds = makeReader(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::SegmentedReader> wl(dynamic_cast<dataset::SegmentedReader*>(ds.release()));
+    wassert(actual(wl.get()));
     return wl;
 }
 
-dataset::ondisk2::Reader* DatasetTest::makeOndisk2Reader(const ConfigFile* wcfg)
+std::unique_ptr<dataset::SegmentedWriter> DatasetTest::makeLocalWriter(const ConfigFile* wcfg)
 {
-	Reader* ds = makeReader(wcfg);
-	dataset::ondisk2::Reader* wl = dynamic_cast<dataset::ondisk2::Reader*>(ds);
-	ensure(wl);
-	return wl;
-}
-
-dataset::ondisk2::Writer* DatasetTest::makeOndisk2Writer(const ConfigFile* wcfg)
-{
-    Writer* ds = makeWriter(wcfg);
-    dataset::ondisk2::Writer* wl = dynamic_cast<dataset::ondisk2::Writer*>(ds);
-    ensure(wl);
+    auto ds = makeWriter(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::SegmentedWriter> wl(dynamic_cast<dataset::SegmentedWriter*>(ds.release()));
+    wassert(actual(wl.get()));
     return wl;
 }
 
-dataset::simple::Reader* DatasetTest::makeSimpleReader(const ConfigFile* wcfg)
+std::unique_ptr<dataset::SegmentedChecker> DatasetTest::makeLocalChecker(const ConfigFile* wcfg)
 {
-	Reader* ds = makeReader(wcfg);
-	dataset::simple::Reader* wl = dynamic_cast<dataset::simple::Reader*>(ds);
-	ensure(wl);
-	return wl;
+    auto ds = makeChecker(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::SegmentedChecker> wl(dynamic_cast<dataset::SegmentedChecker*>(ds.release()));
+    wassert(actual(wl.get()));
+    return wl;
 }
 
-dataset::simple::Writer* DatasetTest::makeSimpleWriter(const ConfigFile* wcfg)
+std::unique_ptr<dataset::ondisk2::Reader> DatasetTest::makeOndisk2Reader(const ConfigFile* wcfg)
 {
-    Writer* ds = makeWriter(wcfg);
-    dataset::simple::Writer* wl = dynamic_cast<dataset::simple::Writer*>(ds);
-    ensure(wl);
+    auto ds = makeReader(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::ondisk2::Reader> wl(dynamic_cast<dataset::ondisk2::Reader*>(ds.release()));
+    wassert(actual(wl.get()));
+    return wl;
+}
+
+std::unique_ptr<dataset::ondisk2::Writer> DatasetTest::makeOndisk2Writer(const ConfigFile* wcfg)
+{
+    auto ds = makeWriter(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::ondisk2::Writer> wl(dynamic_cast<dataset::ondisk2::Writer*>(ds.release()));
+    wassert(actual(wl.get()));
+    return wl;
+}
+
+std::unique_ptr<dataset::ondisk2::Checker> DatasetTest::makeOndisk2Checker(const ConfigFile* wcfg)
+{
+    auto ds = makeChecker(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::ondisk2::Checker> wl(dynamic_cast<dataset::ondisk2::Checker*>(ds.release()));
+    wassert(actual(wl.get()));
+    return wl;
+}
+
+std::unique_ptr<dataset::simple::Reader> DatasetTest::makeSimpleReader(const ConfigFile* wcfg)
+{
+    auto ds = makeReader(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::simple::Reader> wl(dynamic_cast<dataset::simple::Reader*>(ds.release()));
+    wassert(actual(wl.get()));
+    return wl;
+}
+
+std::unique_ptr<dataset::simple::Writer> DatasetTest::makeSimpleWriter(const ConfigFile* wcfg)
+{
+    auto ds = makeWriter(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::simple::Writer> wl(dynamic_cast<dataset::simple::Writer*>(ds.release()));
+    wassert(actual(wl.get()));
+    return wl;
+}
+
+std::unique_ptr<dataset::simple::Checker> DatasetTest::makeSimpleChecker(const ConfigFile* wcfg)
+{
+    auto ds = makeChecker(wcfg);
+    wassert(actual(ds.get()));
+    unique_ptr<dataset::simple::Checker> wl(dynamic_cast<dataset::simple::Checker*>(ds.release()));
+    wassert(actual(wl.get()));
     return wl;
 }
 
@@ -369,28 +330,11 @@ void DatasetTest::import(const ConfigFile* wcfg, const std::string& testfile)
 
     {
         std::unique_ptr<Writer> writer(makeWriter(wcfg));
-
-        if (str::endswith(testfile, ".vm2")) {
-            scan::Vm2 scanner;
-            scanner.open(testfile);
-
-            Metadata md;
-            while (scanner.next(md))
-            {
-                Writer::AcquireResult res = writer->acquire(md);
-                ensure_equals(res, Writer::ACQ_OK);
-            }
-        } else {
-
-            scan::Grib scanner;
-            scanner.open(testfile);
-
-            Metadata md;
-            while (scanner.next(md))
-            {
-                Writer::AcquireResult res = writer->acquire(md);
-                ensure_equals(res, Writer::ACQ_OK);
-            }
+        metadata::Collection data(testfile);
+        for (auto& md: data)
+        {
+            Writer::AcquireResult res = writer->acquire(*md);
+            ensure_equals(res, Writer::ACQ_OK);
         }
     }
 
@@ -407,7 +351,7 @@ void DatasetTest::clean_and_import(const ConfigFile* wcfg, const std::string& te
 
 void DatasetTest::ensure_maint_clean(size_t filecount, const ConfigFile* wcfg)
 {
-    unique_ptr<dataset::SegmentedWriter> writer(makeLocalWriter(wcfg));
+    unique_ptr<dataset::SegmentedChecker> writer(makeLocalChecker(wcfg));
     arki::tests::MaintenanceResults expected(true, filecount);
     expected.by_type[COUNTED_OK] = filecount;
     wassert(actual(writer.get()).maintenance(expected));
@@ -447,11 +391,9 @@ void DatasetTest::import_all_packed(const testdata::Fixture& fixture)
 
     // Pack the dataset in case something imported data out of order
     {
-        unique_ptr<LocalWriter> writer(makeLocalWriter());
-        LineChecker checker;
-        checker.ignore_regexp(": packed ");
-        checker.ignore_regexp(": [0-9]+ files? packed");
-        wassert(actual(writer.get()).repack(checker, true));
+        unique_ptr<LocalChecker> writer(makeLocalChecker());
+        NullReporter r;
+        wassert(writer->repack(r, true));
     }
 }
 
@@ -472,32 +414,24 @@ void MaintenanceCollector::clear()
 
 bool MaintenanceCollector::isClean() const
 {
-	for (size_t i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
-		if (i != tests::DatasetTest::COUNTED_OK && i != tests::DatasetTest::COUNTED_ARC_OK && counts[i])
-			return false;
-	return true;
+    for (size_t i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
+        if (i != tests::DatasetTest::COUNTED_OK && counts[i])
+            return false;
+    return true;
 }
 
-void MaintenanceCollector::operator()(const std::string& file, dataset::data::FileState state)
+void MaintenanceCollector::operator()(const std::string& file, dataset::segment::State state)
 {
     using namespace arki::dataset;
-
     fileStates[file] = state;
-    if (state.is_ok())           ++counts[tests::DatasetTest::COUNTED_OK];
-    if (state.is_archived_ok())  ++counts[tests::DatasetTest::COUNTED_ARC_OK];
-    if (state.has(FILE_ARCHIVED))
-    {
-        if (state.has(FILE_TO_INDEX))   ++counts[tests::DatasetTest::COUNTED_ARC_TO_INDEX];
-        if (state.has(FILE_TO_RESCAN))  ++counts[tests::DatasetTest::COUNTED_ARC_TO_RESCAN];
-        if (state.has(FILE_TO_DEINDEX)) ++counts[tests::DatasetTest::COUNTED_ARC_TO_DEINDEX];
-    } else {
-        if (state.has(FILE_TO_ARCHIVE)) ++counts[tests::DatasetTest::COUNTED_TO_ARCHIVE];
-        if (state.has(FILE_TO_DELETE))  ++counts[tests::DatasetTest::COUNTED_TO_DELETE];
-        if (state.has(FILE_TO_PACK))    ++counts[tests::DatasetTest::COUNTED_TO_PACK];
-        if (state.has(FILE_TO_INDEX))   ++counts[tests::DatasetTest::COUNTED_TO_INDEX];
-        if (state.has(FILE_TO_RESCAN))  ++counts[tests::DatasetTest::COUNTED_TO_RESCAN];
-        if (state.has(FILE_TO_DEINDEX)) ++counts[tests::DatasetTest::COUNTED_TO_DEINDEX];
-    }
+    if (state.is_ok())                  ++counts[tests::DatasetTest::COUNTED_OK];
+    if (state.has(SEGMENT_ARCHIVE_AGE)) ++counts[tests::DatasetTest::COUNTED_ARCHIVE_AGE];
+    if (state.has(SEGMENT_DELETE_AGE))  ++counts[tests::DatasetTest::COUNTED_DELETE_AGE];
+    if (state.has(SEGMENT_DIRTY))       ++counts[tests::DatasetTest::COUNTED_DIRTY];
+    if (state.has(SEGMENT_NEW))         ++counts[tests::DatasetTest::COUNTED_NEW];
+    if (state.has(SEGMENT_UNALIGNED))   ++counts[tests::DatasetTest::COUNTED_UNALIGNED];
+    if (state.has(SEGMENT_DELETED))     ++counts[tests::DatasetTest::COUNTED_DELETED];
+    if (state.has(SEGMENT_CORRUPTED))   ++counts[tests::DatasetTest::COUNTED_CORRUPTED];
 }
 
 size_t MaintenanceCollector::count(tests::DatasetTest::Counted s)
@@ -537,16 +471,13 @@ void MaintenanceCollector::dump(std::ostream& out) const
 
 const char* MaintenanceCollector::names[] = {
     "ok",
-    "arc ok",
-    "to archive",
-    "to delete",
-    "to pack",
-    "to index",
-    "to rescan",
-    "to deindex",
-    "arc to index",
-    "arc to rescan",
-    "arc deindex",
+    "archive age",
+    "delete age",
+    "dirty",
+    "new",
+    "unaligned",
+    "deleted",
+    "corrupted",
     "counted_max",
 };
 
@@ -683,10 +614,21 @@ std::unique_ptr<Reader> make_dataset_reader(const std::string& cfgstr)
     return ds;
 }
 
-void test_append_transaction_ok(dataset::data::Segment* dw, Metadata& md, int append_amount_adjust)
+std::unique_ptr<dataset::LocalChecker> make_dataset_checker(const std::string& cfgstr)
 {
-    typedef types::source::Blob Blob;
+    // Parse configuration
+    stringstream incfg(cfgstr);
+    ConfigFile cfg;
+    cfg.parse(incfg, "(memory)");
+    wassert(actual(cfg.value("path").empty()).isfalse());
 
+    unique_ptr<dataset::LocalChecker> ds(dataset::LocalChecker::create(cfg));
+    wassert(actual(ds.get()).istrue());
+    return ds;
+}
+
+void test_append_transaction_ok(dataset::segment::Segment* dw, Metadata& md, int append_amount_adjust)
+{
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());
     size_t data_size = md.data_size();
@@ -709,7 +651,7 @@ void test_append_transaction_ok(dataset::data::Segment* dw, Metadata& md, int ap
     wassert(actual_type(md.source()).is_source_blob("grib1", "", dw->absname, orig_fsize, data_size));
 }
 
-void test_append_transaction_rollback(dataset::data::Segment* dw, Metadata& md)
+void test_append_transaction_rollback(dataset::segment::Segment* dw, Metadata& md)
 {
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());
@@ -731,10 +673,10 @@ void test_append_transaction_rollback(dataset::data::Segment* dw, Metadata& md)
 }
 
 /// Run maintenance and see that the results are as expected
-void ActualSegmentedWriter::maintenance(const MaintenanceResults& expected, bool quick)
+void ActualSegmentedChecker::maintenance(const MaintenanceResults& expected, bool quick)
 {
     MaintenanceCollector c;
-    wassert(_actual->maintenance(c, quick));
+    wassert(_actual->maintenance([&](const std::string& relpath, segment::State state) { c(relpath, state); }, quick));
 
     bool ok = true;
     if (expected.files_seen != -1 && c.fileStates.size() != (unsigned)expected.files_seen)
@@ -763,42 +705,239 @@ void ActualSegmentedWriter::maintenance(const MaintenanceResults& expected, bool
     throw TestFailed(ss.str());
 }
 
-void ActualSegmentedWriter::maintenance_clean(unsigned data_count, bool quick)
+void ActualSegmentedChecker::maintenance_clean(unsigned data_count, bool quick)
 {
     MaintenanceResults expected(true, data_count);
     expected.by_type[tests::DatasetTest::COUNTED_OK] = data_count;
     maintenance(expected, quick);
 }
 
-template<typename Dataset>
-void ActualLocalWriter<Dataset>::repack(const LineChecker& expected, bool write)
+
+ReporterExpected::OperationMatch::OperationMatch(const std::string& dsname, const std::string& operation, const std::string& message)
+    : dsname(dsname), operation(operation), message(message)
 {
-    stringstream s;
-    wassert(this->_actual->repack(s, write));
-    wassert(expected.check(s.str()));
+}
+
+std::string ReporterExpected::OperationMatch::error_unmatched(const std::string& type) const
+{
+    string msg = "expected operation not matched: " + dsname + ":" + type + " not found in " + operation + " output";
+    if (!message.empty())
+        msg += " (matching '" + message + "')";
+    return msg;
+}
+
+ReporterExpected::SegmentMatch::SegmentMatch(const std::string& dsname, const std::string& relpath, const std::string& message)
+    : dsname(dsname), relpath(relpath), message(message)
+{
+}
+
+std::string ReporterExpected::SegmentMatch::error_unmatched(const std::string& operation) const
+{
+    string msg = "expected segment not matched: " + dsname + ":" + relpath + " not found in " + operation + " output";
+    if (!message.empty())
+        msg += " (matching '" + message + "')";
+    return msg;
+}
+
+struct MainteanceCheckResult
+{
+    std::string type;
+    bool matched = false;
+
+    MainteanceCheckResult(const std::string& type) : type(type) {}
+};
+
+struct OperationResult : public MainteanceCheckResult
+{
+    std::string dsname;
+    std::string operation;
+    std::string message;
+
+    OperationResult(const std::string& type, const std::string& dsname, const std::string& operation, const std::string& message=std::string())
+        : MainteanceCheckResult(type), dsname(dsname), operation(operation), message(message) {}
+
+    bool match(const ReporterExpected::OperationMatch& m) const
+    {
+        if (m.dsname != dsname) return false;
+        if (m.operation != operation) return false;
+        if (!m.message.empty() && message.find(m.message) == string::npos) return false;
+        return true;
+    }
+
+    string error_unmatched() const
+    {
+        return "operation output not matched: " + type + " on " + dsname + ":" + operation + ": " + message;
+    }
+};
+
+struct SegmentResult : public MainteanceCheckResult
+{
+    std::string dsname;
+    std::string relpath;
+    std::string message;
+
+    SegmentResult(const std::string& operation, const std::string& dsname, const std::string& relpath, const std::string& message=std::string())
+        : MainteanceCheckResult(operation), dsname(dsname), relpath(relpath), message(message) {}
+
+    bool match(const ReporterExpected::SegmentMatch& m) const
+    {
+        if (m.dsname != dsname) return false;
+        if (m.relpath != relpath) return false;
+        if (!m.message.empty() && message.find(m.message) == string::npos) return false;
+        return true;
+    }
+
+    string error_unmatched() const
+    {
+        return "segment output not matched: " + type + " on " + dsname + ":" + relpath + ": " + message;
+    }
+};
+
+template<typename Matcher, typename Result>
+struct MainteanceCheckResults : public std::vector<Result>
+{
+    void match(const std::string& type, const std::vector<Matcher>& matches, vector<string>& issues)
+    {
+        // Track which rules were not matched
+        std::set<const Matcher*> unmatched;
+        for (const auto& m: matches)
+            unmatched.insert(&m);
+
+        for (auto& r: *this)
+        {
+            if (r.type != type) continue;
+            for (const auto& m: matches)
+                if (r.match(m))
+                {
+                    r.matched = true;
+                    unmatched.erase(&m);
+                }
+        }
+
+        // Signal the unmatched rules for this operation
+        for (const auto& m: unmatched)
+            issues.emplace_back(m->error_unmatched(type));
+    }
+
+    void count_equals(const std::string& type, int expected, vector<string>& issues)
+    {
+        if (expected == -1) return;
+        size_t count = 0;
+        for (const auto& r: *this)
+        {
+            if (r.type != type) continue;
+            ++count;
+        }
+
+        // Signal the counts that differ
+        if (count != (unsigned)expected)
+            issues.emplace_back(type + " had " + std::to_string(count) + " results but " + std::to_string(expected) + " were expected");
+        else
+        {
+            // If the count is correct, mark all results for this operation as
+            // matched, so that one can just do a test matching count of files
+            // by operation type and not the details
+            for (auto& r: *this)
+                if (r.type == type)
+                    r.matched = true;
+        }
+    }
+
+    void report_unmatched(vector<string>& issues, const std::string& type_filter=std::string())
+    {
+        for (const auto& r: *this)
+        {
+            if (!type_filter.empty() && r.type != type_filter) continue;
+            if (r.matched) continue;
+            issues.emplace_back(r.error_unmatched());
+        }
+    }
+};
+
+struct CollectReporter : public dataset::Reporter
+{
+    typedef MainteanceCheckResults<ReporterExpected::OperationMatch, OperationResult> OperationResults;
+    typedef MainteanceCheckResults<ReporterExpected::SegmentMatch, SegmentResult> SegmentResults;
+
+    OperationResults op_results;
+    SegmentResults seg_results;
+
+    void operation_progress(const Base& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("progress", ds.name(), operation, message); }
+    void operation_manual_intervention(const Base& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("manual_intervention", ds.name(), operation, message); }
+    void operation_aborted(const Base& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("aborted", ds.name(), operation, message); }
+    void operation_report(const Base& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("report", ds.name(), operation, message); }
+
+    void segment_repack(const Base& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("repacked", ds.name(), relpath, message); }
+    void segment_archive(const Base& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("archived", ds.name(), relpath, message); }
+    void segment_delete(const Base& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("deleted", ds.name(), relpath, message); }
+    void segment_deindex(const Base& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("deindexed", ds.name(), relpath, message); }
+    void segment_rescan(const Base& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("rescanned", ds.name(), relpath, message); }
+
+    void check(const ReporterExpected& expected)
+    {
+        vector<string> issues;
+
+        op_results.match("progress", expected.progress, issues);
+        op_results.match("manual_intervention", expected.manual_intervention, issues);
+        op_results.match("aborted", expected.aborted, issues);
+        op_results.match("report", expected.report, issues);
+
+        op_results.report_unmatched(issues, "manual_intervention");
+        op_results.report_unmatched(issues, "aborted");
+
+        seg_results.match("repacked", expected.repacked, issues);
+        seg_results.match("archived", expected.archived, issues);
+        seg_results.match("deleted", expected.deleted, issues);
+        seg_results.match("deindexed", expected.deindexed, issues);
+        seg_results.match("rescanned", expected.rescanned, issues);
+
+        seg_results.count_equals("repacked", expected.count_repacked, issues);
+        seg_results.count_equals("archived", expected.count_archived, issues);
+        seg_results.count_equals("deleted", expected.count_deleted, issues);
+        seg_results.count_equals("deindexed", expected.count_deindexed, issues);
+        seg_results.count_equals("rescanned", expected.count_rescanned, issues);
+
+        seg_results.report_unmatched(issues);
+
+        if (!issues.empty())
+        {
+            std::stringstream ss;
+            ss << issues.size() << " mismatches in maintenance results:" << endl;
+            for (const auto& m: issues)
+                ss << "  " << m << endl;
+            throw TestFailed(ss.str());
+        }
+    }
+};
+
+template<typename Dataset>
+void ActualChecker<Dataset>::repack(const ReporterExpected& expected, bool write)
+{
+    CollectReporter reporter;
+    wassert(this->_actual->repack(reporter, write));
+    wassert(reporter.check(expected));
 }
 
 template<typename Dataset>
-void ActualLocalWriter<Dataset>::repack_clean(bool write)
+void ActualChecker<Dataset>::check(const ReporterExpected& expected, bool write, bool quick)
 {
-    LineChecker expected;
-    expected.ignore_regexp("total bytes freed.");
-    repack(expected, write);
+    CollectReporter reporter;
+    wassert(this->_actual->check(reporter, write, quick));
+    wassert(reporter.check(expected));
 }
 
 template<typename Dataset>
-void ActualLocalWriter<Dataset>::check(const LineChecker& expected, bool write, bool quick)
+void ActualChecker<Dataset>::repack_clean(bool write)
 {
-    stringstream s;
-    wassert(this->_actual->check(s, write, quick));
-    wassert(expected.check(s.str()));
+    ReporterExpected e;
+    repack(e, write);
 }
 
 template<typename Dataset>
-void ActualLocalWriter<Dataset>::check_clean(bool write)
+void ActualChecker<Dataset>::check_clean(bool write, bool quick)
 {
-    LineChecker expected;
-    check(expected, write);
+    ReporterExpected e;
+    check(e, write, quick);
 }
 
 }
@@ -858,6 +997,7 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
 
 }
 
-template class ActualLocalWriter<dataset::LocalWriter>;
-template class ActualLocalWriter<dataset::SegmentedWriter>;
+template class ActualChecker<Checker>;
+template class ActualChecker<dataset::LocalChecker>;
+template class ActualChecker<dataset::SegmentedChecker>;
 }

@@ -3,7 +3,8 @@
 
 /// dataset/maintenance - Dataset maintenance utilities
 
-#include <arki/dataset/data.h>
+#include <arki/dataset/segment.h>
+#include <arki/types/time.h>
 #include <string>
 #include <vector>
 #include <sys/types.h>
@@ -15,92 +16,111 @@ class Collection;
 }
 
 namespace scan {
-struct Validator;
+class Validator;
 }
 
 namespace dataset {
-class SegmentedWriter;
+class Reporter;
+class SegmentedChecker;
+class Step;
 
 namespace maintenance {
 
 /**
- * Visitor interface for scanning information about the files indexed in the database
- */
-struct MaintFileVisitor
-{
-    virtual ~MaintFileVisitor() {}
-
-    virtual void operator()(const std::string& file, data::FileState state) = 0;
-};
-
-/**
- * Visitor interface for scanning information about the files indexed in the database
- */
-struct IndexFileVisitor
-{
-	virtual ~IndexFileVisitor() {}
-
-    virtual void operator()(const std::string& file, const metadata::Collection& mdc) = 0;
-};
-
-/**
- * MaintFileVisitor that feeds a MaintFileVisitor with TO_INDEX status.
+ * Scan the files actually present inside a directory and compare them with a
+ * stream of files known by an indexed, detecting new files and files that have
+ * been removed.
  *
- * The input feed is assumed to come from the index, and is checked against the
- * files found on disk in order to detect files that are on disk but not in the
- * index.
+ * Check needs to be called with relpaths in ascending alphabetical order.
+ *
+ * Results are sent to the \a next state_func. \a next can be called more times
+ * than check has been called, in case of segments found on disk that the index
+ * does not know about.
+ *
+ * end() needs to be called after all index information has been sent to
+ * check(), in order to generate data for the remaining files found on disk and
+ * not in the index.
  */
-struct FindMissing : public MaintFileVisitor
+struct FindMissing
 {
-	MaintFileVisitor& next;
-	std::vector<std::string> disk;
+    segment::state_func& next;
+    std::vector<std::string> disk;
 
-	FindMissing(MaintFileVisitor& next, const std::vector<std::string>& files);
+    FindMissing(const std::string& root, segment::state_func next);
+    FindMissing(const FindMissing&) = delete;
+    FindMissing& operator=(const FindMissing&) = delete;
 
-	// files: a, b, c,    e, f, g
-	// index:       c, d, e, f, g
+    // files: a, b, c,    e, f, g
+    // index:       c, d, e, f, g
 
-	void operator()(const std::string& file, data::FileState state);
-	void end();
+    void check(const std::string& relpath, segment::State state);
+    void end();
 };
 
 /**
- * Print out the maintenance state for each file
+ * Check the age of segments in a dataset, to detect those that need to be
+ * deleted or archived. It adds SEGMENT_DELETE_AGE or SEGMENT_ARCHIVE_AGE as needed.
  */
-struct Dumper : public MaintFileVisitor
+struct CheckAge
 {
-	void operator()(const std::string& file, data::FileState state);
+    typedef std::function<bool(const std::string&, types::Time&, types::Time&)> segment_timespan_func;
+    segment::state_func next;
+    segment_timespan_func get_segment_timespan;
+    types::Time archive_threshold;
+    types::Time delete_threshold;
+
+    CheckAge(segment::state_func next, segment_timespan_func get_segment_timespan, int archive_age=-1, int delete_age=-1);
+
+    void operator()(const std::string& relpath, segment::State state);
 };
 
-struct Tee : public MaintFileVisitor
+/**
+ * Temporarily override the current date used to check data age.
+ *
+ * This is used to be able to write unit tests that run the same independently
+ * of when they are run.
+ */
+struct TestOverrideCurrentDateForMaintenance
 {
-	MaintFileVisitor& one;
-	MaintFileVisitor& two;
+    time_t old_ts;
 
-	Tee(MaintFileVisitor& one, MaintFileVisitor& two);
-	virtual ~Tee();
-	void operator()(const std::string& file, data::FileState state);
+    TestOverrideCurrentDateForMaintenance(time_t ts);
+    ~TestOverrideCurrentDateForMaintenance();
+};
+
+
+/**
+ * Print out the maintenance state for each segment
+ */
+struct Dumper
+{
+    void operator()(const std::string& relpath, segment::State state);
+};
+
+struct Tee
+{
+    segment::state_func& one;
+    segment::state_func& two;
+
+    Tee(segment::state_func& one, segment::state_func& two);
+    virtual ~Tee();
+    void operator()(const std::string& relpath, segment::State state);
 };
 
 /// Base class for all repackers and rebuilders
-struct Agent : public maintenance::MaintFileVisitor
+struct Agent
 {
-	std::ostream& m_log;
-	SegmentedWriter& w;
-	bool lineStart;
+    dataset::Reporter& reporter;
+    SegmentedChecker& w;
+    bool lineStart;
 
-	Agent(std::ostream& log, SegmentedWriter& w);
+    Agent(dataset::Reporter& reporter, SegmentedChecker& w);
+    Agent(const Agent&) = delete;
+    Agent& operator=(const Agent&) = delete;
 
-	std::ostream& log();
+    virtual void operator()(const std::string& relpath, segment::State state) = 0;
 
-	// Start a line with multiple items logged
-	void logStart();
-	// Log another item on the current line
-	std::ostream& logAdd();
-	// End the line with multiple things logged
-	void logEnd();
-
-	virtual void end() {}
+    virtual void end() {}
 };
 
 /**
@@ -110,12 +130,12 @@ struct Agent : public maintenance::MaintFileVisitor
  */
 struct FailsafeRepacker : public Agent
 {
-	size_t m_count_deleted;
+    using Agent::Agent;
 
-	FailsafeRepacker(std::ostream& log, SegmentedWriter& w);
+    size_t m_count_deleted = 0;
 
-	void operator()(const std::string& file, data::FileState state);
-	void end();
+    void operator()(const std::string& relpath, segment::State state);
+    void end();
 };
 
 /**
@@ -123,16 +143,17 @@ struct FailsafeRepacker : public Agent
  */
 struct MockRepacker : public Agent
 {
-	size_t m_count_packed;
-	size_t m_count_archived;
-	size_t m_count_deleted;
-	size_t m_count_deindexed;
-	size_t m_count_rescanned;
+    using Agent::Agent;
 
-	MockRepacker(std::ostream& log, SegmentedWriter& w);
+    size_t m_count_ok = 0;
+    size_t m_count_packed = 0;
+    size_t m_count_archived = 0;
+    size_t m_count_deleted = 0;
+    size_t m_count_deindexed = 0;
+    size_t m_count_rescanned = 0;
 
-	void operator()(const std::string& file, data::FileState state);
-	void end();
+    void operator()(const std::string& relpath, segment::State state);
+    void end();
 };
 
 /**
@@ -140,56 +161,57 @@ struct MockRepacker : public Agent
  */
 struct MockFixer : public Agent
 {
-	size_t m_count_packed;
-	size_t m_count_rescanned;
-	size_t m_count_deindexed;
+    using Agent::Agent;
 
-	MockFixer(std::ostream& log, SegmentedWriter& w);
+    size_t m_count_ok = 0;
+    size_t m_count_packed = 0;
+    size_t m_count_rescanned = 0;
+    size_t m_count_deindexed = 0;
 
-	void operator()(const std::string& file, data::FileState state);
-	void end();
+    void operator()(const std::string& relpath, segment::State state);
+    void end();
 };
 
 /**
  * Perform real repacking
  */
-struct RealRepacker : public maintenance::Agent
+struct RealRepacker : public Agent
 {
-	size_t m_count_packed;
-	size_t m_count_archived;
-	size_t m_count_deleted;
-	size_t m_count_deindexed;
-	size_t m_count_rescanned;
-	size_t m_count_freed;
-	bool m_touched_archive;
-	bool m_redo_summary;
+    using Agent::Agent;
 
-	RealRepacker(std::ostream& log, SegmentedWriter& w);
+    size_t m_count_ok = 0;
+    size_t m_count_packed = 0;
+    size_t m_count_archived = 0;
+    size_t m_count_deleted = 0;
+    size_t m_count_deindexed = 0;
+    size_t m_count_rescanned = 0;
+    size_t m_count_freed = 0;
+    bool m_touched_archive = false;
+    bool m_redo_summary = false;
 
-	void operator()(const std::string& file, data::FileState state);
-	void end();
+    void operator()(const std::string& relpath, segment::State state);
+    void end();
 };
 
 /**
  * Perform real repacking
  */
-struct RealFixer : public maintenance::Agent
+struct RealFixer : public Agent
 {
-	size_t m_count_packed;
-	size_t m_count_rescanned;
-	size_t m_count_deindexed;
-	bool m_touched_archive;
-	bool m_redo_summary;
+    using Agent::Agent;
 
-	RealFixer(std::ostream& log, SegmentedWriter& w);
+    size_t m_count_ok = 0;
+    size_t m_count_packed = 0;
+    size_t m_count_rescanned = 0;
+    size_t m_count_deindexed = 0;
+    bool m_touched_archive = 0;
+    bool m_redo_summary = 0;
 
-	void operator()(const std::string& file, data::FileState state);
-	void end();
+    void operator()(const std::string& relpath, segment::State state);
+    void end();
 };
 
 }
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

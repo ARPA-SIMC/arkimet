@@ -187,7 +187,7 @@ void ReaderServer::do_summary(const LegacySummaryParams& parms, net::http::Reque
 
     // Query the summary
     Summary sum;
-    ds.querySummary(Matcher::parse(*parms.query), sum);
+    ds.query_summary(Matcher::parse(*parms.query), sum);
 
     if (*parms.style == "yaml")
     {
@@ -292,7 +292,7 @@ void ReaderServer::do_querySummary(const QuerySummaryParams& parms, net::http::R
     StreamHeaders headers(req, dsname);
     headers.ext = "summary";
     Summary s;
-    ds.querySummary(Matcher::parse(*parms.matcher), s);
+    ds.query_summary(Matcher::parse(*parms.matcher), s);
     headers.send_result(s.encode());
 }
 

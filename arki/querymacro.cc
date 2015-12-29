@@ -26,17 +26,17 @@ static Querymacro* checkqmacro(lua_State *L, int idx = 1)
 
 static int arkilua_dataset(lua_State *L)
 {
-	Querymacro* rd = checkqmacro(L);
-	const char* name = luaL_checkstring(L, 2);
-	Reader* ds = rd->dataset(name);
-	if (ds) 
-	{
-		ds->lua_push(L);
-		return 1;
-	} else {
-		lua_pushnil(L);
-		return 1;
-	}
+    Querymacro* rd = checkqmacro(L);
+    const char* name = luaL_checkstring(L, 2);
+    dataset::Reader* ds = rd->dataset(name);
+    if (ds)
+    {
+        ds->lua_push(L);
+        return 1;
+    } else {
+        lua_pushnil(L);
+        return 1;
+    }
 }
 
 static int arkilua_metadataconsumer(lua_State *L)
@@ -67,7 +67,7 @@ static const struct luaL_Reg querymacrolib[] = {
 };
 
 Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std::string& query)
-	: cfg(cfg), L(new Lua), funcid_querydata(-1), funcid_querysummary(-1)
+    : Reader(cfg), cfg(cfg), L(new Lua), funcid_querydata(-1), funcid_querysummary(-1)
 {
 	Summary::lua_openlib(*L);
 	Matcher::lua_openlib(*L);
@@ -136,18 +136,18 @@ Querymacro::~Querymacro()
 		delete i->second;
 }
 
-Reader* Querymacro::dataset(const std::string& name)
+dataset::Reader* Querymacro::dataset(const std::string& name)
 {
-	std::map<std::string, Reader*>::iterator i = ds_cache.find(name);
-	if (i == ds_cache.end())
-	{
-		ConfigFile* dscfg = cfg.section(name);
-		if (!dscfg) return 0;
-		Reader* ds = Reader::create(*dscfg);
-		pair<map<string, Reader*>::iterator, bool> res = ds_cache.insert(make_pair(name, ds));
-		i = res.first;
-	}
-	return i->second;
+    std::map<std::string, dataset::Reader*>::iterator i = ds_cache.find(name);
+    if (i == ds_cache.end())
+    {
+        ConfigFile* dscfg = cfg.section(name);
+        if (!dscfg) return 0;
+        dataset::Reader* ds = dataset::Reader::create(*dscfg);
+        pair<map<string, dataset::Reader*>::iterator, bool> res = ds_cache.insert(make_pair(name, ds));
+        i = res.first;
+    }
+    return i->second;
 }
 
 void Querymacro::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
@@ -180,7 +180,7 @@ void Querymacro::query_data(const dataset::DataQuery& q, metadata_dest_func dest
     }
 }
 
-void Querymacro::querySummary(const Matcher& matcher, Summary& summary)
+void Querymacro::query_summary(const Matcher& matcher, Summary& summary)
 {
 	if (funcid_querysummary == -1) return;
 

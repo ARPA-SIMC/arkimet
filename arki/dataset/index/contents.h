@@ -6,6 +6,7 @@
 #include <arki/dataset/index.h>
 #include <arki/transaction.h>
 #include <arki/utils/sqlite.h>
+#include <arki/dataset/segment.h>
 #include <arki/dataset/index/attr.h>
 #include <arki/dataset/index/aggregate.h>
 #include <arki/dataset/index/summarycache.h>
@@ -23,12 +24,7 @@ class ConfigFile;
 namespace dataset {
 struct DataQuery;
 
-namespace maintenance {
-struct IndexFileVisitor;
-}
-
 namespace index {
-
 struct Uniques;
 struct Others;
 
@@ -145,22 +141,19 @@ public:
 	/// Return the number of items currently indexed by this index
 	size_t count() const;
 
-	/**
-	 * Scan all file info in the database, sorted by file and offset
-	 */
-	void scan_files(maintenance::IndexFileVisitor& v) const;
+    /**
+     * Scan all file info in the database, sorted by file and offset
+     */
+    void scan_files(segment::contents_func v) override;
+
+    void list_segments(std::function<void(const std::string&)> dest) override;
 
     /**
      * Send the metadata of all data items inside a file to the given consumer
      */
     void scan_file(const std::string& relname, metadata_dest_func consumer, const std::string& orderBy = "offset") const;
 
-	/**
-	 * Return the maximum reference time found in the given file.
-	 *
-	 * Return the empty string if the file is not in the index.
-	 */
-	std::string max_file_reftime(const std::string& relname) const;
+    bool segment_timespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const override;
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     bool query_summary(const Matcher& m, Summary& summary) override;
@@ -180,17 +173,15 @@ public:
 	 */
 	void querySummaryFromDB(const std::string& where, Summary& summary) const;
 
-    size_t produce_nth(metadata_dest_func consumer, size_t idx) override;
-
-	/**
-	 * Run a consistency check on the summary cache, reporting issues
-	 * to \a log
-	 *
-	 * @return
-	 *   true if the summary cache looks ok
-	 *   false if problems have been found
-	 */
-	bool checkSummaryCache(std::ostream& log) const;
+    /**
+     * Run a consistency check on the summary cache, reporting issues
+     * to \a log
+     *
+     * @return
+     *   true if the summary cache looks ok
+     *   false if problems have been found
+     */
+    bool checkSummaryCache(const dataset::Base& ds, Reporter& reporter) const;
 
 	/**
 	 * Invalidate and rebuild the entire summary cache
@@ -319,6 +310,4 @@ public:
 }
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

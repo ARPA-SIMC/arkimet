@@ -1,11 +1,7 @@
 #include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/utils/sqlite.h>
-
 #include <sstream>
-#include <fstream>
-#include <iostream>
 
 namespace tut {
 using namespace std;
