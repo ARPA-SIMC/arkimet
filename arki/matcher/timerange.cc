@@ -242,11 +242,11 @@ std::string MatchTimerangeGRIB2::toString() const
 
 MatchTimerangeBUFR::MatchTimerangeBUFR(const std::string& pattern)
 {
-	OptionalCommaList args(pattern);
-	has_forecast = !args.empty();
-	if (has_forecast)
-	{
-        types::timerange::GRIB1Unit unit;
+    OptionalCommaList args(pattern);
+    has_forecast = !args.empty();
+    if (has_forecast)
+    {
+        types::timerange::GRIB1Unit unit = types::timerange::SECOND;
         has_forecast = parseValueWithUnit(args[0], value, unit);
         is_seconds = unit == types::timerange::SECOND;
 	} else {

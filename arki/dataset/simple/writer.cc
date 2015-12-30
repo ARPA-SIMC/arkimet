@@ -137,6 +137,7 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
 		return ACQ_ERROR;
 	}
 #endif
+    throw std::runtime_error("testAcquire not implemented for simple datasets");
 }
 
 

@@ -55,28 +55,6 @@ struct FdLock
     }
 };
 
-/// Write the buffer to a file. If the file already exists, does nothing and returns false
-bool add_file(const std::string& absname, const std::vector<uint8_t>& buf)
-{
-    int fd = open(absname.c_str(), O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
-    if (fd == -1)
-    {
-        if (errno == EEXIST) return false;
-        throw wibble::exception::File(absname, "cannot create file");
-    }
-
-    utils::fd::HandleWatch hw(absname, fd);
-
-    ssize_t count = pwrite(fd, buf.data(), buf.size(), 0);
-    if (count < 0)
-        throw wibble::exception::File(absname, "cannot write file");
-
-    if (fdatasync(fd) < 0)
-        throw wibble::exception::File(absname, "flushing write");
-
-    return true;
-}
-
 struct Append : public Transaction
 {
     const dir::Segment& segment;
@@ -247,7 +225,7 @@ off_t Segment::append(Metadata& md)
     size_t pos;
     int fd;
     seqfile.open_next(format, dest, pos, fd);
-    size_t size = write_file(md, fd, dest);
+    /*size_t size =*/ write_file(md, fd, dest);
 
     // Set the source information that we are writing in the metadata
     // md.set_source(Source::createBlob(md.source().format, "", absname, pos, size));

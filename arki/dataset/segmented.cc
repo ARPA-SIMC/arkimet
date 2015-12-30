@@ -117,7 +117,7 @@ SegmentedChecker::~SegmentedChecker()
 
 void SegmentedChecker::archiveFile(const std::string& relpath)
 {
-#warning TODO: this is a hack to ensure that 'last' is created (and clean) before we start moving files into it.
+    // TODO: this is a hack to ensure that 'last' is created (and clean) before we start moving files into it.
     archive();
 
     string pathname = str::joinpath(m_path, relpath);

@@ -188,6 +188,7 @@ $(top_builddir)/arki/matcher/reftime/reftime-parse.hh $(top_builddir)/arki/match
 lib_LTLIBRARIES = libarkimet.la
 
 # Build these incrementally
+libarkimet_la_CPPFLAGS = $(AM_CPPFLAGS) -Werror
 libarkimet_la_SOURCES =
 libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
 tests_arki_test_SOURCES = tests/tut-main.cpp

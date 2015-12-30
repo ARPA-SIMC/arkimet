@@ -69,6 +69,8 @@ unique_ptr<MatchSource> MatchSource::parse(const std::string& pattern)
                                  throw wibble::exception::Consistency("parsing type of run to match", "unsupported run style: " + name);
     }
 #endif
+    // TODO: actually implement source matching
+    return unique_ptr<MatchSource>();
 }
 
 void MatchSource::init()

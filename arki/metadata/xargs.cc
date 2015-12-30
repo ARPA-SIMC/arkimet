@@ -159,7 +159,7 @@ int Xargs::run_child()
             // Redirect stdin to /dev/null
             int new_stdin = open("/dev/null", O_RDONLY);
             ::dup2(new_stdin, 0);
-            wibble::sys::Exec::main();
+            return wibble::sys::Exec::main();
         }
     };
 

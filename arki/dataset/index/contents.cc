@@ -1103,7 +1103,7 @@ void WContents::remove(const std::string& relname, off_t ofs)
     fetch_id.compile("SELECT id, reftime FROM md WHERE file=? AND offset=?");
     fetch_id.bind(1, relname);
     fetch_id.bind(2, ofs);
-    int id;
+    int id = 0;
     string reftime;
     while (fetch_id.step())
     {

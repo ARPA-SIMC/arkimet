@@ -42,7 +42,7 @@ int OptionalCommaList::getInt(size_t pos, int def) const
     const char* beg = (*this)[pos].c_str();
     char* end;
     unsigned long res = strtoul(beg, &end, 10);
-    if ((end-beg) < (*this)[pos].size())
+    if ((unsigned)(end-beg) < (*this)[pos].size())
     {
         stringstream ss;
         ss << "cannot parse matcher: '" << (*this)[pos] << "' is not a number";

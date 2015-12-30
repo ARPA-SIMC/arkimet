@@ -327,12 +327,8 @@ void Metadata::readInlineData(BinaryDecoder& dec, const std::string& filename)
 
     source::Inline* s = dynamic_cast<source::Inline*>(m_source);
 
-#warning implement with a BinaryDecoder::pop_raw(size_t, name)
-    dec.ensure_size(s->size, "inline data");
-    m_data.assign(dec.buf, dec.buf + s->size);
-
-    dec.buf += s->size;
-    dec.size -= s->size;
+    BinaryDecoder data = dec.pop_data(s->size, "inline data");
+    m_data.assign(data.buf, data.buf + s->size);
 }
 
 bool Metadata::readYaml(LineReader& in, const std::string& filename)
@@ -483,7 +479,7 @@ void Metadata::encodeBinary(BinaryEncoder& enc) const
     // Prepend header
     enc.add_string("MD");
     enc.add_unsigned(0u, 2);
-#warning Make it a one pass only job, by writing zeroes here the first time round, then rewriting it with the actual length
+    // TODO Make it a one pass only job, by writing zeroes here the first time round, then rewriting it with the actual length
     enc.add_unsigned(encoded.size(), 4);
     enc.add_raw(encoded);
 }
@@ -528,7 +524,7 @@ const vector<uint8_t>& Metadata::getData()
 
 void Metadata::drop_cached_data()
 {
-    if (const source::Blob* blob = dynamic_cast<const source::Blob*>(m_source))
+    if (/*const source::Blob* blob =*/ dynamic_cast<const source::Blob*>(m_source))
     {
         m_data.clear();
         m_data.shrink_to_fit();

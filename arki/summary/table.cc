@@ -243,6 +243,7 @@ bool Table::merge_yaml(LineReader& in, const std::string& filename)
     return !in.eof();
 }
 
+#if 0
 static void test_consistency(Row* rows, unsigned size, const char* context)
 {
     for (unsigned i = 0; i < size; ++i)
@@ -256,6 +257,7 @@ static void test_consistency(Row* rows, unsigned size, const char* context)
         }
     }
 }
+#endif
 
 void Table::ensure_we_can_add_one()
 {

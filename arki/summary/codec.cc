@@ -80,7 +80,7 @@ struct Format1Decoder : public DecoderBase
                 decode(dec, scanpos + stripelen);
         } else {
             // Leaf node: decode stats
-            size_t statlen = dec.pop_uint(2, "Summary statistics size");
+            /*size_t statlen =*/ dec.pop_uint(2, "Summary statistics size");
             codeclog("Decoding stats in " << statlen << "b");
             row.stats = *Stats::decode(dec);
 
