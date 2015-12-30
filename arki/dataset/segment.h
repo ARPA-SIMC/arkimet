@@ -22,6 +22,8 @@ class Collection;
 }
 
 namespace dataset {
+class Segment;
+
 static const unsigned SEGMENT_OK          = 0;
 static const unsigned SEGMENT_DIRTY       = 1 << 0; /// Segment contains data deleted or out of order
 static const unsigned SEGMENT_UNALIGNED   = 1 << 1; /// Segment contents are inconsistent with the index
@@ -32,7 +34,6 @@ static const unsigned SEGMENT_ARCHIVE_AGE = 1 << 5; /// File is ok, but old enou
 static const unsigned SEGMENT_DELETE_AGE  = 1 << 6; /// File is ok, but old enough to be deleted
 
 namespace segment {
-class Segment;
 
 /**
  * State of a file in a dataset, as one or more of the FILE_* flags
@@ -230,6 +231,8 @@ public:
     static std::unique_ptr<SegmentManager> get(const ConfigFile& cfg);
 };
 
+}
+
 /**
  * Interface for managing a dataset segment.
  *
@@ -288,11 +291,13 @@ public:
      */
     virtual Pending append(Metadata& md, off_t* ofs) = 0;
 
-    virtual State check(const metadata::Collection& mds, bool quick=true) = 0;
+    virtual segment::State check(const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
     virtual void truncate(size_t offset) = 0;
     virtual Pending repack(const std::string& rootdir, metadata::Collection& mds) = 0;
 };
+
+namespace segment {
 
 /**
  * Interface for writing metadata and data to output streams.

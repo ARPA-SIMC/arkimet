@@ -438,8 +438,8 @@ struct ActualSegmentedChecker : public ActualChecker<dataset::SegmentedChecker>
 /// element with zeros
 void corrupt_datafile(const std::string& absname);
 
-void test_append_transaction_ok(dataset::segment::Segment* dw, Metadata& md, int append_amount_adjust=0);
-void test_append_transaction_rollback(dataset::segment::Segment* dw, Metadata& md);
+void test_append_transaction_ok(dataset::Segment* dw, Metadata& md, int append_amount_adjust=0);
+void test_append_transaction_rollback(dataset::Segment* dw, Metadata& md);
 
 inline arki::tests::ActualChecker<dataset::LocalChecker> actual(arki::dataset::LocalChecker* actual)
 {

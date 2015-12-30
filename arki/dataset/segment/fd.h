@@ -12,7 +12,7 @@ namespace dataset {
 namespace segment {
 namespace fd {
 
-class Segment : public segment::Segment
+class Segment : public dataset::Segment
 {
 protected:
     int fd;
@@ -47,7 +47,7 @@ public:
             const std::string& rootdir,
             const std::string& relname,
             metadata::Collection& mds,
-            segment::Segment* make_repack_segment(const std::string&, const std::string&),
+            fd::Segment* make_repack_segment(const std::string&, const std::string&),
             bool skip_validation=false);
 };
 

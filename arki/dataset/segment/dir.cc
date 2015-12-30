@@ -195,7 +195,7 @@ std::string SequenceFile::data_fname(size_t pos, const std::string& format)
 }
 
 Segment::Segment(const std::string& format, const std::string& relname, const std::string& absname)
-    : segment::Segment(relname, absname), format(format), seqfile(absname)
+    : dataset::Segment(relname, absname), format(format), seqfile(absname)
 {
 }
 

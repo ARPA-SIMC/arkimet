@@ -57,7 +57,7 @@ Writer::~Writer()
 
 Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
-    segment::Segment* w = file(md, md.source().format);
+    Segment* w = file(md, md.source().format);
     off_t ofs;
 
     Pending p_idx = idx->beginTransaction();
@@ -85,7 +85,7 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 
 Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 {
-    segment::Segment* w = file(md, md.source().format);
+    Segment* w = file(md, md.source().format);
     off_t ofs;
 
     Pending p_idx = idx->beginTransaction();
@@ -114,7 +114,7 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     // Try to acquire without replacing
-    segment::Segment* w = file(md, md.source().format);
+    Segment* w = file(md, md.source().format);
     off_t ofs;
 
     Pending p_idx = idx->beginTransaction();

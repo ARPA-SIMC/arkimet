@@ -101,7 +101,7 @@ struct TestSegments
 
         // Import 2 gigabytes of data in a single segment
         metadata::Collection mds;
-        segment::Segment* w = segment_manager->get_segment("test.grib");
+        Segment* w = segment_manager->get_segment("test.grib");
         for (unsigned i = 0; i < 2048; ++i)
         {
             unique_ptr<Metadata> md(new Metadata(testdata::make_large_mock("grib", 1024*1024, i / (30 * 24), (i/24) % 30, i % 24)));

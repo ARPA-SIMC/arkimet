@@ -64,7 +64,7 @@ SegmentedWriter::~SegmentedWriter()
     delete m_step;
 }
 
-segment::Segment* SegmentedWriter::file(const Metadata& md, const std::string& format)
+Segment* SegmentedWriter::file(const Metadata& md, const std::string& format)
 {
     string relname = (*m_step)(md) + "." + md.source().format;
     return m_segment_manager->get_segment(format, relname);

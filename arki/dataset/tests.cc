@@ -627,7 +627,7 @@ std::unique_ptr<dataset::LocalChecker> make_dataset_checker(const std::string& c
     return ds;
 }
 
-void test_append_transaction_ok(dataset::segment::Segment* dw, Metadata& md, int append_amount_adjust)
+void test_append_transaction_ok(dataset::Segment* dw, Metadata& md, int append_amount_adjust)
 {
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());
@@ -651,7 +651,7 @@ void test_append_transaction_ok(dataset::segment::Segment* dw, Metadata& md, int
     wassert(actual_type(md.source()).is_source_blob("grib1", "", dw->absname, orig_fsize, data_size));
 }
 
-void test_append_transaction_rollback(dataset::segment::Segment* dw, Metadata& md)
+void test_append_transaction_rollback(dataset::Segment* dw, Metadata& md)
 {
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());

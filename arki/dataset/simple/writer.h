@@ -29,7 +29,7 @@ protected:
     index::Manifest* m_mft;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
-    segment::Segment* file(const Metadata& md, const std::string& format);
+    Segment* file(const Metadata& md, const std::string& format);
 
 public:
     Writer(const ConfigFile& cfg);
@@ -50,7 +50,7 @@ protected:
     index::Manifest* m_mft;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
-    segment::Segment* file(const Metadata& md, const std::string& format);
+    Segment* file(const Metadata& md, const std::string& format);
 
 public:
     Checker(const ConfigFile& cfg);

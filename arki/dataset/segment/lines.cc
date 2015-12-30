@@ -157,7 +157,7 @@ State Segment::check(const metadata::Collection& mds, bool quick)
     return fd::Segment::check(mds, 2, quick);
 }
 
-static segment::Segment* make_repack_segment(const std::string& relname, const std::string& absname)
+static fd::Segment* make_repack_segment(const std::string& relname, const std::string& absname)
 {
     unique_ptr<lines::Segment> res(new lines::Segment(relname, absname));
     res->truncate_and_open();

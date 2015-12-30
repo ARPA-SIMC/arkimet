@@ -159,7 +159,7 @@ def_test(2)
 {
     struct Test : public SegmentCheckTest
     {
-        dataset::segment::Segment* make_segment() override
+        dataset::Segment* make_segment() override
         {
             return new dir::Segment(format, relname, absname);
         }
@@ -171,7 +171,7 @@ def_test(3)
 {
     struct Test : public SegmentRemoveTest
     {
-        dataset::segment::Segment* make_segment() override
+        dataset::Segment* make_segment() override
         {
             return new dir::Segment(format, relname, absname);
         }

@@ -25,18 +25,18 @@ SegmentTest::~SegmentTest()
 {
 }
 
-unique_ptr<segment::Segment> SegmentTest::make_empty_segment()
+unique_ptr<Segment> SegmentTest::make_empty_segment()
 {
     // Clear potentially existing segments
     system(("rm -rf " + absname).c_str());
 
-    unique_ptr<segment::Segment> res(make_segment());
+    unique_ptr<Segment> res(make_segment());
     return res;
 }
 
-unique_ptr<segment::Segment> SegmentTest::make_full_segment()
+unique_ptr<Segment> SegmentTest::make_full_segment()
 {
-    unique_ptr<segment::Segment> res(make_empty_segment());
+    unique_ptr<Segment> res(make_empty_segment());
     for (unsigned i = 0; i < mdc.size(); ++i)
     {
         off_t ofs = res->append(mdc[i]);
@@ -47,7 +47,7 @@ unique_ptr<segment::Segment> SegmentTest::make_full_segment()
 
 void SegmentCheckTest::run()
 {
-    unique_ptr<segment::Segment> segment(make_full_segment());
+    unique_ptr<Segment> segment(make_full_segment());
     dataset::segment::State state;
 
     // A simple segment freshly imported is ok
@@ -124,7 +124,7 @@ void SegmentCheckTest::run()
 
 void SegmentRemoveTest::run()
 {
-    unique_ptr<segment::Segment> segment(make_full_segment());
+    unique_ptr<Segment> segment(make_full_segment());
 
     wassert(actual(sys::exists(absname)).istrue());
 

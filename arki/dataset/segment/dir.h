@@ -53,7 +53,7 @@ struct SequenceFile
     static std::string data_fname(size_t pos, const std::string& format);
 };
 
-class Segment : public segment::Segment
+class Segment : public dataset::Segment
 {
 public:
     std::string format;

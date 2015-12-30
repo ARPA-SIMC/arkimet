@@ -23,7 +23,7 @@ public:
     Pending repack(const std::string& rootdir, metadata::Collection& mds) override;
 };
 
-class HoleSegment : public Segment
+class HoleSegment : public concat::Segment
 {
 public:
     HoleSegment(const std::string& relname, const std::string& absname)

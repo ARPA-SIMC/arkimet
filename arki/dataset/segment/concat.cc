@@ -151,7 +151,7 @@ State Segment::check(const metadata::Collection& mds, bool quick)
     return fd::Segment::check(mds, 0, quick);
 }
 
-static segment::Segment* make_repack_segment(const std::string& relname, const std::string& absname)
+static fd::Segment* make_repack_segment(const std::string& relname, const std::string& absname)
 {
     unique_ptr<concat::Segment> res(new concat::Segment(relname, absname));
     res->truncate_and_open();
@@ -162,7 +162,7 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds)
     return fd::Segment::repack(rootdir, relname, mds, make_repack_segment);
 }
 
-static segment::Segment* make_repack_hole_segment(const std::string& relname, const std::string& absname)
+static fd::Segment* make_repack_hole_segment(const std::string& relname, const std::string& absname)
 {
     unique_ptr<concat::Segment> res(new concat::HoleSegment(relname, absname));
     res->truncate_and_open();

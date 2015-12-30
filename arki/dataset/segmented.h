@@ -41,7 +41,7 @@ protected:
      * Return an instance of the Segment for the file where the given metadata
      * should be written
      */
-    segment::Segment* file(const Metadata& md, const std::string& format);
+    Segment* file(const Metadata& md, const std::string& format);
 
 public:
     SegmentedWriter(const ConfigFile& cfg);
