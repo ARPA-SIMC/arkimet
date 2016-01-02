@@ -57,24 +57,6 @@ void impl_ensure_dispatches(Dispatcher& dispatcher, std::unique_ptr<Metadata> md
 
 unsigned count_results(dataset::Reader& ds, const dataset::DataQuery& dq);
 
-struct OutputChecker : public std::stringstream
-{
-	std::vector<std::string> lines;
-	bool split;
-
-	// Split the output into lines if it has not been done yet
-	void splitIfNeeded();
-
-    // Join the split and marked lines
-    std::string join() const;
-
-    OutputChecker();
-
-    void ignore_line_containing(const std::string& needle);
-    void ensure_line_contains(const std::string& needle);
-    void ensure_all_lines_seen();
-};
-
 struct ForceSqlite
 {
 	bool old;
