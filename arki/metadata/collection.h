@@ -11,6 +11,10 @@ namespace arki {
 struct Metadata;
 struct Summary;
 
+namespace types {
+struct Time;
+}
+
 namespace dataset {
 struct DataQuery;
 struct Reader;
@@ -124,10 +128,20 @@ public:
 	void sort(const sort::Compare& cmp);
 	void sort(const std::string& cmp);
 	void sort(); // Sort by reftime
+
+    /**
+     * Expand the given begin and end ranges to include the datetime extremes
+     * of this collection.
+     *
+     * If begin and end are unset, set them to the datetime extremes of this
+     * collection.
+     *
+     * Returns true if all the metadata items had a reftime set, false if some
+     * elements had no reftime information.
+     */
+    bool expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;
 };
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

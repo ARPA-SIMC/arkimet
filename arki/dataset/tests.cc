@@ -360,6 +360,7 @@ void DatasetTest::ensure_maint_clean(size_t filecount, const ConfigFile* wcfg)
 
 void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount, const ConfigFile* wcfg)
 {
+    nag::TestCollect tc;
     wassert(ensure_maint_clean(filecount, wcfg));
 
     unique_ptr<dataset::LocalReader> reader(makeLocalReader(wcfg));
@@ -368,6 +369,7 @@ void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount, con
 
     if (filecount > 0)
         wassert(actual_file(str::joinpath(reader->path(), idxfname())).exists());
+    tc.clear();
 }
 
 void DatasetTest::import_all(const testdata::Fixture& fixture)

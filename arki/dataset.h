@@ -251,10 +251,10 @@ public:
 
     /**
      * Expand the given begin and end ranges to include the datetime extremes
-     * of this manifest.
+     * of this dataset.
      *
      * If begin and end are unset, set them to the datetime extremes of this
-     * manifest.
+     * dataset.
      */
     virtual void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end);
 

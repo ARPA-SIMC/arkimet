@@ -1,5 +1,6 @@
 #include "collection.h"
 #include <arki/types/source/blob.h>
+#include <arki/types/reftime.h>
 #include <arki/utils/compress.h>
 #include <arki/binary.h>
 #include <arki/utils/sys.h>
@@ -318,7 +319,18 @@ void Collection::sort(const std::string& cmp)
 
 void Collection::sort()
 {
-	sort("");
+    sort("");
+}
+
+bool Collection::expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& until) const
+{
+    for (const auto& md: *this)
+    {
+        auto rt = md->get<types::Reftime>();
+        if (!rt) return false;
+        rt->expand_date_range(begin, until);
+    }
+    return true;
 }
 
 }

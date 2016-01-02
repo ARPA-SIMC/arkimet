@@ -42,7 +42,7 @@ struct Fixture : public DatasetTest {
     void clean_and_import(const ConfigFile* wcfg=0, const std::string& testfile="inbound/test.grib1")
     {
         DatasetTest::clean_and_import(wcfg, testfile);
-        ensure_localds_clean(3, 3, wcfg);
+        wassert(ensure_localds_clean(3, 3, wcfg));
     }
 };
 
@@ -101,7 +101,7 @@ add_method("acquire", [](Fixture& f) {
     ensure(sys::timestamp("testds/2007/07-08.grib1.summary") <= sys::timestamp("testds/" + f.idxfname()));
     ensure(files::hasDontpackFlagfile("testds"));
 
-    f.ensure_localds_clean(1, 2);
+    wassert(f.ensure_localds_clean(1, 2));
 });
 
 // Test appending to existing files
@@ -148,7 +148,7 @@ add_method("append", [](Fixture& f) {
     ensure(sys::timestamp("testds/20/2007.grib1.summary") <= sys::timestamp("testds/" + f.idxfname()));
 
     // Dataset is fine and clean
-    f.ensure_localds_clean(1, 2, &cfg);
+    wassert(f.ensure_localds_clean(1, 2, &cfg));
 });
 
 // Test maintenance scan on non-indexed files
@@ -197,7 +197,7 @@ add_method("scan_nonindexed", [](Fixture& f) {
     }
 
     // Everything should be fine now
-    f.ensure_localds_clean(1, 3);
+    wassert(f.ensure_localds_clean(1, 3));
 
     // Remove the file from the index
     {
@@ -215,7 +215,7 @@ add_method("scan_nonindexed", [](Fixture& f) {
     }
 
     // Query is still ok, but empty
-    f.ensure_localds_clean(0, 0);
+    wassert(f.ensure_localds_clean(0, 0));
 });
 
 // Test maintenance scan with missing metadata and summary
@@ -265,7 +265,7 @@ add_method("scan_missing_md_summary", [](Fixture& f) {
     }
 
     // Everything should be fine now
-    f.ensure_localds_clean(3, 3);
+    wassert(f.ensure_localds_clean(3, 3));
     ensure(sys::exists("testds/2007/07-08.grib1"));
     ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
     ensure(sys::exists("testds/2007/07-08.grib1.summary"));
@@ -344,7 +344,7 @@ add_method("scan_missing_summary", [](Fixture& f) {
     }
 
     // Everything should be fine now
-    f.ensure_localds_clean(3, 3);
+    wassert(f.ensure_localds_clean(3, 3));
     ensure(sys::exists("testds/2007/07-08.grib1"));
     ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
     ensure(sys::exists("testds/2007/07-08.grib1.summary"));
@@ -408,7 +408,7 @@ add_method("scan_compressed", [](Fixture& f) {
     ensure(sys::exists("testds/" + f.idxfname()));
 
     // Query is ok
-    f.ensure_localds_clean(3, 3);
+    wassert(f.ensure_localds_clean(3, 3));
 
 	// Try removing summary and metadata
 	setup.removemd();
@@ -448,7 +448,7 @@ add_method("scan_compressed", [](Fixture& f) {
     }
 
     // Everything should be fine now
-    f.ensure_localds_clean(3, 3);
+    wassert(f.ensure_localds_clean(3, 3));
     ensure(!sys::exists("testds/2007/07-08.grib1"));
     ensure(sys::exists("testds/2007/07-08.grib1.gz"));
     ensure(sys::exists("testds/2007/07-08.grib1.gz.idx"));
@@ -535,7 +535,7 @@ add_method("scan_missingdata", [](Fixture& f) {
     }
 
     // Everything should be fine now
-    f.ensure_localds_clean(2, 2);
+    wassert(f.ensure_localds_clean(2, 2));
     ensure(sys::exists("testds/" + f.idxfname()));
 
 
@@ -556,7 +556,7 @@ add_method("scan_missingdata", [](Fixture& f) {
     }
 
     // And everything else should still be queriable
-    f.ensure_localds_clean(2, 2);
+    wassert(f.ensure_localds_clean(2, 2));
     ensure(sys::exists("testds/" + f.idxfname()));
 });
 
