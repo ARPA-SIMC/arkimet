@@ -2,6 +2,7 @@
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/archive.h>
 #include <arki/dataset/maintenance.h>
+#include <arki/dataset/indexed.h>
 #include <arki/metadata/test-generator.h>
 #include <arki/metadata/consumer.h>
 #include <arki/scan/any.h>
@@ -98,7 +99,7 @@ struct Ondisk2Scenario : public Scenario
         using namespace dataset;
 
         // Override current date for maintenance to 2010-09-01 + curday
-        dataset::maintenance::TestOverrideCurrentDateForMaintenance od(t_start + 3600*24*(curday-1));
+        dataset::TestOverrideCurrentDateForMaintenance od(t_start + 3600*24*(curday-1));
 
         // Pack and archive
         unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));

@@ -1,5 +1,4 @@
 #include "config.h"
-
 #include <arki/dataset/maintenance.h>
 #include <arki/dataset/segmented.h>
 #include <arki/dataset/archive.h>
@@ -11,7 +10,6 @@
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
 #include <arki/scan/any.h>
-#include <arki/scan/dir.h>
 #include <arki/sort.h>
 #include <arki/nag.h>
 #include <algorithm>
@@ -47,119 +45,9 @@ namespace arki {
 namespace dataset {
 namespace maintenance {
 
-FindMissing::FindMissing(const std::string& root, segment::state_func next)
-    : next(next), disk(scan::dir(root, true))
-{
-    // Sort backwards because we read from the end
-    auto sorter = [](const std::string& a, const std::string& b) { return b < a; };
-    std::sort(disk.begin(), disk.end(), sorter);
-}
-
-void FindMissing::check(const std::string& relpath, segment::State state)
-{
-    while (not disk.empty() and disk.back() < relpath)
-    {
-        nag::verbose("FindMissing: %s is not in index", disk.back().c_str());
-        next(disk.back(), SEGMENT_NEW);
-        disk.pop_back();
-    }
-    if (!disk.empty() && disk.back() == relpath)
-    {
-        disk.pop_back();
-        next(relpath, state);
-    }
-    else // if (disk.empty() || disk.back() > file)
-    {
-        nag::verbose("FindMissing: %s has been deleted", relpath.c_str());
-        next(relpath, state - SEGMENT_UNALIGNED + SEGMENT_DELETED);
-    }
-}
-
-void FindMissing::end()
-{
-    while (not disk.empty())
-    {
-        nag::verbose("FindMissing: %s is not in index", disk.back().c_str());
-        next(disk.back(), SEGMENT_NEW);
-        disk.pop_back();
-    }
-}
-
-static time_t override_now = 0;
-
-TestOverrideCurrentDateForMaintenance::TestOverrideCurrentDateForMaintenance(time_t ts)
-{
-    old_ts = override_now;
-    override_now = ts;
-}
-TestOverrideCurrentDateForMaintenance::~TestOverrideCurrentDateForMaintenance()
-{
-    override_now = old_ts;
-}
-
-
-CheckAge::CheckAge(segment::state_func next, segment_timespan_func get_segment_timespan, int archive_age, int delete_age)
-    : next(next), get_segment_timespan(get_segment_timespan), archive_threshold(0, 0, 0), delete_threshold(0, 0, 0)
-{
-    time_t now = override_now ? override_now : time(NULL);
-    struct tm t;
-
-    // Go to the beginning of the day
-    now -= (now % (3600*24));
-
-    if (archive_age != -1)
-    {
-        time_t arc_thr = now - archive_age * 3600 * 24;
-        gmtime_r(&arc_thr, &t);
-        archive_threshold.set(t);
-    }
-    if (delete_age != -1)
-    {
-        time_t del_thr = now - delete_age * 3600 * 24;
-        gmtime_r(&del_thr, &t);
-        delete_threshold.set(t);
-    }
-}
-
-void CheckAge::operator()(const std::string& relpath, segment::State state)
-{
-    if (archive_threshold.vals[0] == 0 and delete_threshold.vals[0] == 0)
-        next(relpath, state);
-    else
-    {
-        types::Time start_time;
-        types::Time end_time;
-        if (!get_segment_timespan(relpath, start_time, end_time))
-        {
-            nag::verbose("CheckAge: cannot detect the timespan of segment %s", relpath.c_str());
-            next(relpath, state + SEGMENT_CORRUPTED);
-        }
-        else if (delete_threshold.vals[0] != 0 && delete_threshold >= end_time)
-        {
-            nag::verbose("CheckAge: %s is old enough to be deleted", relpath.c_str());
-            next(relpath, state + SEGMENT_DELETE_AGE);
-        }
-        else if (archive_threshold.vals[0] != 0 && archive_threshold >= end_time)
-        {
-            nag::verbose("CheckAge: %s is old enough to be archived", relpath.c_str());
-            next(relpath, state + SEGMENT_ARCHIVE_AGE);
-        }
-        else
-            next(relpath, state);
-    }
-}
-
 void Dumper::operator()(const std::string& file, segment::State state)
 {
     cerr << file << " " << state.to_string() << endl;
-}
-
-Tee::Tee(segment::state_func& one, segment::state_func& two) : one(one), two(two) {}
-Tee::~Tee() {}
-void Tee::operator()(const std::string& file, segment::State state)
-{
-	one(file, state);
-	two(file, state);
 }
 
 // Agent
