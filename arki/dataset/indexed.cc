@@ -23,6 +23,16 @@ TestOverrideCurrentDateForMaintenance::~TestOverrideCurrentDateForMaintenance()
 
 namespace {
 
+struct SegmentState
+{
+    std::string relpath;
+    segment::State state;
+
+    SegmentState(const std::string& relpath, segment::State state) : relpath(relpath), state(state) {}
+    SegmentState(const SegmentState&) = default;
+    SegmentState(SegmentState&&) = default;
+};
+
 /**
  * Check the age of segments in a dataset, to detect those that need to be
  * deleted or archived. It adds SEGMENT_DELETE_AGE or SEGMENT_ARCHIVE_AGE as needed.
@@ -30,66 +40,59 @@ namespace {
 struct CheckAge
 {
     typedef std::function<bool(const std::string&, types::Time&, types::Time&)> segment_timespan_func;
-    segment::state_func next;
     segment_timespan_func get_segment_timespan;
     types::Time archive_threshold;
     types::Time delete_threshold;
 
-    CheckAge(segment::state_func next, segment_timespan_func get_segment_timespan, int archive_age=-1, int delete_age=-1);
-
-    void operator()(const std::string& relpath, segment::State state);
-};
-
-CheckAge::CheckAge(segment::state_func next, segment_timespan_func get_segment_timespan, int archive_age, int delete_age)
-    : next(next), get_segment_timespan(get_segment_timespan), archive_threshold(0, 0, 0), delete_threshold(0, 0, 0)
-{
-    time_t now = override_now ? override_now : time(NULL);
-    struct tm t;
-
-    // Go to the beginning of the day
-    now -= (now % (3600*24));
-
-    if (archive_age != -1)
+    CheckAge(int archive_age=-1, int delete_age=-1)
+        : archive_threshold(0, 0, 0), delete_threshold(0, 0, 0)
     {
-        time_t arc_thr = now - archive_age * 3600 * 24;
-        gmtime_r(&arc_thr, &t);
-        archive_threshold.set(t);
+        time_t now = override_now ? override_now : time(NULL);
+        struct tm t;
+
+        // Go to the beginning of the day
+        now -= (now % (3600*24));
+
+        if (archive_age != -1)
+        {
+            time_t arc_thr = now - archive_age * 3600 * 24;
+            gmtime_r(&arc_thr, &t);
+            archive_threshold.set(t);
+        }
+        if (delete_age != -1)
+        {
+            time_t del_thr = now - delete_age * 3600 * 24;
+            gmtime_r(&del_thr, &t);
+            delete_threshold.set(t);
+        }
     }
-    if (delete_age != -1)
-    {
-        time_t del_thr = now - delete_age * 3600 * 24;
-        gmtime_r(&del_thr, &t);
-        delete_threshold.set(t);
-    }
-}
 
-void CheckAge::operator()(const std::string& relpath, segment::State state)
-{
-    if (archive_threshold.vals[0] == 0 and delete_threshold.vals[0] == 0)
-        next(relpath, state);
-    else
+    segment::State check(const std::string& relpath, segment::State state)
     {
+        if (archive_threshold.vals[0] == 0 and delete_threshold.vals[0] == 0)
+            return state;
+
         types::Time start_time;
         types::Time end_time;
         if (!get_segment_timespan(relpath, start_time, end_time))
         {
             nag::verbose("CheckAge: cannot detect the timespan of segment %s", relpath.c_str());
-            next(relpath, state + SEGMENT_CORRUPTED);
+            return state + SEGMENT_CORRUPTED;
         }
         else if (delete_threshold.vals[0] != 0 && delete_threshold >= end_time)
         {
             nag::verbose("CheckAge: %s is old enough to be deleted", relpath.c_str());
-            next(relpath, state + SEGMENT_DELETE_AGE);
+            return state + SEGMENT_DELETE_AGE;
         }
         else if (archive_threshold.vals[0] != 0 && archive_threshold >= end_time)
         {
             nag::verbose("CheckAge: %s is old enough to be archived", relpath.c_str());
-            next(relpath, state + SEGMENT_ARCHIVE_AGE);
+            return state + SEGMENT_ARCHIVE_AGE;
         }
         else
-            next(relpath, state);
+            return state;
     }
-}
+};
 
 /**
  * Scan the files actually present inside a directory and compare them with a
@@ -108,58 +111,52 @@ void CheckAge::operator()(const std::string& relpath, segment::State state)
  */
 struct FindMissing
 {
-    segment::state_func& next;
     std::vector<std::string> disk;
+    std::vector<SegmentState> results;
 
-    FindMissing(const std::string& root, segment::state_func next);
+    FindMissing(const std::string& root)
+        : disk(scan::dir(root, true))
+    {
+        // Sort backwards because we read from the end
+        auto sorter = [](const std::string& a, const std::string& b) { return b < a; };
+        std::sort(disk.begin(), disk.end(), sorter);
+    }
     FindMissing(const FindMissing&) = delete;
     FindMissing& operator=(const FindMissing&) = delete;
 
     // files: a, b, c,    e, f, g
     // index:       c, d, e, f, g
 
-    void check(const std::string& relpath, segment::State state);
-    void end();
+    void check(const std::string& relpath, segment::State state)
+    {
+        while (not disk.empty() and disk.back() < relpath)
+        {
+            nag::verbose("FindMissing: %s is not in index", disk.back().c_str());
+            results.emplace_back(disk.back(), SEGMENT_NEW);
+            disk.pop_back();
+        }
+        if (!disk.empty() && disk.back() == relpath)
+        {
+            disk.pop_back();
+            results.emplace_back(relpath, state);
+        }
+        else // if (disk.empty() || disk.back() > file)
+        {
+            nag::verbose("FindMissing: %s has been deleted", relpath.c_str());
+            results.emplace_back(relpath, state - SEGMENT_UNALIGNED + SEGMENT_DELETED);
+        }
+    }
+
+    void end()
+    {
+        while (not disk.empty())
+        {
+            nag::verbose("FindMissing: %s is not in index", disk.back().c_str());
+            results.emplace_back(disk.back(), SEGMENT_NEW);
+            disk.pop_back();
+        }
+    }
 };
-
-FindMissing::FindMissing(const std::string& root, segment::state_func next)
-    : next(next), disk(scan::dir(root, true))
-{
-    // Sort backwards because we read from the end
-    auto sorter = [](const std::string& a, const std::string& b) { return b < a; };
-    std::sort(disk.begin(), disk.end(), sorter);
-}
-
-void FindMissing::check(const std::string& relpath, segment::State state)
-{
-    while (not disk.empty() and disk.back() < relpath)
-    {
-        nag::verbose("FindMissing: %s is not in index", disk.back().c_str());
-        next(disk.back(), SEGMENT_NEW);
-        disk.pop_back();
-    }
-    if (!disk.empty() && disk.back() == relpath)
-    {
-        disk.pop_back();
-        next(relpath, state);
-    }
-    else // if (disk.empty() || disk.back() > file)
-    {
-        nag::verbose("FindMissing: %s has been deleted", relpath.c_str());
-        next(relpath, state - SEGMENT_UNALIGNED + SEGMENT_DELETED);
-    }
-}
-
-void FindMissing::end()
-{
-    while (not disk.empty())
-    {
-        nag::verbose("FindMissing: %s is not in index", disk.back().c_str());
-        next(disk.back(), SEGMENT_NEW);
-        disk.pop_back();
-    }
-}
-
 
 }
 
@@ -219,40 +216,41 @@ void IndexedChecker::maintenance(segment::state_func v, bool quick)
     // TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
     // and delete the index if it fails
 
-    CheckAge::segment_timespan_func get_segment_timespan;
+    // First pass: detect files that have been added or removed compared to the
+    // index
+
+    // FindMissing accumulates states instead of acting on files right away;
+    // this has the desirable side effect of avoiding modifying the index while
+    // it is being iterated
+    FindMissing fm(m_path);
+    m_idx->scan_files([&](const std::string& relname, segment::State state, const metadata::Collection& mds) {
+        if (state.is_ok())
+            state = m_segment_manager->check(relname, mds, quick);
+        fm.check(relname, state);
+    });
+    fm.end();
+
+
+    // Second pass: checking if segments are old enough to be deleted or
+    // archived
+
+    CheckAge ca(m_archive_age, m_delete_age);
     if (m_step)
     {
         // If we have a step, try and use it to get the timespan without hitting the index
-        get_segment_timespan = [&](const std::string& relpath, types::Time& begin, types::Time& until) {
+        ca.get_segment_timespan = [&](const std::string& relpath, types::Time& begin, types::Time& until) {
             if (m_step->path_timespan(relpath, begin, until))
                 return true;
             return m_idx->segment_timespan(relpath, begin, until);
         };
     } else {
-        get_segment_timespan = [&](const std::string& relpath, types::Time& begin, types::Time& until) {
+        ca.get_segment_timespan = [&](const std::string& relpath, types::Time& begin, types::Time& until) {
             return m_idx->segment_timespan(relpath, begin, until);
         };
     }
 
-    // Accumulate states instead of acting on files right away, to avoid
-    // modifying the index while it is being iterated
-    std::vector<std::pair<std::string, segment::State>> states;
-    CheckAge ca([&](const std::string& relname, segment::State state) {
-        states.emplace_back(relname, state);
-    }, get_segment_timespan, m_archive_age, m_delete_age);
-    FindMissing fm(m_path, [&](const std::string& relname, segment::State state) {
-        ca(relname, state);
-    });
-    m_idx->scan_files([&](const std::string& relname, segment::State state, const metadata::Collection& mds) {
-        if (!state.is_ok())
-            fm.check(relname, state);
-        else
-            fm.check(relname, m_segment_manager->check(relname, mds, quick));
-    });
-    fm.end();
-
-    for (const auto& s: states)
-        v(s.first, s.second);
+    for (const auto& i: fm.results)
+        v(i.relpath, ca.check(i.relpath, i.state));
 
     SegmentedChecker::maintenance(v, quick);
 }
