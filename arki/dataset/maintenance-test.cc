@@ -24,22 +24,14 @@ using namespace arki::utils;
 namespace {
 
 struct Fixture : public DatasetTest {
-    string extracfg;
-
-    Fixture(const std::string& extracfg)
-        : extracfg(extracfg)
-    {
-    }
+    using DatasetTest::DatasetTest;
 
     void test_setup()
     {
-        std::stringstream in(extracfg);
-        cfg.clear();
-        cfg.parse(in, "(memory)");
-        cfg.setValue("path", sys::abspath("testds"));
-        cfg.setValue("name", "testds");
-        cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
-        cfg.setValue("step", "daily");
+        DatasetTest::test_setup(R"(
+            unique=reftime, origin, product, level, timerange, area
+            step=daily
+        )");
     }
 
     void test_teardown()

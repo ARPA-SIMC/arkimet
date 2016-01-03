@@ -11,7 +11,7 @@
 #include "arki/utils/sys.h"
 #include "arki/scan/any.h"
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
@@ -20,126 +20,25 @@ using namespace arki::utils;
 using namespace arki::dataset;
 using namespace arki::dataset::index;
 
-struct arki_dataset_index_manifest_shar : public DatasetTest {
-	arki_dataset_index_manifest_shar()
-	{
-		system("rm -rf testds");
-		system("mkdir testds");
-		system("mkdir testds/.archive");
-		system("mkdir testds/.archive/last");
-	}
-
-	std::string idxfname() const
-	{
-		return Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
-	}
-};
-TESTGRP(arki_dataset_index_manifest);
-
-// Acquire and query
-def_test(1)
+class Tests : public TestCase
 {
-    // Empty dirs do not show up as having a manifest
-    ensure(!Manifest::exists("testds/.archive/last"));
+    using TestCase::TestCase;
 
-    // An empty MANIFEST file counts as an empty manifest
-    system("touch testds/.archive/last/MANIFEST");
-    ensure(Manifest::exists("testds/.archive/last"));
-    sys::unlink_ifexists("testds/.archive/last/MANIFEST");
+    void register_tests() override;
+} test("arki_dataset_index_manifest");
 
-    // Same if there is a sqlite manifest
-    system("touch testds/.archive/last/index.sqlite");
-    ensure(Manifest::exists("testds/.archive/last"));
-    sys::unlink_ifexists("testds/.archive/last/index.sqlite");
+void clean()
+{
+    if (sys::exists("testds"))
+        sys::rmtree("testds");
+    sys::makedirs("testds/.archive/last");
 }
 
-
-// Test accessing empty manifests
-def_test(2)
+std::string idxfname()
 {
-	// Opening a missing manifest read only fails
-	{
-		ensure(!Manifest::exists("testds/.archive/last/" + idxfname()));
-		std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
-		try {
-			m->openRO();
-			ensure(false);
-		} catch (std::exception& e) {
-			ensure(string(e.what()).find("does not exist") != string::npos);
-		}
-	}
-
-	// But an empty dataset
-	{
-		std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
-		m->openRW();
-	}
-
-	std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
-	m->openRO();
-
-	vector<string> files;
-	m->fileList(Matcher(), files);
-	ensure(files.empty());
+    return Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
-// Retest with sqlite
-
-// Test creating a new manifest
-def_test(4)
-{
-    // Opening a missing manifest read-write creates a new one
-    ensure(!sys::exists("testds/.archive/last/" + idxfname()));
-    std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
-    m->openRW();
-    m->flush();
-    ensure(sys::exists("testds/.archive/last/" + idxfname()));
-
-    size_t count = 0;
-    m->list_segments([&](const std::string&) { ++count; });
-    wassert(actual(count) == 0u);
-
-    m->scan_files([&](const std::string&, segment::State, const metadata::Collection&) { ++count; });
-    wassert(actual(count) == 0u);
-
-    m->vacuum();
-}
-
-// Retest with sqlite
-
-
-// Test adding and removing files
-def_test(6)
-{
-	system("cp inbound/test.grib1 testds/.archive/last/a.grib1");
-	system("mkdir testds/.archive/last/foo");
-	system("cp inbound/test.grib1 testds/.archive/last/foo/b.grib1");
-
-	std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
-	m->openRW();
-
-    Summary s;
-    scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) { s.add(*md); return true; });
-
-	m->acquire("a.grib1", 1000010, s);
-	m->acquire("foo/b.grib1", 1000011, s);
-
-	vector<string> files;
-	m->fileList(Matcher(), files);
-	ensure_equals(files.size(), 2u);
-	ensure_equals(files[0], "a.grib1");
-	ensure_equals(files[1], "foo/b.grib1");
-
-	m->remove("a.grib1");
-	files.clear();
-	m->fileList(Matcher(), files);
-	ensure_equals(files.size(), 1u);
-	ensure_equals(files[0], "foo/b.grib1");
-}
-
-// Retest with sqlite
-
-namespace {
 struct IndexingCollector : public MaintenanceCollector
 {
 	Manifest& m;
@@ -166,11 +65,113 @@ struct IndexingCollector : public MaintenanceCollector
         }
     }
 };
-}
+
+void Tests::register_tests() {
+
+add_method("exists", [] {
+    clean();
+
+    // Empty dirs do not show up as having a manifest
+    ensure(!Manifest::exists("testds/.archive/last"));
+
+    // An empty MANIFEST file counts as an empty manifest
+    system("touch testds/.archive/last/MANIFEST");
+    ensure(Manifest::exists("testds/.archive/last"));
+    sys::unlink_ifexists("testds/.archive/last/MANIFEST");
+
+    // Same if there is a sqlite manifest
+    system("touch testds/.archive/last/index.sqlite");
+    ensure(Manifest::exists("testds/.archive/last"));
+    sys::unlink_ifexists("testds/.archive/last/index.sqlite");
+});
+
+// Test accessing empty manifests
+add_method("empty", [] {
+    clean();
+
+	// Opening a missing manifest read only fails
+	{
+		ensure(!Manifest::exists("testds/.archive/last/" + idxfname()));
+		std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+		try {
+			m->openRO();
+			ensure(false);
+		} catch (std::exception& e) {
+			ensure(string(e.what()).find("does not exist") != string::npos);
+		}
+	}
+
+	// But an empty dataset
+	{
+		std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+		m->openRW();
+	}
+
+	std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+	m->openRO();
+
+	vector<string> files;
+	m->fileList(Matcher(), files);
+	ensure(files.empty());
+});
+
+// Test creating a new manifest
+add_method("create", [] {
+    clean();
+
+    // Opening a missing manifest read-write creates a new one
+    ensure(!sys::exists("testds/.archive/last/" + idxfname()));
+    std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+    m->openRW();
+    m->flush();
+    ensure(sys::exists("testds/.archive/last/" + idxfname()));
+
+    size_t count = 0;
+    m->list_segments([&](const std::string&) { ++count; });
+    wassert(actual(count) == 0u);
+
+    m->scan_files([&](const std::string&, segment::State, const metadata::Collection&) { ++count; });
+    wassert(actual(count) == 0u);
+
+    m->vacuum();
+});
+
+// Test adding and removing files
+add_method("add_remove", [] {
+    clean();
+
+	system("cp inbound/test.grib1 testds/.archive/last/a.grib1");
+	system("mkdir testds/.archive/last/foo");
+	system("cp inbound/test.grib1 testds/.archive/last/foo/b.grib1");
+
+	std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+	m->openRW();
+
+    Summary s;
+    scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) { s.add(*md); return true; });
+
+	m->acquire("a.grib1", 1000010, s);
+	m->acquire("foo/b.grib1", 1000011, s);
+
+	vector<string> files;
+	m->fileList(Matcher(), files);
+	ensure_equals(files.size(), 2u);
+	ensure_equals(files[0], "a.grib1");
+	ensure_equals(files[1], "foo/b.grib1");
+
+	m->remove("a.grib1");
+	files.clear();
+	m->fileList(Matcher(), files);
+	ensure_equals(files.size(), 1u);
+	ensure_equals(files[0], "foo/b.grib1");
+});
+
+// TODO: Retest with sqlite
 
 // Test modifying index during scanning/listing of segments
-def_test(8)
-{
+add_method("modify_while_scanning", [] {
+    clean();
+
 #warning TODO: move to index-test once acquire is part of the index interface
     // Index data about a sample file
     time_t mtime = sys::timestamp("inbound/test-sorted.grib1");
@@ -223,6 +224,8 @@ def_test(8)
         m->list_segments([&](const std::string&) { ++count; });
         wassert(actual(count) == 5u);
     }
+});
+
 }
 
 }

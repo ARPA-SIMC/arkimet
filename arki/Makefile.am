@@ -538,7 +538,7 @@ tests_arki_test_SOURCES += \
 		dataset/index-test.cc \
 		dataset/index/base-tut.cc \
 		dataset/index/attr-tut.cc \
-		dataset/index/manifest-tut.cc \
+		dataset/index/manifest-test.cc \
 		dataset/index/aggregate-tut.cc \
 		dataset/index/summarycache-tut.cc \
 		dataset/index/contents-tut.cc \
@@ -549,14 +549,14 @@ tests_arki_test_SOURCES += \
 		dataset/file-tut.cc \
 		dataset/archive-test.cc \
 		dataset/simple/datafile-tut.cc \
-		dataset/simple/reader-tut.cc \
+		dataset/simple/reader-test.cc \
 		dataset/simple/writer-test.cc \
 		dataset/ondisk2-tut.cc \
 		dataset/ondisk2/reader-tut.cc \
 		dataset/ondisk2/writer-test.cc \
 		dataset/ondisk2/test-utils.cc \
-		dataset/http/server-tut.cc \
-		dataset/http/inbound-tut.cc \
+		dataset/http/server-test.cc \
+		dataset/http/inbound-test.cc \
 		dataset/http/test-utils.cc \
 		dataset/outbound-tut.cc \
 		dataset/offline-test.cc \
@@ -571,7 +571,7 @@ tests_arki_test_SOURCES += \
 		querymacro-tut.cc \
 		datasetpool-tut.cc \
 		dispatcher-tut.cc \
-		runtime/processor-tut.cc \
+		runtime/processor-test.cc \
 		runtime-test.cc
 
 if CURL

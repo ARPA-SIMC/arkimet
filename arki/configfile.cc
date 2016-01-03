@@ -52,6 +52,7 @@ void ConfigFile::clear()
     for (std::map<string, ConfigFile*>::iterator i = sections.begin();
             i != sections.end(); ++i)
         delete i->second;
+    sections.clear();
 }
 
 struct ConfigFileParserHelper
@@ -162,6 +163,12 @@ void ConfigFile::parse(std::istream& in, const std::string& fileName)
 		}
 		++h.line;
 	}
+}
+
+void ConfigFile::parse(const std::string& in, const std::string& file_name)
+{
+    stringstream ss(in);
+    parse(ss, file_name);
 }
 
 void ConfigFile::parseSection(ConfigFileParserHelper& h, std::istream& in)

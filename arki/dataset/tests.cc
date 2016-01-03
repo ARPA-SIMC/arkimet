@@ -102,7 +102,8 @@ DatasetTestDefaultConfig::~DatasetTestDefaultConfig()
 }
 #endif
 
-DatasetTest::DatasetTest()
+DatasetTest::DatasetTest(const std::string& cfg_instance)
+    : cfg_instance(cfg_instance), ds_name("testds"), ds_root(sys::abspath("testds"))
 {
     //if (default_datasettest_config)
         //cfg = *default_datasettest_config;

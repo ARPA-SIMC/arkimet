@@ -71,7 +71,13 @@ int days_since(int year, int month, int day);
 // Return the file name of the Manifest index
 std::string manifest_idx_fname();
 
-// Base class for dataset tests
+/**
+ * Test fixture to test a dataset.
+ *
+ * It is initialized with the dataset configuration and takes care of
+ * instantiating readers, writers and checkers, and to provide common functions
+ * to test them.
+ */
 struct DatasetTest : public Fixture
 {
     enum Counted {
@@ -86,13 +92,39 @@ struct DatasetTest : public Fixture
         COUNTED_MAX,
     };
 
-    // Default dataset configuration (to be filled by subclasser)
+    /*
+     * Default dataset configuration, regenerated each time by test_setup by
+     * concatenating cfg_default and cfg_instance.
+     *
+     * The 'path' value of the configuration will always be set to the absolute
+     * path of the root of the dataset (ds_root)
+     *
+     * The 'name' value of the configuration will always be set to ds_name.
+     */
     ConfigFile cfg;
+    // Extra configuration for this instance of this fixture
+    std::string cfg_instance;
+    // Dataset name (always "testds")
+    std::string ds_name;
+    // Dataset root directory
+    std::string ds_root;
     dataset::segment::SegmentManager* segment_manager = nullptr;
     Metadata import_results[3];
 
-    DatasetTest();
+    /**
+     * @param cfg_tail
+     *   Snippet of configuration that will be parsed by test_setup
+     */
+    DatasetTest(const std::string& cfg_instance=std::string());
     ~DatasetTest();
+
+    void test_setup(const std::string& cfg_default=std::string())
+    {
+        cfg.clear();
+        cfg.parse(cfg_default + "\n" + cfg_instance + "\n");
+        cfg.setValue("path", ds_root);
+        cfg.setValue("name", ds_name);
+    }
 
     dataset::segment::SegmentManager& segments();
 

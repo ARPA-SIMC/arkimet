@@ -14,7 +14,6 @@
 #include <arki/utils/sys.h>
 #include <arki/wibble/grcal/grcal.h>
 
-namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
@@ -23,25 +22,38 @@ using namespace arki::utils;
 using namespace arki::tests;
 using namespace arki::dataset::simple;
 
-struct arki_dataset_simple_reader_shar : public arki::tests::DatasetTest {
-	arki_dataset_simple_reader_shar()
-	{
-		cfg.setValue("path", "testds");
-		cfg.setValue("name", "testds");
-		cfg.setValue("type", "simple");
-		cfg.setValue("step", "daily");
-		cfg.setValue("postprocess", "testcountbytes");
+namespace {
 
-		clean_and_import();
-	}
+struct Fixture : public DatasetTest {
+    using DatasetTest::DatasetTest;
+
+    void test_setup()
+    {
+        DatasetTest::test_setup(R"(
+            type = simple
+            step = daily
+            postprocess = testcountbytes
+        )");
+
+        clean_and_import();
+    }
 };
-TESTGRP(arki_dataset_simple_reader);
 
+class Tests : public FixtureTestCase<Fixture>
+{
+    using FixtureTestCase::FixtureTestCase;
+
+    void register_tests() override;
+};
+
+Tests test_plain("arki_dataset_simple_reader_plain");
+Tests test_sqlite("arki_dataset_simple_reader_sqlite", "index_type=sqlite");
+
+void Tests::register_tests() {
 
 // Test querying with postprocessing
-def_test(1)
-{
-    unique_ptr<simple::Reader> reader(makeSimpleReader());
+add_method("postprocess", [](Fixture& f) {
+    unique_ptr<simple::Reader> reader(f.makeSimpleReader());
 
     dataset::ByteQuery bq;
     bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "testcountbytes");
@@ -49,7 +61,7 @@ def_test(1)
 
     string out = sys::read_file("testcountbytes.out");
     ensure_equals(out, "7399\n");
-}
+});
 
 #if 0
 // Acquire and query
@@ -146,5 +158,5 @@ def_test(8)
 
 #endif
 
-
+}
 }

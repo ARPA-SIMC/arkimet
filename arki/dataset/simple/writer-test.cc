@@ -27,15 +27,14 @@ static inline const types::AssignedDataset* getDataset(const Metadata& md)
 }
 
 struct Fixture : public DatasetTest {
-    Fixture() {}
+    using DatasetTest::DatasetTest;
 
     void test_setup()
     {
-        cfg.clear();
-        cfg.setValue("path", sys::abspath("testds"));
-        cfg.setValue("name", "testds");
-        cfg.setValue("type", "simple");
-        cfg.setValue("step", "daily");
+        DatasetTest::test_setup(R"(
+            type=simple
+            step=daily
+        )");
     }
 
     // Recreate the dataset importing data into it

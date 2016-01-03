@@ -176,6 +176,13 @@ public:
 	void parse(std::istream& in, const std::string& fileName);
 
     /**
+     * Parse configuration from the given string.
+     *
+     * The values and sections that are found are added to this ConfigFile.
+     */
+    void parse(const std::string& in, const std::string& file_name="memory buffer");
+
+    /**
      * Output this configuration to the given output stream
      */
     void output(std::ostream& out, const std::string& fileName, const std::string& secName=std::string()) const;
