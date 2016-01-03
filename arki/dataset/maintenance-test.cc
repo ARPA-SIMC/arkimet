@@ -545,58 +545,6 @@ class Tests : public FixtureTestCase<Fixture>
             wruntest(f.test_deleted_index_check, testdata::VM2Data());
             wruntest(f.test_deleted_index_check, testdata::ODIMData());
         });
-        add_method("scan_randomfiles", [](Fixture& f) {
-            // Test recreating a dataset from random datafiles
-            system("rm -rf testds");
-            system("mkdir testds");
-            system("mkdir testds/foo");
-            system("mkdir testds/foo/bar");
-            system("cp inbound/test.grib1 testds/foo/bar/");
-            system("echo 'GRIB garbage 7777' > testds/foo/bar/test.grib1.tmp");
-
-            // See if the files to index are detected in the correct number
-            {
-                auto writer(f.makeLocalChecker());
-                MaintenanceResults expected(false, 1);
-                expected.by_type[DatasetTest::COUNTED_NEW] = 1;
-                wassert(actual(writer.get()).maintenance(expected));
-            }
-
-            // Perform full maintenance and check that things are still ok afterwards
-            {
-                auto writer(f.makeLocalChecker());
-                ReporterExpected e;
-                e.rescanned.emplace_back("testds", "foo/bar/test.grib1");
-                wassert(actual(writer.get()).check(e, true, true));
-
-                // A repack is still needed because the data is not sorted by reftime
-                MaintenanceResults expected(false, 1);
-                expected.by_type[DatasetTest::COUNTED_DIRTY] = 1;
-                wassert(actual(writer.get()).maintenance(expected));
-            }
-
-            ensure(sys::exists("testds/foo/bar/test.grib1.tmp"));
-            ensure_equals(sys::size("testds/foo/bar/test.grib1"), 44412u);
-
-            // Perform packing and check that things are still ok afterwards
-            {
-                auto writer(f.makeLocalChecker());
-                ReporterExpected e;
-                e.repacked.emplace_back("testds", "foo/bar/test.grib1");
-                wassert(actual(writer.get()).repack(e, true));
-            }
-            wassert(actual(f.makeLocalChecker().get()).maintenance_clean(1));
-
-            ensure_equals(sys::size("testds/foo/bar/test.grib1"), 44412u);
-
-            // Test querying
-            {
-                std::unique_ptr<Reader> reader(f.makeReader(&f.cfg));
-                metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,200"));
-                ensure_equals(mdc.size(), 1u);
-                wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testds"), "foo/bar/test.grib1", 34960, 7218));
-            }
-        });
         add_method("repack_timestamps", [](Fixture& f) {
             // Ensure that if repacking changes the data file timestamp, it reindexes it properly
             f.clean_and_import();
@@ -625,31 +573,22 @@ class Tests : public FixtureTestCase<Fixture>
             // Ensure that the archive is still clean
             wassert(actual(f.makeLocalChecker().get()).maintenance_clean(3));
         });
-        add_method("repack_timestamps", [](Fixture& f) {
+        add_method("repack_delete", [](Fixture& f) {
             // Test accuracy of maintenance scan, on a dataset with one file to both repack and delete
+            f.cfg.setValue("step", "yearly");
 
             // Data are from 07, 08, 10 2007
             int treshold[6] = { 2008, 1, 1, 0, 0, 0 };
             int now[6];
             wibble::grcal::date::now(now);
             long long int duration = wibble::grcal::date::duration(treshold, now);
+            f.cfg.setValue("delete age", duration/(3600*24));
 
-            system("rm -rf testds");
-            system("mkdir testds");
-            system("mkdir testds/2007");
-            system("cp inbound/test.grib1 testds/2007/");
+            testdata::GRIBData data;
+            f.import_all(data);
 
-            ConfigFile cfg = f.cfg;
-            cfg.setValue("step", "yearly");
-            cfg.setValue("delete age", duration/(3600*24));
-
-            // Run maintenance to build the dataset
             {
-                auto writer(f.makeLocalChecker(&cfg));
-                ReporterExpected e;
-                e.rescanned.emplace_back("testds", "2007/test.grib1");
-                wassert(actual(writer.get()).check(e, true, true));
-
+                auto writer(f.makeLocalChecker());
                 arki::tests::MaintenanceResults expected(false, 1);
                 // A repack is still needed because the data is not sorted by reftime
                 expected.by_type[DatasetTest::COUNTED_DIRTY] = 1;
@@ -660,45 +599,35 @@ class Tests : public FixtureTestCase<Fixture>
 
             // Perform packing and check that things are still ok afterwards
             {
-                auto writer(f.makeLocalChecker(&cfg));
+                auto writer(f.makeLocalChecker());
                 ReporterExpected e;
-                e.deleted.emplace_back("testds", "2007/test.grib1");
+                e.deleted.emplace_back("testds", "20/2007.grib1");
                 wassert(actual(writer.get()).repack(e, true));
             }
             wassert(actual(f.makeLocalChecker().get()).maintenance_clean(0));
 
             // Perform full maintenance and check that things are still ok afterwards
             {
-                auto checker(f.makeLocalChecker(&cfg));
+                auto checker(f.makeLocalChecker());
                 wassert(actual(checker.get()).check_clean(true, true));
             }
         });
         add_method("scan_repack_archive", [](Fixture& f) {
             // Test accuracy of maintenance scan, on a dataset with one file to both repack and archive
+            f.cfg.setValue("step", "yearly");
 
             // Data are from 07, 08, 10 2007
             int treshold[6] = { 2008, 1, 1, 0, 0, 0 };
             int now[6];
             wibble::grcal::date::now(now);
             long long int duration = wibble::grcal::date::duration(treshold, now);
+            f.cfg.setValue("archive age", duration/(3600*24));
 
-            system("rm -rf testds");
-            system("mkdir testds");
-            system("mkdir testds/2007");
-            system("cp inbound/test.grib1 testds/2007/");
+            testdata::GRIBData data;
+            f.import_all(data);
 
-            ConfigFile cfg = f.cfg;
-            cfg.setValue("step", "yearly");
-            cfg.setValue("archive age", duration/(3600*24));
-
-            // Run maintenance to build the dataset
             {
-                auto writer(f.makeLocalChecker(&cfg));
-
-                ReporterExpected e;
-                e.rescanned.emplace_back("testds", "2007/test.grib1");
-                wassert(actual(writer.get()).check(e, true, true));
-
+                auto writer(f.makeLocalChecker());
                 MaintenanceResults expected(false, 1);
                 // A repack is still needed because the data is not sorted by reftime
                 expected.by_type[DatasetTest::COUNTED_DIRTY] = 1;
@@ -709,11 +638,11 @@ class Tests : public FixtureTestCase<Fixture>
 
             // Perform packing and check that things are still ok afterwards
             {
-                auto writer(f.makeLocalChecker(&cfg));
+                auto writer(f.makeLocalChecker());
 
                 ReporterExpected e;
-                e.repacked.emplace_back("testds", "2007/test.grib1");
-                e.archived.emplace_back("testds", "2007/test.grib1");
+                e.repacked.emplace_back("testds", "20/2007.grib1");
+                e.archived.emplace_back("testds", "20/2007.grib1");
                 wassert(actual(writer.get()).repack(e, true));
             }
         });
