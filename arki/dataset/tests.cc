@@ -134,11 +134,6 @@ std::string manifest_idx_fname()
     return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
-std::string DatasetTest::arcidxfname() const
-{
-	return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
-}
-
 std::unique_ptr<Reader> DatasetTest::makeReader(const ConfigFile* wcfg)
 {
     if (!wcfg) wcfg = &cfg;

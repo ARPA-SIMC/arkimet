@@ -130,8 +130,6 @@ struct DatasetTest : public Fixture
 
 	// Return the file name of the index of the current dataset
 	std::string idxfname(const ConfigFile* wcfg = 0) const;
-	// Return the file name of the archive index of the current dataset
-	std::string arcidxfname() const;
 
     std::unique_ptr<dataset::Reader> makeReader(const ConfigFile* wcfg=0);
     std::unique_ptr<dataset::Writer> makeWriter(const ConfigFile* wcfg=0);
