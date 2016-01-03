@@ -144,17 +144,15 @@ add_method("append", [](Fixture& f) {
 
 // Test maintenance scan on non-indexed files
 add_method("scan_nonindexed", [](Fixture& f) {
-	struct Setup {
-		void operator() ()
-		{
-			system("rm -rf testds");
-			system("mkdir testds");
-			system("mkdir testds/2007");
-			system("cp inbound/test-sorted.grib1 testds/2007/07-08.grib1");
-		}
-	} setup;
+    f.cfg.setValue("step", "monthly");
 
-	setup();
+    // Create a new segment, not in the index
+    testdata::GRIBData data;
+    sys::makedirs("testds/2007");
+    // TODO: use segments also in the other tests, and instantiate a new test suite for different segment types
+    Segment* s = f.segments().get_segment("2007/07.grib1");
+    s->append(data.test_data[1].md);
+    s->append(data.test_data[0].md);
 
     // Query now is ok, but empty
     {
@@ -178,7 +176,7 @@ add_method("scan_nonindexed", [](Fixture& f) {
         // Check should reindex the file
         {
             ReporterExpected e;
-            e.rescanned.emplace_back("testds", "2007/07-08.grib1");
+            e.rescanned.emplace_back("testds", "2007/07.grib1");
             wassert(actual(writer).check(e, true, true));
         }
 
@@ -188,12 +186,12 @@ add_method("scan_nonindexed", [](Fixture& f) {
     }
 
     // Everything should be fine now
-    wassert(f.ensure_localds_clean(1, 3));
+    wassert(f.ensure_localds_clean(1, 2));
 
     // Remove the file from the index
     {
         dataset::simple::Checker writer(f.cfg);
-        writer.removeFile("2007/07-08.grib1", false);
+        writer.removeFile("2007/07.grib1", false);
     }
 
     // Repack should delete the files not in index
@@ -201,7 +199,7 @@ add_method("scan_nonindexed", [](Fixture& f) {
         dataset::simple::Checker writer(f.cfg);
 
         ReporterExpected e;
-        e.deleted.emplace_back("testds", "2007/07-08.grib1", "44412 freed");
+        e.deleted.emplace_back("testds", "2007/07.grib1", "42178 freed");
         wassert(actual(writer).repack(e, true));
     }
 
