@@ -118,13 +118,11 @@ struct DatasetTest : public Fixture
     DatasetTest(const std::string& cfg_instance=std::string());
     ~DatasetTest();
 
-    void test_setup(const std::string& cfg_default=std::string())
-    {
-        cfg.clear();
-        cfg.parse(cfg_default + "\n" + cfg_instance + "\n");
-        cfg.setValue("path", ds_root);
-        cfg.setValue("name", ds_name);
-    }
+    /**
+     * Build cfg based on cfg_default and cfg_instance, and remove the dataset
+     * directory if it exists.
+     */
+    void test_setup(const std::string& cfg_default=std::string());
 
     dataset::segment::SegmentManager& segments();
 
@@ -147,14 +145,13 @@ struct DatasetTest : public Fixture
 	// Clean the dataset directory
 	void clean(const ConfigFile* wcfg = 0);
 
-	// Import a file
-	void import(const ConfigFile* wcfg = 0, const std::string& testfile = "inbound/test.grib1");
+    // Import a file
+    void import(const ConfigFile* wcfg = 0, const std::string& testfile="inbound/test.grib1");
 
-	// Recreate the dataset importing data into it
-	void clean_and_import(const ConfigFile* wcfg = 0, const std::string& testfile = "inbound/test.grib1");
+    // Recreate the dataset importing data into it
+    void clean_and_import(const ConfigFile* wcfg=nullptr, const std::string& testfile="inbound/test.grib1");
 
-    void ensure_maint_clean(size_t filecount, const ConfigFile* wcfg = 0);
-    void ensure_localds_clean(size_t filecount, size_t resultcount, const ConfigFile* wcfg = 0);
+    void ensure_localds_clean(size_t filecount, size_t resultcount);
 
     void import_all(const testdata::Fixture& fixture);
     void import_all_packed(const testdata::Fixture& fixture);
@@ -443,6 +440,7 @@ struct ActualSegmentedChecker : public ActualChecker<dataset::SegmentedChecker>
 
     /// Run maintenance and see that the results are as expected
     void maintenance(const MaintenanceResults& expected, bool quick=true);
+    /// Check that a check reports all ok, and that there are data_count segments in the dataset
     void maintenance_clean(unsigned data_count, bool quick=true);
 };
 

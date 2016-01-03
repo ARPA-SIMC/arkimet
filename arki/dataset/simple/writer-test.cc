@@ -38,10 +38,10 @@ struct Fixture : public DatasetTest {
     }
 
     // Recreate the dataset importing data into it
-    void clean_and_import(const ConfigFile* wcfg=0, const std::string& testfile="inbound/test.grib1")
+    void clean_and_import(const std::string& testfile="inbound/test.grib1")
     {
-        DatasetTest::clean_and_import(wcfg, testfile);
-        wassert(ensure_localds_clean(3, 3, wcfg));
+        DatasetTest::clean_and_import(nullptr, testfile);
+        wassert(ensure_localds_clean(3, 3));
     }
 };
 
@@ -105,29 +105,21 @@ add_method("acquire", [](Fixture& f) {
 
 // Test appending to existing files
 add_method("append", [](Fixture& f) {
-    ConfigFile cfg;
-    cfg.setValue("path", sys::abspath("testds"));
-    cfg.setValue("name", "testds");
-    cfg.setValue("type", "simple");
-    cfg.setValue("step", "yearly");
-
-	// Clean the dataset
-	system("rm -rf testds");
-	system("mkdir testds");
+    f.cfg.setValue("step", "yearly");
 
     metadata::Collection mdc("inbound/test-sorted.grib1");
 
     // Import once in the empty dataset
     {
-        dataset::simple::Writer writer(cfg);
-        Writer::AcquireResult res = writer.acquire(mdc[0]);
+        auto writer = f.makeSimpleWriter();
+        Writer::AcquireResult res = writer->acquire(mdc[0]);
         ensure_equals(res, Writer::ACQ_OK);
     }
 
     // Import another one, appending to the file
     {
-        dataset::simple::Writer writer(cfg);
-        Writer::AcquireResult res = writer.acquire(mdc[1]);
+        auto writer = f.makeSimpleWriter();
+        Writer::AcquireResult res = writer->acquire(mdc[1]);
         ensure_equals(res, Writer::ACQ_OK);
 
         const AssignedDataset* ds = getDataset(mdc[1]);
@@ -147,7 +139,7 @@ add_method("append", [](Fixture& f) {
     ensure(sys::timestamp("testds/20/2007.grib1.summary") <= sys::timestamp("testds/" + f.idxfname()));
 
     // Dataset is fine and clean
-    wassert(f.ensure_localds_clean(1, 2, &cfg));
+    wassert(f.ensure_localds_clean(1, 2));
 });
 
 // Test maintenance scan on non-indexed files

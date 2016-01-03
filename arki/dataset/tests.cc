@@ -113,6 +113,16 @@ DatasetTest::~DatasetTest()
     if (segment_manager) delete segment_manager;
 }
 
+void DatasetTest::test_setup(const std::string& cfg_default)
+{
+    cfg.clear();
+    cfg.parse(cfg_default + "\n" + cfg_instance + "\n");
+    cfg.setValue("path", ds_root);
+    cfg.setValue("name", ds_name);
+    if (sys::exists(ds_root))
+        sys::rmtree(ds_root);
+}
+
 dataset::segment::SegmentManager& DatasetTest::segments()
 {
     if (!segment_manager)
@@ -272,21 +282,15 @@ void DatasetTest::clean_and_import(const ConfigFile* wcfg, const std::string& te
 	import(wcfg, testfile);
 }
 
-void DatasetTest::ensure_maint_clean(size_t filecount, const ConfigFile* wcfg)
-{
-    unique_ptr<dataset::SegmentedChecker> writer(makeLocalChecker(wcfg));
-    arki::tests::MaintenanceResults expected(true, filecount);
-    expected.by_type[COUNTED_OK] = filecount;
-    wassert(actual(writer.get()).maintenance(expected));
-}
-
-
-void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount, const ConfigFile* wcfg)
+void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount)
 {
     nag::TestCollect tc;
-    wassert(ensure_maint_clean(filecount, wcfg));
+    {
+        unique_ptr<dataset::SegmentedChecker> writer(makeLocalChecker());
+        wassert(actual(writer.get()).maintenance_clean(filecount));
+    }
 
-    unique_ptr<dataset::LocalReader> reader(makeLocalReader(wcfg));
+    unique_ptr<dataset::LocalReader> reader(makeLocalReader());
     metadata::Collection mdc(*reader, Matcher());
     wassert(actual(mdc.size()) == resultcount);
 

@@ -585,7 +585,7 @@ class Tests : public FixtureTestCase<Fixture>
                 e.repacked.emplace_back("testds", "foo/bar/test.grib1");
                 wassert(actual(writer.get()).repack(e, true));
             }
-            f.ensure_maint_clean(1);
+            wassert(actual(f.makeLocalChecker().get()).maintenance_clean(1));
 
             ensure_equals(sys::size("testds/foo/bar/test.grib1"), 44412u);
 
@@ -602,7 +602,7 @@ class Tests : public FixtureTestCase<Fixture>
             f.clean_and_import();
 
             // Ensure the archive appears clean
-            f.ensure_maint_clean(3);
+            wassert(actual(f.makeLocalChecker().get()).maintenance_clean(3));
 
             // Change timestamp and rescan the file
             {
@@ -614,7 +614,7 @@ class Tests : public FixtureTestCase<Fixture>
             }
 
             // Ensure that the archive is still clean
-            f.ensure_maint_clean(3);
+            wassert(actual(f.makeLocalChecker().get()).maintenance_clean(3));
 
             // Repack the file
             {
@@ -623,7 +623,7 @@ class Tests : public FixtureTestCase<Fixture>
             }
 
             // Ensure that the archive is still clean
-            f.ensure_maint_clean(3);
+            wassert(actual(f.makeLocalChecker().get()).maintenance_clean(3));
         });
         add_method("repack_timestamps", [](Fixture& f) {
             // Test accuracy of maintenance scan, on a dataset with one file to both repack and delete
@@ -665,13 +665,12 @@ class Tests : public FixtureTestCase<Fixture>
                 e.deleted.emplace_back("testds", "2007/test.grib1");
                 wassert(actual(writer.get()).repack(e, true));
             }
-            f.ensure_maint_clean(0);
+            wassert(actual(f.makeLocalChecker().get()).maintenance_clean(0));
 
             // Perform full maintenance and check that things are still ok afterwards
             {
-                auto writer(f.makeLocalChecker(&cfg));
-                wassert(actual(writer.get()).check_clean(true, true));
-                f.ensure_maint_clean(0);
+                auto checker(f.makeLocalChecker(&cfg));
+                wassert(actual(checker.get()).check_clean(true, true));
             }
         });
         add_method("scan_repack_archive", [](Fixture& f) {
