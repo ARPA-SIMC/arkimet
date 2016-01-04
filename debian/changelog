@@ -1,3 +1,11 @@
+arkimet (1.0-1) UNRELEASED; urgency=low
+
+  * New major version, see NEWS file for important changes
+  * ported to c++11
+  * dropped dependency on wibble
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 22 May 2013 10:31:52 +0200
+
 arkimet (0.74-1) UNRELEASED; urgency=low
 
   * arki-check now can do repack and archival in a single run
