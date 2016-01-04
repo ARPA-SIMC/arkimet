@@ -23,6 +23,8 @@ struct OfflineReader : public Reader
     OfflineReader(const std::string& fname);
     ~OfflineReader() {}
 
+    std::string type() const override;
+
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
     void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) override;

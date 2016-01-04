@@ -106,6 +106,8 @@ HTTP::~HTTP()
 {
 }
 
+std::string HTTP::type() const { return "http"; }
+
 struct ReqState
 {
     http::CurlEasy& m_curl;

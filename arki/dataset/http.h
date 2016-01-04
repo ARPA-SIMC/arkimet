@@ -59,6 +59,8 @@ public:
 	HTTP(const ConfigFile& cfg);
 	virtual ~HTTP();
 
+    std::string type() const override;
+
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
     void query_bytes(const dataset::ByteQuery& q, int out) override;

@@ -23,6 +23,8 @@ public:
     Empty(const ConfigFile& cfg);
     virtual ~Empty();
 
+    std::string type() const override { return "empty"; }
+
     // Nothing to do: the dataset is always empty
     void query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)>) override {}
     void query_summary(const Matcher& matcher, Summary& summary) override {}

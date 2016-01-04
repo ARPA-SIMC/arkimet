@@ -289,10 +289,8 @@ void Reader::lua_push(lua_State* L)
 Reader* Reader::create(const ConfigFile& cfg)
 {
     string type = str::lower(cfg.value("type"));
-    if (type.empty())
-        type = "local";
 
-	if (type == "ondisk2" || type == "test")
+	if (type == "ondisk2")
 		return new dataset::ondisk2::Reader(cfg);
 	if (type == "simple" || type == "error" || type == "duplicates")
 		return new dataset::simple::Reader(cfg);
@@ -307,7 +305,7 @@ Reader* Reader::create(const ConfigFile& cfg)
 	if (type == "file")
 		return dataset::File::create(cfg);
 
-    throw std::runtime_error("cannot create dataset: unknown dataset type \""+type+"\"");
+    throw std::runtime_error("cannot create dataset reader: unknown dataset type \""+type+"\"");
 }
 
 void Reader::readConfig(const std::string& path, ConfigFile& cfg)
@@ -326,7 +324,7 @@ Writer* Writer::create(const ConfigFile& cfg)
 {
     string type = str::lower(cfg.value("type"));
     if (type == "remote")
-        throw std::runtime_error("cannot create dataset: remote datasets are not writable");
+        throw std::runtime_error("cannot create dataset writer: remote datasets are not writable");
     if (type == "outbound")
         return new dataset::Outbound(cfg);
     if (type == "discard")

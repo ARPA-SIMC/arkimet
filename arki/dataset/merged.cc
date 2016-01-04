@@ -162,6 +162,8 @@ Merged::~Merged()
 {
 }
 
+std::string Merged::type() const { return "merged"; }
+
 void Merged::addDataset(Reader& ds)
 {
 	datasets.push_back(&ds);

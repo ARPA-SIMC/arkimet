@@ -28,6 +28,8 @@ Reader::~Reader()
 {
 }
 
+std::string Reader::type() const { return "simple"; }
+
 bool Reader::is_dataset(const std::string& dir)
 {
     return index::Manifest::exists(dir);

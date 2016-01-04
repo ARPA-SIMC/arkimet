@@ -23,6 +23,8 @@ public:
     Reader(const ConfigFile& cfg);
     virtual ~Reader();
 
+    std::string type() const override;
+
     void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) override;
 
     static bool is_dataset(const std::string& dir);

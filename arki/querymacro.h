@@ -38,6 +38,8 @@ public:
 	Querymacro(const ConfigFile& cfg, const std::string& name, const std::string& query);
 	virtual ~Querymacro();
 
+    std::string type() const override;
+
 	/**
 	 * Get a dataset from the querymacro dataset cache, instantiating it in
 	 * the cache if it is not already there

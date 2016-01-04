@@ -25,6 +25,8 @@ Outbound::~Outbound()
 {
 }
 
+std::string Outbound::type() const { return "outbound"; }
+
 void Outbound::storeBlob(Metadata& md, const std::string& reldest)
 {
     // Write using segment::Writer

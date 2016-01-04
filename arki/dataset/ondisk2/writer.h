@@ -36,6 +36,8 @@ public:
     Writer(const ConfigFile& cfg);
     virtual ~Writer();
 
+    std::string type() const override;
+
     AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
     void remove(Metadata& md) override;
     void flush() override;
@@ -58,6 +60,8 @@ protected:
 
 public:
     Checker(const ConfigFile& cfg);
+
+    std::string type() const override;
 
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
 

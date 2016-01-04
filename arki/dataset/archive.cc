@@ -261,6 +261,8 @@ ArchivesReader::~ArchivesReader()
     delete archives;
 }
 
+std::string ArchivesReader::type() const { return "archives"; }
+
 void ArchivesReader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     archives->iter([&](Reader& r) {
@@ -331,6 +333,8 @@ ArchivesChecker::~ArchivesChecker()
 {
     delete archives;
 }
+
+std::string ArchivesChecker::type() const { return "archives"; }
 
 void ArchivesChecker::removeAll(Reporter& reporter, bool writable)
 {

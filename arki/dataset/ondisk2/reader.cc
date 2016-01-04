@@ -26,6 +26,8 @@ Reader::~Reader()
 {
 }
 
+std::string Reader::type() const { return "ondisk2"; }
+
 }
 }
 }

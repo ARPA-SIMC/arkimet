@@ -136,6 +136,8 @@ Querymacro::~Querymacro()
 		delete i->second;
 }
 
+std::string Querymacro::type() const { return "querymacro"; }
+
 dataset::Reader* Querymacro::dataset(const std::string& name)
 {
     std::map<std::string, dataset::Reader*>::iterator i = ds_cache.find(name);

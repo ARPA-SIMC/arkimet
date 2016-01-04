@@ -81,6 +81,10 @@ public:
         const std::string& format, const std::string& basedir, const std::string& fname,
         uint64_t ofs, uint64_t size);
 
+    /// Check only the file name components of a source::Blob item
+    void is_source_blob(
+        const std::string& format, const std::string& basedir, const std::string& fname);
+
     /// Check all components of a source::URL item
     void is_source_url(const std::string& format, const std::string& url);
 

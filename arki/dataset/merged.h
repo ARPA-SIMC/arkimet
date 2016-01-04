@@ -26,6 +26,8 @@ public:
 	Merged();
 	virtual ~Merged();
 
+    std::string type() const override;
+
 	/// Add a dataset to the group of datasets to merge
 	void addDataset(Reader& ds);
 

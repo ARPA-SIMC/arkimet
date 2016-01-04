@@ -20,6 +20,8 @@ class Discard : public Writer
 public:
     using Writer::Writer;
 
+    std::string type() const override { return "discard"; }
+
     AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
 
     void remove(Metadata&) override

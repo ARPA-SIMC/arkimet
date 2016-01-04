@@ -31,23 +31,22 @@ struct arki_dataset_gridquery_shar {
 		system("rm -rf testds ; mkdir testds");
 		system("rm -rf error ; mkdir error");
 
-		// In-memory dataset configuration
-		string conf =
-			"[testds]\n"
-			"type = test\n"
-			"step = daily\n"
-			"filter = origin: GRIB1\n"
-			"index = origin, reftime\n"
-			"name = testds\n"
-			"path = testds\n"
-			"\n"
-			"[error]\n"
-			"type = error\n"
-			"step = daily\n"
-			"name = error\n"
-			"path = error\n";
-		stringstream incfg(conf);
-		config.parse(incfg, "(memory)");
+        // In-memory dataset configuration
+        string conf =
+            "[testds]\n"
+            "type = ondisk2\n"
+            "step = daily\n"
+            "filter = origin: GRIB1\n"
+            "index = origin, reftime\n"
+            "name = testds\n"
+            "path = testds\n"
+            "\n"
+            "[error]\n"
+            "type = error\n"
+            "step = daily\n"
+            "name = error\n"
+            "path = error\n";
+        config.parse(conf, "(memory)");
 
         // Import data into the datasets
         Metadata md;

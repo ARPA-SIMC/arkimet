@@ -196,6 +196,8 @@ TargetfileSpy::~TargetfileSpy()
     delete cur_output;
 }
 
+std::string TargetfileSpy::type() const { return ds.type(); }
+
 void TargetfileSpy::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     ds.query_data(q, [&](unique_ptr<Metadata> md) {

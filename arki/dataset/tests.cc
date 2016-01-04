@@ -77,21 +77,6 @@ int days_since(int year, int month, int day)
     return duration/(3600*24);
 }
 
-#if 0
-namespace {
-const ConfigFile* default_datasettest_config = 0;
-}
-
-DatasetTestDefaultConfig::DatasetTestDefaultConfig(const ConfigFile& cfg)
-{
-    default_datasettest_config = &cfg;
-}
-DatasetTestDefaultConfig::~DatasetTestDefaultConfig()
-{
-    default_datasettest_config = 0;
-}
-#endif
-
 DatasetTest::DatasetTest(const std::string& cfg_instance)
     : cfg_instance(cfg_instance), ds_name("testds"), ds_root(sys::abspath("testds"))
 {

@@ -16,7 +16,7 @@ struct arki_datasetpool_shar {
 		// In-memory dataset configuration
 		string conf =
 			"[test200]\n"
-			"type = test\n"
+			"type = ondisk2\n"
 			"step = daily\n"
 			"filter = origin: GRIB1,200\n"
 			"index = origin, reftime\n"
@@ -24,7 +24,7 @@ struct arki_datasetpool_shar {
 			"path = test200\n"
 			"\n"
 			"[test80]\n"
-			"type = test\n"
+			"type = ondisk2\n"
 			"step = daily\n"
 			"filter = origin: GRIB1,80\n"
 			"index = origin, reftime\n"

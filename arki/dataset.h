@@ -162,6 +162,9 @@ public:
     /// Return the dataset configuration
     const std::map<std::string, std::string>& cfg() const { return m_cfg; }
 
+    /// Return a name identifying the dataset type
+    virtual std::string type() const = 0;
+
     /// Return the dataset name
     std::string name() const;
 
@@ -404,6 +407,7 @@ struct Checker : public dataset::Base
 struct NullChecker : public Checker
 {
     using Checker::Checker;
+    std::string type() const override { return "null"; }
     void removeAll(dataset::Reporter& reporter, bool writable=false) override {}
     void repack(dataset::Reporter& reporter, bool writable=false) override {}
     void check(dataset::Reporter& reporter, bool fix, bool quick) override {}

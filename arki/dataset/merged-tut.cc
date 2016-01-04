@@ -29,31 +29,30 @@ struct arki_dataset_merged_shar {
 		system("rm -rf test80/*");
 		system("rm -rf error/*");
 
-		// In-memory dataset configuration
-		string conf =
-			"[test200]\n"
-			"type = test\n"
-			"step = daily\n"
-			"filter = origin: GRIB1,200\n"
-			"index = origin, reftime\n"
-			"name = test200\n"
-			"path = test200\n"
-			"\n"
-			"[test80]\n"
-			"type = test\n"
-			"step = daily\n"
-			"filter = origin: GRIB1,80\n"
-			"index = origin, reftime\n"
-			"name = test80\n"
-			"path = test80\n"
-			"\n"
-			"[error]\n"
-			"type = error\n"
-			"step = daily\n"
-			"name = error\n"
-			"path = error\n";
-		stringstream incfg(conf);
-		config.parse(incfg, "(memory)");
+        // In-memory dataset configuration
+        string conf =
+            "[test200]\n"
+            "type = ondisk2\n"
+            "step = daily\n"
+            "filter = origin: GRIB1,200\n"
+            "index = origin, reftime\n"
+            "name = test200\n"
+            "path = test200\n"
+            "\n"
+            "[test80]\n"
+            "type = ondisk2\n"
+            "step = daily\n"
+            "filter = origin: GRIB1,80\n"
+            "index = origin, reftime\n"
+            "name = test80\n"
+            "path = test80\n"
+            "\n"
+            "[error]\n"
+            "type = error\n"
+            "step = daily\n"
+            "name = error\n"
+            "path = error\n";
+        config.parse(conf, "(memory)");
 
         // Import data into the datasets
         Metadata md;

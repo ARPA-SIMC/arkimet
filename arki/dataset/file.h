@@ -26,6 +26,8 @@ protected:
 public:
 	File(const ConfigFile& cfg);
 
+    std::string type() const override { return "file"; }
+
 	const std::string& pathname() const { return m_pathname; }
 
     virtual void scan(const dataset::DataQuery& q, metadata_dest_func dest) = 0;

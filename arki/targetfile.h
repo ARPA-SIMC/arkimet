@@ -73,6 +73,8 @@ public:
     TargetfileSpy(Reader& ds, utils::sys::NamedFileDescriptor& output, const std::string& def);
     ~TargetfileSpy();
 
+    std::string type() const override;
+
     void redirect(Metadata& md);
 
     virtual void query_data(const dataset::DataQuery& q, metadata_dest_func dest);

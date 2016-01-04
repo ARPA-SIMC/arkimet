@@ -10,6 +10,8 @@ namespace dataset {
 Memory::Memory() : Reader("memory") {}
 Memory::~Memory() {}
 
+std::string Memory::type() const { return "memory"; }
+
 void Memory::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest)
 {
     if (q.sorter)

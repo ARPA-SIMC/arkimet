@@ -70,6 +70,8 @@ public:
     ArchivesReader(const std::string& root);
     virtual ~ArchivesReader();
 
+    std::string type() const override;
+
     void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void query_bytes(const dataset::ByteQuery& q, int out) override;
@@ -85,6 +87,8 @@ public:
     /// Create an archive for the dataset at the given root dir.
     ArchivesChecker(const std::string& root);
     virtual ~ArchivesChecker();
+
+    std::string type() const override;
 
     //void indexFile(const std::string& relname);
     void indexFile(const std::string& relname, metadata::Collection&& mds);

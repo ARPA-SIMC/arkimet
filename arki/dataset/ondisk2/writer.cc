@@ -55,6 +55,8 @@ Writer::~Writer()
     flush();
 }
 
+std::string Writer::type() const { return "ondisk2"; }
+
 Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
     Segment* w = file(md, md.source().format);
@@ -267,6 +269,8 @@ Checker::Checker(const ConfigFile& cfg)
 
     idx->open();
 }
+
+std::string Checker::type() const { return "ondisk2"; }
 
 void Checker::rescanFile(const std::string& relpath)
 {

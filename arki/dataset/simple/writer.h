@@ -35,6 +35,8 @@ public:
     Writer(const ConfigFile& cfg);
     virtual ~Writer();
 
+    std::string type() const override;
+
     AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
     void remove(Metadata& md);
     void flush() override;
@@ -55,6 +57,8 @@ protected:
 public:
     Checker(const ConfigFile& cfg);
     virtual ~Checker();
+
+    std::string type() const override;
 
     void indexFile(const std::string& relpath, metadata::Collection&& contents) override;
     void rescanFile(const std::string& relpath) override;

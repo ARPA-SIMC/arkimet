@@ -278,6 +278,26 @@ void ActualType::is_source_blob(
     }
 }
 
+void ActualType::is_source_blob(
+    const std::string& format,
+    const std::string& basedir,
+    const std::string& fname)
+{
+    const source::Blob* item = get_specific_type<source::Blob>(_actual);
+    wassert(actual(item->format) == format);
+    wassert(actual(item->basedir) == basedir);
+    wassert(actual(item->filename) == fname);
+    if (!basedir.empty())
+    {
+        string expected;
+        if (fname[0] == '/')
+            expected = fname;
+        else
+            expected = sys::abspath(str::joinpath(basedir, fname));
+        wassert(actual(item->absolutePathname()) == expected);
+    }
+}
+
 void ActualType::is_source_url(const std::string& format, const std::string& url)
 {
     const source::URL* item = get_specific_type<source::URL>(_actual);

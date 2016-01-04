@@ -51,6 +51,8 @@ Writer::~Writer()
     flush();
 }
 
+std::string Writer::type() const { return "simple"; }
+
 Segment* Writer::file(const Metadata& md, const std::string& format)
 {
     Segment* writer = SegmentedWriter::file(md, format);
@@ -160,6 +162,8 @@ Checker::~Checker()
 {
     m_mft->flush();
 }
+
+std::string Checker::type() const { return "simple"; }
 
 void Checker::indexFile(const std::string& relname, metadata::Collection&& mds)
 {

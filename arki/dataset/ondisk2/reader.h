@@ -15,6 +15,8 @@ class Reader : public IndexedReader
 public:
     Reader(const ConfigFile& cfg);
     virtual ~Reader();
+
+    std::string type() const override;
 };
 
 }

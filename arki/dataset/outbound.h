@@ -30,6 +30,8 @@ public:
 
 	virtual ~Outbound();
 
+    std::string type() const override;
+
     /**
      * Acquire the given metadata item (and related data) in this dataset.
      *

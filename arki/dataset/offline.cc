@@ -14,6 +14,8 @@ OfflineReader::OfflineReader(const std::string& fname)
     sum.readFile(fname);
 }
 
+std::string OfflineReader::type() const { return "offline"; }
+
 void OfflineReader::query_data(const dataset::DataQuery& q, metadata_dest_func)
 {
     // TODO: if the matcher would match the summary, output some kind of note about it
