@@ -404,6 +404,9 @@ struct Checker : public dataset::Base
     static Checker* create(const ConfigFile& cfg);
 };
 
+/**
+ * Checker that does nothing
+ */
 struct NullChecker : public Checker
 {
     using Checker::Checker;
@@ -411,6 +414,19 @@ struct NullChecker : public Checker
     void removeAll(dataset::Reporter& reporter, bool writable=false) override {}
     void repack(dataset::Reporter& reporter, bool writable=false) override {}
     void check(dataset::Reporter& reporter, bool fix, bool quick) override {}
+};
+
+/**
+ * Checker that raises an exception on each operation notifying that the
+ * operation is not possible
+ */
+struct FailChecker : public Checker
+{
+    using Checker::Checker;
+    std::string type() const override { return "fail"; }
+    void removeAll(dataset::Reporter& reporter, bool writable=false) override;
+    void repack(dataset::Reporter& reporter, bool writable=false) override;
+    void check(dataset::Reporter& reporter, bool fix, bool quick) override;
 };
 
 }

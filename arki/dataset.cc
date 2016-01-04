@@ -345,12 +345,15 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
     return dataset::LocalWriter::testAcquire(cfg, md, out);
 }
 
+void FailChecker::removeAll(dataset::Reporter& reporter, bool writable) { throw std::runtime_error("operation not possible on dataset " + name()); }
+void FailChecker::repack(dataset::Reporter& reporter, bool writable) { throw std::runtime_error("operation not possible on dataset " + name()); }
+void FailChecker::check(dataset::Reporter& reporter, bool fix, bool quick) { throw std::runtime_error("operation not possible on dataset " + name()); }
+
 Checker* Checker::create(const ConfigFile& cfg)
 {
     string type = str::lower(cfg.value("type"));
-    // TODO: create and return a null checker instead
     if (type == "remote" || type == "outbound" || type == "discard")
-        throw std::runtime_error("cannot create dataset checker: " + type + " datasets are not checkable");
+        return new FailChecker(cfg);
     return dataset::LocalChecker::create(cfg);
 }
 
