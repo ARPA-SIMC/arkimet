@@ -62,7 +62,7 @@ void to::test<2>()
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_url("grib1", "http://localhost:7117/dataset/test200/query"));
+    wassert(actual_type(mdc[0].source()).is_source_url("grib", "http://localhost:7117/dataset/test200/query"));
 
     mdc.clear();
     mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
@@ -83,7 +83,7 @@ void to::test<3>()
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
+    wassert(actual_type(mdc[0].source()).is_source_inline("grib", 7218));
     wassert(actual(mdc[0].getData().size()) == 7218u);
 
     mdc.clear();
@@ -100,7 +100,7 @@ void to::test<3>()
     mdc.clear();
     Metadata::read_file(output.name(), mdc.inserter_func());
     wassert(actual(mdc.size()) == 1u);
-    wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
+    wassert(actual_type(mdc[0].source()).is_source_inline("grib", 7218));
     wassert(actual(mdc[0].getData().size()) == 7218u);
 }
 
@@ -206,7 +206,7 @@ void to::test<8>()
     metadata::Collection mdc(*testds, Matcher());
     ensure_equals(mdc.size(), 1u);
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_url("grib1", "http://localhost:7117/dataset/test200/query"));
+    wassert(actual_type(mdc[0].source()).is_source_url("grib", "http://localhost:7117/dataset/test200/query"));
 }
 
 // Test querying the summary
@@ -260,7 +260,7 @@ void to::test<11>()
     vector<uint8_t> plain;
     {
         ConfigFile cfg;
-        cfg.setValue("type", "test");
+        cfg.setValue("type", "ondisk2");
         cfg.setValue("path", "test80");
         cfg.setValue("name", "test80");
         cfg.setValue("step", "daily");

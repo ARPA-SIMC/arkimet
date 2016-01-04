@@ -177,15 +177,15 @@ struct MaintenanceCollector
     std::string remaining() const;
 };
 
-struct OrderCheck : public metadata::Eater
+struct OrderCheck
 {
     std::shared_ptr<sort::Compare> order;
     Metadata old;
     bool first;
 
     OrderCheck(const std::string& order);
-    virtual ~OrderCheck();
-    bool eat(std::unique_ptr<Metadata>&& md) override;
+    ~OrderCheck();
+    bool eat(std::unique_ptr<Metadata>&& md);
 };
 
 namespace testdata {

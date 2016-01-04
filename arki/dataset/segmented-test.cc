@@ -282,13 +282,13 @@ add_method("query_lots", [](Fixture& f) {
     utils::files::removeDontpackFlagfile(f.cfg.value("path"));
 
     // Query all the dataset and make sure the results are in the right order
-    struct CheckSortOrder : public metadata::Eater
+    struct CheckSortOrder
     {
         uint64_t last_value;
         unsigned seen;
         CheckSortOrder() : last_value(0), seen(0) {}
         virtual uint64_t make_key(const Metadata& md) const = 0;
-        bool eat(unique_ptr<Metadata>&& md) override
+        bool eat(unique_ptr<Metadata>&& md)
         {
             uint64_t value = make_key(*md);
             wassert(actual(value) >= last_value);

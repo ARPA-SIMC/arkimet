@@ -10,7 +10,7 @@
 namespace arki {
 namespace metadata {
 
-class Clusterer : public metadata::Eater
+class Clusterer
 {
 protected:
     /// Format of all the items in the current batch
@@ -92,7 +92,7 @@ public:
     // a chance to do their own flushing. Flushes must be explicit.
     ~Clusterer();
 
-    bool eat(std::unique_ptr<Metadata>&& md) override;
+    bool eat(std::unique_ptr<Metadata>&& md);
 
     /**
      * Signal that no more data will be sent, and close the current partial

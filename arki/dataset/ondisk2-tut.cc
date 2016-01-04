@@ -526,14 +526,14 @@ def_test(12)
 }
 
 namespace {
-struct ReadHang : public wibble::sys::ChildProcess, public metadata::Eater
+struct ReadHang : public wibble::sys::ChildProcess
 {
-	const ConfigFile& cfg;
-	int commfd;
+    const ConfigFile& cfg;
+    int commfd;
 
-	ReadHang(const ConfigFile& cfg) : cfg(cfg) {}
+    ReadHang(const ConfigFile& cfg) : cfg(cfg) {}
 
-    bool eat(unique_ptr<Metadata>&& md) override
+    bool eat(unique_ptr<Metadata>&& md)
 	{
 		// Notify start of reading
 		cout << "H" << endl;

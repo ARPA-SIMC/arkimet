@@ -45,10 +45,10 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-struct Printer : public metadata::Eater
+struct Printer
 {
     virtual void flush() {}
-
+    virtual bool eat(unique_ptr<Metadata>&& md) = 0;
     static unique_ptr<Printer> create(commandline::Options& opts);
 };
 

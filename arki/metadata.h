@@ -20,7 +20,6 @@ struct Blob;
 }
 
 namespace metadata {
-class Eater;
 
 struct ReadContext
 {
@@ -237,7 +236,6 @@ public:
     static void read_file(const std::string& fname, metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
-    [[deprecated("use read_file instead")]] static void readFile(const metadata::ReadContext& fname, metadata::Eater& mdc);
     static void read_file(const metadata::ReadContext& fname, metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer

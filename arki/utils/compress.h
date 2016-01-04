@@ -4,7 +4,6 @@
 /// Compression/decompression utilities
 
 #include <arki/libconfig.h>
-#include <arki/metadata/consumer.h>
 #include <arki/utils/sys.h>
 #include <sys/types.h>
 #include <string>
@@ -15,6 +14,8 @@ struct z_stream_s;
 typedef struct z_stream_s z_stream;
 
 namespace arki {
+struct Metadata;
+
 namespace utils {
 
 /**
@@ -132,7 +133,7 @@ off_t filesize(const std::string& file);
  * It also creates a compressed file index for faster seeking in the compressed
  * file.
  */
-class DataCompressor : public metadata::Eater
+class DataCompressor
 {
 protected:
 	// Number of data items in a compressed block
@@ -158,14 +159,14 @@ protected:
     void endBlock(bool is_final=false);
 
 public:
-	DataCompressor(const std::string& outfile, size_t groupsize = 512);
-	~DataCompressor();
+    DataCompressor(const std::string& outfile, size_t groupsize = 512);
+    ~DataCompressor();
 
-    bool eat(std::unique_ptr<Metadata>&& md) override;
+    bool eat(std::unique_ptr<Metadata>&& md);
 
     void add(const std::vector<uint8_t>& buf);
 
-	void flush();
+    void flush();
 };
 
 }

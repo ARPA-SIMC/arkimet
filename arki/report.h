@@ -1,37 +1,18 @@
 #ifndef ARKI_REPORT_H
 #define ARKI_REPORT_H
 
-/*
- * arki/report - Build a report of an arkimet metadata or summary stream
- *
- * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// arki/report - Build a report of an arkimet metadata or summary stream
 
-#include <arki/metadata/consumer.h>
 #include <string>
+#include <memory>
 #include <iosfwd>
 
 namespace arki {
-struct Lua;
+struct Metadata;
 struct Summary;
+struct Lua;
 
-class Report : public metadata::Eater
+class Report
 {
 protected:
 	mutable Lua *L;
@@ -42,8 +23,8 @@ protected:
 	void create_lua_object();
 
 public:
-	Report(const std::string& params = std::string());
-	virtual ~Report();
+    Report(const std::string& params = std::string());
+    ~Report();
 
 	/// Return true if this report can process metadata
 	bool acceptsMetadata() const { return m_accepts_metadata; }
@@ -66,16 +47,14 @@ public:
     void captureOutput(int out);
 
     /// Process a metadata for the report
-    bool eat(std::unique_ptr<Metadata>&& md) override;
+    bool eat(std::unique_ptr<Metadata>&& md);
 
-	/// Process a summary for the report
-	virtual bool operator()(Summary& s);
+    /// Process a summary for the report
+    bool operator()(Summary& s);
 
-	/// Done sending input: produce the report
-	void report();
+    /// Done sending input: produce the report
+    void report();
 };
 
 }
-
-// vim:set ts=4 sw=4:
 #endif

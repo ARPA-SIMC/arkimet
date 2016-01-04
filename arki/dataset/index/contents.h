@@ -217,9 +217,6 @@ protected:
 	 */
 	void initQueries();
 
-	/// Run a query and output to a consumer all the metadata that come out
-	void metadataQuery(const std::string& query, metadata::Eater& consumer) const;
-
 public:
 	RContents(const ConfigFile& cfg);
 	~RContents();

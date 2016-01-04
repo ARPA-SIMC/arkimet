@@ -3,7 +3,6 @@
 
 /// Metadata consumers to write Metadata to an output stream
 
-#include <arki/metadata/consumer.h>
 #include <arki/utils/sys.h>
 
 namespace arki {
@@ -17,8 +16,9 @@ class JSON;
 
 namespace metadata {
 
-struct Printer : public Eater
+struct Printer
 {
+    virtual bool eat(std::unique_ptr<Metadata>&& md) = 0;
     virtual bool eat_summary(std::unique_ptr<Summary> s) = 0;
     virtual bool observe(const Metadata& md) = 0;
     virtual bool observe_summary(const Summary& s) = 0;

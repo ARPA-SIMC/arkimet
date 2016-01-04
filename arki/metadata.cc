@@ -616,11 +616,6 @@ void Metadata::read_file(const std::string& fname, metadata_dest_func dest)
     read_file(context, dest);
 }
 
-void Metadata::readFile(const metadata::ReadContext& file, metadata::Eater& mdc)
-{
-    read_file(file, [&](unique_ptr<Metadata> md) { return mdc.eat(move(md)); });
-}
-
 void Metadata::read_file(const metadata::ReadContext& file, metadata_dest_func dest)
 {
     // Read all the metadata

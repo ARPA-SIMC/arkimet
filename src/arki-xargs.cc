@@ -66,7 +66,8 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-static void process(metadata::Eater& consumer, sys::NamedFileDescriptor& in)
+template<typename Consumer>
+static void process(Consumer& consumer, sys::NamedFileDescriptor& in)
 {
     metadata::ReadContext rc(sys::getcwd(), in.name());
     Metadata::read_file(in, rc, [&](unique_ptr<Metadata> md) { return consumer.eat(move(md)); });
