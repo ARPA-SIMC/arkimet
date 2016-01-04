@@ -1,5 +1,4 @@
 /// arki-check - Maintenance of arkimet dataset
-
 #include "config.h"
 #include <arki/wibble/exception.h>
 #include <arki/utils/commandline/parser.h>
@@ -11,7 +10,6 @@
 #include <arki/types/assigneddataset.h>
 #include <arki/nag.h>
 #include <arki/runtime.h>
-#include <fstream>
 #include <iostream>
 #include <sys/stat.h>
 

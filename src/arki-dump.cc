@@ -13,8 +13,6 @@
 #include <arki/utils/files.h>
 #include <arki/binary.h>
 #include <arki/runtime.h>
-
-#include <fstream>
 #include <iostream>
 
 using namespace std;

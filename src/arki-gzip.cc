@@ -4,7 +4,6 @@
 #include <arki/scan/any.h>
 #include <arki/utils/sys.h>
 #include <arki/runtime.h>
-#include <fstream>
 #include <iostream>
 #include <cstring>
 #include <cerrno>

@@ -20,7 +20,6 @@
 #include <arki/wibble/regexp.h>
 #include <arki/wibble/grcal/grcal.h>
 #include <algorithm>
-#include <fstream>
 #include <cstring>
 #include <limits.h>
 #include <sys/time.h>
@@ -64,15 +63,6 @@ void impl_ensure_dispatches(Dispatcher& dispatcher, unique_ptr<Metadata> md, met
     }
     wassert(actual(res) == Dispatcher::DISP_OK);
     c.move_to(mdc);
-}
-
-ForceSqlite::ForceSqlite(bool val) : old(dataset::index::Manifest::get_force_sqlite())
-{
-	dataset::index::Manifest::set_force_sqlite(val);
-}
-ForceSqlite::~ForceSqlite()
-{
-	dataset::index::Manifest::set_force_sqlite(old);
 }
 
 int days_since(int year, int month, int day)

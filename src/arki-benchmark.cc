@@ -19,8 +19,6 @@
 #include <arki/utils/string.h>
 #include <arki/runtime.h>
 #include "bench/benchmark.h"
-
-#include <fstream>
 #include <iostream>
 #include <sys/stat.h>
 

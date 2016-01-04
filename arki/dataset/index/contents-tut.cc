@@ -14,9 +14,7 @@
 #include <arki/wibble/sys/process.h>
 #include <arki/wibble/sys/childprocess.h>
 #include <memory>
-#include <sstream>
 #include <sys/fcntl.h>
-#include <iostream>
 #include <unistd.h>
 
 namespace tut {
@@ -31,10 +29,9 @@ using namespace arki::utils;
 template<typename INDEX>
 static inline unique_ptr<INDEX> createIndex(const std::string& config)
 {
-	stringstream confstream(config);
-	ConfigFile cfg;
-	cfg.parse(confstream, "(memory)");
-	return unique_ptr<INDEX>(new INDEX(cfg));
+    ConfigFile cfg;
+    cfg.parse(config);
+    return unique_ptr<INDEX>(new INDEX(cfg));
 }
 
 struct arki_dataset_index_contents_shar {
@@ -203,11 +200,10 @@ struct ReadHang : public wibble::sys::ChildProcess
 	ConfigFile cfg;
 	int commfd;
 
-	ReadHang(const std::string& cfgstr)
-	{
-		stringstream confstream(cfgstr);
-		cfg.parse(confstream, "(memory)");
-	}
+    ReadHang(const std::string& cfgstr)
+    {
+        cfg.parse(cfgstr);
+    }
 
     int main() override
     {
@@ -215,13 +211,13 @@ struct ReadHang : public wibble::sys::ChildProcess
             RContents idx(cfg);
             idx.open();
             idx.query_data(Matcher::parse("origin:GRIB1"), [&](unique_ptr<Metadata> md) {
-                cout << "H" << endl;
+                fputs("H\n", stdout);
                 usleep(100000);
                 return true;
             });
         } catch (std::exception& e) {
-            cerr << e.what() << endl;
-            cout << "E" << endl;
+            fprintf(stderr, "%s\n", e.what());
+            fputs("E\n", stdout);
             return 1;
         }
         return 0;

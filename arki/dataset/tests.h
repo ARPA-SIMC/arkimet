@@ -57,14 +57,6 @@ void impl_ensure_dispatches(Dispatcher& dispatcher, std::unique_ptr<Metadata> md
 
 unsigned count_results(dataset::Reader& ds, const dataset::DataQuery& dq);
 
-struct ForceSqlite
-{
-	bool old;
-
-	ForceSqlite(bool val = true);
-	~ForceSqlite();
-};
-
 // Return the number of days passed from the given date until today
 int days_since(int year, int month, int day);
 
@@ -156,38 +148,6 @@ struct DatasetTest : public Fixture
     void import_all(const testdata::Fixture& fixture);
     void import_all_packed(const testdata::Fixture& fixture);
 };
-
-#if 0
-struct DatasetTestDefaultConfig
-{
-    DatasetTestDefaultConfig(const ConfigFile& cfg);
-    ~DatasetTestDefaultConfig();
-};
-
-template<typename T>
-struct dataset_tg : public tut::test_group<T>
-{
-    ConfigFile default_config;
-
-    dataset_tg(const char* name, const std::string& config_test)
-        : tut::test_group<T>(name)
-    {
-        std::stringstream in(config_test);
-        default_config.parse(in, "(memory)");
-    }
-
-    tut::test_result run_next()
-    {
-        DatasetTestDefaultConfig dtdc(default_config);
-        return tut::test_group<T>::run_next();
-    }
-    tut::test_result run_test(int n)
-    {
-        DatasetTestDefaultConfig dtdc(default_config);
-        return tut::test_group<T>::run_test(n);
-    }
-};
-#endif
 
 std::unique_ptr<dataset::LocalWriter> make_dataset_writer(const std::string& cfg, bool empty=true);
 std::unique_ptr<dataset::LocalChecker> make_dataset_checker(const std::string& cfg);
