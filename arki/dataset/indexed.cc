@@ -256,6 +256,9 @@ void IndexedChecker::maintenance(segment::state_func v, bool quick)
                         nag::verbose("%s:%s: segment contents do not fit inside the step of this dataset", name().c_str(), relpath.c_str());
                         state = SEGMENT_CORRUPTED;
                     }
+                    // Expand segment timespan to the full possible segment timespan
+                    *md_begin = seg_begin;
+                    *md_until = seg_until;
                 } else {
                     nag::verbose("%s:%s: segment name does not fit the step of this dataset", name().c_str(), relpath.c_str());
                     state = SEGMENT_CORRUPTED;
