@@ -558,7 +558,7 @@ void test_append_transaction_ok(dataset::Segment* dw, Metadata& md, int append_a
     wassert(actual(sys::size(dw->absname)) == orig_fsize + data_size + append_amount_adjust);
 
     // And metadata is updated
-    wassert(actual_type(md.source()).is_source_blob("grib1", "", dw->absname, orig_fsize, data_size));
+    wassert(actual_type(md.source()).is_source_blob("grib", "", dw->absname, orig_fsize, data_size));
 }
 
 void test_append_transaction_rollback(dataset::Segment* dw, Metadata& md)

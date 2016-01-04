@@ -377,7 +377,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     testdata::GRIBData data;
     sys::makedirs("testds/2007/07");
     // TODO: use segments also in the other tests, and instantiate a new test suite for different segment types
-    Segment* s = f.segments().get_segment("2007/07.grib1");
+    Segment* s = f.segments().get_segment("2007/07.grib");
     s->append(data.test_data[1].md);
     s->append(data.test_data[1].md);
     s->append(data.test_data[0].md);
@@ -392,7 +392,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     // Perform full maintenance and check that things are still ok afterwards
     {
         ReporterExpected e;
-        e.rescanned.emplace_back("testds", "2007/07.grib1");
+        e.rescanned.emplace_back("testds", "2007/07.grib");
         wassert(actual(writer).check(e, true, true));
     }
 
@@ -402,7 +402,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
         wassert(actual(writer).maintenance(expected));
     }
 
-    wassert(actual(sys::size("testds/2007/07.grib1")) == 34960*2u + 7218u);
+    wassert(actual(sys::size("testds/2007/07.grib")) == 34960*2u + 7218u);
 
     {
         // Test querying: reindexing should have chosen the last version of
@@ -411,31 +411,31 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
         ensure(reader.hasWorkingIndex());
         metadata::Collection mdc(reader, Matcher::parse("reftime:=2007-07-07"));
         wassert(actual(mdc.size()) == 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testds"), "2007/07.grib1", 34960, 34960));
+        wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("testds"), "2007/07.grib", 34960, 34960));
 
         mdc.clear();
         mdc.add(reader, Matcher::parse("reftime:=2007-07-08"));
         wassert(actual(mdc.size()) == 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testds"), "2007/07.grib1", 34960*2, 7218));
+        wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("testds"), "2007/07.grib", 34960*2, 7218));
     }
 
     // Perform packing and check that things are still ok afterwards
     {
         ReporterExpected e;
-        e.repacked.emplace_back("testds", "2007/07.grib1", "34960 freed");
+        e.repacked.emplace_back("testds", "2007/07.grib", "34960 freed");
         wassert(actual(writer).repack(e, true));
     }
 
     wassert(actual(writer).maintenance_clean(1));
 
-    wassert(actual(sys::size("testds/2007/07.grib1")) == 34960u + 7218u);
+    wassert(actual(sys::size("testds/2007/07.grib")) == 34960u + 7218u);
 
     // Test querying, and see that things have moved to the beginning
     ondisk2::Reader reader(f.cfg);
     ensure(reader.hasWorkingIndex());
     metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,80"));
     ensure_equals(mdc.size(), 1u);
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testds"), "2007/07.grib1", 0, 34960));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("testds"), "2007/07.grib", 0, 34960));
 
     // Query the second element and check that it starts after the first one
     // (there used to be a bug where the rebuild would use the offsets of
@@ -443,7 +443,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     mdc.clear();
     mdc.add(reader, Matcher::parse("reftime:=2007-07-08"));
     ensure_equals(mdc.size(), 1u);
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testds"), "2007/07.grib1", 34960, 7218));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("testds"), "2007/07.grib", 34960, 7218));
 
     // Ensure that we have the summary cache
     ensure(sys::exists("testds/.summaries/all.summary"));
@@ -455,11 +455,11 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
 // rebuild flagfiles, and duplicate items inside
 add_method("scan_reindex", [](Fixture& f) {
     f.acquireSamples();
-    system("cat inbound/test.grib1 >> testds/2007/07-08.grib1");
+    system("cat inbound/test.grib1 >> testds/2007/07-08.grib");
     {
         index::WContents index(f.cfg);
         index.open();
-        index.reset("2007/07-08.grib1");
+        index.reset("2007/07-08.grib");
     }
 
     arki::dataset::ondisk2::Checker writer(f.cfg);
@@ -470,7 +470,7 @@ add_method("scan_reindex", [](Fixture& f) {
 
     // Perform full maintenance and check that things are still ok afterwards
 
-    // By catting test.grib1 into 07-08.grib1, we create 2 metadata that do
+    // By catting test.grib1 into 07-08.grib, we create 2 metadata that do
     // not fit in that file (1 does).
     // Because they are duplicates of metadata in other files, one cannot
     // use the order of the data in the file to determine which one is the
@@ -497,8 +497,8 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
         ondisk2::Reader reader(f.cfg);
         metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,200"));
         ensure_equals(mdc.size(), 1u);
-        mdc.compressDataFile(1024, "metadata file testds/2007/07-08.grib1");
-        sys::unlink_ifexists("testds/2007/07-08.grib1");
+        mdc.compressDataFile(1024, "metadata file testds/2007/07-08.grib");
+        sys::unlink_ifexists("testds/2007/07-08.grib");
     }
 
     // The dataset should still be clean
@@ -525,9 +525,9 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
 
         // Perform full maintenance and check that things are still ok afterwards
         ReporterExpected e;
-        e.rescanned.emplace_back("testds", "2007/07-07.grib1");
-        e.rescanned.emplace_back("testds", "2007/07-08.grib1");
-        e.rescanned.emplace_back("testds", "2007/10-09.grib1");
+        e.rescanned.emplace_back("testds", "2007/07-07.grib");
+        e.rescanned.emplace_back("testds", "2007/07-08.grib");
+        e.rescanned.emplace_back("testds", "2007/10-09.grib");
         wassert(actual(writer).check(e, true, true));
         wassert(actual(writer).maintenance_clean(3));
         wassert(actual(writer).check_clean(true, true));
@@ -651,7 +651,7 @@ add_method("data_in_right_segment_reindex", [](Fixture& f) {
     // Append one of the GRIBs to the wrong file
     const auto& buf = mdc[1].getData();
     wassert(actual(buf.size()) == 34960u);
-    FILE* fd = fopen("testds/2007/10-09.grib1", "ab");
+    FILE* fd = fopen("testds/2007/10-09.grib", "ab");
     wassert(actual(fd != NULL).istrue());
     wassert(actual(fwrite(buf.data(), buf.size(), 1, fd)) == 1u);
     wassert(actual(fclose(fd)) == 0);
@@ -660,7 +660,7 @@ add_method("data_in_right_segment_reindex", [](Fixture& f) {
     {
         ondisk2::Checker writer(f.cfg);
         try {
-            writer.rescanFile("2007/10-09.grib1");
+            writer.rescanFile("2007/10-09.grib");
             wassert(throw std::runtime_error("rescanFile should have thrown at this point"));
         } catch (std::exception& e) {
             wassert(actual(e.what()).contains("manual fix is required"));
@@ -706,7 +706,7 @@ add_method("data_in_right_segment_rescan", [](Fixture& f) {
     const auto& buf2 = mdc[2].getData();
     wassert(actual(buf1.size()) == 34960u);
     wassert(actual(buf2.size()) == 2234u);
-    FILE* fd = fopen("testds/2007/06-06.grib1", "ab");
+    FILE* fd = fopen("testds/2007/06-06.grib", "ab");
     wassert(actual(fd != NULL).istrue());
     wassert(actual(fwrite(buf1.data(), buf1.size(), 1, fd)) == 1u);
     wassert(actual(fwrite(buf2.data(), buf2.size(), 1, fd)) == 1u);
@@ -716,7 +716,7 @@ add_method("data_in_right_segment_rescan", [](Fixture& f) {
     {
         ondisk2::Checker writer(f.cfg);
         try {
-            writer.rescanFile("2007/06-06.grib1");
+            writer.rescanFile("2007/06-06.grib");
             wassert(throw std::runtime_error("rescanFile should have thrown at this point"));
         } catch (std::exception& e) {
             wassert(actual(e.what()).contains("manual fix is required"));

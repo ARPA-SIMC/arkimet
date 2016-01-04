@@ -44,7 +44,7 @@ def_test(1)
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 0, 7218));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -74,7 +74,7 @@ def_test(1)
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 7218, 34960));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 7218, 34960));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -97,7 +97,7 @@ def_test(1)
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 42178, 2234));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 42178, 2234));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -133,7 +133,7 @@ def_test(2)
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/padded.grib1", 100, 7218));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/padded.grib1", 100, 7218));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -155,7 +155,7 @@ def_test(2)
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/padded.grib1", 7418, 34960));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/padded.grib1", 7418, 34960));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -177,7 +177,7 @@ def_test(2)
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/padded.grib1", 42478, 2234));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/padded.grib1", 42478, 2234));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -233,7 +233,7 @@ arki.bbox = { { 45.00, 11.00 }, { 46.00, 11.00 }, { 46.00, 12.00 }, { 47.00, 13.
     ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 0, 7218));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
 }
 
 // Test validation
@@ -284,7 +284,7 @@ def_test(5)
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/layer.grib1", 0, 30682));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/layer.grib1", 0, 30682));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -319,7 +319,7 @@ def_test(6)
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/proselvo.grib1", 0, 298));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/proselvo.grib1", 0, 298));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -354,7 +354,7 @@ def_test(7)
     wassert(actual(scanner.next(md)).istrue());
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib2", sys::abspath("."), "inbound/cleps_pf16_HighPriority.grib2", 0, 432));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/cleps_pf16_HighPriority.grib2", 0, 432));
 
     // Check that the source can be read properly
     buf = wcallchecked(md.getData());

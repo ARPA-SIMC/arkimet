@@ -576,15 +576,13 @@ void Grib::setSource(Metadata& md)
     off_t offset = ftello(in);
     offset -= size;
 
-    char gribn[8];
-    snprintf(gribn, 8, "grib%ld", edition);
     if (false)
     {
-        md.set_source_inline(gribn, vector<uint8_t>(vbuf, vbuf + size));
+        md.set_source_inline("grib", vector<uint8_t>(vbuf, vbuf + size));
     }
     else
     {
-        md.set_source(Source::createBlob(gribn, basedir, relname, offset, size));
+        md.set_source(Source::createBlob("grib", basedir, relname, offset, size));
         md.set_cached_data(vector<uint8_t>(vbuf, vbuf + size));
     }
     stringstream note;
@@ -619,9 +617,7 @@ void MultiGrib::setSource(Metadata& md)
 
     tmpfile.flush();
 
-    char gribn[8];
-    snprintf(gribn, 8, "grib%ld", edition);
-    md.set_source(Source::createBlob(gribn, "", tmpfilename, offset, size));
+    md.set_source(Source::createBlob("grib", "", tmpfilename, offset, size));
 }
 
 bool Grib::scanLua(std::vector<int> ids, Metadata& md)

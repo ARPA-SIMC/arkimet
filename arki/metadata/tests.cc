@@ -95,14 +95,14 @@ void ActualMetadata::is_similar(const Metadata& expected)
         if (!other)
         {
             std::stringstream ss;
-            ss << "missing metadata item " << i->first << ": " << i->second;
+            ss << "missing metadata item " << types::formatCode(i->first) << ": " << *(i->second);
             throw TestFailed(ss.str());
         }
 
         if ((*i->second) != *other)
         {
             std::stringstream ss;
-            ss << i->first << " differ: " << i->first << ": expected " << *(i->second) << " got " << *other;
+            ss << i->first << " differ: " << types::formatCode(i->first) << ": expected " << *(i->second) << " got " << *other;
             throw TestFailed(ss.str());
         }
     }

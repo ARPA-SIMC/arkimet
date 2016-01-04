@@ -88,7 +88,7 @@ def_test(3)
     p.flush();
     out.close();
 
-    ensure_equals(sys::read_file(out.name()), "44964\n");
+    ensure_equals(sys::read_file(out.name()), "44961\n");
 }
 
 // Test actually sending some data
@@ -133,7 +133,7 @@ def_test(5)
     p.flush();
     out.close();
 
-    wassert(actual(sys::read_file(out.name())) == "5755392\n");
+    wassert(actual(sys::read_file(out.name())) == "5755008\n");
 }
 
 // Try to shift a sizeable chunk of data out of the postprocessor

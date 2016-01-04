@@ -63,7 +63,7 @@ def_test(1)
 		mdbuf.add(md);
 
         // The new data is there
-        wassert(actual_type(md.source()).is_source_blob("grib1", wibble::sys::process::getcwd(), "inbound/test.grib1", 0, size));
+        wassert(actual_type(md.source()).is_source_blob("grib", wibble::sys::process::getcwd(), "inbound/test.grib1", 0, size));
 
         // Metadata and summaries don't get touched
         ensure(!sys::exists(mdfname));
@@ -78,7 +78,7 @@ def_test(1)
         mdbuf.add(md);
 
         // The new data is there
-        wassert(actual_type(md.source()).is_source_blob("grib1", wibble::sys::process::getcwd(), "inbound/test.grib1", totsize, size));
+        wassert(actual_type(md.source()).is_source_blob("grib", wibble::sys::process::getcwd(), "inbound/test.grib1", totsize, size));
 
         // Metadata and summaries don't get touched
         ensure(!sys::exists(mdfname));
@@ -100,7 +100,7 @@ def_test(1)
 		mdbuf.add(md);
 
         // The new data is there
-        wassert(actual_type(md.source()).is_source_blob("grib1", wibble::sys::process::getcwd(), "inbound/test.grib1", totsize, size));
+        wassert(actual_type(md.source()).is_source_blob("grib", wibble::sys::process::getcwd(), "inbound/test.grib1", totsize, size));
 
         // Metadata and summaries don't get touched
         ensure_equals(sys::inode(mdfname), inomd);

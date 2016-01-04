@@ -177,7 +177,7 @@ def_test(1)
 #endif
     const AssignedDataset* ds = getDataset(mdc[0]);
     ensure_equals(ds->name, "test200");
-    ensure_equals(ds->id, "2007/07-08.grib1:0");
+    ensure_equals(ds->id, "2007/07-08.grib:0");
 
     // See if we catch duplicate imports
     mdc[0].unset(TYPE_ASSIGNEDDATASET);
@@ -189,10 +189,10 @@ def_test(1)
     // Flush the changes and check that everything is allright
     d200.flush();
 
-    ensure(sys::exists("test200/2007/07-08.grib1"));
+    ensure(sys::exists("test200/2007/07-08.grib"));
     ensure(sys::exists("test200/index.sqlite"));
-    ensure(sys::timestamp("test200/2007/07-08.grib1") <= sys::timestamp("test200/index.sqlite"));
-//2	ensure(!hasRebuildFlagfile("test200/2007/07-08.grib1"));
+    ensure(sys::timestamp("test200/2007/07-08.grib") <= sys::timestamp("test200/index.sqlite"));
+//2	ensure(!hasRebuildFlagfile("test200/2007/07-08.grib"));
 //2	ensure(!hasIndexFlagfile("test200"));
 }
 
@@ -207,7 +207,7 @@ def_test(2)
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("test200"), "2007/07-08.grib1", 0, 7218));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("test200"), "2007/07-08.grib", 0, 7218));
 
     mdc.clear();
     mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
@@ -232,7 +232,7 @@ def_test(3)
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("test80"), "2007/07-07.grib1", 0, 34960));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("test80"), "2007/07-07.grib", 0, 34960));
 
     mdc.clear();
     mdc.add(*testds, Matcher::parse("origin:GRIB1,98"));
@@ -257,7 +257,7 @@ def_test(4)
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("test98"), "2007/10-09.grib1", 0, 2234));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("test98"), "2007/10-09.grib", 0, 2234));
 }
 
 // Test replacing an element
@@ -333,11 +333,11 @@ def_test(6)
 
     {
         unique_ptr<Writer> testds(Writer::create(*config.section("test200")));
-        ensure(!sys::exists("test200/2007/07-08.grib1.needs-pack"));
+        ensure(!sys::exists("test200/2007/07-08.grib.needs-pack"));
         // Remove it
         testds->remove(mdc[0]);
         testds->flush();
-        ensure(!sys::exists("test200/2007/07-08.grib1.needs-pack"));
+        ensure(!sys::exists("test200/2007/07-08.grib.needs-pack"));
     }
 
     // Check that it does not have a source and metadata element
@@ -464,9 +464,9 @@ def_test(10)
     }
 
 	// Make sure all the data files need repack, as they now have got deleted data inside
-	//ensure(hasPackFlagfile("test200/2007/07-08.grib1"));
-	//ensure(hasPackFlagfile("test200/2007/07-07.grib1"));
-	//ensure(hasPackFlagfile("test200/2007/10-09.grib1"));
+	//ensure(hasPackFlagfile("test200/2007/07-08.grib"));
+	//ensure(hasPackFlagfile("test200/2007/07-07.grib"));
+	//ensure(hasPackFlagfile("test200/2007/10-09.grib"));
 
     // Test querying the dataset
     {
@@ -640,17 +640,17 @@ def_test(14)
         ensure(scanner.next(md));
         ensure_equals(all.acquire(md), Writer::ACQ_OK);
     }
-    ensure(sys::exists("testall/20/2007.grib1"));
+    ensure(sys::exists("testall/20/2007.grib"));
 
     // Compress what is imported so far
     {
         ondisk2::Reader reader(*config.section("testall"));
         metadata::Collection mdc(reader, Matcher::parse(""));
         ensure_equals(mdc.size(), 1u);
-        mdc.compressDataFile(1024, "metadata file testall/20/2007.grib1");
-        sys::unlink_ifexists("testall/20/2007.grib1");
+        mdc.compressDataFile(1024, "metadata file testall/20/2007.grib");
+        sys::unlink_ifexists("testall/20/2007.grib");
     }
-    ensure(!sys::exists("testall/20/2007.grib1"));
+    ensure(!sys::exists("testall/20/2007.grib"));
 
     // Import the last data
     {
@@ -662,7 +662,7 @@ def_test(14)
             ensure(string(e.what()).find("cannot update compressed data files") != string::npos);
         }
     }
-    ensure(!sys::exists("testall/20/2007.grib1"));
+    ensure(!sys::exists("testall/20/2007.grib"));
 }
 
 // Test Update Sequence Number replacement strategy

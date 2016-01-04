@@ -66,7 +66,7 @@ def_test(2)
 
     string out = utils::files::read_file("tmp-xargs");
     wassert(actual(out).contains("ARKI_XARGS_FILENAME="));
-    wassert(actual(out).matches("ARKI_XARGS_FORMAT=['\"]?GRIB1['\"]?\n"));
+    wassert(actual(out).matches("ARKI_XARGS_FORMAT=['\"]?GRIB['\"]?\n"));
     wassert(actual(out).matches("ARKI_XARGS_COUNT=['\"]?10['\"]?\n"));
     wassert(actual(out).contains("ARKI_XARGS_TIME_START='2007-07-08 13:00:00Z'\n"));
     wassert(actual(out).contains("ARKI_XARGS_TIME_END='2007-07-08 13:00:00Z'\n"));

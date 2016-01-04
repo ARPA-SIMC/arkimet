@@ -46,12 +46,12 @@ class Tests : public FixtureTestCase<Fixture>
             if (f.cfg.value("type") == "simple") return; // TODO: we need to avoid the SLOOOOW rescan done by simple on the data file
             f.clean();
 
-            // Simulate 2007/07-07.grib1 to be 6G already
+            // Simulate 2007/07-07.grib to be 6G already
             system("mkdir -p testds/2007");
-            system("touch testds/2007/07-07.grib1");
+            system("touch testds/2007/07-07.grib");
             // Truncate the last grib out of a file
-            if (truncate("testds/2007/07-07.grib1", 6000000000LLU) < 0)
-                throw wibble::exception::System("truncating testds/2007/07-07.grib1");
+            if (truncate("testds/2007/07-07.grib", 6000000000LLU) < 0)
+                throw wibble::exception::System("truncating testds/2007/07-07.grib");
 
             f.import();
 
@@ -59,7 +59,7 @@ class Tests : public FixtureTestCase<Fixture>
                 auto writer(f.makeLocalChecker());
                 ReporterExpected e;
                 e.report.emplace_back("testds", "check", "2 files ok");
-                e.repacked.emplace_back("testds", "2007/07-07.grib1");
+                e.repacked.emplace_back("testds", "2007/07-07.grib");
                 wassert(actual(writer.get()).check(e, false));
             }
 
@@ -71,7 +71,7 @@ class Tests : public FixtureTestCase<Fixture>
             // Perform full maintenance and check that things are still ok afterwards
             writer.check(s, true, false);
             ensure_equals(s.str(),
-                "testdir: rescanned 2007/07.grib1\n"
+                "testdir: rescanned 2007/07.grib\n"
                 "testdir: 1 file rescanned, 7736 bytes reclaimed cleaning the index.\n");
             c.clear();
             writer.maintenance(c);
@@ -84,7 +84,7 @@ class Tests : public FixtureTestCase<Fixture>
             s.str(std::string());
             writer.repack(s, true);
             ensure_equals(s.str(), 
-                "testdir: packed 2007/07.grib1 (34960 saved)\n"
+                "testdir: packed 2007/07.grib (34960 saved)\n"
                 "testdir: 1 file packed, 2576 bytes reclaimed on the index, 37536 total bytes freed.\n");
             c.clear();
 
@@ -114,10 +114,10 @@ class Tests : public FixtureTestCase<Fixture>
             // Change timestamp and rescan the file
             {
                 struct utimbuf oldts = { 199926000, 199926000 };
-                ensure(utime("testds/2007/07-08.grib1", &oldts) == 0);
+                ensure(utime("testds/2007/07-08.grib", &oldts) == 0);
 
                 auto writer(f.makeLocalChecker());
-                writer->rescanFile("2007/07-08.grib1");
+                writer->rescanFile("2007/07-08.grib");
             }
 
             // Ensure that the archive is still clean
@@ -126,7 +126,7 @@ class Tests : public FixtureTestCase<Fixture>
             // Repack the file
             {
                 auto writer(f.makeLocalChecker());
-                ensure_equals(writer->repackFile("2007/07-08.grib1"), 0u);
+                ensure_equals(writer->repackFile("2007/07-08.grib"), 0u);
             }
 
             // Ensure that the archive is still clean
@@ -160,7 +160,7 @@ class Tests : public FixtureTestCase<Fixture>
             {
                 auto writer(f.makeLocalChecker());
                 ReporterExpected e;
-                e.deleted.emplace_back("testds", "20/2007.grib1");
+                e.deleted.emplace_back("testds", "20/2007.grib");
                 wassert(actual(writer.get()).repack(e, true));
             }
             wassert(actual(f.makeLocalChecker().get()).maintenance_clean(0));
@@ -200,8 +200,8 @@ class Tests : public FixtureTestCase<Fixture>
                 auto writer(f.makeLocalChecker());
 
                 ReporterExpected e;
-                e.repacked.emplace_back("testds", "20/2007.grib1");
-                e.archived.emplace_back("testds", "20/2007.grib1");
+                e.repacked.emplace_back("testds", "20/2007.grib");
+                e.archived.emplace_back("testds", "20/2007.grib");
                 wassert(actual(writer.get()).repack(e, true));
             }
         });

@@ -42,7 +42,7 @@ def_test(1)
     ensure_equals(mdc.size(), 3u);
 
     // Check the source info
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 0, 7218));
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
 
 	// Check that the source can be read properly
 	buf = mdc[0].getData();
@@ -61,7 +61,7 @@ def_test(1)
     wassert(actual(mdc[0]).contains("run", "MINUTE(13:00)"));
 
     // Check the source info
-    wassert(actual(mdc[1].source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 7218, 34960));
+    wassert(actual(mdc[1].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 7218, 34960));
 
 	// Check that the source can be read properly
 	buf = mdc[1].getData();
@@ -80,7 +80,7 @@ def_test(1)
     wassert(actual(mdc[1]).contains("run", "MINUTE(0)"));
 
     // Check the source info
-    wassert(actual(mdc[2].source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 42178, 2234));
+    wassert(actual(mdc[2].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 42178, 2234));
 
 	// Check that the source can be read properly
 	buf = mdc[2].getData();

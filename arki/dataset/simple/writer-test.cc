@@ -78,28 +78,28 @@ add_method("acquire", [](Fixture& f) {
     #endif
     const AssignedDataset* ds = getDataset(md);
     ensure_equals(ds->name, "testds");
-    ensure_equals(ds->id, "2007/07-08.grib1:0");
+    ensure_equals(ds->id, "2007/07-08.grib:0");
 
-    wassert(actual_type(md.source()).is_source_blob("grib1", sys::abspath("./testds"), "2007/07-08.grib1", 0, 7218));
+    wassert(actual_type(md.source()).is_source_blob("grib", sys::abspath("./testds"), "2007/07-08.grib", 0, 7218));
 
     // Import again works fine
     res = writer.acquire(md);
     ensure_equals(res, Writer::ACQ_OK);
     ds = getDataset(md);
     ensure_equals(ds->name, "testds");
-    ensure_equals(ds->id, "2007/07-08.grib1:7218");
+    ensure_equals(ds->id, "2007/07-08.grib:7218");
 
-    wassert(actual_type(md.source()).is_source_blob("grib1", sys::abspath("./testds"), "2007/07-08.grib1", 7218, 7218));
+    wassert(actual_type(md.source()).is_source_blob("grib", sys::abspath("./testds"), "2007/07-08.grib", 7218, 7218));
 
     // Flush the changes and check that everything is allright
     writer.flush();
-    ensure(sys::exists("testds/2007/07-08.grib1"));
-    ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
-    ensure(sys::exists("testds/2007/07-08.grib1.summary"));
+    ensure(sys::exists("testds/2007/07-08.grib"));
+    ensure(sys::exists("testds/2007/07-08.grib.metadata"));
+    ensure(sys::exists("testds/2007/07-08.grib.summary"));
     ensure(sys::exists("testds/" + f.idxfname()));
-    ensure(sys::timestamp("testds/2007/07-08.grib1") <= sys::timestamp("testds/2007/07-08.grib1.metadata"));
-    ensure(sys::timestamp("testds/2007/07-08.grib1.metadata") <= sys::timestamp("testds/2007/07-08.grib1.summary"));
-    ensure(sys::timestamp("testds/2007/07-08.grib1.summary") <= sys::timestamp("testds/" + f.idxfname()));
+    ensure(sys::timestamp("testds/2007/07-08.grib") <= sys::timestamp("testds/2007/07-08.grib.metadata"));
+    ensure(sys::timestamp("testds/2007/07-08.grib.metadata") <= sys::timestamp("testds/2007/07-08.grib.summary"));
+    ensure(sys::timestamp("testds/2007/07-08.grib.summary") <= sys::timestamp("testds/" + f.idxfname()));
     ensure(files::hasDontpackFlagfile("testds"));
 
     wassert(f.ensure_localds_clean(1, 2));
@@ -127,18 +127,18 @@ add_method("append", [](Fixture& f) {
         const AssignedDataset* ds = getDataset(mdc[1]);
         ensure(ds);
         ensure_equals(ds->name, "testds");
-        ensure_equals(ds->id, "20/2007.grib1:34960");
+        ensure_equals(ds->id, "20/2007.grib:34960");
 
-        wassert(actual_type(mdc[1].source()).is_source_blob("grib1", sys::abspath("testds"), "20/2007.grib1", 34960, 7218));
+        wassert(actual_type(mdc[1].source()).is_source_blob("grib", sys::abspath("testds"), "20/2007.grib", 34960, 7218));
     }
 
-    ensure(sys::exists("testds/20/2007.grib1"));
-    ensure(sys::exists("testds/20/2007.grib1.metadata"));
-    ensure(sys::exists("testds/20/2007.grib1.summary"));
+    ensure(sys::exists("testds/20/2007.grib"));
+    ensure(sys::exists("testds/20/2007.grib.metadata"));
+    ensure(sys::exists("testds/20/2007.grib.summary"));
     ensure(sys::exists("testds/" + f.idxfname()));
-    ensure(sys::timestamp("testds/20/2007.grib1") <= sys::timestamp("testds/20/2007.grib1.metadata"));
-    ensure(sys::timestamp("testds/20/2007.grib1.metadata") <= sys::timestamp("testds/20/2007.grib1.summary"));
-    ensure(sys::timestamp("testds/20/2007.grib1.summary") <= sys::timestamp("testds/" + f.idxfname()));
+    ensure(sys::timestamp("testds/20/2007.grib") <= sys::timestamp("testds/20/2007.grib.metadata"));
+    ensure(sys::timestamp("testds/20/2007.grib.metadata") <= sys::timestamp("testds/20/2007.grib.summary"));
+    ensure(sys::timestamp("testds/20/2007.grib.summary") <= sys::timestamp("testds/" + f.idxfname()));
 
     // Dataset is fine and clean
     wassert(f.ensure_localds_clean(1, 2));
@@ -152,7 +152,7 @@ add_method("scan_nonindexed", [](Fixture& f) {
     testdata::GRIBData data;
     sys::makedirs("testds/2007");
     // TODO: use segments also in the other tests, and instantiate a new test suite for different segment types
-    Segment* s = f.segments().get_segment("2007/07.grib1");
+    Segment* s = f.segments().get_segment("2007/07.grib");
     s->append(data.test_data[1].md);
     s->append(data.test_data[0].md);
 
@@ -178,7 +178,7 @@ add_method("scan_nonindexed", [](Fixture& f) {
         // Check should reindex the file
         {
             ReporterExpected e;
-            e.rescanned.emplace_back("testds", "2007/07.grib1");
+            e.rescanned.emplace_back("testds", "2007/07.grib");
             wassert(actual(writer).check(e, true, true));
         }
 
@@ -193,7 +193,7 @@ add_method("scan_nonindexed", [](Fixture& f) {
     // Remove the file from the index
     {
         dataset::simple::Checker writer(f.cfg);
-        writer.removeFile("2007/07.grib1", false);
+        writer.removeFile("2007/07.grib", false);
     }
 
     // Repack should delete the files not in index
@@ -201,7 +201,7 @@ add_method("scan_nonindexed", [](Fixture& f) {
         dataset::simple::Checker writer(f.cfg);
 
         ReporterExpected e;
-        e.deleted.emplace_back("testds", "2007/07.grib1", "42178 freed");
+        e.deleted.emplace_back("testds", "2007/07.grib", "42178 freed");
         wassert(actual(writer).repack(e, true));
     }
 
@@ -214,11 +214,11 @@ add_method("scan_missing_md_summary", [](Fixture& f) {
     struct Setup {
         void operator() ()
         {
-            sys::unlink_ifexists("testds/2007/07-08.grib1.metadata");
-            sys::unlink_ifexists("testds/2007/07-08.grib1.summary");
-            ensure(sys::exists("testds/2007/07-08.grib1"));
-            ensure(!sys::exists("testds/2007/07-08.grib1.metadata"));
-            ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
+            sys::unlink_ifexists("testds/2007/07-08.grib.metadata");
+            sys::unlink_ifexists("testds/2007/07-08.grib.summary");
+            ensure(sys::exists("testds/2007/07-08.grib"));
+            ensure(!sys::exists("testds/2007/07-08.grib.metadata"));
+            ensure(!sys::exists("testds/2007/07-08.grib.summary"));
         }
     } setup;
 
@@ -248,7 +248,7 @@ add_method("scan_missing_md_summary", [](Fixture& f) {
 
         // Check should reindex the file
         ReporterExpected e;
-        e.rescanned.emplace_back("testds", "2007/07-08.grib1");
+        e.rescanned.emplace_back("testds", "2007/07-08.grib");
         wassert(actual(writer).check(e, true, true));
 
         // Repack should do nothing
@@ -257,9 +257,9 @@ add_method("scan_missing_md_summary", [](Fixture& f) {
 
     // Everything should be fine now
     wassert(f.ensure_localds_clean(3, 3));
-    ensure(sys::exists("testds/2007/07-08.grib1"));
-    ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
-    ensure(sys::exists("testds/2007/07-08.grib1.summary"));
+    ensure(sys::exists("testds/2007/07-08.grib"));
+    ensure(sys::exists("testds/2007/07-08.grib.metadata"));
+    ensure(sys::exists("testds/2007/07-08.grib.summary"));
     ensure(sys::exists("testds/" + f.idxfname()));
 
 
@@ -283,9 +283,9 @@ add_method("scan_missing_md_summary", [](Fixture& f) {
         metadata::Collection mdc(reader, Matcher());
         ensure_equals(mdc.size(), 3u);
     }
-    ensure(sys::exists("testds/2007/07-08.grib1"));
-    ensure(!sys::exists("testds/2007/07-08.grib1.metadata"));
-    ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
+    ensure(sys::exists("testds/2007/07-08.grib"));
+    ensure(!sys::exists("testds/2007/07-08.grib.metadata"));
+    ensure(!sys::exists("testds/2007/07-08.grib.summary"));
     ensure(sys::exists("testds/" + f.idxfname()));
 });
 
@@ -294,10 +294,10 @@ add_method("scan_missing_summary", [](Fixture& f) {
     struct Setup {
         void operator() ()
         {
-            sys::unlink_ifexists("testds/2007/07-08.grib1.summary");
-            ensure(sys::exists("testds/2007/07-08.grib1"));
-            ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
-            ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
+            sys::unlink_ifexists("testds/2007/07-08.grib.summary");
+            ensure(sys::exists("testds/2007/07-08.grib"));
+            ensure(sys::exists("testds/2007/07-08.grib.metadata"));
+            ensure(!sys::exists("testds/2007/07-08.grib.summary"));
         }
     } setup;
 
@@ -327,7 +327,7 @@ add_method("scan_missing_summary", [](Fixture& f) {
 
         // Check should reindex the file
         ReporterExpected e;
-        e.rescanned.emplace_back("testds", "2007/07-08.grib1");
+        e.rescanned.emplace_back("testds", "2007/07-08.grib");
         wassert(actual(writer).check(e, true, true));
 
         // Repack should do nothing
@@ -336,9 +336,9 @@ add_method("scan_missing_summary", [](Fixture& f) {
 
     // Everything should be fine now
     wassert(f.ensure_localds_clean(3, 3));
-    ensure(sys::exists("testds/2007/07-08.grib1"));
-    ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
-    ensure(sys::exists("testds/2007/07-08.grib1.summary"));
+    ensure(sys::exists("testds/2007/07-08.grib"));
+    ensure(sys::exists("testds/2007/07-08.grib.metadata"));
+    ensure(sys::exists("testds/2007/07-08.grib.summary"));
     ensure(sys::exists("testds/" + f.idxfname()));
 
 
@@ -360,9 +360,9 @@ add_method("scan_missing_summary", [](Fixture& f) {
         metadata::Collection mdc(reader, Matcher());
         ensure_equals(mdc.size(), 3u);
     }
-    ensure(sys::exists("testds/2007/07-08.grib1"));
-    ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
-    ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
+    ensure(sys::exists("testds/2007/07-08.grib"));
+    ensure(sys::exists("testds/2007/07-08.grib.metadata"));
+    ensure(!sys::exists("testds/2007/07-08.grib.summary"));
     ensure(sys::exists("testds/" + f.idxfname()));
 });
 
@@ -373,24 +373,24 @@ add_method("scan_compressed", [](Fixture& f) {
         {
             // Compress one file
             metadata::Collection mdc;
-            mdc.read_from_file("testds/2007/07-08.grib1.metadata");
+            mdc.read_from_file("testds/2007/07-08.grib.metadata");
             ensure_equals(mdc.size(), 1u);
-            mdc.compressDataFile(1024, "metadata file testds/2007/07-08.grib1.metadata");
-            sys::unlink_ifexists("testds/2007/07-08.grib1");
+            mdc.compressDataFile(1024, "metadata file testds/2007/07-08.grib.metadata");
+            sys::unlink_ifexists("testds/2007/07-08.grib");
 
-            ensure(!sys::exists("testds/2007/07-08.grib1"));
-            ensure(sys::exists("testds/2007/07-08.grib1.gz"));
-            ensure(sys::exists("testds/2007/07-08.grib1.gz.idx"));
-            ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
-            ensure(sys::exists("testds/2007/07-08.grib1.summary"));
+            ensure(!sys::exists("testds/2007/07-08.grib"));
+            ensure(sys::exists("testds/2007/07-08.grib.gz"));
+            ensure(sys::exists("testds/2007/07-08.grib.gz.idx"));
+            ensure(sys::exists("testds/2007/07-08.grib.metadata"));
+            ensure(sys::exists("testds/2007/07-08.grib.summary"));
         }
 
         void removemd()
         {
-            sys::unlink_ifexists("testds/2007/07-08.grib1.metadata");
-            sys::unlink_ifexists("testds/2007/07-08.grib1.summary");
-            ensure(!sys::exists("testds/2007/07-08.grib1.metadata"));
-            ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
+            sys::unlink_ifexists("testds/2007/07-08.grib.metadata");
+            sys::unlink_ifexists("testds/2007/07-08.grib.summary");
+            ensure(!sys::exists("testds/2007/07-08.grib.metadata"));
+            ensure(!sys::exists("testds/2007/07-08.grib.summary"));
         }
     } setup;
 
@@ -431,7 +431,7 @@ add_method("scan_compressed", [](Fixture& f) {
 
         // Check should reindex the file
         ReporterExpected e;
-        e.rescanned.emplace_back("testds", "2007/07-08.grib1");
+        e.rescanned.emplace_back("testds", "2007/07-08.grib");
         wassert(actual(writer).check(e, true, true));
 
         // Repack should do nothing
@@ -440,11 +440,11 @@ add_method("scan_compressed", [](Fixture& f) {
 
     // Everything should be fine now
     wassert(f.ensure_localds_clean(3, 3));
-    ensure(!sys::exists("testds/2007/07-08.grib1"));
-    ensure(sys::exists("testds/2007/07-08.grib1.gz"));
-    ensure(sys::exists("testds/2007/07-08.grib1.gz.idx"));
-    ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
-    ensure(sys::exists("testds/2007/07-08.grib1.summary"));
+    ensure(!sys::exists("testds/2007/07-08.grib"));
+    ensure(sys::exists("testds/2007/07-08.grib.gz"));
+    ensure(sys::exists("testds/2007/07-08.grib.gz.idx"));
+    ensure(sys::exists("testds/2007/07-08.grib.metadata"));
+    ensure(sys::exists("testds/2007/07-08.grib.summary"));
     ensure(sys::exists("testds/" + f.idxfname()));
 
 
@@ -473,11 +473,11 @@ add_method("scan_compressed", [](Fixture& f) {
             ensure(str::endswith(e.what(), "file needs to be manually decompressed before scanning"));
         }
     }
-    ensure(!sys::exists("testds/2007/07-08.grib1"));
-    ensure(sys::exists("testds/2007/07-08.grib1.gz"));
-    ensure(sys::exists("testds/2007/07-08.grib1.gz.idx"));
-    ensure(!sys::exists("testds/2007/07-08.grib1.metadata"));
-    ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
+    ensure(!sys::exists("testds/2007/07-08.grib"));
+    ensure(sys::exists("testds/2007/07-08.grib.gz"));
+    ensure(sys::exists("testds/2007/07-08.grib.gz.idx"));
+    ensure(!sys::exists("testds/2007/07-08.grib.metadata"));
+    ensure(!sys::exists("testds/2007/07-08.grib.summary"));
     ensure(sys::exists("testds/" + f.idxfname()));
 });
 
@@ -486,9 +486,9 @@ add_method("scan_missingdata", [](Fixture& f) {
     struct Setup {
         void operator() ()
         {
-            sys::unlink_ifexists("testds/2007/07-08.grib1.summary");
-            sys::unlink_ifexists("testds/2007/07-08.grib1.metadata");
-            sys::unlink_ifexists("testds/2007/07-08.grib1");
+            sys::unlink_ifexists("testds/2007/07-08.grib.summary");
+            sys::unlink_ifexists("testds/2007/07-08.grib.metadata");
+            sys::unlink_ifexists("testds/2007/07-08.grib");
         }
     } setup;
 
@@ -518,7 +518,7 @@ add_method("scan_missingdata", [](Fixture& f) {
 
         // Check should reindex the file
         ReporterExpected e;
-        e.deindexed.emplace_back("testds", "2007/07-08.grib1");
+        e.deindexed.emplace_back("testds", "2007/07-08.grib");
         wassert(actual(writer).check(e, true, true));
 
         // Repack should do nothing
@@ -542,7 +542,7 @@ add_method("scan_missingdata", [](Fixture& f) {
 
         // Repack should tidy up the index
         ReporterExpected e;
-        e.deindexed.emplace_back("testds", "2007/07-08.grib1");
+        e.deindexed.emplace_back("testds", "2007/07-08.grib");
         wassert(actual(writer).repack(e, true));
     }
 
@@ -560,8 +560,8 @@ def_test(7)
 		system("mkdir testds/.archive/foo");
 		Archive arc("testds/.archive/foo");
 		arc.openRW();
-		system("cp inbound/test.grib1 testds/.archive/foo/");
-		arc.acquire("test.grib1");
+		system("cp inbound/test.grib testds/.archive/foo/");
+		arc.acquire("test.grib");
 	}
 
 	// Everything should be fine now

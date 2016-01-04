@@ -33,11 +33,11 @@ using namespace arki::utils;
 using namespace arki::tests;
 using namespace arki::tests;
 
-struct arki_data_dir_shar {
+struct arki_segment_dir_shar {
     string fname;
     metadata::Collection mdc;
 
-    arki_data_dir_shar()
+    arki_segment_dir_shar()
         : fname("testfile.grib")
     {
         system(("rm -rf " + fname).c_str());
@@ -57,13 +57,11 @@ struct arki_data_dir_shar {
     }
 };
 
-TESTGRP(arki_data_dir);
+TESTGRP(arki_segment_dir);
 
 // Try to append some data
 def_test(1)
 {
-    typedef types::source::Blob Blob;
-
     wassert(actual_file(fname).not_exists());
     {
         unique_ptr<dir::Segment> w(make_w(fname));
@@ -83,7 +81,7 @@ def_test(1)
             // Start the append transaction, the file is written
             off_t ofs;
             Pending p = w->append(md, &ofs);
-            wassert(actual((size_t)ofs) == 0);
+            wassert(actual((size_t)ofs) == 0u);
             wassert(actual(sys::size(str::joinpath(w->absname, "000000.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
@@ -91,7 +89,7 @@ def_test(1)
             p.commit();
 
             // After commit, metadata is updated
-            wassert(actual_type(md.source()).is_source_blob("grib1", "", w->absname, 0, data_size));
+            wassert(actual_type(md.source()).is_source_blob("grib", "", w->absname, 0, data_size));
         }
 
         // Then fail one
@@ -105,7 +103,7 @@ def_test(1)
             // Start the append transaction, the file is written
             off_t ofs;
             Pending p = w->append(md, &ofs);
-            wassert(actual((size_t)ofs) == 1);
+            wassert(actual((size_t)ofs) == 1u);
             wassert(actual(sys::size(str::joinpath(w->absname, "000001.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
@@ -129,7 +127,7 @@ def_test(1)
             // Rolling back a transaction does leave a gap in the sequence
             off_t ofs;
             Pending p = w->append(md, &ofs);
-            wassert(actual((size_t)ofs) == 2);
+            wassert(actual((size_t)ofs) == 2u);
             wassert(actual(sys::size(str::joinpath(w->absname, "000002.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
@@ -137,7 +135,7 @@ def_test(1)
             p.commit();
 
             // After commit, metadata is updated
-            wassert(actual_type(md.source()).is_source_blob("grib1", "", w->absname, 2, data_size));
+            wassert(actual_type(md.source()).is_source_blob("grib", "", w->absname, 2, data_size));
         }
     }
 

@@ -280,7 +280,7 @@ struct ODIMData : Fixture
     ODIMData()
     {
         metadata::Collection mdc;
-        format = "odim";
+        format = "odimh5";
         max_selective_aggregation = "yearly";
         scan::scan("inbound/odimh5/COMP_CAPPI_v20.h5", mdc.inserter_func());
         scan::scan("inbound/odimh5/PVOL_v20.h5", mdc.inserter_func());

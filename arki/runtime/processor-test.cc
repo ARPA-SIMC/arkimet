@@ -62,9 +62,9 @@ add_method("metadata_binary", [](Fixture& f) {
     mdc.read_from_file("pm-out");
 
     wassert(actual(mdc.size()) == 3u);
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", ".", sys::abspath("testds/2007/07-07.grib1"), 0, 34960));
-    wassert(actual_type(mdc[1].source()).is_source_blob("grib1", ".", sys::abspath("testds/2007/07-08.grib1"), 0, 7218));
-    wassert(actual_type(mdc[2].source()).is_source_blob("grib1", ".", sys::abspath("testds/2007/10-09.grib1"), 0, 2234));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib", ".", sys::abspath("testds/2007/07-07.grib"), 0, 34960));
+    wassert(actual_type(mdc[1].source()).is_source_blob("grib", ".", sys::abspath("testds/2007/07-08.grib"), 0, 7218));
+    wassert(actual_type(mdc[2].source()).is_source_blob("grib", ".", sys::abspath("testds/2007/10-09.grib"), 0, 2234));
 });
 
 // Export inline data
@@ -77,9 +77,9 @@ add_method("metadata_binary_inline", [](Fixture& f) {
     mdc.read_from_file("pm-out");
 
     wassert(actual(mdc.size()) == 3u);
-    wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 34960));
-    wassert(actual_type(mdc[1].source()).is_source_inline("grib1", 7218));
-    wassert(actual_type(mdc[2].source()).is_source_inline("grib1", 2234));
+    wassert(actual_type(mdc[0].source()).is_source_inline("grib", 34960));
+    wassert(actual_type(mdc[1].source()).is_source_inline("grib", 7218));
+    wassert(actual_type(mdc[2].source()).is_source_inline("grib", 2234));
     wassert(actual(mdc[0].getData().size()) == 34960u);
     wassert(actual(mdc[1].getData().size()) == 7218u);
     wassert(actual(mdc[2].getData().size()) == 2234u);
@@ -95,9 +95,9 @@ add_method("data_binary", [](Fixture& f) {
     scan::scan("pm-out", mdc.inserter_func(), "grib");
 
     wassert(actual(mdc.size()) == 3u);
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("."), "pm-out", 0, 34960));
-    wassert(actual_type(mdc[1].source()).is_source_blob("grib1", sys::abspath("."), "pm-out", 34960, 7218));
-    wassert(actual_type(mdc[2].source()).is_source_blob("grib1", sys::abspath("."), "pm-out", 34960 + 7218, 2234));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("."), "pm-out", 0, 34960));
+    wassert(actual_type(mdc[1].source()).is_source_blob("grib", sys::abspath("."), "pm-out", 34960, 7218));
+    wassert(actual_type(mdc[2].source()).is_source_blob("grib", sys::abspath("."), "pm-out", 34960 + 7218, 2234));
 });
 
 }

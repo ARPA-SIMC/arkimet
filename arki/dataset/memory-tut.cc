@@ -42,18 +42,18 @@ def_test(1)
 
     metadata::Collection mdc(c, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 1u);
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 0, 7218));
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
 
     mdc.clear();
 
     mdc.add(c, Matcher::parse("origin:GRIB1,80"));
     ensure_equals(mdc.size(), 1u);
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 7218, 34960u));
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 7218, 34960u));
 
     mdc.clear();
     mdc.add(c, Matcher::parse("origin:GRIB1,98"));
     ensure_equals(mdc.size(), 1u);
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 42178, 2234));
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 42178, 2234));
 }
 
 // Test querying the summary

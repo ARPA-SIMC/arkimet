@@ -31,7 +31,6 @@ struct FixtureWriter : public DatasetTest
             step = daily
             unique = product, area, reftime
         )");
-        import_all_packed(td);
     }
 
     bool smallfiles() const

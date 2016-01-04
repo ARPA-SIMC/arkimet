@@ -25,11 +25,11 @@ using namespace arki::types;
 using namespace arki::tests;
 using namespace arki::tests;
 
-struct arki_data_concat_shar {
+struct arki_segment_concat_shar {
     string fname;
     metadata::Collection mdc;
 
-    arki_data_concat_shar()
+    arki_segment_concat_shar()
         : fname("testfile.grib")
     {
         system(("rm -f " + fname).c_str());
@@ -49,7 +49,7 @@ struct arki_data_concat_shar {
     }
 };
 
-TESTGRP(arki_data_concat);
+TESTGRP(arki_segment_concat);
 
 namespace {
 
