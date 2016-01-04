@@ -36,17 +36,15 @@ static ostream& operator<<(ostream& out, const vector<uint8_t>& buf)
 namespace {
 
 struct Fixture : public DatasetTest {
-    Fixture() {}
+    using DatasetTest::DatasetTest;
 
     void test_setup()
     {
-        system("rm -rf testdir");
-        cfg.clear();
-        cfg.setValue("path", sys::abspath("testdir"));
-        cfg.setValue("name", "testdir");
-        cfg.setValue("type", "ondisk2");
-        cfg.setValue("step", "daily");
-        cfg.setValue("unique", "origin, reftime");
+        DatasetTest::test_setup(R"(
+            type = ondisk2
+            step = daily
+            unique = origin, reftime
+        )");
     }
 
     void acquireSamples()
@@ -131,7 +129,7 @@ struct Fixture : public DatasetTest {
             // Test packing has something to report
             auto writer(makeLocalChecker());
             ReporterExpected e;
-            e.repacked.emplace_back("testdir", holed_fname);
+            e.repacked.emplace_back("testds", holed_fname);
             wassert(actual(writer.get()).repack(e, false));
         }
 
@@ -139,16 +137,16 @@ struct Fixture : public DatasetTest {
         {
             auto writer(makeLocalChecker());
             ReporterExpected e;
-            e.repacked.emplace_back("testdir", holed_fname);
+            e.repacked.emplace_back("testds", holed_fname);
             wassert(actual(writer.get()).repack(e, true));
 
             wassert(actual(writer.get()).maintenance_clean(2));
         }
 
         // Ensure that we have the summary cache
-        wassert(actual_file("testdir/.summaries/all.summary").exists());
-        //ensure(sys::fs::exists("testdir/.summaries/2007-07.summary"));
-        //ensure(sys::fs::exists("testdir/.summaries/2007-10.summary"));
+        wassert(actual_file("testds/.summaries/all.summary").exists());
+        //ensure(sys::fs::exists("testds/.summaries/2007-07.summary"));
+        //ensure(sys::fs::exists("testds/.summaries/2007-10.summary"));
     }
 
     // Test maintenance scan, on dataset with one file to delete, performing repack
@@ -161,7 +159,7 @@ struct Fixture : public DatasetTest {
             // Test packing has something to report
             auto writer(makeLocalChecker());
             ReporterExpected e;
-            e.deleted.emplace_back("testdir", removed_fname);
+            e.deleted.emplace_back("testds", removed_fname);
             wassert(actual(writer.get()).repack(e, false));
         }
 
@@ -169,16 +167,16 @@ struct Fixture : public DatasetTest {
         {
             auto writer(makeLocalChecker());
             ReporterExpected e;
-            e.deleted.emplace_back("testdir", removed_fname);
+            e.deleted.emplace_back("testds", removed_fname);
             wassert(actual(writer.get()).repack(e, true));
 
             wassert(actual(writer.get()).maintenance_clean(fixture.count_dataset_files() - 1));
         }
 
         // Ensure that we have the summary cache
-        wassert(actual_file("testdir/.summaries/all.summary").exists());
-        //ensure(sys::fs::exists("testdir/.summaries/2007-07.summary"));
-        //ensure(sys::fs::exists("testdir/.summaries/2007-10.summary"));
+        wassert(actual_file("testds/.summaries/all.summary").exists());
+        //ensure(sys::fs::exists("testds/.summaries/2007-07.summary"));
+        //ensure(sys::fs::exists("testds/.summaries/2007-10.summary"));
     }
 
     // Test maintenance scan, on dataset with one file to pack, performing check
@@ -191,7 +189,7 @@ struct Fixture : public DatasetTest {
             // Test check has something to report
             auto writer(makeLocalChecker());
             ReporterExpected e;
-            e.repacked.emplace_back("testdir", holed_fname);
+            e.repacked.emplace_back("testds", holed_fname);
             wassert(actual(writer.get()).check(e, false));
         }
 
@@ -211,9 +209,9 @@ struct Fixture : public DatasetTest {
         }
 
         // Ensure that we have the summary cache
-        wassert(actual_file("testdir/.summaries/all.summary").exists());
-        //ensure(sys::fs::exists("testdir/.summaries/2007-07.summary"));
-        //ensure(sys::fs::exists("testdir/.summaries/2007-10.summary"));
+        wassert(actual_file("testds/.summaries/all.summary").exists());
+        //ensure(sys::fs::exists("testds/.summaries/2007-07.summary"));
+        //ensure(sys::fs::exists("testds/.summaries/2007-10.summary"));
     }
 
     // Test maintenance scan, on dataset with one file to delete, performing check
@@ -226,7 +224,7 @@ struct Fixture : public DatasetTest {
             // Test packing has something to report
             auto writer(makeLocalChecker());
             ReporterExpected e;
-            e.rescanned.emplace_back("testdir", removed_fname);
+            e.rescanned.emplace_back("testds", removed_fname);
             wassert(actual(writer.get()).check(e, false));
         }
 
@@ -234,16 +232,16 @@ struct Fixture : public DatasetTest {
         {
             auto writer(makeLocalChecker());
             ReporterExpected e;
-            e.rescanned.emplace_back("testdir", removed_fname);
+            e.rescanned.emplace_back("testds", removed_fname);
             wassert(actual(writer.get()).check(e, true));
 
             wassert(actual(writer.get()).maintenance_clean(fixture.count_dataset_files()));
         }
 
         // Ensure that we have the summary cache
-        wassert(actual_file("testdir/.summaries/all.summary").exists());
-        //ensure(sys::fs::exists("testdir/.summaries/2007-07.summary"));
-        //ensure(sys::fs::exists("testdir/.summaries/2007-10.summary"));
+        wassert(actual_file("testds/.summaries/all.summary").exists());
+        //ensure(sys::fs::exists("testds/.summaries/2007-07.summary"));
+        //ensure(sys::fs::exists("testds/.summaries/2007-10.summary"));
     }
 
     // Test accuracy of maintenance scan, after deleting the index
@@ -260,7 +258,7 @@ struct Fixture : public DatasetTest {
             wassert(actual(mdc_pre.size()) == 3u);
         }
 
-        sys::unlink_ifexists("testdir/index.sqlite");
+        sys::unlink_ifexists("testds/index.sqlite");
 
         // All files are found as files to be indexed
         {
@@ -276,7 +274,7 @@ struct Fixture : public DatasetTest {
             ReporterExpected e;
             for (set<string>::const_iterator i = fixture.fnames.begin();
                     i != fixture.fnames.end(); ++i)
-                e.rescanned.emplace_back("testdir", *i);
+                e.rescanned.emplace_back("testds", *i);
             wassert(actual(writer.get()).check(e, true));
 
             wassert(actual(writer.get()).maintenance_clean(fixture.fnames.size()));
@@ -297,7 +295,7 @@ struct Fixture : public DatasetTest {
         wassert(actual(mdc_post[2]).is_similar(mdc_pre[2]));
 
         // Ensure that we have the summary cache
-        wassert(actual_file("testdir/.summaries/all.summary").exists());
+        wassert(actual_file("testds/.summaries/all.summary").exists());
     }
 };
 
@@ -373,10 +371,14 @@ add_method("delete_index_and_check", [](Fixture& f) {
 
 // Test recreating a dataset from just a datafile with duplicate data and a rebuild flagfile
 add_method("reindex_with_duplicates", [](Fixture& f) {
-	system("mkdir testdir");
-	system("mkdir testdir/foo");
-	system("mkdir testdir/foo/bar");
-	system("cat inbound/test.grib1 inbound/test.grib1 > testdir/foo/bar/test.grib1");
+    f.cfg.setValue("step", "monthly");
+    testdata::GRIBData data;
+    sys::makedirs("testds/2007/07");
+    // TODO: use segments also in the other tests, and instantiate a new test suite for different segment types
+    Segment* s = f.segments().get_segment("2007/07.grib1");
+    s->append(data.test_data[1].md);
+    s->append(data.test_data[1].md);
+    s->append(data.test_data[0].md);
 
     arki::dataset::ondisk2::Checker writer(f.cfg);
     {
@@ -388,7 +390,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     // Perform full maintenance and check that things are still ok afterwards
     {
         ReporterExpected e;
-        e.rescanned.emplace_back("testdir", "foo/bar/test.grib1");
+        e.rescanned.emplace_back("testds", "2007/07.grib1");
         wassert(actual(writer).check(e, true, true));
     }
 
@@ -398,60 +400,60 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
         wassert(actual(writer).maintenance(expected));
     }
 
-    wassert(actual(sys::size("testdir/foo/bar/test.grib1")) == 44412*2u);
+    wassert(actual(sys::size("testds/2007/07.grib1")) == 34960*2u + 7218u);
 
     {
         // Test querying: reindexing should have chosen the last version of
         // duplicate items
         ondisk2::Reader reader(f.cfg);
         ensure(reader.hasWorkingIndex());
-        metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,80"));
-        ensure_equals(mdc.size(), 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testdir"), "foo/bar/test.grib1", 51630, 34960));
+        metadata::Collection mdc(reader, Matcher::parse("reftime:=2007-07-07"));
+        wassert(actual(mdc.size()) == 1u);
+        wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testds"), "2007/07.grib1", 34960, 34960));
 
         mdc.clear();
-        mdc.add(reader, Matcher::parse("origin:GRIB1,200"));
-        ensure_equals(mdc.size(), 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testdir"), "foo/bar/test.grib1", 44412, 7218));
+        mdc.add(reader, Matcher::parse("reftime:=2007-07-08"));
+        wassert(actual(mdc.size()) == 1u);
+        wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testds"), "2007/07.grib1", 34960*2, 7218));
     }
 
     // Perform packing and check that things are still ok afterwards
     {
         ReporterExpected e;
-        e.repacked.emplace_back("testdir", "foo/bar/test.grib1", "44412 freed");
+        e.repacked.emplace_back("testds", "2007/07.grib1", "34960 freed");
         wassert(actual(writer).repack(e, true));
     }
 
     wassert(actual(writer).maintenance_clean(1));
 
-    wassert(actual(sys::size("testdir/foo/bar/test.grib1")) == 44412u);
+    wassert(actual(sys::size("testds/2007/07.grib1")) == 34960u + 7218u);
 
     // Test querying, and see that things have moved to the beginning
     ondisk2::Reader reader(f.cfg);
     ensure(reader.hasWorkingIndex());
     metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,80"));
     ensure_equals(mdc.size(), 1u);
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testdir"), "foo/bar/test.grib1", 0, 34960));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testds"), "2007/07.grib1", 0, 34960));
 
     // Query the second element and check that it starts after the first one
     // (there used to be a bug where the rebuild would use the offsets of
     // the metadata instead of the data)
     mdc.clear();
-    mdc.add(reader, Matcher::parse("origin:GRIB1,200"));
+    mdc.add(reader, Matcher::parse("reftime:=2007-07-08"));
     ensure_equals(mdc.size(), 1u);
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testdir"), "foo/bar/test.grib1", 34960, 7218));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testds"), "2007/07.grib1", 34960, 7218));
 
     // Ensure that we have the summary cache
-    ensure(sys::exists("testdir/.summaries/all.summary"));
-    ensure(sys::exists("testdir/.summaries/2007-07.summary"));
-    ensure(sys::exists("testdir/.summaries/2007-10.summary"));
+    ensure(sys::exists("testds/.summaries/all.summary"));
+    ensure(sys::exists("testds/.summaries/2007-07.summary"));
+    ensure(sys::exists("testds/.summaries/2007-10.summary"));
 });
 
 // Test accuracy of maintenance scan, with index, on dataset with some
 // rebuild flagfiles, and duplicate items inside
 add_method("scan_reindex", [](Fixture& f) {
     f.acquireSamples();
-    system("cat inbound/test.grib1 >> testdir/2007/07-08.grib1");
+    system("cat inbound/test.grib1 >> testds/2007/07-08.grib1");
     {
         index::WContents index(f.cfg);
         index.open();
@@ -493,8 +495,8 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
         ondisk2::Reader reader(f.cfg);
         metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,200"));
         ensure_equals(mdc.size(), 1u);
-        mdc.compressDataFile(1024, "metadata file testdir/2007/07-08.grib1");
-        sys::unlink_ifexists("testdir/2007/07-08.grib1");
+        mdc.compressDataFile(1024, "metadata file testds/2007/07-08.grib1");
+        sys::unlink_ifexists("testds/2007/07-08.grib1");
     }
 
     // The dataset should still be clean
@@ -510,7 +512,7 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
     }
 
     // Remove the index
-    system("rm testdir/index.sqlite");
+    system("rm testds/index.sqlite");
 
     // See how maintenance scan copes
     {
@@ -521,18 +523,18 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
 
         // Perform full maintenance and check that things are still ok afterwards
         ReporterExpected e;
-        e.rescanned.emplace_back("testdir", "2007/07-07.grib1");
-        e.rescanned.emplace_back("testdir", "2007/07-08.grib1");
-        e.rescanned.emplace_back("testdir", "2007/10-09.grib1");
+        e.rescanned.emplace_back("testds", "2007/07-07.grib1");
+        e.rescanned.emplace_back("testds", "2007/07-08.grib1");
+        e.rescanned.emplace_back("testds", "2007/10-09.grib1");
         wassert(actual(writer).check(e, true, true));
         wassert(actual(writer).maintenance_clean(3));
         wassert(actual(writer).check_clean(true, true));
         wassert(actual(writer).repack_clean(true));
 
         // Ensure that we have the summary cache
-        ensure(sys::exists("testdir/.summaries/all.summary"));
-        ensure(sys::exists("testdir/.summaries/2007-07.summary"));
-        ensure(sys::exists("testdir/.summaries/2007-10.summary"));
+        ensure(sys::exists("testds/.summaries/all.summary"));
+        ensure(sys::exists("testds/.summaries/2007-07.summary"));
+        ensure(sys::exists("testds/.summaries/2007-10.summary"));
     }
 });
 
@@ -544,7 +546,7 @@ add_method("summary_checks", [](Fixture& f) {
         return;
 
     f.acquireSamples();
-    files::removeDontpackFlagfile("testdir");
+    files::removeDontpackFlagfile("testds");
 
     arki::dataset::ondisk2::Checker writer(f.cfg);
 
@@ -555,25 +557,25 @@ add_method("summary_checks", [](Fixture& f) {
     wassert(actual(writer).repack_clean(true));
 
     // Ensure that we have the summary cache
-    ensure(sys::exists("testdir/.summaries/all.summary"));
-    ensure(sys::exists("testdir/.summaries/2007-07.summary"));
-    ensure(sys::exists("testdir/.summaries/2007-10.summary"));
+    ensure(sys::exists("testds/.summaries/all.summary"));
+    ensure(sys::exists("testds/.summaries/2007-07.summary"));
+    ensure(sys::exists("testds/.summaries/2007-10.summary"));
 
 	// Make one summary cache file not writable
-	chmod("testdir/.summaries/all.summary", 0400);
+	chmod("testds/.summaries/all.summary", 0400);
 
     // Perform check and see that we detect it
     {
         ReporterExpected e;
-        e.manual_intervention.emplace_back("testdir", "check", sys::abspath("testdir/.summaries/all.summary") + " is not writable");
+        e.manual_intervention.emplace_back("testds", "check", sys::abspath("testds/.summaries/all.summary") + " is not writable");
         wassert(actual(writer).check(e, false, true));
     }
 
     // Fix it
     {
         ReporterExpected e;
-        e.manual_intervention.emplace_back("testdir", "check", sys::abspath("testdir/.summaries/all.summary") + " is not writable");
-        e.progress.emplace_back("testdir", "check", "rebuilding summary cache");
+        e.manual_intervention.emplace_back("testds", "check", sys::abspath("testds/.summaries/all.summary") + " is not writable");
+        e.progress.emplace_back("testds", "check", "rebuilding summary cache");
         wassert(actual(writer).check(e, true, true));
     }
 
@@ -647,7 +649,7 @@ add_method("data_in_right_segment_reindex", [](Fixture& f) {
     // Append one of the GRIBs to the wrong file
     const auto& buf = mdc[1].getData();
     wassert(actual(buf.size()) == 34960u);
-    FILE* fd = fopen("testdir/2007/10-09.grib1", "ab");
+    FILE* fd = fopen("testds/2007/10-09.grib1", "ab");
     wassert(actual(fd != NULL).istrue());
     wassert(actual(fwrite(buf.data(), buf.size(), 1, fd)) == 1u);
     wassert(actual(fclose(fd)) == 0);
@@ -664,7 +666,7 @@ add_method("data_in_right_segment_reindex", [](Fixture& f) {
     }
 
     // Delete index then run a maintenance
-    wassert(actual(unlink("testdir/index.sqlite")) == 0);
+    wassert(actual(unlink("testds/index.sqlite")) == 0);
 
     // Run maintenance check
     {
@@ -702,7 +704,7 @@ add_method("data_in_right_segment_rescan", [](Fixture& f) {
     const auto& buf2 = mdc[2].getData();
     wassert(actual(buf1.size()) == 34960u);
     wassert(actual(buf2.size()) == 2234u);
-    FILE* fd = fopen("testdir/2007/06-06.grib1", "ab");
+    FILE* fd = fopen("testds/2007/06-06.grib1", "ab");
     wassert(actual(fd != NULL).istrue());
     wassert(actual(fwrite(buf1.data(), buf1.size(), 1, fd)) == 1u);
     wassert(actual(fwrite(buf2.data(), buf2.size(), 1, fd)) == 1u);
@@ -774,21 +776,21 @@ add_method("pack_vm2", [](Fixture& f) {
         expected.by_type[DatasetTest::COUNTED_DIRTY] = 2;
         wassert(actual(writer.get()).maintenance(expected));
 
-        ensure(!sys::exists("testdir/.archive"));
+        ensure(!sys::exists("testds/.archive"));
     }
 
     // Perform packing and check that things are still ok afterwards
     {
         auto writer(f.makeLocalChecker());
         ReporterExpected e;
-        e.repacked.emplace_back("testdir", "1987/10-31.vm2");
-        e.repacked.emplace_back("testdir", "2011/01-01.vm2");
+        e.repacked.emplace_back("testds", "1987/10-31.vm2");
+        e.repacked.emplace_back("testds", "2011/01-01.vm2");
         wassert(actual(writer.get()).repack(e, true));
     }
 
     // Check that the files have actually shrunk
-    wassert(actual(sys::stat("testdir/1987/10-31.vm2")->st_size) == 36);
-    wassert(actual(sys::stat("testdir/2011/01-01.vm2")->st_size) == 33);
+    wassert(actual(sys::stat("testds/1987/10-31.vm2")->st_size) == 36);
+    wassert(actual(sys::stat("testds/2011/01-01.vm2")->st_size) == 33);
 
     // Ensure the archive is now clean
     {
@@ -797,7 +799,7 @@ add_method("pack_vm2", [](Fixture& f) {
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
         wassert(actual(writer.get()).maintenance(expected));
 
-        wassert(actual_file("testdir/.archive").not_exists());
+        wassert(actual_file("testds/.archive").not_exists());
     }
 
     // Ensure that the data hasn't been corrupted
