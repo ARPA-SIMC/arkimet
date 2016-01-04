@@ -1,13 +1,5 @@
-#include "arki/tests/tests.h"
 #include "arki/dataset/tests.h"
-#include "arki/metadata/tests.h"
 #include "arki/dataset.h"
-#include "arki/dataset/ondisk2.h"
-#include "arki/dataset/outbound.h"
-#include "arki/dataset/discard.h"
-#include "arki/dataset/empty.h"
-#include "arki/dataset/simple/reader.h"
-#include "arki/dataset/simple/writer.h"
 #include "arki/metadata/collection.h"
 #include "arki/summary.h"
 #include "arki/types/source.h"
@@ -19,9 +11,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <sys/fcntl.h>
-#include <memory>
-#include <sstream>
-#include <iostream>
 
 using namespace std;
 using namespace arki;

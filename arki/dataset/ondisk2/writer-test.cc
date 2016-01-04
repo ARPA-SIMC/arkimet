@@ -309,6 +309,8 @@ class Tests : public FixtureTestCase<Fixture>
 
 void Tests::register_tests() {
 
+// Add here only simple-specific tests that are not convered by tests in dataset-writer-test.cc
+
 add_method("hole_file_and_repack", [](Fixture& f) {
     wruntest(f.test_hole_file_and_repack, testdata::GRIBData());
     wruntest(f.test_hole_file_and_repack, testdata::BUFRData());

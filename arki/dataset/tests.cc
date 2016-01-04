@@ -98,6 +98,12 @@ void DatasetTest::test_setup(const std::string& cfg_default)
         sys::rmtree(ds_root);
 }
 
+void DatasetTest::test_teardown()
+{
+    delete segment_manager;
+    segment_manager = nullptr;
+}
+
 dataset::segment::SegmentManager& DatasetTest::segments()
 {
     if (!segment_manager)
@@ -643,6 +649,27 @@ std::string ReporterExpected::SegmentMatch::error_unmatched(const std::string& o
     return msg;
 }
 
+void ReporterExpected::clear()
+{
+    progress.clear();
+    manual_intervention.clear();
+    aborted.clear();
+    report.clear();
+
+    repacked.clear();
+    archived.clear();
+    deleted.clear();
+    deindexed.clear();
+    rescanned.clear();
+
+    count_repacked = -1;
+    count_archived = -1;
+    count_deleted = -1;
+    count_deindexed = -1;
+    count_rescanned = -1;
+}
+
+
 struct MainteanceCheckResult
 {
     std::string type;
@@ -901,7 +928,7 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
 
 }
 
-template class ActualChecker<Checker>;
+template class ActualChecker<dataset::Checker>;
 template class ActualChecker<dataset::LocalChecker>;
 template class ActualChecker<dataset::SegmentedChecker>;
 }

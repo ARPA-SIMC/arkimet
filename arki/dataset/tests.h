@@ -115,6 +115,7 @@ struct DatasetTest : public Fixture
      * directory if it exists.
      */
     void test_setup(const std::string& cfg_default=std::string());
+    void test_teardown();
 
     dataset::segment::SegmentManager& segments();
 
@@ -346,6 +347,8 @@ struct ReporterExpected
     int count_deleted = -1;
     int count_deindexed = -1;
     int count_rescanned = -1;
+
+    void clear();
 };
 
 
@@ -415,6 +418,8 @@ inline arki::tests::ActualChecker<dataset::LocalChecker> actual(arki::dataset::L
 {
     return arki::tests::ActualChecker<dataset::LocalChecker>(actual);
 }
+inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::Checker* actual) { return arki::tests::ActualChecker<dataset::Checker>(actual); }
+inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>(&actual); }
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::SegmentedChecker* actual) { return arki::tests::ActualSegmentedChecker(actual); }
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::SegmentedChecker& actual) { return arki::tests::ActualSegmentedChecker(&actual); }
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::simple::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::SegmentedChecker*)&actual); }

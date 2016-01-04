@@ -568,6 +568,7 @@ tests_arki_test_SOURCES += \
 		dataset-test.cc \
 		dataset-reader-test.cc \
 		dataset-writer-test.cc \
+		dataset-checker-test.cc \
 		metadatagrid-test.cc \
 		postprocess-tut.cc \
 		querymacro-tut.cc \

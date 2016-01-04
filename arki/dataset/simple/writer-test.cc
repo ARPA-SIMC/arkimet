@@ -55,6 +55,8 @@ class Tests : public FixtureTestCase<Fixture>
 
 void Tests::register_tests() {
 
+// Add here only simple-specific tests that are not convered by tests in dataset-writer-test.cc
+
 // Test acquiring data
 add_method("acquire", [](Fixture& f) {
     // Clean the dataset
