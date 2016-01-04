@@ -566,6 +566,8 @@ tests_arki_test_SOURCES += \
 		dataset/gridquery-tut.cc \
 		dataset/test-scenario-test.cc \
 		dataset-test.cc \
+		dataset-reader-test.cc \
+		dataset-writer-test.cc \
 		metadatagrid-test.cc \
 		postprocess-tut.cc \
 		querymacro-tut.cc \

@@ -85,5 +85,4 @@ add_method("instantiate", [](Fixture& f) {
 });
 
 }
-
 }

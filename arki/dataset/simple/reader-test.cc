@@ -51,16 +51,9 @@ Tests test_sqlite("arki_dataset_simple_reader_sqlite", "index_type=sqlite");
 
 void Tests::register_tests() {
 
-// Test querying with postprocessing
-add_method("postprocess", [](Fixture& f) {
-    unique_ptr<simple::Reader> reader(f.makeSimpleReader());
+// Add here only simple-specific tests that are not convered by tests in dataset-reader-test.cc
 
-    dataset::ByteQuery bq;
-    bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "testcountbytes");
-    reader->query_bytes(bq, 2);
-
-    string out = sys::read_file("testcountbytes.out");
-    ensure_equals(out, "7399\n");
+add_method("empty", [](Fixture& f) {
 });
 
 #if 0

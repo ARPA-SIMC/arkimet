@@ -29,24 +29,11 @@ struct arki_dataset_ondisk2_reader_shar {
 };
 TESTGRP(arki_dataset_ondisk2_reader);
 
-// Test querying with postprocessing
-def_test(1)
-{
-    const test::Scenario& s = test::Scenario::get("ondisk2-testgrib1");
-    unique_ptr<ondisk2::Reader> reader(new ondisk2::Reader(s.cfg));
-    ensure(reader->hasWorkingIndex());
-
-    dataset::ByteQuery bq;
-    bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "testcountbytes");
-    reader->query_bytes(bq, 2);
-
-    string out = sys::read_file("testcountbytes.out");
-    ensure_equals(out, "7444\n");
-}
+// Add here only simple-specific tests that are not convered by tests in dataset-reader-test.cc
 
 // Test that summary files are not created for all the extent of the query, but
 // only for data present in the dataset
-def_test(2)
+def_test(1)
 {
     const test::Scenario& scen = test::Scenario::get("ondisk2-testgrib1");
     ConfigFile cfg = scen.clone("testds");
