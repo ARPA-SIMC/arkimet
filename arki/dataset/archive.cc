@@ -373,14 +373,14 @@ static std::string poppath(std::string& path)
 	return res;
 }
 
-void ArchivesChecker::indexFile(const std::string& relname, metadata::Collection&& mds)
+void ArchivesChecker::indexSegment(const std::string& relname, metadata::Collection&& mds)
 {
     string path = relname;
     string name = poppath(path);
     if (Checker* a = archives->lookup(name))
     {
         if (SegmentedChecker* sc = dynamic_cast<SegmentedChecker*>(a))
-            sc->indexFile(path, move(mds));
+            sc->indexSegment(path, move(mds));
         else
             throw std::runtime_error(this->name() + ": cannot acquire " + relname + ": archive " + name + " is not writable");
     }

@@ -287,7 +287,7 @@ void IndexedChecker::removeAll(Reporter& reporter, bool writable)
     m_idx->list_segments([&](const std::string& relpath) {
         if (writable)
         {
-            size_t freed = removeFile(relpath, true);
+            size_t freed = removeSegment(relpath, true);
             reporter.segment_delete(*this, relpath, "deleted (" + std::to_string(freed) + " freed)");
         } else
             reporter.segment_delete(*this, relpath, "should be deleted");

@@ -193,7 +193,7 @@ add_method("scan_nonindexed", [](Fixture& f) {
     // Remove the file from the index
     {
         dataset::simple::Checker writer(f.cfg);
-        writer.removeFile("2007/07.grib", false);
+        writer.removeSegment("2007/07.grib", false);
     }
 
     // Repack should delete the files not in index

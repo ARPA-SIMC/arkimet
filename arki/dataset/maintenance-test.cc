@@ -117,7 +117,7 @@ class Tests : public FixtureTestCase<Fixture>
                 ensure(utime("testds/2007/07-08.grib", &oldts) == 0);
 
                 auto writer(f.makeLocalChecker());
-                writer->rescanFile("2007/07-08.grib");
+                writer->rescanSegment("2007/07-08.grib");
             }
 
             // Ensure that the archive is still clean
@@ -126,7 +126,7 @@ class Tests : public FixtureTestCase<Fixture>
             // Repack the file
             {
                 auto writer(f.makeLocalChecker());
-                ensure_equals(writer->repackFile("2007/07-08.grib"), 0u);
+                ensure_equals(writer->repackSegment("2007/07-08.grib"), 0u);
             }
 
             // Ensure that the archive is still clean

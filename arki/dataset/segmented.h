@@ -99,13 +99,13 @@ public:
     /**
      * Add information about a file to the index
      */
-    virtual void indexFile(const std::string& relpath, metadata::Collection&& contents) = 0;
+    virtual void indexSegment(const std::string& relpath, metadata::Collection&& contents) = 0;
 
     /**
      * Consider all existing metadata about a file as invalid and rebuild
      * them by rescanning the file
      */
-    virtual void rescanFile(const std::string& relpath) = 0;
+    virtual void rescanSegment(const std::string& relpath) = 0;
 
     /**
      * Optimise the contents of a data file
@@ -115,14 +115,14 @@ public:
      *
      * @returns The number of bytes freed on disk with this operation
      */
-    virtual size_t repackFile(const std::string& relpath) = 0;
+    virtual size_t repackSegment(const std::string& relpath) = 0;
 
     /**
      * Remove the file from the dataset
      *
      * @returns The number of bytes freed on disk with this operation
      */
-    virtual size_t removeFile(const std::string& relpath, bool withData=false) = 0;
+    virtual size_t removeSegment(const std::string& relpath, bool withData=false) = 0;
 
     /**
      * Move the file to archive
@@ -131,7 +131,7 @@ public:
      * metadata and summaries (if found) to the "last" archive, and adds it
      * to its manifest
      */
-    virtual void archiveFile(const std::string& relpath);
+    virtual void archiveSegment(const std::string& relpath);
 
     /**
      * Perform generic packing and optimisations

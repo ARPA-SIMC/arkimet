@@ -199,9 +199,9 @@ void Manifest::invalidate_summary(const std::string& relname)
     invalidate_summary();
 }
 
-void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
+void Manifest::rescanSegment(const std::string& dir, const std::string& relpath)
 {
-	string pathname = str::joinpath(dir, relpath);
+    string pathname = str::joinpath(dir, relpath);
 
 	// Temporarily uncompress the file for scanning
 	unique_ptr<utils::compress::TempUnzip> tu;

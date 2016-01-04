@@ -55,7 +55,7 @@ public:
     void list_segments(std::function<void(const std::string&)> dest) override = 0;
     void scan_files(segment::contents_func v) override = 0;
 
-	void rescanFile(const std::string& dir, const std::string& relpath);
+    void rescanSegment(const std::string& dir, const std::string& relpath);
 
 	static bool exists(const std::string& dir);
     static std::unique_ptr<Manifest> create(const std::string& dir, const ConfigFile* cfg=0);

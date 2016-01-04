@@ -115,7 +115,7 @@ SegmentedChecker::~SegmentedChecker()
     delete m_step;
 }
 
-void SegmentedChecker::archiveFile(const std::string& relpath)
+void SegmentedChecker::archiveSegment(const std::string& relpath)
 {
     // TODO: this is a hack to ensure that 'last' is created (and clean) before we start moving files into it.
     archive();
@@ -175,10 +175,10 @@ void SegmentedChecker::archiveFile(const std::string& relpath)
     } else
         scan::scan(arcabsname, mdc.inserter_func());
 
-    archive().indexFile(arcrelname, move(mdc));
+    archive().indexSegment(arcrelname, move(mdc));
 }
 
-size_t SegmentedChecker::removeFile(const std::string& relpath, bool withData)
+size_t SegmentedChecker::removeSegment(const std::string& relpath, bool withData)
 {
     if (withData)
         return m_segment_manager->remove(relpath);

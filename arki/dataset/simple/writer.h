@@ -13,15 +13,12 @@ namespace arki {
 class Matcher;
 
 namespace dataset {
-class TargetFile;
-
 namespace index {
 class Manifest;
 }
 
 namespace simple {
 class Reader;
-class Datafile;
 
 class Writer : public IndexedWriter
 {
@@ -51,7 +48,7 @@ class Checker : public IndexedChecker
 protected:
     index::Manifest* m_mft;
 
-    /// Return a (shared) instance of the Datafile for the given relative pathname
+    /// Return a (shared) instance of the Segment for the given relative pathname
     Segment* file(const Metadata& md, const std::string& format);
 
 public:
@@ -60,11 +57,11 @@ public:
 
     std::string type() const override;
 
-    void indexFile(const std::string& relpath, metadata::Collection&& contents) override;
-    void rescanFile(const std::string& relpath) override;
-    size_t repackFile(const std::string& relpath) override;
-    void archiveFile(const std::string& relpath) override;
-    size_t removeFile(const std::string& relpath, bool withData=false) override;
+    void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
+    void rescanSegment(const std::string& relpath) override;
+    size_t repackSegment(const std::string& relpath) override;
+    void archiveSegment(const std::string& relpath) override;
+    size_t removeSegment(const std::string& relpath, bool withData=false) override;
     size_t vacuum() override;
 };
 

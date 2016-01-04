@@ -272,7 +272,7 @@ Checker::Checker(const ConfigFile& cfg)
 
 std::string Checker::type() const { return "ondisk2"; }
 
-void Checker::rescanFile(const std::string& relpath)
+void Checker::rescanSegment(const std::string& relpath)
 {
     string pathname = str::joinpath(m_path, relpath);
 
@@ -349,7 +349,7 @@ void Checker::rescanFile(const std::string& relpath)
 }
 
 
-size_t Checker::repackFile(const std::string& relpath)
+size_t Checker::repackSegment(const std::string& relpath)
 {
     // Lock away writes and reads
     Pending p = idx->beginExclusiveTransaction();
@@ -397,19 +397,19 @@ size_t Checker::repackFile(const std::string& relpath)
     return size_pre - size_post;
 }
 
-void Checker::indexFile(const std::string& relpath, metadata::Collection&& contents)
+void Checker::indexSegment(const std::string& relpath, metadata::Collection&& contents)
 {
     throw std::runtime_error("cannot index " + relpath + ": the operation is not implemented in ondisk2 datasets");
 }
 
-size_t Checker::removeFile(const std::string& relpath, bool withData)
+size_t Checker::removeSegment(const std::string& relpath, bool withData)
 {
     idx->reset(relpath);
     // TODO: also remove .metadata and .summary files
-    return SegmentedChecker::removeFile(relpath, withData);
+    return SegmentedChecker::removeSegment(relpath, withData);
 }
 
-void Checker::archiveFile(const std::string& relpath)
+void Checker::archiveSegment(const std::string& relpath)
 {
     // Create the target directory in the archive
     string pathname = str::joinpath(m_path, relpath);
@@ -423,7 +423,7 @@ void Checker::archiveFile(const std::string& relpath)
     idx->reset(relpath);
 
     // Delegate the rest to SegmentedChecker
-    SegmentedChecker::archiveFile(relpath);
+    SegmentedChecker::archiveSegment(relpath);
 }
 
 size_t Checker::vacuum()

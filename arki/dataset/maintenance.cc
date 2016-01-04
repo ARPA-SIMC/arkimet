@@ -159,7 +159,7 @@ void RealRepacker::operator()(const std::string& relpath, segment::State state)
     if (state.has(SEGMENT_DIRTY) && !state.has(SEGMENT_DELETE_AGE))
     {
         // Repack the file
-        size_t saved = w.repackFile(relpath);
+        size_t saved = w.repackSegment(relpath);
         reporter.segment_repack(w, relpath, "repacked (" + std::to_string(saved) + " freed)");
         ++m_count_packed;
         m_count_freed += saved;
@@ -167,7 +167,7 @@ void RealRepacker::operator()(const std::string& relpath, segment::State state)
     if (state.has(SEGMENT_ARCHIVE_AGE))
     {
         // Create the target directory in the archive
-        w.archiveFile(relpath);
+        w.archiveSegment(relpath);
         reporter.segment_archive(w, relpath, "archived");
         ++m_count_archived;
         m_touched_archive = true;
@@ -176,7 +176,7 @@ void RealRepacker::operator()(const std::string& relpath, segment::State state)
     if (state.has(SEGMENT_DELETE_AGE))
     {
         // Delete obsolete files
-        size_t size = w.removeFile(relpath, true);
+        size_t size = w.removeSegment(relpath, true);
         reporter.segment_delete(w, relpath, "deleted (" + std::to_string(size) + " freed)");
         ++m_count_deleted;
         ++m_count_deindexed;
@@ -186,7 +186,7 @@ void RealRepacker::operator()(const std::string& relpath, segment::State state)
     if (state.has(SEGMENT_NEW))
     {
         // Delete all files not indexed
-        size_t size = w.removeFile(relpath, true);
+        size_t size = w.removeSegment(relpath, true);
         reporter.segment_delete(w, relpath, "deleted (" + std::to_string(size) + " freed)");
         ++m_count_deleted;
         m_count_freed += size;
@@ -194,7 +194,7 @@ void RealRepacker::operator()(const std::string& relpath, segment::State state)
     if (state.has(SEGMENT_DELETED))
     {
         // Remove from index those files that have been deleted
-        w.removeFile(relpath, false);
+        w.removeSegment(relpath, false);
         reporter.segment_deindex(w, relpath, "removed from index");
         ++m_count_deindexed;
         m_redo_summary = true;
@@ -239,7 +239,7 @@ void RealFixer::operator()(const std::string& relpath, segment::State state)
     */
     if (state.has(SEGMENT_NEW) || state.has(SEGMENT_UNALIGNED))
     {
-        w.rescanFile(relpath);
+        w.rescanSegment(relpath);
         reporter.segment_rescan(w, relpath, "rescanned");
         ++m_count_rescanned;
         m_redo_summary = true;
@@ -247,7 +247,7 @@ void RealFixer::operator()(const std::string& relpath, segment::State state)
     if (state.has(SEGMENT_DELETED))
     {
         // Remove from index those files that have been deleted
-        w.removeFile(relpath, false);
+        w.removeSegment(relpath, false);
         reporter.segment_deindex(w, relpath, "removed from the index");
         ++m_count_deindexed;
         m_redo_summary = true;

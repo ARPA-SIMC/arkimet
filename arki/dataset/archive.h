@@ -90,8 +90,7 @@ public:
 
     std::string type() const override;
 
-    //void indexFile(const std::string& relname);
-    void indexFile(const std::string& relname, metadata::Collection&& mds);
+    void indexSegment(const std::string& relname, metadata::Collection&& mds);
 
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
     void repack(dataset::Reporter& reporter, bool writable=false) override;

@@ -64,7 +64,7 @@ add_method("acquire_last", [](Fixture& f) {
     {
         ArchivesChecker checker("testds");
         system("cp -a inbound/test-sorted.grib1 testds/.archive/last/test-sorted.grib1");
-        wassert(checker.indexFile("last/test-sorted.grib1", metadata::Collection(f.orig)));
+        wassert(checker.indexSegment("last/test-sorted.grib1", metadata::Collection(f.orig)));
         wassert(actual_file("testds/.archive/last/test-sorted.grib1").exists());
         wassert(actual_file("testds/.archive/last/test-sorted.grib1.metadata").exists());
         wassert(actual_file("testds/.archive/last/test-sorted.grib1.summary").exists());
@@ -136,7 +136,7 @@ add_method("maintenance_missing_metadata", [](Fixture& f) {
     {
         ArchivesChecker checker("testds");
         system("cp inbound/test-sorted.grib1 testds/.archive/last/");
-        wassert(checker.indexFile("last/test-sorted.grib1", metadata::Collection(f.orig)));
+        wassert(checker.indexSegment("last/test-sorted.grib1", metadata::Collection(f.orig)));
         sys::unlink("testds/.archive/last/test-sorted.grib1.metadata");
         sys::unlink("testds/.archive/last/test-sorted.grib1.summary");
     }
@@ -193,7 +193,7 @@ add_method("reader_empty_last", [](Fixture& f) {
         system("cp inbound/test-sorted.grib1 testds/.archive/foo/");
 
         ArchivesChecker checker("testds");
-        wassert(checker.indexFile("foo/test-sorted.grib1", metadata::Collection(f.orig)));
+        wassert(checker.indexSegment("foo/test-sorted.grib1", metadata::Collection(f.orig)));
 
         wassert(actual(checker).check_clean(true, true));
         wassert(actual(checker).repack_clean(true));

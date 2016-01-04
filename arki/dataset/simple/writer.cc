@@ -165,7 +165,7 @@ Checker::~Checker()
 
 std::string Checker::type() const { return "simple"; }
 
-void Checker::indexFile(const std::string& relname, metadata::Collection&& mds)
+void Checker::indexSegment(const std::string& relname, metadata::Collection&& mds)
 {
     string pathname = str::joinpath(m_path, relname);
     time_t mtime = scan::timestamp(pathname);
@@ -189,18 +189,18 @@ void Checker::indexFile(const std::string& relname, metadata::Collection&& mds)
     m_mft->flush();
 }
 
-void Checker::rescanFile(const std::string& relpath)
+void Checker::rescanSegment(const std::string& relpath)
 {
     // Delete cached info to force a full rescan
     string pathname = str::joinpath(m_path, relpath);
     sys::unlink_ifexists(pathname + ".metadata");
     sys::unlink_ifexists(pathname + ".summary");
 
-    m_mft->rescanFile(m_path, relpath);
+    m_mft->rescanSegment(m_path, relpath);
 }
 
 
-size_t Checker::repackFile(const std::string& relpath)
+size_t Checker::repackSegment(const std::string& relpath)
 {
     string pathname = str::joinpath(m_path, relpath);
 
@@ -246,19 +246,19 @@ size_t Checker::repackFile(const std::string& relpath)
 	return size_pre - size_post;
 }
 
-size_t Checker::removeFile(const std::string& relpath, bool withData)
+size_t Checker::removeSegment(const std::string& relpath, bool withData)
 {
     m_mft->remove(relpath);
-    return SegmentedChecker::removeFile(relpath, withData);
+    return SegmentedChecker::removeSegment(relpath, withData);
 }
 
-void Checker::archiveFile(const std::string& relpath)
+void Checker::archiveSegment(const std::string& relpath)
 {
     // Remove from index
     m_mft->remove(relpath);
 
     // Delegate the rest to SegmentedChecker
-    SegmentedChecker::archiveFile(relpath);
+    SegmentedChecker::archiveSegment(relpath);
 }
 
 size_t Checker::vacuum()
