@@ -81,8 +81,6 @@ this->add_method("preconditions", [](Fixture& f) {
 
 // Test accuracy of maintenance scan, on perfect dataset
 this->add_method("clean", [](Fixture& f) {
-    //unsigned file_count = f.td.count_dataset_files();
-
     wassert(f.import_all(f.td));
 
     // Ensure everything appears clean
@@ -183,19 +181,18 @@ this->add_method("delete_age", [](Fixture& f) {
     f.cfg.setValue("delete age", f.td.selective_days_since());
     wassert(f.import_all(f.td));
 
-    // Check if files to delete are detected
     {
         auto checker(f.makeChecker());
         ReporterExpected e;
+
+        // Check if files to delete are detected
+        e.clear();
         for (const auto& i: f.td.fnames_before_cutoff)
             e.deleted.emplace_back("testds", i);
         wassert(actual(checker.get()).repack(e, false));
-    }
 
-    // Perform packing and check that things are still ok afterwards
-    {
-        auto checker(f.makeChecker());
-        ReporterExpected e;
+        // Perform packing and check that things are still ok afterwards
+        e.clear();
         for (const auto& i: f.td.fnames_before_cutoff)
             e.deleted.emplace_back("testds", i);
         wassert(actual(checker.get()).repack(e, true));
@@ -278,35 +275,37 @@ this->add_method("scan_corrupted", [](Fixture& f) {
     // Corrupt the first datum in the file
     corrupt_datafile(second_in_segment.absolutePathname());
 
-    ReporterExpected e;
-    auto checker(f.makeChecker());
+    {
+        ReporterExpected e;
+        auto checker(f.makeChecker());
 
-    // A quick check has nothing to complain
-    wassert(actual(checker.get()).check_clean(false, true));
+        // A quick check has nothing to complain
+        wassert(actual(checker.get()).check_clean(false, true));
 
-    // A thorough check should find the corruption
-    e.clear();
-    e.rescanned.emplace_back("testds", second_in_segment.filename);
-    wassert(actual(checker.get()).check(e, false, false));
+        // A thorough check should find the corruption
+        e.clear();
+        e.rescanned.emplace_back("testds", second_in_segment.filename);
+        wassert(actual(checker.get()).check(e, false, false));
 
-    // Perform full maintenance and check that things are still ok afterwards
-    e.clear();
-    e.rescanned.emplace_back("testds", second_in_segment.filename);
-    wassert(actual(checker.get()).check(e, true, false));
+        // Perform full maintenance and check that things are still ok afterwards
+        e.clear();
+        e.rescanned.emplace_back("testds", second_in_segment.filename);
+        wassert(actual(checker.get()).check(e, true, false));
 
-    // The corrupted file has been deindexed, now there is a gap in the data file
-    e.clear();
-    e.repacked.emplace_back("testds", second_in_segment.filename);
-    wassert(actual(checker.get()).check(e, false, false));
+        // The corrupted file has been deindexed, now there is a gap in the data file
+        e.clear();
+        e.repacked.emplace_back("testds", second_in_segment.filename);
+        wassert(actual(checker.get()).check(e, false, false));
 
-    // Perform packing and check that things are still ok afterwards
-    e.clear();
-    e.repacked.emplace_back("testds", second_in_segment.filename);
-    wassert(actual(checker.get()).repack(e, true));
+        // Perform packing and check that things are still ok afterwards
+        e.clear();
+        e.repacked.emplace_back("testds", second_in_segment.filename);
+        wassert(actual(checker.get()).repack(e, true));
 
-    // Maintenance and pack are ok now
-    wassert(actual(checker.get()).check_clean(false, false));
-    wassert(actual(checker.get()).repack_clean(false));
+        // Maintenance and pack are ok now
+        wassert(actual(checker.get()).check_clean(false, false));
+        wassert(actual(checker.get()).repack_clean(false));
+    }
 
     // Try querying and make sure we get the two files
     auto reader(f.makeReader());
@@ -320,33 +319,30 @@ this->add_method("scan_corrupted", [](Fixture& f) {
 this->add_method("repack_deleted", [](Fixture& f) {
     wassert(f.import_all_packed(f.td));
     string deleted_fname = f.import_results[0].sourceBlob().filename;
-    unsigned file_count = f.td.count_dataset_files();
     f.segments().remove(deleted_fname);
 
-    auto checker(f.makeChecker());
-    ReporterExpected e;
+    {
+        auto checker(f.makeChecker());
+        ReporterExpected e;
 
-    // Initial check finds the deleted file
-    e.clear();
-    e.deindexed.emplace_back("testds", deleted_fname);
-    wassert(actual(checker.get()).check(e, false, true));
+        // Initial check finds the deleted file
+        e.clear();
+        e.deindexed.emplace_back("testds", deleted_fname);
+        wassert(actual(checker.get()).check(e, false, true));
 
-    // Packing should notice the problem and do nothing
-    e.clear();
-    e.deindexed.emplace_back("testds", deleted_fname);
-    wassert(actual(checker.get()).repack(e, true));
+        // Packing finds the deleted file
+        e.clear();
+        e.deindexed.emplace_back("testds", deleted_fname);
+        wassert(actual(checker.get()).repack(e, false));
 
-    e.clear();
-    e.deindexed.emplace_back("testds", deleted_fname);
-    wassert(actual(checker.get()).check(e, false, true));
+        // Perform packing and check that things are still ok afterwards
+        e.clear();
+        e.deindexed.emplace_back("testds", deleted_fname);
+        wassert(actual(checker.get()).repack(e, true));
 
-    // Perform packing and check that things are still ok afterwards
-    e.clear();
-    e.deindexed.emplace_back("testds", deleted_fname);
-    wassert(actual(checker.get()).repack(e, true));
-
-    wassert(actual(checker.get()).check_clean(false, true));
-    wassert(actual(checker.get()).repack_clean(false));
+        wassert(actual(checker.get()).check_clean(false, true));
+        wassert(actual(checker.get()).repack_clean(false));
+    }
 
     // Try querying and make sure we get the two files
     auto reader(f.makeReader());
@@ -360,23 +356,24 @@ this->add_method("repack_deleted", [](Fixture& f) {
 this->add_method("check_deleted", [](Fixture& f) {
     wassert(f.import_all_packed(f.td));
     string deleted_fname = f.import_results[0].sourceBlob().filename;
-    unsigned file_count = f.td.count_dataset_files();
     f.segments().remove(deleted_fname);
 
-    auto checker(f.makeChecker());
-    ReporterExpected e;
+    {
+        auto checker(f.makeChecker());
+        ReporterExpected e;
 
-    // Initial check finds the deleted file
-    e.clear();
-    e.deindexed.emplace_back("testds", deleted_fname);
-    wassert(actual(checker.get()).check(e, false, true));
+        // Initial check finds the deleted file
+        e.clear();
+        e.deindexed.emplace_back("testds", deleted_fname);
+        wassert(actual(checker.get()).check(e, false, true));
 
-    // Perform full maintenance and check that things are still ok afterwards
-    e.clear();
-    e.deindexed.emplace_back("testds", deleted_fname);
-    wassert(actual(checker.get()).check(e, true, true));
+        // Perform full maintenance and check that things are still ok afterwards
+        e.clear();
+        e.deindexed.emplace_back("testds", deleted_fname);
+        wassert(actual(checker.get()).check(e, true, true));
 
-    wassert(actual(checker.get()).check_clean(false, true));
+        wassert(actual(checker.get()).check_clean(false, true));
+    }
 
     // Try querying and make sure we get the two files
     auto reader(f.makeReader());
@@ -388,33 +385,34 @@ this->add_method("check_deleted", [](Fixture& f) {
 // Test accuracy of maintenance scan, after deleting the index, with some
 // spurious extra files in the dataset
 this->add_method("scan_noindex", [](Fixture& f) {
-    unsigned file_count = f.td.count_dataset_files();
     wassert(f.import_all_packed(f.td));
     sys::unlink_ifexists("testds/index.sqlite");
     sys::unlink_ifexists("testds/MANIFEST");
     sys::makedirs("testds/2014/");
     sys::write_file("testds/2014/01.grib1.tmp", "GRIB garbage 7777");
 
-    auto checker(f.makeChecker());
-    ReporterExpected e;
+    {
+        auto checker(f.makeChecker());
+        ReporterExpected e;
 
-    // See if the files to index are detected
-    e.clear();
-    for (const auto& i: f.td.test_data)
-        e.rescanned.emplace_back("testds", i.destfile);
-    wassert(actual(checker.get()).check(e, false, true));
+        // See if the files to index are detected
+        e.clear();
+        for (const auto& i: f.td.test_data)
+            e.rescanned.emplace_back("testds", i.destfile);
+        wassert(actual(checker.get()).check(e, false, true));
 
-    // Perform full maintenance and check that things are still ok afterwards
-    e.clear();
-    for (const auto& i: f.td.test_data)
-        e.rescanned.emplace_back("testds", i.destfile);
-    wassert(actual(checker.get()).check(e, true, true));
+        // Perform full maintenance and check that things are still ok afterwards
+        e.clear();
+        for (const auto& i: f.td.test_data)
+            e.rescanned.emplace_back("testds", i.destfile);
+        wassert(actual(checker.get()).check(e, true, true));
 
-    wassert(actual(checker.get()).check_clean(false, true));
-    wassert(actual(checker.get()).repack_clean(false));
+        wassert(actual(checker.get()).check_clean(false, true));
+        wassert(actual(checker.get()).repack_clean(false));
 
-    // The spurious file should not have been touched
-    wassert(actual_file("testds/2014/01.grib1.tmp").exists());
+        // The spurious file should not have been touched
+        wassert(actual_file("testds/2014/01.grib1.tmp").exists());
+    }
 
     // Try querying and make sure we get the three files
     auto reader(f.makeReader());
