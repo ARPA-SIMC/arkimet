@@ -1,4 +1,4 @@
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/types/bbox.h>
 #include <arki/types/utils.h>
 #include <arki/binary.h>
@@ -40,7 +40,7 @@ BBox::Style BBox::parseStyle(const std::string& str)
 	if (str == "POINT") return POINT;
 	if (str == "BOX") return BOX;
 	if (str == "HULL") return HULL;
-	throw wibble::exception::Consistency("parsing BBox style", "cannot parse BBox style '"+str+"': only INVALID and BOX are supported");
+	throw_consistency_error("parsing BBox style", "cannot parse BBox style '"+str+"': only INVALID and BOX are supported");
 }
 
 std::string BBox::formatStyle(BBox::Style s)
@@ -81,7 +81,7 @@ unique_ptr<BBox> BBox::decode(BinaryDecoder& dec)
             return createInvalid();
         }
         default:
-            throw wibble::exception::Consistency("parsing BBox", "style is " + formatStyle(s) + " but we can only decode INVALID and BOX");
+            throw_consistency_error("parsing BBox", "style is " + formatStyle(s) + " but we can only decode INVALID and BOX");
     }
 }
 
@@ -120,7 +120,7 @@ int INVALID::compare_local(const BBox& o) const
 	// We should be the same kind, so upcast
 	const INVALID* v = dynamic_cast<const INVALID*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a GRIB1 BBox, but is a ") + typeid(&o).name() + " instead");
 

@@ -1,7 +1,6 @@
 #include <arki/dataset/index/attr.h>
 #include <arki/matcher.h>
 #include <arki/binary.h>
-#include <arki/wibble/exception.h>
 #include <sstream>
 
 using namespace std;

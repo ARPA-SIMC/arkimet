@@ -1,6 +1,6 @@
 /// arki-check - Maintenance of arkimet dataset
 #include "config.h"
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/utils/commandline/parser.h>
 #include <arki/configfile.h>
 #include <arki/runtime/printer.h>
@@ -10,6 +10,7 @@
 #include <arki/types/assigneddataset.h>
 #include <arki/nag.h>
 #include <arki/runtime.h>
+#include <sstream>
 #include <iostream>
 #include <sys/stat.h>
 
@@ -290,10 +291,10 @@ int main(int argc, const char* argv[])
 		} else {
 			if (opts.stats->boolValue())
 				// worker.reset(new Statistician());
-				throw wibble::exception::Consistency("running --stats", "statistics code needs to be reimplemented");
+				throw_consistency_error("running --stats", "statistics code needs to be reimplemented");
 			else if (opts.invalidate->boolValue())
 				// worker.reset(new Invalidator);
-				throw wibble::exception::Consistency("running --invalidate", "invalidate code needs to be reimplemented");
+				throw_consistency_error("running --invalidate", "invalidate code needs to be reimplemented");
 			else if (opts.remove_all->boolValue())
 				worker.reset(new RemoveAller(opts.fix->boolValue()));
 			else if (opts.repack->boolValue())

@@ -1,4 +1,4 @@
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/types/area.h>
 #include <arki/types/utils.h>
 #include <arki/binary.h>
@@ -46,10 +46,10 @@ const unsigned char Area::VM2;
 
 Area::Style Area::parseStyle(const std::string& str)
 {
-	if (str == "GRIB") return GRIB;
-	if (str == "ODIMH5") return ODIMH5;
+    if (str == "GRIB") return GRIB;
+    if (str == "ODIMH5") return ODIMH5;
     if (str == "VM2") return VM2;
-	throw wibble::exception::Consistency("parsing Area style", "cannot parse Area style '"+str+"': only GRIB,ODIMH5 is supported");
+    throw_consistency_error("parsing Area style", "cannot parse Area style '"+str+"': only GRIB,ODIMH5 is supported");
 }
 
 std::string Area::formatStyle(Area::Style s)
@@ -111,18 +111,16 @@ unique_ptr<Area> Area::decodeString(const std::string& val)
         case Area::GRIB: return createGRIB(ValueBag::parse(inner));
         case Area::ODIMH5: return createODIMH5(ValueBag::parse(inner));
         case Area::VM2: {
-            using wibble::exception::Consistency;
             const char* innerptr = inner.c_str();
             char* endptr;
             unsigned long station_id = strtoul(innerptr, &endptr, 10); 
             if (innerptr == endptr)
-                throw Consistency("parsing" + inner,
-                                  "expected a number, but found \"" + inner +"\"");
+                throw std::runtime_error("cannot parse" + inner + ": expected a number, but found \"" + inner +"\"");
             return createVM2(station_id);
         }
-		default:
-			throw wibble::exception::Consistency("parsing Area", "unknown Area style " + formatStyle(style));
-	}
+        default:
+            throw_consistency_error("parsing Area", "unknown Area style " + formatStyle(style));
+    }
 }
 
 unique_ptr<Area> Area::decodeMapping(const emitter::memory::Mapping& val)
@@ -135,7 +133,7 @@ unique_ptr<Area> Area::decodeMapping(const emitter::memory::Mapping& val)
         case Area::ODIMH5: return upcast<Area>(area::ODIMH5::decodeMapping(val));
         case Area::VM2: return upcast<Area>(area::VM2::decodeMapping(val));
         default:
-            throw wibble::exception::Consistency("parsing Area", "unknown Area style " + val.get_string());
+            throw_consistency_error("parsing Area", "unknown Area style " + val.get_string());
     }
 }
 
@@ -235,14 +233,14 @@ bool GRIB::lua_lookup(lua_State* L, const std::string& name) const
 
 int GRIB::compare_local(const Area& o) const
 {
-	// We should be the same kind, so upcast
-	const GRIB* v = dynamic_cast<const GRIB*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a GRIB Area, but is a ") + typeid(&o).name() + " instead");
+    // We should be the same kind, so upcast
+    const GRIB* v = dynamic_cast<const GRIB*>(&o);
+    if (!v)
+        throw_consistency_error(
+            "comparing metadata types",
+            string("second element claims to be a GRIB Area, but is a ") + typeid(&o).name() + " instead");
 
-	return m_values.compare(v->m_values);
+    return m_values.compare(v->m_values);
 }
 
 bool GRIB::equals(const Type& o) const
@@ -309,14 +307,14 @@ bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
 
 int ODIMH5::compare_local(const Area& o) const
 {
-	// We should be the same kind, so upcast
-	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a ODIMH5 Area, but is a ") + typeid(&o).name() + " instead");
+    // We should be the same kind, so upcast
+    const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
+    if (!v)
+        throw_consistency_error(
+            "comparing metadata types",
+            string("second element claims to be a ODIMH5 Area, but is a ") + typeid(&o).name() + " instead");
 
-	return m_values.compare(v->m_values);
+    return m_values.compare(v->m_values);
 }
 
 bool ODIMH5::equals(const Type& o) const
@@ -408,10 +406,10 @@ int VM2::compare_local(const Area& o) const
 {
     const VM2* v = dynamic_cast<const VM2*>(&o);
     if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a VM2 Area, but is a ") + typeid(&o).name() + " instead");
-	if (m_station_id == v->m_station_id) return 0;
+        throw_consistency_error(
+            "comparing metadata types",
+            string("second element claims to be a VM2 Area, but is a ") + typeid(&o).name() + " instead");
+    if (m_station_id == v->m_station_id) return 0;
     return (m_station_id > v->m_station_id ? 1 : -1);
 }
 

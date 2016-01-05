@@ -1,4 +1,5 @@
 #include "arki/dataset/ondisk2/writer.h"
+#include "arki/exceptions.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/archive.h"
 #include "arki/dataset/segment.h"
@@ -17,7 +18,6 @@
 #include "arki/nag.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/wibble/exception.h"
 #include <sstream>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -284,7 +284,7 @@ void Checker::rescanSegment(const std::string& relpath)
     // Collect the scan results in a metadata::Collector
     metadata::Collection mds;
     if (!scan::scan(pathname, mds.inserter_func()))
-        throw wibble::exception::Consistency("rescanning " + pathname, "file format unknown");
+        throw std::runtime_error("cannot rescan " + pathname + ": file format unknown");
     // cerr << " SCANNED " << pathname << ": " << mds.size() << endl;
 
     // Lock away writes and reads

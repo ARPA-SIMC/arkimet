@@ -211,7 +211,7 @@ void ChildProcess::waitForSuccess() {
         snprintf(buf, 128, "Subprocess terminated by signal %d.", WTERMSIG(r));
         throw std::runtime_error(buf);
     }
-    throw exception::Generic( "Error waiting for subprocess." );
+    throw std::runtime_error("error waiting for subprocess.");
 }
 
 void ChildProcess::kill(int signal)
@@ -228,4 +228,3 @@ void ChildProcess::kill(int signal)
 
 }
 }
-// vim:set ts=4 sw=4:

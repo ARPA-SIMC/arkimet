@@ -1,6 +1,5 @@
 /// Manage a remote inbound queue
 #include "config.h"
-#include <arki/wibble/exception.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/matcher.h>

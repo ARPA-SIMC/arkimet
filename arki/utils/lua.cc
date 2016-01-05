@@ -4,7 +4,7 @@
 #include <arki/metadata.h>
 #include <arki/summary.h>
 #include <arki/matcher.h>
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <ostream>
 
 using namespace std;
@@ -62,7 +62,7 @@ void Lua::functionFromFile(const std::string& name, const std::string& fname)
 		string error = lua_tostring(L, -1);
 		// Pop the error from the stack
 		lua_pop(L, 1);
-		throw wibble::exception::Consistency("parsing Lua code for function " + name, error);
+		throw_consistency_error("parsing Lua code for function " + name, error);
 	}
 
 	// Set the function as a global variable
@@ -77,7 +77,7 @@ void Lua::functionFromString(const std::string& name, const std::string& buf, co
 		string error = lua_tostring(L, -1);
 		// Pop the error from the stack
 		lua_pop(L, 1);
-		throw wibble::exception::Consistency("parsing Lua code for function " + name, error);
+		throw_consistency_error("parsing Lua code for function " + name, error);
 	}
 	// Set the function as the global variable "GRIB1"
 	lua_setglobal(L, name.c_str());

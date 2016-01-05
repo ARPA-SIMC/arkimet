@@ -1,4 +1,4 @@
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/types/time.h>
 #include <arki/types/utils.h>
 #include <arki/binary.h>
@@ -312,7 +312,7 @@ void Time::setFromISO8601(const std::string& str)
     int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
     sscanf(str.c_str(), "%d-%d-%dT%d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
     if (count == 0)
-        throw wibble::exception::Consistency(
+        throw_consistency_error(
                 "Invalid datetime specification: '"+str+"'",
                 "Parsing ISO-8601 string");
 }
@@ -322,7 +322,7 @@ void Time::setFromSQL(const std::string& str)
     int* v = vals;
     int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
     if (count == 0)
-        throw wibble::exception::Consistency(
+        throw_consistency_error(
                 "Invalid datetime specification: '"+str+"'",
                 "Parsing SQL string");
 }
@@ -365,7 +365,7 @@ unique_ptr<Time> Time::createFromISO8601(const std::string& str)
     if (count < 6)
         count = sscanf(str.c_str(), "%d-%d-%dT%d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
     if (count < 6)
-        throw wibble::exception::Consistency(
+        throw_consistency_error(
                 "Invalid datetime specification: '"+str+"'",
                 "Parsing ISO-8601 string");
     return res;
@@ -377,7 +377,7 @@ Time Time::create_from_SQL(const std::string& str)
     int* v = res.vals;
     int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
     if (count == 0)
-        throw wibble::exception::Consistency(
+        throw_consistency_error(
                 "Invalid datetime specification: '"+str+"'",
                 "Parsing SQL string");
     return res;
@@ -414,7 +414,7 @@ static int _daysinmonth(int month, int year)
 		default: {
 			stringstream str;
 			str << "Month '" << month << "' is not between 1 and 12";
-			throw wibble::exception::Consistency("computing number of days in month", str.str());
+			throw_consistency_error("computing number of days in month", str.str());
 		}
 	}
 }

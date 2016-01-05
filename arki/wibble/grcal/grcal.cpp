@@ -19,7 +19,7 @@
  */
 
 #include <arki/wibble/grcal/grcal.h>
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <ctime>
 #include <sstream>
 #include <iomanip>
@@ -47,6 +47,7 @@ static std::string tostringall(const int* val)
 #endif
 
 using namespace std;
+using namespace arki;
 
 namespace wibble {
 namespace grcal {
@@ -75,7 +76,7 @@ int daysinmonth(int year, int month)
 		default: {
 			stringstream str;
 			str << "Month '" << month << "' is not between 1 and 12";
-			throw wibble::exception::Consistency("computing number of days in month", str.str());
+			throw_consistency_error("computing number of days in month", str.str());
 		}
 	}
 }

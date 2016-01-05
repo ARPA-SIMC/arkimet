@@ -1,5 +1,4 @@
 #include "config.h"
-#include <arki/wibble/exception.h>
 #include <arki/utils/commandline/parser.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>

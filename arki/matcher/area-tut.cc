@@ -4,7 +4,6 @@
 #include "arki/metadata.h"
 #include "arki/types/area.h"
 #include "arki/configfile.h"
-#include "arki/wibble/exception.h"
 #include <sstream>
 #include <iostream>
 

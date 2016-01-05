@@ -5,7 +5,7 @@
 #include <arki/types/reftime.h>
 #include <arki/metadata.h>
 
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/utils/string.h>
 #include <arki/wibble/regexp.h>
 #include <arki/wibble/grcal/grcal.h>
@@ -31,7 +31,7 @@ struct Item
 	Item(const std::string& expr)
 	{
 		if (expr.empty())
-			throw wibble::exception::Consistency("parsing sort expression", "metadata name is the empty string");
+			throw_consistency_error("parsing sort expression", "metadata name is the empty string");
 		size_t start = 0;
 		switch (expr[0])
 		{
@@ -137,7 +137,7 @@ static Compare::Interval parseInterval(const std::string& name)
     if (nname == "day") return Compare::DAY;
     if (nname == "month") return Compare::MONTH;
     if (nname == "year") return Compare::YEAR;
-    throw wibble::exception::Consistency("parsing interval name", "unsupported interval: " + name + ".  Valid intervals are minute, hour, day, month and year");
+    throw_consistency_error("parsing interval name", "unsupported interval: " + name + ".  Valid intervals are minute, hour, day, month and year");
 }
 
 unique_ptr<Compare> Compare::parse(const std::string& expr)

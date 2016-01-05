@@ -1,23 +1,23 @@
-#include <arki/summary.h>
-#include <arki/summary/table.h>
-#include <arki/summary/codec.h>
-#include <arki/summary/stats.h>
-#include <arki/metadata.h>
-#include <arki/matcher.h>
-#include <arki/binary.h>
-#include <arki/formatter.h>
-#include <arki/types/utils.h>
-#include <arki/types/area.h>
-#include <arki/types/time.h>
-#include <arki/utils/geosdef.h>
-#include <arki/utils/compress.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include <arki/iotrace.h>
-#include <arki/utils/lua.h>
-#include <arki/utils/string.h>
-#include <arki/utils/sys.h>
-#include "arki/wibble/exception.h"
+#include "summary.h"
+#include "summary/table.h"
+#include "summary/codec.h"
+#include "summary/stats.h"
+#include "exceptions.h"
+#include "metadata.h"
+#include "matcher.h"
+#include "binary.h"
+#include "formatter.h"
+#include "types/utils.h"
+#include "types/area.h"
+#include "types/time.h"
+#include "utils/geosdef.h"
+#include "utils/compress.h"
+#include "emitter.h"
+#include "emitter/memory.h"
+#include "iotrace.h"
+#include "utils/lua.h"
+#include "utils/string.h"
+#include "utils/sys.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -325,7 +325,7 @@ void Summary::dump(std::ostream& out) const
 unique_ptr<types::Reftime> Summary::getReferenceTime() const
 {
     if (root->empty())
-        throw wibble::exception::Consistency("get summary reference time", "summary is empty");
+        throw_consistency_error("get summary reference time", "summary is empty");
     else
         return root->stats.make_reftime();
 }
@@ -428,7 +428,7 @@ bool Summary::read(int fd, const std::string& filename)
 
     // Ensure first 2 bytes are SU
     if (signature != "SU")
-        throw wibble::exception::Consistency("parsing file " + filename, "summary entry does not start with 'SU'");
+        throw_consistency_error("parsing file " + filename, "summary entry does not start with 'SU'");
 
     BinaryDecoder dec(buf);
     read_inner(dec, version, filename);

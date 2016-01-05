@@ -32,9 +32,7 @@ struct LexInterval {
 #include "parser.h"
 #include "arki/wibble/grcal/grcal.h"
 #include "reftime-parse.hh"
-
 #include <string>
-#include <arki/wibble/exception.h>
 #include <ctype.h>
 
 using namespace std;
@@ -50,7 +48,7 @@ struct Parser
 	{
 		string lead = str.substr(0, cur - str.begin());
 		string trail = str.substr(cur - str.begin());
-		throw wibble::exception::Consistency("parsing reftime match expression \"" + lead + "[HERE]" + trail + "\"", msg);
+        throw std::runtime_error("cannot parse reftime match expression \"" + lead + "[HERE]" + trail + "\": " + msg);
 	}
 
 	void eatNonSpaces()

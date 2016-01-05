@@ -166,7 +166,7 @@ void setPerms(const string& user)
 	{
 		stringstream str;
 		str << "User " << user << " does not exist on this system"; 
-		throw wibble::exception::Consistency("setting process permissions", str.str());
+		throw_consistency_error("setting process permissions", str.str());
 	}
 	struct group* gr = getgrgid(pw->pw_gid);
 	if (!gr)
@@ -174,7 +174,7 @@ void setPerms(const string& user)
 		stringstream str;
 		str << "Group " << pw->pw_gid << " (primary group of user "
 			<< user << ") does not exist on this system";
-		throw wibble::exception::Consistency("setting process permissions", str.str());
+		throw_consistency_error("setting process permissions", str.str());
 	}
 
 	set_perms(user, pw->pw_uid, gr->gr_name, gr->gr_gid);
@@ -187,14 +187,14 @@ void setPerms(const string& user, const string& group)
 	{
 		stringstream str;
 		str << "User " << user << " does not exist on this system";
-		throw wibble::exception::Consistency("setting process permissions", str.str());
+		throw_consistency_error("setting process permissions", str.str());
 	}
 	struct group* gr = getGroupInfo(group);
 	if (!gr)
 	{
 		stringstream str;
 		str << "Group " << group << " does not exist on this system";
-		throw wibble::exception::Consistency("setting process permissions", str.str());
+		throw_consistency_error("setting process permissions", str.str());
 	}
 
 	set_perms(user, pw->pw_uid, group, gr->gr_gid);
@@ -207,7 +207,7 @@ void setPerms(uid_t user)
 	{
 		stringstream str;
 		str << "User " << user << " does not exist on this system";
-		throw wibble::exception::Consistency("setting process permissions", str.str());
+		throw_consistency_error("setting process permissions", str.str());
 	}
 	struct group* gr = getgrgid(pw->pw_gid);
 	if (!gr)
@@ -215,7 +215,7 @@ void setPerms(uid_t user)
 		stringstream str;
 		str << "Group " << pw->pw_gid
 			<< " (primary group of user " << user << ") does not exist on this system";
-		throw wibble::exception::Consistency("setting process permissions", str.str());
+		throw_consistency_error("setting process permissions", str.str());
 	}
 
 	set_perms(pw->pw_name, pw->pw_uid, gr->gr_name, gr->gr_gid);
@@ -229,14 +229,14 @@ void setPerms(uid_t user, gid_t group)
 	{
 		stringstream str;
 		str << "User " << user << " does not exist on this system";
-		throw wibble::exception::Consistency("setting process permissions", str.str());
+		throw_consistency_error("setting process permissions", str.str());
 	}
 	struct group* gr = getgrgid(group);
 	if (!gr)
 	{
 		stringstream str;
 		str << "Group " << group << " does not exist on this system";
-		throw wibble::exception::Consistency("setting process permissions", str.str());
+		throw_consistency_error("setting process permissions", str.str());
 	}
 
 	set_perms(pw->pw_name, pw->pw_uid, gr->gr_name, gr->gr_gid);

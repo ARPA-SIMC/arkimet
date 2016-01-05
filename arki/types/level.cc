@@ -1,4 +1,4 @@
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/binary.h>
 #include <arki/utils.h>
 #include <arki/types/level.h>
@@ -92,7 +92,7 @@ Level::Style Level::parseStyle(const std::string& str)
 	if (str == "GRIB2S") return GRIB2S;
 	if (str == "GRIB2D") return GRIB2D;
 	if (str == "ODIMH5") return ODIMH5;
-	throw wibble::exception::Consistency("parsing Level style", "cannot parse Level style '"+str+"': only GRIB1, GRIB2S, GRIB2D, ODIMH5 are supported");
+	throw_consistency_error("parsing Level style", "cannot parse Level style '"+str+"': only GRIB1, GRIB2S, GRIB2D, ODIMH5 are supported");
 }
 
 std::string Level::formatStyle(Level::Style s)
@@ -153,7 +153,7 @@ unique_ptr<Level> Level::decode(BinaryDecoder& dec)
             return createODIMH5(min, max);
         }
 		default:
-			throw wibble::exception::Consistency("parsing Level", "style is " + formatStyle(s) + " but we can only decode GRIB1, GRIB2S and GRIB2D");
+			throw_consistency_error("parsing Level", "style is " + formatStyle(s) + " but we can only decode GRIB1, GRIB2S and GRIB2D");
 	}
 }
 
@@ -162,11 +162,11 @@ static int getNumber(const char * & start, const char* what)
 	char* endptr;
 
 	if (!*start)
-		throw wibble::exception::Consistency("parsing Level", string("no ") + what + " after level type");
+		throw_consistency_error("parsing Level", string("no ") + what + " after level type");
 
 	int res = strtol(start, &endptr, 10);
 	if (endptr == start)
-		throw wibble::exception::Consistency("parsing Level",
+		throw_consistency_error("parsing Level",
 				string("expected ") + what + ", but found \"" + start + "\"");
 	start = endptr;
 
@@ -183,7 +183,7 @@ static T getUnsigned(const char * & start, const char* what, T missing=(T)-1)
     char* endptr;
 
     if (!*start)
-        throw wibble::exception::Consistency("parsing Level", string("no ") + what + " found");
+        throw_consistency_error("parsing Level", string("no ") + what + " found");
 
     // Skip spaces, if any
     while (*start && (::isspace(*start)))
@@ -199,7 +199,7 @@ static T getUnsigned(const char * & start, const char* what, T missing=(T)-1)
     {
         res = (T)strtoul(start, &endptr, 10);
         if (endptr == start)
-            throw wibble::exception::Consistency("parsing Level",
+            throw_consistency_error("parsing Level",
                     string("expected ") + what + ", but found \"" + start + "\"");
         start = endptr;
     }
@@ -216,11 +216,11 @@ static double getDouble(const char * & start, const char* what)
 	char* endptr;
 
 	if (!*start)
-		throw wibble::exception::Consistency("parsing Level", string("no ") + what + " after level type");
+		throw_consistency_error("parsing Level", string("no ") + what + " after level type");
 
 	double res = strtold(start, &endptr);
 	if (endptr == start)
-		throw wibble::exception::Consistency("parsing Level",
+		throw_consistency_error("parsing Level",
 				string("expected ") + what + ", but found \"" + start + "\"");
 	start = endptr;
 
@@ -282,7 +282,7 @@ unique_ptr<Level> Level::decodeString(const std::string& val)
             return createODIMH5(min, max);
         }
 		default:
-			throw wibble::exception::Consistency("parsing Level", "unknown Level style " + formatStyle(style));
+			throw_consistency_error("parsing Level", "unknown Level style " + formatStyle(style));
 	}
 }
 
@@ -297,7 +297,7 @@ unique_ptr<Level> Level::decodeMapping(const emitter::memory::Mapping& val)
         case Level::GRIB2D: return upcast<Level>(level::GRIB2D::decodeMapping(val));
         case Level::ODIMH5: return upcast<Level>(level::ODIMH5::decodeMapping(val));
         default:
-            throw wibble::exception::Consistency("parsing Level", "unknown Level style " + val.get_string());
+            throw_consistency_error("parsing Level", "unknown Level style " + val.get_string());
     }
 }
 
@@ -522,7 +522,7 @@ int GRIB1::compare_local(const Level& o) const
 	// We should be the same kind, so upcast
 	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a GRIB1 Level, but is a ") + typeid(&o).name() + " instead");
 
@@ -748,7 +748,7 @@ int GRIB2S::compare_local(const Level& o) const
 	// We should be the same kind, so upcast
 	const GRIB2S* v = dynamic_cast<const GRIB2S*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a GRIB2S Level, but is a ") + typeid(&o).name() + " instead");
 
@@ -933,7 +933,7 @@ int GRIB2D::compare_local(const Level& o) const
 	// We should be the same kind, so upcast
 	const GRIB2D* v = dynamic_cast<const GRIB2D*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a GRIB2D Level, but is a ") + typeid(&o).name() + " instead");
 
@@ -1078,7 +1078,7 @@ int ODIMH5::compare_local(const Level& o) const
 	// We should be the same kind, so upcast
 	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a ODIMH5 Level, but is a ") + typeid(&o).name() + " instead");
 

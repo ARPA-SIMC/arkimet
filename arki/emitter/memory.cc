@@ -1,6 +1,6 @@
 #include "config.h"
 #include "memory.h"
-#include "arki/wibble/exception.h"
+#include "arki/exceptions.h"
 #include <memory>
 
 using namespace std;
@@ -16,7 +16,7 @@ Node::~Node()
 
 void Node::add_val(const Node*)
 {
-    throw wibble::exception::Consistency("adding node to structured data", "cannot add elements to this node");
+    throw_consistency_error("adding node to structured data", "cannot add elements to this node");
 }
 
 List::~List()
@@ -53,7 +53,7 @@ void Mapping::add_val(const Node* n)
     else
     {
         if (!n->is_string())
-            throw wibble::exception::Consistency("adding node to structured data", "cannot use a non-string as mapping key");
+            throw_consistency_error("adding node to structured data", "cannot use a non-string as mapping key");
         cur_key = n->get_string();
         has_cur_key = true;
         delete n;

@@ -44,7 +44,7 @@ struct NetCDFValidator : public Validator
 
 		wibble::Regexp re(meteo::vm2::Parser::regexp_str, 0, REG_EXTENDED);
 		if (!re.match(s))
-			throw wibble::exception::Consistency("Not a valid VM2 file", s);
+			throw_consistency_error("Not a valid VM2 file", s);
 #endif
 	}
 
@@ -55,10 +55,10 @@ struct NetCDFValidator : public Validator
 		std::string s((const char *)buf, size);
 
 		if (size == 0)
-			throw wibble::exception::Consistency("Empty VM2 file");
+			throw_consistency_error("Empty VM2 file");
         wibble::Regexp re(meteo::vm2::Parser::regexp_str, 0, REG_EXTENDED);
 		if (!re.match(s))
-			throw wibble::exception::Consistency("Not a valid VM2 file", s);
+			throw_consistency_error("Not a valid VM2 file", s);
 #endif
 	}
 };

@@ -4,7 +4,6 @@
 #include "arki/metadata.h"
 #include "arki/types/product.h"
 #include "arki/matcher/product.h"
-#include "arki/wibble/exception.h"
 #include <sstream>
 #include <iostream>
 #include <memory>

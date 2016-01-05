@@ -1,11 +1,11 @@
 #include "arki/dataset/merged.h"
+#include "arki/exceptions.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/matcher.h"
 #include "arki/summary.h"
 #include "arki/sort.h"
 #include "arki/utils/string.h"
-#include "arki/wibble/exception.h"
 #include <cstring>
 #include <thread>
 #include <mutex>
@@ -58,7 +58,7 @@ public:
     {
         std::lock_guard<std::mutex> lock(mutex);
         if (head == tail)
-            throw wibble::exception::Consistency("removing an element from a SyncBuffer", "the buffer is empty");
+            throw_consistency_error("removing an element from a SyncBuffer", "the buffer is empty");
         // Reset the item (this will take care, for example, to dereference
         // refcounted values in the same thread that took them over)
         unique_ptr<Metadata> res(buffer[tail]);
@@ -108,7 +108,7 @@ public:
     {
         try {
             if (!query)
-                throw wibble::exception::Consistency("executing query in subthread", "no query has been set");
+                throw_consistency_error("executing query in subthread", "no query has been set");
             dataset->query_data(*query, [&](unique_ptr<Metadata> md) {
                 mdbuf.push(move(md));
                 return true;
@@ -227,8 +227,8 @@ void Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         if (!readers[i].errorbuf.empty())
             errors.push_back(readers[i].errorbuf);
     }
-	if (!errors.empty())
-		throw wibble::exception::Consistency("running metadata queries on multiple datasets", str::join("; ", errors.begin(), errors.end()));
+    if (!errors.empty())
+        throw_consistency_error("running metadata queries on multiple datasets", str::join("; ", errors.begin(), errors.end()));
 }
 
 void Merged::query_summary(const Matcher& matcher, Summary& summary)
@@ -260,8 +260,8 @@ void Merged::query_summary(const Matcher& matcher, Summary& summary)
         else
             errors.push_back(readers[i].errorbuf);
     }
-	if (!errors.empty())
-		throw wibble::exception::Consistency("running summary queries on multiple datasets", str::join("; ", errors.begin(), errors.end()));
+    if (!errors.empty())
+        throw_consistency_error("running summary queries on multiple datasets", str::join("; ", errors.begin(), errors.end()));
 }
 
 void Merged::query_bytes(const dataset::ByteQuery& q, int out)

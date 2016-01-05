@@ -1,4 +1,4 @@
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/types/utils.h>
 #include <arki/binary.h>
@@ -87,13 +87,13 @@ unique_ptr<AssignedDataset> AssignedDataset::decodeString(const std::string& val
 {
 	size_t pos = val.find(" as ");
 	if (pos == string::npos)
-		throw wibble::exception::Consistency("parsing dataset attribution",
+		throw_consistency_error("parsing dataset attribution",
 			"string \"" + val + "\" does not contain \" as \"");
 	string name = val.substr(0, pos);
 	pos += 4;
 	size_t idpos = val.find(" imported on ", pos);
 	if (idpos == string::npos)
-		throw wibble::exception::Consistency("parsing dataset attribution",
+		throw_consistency_error("parsing dataset attribution",
 			"string \"" + val + "\" does not contain \" imported on \" after the dataset name");
 	string id = val.substr(pos, idpos - pos);
 	pos = idpos + 13;

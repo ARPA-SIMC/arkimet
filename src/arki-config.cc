@@ -1,6 +1,6 @@
 /// Configuration wizard
 #include "config.h"
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/utils/commandline/parser.h>
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
@@ -228,7 +228,7 @@ struct Wizard
 		datasetName = absConfigFile.substr(0, absConfigFile.size() - 7);
 		size_t pos = datasetName.rfind("/");
 		if (pos == string::npos)
-			throw wibble::exception::Consistency("computing dataset name", "config file " + absConfigFile + " cannot be in the root directory");
+			throw_consistency_error("computing dataset name", "config file " + absConfigFile + " cannot be in the root directory");
 		datasetName = datasetName.substr(pos + 1);
 	}
 
@@ -641,8 +641,6 @@ public:
             unique_ptr<matcher::Implementation> i = t.parse_func(expr);
             if (!i) return "parse error";
             return string();
-        } catch (wibble::exception::Generic& g) {
-            return g.desc();
         } catch (std::exception& e) {
             return e.what();
         }

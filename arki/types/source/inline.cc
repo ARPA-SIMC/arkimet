@@ -3,7 +3,7 @@
 #include <arki/utils/lua.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 
 using namespace std;
 using namespace arki::utils;
@@ -57,7 +57,7 @@ int Inline::compare_local(const Source& o) const
     // We should be the same kind, so upcast
     const Inline* v = dynamic_cast<const Inline*>(&o);
     if (!v)
-        throw wibble::exception::Consistency(
+        throw_consistency_error(
             "comparing metadata types",
             string("second element claims to be a Inline Source, but is a ") + typeid(&o).name() + " instead");
 

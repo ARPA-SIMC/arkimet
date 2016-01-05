@@ -1,5 +1,6 @@
 #include "config.h"
 #include "fd.h"
+#include "arki/exceptions.h"
 #include "arki/metadata/tests.h"
 #include "arki/metadata/collection.h"
 #include "arki/scan/any.h"
@@ -44,7 +45,7 @@ struct arki_data_fd_shar {
         w = dynamic_cast<fd::Writer*>(res._implementation());
 
         if (!w)
-            throw wibble::exception::Consistency("creating test writer", "the writer we got in not a fd::Writer");
+            throw_consistency_error("creating test writer", "the writer we got in not a fd::Writer");
 
         return res;
     }

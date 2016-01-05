@@ -21,7 +21,7 @@
  */
 
 #include "h5.h"
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <sstream>
 
 using namespace std;
@@ -60,7 +60,7 @@ void throw_error(const std::string& context, hid_t stack)
 {
     stringstream s;
     H5Ewalk(stack, H5E_WALK_UPWARD, h5_error_stack_to_sstream, &s);
-    throw wibble::exception::Consistency(context, s.str());
+    throw_consistency_error(context, s.str());
 }
 
 

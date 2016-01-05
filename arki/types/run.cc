@@ -1,4 +1,4 @@
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/types/run.h>
 #include <arki/types/utils.h>
 #include <arki/utils.h>
@@ -35,7 +35,7 @@ const unsigned char Run::MINUTE;
 Run::Style Run::parseStyle(const std::string& str)
 {
 	if (str == "MINUTE") return MINUTE;
-	throw wibble::exception::Consistency("parsing Run style", "cannot parse Run style '"+str+"': only MINUTE is supported");
+	throw_consistency_error("parsing Run style", "cannot parse Run style '"+str+"': only MINUTE is supported");
 }
 
 std::string Run::formatStyle(Run::Style s)
@@ -61,7 +61,7 @@ unique_ptr<Run> Run::decode(BinaryDecoder& dec)
             return createMinute(m / 60, m % 60);
         }
         default:
-            throw wibble::exception::Consistency("parsing Run", "style is " + formatStyle(s) + " but we can only decode MINUTE");
+            throw_consistency_error("parsing Run", "style is " + formatStyle(s) + " but we can only decode MINUTE");
     }
 }
 
@@ -87,7 +87,7 @@ unique_ptr<Run> Run::decodeString(const std::string& val)
             return createMinute(hour, minute);
         }
         default:
-            throw wibble::exception::Consistency("parsing Run", "unknown Run style " + formatStyle(style));
+            throw_consistency_error("parsing Run", "unknown Run style " + formatStyle(style));
     }
 }
 
@@ -99,7 +99,7 @@ unique_ptr<Run> Run::decodeMapping(const emitter::memory::Mapping& val)
     {
         case Run::MINUTE: return upcast<Run>(run::Minute::decodeMapping(val));
         default:
-            throw wibble::exception::Consistency("parsing Run", "unknown Run style " + val.get_string());
+            throw_consistency_error("parsing Run", "unknown Run style " + val.get_string());
     }
 }
 
@@ -185,7 +185,7 @@ int Minute::compare_local(const Run& o) const
 	// We should be the same kind, so upcast
 	const Minute* v = dynamic_cast<const Minute*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a GRIB1 Run, but is a ") + typeid(&o).name() + " instead");
 

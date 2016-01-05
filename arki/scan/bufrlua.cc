@@ -3,7 +3,7 @@
 #include <arki/metadata.h>
 #include <arki/runtime/config.h>
 #include <arki/utils/string.h>
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 
 using namespace std;
 using namespace dballe;
@@ -25,7 +25,7 @@ BufrLua::BufrLua()
             string error = lua_tostring(L, -1);
             // Pop the error from the stack
             lua_pop(L, 1);
-            throw wibble::exception::Consistency("parsing " + fname, error);
+            throw_consistency_error("parsing " + fname, error);
         }
     }
 }
@@ -57,7 +57,7 @@ int BufrLua::get_scan_func(MsgType type)
                 string error = lua_tostring(L, -1);
                 // Pop the error from the stack
                 lua_pop(L, 1);
-                throw wibble::exception::Consistency("parsing " + fname, error);
+                throw_consistency_error("parsing " + fname, error);
         }
 
 	// Index the queryData function
@@ -92,7 +92,7 @@ void BufrLua::scan(Message& message, Metadata& md)
         {
                 string error = lua_tostring(L, -1);
                 lua_pop(L, 1);
-                throw wibble::exception::Consistency("running BUFR scan function", error);
+                throw_consistency_error("running BUFR scan function", error);
         }
 }
 

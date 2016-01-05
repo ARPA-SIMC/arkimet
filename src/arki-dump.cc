@@ -1,6 +1,5 @@
 /// Dump arkimet data files
 #include "config.h"
-#include <arki/wibble/exception.h>
 #include <arki/utils/commandline/parser.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
@@ -13,6 +12,7 @@
 #include <arki/utils/files.h>
 #include <arki/binary.h>
 #include <arki/runtime.h>
+#include <sstream>
 #include <iostream>
 
 using namespace std;

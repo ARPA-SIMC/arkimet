@@ -1,7 +1,7 @@
 #include "stream.h"
 #include <arki/types/source/inline.h>
 #include <arki/binary.h>
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/utils/string.h>
 #include <cstring>
 
@@ -73,7 +73,7 @@ bool Stream::check()
         case METADATA: return checkMetadata(); break;
         case DATA: return checkData(); break;
         default:
-            throw wibble::exception::Consistency("checking inbound data", "metadata stream state is in invalid state");
+            throw_consistency_error("checking inbound data", "metadata stream state is in invalid state");
     }
 }
 

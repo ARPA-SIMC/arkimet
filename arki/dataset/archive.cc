@@ -17,7 +17,6 @@
 #include "arki/nag.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include "arki/wibble/exception.h"
 #include <ctime>
 #include <fcntl.h>
 #ifdef HAVE_LUA

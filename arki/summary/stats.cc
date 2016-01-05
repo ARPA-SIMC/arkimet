@@ -1,14 +1,14 @@
-#include <arki/summary/stats.h>
-#include <arki/metadata.h>
-#include <arki/types/utils.h>
-#include <arki/binary.h>
-#include <arki/utils/lua.h>
-#include <arki/utils/string.h>
-#include <arki/utils/files.h>
-#include <arki/utils/yaml.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include "arki/wibble/exception.h"
+#include "arki/summary/stats.h"
+#include "arki/metadata.h"
+#include "arki/types/utils.h"
+#include "arki/binary.h"
+#include "arki/utils/lua.h"
+#include "arki/utils/string.h"
+#include "arki/utils/files.h"
+#include "arki/utils/yaml.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/exceptions.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -38,7 +38,7 @@ Stats::Stats(const Metadata& md)
         begin = rt->period_begin();
         end = rt->period_end();
     } else
-        throw wibble::exception::Consistency("summarising metadata", "missing reference time");
+        throw_consistency_error("summarising metadata", "missing reference time");
 }
 
 Stats* Stats::clone() const
@@ -54,7 +54,7 @@ int Stats::compare(const Type& o) const
     // We should be the same kind, so upcast
     const Stats* v = dynamic_cast<const Stats*>(&o);
     if (!v)
-        throw wibble::exception::Consistency(
+        throw_consistency_error(
             "comparing metadata types",
             string("second element claims to be a summary::Stats, but it is a ") + typeid(&o).name() + " instead");
 
@@ -100,7 +100,7 @@ void Stats::merge(const Metadata& md)
             rt->expand_date_range(begin, end);
     }
     else
-        throw wibble::exception::Consistency("summarising metadata", "missing reference time");
+        throw_consistency_error("summarising metadata", "missing reference time");
     ++count;
     size += md.data_size();
 }

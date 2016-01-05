@@ -1,5 +1,6 @@
 #include "metadata.h"
 #include "metadata/consumer.h"
+#include "exceptions.h"
 #include "types/value.h"
 #include "types/source/blob.h"
 #include "types/source/inline.h"
@@ -13,7 +14,6 @@
 #include "utils/datareader.h"
 #include "utils/string.h"
 #include "utils/yaml.h"
-#include "wibble/exception.h"
 #include <unistd.h>
 #include <cstdlib>
 #include <cerrno>
@@ -119,7 +119,7 @@ unique_ptr<Metadata> Metadata::create_from_yaml(std::istream& in, const std::str
 const Source& Metadata::source() const
 {
     if (!m_source)
-        throw wibble::exception::Consistency("metadata has no source");
+        throw_consistency_error("metadata has no source");
     return *m_source;
 }
 
@@ -131,9 +131,9 @@ const types::source::Blob* Metadata::has_source_blob() const
 
 const source::Blob& Metadata::sourceBlob() const
 {
-    if (!m_source) throw wibble::exception::Consistency("metadata has no source");
+    if (!m_source) throw_consistency_error("metadata has no source");
     const source::Blob* res = dynamic_cast<source::Blob*>(m_source);
-    if (!res) throw wibble::exception::Consistency("metadata source is not a Blob source");
+    if (!res) throw_consistency_error("metadata source is not a Blob source");
     return *res;
 }
 
@@ -235,7 +235,7 @@ bool Metadata::read(int in, const metadata::ReadContext& filename, bool readInli
 
     // Ensure first 2 bytes are MD or !D
     if (signature != "MD")
-        throw wibble::exception::Consistency("parsing file " + filename.pathname, "metadata entry does not start with 'MD'");
+        throw_consistency_error("parsing file " + filename.pathname, "metadata entry does not start with 'MD'");
 
     read_inner(inner, version, filename);
 
@@ -496,7 +496,7 @@ const vector<uint8_t>& Metadata::getData()
 
     // If we don't have it in cache and we don't have a source, we cannot know
     // how to load it: give up
-    if (!m_source) throw wibble::exception::Consistency("retrieving data", "data source is not defined");
+    if (!m_source) throw_consistency_error("retrieving data", "data source is not defined");
 
     // Load it according to source
     switch (m_source->style())
@@ -517,7 +517,7 @@ const vector<uint8_t>& Metadata::getData()
             return m_data;
         }
         default:
-            throw wibble::exception::Consistency("retrieving data", "unsupported source style");
+            throw_consistency_error("retrieving data", "unsupported source style");
     }
 }
 
@@ -542,7 +542,7 @@ void Metadata::set_cached_data(std::vector<uint8_t>&& buf)
 
 void Metadata::makeInline()
 {
-    if (!m_source) throw wibble::exception::Consistency("making source inline", "data source is not defined");
+    if (!m_source) throw_consistency_error("making source inline", "data source is not defined");
     getData();
     set_source(Source::createInline(m_source->format, m_data.size()));
 }
@@ -572,7 +572,7 @@ size_t Metadata::data_size() const
         default:
             // An unsupported source type should make more noise than a 0
             // return type
-            throw wibble::exception::Consistency("retrieving data", "unsupported source style");
+            throw_consistency_error("retrieving data", "unsupported source style");
     }
 }
 
@@ -640,7 +640,7 @@ void Metadata::read_file(int in, const metadata::ReadContext& file, metadata_des
 
         // Ensure first 2 bytes are MD or !D
         if (signature != "MD" && signature != "!D" && signature != "MG")
-            throw wibble::exception::Consistency("parsing file " + file.pathname, "metadata entry does not start with 'MD', '!D' or 'MG'");
+            throw_consistency_error("parsing file " + file.pathname, "metadata entry does not start with 'MD', '!D' or 'MG'");
 
         if (signature == "MG")
         {

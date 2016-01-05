@@ -22,6 +22,7 @@
  */
 
 #include <arki/wibble/sys/childprocess.h>
+#include <vector>
 
 namespace wibble {
 namespace sys {

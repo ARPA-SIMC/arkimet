@@ -1,4 +1,4 @@
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/types/proddef.h>
 #include <arki/types/utils.h>
 #include <arki/binary.h>
@@ -33,7 +33,7 @@ const unsigned char Proddef::GRIB;
 Proddef::Style Proddef::parseStyle(const std::string& str)
 {
 	if (str == "GRIB") return GRIB;
-	throw wibble::exception::Consistency("parsing Proddef style", "cannot parse Proddef style '"+str+"': only GRIB is supported");
+	throw_consistency_error("parsing Proddef style", "cannot parse Proddef style '"+str+"': only GRIB is supported");
 }
 
 std::string Proddef::formatStyle(Proddef::Style s)
@@ -56,7 +56,7 @@ unique_ptr<Proddef> Proddef::decode(BinaryDecoder& dec)
         case GRIB:
             return createGRIB(ValueBag::decode(dec));
         default:
-            throw wibble::exception::Consistency("parsing Proddef", "style is " + formatStyle(s) + " but we can only decode GRIB");
+            throw_consistency_error("parsing Proddef", "style is " + formatStyle(s) + " but we can only decode GRIB");
     }
 }
 
@@ -68,7 +68,7 @@ unique_ptr<Proddef> Proddef::decodeString(const std::string& val)
     {
         case Proddef::GRIB: return createGRIB(ValueBag::parse(inner));
         default:
-            throw wibble::exception::Consistency("parsing Proddef", "unknown Proddef style " + formatStyle(style));
+            throw_consistency_error("parsing Proddef", "unknown Proddef style " + formatStyle(style));
     }
 }
 
@@ -80,7 +80,7 @@ unique_ptr<Proddef> Proddef::decodeMapping(const emitter::memory::Mapping& val)
     {
         case Proddef::GRIB: return upcast<Proddef>(proddef::GRIB::decodeMapping(val));
         default:
-            throw wibble::exception::Consistency("parsing Proddef", "unknown Proddef style " + val.get_string());
+            throw_consistency_error("parsing Proddef", "unknown Proddef style " + val.get_string());
     }
 }
 
@@ -156,7 +156,7 @@ int GRIB::compare_local(const Proddef& o) const
 	// We should be the same kind, so upcast
 	const GRIB* v = dynamic_cast<const GRIB*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a GRIB Proddef, but is a ") + typeid(&o).name() + " instead");
 

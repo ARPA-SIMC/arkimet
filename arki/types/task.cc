@@ -1,4 +1,4 @@
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/types/task.h>
 #include <arki/types/utils.h>
 #include <arki/binary.h>
@@ -35,7 +35,7 @@ int Task::compare(const Type& o) const
 	// We should be the same kind, so upcast
 	const Task* v = dynamic_cast<const Task*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a Task, but it is a ") + typeid(&o).name() + " instead");
 
@@ -80,12 +80,12 @@ unique_ptr<Task> Task::decodeMapping(const emitter::memory::Mapping& val)
 unique_ptr<Task> Task::decodeString(const std::string& val)
 {
 	if (val.empty())
-		throw wibble::exception::Consistency("parsing Task", "string is empty");
+		throw_consistency_error("parsing Task", "string is empty");
 	//if (val[0] != '[')
-	//	throw wibble::exception::Consistency("parsing Task", "string does not start with open square bracket");
+	//	throw_consistency_error("parsing Task", "string does not start with open square bracket");
 	//size_t pos = val.find(']');
 	//if (pos == string::npos)
-	//	throw wibble::exception::Consistency("parsing Task", "no closed square bracket found");
+	//	throw_consistency_error("parsing Task", "no closed square bracket found");
 	return Task::create(val);
 }
 

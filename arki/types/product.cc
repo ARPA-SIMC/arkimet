@@ -1,4 +1,4 @@
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/types/product.h>
 #include <arki/types/utils.h>
 #include <arki/binary.h>
@@ -48,12 +48,12 @@ int Product::getMaxIntCount() { return 4; }
 
 Product::Style Product::parseStyle(const std::string& str)
 {
-	if (str == "GRIB1") return GRIB1;
-	if (str == "GRIB2") return GRIB2;
-	if (str == "BUFR") return BUFR;
-	if (str == "ODIMH5") 	return ODIMH5;
+    if (str == "GRIB1") return GRIB1;
+    if (str == "GRIB2") return GRIB2;
+    if (str == "BUFR") return BUFR;
+    if (str == "ODIMH5") 	return ODIMH5;
     if (str == "VM2") return VM2;
-	throw wibble::exception::Consistency("parsing Product style", "cannot parse Product style '"+str+"': only GRIB1, GRIB2 and BUFR are supported");
+    throw_consistency_error("parsing Product style", "cannot parse Product style '"+str+"': only GRIB1, GRIB2 and BUFR are supported");
 }
 
 std::string Product::formatStyle(Product::Style s)
@@ -112,9 +112,9 @@ unique_ptr<Product> Product::decode(BinaryDecoder& dec)
         case VM2: {
             return createVM2(dec.pop_uint(4, "VM2 variable id"));
         }
-		default:
-			throw wibble::exception::Consistency("parsing Product", "style is " + formatStyle(s) + "but we can only decode GRIB1, GRIB2 and BUFR");
-	}
+        default:
+            throw_consistency_error("parsing Product", "style is " + formatStyle(s) + "but we can only decode GRIB1, GRIB2 and BUFR");
+    }
 }
 
 /*
@@ -152,11 +152,9 @@ unique_ptr<Product> Product::decodeString(const std::string& val)
                 inner = str::strip(nums.tail.substr(1));
             return createBUFR(nums.vals[0], nums.vals[1], nums.vals[2], ValueBag::parse(inner));
         }
-		case Product::ODIMH5: {
-
-			std::vector<std::string> values;
-
-			split(inner, values, ",");
+        case Product::ODIMH5: {
+            std::vector<std::string> values;
+            split(inner, values, ",");
 
             if (values.size() != 2)
                 throw std::logic_error("OdimH5 product has not enogh values");
@@ -169,18 +167,16 @@ unique_ptr<Product> Product::decodeString(const std::string& val)
             return createODIMH5(o, p);
         }
         case Product::VM2: {
-            using wibble::exception::Consistency;
             const char* innerptr = inner.c_str();
             char* endptr;
             unsigned long variable_id = strtoul(innerptr, &endptr, 10); 
             if (innerptr == endptr)
-                throw Consistency("parsing" + inner,
-                                  "expected a number, but found \"" + inner +"\"");
+                throw std::runtime_error("cannot parse " + inner + ": expected a number, but found \"" + inner +"\"");
             return createVM2(variable_id);
         }
-		default:
-			throw wibble::exception::Consistency("parsing Product", "unknown Product style " + formatStyle(style));
-	}
+        default:
+            throw_consistency_error("parsing Product", "unknown Product style " + formatStyle(style));
+    }
 }
 
 unique_ptr<Product> Product::decodeMapping(const emitter::memory::Mapping& val)
@@ -195,7 +191,7 @@ unique_ptr<Product> Product::decodeMapping(const emitter::memory::Mapping& val)
         case Product::ODIMH5: return upcast<Product>(product::ODIMH5::decodeMapping(val));
         case Product::VM2: return upcast<Product>(product::VM2::decodeMapping(val));
         default:
-            throw wibble::exception::Consistency("parsing Product", "unknown Product style " + val.get_string());
+            throw_consistency_error("parsing Product", "unknown Product style " + val.get_string());
     }
 }
 
@@ -344,12 +340,12 @@ int GRIB1::compare_local(const Product& o) const
 {
     if (int res = Product::compare_local(o)) return res;
 
-	// We should be the same kind, so upcast
-	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a GRIB1 Product, but it is a ") + typeid(&o).name() + " instead");
+    // We should be the same kind, so upcast
+    const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
+    if (!v)
+        throw_consistency_error(
+            "comparing metadata types",
+            string("second element claims to be a GRIB1 Product, but it is a ") + typeid(&o).name() + " instead");
 
 	if (int res = m_origin - v->m_origin) return res;
 	if (int res = m_table - v->m_table) return res;
@@ -479,12 +475,12 @@ int GRIB2::compare_local(const Product& o) const
 {
     if (int res = Product::compare_local(o)) return res;
 
-	// We should be the same kind, so upcast
-	const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a GRIB2 Product, but it is a ") + typeid(&o).name() + " instead");
+    // We should be the same kind, so upcast
+    const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
+    if (!v)
+        throw_consistency_error(
+            "comparing metadata types",
+            string("second element claims to be a GRIB2 Product, but it is a ") + typeid(&o).name() + " instead");
 
 	if (int res = m_centre - v->m_centre) return res;
 	if (int res = m_discipline - v->m_discipline) return res;
@@ -627,12 +623,12 @@ int BUFR::compare_local(const Product& o) const
 {
     if (int res = Product::compare_local(o)) return res;
 
-	// We should be the same kind, so upcast
-	const BUFR* v = dynamic_cast<const BUFR*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a BUFR Product, but it is a ") + typeid(&o).name() + " instead");
+    // We should be the same kind, so upcast
+    const BUFR* v = dynamic_cast<const BUFR*>(&o);
+    if (!v)
+        throw_consistency_error(
+            "comparing metadata types",
+            string("second element claims to be a BUFR Product, but it is a ") + typeid(&o).name() + " instead");
 
 	if (int res = m_type - v->m_type) return res;
 	if (int res = m_subtype - v->m_subtype) return res;
@@ -790,12 +786,12 @@ int ODIMH5::compare_local(const Product& o) const
 {
     if (int res = Product::compare_local(o)) return res;
 
-	// We should be the same kind, so upcast
-	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-		        "comparing metadata types",
-		        string("second element claims to be a ODIMH5 Product, but it is a ") + typeid(&o).name() + " instead");
+    // We should be the same kind, so upcast
+    const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
+    if (!v)
+        throw_consistency_error(
+                "comparing metadata types",
+                string("second element claims to be a ODIMH5 Product, but it is a ") + typeid(&o).name() + " instead");
 
 	if (int resi = m_obj.compare(v->m_obj)) 	return resi;
 	if (int resi = m_prod.compare(v->m_prod)) 	return resi;
@@ -916,7 +912,7 @@ int VM2::compare_local(const Product& o) const
 
     const VM2* v = dynamic_cast<const VM2*>(&o);
     if (!v)
-        throw wibble::exception::Consistency(
+        throw_consistency_error(
             "comparing metadata types",
             string("second element claims to be a VM2 Product, but it is a ") + typeid(&o).name() + " instead");
     if (m_variable_id == v->m_variable_id) return 0;

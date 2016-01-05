@@ -3,12 +3,12 @@
 #include "segment/lines.h"
 #include "segment/dir.h"
 #include "arki/configfile.h"
+#include "arki/exceptions.h"
 #include "arki/scan/any.h"
 #include "arki/metadata/collection.h"
 #include "arki/utils.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <arki/wibble/exception.h>
 
 using namespace std;
 using namespace arki::utils;
@@ -72,7 +72,7 @@ const OstreamWriter* OstreamWriter::get(const std::string& format)
             ow_lines = new lines::OstreamWriter;
         return ow_lines;
     } else {
-        throw wibble::exception::Consistency(
+        throw_consistency_error(
                 "getting ostream writer for " + format,
                 "format not supported");
     }
@@ -107,7 +107,7 @@ struct BaseSegmentManager : public SegmentManager
 
         // Refuse to write to compressed files
         if (scan::isCompressed(absname))
-            throw wibble::exception::Consistency("accessing data file " + relname,
+            throw_consistency_error("accessing data file " + relname,
                     "cannot update compressed data files: please manually uncompress it first");
 
         // Else we need to create an appropriate one
@@ -144,11 +144,11 @@ struct BaseSegmentManager : public SegmentManager
                     res.reset(new concat::Segment(relname, absname));
             } else if (format == "vm2") {
                 if (mockdata)
-                    throw wibble::exception::Consistency("mockdata single-file line-based segments not implemented");
+                    throw_consistency_error("mockdata single-file line-based segments not implemented");
                 else
                     res.reset(new lines::Segment(relname, absname));
             } else {
-                throw wibble::exception::Consistency(
+                throw_consistency_error(
                         "getting segment for " + format + " file " + relname,
                         "format not supported");
             }
@@ -220,11 +220,11 @@ struct AutoSegmentManager : public BaseSegmentManager
                 res.reset(new dir::Segment(format, relname, absname));
         } else if (format == "vm2") {
             if (mockdata)
-                throw wibble::exception::Consistency("mockdata single-file line-based segments not implemented");
+                throw_consistency_error("mockdata single-file line-based segments not implemented");
             else
                 res.reset(new lines::Segment(relname, absname));
         } else {
-            throw wibble::exception::Consistency(
+            throw_consistency_error(
                     "getting writer for " + format + " file " + relname,
                     "format not supported");
         }

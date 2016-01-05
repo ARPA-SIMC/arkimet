@@ -1,7 +1,6 @@
 #include "config.h"
-
-#include <arki/matcher/source.h>
-#include <arki/matcher/utils.h>
+#include "arki/matcher/source.h"
+#include "arki/matcher/utils.h"
 #include <sstream>
 #include <iomanip>
 
@@ -66,7 +65,7 @@ unique_ptr<MatchSource> MatchSource::parse(const std::string& pattern)
     {
         case types::Run::MINUTE: return new MatchRunMinute(rest);
         default:
-                                 throw wibble::exception::Consistency("parsing type of run to match", "unsupported run style: " + name);
+                                 throw_consistency_error("parsing type of run to match", "unsupported run style: " + name);
     }
 #endif
     // TODO: actually implement source matching

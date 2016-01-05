@@ -2,7 +2,6 @@
 #include <arki/runtime/io.h>
 #include <arki/runtime/config.h>
 #include <arki/metadata/consumer.h>
-#include <arki/wibble/exception.h>
 #include <arki/utils/string.h>
 #include <iostream>
 #include <cstdlib>

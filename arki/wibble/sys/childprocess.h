@@ -24,7 +24,7 @@
  */
 
 #include <sys/types.h>
-#include <arki/wibble/exception.h>
+#include <string>
 
 struct rusage;
 

@@ -1,4 +1,4 @@
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/types/origin.h>
 #include <arki/types/utils.h>
 #include <arki/binary.h>
@@ -48,7 +48,7 @@ Origin::Style Origin::parseStyle(const std::string& str)
 	if (str == "GRIB2") return GRIB2;
 	if (str == "BUFR") return BUFR;
 	if (str == "ODIMH5") 	return ODIMH5;
-	throw wibble::exception::Consistency("parsing Origin style", "cannot parse Origin style '"+str+"': only GRIB1, GRIB2 and BUFR are supported");
+	throw_consistency_error("parsing Origin style", "cannot parse Origin style '"+str+"': only GRIB1, GRIB2 and BUFR are supported");
 }
 
 std::string Origin::formatStyle(Origin::Style s)
@@ -108,7 +108,7 @@ unique_ptr<Origin> Origin::decode(BinaryDecoder& dec)
             return upcast<Origin>(origin::ODIMH5::create(wmo, rad, plc));
         }
 		default:
-			throw wibble::exception::Consistency("parsing Origin", "style is " + formatStyle(s) + " but we can only decode GRIB1, GRIB2 and BUFR");
+			throw_consistency_error("parsing Origin", "style is " + formatStyle(s) + " but we can only decode GRIB1, GRIB2 and BUFR");
 	}
 }
 
@@ -147,7 +147,7 @@ unique_ptr<Origin> Origin::decodeString(const std::string& val)
             return upcast<Origin>(origin::ODIMH5::create(values[0], values[1], values[2]));
         }
 		default:
-			throw wibble::exception::Consistency("parsing Origin", "unknown Origin style " + formatStyle(style));
+			throw_consistency_error("parsing Origin", "unknown Origin style " + formatStyle(style));
 	}
 }
 
@@ -162,7 +162,7 @@ unique_ptr<Origin> Origin::decodeMapping(const emitter::memory::Mapping& val)
         case Origin::BUFR: return upcast<Origin>(origin::BUFR::decodeMapping(val));
         case Origin::ODIMH5: return upcast<Origin>(origin::ODIMH5::decodeMapping(val));
         default:
-            throw wibble::exception::Consistency("parsing Origin", "unknown Origin style " + val.get_string());
+            throw_consistency_error("parsing Origin", "unknown Origin style " + val.get_string());
     }
 }
 
@@ -296,7 +296,7 @@ int GRIB1::compare_local(const Origin& o) const
 	// We should be the same kind, so upcast
 	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a GRIB1 Origin, but is a ") + typeid(&o).name() + " instead");
 
@@ -412,7 +412,7 @@ int GRIB2::compare_local(const Origin& o) const
 	// We should be the same kind, so upcast
 	const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a GRIB2 Origin, but is a ") + typeid(&o).name() + " instead");
 
@@ -523,7 +523,7 @@ int BUFR::compare_local(const Origin& o) const
 	// between origins of different style: we do need a two-phase upcast
 	const BUFR* v = dynamic_cast<const BUFR*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a BUFR Origin, but is a ") + typeid(&o).name() + " instead");
 
@@ -622,7 +622,7 @@ int ODIMH5::compare_local(const Origin& o) const
 	// We should be the same kind, so upcast
 	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a GRIB1 Origin, but is a ") + typeid(&o).name() + " instead");
 

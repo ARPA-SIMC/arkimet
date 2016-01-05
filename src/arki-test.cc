@@ -1,6 +1,5 @@
 /// Test script support
 #include "config.h"
-#include <arki/wibble/exception.h>
 #include <arki/utils/string.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>

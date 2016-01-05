@@ -214,7 +214,7 @@ Querymacro::Func Querymacro::get(const std::string& def)
 	{
 		size_t pos = def.find(':');
 		if (pos == string::npos)
-			throw wibble::exception::Consistency(
+			throw_consistency_error(
 					"parsing targetfile definition \""+def+"\"",
 					"definition not in the form type:parms");
 		string type = def.substr(0, pos);
@@ -227,7 +227,7 @@ Querymacro::Func Querymacro::get(const std::string& def)
 		if (lua_type(*L, -1) == LUA_TNIL)
 		{
 			lua_pop(*L, 2);
-			throw wibble::exception::Consistency(
+			throw_consistency_error(
 					"parsing targetfile definition \""+def+"\"",
 					"no targetfile found of type \""+type+"\"");
 		}
@@ -238,7 +238,7 @@ Querymacro::Func Querymacro::get(const std::string& def)
 		{
 			string error = lua_tostring(*L, -1);
 			lua_pop(*L, 2);
-			throw wibble::exception::Consistency(
+			throw_consistency_error(
 					"creating targetfile function \""+def+"\"",
 					error);
 		}
@@ -269,7 +269,7 @@ std::string Querymacro::Func::operator()(const Metadata& md)
 	{
 		string error = lua_tostring(*L, -1);
 		lua_pop(*L, 1);
-		throw wibble::exception::Consistency("running targetfile function", error);
+		throw_consistency_error("running targetfile function", error);
 	}
 
 	string res = lua_tostring(*L, -1);

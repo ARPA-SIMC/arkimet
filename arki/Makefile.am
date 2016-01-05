@@ -10,7 +10,6 @@ AM_LDFLAGS = $(EXTRA_LDFLAGS)
 arkiincludedir = $(includedir)/arki
 
 nobase_dist_arkiinclude_HEADERS = \
-		wibble/exception.h \
 		wibble/regexp.h \
 		wibble/sys/process.h \
 		wibble/sys/childprocess.h \
@@ -200,7 +199,6 @@ tests_arki_test_LDADD =
 #
 if DEVEL_DO_TYPES
 libarkimet_la_SOURCES += \
-		wibble/exception.cpp \
 		wibble/regexp.cpp \
 		wibble/sys/fs.cpp \
 		wibble/sys/filelock.cpp \

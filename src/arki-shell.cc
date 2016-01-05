@@ -1,6 +1,6 @@
 /// Interactive arkimet Lua shell
 #include "config.h"
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/utils/commandline/parser.h>
 #include <arki/utils/string.h>
 #include <arki/utils/lua.h>
@@ -82,7 +82,7 @@ struct Interpreter : public Lua
             string error = lua_tostring(L, -1);
             // Pop the error from the stack
             lua_pop(L, 1);
-            throw wibble::exception::Consistency("parsing Lua code from " + fname, error);
+            throw_consistency_error("parsing Lua code from " + fname, error);
         }
     }
 
@@ -94,7 +94,7 @@ struct Interpreter : public Lua
             string error = lua_tostring(L, -1);
             // Pop the error from the stack
             lua_pop(L, 1);
-            throw wibble::exception::Consistency("parsing Lua code", error);
+            throw_consistency_error("parsing Lua code", error);
         }
     }
 
@@ -105,7 +105,7 @@ struct Interpreter : public Lua
         {
             string error = lua_tostring(L, -1);
             lua_pop(L, 1);
-            throw wibble::exception::Consistency("running code", error);
+            throw_consistency_error("running code", error);
         }
     }
 };

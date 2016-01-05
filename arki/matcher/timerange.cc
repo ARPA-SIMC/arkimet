@@ -1,8 +1,7 @@
 #include "config.h"
-
 #include <arki/matcher/timerange.h>
 #include <arki/matcher/utils.h>
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 
 using namespace std;
 using namespace arki::types;
@@ -75,7 +74,7 @@ static int parseTimedefValueWithUnit(const std::string& str, bool& is_second)
     timerange::TimedefUnit unit;
     uint32_t val;
     if (!Timedef::timeunit_parse(s, unit, val) || *s)
-        throw wibble::exception::Consistency(
+        throw_consistency_error(
                 "parsing 'timerange' match expression",
                 "cannot parse time '" + str + "'");
 
@@ -126,7 +125,7 @@ MatchTimerangeGRIB1::MatchTimerangeGRIB1(const std::string& pattern)
 		else if (first == second)
 			unit = first;
 		else
-			throw wibble::exception::Consistency(
+			throw_consistency_error(
 					"parsing 'timerange' match expression",
 					"the two time values '" + args[1] + "' and '" + args[2] + "' have different units");
 

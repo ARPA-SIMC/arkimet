@@ -1,8 +1,5 @@
 #include "config.h"
-
 #include <arki/datasetpool.h>
-
-#include <arki/wibble/exception.h>
 #include <arki/utils/string.h>
 #include <arki/configfile.h>
 #include <arki/dataset.h>
@@ -59,4 +56,3 @@ template class DatasetPool<dataset::Reader>;
 template class DatasetPool<dataset::Writer>;
 
 }
-// vim:set ts=4 sw=4:

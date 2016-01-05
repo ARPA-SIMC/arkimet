@@ -1,5 +1,5 @@
 #include "config.h"
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/values.h>
 #include <arki/binary.h>
 #include <arki/utils/string.h>
@@ -254,7 +254,7 @@ struct String : public Common<std::string>
         }
         else
             // TODO: if needed, here we implement another string encoding type
-            throw wibble::exception::Consistency("encoding short string", "string '"+m_val+"' is too long: the maximum length is 63 characters, but the string is " + to_string(m_val.size()) + " characters long");
+            throw_consistency_error("encoding short string", "string '"+m_val+"' is too long: the maximum length is 63 characters, but the string is " + to_string(m_val.size()) + " characters long");
     }
 
 	virtual std::string toString() const
@@ -376,7 +376,7 @@ Value* Value::parse(const emitter::memory::Node& m)
     else if (m.is_string())
         return createString(m.get_string());
     else
-        throw wibble::exception::Consistency("decoding value", "value is neither integer nor string");
+        throw_consistency_error("decoding value", "value is neither integer nor string");
 }
 
 Value* Value::createInteger(int val)
@@ -620,7 +620,7 @@ ValueBag ValueBag::parse(const std::string& str)
 		{
 			cur = skipSpaces(str, begin);
 			if (cur != str.size())
-				throw wibble::exception::Consistency("parsing key=value list", "found invalid extra characters \""+str.substr(begin)+"\" at the end of the list");
+				throw_consistency_error("parsing key=value list", "found invalid extra characters \""+str.substr(begin)+"\" at the end of the list");
 			break;
 		}
 			
@@ -641,7 +641,7 @@ ValueBag ValueBag::parse(const std::string& str)
 		if (val.get())
 			res.set(key, val.release());
 		else
-			throw wibble::exception::Consistency("parsing key=value list", "cannot parse value at \""+str.substr(cur)+"\"");
+			throw_consistency_error("parsing key=value list", "cannot parse value at \""+str.substr(cur)+"\"");
 
 		// Move on to the next one
 		begin = cur + lenParsed;

@@ -3,7 +3,7 @@
 #include "source/inline.h"
 #include "source/url.h"
 #include <arki/binary.h>
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/types/utils.h>
 #include <arki/utils/lua.h>
 #include <arki/utils/datareader.h>
@@ -37,7 +37,7 @@ Source::Style Source::parseStyle(const std::string& str)
 	if (str == "BLOB") return BLOB;
 	if (str == "URL") return URL;
 	if (str == "INLINE") return INLINE;
-	throw wibble::exception::Consistency("parsing Source style", "cannot parse Source style '"+str+"': only BLOB, URL and INLINE are supported");
+	throw_consistency_error("parsing Source style", "cannot parse Source style '"+str+"': only BLOB, URL and INLINE are supported");
 }
 
 std::string Source::formatStyle(Source::Style s)
@@ -104,7 +104,7 @@ unique_ptr<Source> Source::decodeRelative(BinaryDecoder& dec, const std::string&
             return createInline(format, size);
         }
         default:
-            throw wibble::exception::Consistency("parsing Source", "style " + formatStyle(s) + " but we can only decode BLOB, URL or INLINE");
+            throw_consistency_error("parsing Source", "style " + formatStyle(s) + " but we can only decode BLOB, URL or INLINE");
     }
 }
 
@@ -116,7 +116,7 @@ unique_ptr<Source> Source::decodeString(const std::string& val)
 	// Parse the format
 	size_t pos = inner.find(',');
 	if (pos == string::npos)
-		throw wibble::exception::Consistency("parsing Source", "source \""+inner+"\" should start with \"format,\"");
+		throw_consistency_error("parsing Source", "source \""+inner+"\" should start with \"format,\"");
 	string format = inner.substr(0, pos);
 	inner = inner.substr(pos+1);
 
@@ -125,12 +125,12 @@ unique_ptr<Source> Source::decodeString(const std::string& val)
 		case Source::BLOB: {
 			size_t end = inner.rfind(':');
 			if (end == string::npos)
-				throw wibble::exception::Consistency("parsing Source", "source \""+inner+"\" should contain a filename followed by a colon (':')");
+				throw_consistency_error("parsing Source", "source \""+inner+"\" should contain a filename followed by a colon (':')");
 			string fname = inner.substr(0, end);
 			pos = end + 1;
 			end = inner.find('+', pos);
 			if (end == string::npos)
-				throw wibble::exception::Consistency("parsing Source", "source \""+inner+"\" should contain \"offset+len\" after the filename");
+				throw_consistency_error("parsing Source", "source \""+inner+"\" should contain \"offset+len\" after the filename");
 
             return createBlob(format, string(), fname,
                     strtoull(inner.substr(pos, end-pos).c_str(), 0, 10),
@@ -157,7 +157,7 @@ unique_ptr<Source> Source::decodeMapping(const emitter::memory::Mapping& val)
         case Source::URL: return upcast<Source>(source::URL::decodeMapping(val));
         case Source::INLINE: return upcast<Source>(source::Inline::decodeMapping(val));
         default:
-            throw wibble::exception::Consistency("parsing Source", "unknown Source style " + val.get_string());
+            throw_consistency_error("parsing Source", "unknown Source style " + val.get_string());
     }
 }
 

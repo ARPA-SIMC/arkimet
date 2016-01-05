@@ -7,7 +7,6 @@
 #include <arki/scan/any.h>
 #include <arki/runtime.h>
 #include <arki/utils/sys.h>
-#include <arki/wibble/exception.h>
 #include <arki/utils/commandline/parser.h>
 #include <arki/wibble/sys/exec.h>
 #include <iostream>

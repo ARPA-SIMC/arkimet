@@ -1,10 +1,9 @@
 #include "config.h"
-
-#include <arki/bbox.h>
-#include <arki/utils/geosdef.h>
-#include <arki/runtime/config.h>
-#include <arki/wibble/exception.h>
-#include <arki/utils/string.h>
+#include "arki/bbox.h"
+#include "arki/exceptions.h"
+#include "arki/utils/geosdef.h"
+#include "arki/runtime/config.h"
+#include "arki/utils/string.h"
 #include <memory>
 
 using namespace ARKI_GEOS_NS;
@@ -158,11 +157,11 @@ std::unique_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const types::Area& v) const
 	lua_newtable(*L);
 	lua_setglobal(*L, "bbox");
 
-	std::string error = L->runFunctionSequence("BBOX_", funcCount);
-	if (!error.empty())
-	{
-		throw wibble::exception::Consistency("computing bounding box via Lua", error);
-	} else {
+    std::string error = L->runFunctionSequence("BBOX_", funcCount);
+    if (!error.empty())
+    {
+        throw_consistency_error("computing bounding box via Lua", error);
+    } else {
 		//arkilua_dumpstack(L, "Afterscan", stderr);
 		vector< pair<double, double> > points = bbox(*L);
 		switch (points.size())

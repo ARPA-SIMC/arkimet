@@ -1,4 +1,3 @@
-#include <arki/wibble/exception.h>
 #include <arki/types/value.h>
 #include <arki/types/utils.h>
 #include <arki/binary.h>
@@ -37,8 +36,6 @@ bool Value::equals(const Type& o) const
 
 int Value::compare(const Type& o) const
 {
-    using namespace wibble;
-
     int res = CoreType<Value>::compare(o);
     if (res != 0) return res;
 

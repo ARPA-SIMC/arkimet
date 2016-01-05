@@ -2,7 +2,6 @@
 #include "arki/scan/dir.h"
 #include "arki/utils.h"
 #include "arki/utils/sys.h"
-#include "arki/wibble/exception.h"
 #include <algorithm>
 
 namespace tut {

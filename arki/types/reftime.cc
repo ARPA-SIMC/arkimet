@@ -1,4 +1,4 @@
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 #include <arki/types/reftime.h>
 #include <arki/types/utils.h>
 #include <arki/binary.h>
@@ -37,7 +37,7 @@ Reftime::Style Reftime::parseStyle(const std::string& str)
 {
 	if (str == "POSITION") return POSITION;
 	if (str == "PERIOD") return PERIOD;
-	throw wibble::exception::Consistency("parsing Reftime style", "cannot parse Reftime style '"+str+"': only POSITION and PERIOD are supported");
+	throw_consistency_error("parsing Reftime style", "cannot parse Reftime style '"+str+"': only POSITION and PERIOD are supported");
 }
 
 std::string Reftime::formatStyle(Reftime::Style s)
@@ -83,7 +83,7 @@ unique_ptr<Reftime> Reftime::decodeMapping(const emitter::memory::Mapping& val)
         case POSITION: return upcast<Reftime>(reftime::Position::decodeMapping(val));
         case PERIOD: return upcast<Reftime>(reftime::Period::decodeMapping(val));
         default:
-            throw wibble::exception::Consistency("parsing Reftime", "unknown Reftime style " + val.get_string());
+            throw_consistency_error("parsing Reftime", "unknown Reftime style " + val.get_string());
     }
 }
 
@@ -192,7 +192,7 @@ int Position::compare_local(const Reftime& o) const
 	// We should be the same kind, so upcast
 	const Position* v = dynamic_cast<const Position*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a Position Reftime, but is a ") + typeid(&o).name() + " instead");
 
@@ -282,7 +282,7 @@ int Period::compare_local(const Reftime& o) const
 	// We should be the same kind, so upcast
 	const Period* v = dynamic_cast<const Period*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a Period Reftime, but is a ") + typeid(&o).name() + " instead");
 

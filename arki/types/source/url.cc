@@ -3,7 +3,7 @@
 #include <arki/utils/lua.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
-#include <arki/wibble/exception.h>
+#include <arki/exceptions.h>
 
 using namespace std;
 using namespace arki::utils;
@@ -58,7 +58,7 @@ int URL::compare_local(const Source& o) const
 	// We should be the same kind, so upcast
 	const URL* v = dynamic_cast<const URL*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a URL Source, but is a ") + typeid(&o).name() + " instead");
 

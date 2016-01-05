@@ -6,7 +6,6 @@
 #include "arki/dataset/segment.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/wibble/exception.h"
 #include <sys/stat.h>
 
 using namespace std;
@@ -53,37 +52,17 @@ Writer::AcquireResult Outbound::acquire(Metadata& md, ReplaceStrategy replace)
 
     // This should never be reached, but we throw an exception to avoid a
     // warning from the compiler
-    throw wibble::exception::Consistency("this code is here to appease a compiler warning", "this code path should never be reached");
+    throw std::runtime_error("this code path should never be reached (it is here to appease a compiler warning)");
 }
 
 void Outbound::remove(Metadata&)
 {
-    throw wibble::exception::Consistency("removing data from outbound dataset", "dataset does not support removing items");
+    throw std::runtime_error("cannot remove data from outbound dataset: dataset does not support removing items");
 }
 
 void Outbound::removeAll(std::ostream& log, bool writable)
 {
     log << m_name << ": cleaning dataset not implemented" << endl;
-}
-
-size_t Outbound::repackFile(const std::string& relpath)
-{
-    throw wibble::exception::Consistency("repacking file " + relpath, "dataset does not support repacking files");
-}
-
-void Outbound::rescanFile(const std::string& relpath)
-{
-    throw wibble::exception::Consistency("rescanning file " + relpath, "dataset does not support rescanning files");
-}
-
-size_t Outbound::removeFile(const std::string& relpath, bool withData)
-{
-    throw wibble::exception::Consistency("removing file " + relpath, "dataset does not support removing files");
-}
-
-size_t Outbound::vacuum()
-{
-    return 0;
 }
 
 Writer::AcquireResult Outbound::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
