@@ -57,12 +57,12 @@ add_method("compressed", [](Fixture& f) {
 
     // Import and compress all the files
     f.clean_and_import(&cfg);
-    scan::compress("testds/2007/07-07.grib1");
-    scan::compress("testds/2007/07-08.grib1");
-    scan::compress("testds/2007/10-09.grib1");
-    sys::unlink_ifexists("testds/2007/07-07.grib1");
-    sys::unlink_ifexists("testds/2007/07-08.grib1");
-    sys::unlink_ifexists("testds/2007/10-09.grib1");
+    scan::compress("testds/2007/07-07.grib");
+    scan::compress("testds/2007/07-08.grib");
+    scan::compress("testds/2007/10-09.grib");
+    sys::unlink_ifexists("testds/2007/07-07.grib");
+    sys::unlink_ifexists("testds/2007/07-08.grib");
+    sys::unlink_ifexists("testds/2007/10-09.grib");
 
     // Test that querying returns all items
     {
@@ -85,32 +85,32 @@ add_method("compressed", [](Fixture& f) {
     {
         auto writer(f.makeLocalChecker(&cfg));
         ReporterExpected e;
-        e.archived.emplace_back("testds", "2007/07-07.grib1");
-        e.archived.emplace_back("testds", "2007/07-08.grib1");
+        e.archived.emplace_back("testds", "2007/07-07.grib");
+        e.archived.emplace_back("testds", "2007/07-08.grib");
         wassert(actual(writer.get()).repack(e, true));
     }
 
     // Check that the files have been moved to the archive
-    ensure(!sys::exists("testds/.archive/last/2007/07-07.grib1"));
-    ensure(sys::exists("testds/.archive/last/2007/07-07.grib1.gz"));
-    ensure(sys::exists("testds/.archive/last/2007/07-07.grib1.gz.idx"));
-    ensure(sys::exists("testds/.archive/last/2007/07-07.grib1.metadata"));
-    ensure(sys::exists("testds/.archive/last/2007/07-07.grib1.summary"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib1"));
-    ensure(sys::exists("testds/.archive/last/2007/07-08.grib1.gz"));
-    ensure(sys::exists("testds/.archive/last/2007/07-08.grib1.gz.idx"));
-    ensure(sys::exists("testds/.archive/last/2007/07-08.grib1.metadata"));
-    ensure(sys::exists("testds/.archive/last/2007/07-08.grib1.summary"));
-    ensure(!sys::exists("testds/2007/07-07.grib1"));
-    ensure(!sys::exists("testds/2007/07-07.grib1.gz"));
-    ensure(!sys::exists("testds/2007/07-07.grib1.gz.idx"));
-    ensure(!sys::exists("testds/2007/07-07.grib1.metadata"));
-    ensure(!sys::exists("testds/2007/07-07.grib1.summary"));
-    ensure(!sys::exists("testds/2007/07-08.grib1"));
-    ensure(!sys::exists("testds/2007/07-08.grib1.gz"));
-    ensure(!sys::exists("testds/2007/07-08.grib1.gz.idx"));
-    ensure(!sys::exists("testds/2007/07-08.grib1.metadata"));
-    ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
+    ensure(!sys::exists("testds/.archive/last/2007/07-07.grib"));
+    ensure(sys::exists("testds/.archive/last/2007/07-07.grib.gz"));
+    ensure(sys::exists("testds/.archive/last/2007/07-07.grib.gz.idx"));
+    ensure(sys::exists("testds/.archive/last/2007/07-07.grib.metadata"));
+    ensure(sys::exists("testds/.archive/last/2007/07-07.grib.summary"));
+    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib"));
+    ensure(sys::exists("testds/.archive/last/2007/07-08.grib.gz"));
+    ensure(sys::exists("testds/.archive/last/2007/07-08.grib.gz.idx"));
+    ensure(sys::exists("testds/.archive/last/2007/07-08.grib.metadata"));
+    ensure(sys::exists("testds/.archive/last/2007/07-08.grib.summary"));
+    ensure(!sys::exists("testds/2007/07-07.grib"));
+    ensure(!sys::exists("testds/2007/07-07.grib.gz"));
+    ensure(!sys::exists("testds/2007/07-07.grib.gz.idx"));
+    ensure(!sys::exists("testds/2007/07-07.grib.metadata"));
+    ensure(!sys::exists("testds/2007/07-07.grib.summary"));
+    ensure(!sys::exists("testds/2007/07-08.grib"));
+    ensure(!sys::exists("testds/2007/07-08.grib.gz"));
+    ensure(!sys::exists("testds/2007/07-08.grib.gz.idx"));
+    ensure(!sys::exists("testds/2007/07-08.grib.metadata"));
+    ensure(!sys::exists("testds/2007/07-08.grib.summary"));
 
     // Maintenance should now show a normal situation
     {
@@ -149,8 +149,8 @@ add_method("query_archived", [](Fixture& f) {
     {
         auto writer(f.makeLocalChecker(&cfg));
         ReporterExpected e;
-        e.archived.emplace_back("testds", "2007/07-07.grib1");
-        e.archived.emplace_back("testds", "2007/07-08.grib1");
+        e.archived.emplace_back("testds", "2007/07-07.grib");
+        e.archived.emplace_back("testds", "2007/07-08.grib");
         wassert(actual(writer.get()).repack(e, true));
     }
 
@@ -163,7 +163,7 @@ add_method("query_archived", [](Fixture& f) {
     wassert(actual(mdc.size()) == 1u);
 
     // Check that the source record that comes out is ok
-    //wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
+    //wassert(actual_type(mdc[0].source()).is_source_inline("grib", 7218));
 
     // Check that data is accessible
     const auto& buf = mdc[0].getData();
