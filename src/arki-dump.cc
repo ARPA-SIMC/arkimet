@@ -3,7 +3,6 @@
 #include <arki/utils/commandline/parser.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
-#include <arki/runtime/printer.h>
 #include <arki/matcher.h>
 #include <arki/dataset/http.h>
 #include <arki/summary.h>
@@ -75,6 +74,57 @@ struct Options : public StandardParserWithManpage
 
 }
 }
+}
+
+namespace {
+
+struct YamlPrinter
+{
+    NamedFileDescriptor& out;
+    Formatter* formatter = nullptr;
+
+    YamlPrinter(NamedFileDescriptor& out, bool formatted=false)
+        : out(out)
+    {
+        if (formatted)
+            formatter = Formatter::create().release();
+    }
+    ~YamlPrinter()
+    {
+        delete formatter;
+    }
+
+    bool print(const Metadata& md)
+    {
+        string res = serialize(md);
+        out.write_all_or_throw(res.data(), res.size());
+        return true;
+    }
+
+    bool print_summary(const Summary& s)
+    {
+        string res = serialize(s);
+        out.write_all_or_throw(res.data(), res.size());
+        return true;
+    }
+
+    std::string serialize(const Metadata& md)
+    {
+        stringstream ss;
+        md.writeYaml(ss, formatter);
+        ss << endl;
+        return ss.str();
+    }
+
+    std::string serialize(const Summary& s)
+    {
+        stringstream ss;
+        s.writeYaml(ss, formatter);
+        ss << endl;
+        return ss.str();
+    }
+};
+
 }
 
 // Add to \a s the info from all data read from \a in
@@ -273,7 +323,7 @@ int main(int argc, const char* argv[])
         }
         else
         {
-            metadata::YamlPrinter writer(*out, opts.annotate->boolValue());
+            YamlPrinter writer(*out, opts.annotate->boolValue());
 
             Metadata md;
             Summary summary;
@@ -290,18 +340,18 @@ int main(int argc, const char* argv[])
                     md.read_inner(dec, version, in->name());
                     if (md.source().style() == Source::INLINE)
                         md.readInlineData(*in, in->name());
-                    writer.observe(md);
+                    writer.print(md);
                 }
                 else if (signature == "SU")
                 {
                     BinaryDecoder dec(buf);
                     summary.read_inner(dec, version, in->name());
-                    writer.observe_summary(summary);
+                    writer.print_summary(summary);
                 }
                 else if (signature == "MG")
                 {
                     BinaryDecoder dec(buf);
-                    Metadata::read_group(dec, version, in->name(), [&](unique_ptr<Metadata> md) { return writer.eat(move(md)); });
+                    Metadata::read_group(dec, version, in->name(), [&](unique_ptr<Metadata> md) { return writer.print(*md); });
                 }
             }
 // Uncomment as a quick hack to check memory usage at this point:

@@ -3,7 +3,6 @@
 #include <arki/exceptions.h>
 #include <arki/utils/commandline/parser.h>
 #include <arki/configfile.h>
-#include <arki/runtime/printer.h>
 #include <arki/datasetpool.h>
 #include <arki/dataset/local.h>
 #include <arki/metadata/consumer.h>

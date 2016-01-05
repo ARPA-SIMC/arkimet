@@ -104,7 +104,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/config.h \
 		runtime.h \
 		runtime/io.h \
-		runtime/printer.h \
 		runtime/processor.h \
 		scan/any.h \
 		scan/dir.h \
@@ -285,7 +284,6 @@ libarkimet_la_SOURCES += \
 		matcher/quantity.cc \
 		runtime/config.cc \
 		runtime/io.cc \
-		runtime/printer.cc \
 		types-init.cc
 
 tests_arki_test_SOURCES += \
