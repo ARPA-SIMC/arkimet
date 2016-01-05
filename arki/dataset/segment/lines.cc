@@ -1,4 +1,5 @@
 #include "lines.h"
+#include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/nag.h"
 #include "arki/utils/sys.h"
@@ -99,7 +100,7 @@ void Segment::write(const std::vector<uint8_t>& buf)
     }
 
     if (fdatasync(fd) < 0)
-        throw wibble::exception::File(absname, "flushing write");
+        throw_file_error(absname, "cannot flush write");
 }
 
 off_t Segment::append(Metadata& md)
@@ -208,7 +209,7 @@ size_t OstreamWriter::stream(Metadata& md, int out) const
 
     res = ::write(out, "\n", 1);
     if (res < 0 || (unsigned)res != 1)
-        throw wibble::exception::System("writing newline");
+        throw_system_error("cannot write newline");
 
     return buf.size() + 1;
 }
