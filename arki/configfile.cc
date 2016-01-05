@@ -1,5 +1,6 @@
-#include "config.h"
 #include "configfile.h"
+#include "config.h"
+#include "exceptions.h"
 #include "utils/string.h"
 #include <arki/wibble/regexp.h>
 #include <cctype>
@@ -139,12 +140,12 @@ void ConfigFile::parse(std::istream& in, const std::string& fileName)
 {
 	ConfigFileParserHelper h(fileName);
 
-	string line;
-	while (!in.eof())
-	{
-		getline(in, line);
-		if (in.fail() && !in.eof())
-			throw wibble::exception::File(fileName, "reading one line");
+    string line;
+    while (!in.eof())
+    {
+        getline(in, line);
+        if (in.fail() && !in.eof())
+            throw_system_error(fileName + ": cannot read one line");
 		if (h.sec_start.match(line))
 		{
 			string name = h.sec_start[1];
@@ -277,7 +278,7 @@ bool ConfigFile::boolValue(const std::string& str, bool def)
 		return true;
 	if (l == "false" || l == "no" || l == "off" || l == "0")
 		return false;
-	throw wibble::exception::Consistency("parsing bool value", "value \"" + str + "\" is not supported");
+    throw std::runtime_error("cannot parse bool value: value \"" + str + "\" is not supported");
 }
 
 }
