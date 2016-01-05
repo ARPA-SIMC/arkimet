@@ -23,6 +23,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		binary.h \
 		defs.h \
 		exceptions.h \
+		file.h \
 		bbox.h \
 		configfile.h \
 		libconfig.h \

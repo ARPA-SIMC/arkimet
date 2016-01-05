@@ -262,7 +262,7 @@ int main(int argc, const char* argv[])
             Metadata md;
             auto reader = files::linereader_from_fd(*in, in->name());
             while (md.readYaml(*reader, in->name()))
-                md.write(*out, out->name());
+                md.write(*out);
         }
         else if (opts.reverse_summary->boolValue())
         {

@@ -52,8 +52,8 @@ struct arki_dataset_index_contents_shar {
         md.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
         md.add_note("this is a test");
         {
-            sys::File out("test-md.metadata", O_WRONLY | O_CREAT | O_TRUNC, 0666);
-            md.write(out, "test-md.metadata");
+            File out("test-md.metadata", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            md.write(out);
             out.close();
         }
 
@@ -67,8 +67,8 @@ struct arki_dataset_index_contents_shar {
         md1.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
         {
             // Index one without notes
-            sys::File out("test-md1.metadata", O_WRONLY | O_CREAT | O_TRUNC, 0666);
-            md1.write(out, "test-md1.metadata");
+            File out("test-md1.metadata", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            md1.write(out);
             out.close();
         }
     }

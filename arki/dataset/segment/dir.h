@@ -5,7 +5,7 @@
 
 #include <arki/defs.h>
 #include <arki/dataset/segment.h>
-#include <arki/utils/sys.h>
+#include <arki/file.h>
 
 namespace arki {
 class Metadata;
@@ -49,7 +49,7 @@ struct SequenceFile
      * Returns the open file descriptor, and the corresponding 'offset', that
      * is, the file sequence number itself.
      */
-    utils::sys::File open_next(const std::string& format, std::string& absname, size_t& pos);
+    File open_next(const std::string& format, std::string& absname, size_t& pos);
 
     static std::string data_fname(size_t pos, const std::string& format);
 };
@@ -65,7 +65,7 @@ protected:
      * Write the data in md to a file. Delete the file in case of errors. Close fd
      * in any case. Return the size of the data that has been written.
      */
-    virtual size_t write_file(Metadata& md, utils::sys::File& fd);
+    virtual size_t write_file(Metadata& md, File& fd);
 
 public:
     Segment(const std::string& format, const std::string& relname, const std::string& absname);
@@ -109,7 +109,7 @@ protected:
 class HoleSegment : public Segment
 {
 protected:
-    size_t write_file(Metadata& md, utils::sys::File& fd) override;
+    size_t write_file(Metadata& md, File& fd) override;
 
 public:
     HoleSegment(const std::string& format, const std::string& relname, const std::string& absname);

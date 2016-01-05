@@ -351,14 +351,13 @@ bool Metadata::readYaml(LineReader& in, const std::string& filename)
     return !in.eof();
 }
 
-void Metadata::write(int outfd, const std::string& filename) const
+void Metadata::write(NamedFileDescriptor& out) const
 {
     // Prepare the encoded data
     vector<uint8_t> encoded = encodeBinary();
 
     // Write out
-    sys::NamedFileDescriptor fd(outfd, filename);
-    fd.write_all_or_retry(encoded.data(), encoded.size());
+    out.write_all_or_retry(encoded.data(), encoded.size());
 
     // If the source is inline, then the data follows the metadata
     if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
@@ -366,10 +365,10 @@ void Metadata::write(int outfd, const std::string& filename) const
         if (s->size != m_data.size())
         {
             stringstream ss;
-            ss << "cannot write metadata to file " << filename << ": metadata size " << s->size << " does not match the data size " << m_data.size();
+            ss << "cannot write metadata to file " << out.name() << ": metadata size " << s->size << " does not match the data size " << m_data.size();
             throw runtime_error(ss.str());
         }
-        fd.write_all_or_retry(m_data.data(), m_data.size());
+        out.write_all_or_retry(m_data.data(), m_data.size());
     }
 }
 

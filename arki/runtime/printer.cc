@@ -24,13 +24,13 @@ BinaryPrinter::~BinaryPrinter()
 
 bool BinaryPrinter::eat(unique_ptr<Metadata>&& md)
 {
-    md->write(out, out.name());
+    md->write(out);
     return true;
 }
 
 bool BinaryPrinter::observe(const Metadata& md)
 {
-    md.write(out, out.name());
+    md.write(out);
     return true;
 }
 

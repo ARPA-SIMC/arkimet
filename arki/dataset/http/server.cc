@@ -277,9 +277,10 @@ void ReaderServer::do_queryData(const QueryDataParams& parms, net::http::Request
     DataQuery dq;
     parms.set_into(dq);
 // TODO: hook here something that makes absolute BLOB sources or Inline sources depending on sq.with_data
+    NamedFileDescriptor out(headers.req.sock, "socket");
     ds.query_data(dq, [&](unique_ptr<Metadata> md) {
         headers.sendIfNotFired();
-        md->write(headers.req.sock, "socket");
+        md->write(out);
         return true;
     });
 

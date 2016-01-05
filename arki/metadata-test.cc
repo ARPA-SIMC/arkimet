@@ -225,7 +225,7 @@ add_method("binary_inline", [](Fixture& f) {
 
     // Encode
     sys::File temp("testfile", O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    wassert(md.write(temp, "testfile"));
+    wassert(md.write(temp));
     temp.close();
 
     // Decode
@@ -246,7 +246,7 @@ add_method("binary_fd", [](Fixture& f) {
 
     // Encode
     sys::File out(tmpfile, O_WRONLY | O_CREAT, 0666);
-    md.write(out, tmpfile);
+    md.write(out);
     out.close();
 
     // Decode

@@ -79,9 +79,9 @@ const Validator& validator() { return bufr_validator; }
 
 Bufr::Bufr() : file(0), importer(0), extras(0)
 {
-	msg::Importer::Options opts;
-	opts.simplified = true;
-	importer = msg::Importer::create(File::BUFR, opts).release();
+    msg::Importer::Options opts;
+    opts.simplified = true;
+    importer = msg::Importer::create(dballe::File::BUFR, opts).release();
 
 #ifdef HAVE_LUA
 	extras = new bufr::BufrLua;
@@ -112,9 +112,9 @@ void Bufr::open(const std::string& filename, const std::string& basedir, const s
     this->basedir = basedir;
     this->relname = relname;
     if (filename == "-")
-        file = File::create(File::BUFR, stdin, false, "standard input").release();
+        file = dballe::File::create(dballe::File::BUFR, stdin, false, "standard input").release();
     else
-        file = File::create(File::BUFR, filename.c_str(), "r").release();
+        file = dballe::File::create(dballe::File::BUFR, filename.c_str(), "r").release();
 }
 
 void Bufr::close()

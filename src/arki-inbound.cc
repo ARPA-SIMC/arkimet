@@ -56,7 +56,8 @@ struct BinaryPrinter : public Printer
 {
     bool eat(unique_ptr<Metadata>&& md) override
     {
-        md->write(1, "(stdout)");
+        NamedFileDescriptor out(1, "(stdout)");
+        md->write(out);
         return true;
     }
 };

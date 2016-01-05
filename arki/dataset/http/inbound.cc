@@ -50,9 +50,10 @@ void InboundServer::do_scan(const InboundParams& parms, net::http::Request& req)
     StreamHeaders headers(req, str::basename(*parms.file));
     headers.ext = "arkimet";
 
+    NamedFileDescriptor out(headers.req.sock, "socket");
     ds->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
         headers.sendIfNotFired();
-        md->write(headers.req.sock, "socket");
+        md->write(out);
         return true;
     });
 
@@ -133,10 +134,11 @@ void InboundServer::do_dispatch(const InboundParams& parms, net::http::Request& 
 
     RealDispatcher d(import_config);
     bool all_ok = true;
+    NamedFileDescriptor out(headers.req.sock, "socket");
     ds->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
         Dispatcher::Outcome res = d.dispatch(move(md), [&](unique_ptr<Metadata> md) {
             headers.sendIfNotFired();
-            md->write(headers.req.sock, "socket");
+            md->write(out);
             return true;
         });
         switch (res)
@@ -198,4 +200,3 @@ void InboundServer::make_import_config(const net::http::Request& req, const Conf
 }
 }
 }
-// vim:set ts=4 sw=4:

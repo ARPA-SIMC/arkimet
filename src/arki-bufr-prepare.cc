@@ -90,7 +90,7 @@ protected:
         dst.load_tables();
     }
 
-    void splitmsg(const BinaryMessage& rmsg, const BufrBulletin& msg, msg::Importer& importer, File& outfile)
+    void splitmsg(const BinaryMessage& rmsg, const BufrBulletin& msg, msg::Importer& importer, dballe::File& outfile)
     {
         // Create new message with the same info as the old one
         auto newmsg(BufrBulletin::create());
@@ -144,11 +144,11 @@ public:
         override_usn_value = value;
     }
 
-    void process(const std::string& filename, File& outfile)
+    void process(const std::string& filename, dballe::File& outfile)
     {
         // Use .release() so the code is the same even with the new C++11's dballe
-        unique_ptr<File> file(File::create(File::BUFR, filename.c_str(), "r").release());
-        unique_ptr<msg::Importer> importer(msg::Importer::create(File::BUFR).release());
+        unique_ptr<dballe::File> file(dballe::File::create(dballe::File::BUFR, filename.c_str(), "r").release());
+        unique_ptr<msg::Importer> importer(msg::Importer::create(dballe::File::BUFR).release());
 
         while (BinaryMessage rmsg = file->read())
         {
@@ -188,11 +188,11 @@ int main(int argc, const char* argv[])
         if (opts.force_usn->isSet())
             copier.override_usn(opts.force_usn->intValue());
 
-        unique_ptr<File> outfile;
+        unique_ptr<dballe::File> outfile;
         if (opts.outfile->isSet())
-            outfile.reset(File::create(File::BUFR, opts.outfile->stringValue().c_str(), "wb").release());
+            outfile.reset(dballe::File::create(dballe::File::BUFR, opts.outfile->stringValue().c_str(), "wb").release());
         else
-            outfile.reset(File::create(File::BUFR, "(stdout)", "wb").release());
+            outfile.reset(dballe::File::create(dballe::File::BUFR, "(stdout)", "wb").release());
 
         if (!opts.hasNext())
         {

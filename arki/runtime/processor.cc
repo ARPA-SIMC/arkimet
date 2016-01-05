@@ -33,7 +33,7 @@ SingleOutputProcessor::SingleOutputProcessor(const utils::sys::NamedFileDescript
 metadata_print_func create_metadata_printer(ProcessorMaker& maker, sys::NamedFileDescriptor& out)
 {
     if (!maker.json && !maker.yaml && !maker.annotate)
-        return [&](const Metadata& md) { md.write(out, out.name()); };
+        return [&](const Metadata& md) { md.write(out); };
 
     shared_ptr<Formatter> formatter;
     if (maker.annotate)

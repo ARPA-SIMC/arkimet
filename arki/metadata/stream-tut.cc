@@ -103,9 +103,9 @@ def_test(1)
     // Encode everything in a buffer
     size_t end1, end2;
     std::string input = tempfile_to_string([&](sys::NamedFileDescriptor& out) {
-        md1.write(out, "(memory)");
+        md1.write(out);
         end1 = out.lseek(0, SEEK_CUR);
-        md2.write(out, "(memory)");
+        md2.write(out);
         end2 = out.lseek(0, SEEK_CUR);
     });
 
@@ -168,9 +168,9 @@ def_test(2)
 
     // Encode it in a buffer 3 times
     std::string str = tempfile_to_string([&](sys::NamedFileDescriptor& out) {
-        md.write(out, "(memory)");
-        md.write(out, "(memory)");
-        md.write(out, "(memory)");
+        md.write(out);
+        md.write(out);
+        md.write(out);
     });
 
     // Where we collect the decoded metadata

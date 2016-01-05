@@ -147,13 +147,13 @@ std::pair<std::string, size_t> SequenceFile::next(const std::string& format)
     return make_pair(str::joinpath(dirname, data_fname(cur, format)), (size_t)cur);
 }
 
-sys::File SequenceFile::open_next(const std::string& format, std::string& absname, size_t& pos)
+File SequenceFile::open_next(const std::string& format, std::string& absname, size_t& pos)
 {
     while (true)
     {
         pair<string, size_t> dest = next(format);
 
-        sys::File fd(dest.first);
+        File fd(dest.first);
         if (fd.open_ifexists(O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666))
         {
             absname = dest.first;
@@ -194,7 +194,7 @@ void Segment::close()
     seqfile.close();
 }
 
-size_t Segment::write_file(Metadata& md, sys::File& fd)
+size_t Segment::write_file(Metadata& md, File& fd)
 {
     try {
         const std::vector<uint8_t>& buf = md.getData();
@@ -219,7 +219,7 @@ off_t Segment::append(Metadata& md)
 
     string dest;
     size_t pos;
-    sys::File fd = seqfile.open_next(format, dest, pos);
+    File fd = seqfile.open_next(format, dest, pos);
     /*size_t size =*/ write_file(md, fd);
     fd.close();
 
@@ -239,7 +239,7 @@ Pending Segment::append(Metadata& md, off_t* ofs)
 
     string dest;
     size_t pos;
-    sys::File fd = seqfile.open_next(format, dest, pos);
+    File fd = seqfile.open_next(format, dest, pos);
     size_t size = write_file(md, fd);
     fd.close();
     *ofs = pos;
@@ -514,7 +514,7 @@ HoleSegment::HoleSegment(const std::string& format, const std::string& relname, 
 {
 }
 
-size_t HoleSegment::write_file(Metadata& md, sys::File& fd)
+size_t HoleSegment::write_file(Metadata& md, File& fd)
 {
     try {
         if (ftruncate(fd, md.data_size()) == -1)
