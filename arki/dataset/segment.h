@@ -21,6 +21,10 @@ namespace metadata {
 class Collection;
 }
 
+namespace scan {
+class Validator;
+}
+
 namespace dataset {
 class Segment;
 
@@ -295,6 +299,8 @@ public:
     virtual size_t remove() = 0;
     virtual void truncate(size_t offset) = 0;
     virtual Pending repack(const std::string& rootdir, metadata::Collection& mds) = 0;
+
+    virtual void validate(Metadata& md, const scan::Validator& v) = 0;
 };
 
 namespace segment {

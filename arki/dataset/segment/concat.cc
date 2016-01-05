@@ -146,7 +146,7 @@ void HoleSegment::write(const std::vector<uint8_t>& buf)
 
 State Segment::check(const metadata::Collection& mds, bool quick)
 {
-    return fd::Segment::check(mds, 0, quick);
+    return check_fd(mds, 0, quick);
 }
 
 static fd::Segment* make_repack_segment(const std::string& relname, const std::string& absname)

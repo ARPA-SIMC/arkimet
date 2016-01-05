@@ -5,6 +5,7 @@
 
 #include <arki/libconfig.h>
 #include <arki/defs.h>
+#include <arki/file.h>
 #include <vector>
 #include <string>
 #include <ctime>
@@ -12,12 +13,6 @@
 
 namespace arki {
 class Metadata;
-
-namespace utils {
-namespace sys {
-class NamedFileDescriptor;
-}
-}
 
 namespace scan {
 
@@ -104,13 +99,10 @@ struct Validator
     virtual std::string format() const = 0;
 
     // Validate data found in a file
-    virtual void validate(utils::sys::NamedFileDescriptor& fd, off_t offset, size_t size) const = 0;
+    virtual void validate_file(NamedFileDescriptor& fd, off_t offset, size_t size) const = 0;
 
     // Validate a memory buffer
-    virtual void validate(const void* buf, size_t size) const = 0;
-
-    // Validate data pointed by a Metadata
-    virtual void validate(Metadata& md) const;
+    virtual void validate_buf(const void* buf, size_t size) const = 0;
 
 	/**
 	 * Get the validator for a given file name
@@ -121,7 +113,7 @@ struct Validator
 	static const Validator& by_filename(const std::string& filename);
 
 protected:
-    [[noreturn]] void throw_check_error(utils::sys::NamedFileDescriptor& fd, off_t offset, const std::string& msg) const;
+    [[noreturn]] void throw_check_error(NamedFileDescriptor& fd, off_t offset, const std::string& msg) const;
     [[noreturn]] void throw_check_error(const std::string& msg) const;
 };
 

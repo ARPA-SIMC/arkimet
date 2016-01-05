@@ -467,7 +467,7 @@ endif
 
 if VM2
 libarkimet_la_SOURCES += scan/vm2.cc
-tests_arki_test_SOURCES += scan/vm2-tut.cc
+tests_arki_test_SOURCES += scan/vm2-test.cc
 endif
 
 endif

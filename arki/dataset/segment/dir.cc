@@ -293,21 +293,21 @@ State Segment::check(const metadata::Collection& mds, bool quick)
 
     // Check the list of elements we expect for sort order, gaps, and match
     // with what is in the file system
-    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+    for (const auto& i: mds)
     {
         if (validator)
         {
             try {
-                validator->validate(**i);
+                validate(*i, *validator);
             } catch (std::exception& e) {
                 stringstream out;
-                out << (*i)->source();
+                out << i->source();
                 nag::warning("%s: validation failed at %s: %s", absname.c_str(), out.str().c_str(), e.what());
                 return SEGMENT_UNALIGNED;
             }
         }
 
-        const source::Blob& source = (*i)->sourceBlob();
+        const source::Blob& source = i->sourceBlob();
 
         if (source.offset != next_sequence_expected)
             out_of_order = true;
@@ -337,6 +337,21 @@ State Segment::check(const metadata::Collection& mds, bool quick)
     } else {
         return SEGMENT_OK;
     }
+}
+
+void Segment::validate(Metadata& md, const scan::Validator& v)
+{
+    if (const types::source::Blob* blob = md.has_source_blob()) {
+        if (blob->filename != relname)
+            throw std::runtime_error("metadata to validate does not appear to be from this segment");
+
+        string fname = seqfile.data_fname(blob->offset, blob->format);
+        sys::File fd(fname, O_RDONLY);
+        v.validate_file(fd, blob->offset, blob->size);
+        return;
+    }
+    const auto& buf = md.getData();
+    v.validate_buf(buf.data(), buf.size());
 }
 
 void Segment::foreach_datafile(std::function<void(const char*)> f)

@@ -30,11 +30,11 @@ public:
     off_t wrpos();
     virtual void write(const std::vector<uint8_t>& buf);
     void fdtruncate(off_t pos);
+    State check_fd(const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
 
-    size_t remove();
-    void truncate(size_t offset);
-
-    virtual State check(const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
+    size_t remove() override;
+    void truncate(size_t offset) override;
+    void validate(Metadata& md, const scan::Validator& v) override;
 
     /**
      * If skip_validation is true, repack will skip validating the data that is

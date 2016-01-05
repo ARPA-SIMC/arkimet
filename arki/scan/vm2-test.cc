@@ -4,25 +4,23 @@
 #include <arki/scan/vm2.h>
 #include <arki/scan/any.h>
 #include <arki/utils/sys.h>
-#include <arki/wibble/exception.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
 
-struct arki_scan_vm2_shar {
-};
-TESTGRP(arki_scan_vm2);
+def_tests(arki_scan_vm2);
+
+void Tests::register_tests() {
 
 // Scan a well-known vm2 sample
-def_test(1)
-{
+add_method("scan", []() {
     Metadata md;
     scan::Vm2 scanner;
     vector<uint8_t> buf;
@@ -46,59 +44,20 @@ def_test(1)
     buf = md.getData();
     ensure_equals(buf.size(), 34u);
     ensure_equals(string((const char*)buf.data(), 34), "198710310000,1,227,1.2,,,000000000");
-}
-
-def_test(2)
-{
-    Metadata md;
-    vector<uint8_t> buf;
-
-    const scan::Validator& v = scan::vm2::validator();
-
-    sys::File fd("inbound/test.vm2", O_RDONLY);
-#define ensure_no_throws(x) do { try { x; } catch(wibble::exception::Generic& e) { ensure(false); } } while (0)
-#define ensure_throws(x) do { try { x; ensure(false); } catch (wibble::exception::Generic& e) { } } while (0)
-    ensure_no_throws(v.validate(fd, 0, 35));
-    ensure_no_throws(v.validate(fd, 0, 34));
-    ensure_no_throws(v.validate(fd, 35, 35));
-    ensure_no_throws(v.validate(fd, 35, 36));
-
-    ensure_throws(v.validate(fd, 1, 35));
-    ensure_throws(v.validate(fd, 0, 36));
-    ensure_throws(v.validate(fd, 34, 34));
-    ensure_throws(v.validate(fd, 36, 34));
-
-    fd.close();
-
-    metadata::Collection mdc;
-    scan::scan("inbound/test.vm2", mdc.inserter_func());
-    mdc[0].unset(TYPE_VALUE);
-    buf = mdc[0].getData();
-
-    v.validate(buf.data(), buf.size());
-    ensure_throws(v.validate((const char*)buf.data()+1, buf.size()-1));
-
-    std::ifstream in("inbound/test.vm2");
-    std::string line;
-    while (std::getline(in, line)) {
-        line += "\n";
-        ensure_no_throws(v.validate(line.c_str(), line.size()));
-    }
-}
+});
 
 // Scan a well-known vm2 sample (with seconds)
-def_test(3)
-{
+add_method("scan_seconds", []() {
     Metadata md;
     scan::Vm2 scanner;
     vector<uint8_t> buf;
 
     scanner.open("inbound/test.vm2");
     // Skip the first vm2
-    ensure(scanner.next(md));
+    wassert(actual(scanner.next(md)));
 
     // See how we scan the second vm2
-    ensure(scanner.next(md));
+    wassert(actual(scanner.next(md)));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/test.vm2", 35, 35));
@@ -113,13 +72,49 @@ def_test(3)
     md.unset(TYPE_VALUE);
     md.drop_cached_data();
     buf = md.getData();
-    ensure_equals(buf.size(), 35u);
-    ensure_equals(string((const char*)buf.data(), 35), "19871031000030,1,228,.5,,,000000000");
-}
+    wassert(actual(buf.size()) == 35u);
+    wassert(actual(string((const char*)buf.data(), 35)) == "19871031000030,1,228,.5,,,000000000");
+});
+
+add_method("validate", []() {
+    Metadata md;
+    vector<uint8_t> buf;
+
+    const scan::Validator& v = scan::vm2::validator();
+
+    sys::File fd("inbound/test.vm2", O_RDONLY);
+#define ensure_no_throws(x) do { try { x; } catch(std::exception&) { ensure(false); } } while (0)
+#define ensure_throws(x) do { try { x; ensure(false); } catch (std::exception&) { } } while (0)
+    ensure_no_throws(v.validate_file(fd, 0, 35));
+    ensure_no_throws(v.validate_file(fd, 0, 34));
+    ensure_no_throws(v.validate_file(fd, 35, 35));
+    ensure_no_throws(v.validate_file(fd, 35, 36));
+
+    ensure_throws(v.validate_file(fd, 1, 35));
+    ensure_throws(v.validate_file(fd, 0, 36));
+    ensure_throws(v.validate_file(fd, 34, 34));
+    ensure_throws(v.validate_file(fd, 36, 34));
+
+    fd.close();
+
+    metadata::Collection mdc;
+    scan::scan("inbound/test.vm2", mdc.inserter_func());
+    mdc[0].unset(TYPE_VALUE);
+    buf = mdc[0].getData();
+
+    v.validate_buf(buf.data(), buf.size());
+    ensure_throws(v.validate_buf((const char*)buf.data()+1, buf.size()-1));
+
+    std::ifstream in("inbound/test.vm2");
+    std::string line;
+    while (std::getline(in, line)) {
+        line += "\n";
+        ensure_no_throws(v.validate_buf(line.c_str(), line.size()));
+    }
+});
 
 // Scan and reconstruct a VM2 sample
-def_test(4)
-{
+add_method("reconstruct", []() {
     const types::Value* value;
     vector<uint8_t> buf;
 
@@ -133,18 +128,17 @@ def_test(4)
     value = mdc[1].get<types::Value>();
     buf = scan::Vm2::reconstruct(mdc[1], value->buffer);
     wassert(actual(string((const char*)buf.data(), buf.size())) == "19871031000030,1,228,.5,,,000000000");
-}
+});
 
 // Scan a corrupted VM2
-def_test(5)
-{
+add_method("corrupted", []() {
     system("cp inbound/test.vm2 inbound/test-corrupted.vm2");
     system("dd if=/dev/zero of=inbound/test-corrupted.vm2 bs=1 seek=71 count=33 conv=notrunc 2>/dev/null");
 
     metadata::Collection mdc;
     scan::scan("inbound/test-corrupted.vm2", mdc.inserter_func());
 
-    wassert(actual(mdc.size()) == 3);
+    wassert(actual(mdc.size()) == 3u);
 
     // Check the source info
     wassert(actual(mdc[0].source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/test-corrupted.vm2", 0, 34));
@@ -152,6 +146,7 @@ def_test(5)
     wassert(actual(mdc[2].source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/test-corrupted.vm2", 105, 32));
 
     system("rm inbound/test-corrupted.vm2");
-}
+});
 
+}
 }

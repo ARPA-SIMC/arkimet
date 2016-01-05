@@ -40,7 +40,7 @@ struct OdimH5Validator : public Validator
 {
     std::string format() const override { return "ODIMH5"; }
 
-    void validate(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
+    void validate_file(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
     {
         if (size < 8)
             throw_check_error(fd, offset, "file segment to check is only " + std::to_string(size) + " bytes (minimum for a ODIMH5 is 8)");
@@ -55,7 +55,7 @@ struct OdimH5Validator : public Validator
             throw_check_error(fd, offset, "invalid HDF5 header");
     }
 
-    void validate(const void* buf, size_t size) const override
+    void validate_buf(const void* buf, size_t size) const override
     {
         /* we check that file header is a valid HDF5 header */
 

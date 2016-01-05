@@ -509,6 +509,7 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
 
     // The dataset should still be clean even with an accurate scan
     {
+        nag::TestCollect tc;
         arki::dataset::ondisk2::Checker writer(f.cfg);
         wassert(actual(writer).maintenance_clean(3, false));
     }

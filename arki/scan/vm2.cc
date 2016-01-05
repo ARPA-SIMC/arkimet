@@ -37,7 +37,7 @@ struct VM2Validator : public Validator
     std::string format() const override { return "VM2"; }
 
     // Validate data found in a file
-    void validate(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
+    void validate_file(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
     {
         if (size >= 1024)
             throw_check_error(fd, offset, "size of data to check (" + std::to_string(size) + ") is too long for a VM2 line");
@@ -52,7 +52,7 @@ struct VM2Validator : public Validator
     }
 
     // Validate a memory buffer
-    void validate(const void* buf, size_t size) const override
+    void validate_buf(const void* buf, size_t size) const override
     {
         std::string s((const char *)buf, size);
 

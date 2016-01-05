@@ -109,7 +109,7 @@ void Segment::write(const std::vector<uint8_t>& buf)
     }
 }
 
-State Segment::check(const metadata::Collection& mds, unsigned max_gap, bool quick)
+State Segment::check_fd(const metadata::Collection& mds, unsigned max_gap, bool quick)
 {
     close();
 
@@ -118,13 +118,13 @@ State Segment::check(const metadata::Collection& mds, unsigned max_gap, bool qui
     {
         const scan::Validator* validator = &scan::Validator::by_filename(absname.c_str());
 
-        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+        for (const auto& i: mds)
         {
             try {
-                validator->validate(**i);
+                validate(*i, *validator);
             } catch (std::exception& e) {
                 stringstream out;
-                out << (*i)->source();
+                out << i->source();
                 nag::warning("%s: validation failed at %s: %s", absname.c_str(), out.str().c_str(), e.what());
                 return SEGMENT_UNALIGNED;
             }
@@ -184,6 +184,26 @@ State Segment::check(const metadata::Collection& mds, unsigned max_gap, bool qui
     } else {
         return SEGMENT_OK;
     }
+}
+
+void Segment::validate(Metadata& md, const scan::Validator& v)
+{
+    if (const types::source::Blob* blob = md.has_source_blob()) {
+        if (blob->filename != relname)
+            throw std::runtime_error("metadata to validate does not appear to be from this segment");
+
+        if (sys::exists(absname))
+        {
+            sys::File fd(absname, O_RDONLY);
+            v.validate_file(fd, blob->offset, blob->size);
+            return;
+        }
+        // If the file does not exist, it may be a compressed segment.
+        // TODO: Until handling of compressed segments is incorporated here, we
+        // just let Metadata::getData see if it can load the data somehow.
+    }
+    const auto& buf = md.getData();
+    v.validate_buf(buf.data(), buf.size());
 }
 
 size_t Segment::remove()
@@ -268,7 +288,7 @@ Pending Segment::repack(
         const auto& buf = (*i)->getData();
         // Validate it
         if (!skip_validation)
-            validator.validate(buf.data(), buf.size());
+            validator.validate_buf(buf.data(), buf.size());
         // Append it to the new file
         off_t w_off = writer->append(buf);
         // Update the source information in the metadata

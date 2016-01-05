@@ -242,22 +242,22 @@ def_test(4)
     Metadata md;
     vector<uint8_t> buf;
 
-	const scan::Validator& v = scan::grib::validator();
+    const scan::Validator& v = scan::grib::validator();
 
     sys::File fd("inbound/test.grib1", O_RDONLY);
-    v.validate(fd, 0, 7218);
-    v.validate(fd, 7218, 34960);
-    v.validate(fd, 42178, 2234);
+    v.validate_file(fd, 0, 7218);
+    v.validate_file(fd, 7218, 34960);
+    v.validate_file(fd, 42178, 2234);
 
 #define ensure_throws(x) do { try { x; ensure(false); } catch (std::exception& e) { } } while (0)
 
-    ensure_throws(v.validate(fd, 1, 7217));
-    ensure_throws(v.validate(fd, 0, 7217));
-    ensure_throws(v.validate(fd, 0, 7219));
-    ensure_throws(v.validate(fd, 7217, 34961));
-    ensure_throws(v.validate(fd, 42178, 2235));
-    ensure_throws(v.validate(fd, 44412, 0));
-    ensure_throws(v.validate(fd, 44412, 10));
+    ensure_throws(v.validate_file(fd, 1, 7217));
+    ensure_throws(v.validate_file(fd, 0, 7217));
+    ensure_throws(v.validate_file(fd, 0, 7219));
+    ensure_throws(v.validate_file(fd, 7217, 34961));
+    ensure_throws(v.validate_file(fd, 42178, 2235));
+    ensure_throws(v.validate_file(fd, 44412, 0));
+    ensure_throws(v.validate_file(fd, 44412, 10));
 
     fd.close();
 
@@ -265,9 +265,9 @@ def_test(4)
     scan::scan("inbound/test.grib1", mdc.inserter_func());
     buf = mdc[0].getData();
 
-	v.validate(buf.data(), buf.size());
-	ensure_throws(v.validate((const char*)buf.data()+1, buf.size()-1));
-	ensure_throws(v.validate(buf.data(), buf.size()-1));
+    wassert(v.validate_buf(buf.data(), buf.size()));
+    ensure_throws(v.validate_buf((const char*)buf.data()+1, buf.size()-1));
+    ensure_throws(v.validate_buf(buf.data(), buf.size()-1));
 }
 
 // Test scanning layers instead of levels

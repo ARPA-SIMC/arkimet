@@ -41,7 +41,7 @@ struct BufrValidator : public Validator
     std::string format() const override { return "BUFR"; }
 
     // Validate data found in a file
-    void validate(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
+    void validate_file(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
     {
         if (size < 8)
             throw_check_error(fd, offset, "file segment to check is only " + std::to_string(size) + " bytes (minimum for a BUFR is 8)");
@@ -59,7 +59,7 @@ struct BufrValidator : public Validator
     }
 
     // Validate a memory buffer
-    void validate(const void* buf, size_t size) const override
+    void validate_buf(const void* buf, size_t size) const override
     {
         if (size < 8)
             throw_check_error("buffer is shorter than 8 bytes");

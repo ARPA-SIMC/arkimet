@@ -292,17 +292,6 @@ void compress(const std::string& file, size_t groupsize)
 	// TODO: delete uncompressed version
 }
 
-void Validator::validate(Metadata& md) const
-{
-    if (const types::source::Blob* blob = md.has_source_blob()) {
-        sys::File fd(blob->absolutePathname(), O_RDONLY);
-        validate(fd, blob->offset, blob->size);
-    } else {
-        const auto& buf = md.getData();
-        validate(buf.data(), buf.size());
-    }
-}
-
 void Validator::throw_check_error(utils::sys::NamedFileDescriptor& fd, off_t offset, const std::string& msg) const
 {
     stringstream ss;

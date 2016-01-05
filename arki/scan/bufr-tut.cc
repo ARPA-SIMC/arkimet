@@ -200,30 +200,30 @@ def_test(3)
     Metadata md;
     vector<uint8_t> buf;
 
-	const scan::Validator& v = scan::bufr::validator();
+    const scan::Validator& v = scan::bufr::validator();
 
     sys::File fd("inbound/test.bufr", O_RDONLY);
-    v.validate(fd, 0, 194);
-    v.validate(fd, 194, 220);
-    v.validate(fd, 414, 220);
+    v.validate_file(fd, 0, 194);
+    v.validate_file(fd, 194, 220);
+    v.validate_file(fd, 414, 220);
 
 #define ensure_throws(x) do { try { x; ensure(false); } catch (std::exception& e) { } } while (0)
-    ensure_throws(v.validate(fd, 1, 193));
-    ensure_throws(v.validate(fd, 0, 193));
-    ensure_throws(v.validate(fd, 0, 195));
-    ensure_throws(v.validate(fd, 193, 221));
-    ensure_throws(v.validate(fd, 414, 221));
-    ensure_throws(v.validate(fd, 634, 0));
-    ensure_throws(v.validate(fd, 634, 10));
+    ensure_throws(v.validate_file(fd, 1, 193));
+    ensure_throws(v.validate_file(fd, 0, 193));
+    ensure_throws(v.validate_file(fd, 0, 195));
+    ensure_throws(v.validate_file(fd, 193, 221));
+    ensure_throws(v.validate_file(fd, 414, 221));
+    ensure_throws(v.validate_file(fd, 634, 0));
+    ensure_throws(v.validate_file(fd, 634, 10));
     fd.close();
 
     metadata::Collection mdc;
     scan::scan("inbound/test.bufr", mdc.inserter_func());
     buf = mdc[0].getData();
 
-	v.validate(buf.data(), buf.size());
-	ensure_throws(v.validate((const char*)buf.data()+1, buf.size()-1));
-	ensure_throws(v.validate(buf.data(), buf.size()-1));
+    wassert(v.validate_buf(buf.data(), buf.size()));
+    ensure_throws(v.validate_buf((const char*)buf.data()+1, buf.size()-1));
+    ensure_throws(v.validate_buf(buf.data(), buf.size()-1));
 }
 
 // Test scanning a BUFR file that can only be decoded partially

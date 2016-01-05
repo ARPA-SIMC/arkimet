@@ -93,6 +93,7 @@ public:
     size_t remove() override;
     void truncate(size_t offset) override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds) override;
+    void validate(Metadata& md, const scan::Validator& v) override;
 
     /// Call f for each nnnnnn.format file in the directory segment, passing the file name
     void foreach_datafile(std::function<void(const char*)> f);
