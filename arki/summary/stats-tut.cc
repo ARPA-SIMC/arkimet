@@ -25,13 +25,13 @@ def_test(1)
     using namespace arki::summary;
 
     unique_ptr<Stats> st(new Stats);
-    wassert(actual(st->count) == 0);
-    wassert(actual(st->size) == 0);
+    wassert(actual(st->count) == 0u);
+    wassert(actual(st->size) == 0u);
     wassert(actual(*st) == Stats());
 
     st->merge(md);
-    wassert(actual(st->count) == 1);
-    wassert(actual(st->size) == 0);
+    wassert(actual(st->count) == 1u);
+    wassert(actual(st->size) == 0u);
 
     unique_ptr<Stats> st1(new Stats);
     st1->merge(md);

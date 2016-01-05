@@ -52,13 +52,13 @@ def_test(1)
     Metadata md1;
     {
         string s(str1.str());
-        auto reader = files::linereader_from_chars(s.data(), s.size());
+        auto reader = LineReader::from_chars(s.data(), s.size());
         md1.readYaml(*reader, "(test memory buffer)");
     }
     Metadata md2;
     {
         string s(str2.str());
-        auto reader = files::linereader_from_chars(s.data(), s.size());
+        auto reader = LineReader::from_chars(s.data(), s.size());
         md2.readYaml(*reader, "(test memory buffer)");
     }
 

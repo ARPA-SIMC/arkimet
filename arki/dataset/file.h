@@ -4,6 +4,7 @@
 /// dataset/file - Dataset on a single file
 
 #include <arki/defs.h>
+#include <arki/file.h>
 #include <arki/dataset.h>
 #include <string>
 

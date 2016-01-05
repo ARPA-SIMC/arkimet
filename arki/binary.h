@@ -222,6 +222,26 @@ struct BinaryDecoder
     }
 
     /**
+     * Return a line of text that ends with the given separator.
+     *
+     * The separator is not included in the resulting string.
+     *
+     * If the buffer does not contain the separator, all the buffer contents
+     * are returned.
+     */
+    std::string pop_line(char sep='\n');
+
+    /**
+     * Return a line of text that ends with the given separator.
+     *
+     * The separator is not included in the resulting string.
+     *
+     * If the buffer does not contain the separator, all the buffer contents
+     * are returned.
+     */
+    std::string pop_line(const std::string& sep);
+
+    /**
      * Skip all the leading bytes with the given value
      */
     void skip_leading(uint8_t val)

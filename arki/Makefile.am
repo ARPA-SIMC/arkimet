@@ -234,6 +234,7 @@ libarkimet_la_SOURCES += \
 		utils/net/server.cpp \
 		utils/net/http.cpp \
 		binary.cc \
+		file.cc \
 		configfile.cc \
 		transaction.cc \
 		emitter.cc \
@@ -300,6 +301,7 @@ tests_arki_test_SOURCES += \
 		utils/process-tut.cc \
 		utils/raii-tut.cc \
 		binary-test.cc \
+		file-test.cc \
 		configfile-test.cc \
 		transaction-test.cc \
 		emitter/memory-tut.cc \

@@ -3,6 +3,7 @@
 #include "yaml.h"
 
 using namespace std;
+using namespace arki;
 using namespace arki::utils;
 using namespace arki::tests;
 
@@ -26,7 +27,7 @@ class Tests : public TestCase
                 "   continue val2\n"
                 "\n"
                 "Name: second record\n";
-            auto reader = files::linereader_from_chars(data.data(), data.size());
+            auto reader = LineReader::from_chars(data.data(), data.size());
             YamlStream yamlStream;
             YamlStream::const_iterator i = yamlStream.begin(*reader);
             wassert(actual(i != yamlStream.end()));
@@ -75,7 +76,7 @@ class Tests : public TestCase
                 "# comment\n"
                 "\n"
                 "Name: second record\n";
-            auto reader = files::linereader_from_chars(data.data(), data.size());
+            auto reader = LineReader::from_chars(data.data(), data.size());
             YamlStream yamlStream;
             YamlStream::const_iterator i = yamlStream.begin(*reader);
             wassert(actual(i != yamlStream.end()));

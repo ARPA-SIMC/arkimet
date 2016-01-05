@@ -213,7 +213,7 @@ bool Table::merge_yaml(LineReader& in, const std::string& filename)
         {
             case TYPE_SUMMARYITEM:
                 {
-                    auto in = files::linereader_from_chars(i->second.data(), i->second.size());
+                    auto in = LineReader::from_chars(i->second.data(), i->second.size());
                     YamlStream yamlStream;
                     for (YamlStream::const_iterator i = yamlStream.begin(*in); i != yamlStream.end(); ++i)
                     {

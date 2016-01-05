@@ -168,7 +168,7 @@ void ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
     if (sorter) sorter->flush();
 }
 
-YamlFile::YamlFile(const ConfigFile& cfg) : FdFile(cfg), reader(files::linereader_from_fd(fd, m_pathname).release()) {}
+YamlFile::YamlFile(const ConfigFile& cfg) : FdFile(cfg), reader(LineReader::from_fd(fd, m_pathname).release()) {}
 YamlFile::~YamlFile() { delete reader; }
 void YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {

@@ -1,6 +1,9 @@
 #include "binary.h"
 #include <stdexcept>
+#include <algorithm>
 #include <sstream>
+
+using namespace std;
 
 namespace arki {
 
@@ -14,6 +17,48 @@ void BinaryDecoder::throw_insufficient_size(const std::string& what, size_t want
     std::stringstream ss;
     ss << "Cannot parse " << what << ": size is " << size << " but at least " << wanted << " are needed";
     throw std::runtime_error(ss.str());
+}
+
+std::string BinaryDecoder::pop_line(char sep)
+{
+    string res;
+
+    if (!size) return res;
+
+    const uint8_t* pos = std::find(buf, buf + size, (uint8_t)sep);
+    if (pos == buf + size)
+    {
+        res.assign(buf, buf + size);
+        buf += size;
+        size = 0;
+        return res;
+    }
+
+    res.assign(buf, pos);
+    size -= (pos + 1 - buf);
+    buf = pos + 1;
+    return res;
+}
+
+std::string BinaryDecoder::pop_line(const std::string& sep)
+{
+    string res;
+
+    if (!size) return res;
+
+    const uint8_t* pos = std::search(buf, buf + size, (uint8_t*)sep.data(), (uint8_t*)sep.data() + sep.size());
+    if (pos == buf + size)
+    {
+        res.assign(buf, buf + size);
+        buf += size;
+        size = 0;
+        return res;
+    }
+
+    res.assign(buf, pos);
+    size -= (pos + sep.size() - buf);
+    buf = pos + sep.size();
+    return res;
 }
 
 BinaryDecoder BinaryDecoder::pop_type_envelope(TypeCode& code)

@@ -153,7 +153,7 @@ add_method("yaml", [](Fixture& f) {
     md.writeYaml(output);
     Metadata md1;
     string s(output.str());
-    auto reader = files::linereader_from_chars(s.data(), s.size());
+    auto reader = LineReader::from_chars(s.data(), s.size());
     md1.readYaml(*reader, "(test memory buffer)");
 
     wassert(actual(Source::createBlob("grib", "", "fname", 1, 2)) == md1.source());
@@ -167,7 +167,7 @@ add_method("yaml", [](Fixture& f) {
     md.writeYaml(output1);
     Metadata md2;
     s = output1.str();
-    reader = files::linereader_from_chars(s.data(), s.size());
+    reader = LineReader::from_chars(s.data(), s.size());
     md2.readYaml(*reader, "(test memory buffer)");
 
     wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());

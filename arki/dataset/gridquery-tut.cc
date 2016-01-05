@@ -115,7 +115,7 @@ def_test(2)
         "Area: GRIB(Ni=297, Nj=313, latfirst=-25000000, latlast=-5500000, latp=-32500000, lonfirst=-8500000, lonlast=10000000, lonp=10000000, rot=0, type=10)\n"
         "Run: MINUTE(00:00)\n"
     );
-    auto reader = utils::files::linereader_from_chars(md_yaml.data(), md_yaml.size());
+    auto reader = LineReader::from_chars(md_yaml.data(), md_yaml.size());
     unique_ptr<Metadata> md = Metadata::create_empty();
     md->readYaml(*reader, "(test memory buffer)");
 

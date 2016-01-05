@@ -4,6 +4,7 @@
 /// summary/table - Arkimet summary implementation in tabular form
 
 #include <arki/types.h>
+#include <arki/file.h>
 #include <arki/summary/stats.h>
 #include <cstring>
 

@@ -4,6 +4,7 @@
 /// utils/files - arkimet-specific file functions
 
 #include <arki/defs.h>
+#include <arki/file.h>
 #include <string>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -112,28 +113,6 @@ struct PreserveFileTimes
     PreserveFileTimes(const std::string& fname);
     ~PreserveFileTimes();
 };
-
-/**
- * Create a LineReader from a file descriptor.
- *
- * The file descriptor is not managed by the LineReader, and will ned to be
- * kept open by the caller for as long as the line reader is used, then closed
- * at the end.
- *
- * Note that a LineReader on a file descriptor needs to do read ahead to avoid
- * reading one character at a time, so if the caller stops calling getline(),
- * the file descriptor is likely to be positioned further ahead than the last
- * line read.
- */
-std::unique_ptr<LineReader> linereader_from_fd(int fd, const std::string& pathname);
-
-/**
- * Create a LineReader from a buffer on a string.
- *
- * No copy is made of the data: the buffer must remain valid for as long as the
- * line reader is used.
- */
-std::unique_ptr<LineReader> linereader_from_chars(const char* buf, size_t size);
 
 }
 }

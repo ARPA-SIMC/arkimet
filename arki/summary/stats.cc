@@ -199,7 +199,7 @@ unique_ptr<Stats> Stats::decode(BinaryDecoder& dec)
 unique_ptr<Stats> Stats::decodeString(const std::string& str)
 {
     unique_ptr<Stats> res(new Stats);
-    auto reader = files::linereader_from_chars(str.data(), str.size());
+    auto reader = LineReader::from_chars(str.data(), str.size());
     YamlStream yamlStream;
     for (YamlStream::const_iterator i = yamlStream.begin(*reader);
             i != yamlStream.end(); ++i)

@@ -155,7 +155,7 @@ add_method("yaml", [](Fixture& f) {
     f.s.writeYaml(stream1);
     Summary s2;
     string st(stream1.str());
-    auto reader = utils::files::linereader_from_chars(st.data(), st.size());
+    auto reader = LineReader::from_chars(st.data(), st.size());
     s2.readYaml(*reader, "(test memory buffer)");
     ensure(s2 == f.s);
 });
@@ -285,7 +285,7 @@ add_method("summarise_grib", [](Fixture& f) {
     s1.writeYaml(stream1);
     Summary s3;
     string st2(stream1.str());
-    auto reader = utils::files::linereader_from_chars(st2.data(), st2.size());
+    auto reader = LineReader::from_chars(st2.data(), st2.size());
     s3.readYaml(*reader, "(test memory buffer)");
     ensure(s3 == s1);
 #endif
@@ -356,7 +356,7 @@ add_method("binary_old", [](Fixture& f) {
         stringstream stream;
         s.writeYaml(stream);
         string st = stream.str();
-        auto reader = utils::files::linereader_from_chars(st.data(), st.size());
+        auto reader = LineReader::from_chars(st.data(), st.size());
         Summary s2;
         s2.readYaml(*reader, "(test memory buffer)");
         wassert(actual(s == s2));

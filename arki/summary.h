@@ -5,6 +5,7 @@
 #include <arki/types/reftime.h>
 #include <arki/itemset.h>
 #include <arki/utils/geosfwd.h>
+#include <arki/file.h>
 #include <map>
 #include <set>
 #include <string>
