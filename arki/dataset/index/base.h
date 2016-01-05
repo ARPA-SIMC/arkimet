@@ -23,20 +23,6 @@ namespace index {
  */
 std::set<types::Code> parseMetadataBitmask(const std::string& components);
 
-/**
- * Configurable creator of unique database IDs from metadata
- */
-struct IDMaker
-{
-	std::set<types::Code> components;
-	
-	IDMaker() {}
-	IDMaker(const std::set<types::Code>& components) : components(components) {}
-
-	std::string id(const Metadata& md) const;
-};
-
-
 // Exception we can throw if an element was not found
 struct NotFound {};
 
@@ -52,6 +38,4 @@ std::string fmtin(const std::vector<int>& vals);
 }
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

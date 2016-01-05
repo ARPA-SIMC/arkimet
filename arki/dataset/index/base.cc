@@ -33,35 +33,6 @@ std::set<types::Code> parseMetadataBitmask(const std::string& components)
     return res;
 }
 
-struct Adder
-{
-    string res;
-
-    template<typename VAL>
-    void add(const VAL& val, const char* name)
-    {
-        switch (val.size())
-        {
-            case 0: break;
-            case 1: res += val.begin()->encode(); break;
-            default:
-                std::stringstream err;
-                err << "cannot generate ID: can only handle metadata with 1 " << name << " (" << val.size() << " found)";
-                throw std::runtime_error(err.str());
-        }
-    }
-};
-
-std::string IDMaker::id(const Metadata& md) const
-{
-    vector<uint8_t> res;
-    BinaryEncoder enc(res);
-    for (set<types::Code>::const_iterator i = components.begin(); i != components.end(); ++i)
-        if (const Type* t = md.get(*i))
-            t->encodeBinary(enc);
-    return str::encode_base64(res.data(), res.size());
-}
-
 std::string fmtin(const std::vector<int>& vals)
 {
     if (vals.empty())
@@ -87,4 +58,3 @@ std::string fmtin(const std::vector<int>& vals)
 }
 }
 }
-// vim:set ts=4 sw=4:

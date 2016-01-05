@@ -1,5 +1,6 @@
 #include "arki/dataset/ondisk2/writer.h"
 #include "arki/exceptions.h"
+#include "arki/binary.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/archive.h"
 #include "arki/dataset/segment.h"
@@ -272,6 +273,29 @@ Checker::Checker(const ConfigFile& cfg)
 
 std::string Checker::type() const { return "ondisk2"; }
 
+namespace {
+
+/// Create unique strings from metadata
+struct IDMaker
+{
+    std::set<types::Code> components;
+
+    IDMaker(const std::set<types::Code>& components) : components(components) {}
+
+    vector<uint8_t> make_string(const Metadata& md) const
+    {
+        vector<uint8_t> res;
+        BinaryEncoder enc(res);
+        for (set<types::Code>::const_iterator i = components.begin(); i != components.end(); ++i)
+            if (const Type* t = md.get(*i))
+                t->encodeBinary(enc);
+        return res;
+    }
+};
+
+}
+
+
 void Checker::rescanSegment(const std::string& relpath)
 {
     string pathname = str::joinpath(m_path, relpath);
@@ -297,15 +321,15 @@ void Checker::rescanSegment(const std::string& relpath)
 
     // Scan the list of metadata, looking for duplicates and marking all
     // the duplicates except the last one as deleted
-    index::IDMaker id_maker(idx->unique_codes());
+    IDMaker id_maker(idx->unique_codes());
 
-    map<string, const Metadata*> finddupes;
+    map<vector<uint8_t>, const Metadata*> finddupes;
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
-        string id = id_maker.id(**i);
+        vector<uint8_t> id = id_maker.make_string(**i);
         if (id.empty())
             continue;
-        map<string, const Metadata*>::iterator dup = finddupes.find(id);
+        auto dup = finddupes.find(id);
         if (dup == finddupes.end())
             finddupes.insert(make_pair(id, *i));
         else
@@ -315,10 +339,9 @@ void Checker::rescanSegment(const std::string& relpath)
 
     // Send the remaining metadata to the reindexer
     std::string basename = str::basename(relpath);
-    for (map<string, const Metadata*>::const_iterator i = finddupes.begin();
-            i != finddupes.end(); ++i)
+    for (const auto& i: finddupes)
     {
-        const Metadata& md = *i->second;
+        const Metadata& md = *i.second;
         const source::Blob& blob = md.sourceBlob();
         try {
             int id;
