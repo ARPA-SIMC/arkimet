@@ -1,6 +1,5 @@
 #include "config.h"
 #include <arki/utils/compress.h>
-#include <arki/utils/fd.h>
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
 #include <arki/utils/gzip.h>
@@ -166,17 +165,17 @@ void gunzip(int rdfd, const std::string& rdfname, int wrfd, const std::string& w
 }
 
 TempUnzip::TempUnzip(const std::string& fname)
-	: fname(fname)
+    : fname(fname)
 {
-	// zcat gzfname > fname
-	string gzfname = fname + ".gz";
-	int rdfd = open(gzfname.c_str(), O_RDONLY);
-	utils::fd::HandleWatch hwrd(gzfname, rdfd);
+    // zcat gzfname > fname
+    string gzfname = fname + ".gz";
+    sys::File rdfd(gzfname, O_RDONLY);
 
-	int wrfd = open(fname.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0666);
-	utils::fd::HandleWatch hwwr(fname, wrfd);
+    sys::File wrfd(fname, O_WRONLY | O_CREAT | O_EXCL, 0666);
 
-	gunzip(rdfd, gzfname, wrfd, fname);
+    gunzip(rdfd, gzfname, wrfd, fname);
+    rdfd.close();
+    wrfd.close();
 
     // Set the same timestamp as the compressed file
     std::unique_ptr<struct stat> st = sys::stat(gzfname);

@@ -6,7 +6,6 @@
 #include "formatter.h"
 #include "binary.h"
 #include "utils/compress.h"
-#include "utils/fd.h"
 #include "emitter.h"
 #include "emitter/memory.h"
 #include "iotrace.h"
@@ -358,7 +357,8 @@ void Metadata::write(int outfd, const std::string& filename) const
     vector<uint8_t> encoded = encodeBinary();
 
     // Write out
-    utils::fd::write_all(outfd, encoded.data(), encoded.size());
+    sys::NamedFileDescriptor fd(outfd, filename);
+    fd.write_all_or_retry(encoded.data(), encoded.size());
 
     // If the source is inline, then the data follows the metadata
     if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
@@ -369,7 +369,7 @@ void Metadata::write(int outfd, const std::string& filename) const
             ss << "cannot write metadata to file " << filename << ": metadata size " << s->size << " does not match the data size " << m_data.size();
             throw runtime_error(ss.str());
         }
-        utils::fd::write_all(outfd, m_data.data(), m_data.size());
+        fd.write_all_or_retry(m_data.data(), m_data.size());
     }
 }
 

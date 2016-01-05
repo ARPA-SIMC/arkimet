@@ -11,7 +11,6 @@
 #include "arki/scan/vm2.h"
 #include "arki/utils.h"
 #include "arki/utils/files.h"
-#include "arki/utils/fd.h"
 #include "arki/types/timerange.h"
 #include "arki/types/area.h"
 #include "arki/types/proddef.h"

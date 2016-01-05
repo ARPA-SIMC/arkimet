@@ -3,7 +3,6 @@
 #include "arki/summary.h"
 #include "arki/dataset.h"
 #include "arki/types/reftime.h"
-#include "arki/utils/fd.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <cerrno>

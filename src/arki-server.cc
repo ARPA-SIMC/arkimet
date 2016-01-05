@@ -24,7 +24,6 @@
 #include <arki/report.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
-#include <arki/utils/fd.h>
 #include <arki/nag.h>
 #include <arki/runtime.h>
 #include <arki/runtime/config.h>
@@ -887,14 +886,15 @@ struct HTTP : public net::TCPServer
         this->server_name = server_name;
     }
 
-    virtual void handle_client(int sock,
+    virtual void handle_client(int sockfd,
             const std::string& peer_hostname,
             const std::string& peer_hostaddr,
             const std::string& peer_port)
     {
         using namespace wibble;
-        utils::fd::HandleWatch hw("Client socket", sock);
-        log << log::INFO << "Connection from " << peer_hostname << " " << peer_hostaddr << ":" << peer_port << endl;
+        string peer_name = peer_hostaddr + ":" + peer_port;
+        utils::sys::File sock(sockfd, peer_name);
+        log << log::INFO << "Connection from " << peer_hostname << " " << peer_name << endl;
 
         if (children.size() > 256)
         {

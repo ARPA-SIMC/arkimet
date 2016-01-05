@@ -1,23 +1,6 @@
-/*
- * OO base class for process functions and child processes
- *
- * Copyright (C) 2003-2010  Enrico Zini <enrico@debian.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-#include <arki/wibble/sys/process.h>
+#include "process.h"
+#include "arki/exceptions.h"
+#include "arki/utils/sys.h"
 
 #include <sys/types.h>		// fork, waitpid, kill, open, getpw*, getgr*, initgroups
 #include <sys/stat.h>		// open
@@ -46,13 +29,12 @@ using namespace std;
 
 void detachFromTTY()
 {
-	int devnull = open("/dev/null", O_RDWR);
-	if (devnull == -1) throw wibble::exception::File("/dev/null", "opening for read and write access");
+    arki::utils::sys::File devnull("/dev/null", O_RDWR);
 	if (dup2(devnull, 0) == -1) throw wibble::exception::System("redirecting stdin to /dev/null");
 	if (dup2(devnull, 1) == -1) throw wibble::exception::System("redirecting stdout to /dev/null");
 	if (setsid() == -1) throw wibble::exception::System("trying to become session leader");
 	if (dup2(devnull, 2) == -1) throw wibble::exception::System("redirecting stderr to /dev/null");
-	close(devnull);
+    devnull.close();
 }
 
 string formatStatus(int status)

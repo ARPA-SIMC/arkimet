@@ -287,29 +287,6 @@ public:
 	virtual std::string desc() const throw ();
 };
 
-/// Base class for exceptions for file I/O
-/**
- * It is a direct child of SystemException, and has the very same semantics.
- * Like in SystemException, the error code description provided is a
- * description for errno values.
- */
-class File : public System
-{
-protected:
-	std::string m_name;
-
-public:
-	File(const std::string& name, const std::string& context)	throw () :
-		System(context), m_name(name) {}
-	~File() throw () {}
-
-	virtual const char* type() const throw () { return "File"; }
-
-	virtual std::string desc() const throw () { return m_name + ": " + System::desc(); }
-};
-
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

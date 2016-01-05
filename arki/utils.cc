@@ -1,9 +1,10 @@
 #include "config.h"
 #define _XOPEN_SOURCE 700
 #define _XOPEN_SOURCE_EXTENDED 1
-#include <arki/utils.h>
-#include <arki/utils/sys.h>
-#include <arki/wibble/sys/process.h>
+#include "arki/utils.h"
+#include "arki/exceptions.h"
+#include "arki/utils/sys.h"
+#include "arki/wibble/sys/process.h"
 #include <cctype>
 #include <cstdlib>
 #include <cstring>
@@ -42,18 +43,14 @@ namespace utils {
 
 void createFlagfile(const std::string& pathname)
 {
-	int fd = ::open(pathname.c_str(), O_WRONLY | O_CREAT | O_NOCTTY, 0666);
-	if (fd == -1)
-		throw wibble::exception::File(pathname, "opening/creating file");
-	::close(fd);
+    sys::File fd(pathname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
+    fd.close();
 }
 
 void createNewFlagfile(const std::string& pathname)
 {
-	int fd = ::open(pathname.c_str(), O_WRONLY | O_CREAT | O_NOCTTY | O_EXCL, 0666);
-	if (fd == -1)
-		throw wibble::exception::File(pathname, "creating file");
-	::close(fd);
+    sys::File fd(pathname, O_WRONLY | O_CREAT | O_NOCTTY | O_EXCL, 0666);
+    fd.close();
 }
 
 void hexdump(const char* name, const std::string& str)
@@ -83,7 +80,7 @@ MoveToTempDir::MoveToTempDir(const std::string& pattern)
     char buf[pattern.size() + 1];
     memcpy(buf, pattern.c_str(), pattern.size() + 1);
     if (mkdtemp(buf) == NULL)
-        throw wibble::exception::System("cannot create temporary directory");
+        throw_system_error("cannot create temporary directory");
     tmp_dir = buf;
     wibble::sys::process::chdir(tmp_dir);
 }
@@ -107,10 +104,9 @@ std::string require_format(const std::string& fname)
 {
     std::string res = get_format(fname);
     if (res.empty())
-        throw wibble::exception::Consistency("getting extension from file name " + fname, "file name has no extension");
+        throw std::runtime_error("cannot get extension from file name " + fname + ": file name has no extension");
     return res;
 }
 
 }
 }
-// vim:set ts=4 sw=4:

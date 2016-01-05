@@ -4,7 +4,6 @@
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils.h"
-#include "arki/utils/fd.h"
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -148,20 +147,19 @@ std::pair<std::string, size_t> SequenceFile::next(const std::string& format)
     return make_pair(str::joinpath(dirname, data_fname(cur, format)), (size_t)cur);
 }
 
-void SequenceFile::open_next(const std::string& format, std::string& absname, size_t& pos, int& fd)
+sys::File SequenceFile::open_next(const std::string& format, std::string& absname, size_t& pos)
 {
     while (true)
     {
         pair<string, size_t> dest = next(format);
 
-        fd = ::open(dest.first.c_str(), O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
-        if (fd > 0)
+        sys::File fd(dest.first);
+        if (fd.open_ifexists(O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666))
         {
             absname = dest.first;
             pos = dest.second;
-            return;
+            return fd;
         }
-        if (errno != EEXIST) throw_file_error(dest.first, "cannot create file");
     }
 }
 
@@ -196,19 +194,17 @@ void Segment::close()
     seqfile.close();
 }
 
-size_t Segment::write_file(Metadata& md, int fd, const std::string& absname)
+size_t Segment::write_file(Metadata& md, sys::File& fd)
 {
-    utils::fd::HandleWatch hw(absname, fd);
-
     try {
         const std::vector<uint8_t>& buf = md.getData();
 
-        ssize_t count = pwrite(fd, buf.data(), buf.size(), 0);
-        if (count < 0)
-            throw_file_error(absname, "cannot write file");
+        size_t count = fd.pwrite(buf.data(), buf.size(), 0);
+        if (count != buf.size())
+            throw std::runtime_error(fd.name() + ": written only " + std::to_string(count) + "/" + std::to_string(buf.size()) + " bytes");
 
         if (fdatasync(fd) < 0)
-            throw_file_error(absname, "cannot flush write");
+            fd.throw_error("cannot flush write");
 
         return buf.size();
     } catch (...) {
@@ -223,9 +219,9 @@ off_t Segment::append(Metadata& md)
 
     string dest;
     size_t pos;
-    int fd;
-    seqfile.open_next(format, dest, pos, fd);
-    /*size_t size =*/ write_file(md, fd, dest);
+    sys::File fd = seqfile.open_next(format, dest, pos);
+    /*size_t size =*/ write_file(md, fd);
+    fd.close();
 
     // Set the source information that we are writing in the metadata
     // md.set_source(Source::createBlob(md.source().format, "", absname, pos, size));
@@ -243,9 +239,9 @@ Pending Segment::append(Metadata& md, off_t* ofs)
 
     string dest;
     size_t pos;
-    int fd;
-    seqfile.open_next(format, dest, pos, fd);
-    size_t size = write_file(md, fd, dest);
+    sys::File fd = seqfile.open_next(format, dest, pos);
+    size_t size = write_file(md, fd);
+    fd.close();
     *ofs = pos;
     return new Append(*this, md, pos, size);
 }
@@ -518,13 +514,11 @@ HoleSegment::HoleSegment(const std::string& format, const std::string& relname, 
 {
 }
 
-size_t HoleSegment::write_file(Metadata& md, int fd, const std::string& absname)
+size_t HoleSegment::write_file(Metadata& md, sys::File& fd)
 {
-    utils::fd::HandleWatch hw(absname, fd);
-
     try {
         if (ftruncate(fd, md.data_size()) == -1)
-            throw_file_error(absname, "cannot set file size");
+            fd.throw_error("cannot set file size");
 
         return md.data_size();
     } catch (...) {

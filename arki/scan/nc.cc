@@ -8,8 +8,6 @@
 #include <arki/utils/lua.h>
 #include <arki/utils/sys.h>
 #include <arki/scan/any.h>
-#include <arki/wibble/exception.h>
-#include <arki/wibble/regexp.h>
 #include <netcdfcpp.h>
 #include <cstring>
 #include <sstream>
@@ -104,7 +102,7 @@ void NetCDF::open(const std::string& filename, const std::string& basedir, const
     this->basedir = basedir;
     this->relname = relname;
     if (relname == "-")
-        throw wibble::exception::File(filename, "cannot read NetCDF data from standard input");
+        throw std::runtime_error("cannot read NetCDF data from standard input");
     backend = new netcdf::Backend(filename);
 }
 

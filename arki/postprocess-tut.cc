@@ -4,7 +4,6 @@
 #include "metadata.h"
 #include "scan/any.h"
 #include "utils/files.h"
-#include "utils/fd.h"
 #include "utils/sys.h"
 #include "binary.h"
 #include <sstream>

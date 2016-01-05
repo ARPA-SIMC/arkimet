@@ -1,8 +1,8 @@
 /// HTTP server utilities
-
-#include <arki/utils/net/http.h>
-#include <arki/utils/string.h>
-#include <arki/wibble/exception.h>
+#include "http.h"
+#include "arki/utils/net/http.h"
+#include "arki/utils/string.h"
+#include "arki/exceptions.h"
 #include <sstream>
 #include <ctime>
 #include <cerrno>
@@ -150,7 +150,7 @@ bool Request::read_buf(std::string& res, size_t size)
     {
         ssize_t r = read( sock, const_cast< char* >( res.data() ) + pos, size - pos );
         if (r < 0)
-            throw wibble::exception::System("reading data from socket");
+            throw_system_error("cannot read data from socket");
         if (static_cast<size_t>(r) == size - pos)
             break;
         else if (r == 0)
@@ -284,7 +284,7 @@ void Request::send(const std::string& buf)
     {
         ssize_t sent = write(sock, buf.data() + pos, buf.size() - pos);
         if (sent < 0)
-            throw wibble::exception::System("writing data to client");
+            throw_system_error("cannot write data to client");
         pos += sent;
     }
 }
@@ -296,7 +296,7 @@ void Request::send(const std::vector<uint8_t>& buf)
     {
         ssize_t sent = write(sock, buf.data() + pos, buf.size() - pos);
         if (sent < 0)
-            throw wibble::exception::System("writing data to client");
+            throw_system_error("cannot write data to client");
         pos += sent;
     }
 }
@@ -328,7 +328,7 @@ void Request::send_date_header()
     char tbuf[256];
     size_t size = strftime(tbuf, 256, "%a, %d %b %Y %H:%M:%S GMT", &t);
     if (size == 0)
-        throw wibble::exception::Consistency("internal buffer too small to store date header");
+        throw std::runtime_error("internal buffer too small to store date header");
 
     stringstream buf;
     buf << "Date: " << tbuf << "\r\n";
@@ -398,7 +398,7 @@ void Request::discard_input()
         while (true)
         {
             int res = read(sock, buf, 4096);
-            if (res < 0) throw wibble::exception::System("reading data from input socket");
+            if (res < 0) throw_system_error("cannot read data from input socket");
             if (res == 0) break;
         }
     }
@@ -458,7 +458,7 @@ bool FileParam::FileInfo::read(
         outfd = open(fname.c_str(), openflags, 0600);
         if (outfd >= 0) break;
         if (errno != EEXIST)
-            throw wibble::exception::File(fname, "creating file");
+            throw_file_error(fname, "cannot create file");
         // Alter the file name and try again
         char buf[16];
         snprintf(buf, 16, ".%u", i);
@@ -592,7 +592,7 @@ void Params::parse_get_or_post(net::http::Request& req)
     else if (req.method == "POST")
         parse_post(req);
     else
-        throw wibble::exception::Consistency("cannot parse parameters from \"" + req.method + "\" request");
+        throw std::runtime_error("cannot parse parameters from \"" + req.method + "\" request");
 }
 
 void Params::parse_urlencoded(const std::string& qstring)
@@ -701,7 +701,7 @@ void Params::parse_post(net::http::Request& req)
     // Get the supposed size of incoming data
     map<string, string>::const_iterator i = req.headers.find("content-length");
     if (i == req.headers.end())
-        throw wibble::exception::Consistency("no Content-Length: found in request header");
+        throw std::runtime_error("no Content-Length: found in request header");
     // Validate the post size
     size_t inputsize = strtoul(i->second.c_str(), 0, 10);
     if (inputsize > conf_max_input_size)
@@ -716,7 +716,7 @@ void Params::parse_post(net::http::Request& req)
     // Get the content type
     i = req.headers.find("content-type");
     if (i == req.headers.end())
-        throw wibble::exception::Consistency("no Content-Type: found in request header");
+        throw std::runtime_error("no Content-Type: found in request header");
     if (i->second.find("x-www-form-urlencoded") != string::npos)
     {
         string line;
@@ -728,7 +728,7 @@ void Params::parse_post(net::http::Request& req)
         parse_multipart(req, inputsize, i->second);
     }
     else
-        throw wibble::exception::Consistency("unsupported Content-Type: " + i->second);
+        throw std::runtime_error("unsupported Content-Type: " + i->second);
 }
 
 }

@@ -6,7 +6,6 @@
 #include <arki/metadata/consumer.h>
 #include <arki/metadata/collection.h>
 #include <arki/configfile.h>
-#include <arki/utils/fd.h>
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
 

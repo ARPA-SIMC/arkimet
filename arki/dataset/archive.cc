@@ -11,7 +11,6 @@
 #include "arki/types/source/blob.h"
 #include "arki/matcher.h"
 #include "arki/metadata/collection.h"
-#include "arki/utils/fd.h"
 #include "arki/utils/files.h"
 #include "arki/utils/compress.h"
 #include "arki/scan/any.h"
