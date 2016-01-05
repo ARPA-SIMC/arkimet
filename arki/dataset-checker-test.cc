@@ -317,8 +317,9 @@ this->add_method("scan_corrupted", [](Fixture& f) {
 // Test accuracy of maintenance scan, on dataset with one file deleted,
 // performing repack
 this->add_method("repack_deleted", [](Fixture& f) {
+    f.cfg.setValue("step", f.td.max_selective_aggregation);
     wassert(f.import_all_packed(f.td));
-    string deleted_fname = f.import_results[0].sourceBlob().filename;
+    string deleted_fname = f.import_results[f.td.max_selective_aggregation_singleton_index].sourceBlob().filename;
     f.segments().remove(deleted_fname);
 
     {
@@ -354,8 +355,9 @@ this->add_method("repack_deleted", [](Fixture& f) {
 // Test accuracy of maintenance scan, on dataset with one file deleted,
 // performing check
 this->add_method("check_deleted", [](Fixture& f) {
+    f.cfg.setValue("step", f.td.max_selective_aggregation);
     wassert(f.import_all_packed(f.td));
-    string deleted_fname = f.import_results[0].sourceBlob().filename;
+    string deleted_fname = f.import_results[f.td.max_selective_aggregation_singleton_index].sourceBlob().filename;
     f.segments().remove(deleted_fname);
 
     {

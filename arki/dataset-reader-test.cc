@@ -33,6 +33,8 @@ struct FixtureReader : public DatasetTest
             step = daily
             unique = product, area, reftime
         )");
+        if (td.format == "vm2")
+            cfg.setValue("smallfiles", "true");
         import_all_packed(td);
     }
 
