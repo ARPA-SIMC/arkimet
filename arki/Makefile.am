@@ -90,7 +90,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		matcher/timerange.h \
 		matcher/utils.h \
 		metadata/collection.h \
-		metadata/consumer.h \
 		metadata/clusterer.h \
 		metadata/xargs.h \
 		metadatagrid.h \
@@ -376,7 +375,6 @@ libarkimet_la_SOURCES += \
 		utils/compress.cc \
 		utils/sqlite.cc \
 		metadata.cc \
-		metadata/consumer.cc \
 		metadata/collection.cc \
 		metadata/stream.cc \
 		metadata/clusterer.cc \
@@ -404,7 +402,6 @@ tests_arki_test_SOURCES += \
 		validator-test.cc \
 		bbox-test.cc \
 		metadata-test.cc \
-		metadata/consumer-tut.cc \
 		metadata/collection-tut.cc \
 		metadata/clusterer-tut.cc \
 		metadata/stream-tut.cc \

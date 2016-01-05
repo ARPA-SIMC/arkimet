@@ -235,6 +235,57 @@ void DataQuery::lua_push_table(lua_State* L, int idx) const
 	lua_settable(L, idx);
 }
 
+namespace {
+
+// Metadata consumer that passes the metadata to a Lua function
+struct LuaConsumer
+{
+    lua_State* L;
+    int funcid;
+
+    LuaConsumer(lua_State* L, int funcid) : L(L), funcid(funcid) {}
+    ~LuaConsumer()
+    {
+        // Unindex the function
+        luaL_unref(L, LUA_REGISTRYINDEX, funcid);
+    }
+
+    bool eat(std::unique_ptr<Metadata>&& md)
+    {
+        // Get the function
+        lua_rawgeti(L, LUA_REGISTRYINDEX, funcid);
+
+        // Push the metadata, handing it over to Lua's garbage collector
+        Metadata::lua_push(L, move(md));
+
+        // Call the function
+        if (lua_pcall(L, 1, 1, 0))
+        {
+            string error = lua_tostring(L, -1);
+            lua_pop(L, 1);
+            throw std::runtime_error("cannot run metadata consumer function: " + error);
+        }
+
+        int res = lua_toboolean(L, -1);
+        lua_pop(L, 1);
+        return res;
+    }
+
+    static std::unique_ptr<LuaConsumer> lua_check(lua_State* L, int idx)
+    {
+        luaL_checktype(L, idx, LUA_TFUNCTION);
+
+        // Ref the created function into the registry
+        lua_pushvalue(L, idx);
+        int funcid = luaL_ref(L, LUA_REGISTRYINDEX);
+
+        // Create a consumer using the function
+        return unique_ptr<LuaConsumer>(new LuaConsumer(L, funcid));
+    }
+};
+
+}
+
 static int arkilua_queryData(lua_State *L)
 {
 	// queryData(self, { matcher="", withdata=false, sorter="" }, consumer_func)
@@ -246,8 +297,8 @@ static int arkilua_queryData(lua_State *L)
 	dataset::DataQuery dq;
 	dq.lua_from_table(L, 2);
 
-	// Create metadata consumer proxy
-	std::unique_ptr<metadata::LuaConsumer> mdc = metadata::LuaConsumer::lua_check(L, 3);
+    // Create metadata consumer proxy
+    std::unique_ptr<LuaConsumer> mdc = LuaConsumer::lua_check(L, 3);
 
     // Run the query
     rd->query_data(dq, [&](unique_ptr<Metadata> md) { return mdc->eat(move(md)); });

@@ -15,18 +15,6 @@ class Metadata;
 
 namespace metadata {
 
-// Metadata consumer that passes the metadata to a Lua function
-struct LuaConsumer
-{
-    lua_State* L;
-    int funcid;
-
-    LuaConsumer(lua_State* L, int funcid);
-    virtual ~LuaConsumer();
-    bool eat(std::unique_ptr<Metadata>&& md);
-
-    static std::unique_ptr<LuaConsumer> lua_check(lua_State* L, int idx);
-};
 
 }
 }
