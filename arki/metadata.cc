@@ -531,6 +531,11 @@ void Metadata::drop_cached_data()
     }
 }
 
+bool Metadata::has_cached_data() const
+{
+    return !m_data.empty();
+}
+
 void Metadata::set_cached_data(std::vector<uint8_t>&& buf)
 {
     m_data = move(buf);

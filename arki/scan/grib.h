@@ -1,27 +1,7 @@
 #ifndef ARKI_SCAN_GRIB_H
 #define ARKI_SCAN_GRIB_H
 
-/*
- * scan/grib - Scan a GRIB (version 1 or 2) file for metadata
- *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// scan/grib - Scan a GRIB (version 1 or 2) file for metadata
 
 #include <string>
 #include <vector>
@@ -119,14 +99,14 @@ protected:
     std::string tmpfilename;
     std::ostream& tmpfile;
 
-	/**
-	 * Set the source information in the metadata.
-	 *
-	 * In the case of multigribs, we need to first copy the data to a temporary
-	 * file, then use that as the source.  This rebuilds a scattered multigrib
-	 * into a single blob of data.
-	 */
-	virtual void setSource(Metadata& md);
+    /**
+     * Set the source information in the metadata.
+     *
+     * In the case of multigribs, we need to first copy the data to a temporary
+     * file, then use that as the source.  This rebuilds a scattered multigrib
+     * into a single blob of data.
+     */
+    void setSource(Metadata& md) override;
 
 public:
 	MultiGrib(const std::string& tmpfilename, std::ostream& tmpfile);
@@ -134,6 +114,4 @@ public:
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

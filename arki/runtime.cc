@@ -1,5 +1,6 @@
 #include "config.h"
 #include "arki/runtime.h"
+#include "arki/exceptions.h"
 #include "arki/utils/string.h"
 #include "arki/configfile.h"
 #include "arki/summary.h"
@@ -25,7 +26,6 @@
 #ifdef HAVE_LUA
 #include "arki/report.h"
 #endif
-#include <arki/wibble/sys/signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -297,15 +297,15 @@ void CommandLine::setupProcessing()
 		string file = files->stringValue();
 		std::istream* input;
 		std::ifstream in;
-		if (file != "-")
-		{
-			in.open(file.c_str(), ios::in);
-			if (!in.is_open() || in.fail())
-				throw wibble::exception::File(file, "opening file for reading");
-			input = &in;
-		} else {
-			input = &cin;
-		}
+        if (file != "-")
+        {
+            in.open(file.c_str(), ios::in);
+            if (!in.is_open() || in.fail())
+                throw_file_error(file, "cannot open file for reading");
+            input = &in;
+        } else {
+            input = &cin;
+        }
 
         // Read the content and scan the related files or dataset directories
         string line;
@@ -380,7 +380,7 @@ void CommandLine::setupProcessing()
                         got = dataset::HTTP::expandMatcher(strquery, server);
                         resolved_by = server;
                     }
-                } catch (wibble::exception::Generic& e) {
+                } catch (std::exception& e) {
                     // If the server cannot expand the query, we're
                     // ok as we send it expanded. What we are
                     // checking here is that the server does not
@@ -392,7 +392,7 @@ void CommandLine::setupProcessing()
                 {
                     nag::warning("%s expands the query as %s", server.c_str(), got.c_str());
                     nag::warning("%s expands the query as %s", resolved_by.c_str(), expanded.c_str());
-                    throw wibble::exception::Consistency("checking alias consistency", "two systems queried disagree about the query alias expansion");
+                    throw std::runtime_error("cannot check alias consistency: two systems queried disagree about the query alias expansion");
                 } else if (first)
                     expanded = got;
                 first = false;
@@ -487,10 +487,10 @@ void CommandLine::doneProcessing()
 
 static std::string moveFile(const std::string& source, const std::string& targetdir)
 {
-	string targetFile = str::joinpath(targetdir, str::basename(source));
-	if (rename(source.c_str(), targetFile.c_str()) == -1)
-		throw wibble::exception::System("Moving " + source + " to " + targetFile);
-	return targetFile;
+    string targetFile = str::joinpath(targetdir, str::basename(source));
+    if (::rename(source.c_str(), targetFile.c_str()) == -1)
+        throw_system_error ("cannot move " + source + " to " + targetFile);
+    return targetFile;
 }
 
 static std::string moveFile(const dataset::Reader& ds, const std::string& targetdir)

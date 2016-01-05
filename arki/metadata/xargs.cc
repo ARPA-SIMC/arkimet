@@ -1,10 +1,11 @@
 #include "xargs.h"
-#include <arki/metadata.h>
-#include <arki/utils/raii.h>
-#include <arki/utils/sys.h>
-#include <arki/utils/string.h>
-#include <arki/dataset/segment.h>
-#include <arki/wibble/sys/exec.h>
+#include "arki/exceptions.h"
+#include "arki/metadata.h"
+#include "arki/utils/raii.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
+#include "arki/dataset/segment.h"
+#include "arki/wibble/sys/exec.h"
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -34,9 +35,7 @@ Tempfile::~Tempfile()
 void Tempfile::set_template(const std::string& tpl)
 {
     if (fd != -1)
-        throw wibble::exception::Consistency(
-                "setting a new temp file template",
-                "there is already a temp file open");
+        throw std::runtime_error("cannot set a new temp file template: there is already a temp file open");
 
     pathname_template = tpl;
 }
@@ -44,9 +43,7 @@ void Tempfile::set_template(const std::string& tpl)
 void Tempfile::open()
 {
     if (fd != -1)
-        throw wibble::exception::Consistency(
-                "opening temp file for new batch",
-                "there is already a tempfile open");
+        throw std::runtime_error("cannot open temp file for new batch: there is already a tempfile open");
 
     utils::raii::TransactionAllocArray<char> allocpn(
             pathname,
@@ -54,9 +51,7 @@ void Tempfile::open()
             pathname_template.c_str());
     fd = mkstemp(pathname);
     if (fd < 0)
-    {
-        throw wibble::exception::System("creating temporary file");
-    }
+        throw_system_error("cannot create temporary file");
     allocpn.commit();
 }
 
@@ -83,9 +78,7 @@ void Tempfile::close()
     utils::raii::DeleteArrayAndZeroOnExit<char> xx2(pathname);
 
     if (::close(fd) < 0)
-    {
-        throw wibble::exception::File(pathname, "closing file");
-    }
+        throw_file_error(pathname, "cannot close file");
 
     // delete the file, if it still exists
     sys::unlink_ifexists(pathname);
@@ -228,7 +221,7 @@ static size_t parse_size(const std::string& str)
     if (suffix == "Z") return res * 1024*1024*1024*1024*1024*1024*1024;
     if (suffix == "YB") return res * 1000*1000*1000*1000*1000*1000*1000*1000;
     if (suffix == "Y") return res * 1024*1024*1024*1024*1024*1024*1024*1024;
-    throw wibble::exception::Consistency("parsing size", "unknown suffix: '"+suffix+"'");
+    throw std::runtime_error("cannot parse size: unknown suffix: '"+suffix+"'");
 }
 
 static size_t parse_interval(const std::string& str)
@@ -239,7 +232,7 @@ static size_t parse_interval(const std::string& str)
     if (name == "day") return 3;
     if (name == "month") return 2;
     if (name == "year") return 1;
-    throw wibble::exception::Consistency("parsing interval name", "unsupported interval: " + str + ".  Valid intervals are minute, hour, day, month and year");
+    throw std::runtime_error("cannot parse interval name: unsupported interval: " + str + ".  Valid intervals are minute, hour, day, month and year");
 }
 
 void Xargs::set_max_bytes(const std::string& val)

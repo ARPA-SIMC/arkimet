@@ -55,22 +55,20 @@ def_test(2)
 
     const scan::Validator& v = scan::vm2::validator();
 
-    int fd = open("inbound/test.vm2", O_RDONLY);
-
+    sys::File fd("inbound/test.vm2", O_RDONLY);
 #define ensure_no_throws(x) do { try { x; } catch(wibble::exception::Generic& e) { ensure(false); } } while (0)
 #define ensure_throws(x) do { try { x; ensure(false); } catch (wibble::exception::Generic& e) { } } while (0)
+    ensure_no_throws(v.validate(fd, 0, 35));
+    ensure_no_throws(v.validate(fd, 0, 34));
+    ensure_no_throws(v.validate(fd, 35, 35));
+    ensure_no_throws(v.validate(fd, 35, 36));
 
-    ensure_no_throws(v.validate(fd, 0, 35, "inbound/test.vm2"));
-    ensure_no_throws(v.validate(fd, 0, 34, "inbound/test.vm2"));
-    ensure_no_throws(v.validate(fd, 35, 35, "inbound/test.vm2"));
-    ensure_no_throws(v.validate(fd, 35, 36, "inbound/test.vm2"));
+    ensure_throws(v.validate(fd, 1, 35));
+    ensure_throws(v.validate(fd, 0, 36));
+    ensure_throws(v.validate(fd, 34, 34));
+    ensure_throws(v.validate(fd, 36, 34));
 
-    ensure_throws(v.validate(fd, 1, 35, "inbound/test.vm2"));
-    ensure_throws(v.validate(fd, 0, 36, "inbound/test.vm2"));
-    ensure_throws(v.validate(fd, 34, 34, "inbound/test.vm2"));
-    ensure_throws(v.validate(fd, 36, 34, "inbound/test.vm2"));
-
-    close(fd);
+    fd.close();
 
     metadata::Collection mdc;
     scan::scan("inbound/test.vm2", mdc.inserter_func());

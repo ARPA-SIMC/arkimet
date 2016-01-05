@@ -408,9 +408,7 @@ bool OrderCheck::eat(unique_ptr<Metadata>&& md)
             old.writeYaml(msg);
             msg << " should come after ";
             md->writeYaml(msg);
-            throw wibble::exception::Consistency(
-                    "checking order of a metadata stream",
-                    msg.str());
+            throw std::runtime_error("cannot check order of a metadata stream: " + msg.str());
         }
     }
     old = *md;
@@ -479,20 +477,15 @@ void corrupt_datafile(const std::string& absname)
             }
         }
         if (selected.empty())
-            throw wibble::exception::Consistency("corrupting " + absname, "no files found to corrupt");
+            throw std::runtime_error("cannot corrupt " + absname + ": no files found to corrupt");
         to_corrupt = str::joinpath(absname, selected);
     }
 
     // Corrupt the beginning of the file
-    int fd = open(to_corrupt.c_str(), O_RDWR);
-    if (fd == -1)
-        throw wibble::exception::File(to_corrupt, "cannot open file");
-    fd::HandleWatch hw(to_corrupt, fd);
-    ssize_t written = pwrite(fd, "\0\0\0\0", 4, 0);
-    if (written < 0)
-        throw wibble::exception::File(to_corrupt, "cannot write to file");
+    sys::File fd(to_corrupt, O_RDWR);
+    ssize_t written = fd.pwrite("\0\0\0\0", 4, 0);
     if (written != 4)
-        throw wibble::exception::Consistency("corrupting " + to_corrupt, "wrote less than 4 bytes");
+        throw std::runtime_error("cannot corrupt " + to_corrupt + ": wrote less than 4 bytes");
 }
 
 std::unique_ptr<dataset::LocalWriter> make_dataset_writer(const std::string& cfgstr, bool empty)

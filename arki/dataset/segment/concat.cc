@@ -132,9 +132,7 @@ Pending Segment::append(Metadata& md, off_t* ofs)
 void HoleSegment::write(const std::vector<uint8_t>& buf)
 {
     // Get the current file size
-    off_t pos = ::lseek(fd, 0, SEEK_END);
-    if (pos == (off_t)-1)
-        throw wibble::exception::File(absname, "getting file size");
+    off_t pos = fd.lseek(0, SEEK_END);
 
     // Enlarge its apparent size to include the size of buf
     int res = ftruncate(fd, pos + buf.size());

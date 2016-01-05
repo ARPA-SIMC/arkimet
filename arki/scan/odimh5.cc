@@ -1,21 +1,20 @@
-#include "config.h"
-#include <arki/scan/odimh5.h>
-#include <arki/metadata.h>
-#include <arki/types/origin.h>
-#include <arki/types/reftime.h>
-#include <arki/types/task.h>
-#include <arki/types/quantity.h>
-#include <arki/types/product.h>
-#include <arki/types/level.h>
-#include <arki/types/area.h>
-#include <arki/types/timerange.h>
-#include <arki/runtime/config.h>
-#include <arki/utils/string.h>
-#include <arki/utils/files.h>
-#include <arki/utils/lua.h>
-#include <arki/utils/sys.h>
-#include <arki/scan/any.h>
-#include <arki/wibble/exception.h>
+#include "odimh5.h"
+#include "arki/libconfig.h"
+#include "arki/metadata.h"
+#include "arki/types/origin.h"
+#include "arki/types/reftime.h"
+#include "arki/types/task.h"
+#include "arki/types/quantity.h"
+#include "arki/types/product.h"
+#include "arki/types/level.h"
+#include "arki/types/area.h"
+#include "arki/types/timerange.h"
+#include "arki/runtime/config.h"
+#include "arki/utils/string.h"
+#include "arki/utils/files.h"
+#include "arki/utils/lua.h"
+#include "arki/utils/sys.h"
+#include "arki/scan/any.h"
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
@@ -39,32 +38,33 @@ static const unsigned char hdf5sign[8] = { 0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0
 
 struct OdimH5Validator : public Validator
 {
-	virtual ~OdimH5Validator() { }
+    std::string format() const override { return "ODIMH5"; }
 
-	virtual void validate(int fd, off_t offset, size_t size, const std::string& fname) const
-	{
-		/* we check that file header is a valid HDF5 header */
+    void validate(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
+    {
+        if (size < 8)
+            throw_check_error(fd, offset, "file segment to check is only " + std::to_string(size) + " bytes (minimum for a ODIMH5 is 8)");
 
-		char buf[8];
-		ssize_t res;
+        /* we check that file header is a valid HDF5 header */
+        char buf[8];
+        ssize_t res;
+        if ((res = fd.pread(buf, 8, offset)) != 8)
+            throw_check_error(fd, offset, "read only " + std::to_string(res) + "/8 bytes of ODIMH5 header");
 
-		if ((res = pread(fd, buf, 8, offset)) == -1)
-			throw wibble::exception::System("reading 8 bytes of ODIMH5 header from " + fname);
+        if (memcmp(buf, hdf5sign, 8) != 0)
+            throw_check_error(fd, offset, "invalid HDF5 header");
+    }
 
-		if (memcmp(buf, hdf5sign, 8) != 0)
-			throw wibble::exception::Consistency("checking ODIMH5 file " + fname, "signature does not match with supposed value");
-	}
+    void validate(const void* buf, size_t size) const override
+    {
+        /* we check that file header is a valid HDF5 header */
 
-	virtual void validate(const void* buf, size_t size) const
-	{
-		/* we check that file header is a valid HDF5 header */
+        if (size < 8)
+            throw_check_error("buffer is shorter than 8 bytes");
 
-		if (size < 8)
-			throw wibble::exception::Consistency("checking ODIMH5 buffer", "buffer is shorter than 8 bytes");
-
-		if (memcmp(buf, hdf5sign, 8) != 0)
-			throw wibble::exception::Consistency("checking ODIMH5 buffer", "buffer does not start with hdf5 signature");
-	}
+        if (memcmp(buf, hdf5sign, 8) != 0)
+            throw_check_error("buffer does not start with hdf5 signature");
+    }
 };
 
 static OdimH5Validator odimh5_validator;
@@ -116,7 +116,7 @@ struct OdimH5Lua : public Lua {
             std::string error = lua_tostring(L, -1);
             // Pop the error from the stack
             lua_pop(L, 1);
-            throw wibble::exception::Consistency("parsing " + fname, error);
+            throw std::runtime_error("cannot parse " + fname + ": " + error);
         }
 
         // Index the scan function
@@ -232,7 +232,7 @@ bool OdimH5::next(Metadata& md)
     try {
         scanLua(md);
     } catch (const std::exception& e) {
-        throw wibble::exception::Consistency("while scanning file " + filename, e.what());
+        throw std::runtime_error("cannot scan file " + filename + ": " + e.what());
     }
 
     read = true;

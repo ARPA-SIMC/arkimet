@@ -1,12 +1,11 @@
-#include "config.h"
-
-#include <arki/runtime/config.h>
-#include <arki/utils.h>
-#include <arki/utils/files.h>
-#include <arki/matcher.h>
-#include <arki/wibble/exception.h>
-#include <arki/utils/string.h>
-#include <arki/utils/sys.h>
+#include "arki/runtime/config.h"
+#include "arki/libconfig.h"
+#include "arki/exceptions.h"
+#include "arki/utils.h"
+#include "arki/utils/files.h"
+#include "arki/matcher.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 #include <algorithm>
 #include <iostream>
 #include <fstream>
@@ -124,7 +123,7 @@ std::string Config::Dirlist::find_file(const std::string& fname, bool executable
         stringstream s;
         s << (executable ? "program" : "file") << " " << fname << " not found; tried: " << str::join(" ", begin(), end());
         // Build a nice error message
-        throw wibble::exception::Consistency(s.str());
+        throw std::runtime_error(s.str());
     }
     else
         return res;
@@ -195,34 +194,34 @@ void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
     // Check if it's a file or a directory
     std::unique_ptr<struct stat> st = sys::stat(fname);
     if (st.get() == 0)
-        throw wibble::exception::Consistency("reading configuration from " + fname, fname + " does not exist");
+        throw std::runtime_error("cannot read configuration from " + fname + ": it does not exist");
 	if (S_ISDIR(st->st_mode))
 	{
 		// If it's a directory, merge in its config file
 		string name = str::basename(fname);
 		string file = str::joinpath(fname, "config");
 
-		ConfigFile section;
-		ifstream in;
-		in.open(file.c_str(), ios::in);
-		if (!in.is_open() || in.fail())
-			throw wibble::exception::File(file, "opening config file for reading");
-		// Parse the config file into a new section
-		section.parse(in, file);
-		// Fill in missing bits
-		section.setValue("name", name);
-		section.setValue("path", sys::abspath(fname));
-		// Merge into cfg
-		cfg.mergeInto(name, section);
-	} else {
-		// If it's a file, then it's a merged config file
-		ifstream in;
-		in.open(fname.c_str(), ios::in);
-		if (!in.is_open() || in.fail())
-			throw wibble::exception::File(fname, "opening config file for reading");
-		// Parse the config file
-		cfg.parse(in, fname);
-	}
+        ConfigFile section;
+        ifstream in;
+        in.open(file.c_str(), ios::in);
+        if (!in.is_open() || in.fail())
+            throw_file_error(file, "cannot open config file for reading");
+        // Parse the config file into a new section
+        section.parse(in, file);
+        // Fill in missing bits
+        section.setValue("name", name);
+        section.setValue("path", sys::abspath(fname));
+        // Merge into cfg
+        cfg.mergeInto(name, section);
+    } else {
+        // If it's a file, then it's a merged config file
+        ifstream in;
+        in.open(fname.c_str(), ios::in);
+        if (!in.is_open() || in.fail())
+            throw_file_error(fname, "cannot open config file for reading");
+        // Parse the config file
+        cfg.parse(in, fname);
+    }
 }
 
 bool parseConfigFiles(ConfigFile& cfg, const commandline::VectorOption<commandline::String>& files)

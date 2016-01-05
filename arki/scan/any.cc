@@ -9,6 +9,7 @@
 #include <sstream>
 #include <algorithm>
 #include <utime.h>
+#include <fcntl.h>
 
 #ifdef HAVE_GRIBAPI
 #include <arki/scan/grib.h>
@@ -293,8 +294,27 @@ void compress(const std::string& file, size_t groupsize)
 
 void Validator::validate(Metadata& md) const
 {
-    const auto& buf = md.getData();
-    validate(buf.data(), buf.size());
+    if (const types::source::Blob* blob = md.has_source_blob()) {
+        sys::File fd(blob->absolutePathname(), O_RDONLY);
+        validate(fd, blob->offset, blob->size);
+    } else {
+        const auto& buf = md.getData();
+        validate(buf.data(), buf.size());
+    }
+}
+
+void Validator::throw_check_error(utils::sys::NamedFileDescriptor& fd, off_t offset, const std::string& msg) const
+{
+    stringstream ss;
+    ss << fd.name() << ":" << offset << ": " << format() << " validation failed: " << msg;
+    throw runtime_error(ss.str());
+}
+
+void Validator::throw_check_error(const std::string& msg) const
+{
+    stringstream ss;
+    ss << format() << " validation failed: " << msg;
+    throw runtime_error(ss.str());
 }
 
 const Validator& Validator::by_filename(const std::string& filename)

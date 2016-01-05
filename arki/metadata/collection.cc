@@ -1,16 +1,16 @@
 #include "collection.h"
-#include <arki/types/source/blob.h>
-#include <arki/types/reftime.h>
-#include <arki/utils/compress.h>
-#include <arki/binary.h>
-#include <arki/utils/sys.h>
-#include <arki/utils.h>
-#include <arki/summary.h>
-#include <arki/sort.h>
-#include <arki/postprocess.h>
-#include <arki/dataset.h>
-#include <arki/scan/any.h>
-#include "arki/wibble/exception.h"
+#include "arki/exceptions.h"
+#include "arki/types/source/blob.h"
+#include "arki/types/reftime.h"
+#include "arki/utils/compress.h"
+#include "arki/binary.h"
+#include "arki/utils/sys.h"
+#include "arki/utils.h"
+#include "arki/summary.h"
+#include "arki/sort.h"
+#include "arki/postprocess.h"
+#include "arki/dataset.h"
+#include "arki/scan/any.h"
 #include <algorithm>
 #include <memory>
 #include <fcntl.h>
@@ -58,7 +58,7 @@ struct AtomicWriter
         if (!out) return;
         out.close();
         if (::rename(out.name().c_str(), destfname.c_str()) < 0)
-            throw wibble::exception::System("Renaming " + out.name() + " to " + destfname);
+            throw_system_error("cannot rename " + out.name() + " to " + destfname);
     }
 
     void rollback()
@@ -219,24 +219,23 @@ std::string Collection::ensureContiguousData(const std::string& source) const
     {
         const source::Blob& s = (*i)->sourceBlob();
         if (s.offset != (size_t)last_end)
-            throw wibble::exception::Consistency("validating " + source,
-                    "metadata element points to data that does not start at the end of the previous element");
+            throw std::runtime_error("cannot validzate " + source +
+                    ": metadata element points to data that does not start at the end of the previous element");
         if (i == vals.begin())
         {
             fname = s.absolutePathname();
         } else {
             if (fname != s.absolutePathname())
-                throw wibble::exception::Consistency("validating " + source,
-                        "metadata element points at another data file (previous: " + fname + ", this: " + s.absolutePathname() + ")");
+                throw std::runtime_error("cannot validate " + source +
+                        ": metadata element points at another data file (previous: " + fname + ", this: " + s.absolutePathname() + ")");
         }
         last_end += s.size;
     }
     std::unique_ptr<struct stat> st = sys::stat(fname);
     if (st.get() == NULL)
-        throw wibble::exception::File(fname, "validating data described in " + source);
+        throw_file_error(fname, "cannot validate data described in " + source);
     if (st->st_size != last_end)
-        throw wibble::exception::Consistency("validating " + source,
-                "metadata do not cover the entire data file " + fname);
+        throw std::runtime_error("validating " + source + ": metadata do not cover the entire data file " + fname);
     return fname;
 }
 

@@ -181,6 +181,9 @@ public:
     /// Get the raw data described by this metadata
     const std::vector<uint8_t>& getData();
 
+    /// Return True if getData can be called without causing I/O
+    bool has_cached_data() const;
+
     /**
      * Set cached data for non-inline sources, so that getData() won't have
      * to read it again.

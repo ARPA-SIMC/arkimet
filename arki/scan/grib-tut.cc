@@ -244,23 +244,22 @@ def_test(4)
 
 	const scan::Validator& v = scan::grib::validator();
 
-	int fd = open("inbound/test.grib1", O_RDONLY);
-
-	v.validate(fd, 0, 7218, "inbound/test.grib1");
-	v.validate(fd, 7218, 34960, "inbound/test.grib1");
-	v.validate(fd, 42178, 2234, "inbound/test.grib1");
+    sys::File fd("inbound/test.grib1", O_RDONLY);
+    v.validate(fd, 0, 7218);
+    v.validate(fd, 7218, 34960);
+    v.validate(fd, 42178, 2234);
 
 #define ensure_throws(x) do { try { x; ensure(false); } catch (std::exception& e) { } } while (0)
 
-	ensure_throws(v.validate(fd, 1, 7217, "inbound/test.grib1"));
-	ensure_throws(v.validate(fd, 0, 7217, "inbound/test.grib1"));
-	ensure_throws(v.validate(fd, 0, 7219, "inbound/test.grib1"));
-	ensure_throws(v.validate(fd, 7217, 34961, "inbound/test.grib1"));
-	ensure_throws(v.validate(fd, 42178, 2235, "inbound/test.grib1"));
-	ensure_throws(v.validate(fd, 44412, 0, "inbound/test.grib1"));
-	ensure_throws(v.validate(fd, 44412, 10, "inbound/test.grib1"));
+    ensure_throws(v.validate(fd, 1, 7217));
+    ensure_throws(v.validate(fd, 0, 7217));
+    ensure_throws(v.validate(fd, 0, 7219));
+    ensure_throws(v.validate(fd, 7217, 34961));
+    ensure_throws(v.validate(fd, 42178, 2235));
+    ensure_throws(v.validate(fd, 44412, 0));
+    ensure_throws(v.validate(fd, 44412, 10));
 
-	close(fd);
+    fd.close();
 
     metadata::Collection mdc;
     scan::scan("inbound/test.grib1", mdc.inserter_func());

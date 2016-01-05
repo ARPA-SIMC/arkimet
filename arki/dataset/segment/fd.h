@@ -5,6 +5,7 @@
 
 #include <arki/libconfig.h>
 #include <arki/dataset/segment.h>
+#include <arki/utils/sys.h>
 #include <string>
 
 namespace arki {
@@ -15,7 +16,7 @@ namespace fd {
 class Segment : public dataset::Segment
 {
 protected:
-    int fd;
+    utils::sys::File fd;
 
 public:
     Segment(const std::string& relname, const std::string& absname);

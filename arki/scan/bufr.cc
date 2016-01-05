@@ -38,56 +38,35 @@ namespace bufr {
 
 struct BufrValidator : public Validator
 {
-	virtual ~BufrValidator() {}
+    std::string format() const override { return "BUFR"; }
 
     // Validate data found in a file
-    virtual void validate(int fd, off_t offset, size_t size, const std::string& fname) const
+    void validate(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
     {
         if (size < 8)
-        {
-            stringstream ss;
-            ss << fname << ":" << offset << ": cannot check BUFR segment: file segment to check is only " << size << " bytes (minimum for a BUFR is 8)";
-            throw runtime_error(ss.str());
-        }
+            throw_check_error(fd, offset, "file segment to check is only " + std::to_string(size) + " bytes (minimum for a BUFR is 8)");
 
-        sys::NamedFileDescriptor f(fd, fname);
         char buf[4];
         ssize_t res;
-        if ((res = f.pread(buf, 4, offset)) != 4)
-        {
-            stringstream ss;
-            ss << fname << ":" << offset << ": could only read " << res << "/4 bytes of BUFR header";
-            throw runtime_error(ss.str());
-        }
+        if ((res = fd.pread(buf, 4, offset)) != 4)
+            throw_check_error(fd, offset, "read only " + std::to_string(res) + "/4 bytes of BUFR header");
         if (memcmp(buf, "BUFR", 4) != 0)
-        {
-            stringstream ss;
-            ss << fname << ":" << offset << ": segment does not start with 'BUFR'";
-            throw runtime_error(ss.str());
-        }
-        if ((res = f.pread(buf, 4, offset + size - 4)) != 4)
-        {
-            stringstream ss;
-            ss << fname << ":" << offset << ": could only read " << res << "/4 bytes of BUFR trailer";
-            throw runtime_error(ss.str());
-        }
+            throw_check_error(fd, offset, "data does not start with 'BUFR'");
+        if ((res = fd.pread(buf, 4, offset + size - 4)) != 4)
+            throw_check_error(fd, offset, "read only " + std::to_string(res) + "/4 bytes of BUFR trailer");
         if (memcmp(buf, "7777", 4) != 0)
-        {
-            stringstream ss;
-            ss << fname << ":" << offset << ": segment does not end with '7777'";
-            throw runtime_error(ss.str());
-        }
+            throw_check_error(fd, offset, "data does not end with '7777'");
     }
 
     // Validate a memory buffer
-    virtual void validate(const void* buf, size_t size) const
+    void validate(const void* buf, size_t size) const override
     {
         if (size < 8)
-            throw runtime_error("BUFR buffer is shorter than 8 bytes");
+            throw_check_error("buffer is shorter than 8 bytes");
         if (memcmp(buf, "BUFR", 4) != 0)
-            throw runtime_error("BUFR buffer does not start with 'BUFR'");
+            throw_check_error("buffer does not start with 'BUFR'");
         if (memcmp((const char*)buf + size - 4, "7777", 4) != 0)
-            throw runtime_error("BUFR buffer does not end with '7777'");
+            throw_check_error("buffer does not end with '7777'");
     }
 };
 

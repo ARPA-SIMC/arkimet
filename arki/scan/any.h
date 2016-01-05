@@ -13,6 +13,12 @@
 namespace arki {
 class Metadata;
 
+namespace utils {
+namespace sys {
+class NamedFileDescriptor;
+}
+}
+
 namespace scan {
 
 /**
@@ -92,13 +98,16 @@ std::vector<uint8_t> reconstruct(const std::string& format, const Metadata& md, 
  */
 struct Validator
 {
-	virtual ~Validator() {}
+    virtual ~Validator() {}
 
-	// Validate data found in a file
-	virtual void validate(int fd, off_t offset, size_t size, const std::string& fname) const = 0;
+    /// Return the format checked by this validator
+    virtual std::string format() const = 0;
 
-	// Validate a memory buffer
-	virtual void validate(const void* buf, size_t size) const = 0;
+    // Validate data found in a file
+    virtual void validate(utils::sys::NamedFileDescriptor& fd, off_t offset, size_t size) const = 0;
+
+    // Validate a memory buffer
+    virtual void validate(const void* buf, size_t size) const = 0;
 
     // Validate data pointed by a Metadata
     virtual void validate(Metadata& md) const;
@@ -110,6 +119,10 @@ struct Validator
 	 *   a pointer to a static object, which should not be deallocated.
 	 */
 	static const Validator& by_filename(const std::string& filename);
+
+protected:
+    [[noreturn]] void throw_check_error(utils::sys::NamedFileDescriptor& fd, off_t offset, const std::string& msg) const;
+    [[noreturn]] void throw_check_error(const std::string& msg) const;
 };
 
 /**

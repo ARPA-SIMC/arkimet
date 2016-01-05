@@ -1,5 +1,6 @@
+#include "manifest.h"
 #include "arki/libconfig.h"
-#include "arki/dataset/index/manifest.h"
+#include "arki/exceptions.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/consumer.h"
@@ -18,7 +19,6 @@
 #include "arki/iotrace.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include "arki/wibble/exception.h"
 #include <algorithm>
 #include <unistd.h>
 #include <fstream>
@@ -388,7 +388,7 @@ public:
     void openRO()
     {
         if (!reread())
-            throw wibble::exception::Consistency("opening archive index", "MANIFEST does not exist in " + m_path);
+            throw std::runtime_error("cannot open archive index: MANIFEST does not exist in " + m_path);
         rw = false;
     }
 
@@ -547,7 +547,7 @@ public:
             std::ofstream out;
             out.open(pathname.c_str(), ios::out);
             if (!out.is_open() || out.fail())
-                throw wibble::exception::File(pathname, "opening file for writing");
+                throw_file_error(pathname, "cannot open file for writing");
 
             for (vector<Info>::const_iterator i = info.begin();
                     i != info.end(); ++i)
@@ -556,7 +556,7 @@ public:
             out.close();
 
             if (::rename(pathname.c_str(), str::joinpath(m_path, "MANIFEST").c_str()) < 0)
-                throw wibble::exception::System("Renaming " + pathname + " to " + str::joinpath(m_path, "MANIFEST"));
+                throw_system_error("cannot rename " + pathname + " to " + str::joinpath(m_path, "MANIFEST"));
 
             invalidate_summary();
             dirty = false;
@@ -632,20 +632,20 @@ public:
         m_db.checkpoint();
 	}
 
-	void openRO()
-	{
-		string pathname(str::joinpath(m_path, "index.sqlite"));
-		if (m_db.isOpen())
-			throw wibble::exception::Consistency("opening archive index", "index " + pathname + " is already open");
+    void openRO()
+    {
+        string pathname(str::joinpath(m_path, "index.sqlite"));
+        if (m_db.isOpen())
+            throw std::runtime_error("cannot open archive index: index " + pathname + " is already open");
 
         if (!sys::access(pathname, F_OK))
-            throw wibble::exception::Consistency("opening archive index", "index " + pathname + " does not exist");
+            throw std::runtime_error("opening archive index: index " + pathname + " does not exist");
 
-		m_db.open(pathname);
-		setupPragmas();
+        m_db.open(pathname);
+        setupPragmas();
 
-		initQueries();
-	}
+        initQueries();
+    }
 
     void openRW()
     {
@@ -889,7 +889,7 @@ std::unique_ptr<Manifest> Manifest::create(const std::string& dir, const ConfigF
     else if (value == "sqlite")
         return unique_ptr<Manifest>(new manifest::SqliteManifest(dir));
     else
-        throw wibble::exception::Consistency("unsupported index_type " + value);
+        throw std::runtime_error("unsupported index_type " + value);
 }
 
 }

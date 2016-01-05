@@ -1,4 +1,5 @@
 #include "fd.h"
+#include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
@@ -9,7 +10,6 @@
 #include "arki/utils/sys.h"
 #include "arki/utils.h"
 #include "arki/nag.h"
-#include <arki/wibble/exception.h>
 #include <algorithm>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -26,7 +26,7 @@ namespace segment {
 namespace fd {
 
 Segment::Segment(const std::string& relname, const std::string& absname)
-    : dataset::Segment(relname, absname), fd(-1)
+    : dataset::Segment(relname, absname), fd(absname)
 {
 }
 
@@ -40,9 +40,7 @@ void Segment::open()
     if (fd != -1) return;
 
     // Open the data file
-    fd = ::open(absname.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666);
-    if (fd == -1)
-        throw wibble::exception::File(absname, "cannot open file for appending data");
+    fd.open(O_WRONLY | O_CREAT | O_APPEND, 0666);
 }
 
 void Segment::truncate_and_open()
@@ -50,16 +48,13 @@ void Segment::truncate_and_open()
     if (fd != -1) return;
 
     // Open the data file
-    fd = ::open(absname.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    if (fd == -1)
-        throw wibble::exception::File(absname, "cannot truncate and open file for appending data");
+    fd.open(O_WRONLY | O_CREAT | O_TRUNC, 0666);
 }
 
 void Segment::close()
 {
-    //if (fdatasync(fd_dst) != 0) throw wibble::exception::File(dst, "flushing data to file");
-    if (fd != -1) ::close(fd);
-    fd = -1;
+    //if (fdatasync(fd) != 0) throw_file_error(dst, "cannot flush data to file");
+    fd.close();
 }
 
 void Segment::lock()
@@ -71,7 +66,7 @@ void Segment::lock()
     lock.l_len = 0;
     // Use SETLKW, so that if it is already locked, we just wait
     if (fcntl(fd, F_SETLKW, &lock) == -1)
-        throw wibble::exception::System("locking the file " + absname + " for writing");
+        throw_file_error(absname, "cannot lock file for writing");
 }
 
 void Segment::unlock()
@@ -87,10 +82,7 @@ void Segment::unlock()
 off_t Segment::wrpos()
 {
     // Get the write position in the data file
-    off_t size = lseek(fd, 0, SEEK_END);
-    if (size == (off_t)-1)
-        throw wibble::exception::File(absname, "reading the current position");
-    return size;
+    return fd.lseek(0, SEEK_END);
 }
 
 void Segment::fdtruncate(off_t pos)
@@ -107,13 +99,7 @@ void Segment::write(const std::vector<uint8_t>& buf)
     //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
 
     // Append the data
-    ssize_t res = ::write(fd, buf.data(), buf.size());
-    if (res < 0 || (unsigned)res != buf.size())
-    {
-        stringstream ss;
-        ss << "cannot write " << buf.size() << " bytes to " << absname;
-        throw std::system_error(errno, std::system_category(), ss.str());
-    }
+    fd.write_all_or_throw(buf.data(), buf.size());
 
     if (fdatasync(fd) < 0)
     {
@@ -205,8 +191,7 @@ size_t Segment::remove()
     close();
 
     size_t size = sys::size(absname);
-    if (unlink(absname.c_str()) < 0)
-        throw wibble::exception::System("removing " + absname);
+    sys::unlink(absname.c_str());
     return size;
 }
 
@@ -254,7 +239,7 @@ Pending Segment::repack(
             if (fired) return;
             // Rename the data file to its final name
             if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
-                throw wibble::exception::System("renaming " + tmpabsname + " to " + absname);
+                throw_system_error("cannot rename " + tmpabsname + " to " + absname);
             fired = true;
         }
 
