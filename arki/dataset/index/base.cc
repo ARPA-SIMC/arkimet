@@ -35,21 +35,21 @@ std::set<types::Code> parseMetadataBitmask(const std::string& components)
 
 struct Adder
 {
-	string res;
+    string res;
 
-	template<typename VAL>
-	void add(const VAL& val, const char* name)
-	{
-		switch (val.size())
-		{
-			case 0: break;
-			case 1: res += val.begin()->encode(); break;
-			default:
-					std::stringstream err;
-					err << "can only handle metadata with 1 " << name << " (" << val.size() << " found)";
-					throw wibble::exception::Consistency("generating ID", err.str());
-		}
-	}
+    template<typename VAL>
+    void add(const VAL& val, const char* name)
+    {
+        switch (val.size())
+        {
+            case 0: break;
+            case 1: res += val.begin()->encode(); break;
+            default:
+                std::stringstream err;
+                err << "cannot generate ID: can only handle metadata with 1 " << name << " (" << val.size() << " found)";
+                throw std::runtime_error(err.str());
+        }
+    }
 };
 
 std::string IDMaker::id(const Metadata& md) const

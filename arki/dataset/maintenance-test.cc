@@ -1,4 +1,5 @@
 #include "arki/dataset/tests.h"
+#include "arki/exceptions.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/segmented.h"
 #include "arki/metadata/collection.h"
@@ -7,7 +8,6 @@
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
 #include <arki/wibble/grcal/grcal.h>
-#include "arki/wibble/exception.h"
 #include <cstdlib>
 #include <sys/types.h>
 #include <utime.h>
@@ -51,7 +51,7 @@ class Tests : public FixtureTestCase<Fixture>
             system("touch testds/2007/07-07.grib");
             // Truncate the last grib out of a file
             if (truncate("testds/2007/07-07.grib", 6000000000LLU) < 0)
-                throw wibble::exception::System("truncating testds/2007/07-07.grib");
+                throw_system_error("truncating testds/2007/07-07.grib");
 
             f.import();
 

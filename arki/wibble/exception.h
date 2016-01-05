@@ -145,10 +145,8 @@ public:
     Context(const std::string& context) throw ()
     {
         AddContext::copyContext( std::back_inserter( m_context ) );
-        addContext(context);
     }
 
-    void addContext(const std::string& c) throw () { m_context.push_back(c); }
     std::string formatContext() const throw ()
     {
         if (m_context.empty())
@@ -211,23 +209,6 @@ public:
 	virtual const char* what() const throw () { return fullInfo().c_str(); }
 };
 
-/// Exception thrown when some long event is interrupted by an external event
-/// (like a system call being interrupted by a signal)
-/**
- * It is a direct child of ContextException, and has the very same semantics.
- *
- * \warning Any function throwing InterruptedException must allow to be called
- * again with the same parameters to retry the operation
- */
-class Interrupted : public Generic
-{
-public:
-	Interrupted() throw () {}
-	Interrupted(const std::string& context) throw () : Generic(context) {}
-
-	virtual const char* type() const throw () { return "Interrupted"; }
-};
-
 /// Exception thrown when some consistency check fails
 /**
  * It is a direct child of ContextException, and has the very same semantics.
@@ -249,42 +230,6 @@ public:
 			return "consistency check failed";
 		return m_error;
 	}
-};
-
-/// Base class for system exceptions
-/**
- * This is the base class for exceptions that depend on system events, like
- * exceptions on file or network I/O, on database access and so on.
- * SystemExceptions introduces the keeping of an error code with an associated
- * string description, and by defaults provides the textual description for
- * Unix errno error codes.
- * The exception context should be phrased like "doing X".
- *
- * Example:
- * \code
- * 		const char* fname = "foo.bar";
- * 		if ((fd = open(fname, O_RDONLY)) == -1)
- * 			// Should not throw SystemException, but a more specialized derived
- * 			// class like FileException
- * 			throw SystemException(errno, stringf::fmt("opening %s read-only", fname));
- * \endcode
- */
-class System : public Generic
-{
-protected:
-	int m_errno;
-
-public:
-	System(const std::string& context) throw ();
-	System(int code, const std::string& context) throw ();
-
-	virtual const char* type() const throw () { return "System"; }
-
-	/// Get the system error code associated to the exception
-	virtual int code() const throw () { return m_errno; }
-
-	/// Get the description of the error code
-	virtual std::string desc() const throw ();
 };
 
 }

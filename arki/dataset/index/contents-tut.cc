@@ -1,18 +1,18 @@
-#include <arki/types/tests.h>
-#include <arki/metadata/tests.h>
-#include <arki/dataset.h>
-#include <arki/dataset/index/contents.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/types/source/blob.h>
-#include <arki/scan/any.h>
-#include <arki/configfile.h>
-#include <arki/matcher.h>
-#include <arki/summary.h>
-#include <arki/iotrace.h>
-#include <arki/utils/sys.h>
-#include <arki/wibble/sys/process.h>
-#include <arki/wibble/sys/childprocess.h>
+#include "arki/metadata/tests.h"
+#include "arki/exceptions.h"
+#include "arki/dataset.h"
+#include "arki/dataset/index/contents.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/types/source/blob.h"
+#include "arki/scan/any.h"
+#include "arki/configfile.h"
+#include "arki/matcher.h"
+#include "arki/summary.h"
+#include "arki/iotrace.h"
+#include "arki/utils/sys.h"
+#include "arki/wibble/sys/process.h"
+#include "arki/wibble/sys/childprocess.h"
 #include <memory>
 #include <sys/fcntl.h>
 #include <unistd.h>
@@ -228,13 +228,13 @@ struct ReadHang : public wibble::sys::ChildProcess
 		forkAndRedirect(0, &commfd);
 	}
 
-	char waitUntilHung()
-	{
-		char buf[2];
-		if (read(commfd, buf, 1) != 1)
-			throw wibble::exception::System("reading 1 byte from child process");
-		return buf[0];
-	}
+    char waitUntilHung()
+    {
+        char buf[2];
+        if (read(commfd, buf, 1) != 1)
+            throw_system_error("reading 1 byte from child process");
+        return buf[0];
+    }
 };
 }
 

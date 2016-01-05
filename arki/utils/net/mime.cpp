@@ -1,7 +1,7 @@
-#include <arki/utils/net/mime.h>
-#include <arki/utils/string.h>
-#include <arki/utils/sys.h>
-#include <arki/wibble/exception.h>
+#include "mime.h"
+#include "arki/exceptions.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 #include <unistd.h>
 
 using namespace std;
@@ -26,7 +26,7 @@ bool Reader::read_line(int sock, string& res)
         ssize_t count = read(sock, &c, 1);
         if (count == 0) return false;
         if (count < 0)
-            throw wibble::exception::System("reading from socket");
+            throw_system_error("reading from socket");
         switch (c)
         {
             case '\r':
@@ -113,8 +113,8 @@ bool Reader::readboundarytail(int sock)
     {
         char c;
         ssize_t count = read(sock, &c, 1);
-        if (count == 0) throw wibble::exception::Consistency("reading from socket", "data ends before MIME boundary");
-        if (count < 0) throw wibble::exception::System("reading from socket");
+        if (count == 0) throw std::runtime_error("reading from socket: data ends before MIME boundary");
+        if (count < 0) throw_system_error("reading from socket");
         switch (c)
         {
             case '\r':
@@ -132,7 +132,7 @@ bool Reader::readboundarytail(int sock)
                 has_cr = false;
                 break;
             default:
-                throw wibble::exception::Consistency("reading from socket", "line ends with non-whitespace");
+                throw std::runtime_error("reading from socket: line ends with non-whitespace");
                 break;
         }
     }
@@ -148,8 +148,8 @@ bool Reader::read_until_boundary(int sock, const std::string& boundary, int outf
     {
         char c;
         ssize_t count = read(sock, &c, 1);
-        if (count == 0) throw wibble::exception::Consistency("reading from socket", "data ends before MIME boundary");
-        if (count < 0) throw wibble::exception::System("reading from socket");
+        if (count == 0) throw std::runtime_error("reading from socket: data ends before MIME boundary");
+        if (count < 0) throw_system_error("reading from socket");
 
         if (c == boundary[got])
             ++got;
@@ -181,8 +181,8 @@ bool Reader::read_until_boundary(int sock, const std::string& boundary, std::ost
     {
         char c;
         ssize_t count = read(sock, &c, 1);
-        if (count == 0) throw wibble::exception::Consistency("reading from socket", "data ends before MIME boundary");
-        if (count < 0) throw wibble::exception::System("reading from socket");
+        if (count == 0) throw std::runtime_error("reading from socket: data ends before MIME boundary");
+        if (count < 0) throw_system_error("reading from socket");
 
         if (c == boundary[got])
             ++got;
@@ -213,8 +213,8 @@ bool Reader::discard_until_boundary(int sock, const std::string& boundary)
     {
         char c;
         ssize_t count = read(sock, &c, 1);
-        if (count == 0) throw wibble::exception::Consistency("reading from socket", "data ends before MIME boundary");
-        if (count < 0) throw wibble::exception::System("reading from socket");
+        if (count == 0) throw std::runtime_error("reading from socket: data ends before MIME boundary");
+        if (count < 0) throw_system_error("reading from socket");
         if (c == boundary[got])
             ++got;
         else

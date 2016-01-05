@@ -30,8 +30,8 @@ GridQuery::GridQuery(Reader& ds) : ds(ds)
 
 void GridQuery::add(const Matcher& m)
 {
-	if (summary.resolveMatcher(m, items) == 0)
-		throw wibble::exception::Consistency("resolving " + m.toString(), "there are no data which correspond to the matcher");
+    if (summary.resolveMatcher(m, items) == 0)
+        throw std::runtime_error("cannot resolve " + m.toString() + ": there are no data which correspond to the matcher");
 }
 
 void GridQuery::addTime(const Time& rt)
@@ -65,8 +65,8 @@ void GridQuery::consolidate()
 
 	mdgrid.consolidate();
 
-	if (times.empty())
-		throw wibble::exception::Consistency("consolidating GridQuery", "no times have been requested");
+    if (times.empty())
+        throw std::runtime_error("cannot consolidate GridQuery: no times have been requested");
 
 	// Sort times
 	std::sort(times.begin(), times.end());
@@ -90,7 +90,7 @@ void GridQuery::consolidate()
         if (i->empty()) continue;
         i->foreach_type([&](types::Code code, const matcher::OR&) {
             if (codes.find(code) != codes.end())
-                throw wibble::exception::Consistency("consolidating GridQuery", "filters conflict on " + types::tag(code));
+                throw std::runtime_error("cannot consolidate GridQuery: filters conflict on " + types::tag(code));
             codes.insert(code);
         });
     }

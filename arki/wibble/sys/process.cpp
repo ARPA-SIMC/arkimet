@@ -1,7 +1,6 @@
 #include "process.h"
 #include "arki/exceptions.h"
 #include "arki/utils/sys.h"
-
 #include <sys/types.h>		// fork, waitpid, kill, open, getpw*, getgr*, initgroups
 #include <sys/stat.h>		// open
 #include <sys/resource.h>	// getrlimit, setrlimit
@@ -14,10 +13,11 @@
 #include <pwd.h>			// getpw*
 #include <grp.h>			// getgr*, initgroups
 #include <errno.h>
-
 #include <cstring>
 #include <cstdlib>
 #include <sstream>
+
+using namespace arki;
 
 extern char** environ;
 
@@ -30,10 +30,10 @@ using namespace std;
 void detachFromTTY()
 {
     arki::utils::sys::File devnull("/dev/null", O_RDWR);
-	if (dup2(devnull, 0) == -1) throw wibble::exception::System("redirecting stdin to /dev/null");
-	if (dup2(devnull, 1) == -1) throw wibble::exception::System("redirecting stdout to /dev/null");
-	if (setsid() == -1) throw wibble::exception::System("trying to become session leader");
-	if (dup2(devnull, 2) == -1) throw wibble::exception::System("redirecting stderr to /dev/null");
+	if (dup2(devnull, 0) == -1) throw_system_error("redirecting stdin to /dev/null");
+	if (dup2(devnull, 1) == -1) throw_system_error("redirecting stdout to /dev/null");
+	if (setsid() == -1) throw_system_error("trying to become session leader");
+	if (dup2(devnull, 2) == -1) throw_system_error("redirecting stderr to /dev/null");
     devnull.close();
 }
 
@@ -67,7 +67,7 @@ string formatStatus(int status)
 void chdir(const string& dir)
 {
 	if (::chdir(dir.c_str()) == -1)
-		throw wibble::exception::System("changing working directory to " + dir);
+		throw_system_error("changing working directory to " + dir);
 }
 
 std::string getcwd()
@@ -75,7 +75,7 @@ std::string getcwd()
 #if defined(__GLIBC__)
 	char* cwd = ::get_current_dir_name();
 	if (cwd == NULL)
-		throw wibble::exception::System("getting the current working directory");
+		throw_system_error("getting the current working directory");
 	const std::string str(cwd);
 	::free(cwd);
 	return str;
@@ -83,7 +83,7 @@ std::string getcwd()
 	size_t size = pathconf(".", _PC_PATH_MAX);
 	char *buf = (char *)alloca( size );
 	if (::getcwd(buf, size) == NULL)
-		throw wibble::exception::System("getting the current working directory");
+		throw_system_error("getting the current working directory");
 	return buf;
 #endif
 }
@@ -91,7 +91,7 @@ std::string getcwd()
 void chroot(const string& dir)
 {
 	if (::chroot(dir.c_str()) == -1)
-		throw wibble::exception::System("changing root directory to " + dir);
+		throw_system_error("changing root directory to " + dir);
 }
 
 mode_t umask(mode_t mask)
@@ -122,7 +122,7 @@ void initGroups(const string& name, gid_t gid)
 		stringstream str;
 		str << "initializing group access list for user " << name
 			<< " with additional group " << gid;
-		throw wibble::exception::System(str.str());
+		throw_system_error(str.str());
 	}
 }
 
@@ -134,28 +134,28 @@ static void set_perms(const string& user, uid_t uid, const string& group, gid_t 
 	{
 		stringstream str;
 		str << "setting group id to " << gid << " (" << group << ")";
-		throw wibble::exception::System(str.str());
+		throw_system_error(str.str());
 	}
 
 	if (setegid(gid) == -1)
 	{
 		stringstream str;
 		str << "setting effective group id to " << gid << " (" << group << ")";
-		throw wibble::exception::System(str.str());
+		throw_system_error(str.str());
 	}
 
 	if (setuid(uid) == -1)
 	{
 		stringstream str;
 		str << "setting user id to " << uid << " (" << user << ")";
-		throw wibble::exception::System(str.str());
+		throw_system_error(str.str());
 	}
 
 	if (seteuid(uid) == -1)
 	{
 		stringstream str;
 		str << "setting effective user id to " << uid << " (" << user << ")";
-		throw wibble::exception::System(str.str());
+		throw_system_error(str.str());
 	}
 }
 
@@ -269,13 +269,13 @@ static void setLimit(int rlim, int val)
 {
 	struct rlimit lim;
 	if (getrlimit(rlim, &lim) == -1)
-		throw wibble::exception::System("Getting " + describe_rlimit_res_t(rlim) + " limit");
+		throw_system_error("Getting " + describe_rlimit_res_t(rlim) + " limit");
 	lim.rlim_cur = val;
 	if (setrlimit(rlim, &lim) == -1)
 	{
 		stringstream str;
 		str << "Setting " << describe_rlimit_res_t(rlim) << " limit to " << val;
-		throw wibble::exception::System(str.str());
+		throw_system_error(str.str());
 	}
 }
 
@@ -283,7 +283,7 @@ static int getLimit(int rlim, int* max = 0)
 {
 	struct rlimit lim;
 	if (getrlimit(rlim, &lim) == -1)
-		throw wibble::exception::System("Getting " + describe_rlimit_res_t(rlim) + " limit");
+		throw_system_error("Getting " + describe_rlimit_res_t(rlim) + " limit");
 	if (max)
 		*max = lim.rlim_max;
 	return lim.rlim_cur;

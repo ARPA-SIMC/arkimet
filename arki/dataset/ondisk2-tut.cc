@@ -1,4 +1,5 @@
 #include <arki/dataset/tests.h>
+#include <arki/exceptions.h>
 #include <arki/dataset/ondisk2.h>
 //#include <arki/dataset/ondisk2/maintenance.h>
 #include <arki/configfile.h>
@@ -561,13 +562,13 @@ struct ReadHang : public wibble::sys::ChildProcess
 		forkAndRedirect(0, &commfd);
 	}
 
-	char waitUntilHung()
-	{
-		char buf[2];
-		if (read(commfd, buf, 1) != 1)
-			throw wibble::exception::System("reading 1 byte from child process");
-		return buf[0];
-	}
+    char waitUntilHung()
+    {
+        char buf[2];
+        if (read(commfd, buf, 1) != 1)
+            throw_system_error("reading 1 byte from child process");
+        return buf[0];
+    }
 };
 }
 

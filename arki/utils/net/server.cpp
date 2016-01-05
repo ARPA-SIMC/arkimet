@@ -1,6 +1,6 @@
-#include <arki/utils/net/server.h>
-#include <arki/utils/string.h>
-#include <arki/wibble/exception.h>
+#include "server.h"
+#include "arki/exceptions.h"
+#include "arki/utils/string.h"
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -54,7 +54,7 @@ void Server::bind(const char* port, const char* host)
         // Set SO_REUSEADDR 
         int flag = 1;
         if (setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(int)) < 0)
-            throw wibble::exception::System("setting SO_REUSEADDR on socket");
+            throw_system_error("setting SO_REUSEADDR on socket");
 
         if (::bind(sfd, rp->ai_addr, rp->ai_addrlen) == 0)
         {
@@ -97,14 +97,14 @@ void Server::bind(const char* port, const char* host)
 void Server::listen(int backlog)
 {
     if (::listen(sock, backlog) < 0)
-        throw wibble::exception::System("listening on port " + port);
+        throw_system_error("listening on port " + port);
 }
 
 void Server::set_sock_cloexec()
 {
     // Set close-on-exec on master socket
     if (fcntl(sock, F_SETFD, FD_CLOEXEC) < 0)
-        throw wibble::exception::System("setting FD_CLOEXEC on server socket");
+        throw_system_error("setting FD_CLOEXEC on server socket");
 }
 
 
@@ -180,7 +180,7 @@ int TCPServer::accept_loop()
             {
                 if (errno == EINTR)
                     return TCPServer::last_signal;
-                throw wibble::exception::System("listening on " + host + ":" + port);
+                throw_system_error("listening on " + host + ":" + port);
             }
         }
 
@@ -202,14 +202,18 @@ int TCPServer::accept_loop()
             if (gaires == 0)
                 handle_client(fd, hostname, hbuf, sbuf);
             else
-                throw wibble::exception::Consistency(
-                        "resolving peer name numerically",
-                        gai_strerror(gaires));
+            {
+                string msg = "cannot resolve peer name numerically: ";
+                msg += gai_strerror(gaires);
+                throw std::runtime_error(msg);
+            }
         }
         else
-            throw wibble::exception::Consistency(
-                    "resolving peer name",
-                    gai_strerror(gaires));
+        {
+            string msg = "cannot resolve peer name: ";
+            msg += gai_strerror(gaires);
+            throw std::runtime_error(msg);
+        }
     }
 }
 

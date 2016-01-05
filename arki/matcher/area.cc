@@ -1,5 +1,4 @@
 #include "config.h"
-
 #include <arki/matcher/area.h>
 #include <arki/matcher/utils.h>
 #include <arki/utils/geosdef.h>
@@ -117,7 +116,7 @@ unique_ptr<MatchArea> MatchArea::parse(const std::string& pattern)
     }
 #endif
     else
-        throw wibble::exception::Consistency("parsing type of area to match", "unsupported area match: " + str::strip(p.substr(0, 5)));
+        throw std::runtime_error("cannot parse type of area to match: unsupported area match: " + str::strip(p.substr(0, 5)));
 }
 
 #ifdef HAVE_GEOS
@@ -169,7 +168,7 @@ unique_ptr<MatchAreaBBox> MatchAreaBBox::parse(const std::string& pattern)
         return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxCoveredBy(rest));
 #endif
     } else {
-        throw wibble::exception::Consistency("parsing type of bbox match", "unsupported match type: " + verb);
+        throw std::runtime_error("cannot parse type of bbox match: unsupported match type: " + verb);
     }
 }
 

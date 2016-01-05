@@ -1,14 +1,14 @@
 #include "config.h"
-
 #include "postprocess.h"
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/utils/process.h>
-#include <arki/runtime/config.h>
-#include <arki/utils/string.h>
-#include <arki/wibble/regexp.h>
-#include <arki/wibble/sys/childprocess.h>
-#include <arki/wibble/sys/process.h>
+#include "arki/exceptions.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/utils/process.h"
+#include "arki/runtime/config.h"
+#include "arki/utils/string.h"
+#include "arki/wibble/regexp.h"
+#include "arki/wibble/sys/childprocess.h"
+#include "arki/wibble/sys/process.h"
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -102,7 +102,7 @@ struct Child : public utils::IODispatcher
                     return;
                 }
                 if (errno != EINVAL)
-                    throw wibble::exception::System("splicing data from child postprocessor to destination");
+                    throw_system_error("splicing data from child postprocessor to destination");
                 // Else pass it on to the traditional method
             }
         }
@@ -114,7 +114,7 @@ struct Child : public utils::IODispatcher
         char buf[4096*2];
         ssize_t res = read(outfd, buf, 4096*2);
         if (res < 0)
-            throw wibble::exception::System("reading from child postprocessor");
+            throw_system_error("reading from child postprocessor");
         if (res == 0)
         {
             close_outfd();
@@ -143,7 +143,7 @@ struct Child : public utils::IODispatcher
                         close(m_nextfd);
                         m_nextfd = -1;
                     } else
-                        throw wibble::exception::System("writing to destination file descriptor");
+                        throw_system_error("writing to destination file descriptor");
                 }
                 pos += wres;
             }
@@ -152,7 +152,7 @@ struct Child : public utils::IODispatcher
         {
             m_out->write(buf, res);
             if (m_out->bad())
-                throw wibble::exception::System("writing to destination stream");
+                throw_system_error("writing to destination stream");
             if (m_out->eof())
                 m_out = NULL;
         }
@@ -241,7 +241,7 @@ void Postprocess::validate(const map<string, string>& cfg)
 
     // Validate the command
     if (m_child->cmd.args.empty())
-        throw wibble::exception::Consistency("initialising postprocessing filter", "postprocess command is empty");
+        throw std::runtime_error("cannot initialize postprocessing filter: postprocess command is empty");
     string scriptname = str::basename(m_child->cmd.args[0]);
     if (i != cfg.end() && allowed.find(scriptname) == allowed.end())
     {
@@ -294,10 +294,10 @@ void Postprocess::flush()
     m_child = 0;
     if (res)
     {
-        string msg = "postprocess command \"" + m_command + "\" " + wibble::sys::process::formatStatus(res);
+        string msg = "cannot run postprocessing filter: postprocess command \"" + m_command + "\" " + wibble::sys::process::formatStatus(res);
         if (!m_errors.str().empty())
             msg += "; stderr: " + str::strip(m_errors.str());
-        throw wibble::exception::Consistency("running postprocessing filter", msg);
+        throw std::runtime_error(msg);
     }
 }
 

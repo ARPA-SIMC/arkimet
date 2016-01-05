@@ -1,4 +1,5 @@
 #include <arki/dataset/test-scenario.h>
+#include <arki/exceptions.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/archive.h>
 #include <arki/dataset/maintenance.h>
@@ -9,7 +10,6 @@
 #include <arki/utils.h>
 #include <arki/utils/sys.h>
 #include <arki/utils/string.h>
-#include <arki/wibble/exception.h>
 #include <sstream>
 
 using namespace std;
@@ -41,13 +41,9 @@ void Scenario::build()
 ConfigFile Scenario::clone(const std::string& newpath) const
 {
     if (path.find("'") != string::npos)
-        throw wibble::exception::Consistency(
-                "cloning scenario " + name + " from " + path,
-                "cannot currently clone scenario if the old path contains \"'\"");
+        throw std::runtime_error("cannot clone scenario " + name + " from " + path + ": the old path contains \"'\"");
     if (newpath.find("'") != string::npos)
-        throw wibble::exception::Consistency(
-                "cloning scenario " + name + " to " + newpath,
-                "cannot currently clone scenario if the new path contains \"'\"");
+        throw std::runtime_error("cannot clone scenario " + name + " from " + path + ": the new path contains \"'\"");
 
     if (sys::exists(newpath))
         sys::rmtree(newpath);
@@ -56,7 +52,7 @@ ConfigFile Scenario::clone(const std::string& newpath) const
     string cmd = "cp -a '" + path + "' '" + newpath + "'";
     int sres = system(cmd.c_str());
     if (sres == -1)
-        throw wibble::exception::System("Running command " + cmd);
+        throw_system_error("Running command " + cmd);
     if (sres != 0)
     {
         stringstream ss;
@@ -77,7 +73,7 @@ metadata_dest_func make_importer(dataset::SegmentedWriter& ds)
     return [&](unique_ptr<Metadata> md) {
         Writer::AcquireResult r = ds.acquire(*md);
         if (r != Writer::ACQ_OK)
-            throw wibble::exception::Consistency("building test scenario", "metadata was not imported successfully");
+            throw std::runtime_error("cannot build test scenario: metadata was not imported successfully");
         return true;
     };
 }
@@ -123,7 +119,7 @@ struct Ondisk2Scenario : public Scenario
         string last = str::joinpath(path, ".archive/last");
         string older = str::joinpath(path, ".archive/" + newname);
         if (rename(last.c_str(), older.c_str()) < 0)
-            throw wibble::exception::System("cannot rename " + last + " to " + older);
+            throw_system_error("cannot rename " + last + " to " + older);
     }
 
     /* Boilerplate left here in case there is something to add at a later stage
@@ -215,7 +211,7 @@ struct Ondisk2Archived : public Ondisk2Scenario
         OstreamReporter reporter(checklog);
         ds->check(reporter, true, true);
         if (checklog.str() != "ondisk2-archived: check 0 files ok\n")
-            throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
+            throw std::runtime_error("cannot run check on correct dataset: log is not empty: " + checklog.str());
 
         // Pack to build 'older' archive
         run_repack(16, 8);
@@ -276,7 +272,7 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
             OstreamReporter reporter(checklog);
             ds->check(reporter, true, true);
             if (checklog.str() != "ondisk2-manyarchivestates: check 0 files ok\n")
-                throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
+                throw std::runtime_error("cannot run check on correct dataset: log is not empty: " + checklog.str());
         }
 
         // Pack and build 'offline' archive
@@ -338,9 +334,7 @@ const Scenario& Scenario::get(const std::string& name)
     // Get the scenario
     ScenarioDB::iterator i = scenarios->find(name);
     if (i == scenarios->end())
-        throw wibble::exception::Consistency(
-                "creating test scenario \"" + name + "\"",
-                "scenario does not exist");
+        throw std::runtime_error("cannot create test scenario \"" + name + "\": scenario does not exist");
     // Build it if needed
     if (!i->second->built)
         i->second->build();
@@ -360,4 +354,3 @@ std::vector<std::string> Scenario::list()
 }
 }
 }
-// vim:set ts=4 sw=4:

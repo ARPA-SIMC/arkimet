@@ -1,24 +1,5 @@
-/*
- * OO wrapper for regular expression functions
- *
- * Copyright (C) 2003--2006  Enrico Zini <enrico@debian.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include <arki/wibble/regexp.h>
+#include <sstream>
 
 using namespace std;
 
@@ -27,21 +8,29 @@ namespace exception {
 
 ////// wibble::exception::Regexp
 
-Regexp::Regexp(const regex_t& re, int code,
-				const string& context) throw ()
-			: Generic(context), m_code(code)
+namespace {
+
+std::string format_re_msg(const regex_t& re, int code, const string& user_msg)
 {
-	int size = 64;
-	char* msg = new char[size];
-	int nsize = regerror(code, &re, msg, size);
-	if (nsize > size)
-	{
-		delete[] msg;
-		msg = new char[nsize];
-		regerror(code, &re, msg, nsize);
-	}
-	m_message = msg;
-	delete[] msg;
+    int size = 64;
+    char* msg = new char[size];
+    int nsize = regerror(code, &re, msg, size);
+    if (nsize > size)
+    {
+        delete[] msg;
+        msg = new char[nsize];
+        regerror(code, &re, msg, nsize);
+    }
+    string m_message = user_msg + ": " + msg;
+    delete[] msg;
+    return m_message;
+}
+
+}
+
+Regexp::Regexp(const regex_t& re, int code, const string& msg)
+    : std::runtime_error(format_re_msg(re, code, msg))
+{
 }
 
 }

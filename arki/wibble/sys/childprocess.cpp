@@ -1,47 +1,25 @@
-/*
- * OO base class for process functions and child processes
- *
- * Copyright (C) 2003--2006  Enrico Zini <enrico@debian.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-#include <arki/wibble/sys/childprocess.h>
-
+#include "childprocess.h"
+#include "arki/exceptions.h"
 #include <stdlib.h>		// EXIT_FAILURE
 #include <sys/types.h>		// fork, waitpid, kill, open, getpw*, getgr*, initgroups
 #include <sys/stat.h>		// open
 #include <unistd.h>			// fork, dup2, pipe, close, setsid, _exit, chdir
 #include <fcntl.h>			// open
-
 #include <sys/resource.h>	// getrlimit, setrlimit
 #include <sys/wait.h>		// waitpid
 #include <signal.h>			// kill
 #include <pwd.h>			// getpw*
 #include <grp.h>			// getgr*, initgroups
-
 #include <stdio.h>			// flockfile, funlockfile
 #include <ctype.h>			// is*
 #include <errno.h>
-
 #include <sstream>
+
+using namespace arki;
+using namespace std;
 
 namespace wibble {
 namespace sys {
-
-using namespace std;
-namespace wexcept = wibble::exception;
 
 void ChildProcess::spawnChild() {
 }
@@ -79,7 +57,7 @@ pid_t ChildProcess::fork()
         funlockfile(stdin);
         funlockfile(stderr);
         funlockfile(stdout);
-        throw wexcept::System("trying to fork a child process");
+        throw_system_error("trying to fork a child process");
 
     } else {
         funlockfile(stdin);
@@ -97,7 +75,7 @@ pid_t ChildProcess::fork()
 void mkpipe( int *fds, int *infd, int *outfd, const char *err )
 {
     if (pipe(fds) == -1)
-        throw wexcept::System( err );
+        throw_system_error( err );
     if (infd)
         *infd = fds[0];
     if (outfd)
@@ -107,9 +85,9 @@ void mkpipe( int *fds, int *infd, int *outfd, const char *err )
 void renamefd( int _old, int _new, const char *err = "..." )
 {
     if ( dup2( _old, _new ) == -1 )
-        throw wexcept::System( err );
+        throw_system_error( err );
     if ( close( _old ) == -1 )
-        throw wexcept::System( err );
+        throw_system_error( err );
 }
 
 void ChildProcess::setupRedirects(int* _stdinfd, int* _stdoutfd, int* _stderrfd) {
@@ -139,7 +117,7 @@ void ChildProcess::setupChild() {
     if (_stdin) {
         // Redirect input from the parent to _stdin
         if (close(pipes[0][1]) == -1)
-            throw wexcept::System("closing write end of parent _stdin pipe");
+            throw_system_error("closing write end of parent _stdin pipe");
 
         renamefd( pipes[0][0], STDIN_FILENO, "renaming parent _stdin pipe fd" );
     }
@@ -147,18 +125,18 @@ void ChildProcess::setupChild() {
     if (_stdout) {
         // Redirect output to the parent _stdout fd
         if (close(pipes[1][0]) == -1)
-            throw wexcept::System("closing read end of parent _stdout pipe");
+            throw_system_error("closing read end of parent _stdout pipe");
 
         if (_stderr == _stdout)
             if (dup2(pipes[1][1], STDERR_FILENO) == -1)
-                throw wexcept::System( "dup2-ing _stderr to parent _stdout/_stderr pipe");
+                throw_system_error( "dup2-ing _stderr to parent _stdout/_stderr pipe");
         renamefd( pipes[1][1], STDOUT_FILENO, "renaming parent _stdout pipe" );
     }
 
     if (_stderr && _stderr != _stdout) {
         // Redirect all output to the parent
         if (close(pipes[2][0]) == -1)
-            throw wexcept::System("closing read end of parent _stderr pipe");
+            throw_system_error("closing read end of parent _stderr pipe");
 
         renamefd( pipes[2][1], STDERR_FILENO, "renaming parent _stderr pipe" );
     }
@@ -170,18 +148,18 @@ void ChildProcess::setupParent() {
     funlockfile(stdout);
 
     if (_stdin && close(pipes[0][0]) == -1)
-        throw wexcept::System("closing read end of _stdin child pipe");
+        throw_system_error("closing read end of _stdin child pipe");
     if (_stdout && close(pipes[1][1]) == -1)
-        throw wexcept::System("closing write end of _stdout child pipe");
+        throw_system_error("closing write end of _stdout child pipe");
     if (_stderr && _stderr != _stdout && close(pipes[2][1]) == -1)
-        throw wexcept::System("closing write end of _stderr child pipe");
+        throw_system_error("closing write end of _stderr child pipe");
 }
 
 void ChildProcess::waitError() {
     if (errno == EINTR)
-        throw wexcept::Interrupted("waiting for child termination");
+        throw std::runtime_error("system call interrupted while waiting for child termination");
     else
-        throw wexcept::System("waiting for child termination");
+        throw_system_error("waiting for child termination");
 }
 
 bool ChildProcess::running()
@@ -239,14 +217,12 @@ void ChildProcess::waitForSuccess() {
 void ChildProcess::kill(int signal)
 {
     if (_pid == -1)
-        throw wexcept::Consistency(
-            "killing child process",
-            "child process has not been started");
+        throw std::runtime_error("cannot kill child process: child process has not been started");
     if (::kill(_pid, signal) == -1)
     {
         stringstream str;
         str << "killing process " << _pid;
-        throw wibble::exception::System(str.str());
+        throw_system_error(str.str());
     }
 }
 

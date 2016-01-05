@@ -1,8 +1,7 @@
-#include "config.h"
-
-#include <arki/emitter/json.h>
-#include <arki/wibble/exception.h>
-#include <arki/utils/string.h>
+#include "json.h"
+#include "arki/libconfig.h"
+#include "arki/utils/string.h"
+#include "arki/exceptions.h"
 #include <cctype>
 #include <cmath>
 
@@ -23,17 +22,17 @@ void JSON::val_head()
             case LIST_FIRST: stack.back() = LIST; break;
             case LIST:
                 out << ",";
-                if (out.bad()) throw wibble::exception::System("write failed");
+                if (out.bad()) throw_system_error("write failed");
                 break;
             case MAPPING_KEY_FIRST: stack.back() = MAPPING_VAL; break;
             case MAPPING_KEY:
                 out << ",";
-                if (out.bad()) throw wibble::exception::System("write failed");
+                if (out.bad()) throw_system_error("write failed");
                 stack.back() = MAPPING_VAL;
                 break;
             case MAPPING_VAL:
                 out << ":";
-                if (out.bad()) throw wibble::exception::System("write failed");
+                if (out.bad()) throw_system_error("write failed");
                 stack.back() = MAPPING_KEY;
                 break;
         }
@@ -45,7 +44,7 @@ void JSON::add_null()
     val_head();
 
     out << "null";
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
 }
 
 void JSON::add_bool(bool val)
@@ -56,14 +55,14 @@ void JSON::add_bool(bool val)
         out << "true";
     else
         out << "false";
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
 }
 
 void JSON::add_int(long long int val)
 {
     val_head();
     out << val;
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
 }
 
 void JSON::add_double(double val)
@@ -76,7 +75,7 @@ void JSON::add_double(double val)
         out << (int)vint << ".0";
     else
         out << val;
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
 }
 
 void JSON::add_string(const std::string& val)
@@ -97,7 +96,7 @@ void JSON::add_string(const std::string& val)
             default: out << *i; break;
         }
     out << '"';
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
 }
 
 void JSON::add_break()
@@ -105,33 +104,33 @@ void JSON::add_break()
     // Always use \n on any platform, to prevent ambiguities in case real data
     // start with \r or \n
     out << '\n';
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
 }
 
 void JSON::add_raw(const std::string& val)
 {
     out.write(val.data(), val.size());
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
 }
 
 void JSON::add_raw(const std::vector<uint8_t>& val)
 {
     out.write((const char*)val.data(), val.size());
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
 }
 
 void JSON::start_list()
 {
     val_head();
     out << "[";
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
     stack.push_back(LIST_FIRST);
 }
 
 void JSON::end_list()
 {
     out << "]";
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
     stack.pop_back();
 }
 
@@ -139,23 +138,21 @@ void JSON::start_mapping()
 {
     val_head();
     out << "{";
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
     stack.push_back(MAPPING_KEY_FIRST);
 }
 
 void JSON::end_mapping()
 {
     out << "}";
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
     stack.pop_back();
 }
 
-struct JSONParseException : public wibble::exception::Consistency
+struct JSONParseException : public std::runtime_error
 {
     JSONParseException(const std::string& msg)
-        : wibble::exception::Consistency("parsing JSON", msg) {}
-
-    virtual const char* type() const throw () { return "JSONParse"; }
+        : std::runtime_error("cannot parse JSON: " + msg) {}
 };
 
 static void parse_spaces(std::istream& in)

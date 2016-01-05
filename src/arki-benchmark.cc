@@ -1,23 +1,23 @@
 /// arki-benchmark - Run an arkimet import and query benchmark
 #include "config.h"
-#include <arki/wibble/exception.h>
-#include <arki/utils/commandline/parser.h>
-#include <arki/wibble/sys/process.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/summary.h>
+#include "arki/exceptions.h"
+#include "arki/utils/commandline/parser.h"
+#include "arki/wibble/sys/process.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/summary.h"
 #ifdef HAVE_GRIBAPI
-#include <arki/scan/grib.h>
+#include "arki/scan/grib.h"
 #endif
 #ifdef HAVE_DBALLE
-#include <arki/scan/bufr.h>
+#include "arki/scan/bufr.h"
 #endif
-#include <arki/matcher.h>
-#include <arki/dataset.h>
-#include <arki/utils.h>
-#include <arki/utils/sys.h>
-#include <arki/utils/string.h>
-#include <arki/runtime.h>
+#include "arki/matcher.h"
+#include "arki/dataset.h"
+#include "arki/utils.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
+#include "arki/runtime.h"
 #include "bench/benchmark.h"
 #include <iostream>
 #include <sys/stat.h>
@@ -283,7 +283,7 @@ int main(int argc, const char* argv[])
 
 		// We don't want buffered stdout
 		if (setvbuf(stdout, NULL, _IOLBF, 0) != 0)
-			throw wibble::exception::System("setting stdout to line-buffered mode");
+			throw_system_error("setting stdout to line-buffered mode");
 
 		if (opts.parse(argc, argv))
 			return 0;

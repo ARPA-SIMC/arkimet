@@ -1,29 +1,11 @@
-/*
- * OO wrapper for execve
- *
- * Copyright (C) 2003  Enrico Zini <enrico@debian.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
-#include <arki/wibble/sys/exec.h>
-
+#include "arki/wibble/sys/exec.h"
+#include "arki/exceptions.h"
 #include <string.h>			// strdup
 #include <unistd.h>			// execve
 #include <malloc.h> // alloca on win32 seems to live there
 #include <iostream>
+
+using namespace arki;
 
 extern char **environ;
 
@@ -80,17 +62,15 @@ void Exec::exec()
     if (searchInPath)
     {
         if (execvpe(pathname.c_str(), exec_args, exec_env) == -1)
-            throw wibble::exception::System("trying to run " + pathname);
+            throw_system_error("trying to run " + pathname);
     } else {
         if (execve(pathname.c_str(), exec_args, exec_env) == -1)
-            throw wibble::exception::System("trying to run " + pathname);
+            throw_system_error("trying to run " + pathname);
     }
 
     delete[] exec_args;
     if (exec_env != environ) delete[] exec_env;
-	throw wibble::exception::Consistency(
-			"trying to run " + pathname,
-			"Program flow continued after successful exec()");
+    throw std::runtime_error("cannot run run " + pathname + ": program flow continued after successful exec()");
 }
 
 }

@@ -1,9 +1,11 @@
-#include <arki/wibble/sys/filelock.h>
+#include "arki/wibble/sys/filelock.h"
+#include "arki/exceptions.h"
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <arki/wibble/exception.h>
+
+using namespace arki;
 
 namespace wibble {
 namespace sys {
@@ -17,7 +19,7 @@ FileLock::FileLock(int fd, short l_type, short l_whence, off_t l_start, off_t l_
     lock.l_start = l_start;
     lock.l_len = l_len;
     if (fcntl(fd, F_SETLKW, &lock) == -1)
-        throw wibble::exception::System("locking file");
+        throw_system_error("locking file");
 }
 
 FileLock::~FileLock()

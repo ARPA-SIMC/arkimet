@@ -3,6 +3,7 @@
 
 /// HTTP server utilities
 
+#include <vector>
 #include <string>
 #include <map>
 #include <arki/utils/net/mime.h>

@@ -1,37 +1,37 @@
 /// Arkimet server
 #include "config.h"
-#include <arki/wibble/exception.h>
-#include <arki/utils/commandline/parser.h>
-#include <arki/utils/string.h>
-#include <arki/wibble/sys/process.h>
-#include <arki/wibble/sys/childprocess.h>
-#include <arki/wibble/log/stream.h>
-#include <arki/wibble/log/syslog.h>
-#include <arki/wibble/log/file.h>
-#include <arki/wibble/log/ostream.h>
-#include <arki/wibble/log/filters.h>
-#include <arki/configfile.h>
-#include <arki/dataset.h>
-#include <arki/dataset/http.h>
-#include <arki/dataset/http/server.h>
-#include <arki/dataset/http/inbound.h>
-#include <arki/dataset/merged.h>
-#include <arki/dataset/file.h>
-#include <arki/summary.h>
-#include <arki/matcher.h>
-#include <arki/formatter.h>
-#include <arki/dispatcher.h>
-#include <arki/report.h>
-#include <arki/utils.h>
-#include <arki/utils/files.h>
-#include <arki/nag.h>
-#include <arki/runtime.h>
-#include <arki/runtime/config.h>
-#include <arki/emitter/json.h>
-#include <arki/utils/sys.h>
-#include <arki/utils/string.h>
-#include <arki/utils/net/server.h>
-#include <arki/utils/net/http.h>
+#include "arki/exceptions.h"
+#include "arki/utils/commandline/parser.h"
+#include "arki/utils/string.h"
+#include "arki/wibble/sys/process.h"
+#include "arki/wibble/sys/childprocess.h"
+#include "arki/wibble/log/stream.h"
+#include "arki/wibble/log/syslog.h"
+#include "arki/wibble/log/file.h"
+#include "arki/wibble/log/ostream.h"
+#include "arki/wibble/log/filters.h"
+#include "arki/configfile.h"
+#include "arki/dataset.h"
+#include "arki/dataset/http.h"
+#include "arki/dataset/http/server.h"
+#include "arki/dataset/http/inbound.h"
+#include "arki/dataset/merged.h"
+#include "arki/dataset/file.h"
+#include "arki/summary.h"
+#include "arki/matcher.h"
+#include "arki/formatter.h"
+#include "arki/dispatcher.h"
+#include "arki/report.h"
+#include "arki/utils.h"
+#include "arki/utils/files.h"
+#include "arki/nag.h"
+#include "arki/runtime.h"
+#include "arki/runtime/config.h"
+#include "arki/emitter/json.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
+#include "arki/utils/net/server.h"
+#include "arki/utils/net/http.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -258,9 +258,9 @@ struct ScriptHandlers
 
         // Connect stdin and stdout to the socket
         if (dup2(req.sock, 0) < 0)
-            throw wibble::exception::System("redirecting input socket to stdin");
+            throw_system_error("redirecting input socket to stdin");
         if (dup2(req.sock, 1) < 0)
-            throw wibble::exception::System("redirecting input socket to stdout");
+            throw_system_error("redirecting input socket to stdout");
 
         // Create and populate the Lua VM
         Lua L;
@@ -580,7 +580,7 @@ struct DatasetHandler : public LocalHandler
             srv.do_queryBytes(params, req);
         }
         else
-            throw wibble::exception::Consistency("Unknown dataset action: \"" + action + "\"");
+            throw std::runtime_error("Unknown dataset action: \"" + action + "\"");
     }
 };
 
@@ -909,9 +909,9 @@ struct HTTP : public net::TCPServer
         timeout.tv_sec = 300;
         timeout.tv_usec = 0;
         if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(struct timeval)) < 0)
-            throw wibble::exception::System("setting SO_RCVTIMEO on socket");
+            throw_system_error("setting SO_RCVTIMEO on socket");
         if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(struct timeval)) < 0)
-            throw wibble::exception::System("setting SO_SNDTIMEO on socket");
+            throw_system_error("setting SO_SNDTIMEO on socket");
 
         Request req(log);
         req.server_software = SERVER_SOFTWARE;
@@ -964,7 +964,7 @@ struct HTTP : public net::TCPServer
                         if (errno == ECHILD)
                             break;
                         else
-                            throw wibble::exception::System("checking for childred that exited");
+                            throw_system_error("checking for childred that exited");
                     }
                     log << log::INFO << "Child " << pid << " ended" << endl;
 
@@ -1116,7 +1116,7 @@ struct ServerProcess : public wibble::sys::ChildProcess
         // The master socket will be closed, the child workers will keep
         // working and we will get SIGCHLD from them
         if (execve(argv0.c_str(), argv, envp) < 0)
-            throw wibble::exception::System("reloading server");
+            throw_system_error("reloading server");
     }
 };
 

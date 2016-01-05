@@ -7,7 +7,6 @@
 #include "types/reftime.h"
 #include "utils/string.h"
 #include "utils/sys.h"
-#include "arki/wibble/exception.h"
 
 using namespace std;
 using namespace arki::types;
@@ -19,44 +18,40 @@ static inline Matcher getFilter(const ConfigFile* cfg)
 {
     try {
         return Matcher::parse(cfg->value("filter"));
-    } catch (wibble::exception::Generic& e) {
+    } catch (std::runtime_error& e) {
         const ConfigFile::FilePos* fp = cfg->valueInfo("filter");
         if (fp)
         {
             stringstream ss;
-            ss << "in file " << fp->pathname << ":" << fp->lineno;
-            e.addContext(ss.str());
+            ss << fp->pathname << ":" << fp->lineno << ": " << e.what();
+            throw std::runtime_error(ss.str());
         }
         throw;
     }
 }
 
 Dispatcher::Dispatcher(const ConfigFile& cfg)
-	: m_can_continue(true), m_outbound_failures(0)
+    : m_can_continue(true), m_outbound_failures(0)
 {
-	// Validate the configuration, and split normal datasets from outbound
-	// datasets
-	for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
-			i != cfg.sectionEnd(); ++i)
-	{
-		if (i->first == "error" or i->first == "duplicates")
-			continue;
-		else if (i->second->value("type") == "outbound")
-		{
-			if (i->second->value("filter").empty())
-				throw wibble::exception::Consistency(
-						"configuration of dataset '"+i->first+"' does not have a 'filter' directive",
-						"reading dataset configuration");
-			outbounds.push_back(make_pair(i->first, getFilter(i->second)));
-		}
-		else {
-			if (i->second->value("filter").empty())
-				throw wibble::exception::Consistency(
-						"configuration of dataset '"+i->first+"' does not have a 'filter' directive",
-						"reading dataset configuration");
-			datasets.push_back(make_pair(i->first, getFilter(i->second)));
-		}
-	}
+    // Validate the configuration, and split normal datasets from outbound
+    // datasets
+    for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
+            i != cfg.sectionEnd(); ++i)
+    {
+        if (i->first == "error" or i->first == "duplicates")
+            continue;
+        else if (i->second->value("type") == "outbound")
+        {
+            if (i->second->value("filter").empty())
+                throw std::runtime_error("configuration of dataset '"+i->first+"' does not have a 'filter' directive");
+            outbounds.push_back(make_pair(i->first, getFilter(i->second)));
+        }
+        else {
+            if (i->second->value("filter").empty())
+                throw std::runtime_error("configuration of dataset '"+i->first+"' does not have a 'filter' directive");
+            datasets.push_back(make_pair(i->first, getFilter(i->second)));
+        }
+    }
 }
 
 Dispatcher::~Dispatcher()
@@ -213,16 +208,15 @@ done:
 
 
 RealDispatcher::RealDispatcher(const ConfigFile& cfg)
-	: Dispatcher(cfg), pool(cfg), dserror(0), dsduplicates(0)
+    : Dispatcher(cfg), pool(cfg), dserror(0), dsduplicates(0)
 {
-	// Instantiate the error dataset in the cache
-	dserror = pool.get("error");
-	if (!dserror)
-		throw wibble::exception::Consistency(
-			"no [error] dataset found", "reading dataset configuration");
+    // Instantiate the error dataset in the cache
+    dserror = pool.get("error");
+    if (!dserror)
+        throw std::runtime_error("no [error] dataset found");
 
-	// Instantiate the duplicates dataset in the cache
-	dsduplicates = pool.get("duplicates");
+    // Instantiate the duplicates dataset in the cache
+    dsduplicates = pool.get("duplicates");
 }
 
 RealDispatcher::~RealDispatcher()
@@ -260,11 +254,10 @@ void RealDispatcher::flush() { pool.flush(); }
 
 
 TestDispatcher::TestDispatcher(const ConfigFile& cfg, std::ostream& out)
-	: Dispatcher(cfg), cfg(cfg), out(out), m_count(0)
+    : Dispatcher(cfg), cfg(cfg), out(out), m_count(0)
 {
-	if (!cfg.section("error"))
-		throw wibble::exception::Consistency(
-			"no [error] dataset found", "reading dataset configuration");
+    if (!cfg.section("error"))
+        throw std::runtime_error("no [error] dataset found");
 }
 TestDispatcher::~TestDispatcher() {}
 

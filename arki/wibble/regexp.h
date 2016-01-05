@@ -1,29 +1,11 @@
 #ifndef WIBBLE_REGEXP_H
 #define WIBBLE_REGEXP_H
 
-/*
- * OO wrapper for regular expression functions
- * 
- * Copyright (C) 2003--2006  Enrico Zini <enrico@debian.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
+/// OO wrapper for regular expression functions
 
-#include <arki/wibble/exception.h>
 #include <sys/types.h>
 #include <regex.h>
+#include <stdexcept>
 #include <cstddef>
 
 namespace wibble {
@@ -31,22 +13,10 @@ namespace exception {
 
 ////// wibble::exception::Regexp
 
-class Regexp : public wibble::exception::Generic
+class Regexp : public std::runtime_error
 {
-protected:
-	int m_code;
-	std::string m_message;
-
 public:
-	Regexp(const regex_t& re, int code, const std::string& context)
-		throw ();
-	~Regexp() throw () {}
-
-	/// Get the regexp error code associated to the exception
-	virtual int code() const throw () { return m_code; }
-
-	virtual const char* type() const throw () { return "Regexp"; }
-	virtual std::string desc() const throw () { return m_message; }
+    Regexp(const regex_t& re, int code, const std::string& msg);
 };
 
 }

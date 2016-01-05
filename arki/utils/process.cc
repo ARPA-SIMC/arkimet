@@ -1,7 +1,8 @@
 #include "config.h"
 #include "process.h"
-#include <arki/wibble/sys/childprocess.h>
-#include <arki/wibble/sys/process.h>
+#include "arki/exceptions.h"
+#include "arki/wibble/sys/childprocess.h"
+#include "arki/wibble/sys/process.h"
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -79,7 +80,7 @@ int Subcommand::main()
         // Exec the filter
         //cerr << "RUN " << args[0] << " args: " << str::join(&argv[0], &argv[args.size()]) << endl;
         execv(args[0].c_str(), (char* const*)argv);
-        throw wibble::exception::System("running postprocessing filter");
+        throw_system_error("running postprocessing filter");
     } catch (std::exception& e) {
         cerr << e.what() << endl;
         return 1;
@@ -116,7 +117,7 @@ void IODispatcher::close_infd()
     {
         //cerr << "Closing pipe" << endl;
         if (close(infd) < 0)
-            throw wibble::exception::System("closing output to filter child process");
+            throw_system_error("closing output to filter child process");
         infd = -1;
     }
 }
@@ -127,7 +128,7 @@ void IODispatcher::close_outfd()
     {
         //cerr << "Closing pipe" << endl;
         if (close(outfd) < 0)
-            throw wibble::exception::System("closing input from child standard output");
+            throw_system_error("closing input from child standard output");
         outfd = -1;
     }
 }
@@ -138,7 +139,7 @@ void IODispatcher::close_errfd()
     {
         //cerr << "Closing pipe" << endl;
         if (close(errfd) < 0)
-            throw wibble::exception::System("closing input from child standard error");
+            throw_system_error("closing input from child standard error");
         errfd = -1;
     }
 }
@@ -149,14 +150,14 @@ bool IODispatcher::fd_to_stream(int in, std::ostream& out)
     char buf[4096*2];
     ssize_t res = read(in, buf, 4096*2);
     if (res < 0)
-        throw wibble::exception::System("reading from child stderr");
+        throw_system_error("reading from child stderr");
     if (res == 0)
         return false;
 
     // Pass it on
     out.write(buf, res);
     if (out.bad())
-        throw wibble::exception::System("writing to destination stream");
+        throw_system_error("writing to destination stream");
     return true;
 }
 
@@ -166,7 +167,7 @@ bool IODispatcher::discard_fd(int in)
     char buf[4096*2];
     ssize_t res = read(in, buf, 4096*2);
     if (res < 0)
-        throw wibble::exception::System("reading from child stderr");
+        throw_system_error("reading from child stderr");
     if (res == 0)
         return false;
     return true;
@@ -211,9 +212,9 @@ size_t IODispatcher::send(const void* buf, size_t size)
 
         int res = pselect(nfds, poutfds, &infds, NULL, timeout_param, NULL);
         if (res < 0)
-            throw wibble::exception::System("waiting for activity on filter child process");
+            throw_system_error("waiting for activity on filter child process");
         if (res == 0)
-            throw wibble::exception::Consistency("timeout waiting for activity on filter child process");
+            throw std::runtime_error("timeout waiting for activity on filter child process");
 
         if (infd != -1 && FD_ISSET(infd, &infds))
         {
@@ -227,7 +228,7 @@ size_t IODispatcher::send(const void* buf, size_t size)
                     close_infd();
                 }
                 else
-                    throw wibble::exception::System("writing to child process");
+                    throw_system_error("writing to child process");
             } else {
                 written += res;
             }
@@ -274,9 +275,9 @@ void IODispatcher::flush()
 
         int res = pselect(nfds, &outfds, NULL, NULL, timeout_param, NULL);
         if (res < 0)
-            throw wibble::exception::System("waiting for activity on filter child process");
+            throw_system_error("waiting for activity on filter child process");
         if (res == 0)
-            throw wibble::exception::Consistency("timeout waiting for activity on filter child process");
+            throw std::runtime_error("timeout waiting for activity on filter child process");
 
         if (outfd != -1 && FD_ISSET(outfd, &outfds))
             read_stdout();
