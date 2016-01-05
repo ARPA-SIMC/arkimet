@@ -1,4 +1,5 @@
 #include "dir.h"
+#include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
@@ -8,7 +9,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/scan/any.h"
-#include <arki/wibble/exception.h>
 #include <arki/utils/string.h>
 #include <cerrno>
 #include <cstring>
@@ -45,7 +45,7 @@ struct FdLock
         lock.l_len = 0;
         // Use SETLKW, so that if it is already locked, we just wait
         if (fcntl(fd, F_SETLKW, &lock) == -1)
-            throw wibble::exception::File(pathname, "locking the file for writing");
+            throw_file_error(pathname, "cannot lock the file for writing");
     }
 
     ~FdLock()
@@ -115,7 +115,7 @@ void SequenceFile::open()
 {
     fd = ::open(pathname.c_str(), O_RDWR | O_CREAT | O_CLOEXEC | O_NOATIME | O_NOFOLLOW, 0666);
     if (fd == -1)
-        throw wibble::exception::File(pathname, "cannot open sequence file");
+        throw_file_error(pathname, "cannot open sequence file");
 }
 
 void SequenceFile::close()
@@ -133,7 +133,7 @@ std::pair<std::string, size_t> SequenceFile::next(const std::string& format)
     // Read the value in the sequence file
     ssize_t count = pread(fd, &cur, sizeof(cur), 0);
     if (count < 0)
-        throw wibble::exception::File(pathname, "cannot read sequence file");
+        throw_file_error(pathname, "cannot read sequence file");
 
     if ((size_t)count < sizeof(cur))
         cur = 0;
@@ -143,7 +143,7 @@ std::pair<std::string, size_t> SequenceFile::next(const std::string& format)
     // Write it out
     count = pwrite(fd, &cur, sizeof(cur), 0);
     if (count < 0)
-        throw wibble::exception::File(pathname, "cannot write sequence file");
+        throw_file_error(pathname, "cannot write sequence file");
 
     return make_pair(str::joinpath(dirname, data_fname(cur, format)), (size_t)cur);
 }
@@ -161,7 +161,7 @@ void SequenceFile::open_next(const std::string& format, std::string& absname, si
             pos = dest.second;
             return;
         }
-        if (errno != EEXIST) throw wibble::exception::File(dest.first, "cannot create file");
+        if (errno != EEXIST) throw_file_error(dest.first, "cannot create file");
     }
 }
 
@@ -205,10 +205,10 @@ size_t Segment::write_file(Metadata& md, int fd, const std::string& absname)
 
         ssize_t count = pwrite(fd, buf.data(), buf.size(), 0);
         if (count < 0)
-            throw wibble::exception::File(absname, "cannot write file");
+            throw_file_error(absname, "cannot write file");
 
         if (fdatasync(fd) < 0)
-            throw wibble::exception::File(absname, "flushing write");
+            throw_file_error(absname, "cannot flush write");
 
         return buf.size();
     } catch (...) {
@@ -234,7 +234,7 @@ off_t Segment::append(Metadata& md)
 
 off_t Segment::append(const std::vector<uint8_t>& buf)
 {
-    throw wibble::exception::Consistency("dir::Segment::append not implemented");
+    throw std::runtime_error("dir::Segment::append not implemented");
 }
 
 Pending Segment::append(Metadata& md, off_t* ofs)
@@ -264,7 +264,7 @@ off_t Segment::link(const std::string& srcabsname)
             break;
         }
         if (errno != EEXIST)
-            throw wibble::exception::System("cannot link " + srcabsname + " as " + dest.first);
+            throw_system_error("cannot link " + srcabsname + " as " + dest.first);
     }
     return pos;
 }
@@ -417,11 +417,11 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds)
 
             // Move the old directory inside the emp dir, to free the old directory name
             if (rename(absname.c_str(), tmppos.c_str()))
-                throw wibble::exception::System("cannot rename " + absname + " to " + tmppos);
+                throw_system_error("cannot rename " + absname + " to " + tmppos);
 
             // Rename the data file to its final name
             if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
-                throw wibble::exception::System("cannot rename " + tmpabsname + " to " + absname
+                throw_system_error("cannot rename " + tmpabsname + " to " + absname
                     + " (ATTENTION: please check if you need to rename " + tmppos + " to " + absname
                     + " manually to restore the dataset as it was before the repack)");
 
@@ -496,7 +496,7 @@ unique_ptr<dir::Segment> HoleSegment::make_segment(const std::string& format, co
 
 OstreamWriter::OstreamWriter()
 {
-    throw wibble::exception::Consistency("dir::OstreamWriter not implemented");
+    throw std::runtime_error("dir::OstreamWriter not implemented");
 }
 
 OstreamWriter::~OstreamWriter()
@@ -505,12 +505,12 @@ OstreamWriter::~OstreamWriter()
 
 size_t OstreamWriter::stream(Metadata& md, std::ostream& out) const
 {
-    throw wibble::exception::Consistency("dir::OstreamWriter::stream not implemented");
+    throw std::runtime_error("dir::OstreamWriter::stream not implemented");
 }
 
 size_t OstreamWriter::stream(Metadata& md, int out) const
 {
-    throw wibble::exception::Consistency("dir::OstreamWriter::stream not implemented");
+    throw std::runtime_error("dir::OstreamWriter::stream not implemented");
 }
 
 HoleSegment::HoleSegment(const std::string& format, const std::string& relname, const std::string& absname)
@@ -524,7 +524,7 @@ size_t HoleSegment::write_file(Metadata& md, int fd, const std::string& absname)
 
     try {
         if (ftruncate(fd, md.data_size()) == -1)
-            throw wibble::exception::File(absname, "cannot set file size");
+            throw_file_error(absname, "cannot set file size");
 
         return md.data_size();
     } catch (...) {

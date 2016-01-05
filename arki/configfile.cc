@@ -145,7 +145,7 @@ void ConfigFile::parse(std::istream& in, const std::string& fileName)
     {
         getline(in, line);
         if (in.fail() && !in.eof())
-            throw_system_error(fileName + ": cannot read one line");
+            throw_file_error(fileName, "cannot read one line");
 		if (h.sec_start.match(line))
 		{
 			string name = h.sec_start[1];
