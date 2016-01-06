@@ -2,6 +2,7 @@
 #include "arki/metadata.h"
 #include "arki/summary.h"
 #include "arki/dataset.h"
+#include "arki/dataset/reporter.h"
 #include "arki/types/reftime.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"

@@ -6,6 +6,7 @@
 #include "arki/dataset/simple/reader.h"
 #include "arki/dataset/simple/writer.h"
 #include "arki/dataset/index/manifest.h"
+#include "arki/dataset/reporter.h"
 #include "arki/dispatcher.h"
 #include "arki/scan/grib.h"
 #include "arki/scan/vm2.h"

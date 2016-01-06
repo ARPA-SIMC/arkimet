@@ -9,7 +9,7 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils.h"
-#include "arki/dataset.h"
+#include "arki/dataset/reporter.h"
 #include "arki/nag.h"
 #include <algorithm>
 #include <sys/types.h>

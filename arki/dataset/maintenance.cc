@@ -4,6 +4,7 @@
 #include <arki/dataset/archive.h>
 #include <arki/metadata/collection.h>
 #include <arki/dataset/step.h>
+#include <arki/dataset/reporter.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/compress.h>

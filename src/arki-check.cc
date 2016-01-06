@@ -5,6 +5,7 @@
 #include <arki/configfile.h>
 #include <arki/datasetpool.h>
 #include <arki/dataset/local.h>
+#include <arki/dataset/reporter.h>
 #include <arki/metadata/consumer.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/nag.h>

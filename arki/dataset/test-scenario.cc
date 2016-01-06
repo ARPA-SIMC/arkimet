@@ -4,6 +4,7 @@
 #include <arki/dataset/archive.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/dataset/indexed.h>
+#include <arki/dataset/reporter.h>
 #include <arki/metadata/test-generator.h>
 #include <arki/metadata/consumer.h>
 #include <arki/scan/any.h>

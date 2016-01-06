@@ -3,7 +3,7 @@
 #include <arki/types/source/blob.h>
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
-#include <arki/dataset.h>
+#include <arki/dataset/reporter.h>
 
 using namespace std;
 using namespace arki;

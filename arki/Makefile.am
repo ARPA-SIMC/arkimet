@@ -26,6 +26,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		bbox.h \
 		configfile.h \
 		libconfig.h \
+		dataset/reporter.h \
 		dataset/archive.h \
 		dataset/segment.h \
 		dataset/segment/fd.h \
@@ -478,6 +479,7 @@ libarkimet_la_SOURCES += \
 		metadata/xargs.cc \
 		targetfile.cc \
 		dataset.cc \
+		dataset/reporter.cc \
 		dataset/segment.cc \
 		dataset/segment/fd.cc \
 		dataset/segment/concat.cc \
@@ -522,6 +524,7 @@ tests_arki_test_SOURCES += \
 		targetfile-tut.cc \
 		metadata/xargs-tut.cc \
 		dataset/tests.cc \
+		dataset/reporter-test.cc \
 		dataset/segment-tut.cc \
 		dataset/segment/tests.cc \
 		dataset/segment/fd-tut.cc \

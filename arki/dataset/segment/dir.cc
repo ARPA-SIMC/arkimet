@@ -9,7 +9,7 @@
 #include "arki/utils/sys.h"
 #include "arki/scan/any.h"
 #include "arki/utils/string.h"
-#include "arki/dataset.h"
+#include "arki/dataset/reporter.h"
 #include <cerrno>
 #include <cstring>
 #include <cstdint>

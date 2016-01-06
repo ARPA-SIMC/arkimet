@@ -4,6 +4,7 @@
 #include "simple/writer.h"
 #include "maintenance.h"
 #include "archive.h"
+#include "reporter.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/scan/any.h"

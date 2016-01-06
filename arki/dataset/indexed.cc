@@ -2,6 +2,7 @@
 #include "index.h"
 #include "maintenance.h"
 #include "step.h"
+#include "reporter.h"
 #include "arki/scan/dir.h"
 #include "arki/metadata/collection.h"
 #include <algorithm>

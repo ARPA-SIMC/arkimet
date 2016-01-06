@@ -1,6 +1,7 @@
 #include "arki/dataset/ondisk2/test-utils.h"
 #include "arki/dataset/ondisk2/writer.h"
 #include "arki/dataset/ondisk2/reader.h"
+#include "arki/dataset/reporter.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
