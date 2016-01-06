@@ -3,7 +3,7 @@
 #include "libconfig.h"
 #include "exceptions.h"
 #include "utils/string.h"
-#include <arki/wibble/regexp.h>
+#include "utils/regexp.h"
 #include <cctype>
 #include <sstream>
 #include <cstdio>
@@ -24,9 +24,9 @@ std::string ParseError::describe(const std::string& filename, int line, const st
 
 struct Parser
 {
-    wibble::ERegexp sec_start;
-    wibble::ERegexp empty_line;
-    wibble::ERegexp assignment;
+    ERegexp sec_start;
+    ERegexp empty_line;
+    ERegexp assignment;
     ConfigFile* dest = nullptr;
     LineReader& reader;
     string pathname;

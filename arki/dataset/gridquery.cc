@@ -11,7 +11,6 @@
 #ifdef HAVE_LUA
 #include <arki/report.h>
 #endif
-#include <arki/wibble/regexp.h>
 
 // #include <iostream>
 

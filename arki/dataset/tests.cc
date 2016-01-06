@@ -17,7 +17,6 @@
 #include "arki/types/proddef.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <arki/wibble/regexp.h>
 #include <arki/wibble/grcal/grcal.h>
 #include <algorithm>
 #include <cstring>

@@ -4,8 +4,8 @@
 #include "configfile.h"
 #include "utils/string.h"
 #include "utils/lua.h"
-#include <arki/wibble/regexp.h>
-#include <arki/utils/string.h>
+#include "utils/regexp.h"
+#include "utils/string.h"
 #include <memory>
 #include <cassert>
 
@@ -152,10 +152,9 @@ unique_ptr<OR> OR::parse(const MatcherType& mt, const std::string& pattern)
     const Aliases* aliases = MatcherAliasDatabase::get(mt.name);
 
     // Split 'patterns' on /\s*or\s*/i
-    wibble::Splitter splitter("[ \t]+or[ \t]+", REG_EXTENDED | REG_ICASE);
+    Splitter splitter("[ \t]+or[ \t]+", REG_EXTENDED | REG_ICASE);
 
-    for (wibble::Splitter::const_iterator i = splitter.begin(pattern);
-            i != splitter.end(); ++i)
+    for (Splitter::const_iterator i = splitter.begin(pattern); i != splitter.end(); ++i)
     {
         shared_ptr<OR> exprs = aliases ? aliases->get(str::lower(*i)) : nullptr;
         if (exprs)
@@ -263,12 +262,11 @@ unique_ptr<AND> AND::parse(const std::string& pattern)
 {
     unique_ptr<AND> res(new AND);
 
-	// Split on newlines or semicolons
-	wibble::Tokenizer tok(pattern, "[^\n;]+", REG_EXTENDED);
+    // Split on newlines or semicolons
+    Tokenizer tok(pattern, "[^\n;]+", REG_EXTENDED);
 
-	for (wibble::Tokenizer::const_iterator i = tok.begin();
-			i != tok.end(); ++i)
-	{
+    for (Tokenizer::const_iterator i = tok.begin(); i != tok.end(); ++i)
+    {
         string expr = str::strip(*i);
         if (expr.empty()) continue;
         size_t pos = expr.find(':');

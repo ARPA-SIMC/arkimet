@@ -1,15 +1,12 @@
-#include "config.h"
-
-#include <arki/sort.h>
-#include <arki/metadata.h>
-#include <arki/types/reftime.h>
-#include <arki/metadata.h>
-
-#include <arki/exceptions.h>
-#include <arki/utils/string.h>
-#include <arki/wibble/regexp.h>
-#include <arki/wibble/grcal/grcal.h>
-
+#include "arki/sort.h"
+#include "arki/libconfig.h"
+#include "arki/metadata.h"
+#include "arki/types/reftime.h"
+#include "arki/metadata.h"
+#include "arki/exceptions.h"
+#include "arki/utils/string.h"
+#include "arki/utils/regexp.h"
+#include "arki/wibble/grcal/grcal.h"
 #include <vector>
 #include <algorithm>
 #include <cctype>
@@ -68,8 +65,8 @@ class Items : public std::vector<Item>, public Compare
 public:
     Items(const std::string& expr)
     {
-        wibble::Splitter splitter("[ \t]*,[ \t]*", REG_EXTENDED);
-        for (wibble::Splitter::const_iterator i = splitter.begin(expr);
+        Splitter splitter("[ \t]*,[ \t]*", REG_EXTENDED);
+        for (Splitter::const_iterator i = splitter.begin(expr);
                 i != splitter.end(); ++i)
             push_back(Item(*i));
         if (empty())

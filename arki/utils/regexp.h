@@ -1,5 +1,5 @@
-#ifndef WIBBLE_REGEXP_H
-#define WIBBLE_REGEXP_H
+#ifndef ARKI_UTILS_REGEXP_H
+#define ARKI_UTILS_REGEXP_H
 
 /// OO wrapper for regular expression functions
 
@@ -8,18 +8,14 @@
 #include <stdexcept>
 #include <cstddef>
 
-namespace wibble {
-namespace exception {
+namespace arki {
+namespace utils {
 
-////// wibble::exception::Regexp
-
-class Regexp : public std::runtime_error
+class RegexpError : public std::runtime_error
 {
 public:
-    Regexp(const regex_t& re, int code, const std::string& msg);
+    RegexpError(const regex_t& re, int code, const std::string& msg);
 };
-
-}
 
 class Regexp
 {
@@ -30,14 +26,14 @@ protected:
 	std::string lastMatch;
 
 public:
-        /* Note that match_count is required to be >1 to enable
-           sub-regexp capture. The maximum *INCLUDES* the whole-regexp
-           match (indexed 0). [TODO we may want to fix this to be more
-           friendly?] */
-	Regexp(const std::string& expr, int match_count = 0, int flags = 0) throw (wibble::exception::Regexp);
-	~Regexp() throw ();
+    /* Note that match_count is required to be >1 to enable
+       sub-regexp capture. The maximum *INCLUDES* the whole-regexp
+       match (indexed 0). [TODO we may want to fix this to be more
+       friendly?] */
+    Regexp(const std::string& expr, int match_count = 0, int flags = 0);
+    ~Regexp() throw ();
 
-	bool match(const std::string& str, int flags = 0) throw (wibble::exception::Regexp);
+    bool match(const std::string& str, int flags = 0);
 
     /* Indexing is from 1 for capture matches, like perl's $0,
        $1... 0 is whole-regexp match, not a capture. TODO
@@ -53,14 +49,14 @@ public:
 class ERegexp : public Regexp
 {
 public:
-	ERegexp(const std::string& expr, int match_count = 0, int flags = 0) throw (wibble::exception::Regexp)
-		: Regexp(expr, match_count, flags | REG_EXTENDED) {}
+    ERegexp(const std::string& expr, int match_count = 0, int flags = 0)
+        : Regexp(expr, match_count, flags | REG_EXTENDED) {}
 };
 
 class Tokenizer
 {
-	const std::string& str;
-	wibble::Regexp re;
+    const std::string& str;
+    Regexp re;
 
 public:
 	class const_iterator
@@ -115,19 +111,19 @@ public:
  */
 class Splitter
 {
-	wibble::Regexp re;
+	Regexp re;
 
 public:
-	/**
-	 * Warning: the various iterators reuse the Regexps and therefore only one
-	 * iteration of a Splitter can be done at a given time.
-	 */
-	// TODO: add iterator_traits
-	class const_iterator
-	{
-		wibble::Regexp& re;
-		std::string cur;
-		std::string next;
+    /**
+     * Warning: the various iterators reuse the Regexps and therefore only one
+     * iteration of a Splitter can be done at a given time.
+     */
+    // TODO: add iterator_traits
+    class const_iterator
+    {
+        Regexp& re;
+        std::string cur;
+        std::string next;
 
 	public:
 		typedef std::string value_type;
@@ -136,8 +132,8 @@ public:
 		typedef value_type &reference;
 		typedef std::forward_iterator_tag iterator_category;
 
-		const_iterator(wibble::Regexp& re, const std::string& str) : re(re), next(str) { ++*this; }
-		const_iterator(wibble::Regexp& re) : re(re) {}
+        const_iterator(Regexp& re, const std::string& str) : re(re), next(str) { ++*this; }
+        const_iterator(Regexp& re) : re(re) {}
 
 		const_iterator& operator++();
 
@@ -173,6 +169,5 @@ public:
 };
 
 }
-
-// vim:set ts=4 sw=4:
+}
 #endif

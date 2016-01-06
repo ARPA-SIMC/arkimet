@@ -10,7 +10,6 @@ AM_LDFLAGS = $(EXTRA_LDFLAGS)
 arkiincludedir = $(includedir)/arki
 
 nobase_dist_arkiinclude_HEADERS = \
-		wibble/regexp.h \
 		wibble/sys/process.h \
 		wibble/sys/childprocess.h \
 		wibble/sys/exec.h \
@@ -155,6 +154,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/intern.h \
 		utils/pcounter.h \
 		utils/process.h \
+		utils/regexp.h \
 		utils/sqlite.h \
 		utils/raii.h \
 		utils/string.h \
@@ -199,7 +199,6 @@ tests_arki_test_LDADD =
 #
 if DEVEL_DO_TYPES
 libarkimet_la_SOURCES += \
-		wibble/regexp.cpp \
 		wibble/sys/fs.cpp \
 		wibble/sys/filelock.cpp \
 		wibble/sys/process.cpp \
@@ -222,6 +221,7 @@ libarkimet_la_SOURCES += \
 		utils/pcounter.cc \
 		utils/process.cc \
 		utils/raii.cc \
+		utils/regexp.cc \
 		utils/string.cc \
 		utils/sys.cc \
 		utils/yaml.cc \
@@ -301,6 +301,7 @@ tests_arki_test_SOURCES += \
 		utils/pcounter-tut.cc \
 		utils/process-tut.cc \
 		utils/raii-tut.cc \
+		utils/regexp-test.cc \
 		binary-test.cc \
 		file-test.cc \
 		configfile-test.cc \

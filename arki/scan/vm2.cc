@@ -7,7 +7,7 @@
 #include "arki/nag.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/wibble/regexp.h"
+#include "arki/utils/regexp.h"
 #include "arki/utils/lua.h"
 #include "arki/scan/any.h"
 #include "arki/types/area.h"
@@ -47,7 +47,7 @@ struct VM2Validator : public Validator
         size_t sz = fd.pread(buf, size, offset);
         std::string s((const char*)buf, sz);
 
-        wibble::Regexp re(meteo::vm2::Parser::regexp_str, 0, REG_EXTENDED);
+        Regexp re(meteo::vm2::Parser::regexp_str, 0, REG_EXTENDED);
         if (!re.match(s))
             throw_check_error(fd, offset, "not a valid VM2 line: '" + s + "'");
     }
@@ -59,7 +59,7 @@ struct VM2Validator : public Validator
 
         if (size == 0)
             throw_check_error("buffer is empty");
-        wibble::Regexp re(meteo::vm2::Parser::regexp_str, 0, REG_EXTENDED);
+        Regexp re(meteo::vm2::Parser::regexp_str, 0, REG_EXTENDED);
         if (!re.match(s))
             throw_check_error("not a valid VM2 line: '" + s + "'");
     }

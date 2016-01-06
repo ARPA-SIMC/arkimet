@@ -6,7 +6,7 @@
 #include "arki/utils/process.h"
 #include "arki/runtime/config.h"
 #include "arki/utils/string.h"
-#include "arki/wibble/regexp.h"
+#include "arki/utils/regexp.h"
 #include "arki/wibble/sys/childprocess.h"
 #include "arki/wibble/sys/process.h"
 #include <sys/select.h>
@@ -193,8 +193,8 @@ Postprocess::Postprocess(const std::string& command)
     m_child->m_err = &m_errors;
 
     // Parse command into its components
-    wibble::Splitter sp("[[:space:]]+", REG_EXTENDED);
-    for (wibble::Splitter::const_iterator j = sp.begin(m_command); j != sp.end(); ++j)
+    Splitter sp("[[:space:]]+", REG_EXTENDED);
+    for (Splitter::const_iterator j = sp.begin(m_command); j != sp.end(); ++j)
         m_child->cmd.args.push_back(*j);
     //cerr << "Split \"" << m_command << "\" into: " << str::join(m_child->cmd.args.begin(), m_child->cmd.args.end(), ", ") << endl;
 }
@@ -233,9 +233,9 @@ void Postprocess::validate(const map<string, string>& cfg)
     map<string, string>::const_iterator i = cfg.find("postprocess");
     if (i != cfg.end())
     {
-        wibble::Splitter sp("[[:space:]]*,[[:space:]]*|[[:space:]]+", REG_EXTENDED);
+        Splitter sp("[[:space:]]*,[[:space:]]*|[[:space:]]+", REG_EXTENDED);
         string pp = i->second;
-        for (wibble::Splitter::const_iterator j = sp.begin(pp); j != sp.end(); ++j)
+        for (Splitter::const_iterator j = sp.begin(pp); j != sp.end(); ++j)
             allowed.insert(*j);
     }
 

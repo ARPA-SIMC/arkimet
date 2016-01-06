@@ -4,8 +4,8 @@
 #include "utils/lua.h"
 #include "utils/sys.h"
 #include "utils/string.h"
+#include "utils/regexp.h"
 #include "runtime/config.h"
-#include <arki/wibble/regexp.h>
 
 using namespace std;
 using namespace arki::utils;
@@ -26,9 +26,9 @@ Report::~Report()
 void Report::load(const std::string& params)
 {
     // Parse params into its components
-    wibble::Splitter sp("[[:space:]]*,[[:space:]]*|[[:space:]]+", REG_EXTENDED);
+    Splitter sp("[[:space:]]*,[[:space:]]*|[[:space:]]+", REG_EXTENDED);
     vector<string> args;
-    for (wibble::Splitter::const_iterator j = sp.begin(params); j != sp.end(); ++j)
+    for (Splitter::const_iterator j = sp.begin(params); j != sp.end(); ++j)
         args.push_back(*j);
 
     if (args.empty())

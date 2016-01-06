@@ -4,7 +4,7 @@
 #include <arki/matcher.h>
 #include <arki/utils/string.h>
 #include <arki/binary.h>
-#include <arki/wibble/regexp.h>
+#include <arki/utils/regexp.h>
 #include <sstream>
 #include <ctime>
 
@@ -24,8 +24,8 @@ namespace index {
 std::set<types::Code> parseMetadataBitmask(const std::string& components)
 {
     set<types::Code> res;
-    wibble::Splitter splitter("[ \t]*,[ \t]*", REG_EXTENDED);
-    for (wibble::Splitter::const_iterator i = splitter.begin(str::lower(components));
+    Splitter splitter("[ \t]*,[ \t]*", REG_EXTENDED);
+    for (Splitter::const_iterator i = splitter.begin(str::lower(components));
             i != splitter.end(); ++i)
     {
         res.insert(types::parseCodeName(*i));

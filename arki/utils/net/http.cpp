@@ -175,7 +175,7 @@ bool Request::read_method()
     // If we cannot fill some of method, url or version we just let
     // them be, as they have previously been filled with defaults
     // by read_request()
-    wibble::Splitter::const_iterator i = space_splitter.begin(cmdline);
+    Splitter::const_iterator i = space_splitter.begin(cmdline);
     if (i != space_splitter.end())
     {
         method = str::upper(*i);
@@ -641,8 +641,8 @@ void Params::parse_multipart(net::http::Request& req, size_t inputsize, const st
 
     // Content-Disposition: form-data; name="submit-name"
     //wibble::ERegexp re_disposition(";%s*([^%s=]+)=\"(.-)\"", 2);
-    wibble::Splitter cd_splitter("[[:blank:]]*;[[:blank:]]*", REG_EXTENDED);
-    wibble::ERegexp cd_parm("([^=]+)=\"([^\"]+)\"", 3);
+    Splitter cd_splitter("[[:blank:]]*;[[:blank:]]*", REG_EXTENDED);
+    ERegexp cd_parm("([^=]+)=\"([^\"]+)\"", 3);
 
     bool has_part = true;
     while (has_part)
@@ -656,7 +656,7 @@ void Params::parse_multipart(net::http::Request& req, size_t inputsize, const st
         map<string, string>::const_iterator i = headers.find("content-disposition");
         if (i == headers.end())
             throw net::http::error400("no Content-disposition in MIME headers");
-        wibble::Splitter::const_iterator j = cd_splitter.begin(i->second);
+        Splitter::const_iterator j = cd_splitter.begin(i->second);
         if (j == cd_splitter.end())
             throw net::http::error400("incomplete content-disposition header");
         if (*j != "form-data")

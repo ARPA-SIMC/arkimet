@@ -1,10 +1,10 @@
-#include <arki/wibble/regexp.h>
+#include "regexp.h"
 #include <sstream>
 
 using namespace std;
 
-namespace wibble {
-namespace exception {
+namespace arki {
+namespace utils {
 
 ////// wibble::exception::Regexp
 
@@ -28,24 +28,22 @@ std::string format_re_msg(const regex_t& re, int code, const string& user_msg)
 
 }
 
-Regexp::Regexp(const regex_t& re, int code, const string& msg)
+RegexpError::RegexpError(const regex_t& re, int code, const string& msg)
     : std::runtime_error(format_re_msg(re, code, msg))
 {
-}
-
 }
 
 ////// Regexp
 
 Regexp::Regexp(const string& expr, int match_count, int flags)
-	throw (wibble::exception::Regexp) : pmatch(0), nmatch(match_count)
+    : pmatch(0), nmatch(match_count)
 {
-	if (match_count == 0)
-		flags |= REG_NOSUB;
+    if (match_count == 0)
+        flags |= REG_NOSUB;
 
-	int res = regcomp(&re, expr.c_str(), flags);
-	if (res)
-		throw wibble::exception::Regexp(re, res, "Compiling regexp \"" + expr + "\"");
+    int res = regcomp(&re, expr.c_str(), flags);
+    if (res)
+        throw RegexpError(re, res, "cannot compile regexp \"" + expr + "\"");
 
 	if (match_count > 0)
 		pmatch = new regmatch_t[match_count];
@@ -60,10 +58,9 @@ Regexp::~Regexp() throw ()
 	
 
 bool Regexp::match(const string& str, int flags)
-	throw(wibble::exception::Regexp)
 {
-	int res;
-	
+    int res;
+
 	if (nmatch)
 	{
 		res = regexec(&re, str.c_str(), nmatch, pmatch, flags);
@@ -72,12 +69,12 @@ bool Regexp::match(const string& str, int flags)
 	else
 		res = regexec(&re, str.c_str(), 0, 0, flags);
 
-	switch (res)
-	{
-		case 0:	return true;
-		case REG_NOMATCH: return false;
-		default: throw wibble::exception::Regexp(re, res, "Matching string \"" + str + "\"");
-	}
+    switch (res)
+    {
+        case 0: return true;
+        case REG_NOMATCH: return false;
+        default: throw RegexpError(re, res, "cannot match string \"" + str + "\"");
+    }
 }
 
 string Regexp::operator[](int idx)
@@ -170,4 +167,5 @@ Splitter::const_iterator& Splitter::const_iterator::operator++()
 	return *this;
 }
 
+}
 }

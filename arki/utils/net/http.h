@@ -70,7 +70,7 @@ struct Request
     std::string url;
     std::string version;
     std::map<std::string, std::string> headers;
-    wibble::Splitter space_splitter;
+    Splitter space_splitter;
 
     net::mime::Reader mime_reader;
 

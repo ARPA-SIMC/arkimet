@@ -5,7 +5,7 @@
 
 #include <string>
 #include <map>
-#include <arki/wibble/regexp.h>
+#include <arki/utils/regexp.h>
 #include <iosfwd>
 
 namespace arki {
@@ -15,7 +15,7 @@ namespace mime {
 
 struct Reader
 {
-    wibble::ERegexp header_splitter;
+    ERegexp header_splitter;
 
     Reader();
 
