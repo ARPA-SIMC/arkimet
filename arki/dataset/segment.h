@@ -26,6 +26,7 @@ class Validator;
 }
 
 namespace dataset {
+class Reporter;
 class Segment;
 
 static const unsigned SEGMENT_OK          = 0;
@@ -214,7 +215,7 @@ public:
      *
      * @returns the State with the state of the file
      */
-    virtual State check(const std::string& relname, const metadata::Collection& mds, bool quick=true) = 0;
+    virtual State check(dataset::Reporter& reporter, const std::string& ds, const std::string& relname, const metadata::Collection& mds, bool quick=true) = 0;
 
     /**
      * Remove a file, returning its size
@@ -295,7 +296,7 @@ public:
      */
     virtual Pending append(Metadata& md, off_t* ofs) = 0;
 
-    virtual segment::State check(const metadata::Collection& mds, bool quick=true) = 0;
+    virtual segment::State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
     virtual void truncate(size_t offset) = 0;
     virtual Pending repack(const std::string& rootdir, metadata::Collection& mds) = 0;

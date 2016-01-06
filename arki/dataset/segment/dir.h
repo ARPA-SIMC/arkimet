@@ -89,7 +89,7 @@ public:
      */
     off_t link(const std::string& absname);
 
-    State check(const metadata::Collection& mds, bool quick=true) override;
+    State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
     void truncate(size_t offset) override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds) override;
@@ -115,7 +115,7 @@ protected:
 public:
     HoleSegment(const std::string& format, const std::string& relname, const std::string& absname);
 
-    State check(const metadata::Collection& mds, bool quick=true) override;
+    State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
 
 protected:
     std::unique_ptr<dir::Segment> make_segment(const std::string& format, const std::string& relname, const std::string& absname) override;

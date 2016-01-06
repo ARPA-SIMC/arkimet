@@ -575,7 +575,8 @@ void test_append_transaction_rollback(dataset::Segment* dw, Metadata& md)
 void ActualSegmentedChecker::maintenance(const MaintenanceResults& expected, bool quick)
 {
     MaintenanceCollector c;
-    wassert(_actual->maintenance([&](const std::string& relpath, segment::State state) { c(relpath, state); }, quick));
+    dataset::NullReporter rep;
+    wassert(_actual->maintenance(rep, [&](const std::string& relpath, segment::State state) { c(relpath, state); }, quick));
 
     bool ok = true;
     if (expected.files_seen != -1 && c.fileStates.size() != (unsigned)expected.files_seen)
@@ -613,26 +614,26 @@ void ActualSegmentedChecker::maintenance_clean(unsigned data_count, bool quick)
 
 
 ReporterExpected::OperationMatch::OperationMatch(const std::string& dsname, const std::string& operation, const std::string& message)
-    : dsname(dsname), operation(operation), message(message)
+    : name(dsname), operation(operation), message(message)
 {
 }
 
 std::string ReporterExpected::OperationMatch::error_unmatched(const std::string& type) const
 {
-    string msg = "expected operation not matched: " + dsname + ":" + type + " not found in " + operation + " output";
+    string msg = "expected operation not matched: " + name + ":" + type + " not found in " + operation + " output";
     if (!message.empty())
         msg += " (matching '" + message + "')";
     return msg;
 }
 
 ReporterExpected::SegmentMatch::SegmentMatch(const std::string& dsname, const std::string& relpath, const std::string& message)
-    : dsname(dsname), relpath(relpath), message(message)
+    : name(dsname + ":" + relpath), message(message)
 {
 }
 
 std::string ReporterExpected::SegmentMatch::error_unmatched(const std::string& operation) const
 {
-    string msg = "expected segment not matched: " + dsname + ":" + relpath + " not found in " + operation + " output";
+    string msg = "expected segment not matched: " + name + " not found in " + operation + " output";
     if (!message.empty())
         msg += " (matching '" + message + "')";
     return msg;
@@ -662,23 +663,23 @@ void ReporterExpected::clear()
 struct MainteanceCheckResult
 {
     std::string type;
+    std::string name;
     bool matched = false;
 
-    MainteanceCheckResult(const std::string& type) : type(type) {}
+    MainteanceCheckResult(const std::string& type, const std::string& name) : type(type), name(name) {}
 };
 
 struct OperationResult : public MainteanceCheckResult
 {
-    std::string dsname;
     std::string operation;
     std::string message;
 
     OperationResult(const std::string& type, const std::string& dsname, const std::string& operation, const std::string& message=std::string())
-        : MainteanceCheckResult(type), dsname(dsname), operation(operation), message(message) {}
+        : MainteanceCheckResult(type, dsname), operation(operation), message(message) {}
 
     bool match(const ReporterExpected::OperationMatch& m) const
     {
-        if (m.dsname != dsname) return false;
+        if (m.name != name) return false;
         if (m.operation != operation) return false;
         if (!m.message.empty() && message.find(m.message) == string::npos) return false;
         return true;
@@ -686,36 +687,48 @@ struct OperationResult : public MainteanceCheckResult
 
     string error_unmatched() const
     {
-        return "operation output not matched: " + type + " on " + dsname + ":" + operation + ": " + message;
+        return "operation output not matched: " + type + " on " + name + ":" + operation + ": " + message;
     }
 };
 
 struct SegmentResult : public MainteanceCheckResult
 {
-    std::string dsname;
-    std::string relpath;
     std::string message;
 
     SegmentResult(const std::string& operation, const std::string& dsname, const std::string& relpath, const std::string& message=std::string())
-        : MainteanceCheckResult(operation), dsname(dsname), relpath(relpath), message(message) {}
+        : MainteanceCheckResult(operation, dsname + ":" + relpath), message(message) {}
 
     bool match(const ReporterExpected::SegmentMatch& m) const
     {
-        if (m.dsname != dsname) return false;
-        if (m.relpath != relpath) return false;
+        if (m.name != name) return false;
         if (!m.message.empty() && message.find(m.message) == string::npos) return false;
         return true;
     }
 
     string error_unmatched() const
     {
-        return "segment output not matched: " + type + " on " + dsname + ":" + relpath + ": " + message;
+        return "segment output not matched: " + type + " on " + name + ": " + message;
     }
 };
 
 template<typename Matcher, typename Result>
 struct MainteanceCheckResults : public std::vector<Result>
 {
+    std::map<std::string, std::vector<std::string>> extra_info;
+
+    void store_extra_info(const std::string& name, const std::string& message)
+    {
+        extra_info[name].emplace_back(message);
+    }
+
+    void report_extra_info(const std::string& name, vector<string>& issues)
+    {
+        auto i = extra_info.find(name);
+        if (i == extra_info.end()) return;
+        for (const auto& msg: i->second)
+            issues.emplace_back(name + " extra info: " + msg);
+    }
+
     void match(const std::string& type, const std::vector<Matcher>& matches, vector<string>& issues)
     {
         // Track which rules were not matched
@@ -736,7 +749,10 @@ struct MainteanceCheckResults : public std::vector<Result>
 
         // Signal the unmatched rules for this operation
         for (const auto& m: unmatched)
+        {
             issues.emplace_back(m->error_unmatched(type));
+            report_extra_info(m->name, issues);
+        }
     }
 
     void count_equals(const std::string& type, int expected, vector<string>& issues)
@@ -770,6 +786,7 @@ struct MainteanceCheckResults : public std::vector<Result>
             if (!type_filter.empty() && r.type != type_filter) continue;
             if (r.matched) continue;
             issues.emplace_back(r.error_unmatched());
+            report_extra_info(r.name, issues);
         }
     }
 };
@@ -782,16 +799,17 @@ struct CollectReporter : public dataset::Reporter
     OperationResults op_results;
     SegmentResults seg_results;
 
-    void operation_progress(const Base& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("progress", ds.name(), operation, message); }
-    void operation_manual_intervention(const Base& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("manual_intervention", ds.name(), operation, message); }
-    void operation_aborted(const Base& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("aborted", ds.name(), operation, message); }
-    void operation_report(const Base& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("report", ds.name(), operation, message); }
+    void operation_progress(const std::string& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("progress", ds, operation, message); }
+    void operation_manual_intervention(const std::string& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("manual_intervention", ds, operation, message); }
+    void operation_aborted(const std::string& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("aborted", ds, operation, message); }
+    void operation_report(const std::string& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("report", ds, operation, message); }
 
-    void segment_repack(const Base& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("repacked", ds.name(), relpath, message); }
-    void segment_archive(const Base& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("archived", ds.name(), relpath, message); }
-    void segment_delete(const Base& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("deleted", ds.name(), relpath, message); }
-    void segment_deindex(const Base& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("deindexed", ds.name(), relpath, message); }
-    void segment_rescan(const Base& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("rescanned", ds.name(), relpath, message); }
+    void segment_info(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.store_extra_info(ds + ":" + relpath, message); }
+    void segment_repack(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("repacked", ds, relpath, message); }
+    void segment_archive(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("archived", ds, relpath, message); }
+    void segment_delete(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("deleted", ds, relpath, message); }
+    void segment_deindex(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("deindexed", ds, relpath, message); }
+    void segment_rescan(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("rescanned", ds, relpath, message); }
 
     void check(const ReporterExpected& expected)
     {

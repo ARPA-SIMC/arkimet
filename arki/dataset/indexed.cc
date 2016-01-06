@@ -216,7 +216,7 @@ IndexedChecker::~IndexedChecker()
     delete m_idx;
 }
 
-void IndexedChecker::maintenance(segment::state_func v, bool quick)
+void IndexedChecker::maintenance(dataset::Reporter& reporter, segment::state_func v, bool quick)
 {
     // TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
     // and delete the index if it fails
@@ -234,14 +234,14 @@ void IndexedChecker::maintenance(segment::state_func v, bool quick)
         unique_ptr<types::Time> md_until;
         if (mds.empty())
         {
-            nag::verbose("%s:%s: index knows of this segment but contains no data for it", name().c_str(), relpath.c_str());
+            reporter.segment_info(name(), relpath, "index knows of this segment but contains no data for it");
             md_begin.reset(new types::Time(0, 0, 0));
             md_until.reset(new types::Time(0, 0, 0));
             state = SEGMENT_UNALIGNED;
         } else {
             if (!mds.expand_date_range(md_begin, md_until))
             {
-                nag::verbose("%s:%s: index contains data without reference time information", name().c_str(), relpath.c_str());
+                reporter.segment_info(name(), relpath, "index data for this segment has no reference time information");
                 state = SEGMENT_CORRUPTED;
                 md_begin.reset(new types::Time(0, 0, 0));
                 md_until.reset(new types::Time(0, 0, 0));
@@ -253,21 +253,21 @@ void IndexedChecker::maintenance(segment::state_func v, bool quick)
                 {
                     if (*md_begin < seg_begin || *md_until > seg_until)
                     {
-                        nag::verbose("%s:%s: segment contents do not fit inside the step of this dataset", name().c_str(), relpath.c_str());
+                        reporter.segment_info(name(), relpath, "segment contents do not fit inside the step of this dataset");
                         state = SEGMENT_CORRUPTED;
                     }
                     // Expand segment timespan to the full possible segment timespan
                     *md_begin = seg_begin;
                     *md_until = seg_until;
                 } else {
-                    nag::verbose("%s:%s: segment name does not fit the step of this dataset", name().c_str(), relpath.c_str());
+                    reporter.segment_info(name(), relpath, "segment name does not fit the step of this dataset");
                     state = SEGMENT_CORRUPTED;
                 }
             }
         }
 
         if (state.is_ok())
-            state = m_segment_manager->check(relpath, mds, quick);
+            state = m_segment_manager->check(reporter, name(), relpath, mds, quick);
         fm.check(relpath, state, *md_begin, *md_until);
     });
     fm.end();
@@ -279,7 +279,7 @@ void IndexedChecker::maintenance(segment::state_func v, bool quick)
     for (const auto& seginfo: fm.results)
         v(seginfo.relpath, ca.check(seginfo));
 
-    SegmentedChecker::maintenance(v, quick);
+    SegmentedChecker::maintenance(reporter, v, quick);
 }
 
 void IndexedChecker::removeAll(Reporter& reporter, bool writable)
@@ -288,9 +288,9 @@ void IndexedChecker::removeAll(Reporter& reporter, bool writable)
         if (writable)
         {
             size_t freed = removeSegment(relpath, true);
-            reporter.segment_delete(*this, relpath, "deleted (" + std::to_string(freed) + " freed)");
+            reporter.segment_delete(name(), relpath, "deleted (" + std::to_string(freed) + " freed)");
         } else
-            reporter.segment_delete(*this, relpath, "should be deleted");
+            reporter.segment_delete(name(), relpath, "should be deleted");
     });
     SegmentedChecker::removeAll(reporter, writable);
 }

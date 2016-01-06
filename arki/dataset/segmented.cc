@@ -186,7 +186,7 @@ size_t SegmentedChecker::removeSegment(const std::string& relpath, bool withData
         return 0;
 }
 
-void SegmentedChecker::maintenance(segment::state_func v, bool quick)
+void SegmentedChecker::maintenance(dataset::Reporter& reporter, segment::state_func v, bool quick)
 {
 }
 
@@ -201,7 +201,7 @@ void SegmentedChecker::repack(dataset::Reporter& reporter, bool writable)
 {
     if (files::hasDontpackFlagfile(m_path))
     {
-        reporter.operation_aborted(*this, "repack", "dataset needs checking first");
+        reporter.operation_aborted(name(), "repack", "dataset needs checking first");
         return;
     }
 
@@ -214,7 +214,7 @@ void SegmentedChecker::repack(dataset::Reporter& reporter, bool writable)
     else
         repacker.reset(new maintenance::MockRepacker(reporter, *this));
     try {
-        maintenance([&](const std::string& relpath, segment::State state) {
+        maintenance(reporter, [&](const std::string& relpath, segment::State state) {
             (*repacker)(relpath, state);
         });
         repacker->end();
@@ -232,7 +232,7 @@ void SegmentedChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
     {
         maintenance::RealFixer fixer(reporter, *this);
         try {
-            maintenance([&](const std::string& relpath, segment::State state) {
+            maintenance(reporter, [&](const std::string& relpath, segment::State state) {
                 fixer(relpath, state);
             }, quick);
             fixer.end();
@@ -244,7 +244,7 @@ void SegmentedChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
         files::removeDontpackFlagfile(m_path);
     } else {
         maintenance::MockFixer fixer(reporter, *this);
-        maintenance([&](const std::string& relpath, segment::State state) {
+        maintenance(reporter, [&](const std::string& relpath, segment::State state) {
             fixer(relpath, state);
         }, quick);
         fixer.end();

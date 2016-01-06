@@ -320,7 +320,7 @@ struct ReporterExpected
 {
     struct OperationMatch
     {
-        std::string dsname;
+        std::string name;
         std::string operation;
         std::string message;
 
@@ -330,8 +330,7 @@ struct ReporterExpected
 
     struct SegmentMatch
     {
-        std::string dsname;
-        std::string relpath;
+        std::string name;
         std::string message;
 
         SegmentMatch(const std::string& dsname, const std::string& relpath, const std::string& message=std::string());

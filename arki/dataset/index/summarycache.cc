@@ -135,7 +135,7 @@ bool SummaryCache::check(const dataset::Base& ds, Reporter& reporter) const
         string pathname = str::joinpath(m_scache_root, i->d_name);
         if (!sys::access(pathname, W_OK))
         {
-            reporter.operation_manual_intervention(ds, "check", pathname + " is not writable");
+            reporter.operation_manual_intervention(ds.name(), "check", pathname + " is not writable");
             res = false;
         }
     }

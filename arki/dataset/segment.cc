@@ -166,12 +166,12 @@ struct BaseSegmentManager : public SegmentManager
         return maint->repack(root, mds);
     }
 
-    State check(const std::string& relname, const metadata::Collection& mds, bool quick=true)
+    State check(dataset::Reporter& reporter, const std::string& ds, const std::string& relname, const metadata::Collection& mds, bool quick=true)
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
         unique_ptr<Segment> maint(create_for_format(format, relname, absname));
-        return maint->check(mds, quick);
+        return maint->check(reporter, ds, mds, quick);
     }
 
     size_t remove(const std::string& relname)

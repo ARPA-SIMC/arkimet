@@ -109,7 +109,7 @@ void Segment::write(const std::vector<uint8_t>& buf)
     }
 }
 
-State Segment::check_fd(const metadata::Collection& mds, unsigned max_gap, bool quick)
+State Segment::check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap, bool quick)
 {
     close();
 

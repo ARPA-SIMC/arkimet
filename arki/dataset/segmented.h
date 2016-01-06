@@ -91,7 +91,7 @@ public:
      *   If false, contents of the data files will also be checked for
      *   consistency
      */
-    virtual void maintenance(segment::state_func dest, bool quick=true);
+    virtual void maintenance(dataset::Reporter& reporter, segment::state_func dest, bool quick=true);
 
     /// Remove all data from the dataset
     void removeAll(dataset::Reporter& reporter, bool writable) override;

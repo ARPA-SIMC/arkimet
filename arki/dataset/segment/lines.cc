@@ -153,9 +153,9 @@ Pending Segment::append(Metadata& md, off_t* ofs)
     return res;
 }
 
-State Segment::check(const metadata::Collection& mds, bool quick)
+State Segment::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
 {
-    return check_fd(mds, 2, quick);
+    return check_fd(reporter, ds, mds, 2, quick);
 }
 
 static fd::Segment* make_repack_segment(const std::string& relname, const std::string& absname)

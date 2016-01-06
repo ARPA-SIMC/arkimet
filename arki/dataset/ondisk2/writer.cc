@@ -250,7 +250,7 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
 
     if (!idx->checkSummaryCache(*this, reporter) && fix)
     {
-        reporter.operation_progress(*this, "check", "rebuilding summary cache");
+        reporter.operation_progress(name(), "check", "rebuilding summary cache");
         idx->rebuildSummaryCache();
     }
 }
