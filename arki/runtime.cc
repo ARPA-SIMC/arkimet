@@ -30,7 +30,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <iostream>
-#include <fstream>
 #include <cstdlib>
 #include <cassert>
 
@@ -291,33 +290,21 @@ void CommandLine::setupProcessing()
 				i != cfgfiles->values().end(); ++i)
 			parseConfigFile(inputInfo, *i);
 
-	if (files && files->isSet())	// From --files option, looking for data files or datasets
-	{
-		// Open the file
-		string file = files->stringValue();
-		std::istream* input;
-		std::ifstream in;
+    if (files && files->isSet())    // From --files option, looking for data files or datasets
+    {
+        // Open the file
+        string file = files->stringValue();
+        unique_ptr<NamedFileDescriptor> in;
         if (file != "-")
-        {
-            in.open(file.c_str(), ios::in);
-            if (!in.is_open() || in.fail())
-                throw_file_error(file, "cannot open file for reading");
-            input = &in;
-        } else {
-            input = &cin;
-        }
+            in.reset(new File(file, O_RDONLY));
+        else
+            in.reset(new Stdin);
 
         // Read the content and scan the related files or dataset directories
+        auto reader = LineReader::from_fd(*in);
         string line;
-        while (!input->eof())
+        while (reader->getline(line))
         {
-            getline(*input, line);
-            if (input->fail() && !input->eof())
-            {
-                stringstream ss;
-                ss << "cannot read one line from " << file;
-                throw std::system_error(errno, std::system_category(), ss.str());
-            }
             line = str::strip(line);
             if (line.empty())
                 continue;

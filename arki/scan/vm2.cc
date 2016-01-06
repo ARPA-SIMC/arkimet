@@ -19,6 +19,7 @@
 #include <cstring>
 #include <sstream>
 #include <iomanip>
+#include <fstream>
 #include <iostream>
 #include <unistd.h>
 #include <meteo-vm2/parser.h>

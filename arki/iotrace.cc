@@ -1,34 +1,11 @@
-/*
- * iotrace - I/O profiling
- *
- * Copyright (C) 2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include "config.h"
-
-#include <arki/iotrace.h>
-#include <arki/utils/intern.h>
-#include <arki/runtime/config.h>
+#include "arki/iotrace.h"
+#include "arki/libconfig.h"
+#include "arki/exceptions.h"
+#include "arki/utils/intern.h"
+#include "arki/runtime/config.h"
 #include <vector>
 #include <set>
-#include <fstream>
-#include <stdint.h>
+#include <cstdint>
 
 using namespace std;
 
@@ -74,8 +51,9 @@ void init()
 
     if (!runtime::Config::get().file_iotrace_output.empty())
     {
-        ostream* out = new ofstream(runtime::Config::get().file_iotrace_output.c_str());
-        Logger* logger = new Logger(*out);
+        FILE* out = fopen(runtime::Config::get().file_iotrace_output.c_str(), "at");
+        if (!out) throw_system_error("cannot open " + runtime::Config::get().file_iotrace_output + " for appending");
+        Logger* logger = new Logger(out);
         add_listener(*logger);
         // Lose references, effectively creating garbage; never mind, as we log
         // until the end of the program.
@@ -155,7 +133,7 @@ void Collector::dump(std::ostream& out) const
 
 void Logger::operator()(const Event& e)
 {
-    out << e.filename() << ":" << e.offset << ":" << e.size << ": " << e.desc << endl;
+    fprintf(out, "%s:%zu:%zu:%s\n", e.filename().c_str(), e.offset, e.size, e.desc);
 }
 
 }

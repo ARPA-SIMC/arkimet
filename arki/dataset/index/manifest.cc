@@ -21,7 +21,7 @@
 #include "arki/utils/string.h"
 #include <algorithm>
 #include <unistd.h>
-#include <fstream>
+#include <fcntl.h>
 #include <ctime>
 
 #ifdef HAVE_LUA
@@ -280,11 +280,13 @@ class PlainManifest : public Manifest
 			return file != i.file;
 		}
 
-		void write(ostream& out) const
-		{
-			out << file << ";" << mtime << ";" << start_time.toSQL() << ";" << end_time.toSQL() << endl;
-		}
-	};
+        void write(NamedFileDescriptor& out) const
+        {
+            stringstream ss;
+            ss << file << ";" << mtime << ";" << start_time.toSQL() << ";" << end_time.toSQL() << endl;
+            out.write_all_or_throw(ss.str());
+        }
+    };
 	vector<Info> info;
 	ino_t last_inode;
 	bool dirty;
@@ -307,28 +309,13 @@ class PlainManifest : public Manifest
         if (last_inode == 0)
             return false;
 
-        std::ifstream in;
-        in.open(pathname.c_str(), ios::in);
-        if (!in.is_open() || in.fail())
-        {
-            stringstream ss;
-            ss << "cannot open file " << pathname << " for reading";
-            throw std::system_error(errno, std::system_category(), ss.str());
-        }
-
+        File infd(pathname, O_RDONLY);
         iotrace::trace_file(pathname, 0, 0, "read MANIFEST");
 
+        auto reader = LineReader::from_fd(infd);
         string line;
-        for (size_t lineno = 1; !in.eof(); ++lineno)
+        for (size_t lineno = 1; reader->getline(line); ++lineno)
         {
-            getline(in, line);
-            if (in.fail() && !in.eof())
-            {
-                stringstream ss;
-                ss << "cannot read one line from " << pathname;
-                throw std::system_error(errno, std::system_category(), ss.str());
-            }
-
             // Skip empty lines
             if (line.empty()) continue;
 
@@ -369,10 +356,10 @@ class PlainManifest : public Manifest
                         Time::create_from_SQL(line.substr(end+1))));
         }
 
-		in.close();
-		dirty = false;
-		return true;
-	}
+        infd.close();
+        dirty = false;
+        return true;
+    }
 
 public:
 	PlainManifest(const std::string& dir)
@@ -544,15 +531,10 @@ public:
         {
             string pathname(str::joinpath(m_path, "MANIFEST.tmp"));
 
-            std::ofstream out;
-            out.open(pathname.c_str(), ios::out);
-            if (!out.is_open() || out.fail())
-                throw_file_error(pathname, "cannot open file for writing");
-
+            File out(pathname, O_WRONLY | O_CREAT | O_TRUNC);
             for (vector<Info>::const_iterator i = info.begin();
                     i != info.end(); ++i)
                 i->write(out);
-
             out.close();
 
             if (::rename(pathname.c_str(), str::joinpath(m_path, "MANIFEST").c_str()) < 0)

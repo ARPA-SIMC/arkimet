@@ -6,7 +6,6 @@
 #include <string>
 #include <vector>
 #include <unistd.h>
-#include <fstream>
 
 namespace meteo {
 namespace vm2 {
