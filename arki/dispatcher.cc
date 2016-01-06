@@ -19,7 +19,7 @@ static inline Matcher getFilter(const ConfigFile* cfg)
     try {
         return Matcher::parse(cfg->value("filter"));
     } catch (std::runtime_error& e) {
-        const ConfigFile::FilePos* fp = cfg->valueInfo("filter");
+        const configfile::Position* fp = cfg->valueInfo("filter");
         if (fp)
         {
             stringstream ss;

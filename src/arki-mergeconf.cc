@@ -98,7 +98,7 @@ int main(int argc, const char* argv[])
             try {
                 Matcher::parse(i->second->value("filter"));
             } catch (std::exception& e) {
-                const ConfigFile::FilePos* fp = i->second->valueInfo("filter");
+                const auto* fp = i->second->valueInfo("filter");
                 if (fp)
                     cerr << fp->pathname << ":" << fp->lineno << ":";
                 cerr << e.what();

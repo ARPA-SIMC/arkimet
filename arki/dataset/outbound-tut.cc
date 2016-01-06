@@ -65,9 +65,8 @@ struct arki_dataset_outbound_shar {
 			"step = daily\n"
 			"name = error\n"
 			"path = error\n";
-		stringstream incfg(conf);
-		config.parse(incfg, "(memory)");
-	}
+        config.parse(conf, "(memory)");
+    }
 };
 TESTGRP(arki_dataset_outbound);
 

@@ -245,6 +245,9 @@ public:
     /// Read all metadata from a file into the given consumer
     static void read_file(int in, const metadata::ReadContext& file, metadata_dest_func mdc);
 
+    /// Read all metadata from a file into the given consumer
+    static void read_file(NamedFileDescriptor& fd, metadata_dest_func mdc);
+
     /**
      * Read a metadata group into the given consumer
      */

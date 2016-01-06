@@ -43,9 +43,7 @@ struct Fixture : public arki::utils::tests::Fixture
             "[singlefile]\n"
             "step = singlefile\n"
             ;
-
-        stringstream incfg(conf);
-        cfg.parse(incfg, "(memory)");
+        cfg.parse(conf);
 
         md.set("reftime", "2007-06-05T04:03:02Z");
     }

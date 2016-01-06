@@ -79,26 +79,24 @@ struct arki_dataset_ondisk2_shar {
 			"unique = reftime, origin, product, level, timerange, area\n"
 			"name = test98\n"
 			"path = test98\n";
-		stringstream incfg(conf);
-		config.parse(incfg, "(memory)");
+        config.parse(conf);
         config.section("test200")->setValue("path", sys::abspath("test200"));
         config.section("test80")->setValue("path", sys::abspath("test80"));
         config.section("test98")->setValue("path", sys::abspath("test98"));
 
 
-		// In-memory dataset configuration
-		string conf1 =
-			"[testall]\n"
-			"type = ondisk2\n"
-			"step = daily\n"
-			"filter = origin: GRIB1\n"
-			"index = origin, reftime\n"
-			"unique = reftime, origin, product, level, timerange, area\n"
-			"name = testall\n"
-			"path = testall\n";
-		stringstream incfg1(conf1);
-		configAll.parse(incfg1, "(memory)");
-	}
+        // In-memory dataset configuration
+        string conf1 =
+            "[testall]\n"
+            "type = ondisk2\n"
+            "step = daily\n"
+            "filter = origin: GRIB1\n"
+            "index = origin, reftime\n"
+            "unique = reftime, origin, product, level, timerange, area\n"
+            "name = testall\n"
+            "path = testall\n";
+        configAll.parse(conf1, "(memory)");
+    }
 
 	void acquireSamples()
 	{
@@ -625,8 +623,7 @@ def_test(14)
 		"unique = reftime, origin, product, level, timerange, area\n"
 		"name = testall\n"
 		"path = testall\n";
-	stringstream incfg(conf);
-	config.parse(incfg, "(memory)");
+    config.parse(conf, "(memory)");
 
 	// Clean the dataset
 	system("rm -rf testall/*");
@@ -679,9 +676,8 @@ def_test(15)
         "unique = reftime\n"
         "name = testbufr\n"
         "path = testbufr\n";
-    stringstream incfg(conf);
     ConfigFile cfg;
-    cfg.parse(incfg, "(memory)");
+    cfg.parse(conf, "(memory)");
 
     dataset::ondisk2::Writer bd(*cfg.section("testbufr"));
 

@@ -39,8 +39,7 @@ struct arki_postprocess_shar {
             "postprocess = null\n"
             "name = testall\n"
             "path = testall\n";
-        stringstream incfg(conf);
-        config.parse(incfg, "(memory)");
+        config.parse(conf, "(memory)");
     }
 
     void produceGRIB(Postprocess& p)

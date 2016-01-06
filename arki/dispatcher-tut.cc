@@ -50,9 +50,8 @@ struct arki_dispatcher_shar {
 			"step = daily\n"
 			"name = error\n"
 			"path = error\n";
-		stringstream incfg(conf);
-		config.parse(incfg, "(memory)");
-	}
+        config.parse(conf);
+    }
 };
 TESTGRP(arki_dispatcher);
 
@@ -111,8 +110,7 @@ def_test(2)
 		"[error]\n"
 		"type = discard\n"
 		"name = error\n";
-	stringstream incfg(conf);
-	config.parse(incfg, "(memory)");
+    config.parse(conf);
 
     metadata::Collection source("inbound/tempforecast.bufr");
     ensure_equals(source.size(), 1u);

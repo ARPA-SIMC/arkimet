@@ -4,16 +4,19 @@
 
 namespace arki {
 
+Stdin::Stdin() : NamedFileDescriptor(0, "(stdin)") {}
+Stdout::Stdout() : NamedFileDescriptor(1, "(stdout)") {}
+Stderr::Stderr() : NamedFileDescriptor(2, "(stderr)") {}
+
 namespace {
 
 struct FDLineReader : public LineReader
 {
-    NamedFileDescriptor fd;
+    NamedFileDescriptor& fd;
     std::deque<char> linebuf;
     bool fd_eof = false;
 
-    FDLineReader(int fd, const std::string& pathname)
-        : fd(fd, pathname) {}
+    FDLineReader(NamedFileDescriptor& fd) : fd(fd) {}
 
     bool eof() const override { return fd_eof && linebuf.empty(); }
 
@@ -26,7 +29,7 @@ struct FDLineReader : public LineReader
             if (i != linebuf.end())
             {
                 line.append(linebuf.begin(), i);
-                linebuf.erase(linebuf.begin(), i);
+                linebuf.erase(linebuf.begin(), i + 1);
                 return true;
             }
 
@@ -46,7 +49,7 @@ struct FDLineReader : public LineReader
             if (count == 0)
                 fd_eof = true;
             else
-                linebuf.insert(linebuf.begin(), buf, buf + count);
+                linebuf.insert(linebuf.end(), buf, buf + count);
         }
     }
 };
@@ -86,9 +89,9 @@ struct StringLineReader : public LineReader
 }
 
 
-std::unique_ptr<LineReader> LineReader::from_fd(int fd, const std::string& pathname)
+std::unique_ptr<LineReader> LineReader::from_fd(NamedFileDescriptor& fd)
 {
-    return std::unique_ptr<LineReader>(new FDLineReader(fd, pathname));
+    return std::unique_ptr<LineReader>(new FDLineReader(fd));
 }
 
 std::unique_ptr<LineReader> LineReader::from_chars(const char* buf, size_t size)

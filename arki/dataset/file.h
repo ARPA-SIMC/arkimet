@@ -21,15 +21,14 @@ namespace dataset {
 class File : public Reader
 {
 protected:
-	std::string m_pathname;
-	std::string m_format;
+    std::string m_format;
 
 public:
-	File(const ConfigFile& cfg);
+    File(const ConfigFile& cfg);
 
     std::string type() const override { return "file"; }
 
-	const std::string& pathname() const { return m_pathname; }
+    virtual std::string pathname() const = 0;
 
     virtual void scan(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
 
@@ -47,12 +46,13 @@ public:
 class FdFile : public File
 {
 protected:
-    int fd;
+    NamedFileDescriptor* fd = nullptr;
 
 public:
-	FdFile(const ConfigFile& cfg);
-	virtual ~FdFile();
+    FdFile(const ConfigFile& cfg);
+    virtual ~FdFile();
 
+    std::string pathname() const override;
 };
 
 class ArkimetFile : public FdFile
@@ -80,12 +80,17 @@ public:
 
 class RawFile : public File
 {
+protected:
+    std::string m_pathname;
+
 public:
 	// Initialise the dataset with the information from the configuration in 'cfg'
 	RawFile(const ConfigFile& cfg);
 	virtual ~RawFile();
 
     void scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
+
+    std::string pathname() const override;
 };
 
 }

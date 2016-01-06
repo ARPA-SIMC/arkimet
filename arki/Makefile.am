@@ -408,7 +408,7 @@ tests_arki_test_SOURCES += \
 		summary/intern-tut.cc \
 		summary/table-tut.cc \
 		summary/stats-tut.cc \
-		matcher-tut.cc \
+		matcher-test.cc \
 		matcher/utils-tut.cc \
 		matcher/origin-tut.cc \
 		matcher/product-tut.cc \

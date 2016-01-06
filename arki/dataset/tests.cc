@@ -490,9 +490,8 @@ void corrupt_datafile(const std::string& absname)
 std::unique_ptr<dataset::LocalWriter> make_dataset_writer(const std::string& cfgstr, bool empty)
 {
     // Parse configuration
-    stringstream incfg(cfgstr);
     ConfigFile cfg;
-    cfg.parse(incfg, "(memory)");
+    cfg.parse(cfgstr);
     wassert(actual(cfg.value("path").empty()).isfalse());
 
     // Remove the dataset directory if it exists
@@ -506,9 +505,8 @@ std::unique_ptr<dataset::LocalWriter> make_dataset_writer(const std::string& cfg
 std::unique_ptr<Reader> make_dataset_reader(const std::string& cfgstr)
 {
     // Parse configuration
-    stringstream incfg(cfgstr);
     ConfigFile cfg;
-    cfg.parse(incfg, "(memory)");
+    cfg.parse(cfgstr);
     wassert(actual(cfg.value("path").empty()).isfalse());
 
     unique_ptr<Reader> ds(Reader::create(cfg));
@@ -519,9 +517,8 @@ std::unique_ptr<Reader> make_dataset_reader(const std::string& cfgstr)
 std::unique_ptr<dataset::LocalChecker> make_dataset_checker(const std::string& cfgstr)
 {
     // Parse configuration
-    stringstream incfg(cfgstr);
     ConfigFile cfg;
-    cfg.parse(incfg, "(memory)");
+    cfg.parse(cfgstr);
     wassert(actual(cfg.value("path").empty()).isfalse());
 
     unique_ptr<dataset::LocalChecker> ds(dataset::LocalChecker::create(cfg));

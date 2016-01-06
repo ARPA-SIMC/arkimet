@@ -11,8 +11,7 @@
 #include "arki/nag.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <iostream>
-#include <fstream>
+#include <fcntl.h>
 #include <sys/stat.h>
 
 using namespace std;
@@ -81,12 +80,13 @@ void LocalReader::query_summary(const Matcher& matcher, Summary& summary)
 
 void LocalReader::readConfig(const std::string& path, ConfigFile& cfg)
 {
-	if (path == "-")
-	{
-		// Parse the config file from stdin
-		cfg.parse(cin, path);
-		return;
-	}
+    if (path == "-")
+    {
+        // Parse the config file from stdin
+        Stdin in;
+        cfg.parse(in);
+        return;
+    }
 
 	// Remove trailing slashes, if any
 	string fname = path;
@@ -108,16 +108,9 @@ void LocalReader::readConfig(const std::string& path, ConfigFile& cfg)
         string file = str::joinpath(fname, "config");
 
         ConfigFile section;
-        ifstream in;
-        in.open(file.c_str(), ios::in);
-        if (!in.is_open() || in.fail())
-        {
-            stringstream ss;
-            ss << "cannot open " << file << " for reading";
-            throw std::system_error(errno, std::system_category(), ss.str());
-        }
+        File in(file, O_RDONLY);
         // Parse the config file into a new section
-        section.parse(in, file);
+        section.parse(in);
         // Fill in missing bits
         section.setValue("name", name);
         section.setValue("path", sys::abspath(fname));
@@ -125,16 +118,9 @@ void LocalReader::readConfig(const std::string& path, ConfigFile& cfg)
         cfg.mergeInto(name, section);
     } else {
         // If it's a file, then it's a merged config file
-        ifstream in;
-        in.open(fname.c_str(), ios::in);
-        if (!in.is_open() || in.fail())
-        {
-            stringstream ss;
-            ss << "cannot open config file " << fname << " for reading";
-            throw std::system_error(errno, std::system_category(), ss.str());
-        }
+        File in(fname, O_RDONLY);
         // Parse the config file
-        cfg.parse(in, fname);
+        cfg.parse(in);
     }
 }
 

@@ -19,21 +19,6 @@ struct InputFile : public utils::sys::File
     InputFile(const std::string& file);
 };
 
-struct Stdin : public utils::sys::NamedFileDescriptor
-{
-    Stdin();
-};
-
-struct Stdout : public utils::sys::NamedFileDescriptor
-{
-    Stdout();
-};
-
-struct Stderr : public utils::sys::NamedFileDescriptor
-{
-    Stderr();
-};
-
 struct File : public utils::sys::File
 {
     File(const std::string pathname, bool append=false);

@@ -33,10 +33,6 @@ std::unique_ptr<utils::sys::NamedFileDescriptor> make_input(utils::commandline::
     return std::unique_ptr<utils::sys::NamedFileDescriptor>(new InputFile(pathname));
 }
 
-Stdin::Stdin() : NamedFileDescriptor(0, "(stdin)") {}
-Stdout::Stdout() : NamedFileDescriptor(1, "(stdout)") {}
-Stderr::Stderr() : NamedFileDescriptor(2, "(stderr)") {}
-
 File::File(const std::string pathname, bool append)
     : sys::File(pathname, O_WRONLY | O_CREAT | (append ? O_APPEND : O_TRUNC), 0666)
 {

@@ -412,8 +412,7 @@ void HTTP::readConfig(const std::string& path, ConfigFile& cfg)
 	if (content.response_code >= 400)
 		content.throwError("querying configuration from " + url);
 
-    stringstream cfgin(content.buf);
-    cfg.parse(cfgin, url);
+    cfg.parse(content.buf, url);
 }
 
 void HTTP::produce_one_wrong_query()
@@ -466,8 +465,7 @@ void HTTP::getAliasDatabase(const std::string& server, ConfigFile& cfg)
 	if (content.response_code >= 400)
 		content.throwError("expanding query at " + url);
 
-    stringstream cfgin(content.buf);
-    cfg.parse(cfgin, server);
+    cfg.parse(content.buf, server);
 }
 
 static string geturlprefix(const std::string& s)

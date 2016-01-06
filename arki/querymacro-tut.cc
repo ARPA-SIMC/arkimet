@@ -33,17 +33,16 @@ struct arki_querymacro_shar {
 		system("rm -rf testds");
 		system("mkdir testds");
 
-		// In-memory dataset configuration
-		string conf =
-			"[testds]\n"
-			"unique = origin\n"
-			"type = ondisk2\n"
-			"step = daily\n"
-			"filter = origin: GRIB1,200\n"
-			"name = testds\n"
-			"path = testds\n";
-		stringstream incfg(conf);
-		cfg.parse(incfg, "(memory)");
+        // In-memory dataset configuration
+        string conf =
+            "[testds]\n"
+            "unique = origin\n"
+            "type = ondisk2\n"
+            "step = daily\n"
+            "filter = origin: GRIB1,200\n"
+            "name = testds\n"
+            "path = testds\n";
+        cfg.parse(conf, "(memory)");
 
 		// Import all data from test.grib1
 		Metadata md;

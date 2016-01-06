@@ -1,4 +1,5 @@
 #include "arki/runtime/config.h"
+#include "arki/runtime/io.h"
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
 #include "arki/utils.h"
@@ -7,8 +8,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <algorithm>
-#include <iostream>
-#include <fstream>
 #include <memory>
 #include <unistd.h>
 
@@ -179,12 +178,13 @@ std::vector<std::string> Config::Dirlist::list_files(const std::string& ext, boo
 
 void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
 {
-	if (fileName == "-")
-	{
-		// Parse the config file from stdin
-		cfg.parse(cin, fileName);
-		return;
-	}
+    if (fileName == "-")
+    {
+        // Parse the config file from stdin
+        Stdin in;
+        cfg.parse(in);
+        return;
+    }
 
 	// Remove trailing slashes, if any
 	string fname = fileName;
@@ -202,12 +202,9 @@ void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
 		string file = str::joinpath(fname, "config");
 
         ConfigFile section;
-        ifstream in;
-        in.open(file.c_str(), ios::in);
-        if (!in.is_open() || in.fail())
-            throw_file_error(file, "cannot open config file for reading");
+        runtime::InputFile in(file);
         // Parse the config file into a new section
-        section.parse(in, file);
+        section.parse(in);
         // Fill in missing bits
         section.setValue("name", name);
         section.setValue("path", sys::abspath(fname));
@@ -215,12 +212,9 @@ void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
         cfg.mergeInto(name, section);
     } else {
         // If it's a file, then it's a merged config file
-        ifstream in;
-        in.open(fname.c_str(), ios::in);
-        if (!in.is_open() || in.fail())
-            throw_file_error(fname, "cannot open config file for reading");
+        runtime::InputFile in(fname);
         // Parse the config file
-        cfg.parse(in, fname);
+        cfg.parse(in);
     }
 }
 

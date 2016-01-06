@@ -43,9 +43,8 @@ struct arki_dataset_discard_shar {
 			"type = discard\n"
 			"name = error\n"
 			"path = error\n";
-		stringstream incfg(conf);
-		config.parse(incfg, "(memory)");
-	}
+        config.parse(conf, "(memory)");
+    }
 };
 TESTGRP(arki_dataset_discard);
 

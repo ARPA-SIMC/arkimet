@@ -25,6 +25,22 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
+File::File(const ConfigFile& cfg)
+    : Reader(cfg.value("name"), cfg)
+{
+    m_format = cfg.value("format");
+}
+
+void File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+{
+    scan(q, dest);
+}
+
+void File::query_summary(const Matcher& matcher, Summary& summary)
+{
+    scan(DataQuery(matcher), [&](unique_ptr<Metadata> md) { summary.add(*md); return true; });
+}
+
 void File::readConfig(const std::string& fname, ConfigFile& cfg)
 {
     ConfigFile section;
@@ -106,38 +122,23 @@ File* File::create(const ConfigFile& cfg)
     throw runtime_error(ss.str());
 }
 
-File::File(const ConfigFile& cfg)
-    : Reader(str::basename(cfg.value("path")), cfg)
+FdFile::FdFile(const ConfigFile& cfg) : File(cfg)
 {
-    m_pathname = cfg.value("path");
-    m_format = cfg.value("format");
-}
-
-FdFile::FdFile(const ConfigFile& cfg) : File(cfg), fd(-1)
-{
-    if (m_pathname == "-")
-    {
-        fd = 0;
-    } else {
-        fd = ::open(m_pathname.c_str(), O_RDONLY);
-        if (fd == -1)
-            throw std::system_error(errno, std::system_category(), "cannot open " + m_pathname);
-    }
+    string pathname = cfg.value("path");
+    if (pathname == "-")
+        fd = new Stdin;
+    else
+        fd = new arki::File(pathname, O_RDONLY);
 }
 
 FdFile::~FdFile()
 {
-    if (fd != -1) ::close(fd);
+    delete fd;
 }
 
-void File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+std::string FdFile::pathname() const
 {
-    scan(q, dest);
-}
-
-void File::query_summary(const Matcher& matcher, Summary& summary)
-{
-    scan(DataQuery(matcher), [&](unique_ptr<Metadata> md) { summary.add(*md); return true; });
+    return fd->name();
 }
 
 static shared_ptr<sort::Stream> wrap_with_query(const dataset::DataQuery& q, metadata_dest_func& dest)
@@ -164,11 +165,11 @@ ArkimetFile::~ArkimetFile() {}
 void ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     auto sorter = wrap_with_query(q, dest);
-    Metadata::read_file(fd, m_pathname, dest);
+    Metadata::read_file(*fd, dest);
     if (sorter) sorter->flush();
 }
 
-YamlFile::YamlFile(const ConfigFile& cfg) : FdFile(cfg), reader(LineReader::from_fd(fd, m_pathname).release()) {}
+YamlFile::YamlFile(const ConfigFile& cfg) : FdFile(cfg), reader(LineReader::from_fd(*fd).release()) {}
 YamlFile::~YamlFile() { delete reader; }
 void YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
@@ -177,7 +178,7 @@ void YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
     while (true)
     {
         unique_ptr<Metadata> md(new Metadata);
-        if (!md->readYaml(*reader, m_pathname))
+        if (!md->readYaml(*reader, fd->name()))
             break;
         if (!q.matcher(*md))
             continue;
@@ -187,11 +188,16 @@ void YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
     if (sorter) sorter->flush();
 }
 
-RawFile::RawFile(const ConfigFile& cfg) : File(cfg)
+RawFile::RawFile(const ConfigFile& cfg) : File(cfg), m_pathname(cfg.value("path"))
 {
 }
 
 RawFile::~RawFile() {}
+
+std::string RawFile::pathname() const
+{
+    return m_pathname;
+}
 
 void RawFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {

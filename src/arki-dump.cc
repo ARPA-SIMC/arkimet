@@ -310,14 +310,14 @@ int main(int argc, const char* argv[])
         if (opts.reverse_data->boolValue())
         {
             Metadata md;
-            auto reader = LineReader::from_fd(*in, in->name());
+            auto reader = LineReader::from_fd(*in);
             while (md.readYaml(*reader, in->name()))
                 md.write(*out);
         }
         else if (opts.reverse_summary->boolValue())
         {
             Summary summary;
-            auto reader = LineReader::from_fd(*in, in->name());
+            auto reader = LineReader::from_fd(*in);
             while (summary.readYaml(*reader, in->name()))
                 summary.write(*out, out->name());
         }

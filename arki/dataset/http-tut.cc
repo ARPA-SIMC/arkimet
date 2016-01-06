@@ -58,8 +58,7 @@ struct arki_dataset_http_shar {
 			"step = daily\n"
 			"name = error\n"
 			"path = error\n";
-		stringstream incfg(conf);
-		config.parse(incfg, "(memory)");
+        config.parse(conf, "(memory)");
 
         // Import data into the datasets
         Metadata md;
@@ -97,9 +96,8 @@ def_test(1)
 			"[error]\n"
 			"type = remote\n"
 			"path = http://foo.bar/foo/dataset/error\n";
-		stringstream incfg(conf);
-		ConfigFile cfg;
-		cfg.parse(incfg, "(memory)");
+        ConfigFile cfg;
+        cfg.parse(conf);
 
 		ensure_equals(HTTP::allSameRemoteServer(cfg), "http://foo.bar/foo");
 	}
@@ -117,9 +115,8 @@ def_test(1)
 			"[error]\n"
 			"type = remote\n"
 			"path = http://foo.bar/foo/dataset/error\n";
-		stringstream incfg(conf);
-		ConfigFile cfg;
-		cfg.parse(incfg, "(memory)");
+        ConfigFile cfg;
+        cfg.parse(conf);
 
 		ensure_equals(HTTP::allSameRemoteServer(cfg), "");
 	}
@@ -137,9 +134,8 @@ def_test(1)
 			"[error]\n"
 			"type = remote\n"
 			"path = http://foo.bar/foo/dataset/error\n";
-		stringstream incfg(conf);
-		ConfigFile cfg;
-		cfg.parse(incfg, "(memory)");
+        ConfigFile cfg;
+        cfg.parse(conf);
 
 		ensure_equals(HTTP::allSameRemoteServer(cfg), "");
 	}

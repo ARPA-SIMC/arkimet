@@ -1,14 +1,16 @@
 #ifndef ARKI_CONFIGFILE_H
 #define ARKI_CONFIGFILE_H
 
+#include <arki/file.h>
 #include <map>
 #include <string>
-#include <iosfwd>
 #include <stdexcept>
 
 namespace arki {
 
-class ConfigFileParseError : public std::runtime_error
+namespace configfile {
+
+class ParseError : public std::runtime_error
 {
 protected:
     std::string m_name;
@@ -18,32 +20,33 @@ protected:
     static std::string describe(const std::string& filename, int line, const std::string& error);
 
 public:
-    ConfigFileParseError(const std::string& filename, int line, const std::string& error)
+    ParseError(const std::string& filename, int line, const std::string& error)
         : std::runtime_error(describe(filename, line, error)), m_name(filename), m_line(line), m_error(error) {}
-    ~ConfigFileParseError() throw () {}
+    ~ParseError() throw () {}
 };
 
+/**
+ * Represent the source file information of where a value has been found
+ */
+struct Position
+{
+    std::string pathname;
+    size_t lineno;
 
-class ConfigFileParserHelper;
+    Position(const std::string& pathname, const size_t& lineno)
+        : pathname(pathname), lineno(lineno) {}
+};
+
+class Parser;
+
+}
 
 /**
  * A tree of configuration information
  */
 class ConfigFile
 {
-public:
-	/**
-	 * Represent the source file information of where a value has been found
-	 */
-	struct FilePos {
-		std::string pathname;
-		size_t lineno;
-
-		FilePos(const std::string& pathname, const size_t& lineno):
-			pathname(pathname), lineno(lineno) {}
-	};
-
-private:
+protected:
 	/// The configuration values in this node
 	std::map<std::string, std::string> m_values;
 
@@ -54,27 +57,12 @@ private:
 	 * If a values_pos is missing for a value, it means that the source
 	 * information is unknown.
 	 */
-	std::map<std::string, FilePos> values_pos;
+	std::map<std::string, configfile::Position> values_pos;
 
 	/**
 	 * Subnodes of this node
 	 */
 	std::map<std::string, ConfigFile*> sections;
-
-	/**
-	 * Parse one normal configuration file line
-	 *
-	 * The line may contain a comment, a key=value assignment or be empty.
-	 */
-	void parseLine(ConfigFileParserHelper& h, const std::string& line);
-
-	/**
-	 * Parse configuration from the given input stream.
-	 *
-	 * Finding the beginning of a new section will stop
-	 * the parsing.
-	 */
-	void parseSection(ConfigFileParserHelper& h, std::istream& in);
 
 public:
 	ConfigFile();
@@ -129,15 +117,15 @@ public:
 	 */
 	std::string value(const std::string& key) const;
 
-	/**
-	 * Retrieve information about where a value has been parsed.
-	 *
-	 * @returns
-	 *   none if there is no information for the given key,
-	 *   else, a pointer to a ConfigFile::FilePos structure, which will be
-	 *   valid as long as this ConfigFile object is not modified.
-	 */
-	const FilePos* valueInfo(const std::string& key) const;
+    /**
+     * Retrieve information about where a value has been parsed.
+     *
+     * @returns
+     *   none if there is no information for the given key, else, a pointer to
+     *   a configfile::Position structure, which will be valid as long as this
+     *   ConfigFile object is not modified.
+     */
+    const configfile::Position* valueInfo(const std::string& key) const;
 
     /// Set a value
     void setValue(const std::string& key, const std::string& value);
@@ -163,24 +151,36 @@ public:
 	 */
 	void deleteSection(const std::string& key);
 
-	/**
-	 * Parse configuration from the given input stream.
-	 *
-	 * The sections that are found are added to this ConfigFile.
-	 *
-	 * @param in
-	 *   The input stream to parse.
-	 * @param fileName
-	 *   The file name to use to generate useful parse error messages.
-	 */
-	void parse(std::istream& in, const std::string& fileName);
+    /**
+     * Parse configuration from the given input file.
+     *
+     * The sections that are found are added to this ConfigFile.
+     *
+     * @param in
+     *   The input lines to parse.
+     * @param fileName
+     *   The file name to use to generate useful parse error messages.
+     */
+    void parse(NamedFileDescriptor& in);
+
+    /**
+     * Parse configuration from the given input stream.
+     *
+     * The sections that are found are added to this ConfigFile.
+     *
+     * @param in
+     *   The input lines to parse.
+     * @param fileName
+     *   The file name to use to generate useful parse error messages.
+     */
+    void parse(LineReader& in, const std::string& pathname);
 
     /**
      * Parse configuration from the given string.
      *
      * The values and sections that are found are added to this ConfigFile.
      */
-    void parse(const std::string& in, const std::string& file_name="memory buffer");
+    void parse(const std::string& in, const std::string& pathname="memory buffer");
 
     /**
      * Output this configuration to the given output stream
@@ -194,6 +194,8 @@ public:
 	 * Convenient function to parse a boolean
 	 */
 	static bool boolValue(const std::string& str, bool def = false);
+
+    friend class configfile::Parser;
 };
 
 }

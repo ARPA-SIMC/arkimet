@@ -662,6 +662,11 @@ void Metadata::read_file(int in, const metadata::ReadContext& file, metadata_des
     }
 }
 
+void Metadata::read_file(NamedFileDescriptor& fd, metadata_dest_func mdc)
+{
+    read_file(fd, fd.name(), mdc);
+}
+
 void Metadata::read_group(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest)
 {
     // Handle metadata group

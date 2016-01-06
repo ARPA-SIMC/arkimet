@@ -17,6 +17,21 @@ namespace arki {
 using arki::utils::sys::NamedFileDescriptor;
 using arki::utils::sys::File;
 
+struct Stdin : public NamedFileDescriptor
+{
+    Stdin();
+};
+
+struct Stdout : public NamedFileDescriptor
+{
+    Stdout();
+};
+
+struct Stderr : public NamedFileDescriptor
+{
+    Stderr();
+};
+
 
 /**
  * Abstract interface to things that return a line of text at a time
@@ -50,7 +65,7 @@ struct LineReader
      * the file descriptor is likely to be positioned further ahead than the last
      * line read.
      */
-    static std::unique_ptr<LineReader> from_fd(int fd, const std::string& pathname);
+    static std::unique_ptr<LineReader> from_fd(NamedFileDescriptor& fd);
 
     /**
      * Create a LineReader from a buffer on a string.

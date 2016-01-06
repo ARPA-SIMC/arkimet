@@ -102,7 +102,7 @@ int main(int argc, const char* argv[])
         if (opts.inputfiles->values().empty())
         {
             // Process stdin
-            runtime::Stdin in;
+            Stdin in;
             process(consumer, in);
             consumer.flush();
         } else {
