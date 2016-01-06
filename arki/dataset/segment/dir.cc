@@ -8,7 +8,8 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/scan/any.h"
-#include <arki/utils/string.h>
+#include "arki/utils/string.h"
+#include "arki/dataset.h"
 #include <cerrno>
 #include <cstring>
 #include <cstdint>
@@ -301,8 +302,8 @@ State Segment::check(dataset::Reporter& reporter, const std::string& ds, const m
                 validate(*i, *validator);
             } catch (std::exception& e) {
                 stringstream out;
-                out << i->source();
-                nag::warning("%s: validation failed at %s: %s", absname.c_str(), out.str().c_str(), e.what());
+                out << "validation failed at " << i->source() << ": " << e.what();
+                reporter.segment_info(ds, relname, out.str());
                 return SEGMENT_UNALIGNED;
             }
         }
@@ -315,7 +316,9 @@ State Segment::check(dataset::Reporter& reporter, const std::string& ds, const m
         set<size_t>::const_iterator ei = expected.find(source.offset);
         if (ei == expected.end())
         {
-            nag::warning("%s: expected file %zd not found in the file system", absname.c_str(), (size_t)source.offset);
+            stringstream ss;
+            ss << "expected file " << source.offset << " not found in the file system";
+            reporter.segment_info(ds, relname, ss.str());
             return SEGMENT_UNALIGNED;
         } else
             expected.erase(ei);
@@ -325,14 +328,16 @@ State Segment::check(dataset::Reporter& reporter, const std::string& ds, const m
 
     if (!expected.empty())
     {
-        nag::warning("%s: found %zd file(s) that the index does now know about", absname.c_str(), expected.size());
+        stringstream ss;
+        ss << "found " << expected.size() << " file(s) that the index does now know about";
+        reporter.segment_info(ds, relname, ss.str());
         return SEGMENT_DIRTY;
     }
 
     // Take note of files with holes
     if (out_of_order)
     {
-        nag::verbose("%s: contains deleted data or data to be reordered", absname.c_str());
+        reporter.segment_info(ds, relname, "contains deleted data or data to be reordered");
         return SEGMENT_DIRTY;
     } else {
         return SEGMENT_OK;

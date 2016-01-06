@@ -9,6 +9,7 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils.h"
+#include "arki/dataset.h"
 #include "arki/nag.h"
 #include <algorithm>
 #include <sys/types.h>
@@ -124,8 +125,8 @@ State Segment::check_fd(dataset::Reporter& reporter, const std::string& ds, cons
                 validate(*i, *validator);
             } catch (std::exception& e) {
                 stringstream out;
-                out << i->source();
-                nag::warning("%s: validation failed at %s: %s", absname.c_str(), out.str().c_str(), e.what());
+                out << "validation failed at " << i->source() << ": " << e.what();
+                reporter.segment_info(ds, relname, out.str());
                 return SEGMENT_UNALIGNED;
             }
         }
@@ -155,7 +156,9 @@ State Segment::check_fd(dataset::Reporter& reporter, const std::string& ds, cons
     off_t file_size = utils::compress::filesize(absname);
     if (file_size < end_of_last_data_checked)
     {
-        nag::warning("%s: file looks truncated: its size is %zd but data is known to exist until %zd bytes", absname.c_str(), file_size, (size_t)end_of_last_data_checked);
+        stringstream ss;
+        ss << "file looks truncated: its size is " << file_size << " but data is known to exist until " << end_of_last_data_checked << " bytes";
+        reporter.segment_info(ds, relname, ss.str());
         return SEGMENT_UNALIGNED;
     }
 
