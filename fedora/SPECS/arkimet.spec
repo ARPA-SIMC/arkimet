@@ -39,7 +39,7 @@ sh autogen.sh
 #patch1
 
 %build
-%configure --with-wibble=embedded
+%configure
 make
 make check
 
