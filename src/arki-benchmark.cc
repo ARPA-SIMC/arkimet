@@ -336,7 +336,11 @@ int main(int argc, const char* argv[])
 			// Delete the dataset if it exists
 			// FIXME: unsafe, and not needed if --list is used, but we're a
 			// benchmark, not a general purpose tool
-			(void)system(("rm -rf " + i->second->value("path")).c_str());
+		        int systemRet = system(("rm -rf " + i->second->value("path")).c_str());
+			if(systemRet == -1){
+			  // FIXME: ponghino to get rid of warn_unused_result, see:
+			  // http://stackoverflow.com/questions/9150397/warning-ignoring-return-value-of-system-c
+			}
 
 			// (Re)create the dataset from scratch
 			Benchmark::root()->addChild(new DSBenchmark(i->first, *i->second, info));
