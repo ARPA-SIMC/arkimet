@@ -336,7 +336,7 @@ int main(int argc, const char* argv[])
 			// Delete the dataset if it exists
 			// FIXME: unsafe, and not needed if --list is used, but we're a
 			// benchmark, not a general purpose tool
-			system(("rm -rf " + i->second->value("path")).c_str());
+			(void)system(("rm -rf " + i->second->value("path")).c_str());
 
 			// (Re)create the dataset from scratch
 			Benchmark::root()->addChild(new DSBenchmark(i->first, *i->second, info));
