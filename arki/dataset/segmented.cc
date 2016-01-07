@@ -12,6 +12,7 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
 #include "arki/utils/compress.h"
+#include <system_error>
 #include <sstream>
 
 using namespace std;

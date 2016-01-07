@@ -5,6 +5,7 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include <arki/wibble/sys/signal.h>
+#include <system_error>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/uio.h>

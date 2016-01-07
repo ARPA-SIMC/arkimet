@@ -20,6 +20,7 @@
 #include "arki/nag.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include <system_error>
 #include <sstream>
 #include <sys/types.h>
 #include <sys/stat.h>
