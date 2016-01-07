@@ -7,6 +7,7 @@
 #include "arki/summary.h"
 #include "arki/utils/yaml.h"
 #include "arki/utils/files.h"
+#include <system_error>
 #include <algorithm>
 #include <iostream>
 

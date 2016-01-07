@@ -1,5 +1,6 @@
 #include "config.h"
 #include "arki/scan/nc.h"
+#include "arki/file.h"
 #include "arki/metadata.h"
 #include "arki/runtime/config.h"
 #include "arki/utils/files.h"
@@ -31,8 +32,10 @@ struct NetCDFValidator : public Validator
 {
 	virtual ~NetCDFValidator() {}
 
+	std::string format() const override { return "nc"; }
+
 	// Validate data found in a file
-	virtual void validate(int fd, off_t offset, size_t size, const std::string& fname) const
+	void validate_file(NamedFileDescriptor& fd, off_t offset, size_t size) const override
 	{
 #if 0
 		char buf[1024];
@@ -49,7 +52,7 @@ struct NetCDFValidator : public Validator
 	}
 
 	// Validate a memory buffer
-	virtual void validate(const void* buf, size_t size) const
+	void validate_buf(const void* buf, size_t size) const override
 	{
 #if 0
 		std::string s((const char *)buf, size);
@@ -90,14 +93,14 @@ void NetCDF::open(const std::string& filename)
 {
     string basedir, relname;
     utils::files::resolve_path(filename, basedir, relname);
-    open(sys::fs::abspath(filename), basedir, relname);
+    open(sys::abspath(filename), basedir, relname);
 }
 
 void NetCDF::open(const std::string& filename, const std::string& basedir, const std::string& relname)
 {
     // Close the previous file if needed
     close();
-    this->filename = sys::fs::abspath(filename);
+    this->filename = sys::abspath(filename);
     this->basedir = basedir;
     this->relname = relname;
     if (relname == "-")
@@ -115,7 +118,7 @@ bool NetCDF::next(Metadata& md)
 {
     if (!backend) return false;
 
-    NcFile& nc = backend->nc;
+    //NcFile& nc = backend->nc;
 
 #if 0
     meteo::vm2::Value value;

@@ -1,6 +1,7 @@
 #include "server.h"
 #include "arki/exceptions.h"
 #include "arki/utils/string.h"
+#include <system_error>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>

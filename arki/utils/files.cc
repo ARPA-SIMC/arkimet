@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <system_error>
 #include <unistd.h>
 #include <cstdio>
 #include <cstdlib>
