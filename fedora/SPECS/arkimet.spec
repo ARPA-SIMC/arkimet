@@ -103,7 +103,7 @@ else
 fi
 
 %changelog
-* Thu Jan  7 2015 Daniele Branchini <dbranchini@arpa.emr.it> - 1.0-1%{dist}
+* Thu Jan  7 2016 Daniele Branchini <dbranchini@arpa.emr.it> - 1.0-1%{dist}
 - Ported to c++11
 
 * Tue Oct 13 2015 Daniele Branchini <dbranchini@arpa.emr.it> - 0.81-1%{dist}
