@@ -264,7 +264,7 @@ void Merged::query_summary(const Matcher& matcher, Summary& summary)
         throw_consistency_error("running summary queries on multiple datasets", str::join("; ", errors.begin(), errors.end()));
 }
 
-void Merged::query_bytes(const dataset::ByteQuery& q, int out)
+void Merged::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
     // Here we must serialize, as we do not know how to merge raw data streams
     //

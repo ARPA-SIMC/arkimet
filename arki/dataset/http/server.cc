@@ -317,7 +317,8 @@ void ReaderServer::do_queryBytes(const QueryBytesParams& parms, net::http::Reque
     }
 
     // Produce the results
-    ds.query_bytes(bq, req.sock);
+    NamedFileDescriptor out(req.sock, "socket");
+    ds.query_bytes(bq, out);
 
     // If we had empty output, headers were not sent: catch up
     headers.sendIfNotFired();

@@ -183,28 +183,11 @@ OstreamWriter::~OstreamWriter()
 {
 }
 
-size_t OstreamWriter::stream(Metadata& md, std::ostream& out) const
+size_t OstreamWriter::stream(Metadata& md, NamedFileDescriptor& out) const
 {
     const std::vector<uint8_t>& buf = md.getData();
     wibble::sys::sig::ProcMask pm(blocked);
-    out.write((const char*)buf.data(), buf.size());
-    out.flush();
-    return buf.size();
-}
-
-size_t OstreamWriter::stream(Metadata& md, int out) const
-{
-    const std::vector<uint8_t>& buf = md.getData();
-    wibble::sys::sig::ProcMask pm(blocked);
-
-    ssize_t res = ::write(out, buf.data(), buf.size());
-    if (res < 0 || (unsigned)res != buf.size())
-    {
-        stringstream ss;
-        ss << "cannot write buf.size() bytes";
-        throw std::system_error(errno, std::system_category(), ss.str());
-    }
-
+    out.write_all_or_throw(buf);
     return buf.size();
 }
 

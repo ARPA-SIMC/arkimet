@@ -130,8 +130,7 @@ public:
     OstreamWriter();
     virtual ~OstreamWriter();
 
-    size_t stream(Metadata& md, std::ostream& out) const override;
-    size_t stream(Metadata& md, int out) const override;
+    size_t stream(Metadata& md, NamedFileDescriptor& out) const override;
 };
 
 

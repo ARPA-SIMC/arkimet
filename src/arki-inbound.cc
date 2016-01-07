@@ -117,7 +117,8 @@ int main(int argc, const char* argv[])
                     format = fname.substr(0, pos);
                     fname = fname.substr(pos+1);
                 }
-                inbound.testdispatch(fname, format, 1);
+                Stdout out;
+                inbound.testdispatch(fname, format, out);
             }
         } else if (opts.do_import->isSet()) {
             unique_ptr<Printer> printer = Printer::create(opts);

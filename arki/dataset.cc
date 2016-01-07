@@ -70,7 +70,7 @@ void Writer::flush() {}
 
 Pending Writer::test_writelock() { return Pending(); }
 
-void Reader::query_bytes(const dataset::ByteQuery& q, int out)
+void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
     switch (q.type)
     {

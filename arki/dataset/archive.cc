@@ -269,7 +269,7 @@ void ArchivesReader::query_data(const dataset::DataQuery& q, metadata_dest_func 
     });
 }
 
-void ArchivesReader::query_bytes(const dataset::ByteQuery& q, int out)
+void ArchivesReader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
     archives->iter([&](Reader& r) {
         r.query_bytes(q, out);

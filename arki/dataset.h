@@ -3,6 +3,7 @@
 
 /// Base interface for arkimet datasets
 #include <arki/matcher.h>
+#include <arki/file.h>
 #include <arki/transaction.h>
 #include <string>
 #include <memory>
@@ -202,7 +203,7 @@ public:
      *
      * The default implementation in Reader is based on queryData.
      */
-    virtual void query_bytes(const dataset::ByteQuery& q, int out);
+    virtual void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out);
 
     /**
      * Expand the given begin and end ranges to include the datetime extremes

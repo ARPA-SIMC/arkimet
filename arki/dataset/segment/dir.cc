@@ -519,12 +519,7 @@ OstreamWriter::~OstreamWriter()
 {
 }
 
-size_t OstreamWriter::stream(Metadata& md, std::ostream& out) const
-{
-    throw std::runtime_error("dir::OstreamWriter::stream not implemented");
-}
-
-size_t OstreamWriter::stream(Metadata& md, int out) const
+size_t OstreamWriter::stream(Metadata& md, NamedFileDescriptor& out) const
 {
     throw std::runtime_error("dir::OstreamWriter::stream not implemented");
 }

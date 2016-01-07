@@ -242,7 +242,8 @@ this->add_method("postprocess", [](Fixture& f) {
 
     dataset::ByteQuery bq;
     bq.setPostprocess(f.td.test_data[0].matcher, "testcountbytes");
-    ds->query_bytes(bq, 2);
+    Stderr outfd;
+    ds->query_bytes(bq, outfd);
 
     // Verify that the data that was output was exactly as long as the
     // encoded metadata and its data

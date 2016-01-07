@@ -6,6 +6,7 @@
 #include "arki/scan/any.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
+#include <fcntl.h>
 #include <sstream>
 
 namespace std {
@@ -123,10 +124,12 @@ def_test(2)
 // Test stream writer
 def_test(3)
 {
-    std::stringstream out;
     const OstreamWriter* w = OstreamWriter::get("grib");
+    File out("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
     w->stream(mdc[0], out);
-    wassert(actual(out.str().size()) == datasize(mdc[0]));
+    out.close();
+
+    wassert(actual(sys::size("tmpfile")) == datasize(mdc[0]));
 }
 
 // Test raw append

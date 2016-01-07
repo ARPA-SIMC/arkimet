@@ -205,10 +205,10 @@ struct BufState : public ReqState
 
 struct OstreamState : public ReqState
 {
-    sys::FileDescriptor out;
+    NamedFileDescriptor& out;
     std::function<void()> data_start_hook;
 
-    OstreamState(http::CurlEasy& curl, int out, std::function<void()> data_start_hook = 0)
+    OstreamState(http::CurlEasy& curl, NamedFileDescriptor& out, std::function<void()> data_start_hook = 0)
         : ReqState(curl), out(out), data_start_hook(data_start_hook)
     {
         checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, OstreamState::writefunc));
@@ -224,8 +224,7 @@ struct OstreamState : public ReqState
             s.data_start_hook = nullptr;
         }
         if (size_t res = s.check_error(ptr, size, nmemb)) return res;
-        s.out.write((const char*)ptr, size * nmemb);
-        return size * nmemb;
+        return s.out.write((const char*)ptr, size * nmemb);
     }
 };
 
@@ -325,7 +324,7 @@ void HTTP::query_summary(const Matcher& matcher, Summary& summary)
     summary.read(dec, url);
 }
 
-void HTTP::query_bytes(const dataset::ByteQuery& q, int out)
+void HTTP::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
     m_curl.reset();
     http::CurlForm form;
@@ -556,7 +555,7 @@ void HTTPInbound::scan(const std::string& fname, const std::string& format, meta
         s.throwError("querying inbound/scan from " + url);
 }
 
-void HTTPInbound::testdispatch(const std::string& fname, const std::string& format, int out)
+void HTTPInbound::testdispatch(const std::string& fname, const std::string& format, NamedFileDescriptor& out)
 {
     m_curl.reset();
 

@@ -5,11 +5,11 @@
 
 #include <arki/libconfig.h>
 #include <arki/defs.h>
+#include <arki/file.h>
 #include <arki/transaction.h>
 #include <arki/nag.h>
 #include <string>
 #include <vector>
-#include <iosfwd>
 #include <sys/types.h>
 #include <memory>
 
@@ -314,8 +314,7 @@ class OstreamWriter
 public:
     virtual ~OstreamWriter();
 
-    [[deprecated("stream to fd instead")]] virtual size_t stream(Metadata& md, std::ostream& out) const = 0;
-    virtual size_t stream(Metadata& md, int out) const = 0;
+    virtual size_t stream(Metadata& md, NamedFileDescriptor& out) const = 0;
 
     /**
      * Returns a pointer to a static instance of the appropriate OstreamWriter

@@ -33,7 +33,7 @@ public:
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
-    void query_bytes(const dataset::ByteQuery& q, int out) override;
+    void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out) override;
 };
 
 /**

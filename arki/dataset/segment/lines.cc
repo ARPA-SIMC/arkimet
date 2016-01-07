@@ -182,38 +182,18 @@ OstreamWriter::~OstreamWriter()
 {
 }
 
-size_t OstreamWriter::stream(Metadata& md, std::ostream& out) const
+size_t OstreamWriter::stream(Metadata& md, NamedFileDescriptor& out) const
 {
     const std::vector<uint8_t>& buf = md.getData();
-    wibble::sys::sig::ProcMask pm(blocked);
-    out.write((const char*)buf.data(), buf.size());
-    // Cannot use endl since we don't know how long it is, and we would risk
-    // returning the wrong number of bytes written
-    out << "\n";
-    out.flush();
+    struct iovec todo[2] = {
+        { (void*)buf.data(), buf.size() },
+        { (void*)"\n", 1 },
+    };
+    ssize_t res = ::writev(out, todo, 2);
+    if (res < 0 || (unsigned)res != buf.size() + 1)
+        throw_system_error("cannot write " + to_string(buf.size() + 1) + " bytes to " + out.name());
     return buf.size() + 1;
 }
-
-size_t OstreamWriter::stream(Metadata& md, int out) const
-{
-    const std::vector<uint8_t>& buf = md.getData();
-    wibble::sys::sig::ProcMask pm(blocked);
-
-    ssize_t res = ::write(out, buf.data(), buf.size());
-    if (res < 0 || (unsigned)res != buf.size())
-    {
-        stringstream ss;
-        ss << "cannot write " << buf.size() << " bytes";
-        throw std::system_error(errno, std::system_category(), ss.str());
-    }
-
-    res = ::write(out, "\n", 1);
-    if (res < 0 || (unsigned)res != 1)
-        throw_system_error("cannot write newline");
-
-    return buf.size() + 1;
-}
-
 
 }
 }
