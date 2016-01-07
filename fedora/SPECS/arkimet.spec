@@ -1,18 +1,18 @@
 Summary: Archive for weather information
 Name: arkimet
-Version: 0.81
-Release: 2
+Version: 1.0
+Release: 1
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
 Source0: https://github.com/arpa-simc/%{name}/archive/v%{version}-%{release}.tar.gz#/%{name}-%{version}-%{release}.tar.gz
 Source1: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.init
 Source2: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.default
-Patch0: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.wibble-embedded-cppflags-fix.patch
-Patch1: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.wibble-remove-posix-ifdef.patch
+#Patch0: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.wibble-embedded-cppflags-fix.patch
+#Patch1: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.wibble-remove-posix-ifdef.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 BuildRequires: doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl-devel, geos-devel, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 3.0, flex, bison, meteo-vm2-devel >= 0.12, hdf5-devel
-Requires: hdf5, meteo-vm2 >= 0.12, grib_api-1.10.0, libwibble-devel
+Requires: hdf5, meteo-vm2 >= 0.12, grib_api-1.10.0
 Requires(preun): /sbin/chkconfig, /sbin/service
 Requires(post): /sbin/chkconfig, /sbin/service
 
@@ -35,13 +35,13 @@ Group:    Applications/Meteo
 %prep
 %setup -q -n %{name}-%{version}-%{release}
 sh autogen.sh
-%patch0
-%patch1
+#patch0
+#patch1
 
 %build
 %configure --with-wibble=embedded
 make
-#make check
+make check
 
 %install
 [ "%{buildroot}" != / ] && rm -rf %{buildroot}
@@ -103,6 +103,9 @@ else
 fi
 
 %changelog
+* Thu Jan  7 2015 Daniele Branchini <dbranchini@arpa.emr.it> - 1.0-1%{dist}
+- Ported to c++11
+
 * Tue Oct 13 2015 Daniele Branchini <dbranchini@arpa.emr.it> - 0.81-1%{dist}
 - Ported to wreport 3
 - Fixed argument passing, that caused use of a deallocated string
