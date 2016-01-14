@@ -133,7 +133,7 @@ void Collector::dump(std::ostream& out) const
 
 void Logger::operator()(const Event& e)
 {
-    fprintf(out, "%s:%zu:%zu:%s\n", e.filename().c_str(), e.offset, e.size, e.desc);
+    fprintf(out, "%s:%zu:%zu:%s\n", e.filename().c_str(), (size_t)e.offset, e.size, e.desc);
 }
 
 }
