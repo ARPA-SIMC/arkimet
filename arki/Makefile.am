@@ -178,10 +178,10 @@ BUILT_SOURCES = $(top_builddir)/arki/matcher/reftime/reftime-lex.h \
 
 all_built_sources: $(BUILT_SOURCES)
 
-$(top_builddir)/arki/matcher/reftime/reftime-lex.h $(top_builddir)/arki/matcher/reftime/reftime-lex.cc: $(srcdir)/matcher/reftime/reftime-lex.ll
+%-lex.h %-lex.cc: %-lex.ll
 	$(srcdir)/buildflex $<
 
-$(top_builddir)/arki/matcher/reftime/reftime-parse.hh $(top_builddir)/arki/matcher/reftime/reftime-parse.cc: $(srcdir)/matcher/reftime/reftime-parse.yy
+%-parse.hh %-parse.cc: %-parse.yy
 	$(srcdir)/buildbison $<
 
 lib_LTLIBRARIES = libarkimet.la
@@ -618,6 +618,4 @@ tests_arki_test_LDADD += libarkimet.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthrea
 EXTRA_DIST = runtest buildbison buildflex \
 	     matcher/reftime/reftime-lex.ll \
 	     matcher/reftime/reftime-parse.yy \
-	     $(top_builddir)/arki/matcher/reftime/reftime-lex.h \
-	     $(top_builddir)/arki/matcher/reftime/reftime-parse.hh \
-	     $(BUILT_SOURCES)
+	     $(all_built_sources)
