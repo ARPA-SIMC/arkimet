@@ -619,4 +619,5 @@ EXTRA_DIST = runtest buildbison buildflex \
 	     matcher/reftime/reftime-lex.ll \
 	     matcher/reftime/reftime-parse.yy \
 	     $(top_builddir)/arki/matcher/reftime/reftime-lex.h \
-	     $(top_builddir)/arki/matcher/reftime/reftime-parse.hh
+	     $(top_builddir)/arki/matcher/reftime/reftime-parse.hh \
+	     $(BUILT_SOURCES)
