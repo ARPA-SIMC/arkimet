@@ -256,9 +256,16 @@ struct SummaryShortProcessor : public SingleOutputProcessor
     summary_print_func printer;
     Summary summary;
     std::function<void()> data_start_hook;
+    bool annotate;
+    bool json;
 
     SummaryShortProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out)
-        : SingleOutputProcessor(out), matcher(q), printer(create_summary_printer(maker, output)), data_start_hook(maker.data_start_hook)
+        : SingleOutputProcessor(out), matcher(q),
+          printer(create_summary_printer(maker, output)),
+          data_start_hook(maker.data_start_hook),
+          annotate(maker.annotate),
+          json(maker.json)
+
     {
     }
 
@@ -279,19 +286,51 @@ struct SummaryShortProcessor : public SingleOutputProcessor
         if (data_start_hook) data_start_hook();
         MDCollector c;
         summary.visit(c);
+
+        shared_ptr<Formatter> formatter;
+        if (annotate)
+            formatter = Formatter::create();
+
         stringstream ss;
-        ss << "Size: " << summary.size() << endl;
-        ss << "Count: " << summary.count() << endl;
-        ss << "Reftime: " << *summary.getReferenceTime() << endl;
-        for (const auto& i: c.items)
+        if (json)
         {
-            ss << types::formatCode(i.first) << ":" << endl;
-            for (const auto& mi: i.second)
-                ss << *mi << endl;
+            emitter::JSON json(ss);
+            json.start_mapping();
+            json.add("size", (uint64_t)summary.size());
+            json.add("count", (uint64_t)summary.count());
+            json.add("reftime");
+            json.add_type(*summary.getReferenceTime());
+
+            json.add("items");
+            json.start_mapping();
+            for (const auto& i: c.items)
+            {
+                json.add(str::lower(types::formatCode(i.first)));
+                json.start_list();
+                for (const auto& mi: i.second)
+                    json.add_type(*mi, formatter.get());
+                json.end_list();
+            }
+            json.end_mapping();
+            json.end_mapping();
         }
+        else
+        {
+            ss << "Size: " << summary.size() << endl;
+            ss << "Count: " << summary.count() << endl;
+            ss << "Reftime: " << *summary.getReferenceTime() << endl;
+            ss << "Items:" << endl;
+            for (const auto& i: c.items)
+            {
+                string uc = str::lower(types::formatCode(i.first));
+                uc[0] = toupper(uc[0]);
+                ss << "    " << uc << ":" << endl;
+                for (const auto& mi: i.second)
+                    ss << "        " << *mi << endl;
+            }
+        }
+
         output.write_all_or_retry(ss.str());
-        // TODO: print
-        //printer(summary);
     }
 };
 
