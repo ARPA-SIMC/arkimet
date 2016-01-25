@@ -9,6 +9,7 @@
 #include "arki/summary.h"
 #include "arki/sort.h"
 #include "arki/utils/string.h"
+#include "arki/types/typeset.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -229,6 +230,71 @@ struct SummaryProcessor : public SingleOutputProcessor
     }
 };
 
+namespace {
+
+struct MDCollector : public summary::Visitor
+{
+    std::map<types::Code, types::TypeSet> items;
+
+    bool operator()(const std::vector<const types::Type*>& md, const summary::Stats& stats) override
+    {
+        for (size_t i = 0; i < md.size(); ++i)
+        {
+            if (!md[i]) continue;
+            types::Code code = codeForPos(i);
+            items[code].insert(*md[i]);
+        }
+        return true;
+    }
+};
+
+}
+
+struct SummaryShortProcessor : public SingleOutputProcessor
+{
+    Matcher matcher;
+    summary_print_func printer;
+    Summary summary;
+    std::function<void()> data_start_hook;
+
+    SummaryShortProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out)
+        : SingleOutputProcessor(out), matcher(q), printer(create_summary_printer(maker, output)), data_start_hook(maker.data_start_hook)
+    {
+    }
+
+    virtual ~SummaryShortProcessor() {}
+
+    std::string describe() const override
+    {
+        return "summary_short";
+    }
+
+    void process(dataset::Reader& ds, const std::string& name) override
+    {
+        ds.query_summary(matcher, summary);
+    }
+
+    void end() override
+    {
+        if (data_start_hook) data_start_hook();
+        MDCollector c;
+        summary.visit(c);
+        stringstream ss;
+        ss << "Size: " << summary.size() << endl;
+        ss << "Count: " << summary.count() << endl;
+        ss << "Reftime: " << *summary.getReferenceTime() << endl;
+        for (const auto& i: c.items)
+        {
+            ss << types::formatCode(i.first) << ":" << endl;
+            for (const auto& mi: i.second)
+                ss << *mi << endl;
+        }
+        output.write_all_or_retry(ss.str());
+        // TODO: print
+        //printer(summary);
+    }
+};
+
 
 struct BinaryProcessor : public SingleOutputProcessor
 {
@@ -325,6 +391,8 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher query, sys::Named
         return unique_ptr<DatasetProcessor>(new BinaryProcessor(*this, query, out));
     else if (summary)
         return unique_ptr<DatasetProcessor>(new SummaryProcessor(*this, query, out));
+    else if (summary_short)
+        return unique_ptr<DatasetProcessor>(new SummaryShortProcessor(*this, query, out));
     else
         return unique_ptr<DatasetProcessor>(new DataProcessor(*this, query, out, data_inline));
 }
@@ -377,12 +445,25 @@ std::string ProcessorMaker::verify_option_consistency()
 			return "--summary conflicts with --inline";
 		if (data_only)
 			return "--summary conflicts with --data";
+        if (summary_short)
+            return "--summary conflicts with --summary-short";
 		if (!postprocess.empty())
 			return "--summary conflicts with --postprocess";
 		if (!sort.empty())
 			return "--summary conflicts with --sort";
 	} else if (!summary_restrict.empty())
 		return "--summary-restrict only makes sense with --summary";
+    if (summary_short)
+    {
+        if (data_inline)
+            return "--summary-short conflicts with --inline";
+        if (data_only)
+            return "--summary-short conflicts with --data";
+        if (!postprocess.empty())
+            return "--summary-short conflicts with --postprocess";
+        if (!sort.empty())
+            return "--summary-short conflicts with --sort";
+    }
 	if (data_inline)
 	{
 		if (data_only)

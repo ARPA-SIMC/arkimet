@@ -134,6 +134,8 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 			" to be written. See /etc/arkimet/targetfile for details.");
 	summary = outputOpts->add<BoolOption>("summary", 0, "summary", "",
 			"output only the summary of the data");
+	summary_short = outputOpts->add<BoolOption>("summary-short", 0, "summary-short", "",
+			"output a list of all metadata values that exist in the summary of the data");
 	summary_restrict = outputOpts->add<StringOption>("summary-restrict", 0, "summary-restrict", "types",
 			"summarise using only the given metadata types (comma-separated list)");
 	sort = outputOpts->add<StringOption>("sort", 0, "sort", "period:order",
@@ -225,6 +227,7 @@ bool CommandLine::parse(int argc, const char* argv[])
 
     // Initialize the processor maker
     pmaker.summary = summary->boolValue();
+    pmaker.summary_short = summary_short->boolValue();
     pmaker.yaml = yaml->boolValue();
     pmaker.json = json->boolValue();
     pmaker.annotate = annotate->boolValue();
@@ -317,6 +320,9 @@ void CommandLine::setupProcessing()
 
     if (inputInfo.sectionSize() == 0)
         throw commandline::BadOption("you need to specify at least one input file or dataset");
+
+    if (summary && summary->isSet() && summary_short && summary_short->isSet())
+        throw commandline::BadOption("--summary and --summary-short cannot be used together");
 
     // Filter the dataset list
     if (restr && restr->isSet())

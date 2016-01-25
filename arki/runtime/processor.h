@@ -50,6 +50,7 @@ struct TargetFileProcessor : public DatasetProcessor
 struct ProcessorMaker
 {
     bool summary = false;
+    bool summary_short = false;
     bool yaml = false;
     bool json = false;
     bool annotate = false;

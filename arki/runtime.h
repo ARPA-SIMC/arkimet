@@ -65,6 +65,7 @@ struct CommandLine : public utils::commandline::StandardParserWithManpage
     utils::commandline::BoolOption* dataInline;
     utils::commandline::BoolOption* dataOnly;
     utils::commandline::BoolOption* summary;
+    utils::commandline::BoolOption* summary_short;
     utils::commandline::BoolOption* merged;
     utils::commandline::BoolOption* ignore_duplicates;
     utils::commandline::StringOption* restr;
