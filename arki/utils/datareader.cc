@@ -78,7 +78,7 @@ public:
     void read(off_t ofs, size_t size, void* buf)
     {
         char dataname[32];
-        snprintf(dataname, 32, "%06zd.%s", ofs, format.c_str());
+        snprintf(dataname, 32, "%06zd.%s", (size_t)ofs, format.c_str());
         sys::File file_fd(dirfd.openat(dataname, O_RDONLY | O_CLOEXEC), str::joinpath(dirfd.name(), dataname));
 
         if (posix_fadvise(file_fd, 0, size, POSIX_FADV_DONTNEED) != 0)
