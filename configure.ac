@@ -3,8 +3,8 @@ dnl Process this file with autoconf to produce a configure script.
 AC_INIT(arkimet, 1.0, [enrico@enricozini.org])
 AC_CONFIG_SRCDIR([configure.ac])
 AM_INIT_AUTOMAKE([foreign subdir-objects nostdinc])
-AM_CONFIG_HEADER(config.h)
-AM_CONFIG_HEADER(arki/libconfig.h)
+AC_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADER(arki/libconfig.h)
 
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -77,6 +77,14 @@ PKG_PROG_PKG_CONFIG
 dnl Support large files on 32bit systems
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
+
+dnl See http://www.gossamer-threads.com/lists/xen/devel/275132
+FILE_OFFSET_BITS_64=
+if test $ac_cv_sys_file_offset_bits = 64
+then
+    FILE_OFFSET_BITS_64=yes
+fi
+AM_CONDITIONAL([FILE_OFFSET_BITS_64], [test x"$FILE_OFFSET_BITS_64" = x"yes"])
 
 dnl Use libtool
 dnl AM_ENABLE_STATIC
