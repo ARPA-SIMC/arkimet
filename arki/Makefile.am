@@ -171,10 +171,11 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/net/http.h \
 		values.h
 
-BUILT_SOURCES = $(top_builddir)/arki/matcher/reftime/reftime-lex.h \
-		$(top_builddir)/arki/matcher/reftime/reftime-lex.cc \
-		$(top_builddir)/arki/matcher/reftime/reftime-parse.hh \
-		$(top_builddir)/arki/matcher/reftime/reftime-parse.cc
+BUILT_SOURCES = \
+		$(srcdir)/matcher/reftime/reftime-lex.h \
+		$(srcdir)/matcher/reftime/reftime-lex.cc \
+		$(srcdir)/matcher/reftime/reftime-parse.hh \
+		$(srcdir)/matcher/reftime/reftime-parse.cc
 
 all_built_sources: $(BUILT_SOURCES)
 
