@@ -2,7 +2,6 @@
 #include "step.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
-#include "arki/types/assigneddataset.h"
 #include "arki/dataset/segment.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -39,8 +38,6 @@ Writer::AcquireResult Outbound::acquire(Metadata& md, ReplaceStrategy replace)
     string dest = m_path + "/" + reldest;
 
     sys::makedirs(str::dirname(dest));
-
-    md.set(types::AssignedDataset::create(m_name, ""));
 
     try {
         storeBlob(md, reldest);

@@ -12,6 +12,7 @@ class ConfigFile;
 namespace dataset {
 class Reader;
 class Writer;
+class LocalWriter;
 }
 
 /**
@@ -51,9 +52,27 @@ public:
     WriterPool(const ConfigFile& cfg);
 
     /**
-     * Flush all dataset data do disk
+     * Flush all dataset data to disk
      */
     void flush();
+};
+
+class LocalWriterPool : public DatasetPool<dataset::LocalWriter>
+{
+public:
+    LocalWriterPool(const ConfigFile& cfg);
+
+    /**
+     * Flush all dataset data to disk
+     */
+    void flush();
+
+    /**
+     * Get the dataset that contains the given pathname
+     *
+     * If no dataset can contain that pathname, returns 0.
+     */
+    dataset::LocalWriter* for_path(const std::string& pathname);
 };
 
 }

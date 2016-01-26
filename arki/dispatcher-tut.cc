@@ -5,10 +5,11 @@
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/matcher.h>
-#include <arki/types/assigneddataset.h>
+#include <arki/types/source/blob.h>
 #include <arki/scan/grib.h>
 #include <arki/scan/any.h>
 #include <arki/utils/accounting.h>
+#include <arki/utils/string.h>
 #include <arki/validator.h>
 
 namespace tut {
@@ -16,6 +17,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::tests;
+using namespace arki::utils;
 
 struct arki_dispatcher_shar {
 	ConfigFile config;
@@ -58,7 +60,8 @@ TESTGRP(arki_dispatcher);
 namespace {
 inline std::string dsname(const Metadata& md)
 {
-    return md.get<AssignedDataset>()->name;
+    if (!md.has_source_blob()) return "(md source is not a blob source)";
+    return str::basename(md.sourceBlob().basedir);
 }
 
 inline unique_ptr<Metadata> wrap(const Metadata& md)
@@ -82,13 +85,13 @@ def_test(1)
     scanner.open("inbound/test.grib1");
     ensure(scanner.next(md));
     ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_OK);
-    ensure_equals(dsname(mdc.back()), "test200");
+    wassert(actual(dsname(mdc.back())) == "test200");
     ensure(scanner.next(md));
     ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_OK);
-    ensure_equals(dsname(mdc.back()), "test80");
+    wassert(actual(dsname(mdc.back())) == "test80");
     ensure(scanner.next(md));
     ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_ERROR);
-    ensure_equals(dsname(mdc.back()), "error");
+    wassert(actual(dsname(mdc.back())) == "error");
     ensure(!scanner.next(md));
 
     dispatcher.flush();
@@ -121,7 +124,7 @@ def_test(2)
     metadata::Collection mdc;
     RealDispatcher dispatcher(config);
     ensure_equals(dispatcher.dispatch(wrap(source[0]), mdc.inserter_func()), Dispatcher::DISP_OK);
-    ensure_equals(dsname(mdc.back()), "lami_temp");
+    wassert(actual(mdc.back().sourceBlob()) == source[0].sourceBlob());
 
     dispatcher.flush();
 #endif

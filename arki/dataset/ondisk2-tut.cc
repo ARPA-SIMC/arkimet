@@ -29,13 +29,6 @@ using namespace arki::dataset;
 using namespace arki::utils;
 using namespace arki::tests;
 
-namespace {
-static inline const types::AssignedDataset* getDataset(const Metadata& md)
-{
-    return md.get<AssignedDataset>();
-}
-}
-
 struct arki_dataset_ondisk2_shar {
 	ConfigFile config;
 	ConfigFile configAll;
@@ -174,16 +167,9 @@ def_test(1)
             i != md.notes.end(); ++i)
         cerr << *i << endl;
 #endif
-    const AssignedDataset* ds = getDataset(mdc[0]);
-    ensure_equals(ds->name, "test200");
-    ensure_equals(ds->id, "2007/07-08.grib:0");
-
     // See if we catch duplicate imports
-    mdc[0].unset(TYPE_ASSIGNEDDATASET);
     res = d200.acquire(mdc[0]);
     ensure_equals(res, Writer::ACQ_ERROR_DUPLICATE);
-    ds = getDataset(mdc[0]);
-    ensure(!ds);
 
     // Flush the changes and check that everything is allright
     d200.flush();
@@ -324,10 +310,7 @@ def_test(6)
         ensure_equals(mdc.size(), 1u);
     }
 
-	// Check that it has a source and metadata element
-    const AssignedDataset* ds = getDataset(mdc[0]);
-    Time changeTime = ds->changed;
-    ensure_equals(ds->name, "test200");
+    // Check that it has a source and metadata element
     wassert(actual(mdc[0].has_source_blob()).istrue());
 
     {
@@ -340,8 +323,6 @@ def_test(6)
     }
 
     // Check that it does not have a source and metadata element
-    ds = getDataset(mdc[0]);
-    ensure(!ds);
     wassert(actual(mdc[0].has_source()).isfalse());
 
     // Try to fetch the element again

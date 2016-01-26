@@ -452,7 +452,6 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
 void Contents::build_md(Query& q, Metadata& md) const
 {
     // Rebuild the Metadata
-    md.set(types::AssignedDataset::create(m_name, q.fetchString(2) + ":" + to_string(q.fetch<uint64_t>(3))));
     md.set_source(Source::createBlob(
             q.fetchString(1), m_root, q.fetchString(2),
             q.fetch<uint64_t>(3), q.fetch<uint64_t>(4)));

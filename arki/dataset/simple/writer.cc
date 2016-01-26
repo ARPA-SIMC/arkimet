@@ -3,7 +3,6 @@
 #include "arki/dataset/simple/datafile.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/segment.h"
-#include "arki/types/assigneddataset.h"
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
@@ -70,16 +69,13 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     // Try appending
     try {
         off_t offset = writer->append(md);
-        auto assigned_dataset = types::AssignedDataset::create(m_name, writer->relname + ":" + to_string(offset));
         auto source = types::source::Blob::create(md.source().format, m_path, writer->relname, offset, md.data_size());
         md.set_source(move(source));
         mdbuf->add(md);
         m_mft->acquire(writer->relname, sys::timestamp(mdbuf->pathname, 0), mdbuf->sum);
-        md.set(move(assigned_dataset));
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        md.unset(TYPE_ASSIGNEDDATASET);
         md.add_note("Failed to store in dataset '"+m_name+"': " + e.what());
         return ACQ_ERROR;
     }

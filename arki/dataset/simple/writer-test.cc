@@ -1,7 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset/simple/writer.h"
 #include "arki/dataset/simple/reader.h"
-#include "arki/types/assigneddataset.h"
 #include "arki/types/source/blob.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
@@ -21,9 +20,10 @@ using namespace arki::utils;
 
 namespace {
 
-static inline const types::AssignedDataset* getDataset(const Metadata& md)
+inline std::string dsname(const Metadata& md)
 {
-    return md.get<AssignedDataset>();
+    if (!md.has_source_blob()) return "(md source is not a blob source)";
+    return str::basename(md.sourceBlob().basedir);
 }
 
 struct Fixture : public DatasetTest {
@@ -76,18 +76,14 @@ add_method("acquire", [](Fixture& f) {
             i != md.notes.end(); ++i)
         cerr << *i << endl;
     #endif
-    const AssignedDataset* ds = getDataset(md);
-    ensure_equals(ds->name, "testds");
-    ensure_equals(ds->id, "2007/07-08.grib:0");
+    ensure_equals(dsname(md), "testds");
 
     wassert(actual_type(md.source()).is_source_blob("grib", sys::abspath("./testds"), "2007/07-08.grib", 0, 7218));
 
     // Import again works fine
     res = writer.acquire(md);
     ensure_equals(res, Writer::ACQ_OK);
-    ds = getDataset(md);
-    ensure_equals(ds->name, "testds");
-    ensure_equals(ds->id, "2007/07-08.grib:7218");
+    ensure_equals(dsname(md), "testds");
 
     wassert(actual_type(md.source()).is_source_blob("grib", sys::abspath("./testds"), "2007/07-08.grib", 7218, 7218));
 
@@ -123,12 +119,7 @@ add_method("append", [](Fixture& f) {
         auto writer = f.makeSimpleWriter();
         Writer::AcquireResult res = writer->acquire(mdc[1]);
         ensure_equals(res, Writer::ACQ_OK);
-
-        const AssignedDataset* ds = getDataset(mdc[1]);
-        ensure(ds);
-        ensure_equals(ds->name, "testds");
-        ensure_equals(ds->id, "20/2007.grib:34960");
-
+        ensure_equals(dsname(mdc[1]), "testds");
         wassert(actual_type(mdc[1].source()).is_source_blob("grib", sys::abspath("testds"), "20/2007.grib", 34960, 7218));
     }
 

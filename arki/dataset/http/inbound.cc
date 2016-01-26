@@ -2,6 +2,7 @@
 #include <arki/dataset/http/server.h>
 #include <arki/dataset/file.h>
 #include <arki/dispatcher.h>
+#include <arki/types/source/blob.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/metadata/collection.h>
@@ -138,6 +139,9 @@ void InboundServer::do_dispatch(const InboundParams& parms, net::http::Request& 
     ds->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
         Dispatcher::Outcome res = d.dispatch(move(md), [&](unique_ptr<Metadata> md) {
             headers.sendIfNotFired();
+            auto b = md->sourceBlob();
+            // Amend the blob source to be rooted at the dataset name
+            md->set_source(types::Source::createBlob(b.format, "", str::joinpath(str::basename(b.basedir), b.filename), b.offset, b.size));
             md->write(out);
             return true;
         });

@@ -12,7 +12,6 @@ namespace dataset {
 
 Writer::AcquireResult Discard::acquire(Metadata& md, ReplaceStrategy replace)
 {
-    md.set(types::AssignedDataset::create(m_name, ""));
     return ACQ_OK;
 }
 

@@ -7,7 +7,7 @@
 #include <arki/dataset/local.h>
 #include <arki/dataset/reporter.h>
 #include <arki/metadata/consumer.h>
-#include <arki/types/assigneddataset.h>
+#include <arki/types/source/blob.h>
 #include <arki/nag.h>
 #include <arki/runtime.h>
 #include <sstream>
@@ -254,37 +254,42 @@ int main(int argc, const char* argv[])
         {
             if (opts.op_remove->stringValue().empty())
                 throw commandline::BadOption("you need to give a file name to --remove");
-            WriterPool pool(cfg);
+            LocalWriterPool pool(cfg);
             // Read all metadata from the file specified in --remove
             metadata::Collection todolist(opts.op_remove->stringValue());
-            // Verify that all metadata items have AssignedDataset set
+            // Datasets where each metadata comes from
+            vector<dataset::Writer*> datasets;
+            // Verify that all metadata items can be mapped to a dataset
             unsigned count = 1;
             for (const auto& md: todolist)
             {
-                const types::AssignedDataset* ad = md->get<types::AssignedDataset>();
-                if (!ad)
+                if (!md->has_source_blob())
                 {
                    stringstream ss;
-                   ss << "cannot read information on data to remove: the metadata #" << count << " is not assigned to any dataset";
+                   ss << "cannot remove data #" << count << ": metadata does not come from an on-disk dataset";
                    throw std::runtime_error(ss.str());
                 }
+
+                dataset::Writer* ds = pool.for_path(md->sourceBlob().absolutePathname());
+                if (!ds)
+                {
+                   stringstream ss;
+                   ss << "cannot remove data #" << count << " is does not come from any known dataset";
+                   throw std::runtime_error(ss.str());
+                }
+
+                datasets.push_back(ds);
                 ++count;
             }
             // Perform removals
             count = 1;
-            for (const auto& md: todolist)
+            for (unsigned i = 0; i < todolist.size(); ++i)
             {
-                const types::AssignedDataset* ad = md->get<types::AssignedDataset>();
-                dataset::Writer* ds = pool.get(ad->name);
-                if (!ds)
-                {
-                    cerr << "Message #" << count << " is not in any dataset: skipped" << endl;
-                    continue;
-                }
+                dataset::Writer* ds = datasets[i];
                 try {
-                    ds->remove(*md);
+                    ds->remove(todolist[i]);
                 } catch (std::exception& e) {
-                    cerr << "Message #" << count << ": " << e.what() << endl;
+                    cerr << "Cannot remove message #" << count << ": " << e.what() << endl;
                 }
                 ++count;
             }

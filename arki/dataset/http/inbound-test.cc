@@ -1,9 +1,10 @@
 #include "test-utils.h"
 #include "inbound.h"
 #include "arki/metadata/collection.h"
-#include "arki/types/assigneddataset.h"
+#include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
 #include "config.h"
+#include <iostream>
 
 using namespace std;
 using namespace arki;
@@ -11,6 +12,16 @@ using namespace arki::utils;
 using namespace arki::tests;
 
 namespace {
+inline std::string dsname(const Metadata& md)
+{
+    if (!md.has_source_blob()) return "(md source is not a blob source)";
+    string pathname = md.sourceBlob().filename;
+    size_t pos = pathname.find('/');
+    if (pos == string::npos)
+        return pathname;
+    else
+        return pathname.substr(0, pos);
+}
 
 struct Fixture : public arki::tests::Fixture {
     using arki::tests::Fixture::Fixture;
@@ -157,10 +168,10 @@ add_method("dispatch", [](Fixture& f) {
 
     metadata::Collection mdc;
     Metadata::read_buffer(r.response_body, metadata::ReadContext("(response body)", ""), mdc.inserter_func());
-    ensure_equals(mdc.size(), 3u);
-    ensure_equals(mdc[0].get<types::AssignedDataset>()->name, "testds");
-    ensure_equals(mdc[1].get<types::AssignedDataset>()->name, "testds");
-    ensure_equals(mdc[2].get<types::AssignedDataset>()->name, "testds");
+    wassert(actual(mdc.size()) == 3u);
+    wassert(actual(dsname(mdc[0])) == "testds");
+    wassert(actual(dsname(mdc[1])) == "testds");
+    wassert(actual(dsname(mdc[2])) == "testds");
 
     ensure(!sys::exists("inbound/copy.grib1"));
 });

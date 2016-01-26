@@ -3,6 +3,7 @@
 #include "metadata/consumer.h"
 #include "matcher.h"
 #include "dataset.h"
+#include "dataset/local.h"
 #include "validator.h"
 #include "types/reftime.h"
 #include "utils/string.h"
