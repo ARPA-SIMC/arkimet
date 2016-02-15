@@ -48,18 +48,10 @@ LegacySummaryParams::LegacySummaryParams()
 
     query = add<ParamSingle>("query");
     style = add<ParamSingle>("style");
-}
-
-LegacySummaryShortParams::LegacySummaryShortParams()
-{
-    using namespace net::http;
-
-    query = add<ParamSingle>("query");
-    style = add<ParamSingle>("style");
     annotate = add<ParamSingle>("annotate");
 }
 
-void LegacySummaryShortParams::set_into(runtime::ProcessorMaker& pmaker) const
+void LegacySummaryParams::set_into(runtime::ProcessorMaker& pmaker) const
 {
     using namespace net::http;
 
@@ -244,11 +236,12 @@ void ReaderServer::do_summary(const LegacySummaryParams& parms, net::http::Reque
     }
 }
 
-void ReaderServer::do_summary_short(const LegacySummaryShortParams& parms, arki::utils::net::http::Request& req)
+void ReaderServer::do_summary_short(const LegacySummaryParams& parms, arki::utils::net::http::Request& req)
 {
     Matcher matcher = Matcher::parse(*parms.query);
     runtime::ProcessorMaker pmaker;
     parms.set_into(pmaker);
+    pmaker.summary_short = true;
 
     // Response header generator
     StreamHeaders headers(req, dsname);

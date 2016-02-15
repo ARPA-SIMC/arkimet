@@ -549,7 +549,7 @@ struct DatasetHandler : public LocalHandler
         {
             req.log_action("summary-short for dataset " + dsname);
             dataset::http::ReaderServer srv(*ds, dsname);
-            dataset::http::LegacySummaryShortParams params;
+            dataset::http::LegacySummaryParams params;
             params.parse_get_or_post(req);
             srv.do_summary_short(params, req);
         }

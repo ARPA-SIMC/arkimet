@@ -44,20 +44,10 @@ struct StreamHeaders
     void sendIfNotFired();
 };
 
-/// Parameters used by the legacy /summary/ interface
+/// Parameters used by the legacy /summary/ and /summaryshort/ interface
 struct LegacySummaryParams : public arki::utils::net::http::Params
 {
     LegacySummaryParams();
-
-    // Legacy params
-    arki::utils::net::http::ParamSingle* query;
-    arki::utils::net::http::ParamSingle* style;
-};
-
-/// Parameters used by the legacy /summaryshort/ interface
-struct LegacySummaryShortParams : public arki::utils::net::http::Params
-{
-    LegacySummaryShortParams();
 
     // Legacy params
     arki::utils::net::http::ParamSingle* query;
@@ -138,7 +128,7 @@ struct ReaderServer
     void do_summary(const LegacySummaryParams& parms, arki::utils::net::http::Request& req);
 
     // Generate a short dataset summary
-    void do_summary_short(const LegacySummaryShortParams& parms, arki::utils::net::http::Request& req);
+    void do_summary_short(const LegacySummaryParams& parms, arki::utils::net::http::Request& req);
 
     // Download the results of querying a dataset
     void do_query(const LegacyQueryParams& parms, arki::utils::net::http::Request& req);
