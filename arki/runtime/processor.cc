@@ -325,8 +325,12 @@ struct SummaryShortProcessor : public SingleOutputProcessor
                 string uc = str::lower(types::formatCode(i.first));
                 uc[0] = toupper(uc[0]);
                 ss << "    " << uc << ":" << endl;
-                for (const auto& mi: i.second)
-                    ss << "        " << *mi << endl;
+                for (const auto& mi: i.second) {
+                    ss << "        " << *mi;
+                    if (formatter.get())
+                        ss << "\t# " << (*formatter.get())(*mi);
+                    ss << endl;
+                }
             }
         }
 
