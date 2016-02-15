@@ -56,6 +56,7 @@ LegacySummaryShortParams::LegacySummaryShortParams()
 
     query = add<ParamSingle>("query");
     style = add<ParamSingle>("style");
+    annotate = add<ParamSingle>("annotate");
 }
 
 void LegacySummaryShortParams::set_into(runtime::ProcessorMaker& pmaker) const
@@ -72,6 +73,9 @@ void LegacySummaryShortParams::set_into(runtime::ProcessorMaker& pmaker) const
         pmaker.yaml = true;
     } else if (*style == "json") {
         pmaker.json = true;
+    }
+    if (*annotate == "true") {
+        pmaker.annotate = true;
     }
 
     // Validate request

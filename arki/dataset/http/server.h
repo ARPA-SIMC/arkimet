@@ -62,6 +62,7 @@ struct LegacySummaryShortParams : public arki::utils::net::http::Params
     // Legacy params
     arki::utils::net::http::ParamSingle* query;
     arki::utils::net::http::ParamSingle* style;
+    arki::utils::net::http::ParamSingle* annotate;
 
     /// Initialise a ProcessorMaker with the parsed query params
     void set_into(runtime::ProcessorMaker& pmaker) const;
