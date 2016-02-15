@@ -54,6 +54,19 @@ struct LegacySummaryParams : public arki::utils::net::http::Params
     arki::utils::net::http::ParamSingle* style;
 };
 
+/// Parameters used by the legacy /summaryshort/ interface
+struct LegacySummaryShortParams : public arki::utils::net::http::Params
+{
+    LegacySummaryShortParams();
+
+    // Legacy params
+    arki::utils::net::http::ParamSingle* query;
+    arki::utils::net::http::ParamSingle* style;
+
+    /// Initialise a ProcessorMaker with the parsed query params
+    void set_into(runtime::ProcessorMaker& pmaker) const;
+};
+
 /// Parameters used by the legacy /query/ interface
 struct LegacyQueryParams : public LegacySummaryParams
 {
@@ -122,6 +135,9 @@ struct ReaderServer
 
     // Generate a dataset summary
     void do_summary(const LegacySummaryParams& parms, arki::utils::net::http::Request& req);
+
+    // Generate a short dataset summary
+    void do_summary_short(const LegacySummaryShortParams& parms, arki::utils::net::http::Request& req);
 
     // Download the results of querying a dataset
     void do_query(const LegacyQueryParams& parms, arki::utils::net::http::Request& req);

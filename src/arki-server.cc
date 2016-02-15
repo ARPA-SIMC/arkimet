@@ -545,6 +545,14 @@ struct DatasetHandler : public LocalHandler
             params.parse_get_or_post(req);
             srv.do_summary(params, req);
         }
+        else if (action == "summaryshort")
+        {
+            req.log_action("summary-short for dataset " + dsname);
+            dataset::http::ReaderServer srv(*ds, dsname);
+            dataset::http::LegacySummaryShortParams params;
+            params.parse_get_or_post(req);
+            srv.do_summary_short(params, req);
+        }
         else if (action == "query")
         {
             req.log_action("query dataset " + dsname);
