@@ -320,17 +320,18 @@ struct SummaryShortProcessor : public SingleOutputProcessor
         }
         else
         {
-            ss << "Size: " << summary.size() << endl;
-            ss << "Count: " << summary.count() << endl;
-            ss << "Reftime: " << *summary.getReferenceTime() << endl;
+            ss << "SummaryStats:" << endl;
+            ss << "  " << "Size: " << summary.size() << endl;
+            ss << "  " << "Count: " << summary.count() << endl;
+            ss << "  " << "Reftime: " << *summary.getReferenceTime() << endl;
             ss << "Items:" << endl;
             for (const auto& i: c.items)
             {
                 string uc = str::lower(types::formatCode(i.first));
                 uc[0] = toupper(uc[0]);
-                ss << "    " << uc << ":" << endl;
+                ss << "  " << uc << ":" << endl;
                 for (const auto& mi: i.second) {
-                    ss << "        " << *mi;
+                    ss << "    " << *mi;
                     if (formatter.get())
                         ss << "\t# " << (*formatter.get())(*mi);
                     ss << endl;
