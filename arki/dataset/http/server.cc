@@ -48,7 +48,33 @@ LegacySummaryParams::LegacySummaryParams()
 
     query = add<ParamSingle>("query");
     style = add<ParamSingle>("style");
+    annotate = add<ParamSingle>("annotate");
 }
+
+void LegacySummaryParams::set_into(runtime::ProcessorMaker& pmaker) const
+{
+    using namespace net::http;
+
+    pmaker.server_side = true;
+
+    // Configure the ProcessorMaker with the request
+    if (style->empty()) {
+        ;
+    } else if (*style == "yaml") {
+        pmaker.yaml = true;
+    } else if (*style == "json") {
+        pmaker.json = true;
+    }
+    if (*annotate == "true") {
+        pmaker.annotate = true;
+    }
+
+    // Validate request
+    string errors = pmaker.verify_option_consistency();
+    if (!errors.empty())
+        throw net::http::error400(errors);
+}
+
 
 LegacyQueryParams::LegacyQueryParams(const std::string& tmpdir)
 {
@@ -183,30 +209,89 @@ void ReaderServer::do_config(const ConfigFile& remote_config, net::http::Request
 
 void ReaderServer::do_summary(const LegacySummaryParams& parms, net::http::Request& req)
 {
-    using namespace net::http;
+    Matcher matcher = Matcher::parse(*parms.query);
+    runtime::ProcessorMaker pmaker;
+    pmaker.summary = true;
+    parms.set_into(pmaker);
 
-    // Query the summary
-    Summary sum;
-    ds.query_summary(Matcher::parse(*parms.query), sum);
+    // Response header generator
+    StreamHeaders headers(req, dsname);
 
-    if (*parms.style == "yaml")
+    // Set content type and file name accordingly
+    if (pmaker.yaml)
     {
-        stringstream res;
-        sum.writeYaml(res);
-        req.send_result(res.str(), "text/x-yaml", dsname + "-summary.yaml");
+        headers.content_type = "text/x-yaml";
+        headers.ext = "yaml";
     }
-    else if (*parms.style == "json")
+    else if (pmaker.json)
     {
-        stringstream res;
-        emitter::JSON json(res);
-        sum.serialise(json);
-        req.send_result(res.str(), "application/json", dsname + "-summary.json");
+        headers.content_type = "application/json";
+        headers.ext = "json";
+    } else if (!pmaker.report.empty()) {
+        headers.content_type = "application/octet-stream";
+        headers.ext = "txt";
     }
-    else
+
     {
-        vector<uint8_t> res = sum.encode(true);
-        req.send_result(res, "application/octet-stream", dsname + "-summary.bin");
+        // Create Output directed to req.sock
+        sys::NamedFileDescriptor sockoutput(req.sock, "socket");
+
+        // Hook sending headers to when the subprocess start sending
+        pmaker.data_start_hook = [&]{ headers.send_headers(); };
+
+        // Create the dataset processor for this query
+        unique_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
+
+        // Process the dataset producing the output
+        p->process(ds, dsname);
+        p->end();
     }
+
+    // End of streaming
+
+}
+
+void ReaderServer::do_summary_short(const LegacySummaryParams& parms, arki::utils::net::http::Request& req)
+{
+    Matcher matcher = Matcher::parse(*parms.query);
+    runtime::ProcessorMaker pmaker;
+    pmaker.summary_short = true;
+    parms.set_into(pmaker);
+
+    // Response header generator
+    StreamHeaders headers(req, dsname);
+
+    // Set content type and file name accordingly
+    if (pmaker.yaml)
+    {
+        headers.content_type = "text/x-yaml";
+        headers.ext = "yaml";
+    }
+    else if (pmaker.json)
+    {
+        headers.content_type = "application/json";
+        headers.ext = "json";
+    } else if (!pmaker.report.empty()) {
+        headers.content_type = "application/octet-stream";
+        headers.ext = "txt";
+    }
+
+    {
+        // Create Output directed to req.sock
+        sys::NamedFileDescriptor sockoutput(req.sock, "socket");
+
+        // Hook sending headers to when the subprocess start sending
+        pmaker.data_start_hook = [&]{ headers.send_headers(); };
+
+        // Create the dataset processor for this query
+        unique_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
+
+        // Process the dataset producing the output
+        p->process(ds, dsname);
+        p->end();
+    }
+
+    // End of streaming
 }
 
 void ReaderServer::do_query(const LegacyQueryParams& parms, net::http::Request& req)

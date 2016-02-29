@@ -10,6 +10,7 @@
 #include "arki/sort.h"
 #include "arki/utils/string.h"
 #include "arki/types/typeset.h"
+#include "arki/summary/stats.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -235,6 +236,7 @@ namespace {
 struct MDCollector : public summary::Visitor
 {
     std::map<types::Code, types::TypeSet> items;
+    summary::Stats stats;
 
     bool operator()(const std::vector<const types::Type*>& md, const summary::Stats& stats) override
     {
@@ -244,6 +246,8 @@ struct MDCollector : public summary::Visitor
             types::Code code = codeForPos(i);
             items[code].insert(*md[i]);
         }
+        // TODO: with public access to summary->root.stats() the merge could be skipped
+        this->stats.merge(stats);
         return true;
     }
 };
@@ -296,13 +300,13 @@ struct SummaryShortProcessor : public SingleOutputProcessor
         {
             emitter::JSON json(ss);
             json.start_mapping();
-            json.add("size", (uint64_t)summary.size());
-            json.add("count", (uint64_t)summary.count());
-            json.add("reftime");
-            json.add_type(*summary.getReferenceTime());
 
             json.add("items");
             json.start_mapping();
+            json.add(c.stats.tag());
+            json.start_mapping();
+            c.stats.serialiseLocal(json, formatter.get());
+            json.end_mapping();
             for (const auto& i: c.items)
             {
                 json.add(str::lower(types::formatCode(i.first)));
@@ -316,17 +320,22 @@ struct SummaryShortProcessor : public SingleOutputProcessor
         }
         else
         {
-            ss << "Size: " << summary.size() << endl;
-            ss << "Count: " << summary.count() << endl;
-            ss << "Reftime: " << *summary.getReferenceTime() << endl;
+            ss << "SummaryStats:" << endl;
+            ss << "  " << "Size: " << summary.size() << endl;
+            ss << "  " << "Count: " << summary.count() << endl;
+            ss << "  " << "Reftime: " << *summary.getReferenceTime() << endl;
             ss << "Items:" << endl;
             for (const auto& i: c.items)
             {
                 string uc = str::lower(types::formatCode(i.first));
                 uc[0] = toupper(uc[0]);
-                ss << "    " << uc << ":" << endl;
-                for (const auto& mi: i.second)
-                    ss << "        " << *mi << endl;
+                ss << "  " << uc << ":" << endl;
+                for (const auto& mi: i.second) {
+                    ss << "    " << *mi;
+                    if (formatter.get())
+                        ss << "\t# " << (*formatter.get())(*mi);
+                    ss << endl;
+                }
             }
         }
 
