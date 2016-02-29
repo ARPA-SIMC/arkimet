@@ -22,6 +22,7 @@ nobase_dist_conf_DATA = \
 	scan-bufr/airep.lua \
 	scan-bufr/amdar.lua \
 	scan-bufr/buoy.lua \
+	scan-bufr/generic.lua \
 	scan-bufr/metar.lua \
 	scan-bufr/pilot.lua \
 	scan-bufr/pollution.lua \
