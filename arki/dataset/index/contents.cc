@@ -669,12 +669,14 @@ void Contents::summaryForAll(Summary& out) const
             int month = begin->vals[1];
             while (year < end->vals[0] || (year == end->vals[0] && month <= end->vals[1]))
             {
-                summaryForMonth(year, month, out);
+                Summary monthly;
+                summaryForMonth(year, month, monthly);
 
 				// Increment the month
 				month = (month%12) + 1;
 				if (month == 1)
 					++year;
+                out.add(monthly);
 			}
 		}
 
