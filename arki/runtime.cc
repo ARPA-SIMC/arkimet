@@ -299,7 +299,7 @@ void CommandLine::setupProcessing()
         string file = files->stringValue();
         unique_ptr<NamedFileDescriptor> in;
         if (file != "-")
-            in.reset(new File(file, O_RDONLY));
+            in.reset(new InputFile(file));
         else
             in.reset(new Stdin);
 
