@@ -23,18 +23,6 @@ struct Stats;
 
 namespace types {
 class Reftime;
-
-template<>
-struct traits<summary::Stats>
-{
-    static const char* type_tag;
-    static const types::Code type_code;
-    static const size_t type_sersize_bytes;
-    static const char* type_lua_tag;
-
-    typedef unsigned char Style;
-};
-
 }
 
 namespace summary {

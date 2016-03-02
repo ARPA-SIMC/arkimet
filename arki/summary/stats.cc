@@ -16,12 +16,14 @@ using namespace arki::types;
 
 namespace arki {
 
+/*
 namespace types {
 const char* traits<summary::Stats>::type_tag = "summarystats";
 const types::Code traits<summary::Stats>::type_code = TYPE_SUMMARYSTATS;
 const size_t traits<summary::Stats>::type_sersize_bytes = 2;
 const char* traits<summary::Stats>::type_lua_tag = LUATAG_TYPES ".summary.stats";
 }
+*/
 
 namespace summary {
 
