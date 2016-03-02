@@ -640,15 +640,17 @@ void Contents::summaryForMonth(int year, int month, Summary& out) const
 {
     if (!scache.read(out, year, month))
     {
+        Summary monthly;
         int nextyear = year + (month/12);
         int nextmonth = (month % 12) + 1;
 
         char buf[128];
         snprintf(buf, 128, "reftime >= '%04d-%02d-01 00:00:00' AND reftime < '%04d-%02d-01 00:00:00'",
                 year, month, nextyear, nextmonth);
-        querySummaryFromDB(buf, out);
+        querySummaryFromDB(buf, monthly);
 
-        scache.write(out, year, month);
+        scache.write(monthly, year, month);
+        out.add(monthly);
     }
 }
 
@@ -669,14 +671,12 @@ void Contents::summaryForAll(Summary& out) const
             int month = begin->vals[1];
             while (year < end->vals[0] || (year == end->vals[0] && month <= end->vals[1]))
             {
-                Summary monthly;
-                summaryForMonth(year, month, monthly);
+                summaryForMonth(year, month, out);
 
 				// Increment the month
 				month = (month%12) + 1;
 				if (month == 1)
 					++year;
-                out.add(monthly);
 			}
 		}
 
