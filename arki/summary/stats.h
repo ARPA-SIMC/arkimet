@@ -39,7 +39,7 @@ struct traits<summary::Stats>
 
 namespace summary {
 
-struct Stats : public types::CoreType<Stats>
+struct Stats
 {
     size_t count;
     uint64_t size;
@@ -49,30 +49,36 @@ struct Stats : public types::CoreType<Stats>
     Stats();
     Stats(const Metadata& md);
 
-    int compare(const Type& o) const override;
-    bool equals(const Type& o) const override;
+    bool operator==(const Stats& o) const { return compare(o) == 0; }
+    bool operator!=(const Stats& o) const { return compare(o) != 0; }
+
+    int compare(const Stats& o) const;
+    bool equals(const Stats& o) const;
 
     void merge(const Stats& s);
     void merge(const Metadata& md);
 
     std::unique_ptr<types::Reftime> make_reftime() const;
 
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
-    std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    void encodeBinary(BinaryEncoder& enc) const;
+
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const;
+    std::ostream& writeToOstream(std::ostream& o) const;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const;
     std::string toYaml(size_t indent = 0) const;
     void toYaml(std::ostream& out, size_t indent = 0) const;
     static std::unique_ptr<Stats> decode(BinaryDecoder& dec);
     static std::unique_ptr<Stats> decodeString(const std::string& str);
     static std::unique_ptr<Stats> decodeMapping(const emitter::memory::Mapping& val);
 
-    Stats* clone() const override;
+    Stats* clone() const;
 
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
+    /// Push to the LUA stack a userdata with a copy of this item
+    void lua_push(lua_State* L) const;
+
+    bool lua_lookup(lua_State* L, const std::string& name) const;
 };
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

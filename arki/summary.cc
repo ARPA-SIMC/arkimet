@@ -606,7 +606,7 @@ void Summary::serialise(Emitter& e, const Formatter* f) const
                     (*i)->serialiseLocal(e, f);
                     e.end_mapping();
                 }
-                e.add(stats.tag());
+                e.add("summarystats");
                 e.start_mapping();
                 stats.serialiseLocal(e, f);
                 e.end_mapping();

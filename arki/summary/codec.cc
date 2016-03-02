@@ -119,7 +119,7 @@ struct Format3Decoder : public DecoderBase
                     ss << "cannot parse summary: found unsupported typecode " << (int)code;
                     throw runtime_error(ss.str());
                 }
-                row.items[pos] = 0;
+                row.items[pos] = nullptr;
             }
 
             // Decode the list of changed/added items
@@ -138,7 +138,15 @@ struct Format3Decoder : public DecoderBase
             }
 
             // Decode the stats
-            row.stats = *downcast<Stats>(types::decode(dec));
+            types::Code code;
+            BinaryDecoder inner = dec.pop_type_envelope(code);
+            if (code != TYPE_SUMMARYSTATS)
+            {
+                stringstream ss;
+                ss << "cannot parse summary: found typecode " << (int)code << " instead of summary stats (" << (int)TYPE_SUMMARYSTATS << ")";
+                throw runtime_error(ss.str());
+            }
+            row.stats = *Stats::decode(inner);
 
             // Produce a (metadata, stats) couple
             target.merge(row);

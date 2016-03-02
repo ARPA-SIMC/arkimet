@@ -303,7 +303,7 @@ struct SummaryShortProcessor : public SingleOutputProcessor
 
             json.add("items");
             json.start_mapping();
-            json.add(c.stats.tag());
+            json.add("summarystats");
             json.start_mapping();
             c.stats.serialiseLocal(json, formatter.get());
             json.end_mapping();
