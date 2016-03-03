@@ -55,7 +55,6 @@ doc_DATA =
 dist_doc_DATA =
 
 TESTS =
-LOG_COMPILER = ./arki/runtest
 
 # SUBDIRS = conf embedded arki src doc test
 include $(srcdir)/conf/Makefile.am
