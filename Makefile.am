@@ -2,6 +2,13 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS)
+if FILE_OFFSET_BITS_64
+AM_CPPFLAGS += -D_FILE_OFFSET_BITS=64
+endif
+AM_CXXFLAGS = $(EXTRA_CXXFLAGS) $(DEVEL_CXXFLAGS)
+AM_LDFLAGS = $(EXTRA_LDFLAGS)
+
 EXTRA_DIST = \
 	     README \
 	     README.Cineca \
@@ -13,10 +20,13 @@ CLEANFILES = $(man_MANS)
 dist_noinst_HEADERS =
 noinst_LTLIBRARIES =
 noinst_PROGRAMS =
+lib_LTLIBRARIES =
+check_PROGRAMS =
 
 # SUBDIRS = conf embedded arki src doc test
 include $(srcdir)/conf/Makefile.am
 include $(srcdir)/embedded/Makefile.am
+include $(srcdir)/arki/Makefile.am
 
 man_MANS = \
 	arki-dump.1 \
