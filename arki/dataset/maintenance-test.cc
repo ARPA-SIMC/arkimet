@@ -7,7 +7,6 @@
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
-#include <arki/wibble/grcal/grcal.h>
 #include <cstdlib>
 #include <sys/types.h>
 #include <utime.h>
@@ -20,6 +19,7 @@ using namespace arki::tests;
 using namespace arki::types;
 using namespace arki::dataset;
 using namespace arki::utils;
+using arki::core::Time;
 
 namespace {
 
@@ -137,10 +137,9 @@ class Tests : public FixtureTestCase<Fixture>
             f.cfg.setValue("step", "yearly");
 
             // Data are from 07, 08, 10 2007
-            int treshold[6] = { 2008, 1, 1, 0, 0, 0 };
-            int now[6];
-            wibble::grcal::date::now(now);
-            long long int duration = wibble::grcal::date::duration(treshold, now);
+            Time treshold(2008, 1, 1);
+            Time now = Time::create_now();
+            long long int duration = Time::duration(treshold, now);
             f.cfg.setValue("delete age", duration/(3600*24));
 
             testdata::GRIBData data;
@@ -176,10 +175,9 @@ class Tests : public FixtureTestCase<Fixture>
             f.cfg.setValue("step", "yearly");
 
             // Data are from 07, 08, 10 2007
-            int treshold[6] = { 2008, 1, 1, 0, 0, 0 };
-            int now[6];
-            wibble::grcal::date::now(now);
-            long long int duration = wibble::grcal::date::duration(treshold, now);
+            Time treshold(2008, 1, 1);
+            Time now = Time::create_now();
+            long long int duration = Time::duration(treshold, now);
             f.cfg.setValue("archive age", duration/(3600*24));
 
             testdata::GRIBData data;

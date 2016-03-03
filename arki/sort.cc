@@ -6,7 +6,6 @@
 #include "arki/exceptions.h"
 #include "arki/utils/string.h"
 #include "arki/utils/regexp.h"
-#include "arki/wibble/grcal/grcal.h"
 #include <vector>
 #include <algorithm>
 #include <cctype>

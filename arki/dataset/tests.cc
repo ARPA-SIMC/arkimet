@@ -17,7 +17,6 @@
 #include "arki/types/proddef.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <arki/wibble/grcal/grcal.h>
 #include <algorithm>
 #include <cstring>
 #include <limits.h>
@@ -68,12 +67,9 @@ void impl_ensure_dispatches(Dispatcher& dispatcher, unique_ptr<Metadata> md, met
 int days_since(int year, int month, int day)
 {
     // Data are from 07, 08, 10 2007
-    int threshold[6] = { year, month, day, 0, 0, 0 };
-    int now[6];
-    wibble::grcal::date::now(now);
-    long long int duration = wibble::grcal::date::duration(threshold, now);
-
-    //cerr << str::fmt(duration/(3600*24)) + " days";
+    Time threshold(year, month, day);
+    Time now(Time::create_now());
+    long long int duration = Time::duration(threshold, now);
     return duration/(3600*24);
 }
 
