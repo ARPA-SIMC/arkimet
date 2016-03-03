@@ -50,6 +50,9 @@ noinst_PROGRAMS =
 lib_LTLIBRARIES =
 check_PROGRAMS =
 
+TESTS_ENVIRONMENT = arki/runtest
+TESTS =
+
 # SUBDIRS = conf embedded arki src doc test
 include $(srcdir)/conf/Makefile.am
 include $(srcdir)/embedded/Makefile.am
