@@ -1,31 +1,9 @@
 #ifndef ARKI_DATASET_GRIDQUERY_H
 #define ARKI_DATASET_GRIDQUERY_H
 
-/*
- * dataset/gridquery - Lay out a metadata grid and check that metadata fit 
- *
- * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/dataset.h>
 #include <arki/types.h>
-#include <arki/types/time.h>
+#include <arki/core/time.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/metadatagrid.h>
@@ -57,7 +35,7 @@ protected:
     // Itemsets actually requested (not all elements in the grid are needed)
     std::vector<ItemSet> items;
     // Reference times requested
-    std::vector<types::Time> times;
+    std::vector<core::Time> times;
     // Sorted list of mdgrid indices requested per every reference time
     std::vector<int> wantedidx;
     /**
@@ -75,10 +53,10 @@ public:
     void add(const Matcher& m);
 
     /// Add a reftime
-    void addTime(const types::Time& rt);
+    void addTime(const core::Time& rt);
 
-    // Add a discrete time sequence (@see types::Time::generate())
-    void addTimes(const types::Time& begin, const types::Time& end, int step);
+    // Add a discrete time sequence (@see Time::generate())
+    void addTimes(const core::Time& begin, const core::Time& end, int step);
 
     /// Add an extra filter expression
     void addFilter(const Matcher& m);

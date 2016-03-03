@@ -144,8 +144,8 @@ unique_ptr<Stats> Stats::decodeMapping(const emitter::memory::Mapping& val)
     res->size = val["s"].want_int("parsing summary stats size");
     if (res->count)
     {
-        res->begin = types::Time::decodeList(val["b"].want_list("parsing summary stats begin"));
-        res->end = types::Time::decodeList(val["e"].want_list("parsing summary stats end"));
+        res->begin = core::Time::decodeList(val["b"].want_list("parsing summary stats begin"));
+        res->end = core::Time::decodeList(val["e"].want_list("parsing summary stats end"));
     }
     return res;
 }

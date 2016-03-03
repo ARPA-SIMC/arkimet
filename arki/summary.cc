@@ -7,9 +7,9 @@
 #include "matcher.h"
 #include "binary.h"
 #include "formatter.h"
+#include "core/time.h"
 #include "types/utils.h"
 #include "types/area.h"
-#include "types/time.h"
 #include "utils/geosdef.h"
 #include "utils/compress.h"
 #include "emitter.h"
@@ -27,6 +27,7 @@ using namespace std;
 using namespace arki::utils;
 using namespace arki::types;
 using namespace arki::summary;
+using arki::core::Time;
 
 namespace arki {
 

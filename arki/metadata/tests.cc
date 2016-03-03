@@ -16,6 +16,7 @@
 using namespace std;
 using namespace arki;
 using namespace arki::types;
+using arki::core::Time;
 
 namespace arki {
 namespace tests {

@@ -18,6 +18,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using arki::core::Time;
 
 namespace arki {
 namespace types {
@@ -124,7 +125,7 @@ AssignedDataset* AssignedDataset::clone() const
 
 unique_ptr<AssignedDataset> AssignedDataset::create(const std::string& name, const std::string& id)
 {
-    return unique_ptr<AssignedDataset>(new AssignedDataset(Time::createNow(), name, id));
+    return unique_ptr<AssignedDataset>(new AssignedDataset(Time::create_now(), name, id));
 }
 
 unique_ptr<AssignedDataset> AssignedDataset::create(const Time& changed, const std::string& name, const std::string& id)

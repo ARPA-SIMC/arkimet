@@ -31,8 +31,8 @@ struct Stats
 {
     size_t count;
     uint64_t size;
-    types::Time begin;
-    types::Time end;
+    core::Time begin;
+    core::Time end;
 
     Stats();
     Stats(const Metadata& md);

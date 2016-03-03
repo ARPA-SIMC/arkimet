@@ -21,6 +21,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::tests;
+using arki::core::Time;
 
 static void dump_errors(const vector<string>& errors)
 {

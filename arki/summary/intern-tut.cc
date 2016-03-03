@@ -8,6 +8,7 @@ using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::summary;
+using arki::core::Time;
 
 struct arki_summary_intern_shar {
     arki_summary_intern_shar()

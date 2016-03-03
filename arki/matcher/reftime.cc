@@ -1,12 +1,13 @@
 #include <arki/matcher/reftime.h>
 #include <arki/matcher/reftime/parser.h>
 #include <arki/matcher/utils.h>
-#include <arki/types/time.h>
+#include <arki/core/time.h>
 #include <cctype>
 
 using namespace std;
 using namespace arki::types;
 using namespace arki::matcher::reftime;
+using arki::core::Time;
 
 namespace arki {
 namespace matcher {
@@ -35,14 +36,14 @@ bool MatchReftime::matchItem(const Type& o) const
     if (const types::reftime::Position* po = dynamic_cast<const types::reftime::Position*>(&o))
     {
         for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
-            if (!(*i)->match(po->time.vals))
+            if (!(*i)->match(po->time))
                 return false;
         return true;
     }
     else if (const types::reftime::Period* pe = dynamic_cast<const types::reftime::Period*>(&o))
     {
         for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
-            if (!(*i)->match(pe->begin.vals, pe->end.vals))
+            if (!(*i)->match(pe->begin, pe->end))
                 return false;
         return true;
     }

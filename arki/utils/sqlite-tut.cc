@@ -111,11 +111,11 @@ void to::test<4>()
 	PrecompiledQuery select("select", db);
 	select.compile("SELECT id, val FROM test ORDER BY id DESC LIMIT 1");
 
-	size_t val1;
-	while (select.step())
-		val1 = select.fetch<size_t>(1);
+    size_t val1 = 0xfafef1;
+    while (select.step())
+        val1 = select.fetch<size_t>(1);
 
-	ensure_equals(val1, val);
+    wassert(actual(val1) == val);
 }
 
 // Test inserting 64bit off_t values
@@ -132,11 +132,11 @@ void to::test<5>()
 	PrecompiledQuery select("select", db);
 	select.compile("SELECT id, val FROM test ORDER BY id DESC LIMIT 1");
 
-	off_t val1;
-	while (select.step())
-		val1 = select.fetch<off_t>(1);
+    off_t val1 = 0xfafef1;
+    while (select.step())
+        val1 = select.fetch<off_t>(1);
 
-	ensure_equals(val1, val);
+    wassert(actual(val1) == val);
 }
 
 

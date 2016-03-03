@@ -1,5 +1,4 @@
 #include <arki/exceptions.h>
-#include <arki/wibble/grcal/grcal.h>
 #include <arki/types/timerange.h>
 #include <arki/types/utils.h>
 #include <arki/utils.h>
@@ -25,6 +24,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using arki::core::Time;
 
 namespace arki {
 namespace types {
@@ -1586,14 +1586,12 @@ unique_ptr<reftime::Position> Timedef::validity_time_to_emission_time(const reft
         throw_consistency_error("converting validity time to emission time", "timedef has a step that cannot be converted to seconds");
 
     // Compute the new time
-    int vals[6];
-    for (int i = 0; i < 6; ++i)
-        vals[i] = src.time.vals[i];
-    vals[5] -= secs;
-    wibble::grcal::date::normalise(vals);
+    Time new_time(src.time);
+    new_time.se -= secs;
+    new_time.normalise();
 
     // Return it
-    return unique_ptr<reftime::Position>(new reftime::Position(Time(vals)));
+    return unique_ptr<reftime::Position>(new reftime::Position(new_time));
 }
 
 bool Timedef::get_forecast_step(int& step, bool& is_seconds) const

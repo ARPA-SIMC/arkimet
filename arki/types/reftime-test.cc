@@ -9,6 +9,7 @@ namespace {
 using namespace std;
 using namespace arki::tests;
 using namespace arki;
+using arki::core::Time;
 
 class Tests : public TypeTestCase<types::Reftime>
 {

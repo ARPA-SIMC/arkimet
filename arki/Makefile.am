@@ -21,6 +21,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		wibble/sys/filelock.h \
 		wibble/tests/tut.h \
 		wibble/grcal/grcal.h \
+		core/time.h \
 		core/tests.h \
 		binary.h \
 		defs.h \
@@ -140,7 +141,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		types/task.h \
 		types.tcc \
 		types/tests.h \
-		types/time.h \
 		types/timerange.h \
 		types/utils.h \
 		types/value.h \
@@ -216,6 +216,7 @@ libarkimet_la_SOURCES += \
 		wibble/log/syslog.cpp \
 		wibble/log/filters.cpp \
 		wibble/grcal/grcal.cpp \
+		core/time.cc \
 		core/tests.cc \
 		exceptions.cc \
 		nag.cc \
@@ -256,7 +257,6 @@ libarkimet_la_SOURCES += \
 		types/source/blob.cc \
 		types/source/inline.cc \
 		types/source/url.cc \
-		types/time.cc \
 		types/reftime.cc \
 		types/origin.cc \
 		types/product.cc \
@@ -296,6 +296,7 @@ libarkimet_la_SOURCES += \
 
 tests_arki_test_SOURCES += \
 		tests/tests-tut.cc \
+		core/time-test.cc \
 		types/tests.cc \
 		utils/tests.cc \
 		utils-test.cc \
@@ -318,7 +319,6 @@ tests_arki_test_SOURCES += \
 		types-test.cc \
 		types/utils-test.cc \
 		types/source-test.cc \
-		types/time-test.cc \
 		types/reftime-test.cc \
 		types/origin-test.cc \
 		types/product-test.cc \
@@ -335,7 +335,7 @@ tests_arki_test_SOURCES += \
 		types/value-test.cc \
 		types/typevector-test.cc \
 		types/typeset-test.cc \
-		itemset-tut.cc
+		itemset-test.cc
 
 if IOTRACE
 libarkimet_la_SOURCES += iotrace.cc
@@ -422,7 +422,7 @@ tests_arki_test_SOURCES += \
 		matcher/product-tut.cc \
 		matcher/level-tut.cc \
 		matcher/timerange-tut.cc \
-		matcher/reftime-tut.cc \
+		matcher/reftime-test.cc \
 		matcher/reftime/parser-tut.cc \
 		matcher/area-tut.cc \
 		matcher/proddef-tut.cc \

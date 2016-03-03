@@ -23,44 +23,53 @@ static inline std::ostream& operator<<(std::ostream& o, const arki::ItemSet& m)
 }
 }
 
-namespace tut {
 using namespace std;
 using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
+using arki::core::Time;
 
-struct arki_itemset_shar {
-	ItemSet md;
-	ValueBag testValues;
+namespace {
 
-	arki_itemset_shar()
-	{
-		testValues.set("foo", Value::createInteger(5));
-		testValues.set("bar", Value::createInteger(5000));
-		testValues.set("baz", Value::createInteger(-200));
-		testValues.set("moo", Value::createInteger(0x5ffffff));
-		testValues.set("antani", Value::createInteger(-1));
-		testValues.set("blinda", Value::createInteger(0));
-		testValues.set("supercazzola", Value::createInteger(-1234567));
-		testValues.set("pippo", Value::createString("pippo"));
-		testValues.set("pluto", Value::createString("12"));
-		testValues.set("cippo", Value::createString(""));
-	}
+struct Fixture : public arki::utils::tests::Fixture
+{
+    ItemSet md;
+    ValueBag testValues;
 
-	void fill(ItemSet& md)
-	{
-		md.set(origin::GRIB1::create(1, 2, 3));
-		md.set(product::GRIB1::create(1, 2, 3));
-		md.set(level::GRIB1::create(114, 12, 34));
-		md.set(timerange::GRIB1::create(1, 1, 2, 3));
-		md.set(area::GRIB::create(testValues));
-		md.set(proddef::GRIB::create(testValues));
-		md.set(AssignedDataset::create("dsname", "dsid"));
-		// Test POSITION reference times
-		md.set(reftime::Position::create(Time(2006, 5, 4, 3, 2, 1)));
-	}
+    Fixture()
+    {
+        testValues.set("foo", Value::createInteger(5));
+        testValues.set("bar", Value::createInteger(5000));
+        testValues.set("baz", Value::createInteger(-200));
+        testValues.set("moo", Value::createInteger(0x5ffffff));
+        testValues.set("antani", Value::createInteger(-1));
+        testValues.set("blinda", Value::createInteger(0));
+        testValues.set("supercazzola", Value::createInteger(-1234567));
+        testValues.set("pippo", Value::createString("pippo"));
+        testValues.set("pluto", Value::createString("12"));
+        testValues.set("cippo", Value::createString(""));
+    }
+
+    void fill(ItemSet& md)
+    {
+        md.set(origin::GRIB1::create(1, 2, 3));
+        md.set(product::GRIB1::create(1, 2, 3));
+        md.set(level::GRIB1::create(114, 12, 34));
+        md.set(timerange::GRIB1::create(1, 1, 2, 3));
+        md.set(area::GRIB::create(testValues));
+        md.set(proddef::GRIB::create(testValues));
+        md.set(AssignedDataset::create("dsname", "dsid"));
+        // Test POSITION reference times
+        md.set(reftime::Position::create(Time(2006, 5, 4, 3, 2, 1)));
+    }
 };
-TESTGRP(arki_itemset);
+
+class Tests : public FixtureTestCase<Fixture>
+{
+    using FixtureTestCase::FixtureTestCase;
+
+    void register_tests() override;
+} tests("arki_itemset");
 
 template<typename T>
 static inline void test_basic_itemset_ops(const std::string& vlower, const std::string& vhigher)
@@ -70,13 +79,13 @@ static inline void test_basic_itemset_ops(const std::string& vlower, const std::
     unique_ptr<Type> vlo = decodeString(code, vlower);
     unique_ptr<Type> vhi = decodeString(code, vhigher);
 
-    wassert(actual(md.size()) == 0);
+    wassert(actual(md.size()) == 0u);
     wassert(actual(md.empty()).istrue());
     wassert(actual(md.has(code)).isfalse());
 
     // Add one element and check that it can be retrieved
     md.set(vlo->cloneType());
-    wassert(actual(md.size()) == 1);
+    wassert(actual(md.size()) == 1u);
     wassert(actual(md.empty()).isfalse());
     wassert(actual(md.has(code)).istrue());
     wassert(actual(vlo) == md.get(code));
@@ -88,14 +97,14 @@ static inline void test_basic_itemset_ops(const std::string& vlower, const std::
 
     // Add the same again and check that things are still fine
     md.set(vlo->cloneType());
-    wassert(actual(md.size()) == 1);
+    wassert(actual(md.size()) == 1u);
     wassert(actual(md.empty()).isfalse());
     wassert(actual(md.has(code)).istrue());
     wassert(actual(vlo) == md.get(code));
 
     // Add a different element and check that it gets replaced
     md.set(vhi->cloneType());
-    wassert(actual(md.size()) == 1);
+    wassert(actual(md.size()) == 1u);
     wassert(actual(md.empty()).isfalse());
     wassert(actual(md.has(code)).istrue());
     wassert(actual(vhi) == md.get(code));
@@ -114,16 +123,18 @@ static inline void test_basic_itemset_ops(const std::string& vlower, const std::
 
     // Test unset
     md.unset(code);
-    wassert(actual(md.size()) == 0);
+    wassert(actual(md.size()) == 0u);
     wassert(actual(md.empty()).istrue());
     wassert(actual(md.has(code)).isfalse());
 
     // Test clear
     md1.clear();
-    wassert(actual(md.size()) == 0);
+    wassert(actual(md.size()) == 0u);
     wassert(actual(md.empty()).istrue());
     wassert(actual(md.has(code)).isfalse());
 }
+
+void Tests::register_tests() {
 
 /*
  * It looks like most of these tests are just testing if std::set and
@@ -135,8 +146,7 @@ static inline void test_basic_itemset_ops(const std::string& vlower, const std::
  */
 
 // Test with several item types
-def_test(1)
-{
+add_method("basic_ops", [](Fixture& f) {
     wassert(test_basic_itemset_ops<Origin>("GRIB1(1, 2, 3)", "GRIB1(2, 3, 4)"));
     wassert(test_basic_itemset_ops<Origin>("BUFR(1, 2)", "BUFR(2, 3)"));
     wassert(test_basic_itemset_ops<Reftime>("2006-05-04T03:02:01Z", "2008-07-06T05:04:03"));
@@ -170,7 +180,7 @@ def_test(1)
     wassert(test_basic_itemset_ops<Product>("BUFR(1, 2, 3, name=antani)", "BUFR(1, 2, 3, name=blinda)"));
     wassert(test_basic_itemset_ops<Level>("GRIB1(114, 260, 123)", "GRIB1(120,280,123)"));
     wassert(test_basic_itemset_ops<Timerange>("GRIB1(1)", "GRIB1(2, 3y, 4y)"));
-}
+});
 
 #if 0
 // Test areas
@@ -239,5 +249,7 @@ def_test(12)
 	ensure_equals(compareMaps(b, a), -1);
 }
 #endif
+
+}
 
 }

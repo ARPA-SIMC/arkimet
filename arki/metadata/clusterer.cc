@@ -6,6 +6,7 @@
 using namespace std;
 using namespace arki;
 using namespace arki::types;
+using arki::core::Time;
 
 namespace arki {
 namespace metadata {
@@ -116,8 +117,12 @@ void Clusterer::md_to_interval(const Metadata& md, int* interval) const
     const Reftime* rt = md.get<Reftime>();
     if (!rt) throw runtime_error("cannot compute time interval: metadata has no reference time");
     Time t(rt->period_end());
-    for (unsigned i = 0; i < 6; ++i)
-        interval[i] = i < max_interval ? t.vals[i] : -1;
+    interval[0] = max_interval > 0 ? t.ye : -1;
+    interval[1] = max_interval > 1 ? t.mo : -1;
+    interval[2] = max_interval > 2 ? t.da : -1;
+    interval[3] = max_interval > 3 ? t.ho : -1;
+    interval[4] = max_interval > 4 ? t.mi : -1;
+    interval[5] = max_interval > 5 ? t.se : -1;
 }
 
 

@@ -20,6 +20,7 @@ using namespace std;
 using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
+using arki::core::Time;
 
 def_tests(arki_sort);
 
@@ -36,8 +37,8 @@ vector<int> mdvals(const Metadata& md)
     const reftime::Position* rt = dynamic_cast<const reftime::Position*>(md.get<Reftime>());
     const run::Minute* run = dynamic_cast<const run::Minute*>(md.get<Run>());
     vector<int> res;
-    res.push_back(rt->time.vals[3]);
-    res.push_back(rt->time.vals[4]);
+    res.push_back(rt->time.ho);
+    res.push_back(rt->time.mi);
     res.push_back(run->minute()/60);
     return res;
 }

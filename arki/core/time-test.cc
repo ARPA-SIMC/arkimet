@@ -1,62 +1,89 @@
 #include "arki/core/tests.h"
+#include "arki/tests/lua.h"
 #include <sstream>
 
 namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
+using arki::core::Time;
 
 class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_types_time");
+} test("arki_core_time");
 
 void Tests::register_tests() {
-using namespace arki::types;
 
 // Check 'now' time
 add_method("now", [] {
     Time o(0, 0, 0);
     wassert(actual(o).is(0, 0, 0, 0, 0, 0));
     wassert(actual(o) == Time(0, 0, 0));
-    wassert(actual(o) == Time::create(0, 0, 0, 0, 0, 0));
-    wassert(actual(o) != Time::create(1789, 7, 14, 12, 0, 0));
+    wassert(actual(o) == Time(0, 0, 0, 0, 0, 0));
+    wassert(actual(o) != Time(1789, 7, 14, 12, 0, 0));
 
     // Test serialisation to ISO-8601
-    wassert(actual(o.toISO8601()) == "0000-00-00T00:00:00Z");
+    wassert(actual(o.to_iso8601()) == "0000-00-00T00:00:00Z");
 
     // Test serialisation to SQL
-    wassert(actual(o.toSQL()) == "0000-00-00 00:00:00");
+    wassert(actual(o.to_sql()) == "0000-00-00 00:00:00");
 
     // Test deserialisation from ISO-8601
-    wassert(actual(o) == Time::createFromISO8601(o.toISO8601()));
+    wassert(actual(o) == Time::create_iso8601(o.to_iso8601()));
 
     // Test deserialisation from SQL
-    wassert(actual(o) == Time::create_from_SQL(o.toSQL()));
+    wassert(actual(o) == Time::create_sql(o.to_sql()));
 
     wassert(actual(o).serializes());
 });
 
+// Check comparison of times
+add_method("compare", [] {
+    wassert(actual(Time(1, 2).compare(Time(1, 2))) == 0);
+    wassert(actual(Time(1, 2).compare(Time(1, 3))) < 0);
+    wassert(actual(Time(1, 2).compare(Time(1, 1))) > 0);
+
+    wassert(actual(Time(1, 2, 3).compare(Time(1, 2, 3))) == 0);
+    wassert(actual(Time(1, 2, 3).compare(Time(1, 2, 4))) < 0);
+    wassert(actual(Time(1, 2, 3).compare(Time(1, 2, 2))) > 0);
+
+    wassert(actual(Time(1, 2, 3, 4).compare(Time(1, 2, 3, 4))) == 0);
+    wassert(actual(Time(1, 2, 3, 4).compare(Time(1, 2, 3, 5))) < 0);
+    wassert(actual(Time(1, 2, 3, 4).compare(Time(1, 2, 3, 3))) > 0);
+
+    wassert(actual(Time(1, 2, 3, 4, 5).compare(Time(1, 2, 3, 4, 5))) == 0);
+    wassert(actual(Time(1, 2, 3, 4, 5).compare(Time(1, 2, 3, 4, 6))) < 0);
+    wassert(actual(Time(1, 2, 3, 4, 5).compare(Time(1, 2, 3, 4, 4))) > 0);
+
+    wassert(actual(Time(1, 2, 3, 4, 5, 6).compare(Time(1, 2, 3, 4, 5, 6))) == 0);
+    wassert(actual(Time(1, 2, 3, 4, 5, 6).compare(Time(1, 2, 3, 4, 5, 7))) < 0);
+    wassert(actual(Time(1, 2, 3, 4, 5, 6).compare(Time(1, 2, 3, 4, 5, 5))) > 0);
+});
+
 // Check an arbitrary time
 add_method("arbitrary", [] {
-    Time o = Time::create(1, 2, 3, 4, 5, 6);
+    Time o = Time(1, 2, 3, 4, 5, 6);
     wassert(actual(o).is(1, 2, 3, 4, 5, 6));
 
-    wassert(actual(o) == Time::create(1, 2, 3, 4, 5, 6));
-    wassert(actual(o) != Time::create(1789, 7, 14, 12, 0, 0));
+    wassert(actual(o) == Time(1, 2, 3, 4, 5, 6));
+    wassert(actual(o) != Time(1789, 7, 14, 12, 0, 0));
+    wassert(actual(o.compare(Time(1, 2, 3, 4, 5, 6))) == 0);
+    wassert(actual(o.compare(Time(1, 2, 3, 4, 5, 7))) < 0);
+    wassert(actual(o.compare(Time(1, 2, 3, 4, 5, 5))) > 0);
 
     // Test serialisation to ISO-8601
-    wassert(actual(o.toISO8601()) == "0001-02-03T04:05:06Z");
+    wassert(actual(o.to_iso8601()) == "0001-02-03T04:05:06Z");
 
     // Test serialisation to SQL
-    wassert(actual(o.toSQL()) == "0001-02-03 04:05:06");
+    wassert(actual(o.to_sql()) == "0001-02-03 04:05:06");
 
     // Test deserialisation from ISO-8601
-    wassert(actual(o) == Time::createFromISO8601(o.toISO8601()));
+    wassert(actual(o) == Time::create_iso8601(o.to_iso8601()));
 
     // Test deserialisation from SQL
-    wassert(actual(o) == Time::create_from_SQL(o.toSQL()));
+    wassert(actual(o) == Time::create_sql(o.to_sql()));
 
     wassert(actual(o).serializes());
 });
@@ -102,19 +129,19 @@ add_method("regression1", [] {
 def_test(3)
 {
     unique_ptr<Time> t = Time::createDifference(Time(2007, 6, 5, 4, 3, 2), Time(2006, 5, 4, 3, 2, 1));
-    wasssert(actual(t) == Time::create(1, 1, 1, 1, 1, 1));
+    wasssert(actual(t) == Time(1, 1, 1, 1, 1, 1));
 
     t = Time::createDifference(Time(2007, 3, 1, 0, 0, 0), Time(2007, 2, 28, 0, 0, 0));
-    wassert(actual(t) == Time::create(0, 0, 1, 0, 0, 0));
+    wassert(actual(t) == Time(0, 0, 1, 0, 0, 0));
 
     t = Time::createDifference(create(2008, 3, 1, 0, 0, 0), create(2008, 2, 28, 0, 0, 0));
-    wassert(actual(t) == Time::create(0, 0, 2, 0, 0, 0));
+    wassert(actual(t) == Time(0, 0, 2, 0, 0, 0));
 
     t = Time::createDifference(create(2008, 3, 1, 0, 0, 0), create(2007, 12, 20, 0, 0, 0));
-    wassert(actual(t) == Time::create(0, 2, 10, 0, 0, 0));
+    wassert(actual(t) == Time(0, 2, 10, 0, 0, 0));
 
     t = Time::createDifference(create(2007, 2, 28, 0, 0, 0), create(2008, 3, 1, 0, 0, 0));
-    wassert(actual(t) == Time::create(0, 0, 0, 0, 0, 0));
+    wassert(actual(t) == Time(0, 0, 0, 0, 0, 0));
 }
 #endif
 

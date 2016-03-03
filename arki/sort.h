@@ -80,7 +80,7 @@ protected:
     const Compare& sorter;
     metadata_dest_func next_dest;
     bool hasInterval;
-    std::unique_ptr<types::Time> endofperiod;
+    std::unique_ptr<core::Time> endofperiod;
     std::vector<Metadata*> buffer;
 
     void setEndOfPeriod(const types::Reftime& rt);

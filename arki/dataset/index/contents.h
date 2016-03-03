@@ -153,7 +153,7 @@ public:
      */
     void scan_file(const std::string& relname, metadata_dest_func consumer, const std::string& orderBy = "offset") const;
 
-    bool segment_timespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const override;
+    bool segment_timespan(const std::string& relname, core::Time& start_time, core::Time& end_time) const override;
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     bool query_summary(const Matcher& m, Summary& summary) override;

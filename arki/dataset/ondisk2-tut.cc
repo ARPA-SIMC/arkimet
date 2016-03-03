@@ -9,7 +9,6 @@
 #include <arki/summary.h>
 #include <arki/matcher.h>
 #include <arki/types/assigneddataset.h>
-#include <arki/types/time.h>
 #include <arki/scan/grib.h>
 #include <arki/scan/any.h>
 #include <arki/utils/files.h>
@@ -484,11 +483,11 @@ def_test(11)
     unique_ptr<Reftime> rt = summary.getReferenceTime();
     ensure_equals(rt->style(), Reftime::PERIOD);
     unique_ptr<reftime::Period> p = downcast<reftime::Period>(move(rt));
-    metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,80; reftime:=" + p->begin.toISO8601()));
+    metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,80; reftime:=" + p->begin.to_iso8601()));
     ensure_equals(mdc.size(), 1u);
 
     mdc.clear();
-    mdc.add(reader, Matcher::parse("origin:GRIB1,98; reftime:=" + p->end.toISO8601()));
+    mdc.add(reader, Matcher::parse("origin:GRIB1,98; reftime:=" + p->end.to_iso8601()));
     ensure_equals(mdc.size(), 1u);
 }
 

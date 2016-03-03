@@ -13,7 +13,7 @@
 struct lua_State;
 
 namespace arki {
-namespace types {
+namespace core {
 struct Time;
 }
 
@@ -100,7 +100,7 @@ public:
      * @returns true if the matcher has consistent reference time expressions,
      * false if the match is impossible (like reftime:<2014,>2015)
      */
-    bool restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;
+    bool restrict_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
 
     static std::unique_ptr<OR> parse(const MatcherType& type, const std::string& pattern);
 };
@@ -265,7 +265,7 @@ public:
      * @returns true if the matcher has consistent reference time expressions,
      * false if the match is impossible (like reftime:<2014,>2015)
      */
-    bool restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;
+    bool restrict_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
 
     /// Format back into a string that can be parsed again
     std::string toString() const

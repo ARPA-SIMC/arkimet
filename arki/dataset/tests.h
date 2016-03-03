@@ -193,7 +193,7 @@ namespace testdata {
 struct Element
 {
     Metadata md;
-    types::Time time;
+    core::Time time;
     std::string destfile;
     Matcher matcher;
 
@@ -205,7 +205,7 @@ struct Element
         this->md = md;
         this->time = rt->time;
         char buf[32];
-        snprintf(buf, 32, "%04d/%02d-%02d.%s", time.vals[0], time.vals[1], time.vals[2], md.source().format.c_str());
+        snprintf(buf, 32, "%04d/%02d-%02d.%s", time.ye, time.mo, time.da, md.source().format.c_str());
         this->destfile = buf;
         this->matcher = Matcher::parse(matcher);
     }
@@ -221,7 +221,7 @@ struct Fixture
     unsigned max_selective_aggregation_singleton_index;
     Element test_data[3];
     /// Date that falls somewhere inbetween files in the dataset
-    int selective_cutoff[6];
+    core::Time selective_cutoff;
     std::set<std::string> fnames;
     std::set<std::string> fnames_before_cutoff;
     std::set<std::string> fnames_after_cutoff;

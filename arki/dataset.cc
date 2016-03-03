@@ -131,7 +131,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     }
 }
 
-void Reader::expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end)
+void Reader::expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end)
 {
 }
 

@@ -21,6 +21,7 @@ using namespace arki::tests;
 using namespace arki;
 using namespace arki::utils;
 using namespace arki::types;
+using arki::core::Time;
 
 struct arki_querymacro_shar {
 	ConfigFile cfg;
@@ -50,17 +51,16 @@ struct arki_querymacro_shar {
 		scanner.open("inbound/test.grib1");
 
         dataset::ondisk2::Writer testds(*cfg.section("testds"));
-        vector<types::Time> times;
+        vector<Time> times;
         times.push_back(Time(2009, 8, 7, 0, 0, 0));
         times.push_back(Time(2009, 8, 8, 0, 0, 0));
         times.push_back(Time(2009, 8, 9, 0, 0, 0));
         size_t count = 0;
         while (scanner.next(md))
         {
-            for (vector<types::Time>::const_iterator i = times.begin();
-                    i != times.end(); ++i)
+            for (const auto& i: times)
             {
-                md.set(Reftime::createPosition(*i));
+                md.set(Reftime::createPosition(i));
                 ensure(testds.acquire(md) == dataset::Writer::ACQ_OK);
             }
             ++count;

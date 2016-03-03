@@ -7,6 +7,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::tests;
+using arki::core::Time;
 
 struct arki_summary_stats_shar {
     Metadata md;

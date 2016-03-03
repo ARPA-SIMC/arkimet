@@ -33,6 +33,7 @@ using namespace arki::tests;
 using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::dataset;
+using arki::core::Time;
 
 namespace arki {
 namespace tests {
@@ -885,23 +886,15 @@ namespace testdata {
 void Fixture::finalise_init()
 {
     // Compute selective_cutoff
-    Time tmin = test_data[0].time;
-    //Item<types::Time> tmax = test_data[0].time;
-    for (int i = 2; i < 3; ++i)
-    {
-        tmin = min(tmin, test_data[i].time);
-        //tmax = max(tmax, test_data[i].time);
-    }
-    for (int i = 0; i < 6; ++i)
-        selective_cutoff[i] = tmin.vals[i];
-    ++selective_cutoff[1];
-    wibble::grcal::date::normalise(selective_cutoff);
+    selective_cutoff = min({test_data[0].time, test_data[1].time, test_data[2].time});
+    ++selective_cutoff.mo;
+    selective_cutoff.normalise();
 
-    Time cutoff(selective_cutoff);
+    // Partition data in two groups: before and after selective_cutoff
     for (int i = 0; i < 3; ++i)
     {
         fnames.insert(test_data[i].destfile);
-        if (test_data[i].time < cutoff)
+        if (test_data[i].time < selective_cutoff)
             fnames_before_cutoff.insert(test_data[i].destfile);
         else
             fnames_after_cutoff.insert(test_data[i].destfile);
@@ -915,7 +908,7 @@ unsigned Fixture::count_dataset_files() const
 
 unsigned Fixture::selective_days_since() const
 {
-    return tests::days_since(selective_cutoff[0], selective_cutoff[1], selective_cutoff[2]);
+    return tests::days_since(selective_cutoff.ye, selective_cutoff.mo, selective_cutoff.da);
 }
 
 Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour)

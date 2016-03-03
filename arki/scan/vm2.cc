@@ -1,5 +1,6 @@
 #include "arki/scan/vm2.h"
 #include "arki/exceptions.h"
+#include "arki/core/time.h"
 #include "arki/types/source/blob.h"
 #include "arki/metadata.h"
 #include "arki/runtime/config.h"
@@ -11,7 +12,6 @@
 #include "arki/utils/lua.h"
 #include "arki/scan/any.h"
 #include "arki/types/area.h"
-#include "arki/types/time.h"
 #include "arki/types/reftime.h"
 #include "arki/types/product.h"
 #include "arki/types/value.h"
@@ -27,6 +27,7 @@
 using namespace std;
 using namespace arki::types;
 using namespace arki::utils;
+using arki::core::Time;
 
 namespace arki {
 namespace scan {
@@ -160,14 +161,14 @@ vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& value)
     const area::VM2* area = dynamic_cast<const area::VM2*>(md.get<Area>());
     const product::VM2* product = dynamic_cast<const product::VM2*>(md.get<Product>());
 
-    res << setfill('0') << setw(4) << rt->time.vals[0]
-        << setfill('0') << setw(2) << rt->time.vals[1]
-        << setfill('0') << setw(2) << rt->time.vals[2]
-        << setfill('0') << setw(2) << rt->time.vals[3]
-        << setfill('0') << setw(2) << rt->time.vals[4];
+    res << setfill('0') << setw(4) << rt->time.ye
+        << setfill('0') << setw(2) << rt->time.mo
+        << setfill('0') << setw(2) << rt->time.da
+        << setfill('0') << setw(2) << rt->time.ho
+        << setfill('0') << setw(2) << rt->time.mi;
 
-    if (rt->time.vals[5] != 0)
-        res << setfill('0') << setw(2) << rt->time.vals[5];
+    if (rt->time.se != 0)
+        res << setfill('0') << setw(2) << rt->time.se;
 
     res << "," << area->station_id()
         << "," << product->variable_id()

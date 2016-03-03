@@ -321,7 +321,7 @@ void Collection::sort()
     sort("");
 }
 
-bool Collection::expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& until) const
+bool Collection::expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& until) const
 {
     for (const auto& md: *this)
     {

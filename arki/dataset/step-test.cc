@@ -98,13 +98,6 @@ add_method("daily", [](Fixture& f) {
     wassert(actual((*step)(f.md)) == "2007/06-05");
 });
 
-add_method("singlefile", [](Fixture& f) {
-    unique_ptr<Step> step(Step::create(*f.cfg.section("singlefile")));
-
-    wassert(actual((*step)(f.md)) == "2007/06/05/04/1");
-});
-
-
 }
 
 }

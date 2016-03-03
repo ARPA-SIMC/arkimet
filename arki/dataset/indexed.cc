@@ -4,10 +4,12 @@
 #include "step.h"
 #include "reporter.h"
 #include "arki/scan/dir.h"
+#include "arki/core/time.h"
 #include "arki/metadata/collection.h"
 #include <algorithm>
 
 using namespace std;
+using arki::core::Time;
 
 namespace arki {
 namespace dataset {
@@ -34,13 +36,13 @@ struct SegmentState
     // Segment state
     segment::State state;
     // Minimum reference time of data that can fit in the segment
-    types::Time md_begin;
+    Time md_begin;
     // Maximum reference time of data that can fit in the segment
-    types::Time md_until;
+    Time md_until;
 
     SegmentState(const std::string& relpath, segment::State state)
         : relpath(relpath), state(state), md_begin(0, 0, 0), md_until(0, 0, 0) {}
-    SegmentState(const std::string& relpath, segment::State state, const types::Time& md_begin, const types::Time& md_until)
+    SegmentState(const std::string& relpath, segment::State state, const Time& md_begin, const Time& md_until)
         : relpath(relpath), state(state), md_begin(md_begin), md_until(md_until) {}
     SegmentState(const SegmentState&) = default;
     SegmentState(SegmentState&&) = default;
@@ -53,8 +55,8 @@ struct SegmentState
 struct CheckAge
 {
     const dataset::Checker& checker;
-    types::Time archive_threshold;
-    types::Time delete_threshold;
+    Time archive_threshold;
+    Time delete_threshold;
 
     CheckAge(const dataset::Checker& checker, int archive_age=-1, int delete_age=-1)
         : checker(checker), archive_threshold(0, 0, 0), delete_threshold(0, 0, 0)
@@ -81,15 +83,15 @@ struct CheckAge
 
     segment::State check(const SegmentState& seginfo)
     {
-        if (archive_threshold.vals[0] == 0 and delete_threshold.vals[0] == 0)
+        if (archive_threshold.ye == 0 and delete_threshold.ye == 0)
             return seginfo.state;
 
-        if (delete_threshold.vals[0] != 0 && delete_threshold >= seginfo.md_until)
+        if (delete_threshold.ye != 0 && delete_threshold >= seginfo.md_until)
         {
             nag::verbose("%s:%s: old enough to be deleted", checker.name().c_str(), seginfo.relpath.c_str());
             return seginfo.state + SEGMENT_DELETE_AGE;
         }
-        else if (archive_threshold.vals[0] != 0 && archive_threshold >= seginfo.md_until)
+        else if (archive_threshold.ye != 0 && archive_threshold >= seginfo.md_until)
         {
             nag::verbose("%s:%s: old enough to be archived", checker.name().c_str(), seginfo.relpath.c_str());
             return seginfo.state + SEGMENT_ARCHIVE_AGE;
@@ -133,7 +135,7 @@ struct FindMissing
     // files: a, b, c,    e, f, g
     // index:       c, d, e, f, g
 
-    void check(const std::string& relpath, segment::State state, types::Time& md_begin, types::Time& md_until)
+    void check(const std::string& relpath, segment::State state, Time& md_begin, Time& md_until)
     {
         while (not disk.empty() and disk.back() < relpath)
         {
@@ -231,25 +233,25 @@ void IndexedChecker::maintenance(dataset::Reporter& reporter, segment::state_fun
     FindMissing fm(*this, m_path);
     m_idx->scan_files([&](const std::string& relpath, segment::State state, const metadata::Collection& mds) {
         // Compute the span of reftimes inside the segment
-        unique_ptr<types::Time> md_begin;
-        unique_ptr<types::Time> md_until;
+        unique_ptr<Time> md_begin;
+        unique_ptr<Time> md_until;
         if (mds.empty())
         {
             reporter.segment_info(name(), relpath, "index knows of this segment but contains no data for it");
-            md_begin.reset(new types::Time(0, 0, 0));
-            md_until.reset(new types::Time(0, 0, 0));
+            md_begin.reset(new Time(0, 0, 0));
+            md_until.reset(new Time(0, 0, 0));
             state = SEGMENT_UNALIGNED;
         } else {
             if (!mds.expand_date_range(md_begin, md_until))
             {
                 reporter.segment_info(name(), relpath, "index data for this segment has no reference time information");
                 state = SEGMENT_CORRUPTED;
-                md_begin.reset(new types::Time(0, 0, 0));
-                md_until.reset(new types::Time(0, 0, 0));
+                md_begin.reset(new Time(0, 0, 0));
+                md_until.reset(new Time(0, 0, 0));
             } else if (m_step) {
                 // If we have a step, ensure that the reftime span fits inside the segment step
-                types::Time seg_begin;
-                types::Time seg_until;
+                Time seg_begin;
+                Time seg_until;
                 if (m_step->path_timespan(relpath, seg_begin, seg_until))
                 {
                     if (*md_begin < seg_begin || *md_until > seg_until)

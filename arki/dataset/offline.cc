@@ -1,6 +1,5 @@
 #include "offline.h"
 #include "arki/utils/string.h"
-#include "arki/types/time.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -25,7 +24,7 @@ void OfflineReader::query_summary(const Matcher& matcher, Summary& summary)
     sum.filter(matcher, summary);
 }
 
-void OfflineReader::expand_date_range(unique_ptr<types::Time>& begin, unique_ptr<types::Time>& end)
+void OfflineReader::expand_date_range(unique_ptr<core::Time>& begin, unique_ptr<core::Time>& end)
 {
     sum.expand_date_range(begin, end);
 }

@@ -3,11 +3,10 @@
 #include <arki/validator.h>
 #include <arki/metadata.h>
 #include <arki/types/reftime.h>
-#include <arki/wibble/grcal/grcal.h>
-//#include <arki/wibble/string.h>
 
 using namespace std;
 using namespace arki::types;
+using arki::core::Time;
 
 namespace arki {
 
@@ -40,11 +39,10 @@ bool DailyImport::operator()(const Metadata& v, std::vector<std::string>& errors
         return false;
     }
 
-    int today[6];
-    wibble::grcal::date::now(today);
+    Time today = Time::create_now();
 
     // Compare until the start of today
-    int secs = wibble::grcal::date::duration(rt->time.vals, today);
+    int secs = Time::duration(rt->time, today);
     //printf("TODAY %d %d %d %d %d %d\n", today[0], today[1], today[2], today[3], today[4], today[5]);
     //printf("VAL   %s\n", rt->time.toSQL().c_str());
     //printf("SECS %d\n", secs);
@@ -59,7 +57,7 @@ bool DailyImport::operator()(const Metadata& v, std::vector<std::string>& errors
     }
 
     // Secs was negative, so we compare again from the end of today
-    secs = wibble::grcal::date::duration(today, rt->time.vals);
+    secs = Time::duration(today, rt->time);
     if (secs > 3600*24)
     {
         errors.push_back(name + ": reference time is more than one day into the future");

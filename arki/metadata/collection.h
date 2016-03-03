@@ -11,7 +11,7 @@ namespace arki {
 struct Metadata;
 struct Summary;
 
-namespace types {
+namespace core {
 struct Time;
 }
 
@@ -139,7 +139,7 @@ public:
      * Returns true if all the metadata items had a reftime set, false if some
      * elements had no reftime information.
      */
-    bool expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;
+    bool expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
 };
 
 }

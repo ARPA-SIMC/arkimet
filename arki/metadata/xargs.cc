@@ -185,11 +185,11 @@ int Xargs::run_child()
 
     if (timespan_begin.get())
     {
-        child.env.push_back("ARKI_XARGS_TIME_START=" + timespan_begin->toISO8601(' '));
+        child.env.push_back("ARKI_XARGS_TIME_START=" + timespan_begin->to_iso8601(' '));
         if (timespan_end.get())
-            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan_end->toISO8601(' '));
+            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan_end->to_iso8601(' '));
         else
-            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan_begin->toISO8601(' '));
+            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan_begin->to_iso8601(' '));
     }
 
     child.fork();

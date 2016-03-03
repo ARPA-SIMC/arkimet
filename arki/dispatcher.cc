@@ -12,6 +12,7 @@
 using namespace std;
 using namespace arki::types;
 using namespace arki::utils;
+using arki::core::Time;
 
 namespace arki {
 
@@ -93,7 +94,7 @@ Dispatcher::Outcome Dispatcher::dispatch(unique_ptr<Metadata>&& md, metadata_des
         using namespace arki::types;
         md->add_note("Validation error: reference time is missing");
         // Set today as a dummy reference time, and import into the error dataset
-        md->set(Reftime::createPosition(Time::createNow()));
+        md->set(Reftime::createPosition(Time::create_now()));
         result = raw_dispatch_error(*md) == dataset::Writer::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
         goto done;
     }

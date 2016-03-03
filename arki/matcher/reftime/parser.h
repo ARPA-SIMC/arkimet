@@ -2,7 +2,7 @@
 #define ARKI_MATCHER_REFTIME_PARSER_H
 
 #include <arki/types.h>
-#include <arki/types/time.h>
+#include <arki/core/time.h>
 #include <arki/utils/string.h>
 #include <string>
 #include <ctime>
@@ -18,8 +18,8 @@ namespace reftime {
 struct DTMatch
 {
     virtual ~DTMatch() {}
-    virtual bool match(const int* tt) const = 0;
-    virtual bool match(const int* begin, const int* end) const = 0;
+    virtual bool match(const core::Time& tt) const = 0;
+    virtual bool match(const core::Time& begin, const core::Time& end) const = 0;
     virtual std::string sql(const std::string& column) const = 0;
     virtual std::string toString() const = 0;
 
@@ -41,7 +41,7 @@ struct DTMatch
      * Returns true if the result is a valid interval, false if this match does
      * not match the given interval at all.
      */
-    virtual bool restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const = 0;
+    virtual bool restrict_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const = 0;
 
     static DTMatch* createLE(const int* tt);
     static DTMatch* createLT(const int* tt);
