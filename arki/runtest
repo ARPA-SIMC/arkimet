@@ -2,7 +2,7 @@
 
 TOP_SRCDIR=`pwd`/`dirname $0`/..
 
-CMD=`pwd`/"$1"
+CMD=`pwd`/"arki/tests/arki-test"
 
 ## Run under eatmydata if available
 

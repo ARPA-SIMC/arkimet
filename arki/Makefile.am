@@ -595,6 +595,8 @@ check_PROGRAMS += arki/tests/arki-test
 
 arki_tests_arki_test_LDADD += arki/libarkimet.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
 
+TESTS += arki/runtest
+
 EXTRA_DIST += arki/runtest arki/buildbison arki/buildflex \
 	      arki/matcher/reftime/reftime-lex.ll \
 	      arki/matcher/reftime/reftime-parse.yy \
