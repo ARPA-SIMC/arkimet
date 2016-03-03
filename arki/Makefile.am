@@ -332,7 +332,6 @@ if IOTRACE
 endif
 
 if LZO
-AM_CPPFLAGS += $(LZO_CFLAGS)
 %canon_reldir%_libarkimet_la_LDFLAGS += $(LZO_LIBS)
 endif
 
@@ -340,18 +339,15 @@ if LUA
 nobase_dist_arkiinclude_HEADERS += %reldir%/report.h %reldir%/formatter/lua.h %reldir%/utils/lua.h %reldir%/tests/lua.h
 %canon_reldir%_libarkimet_la_SOURCES += %reldir%/formatter/lua.cc %reldir%/utils/lua.cc
 %canon_reldir%_tests_arki_test_SOURCES += %reldir%/formatter/lua-tut.cc %reldir%/utils/lua-tut.cc %reldir%/tests/lua.cc
-AM_CPPFLAGS += $(LUA_CFLAGS)
 %canon_reldir%_libarkimet_la_LDFLAGS += $(LUA_LIBS)
 %canon_reldir%_tests_arki_test_LDADD += $(LUA_LIBS)
 endif
 
 if GEOS
-AM_CPPFLAGS += $(GEOS_CFLAGS)
 %canon_reldir%_libarkimet_la_LDFLAGS += $(GEOS_LIBS)
 endif
 
 if VM2
-AM_CPPFLAGS += $(VM2_CFLAGS)
 nobase_dist_arkiinclude_HEADERS += %reldir%/scan/vm2.h %reldir%/utils/vm2.h
 %canon_reldir%_libarkimet_la_SOURCES += %reldir%/utils/vm2.cc
 %canon_reldir%_libarkimet_la_LDFLAGS += $(VM2_LIBS)
@@ -428,7 +424,6 @@ if GRIBAPI
 nobase_dist_arkiinclude_HEADERS += %reldir%/scan/grib.h
 %canon_reldir%_libarkimet_la_SOURCES += %reldir%/scan/grib.cc
 %canon_reldir%_tests_arki_test_SOURCES += %reldir%/scan/grib-tut.cc
-AM_CPPFLAGS += $(GRIBAPI_CFLAGS) $(LUA_CFLAGS)
 %canon_reldir%_libarkimet_la_LDFLAGS += $(GRIBAPI_LIBS) $(LUA_LIBS)
 endif
 
@@ -436,7 +431,6 @@ if DBALLE
 nobase_dist_arkiinclude_HEADERS += %reldir%/scan/bufr.h
 %canon_reldir%_libarkimet_la_SOURCES += %reldir%/scan/bufr.cc
 %canon_reldir%_libarkimet_la_LDFLAGS += $(DBALLE_LIBS)
-AM_CPPFLAGS += $(DBALLE_CFLAGS)
 %canon_reldir%_tests_arki_test_SOURCES += %reldir%/scan/bufr-tut.cc
 if LUA
 nobase_dist_arkiinclude_HEADERS += %reldir%/scan/bufrlua.h
@@ -445,7 +439,6 @@ endif
 endif
 
 if HDF5
-AM_CPPFLAGS += $(HDF5_CFLAGS)
 nobase_dist_arkiinclude_HEADERS += %reldir%/scan/odimh5.h
 %canon_reldir%_libarkimet_la_SOURCES += %reldir%/scan/odimh5.cc
 %canon_reldir%_libarkimet_la_LDFLAGS += $(HDF5_LIBS)
@@ -453,7 +446,6 @@ nobase_dist_arkiinclude_HEADERS += %reldir%/scan/odimh5.h
 endif
 
 if NETCDF
-AM_CPPFLAGS += $(NETCDF_CFLAGS)
 nobase_dist_arkiinclude_HEADERS += %reldir%/scan/nc.h
 %canon_reldir%_libarkimet_la_SOURCES += %reldir%/scan/nc.cc
 %canon_reldir%_libarkimet_la_LDFLAGS += $(NETCDF_LIBS)
@@ -572,7 +564,6 @@ if DEVEL_DO_DATASETS
 		%reldir%/runtime-test.cc
 
 if CURL
-AM_CPPFLAGS += @LIBCURL_CPPFLAGS@
 nobase_dist_arkiinclude_HEADERS += %reldir%/dataset/http.h
 %canon_reldir%_libarkimet_la_SOURCES += %reldir%/dataset/http.cc
 %canon_reldir%_libarkimet_la_LDFLAGS += @LIBCURL@
