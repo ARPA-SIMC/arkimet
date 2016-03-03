@@ -2,7 +2,21 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = conf embedded arki src doc test
+EXTRA_DIST = \
+	     README \
+	     README.Cineca \
+	     update-tags \
+	     autogen.sh
+
+CLEANFILES = $(man_MANS)
+
+dist_noinst_HEADERS =
+noinst_LTLIBRARIES =
+noinst_PROGRAMS =
+
+# SUBDIRS = conf embedded arki src doc test
+include $(srcdir)/conf/Makefile.am
+include $(srcdir)/embedded/Makefile.am
 
 man_MANS = \
 	arki-dump.1 \
@@ -25,14 +39,3 @@ endif
 
 arki-%.1: src/arki-% doc/mhooks-%
 	$< --manpage="$(word 2,$^)" > $@
-
-#%.1: tools/%
-#	( cd tools && ./`basename $<` help manpage ) > $@
-
-EXTRA_DIST = \
-	     README \
-	     README.Cineca \
-	     update-tags \
-	     autogen.sh
-
-CLEANFILES = $(man_MANS)

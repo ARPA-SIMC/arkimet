@@ -380,17 +380,7 @@ AM_CONDITIONAL([DEVEL_DO_METADATA], [true])
 AM_CONDITIONAL([DEVEL_DO_DATASETS], [true])
 AM_CONDITIONAL([DEVEL_DO_RUNTIME], [true])
 
-AC_CONFIG_FILES([
-Makefile
-conf/Makefile
-embedded/Makefile
-embedded/sqlite/Makefile
-embedded/minilzo/Makefile
-arki/Makefile
-src/Makefile
-doc/Makefile
-test/Makefile
-])
+AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 
 AC_MSG_NOTICE([
