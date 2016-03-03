@@ -1,56 +1,52 @@
-doc_DATA =
-
-dist_doc_DATA = \
-		DATASET \
-		arkiguide.it.txt \
-		adding-formats.txt \
-		mhooks-config \
-		mhooks-dump \
-		mhooks-gzip \
-		mhooks-query \
-		mhooks-scan \
-		mhooks-check \
-		mhooks-inbound \
-		mhooks-mergeconf \
-		mhooks-server \
-		mhooks-xargs \
-		mhooks-bufr-prepare \
-		lua-examples/area.lua \
-		lua-examples/bbox.lua \
-		lua-examples/proddef.lua \
-		lua-examples/origin.lua \
-		lua-examples/level.lua \
-		lua-examples/product.lua \
-		lua-examples/quantity.lua \
-		lua-examples/reftime.lua \
-		lua-examples/run.lua \
-		lua-examples/task.lua \
-		lua-examples/time.lua \
-		lua-examples/timerange.lua
+dist_doc_DATA += \
+		%reldir%/DATASET \
+		%reldir%/arkiguide.it.txt \
+		%reldir%/adding-formats.txt \
+		%reldir%/mhooks-config \
+		%reldir%/mhooks-dump \
+		%reldir%/mhooks-gzip \
+		%reldir%/mhooks-query \
+		%reldir%/mhooks-scan \
+		%reldir%/mhooks-check \
+		%reldir%/mhooks-inbound \
+		%reldir%/mhooks-mergeconf \
+		%reldir%/mhooks-server \
+		%reldir%/mhooks-xargs \
+		%reldir%/mhooks-bufr-prepare \
+		%reldir%/lua-examples/area.lua \
+		%reldir%/lua-examples/bbox.lua \
+		%reldir%/lua-examples/proddef.lua \
+		%reldir%/lua-examples/origin.lua \
+		%reldir%/lua-examples/level.lua \
+		%reldir%/lua-examples/product.lua \
+		%reldir%/lua-examples/quantity.lua \
+		%reldir%/lua-examples/reftime.lua \
+		%reldir%/lua-examples/run.lua \
+		%reldir%/lua-examples/task.lua \
+		%reldir%/lua-examples/time.lua \
+		%reldir%/lua-examples/timerange.lua
 
 doc_matcherdir = $(docdir)/matcher
 
 dist_doc_matcher_DATA = \
-		   matcher/origin.txt \
-		   matcher/product.txt \
-		   matcher/level.txt \
-		   matcher/timerange.txt \
-		   matcher/reftime.txt \
-		   matcher/area.txt \
-		   matcher/proddef.txt \
-		   matcher/run.txt \
-		   matcher/aliases.txt \
-		   matcher/expressions.txt
-
-CLEANFILES =
+		   %reldir%/matcher/origin.txt \
+		   %reldir%/matcher/product.txt \
+		   %reldir%/matcher/level.txt \
+		   %reldir%/matcher/timerange.txt \
+		   %reldir%/matcher/reftime.txt \
+		   %reldir%/matcher/area.txt \
+		   %reldir%/matcher/proddef.txt \
+		   %reldir%/matcher/run.txt \
+		   %reldir%/matcher/aliases.txt \
+		   %reldir%/matcher/expressions.txt
 
 if ASCIIDOC
 
-arkiguide.it.html: arkiguide.it.txt
+%reldir%/arkiguide.it.html: %reldir%/arkiguide.it.txt
 	asciidoc -a toc $< > $@
 
-doc_DATA += arkiguide.it.html
+doc_DATA += %reldir%/arkiguide.it.html
 
-CLEANFILES += arkiguide.it.html
+CLEANFILES += %reldir%/arkiguide.it.html
 
 endif

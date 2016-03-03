@@ -51,6 +51,8 @@ noinst_PROGRAMS =
 lib_LTLIBRARIES =
 check_PROGRAMS =
 bin_PROGRAMS =
+doc_DATA =
+dist_doc_DATA =
 
 TESTS =
 LOG_COMPILER = ./arki/runtest
@@ -60,6 +62,7 @@ include $(srcdir)/conf/Makefile.am
 include $(srcdir)/embedded/Makefile.am
 include $(srcdir)/arki/Makefile.am
 include $(srcdir)/src/Makefile.am
+include $(srcdir)/doc/Makefile.am
 
 # man_MANS = \
 # 	arki-dump.1 \
