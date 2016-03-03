@@ -591,13 +591,8 @@ export ARKI_HAS_GCOV=yes
 endif
 
 # Tests
-TESTS_ENVIRONMENT = %reldir%/runtest
 check_PROGRAMS += %reldir%/tests/arki-test
-
-check-local:
-	for test in $(check_PROGRAMS); do \
-		$(TESTS_ENVIRONMENT) $$test ; \
-	done
+TESTS += %reldir%/tests/arki-test
 
 %canon_reldir%_tests_arki_test_LDADD += %reldir%/libarkimet.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
 
