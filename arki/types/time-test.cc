@@ -1,5 +1,4 @@
-#include "tests.h"
-#include "time.h"
+#include "arki/core/tests.h"
 #include <sstream>
 
 namespace {
@@ -7,62 +6,57 @@ using namespace std;
 using namespace arki;
 using namespace arki::tests;
 
-class Tests : public TypeTestCase<types::Time>
+class Tests : public TestCase
 {
-    using TypeTestCase::TypeTestCase;
+    using TestCase::TestCase;
     void register_tests() override;
 } test("arki_types_time");
 
 void Tests::register_tests() {
 using namespace arki::types;
 
-add_generic_test("time",
-    { "0000-00-00T00:00:00Z", "1789-07-14T12:00:00Z", },
-    "2014-01-01T12:00:00Z",
-    { "2015-01-01T00:00:00Z", "2115-01-01T00:00:00Z", });
-
 // Check 'now' time
 add_method("now", [] {
-    unique_ptr<Time> o(new Time(0, 0, 0));
-    wassert(actual(o).is_time(0, 0, 0, 0, 0, 0));
+    Time o(0, 0, 0);
+    wassert(actual(o).is(0, 0, 0, 0, 0, 0));
     wassert(actual(o) == Time(0, 0, 0));
     wassert(actual(o) == Time::create(0, 0, 0, 0, 0, 0));
     wassert(actual(o) != Time::create(1789, 7, 14, 12, 0, 0));
 
     // Test serialisation to ISO-8601
-    wassert(actual(o->toISO8601()) == "0000-00-00T00:00:00Z");
+    wassert(actual(o.toISO8601()) == "0000-00-00T00:00:00Z");
 
     // Test serialisation to SQL
-    wassert(actual(o->toSQL()) == "0000-00-00 00:00:00");
+    wassert(actual(o.toSQL()) == "0000-00-00 00:00:00");
 
     // Test deserialisation from ISO-8601
-    wassert(actual(o) == Time::createFromISO8601(o->toISO8601()));
+    wassert(actual(o) == Time::createFromISO8601(o.toISO8601()));
 
     // Test deserialisation from SQL
-    wassert(actual(o) == Time::create_from_SQL(o->toSQL()));
+    wassert(actual(o) == Time::create_from_SQL(o.toSQL()));
 
     wassert(actual(o).serializes());
 });
 
 // Check an arbitrary time
 add_method("arbitrary", [] {
-    unique_ptr<Time> o = Time::create(1, 2, 3, 4, 5, 6);
-    wassert(actual(o).is_time(1, 2, 3, 4, 5, 6));
+    Time o = Time::create(1, 2, 3, 4, 5, 6);
+    wassert(actual(o).is(1, 2, 3, 4, 5, 6));
 
     wassert(actual(o) == Time::create(1, 2, 3, 4, 5, 6));
     wassert(actual(o) != Time::create(1789, 7, 14, 12, 0, 0));
 
     // Test serialisation to ISO-8601
-    wassert(actual(o->toISO8601()) == "0001-02-03T04:05:06Z");
+    wassert(actual(o.toISO8601()) == "0001-02-03T04:05:06Z");
 
     // Test serialisation to SQL
-    wassert(actual(o->toSQL()) == "0001-02-03 04:05:06");
+    wassert(actual(o.toSQL()) == "0001-02-03 04:05:06");
 
     // Test deserialisation from ISO-8601
-    wassert(actual(o) == Time::createFromISO8601(o->toISO8601()));
+    wassert(actual(o) == Time::createFromISO8601(o.toISO8601()));
 
     // Test deserialisation from SQL
-    wassert(actual(o) == Time::create_from_SQL(o->toSQL()));
+    wassert(actual(o) == Time::create_from_SQL(o.toSQL()));
 
     wassert(actual(o).serializes());
 });
@@ -97,9 +91,9 @@ add_method("range_overlaps", [] {
 
 // Reproduce bugs
 add_method("regression1", [] {
-    unique_ptr<Type> decoded = decodeString(TYPE_TIME, "2005-12-01T18:00:00Z");
+    Time decoded = Time::decodeString("2005-12-01T18:00:00Z");
     stringstream ss;
-    ss << *decoded;
+    ss << decoded;
     wassert(actual(ss.str()) == "2005-12-01T18:00:00Z");
 });
 
@@ -125,25 +119,30 @@ def_test(3)
 #endif
 
 // Test Lua functions
-add_lua_test("lua", "00001-02-03T04:05:06Z", R"(
-    function test(o)
-      if o.year ~= 1 then return 'o.year is '..o.year..' instead of 1' end
-      if o.month ~= 2 then return 'o.month is '..o.month..' instead of 2' end
-      if o.day ~= 3 then return 'o.day is '..o.day..' instead of 3' end
-      if o.hour ~= 4 then return 'o.hour is '..o.hour..' instead of 4' end
-      if o.minute ~= 5 then return 'o.minute is '..o.minute..' instead of 5' end
-      if o.second ~= 6 then return 'o.second is '..o.second..' instead of 6' end
-      if tostring(o) ~= '0001-02-03T04:05:06Z' then return 'tostring gave '..tostring(o)..' instead of 0001-02-03T04:05:06Z' end
-      o1 = arki_time.time(1, 2, 3, 4, 5, 6)
-      if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end
-      o1 = arki_time.iso8601('1-2-3T4:5:6Z')
-      if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end
-      o1 = arki_time.sql('1-2-3 4:5:6')
-      if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end
-      o2 = arki_time.now()
-      if o2 <= o1 then return 'time now is '..tostring(o2)..' which is not later than '..tostring(o1) end
-    end
-)");
+add_method("lua", [] {
+    Time o(1, 2, 3, 4, 5, 6);
+    tests::Lua test(R"(
+        function test(o)
+          if o.year ~= 1 then return 'o.year is '..o.year..' instead of 1' end
+          if o.month ~= 2 then return 'o.month is '..o.month..' instead of 2' end
+          if o.day ~= 3 then return 'o.day is '..o.day..' instead of 3' end
+          if o.hour ~= 4 then return 'o.hour is '..o.hour..' instead of 4' end
+          if o.minute ~= 5 then return 'o.minute is '..o.minute..' instead of 5' end
+          if o.second ~= 6 then return 'o.second is '..o.second..' instead of 6' end
+          if tostring(o) ~= '0001-02-03T04:05:06Z' then return 'tostring gave '..tostring(o)..' instead of 0001-02-03T04:05:06Z' end
+          o1 = arki_time.time(1, 2, 3, 4, 5, 6)
+          if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end
+          o1 = arki_time.iso8601('1-2-3T4:5:6Z')
+          if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end
+          o1 = arki_time.sql('1-2-3 4:5:6')
+          if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end
+          o2 = arki_time.now()
+          if o2 <= o1 then return 'time now is '..tostring(o2)..' which is not later than '..tostring(o1) end
+        end
+    )");
+    test.pusharg(o);
+    wassert(actual(test.run()) == "");
+});
 
 }
 

@@ -66,10 +66,10 @@ void Note::encodeWithoutEnvelope(BinaryEncoder& enc) const
 
 unique_ptr<Note> Note::decode(BinaryDecoder& dec)
 {
-    unique_ptr<Time> t = Time::decode(dec);
+    Time t = Time::decode(dec);
     size_t msg_len = dec.pop_varint<size_t>("note text size");
     string msg = dec.pop_string(msg_len, "note text");
-    return Note::create(*t, msg);
+    return Note::create(t, msg);
 }
 
 std::ostream& Note::writeToOstream(std::ostream& o) const
@@ -86,7 +86,7 @@ void Note::serialiseLocal(Emitter& e, const Formatter* f) const
 unique_ptr<Note> Note::decodeMapping(const emitter::memory::Mapping& val)
 {
     return Note::create(
-            *Time::decodeList(val["ti"].want_list("parsing Note time")),
+            Time::decodeList(val["ti"].want_list("parsing Note time")),
             val["va"].want_string("parsing Note content"));
 }
 
@@ -99,7 +99,7 @@ unique_ptr<Note> Note::decodeString(const std::string& val)
     size_t pos = val.find(']');
     if (pos == string::npos)
         throw_consistency_error("parsing Note", "no closed square bracket found");
-    return Note::create(*Time::createFromISO8601(val.substr(1, pos-1)), val.substr(pos+1));
+    return Note::create(Time::createFromISO8601(val.substr(1, pos-1)), val.substr(pos+1));
 }
 
 #ifdef HAVE_LUA

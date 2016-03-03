@@ -15,23 +15,12 @@ struct List;
 
 namespace types {
 
-struct Time;
-
-template<>
-struct traits<Time>
-{
-    static const char* type_tag;
-    static const types::Code type_code;
-    static const size_t type_sersize_bytes;
-    static const char* type_lua_tag;
-};
-
 /**
  * A point in time, in UTC.
  *
  * If all the time components are 0, it is to be interpreted as 'now'.
  */
-class Time : public types::CoreType<Time>
+class Time
 {
 public:
     int vals[6];
@@ -46,8 +35,18 @@ public:
 	Time& operator=(const Time& t);
 
     int compare_raw(const int (&vals)[6]) const;
-    int compare(const Type& o) const override;
-    bool equals(const Type& t) const override;
+    int compare(const Time& o) const;
+    bool operator<(const Time& o) const { return compare(o) < 0; }
+    bool operator<=(const Time& o) const { return compare(o) <= 0; }
+    bool operator>(const Time& o) const { return compare(o) > 0; }
+    bool operator>=(const Time& o) const { return compare(o) >= 0; }
+
+    bool equals(const Time& t) const;
+    bool operator==(const Time& o) const { return equals(o); }
+    bool operator!=(const Time& o) const { return !equals(o); }
+
+    /// Compare with a stringified version, useful for testing
+    bool operator==(const std::string& o) const;
 
     /// Some time operations
 
@@ -65,19 +64,17 @@ public:
 	std::string toSQL() const;
 
     /// CODEC functions
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
-    static std::unique_ptr<Time> decode(BinaryDecoder& dec);
-    static std::unique_ptr<Time> decodeString(const std::string& val);
-    static std::unique_ptr<Time> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<Time> decodeList(const emitter::memory::List& val);
-    std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const;
+    static Time decode(BinaryDecoder& dec);
+    static Time decodeString(const std::string& val);
+    static Time decodeMapping(const emitter::memory::Mapping& val);
+    static Time decodeList(const emitter::memory::List& val);
+    std::ostream& writeToOstream(std::ostream& o) const;
+    void serialise(Emitter& e) const;
+    void serialiseLocal(Emitter& e) const;
     void serialiseList(Emitter& e) const;
 
-    // Lua functions
-    virtual void lua_register_methods(lua_State* L) const override;
-
-    Time* clone() const override;
+    Time* clone() const;
 
     void set(int ye, int mo, int da, int ho, int mi, int se);
     void set(const int (&vals)[6]);
@@ -87,16 +84,16 @@ public:
     void setNow();
 
     /// Construct a Time for the given date
-    static std::unique_ptr<Time> create(int ye, int mo, int da, int ho, int mi, int se);
+    static Time create(int ye, int mo, int da, int ho, int mi, int se);
 
     /// Construct a Time for the given date, as an array of 6 ints
-    static std::unique_ptr<Time> create(const int (&vals)[6]);
+    static Time create(const int (&vals)[6]);
 
     /// Construct a Time from a struct tm
-    static std::unique_ptr<Time> create(struct tm& t);
+    static Time create(struct tm& t);
 
     /// Create a Time object from a string in ISO-8601 format
-    static std::unique_ptr<Time> createFromISO8601(const std::string& str);
+    static Time createFromISO8601(const std::string& str);
 
     /// Create a Time object from a string in SQL format
     static Time create_from_SQL(const std::string& str);
@@ -128,11 +125,11 @@ public:
             const Time* ts1, const Time* te1,
             const Time* ts2, const Time* te2);
 
+    void lua_push(lua_State* L) const;
 
-	static void lua_loadlib(lua_State* L);
+    static Time lua_check(lua_State* L, int idx);
 
-    // Register this type tree with the type system
-    static void init();
+    static void lua_loadlib(lua_State* L);
 };
 
 static inline std::ostream& operator<<(std::ostream& o, const Time& i)

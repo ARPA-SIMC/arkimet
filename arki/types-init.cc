@@ -65,7 +65,6 @@ void init_default_types()
     matcher::MatchTimerange::init();
     Area::init();
     matcher::MatchArea::init();
-    Time::init();
     Reftime::init();
     matcher::MatchReftime::init();
     Run::init();

@@ -58,12 +58,12 @@ unique_ptr<Reftime> Reftime::decode(BinaryDecoder& dec)
     Style s = (Style)dec.pop_uint(1, "reftime style");
     switch (s)
     {
-        case POSITION: return Reftime::createPosition(*Time::decode(dec));
+        case POSITION: return Reftime::createPosition(Time::decode(dec));
         case PERIOD:
         {
             auto begin = Time::decode(dec);
             auto until = Time::decode(dec);
-            return Reftime::createPeriod(*begin, *until);
+            return Reftime::createPeriod(begin, until);
         }
         default:
         {
@@ -90,25 +90,25 @@ unique_ptr<Reftime> Reftime::decodeMapping(const emitter::memory::Mapping& val)
 unique_ptr<Reftime> Reftime::decodeString(const std::string& val)
 {
     size_t pos = val.find(" to ");
-    if (pos == string::npos) return Reftime::createPosition(*Time::decodeString(val));
+    if (pos == string::npos) return Reftime::createPosition(Time::decodeString(val));
 
     return Reftime::createPeriod(
-                *Time::decodeString(val.substr(0, pos)),
-                *Time::decodeString(val.substr(pos + 4)));
+                Time::decodeString(val.substr(0, pos)),
+                Time::decodeString(val.substr(pos + 4)));
 }
 
 static int arkilua_new_position(lua_State* L)
 {
-    const Time* time = types::Type::lua_check<Time>(L, 1);
-    reftime::Position::create(*time)->lua_push(L);
+    Time time = types::Time::lua_check(L, 1);
+    reftime::Position::create(time)->lua_push(L);
     return 1;
 }
 
 static int arkilua_new_period(lua_State* L)
 {
-    const Time* beg = types::Type::lua_check<Time>(L, 1);
-    const Time* end = types::Type::lua_check<Time>(L, 2);
-    reftime::Period::create(*beg, *end)->lua_push(L);
+    Time beg = types::Time::lua_check(L, 1);
+    Time end = types::Time::lua_check(L, 2);
+    reftime::Period::create(beg, end)->lua_push(L);
     return 1;
 }
 
@@ -167,8 +167,8 @@ void Position::serialiseLocal(Emitter& e, const Formatter* f) const
 
 unique_ptr<Position> Position::decodeMapping(const emitter::memory::Mapping& val)
 {
-    unique_ptr<Time> time = Time::decodeList(val["ti"].want_list("parsing position reftime time"));
-    return Position::create(*time);
+    Time time = Time::decodeList(val["ti"].want_list("parsing position reftime time"));
+    return Position::create(time);
 }
 
 std::string Position::exactQuery() const
@@ -259,9 +259,9 @@ void Period::serialiseLocal(Emitter& e, const Formatter* f) const
 
 unique_ptr<Period> Period::decodeMapping(const emitter::memory::Mapping& val)
 {
-    unique_ptr<Time> beg = Time::decodeList(val["b"].want_list("parsing period reftime begin"));
-    unique_ptr<Time> end = Time::decodeList(val["e"].want_list("parsing period reftime end"));
-    return Period::create(*beg, *end);
+    Time beg = Time::decodeList(val["b"].want_list("parsing period reftime begin"));
+    Time end = Time::decodeList(val["e"].want_list("parsing period reftime end"));
+    return Period::create(beg, end);
 }
 
 const char* Period::lua_type_name() const { return "arki.types.reftime.period"; }

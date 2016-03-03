@@ -21,6 +21,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		wibble/sys/filelock.h \
 		wibble/tests/tut.h \
 		wibble/grcal/grcal.h \
+		core/tests.h \
 		binary.h \
 		defs.h \
 		exceptions.h \
@@ -215,6 +216,7 @@ libarkimet_la_SOURCES += \
 		wibble/log/syslog.cpp \
 		wibble/log/filters.cpp \
 		wibble/grcal/grcal.cpp \
+		core/tests.cc \
 		exceptions.cc \
 		nag.cc \
 		utils.cc \
