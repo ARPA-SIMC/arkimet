@@ -39,16 +39,6 @@ int* Table::msoSerLen = 0;
 static int* itemMsoMap = 0;
 static size_t itemMsoMapSize = 0;
 
-bool Row::operator<(const Row& row) const
-{
-    for (unsigned i = 0; i < mso_size; ++i)
-    {
-        if (items[i] < row.items[i]) return true;
-        if (items[i] > row.items[i]) return false;
-    }
-    return false;
-}
-
 bool Row::matches(const Matcher& matcher) const
 {
     if (matcher.empty()) return true;
@@ -89,7 +79,7 @@ void Row::dump(std::ostream& out, unsigned indent) const
 }
 
 Table::Table()
-    : interns(new TypeIntern[Table::msoSize]), rows(0), row_count(0), row_capacity(0)
+    : interns(new TypeIntern[Table::msoSize])
 {
     buildMsoSerLen();
     buildItemMsoMap();
@@ -98,13 +88,12 @@ Table::Table()
 Table::~Table()
 {
     delete[] interns;
-    free(rows);
 }
 
 bool Table::equals(const Table& table) const
 {
-    if (row_count != table.row_count) return false;
-    for (unsigned ri = 0; ri < row_count; ++ri)
+    if (rows.size() != table.rows.size()) return false;
+    for (unsigned ri = 0; ri < rows.size(); ++ri)
     {
         Row translated(table.rows[ri].stats);
         // Translate the row in table to the pointer that we use in *this
@@ -120,8 +109,8 @@ bool Table::equals(const Table& table) const
         }
 
         // Lookup translated in this table
-        Row* pos = lower_bound(rows, rows + row_count, translated);
-        if (pos == rows + row_count) return false;
+        auto pos = lower_bound(rows.begin(), rows.end(), translated);
+        if (pos == rows.end()) return false;
         if (*pos != translated) return false;
         if (pos->stats != translated.stats) return false;
     }
@@ -260,21 +249,6 @@ static void test_consistency(Row* rows, unsigned size, const char* context)
 }
 #endif
 
-void Table::ensure_we_can_add_one()
-{
-    if (row_count + 1 >= row_capacity)
-    {
-//        test_consistency(rows, row_count, "PRE");
-        unsigned new_capacity = row_capacity == 0 ? 16 : row_capacity * 2;
-        Row* new_rows = (Row*)realloc(rows, new_capacity * sizeof(Row));
-        if (!new_rows)
-            throw std::system_error(errno, std::system_category(), "cannot allocate memory for summary table");
-        rows = new_rows;
-        row_capacity = new_capacity;
-//        test_consistency(rows, row_count, "POST");
-    }
-}
-
 void Table::merge(const Row& row)
 {
 //    cerr << "MERGE " << this << " cur_size: " << row_count << " [" << rows << ", " << (rows + row_count) << ")" << " stats count " << row.stats.count << endl;
@@ -283,34 +257,16 @@ void Table::merge(const Row& row)
     //
     // This works well even in case rows == 0, since it works in the [0, 0)
     // range, returning 0 and later matching the append case
-    Row* pos = lower_bound(rows, rows + row_count, row);
+    auto pos = lower_bound(rows.begin(), rows.end(), row);
 
-//    cerr << " INSERTION POINT " << (pos - rows) << endl;
-
-    if (pos == rows + row_count)
+    if (pos == rows.end())
     {
-//        cerr << " APPEND" << endl;
-        // Append
-        ensure_we_can_add_one();
-        // Use placement new instead of assignment, otherwise the vtable of
-        // stats will not be initialized
-        // FIXME: simplify Stats not to be a type?
-        new(rows + row_count++) Row(row);
+        rows.emplace_back(row);
     } else if (*pos == row) {
-//        cerr << " MERGE" << endl;
         // Just merge stats
         pos->stats.merge(row.stats);
     } else {
-//        cerr << " INSERT" << endl;
-        // Insert
-        unsigned idx = pos - rows;
-        // Use the array position since we may reallocate, invalidating the
-        // previous pointer
-        ensure_we_can_add_one();
-        memmove(rows + idx + 1, rows + idx, (row_count - idx) * sizeof(Row));
-        new(rows + idx) Row(row);
-        ++row_count;
-//        test_consistency(rows, row_count, "POST MEMMOVE");
+        rows.emplace(pos, row);
     }
     stats.merge(row.stats);
 }
@@ -333,15 +289,15 @@ bool Table::visit(Visitor& visitor) const
     vector<const Type*> visitmd;
     visitmd.resize(msoSize);
 
-    for (unsigned ri = 0; ri < row_count; ++ri)
+    for (const auto& row: rows)
     {
         // Set this node's metadata in visitmd
         // FIXME: change the visitor API to just get a const Type* const* and
         //        assume it's msoSize long
         for (size_t i = 0; i < msoSize; ++i)
-            visitmd[i] = rows[ri].items[i];
+            visitmd[i] = row.items[i];
 
-        if (!visitor(visitmd, rows[ri].stats))
+        if (!visitor(visitmd, row.stats))
             return false;
     }
 
@@ -353,16 +309,16 @@ bool Table::visitFiltered(const Matcher& matcher, Visitor& visitor) const
     vector<const Type*> visitmd;
     visitmd.resize(msoSize);
 
-    for (unsigned ri = 0; ri < row_count; ++ri)
+    for (const auto& row: rows)
     {
-        if (!rows[ri].matches(matcher)) continue;
+        if (!row.matches(matcher)) continue;
 
         // FIXME: change the visitor API to just get a const Type* const* and
         //        assume it's msoSize long
         for (size_t i = 0; i < msoSize; ++i)
-            visitmd[i] = rows[ri].items[i];
+            visitmd[i] = row.items[i];
 
-        if (!visitor(visitmd, rows[ri].stats))
+        if (!visitor(visitmd, row.stats))
             return false;
     }
 

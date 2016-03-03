@@ -6,6 +6,8 @@
 #include <arki/types.h>
 #include <arki/file.h>
 #include <arki/summary/stats.h>
+#include <vector>
+#include <array>
 #include <cstring>
 
 namespace arki {
@@ -29,58 +31,43 @@ struct Row
 {
     /// Number of item types that contribute to a summary context (same as Table::msoSize)
     static const unsigned mso_size = 10;
-    const types::Type* items[mso_size];
+    std::array<const types::Type*, mso_size> items;
     Stats stats;
 
     Row() {}
-    Row(const Row& row)
-        : stats(row.stats)
-    {
-        memcpy(items, row.items, sizeof(items));
-    }
+    Row(const Row& row) = default;
+    Row(Row&& row) = default;
     Row(const Metadata& md) : stats(Stats(md)) {}
     Row(const Stats& stats) : stats(stats) {}
 
+    Row& operator=(const Row&) = default;
+    Row& operator=(Row&&) = default;
+
     void set_to_zero()
     {
-        memset(items, 0, sizeof(items));
+        items.fill(nullptr);
     }
 
     void set_to_zero(unsigned first_el)
     {
-        memset(items + first_el, 0, (mso_size - first_el) * sizeof(const types::Type*));
+        for (unsigned i = first_el; i < items.size(); ++i)
+            items[i] = nullptr;
     }
 
     bool matches(const Matcher& matcher) const;
 
-    bool operator<(const Row& row) const;
-
-    bool operator==(const Row& row) const
-    {
-        return memcmp(items, row.items, sizeof(items)) == 0;
-    }
-
-    bool operator!=(const Row& row) const
-    {
-        return memcmp(items, row.items, sizeof(items)) != 0;
-    }
+    bool operator<(const Row& row) const { return items < row.items; }
+    bool operator==(const Row& row) const { return items == row.items; }
+    bool operator!=(const Row& row) const { return items != row.items; }
 
     void dump(std::ostream& out, unsigned indent = 0) const;
-
-private:
-    Row& operator=(const Row&);
 };
 
 class Table
 {
 protected:
     TypeIntern* interns;
-    Row* rows;
-    unsigned row_count;
-    unsigned row_capacity;
-
-    /// Ensure that we have enough capacity to add at last an item
-    void ensure_we_can_add_one();
+    std::vector<Row> rows;
 
     static void buildMsoSerLen();
     static void buildItemMsoMap();
@@ -92,8 +79,8 @@ public:
     Table();
     ~Table();
 
-    bool empty() const { return row_count == 0; }
-    unsigned size() const { return row_count; }
+    bool empty() const { return rows.empty(); }
+    size_t size() const { return rows.size(); }
 
     bool equals(const Table& table) const;
 
