@@ -63,6 +63,7 @@ include $(srcdir)/embedded/Makefile.am
 include $(srcdir)/arki/Makefile.am
 include $(srcdir)/src/Makefile.am
 include $(srcdir)/doc/Makefile.am
+include $(srcdir)/test
 
 man_MANS = \
 	arki-dump.1 \
