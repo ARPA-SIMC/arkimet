@@ -215,7 +215,7 @@ void ReaderServer::do_summary(const LegacySummaryParams& parms, net::http::Reque
     parms.set_into(pmaker);
 
     // Response header generator
-    StreamHeaders headers(req, dsname);
+    StreamHeaders headers(req, dsname + "-summary");
 
     // Set content type and file name accordingly
     if (pmaker.yaml)
@@ -228,7 +228,7 @@ void ReaderServer::do_summary(const LegacySummaryParams& parms, net::http::Reque
         headers.content_type = "application/json";
         headers.ext = "json";
     } else if (!pmaker.report.empty()) {
-        headers.content_type = "application/octet-stream";
+        headers.content_type = "text/plain";
         headers.ext = "txt";
     }
 
@@ -259,7 +259,7 @@ void ReaderServer::do_summary_short(const LegacySummaryParams& parms, arki::util
     parms.set_into(pmaker);
 
     // Response header generator
-    StreamHeaders headers(req, dsname);
+    StreamHeaders headers(req, dsname + "-summaryshort");
 
     // Set content type and file name accordingly
     if (pmaker.yaml)
@@ -272,7 +272,7 @@ void ReaderServer::do_summary_short(const LegacySummaryParams& parms, arki::util
         headers.content_type = "application/json";
         headers.ext = "json";
     } else if (!pmaker.report.empty()) {
-        headers.content_type = "application/octet-stream";
+        headers.content_type = "text/plain";
         headers.ext = "txt";
     }
 
