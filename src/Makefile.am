@@ -68,6 +68,7 @@ check_PROGRAMS += %reldir%/test-src
 		arki/utils/tests.cc \
 		arki/types/tests.cc \
 		arki/tests/tut-main.cpp
+
 %canon_reldir%_test_src_LDADD = arki/libarkimet.la
 
 EXTRA_DIST += %reldir%/testlib.sh
