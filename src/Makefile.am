@@ -1,97 +1,73 @@
 ## Process this file with automake to produce Makefile.in
 
-bin_PROGRAMS = arki-check arki-query arki-dump arki-gzip arki-mergeconf arki-benchmark arki-scan arki-xargs arki-server arki-inbound
-noinst_PROGRAMS = arki-test
+bin_PROGRAMS += %reldir%/arki-check %reldir%/arki-query %reldir%/arki-dump %reldir%/arki-gzip %reldir%/arki-mergeconf %reldir%/arki-benchmark %reldir%/arki-scan %reldir%/arki-xargs %reldir%/arki-server %reldir%/arki-inbound
 
-dist_noinst_HEADERS = bench/benchmark.h
+noinst_PROGRAMS += %reldir%/arki-test
 
-all_libs = ../arki/libarkimet.la $(LIBGRIB_LIBS) $(DBALLE_LIBS) $(SQLITE3_LDFLAGS) $(GRIBAPI_LIBS) $(LUA_LIBS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
+dist_noinst_HEADERS += %reldir%/bench/benchmark.h
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(LIBGRIB_CFLAGS) $(DBALLE_CFLAGS) $(SQLITE3_CFLAGS) $(GRIBAPI_CFLAGS) $(LUA_CFLAGS) $(ZLIB_CFLAGS) $(DEVEL_CFLAGS) -DSERVER_DIR=\"$(serverdir)\" $(EXTRA_CXXFLAGS) -Werror
-AM_LDFLAGS = $(EXTRA_LDFLAGS)
-
-if GEOS
-all_libs += $(GEOS_LIBS)
-AM_CPPFLAGS += $(GEOS_CFLAGS)
-endif
-
-# if LIBGRIB
-if CURL
-all_libs += @LIBCURL@
-AM_CPPFLAGS += @LIBCURL_CPPFLAGS@
-endif
-
-if LZO
-all_libs += $(LZO_LIBS)
-AM_CPPFLAGS += $(LZO_CFLAGS)
-endif
+# TODO: -Werror for all bins
 
 if READLINE
-bin_PROGRAMS += arki-config
-arki_config_SOURCES = arki-config.cc
-arki_config_LDADD = $(all_libs)
+bin_PROGRAMS += %reldir%/arki-config
+%canon_reldir%_arki_config_SOURCES = %reldir%/arki-config.cc
+%canon_reldir%_arki_config_LDADD = arki/libarkimet.la
 endif
 
 if DBALLE
-bin_PROGRAMS += arki-bufr-prepare
-
-arki_bufr_prepare_SOURCES = arki-bufr-prepare.cc
-arki_bufr_prepare_LDADD = $(all_libs)
+bin_PROGRAMS += %reldir%/arki-bufr-prepare
+%canon_reldir%_arki_bufr_prepare_SOURCES = %reldir%/arki-bufr-prepare.cc
+%canon_reldir%_arki_bufr_prepare_LDADD = arki/libarkimet.la
 endif
 
 if LUA
-bin_PROGRAMS += arki-shell
-
-arki_shell_SOURCES = arki-shell.cc
-arki_shell_LDADD = $(all_libs)
+bin_PROGRAMS += %reldir%/arki-shell
+%canon_reldir%_arki_shell_SOURCES = %reldir%/arki-shell.cc
+%canon_reldir%_arki_shell_LDADD = arki/libarkimet.la
 endif
 
-arki_scan_SOURCES = arki-scan.cc
-arki_scan_LDADD = $(all_libs)
+%canon_reldir%_arki_scan_SOURCES = %reldir%/arki-scan.cc
+%canon_reldir%_arki_scan_LDADD = arki/libarkimet.la
 
-arki_inbound_SOURCES = arki-inbound.cc
-arki_inbound_LDADD = $(all_libs)
+%canon_reldir%_arki_inbound_SOURCES = %reldir%/arki-inbound.cc
+%canon_reldir%_arki_inbound_LDADD = arki/libarkimet.la
 
-arki_benchmark_SOURCES = arki-benchmark.cc bench/benchmark.cc
-arki_benchmark_LDADD = $(all_libs)
+%canon_reldir%_arki_benchmark_SOURCES = %reldir%/arki-benchmark.cc %reldir%/bench/benchmark.cc
+%canon_reldir%_arki_benchmark_LDADD = arki/libarkimet.la
 
-arki_mergeconf_SOURCES = arki-mergeconf.cc
-arki_mergeconf_LDADD = $(all_libs)
+%canon_reldir%_arki_mergeconf_SOURCES = %reldir%/arki-mergeconf.cc
+%canon_reldir%_arki_mergeconf_LDADD = arki/libarkimet.la
 
-arki_query_SOURCES = arki-query.cc
-arki_query_LDADD = $(all_libs)
+%canon_reldir%_arki_query_SOURCES = %reldir%/arki-query.cc
+%canon_reldir%_arki_query_LDADD = arki/libarkimet.la
 
-arki_check_SOURCES = arki-check.cc
-arki_check_LDADD = $(all_libs)
+%canon_reldir%_arki_check_SOURCES = %reldir%/arki-check.cc
+%canon_reldir%_arki_check_LDADD = arki/libarkimet.la
 
-arki_dump_SOURCES = arki-dump.cc
-arki_dump_LDADD = $(all_libs)
+%canon_reldir%_arki_dump_SOURCES = %reldir%/arki-dump.cc
+%canon_reldir%_arki_dump_LDADD = arki/libarkimet.la
 
-arki_xargs_SOURCES = arki-xargs.cc
-arki_xargs_LDADD = $(all_libs)
+%canon_reldir%_arki_xargs_SOURCES = %reldir%/arki-xargs.cc
+%canon_reldir%_arki_xargs_LDADD = arki/libarkimet.la
 
-arki_gzip_SOURCES = arki-gzip.cc
-arki_gzip_LDADD = $(all_libs)
+%canon_reldir%_arki_gzip_SOURCES = %reldir%/arki-gzip.cc
+%canon_reldir%_arki_gzip_LDADD = arki/libarkimet.la
 
-arki_server_SOURCES = arki-server.cc
-arki_server_LDADD = $(all_libs)
+%canon_reldir%_arki_server_SOURCES = %reldir%/arki-server.cc
+%canon_reldir%_arki_server_CPPFLAGS = $(AM_CPPFLAGS) -DSERVER_DIR=\"$(serverdir)\"
+%canon_reldir%_arki_server_LDADD = arki/libarkimet.la
 
-arki_test_SOURCES = arki-test.cc
-arki_test_LDADD = $(all_libs)
+%canon_reldir%_arki_test_SOURCES = %reldir%/arki-test.cc
+%canon_reldir%_arki_test_LDADD = arki/libarkimet.la
 
-test_scripts = test-arki-server test-arki-scan test-arki-query test-arki-xargs run-test-src
-check_PROGRAMS = test-src
+TESTS += %reldir%/test-arki-server %reldir%/test-arki-scan %reldir%/test-arki-query %reldir%/test-arki-xargs %reldir%/run-test-src
+check_PROGRAMS += %reldir%/test-src
 
-check-local:
-	for test in $(test_scripts); do \
-		./$$test ; \
-	done
+%canon_reldir%_test_src_SOURCES = \
+		%reldir%/arki-server-tut.cc \
+		arki/utils/tests.cc \
+		arki/types/tests.cc \
+		arki/tests/tut-main.cpp
+%canon_reldir%_test_src_LDADD = arki/libarkimet.la
 
-test_src_SOURCES = \
-		arki-server-tut.cc \
-		../arki/utils/tests.cc \
-		../arki/types/tests.cc \
-		../arki/tests/tut-main.cpp
-test_src_LDADD = $(all_libs)
-
-EXTRA_DIST = testlib.sh $(test_scripts)
+EXTRA_DIST += %reldir%/testlib.sh

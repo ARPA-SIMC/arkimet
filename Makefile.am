@@ -3,6 +3,9 @@
 ACLOCAL_AMFLAGS = -I m4
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS)
+AM_CXXFLAGS = $(EXTRA_CXXFLAGS) $(DEVEL_CXXFLAGS)
+AM_LDFLAGS = $(EXTRA_LDFLAGS) -lpthread
+
 if FILE_OFFSET_BITS_64
 AM_CPPFLAGS += -D_FILE_OFFSET_BITS=64
 endif
@@ -24,8 +27,6 @@ endif
 if DBALLE
 AM_CPPFLAGS += $(DBALLE_CFLAGS)
 endif
-AM_CXXFLAGS = $(EXTRA_CXXFLAGS) $(DEVEL_CXXFLAGS)
-AM_LDFLAGS = $(EXTRA_LDFLAGS)
 if HDF5
 AM_CPPFLAGS += $(HDF5_CFLAGS)
 endif
@@ -49,14 +50,16 @@ noinst_LTLIBRARIES =
 noinst_PROGRAMS =
 lib_LTLIBRARIES =
 check_PROGRAMS =
+bin_PROGRAMS =
 
-TESTS_ENVIRONMENT = arki/runtest
 TESTS =
+LOG_COMPILER = ./arki/runtest
 
 # SUBDIRS = conf embedded arki src doc test
 include $(srcdir)/conf/Makefile.am
 include $(srcdir)/embedded/Makefile.am
 include $(srcdir)/arki/Makefile.am
+include $(srcdir)/src/Makefile.am
 
 # man_MANS = \
 # 	arki-dump.1 \
