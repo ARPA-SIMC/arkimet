@@ -592,7 +592,6 @@ endif
 
 # Tests
 check_PROGRAMS += arki/tests/arki-test
-TESTS += arki/tests/arki-test
 
 arki_tests_arki_test_LDADD += arki/libarkimet.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
 
