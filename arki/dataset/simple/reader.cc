@@ -35,7 +35,7 @@ bool Reader::is_dataset(const std::string& dir)
     return index::Manifest::exists(dir);
 }
 
-void Reader::expand_date_range(unique_ptr<types::Time>& begin, unique_ptr<types::Time>& end)
+void Reader::expand_date_range(unique_ptr<core::Time>& begin, unique_ptr<core::Time>& end)
 {
     m_mft->expand_date_range(begin, end);
 }

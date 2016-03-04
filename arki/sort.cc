@@ -6,7 +6,6 @@
 #include "arki/exceptions.h"
 #include "arki/utils/string.h"
 #include "arki/utils/regexp.h"
-#include "arki/wibble/grcal/grcal.h"
 #include <vector>
 #include <algorithm>
 #include <cctype>
@@ -15,6 +14,7 @@
 using namespace std;
 using namespace arki::types;
 using namespace arki::utils;
+using arki::core::Time;
 
 namespace arki {
 namespace sort {
@@ -157,14 +157,19 @@ Stream::~Stream()
 
 void Stream::setEndOfPeriod(const types::Reftime& rt)
 {
-    endofperiod.reset(new Time(rt.period_begin()));
+    Time begin = rt.period_begin();
+    int mo = begin.mo;
+    int da = begin.da;
+    int ho = begin.ho;
+    int mi = begin.mi;
+    int se = begin.se;
     switch (sorter.interval())
     {
-        case Compare::YEAR: endofperiod->vals[1] = -1;
-        case Compare::MONTH: endofperiod->vals[2] = -1;
-        case Compare::DAY: endofperiod->vals[3] = -1;
-        case Compare::HOUR: endofperiod->vals[4] = -1;
-        case Compare::MINUTE: endofperiod->vals[5] = -1; break;
+        case Compare::YEAR: mo = -1;
+        case Compare::MONTH: da = -1;
+        case Compare::DAY: ho = -1;
+        case Compare::HOUR: mi = -1;
+        case Compare::MINUTE: se = -1; break;
         default:
         {
             stringstream ss;
@@ -172,8 +177,8 @@ void Stream::setEndOfPeriod(const types::Reftime& rt)
             throw std::runtime_error(ss.str());
         }
     }
-    wibble::grcal::date::upperbound(endofperiod->vals);
-//cerr << "Set end of period to " << endofperiod << endl;
+    endofperiod.reset(new Time());
+    endofperiod->set_upperbound(begin.ye, mo, da, ho, mi, se);
 }
 
 bool Stream::add(unique_ptr<Metadata> m)

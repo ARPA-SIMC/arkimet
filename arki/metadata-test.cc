@@ -21,7 +21,7 @@ namespace std {
 static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 {
     m.writeYaml(o);
-	return o;
+    return o;
 }
 }
 
@@ -31,6 +31,7 @@ using namespace arki;
 using namespace arki::tests;
 using namespace arki::types;
 using namespace arki::utils;
+using arki::core::Time;
 
 struct Fixture : public arki::utils::tests::Fixture
 {

@@ -23,6 +23,7 @@ using namespace arki;
 using namespace arki::tests;
 using namespace arki::dataset;
 using namespace arki::utils;
+using arki::core::Time;
 
 struct Fixture : public DatasetTest
 {
@@ -303,7 +304,7 @@ add_method("query_lots", [](Fixture& f) {
         virtual uint64_t make_key(const Metadata& md) const
         {
             const reftime::Position* rt = md.get<types::reftime::Position>();
-            return rt->time.vals[1] * 10000 + rt->time.vals[2] * 100 + rt->time.vals[3];
+            return rt->time.mo * 10000 + rt->time.da * 100 + rt->time.ho;
         }
     };
 
@@ -314,7 +315,7 @@ add_method("query_lots", [](Fixture& f) {
             const reftime::Position* rt = md.get<types::reftime::Position>();
             const area::VM2* area = dynamic_cast<const area::VM2*>(md.get(TYPE_AREA));
             const product::VM2* prod = dynamic_cast<const product::VM2*>(md.get(TYPE_PRODUCT));
-            uint64_t dt = rt->time.vals[1] * 10000 + rt->time.vals[2] * 100 + rt->time.vals[3];
+            uint64_t dt = rt->time.mo * 10000 + rt->time.da * 100 + rt->time.ho;
             return dt * 100 + area->station_id() * 10 + prod->variable_id();
         }
     };

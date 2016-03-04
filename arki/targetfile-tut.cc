@@ -18,6 +18,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
+using arki::core::Time;
 
 struct arki_targetfile_shar {
 	Targetfile tf;
@@ -38,16 +39,16 @@ struct arki_targetfile_shar {
 		testValues.set("antani", Value::createInteger(-1));
 		testValues.set("blinda", Value::createInteger(0));
 
-		md.set(origin::GRIB1::create(1, 2, 3));
-		md.set(product::GRIB1::create(1, 2, 3));
-		md.set(level::GRIB1::create(110, 12, 13));
-		md.set(timerange::GRIB1::create(0, 0, 0, 0));
-		md.set(area::GRIB::create(testValues));
-		md.set(proddef::GRIB::create(testValues));
-		md.add_note("test note");
-		md.set(run::Minute::create(12));
-		md.set(reftime::Position::create(types::Time(2007, 1, 2, 3, 4, 5)));
-	}
+        md.set(origin::GRIB1::create(1, 2, 3));
+        md.set(product::GRIB1::create(1, 2, 3));
+        md.set(level::GRIB1::create(110, 12, 13));
+        md.set(timerange::GRIB1::create(0, 0, 0, 0));
+        md.set(area::GRIB::create(testValues));
+        md.set(proddef::GRIB::create(testValues));
+        md.add_note("test note");
+        md.set(run::Minute::create(12));
+        md.set(reftime::Position::create(Time(2007, 1, 2, 3, 4, 5)));
+    }
 };
 TESTGRP(arki_targetfile);
 

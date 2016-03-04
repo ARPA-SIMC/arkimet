@@ -28,7 +28,7 @@ public:
 	virtual void openRO() = 0;
 	virtual void openRW() = 0;
 	virtual void fileList(const Matcher& matcher, std::vector<std::string>& files) = 0;
-    bool segment_timespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const override = 0;
+    bool segment_timespan(const std::string& relname, core::Time& start_time, core::Time& end_time) const override = 0;
     virtual size_t vacuum() = 0;
     virtual void acquire(const std::string& relname, time_t mtime, const Summary& sum) = 0;
     virtual void remove(const std::string& relname) = 0;
@@ -48,7 +48,7 @@ public:
      * If begin and end are unset, set them to the datetime extremes of this
      * manifest.
      */
-    virtual void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const = 0;
+    virtual void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const = 0;
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     bool query_summary(const Matcher& matcher, Summary& summary) override;

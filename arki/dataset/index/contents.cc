@@ -19,7 +19,6 @@
 #include "arki/runtime/io.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <arki/wibble/grcal/grcal.h>
 
 #include <sstream>
 #include <ctime>
@@ -33,6 +32,7 @@ using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::utils::sqlite;
 using namespace arki::dataset::index;
+using arki::core::Time;
 
 namespace arki {
 namespace dataset {
@@ -203,7 +203,7 @@ int Contents::id(const Metadata& md) const
     int idx = 0;
     const reftime::Position* rt = md.get<reftime::Position>();
     if (!rt) return -1;
-    string sqltime = rt->time.toSQL();
+    string sqltime = rt->time.to_sql();
     m_get_id.bind(++idx, sqltime);
 
 	if (m_uniques)
@@ -236,7 +236,7 @@ bool Contents::get_current(const Metadata& md, Metadata& current) const
     int idx = 0;
     const reftime::Position* rt = md.get<reftime::Position>();
     if (!rt) return -1;
-    string sqltime = rt->time.toSQL();
+    string sqltime = rt->time.to_sql();
     m_get_current.bind(++idx, sqltime);
 
     int id_unique = -1;
@@ -335,7 +335,7 @@ void Contents::scan_file(const std::string& relname, metadata_dest_func dest, co
     }
 }
 
-bool Contents::segment_timespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const
+bool Contents::segment_timespan(const std::string& relname, Time& start_time, Time& end_time) const
 {
     Query sq("max_file_reftime", m_db);
     sq.compile("SELECT MIN(reftime), MAX(reftime) FROM md WHERE file=?");
@@ -343,8 +343,8 @@ bool Contents::segment_timespan(const std::string& relname, types::Time& start_t
     bool res = false;
     while (sq.step())
     {
-        start_time.setFromSQL(sq.fetchString(0));
-        end_time.setFromSQL(sq.fetchString(1));
+        start_time.set_sql(sq.fetchString(0));
+        end_time.set_sql(sq.fetchString(1));
         res = true;
     }
     return res;
@@ -358,14 +358,14 @@ static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begi
     q1.compile("SELECT MIN(reftime) FROM md");
     while (q1.step())
         if (!q1.isNULL(0))
-            begin.reset(new Time(Time::create_from_SQL(q1.fetchString(0))));
+            begin.reset(new Time(Time::create_sql(q1.fetchString(0))));
 
     Query q2("min_date", db);
     q2.compile("SELECT MAX(reftime) FROM md");
     while (q2.step())
     {
         if (!q2.isNULL(0))
-            end.reset(new Time(Time::create_from_SQL(q2.fetchString(0))));
+            end.reset(new Time(Time::create_sql(q2.fetchString(0))));
     }
 }
 
@@ -403,16 +403,16 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
                    end.reset(new Time(*db_end));
                 else if (*end > *db_end)
                    *end = *db_end;
-                long long int qrange = wibble::grcal::date::duration(begin->vals, end->vals);
-                long long int dbrange = wibble::grcal::date::duration(db_begin->vals, db_end->vals);
+                long long int qrange = Time::duration(*begin, *end);
+                long long int dbrange = Time::duration(*db_begin, *db_end);
                 // If the query chooses less than 20%
                 // if the time span, force the use of
                 // the reftime index
                 if (dbrange > 0 && qrange * 100 / dbrange < 20)
                 {
                     query += " INDEXED BY md_idx_reftime";
-                    constraints.push_back("reftime BETWEEN \'" + begin->toSQL()
-                            + "\' AND \'" + end->toSQL() + "\'");
+                    constraints.push_back("reftime BETWEEN \'" + begin->to_sql()
+                            + "\' AND \'" + end->to_sql() + "\'");
                 }
             }
 
@@ -459,7 +459,7 @@ void Contents::build_md(Query& q, Metadata& md) const
     const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(5);
     int notes_l = q.fetchBytes(5);
     md.set_notes_encoded(vector<uint8_t>(notes_p, notes_p + notes_l));
-    md.set(Reftime::createPosition(Time::create_from_SQL(q.fetchString(6))));
+    md.set(Reftime::createPosition(Time::create_sql(q.fetchString(6))));
     int j = 7;
     if (m_uniques)
     {
@@ -612,8 +612,8 @@ void Contents::querySummaryFromDB(const std::string& where, Summary& summary) co
         summary::Stats st;
         st.count = sq.fetch<size_t>(0);
         st.size = sq.fetch<unsigned long long>(1);
-        st.begin = Time::create_from_SQL(sq.fetchString(2));
-        st.end = Time::create_from_SQL(sq.fetchString(3));
+        st.begin = Time::create_sql(sq.fetchString(2));
+        st.end = Time::create_sql(sq.fetchString(3));
 
         // Fill in the metadata fields
         Metadata md;
@@ -640,15 +640,17 @@ void Contents::summaryForMonth(int year, int month, Summary& out) const
 {
     if (!scache.read(out, year, month))
     {
+        Summary monthly;
         int nextyear = year + (month/12);
         int nextmonth = (month % 12) + 1;
 
         char buf[128];
         snprintf(buf, 128, "reftime >= '%04d-%02d-01 00:00:00' AND reftime < '%04d-%02d-01 00:00:00'",
                 year, month, nextyear, nextmonth);
-        querySummaryFromDB(buf, out);
+        querySummaryFromDB(buf, monthly);
 
-        scache.write(out, year, month);
+        scache.write(monthly, year, month);
+        out.add(monthly);
     }
 }
 
@@ -665,18 +667,16 @@ void Contents::summaryForAll(Summary& out) const
         // monthly summaries
         if (begin.get() && end.get())
         {
-            int year = begin->vals[0];
-            int month = begin->vals[1];
-            while (year < end->vals[0] || (year == end->vals[0] && month <= end->vals[1]))
+            int year = begin->ye;
+            int month = begin->mo;
+            while (year < end->ye || (year == end->ye && month <= end->mo))
             {
-                Summary monthly;
-                summaryForMonth(year, month, monthly);
+                summaryForMonth(year, month, out);
 
 				// Increment the month
 				month = (month%12) + 1;
 				if (month == 1)
 					++year;
-                out.add(monthly);
 			}
 		}
 
@@ -720,8 +720,8 @@ bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
         summary::Stats st;
         st.count = sq.fetch<size_t>(0);
         st.size = sq.fetch<unsigned long long>(1);
-        st.begin = Time::create_from_SQL(sq.fetchString(2));
-        st.end = Time::create_from_SQL(sq.fetchString(3));
+        st.begin = Time::create_sql(sq.fetchString(2));
+        st.end = Time::create_sql(sq.fetchString(3));
 
         // Fill in the metadata fields
         Metadata md;
@@ -748,18 +748,15 @@ bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
 
 static inline bool range_envelopes_full_month(const Time& begin, const Time& end)
 {
-    bool begins_at_beginning = begin.vals[2] == 1 &&
-        begin.vals[3] == 0 && begin.vals[4] == 0 && begin.vals[5] == 0;
+    bool begins_at_beginning = begin.da == 1 && begin.ho == 0 && begin.mi == 0 && begin.se == 0;
     if (begins_at_beginning)
         return end >= begin.end_of_month();
 
-    bool ends_at_end = end.vals[2] == wibble::grcal::date::daysinmonth(end.vals[0], end.vals[1]) &&
-        end.vals[3] == 23 && end.vals[4] == 59 && end.vals[5] == 59;
+    bool ends_at_end = end.da == Time::days_in_month(end.ye, end.mo) && end.ho == 23 && end.mi == 59 && end.se == 59;
     if (ends_at_end)
         return begin <= end.start_of_month();
 
-    return end.vals[0] == begin.vals[0] + begin.vals[1]/12 &&
-        end.vals[1] == (begin.vals[1] % 12) + 1;
+    return end.ye == begin.ye + begin.mo / 12 && end.mo == (begin.mo % 12) + 1;
 }
 
 bool Contents::query_summary(const Matcher& matcher, Summary& summary)
@@ -808,7 +805,7 @@ bool Contents::query_summary(const Matcher& matcher, Summary& summary)
     }
 
     // If the interval is under a week, query the DB directly
-    long long int range = wibble::grcal::date::duration(begin->vals, end->vals);
+    long long int range = Time::duration(*begin, *end);
     if (range <= 7 * 24 * 3600)
         return querySummaryFromDB(matcher, summary);
 
@@ -836,22 +833,21 @@ bool Contents::query_summary(const Matcher& matcher, Summary& summary)
     {
         Time endmonth = begin->end_of_month();
 
-        bool starts_at_beginning = (begin->vals[2] == 1 &&
-                begin->vals[3] == 0 && begin->vals[4] == 0 && begin->vals[5] == 0);
+        bool starts_at_beginning = (begin->da == 1 && begin->ho == 0 && begin->mi == 0 && begin->se == 0);
         if (starts_at_beginning && endmonth <= *end)
         {
             Summary s;
-            summaryForMonth(begin->vals[0], begin->vals[1], s);
+            summaryForMonth(begin->ye, begin->mo, s);
             s.filter(matcher, summary);
         } else if (endmonth <= *end) {
             Summary s;
-            querySummaryFromDB("reftime >= '" + begin->toSQL() + "'"
-                       " AND reftime < '" + endmonth.toSQL() + "'", s);
+            querySummaryFromDB("reftime >= '" + begin->to_sql() + "'"
+                       " AND reftime < '" + endmonth.to_sql() + "'", s);
             s.filter(matcher, summary);
         } else {
             Summary s;
-            querySummaryFromDB("reftime >= '" + begin->toSQL() + "'"
-                       " AND reftime < '" + end->toSQL() + "'", s);
+            querySummaryFromDB("reftime >= '" + begin->to_sql() + "'"
+                       " AND reftime < '" + end->to_sql() + "'", s);
             s.filter(matcher, summary);
         }
 
@@ -1026,8 +1022,8 @@ void WContents::bindInsertParams(Query& q, const Metadata& md, const std::string
 
     if (const reftime::Position* reftime = md.get<reftime::Position>())
     {
-        const int* rt = reftime->time.vals;
-        int len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", rt[0], rt[1], rt[2], rt[3], rt[4], rt[5]);
+        const auto& t = reftime->time;
+        int len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", t.ye, t.mo, t.da, t.ho, t.mi, t.se);
         q.bind(++idx, timebuf, len);
     } else {
         q.bindNull(++idx);
@@ -1119,8 +1115,8 @@ void WContents::remove(const std::string& relname, off_t ofs)
     }
 
     // Invalidate the summary cache for this month
-    Time rt(Time::create_from_SQL(reftime));
-    scache.invalidate(rt.vals[0], rt.vals[1]);
+    Time rt(Time::create_sql(reftime));
+    scache.invalidate(rt.ye, rt.mo);
 
     // DELETE FROM md WHERE id=?
     m_delete.reset();
@@ -1153,8 +1149,8 @@ void WContents::reset(const std::string& file)
 		if (fmin.empty())
 			return;
     }
-    Time tmin(Time::create_from_SQL(fmin).start_of_month());
-    Time tmax(Time::create_from_SQL(fmax).start_of_month());
+    Time tmin(Time::create_sql(fmin).start_of_month());
+    Time tmax(Time::create_sql(fmax).start_of_month());
 
 	// Clean the database
 	Query query("reset_datafile", m_db);

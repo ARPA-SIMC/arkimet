@@ -398,12 +398,7 @@ add_method("timedef_validity_time_to_emission_time", [] {
     unique_ptr<Timedef> v = Timedef::createFromYaml("6h");
     unique_ptr<Position> p = downcast<Position>(Reftime::decodeString("2009-02-13 12:00:00"));
     unique_ptr<Position> p1 = v->validity_time_to_emission_time(*p);
-    ensure_equals(p1->time.vals[0], 2009);
-    ensure_equals(p1->time.vals[1], 2);
-    ensure_equals(p1->time.vals[2], 13);
-    ensure_equals(p1->time.vals[3], 6);
-    ensure_equals(p1->time.vals[4], 0);
-    ensure_equals(p1->time.vals[5], 0);
+    wassert(actual(p1->time).is(2009, 2, 13, 6));
 });
 
 // Test Lua functions

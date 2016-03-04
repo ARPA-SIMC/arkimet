@@ -4,7 +4,6 @@
 /// Reader for simple datasets with no duplicate checks
 
 #include <arki/dataset/indexed.h>
-#include <arki/types/time.h>
 #include <string>
 
 namespace arki {
@@ -25,7 +24,7 @@ public:
 
     std::string type() const override;
 
-    void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) override;
+    void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) override;
 
     static bool is_dataset(const std::string& dir);
 };

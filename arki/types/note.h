@@ -2,7 +2,7 @@
 #define ARKI_TYPES_NOTE_H
 
 #include <arki/types.h>
-#include <arki/types/time.h>
+#include <arki/core/time.h>
 
 struct lua_State;
 
@@ -27,11 +27,11 @@ struct traits<Note>
  */
 struct Note : public CoreType<Note>
 {
-    Time time;
+    core::Time time;
     std::string content;
 
-    Note(const std::string& content) : time(Time::createNow()), content(content) {}
-    Note(const Time& time, const std::string& content) : time(time), content(content) {}
+    Note(const std::string& content) : time(core::Time::create_now()), content(content) {}
+    Note(const core::Time& time, const std::string& content) : time(time), content(content) {}
 
     int compare(const Type& o) const override;
     virtual int compare(const Note& o) const;
@@ -51,7 +51,7 @@ struct Note : public CoreType<Note>
     static std::unique_ptr<Note> create(const std::string& content);
 
     /// Create a note with the given time and content
-    static std::unique_ptr<Note> create(const Time& time, const std::string& content);
+    static std::unique_ptr<Note> create(const core::Time& time, const std::string& content);
     static std::unique_ptr<Note> decodeMapping(const emitter::memory::Mapping& val);
 };
 

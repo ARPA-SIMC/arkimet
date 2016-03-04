@@ -26,6 +26,7 @@ Lua::Lua(bool load_libs, bool load_arkimet) : L(0)
 
     if (load_arkimet)
     {
+        core::Time::lua_loadlib(L);
         types::Type::lua_loadlib(L);
         Metadata::lua_openlib(L);
         Summary::lua_openlib(L);

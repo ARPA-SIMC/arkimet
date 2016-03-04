@@ -17,6 +17,8 @@ nobase_dist_arkiinclude_HEADERS = \
 		arki/wibble/sys/filelock.h \
 		arki/wibble/tests/tut.h \
 		arki/wibble/grcal/grcal.h \
+		arki/core/time.h \
+		arki/core/tests.h \
 		arki/binary.h \
 		arki/defs.h \
 		arki/exceptions.h \
@@ -89,7 +91,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		arki/matcher/tests.h \
 		arki/matcher/timerange.h \
 		arki/matcher/utils.h \
-		arki/metadata/consumer.h \
 		arki/metadata/collection.h \
 		arki/metadata/clusterer.h \
 		arki/metadata/xargs.h \
@@ -136,7 +137,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		arki/types/task.h \
 		arki/types.tcc \
 		arki/types/tests.h \
-		arki/types/time.h \
 		arki/types/timerange.h \
 		arki/types/utils.h \
 		arki/types/value.h \
@@ -160,7 +160,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		arki/utils/string.h \
 		arki/utils/sys.h \
 		arki/utils/yaml.h \
-		arki/utils/tests.h \
 		arki/utils/commandline/core.h \
 		arki/utils/commandline/doc.h \
 		arki/utils/commandline/engine.h \
@@ -171,6 +170,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		arki/utils/net/server.h \
 		arki/utils/net/http.h \
 		arki/values.h
+
 
 arki_built_sources = \
 		     arki/matcher/reftime/reftime-lex.h \
@@ -201,6 +201,7 @@ arki_tests_arki_test_LDADD =
 # Core functions
 #
 if DEVEL_DO_TYPES
+
 arki_libarkimet_la_SOURCES += \
 		arki/wibble/sys/fs.cpp \
 		arki/wibble/sys/filelock.cpp \
@@ -214,6 +215,8 @@ arki_libarkimet_la_SOURCES += \
 		arki/wibble/log/syslog.cpp \
 		arki/wibble/log/filters.cpp \
 		arki/wibble/grcal/grcal.cpp \
+		arki/core/time.cc \
+		arki/core/tests.cc \
 		arki/exceptions.cc \
 		arki/nag.cc \
 		arki/utils.cc \
@@ -253,7 +256,6 @@ arki_libarkimet_la_SOURCES += \
 		arki/types/source/blob.cc \
 		arki/types/source/inline.cc \
 		arki/types/source/url.cc \
-		arki/types/time.cc \
 		arki/types/reftime.cc \
 		arki/types/origin.cc \
 		arki/types/product.cc \
@@ -293,6 +295,7 @@ arki_libarkimet_la_SOURCES += \
 
 arki_tests_arki_test_SOURCES += \
 		arki/tests/tests-tut.cc \
+		arki/core/time-test.cc \
 		arki/types/tests.cc \
 		arki/utils/tests.cc \
 		arki/utils-test.cc \
@@ -315,7 +318,6 @@ arki_tests_arki_test_SOURCES += \
 		arki/types-test.cc \
 		arki/types/utils-test.cc \
 		arki/types/source-test.cc \
-		arki/types/time-test.cc \
 		arki/types/reftime-test.cc \
 		arki/types/origin-test.cc \
 		arki/types/product-test.cc \
@@ -332,7 +334,8 @@ arki_tests_arki_test_SOURCES += \
 		arki/types/value-test.cc \
 		arki/types/typevector-test.cc \
 		arki/types/typeset-test.cc \
-		arki/itemset-tut.cc
+		arki/itemset-test.cc
+endif
 
 if IOTRACE
 arki_libarkimet_la_SOURCES += arki/iotrace.cc
@@ -362,12 +365,11 @@ arki_libarkimet_la_LDFLAGS += $(VM2_LIBS)
 arki_tests_arki_test_SOURCES += arki/utils/vm2-tut.cc
 endif
 
-endif
-
 #
 # Metadata types
 #
 if DEVEL_DO_METADATA
+
 arki_libarkimet_la_SOURCES += \
 		arki/utils/h5.cc \
 		arki/utils/datareader.cc \
@@ -415,7 +417,7 @@ arki_tests_arki_test_SOURCES += \
 		arki/matcher/product-tut.cc \
 		arki/matcher/level-tut.cc \
 		arki/matcher/timerange-tut.cc \
-		arki/matcher/reftime-tut.cc \
+		arki/matcher/reftime-test.cc \
 		arki/matcher/reftime/parser-tut.cc \
 		arki/matcher/area-tut.cc \
 		arki/matcher/proddef-tut.cc \
@@ -427,6 +429,8 @@ arki_tests_arki_test_SOURCES += \
 		arki/scan/dir-tut.cc \
 		arki/runtime/io-tut.cc \
 		arki/runtime/config-tut.cc
+
+endif
 
 if GRIBAPI
 nobase_dist_arkiinclude_HEADERS += arki/scan/grib.h
@@ -463,8 +467,6 @@ endif
 if VM2
 arki_libarkimet_la_SOURCES += arki/scan/vm2.cc
 arki_tests_arki_test_SOURCES += arki/scan/vm2-test.cc
-endif
-
 endif
 
 #

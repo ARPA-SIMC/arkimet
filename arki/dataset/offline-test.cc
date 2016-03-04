@@ -7,6 +7,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::utils;
 using namespace arki::tests;
+using arki::core::Time;
 
 namespace {
 
@@ -34,7 +35,7 @@ add_method("read", []() {
     reader.query_summary(Matcher(), sum1);
     wassert(actual(sum == sum1));
 
-    unique_ptr<types::Time> begin, end;
+    unique_ptr<Time> begin, end;
     reader.expand_date_range(begin, end);
     wassert(actual(*begin) == "2007-07-07T00:00:00Z");
     wassert(actual(*end) == "2007-10-09T00:00:00Z");

@@ -65,7 +65,7 @@ struct MatchReftime : public Implementation
      * There can be further restrictions than this interval (for example,
      * restrictions on the time of the day).
      */
-    bool restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;
+    bool restrict_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
 
     static std::unique_ptr<MatchReftime> parse(const std::string& pattern);
     static void init();

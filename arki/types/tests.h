@@ -1,8 +1,9 @@
 #ifndef ARKI_TYPES_TESTUTILS_H
 #define ARKI_TYPES_TESTUTILS_H
 
-#include <arki/tests/tests.h>
-#include <arki/types/time.h>
+#include <arki/core/tests.h>
+#include <arki/types.h>
+#include <arki/core/time.h>
 #include <arki/libconfig.h>
 #ifdef HAVE_LUA
 #include <arki/tests/lua.h>
@@ -91,20 +92,11 @@ public:
     /// Check all components of a source::Inline item
     void is_source_inline(const std::string& format, uint64_t size);
 
-    /// Check all components of a Time item
-    void is_time(int ye, int mo, int da, int ho, int mi, int se);
+    /// Check all components of a reftime::Position item
+    void is_reftime_position(const core::Time&);
 
     /// Check all components of a reftime::Position item
-    void is_reftime_position(const int (&time)[6]);
-
-    /// Check all components of a reftime::Position item
-    void is_reftime_position(const types::Time&);
-
-    /// Check all components of a reftime::Position item
-    void is_reftime_period(const int (&begin)[6], const int (&end)[6]);
-
-    /// Check all components of a reftime::Position item
-    void is_reftime_period(const types::Time&, const types::Time&);
+    void is_reftime_period(const core::Time&, const core::Time&);
 };
 
 inline arki::tests::ActualType actual_type(const arki::types::Type& actual) { return arki::tests::ActualType(&actual); }

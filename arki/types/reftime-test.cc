@@ -9,6 +9,7 @@ namespace {
 using namespace std;
 using namespace arki::tests;
 using namespace arki;
+using arki::core::Time;
 
 class Tests : public TypeTestCase<types::Reftime>
 {
@@ -73,18 +74,18 @@ add_method("range", [] {
 
     // Merge with position
     reftime::Position(t1).expand_date_range(begin, end);
-    wassert(actual(begin) == t1);
-    wassert(actual(end) == t1);
+    wassert(actual(*begin) == t1);
+    wassert(actual(*end) == t1);
 
     // Merge with a second position
     reftime::Position(t2).expand_date_range(begin, end);
-    wassert(actual(begin) == t1);
-    wassert(actual(end) == t2);
+    wassert(actual(*begin) == t1);
+    wassert(actual(*end) == t2);
 
     // Merge with a period
     reftime::Period(t3, t4).expand_date_range(begin, end);
-    wassert(actual(begin) == t1);
-    wassert(actual(end) == t4);
+    wassert(actual(*begin) == t1);
+    wassert(actual(*end) == t4);
 });
 
 // Reproduce bugs

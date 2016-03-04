@@ -4,7 +4,7 @@
 /// dataset/index/summarycache - Cache precomputed summaries
 
 #include <arki/types.h>
-#include <arki/types/time.h>
+#include <arki/core/time.h>
 #include <string>
 
 namespace arki {
@@ -55,7 +55,7 @@ public:
     void invalidate(const Metadata& md);
 
     /// Remove cache contents for all dates from tmin and tmax (inclusive)
-    void invalidate(const types::Time& tmin, const types::Time& tmax);
+    void invalidate(const core::Time& tmin, const core::Time& tmax);
 
     /// Run consistency checks on the summary cache
     bool check(const dataset::Base& ds, Reporter& reporter) const;

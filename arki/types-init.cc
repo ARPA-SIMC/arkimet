@@ -35,7 +35,6 @@
 #include <arki/matcher/timerange.h>
 #include <arki/types/area.h>
 #include <arki/matcher/area.h>
-#include <arki/types/time.h>
 #include <arki/types/reftime.h>
 #include <arki/matcher/reftime.h>
 #include <arki/types/run.h>
@@ -65,7 +64,6 @@ void init_default_types()
     matcher::MatchTimerange::init();
     Area::init();
     matcher::MatchArea::init();
-    Time::init();
     Reftime::init();
     matcher::MatchReftime::init();
     Run::init();

@@ -16,12 +16,14 @@ using namespace arki::types;
 
 namespace arki {
 
+/*
 namespace types {
 const char* traits<summary::Stats>::type_tag = "summarystats";
 const types::Code traits<summary::Stats>::type_code = TYPE_SUMMARYSTATS;
 const size_t traits<summary::Stats>::type_sersize_bytes = 2;
 const char* traits<summary::Stats>::type_lua_tag = LUATAG_TYPES ".summary.stats";
 }
+*/
 
 namespace summary {
 
@@ -46,29 +48,17 @@ Stats* Stats::clone() const
     return new Stats(*this);
 }
 
-int Stats::compare(const Type& o) const
+int Stats::compare(const Stats& o) const
 {
-    int res = Type::compare(o);
-    if (res != 0) return res;
-
-    // We should be the same kind, so upcast
-    const Stats* v = dynamic_cast<const Stats*>(&o);
-    if (!v)
-        throw_consistency_error(
-            "comparing metadata types",
-            string("second element claims to be a summary::Stats, but it is a ") + typeid(&o).name() + " instead");
-
-    if (int res = count - v->count) return res;
-    if (int res = size - v->size) return res;
-    if (int res = begin.compare(v->begin)) return res;
-    return end.compare(v->end);
+    if (int res = count - o.count) return res;
+    if (int res = size - o.size) return res;
+    if (int res = begin.compare(o.begin)) return res;
+    return end.compare(o.end);
 }
 
-bool Stats::equals(const Type& o) const
+bool Stats::equals(const Stats& o) const
 {
-    const Stats* v = dynamic_cast<const Stats*>(&o);
-    if (!v) return false;
-    return count == v->count && size == v->size && begin == v->begin && end == v->end;
+    return count == o.count && size == o.size && begin == o.begin && end == o.end;
 }
 
 void Stats::merge(const Stats& s)
@@ -110,6 +100,18 @@ std::unique_ptr<types::Reftime> Stats::make_reftime() const
     return Reftime::create(begin, end);
 }
 
+void Stats::encodeBinary(BinaryEncoder& enc) const
+{
+    vector<uint8_t> contents;
+    contents.reserve(256);
+    BinaryEncoder contentsenc(contents);
+    encodeWithoutEnvelope(contentsenc);
+
+    enc.add_varint((unsigned)TYPE_SUMMARYSTATS);
+    enc.add_varint(contents.size());
+    enc.add_raw(contents);
+}
+
 void Stats::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
     unique_ptr<types::Reftime> reftime(Reftime::create(begin, end));
@@ -142,8 +144,8 @@ unique_ptr<Stats> Stats::decodeMapping(const emitter::memory::Mapping& val)
     res->size = val["s"].want_int("parsing summary stats size");
     if (res->count)
     {
-        res->begin = *types::Time::decodeList(val["b"].want_list("parsing summary stats begin"));
-        res->end = *types::Time::decodeList(val["e"].want_list("parsing summary stats end"));
+        res->begin = core::Time::decodeList(val["b"].want_list("parsing summary stats begin"));
+        res->end = core::Time::decodeList(val["e"].want_list("parsing summary stats end"));
     }
     return res;
 }
@@ -220,20 +222,32 @@ unique_ptr<Stats> Stats::decodeString(const std::string& str)
 }
 
 #ifdef HAVE_LUA
+void Stats::lua_push(lua_State* L) const
+{
+    lua_newtable(L);
+
+    lua_pushstring(L, "count");
+    lua_pushnumber(L, count);
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "size");
+    lua_pushnumber(L, size);
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "reftime");
+    Reftime::create(begin, end)->lua_push(L);
+    lua_settable(L, -3);
+}
+
 bool Stats::lua_lookup(lua_State* L, const std::string& name) const
 {
     if (name == "count")
         lua_pushnumber(L, count);
     else if (name == "reftime")
         Reftime::create(begin, end)->lua_push(L);
-    else
-        return types::CoreType<Stats>::lua_lookup(L, name);
     return true;
 }
 #endif
 
-static types::MetadataType summaryStatsType = types::MetadataType::create<summary::Stats>();
-
 }
 }
-#include <arki/types.tcc>

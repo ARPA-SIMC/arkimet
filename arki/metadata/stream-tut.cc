@@ -27,6 +27,7 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::tests;
+using arki::core::Time;
 
 struct arki_metadata_stream_shar {
 	Metadata md;

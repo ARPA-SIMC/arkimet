@@ -1,18 +1,15 @@
-#include <arki/exceptions.h>
-#include <arki/types/reftime.h>
-#include <arki/types/utils.h>
-#include <arki/binary.h>
-#include <arki/utils/string.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
+#include "reftime.h"
+#include "utils.h"
+#include "arki/exceptions.h"
+#include "arki/binary.h"
+#include "arki/utils/string.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/utils/lua.h"
 #include "config.h"
 #include <sstream>
 #include <cmath>
 #include <cstring>
-
-#ifdef HAVE_LUA
-#include <arki/utils/lua.h>
-#endif
 
 #define CODE TYPE_REFTIME
 #define TAG "reftime"
@@ -20,6 +17,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using arki::core::Time;
 
 namespace arki {
 namespace types {
@@ -58,12 +56,12 @@ unique_ptr<Reftime> Reftime::decode(BinaryDecoder& dec)
     Style s = (Style)dec.pop_uint(1, "reftime style");
     switch (s)
     {
-        case POSITION: return Reftime::createPosition(*Time::decode(dec));
+        case POSITION: return Reftime::createPosition(Time::decode(dec));
         case PERIOD:
         {
             auto begin = Time::decode(dec);
             auto until = Time::decode(dec);
-            return Reftime::createPeriod(*begin, *until);
+            return Reftime::createPeriod(begin, until);
         }
         default:
         {
@@ -90,25 +88,25 @@ unique_ptr<Reftime> Reftime::decodeMapping(const emitter::memory::Mapping& val)
 unique_ptr<Reftime> Reftime::decodeString(const std::string& val)
 {
     size_t pos = val.find(" to ");
-    if (pos == string::npos) return Reftime::createPosition(*Time::decodeString(val));
+    if (pos == string::npos) return Reftime::createPosition(Time::decodeString(val));
 
     return Reftime::createPeriod(
-                *Time::decodeString(val.substr(0, pos)),
-                *Time::decodeString(val.substr(pos + 4)));
+                Time::decodeString(val.substr(0, pos)),
+                Time::decodeString(val.substr(pos + 4)));
 }
 
 static int arkilua_new_position(lua_State* L)
 {
-    const Time* time = types::Type::lua_check<Time>(L, 1);
-    reftime::Position::create(*time)->lua_push(L);
+    Time time = Time::lua_check(L, 1);
+    reftime::Position::create(time)->lua_push(L);
     return 1;
 }
 
 static int arkilua_new_period(lua_State* L)
 {
-    const Time* beg = types::Type::lua_check<Time>(L, 1);
-    const Time* end = types::Type::lua_check<Time>(L, 2);
-    reftime::Period::create(*beg, *end)->lua_push(L);
+    Time beg = Time::lua_check(L, 1);
+    Time end = Time::lua_check(L, 2);
+    reftime::Period::create(beg, end)->lua_push(L);
     return 1;
 }
 
@@ -155,7 +153,7 @@ void Position::encodeWithoutEnvelope(BinaryEncoder& enc) const
 
 std::ostream& Position::writeToOstream(std::ostream& o) const
 {
-    return time.writeToOstream(o);
+    return o << time;
 }
 
 void Position::serialiseLocal(Emitter& e, const Formatter* f) const
@@ -167,13 +165,13 @@ void Position::serialiseLocal(Emitter& e, const Formatter* f) const
 
 unique_ptr<Position> Position::decodeMapping(const emitter::memory::Mapping& val)
 {
-    unique_ptr<Time> time = Time::decodeList(val["ti"].want_list("parsing position reftime time"));
-    return Position::create(*time);
+    Time time = Time::decodeList(val["ti"].want_list("parsing position reftime time"));
+    return Position::create(time);
 }
 
 std::string Position::exactQuery() const
 {
-	return "=" + time.toISO8601();
+    return "=" + time.to_iso8601();
 }
 
 const char* Position::lua_type_name() const { return "arki.types.reftime.position"; }
@@ -195,7 +193,6 @@ int Position::compare_local(const Reftime& o) const
 		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a Position Reftime, but is a ") + typeid(&o).name() + " instead");
-
 	return time.compare(v->time);
 }
 
@@ -206,7 +203,7 @@ bool Position::equals(const Type& o) const
 	return time == v->time;
 }
 
-void Position::expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const
+void Position::expand_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const
 {
     if (!begin.get() || *begin > time)
         begin.reset(new Time(time));
@@ -215,7 +212,7 @@ void Position::expand_date_range(std::unique_ptr<types::Time>& begin, std::uniqu
         end.reset(new Time(time));
 }
 
-void Position::expand_date_range(types::Time& begin, types::Time& end) const
+void Position::expand_date_range(Time& begin, Time& end) const
 {
     if (begin > time) begin = time;
     if (end < time) end = time;
@@ -245,9 +242,7 @@ void Period::encodeWithoutEnvelope(BinaryEncoder& enc) const
 
 std::ostream& Period::writeToOstream(std::ostream& o) const
 {
-    begin.writeToOstream(o);
-    o << " to ";
-    return end.writeToOstream(o);
+    return o << begin << " to " << end;
 }
 
 void Period::serialiseLocal(Emitter& e, const Formatter* f) const
@@ -259,9 +254,9 @@ void Period::serialiseLocal(Emitter& e, const Formatter* f) const
 
 unique_ptr<Period> Period::decodeMapping(const emitter::memory::Mapping& val)
 {
-    unique_ptr<Time> beg = Time::decodeList(val["b"].want_list("parsing period reftime begin"));
-    unique_ptr<Time> end = Time::decodeList(val["e"].want_list("parsing period reftime end"));
-    return Period::create(*beg, *end);
+    Time beg = Time::decodeList(val["b"].want_list("parsing period reftime begin"));
+    Time end = Time::decodeList(val["e"].want_list("parsing period reftime end"));
+    return Period::create(beg, end);
 }
 
 const char* Period::lua_type_name() const { return "arki.types.reftime.period"; }
@@ -297,7 +292,7 @@ bool Period::equals(const Type& o) const
 	return begin == v->begin && end == v->end;
 }
 
-void Period::expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const
+void Period::expand_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const
 {
     if (!begin.get() || *begin > this->begin)
         begin.reset(new Time(this->begin));
@@ -306,7 +301,7 @@ void Period::expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_
         end.reset(new Time(this->end));
 }
 
-void Period::expand_date_range(types::Time& begin, types::Time& end) const
+void Period::expand_date_range(Time& begin, Time& end) const
 {
     if (begin > this->begin) begin = this->begin;
     if (end < this->end) end = this->end;

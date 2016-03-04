@@ -15,7 +15,6 @@
 #include <arki/types/timerange.h>
 #include <arki/scan/any.h>
 #include <arki/utils/sys.h>
-#include <arki/wibble/grcal/grcal.h>
 #include <sstream>
 #include <cstring>
 #include <stdint.h>
@@ -148,7 +147,7 @@ public:
     {
         Datetime dt = msg.get_datetime();
         if (dt.is_missing()) return;
-        reftime->time = types::Time(
+        reftime->time = core::Time(
                 dt.year, dt.month, dt.day,
                 dt.hour, dt.minute, dt.second);
     }
@@ -170,7 +169,7 @@ public:
 
         // Set reference time
         // FIXME: WRONG! The header date should ALWAYS be ignored
-        reftime = reftime::Position::create(types::Time(
+        reftime = reftime::Position::create(core::Time(
                 bulletin->rep_year, bulletin->rep_month, bulletin->rep_day,
                 bulletin->rep_hour, bulletin->rep_minute, bulletin->rep_second));
 
@@ -283,12 +282,12 @@ bool Bufr::do_scan(Metadata& md)
     const reftime::Position* rt = md.get<types::reftime::Position>();
     if (rt)
     {
-        if (rt->time.vals[0] <= 0)
+        if (rt->time.ye <= 0)
             md.unset(TYPE_REFTIME);
         else
         {
-            types::Time t = rt->time;
-            wibble::grcal::date::normalise(t.vals);
+            core::Time t = rt->time;
+            t.normalise();
             if (t != rt->time) md.unset(TYPE_REFTIME);
         }
     }

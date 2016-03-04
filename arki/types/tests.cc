@@ -20,6 +20,7 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::tests;
+using arki::core::Time;
 
 namespace arki {
 namespace tests {
@@ -312,34 +313,10 @@ void ActualType::is_source_inline(const std::string& format, uint64_t size)
     wassert(actual(item->size) == size);
 }
 
-void ActualType::is_time(int ye, int mo, int da, int ho, int mi, int se)
-{
-    const Time* item = get_specific_type<Time>(_actual);
-    wassert(actual(item->vals[0]) == ye);
-    wassert(actual(item->vals[1]) == mo);
-    wassert(actual(item->vals[2]) == da);
-    wassert(actual(item->vals[3]) == ho);
-    wassert(actual(item->vals[4]) == mi);
-    wassert(actual(item->vals[5]) == se);
-}
-
 void ActualType::is_reftime_position(const Time& time)
 {
     const reftime::Position* item = get_specific_type<reftime::Position>(_actual);
     wassert(actual(item->time) == time);
-}
-
-void ActualType::is_reftime_position(const int (&time)[6])
-{
-    const reftime::Position* item = get_specific_type<reftime::Position>(_actual);
-    wassert(actual(item->time) == Time(time));
-}
-
-void ActualType::is_reftime_period(const int (&begin)[6], const int (&end)[6])
-{
-    const reftime::Period* item = get_specific_type<reftime::Period>(_actual);
-    wassert(actual(item->begin) == Time(begin));
-    wassert(actual(item->end) == Time(end));
 }
 
 void ActualType::is_reftime_period(const Time& begin, const Time& end)

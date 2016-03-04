@@ -4,7 +4,6 @@
 /// dataset/maintenance - Dataset maintenance utilities
 
 #include <arki/dataset/segment.h>
-#include <arki/types/time.h>
 #include <string>
 #include <vector>
 #include <sys/types.h>

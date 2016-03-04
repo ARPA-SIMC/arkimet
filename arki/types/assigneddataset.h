@@ -2,7 +2,7 @@
 #define ARKI_TYPES_ASSIGNEDDATASET_H
 
 #include <arki/types.h>
-#include <arki/types/time.h>
+#include <arki/core/time.h>
 
 struct lua_State;
 
@@ -28,11 +28,11 @@ struct traits<AssignedDataset>
  */
 struct AssignedDataset : public types::CoreType<AssignedDataset>
 {
-    Time changed;
+    core::Time changed;
     std::string name;
     std::string id;
 
-    AssignedDataset(const types::Time& changed, const std::string& name, const std::string& id)
+    AssignedDataset(const core::Time& changed, const std::string& name, const std::string& id)
         : changed(changed), name(name), id(id) {}
 
     int compare(const Type& o) const override;
@@ -54,7 +54,7 @@ struct AssignedDataset : public types::CoreType<AssignedDataset>
     static std::unique_ptr<AssignedDataset> create(const std::string& name, const std::string& id);
 
     /// Create a attributed dataset definition with the givem time
-    static std::unique_ptr<AssignedDataset> create(const types::Time& time, const std::string& name, const std::string& id);
+    static std::unique_ptr<AssignedDataset> create(const core::Time& time, const std::string& name, const std::string& id);
 
     static std::unique_ptr<AssignedDataset> decodeMapping(const emitter::memory::Mapping& val);
 };

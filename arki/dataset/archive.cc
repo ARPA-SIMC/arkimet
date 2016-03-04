@@ -28,6 +28,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
+using arki::core::Time;
 
 namespace arki {
 namespace dataset {
@@ -92,7 +93,7 @@ struct ArchivesRoot
         last = nullptr;
     }
 
-    void rescan()
+    void rescan(bool include_invalid=false)
     {
         // Clean up existing archives and restart from scratch
         clear();
@@ -113,7 +114,7 @@ struct ArchivesRoot
             } else {
                 // Add directory with a manifest inside
                 string pathname = str::joinpath(archive_root, i->d_name);
-                if (archive::is_archive(pathname))
+                if (include_invalid || archive::is_archive(pathname))
                     names.insert(i->d_name);
             }
         }
@@ -209,7 +210,7 @@ struct ArchivesCheckerRoot: public ArchivesRoot<Checker>
 
     void rescan()
     {
-        ArchivesRoot<Checker>::rescan();
+        ArchivesRoot<Checker>::rescan(true);
 
         // Instantiate the 'last' archive even if the directory does not exist
         if (!last)

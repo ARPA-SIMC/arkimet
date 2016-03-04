@@ -106,7 +106,7 @@ std::string OR::toStringValueOnlyExpanded() const
     return res;
 }
 
-bool OR::restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const
+bool OR::restrict_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const
 {
     for (auto i: components)
     {
@@ -382,7 +382,7 @@ void Matcher::split(const std::set<types::Code>& codes, Matcher& with, Matcher& 
     }
 }
 
-bool Matcher::restrict_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
+bool Matcher::restrict_date_range(unique_ptr<core::Time>& begin, unique_ptr<core::Time>& end) const
 {
     shared_ptr<matcher::OR> reftime;
 

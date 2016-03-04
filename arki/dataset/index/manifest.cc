@@ -34,6 +34,7 @@ using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::utils::sqlite;
 using namespace arki::dataset::maintenance;
+using arki::core::Time;
 
 namespace arki {
 namespace dataset {
@@ -257,8 +258,8 @@ class PlainManifest : public Manifest
 	{
 		std::string file;
 		time_t mtime;
-        types::Time start_time;
-        types::Time end_time;
+        core::Time start_time;
+        core::Time end_time;
 
         Info(const std::string& file, time_t mtime, const Time& start, const Time& end)
             : file(file), mtime(mtime), start_time(start), end_time(end)
@@ -283,7 +284,7 @@ class PlainManifest : public Manifest
         void write(NamedFileDescriptor& out) const
         {
             stringstream ss;
-            ss << file << ";" << mtime << ";" << start_time.toSQL() << ";" << end_time.toSQL() << endl;
+            ss << file << ";" << mtime << ";" << start_time.to_sql() << ";" << end_time.to_sql() << endl;
             out.write_all_or_throw(ss.str());
         }
     };
@@ -352,8 +353,8 @@ class PlainManifest : public Manifest
 
             info.push_back(Info(
                         file, mtime,
-                        Time::create_from_SQL(line.substr(beg, end-beg)),
-                        Time::create_from_SQL(line.substr(end+1))));
+                        Time::create_sql(line.substr(beg, end-beg)),
+                        Time::create_sql(line.substr(end+1))));
         }
 
         infd.close();
@@ -666,13 +667,13 @@ public:
             query = "SELECT file FROM files";
 
             if (begin.get())
-                query += " WHERE end_time >= '" + begin->toSQL() + "'";
+                query += " WHERE end_time >= '" + begin->to_sql() + "'";
             if (end.get())
             {
                 if (begin.get())
-                    query += " AND start_time <= '" + end->toSQL() + "'";
+                    query += " AND start_time <= '" + end->to_sql() + "'";
                 else
-                    query += " WHERE start_time <= '" + end->toSQL() + "'";
+                    query += " WHERE start_time <= '" + end->to_sql() + "'";
             }
 
             query += " ORDER BY file";
@@ -695,8 +696,8 @@ public:
         bool found = false;
         while (q.step())
         {
-            start_time.setFromSQL(q.fetchString(0));
-            end_time.setFromSQL(q.fetchString(1));
+            start_time.set_sql(q.fetchString(0));
+            end_time.set_sql(q.fetchString(1));
             found = true;
         }
         return found;
@@ -709,8 +710,8 @@ public:
 
         while (q.step())
         {
-            Time st(Time::create_from_SQL(q.fetchString(0)));
-            Time et(Time::create_from_SQL(q.fetchString(1)));
+            Time st(Time::create_sql(q.fetchString(0)));
+            Time et(Time::create_sql(q.fetchString(1)));
 
             if (!begin.get() || st < *begin)
                 begin.reset(new Time(st));
@@ -747,13 +748,13 @@ public:
         {
             case types::Reftime::POSITION: {
                 const reftime::Position* p = dynamic_cast<const reftime::Position*>(rt.get());
-                bt = et = p->time.toSQL();
+                bt = et = p->time.to_sql();
                 break;
             }
             case types::Reftime::PERIOD: {
                 const reftime::Period* p = dynamic_cast<const reftime::Period*>(rt.get());
-                bt = p->begin.toSQL();
-                et = p->end.toSQL();
+                bt = p->begin.to_sql();
+                et = p->end.to_sql();
                 break;
             }
             default: {
