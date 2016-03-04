@@ -3,6 +3,12 @@
 arkiincludedir = $(includedir)/arki
 
 nobase_dist_arkiinclude_HEADERS = \
+		arki/wibble/log/file.h \
+		arki/wibble/log/filters.h \
+		arki/wibble/log/null.h \
+		arki/wibble/log/ostream.h \
+		arki/wibble/log/stream.h \
+		arki/wibble/log/syslog.h \
 		arki/wibble/sys/process.h \
 		arki/wibble/sys/childprocess.h \
 		arki/wibble/sys/exec.h \
@@ -83,6 +89,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		arki/matcher/tests.h \
 		arki/matcher/timerange.h \
 		arki/matcher/utils.h \
+		arki/metadata/consumer.h \
 		arki/metadata/collection.h \
 		arki/metadata/clusterer.h \
 		arki/metadata/xargs.h \
@@ -153,6 +160,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		arki/utils/string.h \
 		arki/utils/sys.h \
 		arki/utils/yaml.h \
+		arki/utils/tests.h \
 		arki/utils/commandline/core.h \
 		arki/utils/commandline/doc.h \
 		arki/utils/commandline/engine.h \
