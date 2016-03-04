@@ -1,8 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-arkiincludedir = $(includedir)/arki
-
-nobase_dist_arkiinclude_HEADERS = \
+nobase_dist_include_HEADERS += \
 		arki/wibble/log/file.h \
 		arki/wibble/log/filters.h \
 		arki/wibble/log/null.h \
@@ -347,7 +345,7 @@ arki_libarkimet_la_LDFLAGS += $(LZO_LIBS)
 endif
 
 if LUA
-nobase_dist_arkiinclude_HEADERS += arki/report.h arki/formatter/lua.h arki/utils/lua.h arki/tests/lua.h
+nobase_dist_include_HEADERS += arki/report.h arki/formatter/lua.h arki/utils/lua.h arki/tests/lua.h
 arki_libarkimet_la_SOURCES += arki/formatter/lua.cc arki/utils/lua.cc
 arki_tests_arki_test_SOURCES += arki/formatter/lua-tut.cc arki/utils/lua-tut.cc arki/tests/lua.cc
 arki_libarkimet_la_LDFLAGS += $(LUA_LIBS)
@@ -359,7 +357,7 @@ arki_libarkimet_la_LDFLAGS += $(GEOS_LIBS)
 endif
 
 if VM2
-nobase_dist_arkiinclude_HEADERS += arki/scan/vm2.h arki/utils/vm2.h
+nobase_dist_include_HEADERS += arki/scan/vm2.h arki/utils/vm2.h
 arki_libarkimet_la_SOURCES += arki/utils/vm2.cc
 arki_libarkimet_la_LDFLAGS += $(VM2_LIBS)
 arki_tests_arki_test_SOURCES += arki/utils/vm2-tut.cc
@@ -433,32 +431,32 @@ arki_tests_arki_test_SOURCES += \
 endif
 
 if GRIBAPI
-nobase_dist_arkiinclude_HEADERS += arki/scan/grib.h
+nobase_dist_include_HEADERS += arki/scan/grib.h
 arki_libarkimet_la_SOURCES += arki/scan/grib.cc
 arki_tests_arki_test_SOURCES += arki/scan/grib-tut.cc
 arki_libarkimet_la_LDFLAGS += $(GRIBAPI_LIBS) $(LUA_LIBS)
 endif
 
 if DBALLE
-nobase_dist_arkiinclude_HEADERS += arki/scan/bufr.h
+nobase_dist_include_HEADERS += arki/scan/bufr.h
 arki_libarkimet_la_SOURCES += arki/scan/bufr.cc
 arki_libarkimet_la_LDFLAGS += $(DBALLE_LIBS)
 arki_tests_arki_test_SOURCES += arki/scan/bufr-tut.cc
 if LUA
-nobase_dist_arkiinclude_HEADERS += arki/scan/bufrlua.h
+nobase_dist_include_HEADERS += arki/scan/bufrlua.h
 arki_libarkimet_la_SOURCES += arki/scan/bufrlua.cc
 endif
 endif
 
 if HDF5
-nobase_dist_arkiinclude_HEADERS += arki/scan/odimh5.h
+nobase_dist_include_HEADERS += arki/scan/odimh5.h
 arki_libarkimet_la_SOURCES += arki/scan/odimh5.cc
 arki_libarkimet_la_LDFLAGS += $(HDF5_LIBS)
 arki_tests_arki_test_SOURCES += arki/utils/h5-tut.cc arki/scan/odimh5-tut.cc
 endif
 
 if NETCDF
-nobase_dist_arkiinclude_HEADERS += arki/scan/nc.h
+nobase_dist_include_HEADERS += arki/scan/nc.h
 arki_libarkimet_la_SOURCES += arki/scan/nc.cc
 arki_libarkimet_la_LDFLAGS += $(NETCDF_LIBS)
 arki_tests_arki_test_SOURCES += arki/scan/nc-tut.cc
@@ -574,7 +572,7 @@ arki_tests_arki_test_SOURCES += \
 		arki/runtime-test.cc
 
 if CURL
-nobase_dist_arkiinclude_HEADERS += arki/dataset/http.h
+nobase_dist_include_HEADERS += arki/dataset/http.h
 arki_libarkimet_la_SOURCES += arki/dataset/http.cc
 arki_libarkimet_la_LDFLAGS += @LIBCURL@
 arki_tests_arki_test_SOURCES += arki/dataset/http-tut.cc

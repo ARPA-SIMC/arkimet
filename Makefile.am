@@ -48,6 +48,7 @@ CLEANFILES = $(man_MANS)
 BUILT_SOURCES =
 
 dist_noinst_HEADERS =
+nobase_dist_include_HEADERS =
 noinst_LTLIBRARIES =
 noinst_PROGRAMS =
 lib_LTLIBRARIES =
