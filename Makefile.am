@@ -45,6 +45,8 @@ EXTRA_DIST = \
 
 CLEANFILES = $(man_MANS)
 
+BUILT_SOURCES =
+
 dist_noinst_HEADERS =
 noinst_LTLIBRARIES =
 noinst_PROGRAMS =
