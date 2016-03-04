@@ -164,13 +164,13 @@ nobase_dist_arkiinclude_HEADERS = \
 		arki/utils/net/http.h \
 		arki/values.h
 
-arki_BUILT_SOURCES = \
+arki_built_sources = \
 		     arki/matcher/reftime/reftime-lex.h \
 		     arki/matcher/reftime/reftime-lex.cc \
 		     arki/matcher/reftime/reftime-parse.hh \
 		     arki/matcher/reftime/reftime-parse.cc
 
-BUILT_SOURCES += $(arki_BUILT_SOURCES)
+BUILT_SOURCES += $(arki_built_sources)
 
 %-lex.h %-lex.cc: %-lex.ll
 	$(srcdir)/arki/buildflex $<
@@ -600,4 +600,4 @@ TESTS += arki/runtest
 EXTRA_DIST += arki/runtest arki/buildbison arki/buildflex \
 	      arki/matcher/reftime/reftime-lex.ll \
 	      arki/matcher/reftime/reftime-parse.yy \
-	      $(arki_BUILT_SOURCES)
+	      $(arki_built_sources)
