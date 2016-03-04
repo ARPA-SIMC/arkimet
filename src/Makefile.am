@@ -71,4 +71,6 @@ check_PROGRAMS += %reldir%/test-src
 
 %canon_reldir%_test_src_LDADD = arki/libarkimet.la
 
-EXTRA_DIST += %reldir%/testlib.sh
+EXTRA_DIST += \
+	%reldir%/testlib.sh \
+	%reldir%/test-arki-server %reldir%/test-arki-scan %reldir%/test-arki-query %reldir%/test-arki-xargs %reldir%/run-test-src
