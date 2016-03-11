@@ -187,7 +187,10 @@ unique_ptr<Source> Source::createURL(const std::string& format, const std::strin
     return upcast<Source>(source::URL::create(format, url));
 }
 
-static MetadataType sourceType = MetadataType::create<Source>();
+void Source::init()
+{
+    MetadataType::register_type<Source>();
+}
 
 }
 }

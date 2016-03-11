@@ -259,6 +259,13 @@ add_method("binary_fd", [](Fixture& f) {
     ensure_equals(md, md1);
 });
 
+// Reproduce decoding error at #24
+add_method("decode_issue_24", [](Fixture& f) {
+    unsigned count = 0;
+    Metadata::read_file("inbound/issue24.arkimet", [&](unique_ptr<Metadata> md) { ++count; return true; });
+    wassert(actual(count) == 1);
+});
+
 // Test Lua functions
 add_method("lua", [](Fixture& f) {
     Metadata md;

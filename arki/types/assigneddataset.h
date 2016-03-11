@@ -50,6 +50,9 @@ struct AssignedDataset : public types::CoreType<AssignedDataset>
 
     AssignedDataset* clone() const override;
 
+    // Register this type with the type system
+    static void init();
+
     /// Create a attributed dataset definition with the current time
     static std::unique_ptr<AssignedDataset> create(const std::string& name, const std::string& id);
 

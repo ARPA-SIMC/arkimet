@@ -133,7 +133,10 @@ unique_ptr<AssignedDataset> AssignedDataset::create(const Time& changed, const s
     return unique_ptr<AssignedDataset>(new AssignedDataset(changed, name, id));
 }
 
-static MetadataType assigneddatasetType = MetadataType::create<AssignedDataset>();
+void AssignedDataset::init()
+{
+    MetadataType::register_type<AssignedDataset>();
+}
 
 }
 }

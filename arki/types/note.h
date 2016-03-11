@@ -47,6 +47,9 @@ struct Note : public CoreType<Note>
 
     Note* clone() const override;
 
+    // Register this type with the type system
+    static void init();
+
     /// Create a note with the current time
     static std::unique_ptr<Note> create(const std::string& content);
 

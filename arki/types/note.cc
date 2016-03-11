@@ -128,7 +128,10 @@ unique_ptr<Note> Note::create(const Time& time, const std::string& content)
     return unique_ptr<Note>(new Note(time, content));
 }
 
-static MetadataType noteType = MetadataType::create<Note>();
+void Note::init()
+{
+    MetadataType::register_type<Note>();
+}
 
 }
 }
