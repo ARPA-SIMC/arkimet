@@ -1,29 +1,6 @@
 #ifndef ARKI_TYPES_TYPESET_H
 #define ARKI_TYPES_TYPESET_H
 
-/*
- * types/typeset - set of types
- *
- * copyright (c) 2015  arpa-sim <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-
 #include <arki/types.h>
 #include <set>
 
@@ -68,7 +45,7 @@ public:
      * Insert val, return the pointer to the item stored in the set (either
      * val, or the previously stored item)
      */
-    const Type* insert(std::auto_ptr<types::Type> val);
+    const Type* insert(std::unique_ptr<types::Type>&& val);
 
     /**
      * Look for an element in the set.

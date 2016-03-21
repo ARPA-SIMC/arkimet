@@ -1,37 +1,33 @@
-/**
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #ifndef ARKI_MATCHER_TESTUTILS_H
 #define ARKI_MATCHER_TESTUTILS_H
 
 #include <arki/metadata/tests.h>
+#include <arki/matcher.h>
 
 namespace arki {
 struct Metadata;
 
 namespace tests {
 
-void fill(Metadata& md);
+class ActualMatcher : public arki::utils::tests::Actual<Matcher>
+{
+public:
+    ActualMatcher(const Matcher& actual) : arki::utils::tests::Actual<Matcher>(actual) {}
 
-#define ensure_matches(expr, md) arki::tests::impl_ensure_matches(wibble::tests::Location(__FILE__, __LINE__, #expr ", " #md), (expr), (md), true)
-#define ensure_not_matches(expr, md) arki::tests::impl_ensure_matches(wibble::tests::Location(__FILE__, __LINE__, #expr ", " #md), (expr), (md), false)
-void impl_ensure_matches(const wibble::tests::Location& loc, const std::string& expr, const Metadata& md, bool shouldMatch = true);
+    /// Ensure that the matcher matches this metadata
+    void matches(const Metadata& md) const;
+
+    /// Ensure that the matcher does not match this metadata
+    void not_matches(const Metadata& md) const;
+};
+
+inline arki::tests::ActualMatcher actual_matcher(const std::string& actual) { return arki::tests::ActualMatcher(Matcher::parse(actual)); }
+inline arki::tests::ActualMatcher actual(const arki::Matcher& actual) { return arki::tests::ActualMatcher(actual); }
+
+
+#define ensure_matches(expr, md) wassert(arki::tests::impl_ensure_matches((expr), (md), true))
+#define ensure_not_matches(expr, md) wassert(arki::tests::impl_ensure_matches((expr), (md), false))
+void impl_ensure_matches(const std::string& expr, const Metadata& md, bool shouldMatch=true);
 
 }
 }

@@ -1,30 +1,9 @@
 #ifndef ARKI_DATASET_HTTP_H
 #define ARKI_DATASET_HTTP_H
 
-/*
- * dataset/http - Remote HTTP dataset access
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Remote HTTP dataset access
 
 #include <arki/dataset/local.h>
-#include <wibble/exception.h>
 #include <curl/curl.h>
 #include <string>
 
@@ -36,24 +15,11 @@ class Matcher;
 namespace dataset {
 
 namespace http {
-class Exception : public wibble::exception::Generic
+class Exception : public std::runtime_error
 {
-protected:
-	std::string m_extrainfo;
-	CURLcode m_errcode;
-
 public:
-	Exception(CURLcode code, const std::string& context) throw ();
-	Exception(CURLcode code, const std::string& extrainfo, const std::string& context) throw ();
-	~Exception() throw () {}
-
-	virtual const char* type() const throw () { return "HTTP"; }
-
-	/// Get the system error code associated to the exception
-	virtual int code() const throw () { return m_errcode; }
-
-	/// Get the description of the error code
-	virtual std::string desc() const throw ();
+    Exception(CURLcode code, const std::string& context);
+    Exception(CURLcode code, const std::string& extrainfo, const std::string& context);
 };
 
 struct CurlEasy
@@ -80,27 +46,24 @@ struct CurlEasy
  *
  * The dataset is read only: remote import of new data is not supported.
  */
-class HTTP : public ReadonlyDataset
+class HTTP : public Reader
 {
 protected:
-	std::string m_name;
-	std::string m_baseurl;
-	std::string m_qmacro;
-	mutable http::CurlEasy m_curl;
-	bool m_mischief;
+    std::string m_baseurl;
+    std::string m_qmacro;
+    http::CurlEasy m_curl;
+    bool m_mischief;
 
 public:
 	// Initialise the dataset with the information from the configurationa in 'cfg'
 	HTTP(const ConfigFile& cfg);
 	virtual ~HTTP();
 
-	/**
-	 * Query the dataset using the given matcher, and sending the results to
-	 * the metadata consumer.
-	 */
-	virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer);
-	virtual void querySummary(const Matcher& matcher, Summary& summary);
-	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
+    std::string type() const override;
+
+    void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    void query_summary(const Matcher& matcher, Summary& summary) override;
+    void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out) override;
 
 	static void readConfig(const std::string& path, ConfigFile& cfg);
 
@@ -147,17 +110,15 @@ public:
     void list(std::vector<std::string>& files);
 
     /// Scan a previously uploaded file
-    void scan(const std::string& fname, const std::string& format, metadata::Eater& consumer);
+    void scan(const std::string& fname, const std::string& format, metadata_dest_func dest);
 
     /// Run a testdispatch on a previously uploaded file
-    void testdispatch(const std::string& fname, const std::string& format, std::ostream& out);
+    void testdispatch(const std::string& fname, const std::string& format, NamedFileDescriptor& out);
 
     /// Run a dispatch on a previously uploaded file
-    void dispatch(const std::string& fname, const std::string& format, metadata::Eater& consumer);
+    void dispatch(const std::string& fname, const std::string& format, metadata_dest_func consumer);
 };
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

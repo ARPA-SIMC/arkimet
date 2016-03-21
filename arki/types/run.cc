@@ -1,31 +1,8 @@
-/*
- * types/run - Daily run identification for a periodic data source
- *
- * Copyright (C) 2008--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/regexp.h>
+#include <arki/exceptions.h>
 #include <arki/types/run.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/utils.h>
+#include <arki/binary.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include "config.h"
@@ -36,14 +13,12 @@
 #include <arki/utils/lua.h>
 #endif
 
-#define CODE types::TYPE_RUN
+#define CODE TYPE_RUN
 #define TAG "run"
 #define SERSIZELEN 1
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
-using namespace wibble;
 
 namespace arki {
 namespace types {
@@ -60,7 +35,7 @@ const unsigned char Run::MINUTE;
 Run::Style Run::parseStyle(const std::string& str)
 {
 	if (str == "MINUTE") return MINUTE;
-	throw wibble::exception::Consistency("parsing Run style", "cannot parse Run style '"+str+"': only MINUTE is supported");
+	throw_consistency_error("parsing Run style", "cannot parse Run style '"+str+"': only MINUTE is supported");
 }
 
 std::string Run::formatStyle(Run::Style s)
@@ -76,23 +51,21 @@ std::string Run::formatStyle(Run::Style s)
 	}
 }
 
-auto_ptr<Run> Run::decode(const unsigned char* buf, size_t len)
+unique_ptr<Run> Run::decode(BinaryDecoder& dec)
 {
-	using namespace utils::codec;
-	Decoder dec(buf, len);
-	Style s = (Style)dec.popUInt(1, "run style");
-	switch (s)
-	{
+    Style s = (Style)dec.pop_uint(1, "run style");
+    switch (s)
+    {
         case MINUTE: {
-            unsigned int m = dec.popVarint<unsigned>("run minute");
+            unsigned int m = dec.pop_varint<unsigned>("run minute");
             return createMinute(m / 60, m % 60);
         }
-		default:
-			throw wibble::exception::Consistency("parsing Run", "style is " + formatStyle(s) + " but we can only decode MINUTE");
-	}
+        default:
+            throw_consistency_error("parsing Run", "style is " + formatStyle(s) + " but we can only decode MINUTE");
+    }
 }
-    
-auto_ptr<Run> Run::decodeString(const std::string& val)
+
+unique_ptr<Run> Run::decodeString(const std::string& val)
 {
 	string inner;
 	Run::Style style = outerParse<Run>(val, inner);
@@ -114,11 +87,11 @@ auto_ptr<Run> Run::decodeString(const std::string& val)
             return createMinute(hour, minute);
         }
         default:
-            throw wibble::exception::Consistency("parsing Run", "unknown Run style " + formatStyle(style));
+            throw_consistency_error("parsing Run", "unknown Run style " + formatStyle(style));
     }
 }
 
-auto_ptr<Run> Run::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Run> Run::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
@@ -126,7 +99,7 @@ auto_ptr<Run> Run::decodeMapping(const emitter::memory::Mapping& val)
     {
         case Run::MINUTE: return upcast<Run>(run::Minute::decodeMapping(val));
         default:
-            throw wibble::exception::Consistency("parsing Run", "unknown Run style " + val.get_string());
+            throw_consistency_error("parsing Run", "unknown Run style " + val.get_string());
     }
 }
 
@@ -153,7 +126,7 @@ void Run::lua_loadlib(lua_State* L)
     utils::lua::add_global_library(L, "arki_run", lib);
 }
 
-auto_ptr<Run> Run::createMinute(unsigned int hour, unsigned int minute)
+unique_ptr<Run> Run::createMinute(unsigned int hour, unsigned int minute)
 {
     return upcast<Run>(run::Minute::create(hour, minute));
 }
@@ -162,10 +135,10 @@ namespace run {
 
 Run::Style Minute::style() const { return Run::MINUTE; }
 
-void Minute::encodeWithoutEnvelope(Encoder& enc) const
+void Minute::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Run::encodeWithoutEnvelope(enc);
-	enc.addVarint(m_minute);
+    Run::encodeWithoutEnvelope(enc);
+    enc.add_varint(m_minute);
 }
 std::ostream& Minute::writeToOstream(std::ostream& o) const
 {
@@ -180,7 +153,7 @@ void Minute::serialiseLocal(Emitter& e, const Formatter* f) const
     Run::serialiseLocal(e, f);
     e.add("va", (int)m_minute);
 }
-auto_ptr<Minute> Minute::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Minute> Minute::decodeMapping(const emitter::memory::Mapping& val)
 {
     unsigned int m = val["va"].want_int("parsing Minute run value");
     return run::Minute::create(m / 60, m % 60);
@@ -212,7 +185,7 @@ int Minute::compare_local(const Run& o) const
 	// We should be the same kind, so upcast
 	const Minute* v = dynamic_cast<const Minute*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a GRIB1 Run, but is a ") + typeid(&o).name() + " instead");
 
@@ -233,11 +206,11 @@ Minute* Minute::clone() const
     return res;
 }
 
-auto_ptr<Minute> Minute::create(unsigned int hour, unsigned int minute)
+unique_ptr<Minute> Minute::create(unsigned int hour, unsigned int minute)
 {
     Minute* res = new Minute;
     res->m_minute = hour * 60 + minute;
-    return auto_ptr<Minute>(res);
+    return unique_ptr<Minute>(res);
 }
 
 }

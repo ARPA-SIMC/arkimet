@@ -1,21 +1,3 @@
-/*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include "config.h"
 
 #include <arki/tests/tests.h>
@@ -34,11 +16,12 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::tests;
 
 namespace {
-inline auto_ptr<Metadata> wrap(const Metadata& md)
+inline unique_ptr<Metadata> wrap(const Metadata& md)
 {
-    return auto_ptr<Metadata>(new Metadata(md));
+    return unique_ptr<Metadata>(new Metadata(md));
 }
 }
 
@@ -75,30 +58,28 @@ struct arki_dataset_http_shar {
 			"step = daily\n"
 			"name = error\n"
 			"path = error\n";
-		stringstream incfg(conf);
-		config.parse(incfg, "(memory)");
+        config.parse(conf, "(memory)");
 
-		// Import data into the datasets
-		Metadata md;
-		metadata::Collection mdc;
-		scan::Grib scanner;
-		RealDispatcher dispatcher(config);
-		scanner.open("inbound/test.grib1");
-		ensure(scanner.next(md));
-		ensure_equals(dispatcher.dispatch(wrap(md), mdc), Dispatcher::DISP_OK);
-		ensure(scanner.next(md));
-		ensure_equals(dispatcher.dispatch(wrap(md), mdc), Dispatcher::DISP_OK);
-		ensure(scanner.next(md));
-		ensure_equals(dispatcher.dispatch(wrap(md), mdc), Dispatcher::DISP_ERROR);
-		ensure(!scanner.next(md));
-		dispatcher.flush();
-	}
+        // Import data into the datasets
+        Metadata md;
+        metadata::Collection mdc;
+        scan::Grib scanner;
+        RealDispatcher dispatcher(config);
+        scanner.open("inbound/test.grib1");
+        ensure(scanner.next(md));
+        ensure_equals(dispatcher.dispatch(wrap(md), mdc.inserter_func()), Dispatcher::DISP_OK);
+        ensure(scanner.next(md));
+        ensure_equals(dispatcher.dispatch(wrap(md), mdc.inserter_func()), Dispatcher::DISP_OK);
+        ensure(scanner.next(md));
+        ensure_equals(dispatcher.dispatch(wrap(md), mdc.inserter_func()), Dispatcher::DISP_ERROR);
+        ensure(!scanner.next(md));
+        dispatcher.flush();
+    }
 };
 TESTGRP(arki_dataset_http);
 
 // Test allSameRemoteServer
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	using namespace arki::dataset;
 
@@ -115,9 +96,8 @@ void to::test<1>()
 			"[error]\n"
 			"type = remote\n"
 			"path = http://foo.bar/foo/dataset/error\n";
-		stringstream incfg(conf);
-		ConfigFile cfg;
-		cfg.parse(incfg, "(memory)");
+        ConfigFile cfg;
+        cfg.parse(conf);
 
 		ensure_equals(HTTP::allSameRemoteServer(cfg), "http://foo.bar/foo");
 	}
@@ -135,9 +115,8 @@ void to::test<1>()
 			"[error]\n"
 			"type = remote\n"
 			"path = http://foo.bar/foo/dataset/error\n";
-		stringstream incfg(conf);
-		ConfigFile cfg;
-		cfg.parse(incfg, "(memory)");
+        ConfigFile cfg;
+        cfg.parse(conf);
 
 		ensure_equals(HTTP::allSameRemoteServer(cfg), "");
 	}
@@ -155,14 +134,13 @@ void to::test<1>()
 			"[error]\n"
 			"type = remote\n"
 			"path = http://foo.bar/foo/dataset/error\n";
-		stringstream incfg(conf);
-		ConfigFile cfg;
-		cfg.parse(incfg, "(memory)");
+        ConfigFile cfg;
+        cfg.parse(conf);
 
 		ensure_equals(HTTP::allSameRemoteServer(cfg), "");
 	}
 #if 0
-	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+	unique_ptr<Reader> testds(Reader::create(*config.section("test200")));
 	MetadataCollector mdc;
 
 	testds->query(Matcher::parse("origin:GRIB1,200"), false, mdc);
@@ -190,5 +168,3 @@ void to::test<1>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

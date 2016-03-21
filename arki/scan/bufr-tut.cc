@@ -1,22 +1,3 @@
-/*
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #include <arki/metadata/tests.h>
 #include <arki/types/tests.h>
 #include <arki/scan/bufr.h>
@@ -30,8 +11,8 @@
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/scan/any.h>
-#include <wibble/sys/fs.h>
-
+#include <arki/utils/sys.h>
+#include <arki/utils/string.h>
 #include <sstream>
 #include <iostream>
 #include <sys/types.h>
@@ -40,8 +21,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
@@ -51,12 +31,11 @@ struct arki_scan_bufr_shar {
 TESTGRP(arki_scan_bufr);
 
 // Scan a well-known bufr file, with no padding between BUFRs
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
-	Metadata md;
-	scan::Bufr scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Bufr scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/test.bufr");
 
@@ -64,7 +43,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 0, 194));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 0, 194));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -80,14 +59,14 @@ void to::test<1>()
     wassert(actual(md).contains("reftime", "2005-12-01T18:00:00Z"));
 
 	// Check run
-	ensure(not md.has(types::TYPE_RUN));
+	ensure(not md.has(TYPE_RUN));
 
 
 	// Next bufr
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 194, 220));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 194, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -103,14 +82,14 @@ void to::test<1>()
     wassert(actual(md).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
-	ensure(not md.has(types::TYPE_RUN));
+	ensure(not md.has(TYPE_RUN));
 
 
 	// Last bufr
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 414, 220));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 414, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -126,7 +105,7 @@ void to::test<1>()
     wassert(actual(md).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
-	ensure(not md.has(types::TYPE_RUN));
+	ensure(not md.has(TYPE_RUN));
 
 
 	// No more bufrs
@@ -135,12 +114,11 @@ void to::test<1>()
 
 
 // Scan a well-known bufr file, with extra padding data between messages
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
-	Metadata md;
-	scan::Bufr scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Bufr scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/padded.bufr");
 
@@ -148,7 +126,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/padded.bufr", 100, 194));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/padded.bufr", 100, 194));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -164,14 +142,14 @@ void to::test<2>()
     wassert(actual(md).contains("reftime", "2005-12-01T18:00:00Z"));
 
 	// Check run
-	ensure(not md.has(types::TYPE_RUN));
+	ensure(not md.has(TYPE_RUN));
 
 
 	// Next bufr
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/padded.bufr", 394, 220));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/padded.bufr", 394, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -187,14 +165,14 @@ void to::test<2>()
     wassert(actual(md).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
-	ensure(not md.has(types::TYPE_RUN));
+	ensure(not md.has(TYPE_RUN));
 
 
 	// Last bufr
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/padded.bufr", 714, 220));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/padded.bufr", 714, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -210,56 +188,51 @@ void to::test<2>()
     wassert(actual(md).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
-	ensure(not md.has(types::TYPE_RUN));
+	ensure(not md.has(TYPE_RUN));
 
 	// No more bufrs
 	ensure(not scanner.next(md));
 }
 
 // Test validation
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
-	Metadata md;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    vector<uint8_t> buf;
 
-	const scan::Validator& v = scan::bufr::validator();
+    const scan::Validator& v = scan::bufr::validator();
 
-	int fd = open("inbound/test.bufr", O_RDONLY);
+    sys::File fd("inbound/test.bufr", O_RDONLY);
+    v.validate_file(fd, 0, 194);
+    v.validate_file(fd, 194, 220);
+    v.validate_file(fd, 414, 220);
 
-	v.validate(fd, 0, 194, "inbound/test.bufr");
-	v.validate(fd, 194, 220, "inbound/test.bufr");
-	v.validate(fd, 414, 220, "inbound/test.bufr");
+#define ensure_throws(x) do { try { x; ensure(false); } catch (std::exception& e) { } } while (0)
+    ensure_throws(v.validate_file(fd, 1, 193));
+    ensure_throws(v.validate_file(fd, 0, 193));
+    ensure_throws(v.validate_file(fd, 0, 195));
+    ensure_throws(v.validate_file(fd, 193, 221));
+    ensure_throws(v.validate_file(fd, 414, 221));
+    ensure_throws(v.validate_file(fd, 634, 0));
+    ensure_throws(v.validate_file(fd, 634, 10));
+    fd.close();
 
-#define ensure_throws(x) do { try { x; ensure(false); } catch (wibble::exception::Generic& e) { } } while (0)
+    metadata::Collection mdc;
+    scan::scan("inbound/test.bufr", mdc.inserter_func());
+    buf = mdc[0].getData();
 
-	ensure_throws(v.validate(fd, 1, 193, "inbound/test.bufr"));
-	ensure_throws(v.validate(fd, 0, 193, "inbound/test.bufr"));
-	ensure_throws(v.validate(fd, 0, 195, "inbound/test.bufr"));
-	ensure_throws(v.validate(fd, 193, 221, "inbound/test.bufr"));
-	ensure_throws(v.validate(fd, 414, 221, "inbound/test.bufr"));
-	ensure_throws(v.validate(fd, 634, 0, "inbound/test.bufr"));
-	ensure_throws(v.validate(fd, 634, 10, "inbound/test.bufr"));
-
-	close(fd);
-
-	metadata::Collection mdc;
-	scan::scan("inbound/test.bufr", mdc);
-	buf = mdc[0].getData();
-
-	v.validate(buf.data(), buf.size());
-	ensure_throws(v.validate((const char*)buf.data()+1, buf.size()-1));
-	ensure_throws(v.validate(buf.data(), buf.size()-1));
+    wassert(v.validate_buf(buf.data(), buf.size()));
+    ensure_throws(v.validate_buf((const char*)buf.data()+1, buf.size()-1));
+    ensure_throws(v.validate_buf(buf.data(), buf.size()-1));
 }
 
 // Test scanning a BUFR file that can only be decoded partially
 // (note: it can now be fully decoded)
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
-	Metadata md;
-	scan::Bufr scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Bufr scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/C23000.bufr");
 
@@ -267,7 +240,7 @@ void to::test<4>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/C23000.bufr", 0, 2206));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/C23000.bufr", 0, 2206));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -283,10 +256,10 @@ void to::test<4>()
     wassert(actual(md).contains("reftime", "2010-07-21T23:00:00Z"));
 
 	// Check area
-	ensure(md.has(types::TYPE_AREA));
+	ensure(md.has(TYPE_AREA));
 
 	// Check run
-	ensure(not md.has(types::TYPE_RUN));
+	ensure(not md.has(TYPE_RUN));
 
 
 	// No more bufrs
@@ -294,12 +267,11 @@ void to::test<4>()
 }
 
 // Test scanning a pollution BUFR file
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
-	Metadata md;
-	scan::Bufr scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Bufr scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/pollution.bufr");
 
@@ -307,7 +279,7 @@ void to::test<5>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/pollution.bufr", 0, 178));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/pollution.bufr", 0, 178));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -323,7 +295,7 @@ void to::test<5>()
     wassert(actual(md).contains("reftime", "2010-08-08T23:00:00Z"));
 
 	// Check run
-	ensure(not md.has(types::TYPE_RUN));
+	ensure(not md.has(TYPE_RUN));
 
 
 	// No more bufrs
@@ -331,8 +303,7 @@ void to::test<5>()
 }
 
 // Test scanning a BUFR file with undefined dates
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -345,8 +316,7 @@ void to::test<6>()
 }
 
 // Test scanning a ship
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -357,8 +327,7 @@ void to::test<7>()
 }
 
 // Test scanning an amdar
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -369,8 +338,7 @@ void to::test<8>()
 }
 
 // Test scanning an airep
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -381,8 +349,7 @@ void to::test<9>()
 }
 
 // Test scanning an acars
-template<> template<>
-void to::test<10>()
+def_test(10)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -393,8 +360,7 @@ void to::test<10>()
 }
 
 // Test scanning a GTS synop
-template<> template<>
-void to::test<11>()
+def_test(11)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -405,8 +371,7 @@ void to::test<11>()
 }
 
 // Test scanning a message with a different date in the header than in its contents
-template<> template<>
-void to::test<12>()
+def_test(12)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -417,8 +382,7 @@ void to::test<12>()
 }
 
 // Test scanning a message which raises domain errors when interpreted
-template<> template<>
-void to::test<13>()
+def_test(13)
 {
     Metadata md;
     scan::Bufr scanner;
@@ -429,8 +393,7 @@ void to::test<13>()
 }
 
 // Test scanning a temp forecast, to see if we got the right reftime
-template<> template<>
-void to::test<14>()
+def_test(14)
 {
     // BUFR has datetime 2009-02-13 12:00:00, timerange instant
     Metadata md;
@@ -447,8 +410,7 @@ void to::test<14>()
 }
 
 // Test scanning a bufr with all sorts of wrong dates
-template<> template<>
-void to::test<15>()
+def_test(15)
 {
     Metadata md;
     scan::Bufr scanner;

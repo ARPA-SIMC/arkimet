@@ -1,22 +1,3 @@
-/*
- * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #include <arki/metadata/tests.h>
 #include <arki/libconfig.h>
 #include <arki/scan/any.h>
@@ -32,38 +13,36 @@
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/utils/compress.h>
-#include <wibble/sys/fs.h>
-
+#include <arki/utils/string.h>
+#include <arki/utils/sys.h>
 #include <sstream>
 #include <iostream>
 
 namespace tut {
 using namespace std;
-using namespace wibble;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::utils;
 
 struct arki_scan_any_shar {
 };
 TESTGRP(arki_scan_any);
 
 // Scan a well-known grib file, with no padding between messages
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
-	metadata::Collection mdc;
+    metadata::Collection mdc;
 #ifndef HAVE_GRIBAPI
-	ensure(not scan::scan("inbound/test.grib1", mdc));
+    ensure(not scan::scan("inbound/test.grib1", mdc.inserter_func()));
 #else
-	wibble::sys::Buffer buf;
+    vector<uint8_t> buf;
 
-	ensure(scan::scan("inbound/test.grib1", mdc));
-
-	ensure_equals(mdc.size(), 3u);
+    ensure(scan::scan("inbound/test.grib1", mdc.inserter_func()));
+    ensure_equals(mdc.size(), 3u);
 
     // Check the source info
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218));
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
 
 	// Check that the source can be read properly
 	buf = mdc[0].getData();
@@ -82,7 +61,7 @@ void to::test<1>()
     wassert(actual(mdc[0]).contains("run", "MINUTE(13:00)"));
 
     // Check the source info
-    wassert(actual(mdc[1].source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 7218, 34960));
+    wassert(actual(mdc[1].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 7218, 34960));
 
 	// Check that the source can be read properly
 	buf = mdc[1].getData();
@@ -101,7 +80,7 @@ void to::test<1>()
     wassert(actual(mdc[1]).contains("run", "MINUTE(0)"));
 
     // Check the source info
-    wassert(actual(mdc[2].source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 42178, 2234));
+    wassert(actual(mdc[2].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 42178, 2234));
 
 	// Check that the source can be read properly
 	buf = mdc[2].getData();
@@ -122,21 +101,20 @@ void to::test<1>()
 }
 
 // Scan a well-known bufr file, with no padding between BUFRs
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
-	metadata::Collection mdc;
+    metadata::Collection mdc;
 #ifndef HAVE_DBALLE
-	ensure(not scan::scan("inbound/test.bufr", mdc));
+    ensure(not scan::scan("inbound/test.bufr", mdc));
 #else
-	wibble::sys::Buffer buf;
+    vector<uint8_t> buf;
 
-	ensure(scan::scan("inbound/test.bufr", mdc));
+    ensure(scan::scan("inbound/test.bufr", mdc.inserter_func()));
 
 	ensure_equals(mdc.size(), 3u);
 
     // Check the source info
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 0, 194));
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 0, 194));
 
 	// Check that the source can be read properly
 	buf = mdc[0].getData();
@@ -152,11 +130,11 @@ void to::test<2>()
     wassert(actual(mdc[0]).contains("reftime", "2005-12-01T18:00:00Z"));
 
 	// Check run
-	ensure(not mdc[0].has(types::TYPE_RUN));
+	ensure(not mdc[0].has(TYPE_RUN));
 
 
     // Check the source info
-    wassert(actual(mdc[1].source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 194, 220));
+    wassert(actual(mdc[1].source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 194, 220));
 
 	// Check that the source can be read properly
 	buf = mdc[1].getData();
@@ -172,11 +150,11 @@ void to::test<2>()
     wassert(actual(mdc[1]).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
-	ensure(not mdc[1].has(types::TYPE_RUN));
+	ensure(not mdc[1].has(TYPE_RUN));
 
 
     // Check the source info
-    wassert(actual(mdc[2].source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 414, 220));
+    wassert(actual(mdc[2].source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 414, 220));
 
 	// Check that the source can be read properly
 	buf = mdc[2].getData();
@@ -192,39 +170,37 @@ void to::test<2>()
     wassert(actual(mdc[2]).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
-	ensure(not mdc[2].has(types::TYPE_RUN));
+	ensure(not mdc[2].has(TYPE_RUN));
 #endif
 }
 
 // Test compression
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 	// Create a test file with 9 gribs inside
 	system("cat inbound/test.grib1 inbound/test.grib1 inbound/test.grib1 > a.grib1");
 	system("cp a.grib1 b.grib1");
 
-	// Compress
-	scan::compress("b.grib1", 5);
-	sys::fs::deleteIfExists("b.grib1");
+    // Compress
+    scan::compress("b.grib1", 5);
+    sys::unlink_ifexists("b.grib1");
 
-	{
-		utils::compress::TempUnzip tu("b.grib1");
-		metadata::Counter c;
-		scan::scan("b.grib1", c);
-		ensure_equals(c.count, 9u);
-	}
+    {
+        utils::compress::TempUnzip tu("b.grib1");
+        unsigned count = 0;
+        scan::scan("b.grib1", [&](unique_ptr<Metadata>) { ++count; return true; });
+        ensure_equals(count, 9u);
+    }
 }
 
 // Test reading update sequence numbers
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     {
         // Gribs don't have update sequence numbrs, and the usn parameter must
         // be left untouched
         metadata::Collection mdc;
-        scan::scan("inbound/test.grib1", mdc);
+        scan::scan("inbound/test.grib1", mdc.inserter_func());
         int usn = 42;
         ensure_equals(scan::update_sequence_number(mdc[0], usn), false);
         ensure_equals(usn, 42);
@@ -232,7 +208,7 @@ void to::test<4>()
 
     {
         metadata::Collection mdc;
-        scan::scan("inbound/synop-gts.bufr", mdc);
+        scan::scan("inbound/synop-gts.bufr", mdc.inserter_func());
         int usn;
         ensure_equals(scan::update_sequence_number(mdc[0], usn), true);
         ensure_equals(usn, 0);
@@ -240,7 +216,7 @@ void to::test<4>()
 
     {
         metadata::Collection mdc;
-        scan::scan("inbound/synop-gts-usn2.bufr", mdc);
+        scan::scan("inbound/synop-gts-usn2.bufr", mdc.inserter_func());
         int usn;
         ensure_equals(scan::update_sequence_number(mdc[0], usn), true);
         ensure_equals(usn, 2);
@@ -248,14 +224,11 @@ void to::test<4>()
 }
 
 // Test reading NetCDF files
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     metadata::Collection mdc;
-    wassert(actual(scan::scan("inbound/example_1.nc", mdc)).istrue());
-    wassert(actual(mdc.size()) == 1);
+    wassert(actual(scan::scan("inbound/example_1.nc", mdc.inserter_func())).istrue());
+    wassert(actual(mdc.size()) == 1u);
 }
 
 }
-
-// vim:set ts=4 sw=4:

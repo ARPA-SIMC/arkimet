@@ -1,24 +1,4 @@
-/*
- * iotrace - I/O profiling
- *
- * Copyright (C) 2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// iotrace - I/O profiling
 
 #ifndef ARKI_IOTRACE_H
 #define ARKI_IOTRACE_H
@@ -30,7 +10,7 @@
 #include <arki/libconfig.h>
 #include <vector>
 #include <string>
-#include <iosfwd>
+#include <cstddef>
 #include <sys/types.h>
 
 namespace arki {
@@ -74,9 +54,9 @@ struct Collector : public Listener
 
 struct Logger : public Listener
 {
-    std::ostream& out;
+    FILE* out;
 
-    Logger(std::ostream& out) : out(out) {}
+    Logger(FILE* out) : out(out) {}
 
     virtual void operator()(const Event& e);
 };

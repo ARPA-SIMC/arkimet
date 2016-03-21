@@ -1,45 +1,18 @@
 #ifndef ARKI_SUMMARY_H
 #define ARKI_SUMMARY_H
 
-/*
- * summary - Handle a summary of a group of summary
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-
 #include <arki/types.h>
 #include <arki/types/reftime.h>
 #include <arki/itemset.h>
 #include <arki/utils/geosfwd.h>
+#include <arki/file.h>
 #include <map>
+#include <set>
 #include <string>
 #include <memory>
 #include <iosfwd>
 
 struct lua_State;
-
-namespace wibble {
-namespace sys {
-struct Buffer;
-}
-}
 
 namespace arki {
 class Metadata;
@@ -146,20 +119,20 @@ public:
 	 */
 	bool read(int fd, const std::string& filename);
 
-	/**
-	 * Read a summary from the given input stream.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 *
-	 * @returns false when end-of-file is reached
-	 */
-	bool read(std::istream& in, const std::string& filename);
-	
-	/**
-	 * Decode the summary, without the outer bundle headers, from the given buffer.
-	 */
-	void read(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename);
+    /**
+     * Read a summary from a buffer.
+     *
+     * The filename string is used to generate nicer parse error messages when
+     * throwing exceptions, and can be anything.
+     *
+     * @returns false when end-of-file is reached
+     */
+    bool read(BinaryDecoder& dec, const std::string& filename);
+
+    /**
+     * Decode the summary, without the outer bundle headers, from the given buffer.
+     */
+    void read_inner(BinaryDecoder& dec, unsigned version, const std::string& filename);
 
     /// Decode from structured data
 	void read(const emitter::memory::Mapping& val);
@@ -169,23 +142,23 @@ public:
 	 */
 	void readFile(const std::string& fname);
 
-	/**
-	 * Read a summary document encoded in Yaml from the given input stream.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 *
-	 * Summary items are read from the file until the end of file is found.
-	 */
-	bool readYaml(std::istream& in, const std::string& filename);
+    /**
+     * Read a summary document encoded in Yaml from the given file descriptor.
+     *
+     * The filename string is used to generate nicer parse error messages when
+     * throwing exceptions, and can be anything.
+     *
+     * Summary items are read from the file until the end of file is found.
+     */
+    bool readYaml(LineReader& in, const std::string& filename);
 
-	/**
-	 * Write the summary to the given output stream.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 */
-	void write(std::ostream& out, const std::string& filename) const;
+    /**
+     * Write the summary to the given output file.
+     *
+     * The filename string is used to generate nicer parse error messages when
+     * throwing exceptions, and can be anything.
+     */
+    void write(int out, const std::string& filename) const;
 
 	/**
 	 * Write the summary to the given file name.
@@ -204,11 +177,11 @@ public:
 
     /// Serialise using an emitter
     void serialise(Emitter& e, const Formatter* f=0) const;
-	
-	/**
-	 * Encode to a string
-	 */
-	std::string encode(bool compressed = false) const;
+
+    /**
+     * Encode to a string
+     */
+    std::vector<uint8_t> encode(bool compressed = false) const;
 
     /**
      * Check if this summary matches the given matcher
@@ -267,7 +240,7 @@ public:
      *
      * Note: an end period of (0, 0, 0, 0, 0, 0) means "now".
      */
-    std::auto_ptr<types::Reftime> getReferenceTime() const;
+    std::unique_ptr<types::Reftime> getReferenceTime() const;
 
     /**
      * Expand the given begin and end ranges to include the datetime extremes
@@ -276,13 +249,13 @@ public:
      * If begin and end are unset, set them to the datetime extremes of this
      * summary.
      */
-    void expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const;
+    void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
 
 	/**
 	 * Get the convex hull of the union of all bounding boxes covered by the
 	 * metadata bundle.
 	 */
-	std::auto_ptr<ARKI_GEOS_GEOMETRY> getConvexHull(ARKI_GEOS_GEOMETRYFACTORY& gf) const;
+	std::unique_ptr<ARKI_GEOS_GEOMETRY> getConvexHull(ARKI_GEOS_GEOMETRYFACTORY& gf) const;
 
 	/**
 	 * Return all the unique combination of metadata items that are found
@@ -325,6 +298,4 @@ public:
 std::ostream& operator<<(std::ostream& o, const Summary& s);
 
 }
-
-// vim:set ts=4 sw=4:
 #endif

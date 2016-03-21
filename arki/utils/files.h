@@ -1,32 +1,14 @@
 #ifndef ARKI_UTILS_FILES_H
 #define ARKI_UTILS_FILES_H
 
-/*
- * utils/files - arkimet-specific file functions
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// utils/files - arkimet-specific file functions
 
+#include <arki/defs.h>
+#include <arki/file.h>
 #include <string>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <iosfwd>
+#include <memory>
 
 #define FLAGFILE_REBUILD ".needs-rebuild"
 #define FLAGFILE_PACK ".needs-pack"
@@ -91,7 +73,7 @@ void removeDontpackFlagfile(const std::string& dir);
 bool hasDontpackFlagfile(const std::string& dir);
 
 /**
- * Same as wibble::sys::fs::readFile, but if \a file is "-" then reads all from
+ * Same as sys::read_file, but if \a file is "-" then reads all from
  * stdin
  */
 std::string read_file(const std::string &file);
@@ -135,6 +117,4 @@ struct PreserveFileTimes
 }
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

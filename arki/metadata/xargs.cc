@@ -1,30 +1,11 @@
-/*
- * metadata/xargs - Cluster a metadata stream and run a progrgam on each batch
- *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #include "xargs.h"
-#include <arki/metadata.h>
-#include <arki/utils/raii.h>
-#include <arki/dataset/data.h>
-#include <wibble/sys/fs.h>
-#include <wibble/sys/exec.h>
+#include "arki/exceptions.h"
+#include "arki/metadata.h"
+#include "arki/utils/raii.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
+#include "arki/dataset/segment.h"
+#include "arki/wibble/sys/exec.h"
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -32,7 +13,7 @@
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
+using namespace arki::utils;
 
 extern char **environ;
 
@@ -54,9 +35,7 @@ Tempfile::~Tempfile()
 void Tempfile::set_template(const std::string& tpl)
 {
     if (fd != -1)
-        throw wibble::exception::Consistency(
-                "setting a new temp file template",
-                "there is already a temp file open");
+        throw std::runtime_error("cannot set a new temp file template: there is already a temp file open");
 
     pathname_template = tpl;
 }
@@ -64,9 +43,7 @@ void Tempfile::set_template(const std::string& tpl)
 void Tempfile::open()
 {
     if (fd != -1)
-        throw wibble::exception::Consistency(
-                "opening temp file for new batch",
-                "there is already a tempfile open");
+        throw std::runtime_error("cannot open temp file for new batch: there is already a tempfile open");
 
     utils::raii::TransactionAllocArray<char> allocpn(
             pathname,
@@ -74,9 +51,7 @@ void Tempfile::open()
             pathname_template.c_str());
     fd = mkstemp(pathname);
     if (fd < 0)
-    {
-        throw wibble::exception::System("creating temporary file");
-    }
+        throw_system_error("cannot create temporary file");
     allocpn.commit();
 }
 
@@ -103,12 +78,10 @@ void Tempfile::close()
     utils::raii::DeleteArrayAndZeroOnExit<char> xx2(pathname);
 
     if (::close(fd) < 0)
-    {
-        throw wibble::exception::File(pathname, "closing file");
-    }
+        throw_file_error(pathname, "cannot close file");
 
     // delete the file, if it still exists
-    sys::fs::deleteIfExists(pathname);
+    sys::unlink_ifexists(pathname);
 }
 
 bool Tempfile::is_open() const
@@ -137,10 +110,11 @@ void Xargs::start_batch(const std::string& new_format)
     tempfile.open();
 }
 
-void Xargs::add_to_batch(Metadata& md, const sys::Buffer& buf)
+void Xargs::add_to_batch(Metadata& md, const std::vector<uint8_t>& buf)
 {
     metadata::Clusterer::add_to_batch(md, buf);
-    arki::dataset::data::OstreamWriter::get(md.source().format)->stream(md, tempfile.fd);
+    NamedFileDescriptor out(tempfile.fd, tempfile.pathname);
+    arki::dataset::segment::OstreamWriter::get(md.source().format)->stream(md, out);
 }
 
 void Xargs::flush_batch()
@@ -161,21 +135,25 @@ void Xargs::flush_batch()
     metadata::Clusterer::flush_batch();
 
     if (res != 0)
-        throw wibble::exception::Consistency("running " + command[0], "process returned exit status " + str::fmt(res));
+    {
+        stringstream ss;
+        ss << "cannot run " << command[0] << ": process returned exit status " << res;
+        throw std::runtime_error(ss.str());
+    }
 }
 
 int Xargs::run_child()
 {
-    struct CustomChild : public sys::Exec
+    struct CustomChild : public wibble::sys::Exec
     {
-        CustomChild(const std::string& pathname) : sys::Exec(pathname) {}
+        CustomChild(const std::string& pathname) : wibble::sys::Exec(pathname) {}
 
         virtual int main()
         {
             // Redirect stdin to /dev/null
             int new_stdin = open("/dev/null", O_RDONLY);
             ::dup2(new_stdin, 0);
-            sys::Exec::main();
+            return wibble::sys::Exec::main();
         }
     };
 
@@ -196,20 +174,22 @@ int Xargs::run_child()
     for (char** s = environ; *s; ++s)
     {
         string envstr(*s);
-        if (str::startsWith(envstr, "ARKI_XARGS_")) continue;
+        if (str::startswith(envstr, "ARKI_XARGS_")) continue;
         child.env.push_back(envstr);
     }
     child.env.push_back("ARKI_XARGS_FILENAME=" + string(tempfile.pathname));
-    child.env.push_back("ARKI_XARGS_FORMAT=" + str::toupper(format));
-    child.env.push_back("ARKI_XARGS_COUNT=" + str::fmt(count));
+    child.env.push_back("ARKI_XARGS_FORMAT=" + str::upper(format));
+    char buf[32];
+    snprintf(buf, 32, "ARKI_XARGS_COUNT=%zd", count);
+    child.env.push_back(buf);
 
     if (timespan_begin.get())
     {
-        child.env.push_back("ARKI_XARGS_TIME_START=" + timespan_begin->toISO8601(' '));
+        child.env.push_back("ARKI_XARGS_TIME_START=" + timespan_begin->to_iso8601(' '));
         if (timespan_end.get())
-            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan_end->toISO8601(' '));
+            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan_end->to_iso8601(' '));
         else
-            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan_begin->toISO8601(' '));
+            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan_begin->to_iso8601(' '));
     }
 
     child.fork();
@@ -242,18 +222,18 @@ static size_t parse_size(const std::string& str)
     if (suffix == "Z") return res * 1024*1024*1024*1024*1024*1024*1024;
     if (suffix == "YB") return res * 1000*1000*1000*1000*1000*1000*1000*1000;
     if (suffix == "Y") return res * 1024*1024*1024*1024*1024*1024*1024*1024;
-    throw wibble::exception::Consistency("parsing size", "unknown suffix: '"+suffix+"'");
+    throw std::runtime_error("cannot parse size: unknown suffix: '"+suffix+"'");
 }
 
 static size_t parse_interval(const std::string& str)
 {
-    string name = str::trim(str::tolower(str));
+    string name = str::lower(str::strip(str));
     if (name == "minute") return 5;
     if (name == "hour") return 4;
     if (name == "day") return 3;
     if (name == "month") return 2;
     if (name == "year") return 1;
-    throw wibble::exception::Consistency("parsing interval name", "unsupported interval: " + str + ".  Valid intervals are minute, hour, day, month and year");
+    throw std::runtime_error("cannot parse interval name: unsupported interval: " + str + ".  Valid intervals are minute, hour, day, month and year");
 }
 
 void Xargs::set_max_bytes(const std::string& val)
@@ -268,5 +248,3 @@ void Xargs::set_interval(const std::string& val)
 
 }
 }
-
-// vim:set ts=4 sw=4:

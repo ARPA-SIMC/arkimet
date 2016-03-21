@@ -1,41 +1,20 @@
 #ifndef ARKI_POSTPROCESS_H
 #define ARKI_POSTPROCESS_H
 
-/*
- * postprocess - postprocessing of result data
- *
- * Copyright (C) 2008--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <string>
 #include <map>
-#include <vector>
 #include <sstream>
-#include <arki/metadata/consumer.h>
+#include <functional>
+#include <memory>
 
 namespace arki {
+class Metadata;
 
 namespace postproc {
 class Child;
 }
 
-class Postprocess : public metadata::Eater
+class Postprocess
 {
 protected:
     /// Subprocess that filters our data
@@ -72,16 +51,6 @@ public:
     /// Set the output file descriptor where we send data coming from the postprocessor
     void set_output(int outfd);
 
-    /**
-     * Set the output stream where we send data coming from the postprocessor
-     *
-     * It tries to get a file descriptor out of the stream with any known
-     * method (so far it's only by checking if the underlying streambuf is a
-     * wibble::stream::PosixBuf). If it can, and the spice(2) syscall is
-     * available, it copies the data more efficiently
-     */
-    void set_output(std::ostream& out);
-
     /// Set the output stream where we send the postprocessor stderr
     void set_error(std::ostream& err);
 
@@ -89,10 +58,10 @@ public:
      * Set hook to be called when the child process has produced its first
      * data, just before the data is sent to the next consumer
      */
-    void set_data_start_hook(metadata::Hook* hook);
+    void set_data_start_hook(std::function<void()> hook);
 
     // Process one metadata
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool process(std::unique_ptr<Metadata>&& md);
 
     // End of processing: flush all pending data
     void flush();

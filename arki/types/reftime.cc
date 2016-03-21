@@ -1,49 +1,23 @@
-/*
- * types/reftime - Vertical reftime or layer
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <arki/types/reftime.h>
-#include <arki/types/utils.h>
-#include <arki/utils/codec.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
+#include "reftime.h"
+#include "utils.h"
+#include "arki/exceptions.h"
+#include "arki/binary.h"
+#include "arki/utils/string.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/utils/lua.h"
 #include "config.h"
 #include <sstream>
 #include <cmath>
 #include <cstring>
 
-#ifdef HAVE_LUA
-#include <arki/utils/lua.h>
-#endif
-
-#define CODE types::TYPE_REFTIME
+#define CODE TYPE_REFTIME
 #define TAG "reftime"
 #define SERSIZELEN 1
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
-using namespace arki::utils::codec;
+using arki::core::Time;
 
 namespace arki {
 namespace types {
@@ -61,7 +35,7 @@ Reftime::Style Reftime::parseStyle(const std::string& str)
 {
 	if (str == "POSITION") return POSITION;
 	if (str == "PERIOD") return PERIOD;
-	throw wibble::exception::Consistency("parsing Reftime style", "cannot parse Reftime style '"+str+"': only POSITION and PERIOD are supported");
+	throw_consistency_error("parsing Reftime style", "cannot parse Reftime style '"+str+"': only POSITION and PERIOD are supported");
 }
 
 std::string Reftime::formatStyle(Reftime::Style s)
@@ -77,25 +51,28 @@ std::string Reftime::formatStyle(Reftime::Style s)
 	}
 }
 
-auto_ptr<Reftime> Reftime::decode(const unsigned char* buf, size_t len)
+unique_ptr<Reftime> Reftime::decode(BinaryDecoder& dec)
 {
-	using namespace utils::codec;
-	ensureSize(len, 1, "Reftime");
-	Style s = (Style)decodeUInt(buf, 1);
+    Style s = (Style)dec.pop_uint(1, "reftime style");
     switch (s)
     {
-        case POSITION:
-            ensureSize(len, 6, "Reftime");
-            return Reftime::createPosition(*Time::decode(buf+1, 5));
+        case POSITION: return Reftime::createPosition(Time::decode(dec));
         case PERIOD:
-            ensureSize(len, 11, "Reftime");
-            return Reftime::createPeriod(*Time::decode(buf+1, 5), *Time::decode(buf+6, 5));
+        {
+            auto begin = Time::decode(dec);
+            auto until = Time::decode(dec);
+            return Reftime::createPeriod(begin, until);
+        }
         default:
-            throw wibble::exception::Consistency("parsing reference time", "style " + str::fmt(s) + "but we can only decode POSITION and PERIOD");
+        {
+            stringstream ss;
+            ss << "cannot parse reference time: style is " << s << " but we can only decode POSITION and PERIOD";
+            throw std::runtime_error(ss.str());
+        }
     }
 }
 
-auto_ptr<Reftime> Reftime::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Reftime> Reftime::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
@@ -104,32 +81,32 @@ auto_ptr<Reftime> Reftime::decodeMapping(const emitter::memory::Mapping& val)
         case POSITION: return upcast<Reftime>(reftime::Position::decodeMapping(val));
         case PERIOD: return upcast<Reftime>(reftime::Period::decodeMapping(val));
         default:
-            throw wibble::exception::Consistency("parsing Reftime", "unknown Reftime style " + val.get_string());
+            throw_consistency_error("parsing Reftime", "unknown Reftime style " + val.get_string());
     }
 }
 
-auto_ptr<Reftime> Reftime::decodeString(const std::string& val)
+unique_ptr<Reftime> Reftime::decodeString(const std::string& val)
 {
     size_t pos = val.find(" to ");
-    if (pos == string::npos) return Reftime::createPosition(*Time::decodeString(val));
+    if (pos == string::npos) return Reftime::createPosition(Time::decodeString(val));
 
     return Reftime::createPeriod(
-                *Time::decodeString(val.substr(0, pos)),
-                *Time::decodeString(val.substr(pos + 4)));
+                Time::decodeString(val.substr(0, pos)),
+                Time::decodeString(val.substr(pos + 4)));
 }
 
 static int arkilua_new_position(lua_State* L)
 {
-    const Time* time = types::Type::lua_check<Time>(L, 1);
-    reftime::Position::create(*time)->lua_push(L);
+    Time time = Time::lua_check(L, 1);
+    reftime::Position::create(time)->lua_push(L);
     return 1;
 }
 
 static int arkilua_new_period(lua_State* L)
 {
-    const Time* beg = types::Type::lua_check<Time>(L, 1);
-    const Time* end = types::Type::lua_check<Time>(L, 2);
-    reftime::Period::create(*beg, *end)->lua_push(L);
+    Time beg = Time::lua_check(L, 1);
+    Time end = Time::lua_check(L, 2);
+    reftime::Period::create(beg, end)->lua_push(L);
     return 1;
 }
 
@@ -144,7 +121,7 @@ void Reftime::lua_loadlib(lua_State* L)
     utils::lua::add_global_library(L, "arki_reftime", lib);
 }
 
-std::auto_ptr<Reftime> Reftime::create(const Time& begin, const Time& end)
+std::unique_ptr<Reftime> Reftime::create(const Time& begin, const Time& end)
 {
     if (begin == end)
         return upcast<Reftime>(reftime::Position::create(begin));
@@ -152,12 +129,12 @@ std::auto_ptr<Reftime> Reftime::create(const Time& begin, const Time& end)
         return upcast<Reftime>(reftime::Period::create(begin, end));
 }
 
-std::auto_ptr<Reftime> Reftime::createPosition(const Time& position)
+std::unique_ptr<Reftime> Reftime::createPosition(const Time& position)
 {
     return upcast<Reftime>(reftime::Position::create(position));
 }
 
-std::auto_ptr<Reftime> Reftime::createPeriod(const Time& begin, const Time& end)
+std::unique_ptr<Reftime> Reftime::createPeriod(const Time& begin, const Time& end)
 {
     return upcast<Reftime>(reftime::Period::create(begin, end));
 }
@@ -168,7 +145,7 @@ Position::Position(const Time& time) : time(time) {}
 
 Reftime::Style Position::style() const { return Reftime::POSITION; }
 
-void Position::encodeWithoutEnvelope(Encoder& enc) const
+void Position::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
     Reftime::encodeWithoutEnvelope(enc);
     time.encodeWithoutEnvelope(enc);
@@ -176,7 +153,7 @@ void Position::encodeWithoutEnvelope(Encoder& enc) const
 
 std::ostream& Position::writeToOstream(std::ostream& o) const
 {
-    return time.writeToOstream(o);
+    return o << time;
 }
 
 void Position::serialiseLocal(Emitter& e, const Formatter* f) const
@@ -186,15 +163,15 @@ void Position::serialiseLocal(Emitter& e, const Formatter* f) const
     time.serialiseList(e);
 }
 
-auto_ptr<Position> Position::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Position> Position::decodeMapping(const emitter::memory::Mapping& val)
 {
-    auto_ptr<Time> time = Time::decodeList(val["ti"].want_list("parsing position reftime time"));
-    return Position::create(*time);
+    Time time = Time::decodeList(val["ti"].want_list("parsing position reftime time"));
+    return Position::create(time);
 }
 
 std::string Position::exactQuery() const
 {
-	return "=" + time.toISO8601();
+    return "=" + time.to_iso8601();
 }
 
 const char* Position::lua_type_name() const { return "arki.types.reftime.position"; }
@@ -213,10 +190,9 @@ int Position::compare_local(const Reftime& o) const
 	// We should be the same kind, so upcast
 	const Position* v = dynamic_cast<const Position*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a Position Reftime, but is a ") + typeid(&o).name() + " instead");
-
 	return time.compare(v->time);
 }
 
@@ -227,7 +203,7 @@ bool Position::equals(const Type& o) const
 	return time == v->time;
 }
 
-void Position::expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const
+void Position::expand_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const
 {
     if (!begin.get() || *begin > time)
         begin.reset(new Time(time));
@@ -236,7 +212,7 @@ void Position::expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_pt
         end.reset(new Time(time));
 }
 
-void Position::expand_date_range(types::Time& begin, types::Time& end) const
+void Position::expand_date_range(Time& begin, Time& end) const
 {
     if (begin > time) begin = time;
     if (end < time) end = time;
@@ -247,9 +223,9 @@ Position* Position::clone() const
     return new Position(time);
 }
 
-auto_ptr<Position> Position::create(const Time& time)
+unique_ptr<Position> Position::create(const Time& time)
 {
-    return auto_ptr<Position>(new Position(time));
+    return unique_ptr<Position>(new Position(time));
 }
 
 Period::Period(const Time& begin, const Time& end)
@@ -257,7 +233,7 @@ Period::Period(const Time& begin, const Time& end)
 
 Reftime::Style Period::style() const { return Reftime::PERIOD; }
 
-void Period::encodeWithoutEnvelope(Encoder& enc) const
+void Period::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
     Reftime::encodeWithoutEnvelope(enc);
     begin.encodeWithoutEnvelope(enc);
@@ -266,9 +242,7 @@ void Period::encodeWithoutEnvelope(Encoder& enc) const
 
 std::ostream& Period::writeToOstream(std::ostream& o) const
 {
-    begin.writeToOstream(o);
-    o << " to ";
-    return end.writeToOstream(o);
+    return o << begin << " to " << end;
 }
 
 void Period::serialiseLocal(Emitter& e, const Formatter* f) const
@@ -278,11 +252,11 @@ void Period::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("e"); end.serialiseList(e);
 }
 
-auto_ptr<Period> Period::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Period> Period::decodeMapping(const emitter::memory::Mapping& val)
 {
-    auto_ptr<Time> beg = Time::decodeList(val["b"].want_list("parsing period reftime begin"));
-    auto_ptr<Time> end = Time::decodeList(val["e"].want_list("parsing period reftime end"));
-    return Period::create(*beg, *end);
+    Time beg = Time::decodeList(val["b"].want_list("parsing period reftime begin"));
+    Time end = Time::decodeList(val["e"].want_list("parsing period reftime end"));
+    return Period::create(beg, end);
 }
 
 const char* Period::lua_type_name() const { return "arki.types.reftime.period"; }
@@ -303,7 +277,7 @@ int Period::compare_local(const Reftime& o) const
 	// We should be the same kind, so upcast
 	const Period* v = dynamic_cast<const Period*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a Period Reftime, but is a ") + typeid(&o).name() + " instead");
 
@@ -318,7 +292,7 @@ bool Period::equals(const Type& o) const
 	return begin == v->begin && end == v->end;
 }
 
-void Period::expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const
+void Period::expand_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const
 {
     if (!begin.get() || *begin > this->begin)
         begin.reset(new Time(this->begin));
@@ -327,7 +301,7 @@ void Period::expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<
         end.reset(new Time(this->end));
 }
 
-void Period::expand_date_range(types::Time& begin, types::Time& end) const
+void Period::expand_date_range(Time& begin, Time& end) const
 {
     if (begin > this->begin) begin = this->begin;
     if (end < this->end) end = this->end;
@@ -338,9 +312,9 @@ Period* Period::clone() const
     return new Period(begin, end);
 }
 
-auto_ptr<Period> Period::create(const Time& begin, const Time& end)
+unique_ptr<Period> Period::create(const Time& begin, const Time& end)
 {
-    return auto_ptr<Period>(new Period(begin, end));
+    return unique_ptr<Period>(new Period(begin, end));
 }
 
 }

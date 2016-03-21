@@ -1,27 +1,4 @@
-/*
- * dataset/http - Remote HTTP dataset access
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include <arki/dataset/http.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
@@ -29,14 +6,14 @@
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/sort.h>
-
-#include <wibble/string.h>
-
+#include <arki/utils/string.h>
+#include <arki/utils/sys.h>
+#include <arki/binary.h>
 #include <cstdlib>
 #include <sstream>
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -50,30 +27,22 @@ namespace dataset {
 
 namespace http {
 
-Exception::Exception(CURLcode code, const std::string& context) throw ()
-	: Generic(context), m_errcode(code) {}
-Exception::Exception(CURLcode code, const std::string& extrainfo, const std::string& context) throw ()
-	: Generic(context), m_extrainfo(extrainfo), m_errcode(code) {}
-
-string Exception::desc() const throw ()
-{
-	if (m_extrainfo.empty())
-		return curl_easy_strerror(m_errcode);
-	else
-		return string(curl_easy_strerror(m_errcode)) + " (" + m_extrainfo + ")";
-}
+Exception::Exception(CURLcode code, const std::string& context)
+    : std::runtime_error("while " + context + ": " + curl_easy_strerror(code)) {}
+Exception::Exception(CURLcode code, const std::string& extrainfo, const std::string& context)
+    : std::runtime_error("while " + context + ": " + curl_easy_strerror(code) + "(" + extrainfo + ")") {}
 
 CurlEasy::CurlEasy() : m_curl(0)
 {
-	m_errbuf = new char[CURL_ERROR_SIZE];
+    m_errbuf = new char[CURL_ERROR_SIZE];
 
-	// FIXME:
-	// curl_easy_init automatically calls curl_global_init
-	// curl_global_init is not thread safe, so the documentation suggests it is
-	// called not automatically here, but somewhere at program startup
-	m_curl = curl_easy_init();
-	if (!m_curl)
-		throw wibble::exception::Consistency("initialising CURL", "curl_easy_init returned NULL");
+    // FIXME:
+    // curl_easy_init automatically calls curl_global_init
+    // curl_global_init is not thread safe, so the documentation suggests it is
+    // called not automatically here, but somewhere at program startup
+    m_curl = curl_easy_init();
+    if (!m_curl)
+        throw std::runtime_error("cannot initialize CURL: curl_easy_init returned NULL");
 }
 
 CurlEasy::~CurlEasy()
@@ -127,17 +96,17 @@ struct CurlForm
 }
 
 HTTP::HTTP(const ConfigFile& cfg)
-	: m_mischief(false)
+    : Reader(cfg), m_mischief(false)
 {
-	this->cfg = cfg.values();
-	m_name = cfg.value("name");
-	m_baseurl = cfg.value("path");
-	m_qmacro = cfg.value("qmacro");
+    m_baseurl = cfg.value("path");
+    m_qmacro = cfg.value("qmacro");
 }
 
 HTTP::~HTTP()
 {
 }
+
+std::string HTTP::type() const { return "http"; }
 
 struct ReqState
 {
@@ -183,7 +152,7 @@ struct ReqState
         ReqState& s = *(ReqState*)stream;
         string header((const char*)ptr, size*nmemb);
         // Look for special headers to get raw exception messages
-        if (str::startsWith(header, "Arkimet-Exception: "))
+        if (str::startswith(header, "Arkimet-Exception: "))
             s.exception_message = header.substr(19);
         return size * nmemb;
     }
@@ -203,66 +172,68 @@ struct ReqState
 
     void throwError(const std::string& context)
     {
-        string msg = str::fmtf("Server gave status %d: ", response_code);
+        stringstream msg;
+        msg << "Server gave status " << response_code << ": ";
         if (!exception_message.empty())
-            msg += exception_message;
+            msg << exception_message;
         else
-            msg += response_error.str();
-        throw wibble::exception::Consistency(context, msg);
+            msg << response_error.str();
+        msg << " while " << context;
+        throw std::runtime_error(msg.str());
     }
 };
 
-struct SStreamState : public ReqState
+template<typename Container>
+struct BufState : public ReqState
 {
-	std::stringstream buf;
+    Container buf;
 
-    SStreamState(http::CurlEasy& curl) : ReqState(curl)
+    BufState(http::CurlEasy& curl) : ReqState(curl)
     {
-        checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &SStreamState::writefunc));
+        checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &BufState::writefunc));
         checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, this));
     }
 
-	static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
-	{
-		SStreamState& s = *(SStreamState*)stream;
-		if (size_t res = s.check_error(ptr, size, nmemb)) return res;
-		s.buf.write((const char*)ptr, size * nmemb);
-		return size * nmemb;
-	}
+    static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
+    {
+        BufState& s = *(BufState*)stream;
+        if (size_t res = s.check_error(ptr, size, nmemb)) return res;
+        s.buf.insert(s.buf.end(), (uint8_t*)ptr, (uint8_t*)ptr + size * nmemb);
+        return size * nmemb;
+    }
 };
 
 struct OstreamState : public ReqState
 {
-	ostream& os;
-    metadata::Hook* data_start_hook;
+    NamedFileDescriptor& out;
+    std::function<void()> data_start_hook;
 
-    OstreamState(http::CurlEasy& curl, ostream& os, metadata::Hook* data_start_hook = 0)
-        : ReqState(curl), os(os), data_start_hook(data_start_hook)
+    OstreamState(http::CurlEasy& curl, NamedFileDescriptor& out, std::function<void()> data_start_hook = 0)
+        : ReqState(curl), out(out), data_start_hook(data_start_hook)
     {
         checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, OstreamState::writefunc));
         checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, this));
     }
 
-	static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
-	{
-		OstreamState& s = *(OstreamState*)stream;
+    static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
+    {
+        OstreamState& s = *(OstreamState*)stream;
         if (s.data_start_hook && size > 0)
         {
-            (*s.data_start_hook)();
-            s.data_start_hook = 0;
+            s.data_start_hook();
+            s.data_start_hook = nullptr;
         }
-		if (size_t res = s.check_error(ptr, size, nmemb)) return res;
-		s.os.write((const char*)ptr, size * nmemb);
-		return size * nmemb;
-	}
+        if (size_t res = s.check_error(ptr, size, nmemb)) return res;
+        return s.out.write((const char*)ptr, size * nmemb);
+    }
 };
 
 struct MDStreamState : public ReqState
 {
 	metadata::Stream mdc;
 
-    MDStreamState(http::CurlEasy& curl, metadata::Eater& consumer, const std::string& baseurl)
-        : ReqState(curl), mdc(consumer, baseurl)
+    MDStreamState(http::CurlEasy& curl, metadata_dest_func dest, const std::string& baseurl)
+        : ReqState(curl), mdc(dest, baseurl)
     {
         checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, MDStreamState::writefunc));
         checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, this));
@@ -278,27 +249,25 @@ struct MDStreamState : public ReqState
 };
 
 
-void HTTP::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
+void HTTP::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-	using namespace wibble::str;
+    m_curl.reset();
 
-	m_curl.reset();
-
-	string url = joinpath(m_baseurl, "query");
-	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
-	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
-	string postdata;
-	if (m_qmacro.empty())
-		postdata = "query=" + urlencode(q.matcher.toStringExpanded());
-	else
-		postdata = "query=" + urlencode(m_qmacro) + "&qmacro=" + urlencode(m_name);
+    string url = str::joinpath(m_baseurl, "query");
+    checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+    checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
+    string postdata;
+    if (m_qmacro.empty())
+        postdata = "query=" + str::encode_url(q.matcher.toStringExpanded());
+    else
+        postdata = "query=" + str::encode_url(m_qmacro) + "&qmacro=" + str::encode_url(m_name);
     if (q.sorter)
-        postdata += "&sort=" + urlencode(q.sorter->toString());
-	if (m_mischief)
-	{
-		postdata += urlencode(";MISCHIEF");
-		m_mischief = false;
-	}
+        postdata += "&sort=" + str::encode_url(q.sorter->toString());
+    if (m_mischief)
+    {
+        postdata += str::encode_url(";MISCHIEF");
+        m_mischief = false;
+    }
     if (q.with_data)
       postdata += "&style=inline";
 	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
@@ -307,8 +276,8 @@ void HTTP::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 	// Size of postfields argument if it's non text
 	checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
 
-	MDStreamState s(m_curl, consumer, m_baseurl);
-	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
+    MDStreamState s(m_curl, dest, m_baseurl);
+    // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
 	CURLcode code = curl_easy_perform(m_curl);
 	if (code != CURLE_OK)
@@ -318,33 +287,31 @@ void HTTP::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 		s.throwError("querying summary from " + url);
 }
 
-void HTTP::querySummary(const Matcher& matcher, Summary& summary)
+void HTTP::query_summary(const Matcher& matcher, Summary& summary)
 {
-	using namespace wibble::str;
+    m_curl.reset();
 
-	m_curl.reset();
-
-	string url = joinpath(m_baseurl, "summary");
-	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
-	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
-	string postdata;
-	if (m_qmacro.empty())
-		postdata = "query=" + urlencode(matcher.toStringExpanded());
-	else
-		postdata = "query=" + urlencode(m_qmacro) + "&qmacro=" + urlencode(m_name);
-	if (m_mischief)
-	{
-		postdata += urlencode(";MISCHIEF");
-		m_mischief = false;
-	}
+    string url = str::joinpath(m_baseurl, "summary");
+    checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+    checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
+    string postdata;
+    if (m_qmacro.empty())
+        postdata = "query=" + str::encode_url(matcher.toStringExpanded());
+    else
+        postdata = "query=" + str::encode_url(m_qmacro) + "&qmacro=" + str::encode_url(m_name);
+    if (m_mischief)
+    {
+        postdata += str::encode_url(";MISCHIEF");
+        m_mischief = false;
+    }
 	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
 	//fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
 	checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
 	// Size of postfields argument if it's non text
 	checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
 
-	SStreamState s(m_curl);
-	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
+    BufState<std::vector<uint8_t>> s(m_curl);
+    // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
 	CURLcode code = curl_easy_perform(m_curl);
 	if (code != CURLE_OK)
@@ -353,21 +320,17 @@ void HTTP::querySummary(const Matcher& matcher, Summary& summary)
 	if (s.response_code >= 400)
 		s.throwError("querying summary from " + url);
 
-	s.buf.seekg(0);
-	summary.read(s.buf, url);
+    BinaryDecoder dec(s.buf);
+    summary.read(dec, url);
 }
 
-void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
+void HTTP::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
-	using namespace wibble::str;
-
-	m_curl.reset();
-
-	http::CurlForm form;
-
-	string url = joinpath(m_baseurl, "query");
-	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
-	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
+    m_curl.reset();
+    http::CurlForm form;
+    string url = str::joinpath(m_baseurl, "query");
+    checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+    checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
 	if (m_qmacro.empty())
 	{
 		if (m_mischief)
@@ -383,14 +346,14 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 	if (q.sorter)
 		form.addstring("sort", q.sorter->toString());
 
-	const char* toupload = getenv("ARKI_POSTPROC_FILES");
-	if (toupload != NULL)
-	{
-		// Split by ':'
-		str::Split splitter(":", toupload);
-		for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
-			form.addfile("postprocfile", *i);
-	}
+    const char* toupload = getenv("ARKI_POSTPROC_FILES");
+    if (toupload != NULL)
+    {
+        // Split by ':'
+        str::Split splitter(toupload, ":");
+        for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
+            form.addfile("postprocfile", *i);
+    }
 	switch (q.type)
 	{
 		case dataset::ByteQuery::BQ_DATA:
@@ -408,9 +371,12 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 			form.addstring("style", "rep_summary");
 			form.addstring("command", q.param);
 			break;
-		default:
-			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + fmt((int)q.type));
-	}
+		default: {
+            stringstream ss;
+            ss << "cannot query dataset: unsupported query type: " << (int)q.type;
+            throw std::runtime_error(ss.str());
+        }
+    }
 	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
 	//fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
 	// Set the form info 
@@ -428,17 +394,16 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 
 void HTTP::readConfig(const std::string& path, ConfigFile& cfg)
 {
-	using namespace wibble::str;
 	using namespace http;
 
 	CurlEasy m_curl;
 	m_curl.reset();
 
-	string url = joinpath(path, "config");
-	SStreamState content(m_curl);
-	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
-	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
-	
+    string url = str::joinpath(path, "config");
+    BufState<std::string> content(m_curl);
+    checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+    // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
+
 	CURLcode code = curl_easy_perform(m_curl);
 	if (code != CURLE_OK)
 		throw http::Exception(code, m_curl.m_errbuf, "Performing query at " + url);
@@ -446,8 +411,7 @@ void HTTP::readConfig(const std::string& path, ConfigFile& cfg)
 	if (content.response_code >= 400)
 		content.throwError("querying configuration from " + url);
 
-	content.buf.seekg(0);
-	cfg.parse(content.buf, url);
+    cfg.parse(content.buf, url);
 }
 
 void HTTP::produce_one_wrong_query()
@@ -457,20 +421,19 @@ void HTTP::produce_one_wrong_query()
 
 std::string HTTP::expandMatcher(const std::string& matcher, const std::string& server)
 {
-	using namespace wibble::str;
 	using namespace http;
 
 	CurlEasy m_curl;
 	m_curl.reset();
 
-	string url = joinpath(server, "qexpand");
-	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
-	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
-	string postdata = "query=" + urlencode(matcher) + "\n";
-	checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
-	checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
-	SStreamState content(m_curl);
-	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
+    string url = str::joinpath(server, "qexpand");
+    checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+    checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
+    string postdata = "query=" + str::encode_url(matcher) + "\n";
+    checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
+    checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
+    BufState<std::string> content(m_curl);
+    // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
 	CURLcode code = curl_easy_perform(m_curl);
 	if (code != CURLE_OK)
@@ -479,22 +442,20 @@ std::string HTTP::expandMatcher(const std::string& matcher, const std::string& s
 	if (content.response_code >= 400)
 		content.throwError("expanding query at " + url);
 
-	content.buf.seekg(0);
-	return str::trim(content.buf.str());
+    return str::strip(content.buf);
 }
 
 void HTTP::getAliasDatabase(const std::string& server, ConfigFile& cfg)
 {
-	using namespace wibble::str;
 	using namespace http;
 
 	CurlEasy m_curl;
 	m_curl.reset();
 
-	string url = joinpath(server, "aliases");
-	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
-	SStreamState content(m_curl);
-	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
+    string url = str::joinpath(server, "aliases");
+    checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+    BufState<string> content(m_curl);
+    // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
 	CURLcode code = curl_easy_perform(m_curl);
 	if (code != CURLE_OK)
@@ -503,9 +464,7 @@ void HTTP::getAliasDatabase(const std::string& server, ConfigFile& cfg)
 	if (content.response_code >= 400)
 		content.throwError("expanding query at " + url);
 
-	content.buf.seekg(0);
-
-	cfg.parse(content.buf, server);
+    cfg.parse(content.buf, server);
 }
 
 static string geturlprefix(const std::string& s)
@@ -518,10 +477,10 @@ static string geturlprefix(const std::string& s)
 
 std::string HTTP::allSameRemoteServer(const ConfigFile& cfg)
 {
-	string base;
-	for (ConfigFile::const_section_iterator i = cfg.sectionBegin(); i != cfg.sectionEnd(); ++i)
-	{
-		string type = wibble::str::tolower(i->second->value("type"));
+    string base;
+    for (ConfigFile::const_section_iterator i = cfg.sectionBegin(); i != cfg.sectionEnd(); ++i)
+    {
+        string type = str::lower(i->second->value("type"));
 		if (type != "remote") return string();
 		string urlprefix = geturlprefix(i->second->value("path"));
 		if (urlprefix.empty()) return string();
@@ -544,16 +503,14 @@ HTTPInbound::~HTTPInbound()
 
 void HTTPInbound::list(std::vector<std::string>& files)
 {
-    using namespace wibble::str;
-
     m_curl.reset();
 
-    string url = joinpath(m_baseurl, "inbound/list");
+    string url = str::joinpath(m_baseurl, "inbound/list");
     checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
     checked("selecting GET method", curl_easy_setopt(m_curl, CURLOPT_HTTPGET, 1));
 
     // Store the results in memory
-    SStreamState s(m_curl);
+    BufState<string> s(m_curl);
 
     CURLcode code = curl_easy_perform(m_curl);
     if (code != CURLE_OK)
@@ -563,25 +520,23 @@ void HTTPInbound::list(std::vector<std::string>& files)
         s.throwError("querying inbound/list from " + url);
 
     // Parse the results
-    str::Split splitter("\n", s.buf.str());
+    str::Split splitter(s.buf, "\n");
     for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
         files.push_back(*i);
 }
 
-void HTTPInbound::scan(const std::string& fname, const std::string& format, metadata::Eater& consumer)
+void HTTPInbound::scan(const std::string& fname, const std::string& format, metadata_dest_func dest)
 {
-    using namespace wibble::str;
-
     m_curl.reset();
 
-    string url = joinpath(m_baseurl, "inbound/scan");
+    string url = str::joinpath(m_baseurl, "inbound/scan");
     checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
     checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
     string postdata;
     if (format.empty())
-        postdata = "file=" + urlencode(fname);
+        postdata = "file=" + str::encode_url(fname);
     else
-        postdata = "file=" + urlencode(fname) + "&format=" + urlencode(format);
+        postdata = "file=" + str::encode_url(fname) + "&format=" + str::encode_url(format);
 
     //fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
     //fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
@@ -589,7 +544,7 @@ void HTTPInbound::scan(const std::string& fname, const std::string& format, meta
     // Size of postfields argument if it's non text
     checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
 
-    MDStreamState s(m_curl, consumer, m_baseurl);
+    MDStreamState s(m_curl, dest, m_baseurl);
     // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
     CURLcode code = curl_easy_perform(m_curl);
@@ -600,20 +555,18 @@ void HTTPInbound::scan(const std::string& fname, const std::string& format, meta
         s.throwError("querying inbound/scan from " + url);
 }
 
-void HTTPInbound::testdispatch(const std::string& fname, const std::string& format, std::ostream& out)
+void HTTPInbound::testdispatch(const std::string& fname, const std::string& format, NamedFileDescriptor& out)
 {
-    using namespace wibble::str;
-
     m_curl.reset();
 
-    string url = joinpath(m_baseurl, "inbound/testdispatch");
+    string url = str::joinpath(m_baseurl, "inbound/testdispatch");
     checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
     checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
     string postdata;
     if (format.empty())
-        postdata = "file=" + urlencode(fname);
+        postdata = "file=" + str::encode_url(fname);
     else
-        postdata = "file=" + urlencode(fname) + "&format=" + urlencode(format);
+        postdata = "file=" + str::encode_url(fname) + "&format=" + str::encode_url(format);
 
     //fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
     //fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
@@ -632,20 +585,18 @@ void HTTPInbound::testdispatch(const std::string& fname, const std::string& form
         s.throwError("querying inbound/scan from " + url);
 }
 
-void HTTPInbound::dispatch(const std::string& fname, const std::string& format, metadata::Eater& consumer)
+void HTTPInbound::dispatch(const std::string& fname, const std::string& format, metadata_dest_func consumer)
 {
-    using namespace wibble::str;
-
     m_curl.reset();
 
-    string url = joinpath(m_baseurl, "inbound/dispatch");
+    string url = str::joinpath(m_baseurl, "inbound/dispatch");
     checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
     checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
     string postdata;
     if (format.empty())
-        postdata = "file=" + urlencode(fname);
+        postdata = "file=" + str::encode_url(fname);
     else
-        postdata = "file=" + urlencode(fname) + "&format=" + urlencode(format);
+        postdata = "file=" + str::encode_url(fname) + "&format=" + str::encode_url(format);
 
     //fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
     //fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
@@ -666,4 +617,3 @@ void HTTPInbound::dispatch(const std::string& fname, const std::string& format, 
 
 }
 }
-// vim:set ts=4 sw=4:

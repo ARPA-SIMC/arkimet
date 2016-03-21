@@ -1,21 +1,3 @@
-/*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include "config.h"
 
 #include <arki/matcher/tests.h>
@@ -32,6 +14,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::tests;
 
 struct arki_matcher_timerange_shar
 {
@@ -45,8 +28,7 @@ struct arki_matcher_timerange_shar
 TESTGRP(arki_matcher_timerange);
 
 // Try matching GRIB1 timerange
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     // md.set(timerange::GRIB1::create(2, 254u, 22, 23));
 	ensure_matches("timerange:GRIB1", md);
@@ -70,8 +52,7 @@ void to::test<1>()
 }
 
 // Try matching GRIB2 timerange
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	md.set(timerange::GRIB2::create(1, 2, 3, 4));
 
@@ -94,8 +75,7 @@ void to::test<2>()
 }
 
 // Try matching Timedef timerange
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     md.set(timerange::Timedef::createFromYaml("6h,1,3h"));
 
@@ -155,8 +135,7 @@ void to::test<3>()
 }
 
 // Try matching BUFR timerange
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
 	md.set(timerange::BUFR::create(2, 1));
 
@@ -182,8 +161,7 @@ void to::test<4>()
 
 
 // Try some cases that have been buggy
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
 	Metadata md;
 
@@ -197,11 +175,10 @@ void to::test<5>()
 }
 
 // Test timedef matcher parsing
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     {
-        auto_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("Timedef,+72h,1,6h"));
+        unique_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("Timedef,+72h,1,6h"));
         const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
         ensure(m);
 
@@ -218,7 +195,7 @@ void to::test<6>()
     }
 
     {
-        auto_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("Timedef,72h"));
+        unique_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("Timedef,72h"));
         const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
         ensure(m);
 
@@ -231,7 +208,7 @@ void to::test<6>()
     }
 
     {
-        auto_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("Timedef,,-"));
+        unique_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("Timedef,,-"));
         const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
         ensure(m);
 
@@ -243,8 +220,7 @@ void to::test<6>()
 }
 
 // Try matching timedef timerange on GRIB1
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     md.set(timerange::GRIB1::create(0, 0, 60, 0));
     ensure_matches("timerange:Timedef,1h", md);
@@ -264,8 +240,7 @@ void to::test<7>()
 }
 
 // Try matching timedef timerange on GRIB2
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
     // On GRIB2
     md.set(timerange::GRIB2::create(3, 1, 1, 3));
@@ -280,8 +255,7 @@ void to::test<8>()
 }
 
 // Try matching timedef timerange on Timedef
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
     md.set(timerange::Timedef::createFromYaml("72h,1,6h"));
     ensure_matches("timerange:Timedef,+72h", md);
@@ -334,8 +308,7 @@ void to::test<9>()
 }
 
 // Try matching timedef timerange on BUFR
-template<> template<>
-void to::test<10>()
+def_test(10)
 {
     md.set(timerange::BUFR::create(2, 1));
     ensure_matches("timerange:Timedef,+2h", md);
@@ -347,8 +320,7 @@ void to::test<10>()
 }
 
 // Try matching timedef timerange on known values
-template<> template<>
-void to::test<11>()
+def_test(11)
 {
     md.set(Timerange::decodeString("Timedef(3h)"));
     ensure_matches("timerange:Timedef,+3h,-", md);
@@ -391,8 +363,7 @@ void to::test<11>()
 }
 
 // Test some serialisation scenarios
-template<> template<>
-void to::test<12>()
+def_test(12)
 {
     Matcher m = Matcher::parse("timerange:Timedef,,1,3h");
     //Matcher m1 = Matcher::parse(m.toStringExpanded());

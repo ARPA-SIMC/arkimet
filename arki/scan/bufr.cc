@@ -1,27 +1,4 @@
-/*
- * scan/bufr - Scan a BUFR file for metadata.
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include <arki/scan/bufr.h>
 #include <arki/utils/files.h>
 #include <dballe/file.h>
@@ -37,9 +14,7 @@
 #include <arki/types/run.h>
 #include <arki/types/timerange.h>
 #include <arki/scan/any.h>
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
-#include <wibble/grcal/grcal.h>
+#include <arki/utils/sys.h>
 #include <sstream>
 #include <cstring>
 #include <stdint.h>
@@ -50,10 +25,10 @@
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace wreport;
 using namespace dballe;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace scan {
@@ -62,39 +37,36 @@ namespace bufr {
 
 struct BufrValidator : public Validator
 {
-	virtual ~BufrValidator() {}
+    std::string format() const override { return "BUFR"; }
 
-	// Validate data found in a file
-	virtual void validate(int fd, off_t offset, size_t size, const std::string& fname) const
-	{
-		char buf[4];
-		ssize_t res;
-		if (size < 8)
-			throw wibble::exception::Consistency("checking BUFR segment in file " + fname, "buffer is shorter than 8 bytes");
-		if ((res = pread(fd, buf, 4, offset)) == -1)
-			throw wibble::exception::System("reading 4 bytes of BUFR header from " + fname);
-		if (res != 4)
-			throw wibble::exception::Consistency("reading 4 bytes of BUFR header from " + fname, "partial read");
-		if (memcmp(buf, "BUFR", 4) != 0)
-			throw wibble::exception::Consistency("checking BUFR segment in file " + fname, "segment does not start with 'BUFR'");
-		if ((res = pread(fd, buf, 4, offset + size - 4)) == -1)
-			throw wibble::exception::System("reading 4 bytes of BUFR trailer from " + fname);
-		if (res != 4)
-			throw wibble::exception::Consistency("reading 4 bytes of BUFR trailer from " + fname, "partial read");
-		if (memcmp(buf, "7777", 4) != 0)
-			throw wibble::exception::Consistency("checking BUFR segment in file " + fname, "segment does not end with 'BUFR'");
-	}
+    // Validate data found in a file
+    void validate_file(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
+    {
+        if (size < 8)
+            throw_check_error(fd, offset, "file segment to check is only " + std::to_string(size) + " bytes (minimum for a BUFR is 8)");
 
-	// Validate a memory buffer
-	virtual void validate(const void* buf, size_t size) const
-	{
-		if (size < 8)
-			throw wibble::exception::Consistency("checking BUFR buffer", "buffer is shorter than 8 bytes");
-		if (memcmp(buf, "BUFR", 4) != 0)
-			throw wibble::exception::Consistency("checking BUFR buffer", "buffer does not start with 'BUFR'");
-		if (memcmp((const char*)buf + size - 4, "7777", 4) != 0)
-			throw wibble::exception::Consistency("checking BUFR buffer", "buffer does not end with '7777'");
-	}
+        char buf[4];
+        ssize_t res;
+        if ((res = fd.pread(buf, 4, offset)) != 4)
+            throw_check_error(fd, offset, "read only " + std::to_string(res) + "/4 bytes of BUFR header");
+        if (memcmp(buf, "BUFR", 4) != 0)
+            throw_check_error(fd, offset, "data does not start with 'BUFR'");
+        if ((res = fd.pread(buf, 4, offset + size - 4)) != 4)
+            throw_check_error(fd, offset, "read only " + std::to_string(res) + "/4 bytes of BUFR trailer");
+        if (memcmp(buf, "7777", 4) != 0)
+            throw_check_error(fd, offset, "data does not end with '7777'");
+    }
+
+    // Validate a memory buffer
+    void validate_buf(const void* buf, size_t size) const override
+    {
+        if (size < 8)
+            throw_check_error("buffer is shorter than 8 bytes");
+        if (memcmp(buf, "BUFR", 4) != 0)
+            throw_check_error("buffer does not start with 'BUFR'");
+        if (memcmp((const char*)buf + size - 4, "7777", 4) != 0)
+            throw_check_error("buffer does not end with '7777'");
+    }
 };
 
 static BufrValidator bufr_validator;
@@ -106,9 +78,9 @@ const Validator& validator() { return bufr_validator; }
 
 Bufr::Bufr() : file(0), importer(0), extras(0)
 {
-	msg::Importer::Options opts;
-	opts.simplified = true;
-	importer = msg::Importer::create(File::BUFR, opts).release();
+    msg::Importer::Options opts;
+    opts.simplified = true;
+    importer = msg::Importer::create(dballe::File::BUFR, opts).release();
 
 #ifdef HAVE_LUA
 	extras = new bufr::BufrLua;
@@ -128,7 +100,7 @@ void Bufr::open(const std::string& filename)
 {
     string basedir, relname;
     utils::files::resolve_path(filename, basedir, relname);
-    open(sys::fs::abspath(filename), basedir, relname);
+    open(sys::abspath(filename), basedir, relname);
 }
 
 void Bufr::open(const std::string& filename, const std::string& basedir, const std::string& relname)
@@ -139,9 +111,9 @@ void Bufr::open(const std::string& filename, const std::string& basedir, const s
     this->basedir = basedir;
     this->relname = relname;
     if (filename == "-")
-        file = File::create(File::BUFR, stdin, false, "standard input").release();
+        file = dballe::File::create(dballe::File::BUFR, stdin, false, "standard input").release();
     else
-        file = File::create(File::BUFR, filename.c_str(), "r").release();
+        file = dballe::File::create(dballe::File::BUFR, filename.c_str(), "r").release();
 }
 
 void Bufr::close()
@@ -164,9 +136,9 @@ protected:
 
 public:
     dballe::msg::Importer& importer;
-    auto_ptr<reftime::Position> reftime;
-    auto_ptr<Origin> origin;
-    auto_ptr<product::BUFR> product;
+    unique_ptr<reftime::Position> reftime;
+    unique_ptr<Origin> origin;
+    unique_ptr<product::BUFR> product;
     Message* msg;
 
     Harvest(dballe::msg::Importer& importer) : importer(importer), msg(0) {}
@@ -175,7 +147,7 @@ public:
     {
         Datetime dt = msg.get_datetime();
         if (dt.is_missing()) return;
-        reftime->time = types::Time(
+        reftime->time = core::Time(
                 dt.year, dt.month, dt.day,
                 dt.hour, dt.minute, dt.second);
     }
@@ -197,7 +169,7 @@ public:
 
         // Set reference time
         // FIXME: WRONG! The header date should ALWAYS be ignored
-        reftime = reftime::Position::create(types::Time(
+        reftime = reftime::Position::create(core::Time(
                 bulletin->rep_year, bulletin->rep_month, bulletin->rep_day,
                 bulletin->rep_hour, bulletin->rep_minute, bulletin->rep_second));
 
@@ -211,12 +183,11 @@ public:
                 origin = Origin::createBUFR(bulletin->originating_centre, bulletin->originating_subcentre);
                 product = product::BUFR::create(bulletin->data_category, bulletin->data_subcategory, bulletin->data_subcategory_local);
                 break;
-            default:
-                {
-                    std::stringstream str;
-                    str << "edition is " << bulletin->edition_number << " but I can only handle 3 and 4";
-                    throw wibble::exception::Consistency("extracting metadata from BUFR message", str.str());
-                }
+            default: {
+                std::stringstream ss;
+                ss << "cannot extract metadata from BUFR message: edition is " << bulletin->edition_number << " but I can only handle 3 and 4";
+                throw std::runtime_error(ss.str());
+            }
         }
 
         // Default to a generic product unless we find more info later
@@ -286,19 +257,19 @@ bool Bufr::do_scan(Metadata& md)
 
     // Set source
     if (false)
-        md.set_source_inline("bufr", wibble::sys::Buffer(rmsg.data.data(), rmsg.data.size()));
+        md.set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
     else {
-        auto_ptr<Source> source = Source::createBlob("bufr", basedir, relname, rmsg.offset, rmsg.data.size());
-        md.set_source(source);
-        md.set_cached_data(wibble::sys::Buffer(rmsg.data.data(), rmsg.data.size()));
+        unique_ptr<Source> source = Source::createBlob("bufr", basedir, relname, rmsg.offset, rmsg.data.size());
+        md.set_source(move(source));
+        md.set_cached_data(vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
     }
 
     Harvest harvest(*importer);
     harvest.harvest_from_dballe(rmsg, md);
 
-    md.set(harvest.reftime);
-    md.set(harvest.origin);
-    md.set(harvest.product);
+    md.set(move(harvest.reftime));
+    md.set(move(harvest.origin));
+    md.set(move(harvest.product));
 
     if (extras && harvest.msg)
     {
@@ -311,13 +282,13 @@ bool Bufr::do_scan(Metadata& md)
     const reftime::Position* rt = md.get<types::reftime::Position>();
     if (rt)
     {
-        if (rt->time.vals[0] <= 0)
-            md.unset(types::TYPE_REFTIME);
+        if (rt->time.ye <= 0)
+            md.unset(TYPE_REFTIME);
         else
         {
-            types::Time t = rt->time;
-            wibble::grcal::date::normalise(t.vals);
-            if (t != rt->time) md.unset(types::TYPE_REFTIME);
+            core::Time t = rt->time;
+            t.normalise();
+            if (t != rt->time) md.unset(TYPE_REFTIME);
         }
     }
 

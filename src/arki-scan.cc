@@ -1,30 +1,5 @@
-/*
- * arki-scan - Scan files for metadata and import them into datasets.
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
-
+#include <arki/utils/commandline/parser.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/dataset.h>
@@ -37,9 +12,10 @@
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
+using namespace arki::utils;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public runtime::CommandLine
@@ -56,24 +32,24 @@ struct Options : public runtime::CommandLine
 
 }
 }
+}
 
 int main(int argc, const char* argv[])
 {
-	wibble::commandline::Options opts;
-	
-	try {
-		if (opts.parse(argc, argv))
-			return 0;
+    commandline::Options opts;
+    try {
+        if (opts.parse(argc, argv))
+            return 0;
 
 		runtime::init();
 
 		opts.setupProcessing();
 
-		bool all_successful = true;
-		for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
-				i != opts.inputInfo.sectionEnd(); ++i)
-		{
-			auto_ptr<ReadonlyDataset> ds = opts.openSource(*i->second);
+        bool all_successful = true;
+        for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
+                i != opts.inputInfo.sectionEnd(); ++i)
+        {
+            unique_ptr<dataset::Reader> ds = opts.openSource(*i->second);
 
 			bool success = true;
 			try {
@@ -85,7 +61,7 @@ int main(int argc, const char* argv[])
 				success = false;
 			}
 
-			opts.closeSource(ds, success);
+            opts.closeSource(move(ds), success);
 
 			// Take note if something went wrong
 			if (!success) all_successful = false;
@@ -99,14 +75,12 @@ int main(int argc, const char* argv[])
 			return 2;
     } catch (runtime::HandledByCommandLineParser& e) {
         return e.status;
-	} catch (wibble::exception::BadOption& e) {
-		cerr << e.desc() << endl;
-		opts.outputHelp(cerr);
-		return 1;
-	} catch (std::exception& e) {
-		cerr << e.what() << endl;
-		return 1;
-	}
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
+        opts.outputHelp(cerr);
+        return 1;
+    } catch (std::exception& e) {
+        cerr << e.what() << endl;
+        return 1;
+    }
 }
-
-// vim:set ts=4 sw=4:

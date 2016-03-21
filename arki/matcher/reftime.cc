@@ -1,35 +1,13 @@
-/*
- * matcher/reftime - Reftime matcher
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/matcher/reftime.h>
 #include <arki/matcher/reftime/parser.h>
 #include <arki/matcher/utils.h>
-#include <arki/types/time.h>
+#include <arki/core/time.h>
 #include <cctype>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
 using namespace arki::matcher::reftime;
+using arki::core::Time;
 
 namespace arki {
 namespace matcher {
@@ -58,14 +36,14 @@ bool MatchReftime::matchItem(const Type& o) const
     if (const types::reftime::Position* po = dynamic_cast<const types::reftime::Position*>(&o))
     {
         for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
-            if (!(*i)->match(po->time.vals))
+            if (!(*i)->match(po->time))
                 return false;
         return true;
     }
     else if (const types::reftime::Period* pe = dynamic_cast<const types::reftime::Period*>(&o))
     {
         for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
-            if (!(*i)->match(pe->begin.vals, pe->end.vals))
+            if (!(*i)->match(pe->begin, pe->end))
                 return false;
         return true;
     }
@@ -87,7 +65,7 @@ std::string MatchReftime::sql(const std::string& column) const
 	return res + ")";
 }
 
-bool MatchReftime::restrict_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const
+bool MatchReftime::restrict_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
 {
     for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
         if (!(*i)->restrict_date_range(begin, end))
@@ -112,18 +90,16 @@ std::string MatchReftime::toString() const
 	return res;
 }
 
-MatchReftime* MatchReftime::parse(const std::string& pattern)
+std::unique_ptr<MatchReftime> MatchReftime::parse(const std::string& pattern)
 {
-	return new MatchReftime(pattern);
+    return unique_ptr<MatchReftime>(new MatchReftime(pattern));
 }
 
 
 void MatchReftime::init()
 {
-    Matcher::register_matcher("reftime", types::TYPE_REFTIME, (MatcherType::subexpr_parser)MatchReftime::parse);
+    Matcher::register_matcher("reftime", TYPE_REFTIME, (MatcherType::subexpr_parser)MatchReftime::parse);
 }
 
 }
 }
-
-// vim:set ts=4 sw=4:

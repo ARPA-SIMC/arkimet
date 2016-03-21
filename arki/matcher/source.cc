@@ -1,35 +1,10 @@
-/*
- * matcher/source - Source matcher
- *
- * Copyright (C) 2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
-#include <arki/matcher/source.h>
-#include <arki/matcher/utils.h>
-#include <arki/metadata.h>
+#include "arki/matcher/source.h"
+#include "arki/matcher/utils.h"
 #include <sstream>
 #include <iomanip>
 
 using namespace std;
-using namespace wibble;
 
 namespace arki {
 namespace matcher {
@@ -73,7 +48,7 @@ std::string MatchRunMinute::toString() const
 }
 #endif
 
-MatchSource* MatchSource::parse(const std::string& pattern)
+unique_ptr<MatchSource> MatchSource::parse(const std::string& pattern)
 {
 #if 0
     size_t beg = 0;
@@ -90,14 +65,16 @@ MatchSource* MatchSource::parse(const std::string& pattern)
     {
         case types::Run::MINUTE: return new MatchRunMinute(rest);
         default:
-                                 throw wibble::exception::Consistency("parsing type of run to match", "unsupported run style: " + name);
+                                 throw_consistency_error("parsing type of run to match", "unsupported run style: " + name);
     }
 #endif
+    // TODO: actually implement source matching
+    return unique_ptr<MatchSource>();
 }
 
 void MatchSource::init()
 {
-    Matcher::register_matcher("source", types::TYPE_SOURCE, (MatcherType::subexpr_parser)MatchSource::parse);
+    Matcher::register_matcher("source", TYPE_SOURCE, (MatcherType::subexpr_parser)MatchSource::parse);
 }
 
 }

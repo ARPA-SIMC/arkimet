@@ -1,50 +1,24 @@
-/*
- * dataset/index/contents - Index for data files and their contents
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include "contents.h"
-#include <arki/dataset/maintenance.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/matcher.h>
-#include <arki/matcher/reftime.h>
-#include <arki/dataset.h>
-#include <arki/types/reftime.h>
-#include <arki/types/source.h>
-#include <arki/types/assigneddataset.h>
-#include <arki/types/value.h>
-#include <arki/summary.h>
-#include <arki/summary/stats.h>
-#include <arki/utils/files.h>
-#include <arki/sort.h>
-#include <arki/nag.h>
-#include <arki/runtime/io.h>
-
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
-#include <wibble/string.h>
-#include <wibble/grcal/grcal.h>
+#include "arki/dataset/maintenance.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/matcher.h"
+#include "arki/matcher/reftime.h"
+#include "arki/dataset.h"
+#include "arki/types/reftime.h"
+#include "arki/types/source.h"
+#include "arki/types/assigneddataset.h"
+#include "arki/types/value.h"
+#include "arki/summary.h"
+#include "arki/summary/stats.h"
+#include "arki/utils/files.h"
+#include "arki/sort.h"
+#include "arki/nag.h"
+#include "arki/runtime/io.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 
 #include <sstream>
 #include <ctime>
@@ -53,12 +27,12 @@
 #include <cstdlib>
 
 using namespace std;
-using namespace wibble;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::utils::sqlite;
 using namespace arki::dataset::index;
+using arki::core::Time;
 
 namespace arki {
 namespace dataset {
@@ -69,23 +43,23 @@ struct IndexGlobalData
 	std::set<types::Code> all_components;
 
 	IndexGlobalData() {
-		all_components.insert(types::TYPE_ORIGIN);
-		all_components.insert(types::TYPE_PRODUCT);
-		all_components.insert(types::TYPE_LEVEL);
-		all_components.insert(types::TYPE_TIMERANGE);
-		all_components.insert(types::TYPE_AREA);
-		all_components.insert(types::TYPE_PRODDEF);
-		all_components.insert(types::TYPE_RUN);
-		//all_components.insert(types::TYPE_REFTIME);
-		all_components.insert(types::TYPE_QUANTITY);
-		all_components.insert(types::TYPE_TASK);
+		all_components.insert(TYPE_ORIGIN);
+		all_components.insert(TYPE_PRODUCT);
+		all_components.insert(TYPE_LEVEL);
+		all_components.insert(TYPE_TIMERANGE);
+		all_components.insert(TYPE_AREA);
+		all_components.insert(TYPE_PRODDEF);
+		all_components.insert(TYPE_RUN);
+		//all_components.insert(TYPE_REFTIME);
+		all_components.insert(TYPE_QUANTITY);
+		all_components.insert(TYPE_TASK);
 	}
 };
 static IndexGlobalData igd;
 
 
 Contents::Contents(const ConfigFile& cfg)
-    : m_name(cfg.value("name")), m_root(sys::fs::abspath(cfg.value("path"))),
+    : m_name(cfg.value("name")), m_root(sys::abspath(cfg.value("path"))),
       m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
       m_uniques(0), m_others(0), m_smallfiles(ConfigFile::boolValue(cfg.value("smallfiles"))),
       scache(str::joinpath(m_root, ".summaries"))
@@ -107,7 +81,7 @@ Contents::Contents(const ConfigFile& cfg)
 
 	// What metadata components we use to create a unique id
 	std::set<types::Code> unique_members = parseMetadataBitmask(cfg.value("unique"));
-	unique_members.erase(types::TYPE_REFTIME);
+	unique_members.erase(TYPE_REFTIME);
 	if (not unique_members.empty())
 		m_uniques = new Aggregate(m_db, "mduniq", unique_members);
 
@@ -135,9 +109,9 @@ std::set<types::Code> Contents::available_other_tables() const
 	q.compile("SELECT name FROM sqlite_master WHERE type='table'");
 	while (q.step())
 	{
-		string name = q.fetchString(0);
-		if (!str::startsWith(name, "sub_"))
-			continue;
+        string name = q.fetchString(0);
+        if (!str::startswith(name, "sub_"))
+            continue;
 		types::Code code = types::checkCodeName(name.substr(4));
 		if (code != TYPE_INVALID
 		 && unique_members.find(code) == unique_members.end()
@@ -197,7 +171,7 @@ std::set<types::Code> Contents::unique_codes() const
 {
 	std::set<types::Code> res;
 	if (m_uniques) res = m_uniques->members();
-	res.insert(types::TYPE_REFTIME);
+	res.insert(TYPE_REFTIME);
 	return res;
 }
 
@@ -229,7 +203,7 @@ int Contents::id(const Metadata& md) const
     int idx = 0;
     const reftime::Position* rt = md.get<reftime::Position>();
     if (!rt) return -1;
-    string sqltime = rt->time.toSQL();
+    string sqltime = rt->time.to_sql();
     m_get_id.bind(++idx, sqltime);
 
 	if (m_uniques)
@@ -262,7 +236,7 @@ bool Contents::get_current(const Metadata& md, Metadata& current) const
     int idx = 0;
     const reftime::Position* rt = md.get<reftime::Position>();
     if (!rt) return -1;
-    string sqltime = rt->time.toSQL();
+    string sqltime = rt->time.to_sql();
     m_get_current.bind(++idx, sqltime);
 
     int id_unique = -1;
@@ -294,7 +268,15 @@ size_t Contents::count() const
 	return res;
 }
 
-void Contents::scan_files(maintenance::IndexFileVisitor& v) const
+void Contents::list_segments(std::function<void(const std::string&)> dest)
+{
+    Query sq("list_segments", m_db);
+    sq.compile("SELECT DISTINCT file FROM md ORDER BY file");
+    while (sq.step())
+        dest(sq.fetchString(0));
+}
+
+void Contents::scan_files(segment::contents_func v)
 {
     string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
     if (m_uniques) query += ", m.uniq";
@@ -315,23 +297,23 @@ void Contents::scan_files(maintenance::IndexFileVisitor& v) const
         {
             if (!last_file.empty())
             {
-                v(last_file, mdc);
+                v(last_file, SEGMENT_OK, mdc);
                 mdc.clear();
             }
             last_file = file;
         }
 
         // Rebuild the Metadata
-        auto_ptr<Metadata> md(new Metadata);
+        unique_ptr<Metadata> md(new Metadata);
         build_md(mdq, *md);
-        mdc.eat(md);
+        mdc.acquire(move(md));
     }
 
     if (!last_file.empty())
-        v(last_file, mdc);
+        v(last_file, SEGMENT_OK, mdc);
 }
 
-void Contents::scan_file(const std::string& relname, metadata::Eater& consumer, const std::string& orderBy) const
+void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& orderBy) const
 {
 	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 	if (m_uniques) query += ", m.uniq";
@@ -347,24 +329,28 @@ void Contents::scan_file(const std::string& relname, metadata::Eater& consumer, 
     while (mdq.step())
     {
         // Rebuild the Metadata
-        auto_ptr<Metadata> md(new Metadata);
+        unique_ptr<Metadata> md(new Metadata);
         build_md(mdq, *md);
-        consumer.eat(md);
+        dest(move(md));
     }
 }
 
-std::string Contents::max_file_reftime(const std::string& relname) const
+bool Contents::segment_timespan(const std::string& relname, Time& start_time, Time& end_time) const
 {
-	Query sq("max_file_reftime", m_db);
-	sq.compile("SELECT MAX(reftime) FROM md WHERE file=?");
-	sq.bind(1, relname);
-	string res;
-	while (sq.step())
-		res = sq.fetchString(0);
-	return res;
+    Query sq("max_file_reftime", m_db);
+    sq.compile("SELECT MIN(reftime), MAX(reftime) FROM md WHERE file=?");
+    sq.bind(1, relname);
+    bool res = false;
+    while (sq.step())
+    {
+        start_time.set_sql(sq.fetchString(0));
+        end_time.set_sql(sq.fetchString(1));
+        res = true;
+    }
+    return res;
 }
 
-static void db_time_extremes(utils::sqlite::SQLiteDB& db, auto_ptr<Time>& begin, auto_ptr<Time>& end)
+static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begin, unique_ptr<Time>& end)
 {
     // SQLite can compute min and max of an indexed column very fast,
     // provided that it is the ONLY thing queried.
@@ -372,14 +358,14 @@ static void db_time_extremes(utils::sqlite::SQLiteDB& db, auto_ptr<Time>& begin,
     q1.compile("SELECT MIN(reftime) FROM md");
     while (q1.step())
         if (!q1.isNULL(0))
-            begin.reset(new Time(Time::create_from_SQL(q1.fetchString(0))));
+            begin.reset(new Time(Time::create_sql(q1.fetchString(0))));
 
     Query q2("min_date", db);
     q2.compile("SELECT MAX(reftime) FROM md");
     while (q2.step())
     {
         if (!q2.isNULL(0))
-            end.reset(new Time(Time::create_from_SQL(q2.fetchString(0))));
+            end.reset(new Time(Time::create_sql(q2.fetchString(0))));
     }
 }
 
@@ -390,8 +376,8 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
 	// Add database constraints
 	if (not m.empty())
 	{
-        auto_ptr<Time> begin;
-        auto_ptr<Time> end;
+        unique_ptr<Time> begin;
+        unique_ptr<Time> end;
         if (!m.restrict_date_range(begin, end))
             // The matcher matches an impossible datetime span: convert it
             // into an impossible clause that evaluates quickly
@@ -402,8 +388,8 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
         else
         {
             // Compare with the reftime bounds in the database
-            auto_ptr<Time> db_begin;
-            auto_ptr<Time> db_end;
+            unique_ptr<Time> db_begin;
+            unique_ptr<Time> db_end;
             db_time_extremes(m_db, db_begin, db_end);
             if (db_begin.get() && db_end.get())
             {
@@ -417,30 +403,22 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
                    end.reset(new Time(*db_end));
                 else if (*end > *db_end)
                    *end = *db_end;
-                long long int qrange = grcal::date::duration(begin->vals, end->vals);
-                long long int dbrange = grcal::date::duration(db_begin->vals, db_end->vals);
+                long long int qrange = Time::duration(*begin, *end);
+                long long int dbrange = Time::duration(*db_begin, *db_end);
                 // If the query chooses less than 20%
                 // if the time span, force the use of
                 // the reftime index
                 if (dbrange > 0 && qrange * 100 / dbrange < 20)
                 {
                     query += " INDEXED BY md_idx_reftime";
-                    constraints.push_back("reftime BETWEEN \'" + begin->toSQL()
-                            + "\' AND \'" + end->toSQL() + "\'");
+                    constraints.push_back("reftime BETWEEN \'" + begin->to_sql()
+                            + "\' AND \'" + end->to_sql() + "\'");
                 }
             }
 
-            const matcher::OR* reftime = m.m_impl->get(types::TYPE_REFTIME);
-			string constraint = "(";
-			for (matcher::OR::const_iterator j = reftime->begin(); j != reftime->end(); ++j)
-			{
-				if (j != reftime->begin())
-					constraint += " OR ";
-				constraint += (*j)->upcast<matcher::MatchReftime>()->sql("reftime");
-			}
-			constraint += ")";
-			constraints.push_back(constraint);
-		}
+            if (auto reftime = m.get(TYPE_REFTIME))
+                constraints.push_back(reftime->toReftimeSQL("reftime"));
+        }
 
 		// Join with the aggregate tables and add constraints on aggregate tables
 		if (m_uniques)
@@ -466,23 +444,22 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
 		return false;
 	*/
 
-	if (!constraints.empty())
-		query += " WHERE " + str::join(constraints.begin(), constraints.end(), " AND ");
-	return true;
+    if (!constraints.empty())
+        query += " WHERE " + str::join(" AND ", constraints.begin(), constraints.end());
+    return true;
 }
 
 void Contents::build_md(Query& q, Metadata& md) const
 {
     // Rebuild the Metadata
-    md.set(types::AssignedDataset::create(m_name, str::fmt(q.fetch<int>(0))));
     md.set_source(Source::createBlob(
             q.fetchString(1), m_root, q.fetchString(2),
             q.fetch<uint64_t>(3), q.fetch<uint64_t>(4)));
     // md.notes = mdq.fetchItems<types::Note>(5);
-    const void* notes_p = q.fetchBlob(5);
+    const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(5);
     int notes_l = q.fetchBytes(5);
-    md.set_notes_encoded(string((const char*)notes_p, notes_l));
-    md.set(Reftime::createPosition(Time::create_from_SQL(q.fetchString(6))));
+    md.set_notes_encoded(vector<uint8_t>(notes_p, notes_p + notes_l));
+    md.set(Reftime::createPosition(Time::create_sql(q.fetchString(6))));
     int j = 7;
     if (m_uniques)
     {
@@ -507,9 +484,9 @@ void Contents::build_md(Query& q, Metadata& md) const
     }
 }
 
-bool Contents::query(const dataset::DataQuery& q, metadata::Eater& consumer) const
+bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
+    string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 
 	if (m_uniques) query += ", m.uniq";
 	if (m_others) query += ", m.other";
@@ -532,7 +509,7 @@ bool Contents::query(const dataset::DataQuery& q, metadata::Eater& consumer) con
 
 	metadata::Collection mdbuf;
 	string last_fname;
-	auto_ptr<runtime::Tempfile> tmpfile;
+	unique_ptr<runtime::Tempfile> tmpfile;
 
 	// Limited scope for mdq, so we finalize the query before starting to
 	// emit results
@@ -555,24 +532,23 @@ bool Contents::query(const dataset::DataQuery& q, metadata::Eater& consumer) con
                 // cluster data by reftime, we guarantee that sorting is
                 // consistent as long as data is required to be sorted by
                 // reftime first.
-				if (mdbuf.size() > 8192)
-				{
+                if (mdbuf.size() > 8192)
+                {
                     // If we pile up too many metadata, write them out
                     if (q.sorter) mdbuf.sort(*q.sorter);
-					if (tmpfile.get() == 0)
-						tmpfile.reset(new runtime::Tempfile);
-					mdbuf.writeTo(tmpfile->stream(), tmpfile->name());
-					tmpfile->stream().flush();
-					mdbuf.clear();
-				}
-				last_fname = srcname;
-			}
+                    if (tmpfile.get() == 0)
+                        tmpfile.reset(new runtime::Tempfile);
+                    mdbuf.write_to(*tmpfile, tmpfile->name());
+                    mdbuf.clear();
+                }
+                last_fname = srcname;
+            }
 
             // Rebuild the Metadata
-            auto_ptr<Metadata> md(new Metadata);
+            unique_ptr<Metadata> md(new Metadata);
             build_md(mdq, *md);
             // Buffer the results in memory, to release the database lock as soon as possible
-            mdbuf.eat(md);
+            mdbuf.acquire(move(md));
         }
 //fprintf(stderr, "POST %zd\n", mdbuf.size());
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
@@ -584,57 +560,19 @@ bool Contents::query(const dataset::DataQuery& q, metadata::Eater& consumer) con
     if (tmpfile.get() != 0)
     {
         metadata::ReadContext rc(tmpfile->name(), m_root);
-        Metadata::readFile(rc, consumer);
+        Metadata::read_file(rc, dest);
     }
 
     // Sort and output the rest
     if (q.sorter) mdbuf.sort(*q.sorter);
 
     // pass it to consumer
-    mdbuf.move_to_eater(consumer);
+    mdbuf.move_to(dest);
 
 //fprintf(stderr, "POSTQ %zd\n", mdbuf.size());
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
 
 	return true;
-}
-
-size_t Contents::produce_nth(metadata::Eater& consumer, size_t idx) const
-{
-    // Buffer results in RAM so we can free the index before starting to read the data
-    metadata::Collection mdbuf;
-    {
-        Query fq("fileq", m_db);
-        fq.compile("SELECT DISTINCT file FROM md ORDER BY file");
-        while (fq.step())
-        {
-            string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
-            if (m_uniques) query += ", m.uniq";
-            if (m_others) query += ", m.other";
-            if (m_smallfiles) query += ", m.data";
-            query += str::fmtf(" FROM md AS m WHERE m.file=? ORDER BY m.offset LIMIT 1 OFFSET %zd", idx);
-
-            Query mdq("mdq", m_db);
-            mdq.compile(query);
-            mdq.bindTransient(1, fq.fetchString(0));
-
-            while (mdq.step())
-            {
-                // Rebuild the Metadata
-                auto_ptr<Metadata> md(new Metadata);
-                build_md(mdq, *md);
-                mdbuf.eat(md);
-            }
-        }
-    }
-
-    // Take note of the size, since mdbuf is about to be destroyed
-    size_t res = mdbuf.size();
-
-    // Pass it to consumer
-    mdbuf.move_to_eater(consumer);
-
-    return res;
 }
 
 void Contents::rebuildSummaryCache()
@@ -674,8 +612,8 @@ void Contents::querySummaryFromDB(const std::string& where, Summary& summary) co
         summary::Stats st;
         st.count = sq.fetch<size_t>(0);
         st.size = sq.fetch<unsigned long long>(1);
-        st.begin = Time::create_from_SQL(sq.fetchString(2));
-        st.end = Time::create_from_SQL(sq.fetchString(3));
+        st.begin = Time::create_sql(sq.fetchString(2));
+        st.end = Time::create_sql(sq.fetchString(3));
 
         // Fill in the metadata fields
         Metadata md;
@@ -701,15 +639,18 @@ void Contents::querySummaryFromDB(const std::string& where, Summary& summary) co
 void Contents::summaryForMonth(int year, int month, Summary& out) const
 {
     if (!scache.read(out, year, month))
-	{
-		int nextyear = year + (month/12);
-		int nextmonth = (month % 12) + 1;
+    {
+        Summary monthly;
+        int nextyear = year + (month/12);
+        int nextmonth = (month % 12) + 1;
 
-        querySummaryFromDB(
-                "reftime >= " + str::fmtf("'%04d-%02d-01 00:00:00'", year, month)
-                + " AND reftime < " + str::fmtf("'%04d-%02d-01 00:00:00'", nextyear, nextmonth), out);
+        char buf[128];
+        snprintf(buf, 128, "reftime >= '%04d-%02d-01 00:00:00' AND reftime < '%04d-%02d-01 00:00:00'",
+                year, month, nextyear, nextmonth);
+        querySummaryFromDB(buf, monthly);
 
-        scache.write(out, year, month);
+        scache.write(monthly, year, month);
+        out.add(monthly);
     }
 }
 
@@ -718,17 +659,17 @@ void Contents::summaryForAll(Summary& out) const
     if (!scache.read(out))
     {
         // Find the datetime extremes in the database
-        auto_ptr<Time> begin;
-        auto_ptr<Time> end;
+        unique_ptr<Time> begin;
+        unique_ptr<Time> end;
         db_time_extremes(m_db, begin, end);
 
         // If there is data in the database, get all the involved
         // monthly summaries
         if (begin.get() && end.get())
         {
-            int year = begin->vals[0];
-            int month = begin->vals[1];
-            while (year < end->vals[0] || (year == end->vals[0] && month <= end->vals[1]))
+            int year = begin->ye;
+            int month = begin->mo;
+            while (year < end->ye || (year == end->ye && month <= end->mo))
             {
                 summaryForMonth(year, month, out);
 
@@ -779,8 +720,8 @@ bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
         summary::Stats st;
         st.count = sq.fetch<size_t>(0);
         st.size = sq.fetch<unsigned long long>(1);
-        st.begin = Time::create_from_SQL(sq.fetchString(2));
-        st.end = Time::create_from_SQL(sq.fetchString(3));
+        st.begin = Time::create_sql(sq.fetchString(2));
+        st.end = Time::create_sql(sq.fetchString(3));
 
         // Fill in the metadata fields
         Metadata md;
@@ -807,25 +748,22 @@ bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
 
 static inline bool range_envelopes_full_month(const Time& begin, const Time& end)
 {
-    bool begins_at_beginning = begin.vals[2] == 1 &&
-        begin.vals[3] == 0 && begin.vals[4] == 0 && begin.vals[5] == 0;
+    bool begins_at_beginning = begin.da == 1 && begin.ho == 0 && begin.mi == 0 && begin.se == 0;
     if (begins_at_beginning)
         return end >= begin.end_of_month();
 
-    bool ends_at_end = end.vals[2] == grcal::date::daysinmonth(end.vals[0], end.vals[1]) &&
-        end.vals[3] == 23 && end.vals[4] == 59 && end.vals[5] == 59;
+    bool ends_at_end = end.da == Time::days_in_month(end.ye, end.mo) && end.ho == 23 && end.mi == 59 && end.se == 59;
     if (ends_at_end)
         return begin <= end.start_of_month();
 
-    return end.vals[0] == begin.vals[0] + begin.vals[1]/12 &&
-        end.vals[1] == (begin.vals[1] % 12) + 1;
+    return end.ye == begin.ye + begin.mo / 12 && end.mo == (begin.mo % 12) + 1;
 }
 
-bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
+bool Contents::query_summary(const Matcher& matcher, Summary& summary)
 {
     // Check if the matcher discriminates on reference times
-    auto_ptr<Time> begin;
-    auto_ptr<Time> end;
+    unique_ptr<Time> begin;
+    unique_ptr<Time> end;
     if (!matcher.restrict_date_range(begin, end))
         return true; // If the matcher contains an impossible reftime, return right away
 
@@ -840,8 +778,8 @@ bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
     }
 
     // Amend open ends with the bounds from the database
-    auto_ptr<Time> db_begin;
-    auto_ptr<Time> db_end;
+    unique_ptr<Time> db_begin;
+    unique_ptr<Time> db_end;
     db_time_extremes(m_db, db_begin, db_end);
     // If the database is empty then the result is empty:
     // we are done
@@ -867,7 +805,7 @@ bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
     }
 
     // If the interval is under a week, query the DB directly
-    long long int range = grcal::date::duration(begin->vals, end->vals);
+    long long int range = Time::duration(*begin, *end);
     if (range <= 7 * 24 * 3600)
         return querySummaryFromDB(matcher, summary);
 
@@ -895,22 +833,21 @@ bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
     {
         Time endmonth = begin->end_of_month();
 
-        bool starts_at_beginning = (begin->vals[2] == 1 &&
-                begin->vals[3] == 0 && begin->vals[4] == 0 && begin->vals[5] == 0);
+        bool starts_at_beginning = (begin->da == 1 && begin->ho == 0 && begin->mi == 0 && begin->se == 0);
         if (starts_at_beginning && endmonth <= *end)
         {
             Summary s;
-            summaryForMonth(begin->vals[0], begin->vals[1], s);
+            summaryForMonth(begin->ye, begin->mo, s);
             s.filter(matcher, summary);
         } else if (endmonth <= *end) {
             Summary s;
-            querySummaryFromDB("reftime >= '" + begin->toSQL() + "'"
-                       " AND reftime < '" + endmonth.toSQL() + "'", s);
+            querySummaryFromDB("reftime >= '" + begin->to_sql() + "'"
+                       " AND reftime < '" + endmonth.to_sql() + "'", s);
             s.filter(matcher, summary);
         } else {
             Summary s;
-            querySummaryFromDB("reftime >= '" + begin->toSQL() + "'"
-                       " AND reftime < '" + end->toSQL() + "'", s);
+            querySummaryFromDB("reftime >= '" + begin->to_sql() + "'"
+                       " AND reftime < '" + end->to_sql() + "'", s);
             s.filter(matcher, summary);
         }
 
@@ -921,9 +858,9 @@ bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
     return true;
 }
 
-bool Contents::checkSummaryCache(std::ostream& log) const
+bool Contents::checkSummaryCache(const dataset::Base& ds, Reporter& reporter) const
 {
-    return scache.check(m_name, log);
+    return scache.check(ds, reporter);
 }
 
 RContents::RContents(const ConfigFile& cfg)
@@ -937,16 +874,24 @@ RContents::~RContents()
 
 void RContents::open()
 {
-	if (m_db.isOpen())
-		throw wibble::exception::Consistency("opening dataset index", "index " + m_pathname + " is already open");
+    if (m_db.isOpen())
+    {
+        stringstream ss;
+        ss << "dataset index " << m_pathname << " is already open";
+        throw runtime_error(ss.str());
+    }
 
-	if (!wibble::sys::fs::access(m_pathname, F_OK))
-		throw wibble::exception::Consistency("opening dataset index", "index " + m_pathname + " does not exist");
-	
-	m_db.open(m_pathname);
-	setupPragmas();
-	
-	initQueries();
+    if (!sys::access(m_pathname, F_OK))
+    {
+        stringstream ss;
+        ss << "dataset index " << m_pathname << " does not exist";
+        throw runtime_error(ss.str());
+    }
+
+    m_db.open(m_pathname);
+    setupPragmas();
+
+    initQueries();
 
     scache.openRO();
 }
@@ -968,10 +913,14 @@ WContents::~WContents()
 
 bool WContents::open()
 {
-	if (m_db.isOpen())
-		throw wibble::exception::Consistency("opening dataset index", "index " + m_pathname + " is already open");
+    if (m_db.isOpen())
+    {
+        stringstream ss;
+        ss << "dataset index " << m_pathname << " is already open";
+        throw runtime_error(ss.str());
+    }
 
-	bool need_create = !wibble::sys::fs::access(m_pathname, F_OK);
+    bool need_create = !sys::access(m_pathname, F_OK);
 
 	m_db.open(m_pathname);
 	setupPragmas();
@@ -1073,8 +1022,8 @@ void WContents::bindInsertParams(Query& q, const Metadata& md, const std::string
 
     if (const reftime::Position* reftime = md.get<reftime::Position>())
     {
-        const int* rt = reftime->time.vals;
-        int len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", rt[0], rt[1], rt[2], rt[3], rt[4], rt[5]);
+        const auto& t = reftime->time;
+        int len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", t.ye, t.mo, t.da, t.ho, t.mi, t.se);
         q.bind(++idx, timebuf, len);
     } else {
         q.bindNull(++idx);
@@ -1145,31 +1094,35 @@ void WContents::replace(Metadata& md, const std::string& file, uint64_t ofs, int
     scache.invalidate(md);
 }
 
-void WContents::remove(int id, std::string& file)
+void WContents::remove(const std::string& relname, off_t ofs)
 {
-	Query fetch_by_id("byid", m_db);
-	fetch_by_id.compile("SELECT file, reftime FROM md WHERE id=?");
-	fetch_by_id.bind(1, id);
-	string reftime;
-	while (fetch_by_id.step())
-	{
-		file = fetch_by_id.fetchString(0);
-		reftime = fetch_by_id.fetchString(1);
-	}
-	if (reftime.empty())
-		throw wibble::exception::Consistency(
-				"removing item with id " + str::fmt(id),
-				"id does not exist in the index");
+    Query fetch_id("byfile", m_db);
+    fetch_id.compile("SELECT id, reftime FROM md WHERE file=? AND offset=?");
+    fetch_id.bind(1, relname);
+    fetch_id.bind(2, ofs);
+    int id = 0;
+    string reftime;
+    while (fetch_id.step())
+    {
+        id = fetch_id.fetch<int>(0);
+        reftime = fetch_id.fetchString(1);
+    }
+    if (reftime.empty())
+    {
+        stringstream ss;
+        ss << "cannot remove item " << relname << ":" << ofs << " because it does not exist in the index";
+        throw runtime_error(ss.str());
+    }
 
     // Invalidate the summary cache for this month
-    Time rt(Time::create_from_SQL(reftime));
-    scache.invalidate(rt.vals[0], rt.vals[1]);
+    Time rt(Time::create_sql(reftime));
+    scache.invalidate(rt.ye, rt.mo);
 
-	// DELETE FROM md WHERE id=?
-	m_delete.reset();
-	m_delete.bind(1, id);
-	while (m_delete.step())
-		;
+    // DELETE FROM md WHERE id=?
+    m_delete.reset();
+    m_delete.bind(1, id);
+    while (m_delete.step())
+        ;
 }
 
 void WContents::reset()
@@ -1196,8 +1149,8 @@ void WContents::reset(const std::string& file)
 		if (fmin.empty())
 			return;
     }
-    Time tmin(Time::create_from_SQL(fmin).start_of_month());
-    Time tmax(Time::create_from_SQL(fmax).start_of_month());
+    Time tmin(Time::create_sql(fmin).start_of_month());
+    Time tmax(Time::create_sql(fmax).start_of_month());
 
 	// Clean the database
 	Query query("reset_datafile", m_db);
@@ -1231,4 +1184,3 @@ void WContents::flush()
 }
 }
 }
-// vim:set ts=4 sw=4:

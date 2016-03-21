@@ -1,36 +1,24 @@
 #ifndef ARKI_METADATA_COLLECTION_H
 #define ARKI_METADATA_COLLECTION_H
 
-/*
- * metadata/collection - In-memory collection of metadata
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// In-memory collection of metadata
 
-#include <arki/metadata/consumer.h>
+#include <arki/defs.h>
 #include <vector>
 #include <string>
-#include <iosfwd>
 
 namespace arki {
 struct Metadata;
 struct Summary;
+
+namespace core {
+struct Time;
+}
+
+namespace dataset {
+struct DataQuery;
+struct Reader;
+}
 
 namespace sort {
 struct Compare;
@@ -41,14 +29,26 @@ namespace metadata {
 /**
  * Consumer that collects all metadata into a vector
  */
-class Collection : public Eater, public Observer
+class Collection
 {
 protected:
     std::vector<Metadata*> vals;
 
 public:
     Collection();
-    virtual ~Collection();
+    Collection(const Collection& o);
+    Collection(Collection&& o) = default;
+    /// Construct a collection filled by the results of query_data
+    Collection(dataset::Reader& ds, const dataset::DataQuery& q);
+    /// Construct a collection filled with the data scanned from the given file
+    /// using scan::any
+    Collection(const std::string& pathname);
+    ~Collection();
+
+    Collection& operator=(const Collection& o);
+    Collection& operator=(Collection&& o) = default;
+
+    bool operator==(const Collection& o) const;
 
     void clear();
     bool empty() const { return vals.empty(); }
@@ -65,11 +65,17 @@ public:
     /// Remove the last element
     void pop_back();
 
+    /// Return a metadata_dest_func that inserts into this collection
+    metadata_dest_func inserter_func();
+
+    /// Append results from a query_data
+    void add(dataset::Reader& ds, const dataset::DataQuery& q);
+
     /// Append a copy of md
-    bool observe(const Metadata& md) override;
+    void push_back(const Metadata& md);
 
     /// Append md
-    bool eat(std::auto_ptr<Metadata> md) override;
+    void acquire(std::unique_ptr<Metadata>&& md);
 
 	/**
 	 * Write all the metadata to a file, atomically, using AtomicWriter
@@ -81,28 +87,19 @@ public:
 	 */
 	void appendTo(const std::string& fname) const;
 
-	/**
-	 * Write all metadata to the given output stream
-	 */
-	void writeTo(std::ostream& out, const std::string& fname) const;
+    /**
+     * Write all metadata to the given output file
+     */
+    void write_to(int out, const std::string& fname) const;
+
+    /// Read metadata from \a pathname and append them to this collection
+    void read_from_file(const std::string& pathname);
 
     /// Add all metadata to a summary
     void add_to_summary(Summary& out) const;
 
-    /**
-     * Send all metadata to an observer
-     */
-    bool send_to_observer(Observer& out) const;
-
-    /**
-     * Send a copy of all metadata to an eater
-     */
-    bool copy_to_eater(Eater& out) const;
-
-    /**
-     * Send all metadata to an eater, emptying this Collection
-     */
-    bool move_to_eater(Eater& out);
+    /// Send all metadata to a consumer function, emptying this Collection
+    bool move_to(metadata_dest_func dest);
 
     /**
      * Strip paths from sources in all Metadata, to make them all refer to a
@@ -131,10 +128,20 @@ public:
 	void sort(const sort::Compare& cmp);
 	void sort(const std::string& cmp);
 	void sort(); // Sort by reftime
+
+    /**
+     * Expand the given begin and end ranges to include the datetime extremes
+     * of this collection.
+     *
+     * If begin and end are unset, set them to the datetime extremes of this
+     * collection.
+     *
+     * Returns true if all the metadata items had a reftime set, false if some
+     * elements had no reftime information.
+     */
+    bool expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
 };
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

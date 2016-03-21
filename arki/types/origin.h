@@ -1,28 +1,6 @@
 #ifndef ARKI_TYPES_ORIGIN_H
 #define ARKI_TYPES_ORIGIN_H
 
-/*
- * types/origin - Originating centre metadata item
- *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/types.h>
 
 struct lua_State;
@@ -65,9 +43,9 @@ struct Origin : public types::StyledType<Origin>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::auto_ptr<Origin> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Origin> decodeString(const std::string& val);
-    static std::auto_ptr<Origin> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Origin> decode(BinaryDecoder& dec);
+    static std::unique_ptr<Origin> decodeString(const std::string& val);
+    static std::unique_ptr<Origin> decodeMapping(const emitter::memory::Mapping& val);
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const = 0;
@@ -78,11 +56,11 @@ struct Origin : public types::StyledType<Origin>
     // Register this type tree with the type system
     static void init();
 
-    static std::auto_ptr<Origin> createGRIB1(unsigned char centre, unsigned char subcentre, unsigned char process);
-    static std::auto_ptr<Origin> createGRIB2(unsigned short centre, unsigned short subcentre,
+    static std::unique_ptr<Origin> createGRIB1(unsigned char centre, unsigned char subcentre, unsigned char process);
+    static std::unique_ptr<Origin> createGRIB2(unsigned short centre, unsigned short subcentre,
                                              unsigned char processtype, unsigned char bgprocessid, unsigned char processid);
-    static std::auto_ptr<Origin> createBUFR(unsigned char centre, unsigned char subcentre);
-    static std::auto_ptr<Origin> createODIMH5(const std::string& wmo, const std::string& rad, const std::string& plc);
+    static std::unique_ptr<Origin> createBUFR(unsigned char centre, unsigned char subcentre);
+    static std::unique_ptr<Origin> createODIMH5(const std::string& wmo, const std::string& rad, const std::string& plc);
 };
 
 namespace origin {
@@ -102,7 +80,7 @@ public:
 	unsigned process() const { return m_process; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -113,8 +91,8 @@ public:
     bool equals(const Type& o) const override;
 
     GRIB1* clone() const override;
-    static std::auto_ptr<GRIB1> create(unsigned char centre, unsigned char subcentre, unsigned char process);
-    static std::auto_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB1> create(unsigned char centre, unsigned char subcentre, unsigned char process);
+    static std::unique_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -139,7 +117,7 @@ public:
 	unsigned processid() const { return m_processid; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -150,9 +128,9 @@ public:
     bool equals(const Type& o) const override;
 
     GRIB2* clone() const override;
-    static std::auto_ptr<GRIB2> create(unsigned short centre, unsigned short subcentre,
+    static std::unique_ptr<GRIB2> create(unsigned short centre, unsigned short subcentre,
             unsigned char processtype, unsigned char bgprocessid, unsigned char processid);
-    static std::auto_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -171,7 +149,7 @@ public:
 	unsigned subcentre() const { return m_subcentre; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -182,8 +160,8 @@ public:
     bool equals(const Type& o) const override;
 
     BUFR* clone() const override;
-    static std::auto_ptr<BUFR> create(unsigned char centre, unsigned char subcentre);
-    static std::auto_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<BUFR> create(unsigned char centre, unsigned char subcentre);
+    static std::unique_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -204,7 +182,7 @@ public:
 	const std::string& getPLC() const { return m_PLC; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -215,8 +193,8 @@ public:
     bool equals(const Type& o) const override;
 
     ODIMH5* clone() const override;
-    static std::auto_ptr<ODIMH5> create(const std::string& wmo, const std::string& rad, const std::string& plc);
-    static std::auto_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<ODIMH5> create(const std::string& wmo, const std::string& rad, const std::string& plc);
+    static std::unique_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;

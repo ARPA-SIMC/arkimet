@@ -1,38 +1,16 @@
-/*
- * dataset/http/inbound - Server-side remote inbound HTTP server
- *
- * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/dataset/http/inbound.h>
 #include <arki/dataset/http/server.h>
 #include <arki/dataset/file.h>
 #include <arki/dispatcher.h>
+#include <arki/types/source/blob.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/metadata/collection.h>
 #include <arki/configfile.h>
-#include <arki/utils/fd.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/string.h>
+#include <arki/utils/sys.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 
 namespace arki {
@@ -41,7 +19,7 @@ namespace http {
 
 InboundParams::InboundParams()
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     file = add<ParamSingle>("file");
     format = add<ParamSingle>("format");
@@ -52,7 +30,7 @@ InboundServer::InboundServer(const ConfigFile& import_config, const std::string&
 {
 }
 
-void InboundServer::do_scan(const InboundParams& parms, wibble::net::http::Request& req)
+void InboundServer::do_scan(const InboundParams& parms, net::http::Request& req)
 {
     // Build the full file name
     string fname = str::joinpath(root, *parms.file);
@@ -67,22 +45,26 @@ void InboundServer::do_scan(const InboundParams& parms, wibble::net::http::Reque
         info->setValue("format", *parms.format);
 
     // Build a dataset to scan the file
-    auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+    unique_ptr<Reader> ds(dataset::File::create(*info));
 
     // Response header generator
     StreamHeaders headers(req, str::basename(*parms.file));
     headers.ext = "arkimet";
 
-    MetadataStreamer cons(headers);
-    ds->queryData(dataset::DataQuery(Matcher::parse("")), cons);
+    NamedFileDescriptor out(headers.req.sock, "socket");
+    ds->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+        headers.sendIfNotFired();
+        md->write(out);
+        return true;
+    });
 
     // If we had empty output, headers were not sent: catch up
     headers.sendIfNotFired();
 }
 
-void InboundServer::do_testdispatch(const InboundParams& parms, wibble::net::http::Request& req)
+void InboundServer::do_testdispatch(const InboundParams& parms, net::http::Request& req)
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     bool can_import = import_config.sectionSize() > 0;
     if (!can_import)
@@ -101,42 +83,32 @@ void InboundServer::do_testdispatch(const InboundParams& parms, wibble::net::htt
         info->setValue("format", *parms.format);
 
     // Build a dataset to scan the file
-    auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+    unique_ptr<Reader> ds(dataset::File::create(*info));
 
-    struct Simulator : public metadata::Eater
-    {
-        TestDispatcher td;
-        stringstream str;
+    stringstream str;
+    TestDispatcher td(import_config, str);
 
-        Simulator(const ConfigFile& cfg)
-            : td(cfg, str) {}
-
-        bool eat(auto_ptr<Metadata> md) override
+    ds->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+        /*Dispatcher::Outcome res =*/ td.dispatch(move(md), [](unique_ptr<Metadata>) { return true; });
+        /*
+        switch (res)
         {
-            metadata::Collection mdc;
-            /*Dispatcher::Outcome res =*/ td.dispatch(md, mdc);
-            /*
-            switch (res)
-            {
-                case Dispatcher::DISP_OK: str << "<b>Imported ok</b>"; break;
-                case Dispatcher::DISP_DUPLICATE_ERROR: str << "<b>Imported as duplicate</b>"; break;
-                case Dispatcher::DISP_ERROR: str << "<b>Imported as error</b>"; break;
-                case Dispatcher::DISP_NOTWRITTEN: str << "<b>Not imported anywhere: do not delete the original</b>"; break;
-                default: str << "<b>Unknown outcome</b>"; break;
-            }
-            */
-            return true;
+            case Dispatcher::DISP_OK: str << "<b>Imported ok</b>"; break;
+            case Dispatcher::DISP_DUPLICATE_ERROR: str << "<b>Imported as duplicate</b>"; break;
+            case Dispatcher::DISP_ERROR: str << "<b>Imported as error</b>"; break;
+            case Dispatcher::DISP_NOTWRITTEN: str << "<b>Not imported anywhere: do not delete the original</b>"; break;
+            default: str << "<b>Unknown outcome</b>"; break;
         }
-    } simulator(import_config);
+        */
+        return true;
+    });
 
-    ds->queryData(dataset::DataQuery(Matcher::parse("")), simulator);
-
-    req.send_result(simulator.str.str(), "text/plain", str::basename(*parms.file) + ".log");
+    req.send_result(str.str(), "text/plain", str::basename(*parms.file) + ".log");
 }
 
-void InboundServer::do_dispatch(const InboundParams& parms, wibble::net::http::Request& req)
+void InboundServer::do_dispatch(const InboundParams& parms, net::http::Request& req)
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     bool can_import = import_config.sectionSize() > 0;
     if (!can_import)
@@ -155,46 +127,41 @@ void InboundServer::do_dispatch(const InboundParams& parms, wibble::net::http::R
         info->setValue("format", *parms.format);
 
     // Build a dataset to scan the file
-    auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+    unique_ptr<Reader> ds(dataset::File::create(*info));
 
     // Response header generator
     StreamHeaders headers(req, str::basename(*parms.file));
     headers.ext = "arkimet";
 
-    MetadataStreamer cons(headers);
-
-    struct Worker : public metadata::Eater
-    {
-        RealDispatcher d;
-        metadata::Eater& cons;
-        bool all_ok;
-
-        Worker(const ConfigFile& cfg, metadata::Eater& cons)
-            : d(cfg), cons(cons), all_ok(true) { }
-
-        bool eat(auto_ptr<Metadata> md) override
-        {
-            Dispatcher::Outcome res = d.dispatch(md, cons);
-            switch (res)
-            {
-                case Dispatcher::DISP_OK:
-                case Dispatcher::DISP_DUPLICATE_ERROR:
-                    break;
-                case Dispatcher::DISP_ERROR:
-                case Dispatcher::DISP_NOTWRITTEN:
-                default:
-                    all_ok = false;
-                    break;
-            }
+    RealDispatcher d(import_config);
+    bool all_ok = true;
+    NamedFileDescriptor out(headers.req.sock, "socket");
+    ds->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+        Dispatcher::Outcome res = d.dispatch(move(md), [&](unique_ptr<Metadata> md) {
+            headers.sendIfNotFired();
+            auto b = md->sourceBlob();
+            // Amend the blob source to be rooted at the dataset name
+            md->set_source(types::Source::createBlob(b.format, "", str::joinpath(str::basename(b.basedir), b.filename), b.offset, b.size));
+            md->write(out);
             return true;
+        });
+        switch (res)
+        {
+            case Dispatcher::DISP_OK:
+            case Dispatcher::DISP_DUPLICATE_ERROR:
+                break;
+            case Dispatcher::DISP_ERROR:
+            case Dispatcher::DISP_NOTWRITTEN:
+            default:
+                all_ok = false;
+                break;
         }
-    } worker(import_config, cons);
-
-    ds->queryData(dataset::DataQuery(Matcher::parse("")), worker);
+        return true;
+    });
 
     // Delete fname if all was ok
-    if (worker.all_ok)
-        sys::fs::unlink(fname);
+    if (all_ok)
+        sys::unlink(fname);
 
     // If we had empty output, headers were not sent: catch up
     headers.sendIfNotFired();
@@ -210,7 +177,7 @@ static bool can_import(const net::http::Request& req, const ConfigFile& cfg)
     return true;
 }
 
-void InboundServer::make_import_config(const wibble::net::http::Request& req, const ConfigFile& src, ConfigFile& dst)
+void InboundServer::make_import_config(const net::http::Request& req, const ConfigFile& src, ConfigFile& dst)
 {
     // Check that the 'error' dataset is importable
     bool has_error = false;
@@ -237,4 +204,3 @@ void InboundServer::make_import_config(const wibble::net::http::Request& req, co
 }
 }
 }
-// vim:set ts=4 sw=4:

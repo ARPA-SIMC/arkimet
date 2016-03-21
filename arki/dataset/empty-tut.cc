@@ -1,53 +1,30 @@
-/*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/dataset/empty.h>
-
 #include <sstream>
 #include <iostream>
 
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::tests;
 
 struct arki_dataset_empty_shar {
 };
 TESTGRP(arki_dataset_empty);
 
 // Test accessing the data
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     ConfigFile cfg;
     dataset::Empty ds(cfg);
 
-    metadata::Collection mdc;
-    ds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1 or BUFR or GRIB2")), mdc);
+    metadata::Collection mdc(ds, Matcher::parse("origin:GRIB1 or BUFR or GRIB2"));
     ensure_equals(mdc.size(), 0u);
 }
 
 }
-
-// vim:set ts=4 sw=4:

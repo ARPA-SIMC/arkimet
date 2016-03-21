@@ -1,64 +1,33 @@
-/*
- * scan/odimh5 - Scan a ODIMH5 file for metadata
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Guido Billi <guidobilli@gmail.com>
- * Author: Enrico Zini <enrico@enricozini.org>
- */
-
-#include "config.h"
-
-#include <arki/scan/odimh5.h>
-
-#include <arki/metadata.h>
-
-#include <arki/types/origin.h>
-#include <arki/types/reftime.h>
-#include <arki/types/task.h>
-#include <arki/types/quantity.h>
-#include <arki/types/product.h>
-#include <arki/types/level.h>
-#include <arki/types/area.h>
-#include <arki/types/timerange.h>
-
-#include <arki/runtime/config.h>
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
-
-#include <arki/utils/files.h>
-#include <arki/utils/lua.h>
-#include <arki/scan/any.h>
-
+#include "odimh5.h"
+#include "arki/libconfig.h"
+#include "arki/metadata.h"
+#include "arki/types/origin.h"
+#include "arki/types/reftime.h"
+#include "arki/types/task.h"
+#include "arki/types/quantity.h"
+#include "arki/types/product.h"
+#include "arki/types/level.h"
+#include "arki/types/area.h"
+#include "arki/types/timerange.h"
+#include "arki/runtime/config.h"
+#include "arki/utils/string.h"
+#include "arki/utils/files.h"
+#include "arki/utils/lua.h"
+#include "arki/utils/sys.h"
+#include "arki/scan/any.h"
 #include <cstring>
 #include <unistd.h>
-#include <fstream>
+#include <fcntl.h>
 #include <vector>
 #include <stdexcept>
 #include <set>
 #include <string>
 #include <sstream>
 #include <memory>
-#include <iostream>
 
 using namespace std;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace scan {
@@ -69,32 +38,33 @@ static const unsigned char hdf5sign[8] = { 0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0
 
 struct OdimH5Validator : public Validator
 {
-	virtual ~OdimH5Validator() { }
+    std::string format() const override { return "ODIMH5"; }
 
-	virtual void validate(int fd, off_t offset, size_t size, const std::string& fname) const
-	{
-		/* we check that file header is a valid HDF5 header */
+    void validate_file(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
+    {
+        if (size < 8)
+            throw_check_error(fd, offset, "file segment to check is only " + std::to_string(size) + " bytes (minimum for a ODIMH5 is 8)");
 
-		char buf[8];
-		ssize_t res;
+        /* we check that file header is a valid HDF5 header */
+        char buf[8];
+        ssize_t res;
+        if ((res = fd.pread(buf, 8, offset)) != 8)
+            throw_check_error(fd, offset, "read only " + std::to_string(res) + "/8 bytes of ODIMH5 header");
 
-		if ((res = pread(fd, buf, 8, offset)) == -1)
-			throw wibble::exception::System("reading 8 bytes of ODIMH5 header from " + fname);
+        if (memcmp(buf, hdf5sign, 8) != 0)
+            throw_check_error(fd, offset, "invalid HDF5 header");
+    }
 
-		if (memcmp(buf, hdf5sign, 8) != 0)
-			throw wibble::exception::Consistency("checking ODIMH5 file " + fname, "signature does not match with supposed value");
-	}
+    void validate_buf(const void* buf, size_t size) const override
+    {
+        /* we check that file header is a valid HDF5 header */
 
-	virtual void validate(const void* buf, size_t size) const
-	{
-		/* we check that file header is a valid HDF5 header */
+        if (size < 8)
+            throw_check_error("buffer is shorter than 8 bytes");
 
-		if (size < 8)
-			throw wibble::exception::Consistency("checking ODIMH5 buffer", "buffer is shorter than 8 bytes");
-
-		if (memcmp(buf, hdf5sign, 8) != 0)
-			throw wibble::exception::Consistency("checking ODIMH5 buffer", "buffer does not start with hdf5 signature");
-	}
+        if (memcmp(buf, hdf5sign, 8) != 0)
+            throw_check_error("buffer does not start with hdf5 signature");
+    }
 };
 
 static OdimH5Validator odimh5_validator;
@@ -146,7 +116,7 @@ struct OdimH5Lua : public Lua {
             std::string error = lua_tostring(L, -1);
             // Pop the error from the stack
             lua_pop(L, 1);
-            throw wibble::exception::Consistency("parsing " + fname, error);
+            throw std::runtime_error("cannot parse " + fname + ": " + error);
         }
 
         // Index the scan function
@@ -212,7 +182,7 @@ void OdimH5::open(const std::string& filename)
 {
     std::string basedir, relname;
     utils::files::resolve_path(filename, basedir, relname);
-    open(wibble::sys::fs::abspath(filename), basedir, relname);
+    open(sys::abspath(filename), basedir, relname);
 }
 
 void OdimH5::open(const std::string& filename, const std::string& basedir, const std::string& relname)
@@ -227,7 +197,7 @@ void OdimH5::open(const std::string& filename, const std::string& basedir, const
 
     // Open H5 file
     read = false;
-    if (wibble::sys::fs::stat(filename)->st_size == 0) {
+    if (sys::stat(filename)->st_size == 0) {
         // If the file is empty, don't open it
         read = true;
     } else {
@@ -262,7 +232,7 @@ bool OdimH5::next(Metadata& md)
     try {
         scanLua(md);
     } catch (const std::exception& e) {
-        throw wibble::exception::Consistency("while scanning file " + filename, e.what());
+        throw std::runtime_error("cannot scan file " + filename + ": " + e.what());
     }
 
     read = true;
@@ -272,30 +242,23 @@ bool OdimH5::next(Metadata& md)
 
 void OdimH5::setSource(Metadata& md)
 {
-	int length;
-	/* for ODIMH5 files the source is the entire file */
+    // for ODIMH5 files the source is the entire file
+    sys::File in(filename, O_RDONLY);
 
-	std::ifstream is;
-	is.open(filename.c_str(), std::ios::binary );
+    // calculate file size
+    struct stat st;
+    in.fstat(st);
 
-	/* calcualte file size */
-	is.seekg (0, std::ios::end);
-	length = is.tellg();
-	is.seekg (0, std::ios::beg);
+    vector<uint8_t> buf(st.st_size);
+    in.read_all_or_throw(buf.data(), buf.size());
+    in.close();
 
-    char* buff = (char*)malloc(length);
-    try {
-        is.read(buff,length);
-        is.close();
+    stringstream note;
+    note << "Scanned from " << relname << ":0+" << buf.size();
+    md.add_note(note.str());
 
-        md.set_source(Source::createBlob("odimh5", basedir, relname, 0, length));
-        md.set_cached_data(wibble::sys::Buffer(buff, length));
-    } catch (...) {
-        free(buff);
-        throw;
-    }
-
-    md.add_note("Scanned from " + relname + ":0+" + wibble::str::fmt(length));
+    md.set_source(Source::createBlob("odimh5", basedir, relname, 0, buf.size()));
+    md.set_cached_data(move(buf));
 }
 
 bool OdimH5::scanLua(Metadata& md)

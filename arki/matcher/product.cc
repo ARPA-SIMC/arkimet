@@ -1,30 +1,7 @@
-/*
- * matcher/product - Product matcher
- *
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #include <arki/matcher/product.h>
 #include <arki/matcher/utils.h>
-#include <arki/metadata.h>
 #include <limits>
 #include <algorithm>
 
@@ -33,8 +10,8 @@
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace matcher {
@@ -212,36 +189,33 @@ std::string MatchProductVM2::toString() const
 	return res.str();
 }
 
-MatchProduct* MatchProduct::parse(const std::string& pattern)
+unique_ptr<MatchProduct> MatchProduct::parse(const std::string& pattern)
 {
-	size_t beg = 0;
-	size_t pos = pattern.find_first_of(":,", beg);
-	string name;
-	string rest;
-	if (pos == string::npos)
-		name = str::trim(pattern.substr(beg));
-	else {
-		name = str::trim(pattern.substr(beg, pos-beg));
-		rest = pattern.substr(pos+(pattern[pos] == ',' ? 1 : 0));
-	}
-	switch (types::Product::parseStyle(name))
-	{
-		case types::Product::GRIB1: return new MatchProductGRIB1(rest);
-		case types::Product::GRIB2: return new MatchProductGRIB2(rest);
-		case types::Product::BUFR: return new MatchProductBUFR(rest);
-		case types::Product::ODIMH5: return new MatchProductODIMH5(rest);
-        case types::Product::VM2: return new MatchProductVM2(rest);
-		default:
-			throw wibble::exception::Consistency("parsing type of product to match", "unsupported product style: " + name);
-	}
+    size_t beg = 0;
+    size_t pos = pattern.find_first_of(":,", beg);
+    string name;
+    string rest;
+    if (pos == string::npos)
+        name = str::strip(pattern.substr(beg));
+    else {
+        name = str::strip(pattern.substr(beg, pos-beg));
+        rest = pattern.substr(pos+(pattern[pos] == ',' ? 1 : 0));
+    }
+    switch (types::Product::parseStyle(name))
+    {
+        case types::Product::GRIB1: return unique_ptr<MatchProduct>(new MatchProductGRIB1(rest));
+        case types::Product::GRIB2: return unique_ptr<MatchProduct>(new MatchProductGRIB2(rest));
+        case types::Product::BUFR: return unique_ptr<MatchProduct>(new MatchProductBUFR(rest));
+        case types::Product::ODIMH5: return unique_ptr<MatchProduct>(new MatchProductODIMH5(rest));
+        case types::Product::VM2: return unique_ptr<MatchProduct>(new MatchProductVM2(rest));
+        default: throw std::runtime_error("cannot parse type of product to match: unsupported product style: " + name);
+    }
 }
 
 void MatchProduct::init()
 {
-    Matcher::register_matcher("product", types::TYPE_PRODUCT, (MatcherType::subexpr_parser)MatchProduct::parse);
+    Matcher::register_matcher("product", TYPE_PRODUCT, (MatcherType::subexpr_parser)MatchProduct::parse);
 }
 
 }
 }
-
-// vim:set ts=4 sw=4:

@@ -1,23 +1,3 @@
-/*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/tests/tests.h>
 #include <arki/metadata.h>
 #include "clusterer.h"
@@ -27,14 +7,14 @@
 namespace tut {
 using namespace std;
 using namespace arki;
-using namespace wibble::tests;
+using namespace arki::tests;
 
 struct arki_metadata_clusterer_shar {
     metadata::Collection mdc;
 
     arki_metadata_clusterer_shar()
     {
-        scan::scan("inbound/test.grib1", mdc);
+        scan::scan("inbound/test.grib1", mdc.inserter_func());
     }
 };
 TESTGRP(arki_metadata_clusterer);
@@ -54,18 +34,17 @@ struct ClusterCounter : public metadata::Clusterer
     }
 };
 
-inline auto_ptr<Metadata> wrap(const Metadata& md)
+inline unique_ptr<Metadata> wrap(const Metadata& md)
 {
-    return auto_ptr<Metadata>(new Metadata(md));
+    return unique_ptr<Metadata>(new Metadata(md));
 }
 
 }
 
 // Test clustering by count
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
-    WIBBLE_TEST_INFO(info);
+    ARKI_UTILS_TEST_INFO(info);
     unsigned items[] = { 0, 1, 10, 11, 20, 21, 121 };
     for (unsigned* i = items; i != items + sizeof(items) / sizeof(items[0]); ++i)
     {
@@ -82,13 +61,12 @@ void to::test<1>()
 }
 
 // Test clustering by size
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     // mdc[0] has 7218b of data
     // mdc[1] has 34960b of data
     // mdc[2] has 2234b of data
-    WIBBLE_TEST_INFO(info);
+    ARKI_UTILS_TEST_INFO(info);
     unsigned items[] = { 0, 1, 10, 11, 20, 21, 121 };
     for (unsigned* i = items; i != items + sizeof(items) / sizeof(items[0]); ++i)
     {
@@ -112,7 +90,7 @@ void to::test<2>()
         clusterer.eat(wrap(mdc[0]));
         clusterer.flush();
 
-        wassert(actual(clusterer.clusters_processed) == 1);
+        wassert(actual(clusterer.clusters_processed) == 1u);
     }
     {
         ClusterCounter clusterer;
@@ -123,13 +101,12 @@ void to::test<2>()
         clusterer.eat(wrap(mdc[2]));
         clusterer.flush();
 
-        wassert(actual(clusterer.clusters_processed) == 3);
+        wassert(actual(clusterer.clusters_processed) == 3u);
     }
 }
 
 // Test clustering by interval
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     ClusterCounter clusterer;
     clusterer.max_interval = 2; // month
@@ -142,8 +119,7 @@ void to::test<3>()
 }
 
 // Test clustering by timerange
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     ClusterCounter clusterer;
     clusterer.split_timerange = true;

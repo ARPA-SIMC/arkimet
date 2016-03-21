@@ -1,50 +1,107 @@
-/*
- * configfile - Read ini-style config files
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include "config.h"
-
 #include "configfile.h"
-
-#include <wibble/exception.h>
-#include <wibble/regexp.h>
-#include <wibble/string.h>
+#include "file.h"
+#include "libconfig.h"
+#include "exceptions.h"
+#include "utils/string.h"
+#include "utils/regexp.h"
 #include <cctype>
 #include <sstream>
 #include <cstdio>
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 
-const char* ConfigFileParseError::type() const throw ()
+namespace configfile {
+
+std::string ParseError::describe(const std::string& filename, int line, const std::string& error)
 {
-	return "ConfigFileParseError";
+    stringstream msg;
+    msg << filename << ":" << line << ":" << error;
+    return msg.str();
 }
-std::string ConfigFileParseError::desc() const throw ()
+
+struct Parser
 {
-	stringstream msg;
-	msg << m_name << ":" << m_line << ":" << m_error;
-	return msg.str();
+    ERegexp sec_start;
+    ERegexp empty_line;
+    ERegexp assignment;
+    ConfigFile* dest = nullptr;
+    LineReader& reader;
+    string pathname;
+    string line;
+    int lineno = 0;
+
+    Parser(const std::string& pathname, LineReader& reader)
+        : sec_start("^\\[[ \t]*([a-zA-Z0-9_.-]+)[ \t]*\\]", 2),
+        empty_line("^[ \t]*([#;].*)?$"),
+        assignment("^[ \t]*([a-zA-Z0-9_.-]+([ \t]+[a-zA-Z0-9_.-]+)*)[ \t]*=[ \t]*(.*)$", 4),
+        reader(reader),
+        pathname(pathname)
+    {
+    }
+
+    bool eof() const { return reader.eof(); }
+
+    bool readline()
+    {
+        bool res = reader.getline(line);
+        ++lineno;
+        return res;
+    }
+
+    [[noreturn]] void throw_parse_error(const std::string& msg) const
+    {
+        throw ParseError(pathname, lineno, msg);
+    }
+
+    /**
+     * Parse configuration from the given input stream.
+     *
+     * Finding the beginning of a new section will stop
+     * the parsing.
+     *
+     * Returns true if a new section follows, false if it stops at the end of
+     * file.
+     */
+    bool parse_section()
+    {
+        while (readline())
+        {
+            if (sec_start.match(line))
+                return true;
+
+            parse_line();
+        }
+        return false;
+    }
+
+    /**
+     * Parse one normal configuration file line
+     *
+     * The line may contain a comment, a key=value assignment or be empty.
+     */
+    void parse_line()
+    {
+        if (empty_line.match(line))
+            return;
+        if (assignment.match(line))
+        {
+            string value = assignment[3];
+            // Strip leading and trailing spaces on the value
+            value = str::strip(value);
+            // Strip double quotes, if they appear
+            if (value[0] == '"' && value[value.size()-1] == '"')
+                value = value.substr(1, value.size()-2);
+            dest->m_values.insert(make_pair(assignment[1], value));
+            dest->values_pos.insert(make_pair(assignment[1], Position(pathname, lineno)));
+        }
+        else
+            throw_parse_error("line is not a comment, nor a section start, nor empty, nor a key=value assignment");
+    }
+};
+
 }
 
 ConfigFile::ConfigFile()
@@ -81,38 +138,21 @@ void ConfigFile::clear()
     for (std::map<string, ConfigFile*>::iterator i = sections.begin();
             i != sections.end(); ++i)
         delete i->second;
+    sections.clear();
 }
-
-struct ConfigFileParserHelper
-{
-	wibble::ERegexp sec_start;
-	wibble::ERegexp empty_line;
-	wibble::ERegexp assignment;
-	string fileName;
-	int line;
-
-	ConfigFileParserHelper(const std::string& fileName)
-		: sec_start("^\\[[ \t]*([a-zA-Z0-9_.-]+)[ \t]*\\]", 2),
-		  empty_line("^[ \t]*([#;].*)?$"),
-		  assignment("^[ \t]*([a-zA-Z0-9_.-]+([ \t]+[a-zA-Z0-9_.-]+)*)[ \t]*=[ \t]*(.*)$", 4),
-		  fileName(fileName),
-		  line(1)
-	{
-	}
-};
 
 void ConfigFile::merge(const ConfigFile& c)
 {
-	// Copy the values and the values information
-	for (const_iterator i = c.begin(); i != c.end(); ++i)
-	{
-		m_values.insert(*i);
-		std::map<std::string, FilePos>::const_iterator j = c.values_pos.find(i->first);
-		if (j == c.values_pos.end())
-			values_pos.erase(i->first);
-		else
-			values_pos.insert(*j);
-	}
+    // Copy the values and the values information
+    for (const_iterator i = c.begin(); i != c.end(); ++i)
+    {
+        m_values.insert(*i);
+        std::map<std::string, configfile::Position>::const_iterator j = c.values_pos.find(i->first);
+        if (j == c.values_pos.end())
+            values_pos.erase(i->first);
+        else
+            values_pos.insert(*j);
+    }
 
 	for (const_section_iterator i = c.sectionBegin(); i != c.sectionEnd(); ++i)
 	{
@@ -144,67 +184,38 @@ void ConfigFile::mergeInto(const std::string& sectionName, const ConfigFile& c)
 	sec->merge(c);
 }
 
-void ConfigFile::parseLine(ConfigFileParserHelper& h, const std::string& line)
+void ConfigFile::parse(LineReader& in, const std::string& pathname)
 {
-	if (h.empty_line.match(line))
-		return;
-	if (h.assignment.match(line))
-	{
-		string value = h.assignment[3];
-		// Strip leading and trailing spaces on the value
-		value = str::trim(value);
-		// Strip double quotes, if they appear
-		if (value[0] == '"' && value[value.size()-1] == '"')
-			value = value.substr(1, value.size()-2);
-		m_values.insert(make_pair(h.assignment[1], value));
-		values_pos.insert(make_pair(h.assignment[1], FilePos(h.fileName, h.line)));
-	}
-	else
-		throw ConfigFileParseError(h.fileName, h.line, "line is not a comment, nor a section start, nor empty, nor a key=value assignment");
+    configfile::Parser parser(pathname, in);
+    parser.dest = this;
+
+    while (true)
+    {
+        if (!parser.parse_section()) return;
+
+        string name = parser.sec_start[1];
+        std::map<string, ConfigFile*>::iterator sec = sections.find(name);
+        if (sec == sections.end())
+        {
+            parser.dest = new ConfigFile();
+            sections.insert(make_pair(name, parser.dest));
+        } else {
+            parser.dest = sec->second;
+        }
+    }
 }
 
-void ConfigFile::parse(std::istream& in, const std::string& fileName)
+void ConfigFile::parse(NamedFileDescriptor& in)
 {
-	ConfigFileParserHelper h(fileName);
-
-	string line;
-	while (!in.eof())
-	{
-		getline(in, line);
-		if (in.fail() && !in.eof())
-			throw wibble::exception::File(fileName, "reading one line");
-		if (h.sec_start.match(line))
-		{
-			string name = h.sec_start[1];
-			ConfigFile* c = new ConfigFile();
-			c->parseSection(h, in);
-			std::map<string, ConfigFile*>::iterator sec = sections.find(name);
-			if (sec == sections.end())
-			{
-				sections.insert(make_pair(name, c));
-			} else {
-				sec->second->merge(*c);
-				delete c;
-			}
-		} else {
-			parseLine(h, line);
-		}
-		++h.line;
-	}
+    auto reader = LineReader::from_fd(in);
+    parse(*reader, in.name());
 }
 
-void ConfigFile::parseSection(ConfigFileParserHelper& h, std::istream& in)
+void ConfigFile::parse(const std::string& in, const std::string& pathname)
 {
-	string line;
-	int c;
-	while ((c = in.peek()) != EOF && c != '[')
-	{
-		getline(in, line);
-		parseLine(h, line);
-		++h.line;
-	}
+    auto reader = LineReader::from_chars(in.data(), in.size());
+    parse(*reader, pathname);
 }
-
 
 std::string ConfigFile::value(const std::string& key) const
 {
@@ -214,18 +225,25 @@ std::string ConfigFile::value(const std::string& key) const
 	return i->second;
 }
 
-const ConfigFile::FilePos* ConfigFile::valueInfo(const std::string& key) const
+const configfile::Position* ConfigFile::valueInfo(const std::string& key) const
 {
-	std::map<std::string, FilePos>::const_iterator i = values_pos.find(key);
-	if (i == values_pos.end())
-		return 0;
-	return &(i->second);
+    std::map<std::string, configfile::Position>::const_iterator i = values_pos.find(key);
+    if (i == values_pos.end())
+        return 0;
+    return &(i->second);
 }
 
 void ConfigFile::setValue(const std::string& key, const std::string& value)
 {
     m_values[key] = value;
-	values_pos.erase(key);
+    values_pos.erase(key);
+}
+
+void ConfigFile::setValue(const std::string& key, int value)
+{
+    std::stringstream ss;
+    ss << value;
+    setValue(key, ss.str());
 }
 
 ConfigFile* ConfigFile::section(const std::string& key) const
@@ -264,30 +282,35 @@ void ConfigFile::output(std::ostream& out, const std::string& fileName, const st
 		if (!i->second.empty())
 			out << i->first << " = " << i->second << endl;
 
-	// Then, the sections
-	for (const_section_iterator i = sectionBegin(); i != sectionEnd(); ++i)
-	{
-		string name = wibble::str::joinpath(secName, i->first);
-		out << endl;
-		out << "[" << name << "]" << endl;
-		i->second->output(out, fileName, name);
-	}
+    // Then, the sections
+    for (const_section_iterator i = sectionBegin(); i != sectionEnd(); ++i)
+    {
+        string name = str::joinpath(secName, i->first);
+        out << endl;
+        out << "[" << name << "]" << endl;
+        i->second->output(out, fileName, name);
+    }
+}
+
+std::string ConfigFile::serialize() const
+{
+    stringstream ss;
+    output(ss, "(memory)");
+    return ss.str();
 }
 
 bool ConfigFile::boolValue(const std::string& str, bool def)
 {
-	if (str.empty())
-		return def;
-	string l = wibble::str::tolower(wibble::str::trim(str));
+    if (str.empty())
+        return def;
+    string l = str::lower(str::strip(str));
 	if (l.empty())
 		return false;
 	if (l == "true" || l == "yes" || l == "on" || l == "1")
 		return true;
 	if (l == "false" || l == "no" || l == "off" || l == "0")
 		return false;
-	throw wibble::exception::Consistency("parsing bool value", "value \"" + str + "\" is not supported");
+    throw std::runtime_error("cannot parse bool value: value \"" + str + "\" is not supported");
 }
 
-
 }
-// vim:set ts=4 sw=4:

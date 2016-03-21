@@ -24,7 +24,7 @@
  */
 
 #include <arki/matcher.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <vector>
 #include <string>
 #include <stdint.h>
@@ -119,12 +119,14 @@ struct CommaJoiner : std::vector<std::string>
 
 	CommaJoiner() : last(0) {}
 
-	template<typename T>
-	void add(const T& val)
-	{
-		push_back(wibble::str::fmt(val));
-		last = size();
-	}
+    template<typename T>
+    void add(const T& val)
+    {
+        std::stringstream ss;
+        ss << val;
+        push_back(ss.str());
+        last = size();
+    }
 
     template<typename T>
     void add(const T& val, const T& missing)
@@ -132,7 +134,11 @@ struct CommaJoiner : std::vector<std::string>
         if (val == missing)
             push_back("-");
         else
-            push_back(wibble::str::fmt(val));
+        {
+            std::stringstream ss;
+            ss << val;
+            push_back(ss.str());
+        }
         last = size();
     }
 

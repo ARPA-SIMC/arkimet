@@ -1,34 +1,46 @@
 #ifndef ARKI_DEFS_H
 #define ARKI_DEFS_H
 
-/*
- * defs - Core defines common to all arkimet code
- *
- * Copyright (C) 2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-#include <arki/libconfig.h>
+/// Core defines common to all arkimet code
 
-#ifndef HAVE_CXX11
-#define override
-#endif
+#include <arki/libconfig.h>
+#include <functional>
+#include <memory>
 
 namespace arki {
+struct Metadata;
+
+/**
+ * Function signature for metadata consumers
+ */
+typedef std::function<bool(std::unique_ptr<Metadata>)> metadata_dest_func;
+
+
+/// Identifier codes used for binary serialisation of Types
+enum TypeCode
+{
+    TYPE_INVALID         =  0,
+    TYPE_ORIGIN          =  1,
+    TYPE_PRODUCT         =  2,
+    TYPE_LEVEL           =  3,
+    TYPE_TIMERANGE       =  4,
+    TYPE_REFTIME         =  5,
+    TYPE_NOTE            =  6,
+    TYPE_SOURCE          =  7,
+    TYPE_ASSIGNEDDATASET =  8,
+    TYPE_AREA            =  9,
+    TYPE_PRODDEF         = 10,
+    TYPE_SUMMARYITEM     = 11,
+    TYPE_SUMMARYSTATS    = 12,
+    TYPE_TIME            = 13,
+    TYPE_BBOX            = 14,
+    TYPE_RUN             = 15,
+    TYPE_TASK            = 16, // utilizzato per OdimH5 /how.task
+    TYPE_QUANTITY        = 17, // utilizzato per OdimH5 /what.quantity
+    TYPE_VALUE           = 18,
+    TYPE_MAXCODE
+};
+
 }
 
 #endif

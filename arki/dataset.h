@@ -1,29 +1,9 @@
 #ifndef ARKI_DATASET_H
 #define ARKI_DATASET_H
 
-/*
- * dataset - Handle arkimet datasets
- *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+/// Base interface for arkimet datasets
 #include <arki/matcher.h>
+#include <arki/file.h>
 #include <arki/transaction.h>
 #include <string>
 #include <memory>
@@ -31,15 +11,9 @@
 struct lua_State;
 
 namespace arki {
-
 class ConfigFile;
 class Metadata;
 class Summary;
-
-namespace metadata {
-class Eater;
-class Hook;
-}
 
 namespace sort {
 class Compare;
@@ -88,6 +62,7 @@ class Compare;
  * to allow complex data searches across datasets.
  */
 namespace dataset {
+struct Reporter;
 
 struct DataQuery
 {
@@ -104,7 +79,7 @@ struct DataQuery
     bool with_data;
 
     /// Optional compare function to define a custom ordering of the result
-    refcounted::Pointer<sort::Compare> sorter;
+    std::shared_ptr<sort::Compare> sorter;
 
     DataQuery();
     DataQuery(const Matcher& matcher, bool with_data=false);
@@ -123,11 +98,11 @@ struct ByteQuery : public DataQuery
 		BQ_REP_SUMMARY = 3
 	};
 
-	std::string param;
-	Type type;
-	metadata::Hook* data_start_hook;
+    std::string param;
+    Type type = BQ_DATA;
+    std::function<void()> data_start_hook = nullptr;
 
-	ByteQuery() : type(BQ_DATA), data_start_hook(0) {}
+    ByteQuery() {}
 
     void setData(const Matcher& m)
     {
@@ -157,50 +132,103 @@ struct ByteQuery : public DataQuery
     }
 };
 
-}
+/**
+ * Base class for all dataset Readers, Writers and Checkers.
+ */
+struct Base
+{
+protected:
+    /// Dataset name
+    std::string m_name;
 
-class ReadonlyDataset
+    /// Dataset configuration key-value pairs (normally extracted from ConfigFile)
+    std::map<std::string, std::string> m_cfg;
+
+    /**
+     * Parent dataset.
+     *
+     * If nullptr, this dataset has no parent.
+     */
+    Base* m_parent = nullptr;
+
+public:
+    Base(const std::string& name);
+    Base(const std::string& name, const ConfigFile& cfg);
+    Base(const ConfigFile& cfg);
+    Base(const Base&) = delete;
+    Base(const Base&&) = delete;
+    virtual ~Base() {}
+    Base& operator=(const Base&) = delete;
+    Base& operator=(Base&&) = delete;
+
+    /// Return the dataset configuration
+    const std::map<std::string, std::string>& cfg() const { return m_cfg; }
+
+    /// Return a name identifying the dataset type
+    virtual std::string type() const = 0;
+
+    /// Return the dataset name
+    std::string name() const;
+
+    /**
+     * Set a parent dataset.
+     *
+     * Datasets can be nested to delegate management of part of the dataset
+     * contents to a separate dataset. Hierarchy is tracked so that at least a
+     * full dataset name can be computed in error messages.
+     */
+    void set_parent(Base& p);
+};
+
+class Reader : public dataset::Base
 {
 public:
-	// Configuration items (normally extracted from ConfigFile)
-	std::map<std::string, std::string> cfg;
+    using Base::Base;
 
-	virtual ~ReadonlyDataset() {}
+    /**
+     * Query the dataset using the given matcher, and sending the results to
+     * the given function
+     */
+    virtual void query_data(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
 
-	/**
-	 * Query the dataset using the given matcher, and sending the results to
-	 * the metadata consumer.
-	 */
-	virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) = 0;
+    /**
+     * Add to summary the summary of the data that would be extracted with the
+     * given query.
+     */
+    virtual void query_summary(const Matcher& matcher, Summary& summary) = 0;
 
-	/**
-	 * Add to summary the summary of the data that would be extracted with the
-	 * given query.
-	 */
-	virtual void querySummary(const Matcher& matcher, Summary& summary) = 0;
+    /**
+     * Query the dataset obtaining a byte stream, that gets written to a file
+     * descriptor.
+     *
+     * The default implementation in Reader is based on queryData.
+     */
+    virtual void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out);
 
-	/**
-	 * Query the dataset obtaining a byte stream.
-	 *
-	 * The default implementation in ReadonlyDataset is based on queryData.
-	 */
-	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
+    /**
+     * Expand the given begin and end ranges to include the datetime extremes
+     * of this dataset.
+     *
+     * If begin and end are unset, set them to the datetime extremes of this
+     * dataset.
+     */
+    virtual void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end);
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this dataset
 	void lua_push(lua_State* L);
 
 	/**
-	 * Check that the element at \a idx is a ReadonlyDataset userdata
+	 * Check that the element at \a idx is a Reader userdata
 	 *
-	 * @return the ReadonlyDataset element, or 0 if the check failed
+	 * @return the Reader element, or 0 if the check failed
 	 */
-	static ReadonlyDataset* lua_check(lua_State* L, int idx);
+	static Reader* lua_check(lua_State* L, int idx);
 
-	/**
-	 * Instantiate an appropriate Dataset for the given configuration
-	 */
-	static ReadonlyDataset* create(const ConfigFile& cfg);
+    /**
+     * Instantiate an appropriate Reader for the given configuration
+     */
+    static Reader* create(const ConfigFile& cfg);
 
 	/**
 	 * Read the configuration of the dataset(s) at the given path or URL,
@@ -209,7 +237,7 @@ public:
 	static void readConfig(const std::string& path, ConfigFile& cfg);
 };
 
-class WritableDataset
+class Writer : public dataset::Base
 {
 public:
 	/// Possible outcomes of acquire
@@ -237,8 +265,6 @@ public:
     };
 
 protected:
-    std::string m_name;
-
 	/**
 	 * Insert the given metadata in the dataset.
 	 *
@@ -251,11 +277,7 @@ protected:
 	//virtual bool replace(Metadata& md) = 0;
 
 public:
-    WritableDataset();
-    virtual ~WritableDataset();
-
-	// Return the dataset name
-	const std::string& name() const { return m_name; }
+    using Base::Base;
 
 	/**
 	 * Acquire the given metadata item (and related data) in this dataset.
@@ -274,11 +296,6 @@ public:
 	virtual void remove(Metadata& md) = 0;
 
 	/**
-	 * Reset this dataset, removing all data, indices and caches
-	 */
-	virtual void removeAll(std::ostream& log, bool writable=false) = 0;
-
-	/**
 	 * Flush pending changes to disk
 	 */
 	virtual void flush();
@@ -291,10 +308,10 @@ public:
      */
     virtual Pending test_writelock();
 
-	/**
-	 * Instantiate an appropriate Dataset for the given configuration
-	 */
-	static WritableDataset* create(const ConfigFile& cfg);
+    /**
+     * Instantiate an appropriate Writer for the given configuration
+     */
+    static Writer* create(const ConfigFile& cfg);
 
 	/**
 	 * Simulate acquiring the given metadata item (and related data) in this
@@ -309,7 +326,64 @@ public:
 	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
+struct Checker : public dataset::Base
+{
+    using Base::Base;
+
+    /**
+     * Reset this dataset, removing all data, indices and caches
+     */
+    virtual void removeAll(dataset::Reporter& reporter, bool writable=false) = 0;
+
+    /**
+     * Repack the dataset, logging status to the given file.
+     *
+     * If writable is false, the process is simulated but no changes are
+     * saved.
+     */
+    virtual void repack(dataset::Reporter& reporter, bool writable=false) = 0;
+
+    /**
+     * Check the dataset for errors, logging status to the given file.
+     *
+     * If \a fix is false, the process is simulated but no changes are saved.
+     * If \a fix is true, errors are fixed.
+     */
+    virtual void check(dataset::Reporter& reporter, bool fix, bool quick) = 0;
+
+    /**
+     * Instantiate an appropriate Checker for the given configuration
+     */
+    static Checker* create(const ConfigFile& cfg);
+};
+
+/**
+ * Checker that does nothing
+ */
+struct NullChecker : public Checker
+{
+    using Checker::Checker;
+    std::string type() const override { return "null"; }
+    void removeAll(dataset::Reporter& reporter, bool writable=false) override {}
+    void repack(dataset::Reporter& reporter, bool writable=false) override {}
+    void check(dataset::Reporter& reporter, bool fix, bool quick) override {}
+};
+
+/**
+ * Checker that raises an exception on each operation notifying that the
+ * operation is not possible
+ */
+struct FailChecker : public Checker
+{
+    using Checker::Checker;
+    std::string type() const override { return "fail"; }
+    void removeAll(dataset::Reporter& reporter, bool writable=false) override;
+    void repack(dataset::Reporter& reporter, bool writable=false) override;
+    void check(dataset::Reporter& reporter, bool fix, bool quick) override;
+};
+
+}
 }
 
-// vim:set ts=4 sw=4:
+
 #endif

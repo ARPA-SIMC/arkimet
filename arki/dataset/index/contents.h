@@ -1,31 +1,12 @@
 #ifndef ARKI_DATASET_INDEX_CONTENTS_H
 #define ARKI_DATASET_INDEX_CONTENTS_H
 
-/*
- * dataset/index/contents - Index for data files and their contents
- *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Index for data files and their contents
 
-#include <wibble/exception.h>
+#include <arki/dataset/index.h>
 #include <arki/transaction.h>
 #include <arki/utils/sqlite.h>
+#include <arki/dataset/segment.h>
 #include <arki/dataset/index/attr.h>
 #include <arki/dataset/index/aggregate.h>
 #include <arki/dataset/index/summarycache.h>
@@ -43,12 +24,7 @@ class ConfigFile;
 namespace dataset {
 struct DataQuery;
 
-namespace maintenance {
-struct IndexFileVisitor;
-}
-
 namespace index {
-
 struct Uniques;
 struct Others;
 
@@ -69,7 +45,7 @@ struct Others;
  * It must be possible to completely regenerate the dataset index by
  * rescanning all the data stored in the dataset.
  */
-class Contents
+class Contents : public dataset::Index
 {
 protected:
     /// Dataset name
@@ -165,40 +141,22 @@ public:
 	/// Return the number of items currently indexed by this index
 	size_t count() const;
 
-	/**
-	 * Scan all file info in the database, sorted by file and offset
-	 */
-	void scan_files(maintenance::IndexFileVisitor& v) const;
+    /**
+     * Scan all file info in the database, sorted by file and offset
+     */
+    void scan_files(segment::contents_func v) override;
 
-	/**
-	 * Send the metadata of all data items inside a file to the given consumer
-	 */
-	void scan_file(const std::string& relname, metadata::Eater& consumer, const std::string& orderBy = "offset") const;
+    void list_segments(std::function<void(const std::string&)> dest) override;
 
-	/**
-	 * Return the maximum reference time found in the given file.
-	 *
-	 * Return the empty string if the file is not in the index.
-	 */
-	std::string max_file_reftime(const std::string& relname) const;
+    /**
+     * Send the metadata of all data items inside a file to the given consumer
+     */
+    void scan_file(const std::string& relname, metadata_dest_func consumer, const std::string& orderBy = "offset") const;
 
-	/**
-	 * Query this index, returning metadata
-	 *
-	 * @return true if the index could be used for the query, false if the
-	 * query does not use the index and a full scan should be used instead
-	 */
-	bool query(const dataset::DataQuery& q, metadata::Eater& consumer) const;
+    bool segment_timespan(const std::string& relname, core::Time& start_time, core::Time& end_time) const override;
 
-	/**
-	 * Query this index, returning a summary
-	 *
-	 * Summary caches are used if available.
-	 *
-	 * @return true if the index could be used for the query, false if the
-	 * query does not use the index and a full scan should be used instead
-	 */
-	bool querySummary(const Matcher& m, Summary& summary) const;
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    bool query_summary(const Matcher& m, Summary& summary) override;
 
 	/**
 	 * Query this index, returning a summary
@@ -215,17 +173,15 @@ public:
 	 */
 	void querySummaryFromDB(const std::string& where, Summary& summary) const;
 
-    size_t produce_nth(metadata::Eater& consumer, size_t idx) const;
-
-	/**
-	 * Run a consistency check on the summary cache, reporting issues
-	 * to \a log
-	 *
-	 * @return
-	 *   true if the summary cache looks ok
-	 *   false if problems have been found
-	 */
-	bool checkSummaryCache(std::ostream& log) const;
+    /**
+     * Run a consistency check on the summary cache, reporting issues
+     * to \a log
+     *
+     * @return
+     *   true if the summary cache looks ok
+     *   false if problems have been found
+     */
+    bool checkSummaryCache(const dataset::Base& ds, Reporter& reporter) const;
 
 	/**
 	 * Invalidate and rebuild the entire summary cache
@@ -260,9 +216,6 @@ protected:
 	 * change in the database schema invalidates precompiled queries.
 	 */
 	void initQueries();
-
-	/// Run a query and output to a consumer all the metadata that come out
-	void metadataQuery(const std::string& query, metadata::Eater& consumer) const;
 
 public:
 	RContents(const ConfigFile& cfg);
@@ -326,13 +279,13 @@ public:
 	 */
 	void replace(Metadata& md, const std::string& file, uint64_t ofs, int* id = 0);
 
-	/**
-	 * Remove the given metadata item from the index.
-	 *
-	 * The removal will only take place when the commit() method will be called
-	 * on the Pending object.
-	 */
-	void remove(int id, std::string& file);
+    /**
+     * Remove the given metadata item from the index.
+     *
+     * The removal will only take place when the commit() method will be called
+     * on the Pending object.
+     */
+    void remove(const std::string& relname, off_t ofs);
 
 	/**
 	 * Remove all entries from the index
@@ -354,6 +307,4 @@ public:
 }
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

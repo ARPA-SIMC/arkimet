@@ -1,39 +1,12 @@
-/*
- * types - arkimet metadata type system
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #include <arki/types.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/sys/buffer.h>
-
+#include <arki/utils/string.h>
 #include <cstring>
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace types {
@@ -82,9 +55,13 @@ MetadataType::~MetadataType()
 
 const MetadataType* MetadataType::get(types::Code code)
 {
-	if (!decoders || decoders[code] == 0)
-		throw wibble::exception::Consistency("parsing binary data", "no decoder found for item type " + str::fmt(code));
-	return decoders[code];
+    if (!decoders || decoders[code] == 0)
+    {
+        stringstream ss;
+        ss << "cannot parse binary data: no decoder found for item type " << code;
+        throw std::runtime_error(ss.str());
+    }
+    return decoders[code];
 }
 
 void debug_intern_stats()
@@ -103,28 +80,27 @@ void MetadataType::lua_loadlib(lua_State* L)
 
 void split(const std::string& str, std::set<std::string>& result, const std::string& delimiters)
 {
-	std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);	// Skip delimiters at beginning.
-	std::string::size_type pos     = str.find_first_of(delimiters, lastPos);	// Find first "non-delimiter".
-	while (std::string::npos != pos || std::string::npos != lastPos)
-	{
-		result.insert(str::trim(str.substr(lastPos, pos - lastPos)));
-		lastPos = str.find_first_not_of(delimiters, pos);	// Skip delimiters.  Note the "not_of"
-		pos = str.find_first_of(delimiters, lastPos);		// Find next "non-delimiter"
-	}
+    std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);      // Skip delimiters at beginning.
+    std::string::size_type pos     = str.find_first_of(delimiters, lastPos);    // Find first "non-delimiter".
+    while (std::string::npos != pos || std::string::npos != lastPos)
+    {
+        result.insert(str::strip(str.substr(lastPos, pos - lastPos)));
+        lastPos = str.find_first_not_of(delimiters, pos);   // Skip delimiters.  Note the "not_of"
+        pos = str.find_first_of(delimiters, lastPos);       // Find next "non-delimiter"
+    }
 }
 
 void split(const std::string& str, std::vector<std::string>& result, const std::string& delimiters)
 {
-	std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);	// Skip delimiters at beginning.
-	std::string::size_type pos     = str.find_first_of(delimiters, lastPos);	// Find first "non-delimiter".
-	while (std::string::npos != pos || std::string::npos != lastPos)
-	{
-		result.push_back(str::trim(str.substr(lastPos, pos - lastPos)));
-		lastPos = str.find_first_not_of(delimiters, pos);	// Skip delimiters.  Note the "not_of"
-		pos = str.find_first_of(delimiters, lastPos);		// Find next "non-delimiter"
-	}
+    std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);      // Skip delimiters at beginning.
+    std::string::size_type pos     = str.find_first_of(delimiters, lastPos);    // Find first "non-delimiter".
+    while (std::string::npos != pos || std::string::npos != lastPos)
+    {
+        result.push_back(str::strip(str.substr(lastPos, pos - lastPos)));
+        lastPos = str.find_first_not_of(delimiters, pos);   // Skip delimiters.  Note the "not_of"
+        pos = str.find_first_of(delimiters, lastPos);       // Find next "non-delimiter"
+    }
 }
 
 }
 }
-// vim:set ts=4 sw=4:

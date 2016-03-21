@@ -1,31 +1,8 @@
-/*
- * types/quantity - Metadata quantity
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- * Author: Guido Billi <guidobilli@gmail.com>
- */
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/exceptions.h>
 #include <arki/types/quantity.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
+#include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include "config.h"
@@ -36,25 +13,20 @@
 #include <arki/utils/lua.h>
 #endif
 
-#define CODE 		types::TYPE_QUANTITY
-#define TAG 		"quantity"
+#define CODE TYPE_QUANTITY
+#define TAG "quantity"
 #define SERSIZELEN 	1
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
-using namespace wibble;
 
-namespace arki { namespace types {
+namespace arki {
+namespace types {
 
-/*============================================================================*/
-
-const char* 		traits<Quantity>::type_tag 		= TAG;
-const types::Code 	traits<Quantity>::type_code 		= CODE;
-const size_t 		traits<Quantity>::type_sersize_bytes 	= SERSIZELEN;
-const char* 		traits<Quantity>::type_lua_tag 		= LUATAG_TYPES ".quantity";
-
-/*============================================================================*/
+const char* traits<Quantity>::type_tag = TAG;
+const types::Code traits<Quantity>::type_code = CODE;
+const size_t traits<Quantity>::type_sersize_bytes = SERSIZELEN;
+const char* traits<Quantity>::type_lua_tag = LUATAG_TYPES ".quantity";
 
 int Quantity::compare(const Type& o) const
 {
@@ -64,7 +36,7 @@ int Quantity::compare(const Type& o) const
 	// We should be the same kind, so upcast
 	const Quantity* v = dynamic_cast<const Quantity*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a Task, but it is a ") + typeid(&o).name() + " instead");
 
@@ -85,41 +57,35 @@ bool Quantity::equals(const Type& o) const
 	return compare(*v) == 0;
 }
 
-void Quantity::encodeWithoutEnvelope(Encoder& enc) const
+void Quantity::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-    enc.addVarint(values.size());
+    enc.add_varint(values.size());
 
-    for (std::set<std::string>::const_iterator i = values.begin();
-            i != values.end(); ++i)
+    for (const auto& v: values)
     {
-        enc.addVarint((*i).size());
-        enc.addString((*i));
+        enc.add_varint(v.size());
+        enc.add_raw(v);
     }
 }
 
-auto_ptr<Quantity> Quantity::decode(const unsigned char* buf, size_t len)
+unique_ptr<Quantity> Quantity::decode(BinaryDecoder& dec)
 {
-	using namespace utils::codec;
+    size_t num = dec.pop_varint<size_t>("quantity num elemetns");
+    std::set<std::string> vals;
 
-	ensureSize(len, 1, "quantity");
-	Decoder dec(buf, len);
-	size_t num 	= dec.popVarint<size_t>("quantity num elemetns");
+    for (size_t i=0; i<num; i++)
+    {
+        size_t vallen = dec.pop_varint<size_t>("quantity name len");
+        string val = dec.pop_string(vallen, "quantity name");
+        vals.insert(val);
+    }
 
-	std::set<std::string> vals;
-
-	for (size_t i=0; i<num; i++)
-	{
-		size_t vallen 	= dec.popVarint<size_t>("quantity name len");
-		string val 	= dec.popString(vallen, "quantity name");
-		vals.insert(val);
-	}
-
-	return Quantity::create(vals);
+    return Quantity::create(vals);
 }
 
 std::ostream& Quantity::writeToOstream(std::ostream& o) const
 {
-	return o << str::join(values.begin(), values.end(), ", ");
+    return o << str::join(", ", values.begin(), values.end());
 }
 
 void Quantity::serialiseLocal(Emitter& e, const Formatter* f) const
@@ -132,7 +98,7 @@ void Quantity::serialiseLocal(Emitter& e, const Formatter* f) const
     e.end_list();
 }
 
-auto_ptr<Quantity> Quantity::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Quantity> Quantity::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     const List& l = val["va"].want_list("parsing Quantity values");
@@ -143,10 +109,10 @@ auto_ptr<Quantity> Quantity::decodeMapping(const emitter::memory::Mapping& val)
     return Quantity::create(vals);
 }
 
-auto_ptr<Quantity> Quantity::decodeString(const std::string& val)
+unique_ptr<Quantity> Quantity::decodeString(const std::string& val)
 {
 	if (val.empty())
-		throw wibble::exception::Consistency("parsing Quantity", "string is empty");
+		throw_consistency_error("parsing Quantity", "string is empty");
 
 	std::set<std::string> vals;
 	split(val, vals);
@@ -206,16 +172,16 @@ Quantity* Quantity::clone() const
     return new Quantity(values);
 }
 
-auto_ptr<Quantity> Quantity::create(const std::string& values)
+unique_ptr<Quantity> Quantity::create(const std::string& values)
 {
     std::set<std::string> vals;
     split(values, vals);
     return Quantity::create(vals);
 }
 
-auto_ptr<Quantity> Quantity::create(const std::set<std::string>& values)
+unique_ptr<Quantity> Quantity::create(const std::set<std::string>& values)
 {
-    return auto_ptr<Quantity>(new Quantity(values));
+    return unique_ptr<Quantity>(new Quantity(values));
 }
 
 
@@ -226,6 +192,4 @@ void Quantity::init()
 
 }
 }
-
 #include <arki/types.tcc>
-// vim:set ts=4 sw=4:

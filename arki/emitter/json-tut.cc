@@ -1,25 +1,4 @@
-/*
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/emitter/json.h>
 #include <arki/emitter/memory.h>
@@ -28,6 +7,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::emitter;
+using namespace arki::tests;
 
 struct arki_emitter_json_shar {
     arki_emitter_json_shar()
@@ -37,8 +17,7 @@ struct arki_emitter_json_shar {
 TESTGRP(arki_emitter_json);
 
 // null value
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     stringstream str;
     JSON json(str);
@@ -52,8 +31,7 @@ void to::test<1>()
 }
 
 // bool value
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     {
         stringstream str;
@@ -83,8 +61,7 @@ void to::test<2>()
 }
 
 // int value
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     {
         stringstream str;
@@ -114,8 +91,7 @@ void to::test<3>()
 }
 
 // double value
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     {
         stringstream str;
@@ -171,8 +147,7 @@ void to::test<4>()
 }
 
 // string value
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     {
         stringstream str;
@@ -202,8 +177,7 @@ void to::test<5>()
 }
 
 // list value
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     {
         stringstream str;
@@ -229,8 +203,7 @@ void to::test<6>()
 }
 
 // mapping value
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     {
         stringstream str;

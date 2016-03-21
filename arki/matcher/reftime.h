@@ -57,7 +57,7 @@ struct MatchReftime : public Implementation
      * Restrict a datetime range, returning the new range endpoints in begin
      * and end.
      *
-     * A NULL auto_ptr means an open end.
+     * A NULL unique_ptr means an open end.
      *
      * Returns true if the result is a valid interval, false if this match does
      * not match the given interval at all.
@@ -65,9 +65,9 @@ struct MatchReftime : public Implementation
      * There can be further restrictions than this interval (for example,
      * restrictions on the time of the day).
      */
-    bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const;
+    bool restrict_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
 
-    static MatchReftime* parse(const std::string& pattern);
+    static std::unique_ptr<MatchReftime> parse(const std::string& pattern);
     static void init();
 };
 

@@ -1,33 +1,12 @@
-/*
- * DB-ALLe - Archive for punctual meteorological data
- *
- * Copyright (C) 2005--2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "benchmark.h"
-
-#include <wibble/exception.h>
+#include "arki/exceptions.h"
 #include <stdarg.h>
 #include <unistd.h>
 #include <ostream>
 #include <cstdio>
 
 using namespace std;
+using namespace arki;
 
 static Benchmark* _root = 0;
 Benchmark* Benchmark::root()
@@ -53,9 +32,9 @@ void Benchmark::elapsed(double& user, double& system, double& total)
     struct tms curtms;
     struct timeval curtime;
     if (times(&curtms) == -1)
-		throw wibble::exception::System("reading timing informations");
+		throw_system_error("reading timing informations");
 	if (gettimeofday(&curtime, NULL) == -1)
-		throw wibble::exception::System("reading time informations");
+		throw_system_error("reading time informations");
 
 	user = (curtms.tms_utime - lasttms.tms_utime + curtms.tms_cutime - lasttms.tms_cutime)/tps;
 	system = (curtms.tms_stime - lasttms.tms_stime + curtms.tms_cstime - lasttms.tms_cstime)/tps;
@@ -93,9 +72,9 @@ void Benchmark::timing(const char* fmt, ...)
     fprintf(stdout, ": %.2f user, %.2f system, %.2f total\n", user, system, total);
 
     if (times(&lasttms) == -1)
-		throw wibble::exception::System("reading timing informations");
+		throw_system_error("reading timing informations");
 	if (gettimeofday(&lasttime, NULL) == -1)
-		throw wibble::exception::System("reading time informations");
+		throw_system_error("reading time informations");
 }
 
 // Run only the subtest at the given path
@@ -116,17 +95,17 @@ void Benchmark::run(const std::string& path)
 				i != children.end(); i++)
 			if ((*i)->name() == child)
 				return (*i)->run(nextpath);
-	}
-	throw wibble::exception::Consistency("looking for child " + path + " at " + fullName(), "element not found");
+    }
+    throw std::runtime_error("element not found looking for child " + path + " at " + fullName());
 }
 
 // Run all subtests and this test
 void Benchmark::run()
 {
 	if (times(&lasttms) == -1)
-		throw wibble::exception::System("reading timing informations");
+		throw_system_error("reading timing informations");
 	if (gettimeofday(&lasttime, NULL) == -1)
-		throw wibble::exception::System("reading time informations");
+		throw_system_error("reading time informations");
 
 	// First, run children
 	if (! children.empty())

@@ -1,30 +1,7 @@
-/*
- * types/proddef - Product definition
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/exceptions.h>
 #include <arki/types/proddef.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include "config.h"
@@ -35,13 +12,12 @@
 #include <arki/utils/lua.h>
 #endif
 
-#define CODE types::TYPE_PRODDEF
+#define CODE TYPE_PRODDEF
 #define TAG "proddef"
 #define SERSIZELEN 2
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -57,7 +33,7 @@ const unsigned char Proddef::GRIB;
 Proddef::Style Proddef::parseStyle(const std::string& str)
 {
 	if (str == "GRIB") return GRIB;
-	throw wibble::exception::Consistency("parsing Proddef style", "cannot parse Proddef style '"+str+"': only GRIB is supported");
+	throw_consistency_error("parsing Proddef style", "cannot parse Proddef style '"+str+"': only GRIB is supported");
 }
 
 std::string Proddef::formatStyle(Proddef::Style s)
@@ -72,21 +48,19 @@ std::string Proddef::formatStyle(Proddef::Style s)
 	}
 }
 
-auto_ptr<Proddef> Proddef::decode(const unsigned char* buf, size_t len)
+unique_ptr<Proddef> Proddef::decode(BinaryDecoder& dec)
 {
-    using namespace utils::codec;
-    ensureSize(len, 1, "Proddef");
-    Style s = (Style)decodeUInt(buf, 1);
+    Style s = (Style)dec.pop_uint(1, "proddef style");
     switch (s)
     {
         case GRIB:
-            return createGRIB(ValueBag::decode(buf+1, len-1));
+            return createGRIB(ValueBag::decode(dec));
         default:
-            throw wibble::exception::Consistency("parsing Proddef", "style is " + formatStyle(s) + " but we can only decode GRIB");
+            throw_consistency_error("parsing Proddef", "style is " + formatStyle(s) + " but we can only decode GRIB");
     }
 }
 
-auto_ptr<Proddef> Proddef::decodeString(const std::string& val)
+unique_ptr<Proddef> Proddef::decodeString(const std::string& val)
 {
     string inner;
     Proddef::Style style = outerParse<Proddef>(val, inner);
@@ -94,11 +68,11 @@ auto_ptr<Proddef> Proddef::decodeString(const std::string& val)
     {
         case Proddef::GRIB: return createGRIB(ValueBag::parse(inner));
         default:
-            throw wibble::exception::Consistency("parsing Proddef", "unknown Proddef style " + formatStyle(style));
+            throw_consistency_error("parsing Proddef", "unknown Proddef style " + formatStyle(style));
     }
 }
 
-auto_ptr<Proddef> Proddef::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Proddef> Proddef::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
@@ -106,7 +80,7 @@ auto_ptr<Proddef> Proddef::decodeMapping(const emitter::memory::Mapping& val)
     {
         case Proddef::GRIB: return upcast<Proddef>(proddef::GRIB::decodeMapping(val));
         default:
-            throw wibble::exception::Consistency("parsing Proddef", "unknown Proddef style " + val.get_string());
+            throw_consistency_error("parsing Proddef", "unknown Proddef style " + val.get_string());
     }
 }
 
@@ -130,7 +104,7 @@ void Proddef::lua_loadlib(lua_State* L)
 }
 #endif
 
-auto_ptr<Proddef> Proddef::createGRIB(const ValueBag& values)
+unique_ptr<Proddef> Proddef::createGRIB(const ValueBag& values)
 {
     return upcast<Proddef>(proddef::GRIB::create(values));
 }
@@ -141,10 +115,10 @@ GRIB::~GRIB() { /* cache_grib.uncache(this); */ }
 
 Proddef::Style GRIB::style() const { return Proddef::GRIB; }
 
-void GRIB::encodeWithoutEnvelope(Encoder& enc) const
+void GRIB::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Proddef::encodeWithoutEnvelope(enc);
-	m_values.encode(enc);
+    Proddef::encodeWithoutEnvelope(enc);
+    m_values.encode(enc);
 }
 std::ostream& GRIB::writeToOstream(std::ostream& o) const
 {
@@ -156,7 +130,7 @@ void GRIB::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("va");
     m_values.serialise(e);
 }
-auto_ptr<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
 {
     return GRIB::create(ValueBag::parse(val["va"].get_mapping()));
 }
@@ -182,7 +156,7 @@ int GRIB::compare_local(const Proddef& o) const
 	// We should be the same kind, so upcast
 	const GRIB* v = dynamic_cast<const GRIB*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a GRIB Proddef, but is a ") + typeid(&o).name() + " instead");
 
@@ -203,11 +177,11 @@ GRIB* GRIB::clone() const
     return res;
 }
 
-auto_ptr<GRIB> GRIB::create(const ValueBag& values)
+unique_ptr<GRIB> GRIB::create(const ValueBag& values)
 {
     GRIB* res = new GRIB;
     res->m_values = values;
-    return auto_ptr<GRIB>(res);
+    return unique_ptr<GRIB>(res);
 }
 
 }

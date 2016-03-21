@@ -35,7 +35,6 @@
 #include <arki/matcher/timerange.h>
 #include <arki/types/area.h>
 #include <arki/matcher/area.h>
-#include <arki/types/time.h>
 #include <arki/types/reftime.h>
 #include <arki/matcher/reftime.h>
 #include <arki/types/run.h>
@@ -47,6 +46,9 @@
 #include <arki/matcher/task.h>
 #include <arki/types/value.h>
 #include <arki/matcher/source.h>
+#include <arki/types/note.h>
+#include <arki/types/source.h>
+#include <arki/types/assigneddataset.h>
 
 namespace arki {
 namespace types {
@@ -65,7 +67,6 @@ void init_default_types()
     matcher::MatchTimerange::init();
     Area::init();
     matcher::MatchArea::init();
-    Time::init();
     Reftime::init();
     matcher::MatchReftime::init();
     Run::init();
@@ -77,6 +78,9 @@ void init_default_types()
     matcher::MatchTask::init();
     Value::init();
     matcher::MatchSource::init();
+    Note::init();
+    Source::init();
+    AssignedDataset::init();
 }
 
 }

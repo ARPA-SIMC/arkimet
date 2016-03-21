@@ -1,48 +1,26 @@
-/*
- * arki-dump - Dump a metadata file
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+/// Dump arkimet data files
 #include "config.h"
-
-#include <wibble/exception.h>
-#include <wibble/commandline/parser.h>
+#include <arki/utils/commandline/parser.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
-#include <arki/metadata/printer.h>
 #include <arki/matcher.h>
 #include <arki/dataset/http.h>
 #include <arki/summary.h>
 #include <arki/formatter.h>
 #include <arki/utils/geosdef.h>
+#include <arki/utils/files.h>
+#include <arki/binary.h>
 #include <arki/runtime.h>
-
-#include <fstream>
+#include <sstream>
 #include <iostream>
 
 using namespace std;
 using namespace arki;
 using namespace arki::types;
-using namespace wibble;
+using namespace arki::utils;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public StandardParserWithManpage
@@ -94,172 +72,226 @@ struct Options : public StandardParserWithManpage
 	}
 };
 
-
 }
+}
+}
+
+namespace {
+
+struct YamlPrinter
+{
+    NamedFileDescriptor& out;
+    Formatter* formatter = nullptr;
+
+    YamlPrinter(NamedFileDescriptor& out, bool formatted=false)
+        : out(out)
+    {
+        if (formatted)
+            formatter = Formatter::create().release();
+    }
+    ~YamlPrinter()
+    {
+        delete formatter;
+    }
+
+    bool print(const Metadata& md)
+    {
+        string res = serialize(md);
+        out.write_all_or_throw(res.data(), res.size());
+        return true;
+    }
+
+    bool print_summary(const Summary& s)
+    {
+        string res = serialize(s);
+        out.write_all_or_throw(res.data(), res.size());
+        return true;
+    }
+
+    std::string serialize(const Metadata& md)
+    {
+        stringstream ss;
+        md.writeYaml(ss, formatter);
+        ss << endl;
+        return ss.str();
+    }
+
+    std::string serialize(const Summary& s)
+    {
+        stringstream ss;
+        s.writeYaml(ss, formatter);
+        ss << endl;
+        return ss.str();
+    }
+};
+
 }
 
 // Add to \a s the info from all data read from \a in
-static void addToSummary(runtime::Input& in, Summary& s)
+static void addToSummary(sys::NamedFileDescriptor& in, Summary& s)
 {
-	Metadata md;
-	Summary summary;
+    Metadata md;
+    Summary summary;
 
-	wibble::sys::Buffer buf;
-	string signature;
-	unsigned version;
+    vector<uint8_t> buf;
+    string signature;
+    unsigned version;
 
-	while (types::readBundle(in.stream(), in.name(), buf, signature, version))
-	{
-		if (signature == "MD" || signature == "!D")
-		{
-            md.read(buf, version, in.name());
+    while (types::readBundle(in, in.name(), buf, signature, version))
+    {
+        if (signature == "MD" || signature == "!D")
+        {
+            BinaryDecoder dec(buf);
+            md.read_inner(dec, version, in.name());
             if (md.source().style() == Source::INLINE)
-                md.readInlineData(in.stream(), in.name());
+                md.readInlineData(in, in.name());
             s.add(md);
-		}
-		else if (signature == "SU")
-		{
-			summary.read(buf, version, in.name());
-			s.add(summary);
-		}
-		else if (signature == "MG")
-		{
-            metadata::SummarisingEater sum(s);
-            Metadata::readGroup(buf, version, in.name(), sum);
-		}
-	}
+        }
+        else if (signature == "SU")
+        {
+            BinaryDecoder dec(buf);
+            summary.read_inner(dec, version, in.name());
+            s.add(summary);
+        }
+        else if (signature == "MG")
+        {
+            BinaryDecoder dec(buf);
+            Metadata::read_group(dec, version, in.name(), [&](unique_ptr<Metadata> md) { s.add(*md); return true; });
+        }
+    }
 }
 
 int main(int argc, const char* argv[])
 {
-	wibble::commandline::Options opts;
-	try {
-		if (opts.parse(argc, argv))
-			return 0;
+    commandline::Options opts;
+    try {
+        if (opts.parse(argc, argv))
+            return 0;
 
-		runtime::init();
+        runtime::init();
 
-		// Validate command line options
-		if (opts.query->boolValue() && opts.aliases->boolValue())
-			throw wibble::exception::BadOption("--query conflicts with --aliases");
-		if (opts.query->boolValue() && opts.config->boolValue())
-			throw wibble::exception::BadOption("--query conflicts with --config");
-		if (opts.query->boolValue() && opts.reverse_data->boolValue())
-			throw wibble::exception::BadOption("--query conflicts with --from-yaml-data");
-		if (opts.query->boolValue() && opts.reverse_summary->boolValue())
-			throw wibble::exception::BadOption("--query conflicts with --from-yaml-summary");
-		if (opts.query->boolValue() && opts.annotate->boolValue())
-			throw wibble::exception::BadOption("--query conflicts with --annotate");
-		if (opts.query->boolValue() && opts.bbox && opts.bbox->isSet())
-			throw wibble::exception::BadOption("--query conflicts with --bbox");
-		if (opts.query->boolValue() && opts.info && opts.info->isSet())
-			throw wibble::exception::BadOption("--query conflicts with --info");
+        // Validate command line options
+        if (opts.query->boolValue() && opts.aliases->boolValue())
+            throw commandline::BadOption("--query conflicts with --aliases");
+        if (opts.query->boolValue() && opts.config->boolValue())
+            throw commandline::BadOption("--query conflicts with --config");
+        if (opts.query->boolValue() && opts.reverse_data->boolValue())
+            throw commandline::BadOption("--query conflicts with --from-yaml-data");
+        if (opts.query->boolValue() && opts.reverse_summary->boolValue())
+            throw commandline::BadOption("--query conflicts with --from-yaml-summary");
+        if (opts.query->boolValue() && opts.annotate->boolValue())
+            throw commandline::BadOption("--query conflicts with --annotate");
+        if (opts.query->boolValue() && opts.bbox && opts.bbox->isSet())
+            throw commandline::BadOption("--query conflicts with --bbox");
+        if (opts.query->boolValue() && opts.info && opts.info->isSet())
+            throw commandline::BadOption("--query conflicts with --info");
 
-		if (opts.config->boolValue() && opts.aliases->boolValue())
-			throw wibble::exception::BadOption("--config conflicts with --aliases");
-		if (opts.config->boolValue() && opts.reverse_data->boolValue())
-			throw wibble::exception::BadOption("--config conflicts with --from-yaml-data");
-		if (opts.config->boolValue() && opts.reverse_summary->boolValue())
-			throw wibble::exception::BadOption("--config conflicts with --from-yaml-summary");
-		if (opts.config->boolValue() && opts.annotate->boolValue())
-			throw wibble::exception::BadOption("--config conflicts with --annotate");
-		if (opts.config->boolValue() && opts.bbox && opts.bbox->isSet())
-			throw wibble::exception::BadOption("--config conflicts with --bbox");
-		if (opts.config->boolValue() && opts.info && opts.info->isSet())
-			throw wibble::exception::BadOption("--config conflicts with --info");
+        if (opts.config->boolValue() && opts.aliases->boolValue())
+            throw commandline::BadOption("--config conflicts with --aliases");
+        if (opts.config->boolValue() && opts.reverse_data->boolValue())
+            throw commandline::BadOption("--config conflicts with --from-yaml-data");
+        if (opts.config->boolValue() && opts.reverse_summary->boolValue())
+            throw commandline::BadOption("--config conflicts with --from-yaml-summary");
+        if (opts.config->boolValue() && opts.annotate->boolValue())
+            throw commandline::BadOption("--config conflicts with --annotate");
+        if (opts.config->boolValue() && opts.bbox && opts.bbox->isSet())
+            throw commandline::BadOption("--config conflicts with --bbox");
+        if (opts.config->boolValue() && opts.info && opts.info->isSet())
+            throw commandline::BadOption("--config conflicts with --info");
 
-		if (opts.aliases->boolValue() && opts.reverse_data->boolValue())
-			throw wibble::exception::BadOption("--aliases conflicts with --from-yaml-data");
-		if (opts.aliases->boolValue() && opts.reverse_summary->boolValue())
-			throw wibble::exception::BadOption("--aliases conflicts with --from-yaml-summary");
-		if (opts.aliases->boolValue() && opts.annotate->boolValue())
-			throw wibble::exception::BadOption("--aliases conflicts with --annotate");
-		if (opts.aliases->boolValue() && opts.bbox && opts.bbox->isSet())
-			throw wibble::exception::BadOption("--aliases conflicts with --bbox");
-		if (opts.aliases->boolValue() && opts.info && opts.info->isSet())
-			throw wibble::exception::BadOption("--aliases conflicts with --info");
+        if (opts.aliases->boolValue() && opts.reverse_data->boolValue())
+            throw commandline::BadOption("--aliases conflicts with --from-yaml-data");
+        if (opts.aliases->boolValue() && opts.reverse_summary->boolValue())
+            throw commandline::BadOption("--aliases conflicts with --from-yaml-summary");
+        if (opts.aliases->boolValue() && opts.annotate->boolValue())
+            throw commandline::BadOption("--aliases conflicts with --annotate");
+        if (opts.aliases->boolValue() && opts.bbox && opts.bbox->isSet())
+            throw commandline::BadOption("--aliases conflicts with --bbox");
+        if (opts.aliases->boolValue() && opts.info && opts.info->isSet())
+            throw commandline::BadOption("--aliases conflicts with --info");
 
-		if (opts.reverse_data->boolValue() && opts.reverse_summary->boolValue())
-			throw wibble::exception::BadOption("--from-yaml-data conflicts with --from-yaml-summary");
-		if (opts.annotate->boolValue() && opts.reverse_data->boolValue())
-			throw wibble::exception::BadOption("--annotate conflicts with --from-yaml-data");
-		if (opts.annotate->boolValue() && opts.reverse_summary->boolValue())
-			throw wibble::exception::BadOption("--annotate conflicts with --from-yaml-summary");
-		if (opts.annotate->boolValue() && opts.bbox && opts.bbox->isSet())
-			throw wibble::exception::BadOption("--annotate conflicts with --bbox");
-		if (opts.annotate->boolValue() && opts.info && opts.info->isSet())
-			throw wibble::exception::BadOption("--annotate conflicts with --info");
+        if (opts.reverse_data->boolValue() && opts.reverse_summary->boolValue())
+            throw commandline::BadOption("--from-yaml-data conflicts with --from-yaml-summary");
+        if (opts.annotate->boolValue() && opts.reverse_data->boolValue())
+            throw commandline::BadOption("--annotate conflicts with --from-yaml-data");
+        if (opts.annotate->boolValue() && opts.reverse_summary->boolValue())
+            throw commandline::BadOption("--annotate conflicts with --from-yaml-summary");
+        if (opts.annotate->boolValue() && opts.bbox && opts.bbox->isSet())
+            throw commandline::BadOption("--annotate conflicts with --bbox");
+        if (opts.annotate->boolValue() && opts.info && opts.info->isSet())
+            throw commandline::BadOption("--annotate conflicts with --info");
 
-		if (opts.query->boolValue())
-		{
-			if (!opts.hasNext())
-				throw wibble::exception::BadOption("--query wants the query on the command line");
-			Matcher m = Matcher::parse(opts.next());
-			cout << m.toStringExpanded() << endl;
-			return 0;
-		}
-		
-		if (opts.aliases->boolValue())
-		{
-			ConfigFile cfg;
-			if (opts.hasNext())
-			{
-				dataset::HTTP::getAliasDatabase(opts.next(), cfg);
-			} else {
-				MatcherAliasDatabase::serialise(cfg);
-			}
-			
-			// Open the output file
-			runtime::Output out(*opts.outfile);
+        if (opts.query->boolValue())
+        {
+            if (!opts.hasNext())
+                throw commandline::BadOption("--query wants the query on the command line");
+            Matcher m = Matcher::parse(opts.next());
+            cout << m.toStringExpanded() << endl;
+            return 0;
+        }
 
-			// Output the merged configuration
-			cfg.output(out.stream(), out.name());
+        if (opts.aliases->boolValue())
+        {
+            ConfigFile cfg;
+            if (opts.hasNext())
+            {
+                dataset::HTTP::getAliasDatabase(opts.next(), cfg);
+            } else {
+                MatcherAliasDatabase::serialise(cfg);
+            }
 
-			return 0;
-		}
+            // Output the merged configuration
+            string res = cfg.serialize();
+            unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
+            out->write_all_or_throw(res);
+            out->close();
 
-		if (opts.config->boolValue())
-		{
-			ConfigFile cfg;
-			while (opts.hasNext())
-			{
-				ReadonlyDataset::readConfig(opts.next(), cfg);
-			}
-			
-			// Open the output file
-			runtime::Output out(*opts.outfile);
+            return 0;
+        }
 
-			// Output the merged configuration
-			cfg.output(out.stream(), out.name());
+        if (opts.config->boolValue())
+        {
+            ConfigFile cfg;
+            while (opts.hasNext())
+                dataset::Reader::readConfig(opts.next(), cfg);
 
-			return 0;
-		}
+            // Output the merged configuration
+            string res = cfg.serialize();
+            unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
+            out->write_all_or_throw(res);
+            out->close();
+
+            return 0;
+        }
 
 #ifdef HAVE_GEOS
-		if (opts.bbox->boolValue())
-		{
-			// Open the input file
-			runtime::Input in(opts);
+        if (opts.bbox->boolValue())
+        {
+            // Open the input file
+            auto in = runtime::make_input(opts);
 
-			// Read everything into a single summary
-			Summary summary;
-			addToSummary(in, summary);
+            // Read everything into a single summary
+            Summary summary;
+            addToSummary(*in, summary);
 
-			// Get the bounding box
-			ARKI_GEOS_GEOMETRYFACTORY gf;
-			std::auto_ptr<ARKI_GEOS_GEOMETRY> hull = summary.getConvexHull(gf);
+            // Get the bounding box
+            ARKI_GEOS_GEOMETRYFACTORY gf;
+            std::unique_ptr<ARKI_GEOS_GEOMETRY> hull = summary.getConvexHull(gf);
 
-			// Open the output file
-			runtime::Output out(*opts.outfile);
+            // Print it out
+            stringstream ss;
+            if (hull.get())
+                ss << hull->toString() << endl;
+            else
+                ss << "no bounding box could be computed." << endl;
 
-			// Print it out
-			if (hull.get())
-				out.stream() << hull->toString() << endl;
-			else
-				out.stream() << "no bounding box could be computed." << endl;
+            // Open the output file
+            unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
+            out->write_all_or_throw(ss.str());
+            out->close();
 
-			return 0;
-		}
+            return 0;
+        }
 #endif
 
         if (opts.info->boolValue())
@@ -269,54 +301,59 @@ int main(int argc, const char* argv[])
             return 0;
         }
 
-		// Open the input file
-		runtime::Input in(opts);
+        // Open the input file
+        auto in = runtime::make_input(opts);
 
-		// Open the output channel
-		runtime::Output out(*opts.outfile);
+        // Open the output channel
+        unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
 
-		if (opts.reverse_data->boolValue())
-		{
-			Metadata md;
-			while (md.readYaml(in.stream(), in.name()))
-				md.write(out.stream(), out.name());
-		}
-		else if (opts.reverse_summary->boolValue())
-		{
-			Summary summary;
-			while (summary.readYaml(in.stream(), in.name()))
-				summary.write(out.stream(), out.name());
-		}
-		else
-		{
-            metadata::YamlPrinter writer(out, opts.annotate->boolValue());
+        if (opts.reverse_data->boolValue())
+        {
+            Metadata md;
+            auto reader = LineReader::from_fd(*in);
+            while (md.readYaml(*reader, in->name()))
+                md.write(*out);
+        }
+        else if (opts.reverse_summary->boolValue())
+        {
+            Summary summary;
+            auto reader = LineReader::from_fd(*in);
+            while (summary.readYaml(*reader, in->name()))
+                summary.write(*out, out->name());
+        }
+        else
+        {
+            YamlPrinter writer(*out, opts.annotate->boolValue());
 
-			Metadata md;
-			Summary summary;
+            Metadata md;
+            Summary summary;
 
-			wibble::sys::Buffer buf;
-			string signature;
-			unsigned version;
+            vector<uint8_t> buf;
+            string signature;
+            unsigned version;
 
-			while (types::readBundle(in.stream(), in.name(), buf, signature, version))
-			{
-				if (signature == "MD" || signature == "!D")
-				{
-                    md.read(buf, version, in.name());
+            while (types::readBundle(*in, in->name(), buf, signature, version))
+            {
+                if (signature == "MD" || signature == "!D")
+                {
+                    BinaryDecoder dec(buf);
+                    md.read_inner(dec, version, in->name());
                     if (md.source().style() == Source::INLINE)
-                        md.readInlineData(in.stream(), in.name());
-                    writer.observe(md);
-				}
-				else if (signature == "SU")
-				{
-                    summary.read(buf, version, in.name());
-                    writer.observe_summary(summary);
-				}
-				else if (signature == "MG")
-				{
-					Metadata::readGroup(buf, version, in.name(), writer);
-				}
-			}
+                        md.readInlineData(*in, in->name());
+                    writer.print(md);
+                }
+                else if (signature == "SU")
+                {
+                    BinaryDecoder dec(buf);
+                    summary.read_inner(dec, version, in->name());
+                    writer.print_summary(summary);
+                }
+                else if (signature == "MG")
+                {
+                    BinaryDecoder dec(buf);
+                    Metadata::read_group(dec, version, in->name(), [&](unique_ptr<Metadata> md) { return writer.print(*md); });
+                }
+            }
 // Uncomment as a quick hack to check memory usage at this point:
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
 //types::debug_intern_stats();
@@ -324,14 +361,12 @@ int main(int argc, const char* argv[])
 		}
 
 		return 0;
-	} catch (wibble::exception::BadOption& e) {
-		cerr << e.desc() << endl;
-		opts.outputHelp(cerr);
-		return 1;
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
+        opts.outputHelp(cerr);
+        return 1;
 	} catch (std::exception& e) {
 		cerr << e.what() << endl;
 		return 1;
 	}
 }
-
-// vim:set ts=4 sw=4:

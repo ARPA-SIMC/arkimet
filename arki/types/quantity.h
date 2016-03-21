@@ -31,23 +31,20 @@
 
 struct lua_State;
 
-namespace arki { namespace types {
-
-/*============================================================================*/
+namespace arki {
+namespace types {
 
 struct Quantity;
 
 template<> struct traits<Quantity>
 {
-	static const char* 		type_tag;
-	static const types::Code 	type_code;
-	static const size_t 		type_sersize_bytes;
-	static const char* 		type_lua_tag;
+    static const char* type_tag;
+    static const types::Code type_code;
+    static const size_t type_sersize_bytes;
+    static const char* type_lua_tag;
 
-	typedef unsigned char 		Style;
+    typedef unsigned char Style;
 };
-
-/*============================================================================*/
 
 /**
  * Quantity informations
@@ -62,9 +59,9 @@ struct Quantity : public CoreType<Quantity>
     bool equals(const Type& o) const override;
 
     /// CODEC functions
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
-    static std::auto_ptr<Quantity> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Quantity> decodeString(const std::string& val);
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    static std::unique_ptr<Quantity> decode(BinaryDecoder& dec);
+    static std::unique_ptr<Quantity> decodeString(const std::string& val);
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -72,9 +69,9 @@ struct Quantity : public CoreType<Quantity>
     Quantity* clone() const override;
 
     /// Create a task
-    static std::auto_ptr<Quantity> create(const std::string& values);
-    static std::auto_ptr<Quantity> create(const std::set<std::string>& values);
-    static std::auto_ptr<Quantity> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Quantity> create(const std::string& values);
+    static std::unique_ptr<Quantity> create(const std::set<std::string>& values);
+    static std::unique_ptr<Quantity> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 
@@ -82,28 +79,6 @@ struct Quantity : public CoreType<Quantity>
     static void init();
 };
 
-/*============================================================================*/
-
-} }
-
-// vim:set ts=4 sw=4:
+}
+}
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

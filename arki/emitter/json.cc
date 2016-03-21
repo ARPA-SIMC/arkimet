@@ -1,36 +1,11 @@
-/*
- * emitter/json - JSON emitter
- *
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include "config.h"
-
-#include <arki/emitter/json.h>
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/sys/buffer.h>
+#include "json.h"
+#include "arki/libconfig.h"
+#include "arki/utils/string.h"
+#include "arki/exceptions.h"
 #include <cctype>
 #include <cmath>
 
 using namespace std;
-using namespace wibble;
 
 namespace arki {
 namespace emitter {
@@ -47,17 +22,17 @@ void JSON::val_head()
             case LIST_FIRST: stack.back() = LIST; break;
             case LIST:
                 out << ",";
-                if (out.bad()) throw wibble::exception::System("write failed");
+                if (out.bad()) throw_system_error("write failed");
                 break;
             case MAPPING_KEY_FIRST: stack.back() = MAPPING_VAL; break;
             case MAPPING_KEY:
                 out << ",";
-                if (out.bad()) throw wibble::exception::System("write failed");
+                if (out.bad()) throw_system_error("write failed");
                 stack.back() = MAPPING_VAL;
                 break;
             case MAPPING_VAL:
                 out << ":";
-                if (out.bad()) throw wibble::exception::System("write failed");
+                if (out.bad()) throw_system_error("write failed");
                 stack.back() = MAPPING_KEY;
                 break;
         }
@@ -69,7 +44,7 @@ void JSON::add_null()
     val_head();
 
     out << "null";
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
 }
 
 void JSON::add_bool(bool val)
@@ -80,14 +55,14 @@ void JSON::add_bool(bool val)
         out << "true";
     else
         out << "false";
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
 }
 
 void JSON::add_int(long long int val)
 {
     val_head();
     out << val;
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
 }
 
 void JSON::add_double(double val)
@@ -100,7 +75,7 @@ void JSON::add_double(double val)
         out << (int)vint << ".0";
     else
         out << val;
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
 }
 
 void JSON::add_string(const std::string& val)
@@ -121,7 +96,7 @@ void JSON::add_string(const std::string& val)
             default: out << *i; break;
         }
     out << '"';
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
 }
 
 void JSON::add_break()
@@ -129,33 +104,33 @@ void JSON::add_break()
     // Always use \n on any platform, to prevent ambiguities in case real data
     // start with \r or \n
     out << '\n';
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
 }
 
 void JSON::add_raw(const std::string& val)
 {
     out.write(val.data(), val.size());
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
 }
 
-void JSON::add_raw(const wibble::sys::Buffer& val)
+void JSON::add_raw(const std::vector<uint8_t>& val)
 {
     out.write((const char*)val.data(), val.size());
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
 }
 
 void JSON::start_list()
 {
     val_head();
     out << "[";
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
     stack.push_back(LIST_FIRST);
 }
 
 void JSON::end_list()
 {
     out << "]";
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
     stack.pop_back();
 }
 
@@ -163,23 +138,21 @@ void JSON::start_mapping()
 {
     val_head();
     out << "{";
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
     stack.push_back(MAPPING_KEY_FIRST);
 }
 
 void JSON::end_mapping()
 {
     out << "}";
-    if (out.bad()) throw wibble::exception::System("write failed");
+    if (out.bad()) throw_system_error("write failed");
     stack.pop_back();
 }
 
-struct JSONParseException : public wibble::exception::Consistency
+struct JSONParseException : public std::runtime_error
 {
     JSONParseException(const std::string& msg)
-        : wibble::exception::Consistency("parsing JSON", msg) {}
-
-    virtual const char* type() const throw () { return "JSONParse"; }
+        : std::runtime_error("cannot parse JSON: " + msg) {}
 };
 
 static void parse_spaces(std::istream& in)
@@ -196,10 +169,12 @@ static void parse_fixed(std::istream& in, const char* expected)
         int c = in.get();
         if (c != *s)
         {
+            stringstream ss;
             if (c == EOF)
-                throw JSONParseException(str::fmtf("end of file reached looking for %s in %s", s, expected));
+                ss << "end of file reached looking for " << s << " in " << expected;
             else
-                throw JSONParseException(str::fmtf("unexpected character '%c' looking for %s in %s", c, s, expected));
+                ss << "unexpected character '" << (char)c << "' looking for " << s << " in " << expected;
+            throw JSONParseException(ss.str());
         }
         ++s;
     }
@@ -369,7 +344,11 @@ static void parse_value(std::istream& in, Emitter& e)
             parse_spaces(in);
             break;
         default:
-            throw JSONParseException(str::fmtf("unexpected character '%c'", in.peek()));
+        {
+            stringstream ss;
+            ss << "unexpected character '" << (char)in.peek() << "'";
+            throw JSONParseException(ss.str());
+        }
     }
     parse_spaces(in);
 }

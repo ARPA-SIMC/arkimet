@@ -1,29 +1,9 @@
 #ifndef ARKI_DATASET_MAINTENANCE_H
 #define ARKI_DATASET_MAINTENANCE_H
 
-/*
- * dataset/maintenance - Dataset maintenance utilities
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// dataset/maintenance - Dataset maintenance utilities
 
-#include <arki/dataset/data.h>
+#include <arki/dataset/segment.h>
 #include <string>
 #include <vector>
 #include <sys/types.h>
@@ -35,92 +15,38 @@ class Collection;
 }
 
 namespace scan {
-struct Validator;
+class Validator;
 }
 
 namespace dataset {
-class WritableLocal;
+class Reporter;
+class SegmentedChecker;
+class Step;
 
 namespace maintenance {
 
 /**
- * Visitor interface for scanning information about the files indexed in the database
+ * Print out the maintenance state for each segment
  */
-struct MaintFileVisitor
+struct Dumper
 {
-    virtual ~MaintFileVisitor() {}
-
-    virtual void operator()(const std::string& file, data::FileState state) = 0;
-};
-
-/**
- * Visitor interface for scanning information about the files indexed in the database
- */
-struct IndexFileVisitor
-{
-	virtual ~IndexFileVisitor() {}
-
-    virtual void operator()(const std::string& file, const metadata::Collection& mdc) = 0;
-};
-
-/**
- * MaintFileVisitor that feeds a MaintFileVisitor with TO_INDEX status.
- *
- * The input feed is assumed to come from the index, and is checked against the
- * files found on disk in order to detect files that are on disk but not in the
- * index.
- */
-struct FindMissing : public MaintFileVisitor
-{
-	MaintFileVisitor& next;
-	std::vector<std::string> disk;
-
-	FindMissing(MaintFileVisitor& next, const std::vector<std::string>& files);
-
-	// files: a, b, c,    e, f, g
-	// index:       c, d, e, f, g
-
-	void operator()(const std::string& file, data::FileState state);
-	void end();
-};
-
-/**
- * Print out the maintenance state for each file
- */
-struct Dumper : public MaintFileVisitor
-{
-	void operator()(const std::string& file, data::FileState state);
-};
-
-struct Tee : public MaintFileVisitor
-{
-	MaintFileVisitor& one;
-	MaintFileVisitor& two;
-
-	Tee(MaintFileVisitor& one, MaintFileVisitor& two);
-	virtual ~Tee();
-	void operator()(const std::string& file, data::FileState state);
+    void operator()(const std::string& relpath, segment::State state);
 };
 
 /// Base class for all repackers and rebuilders
-struct Agent : public maintenance::MaintFileVisitor
+struct Agent
 {
-	std::ostream& m_log;
-	WritableLocal& w;
-	bool lineStart;
+    dataset::Reporter& reporter;
+    SegmentedChecker& w;
+    bool lineStart;
 
-	Agent(std::ostream& log, WritableLocal& w);
+    Agent(dataset::Reporter& reporter, SegmentedChecker& w);
+    Agent(const Agent&) = delete;
+    Agent& operator=(const Agent&) = delete;
 
-	std::ostream& log();
+    virtual void operator()(const std::string& relpath, segment::State state) = 0;
 
-	// Start a line with multiple items logged
-	void logStart();
-	// Log another item on the current line
-	std::ostream& logAdd();
-	// End the line with multiple things logged
-	void logEnd();
-
-	virtual void end() {}
+    virtual void end() {}
 };
 
 /**
@@ -130,12 +56,12 @@ struct Agent : public maintenance::MaintFileVisitor
  */
 struct FailsafeRepacker : public Agent
 {
-	size_t m_count_deleted;
+    using Agent::Agent;
 
-	FailsafeRepacker(std::ostream& log, WritableLocal& w);
+    size_t m_count_deleted = 0;
 
-	void operator()(const std::string& file, data::FileState state);
-	void end();
+    void operator()(const std::string& relpath, segment::State state);
+    void end();
 };
 
 /**
@@ -143,16 +69,17 @@ struct FailsafeRepacker : public Agent
  */
 struct MockRepacker : public Agent
 {
-	size_t m_count_packed;
-	size_t m_count_archived;
-	size_t m_count_deleted;
-	size_t m_count_deindexed;
-	size_t m_count_rescanned;
+    using Agent::Agent;
 
-	MockRepacker(std::ostream& log, WritableLocal& w);
+    size_t m_count_ok = 0;
+    size_t m_count_packed = 0;
+    size_t m_count_archived = 0;
+    size_t m_count_deleted = 0;
+    size_t m_count_deindexed = 0;
+    size_t m_count_rescanned = 0;
 
-	void operator()(const std::string& file, data::FileState state);
-	void end();
+    void operator()(const std::string& relpath, segment::State state);
+    void end();
 };
 
 /**
@@ -160,56 +87,57 @@ struct MockRepacker : public Agent
  */
 struct MockFixer : public Agent
 {
-	size_t m_count_packed;
-	size_t m_count_rescanned;
-	size_t m_count_deindexed;
+    using Agent::Agent;
 
-	MockFixer(std::ostream& log, WritableLocal& w);
+    size_t m_count_ok = 0;
+    size_t m_count_packed = 0;
+    size_t m_count_rescanned = 0;
+    size_t m_count_deindexed = 0;
 
-	void operator()(const std::string& file, data::FileState state);
-	void end();
+    void operator()(const std::string& relpath, segment::State state);
+    void end();
 };
 
 /**
  * Perform real repacking
  */
-struct RealRepacker : public maintenance::Agent
+struct RealRepacker : public Agent
 {
-	size_t m_count_packed;
-	size_t m_count_archived;
-	size_t m_count_deleted;
-	size_t m_count_deindexed;
-	size_t m_count_rescanned;
-	size_t m_count_freed;
-	bool m_touched_archive;
-	bool m_redo_summary;
+    using Agent::Agent;
 
-	RealRepacker(std::ostream& log, WritableLocal& w);
+    size_t m_count_ok = 0;
+    size_t m_count_packed = 0;
+    size_t m_count_archived = 0;
+    size_t m_count_deleted = 0;
+    size_t m_count_deindexed = 0;
+    size_t m_count_rescanned = 0;
+    size_t m_count_freed = 0;
+    bool m_touched_archive = false;
+    bool m_redo_summary = false;
 
-	void operator()(const std::string& file, data::FileState state);
-	void end();
+    void operator()(const std::string& relpath, segment::State state);
+    void end();
 };
 
 /**
  * Perform real repacking
  */
-struct RealFixer : public maintenance::Agent
+struct RealFixer : public Agent
 {
-	size_t m_count_packed;
-	size_t m_count_rescanned;
-	size_t m_count_deindexed;
-	bool m_touched_archive;
-	bool m_redo_summary;
+    using Agent::Agent;
 
-	RealFixer(std::ostream& log, WritableLocal& w);
+    size_t m_count_ok = 0;
+    size_t m_count_packed = 0;
+    size_t m_count_rescanned = 0;
+    size_t m_count_deindexed = 0;
+    bool m_touched_archive = 0;
+    bool m_redo_summary = 0;
 
-	void operator()(const std::string& file, data::FileState state);
-	void end();
+    void operator()(const std::string& relpath, segment::State state);
+    void end();
 };
 
 }
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

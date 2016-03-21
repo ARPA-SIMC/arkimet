@@ -1,45 +1,28 @@
-/*
- * Copyright (C) 2010--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/utils/compress.h>
-#include <wibble/sys/fs.h>
-
+#include <arki/utils/sys.h>
 #include <sstream>
 #include <iostream>
+
+namespace std {
+static ostream& operator<<(ostream& out, const vector<uint8_t>& buf)
+{
+    return out.write((const char*)buf.data(), buf.size());
+}
+}
 
 namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::utils;
-using namespace wibble;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki::utils::compress;
 
-static void fill(sys::Buffer buf, const std::string& pattern)
+static void fill(vector<uint8_t>& buf, const std::string& pattern)
 {
-	char* b = (char*)buf.data();
-	for (size_t i = 0; i < buf.size(); ++i)
-		b[i] = pattern[i % pattern.size()];
+    for (size_t i = 0; i < buf.size(); ++i)
+        buf[i] = pattern[i % pattern.size()];
 }
 
 struct arki_utils_compress_shar {
@@ -47,60 +30,55 @@ struct arki_utils_compress_shar {
 TESTGRP(arki_utils_compress);
 
 // Test compressing data that do not compress
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
-	sys::Buffer orig("ciao", 4);
-	sys::Buffer comp = lzo(orig.data(), orig.size());
+    vector<uint8_t> orig = { 'c', 'i', 'a', 'o' };
+    vector<uint8_t> comp = lzo(orig.data(), orig.size());
 
     wassert(actual(comp.size()) == orig.size());
     wassert(actual(comp) == orig);
 }
 
 // Test a compression/decompression cycle
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	using namespace utils::compress;
 
-	// Make a long and easily compressible string
-	sys::Buffer orig(4096);
-	fill(orig, "ciao");
+    // Make a long and easily compressible string
+    vector<uint8_t> orig(4096);
+    fill(orig, "ciao");
 
-    sys::Buffer comp = lzo(orig.data(), orig.size());
+    vector<uint8_t> comp = lzo(orig.data(), orig.size());
     wassert(actual(comp.size()) < orig.size());
     wassert(actual(unlzo(comp.data(), comp.size(), orig.size())) == orig);
 }
 
 // Test a compression/decompression cycle on a large buffer
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 	using namespace utils::compress;
 
-	// Make a long and easily compressible string
-	sys::Buffer orig(1000000);
-	fill(orig, "ciao");
+    // Make a long and easily compressible string
+    vector<uint8_t> orig(1000000);
+    fill(orig, "ciao");
 
-    sys::Buffer comp = lzo(orig.data(), orig.size());
+    vector<uint8_t> comp = lzo(orig.data(), orig.size());
     wassert(actual(comp.size()) < orig.size());
     wassert(actual(unlzo(comp.data(), comp.size(), orig.size())) == orig);
 }
 
 // Test SeekIndex
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
 	SeekIndex idx;
 
     // Opening a nonexisting file returns false
-    wassert(!actual("this-file-does-not-exists").fileexists());
+    wassert(actual_file("this-file-does-not-exists").not_exists());
     wassert(actual(idx.read("this-file-does-not-exists")).isfalse());
 }
 
 // Test SeekIndex lookup
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
 	SeekIndex idx;
 
@@ -130,5 +108,3 @@ void to::test<5>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

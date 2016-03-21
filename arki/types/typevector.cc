@@ -1,30 +1,7 @@
-/*
- * types/typevector - Vector of nullable types
- *
- * Copyright (C) 2014--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "typevector.h"
 #include <algorithm>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
 
 namespace arki {
@@ -56,7 +33,7 @@ bool TypeVector::operator==(const TypeVector& o) const
     return true;
 }
 
-void TypeVector::set(size_t pos, std::auto_ptr<types::Type> val)
+void TypeVector::set(size_t pos, std::unique_ptr<types::Type> val)
 {
     if (pos >= vals.size())
         vals.resize(pos + 1);
@@ -116,7 +93,7 @@ void TypeVector::split(size_t pos, TypeVector& dest)
     vals.resize(pos);
 }
 
-void TypeVector::push_back(std::auto_ptr<types::Type> val)
+void TypeVector::push_back(std::unique_ptr<types::Type>&& val)
 {
     vals.push_back(val.release());
 }
@@ -153,11 +130,11 @@ bool TypeVector::sorted_insert(const Type& item)
     return true;
 }
 
-bool TypeVector::sorted_insert(std::auto_ptr<types::Type>& item)
+bool TypeVector::sorted_insert(std::unique_ptr<types::Type>&& item)
 {
     vector<Type*>::iterator lb = lower_bound(vals.begin(), vals.end(), item.get(), TypeptrLt());
     if (lb == vals.end())
-        push_back(item);
+        push_back(move(item));
     else if (**lb != *item)
         vals.insert(lb, item.release());
     else

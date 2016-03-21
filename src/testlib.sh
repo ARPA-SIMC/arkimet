@@ -80,7 +80,7 @@ importtest() {
     # Create the test datasets and import the test data
 
     cat <<EOT > test200/config
-type=test
+type=ondisk2
 step=daily
 filter=origin:GRIB1,200
 indef=origin
@@ -88,7 +88,7 @@ postprocess=cat,echo,say,checkfiles,error,outthenerr
 EOT
 
     cat <<EOT > test80/config
-type=test
+type=ondisk2
 step=daily
 filter=origin:GRIB1,80
 indef=origin
@@ -96,7 +96,7 @@ postprocess=cat
 EOT
 
     cat <<EOT > test98/config
-type=test
+type=ondisk2
 step=daily
 filter=origin:GRIB1,98
 indef=origin

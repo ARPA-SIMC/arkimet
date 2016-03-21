@@ -1,31 +1,9 @@
-/*
- * types/area - Geographical area
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/exceptions.h>
 #include <arki/types/area.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/utils/geosdef.h>
+#include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include <arki/bbox.h>
@@ -41,13 +19,12 @@
 #include <arki/utils/vm2.h>
 #endif
 
-#define CODE types::TYPE_AREA
+#define CODE TYPE_AREA
 #define TAG "area"
 #define SERSIZELEN 2
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -69,10 +46,10 @@ const unsigned char Area::VM2;
 
 Area::Style Area::parseStyle(const std::string& str)
 {
-	if (str == "GRIB") return GRIB;
-	if (str == "ODIMH5") return ODIMH5;
+    if (str == "GRIB") return GRIB;
+    if (str == "ODIMH5") return ODIMH5;
     if (str == "VM2") return VM2;
-	throw wibble::exception::Consistency("parsing Area style", "cannot parse Area style '"+str+"': only GRIB,ODIMH5 is supported");
+    throw_consistency_error("parsing Area style", "cannot parse Area style '"+str+"': only GRIB,ODIMH5 is supported");
 }
 
 std::string Area::formatStyle(Area::Style s)
@@ -101,7 +78,7 @@ const ARKI_GEOS_GEOMETRY* Area::bbox() const
 		// Create the bbox generator if missing
 		if (!area::bbox) area::bbox = new BBox();
 
-		std::auto_ptr<ARKI_GEOS_GEOMETRY> res = (*area::bbox)(*this);
+		std::unique_ptr<ARKI_GEOS_GEOMETRY> res = (*area::bbox)(*this);
 		if (res.get())
 			cached_bbox = res.release();
 	}
@@ -109,25 +86,23 @@ const ARKI_GEOS_GEOMETRY* Area::bbox() const
 	return cached_bbox;
 }
 
-auto_ptr<Area> Area::decode(const unsigned char* buf, size_t len)
+unique_ptr<Area> Area::decode(BinaryDecoder& dec)
 {
-	using namespace utils::codec;
-	Decoder dec(buf, len);
-	Style s = (Style)dec.popUInt(1, "area");
+    Style s = (Style)dec.pop_uint(1, "area");
     switch (s)
     {
         case GRIB:
-            return createGRIB(ValueBag::decode(dec.buf, dec.len));
+            return createGRIB(ValueBag::decode(dec));
         case ODIMH5:
-            return createODIMH5(ValueBag::decode(dec.buf, dec.len));
+            return createODIMH5(ValueBag::decode(dec));
         case VM2:
-            return createVM2(dec.popUInt(4, "VM station id"));
+            return createVM2(dec.pop_uint(4, "VM station id"));
         default:
-            throw wibble::exception::Consistency("parsing Area", "style is " + formatStyle(s) + " but we can only decode GRIB");
+            throw std::runtime_error("cannot parse Area: style is " + formatStyle(s) + " but we can only decode GRIB, ODIMH5 and VM2");
     }
 }
 
-auto_ptr<Area> Area::decodeString(const std::string& val)
+unique_ptr<Area> Area::decodeString(const std::string& val)
 {
 	string inner;
 	Area::Style style = outerParse<Area>(val, inner);
@@ -136,21 +111,19 @@ auto_ptr<Area> Area::decodeString(const std::string& val)
         case Area::GRIB: return createGRIB(ValueBag::parse(inner));
         case Area::ODIMH5: return createODIMH5(ValueBag::parse(inner));
         case Area::VM2: {
-            using wibble::exception::Consistency;
             const char* innerptr = inner.c_str();
             char* endptr;
             unsigned long station_id = strtoul(innerptr, &endptr, 10); 
             if (innerptr == endptr)
-                throw Consistency("parsing" + inner,
-                                  "expected a number, but found \"" + inner +"\"");
+                throw std::runtime_error("cannot parse" + inner + ": expected a number, but found \"" + inner +"\"");
             return createVM2(station_id);
         }
-		default:
-			throw wibble::exception::Consistency("parsing Area", "unknown Area style " + formatStyle(style));
-	}
+        default:
+            throw_consistency_error("parsing Area", "unknown Area style " + formatStyle(style));
+    }
 }
 
-auto_ptr<Area> Area::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Area> Area::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
@@ -160,7 +133,7 @@ auto_ptr<Area> Area::decodeMapping(const emitter::memory::Mapping& val)
         case Area::ODIMH5: return upcast<Area>(area::ODIMH5::decodeMapping(val));
         case Area::VM2: return upcast<Area>(area::VM2::decodeMapping(val));
         default:
-            throw wibble::exception::Consistency("parsing Area", "unknown Area style " + val.get_string());
+            throw_consistency_error("parsing Area", "unknown Area style " + val.get_string());
     }
 }
 
@@ -202,15 +175,15 @@ void Area::lua_loadlib(lua_State* L)
 }
 #endif
 
-auto_ptr<Area> Area::createGRIB(const ValueBag& values)
+unique_ptr<Area> Area::createGRIB(const ValueBag& values)
 {
     return upcast<Area>(area::GRIB::create(values));
 }
-auto_ptr<Area> Area::createODIMH5(const ValueBag& values)
+unique_ptr<Area> Area::createODIMH5(const ValueBag& values)
 {
     return upcast<Area>(area::ODIMH5::create(values));
 }
-auto_ptr<Area> Area::createVM2(unsigned station_id)
+unique_ptr<Area> Area::createVM2(unsigned station_id)
 {
     return upcast<Area>(area::VM2::create(station_id));
 }
@@ -221,10 +194,10 @@ GRIB::~GRIB() { /* cache_grib.uncache(this); */ }
 
 Area::Style GRIB::style() const { return Area::GRIB; }
 
-void GRIB::encodeWithoutEnvelope(Encoder& enc) const
+void GRIB::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Area::encodeWithoutEnvelope(enc);
-	m_values.encode(enc);
+    Area::encodeWithoutEnvelope(enc);
+    m_values.encode(enc);
 }
 std::ostream& GRIB::writeToOstream(std::ostream& o) const
 {
@@ -236,7 +209,7 @@ void GRIB::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("va");
     m_values.serialise(e);
 }
-auto_ptr<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
 {
     return GRIB::create(ValueBag::parse(val["va"].get_mapping()));
 }
@@ -260,14 +233,14 @@ bool GRIB::lua_lookup(lua_State* L, const std::string& name) const
 
 int GRIB::compare_local(const Area& o) const
 {
-	// We should be the same kind, so upcast
-	const GRIB* v = dynamic_cast<const GRIB*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a GRIB Area, but is a ") + typeid(&o).name() + " instead");
+    // We should be the same kind, so upcast
+    const GRIB* v = dynamic_cast<const GRIB*>(&o);
+    if (!v)
+        throw_consistency_error(
+            "comparing metadata types",
+            string("second element claims to be a GRIB Area, but is a ") + typeid(&o).name() + " instead");
 
-	return m_values.compare(v->m_values);
+    return m_values.compare(v->m_values);
 }
 
 bool GRIB::equals(const Type& o) const
@@ -284,21 +257,21 @@ GRIB* GRIB::clone() const
     return res;
 }
 
-auto_ptr<GRIB> GRIB::create(const ValueBag& values)
+unique_ptr<GRIB> GRIB::create(const ValueBag& values)
 {
     GRIB* res = new GRIB;
     res->m_values = values;
-    return auto_ptr<GRIB>(res);
+    return unique_ptr<GRIB>(res);
 }
 
 ODIMH5::~ODIMH5() { /* cache_odimh5.uncache(this); */ }
 
 Area::Style ODIMH5::style() const { return Area::ODIMH5; }
 
-void ODIMH5::encodeWithoutEnvelope(Encoder& enc) const
+void ODIMH5::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Area::encodeWithoutEnvelope(enc);
-	m_values.encode(enc);
+    Area::encodeWithoutEnvelope(enc);
+    m_values.encode(enc);
 }
 std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 {
@@ -310,7 +283,7 @@ void ODIMH5::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("va");
     m_values.serialise(e);
 }
-auto_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
 {
     return ODIMH5::create(ValueBag::parse(val["va"].get_mapping()));
 }
@@ -334,14 +307,14 @@ bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
 
 int ODIMH5::compare_local(const Area& o) const
 {
-	// We should be the same kind, so upcast
-	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a ODIMH5 Area, but is a ") + typeid(&o).name() + " instead");
+    // We should be the same kind, so upcast
+    const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
+    if (!v)
+        throw_consistency_error(
+            "comparing metadata types",
+            string("second element claims to be a ODIMH5 Area, but is a ") + typeid(&o).name() + " instead");
 
-	return m_values.compare(v->m_values);
+    return m_values.compare(v->m_values);
 }
 
 bool ODIMH5::equals(const Type& o) const
@@ -358,11 +331,11 @@ ODIMH5* ODIMH5::clone() const
     return res;
 }
 
-auto_ptr<ODIMH5> ODIMH5::create(const ValueBag& values)
+unique_ptr<ODIMH5> ODIMH5::create(const ValueBag& values)
 {
     ODIMH5* res = new ODIMH5;
     res->m_values = values;
-    return auto_ptr<ODIMH5>(res);
+    return unique_ptr<ODIMH5>(res);
 }
 
 VM2::~VM2() {}
@@ -380,10 +353,10 @@ const ValueBag& VM2::derived_values() const {
 
 Area::Style VM2::style() const { return Area::VM2; }
 
-void VM2::encodeWithoutEnvelope(Encoder& enc) const
+void VM2::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
-	Area::encodeWithoutEnvelope(enc);
-	enc.addUInt(m_station_id, 4);
+    Area::encodeWithoutEnvelope(enc);
+    enc.add_unsigned(m_station_id, 4);
     derived_values().encode(enc);
 }
 std::ostream& VM2::writeToOstream(std::ostream& o) const
@@ -405,10 +378,11 @@ void VM2::serialiseLocal(Emitter& e, const Formatter* f) const
 
 std::string VM2::exactQuery() const
 {
-    std::string s = wibble::str::fmtf("VM2,%lu", m_station_id);
+    stringstream ss;
+    ss << "VM2," << m_station_id;
     if (!derived_values().empty())
-        s += ":" + derived_values().toString();
-    return s;
+        ss << ":" << derived_values().toString();
+    return ss.str();
 }
 
 const char* VM2::lua_type_name() const { return "arki.types.area.vm2"; }
@@ -432,10 +406,10 @@ int VM2::compare_local(const Area& o) const
 {
     const VM2* v = dynamic_cast<const VM2*>(&o);
     if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a VM2 Area, but is a ") + typeid(&o).name() + " instead");
-	if (m_station_id == v->m_station_id) return 0;
+        throw_consistency_error(
+            "comparing metadata types",
+            string("second element claims to be a VM2 Area, but is a ") + typeid(&o).name() + " instead");
+    if (m_station_id == v->m_station_id) return 0;
     return (m_station_id > v->m_station_id ? 1 : -1);
 }
 
@@ -453,13 +427,13 @@ VM2* VM2::clone() const
     return res;
 }
 
-auto_ptr<VM2> VM2::create(unsigned station_id)
+unique_ptr<VM2> VM2::create(unsigned station_id)
 {
     VM2* res = new VM2;
     res->m_station_id = station_id;
-    return auto_ptr<VM2>(res);
+    return unique_ptr<VM2>(res);
 }
-auto_ptr<VM2> VM2::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<VM2> VM2::decodeMapping(const emitter::memory::Mapping& val)
 {
     return VM2::create(val["id"].want_int("parsing VM2 area station id"));
 }

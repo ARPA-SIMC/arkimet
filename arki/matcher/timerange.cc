@@ -1,34 +1,11 @@
-/*
- * matcher/timerange - Timerange matcher
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include <arki/matcher/timerange.h>
 #include <arki/matcher/utils.h>
-#include <arki/metadata.h>
+#include <arki/exceptions.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace matcher {
@@ -83,9 +60,9 @@ static bool parseValueWithUnit(const std::string& str, INT& val, types::timerang
         val = value * 12;
         return true;
     } else {
-        throw wibble::exception::Consistency(
-                "parsing 'timerange' match expression '" + str + "'",
-                "unknown time suffix '" + unit + "': valid ones are 's', 'm', 'h', 'd', 'mo', 'y'");
+        stringstream ss;
+        ss << "cannot parse timerange match expression '" << str << "': unknown time suffix '" << unit << "': valid ones are 's', 'm', 'h', 'd', 'mo', 'y'";
+        throw std::runtime_error(ss.str());
     }
 }
 
@@ -97,7 +74,7 @@ static int parseTimedefValueWithUnit(const std::string& str, bool& is_second)
     timerange::TimedefUnit unit;
     uint32_t val;
     if (!Timedef::timeunit_parse(s, unit, val) || *s)
-        throw wibble::exception::Consistency(
+        throw_consistency_error(
                 "parsing 'timerange' match expression",
                 "cannot parse time '" + str + "'");
 
@@ -148,7 +125,7 @@ MatchTimerangeGRIB1::MatchTimerangeGRIB1(const std::string& pattern)
 		else if (first == second)
 			unit = first;
 		else
-			throw wibble::exception::Consistency(
+			throw_consistency_error(
 					"parsing 'timerange' match expression",
 					"the two time values '" + args[1] + "' and '" + args[2] + "' have different units");
 
@@ -210,12 +187,20 @@ std::string MatchTimerangeGRIB1::toString() const
     }
 
     if (has_p1 && use_p1)
-        res.add(str::fmtf("%d%s", p1, u));
+    {
+        stringstream ss;
+        ss << p1 << u;
+        res.add(ss.str());
+    }
     else
         res.addUndef();
 
     if (has_p2 && use_p2)
-        res.add(str::fmtf("%d%s", p2, u));
+    {
+        stringstream ss;
+        ss << p2 << u;
+        res.add(ss.str());
+    }
     else
         res.addUndef();
 
@@ -256,11 +241,11 @@ std::string MatchTimerangeGRIB2::toString() const
 
 MatchTimerangeBUFR::MatchTimerangeBUFR(const std::string& pattern)
 {
-	OptionalCommaList args(pattern);
-	has_forecast = !args.empty();
-	if (has_forecast)
-	{
-        types::timerange::GRIB1Unit unit;
+    OptionalCommaList args(pattern);
+    has_forecast = !args.empty();
+    if (has_forecast)
+    {
+        types::timerange::GRIB1Unit unit = types::timerange::SECOND;
         has_forecast = parseValueWithUnit(args[0], value, unit);
         is_seconds = unit == types::timerange::SECOND;
 	} else {
@@ -284,8 +269,10 @@ bool MatchTimerangeBUFR::matchItem(const Type& o) const
 
 std::string MatchTimerangeBUFR::toString() const
 {
-	if (!has_forecast) return "BUFR";
-	return str::fmtf("BUFR,%u%s", value, is_seconds ? "s" : "mo");
+    if (!has_forecast) return "BUFR";
+    char buf[32];
+    snprintf(buf, 32, "BUFR,%u%s", value, is_seconds ? "s" : "mo");
+    return buf;
 }
 
 MatchTimerangeTimedef::MatchTimerangeTimedef(const std::string& pattern)
@@ -374,10 +361,13 @@ std::string MatchTimerangeTimedef::toString() const
         {
             res.add("-");
         } else {
+            stringstream ss;
+            ss << step;
             if (step_is_seconds)
-                res.add(str::fmtf("%ds", step));
+                ss << "s";
             else
-                res.add(str::fmtf("%dmo", step));
+                ss << "mo";
+            res.add(ss.str());
         }
     } else
         res.addUndef();
@@ -393,47 +383,46 @@ std::string MatchTimerangeTimedef::toString() const
 
     if (has_proc_duration)
     {
+        stringstream ss;
         if (proc_duration == -1)
-            res.add("-");
+            ss << "-";
         else if (proc_duration_is_seconds)
-            res.add(str::fmtf("%ds", proc_duration));
+            ss << proc_duration << "s";
         else
-            res.add(str::fmtf("%dmo", proc_duration));
+            ss << proc_duration << "mo";
+        res.add(ss.str());
     }
 
     return res.join();
 }
 
-MatchTimerange* MatchTimerange::parse(const std::string& pattern)
+unique_ptr<MatchTimerange> MatchTimerange::parse(const std::string& pattern)
 {
-	size_t beg = 0;
-	size_t pos = pattern.find(',', beg);
-	string name;
-	string rest;
-	if (pos == string::npos)
-		name = str::trim(pattern.substr(beg));
-	else {
-		name = str::trim(pattern.substr(beg, pos-beg));
-		rest = pattern.substr(pos+1);
-	}
+    size_t beg = 0;
+    size_t pos = pattern.find(',', beg);
+    string name;
+    string rest;
+    if (pos == string::npos)
+        name = str::strip(pattern.substr(beg));
+    else {
+        name = str::strip(pattern.substr(beg, pos-beg));
+        rest = pattern.substr(pos+1);
+    }
 
     switch (types::Timerange::parseStyle(name))
     {
-        case types::Timerange::GRIB1: return new MatchTimerangeGRIB1(rest);
-        case types::Timerange::GRIB2: return new MatchTimerangeGRIB2(rest);
-        case types::Timerange::TIMEDEF: return new MatchTimerangeTimedef(rest);
-        case types::Timerange::BUFR: return new MatchTimerangeBUFR(rest);
-        default:
-                                     throw wibble::exception::Consistency("parsing type of timerange to match", "unsupported timerange style: " + name);
+        case types::Timerange::GRIB1: return unique_ptr<MatchTimerange>(new MatchTimerangeGRIB1(rest));
+        case types::Timerange::GRIB2: return unique_ptr<MatchTimerange>(new MatchTimerangeGRIB2(rest));
+        case types::Timerange::TIMEDEF: return unique_ptr<MatchTimerange>(new MatchTimerangeTimedef(rest));
+        case types::Timerange::BUFR: return unique_ptr<MatchTimerange>(new MatchTimerangeBUFR(rest));
+        default: throw std::runtime_error("cannot parse type of timerange to match: unsupported timerange style: " + name);
     }
 }
 
 void MatchTimerange::init()
 {
-    Matcher::register_matcher("timerange", types::TYPE_TIMERANGE, (MatcherType::subexpr_parser)MatchTimerange::parse);
+    Matcher::register_matcher("timerange", TYPE_TIMERANGE, (MatcherType::subexpr_parser)MatchTimerange::parse);
 }
 
 }
 }
-
-// vim:set ts=4 sw=4:

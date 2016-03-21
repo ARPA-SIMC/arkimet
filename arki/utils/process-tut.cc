@@ -1,34 +1,12 @@
-/*
- * Copyright (C) 2008--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/utils/process.h>
-#include <wibble/string.h>
 #include <sstream>
 
 namespace tut {
 using namespace std;
 using namespace arki;
-using namespace wibble;
+using namespace arki::tests;
 
 struct arki_utils_process_shar {
     arki_utils_process_shar()
@@ -75,8 +53,7 @@ struct IOCollector : public utils::IODispatcher
 };
 
 // Process that just exits with success
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/true");
@@ -99,8 +76,7 @@ void to::test<1>()
 }
 
 // Process that just exits with error
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/false");
@@ -125,8 +101,7 @@ void to::test<2>()
 }
 
 // Process that eats stdin, outputs nothing
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/sh");
@@ -151,8 +126,7 @@ void to::test<3>()
 }
 
 // Process that copies stdin to stdout
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/cat");
@@ -175,8 +149,7 @@ void to::test<4>()
 }
 
 // Process that copies stdin to stderr
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/sh");
@@ -201,8 +174,7 @@ void to::test<5>()
 }
 
 // Process that copies stdin to stdout and stderr
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/sh");
@@ -227,8 +199,7 @@ void to::test<6>()
 }
 
 // Process that outputs data to stdout without reading stdin
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/sh");
@@ -253,8 +224,7 @@ void to::test<7>()
 }
 
 // Process that outputs data to stderr without reading stdin
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/sh");
@@ -279,8 +249,7 @@ void to::test<8>()
 }
 
 // Process that copies stdin to stdout then exits with an error
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/sh");
@@ -307,5 +276,3 @@ void to::test<9>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

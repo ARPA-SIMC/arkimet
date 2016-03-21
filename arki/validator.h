@@ -71,7 +71,7 @@ struct ValidatorRepository : public std::map<std::string, Validator*>
     /**
      * Add the validator to the repository.
      */
-    void add(std::auto_ptr<Validator> v);
+    void add(std::unique_ptr<Validator> v);
 
     /// Get the singleton version of the repository
     static const ValidatorRepository& get();

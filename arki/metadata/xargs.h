@@ -1,27 +1,7 @@
 #ifndef ARKI_METADATA_XARGS_H
 #define ARKI_METADATA_XARGS_H
 
-/*
- * metadata/xargs - Cluster a metadata stream and run a progrgam on each batch
- *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Cluster a metadata stream and run a progrgam on each batch
 
 #include <arki/metadata/clusterer.h>
 
@@ -54,7 +34,7 @@ protected:
     xargs::Tempfile tempfile;
 
     void start_batch(const std::string& new_format) override;
-    void add_to_batch(Metadata& md, const wibble::sys::Buffer& buf) override;
+    void add_to_batch(Metadata& md, const std::vector<uint8_t>& buf) override;
     void flush_batch() override;
 
     int run_child();

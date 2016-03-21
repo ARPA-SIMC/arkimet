@@ -1,28 +1,6 @@
 #ifndef ARKI_TYPES_BBOX_H
 #define ARKI_TYPES_BBOX_H
 
-/*
- * types/bbox - Bounding box metadata item
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 /**
  * WARNING
  * This metadata type is discontinued, and it exists only to preserve
@@ -71,14 +49,14 @@ struct BBox : public types::StyledType<BBox>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::auto_ptr<BBox> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<BBox> decodeString(const std::string& val);
-    static std::auto_ptr<BBox> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<BBox> decode(BinaryDecoder& dec);
+    static std::unique_ptr<BBox> decodeString(const std::string& val);
+    static std::unique_ptr<BBox> decodeMapping(const emitter::memory::Mapping& val);
 
     // Register this type tree with the type system
     static void init();
 
-    static std::auto_ptr<BBox> createInvalid();
+    static std::unique_ptr<BBox> createInvalid();
 };
 
 namespace bbox {
@@ -86,7 +64,7 @@ namespace bbox {
 struct INVALID : public BBox
 {
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     const char* lua_type_name() const override;
 
@@ -94,7 +72,7 @@ struct INVALID : public BBox
     bool equals(const Type& o) const override;
 
     INVALID* clone() const override;
-    static std::auto_ptr<INVALID> create();
+    static std::unique_ptr<INVALID> create();
 };
 
 }

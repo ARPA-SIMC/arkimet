@@ -1,28 +1,6 @@
 #ifndef ARKI_TYPES_LEVEL_H
 #define ARKI_TYPES_LEVEL_H
 
-/*
- * types/level - Vertical level or layer
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/types.h>
 #include <stdint.h>
 
@@ -64,23 +42,23 @@ struct Level : public types::StyledType<Level>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::auto_ptr<Level> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Level> decodeString(const std::string& val);
-    static std::auto_ptr<Level> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Level> decode(BinaryDecoder& dec);
+    static std::unique_ptr<Level> decodeString(const std::string& val);
+    static std::unique_ptr<Level> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 
     // Register this type tree with the type system
     static void init();
 
-    static std::auto_ptr<Level> createGRIB1(unsigned char type);
-    static std::auto_ptr<Level> createGRIB1(unsigned char type, unsigned short l1);
-    static std::auto_ptr<Level> createGRIB1(unsigned char type, unsigned char l1, unsigned char l2);
-    static std::auto_ptr<Level> createGRIB2S(uint8_t type, uint8_t scale, uint32_t val);
-    static std::auto_ptr<Level> createGRIB2D(uint8_t type1, uint8_t scale1, uint32_t val1,
+    static std::unique_ptr<Level> createGRIB1(unsigned char type);
+    static std::unique_ptr<Level> createGRIB1(unsigned char type, unsigned short l1);
+    static std::unique_ptr<Level> createGRIB1(unsigned char type, unsigned char l1, unsigned char l2);
+    static std::unique_ptr<Level> createGRIB2S(uint8_t type, uint8_t scale, uint32_t val);
+    static std::unique_ptr<Level> createGRIB2D(uint8_t type1, uint8_t scale1, uint32_t val1,
                                              uint8_t type2, uint8_t scale2, uint32_t val2);
-    static std::auto_ptr<Level> createODIMH5(double value);
-    static std::auto_ptr<Level> createODIMH5(double min, double max);
+    static std::unique_ptr<Level> createODIMH5(double value);
+    static std::unique_ptr<Level> createODIMH5(double min, double max);
 };
 
 namespace level {
@@ -98,7 +76,7 @@ public:
 	unsigned l2() const { return m_l2; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -118,10 +96,10 @@ public:
     bool equals(const Type& o) const override;
 
     GRIB1* clone() const override;
-    static std::auto_ptr<GRIB1> create(unsigned char type);
-    static std::auto_ptr<GRIB1> create(unsigned char type, unsigned short l1);
-    static std::auto_ptr<GRIB1> create(unsigned char type, unsigned char l1, unsigned char l2);
-    static std::auto_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB1> create(unsigned char type);
+    static std::unique_ptr<GRIB1> create(unsigned char type, unsigned short l1);
+    static std::unique_ptr<GRIB1> create(unsigned char type, unsigned char l1, unsigned char l2);
+    static std::unique_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
 
     static int getValType(unsigned char type);
 };
@@ -155,7 +133,7 @@ public:
     uint32_t value() const { return m_value; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -166,8 +144,8 @@ public:
     bool equals(const Type& o) const override;
 
     GRIB2S* clone() const override;
-    static std::auto_ptr<GRIB2S> create(uint8_t type, uint8_t scale, uint32_t val);
-    static std::auto_ptr<GRIB2S> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB2S> create(uint8_t type, uint8_t scale, uint32_t val);
+    static std::unique_ptr<GRIB2S> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class GRIB2D : public GRIB2
@@ -189,7 +167,7 @@ public:
 	uint32_t value2() const { return m_value2; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -200,10 +178,10 @@ public:
     bool equals(const Type& o) const override;
 
     GRIB2D* clone() const override;
-    static std::auto_ptr<GRIB2D> create(uint8_t type1, uint8_t scale1, uint32_t val1,
+    static std::unique_ptr<GRIB2D> create(uint8_t type1, uint8_t scale1, uint32_t val1,
                                uint8_t type2, uint8_t scale2, uint32_t val2);
 
-    static std::auto_ptr<GRIB2D> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB2D> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class ODIMH5 : public Level
@@ -217,7 +195,7 @@ public:
 	double min() const { return m_min; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -228,9 +206,9 @@ public:
     bool equals(const Type& o) const override;
 
     ODIMH5* clone() const override;
-    static std::auto_ptr<ODIMH5> create(double value);
-    static std::auto_ptr<ODIMH5> create(double min, double max);
-    static std::auto_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<ODIMH5> create(double value);
+    static std::unique_ptr<ODIMH5> create(double min, double max);
+    static std::unique_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

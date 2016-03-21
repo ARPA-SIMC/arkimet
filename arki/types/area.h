@@ -1,30 +1,7 @@
 #ifndef ARKI_TYPES_AREA_H
 #define ARKI_TYPES_AREA_H
 
-/*
- * types/area - Geographical area
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <memory>
-
 #include <arki/types.h>
 #include <arki/values.h>
 #include <arki/utils/geosfwd.h>
@@ -69,9 +46,9 @@ struct Area : public types::StyledType<Area>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::auto_ptr<Area> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Area> decodeString(const std::string& val);
-    static std::auto_ptr<Area> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Area> decode(BinaryDecoder& dec);
+    static std::unique_ptr<Area> decodeString(const std::string& val);
+    static std::unique_ptr<Area> decodeMapping(const emitter::memory::Mapping& val);
 
 	/// Return the geographical bounding box
 	const ARKI_GEOS_GEOMETRY* bbox() const;
@@ -81,9 +58,9 @@ struct Area : public types::StyledType<Area>
     // Register this type tree with the type system
     static void init();
 
-    static std::auto_ptr<Area> createGRIB(const ValueBag& values);
-    static std::auto_ptr<Area> createODIMH5(const ValueBag& values);
-    static std::auto_ptr<Area> createVM2(unsigned station_id);
+    static std::unique_ptr<Area> createGRIB(const ValueBag& values);
+    static std::unique_ptr<Area> createODIMH5(const ValueBag& values);
+    static std::unique_ptr<Area> createVM2(unsigned station_id);
 };
 
 namespace area {
@@ -99,7 +76,7 @@ public:
 	const ValueBag& values() const { return m_values; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -110,8 +87,8 @@ public:
     bool equals(const Type& o) const override;
 
     GRIB* clone() const override;
-    static std::auto_ptr<GRIB> create(const ValueBag& values);
-    static std::auto_ptr<GRIB> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB> create(const ValueBag& values);
+    static std::unique_ptr<GRIB> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class ODIMH5 : public Area
@@ -125,7 +102,7 @@ public:
 	const ValueBag& values() const { return m_values; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -136,15 +113,15 @@ public:
     bool equals(const Type& o) const override;
 
     ODIMH5* clone() const override;
-    static std::auto_ptr<ODIMH5> create(const ValueBag& values);
-    static std::auto_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<ODIMH5> create(const ValueBag& values);
+    static std::unique_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class VM2 : public Area
 {
 protected:
     unsigned m_station_id;
-    mutable std::auto_ptr<ValueBag> m_derived_values;
+    mutable std::unique_ptr<ValueBag> m_derived_values;
 
 public:
     virtual ~VM2();
@@ -153,7 +130,7 @@ public:
     const ValueBag& derived_values() const;
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -164,8 +141,8 @@ public:
     bool equals(const Type& o) const override;
 
     VM2* clone() const override;
-    static std::auto_ptr<VM2> create(unsigned station_id);
-    static std::auto_ptr<VM2> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<VM2> create(unsigned station_id);
+    static std::unique_ptr<VM2> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 

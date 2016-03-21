@@ -1,36 +1,11 @@
-/*
- * arki-inbound - Manage a remote inbound queue
- *
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+/// Manage a remote inbound queue
 #include "config.h"
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
-
 #include <arki/metadata.h>
+#include <arki/metadata/consumer.h>
 #include <arki/matcher.h>
 #include <arki/dataset.h>
 #include <arki/dataset/http.h>
 #include <arki/runtime.h>
-
 #include <memory>
 #include <iostream>
 #include <cstdlib>
@@ -38,9 +13,10 @@
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
+using namespace arki::utils;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public StandardParserWithManpage
@@ -66,31 +42,33 @@ struct Options : public StandardParserWithManpage
 
 }
 }
+}
 
-struct Printer : public metadata::Eater
+struct Printer
 {
     virtual void flush() {}
-
-    static auto_ptr<Printer> create(wibble::commandline::Options& opts);
+    virtual bool eat(unique_ptr<Metadata>&& md) = 0;
+    static unique_ptr<Printer> create(commandline::Options& opts);
 };
 
 struct BinaryPrinter : public Printer
 {
-    bool eat(auto_ptr<Metadata> md) override
+    bool eat(unique_ptr<Metadata>&& md) override
     {
-        md->write(cout, "(stdout)");
+        NamedFileDescriptor out(1, "(stdout)");
+        md->write(out);
         return true;
     }
 };
 
-auto_ptr<Printer> Printer::create(wibble::commandline::Options& opts)
+unique_ptr<Printer> Printer::create(commandline::Options& opts)
 {
-    return auto_ptr<Printer>(new BinaryPrinter);
+    return unique_ptr<Printer>(new BinaryPrinter);
 }
 
 int main(int argc, const char* argv[])
 {
-    wibble::commandline::Options opts;
+    commandline::Options opts;
 
     try {
         if (opts.parse(argc, argv))
@@ -102,7 +80,7 @@ int main(int argc, const char* argv[])
         if (opts.url->isSet())
             runtime::Config::get().url_inbound = opts.url->stringValue();
         if (runtime::Config::get().url_inbound.empty())
-            throw wibble::exception::BadOption("please specify --url or set ARKI_INBOUND in the environment");
+            throw commandline::BadOption("please specify --url or set ARKI_INBOUND in the environment");
 
         dataset::HTTPInbound inbound(runtime::Config::get().url_inbound);
 
@@ -114,7 +92,7 @@ int main(int argc, const char* argv[])
                     i != files.end(); ++i)
                 cout << *i << endl;
         } else if (opts.do_scan->isSet()) {
-            auto_ptr<Printer> printer = Printer::create(opts);
+            unique_ptr<Printer> printer = Printer::create(opts);
 
             while (opts.hasNext())
             {
@@ -126,7 +104,7 @@ int main(int argc, const char* argv[])
                     format = fname.substr(0, pos);
                     fname = fname.substr(pos+1);
                 }
-                inbound.scan(fname, format, *printer);
+                inbound.scan(fname, format, [&](unique_ptr<Metadata> md) { return printer->eat(move(md)); });
             }
         } else if (opts.do_test->isSet()) {
             while (opts.hasNext())
@@ -139,10 +117,11 @@ int main(int argc, const char* argv[])
                     format = fname.substr(0, pos);
                     fname = fname.substr(pos+1);
                 }
-                inbound.testdispatch(fname, format, cout);
+                Stdout out;
+                inbound.testdispatch(fname, format, out);
             }
         } else if (opts.do_import->isSet()) {
-            auto_ptr<Printer> printer = Printer::create(opts);
+            unique_ptr<Printer> printer = Printer::create(opts);
 
             while (opts.hasNext())
             {
@@ -154,14 +133,14 @@ int main(int argc, const char* argv[])
                     format = fname.substr(0, pos);
                     fname = fname.substr(pos+1);
                 }
-                inbound.dispatch(fname, format, *printer);
+                inbound.dispatch(fname, format, [&](unique_ptr<Metadata> md) { return printer->eat(move(md)); });
             }
         } else {
-            throw wibble::exception::BadOption("please specify an action with --list, --scan, --test or --import");
+            throw commandline::BadOption("please specify an action with --list, --scan, --test or --import");
         }
         return 0;
-    } catch (wibble::exception::BadOption& e) {
-        cerr << e.desc() << endl;
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
         opts.outputHelp(cerr);
         return 1;
     } catch (std::exception& e) {
@@ -169,5 +148,3 @@ int main(int argc, const char* argv[])
         return 1;
     }
 }
-
-// vim:set ts=4 sw=4:

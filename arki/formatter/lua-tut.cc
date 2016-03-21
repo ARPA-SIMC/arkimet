@@ -36,8 +36,7 @@ struct arki_formatter_lua_shar {
 TESTGRP(arki_formatter_lua);
 
 // TODO
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 }
 

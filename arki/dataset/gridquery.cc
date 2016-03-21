@@ -1,61 +1,37 @@
-/*
- * dataset/gridquery - Lay out a metadata grid and check that metadata fit 
- *
- * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "gridquery.h"
-#include <arki/utils/dataset.h>
 #include <arki/utils/lua.h>
+#include <arki/utils/string.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/nag.h>
 #include <arki/postprocess.h>
 #include <arki/types/typeset.h>
-
+#include <algorithm>
 #ifdef HAVE_LUA
 #include <arki/report.h>
 #endif
 
-#include <wibble/regexp.h>
-
 // #include <iostream>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 using namespace arki::types;
+using arki::core::Time;
 
 namespace arki {
 namespace dataset {
 
-GridQuery::GridQuery(ReadonlyDataset& ds) : ds(ds)
+GridQuery::GridQuery(Reader& ds) : ds(ds)
 {
-	// Initialise with the global summary
-	ds.querySummary(Matcher(), summary);
+    // Initialise with the global summary
+    ds.query_summary(Matcher(), summary);
 }
 
 void GridQuery::add(const Matcher& m)
 {
-	if (summary.resolveMatcher(m, items) == 0)
-		throw wibble::exception::Consistency("resolving " + m.toString(), "there are no data which correspond to the matcher");
+    if (summary.resolveMatcher(m, items) == 0)
+        throw std::runtime_error("cannot resolve " + m.toString() + ": there are no data which correspond to the matcher");
 }
 
 void GridQuery::addTime(const Time& rt)
@@ -89,8 +65,8 @@ void GridQuery::consolidate()
 
 	mdgrid.consolidate();
 
-	if (times.empty())
-		throw wibble::exception::Consistency("consolidating GridQuery", "no times have been requested");
+    if (times.empty())
+        throw std::runtime_error("cannot consolidate GridQuery: no times have been requested");
 
 	// Sort times
 	std::sort(times.begin(), times.end());
@@ -109,17 +85,15 @@ void GridQuery::consolidate()
     for (std::map<types::Code, TypeVector>::const_iterator i = mdgrid.dims.begin();
             i != mdgrid.dims.end(); ++i)
         codes.insert(i->first);
-	for (vector<Matcher>::const_iterator i = filters.begin();
-			i != filters.end(); ++i)
-	{
-		if (i->empty()) continue;
-		for (matcher::AND::const_iterator j = (*i)->begin(); j != (*i)->end(); ++j)
-		{
-			if (codes.find(j->first) != codes.end())
-				throw wibble::exception::Consistency("consolidating GridQuery", "filters conflict on " + types::tag(j->first));
-			codes.insert(j->first);
-		}
-	}
+    for (vector<Matcher>::const_iterator i = filters.begin(); i != filters.end(); ++i)
+    {
+        if (i->empty()) continue;
+        i->foreach_type([&](types::Code code, const matcher::OR&) {
+            if (codes.find(code) != codes.end())
+                throw std::runtime_error("cannot consolidate GridQuery: filters conflict on " + types::tag(code));
+            codes.insert(code);
+        });
+    }
 }
 
 Matcher GridQuery::mergedQuery() const
@@ -217,16 +191,16 @@ static void dumpItemset(std::ostream& out, const ItemSet& is)
 
 void GridQuery::dump(std::ostream& out) const
 {
-	if (todolist.empty())
-	{
-		// Not consolidated
-		out << "GridQuery still being built:" << endl;
-		out << "  Grid dimensions so far:" << endl;
+    if (todolist.empty())
+    {
+        // Not consolidated
+        out << "GridQuery still being built:" << endl;
+        out << "  Grid dimensions so far:" << endl;
         for (std::map<types::Code, TypeVector>::const_iterator i = mdgrid.dims.begin();
                 i != mdgrid.dims.end(); ++i)
             out << "    " << types::tag(i->first) << ": "
                 // FIXME: this prints pointers
-                << str::join(i->second.begin(), i->second.end(), ", ")
+                << str::join(", ", i->second.begin(), i->second.end())
                 << endl;
 		out << "  Combinations so far:" << endl;
 		for (std::vector<ItemSet>::const_iterator i = items.begin();
@@ -252,13 +226,13 @@ void GridQuery::dump(std::ostream& out) const
 				out << "       ";
                 for (TypeVector::const_iterator j = items.begin(); j != items.end(); ++j)
                 {
-					if (j != items.begin()) out << "; ";
-					out << types::tag((*j)->type_code());
-				}
-				out << endl;
-			}
-			out << "    " << (i+1) << ": " << str::join(items.begin(), items.end(), "; ") << endl;
-		}
+                    if (j != items.begin()) out << "; ";
+                    out << types::tag((*j)->type_code());
+                }
+                out << endl;
+            }
+            out << "    " << (i+1) << ": " << str::join("; ", items.begin(), items.end()) << endl;
+        }
 		out << "  Marked so far:" << endl;
 		for (size_t i = 0; i < times.size(); ++i)
 		{
@@ -283,7 +257,7 @@ static void arkilua_getmetatable(lua_State* L);
 // Memory management of the copy will be done by Lua
 static int arkilua_new(lua_State* L)
 {
-	ReadonlyDataset* ds = ReadonlyDataset::lua_check(L, 1);
+	Reader* ds = Reader::lua_check(L, 1);
 	GridQueryUD::create(L, new GridQuery(*ds), true);
 
 	// Set the summary for the userdata
@@ -319,7 +293,7 @@ static int arkilua_addtime(lua_State *L)
 {
     GridQuery* gq = GridQuery::lua_check(L, 1);
     const char* timestr luaL_checkstring(L, 2);
-    gq->addTime(Time::create_from_SQL(timestr));
+    gq->addTime(Time::create_sql(timestr));
     return 0;
 }
 
@@ -329,8 +303,8 @@ static int arkilua_addtimes(lua_State *L)
 	const char* tstart = luaL_checkstring(L, 2);
 	const char* tend = luaL_checkstring(L, 3);
 	int tstep = luaL_checkinteger(L, 4);
-    gq->addTimes(Time::create_from_SQL(tstart),
-            Time::create_from_SQL(tend),
+    gq->addTimes(Time::create_sql(tstart),
+            Time::create_sql(tend),
             tstep);
     return 0;
 }

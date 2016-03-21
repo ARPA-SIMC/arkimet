@@ -1,40 +1,18 @@
 #ifndef ARKI_SCAN_ANY_H
 #define ARKI_SCAN_ANY_H
 
-/*
- * scan/any - Scan files autodetecting the format
- *
- * Copyright (C) 2009--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Format-independent metadata extraction and validation
 
 #include <arki/libconfig.h>
+#include <arki/defs.h>
+#include <arki/file.h>
+#include <vector>
 #include <string>
 #include <ctime>
 #include <sys/types.h>
-#include <wibble/sys/buffer.h>
 
 namespace arki {
 class Metadata;
-
-namespace metadata {
-class Eater;
-}
 
 namespace scan {
 
@@ -47,7 +25,7 @@ namespace scan {
  * @return true if the file has been scanned, false if the file is in a format
  * that is not supported or recognised.
  */
-bool scan(const std::string& file, metadata::Eater& c);
+bool scan(const std::string& file, metadata_dest_func dest);
 
 /**
  * Alternate version with explicit base dir.
@@ -55,7 +33,7 @@ bool scan(const std::string& file, metadata::Eater& c);
  * The source information in the metadata will point to \a relname only, with
  * \a basedir as context.
  */
-bool scan(const std::string& basedir, const std::string& relname, metadata::Eater& c);
+bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest);
 
 /**
  * Scan the given file without format autodetection, sending its metadata to a
@@ -67,7 +45,7 @@ bool scan(const std::string& basedir, const std::string& relname, metadata::Eate
  * @return true if the file has been scanned, false if the file is in a format
  * that is not supported or recognised.
  */
-bool scan(const std::string& file, metadata::Eater& c, const std::string& format);
+bool scan(const std::string& file, metadata_dest_func dest, const std::string& format);
 
 /**
  * Alternate version with explicit base dir.
@@ -75,7 +53,7 @@ bool scan(const std::string& file, metadata::Eater& c, const std::string& format
  * The source information in the metadata will point to \a relname only, with
  * \a basedir as context.
  */
-bool scan(const std::string& basedir, const std::string& relname, metadata::Eater& c, const std::string& format);
+bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest, const std::string& format);
 
 /**
  * Return true if the file looks like a file with data that can be scanned.
@@ -103,28 +81,28 @@ time_t timestamp(const std::string& file);
 /**
  * Compress the given file
  */
-void compress(const std::string& file, size_t groupsize = 512);
+void compress(const std::string& file, size_t groupsize=512);
 
 /**
  * Reconstruct raw data based on a metadata and a value
  */
-wibble::sys::Buffer reconstruct(const std::string& format, const Metadata& md, const std::string& value);
+std::vector<uint8_t> reconstruct(const std::string& format, const Metadata& md, const std::string& value);
 
 /**
  * Validate data
  */
 struct Validator
 {
-	virtual ~Validator() {}
+    virtual ~Validator() {}
 
-	// Validate data found in a file
-	virtual void validate(int fd, off_t offset, size_t size, const std::string& fname) const = 0;
+    /// Return the format checked by this validator
+    virtual std::string format() const = 0;
 
-	// Validate a memory buffer
-	virtual void validate(const void* buf, size_t size) const = 0;
+    // Validate data found in a file
+    virtual void validate_file(NamedFileDescriptor& fd, off_t offset, size_t size) const = 0;
 
-    // Validate data pointed by a Metadata
-    virtual void validate(Metadata& md) const;
+    // Validate a memory buffer
+    virtual void validate_buf(const void* buf, size_t size) const = 0;
 
 	/**
 	 * Get the validator for a given file name
@@ -133,6 +111,10 @@ struct Validator
 	 *   a pointer to a static object, which should not be deallocated.
 	 */
 	static const Validator& by_filename(const std::string& filename);
+
+protected:
+    [[noreturn]] void throw_check_error(NamedFileDescriptor& fd, off_t offset, const std::string& msg) const;
+    [[noreturn]] void throw_check_error(const std::string& msg) const;
 };
 
 /**
@@ -151,6 +133,4 @@ bool update_sequence_number(Metadata& md, int& usn);
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

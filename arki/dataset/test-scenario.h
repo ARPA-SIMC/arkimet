@@ -38,7 +38,7 @@ namespace test {
  *
  * Scenarios are built once and then reused, to avoid an expensive rebuild at
  * every test; this means that they are only supposed to be used for testing
- * ReadonlyDataset.
+ * Reader.
  */
 struct Scenario
 {

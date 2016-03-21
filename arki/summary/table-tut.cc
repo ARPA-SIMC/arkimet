@@ -1,23 +1,3 @@
-/*
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/types/tests.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
@@ -26,26 +6,21 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::summary;
 
 namespace {
 
-/**
- * Add metadata to Tables
- */
-struct Adder : public metadata::Eater
+/// Function to add metadata to Tables
+metadata_dest_func make_adder(Table& root)
 {
-    Table& root;
-    Adder(Table& root) : root(root) {}
-    bool eat(auto_ptr<Metadata> md) override
-    {
+    return [&](unique_ptr<Metadata> md) {
         root.merge(*md);
         return true;
-    }
-};
+    };
+}
 
 }
 
@@ -63,44 +38,39 @@ struct arki_summary_table_shar {
     void fill_with_6_samples(Table& root) const
     {
         metadata::test::Generator gen("grib1");
-        gen.add(types::TYPE_ORIGIN, "GRIB1(200, 0, 1)");
-        gen.add(types::TYPE_ORIGIN, "GRIB1(98, 0, 1)");
-        gen.add(types::TYPE_PRODUCT, "GRIB1(200, 0, 1)");
-        gen.add(types::TYPE_PRODUCT, "GRIB1(98, 0, 1)");
-        gen.add(types::TYPE_PRODUCT, "GRIB1(98, 0, 2)");
-        gen.add(types::TYPE_REFTIME, "2010-09-08T00:00:00");
-        gen.add(types::TYPE_REFTIME, "2010-09-09T00:00:00");
-        gen.add(types::TYPE_REFTIME, "2010-09-10T00:00:00");
-
-        Adder adder(root);
-        gen.generate(adder);
+        gen.add(TYPE_ORIGIN, "GRIB1(200, 0, 1)");
+        gen.add(TYPE_ORIGIN, "GRIB1(98, 0, 1)");
+        gen.add(TYPE_PRODUCT, "GRIB1(200, 0, 1)");
+        gen.add(TYPE_PRODUCT, "GRIB1(98, 0, 1)");
+        gen.add(TYPE_PRODUCT, "GRIB1(98, 0, 2)");
+        gen.add(TYPE_REFTIME, "2010-09-08T00:00:00");
+        gen.add(TYPE_REFTIME, "2010-09-09T00:00:00");
+        gen.add(TYPE_REFTIME, "2010-09-10T00:00:00");
+        gen.generate(make_adder(root));
     }
 
     void fill_with_27_samples(Table& root) const
     {
         metadata::test::Generator gen("grib1");
-        gen.add(types::TYPE_ORIGIN, "GRIB1(200, 0, 1)");
-        gen.add(types::TYPE_ORIGIN, "GRIB1(98, 0, 1)");
-        gen.add(types::TYPE_ORIGIN, "GRIB1(98, 0, 2)");
-        gen.add(types::TYPE_PRODUCT, "GRIB1(200, 0, 1)");
-        gen.add(types::TYPE_PRODUCT, "GRIB1(98, 0, 1)");
-        gen.add(types::TYPE_PRODUCT, "GRIB1(98, 0, 2)");
-        gen.add(types::TYPE_LEVEL, "GRIB1(0, 0, 0)");
-        gen.add(types::TYPE_LEVEL, "GRIB1(1)");
-        gen.add(types::TYPE_LEVEL, "GRIB1(2)");
-        gen.add(types::TYPE_REFTIME, "2010-09-08T00:00:00");
-        gen.add(types::TYPE_REFTIME, "2010-09-09T00:00:00");
-        gen.add(types::TYPE_REFTIME, "2010-09-10T00:00:00");
-
-        Adder adder(root);
-        gen.generate(adder);
+        gen.add(TYPE_ORIGIN, "GRIB1(200, 0, 1)");
+        gen.add(TYPE_ORIGIN, "GRIB1(98, 0, 1)");
+        gen.add(TYPE_ORIGIN, "GRIB1(98, 0, 2)");
+        gen.add(TYPE_PRODUCT, "GRIB1(200, 0, 1)");
+        gen.add(TYPE_PRODUCT, "GRIB1(98, 0, 1)");
+        gen.add(TYPE_PRODUCT, "GRIB1(98, 0, 2)");
+        gen.add(TYPE_LEVEL, "GRIB1(0, 0, 0)");
+        gen.add(TYPE_LEVEL, "GRIB1(1)");
+        gen.add(TYPE_LEVEL, "GRIB1(2)");
+        gen.add(TYPE_REFTIME, "2010-09-08T00:00:00");
+        gen.add(TYPE_REFTIME, "2010-09-09T00:00:00");
+        gen.add(TYPE_REFTIME, "2010-09-10T00:00:00");
+        gen.generate(make_adder(root));
     }
 };
 TESTGRP(arki_summary_table);
 
 // Test basic operations
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     // Test the empty table
     Table table;
@@ -122,8 +92,7 @@ void to::test<1>()
     wassert(actual(table1.equals(table)).istrue());
 }
 
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     Table table;
     // Add the same item twice, they should get merged
@@ -135,8 +104,7 @@ void to::test<2>()
 }
 
 // Build a table a bit larger, still no reallocs triggered
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
     // Look at a bigger table
     Table table;
@@ -145,8 +113,7 @@ void to::test<3>()
 }
 
 // Build a table large enough to trigger a realloc
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     // Look at an even bigger table, this should trigger a realloc
     Table table3;
@@ -157,8 +124,7 @@ void to::test<4>()
 }
 
 // Test Row
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
     Row row1;
     wassert(actual(row1.stats.count) == 0);
@@ -176,7 +142,7 @@ void to::test<5>()
 }
 
 //    /// Return the intern version of an item
-//    const types::Type* intern(unsigned pos, std::auto_ptr<types::Type> item);
+//    const types::Type* intern(unsigned pos, std::unique_ptr<types::Type> item);
 //
 //    /// Merge a row into the table
 //    void merge(const Metadata& md, const Stats& st);

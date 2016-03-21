@@ -1,27 +1,6 @@
-/*
- * arki-bufr-prepare - Prepare BUFR messages for importing into arkimet
- *
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Prepare BUFR messages for importing into arkimet
 
 #include "config.h"
-
 #include <arki/runtime.h>
 #include <arki/nag.h>
 #include <arki/scan/bufr.h>
@@ -29,17 +8,18 @@
 #include <wreport/bulletin.h>
 #include <dballe/message.h>
 #include <dballe/msg/codec.h>
-
 #include <arpa/inet.h>
 #include <cstring>
+#include <iostream>
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
+using namespace arki::utils;
 using namespace wreport;
 using namespace dballe;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public StandardParserWithManpage
@@ -66,6 +46,7 @@ struct Options : public StandardParserWithManpage
     }
 };
 
+}
 }
 }
 
@@ -109,7 +90,7 @@ protected:
         dst.load_tables();
     }
 
-    void splitmsg(const BinaryMessage& rmsg, const BufrBulletin& msg, msg::Importer& importer, File& outfile)
+    void splitmsg(const BinaryMessage& rmsg, const BufrBulletin& msg, msg::Importer& importer, dballe::File& outfile)
     {
         // Create new message with the same info as the old one
         auto newmsg(BufrBulletin::create());
@@ -163,11 +144,11 @@ public:
         override_usn_value = value;
     }
 
-    void process(const std::string& filename, File& outfile)
+    void process(const std::string& filename, dballe::File& outfile)
     {
         // Use .release() so the code is the same even with the new C++11's dballe
-        auto_ptr<File> file(File::create(File::BUFR, filename.c_str(), "r").release());
-        auto_ptr<msg::Importer> importer(msg::Importer::create(File::BUFR).release());
+        unique_ptr<dballe::File> file(dballe::File::create(dballe::File::BUFR, filename.c_str(), "r").release());
+        unique_ptr<msg::Importer> importer(msg::Importer::create(dballe::File::BUFR).release());
 
         while (BinaryMessage rmsg = file->read())
         {
@@ -193,7 +174,7 @@ public:
 
 int main(int argc, const char* argv[])
 {
-    wibble::commandline::Options opts;
+    commandline::Options opts;
     try {
         if (opts.parse(argc, argv))
             return 0;
@@ -207,11 +188,11 @@ int main(int argc, const char* argv[])
         if (opts.force_usn->isSet())
             copier.override_usn(opts.force_usn->intValue());
 
-        auto_ptr<File> outfile;
+        unique_ptr<dballe::File> outfile;
         if (opts.outfile->isSet())
-            outfile.reset(File::create(File::BUFR, opts.outfile->stringValue().c_str(), "wb").release());
+            outfile.reset(dballe::File::create(dballe::File::BUFR, opts.outfile->stringValue().c_str(), "wb").release());
         else
-            outfile.reset(File::create(File::BUFR, "(stdout)", "wb").release());
+            outfile.reset(dballe::File::create(dballe::File::BUFR, "(stdout)", "wb").release());
 
         if (!opts.hasNext())
         {
@@ -224,8 +205,8 @@ int main(int argc, const char* argv[])
         }
 
         return 0;
-    } catch (wibble::exception::BadOption& e) {
-        cerr << e.desc() << endl;
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
         opts.outputHelp(cerr);
         return 1;
     } catch (std::exception& e) {

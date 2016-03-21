@@ -1,17 +1,12 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(arkimet, 0.81, [enrico@enricozini.org])
+AC_INIT(arkimet, 1.0, [enrico@enricozini.org])
 AC_CONFIG_SRCDIR([configure.ac])
 AM_INIT_AUTOMAKE([foreign subdir-objects nostdinc])
-AM_CONFIG_HEADER(config.h)
-AM_CONFIG_HEADER(embedded/wibble/wibble/config.h)
-AM_CONFIG_HEADER(arki/libconfig.h)
+AC_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADER(arki/libconfig.h)
 
 AC_CONFIG_MACRO_DIR([m4])
-
-AC_ARG_WITH([wibble],
-	   [AS_HELP_STRING([--with-wibble], ["force wibble version (system, embedded, check)"])],
-	    [], [with_wibble=check])
 
 AC_ARG_ENABLE([bufr],
     [AS_HELP_STRING(
@@ -69,7 +64,7 @@ AM_PROG_CC_STDC
 AC_HEADER_STDC
 
 dnl Use c++11
-AX_CXX_COMPILE_STDCXX_11(noext,optional)
+AX_CXX_COMPILE_STDCXX_11(noext)
 
 dnl Check that exceptions are working
 dnl AC_CHECK_CXX_EH
@@ -82,6 +77,14 @@ PKG_PROG_PKG_CONFIG
 dnl Support large files on 32bit systems
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
+
+dnl See http://www.gossamer-threads.com/lists/xen/devel/275132
+FILE_OFFSET_BITS_64=
+if test $ac_cv_sys_file_offset_bits = 64
+then
+    FILE_OFFSET_BITS_64=yes
+fi
+AM_CONDITIONAL([FILE_OFFSET_BITS_64], [test x"$FILE_OFFSET_BITS_64" = x"yes"])
 
 dnl Use libtool
 dnl AM_ENABLE_STATIC
@@ -112,26 +115,6 @@ if test x"$success" = x"no"; then
         AC_DEFINE(HAVE_SQLITE3, [], [SQLite 3 is available])
 fi
 AM_CONDITIONAL([SQLITE_EMBEDDED], [test x"$SQLITE3_VERSION" = x"embedded"])
-
-dnl Check for wibble
-if test x"$with_wibble" = x"check"; then
-	PKG_CHECK_MODULES([WIBBLE], [libwibble >= 1.1], [with_wibble=system], [with_wibble=embedded])
-fi
-
-if test x"$with_wibble" = x"system"; then
-	PKG_CHECK_MODULES([WIBBLE], [libwibble >= 1.1])
-elif test x"$with_wibble" = x"embedded"; then
-	WIBBLE_LIBS="`pwd`/embedded/wibble/wibble/libwibble.la"
-	WIBBLE_CFLAGS="-I`pwd`/embedded/wibble"
-elif test x"$with_wibble" = x"no"; then
-	AC_MSG_FAILURE([--without-wibble was given, but wibble is essential in building arkimet])
-else
-	AC_MSG_FAILURE([--with-wibble was given with unsupported argument $with_wibble])
-fi
-
-AC_SUBST(WIBBLE_CFLAGS)
-AC_SUBST(WIBBLE_LIBS)
-AM_CONDITIONAL([WIBBLE_STANDALONE], [test x"$with_wibble" = x"system" ])
 
 dnl Optional readline
 VL_LIB_READLINE
@@ -403,7 +386,6 @@ conf/Makefile
 embedded/Makefile
 embedded/sqlite/Makefile
 embedded/minilzo/Makefile
-embedded/wibble/wibble/Makefile
 arki/Makefile
 src/Makefile
 doc/Makefile
@@ -414,7 +396,6 @@ AC_OUTPUT
 AC_MSG_NOTICE([
 ===================================================
 $PACKAGE_NAME-$PACKAGE_VERSION configuration:
-AS_HELP_STRING([wibble:], [$with_wibble])
 AS_HELP_STRING([BUFR via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB 1 via Meteosatlib:], [$have_libgrib])
 AS_HELP_STRING([GRIB 1+2 via grib_api:], [$have_gribapi])

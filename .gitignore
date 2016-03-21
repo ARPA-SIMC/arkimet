@@ -51,8 +51,6 @@ Makefile
 /arki-gzip.1
 /arki-server.1
 /arki-inbound.1
-/_darcs
-/wibble
 /src/arki-benchmark
 /src/arki-check
 /src/arki-config

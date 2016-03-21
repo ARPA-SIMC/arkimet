@@ -1,24 +1,3 @@
-/*
- * metadata/clusterer - Process a stream of metadata in batches
- *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #include "clusterer.h"
 #include <arki/metadata.h>
 #include <arki/types/reftime.h>
@@ -27,7 +6,7 @@
 using namespace std;
 using namespace arki;
 using namespace arki::types;
-using namespace wibble;
+using arki::core::Time;
 
 namespace arki {
 namespace metadata {
@@ -52,7 +31,7 @@ bool Clusterer::exceeds_count(const Metadata& md) const
     return (max_count != 0 && count >= max_count);
 }
 
-bool Clusterer::exceeds_size(const sys::Buffer& buf) const
+bool Clusterer::exceeds_size(const std::vector<uint8_t>& buf) const
 {
     if (max_bytes == 0 || size == 0) return false;
     return size + buf.size() > max_bytes;
@@ -82,7 +61,7 @@ void Clusterer::start_batch(const std::string& new_format)
     size = 0;
 }
 
-void Clusterer::add_to_batch(Metadata& md, const sys::Buffer& buf)
+void Clusterer::add_to_batch(Metadata& md, const std::vector<uint8_t>& buf)
 {
     size += buf.size();
     ++count;
@@ -117,9 +96,9 @@ void Clusterer::flush()
         flush_batch();
 }
 
-bool Clusterer::eat(auto_ptr<Metadata> md)
+bool Clusterer::eat(unique_ptr<Metadata>&& md)
 {
-    sys::Buffer buf = md->getData();
+    const auto& buf = md->getData();
 
     if (format.empty() || format != md->source().format ||
         exceeds_count(*md) || exceeds_size(buf) || exceeds_interval(*md) || exceeds_timerange(*md))
@@ -136,10 +115,14 @@ bool Clusterer::eat(auto_ptr<Metadata> md)
 void Clusterer::md_to_interval(const Metadata& md, int* interval) const
 {
     const Reftime* rt = md.get<Reftime>();
-    if (!rt) throw wibble::exception::Consistency("computing time interval", "metadata has no reference time");
+    if (!rt) throw runtime_error("cannot compute time interval: metadata has no reference time");
     Time t(rt->period_end());
-    for (unsigned i = 0; i < 6; ++i)
-        interval[i] = i < max_interval ? t.vals[i] : -1;
+    interval[0] = max_interval > 0 ? t.ye : -1;
+    interval[1] = max_interval > 1 ? t.mo : -1;
+    interval[2] = max_interval > 2 ? t.da : -1;
+    interval[3] = max_interval > 3 ? t.ho : -1;
+    interval[4] = max_interval > 4 ? t.mi : -1;
+    interval[5] = max_interval > 5 ? t.se : -1;
 }
 
 

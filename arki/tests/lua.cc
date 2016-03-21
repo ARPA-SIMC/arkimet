@@ -22,7 +22,7 @@
 
 #include <arki/tests/lua.h>
 #include <arki/utils/lua.h>
-#include <wibble/exception.h>
+#include <arki/exceptions.h>
 
 using namespace std;
 using namespace arki;
@@ -48,7 +48,7 @@ void Lua::loadFile(const std::string& fname)
 	m_filename = fname;
 
 	if (luaL_loadfile(*L, fname.c_str()))
-		throw wibble::exception::Consistency("parsing Lua code", lua_tostring(*L, -1));
+		throw_consistency_error("parsing Lua code", lua_tostring(*L, -1));
 
 	create_lua_object();
 }
@@ -59,7 +59,7 @@ void Lua::loadString(const std::string& buf)
 	m_filename = "memory buffer";
 
 	if (luaL_loadbuffer(*L, buf.data(), buf.size(), m_filename.c_str()))
-		throw wibble::exception::Consistency("parsing Lua code", lua_tostring(*L, -1));
+		throw_consistency_error("parsing Lua code", lua_tostring(*L, -1));
 
 	create_lua_object();
 }
@@ -72,18 +72,18 @@ void Lua::create_lua_object()
 	{
 		string error = lua_tostring(*L, -1);
 		lua_pop(*L, 1);
-		throw wibble::exception::Consistency(error, "defining pretty printing functions");
+		throw_consistency_error(error, "defining pretty printing functions");
 	}
 
 	// ensure that there is a 'test' function
 	lua_getglobal(*L, "test");
 	int type = lua_type(*L, -1);
 	if (type == LUA_TNIL)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"loading test code from " + m_filename,
 			"code did not define a function called 'test'");
 	if (type != LUA_TFUNCTION)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"loading report code from " + m_filename,
 			"the 'test' variable is not a function");
 
@@ -106,7 +106,7 @@ std::string Lua::run()
 	{
 		string error = lua_tostring(*L, -1);
 		lua_pop(*L, 1);
-		throw wibble::exception::Consistency(error, "calling test function");
+		throw_consistency_error(error, "calling test function");
 	}
 	arg_count = 0;
 	const char* res = lua_tostring(*L, -1);

@@ -1,32 +1,9 @@
-/*
- * arki/formatter/lua - Format arkimet values via a LUA script
- *
- * Copyright (C) 2008--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
-#include <arki/formatter/lua.h>
-#include <wibble/exception.h>
-#include <arki/types.h>
-#include <arki/utils/lua.h>
-#include <arki/runtime/config.h>
+#include "arki/formatter/lua.h"
+#include "arki/exceptions.h"
+#include "arki/types.h"
+#include "arki/utils/lua.h"
+#include "arki/runtime/config.h"
 
 extern "C" {
 #include <lauxlib.h>
@@ -41,23 +18,23 @@ namespace formatter {
 
 Lua::Lua() : L(new arki::Lua)
 {
-	/// Load the prettyprinting functions
+    /// Load the prettyprinting functions
 
-	// TODO: rcFiles also supports a 3rd StringOption parameter
-	vector<string> sources = runtime::rcFiles("format", "ARKI_FORMATTER");
-	for (vector<string>::const_iterator i = sources.begin(); i != sources.end(); ++i)
-	{
-		if (luaL_loadfile(*L, i->c_str()))
-			throw wibble::exception::Consistency("parsing Lua code for pretty printing", lua_tostring(*L, -1));
-		if (lua_pcall(*L, 0, 0, 0))
-		{
-			string error = lua_tostring(*L, -1);
-			lua_pop(*L, 1);
-			throw wibble::exception::Consistency(error, "defining pretty printing functions");
-		}
-	}
+    // TODO: rcFiles also supports a 3rd StringOption parameter
+    vector<string> sources = runtime::rcFiles("format", "ARKI_FORMATTER");
+    for (vector<string>::const_iterator i = sources.begin(); i != sources.end(); ++i)
+    {
+        if (luaL_loadfile(*L, i->c_str()))
+            throw_consistency_error("parsing Lua code for pretty printing", lua_tostring(*L, -1));
+        if (lua_pcall(*L, 0, 0, 0))
+        {
+            string error = lua_tostring(*L, -1);
+            lua_pop(*L, 1);
+            throw_consistency_error(error, "defining pretty printing functions");
+        }
+    }
 
-	//arkilua_dumpstack(L, "Afterinit", stderr);
+    //arkilua_dumpstack(L, "Afterinit", stderr);
 }
 
 Lua::~Lua()
@@ -103,4 +80,3 @@ std::string Lua::operator()(const Type& v) const
 
 }
 }
-// vim:set ts=4 sw=4:

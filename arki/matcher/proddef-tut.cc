@@ -46,8 +46,7 @@ struct arki_matcher_proddef_shar
 TESTGRP(arki_matcher_proddef);
 
 // Try matching Proddef
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	ValueBag testProddef2;
 	testProddef2.set("foo", Value::createInteger(15));

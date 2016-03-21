@@ -1,35 +1,12 @@
-/*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/utils/sqlite.h>
-
 #include <sstream>
-#include <fstream>
-#include <iostream>
 
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::tests;
 using namespace arki::utils::sqlite;
 
 struct arki_utils_sqlite_shar {
@@ -100,24 +77,24 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	try {
-		Pending p(new SqliteTransaction(db));
-		db.exec("INSERT INTO test (val) VALUES (1)");
-		db.exec("INSERT INTO test (val) VALUES (2)");
-		db.exec("INSERT INTO test (val) VALUES (3)");
+    try {
+        Pending p(new SqliteTransaction(db));
+        db.exec("INSERT INTO test (val) VALUES (1)");
+        db.exec("INSERT INTO test (val) VALUES (2)");
+        db.exec("INSERT INTO test (val) VALUES (3)");
 
-		PrecompiledQuery select("select", db);
-		select.compile("SELECT * FROM test");
-		select.step();
-		// Commenting this out works, because the PrecompiledQuery is
-		// finalised by its destructor before Pending::rollback is
-		// called
-		//p.rollback();
-		throw wibble::exception::System("no problem");
-	} catch (wibble::exception::Generic& e) {
-		//cerr << e.what() << endl;
-		ensure(dynamic_cast<wibble::exception::System*>(&e));
-	}
+        PrecompiledQuery select("select", db);
+        select.compile("SELECT * FROM test");
+        select.step();
+        // Commenting this out works, because the PrecompiledQuery is
+        // finalised by its destructor before Pending::rollback is
+        // called
+        //p.rollback();
+        throw std::runtime_error("no problem");
+    } catch (std::runtime_error& e) {
+        //cerr << e.what() << endl;
+        wassert(actual(e.what()).contains("no problem"));
+    }
 }
 
 // Test inserting 64bit size_t values
@@ -134,11 +111,11 @@ void to::test<4>()
 	PrecompiledQuery select("select", db);
 	select.compile("SELECT id, val FROM test ORDER BY id DESC LIMIT 1");
 
-	size_t val1;
-	while (select.step())
-		val1 = select.fetch<size_t>(1);
+    size_t val1 = 0xfafef1;
+    while (select.step())
+        val1 = select.fetch<size_t>(1);
 
-	ensure_equals(val1, val);
+    wassert(actual(val1) == val);
 }
 
 // Test inserting 64bit off_t values
@@ -155,11 +132,11 @@ void to::test<5>()
 	PrecompiledQuery select("select", db);
 	select.compile("SELECT id, val FROM test ORDER BY id DESC LIMIT 1");
 
-	off_t val1;
-	while (select.step())
-		val1 = select.fetch<off_t>(1);
+    off_t val1 = 0xfafef1;
+    while (select.step())
+        val1 = select.fetch<off_t>(1);
 
-	ensure_equals(val1, val);
+    wassert(actual(val1) == val);
 }
 
 

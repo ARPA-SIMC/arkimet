@@ -1,35 +1,13 @@
-/*
- * types/source - Source information
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "blob.h"
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
 #include <arki/utils/lua.h>
+#include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
+#include <arki/exceptions.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -37,13 +15,13 @@ namespace source {
 
 Source::Style Blob::style() const { return Source::BLOB; }
 
-void Blob::encodeWithoutEnvelope(Encoder& enc) const
+void Blob::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
     Source::encodeWithoutEnvelope(enc);
-    enc.addVarint(filename.size());
-    enc.addString(filename);
-    enc.addVarint(offset);
-    enc.addVarint(size);
+    enc.add_varint(filename.size());
+    enc.add_raw(filename);
+    enc.add_varint(offset);
+    enc.add_varint(size);
 }
 
 std::ostream& Blob::writeToOstream(std::ostream& o) const
@@ -60,7 +38,7 @@ void Blob::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("ofs", offset);
     e.add("sz", size);
 }
-std::auto_ptr<Blob> Blob::decodeMapping(const emitter::memory::Mapping& val)
+std::unique_ptr<Blob> Blob::decodeMapping(const emitter::memory::Mapping& val)
 {
     const arki::emitter::memory::Node& rd = val["b"];
     string basedir;
@@ -97,7 +75,7 @@ int Blob::compare_local(const Source& o) const
     // We should be the same kind, so upcast
     const Blob* v = dynamic_cast<const Blob*>(&o);
     if (!v)
-        throw wibble::exception::Consistency(
+        throw_consistency_error(
             "comparing metadata types",
             string("second element claims to be a Blob Source, but is a ") + typeid(&o).name() + " instead");
 
@@ -119,7 +97,7 @@ Blob* Blob::clone() const
     return new Blob(*this);
 }
 
-std::auto_ptr<Blob> Blob::create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
+std::unique_ptr<Blob> Blob::create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
 {
     Blob* res = new Blob;
     res->format = format;
@@ -127,20 +105,20 @@ std::auto_ptr<Blob> Blob::create(const std::string& format, const std::string& b
     res->filename = filename;
     res->offset = offset;
     res->size = size;
-    return auto_ptr<Blob>(res);
+    return unique_ptr<Blob>(res);
 }
 
-std::auto_ptr<Blob> Blob::fileOnly() const
+std::unique_ptr<Blob> Blob::fileOnly() const
 {
     string pathname = absolutePathname();
-    std::auto_ptr<Blob> res = Blob::create(format, wibble::str::dirname(pathname), wibble::str::basename(filename), offset, size);
+    std::unique_ptr<Blob> res = Blob::create(format, str::dirname(pathname), str::basename(filename), offset, size);
     return res;
 }
 
-std::auto_ptr<Blob> Blob::makeAbsolute() const
+std::unique_ptr<Blob> Blob::makeAbsolute() const
 {
     string pathname = absolutePathname();
-    std::auto_ptr<Blob> res = Blob::create(format, "", pathname, offset, size);
+    std::unique_ptr<Blob> res = Blob::create(format, "", pathname, offset, size);
     return res;
 }
 

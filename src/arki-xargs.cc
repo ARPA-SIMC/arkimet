@@ -1,41 +1,15 @@
-/*
- * arki-xargs - Runs a command on every blob of data found in the input files
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+/// Runs a command on every blob of data found in the input files
 #include "config.h"
-
 #include <arki/metadata.h>
 #include <arki/metadata/xargs.h>
 #include <arki/types/reftime.h>
 #include <arki/types/timerange.h>
 #include <arki/scan/any.h>
 #include <arki/runtime.h>
-
-#include <wibble/exception.h>
-#include <wibble/commandline/parser.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
-#include <wibble/sys/exec.h>
-#include <wibble/sys/process.h>
-
+#include <arki/utils/sys.h>
+#include <arki/utils/commandline/parser.h>
+#include <arki/wibble/sys/exec.h>
+#include <iostream>
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
@@ -43,9 +17,10 @@
 using namespace std;
 using namespace arki;
 using namespace arki::types;
-using namespace wibble;
+using namespace arki::utils;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public StandardParserWithManpage
@@ -88,22 +63,24 @@ struct Options : public StandardParserWithManpage
 
 }
 }
+}
 
-static void process(metadata::Eater& consumer, runtime::Input& in)
+template<typename Consumer>
+static void process(Consumer& consumer, sys::NamedFileDescriptor& in)
 {
-    metadata::ReadContext rc(sys::process::getcwd(), in.name());
-    Metadata::readFile(in.stream(), rc, consumer);
+    metadata::ReadContext rc(sys::getcwd(), in.name());
+    Metadata::read_file(in, rc, [&](unique_ptr<Metadata> md) { return consumer.eat(move(md)); });
 }
 
 int main(int argc, const char* argv[])
 {
-	wibble::commandline::Options opts;
-	try {
-		if (opts.parse(argc, argv))
-			return 0;
+    commandline::Options opts;
+    try {
+        if (opts.parse(argc, argv))
+            return 0;
 
-		if (!opts.hasNext())
-			throw wibble::exception::BadOption("please specify a command to run");
+        if (!opts.hasNext())
+            throw commandline::BadOption("please specify a command to run");
 
 		vector<string> args;
 		while (opts.hasNext())
@@ -122,32 +99,30 @@ int main(int argc, const char* argv[])
 		if (opts.split_timerange->boolValue())
 			consumer.split_timerange = true;
 
-		if (opts.inputfiles->values().empty())
-		{
-			// Process stdin
-			runtime::Input in("-");
-			process(consumer, in);
-			consumer.flush();
-		} else {
-			// Process the files
-			for (vector<string>::const_iterator i = opts.inputfiles->values().begin();
-					i != opts.inputfiles->values().end(); ++i)
-			{
-				runtime::Input in(i->c_str());
-				process(consumer, in);
+        if (opts.inputfiles->values().empty())
+        {
+            // Process stdin
+            Stdin in;
+            process(consumer, in);
+            consumer.flush();
+        } else {
+            // Process the files
+            for (vector<string>::const_iterator i = opts.inputfiles->values().begin();
+                    i != opts.inputfiles->values().end(); ++i)
+            {
+                runtime::InputFile in(i->c_str());
+                process(consumer, in);
             }
             consumer.flush();
         }
 
-		return 0;
-	} catch (wibble::exception::BadOption& e) {
-		cerr << e.desc() << endl;
-		opts.outputHelp(cerr);
-		return 1;
+        return 0;
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
+        opts.outputHelp(cerr);
+        return 1;
 	} catch (std::exception& e) {
 		cerr << e.what() << endl;
 		return 1;
 	}
 }
-
-// vim:set ts=4 sw=4:

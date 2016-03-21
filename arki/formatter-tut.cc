@@ -1,29 +1,8 @@
-/*
- * Copyright (C) 2008--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
-#include <arki/matcher/tests.h>
+#include <arki/metadata/tests.h>
 #include <arki/formatter.h>
 #include <arki/metadata.h>
-
+#include <arki/utils/files.h>
 #include <memory>
 #include <sstream>
 #include <iostream>
@@ -39,6 +18,8 @@ static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::utils;
+using namespace arki::tests;
 
 struct arki_formatter_shar {
     Metadata md;
@@ -51,10 +32,9 @@ struct arki_formatter_shar {
 TESTGRP(arki_formatter);
 
 // See if the formatter makes a difference
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
-	auto_ptr<Formatter> formatter(Formatter::create());
+	unique_ptr<Formatter> formatter(Formatter::create());
 
 	stringstream str1;
 	md.writeYaml(str1);
@@ -71,13 +51,15 @@ void to::test<1>()
     // Read back the two metadatas
     Metadata md1;
     {
-        stringstream str(str1.str(), ios_base::in);
-        md1.readYaml(str, "(test memory buffer)");
+        string s(str1.str());
+        auto reader = LineReader::from_chars(s.data(), s.size());
+        md1.readYaml(*reader, "(test memory buffer)");
     }
     Metadata md2;
     {
-        stringstream str(str2.str(), ios_base::in);
-        md2.readYaml(str, "(test memory buffer)");
+        string s(str2.str());
+        auto reader = LineReader::from_chars(s.data(), s.size());
+        md2.readYaml(*reader, "(test memory buffer)");
     }
 
 	// Once reparsed, they should have the same content
@@ -86,5 +68,3 @@ void to::test<1>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

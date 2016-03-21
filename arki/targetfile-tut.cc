@@ -1,23 +1,3 @@
-/*
- * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/tests/tests.h>
 #include <arki/targetfile.h>
 #include <arki/metadata.h>
@@ -37,6 +17,8 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::tests;
+using arki::core::Time;
 
 struct arki_targetfile_shar {
 	Targetfile tf;
@@ -57,30 +39,28 @@ struct arki_targetfile_shar {
 		testValues.set("antani", Value::createInteger(-1));
 		testValues.set("blinda", Value::createInteger(0));
 
-		md.set(origin::GRIB1::create(1, 2, 3));
-		md.set(product::GRIB1::create(1, 2, 3));
-		md.set(level::GRIB1::create(110, 12, 13));
-		md.set(timerange::GRIB1::create(0, 0, 0, 0));
-		md.set(area::GRIB::create(testValues));
-		md.set(proddef::GRIB::create(testValues));
-		md.add_note("test note");
-		md.set(run::Minute::create(12));
-		md.set(reftime::Position::create(types::Time(2007, 1, 2, 3, 4, 5)));
-	}
+        md.set(origin::GRIB1::create(1, 2, 3));
+        md.set(product::GRIB1::create(1, 2, 3));
+        md.set(level::GRIB1::create(110, 12, 13));
+        md.set(timerange::GRIB1::create(0, 0, 0, 0));
+        md.set(area::GRIB::create(testValues));
+        md.set(proddef::GRIB::create(testValues));
+        md.add_note("test note");
+        md.set(run::Minute::create(12));
+        md.set(reftime::Position::create(Time(2007, 1, 2, 3, 4, 5)));
+    }
 };
 TESTGRP(arki_targetfile);
 
 // Empty or unsupported area should give 0
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	Targetfile::Func f = tf.get("echo:foo");
 	ensure_equals(f(md), "foo");
 }
 
 // Test MARS expansion
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	Targetfile::Func f = tf.get("mars:foo[DATE][TIME]+[STEP].grib");
 	ensure_equals(f(md), "foo200701020304+00.grib");

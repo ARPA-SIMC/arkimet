@@ -1,39 +1,17 @@
-/*
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
-#include <arki/matcher/tests.h>
-#include <arki/matcher.h>
-#include <arki/metadata.h>
-#include <arki/types/area.h>
-#include <arki/configfile.h>
-
+#include "arki/matcher/tests.h"
+#include "arki/matcher.h"
+#include "arki/metadata.h"
+#include "arki/types/area.h"
+#include "arki/configfile.h"
 #include <sstream>
 #include <iostream>
 
 namespace tut {
 using namespace std;
-using namespace wibble;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::tests;
 
 struct arki_matcher_area_shar
 {
@@ -47,8 +25,7 @@ struct arki_matcher_area_shar
 TESTGRP(arki_matcher_area);
 
 // Try matching Area
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	ValueBag testArea2;
 	testArea2.set("foo", Value::createInteger(15));
@@ -89,8 +66,7 @@ void to::test<1>()
 }
 
 // Try matching with "bbox equals"
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 #ifdef HAVE_GEOS
 	//md.set(types::Area::decodeString("GRIB(Ni=1, Nj=1, latfirst=44000, latlast=44000, lonfirst=11000, lonlast=11000, type=0)"));
@@ -119,8 +95,7 @@ void to::test<2>()
 }
 
 // Try matching with "bbox covers"
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 #ifdef HAVE_GEOS
 	//md.set(bbox::INVALID::create());
@@ -175,8 +150,7 @@ void to::test<3>()
 }
 
 // Try matching with "bbox intersects"
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
 #ifdef HAVE_GEOS
 	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
@@ -198,8 +172,7 @@ void to::test<4>()
 }
 
 // Try matching with "bbox coveredby"
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
 #ifdef HAVE_GEOS
 	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
@@ -225,8 +198,7 @@ void to::test<5>()
 
 
 // Try matching Area with ODIMH5
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
 	ValueBag testArea2;
 	testArea2.set("foo", Value::createInteger(15));
@@ -271,8 +243,7 @@ void to::test<6>()
 }
 
 // Try matching Area with ODIMH5
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     //Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
     Metadata md1;
@@ -285,8 +256,7 @@ void to::test<7>()
 }
 
 // Try matching Area with ODIMH5
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
 #ifdef HAVE_GEOS
     //Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
@@ -306,8 +276,7 @@ void to::test<8>()
 }
 
 // Try matching Area with ODIMH5
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
 #ifdef HAVE_GEOS
     //Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
@@ -327,8 +296,7 @@ void to::test<9>()
 
 }
 // Try matching Area with VM2
-template<> template<>
-void to::test<10>()
+def_test(10)
 {
     Metadata md;
     md.set(area::VM2::create(1));
@@ -339,18 +307,15 @@ void to::test<10>()
 	ensure_not_matches("area:VM2,2", md);
 	ensure_not_matches("area:GRIB:lon=0,lat=0", md);
 
-	try {
-		ensure_matches("area:VM2,ciccio=riccio", md);
-		ensure(false);
-	} catch (wibble::exception::Consistency& e) {
-		ensure(string(e.what()).find("is not a number") != string::npos);
-	}
+    try {
+        ensure_matches("area:VM2,ciccio=riccio", md);
+        ensure(false);
+    } catch (std::exception& e) {
+        ensure(string(e.what()).find("is not a number") != string::npos);
+    }
     ensure_not_matches("area: VM2:ciccio=riccio", md);
     ensure_not_matches("area: VM2,1:ciccio=riccio", md);
     ensure_matches("area: VM2,1:lon=1207738", md);
 }
 
-
 }
-
-// vim:set ts=4 sw=4:

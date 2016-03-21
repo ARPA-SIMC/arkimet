@@ -1,33 +1,9 @@
 #ifndef ARKI_MATCHER_REFTIME_PARSER_H
 #define ARKI_MATCHER_REFTIME_PARSER_H
 
-/*
- * matcher/reftime/parser.h - Parser for reftime expressions
- *
- * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/types.h>
-#include <arki/types/time.h>
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/grcal/grcal.h>
+#include <arki/core/time.h>
+#include <arki/utils/string.h>
 #include <string>
 #include <ctime>
 #include <vector>
@@ -35,21 +11,18 @@
 #include <sstream>
 #include <cstdio>
 
-using namespace std;
-using namespace wibble;
-using namespace wibble::grcal;
-
 namespace arki {
 namespace matcher {
 namespace reftime {
 
 struct DTMatch
 {
-	virtual ~DTMatch() {}
-	virtual bool match(const int* tt) const = 0;
-	virtual bool match(const int* begin, const int* end) const = 0;
-	virtual std::string sql(const std::string& column) const = 0;
-	virtual std::string toString() const = 0;
+    virtual ~DTMatch() {}
+    virtual bool match(const core::Time& tt) const = 0;
+    virtual bool match(const core::Time& begin, const core::Time& end) const = 0;
+    virtual std::string sql(const std::string& column) const = 0;
+    virtual std::string toString() const = 0;
+
     /**
      * Time (in seconds since midnight) of this expression, used as a reference
      * when building derived times. For example, an expression of
@@ -57,17 +30,18 @@ struct DTMatch
      * the step should still match 00:00 and 12:00, and not 23:59 and 11:59
      */
     virtual int timebase() const = 0;
-	virtual bool isLead() const { return true; }
+    virtual bool isLead() const { return true; }
+
     /**
      * Restrict a datetime range, returning the new range endpoints in begin
      * and end.
      *
-     * A NULL auto_ptr means an open end.
+     * A NULL unique_ptr means an open end.
      *
      * Returns true if the result is a valid interval, false if this match does
      * not match the given interval at all.
      */
-    virtual bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const {}
+    virtual bool restrict_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const = 0;
 
     static DTMatch* createLE(const int* tt);
     static DTMatch* createLT(const int* tt);
@@ -84,21 +58,20 @@ struct DTMatch
 
 struct Parser
 {
-	time_t tnow;
-	vector<string> errors;
-	string unexpected;
+    time_t tnow;
+    std::vector<std::string> errors;
+    std::string unexpected;
 
-	vector<DTMatch*> res;
+    std::vector<DTMatch*> res;
 
-	Parser()
-	{
-		tnow = time(NULL);
-	}
-	~Parser()
-	{
-		for (vector<DTMatch*>::iterator i = res.begin(); i != res.end(); ++i)
-			delete *i;
-	}
+    Parser()
+    {
+        tnow = time(NULL);
+    }
+    ~Parser()
+    {
+        for (auto& i: res) delete i;
+    }
 
 	void add(DTMatch* t)
 	{
@@ -108,42 +81,15 @@ struct Parser
 
     void add_step(int val, int idx, DTMatch* base=0);
 
-	void mknow(int* vals)
-	{
-		struct tm now;
-	 	gmtime_r(&tnow, &now);
-		date::fromtm(now, vals, 6);
-	}
+    void mknow(int* vals);
+    void mktoday(int* vals);
+    void mkyesterday(int* vals);
+    void mktomorrow(int* vals);
 
-	void mktoday(int* vals)
-	{
-		struct tm now;
-	 	gmtime_r(&tnow, &now);
-		date::fromtm(now, vals, 3);
-	}
-
-	void mkyesterday(int* vals)
-	{
-		time_t tv = tnow - 3600*24;
-		struct tm v;
-	 	gmtime_r(&tv, &v);
-		date::fromtm(v, vals, 3);
-	}
-
-	void mktomorrow(int* vals)
-	{
-		time_t tv = tnow + 3600*24;
-		struct tm v;
-	 	gmtime_r(&tv, &v);
-		date::fromtm(v, vals, 3);
-	}
-
-	void parse(const std::string& str);
+    void parse(const std::string& str);
 };
 
 }
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

@@ -1,23 +1,3 @@
-/*
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "aggregate.h"
 #include <arki/types/tests.h>
 #include <arki/types.h>
@@ -28,8 +8,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::dataset::index;
 using namespace arki::types;
@@ -45,20 +24,19 @@ struct arki_dataset_index_aggregate_shar {
 };
 TESTGRP(arki_dataset_index_aggregate);
 
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	set<types::Code> members;
-	members.insert(types::TYPE_ORIGIN);
-	members.insert(types::TYPE_PRODUCT);
-	members.insert(types::TYPE_LEVEL);
+	members.insert(TYPE_ORIGIN);
+	members.insert(TYPE_PRODUCT);
+	members.insert(TYPE_LEVEL);
 	Aggregate u(db, "test", members);
 	u.initDB(members);
 	u.initQueries();
 
     Metadata md;
-    auto_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
-    auto_ptr<Type> product(Product::createGRIB1(200, 1, 2));
+    unique_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
+    unique_ptr<Type> product(Product::createGRIB1(200, 1, 2));
 
     ensure_equals(u.get(md), -1);
     md.set(*origin);

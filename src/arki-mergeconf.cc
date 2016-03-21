@@ -1,43 +1,22 @@
-/*
- * arki-mergeconf - Merge arkimet dataset configurations
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+/// Merge arkimet dataset configurations
 #include "config.h"
-
 #include <arki/configfile.h>
 #include <arki/dataset.h>
 #include <arki/summary.h>
 #include <arki/matcher.h>
 #include <arki/runtime.h>
-#include <wibble/commandline/parser.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/commandline/parser.h>
 #include <arki/utils/geosdef.h>
+#include <arki/utils/string.h>
+#include <arki/utils/sys.h>
 #include <memory>
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
+using namespace arki::utils;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public StandardParserWithManpage
@@ -68,13 +47,14 @@ struct Options : public StandardParserWithManpage
 
 }
 }
+}
 
 int main(int argc, const char* argv[])
 {
-	wibble::commandline::Options opts;
-	try {
-		if (opts.parse(argc, argv))
-			return 0;
+    commandline::Options opts;
+    try {
+        if (opts.parse(argc, argv))
+            return 0;
         runtime::init();
 
 		ConfigFile cfg;
@@ -91,41 +71,41 @@ int main(int argc, const char* argv[])
 		// Read the config files from the remaining commandline arguments
 		while (opts.hasNext())
 		{
-			string file = opts.next();
-			if (!str::startsWith(file, "http://") &&
-			    !str::startsWith(file, "https://") &&
-			    !sys::fs::access(str::joinpath(file, "config"), F_OK))
-			{
-				cerr << file << " skipped: it does not look like a dataset" << endl;
-				continue;
-			}
-			try {
-				ReadonlyDataset::readConfig(file, cfg);
-				foundConfig = true;
-			} catch (std::exception& e) {
-				cerr << file << " skipped: " << e.what() << endl;
-			}
-		}
-		if (!foundConfig)
-			throw wibble::exception::BadOption("you need to specify at least one valid config file or dataset directory");
+            string file = opts.next();
+            if (!str::startswith(file, "http://") &&
+                !str::startswith(file, "https://") &&
+                !sys::access(str::joinpath(file, "config"), F_OK))
+            {
+                cerr << file << " skipped: it does not look like a dataset" << endl;
+                continue;
+            }
+            try {
+                dataset::Reader::readConfig(file, cfg);
+                foundConfig = true;
+            } catch (std::exception& e) {
+                cerr << file << " skipped: " << e.what() << endl;
+            }
+        }
+        if (!foundConfig)
+            throw commandline::BadOption("you need to specify at least one valid config file or dataset directory");
 
-		// Validate the configuration
-		bool hasErrors = false;
-		for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
-				i != cfg.sectionEnd(); ++i)
-		{
-			// Validate filters
-			try {
-				Matcher::parse(i->second->value("filter"));
-			} catch (wibble::exception::Generic& e) {
-				const ConfigFile::FilePos* fp = i->second->valueInfo("filter");
-				if (fp)
-					cerr << fp->pathname << ":" << fp->lineno << ":";
-				cerr << e.what();
-				cerr << endl;
-				hasErrors = true;
-			}
-		}
+        // Validate the configuration
+        bool hasErrors = false;
+        for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
+                i != cfg.sectionEnd(); ++i)
+        {
+            // Validate filters
+            try {
+                Matcher::parse(i->second->value("filter"));
+            } catch (std::exception& e) {
+                const auto* fp = i->second->valueInfo("filter");
+                if (fp)
+                    cerr << fp->pathname << ":" << fp->lineno << ":";
+                cerr << e.what();
+                cerr << endl;
+                hasErrors = true;
+            }
+        }
 		if (hasErrors)
 		{
 			cerr << "Some input files did not validate." << endl;
@@ -146,37 +126,36 @@ int main(int argc, const char* argv[])
 
 			for (ConfigFile::section_iterator i = cfg.sectionBegin();
 					i != cfg.sectionEnd(); ++i)
-			{
-				// Instantiate the dataset
-				auto_ptr<ReadonlyDataset> d(ReadonlyDataset::create(*i->second));
-				// Get the summary
-				Summary sum;
-				d->querySummary(Matcher(), sum);
+            {
+                // Instantiate the dataset
+                unique_ptr<dataset::Reader> d(dataset::Reader::create(*i->second));
+                // Get the summary
+                Summary sum;
+                d->query_summary(Matcher(), sum);
 
 #ifdef HAVE_GEOS
 				// Compute bounding box, and store the WKT in bounding
-				auto_ptr<ARKI_GEOS_GEOMETRY> bbox = sum.getConvexHull(gf);
+				unique_ptr<ARKI_GEOS_GEOMETRY> bbox = sum.getConvexHull(gf);
 				if (bbox.get())
 					i->second->setValue("bounding", bbox->toString());
 #endif
 			}
 		}
 
-		// Open the output file
-		runtime::Output out(*opts.outfile);
 
-		// Output the merged configuration
-		cfg.output(out.stream(), out.name());
+        // Output the merged configuration
+        string res = cfg.serialize();
+        unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
+        out->write_all_or_throw(res);
+        out->close();
 
-		return 0;
-	} catch (wibble::exception::BadOption& e) {
-		cerr << e.desc() << endl;
-		opts.outputHelp(cerr);
-		return 1;
-	} catch (std::exception& e) {
-		cerr << e.what() << endl;
-		return 1;
-	}
+        return 0;
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
+        opts.outputHelp(cerr);
+        return 1;
+    } catch (std::exception& e) {
+        cerr << e.what() << endl;
+        return 1;
+    }
 }
-
-// vim:set ts=4 sw=4:

@@ -1,31 +1,8 @@
-/*
- * matcher/utils - Support code to implement matchers
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
-#include <arki/matcher/utils.h>
+#include "utils.h"
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace matcher {
@@ -38,18 +15,18 @@ OptionalCommaList::OptionalCommaList(const std::string& pattern, bool has_tail)
 		size_t pos = pattern.find(":");
 		if (pos == string::npos)
 			p = pattern;
-		else
-		{
-			p = str::trim(pattern.substr(0, pos));
-			tail = str::trim(pattern.substr(pos+1));
-		}
-	} else
-		p = pattern;
-	str::Split split(",", p);
-	for (str::Split::const_iterator i = split.begin(); i != split.end(); ++i)
-		push_back(*i);
-	while (!empty() && (*this)[size() - 1].empty())
-		resize(size() - 1);
+        else
+        {
+            p = str::strip(pattern.substr(0, pos));
+            tail = str::strip(pattern.substr(pos+1));
+        }
+    } else
+        p = pattern;
+    str::Split split(p, ",");
+    for (str::Split::const_iterator i = split.begin(); i != split.end(); ++i)
+        push_back(*i);
+    while (!empty() && (*this)[size() - 1].empty())
+        resize(size() - 1);
 }
 
 bool OptionalCommaList::has(size_t pos) const
@@ -61,13 +38,17 @@ bool OptionalCommaList::has(size_t pos) const
 
 int OptionalCommaList::getInt(size_t pos, int def) const
 {
-	if (!has(pos)) return def;
-	const char* beg = (*this)[pos].c_str();
-	char* end;
-	unsigned long res = strtoul(beg, &end, 10);
-	if ((end-beg) < (*this)[pos].size())
-		throw wibble::exception::Consistency("parsing matcher", "'"+(*this)[pos]+"' is not a number");
-	return res;
+    if (!has(pos)) return def;
+    const char* beg = (*this)[pos].c_str();
+    char* end;
+    unsigned long res = strtoul(beg, &end, 10);
+    if ((unsigned)(end-beg) < (*this)[pos].size())
+    {
+        stringstream ss;
+        ss << "cannot parse matcher: '" << (*this)[pos] << "' is not a number";
+        throw std::runtime_error(ss.str());
+    }
+    return res;
 }
 
 unsigned OptionalCommaList::getUnsigned(size_t pos, unsigned def) const
@@ -170,5 +151,3 @@ const std::string& OptionalCommaList::getString(size_t pos, const std::string& d
 
 }
 }
-
-// vim:set ts=4 sw=4:

@@ -1,36 +1,15 @@
-/*
- * scan/any - Scan files autodetecting the format
- *
- * Copyright (C) 2009--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/libconfig.h>
 #include <arki/scan/any.h>
 #include <arki/metadata.h>
-#include <arki/metadata/consumer.h>
 #include <arki/types/source/blob.h>
 #include <arki/utils/files.h>
 #include <arki/utils/compress.h>
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/sys.h>
+#include <arki/utils/string.h>
 #include <sstream>
+#include <algorithm>
 #include <utime.h>
+#include <fcntl.h>
 
 #ifdef HAVE_GRIBAPI
 #include <arki/scan/grib.h>
@@ -49,24 +28,28 @@
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 using namespace arki::types;
 
 namespace arki {
 namespace scan {
 
-static void scan_metadata(const std::string& file, metadata::Eater& c)
+static void scan_metadata(const std::string& file, metadata_dest_func dest)
 {
     //cerr << "Reading cached metadata from " << file << endl;
-    Metadata::readFile(file, c);
+    Metadata::read_file(file, dest);
 }
 
-static bool scan_file(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, metadata::Eater& c)
+static bool scan_file(
+        const std::string& pathname,
+        const std::string& basedir,
+        const std::string& relname,
+        const std::string& format,
+        metadata_dest_func dest)
 {
     // Scan the file
     if (isCompressed(pathname))
-        throw wibble::exception::Consistency("scanning " + relname + ".gz", "file needs to be manually decompressed before scanning");
+        throw std::runtime_error("cannot scan " + relname + ".gz: file needs to be manually decompressed before scanning");
 
 #ifdef HAVE_GRIBAPI
     if (format == "grib" || format == "grib1" || format == "grib2")
@@ -75,9 +58,9 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
         scanner.open(pathname, basedir, relname);
         while (true)
         {
-            auto_ptr<Metadata> md(new Metadata);
+            unique_ptr<Metadata> md(new Metadata);
             if (!scanner.next(*md)) break;
-            c.eat(md);
+            if (!dest(move(md))) break;
         }
         return true;
     }
@@ -88,9 +71,9 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
         scanner.open(pathname, basedir, relname);
         while (true)
         {
-            auto_ptr<Metadata> md(new Metadata);
+            unique_ptr<Metadata> md(new Metadata);
             if (!scanner.next(*md)) break;
-            c.eat(md);
+            if (!dest(move(md))) break;
         }
         return true;
     }
@@ -101,9 +84,9 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
         scanner.open(pathname, basedir, relname);
         while (true)
         {
-            auto_ptr<Metadata> md(new Metadata);
+            unique_ptr<Metadata> md(new Metadata);
             if (!scanner.next(*md)) break;
-            c.eat(md);
+            if (!dest(move(md))) break;
         }
         return true;
     }
@@ -114,9 +97,9 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
         scanner.open(pathname, basedir, relname);
         while (true)
         {
-            auto_ptr<Metadata> md(new Metadata);
+            unique_ptr<Metadata> md(new Metadata);
             if (!scanner.next(*md)) break;
-            c.eat(md);
+            if (!dest(move(md))) break;
         }
         return true;
     }
@@ -127,14 +110,14 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
         scanner.open(pathname, basedir, relname);
         while (true)
         {
-            auto_ptr<Metadata> md(new Metadata);
+            unique_ptr<Metadata> md(new Metadata);
             if (!scanner.next(*md)) break;
-            c.eat(md);
+            if (!dest(move(md))) break;
         }
         return true;
     }
 #endif
-	return false;
+    return false;
 }
 
 static bool dir_segment_fnames_lt(const std::string& a, const std::string& b)
@@ -144,50 +127,29 @@ static bool dir_segment_fnames_lt(const std::string& a, const std::string& b)
     return na < nb;
 }
 
-namespace {
-
-struct DirSource : public metadata::Eater
-{
-   metadata::Eater& next;
-   const std::string& dirname;
-   size_t pos;
-
-   DirSource(metadata::Eater& next, const std::string& dirname) : next(next), dirname(dirname), pos(0) {}
-
-   void set_pos(size_t pos)
-   {
-       this->pos = pos;
-   }
-
-   bool eat(auto_ptr<Metadata> md) override
-   {
-       const source::Blob& i = md->sourceBlob();
-       md->set_source(Source::createBlob(i.format, i.basedir, dirname, pos, i.size));
-       return next.eat(md);
-   }
-};
-
-}
-
-static bool scan_dir(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, metadata::Eater& c)
+static bool scan_dir(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, metadata_dest_func dest)
 {
     // Collect all file names in the directory
     vector<std::string> fnames;
-    sys::fs::Directory dir(pathname);
-    for (sys::fs::Directory::const_iterator di = dir.begin(); di != dir.end(); ++di)
-        if (di.isreg() && str::endsWith(*di, format))
-            fnames.push_back(*di);
+    sys::Path dir(pathname);
+    for (sys::Path::iterator di = dir.begin(); di != dir.end(); ++di)
+        if (di.isreg() && str::endswith(di->d_name, format))
+            fnames.push_back(di->d_name);
 
     // Sort them numerically
     std::sort(fnames.begin(), fnames.end(), dir_segment_fnames_lt);
 
     // Scan them one by one
-    DirSource dirsource(c, relname);
+    size_t pos = 0;
     for (vector<string>::const_iterator i = fnames.begin(); i != fnames.end(); ++i)
     {
         //cerr << "SCAN " << *i << " " << pathname << " " << basedir << " " << relname << endl;
-        dirsource.set_pos(strtoul(i->c_str(), 0, 10));
-        if (!scan_file(str::joinpath(pathname, *i), basedir, relname, format, dirsource))
+        pos = strtoul(i->c_str(), 0, 10);
+        if (!scan_file(str::joinpath(pathname, *i), basedir, relname, format, [&](unique_ptr<Metadata> md) {
+                   const source::Blob& i = md->sourceBlob();
+                   md->set_source(Source::createBlob(i.format, i.basedir, relname, pos, i.size));
+                   return dest(move(md));
+                }))
             return false;
 
     }
@@ -202,63 +164,63 @@ static std::string guess_format(const std::string& basedir, const std::string& f
     if (pos == string::npos)
         // No extension, we do not know what it is
         return std::string();
-    return str::tolower(file.substr(pos+1));
+    return str::lower(file.substr(pos+1));
 }
 
-bool scan(const std::string& basedir, const std::string& relname, metadata::Eater& c)
+bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest)
 {
     std::string format = guess_format(basedir, relname);
 
     // If we cannot detect a format, fail
     if (format.empty()) return false;
-    return scan(basedir, relname, c, format);
+    return scan(basedir, relname, dest, format);
 }
 
-bool scan(const std::string& basedir, const std::string& relname, metadata::Eater& c, const std::string& format)
+bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest, const std::string& format)
 {
     // If we scan standard input, assume uncompressed data and do not try to
     // look for an existing .metadata file
     if (relname == "-")
-        return scan_file(relname, basedir, relname, format, c);
+        return scan_file(relname, basedir, relname, format, dest);
 
     // stat the file (or its compressed version)
     string pathname = str::joinpath(basedir, relname);
-    auto_ptr<struct stat> st_file = sys::fs::stat(pathname);
+    unique_ptr<struct stat> st_file = sys::stat(pathname);
     if (!st_file.get())
-        st_file = sys::fs::stat(pathname + ".gz");
+        st_file = sys::stat(pathname + ".gz");
     if (!st_file.get())
-        throw wibble::exception::File(pathname, "getting file information");
+        throw runtime_error(pathname + " or " + pathname + ".gz not found");
 
     // stat the metadata file, if it exists
     string md_pathname = pathname + ".metadata";
-    auto_ptr<struct stat> st_md = sys::fs::stat(md_pathname);
+    unique_ptr<struct stat> st_md = sys::stat(md_pathname);
 
     if (st_md.get() and st_md->st_mtime >= st_file->st_mtime)
     {
         // If there is a usable metadata file, use it to save time
-        scan_metadata(md_pathname, c);
+        scan_metadata(md_pathname, dest);
         return true;
     } else if (S_ISDIR(st_file->st_mode)) {
-        return scan_dir(pathname, basedir, relname, format, c);
+        return scan_dir(pathname, basedir, relname, format, dest);
     } else {
-        return scan_file(pathname, basedir, relname, format, c);
+        return scan_file(pathname, basedir, relname, format, dest);
     }
 }
 
-bool scan(const std::string& file, metadata::Eater& c)
+bool scan(const std::string& file, metadata_dest_func dest)
 {
     string basedir;
     string relname;
     utils::files::resolve_path(file, basedir, relname);
-    return scan(basedir, relname, c);
+    return scan(basedir, relname, dest);
 }
 
-bool scan(const std::string& file, metadata::Eater& c, const std::string& format)
+bool scan(const std::string& file, metadata_dest_func dest, const std::string& format)
 {
     string basedir;
     string relname;
     utils::files::resolve_path(file, basedir, relname);
-    return scan(basedir, relname, c, format);
+    return scan(basedir, relname, dest, format);
 }
 
 bool canScan(const std::string& file)
@@ -268,7 +230,7 @@ bool canScan(const std::string& file)
 	if (pos == string::npos)
 		// No extension, we do not know what it is
 		return false;
-	string ext = str::tolower(file.substr(pos+1));
+	string ext = str::lower(file.substr(pos+1));
 
 	// Check for known extensions
 #ifdef HAVE_GRIBAPI
@@ -296,54 +258,62 @@ bool canScan(const std::string& file)
 
 bool exists(const std::string& file)
 {
-	if (sys::fs::exists(file)) return true;
-	if (sys::fs::exists(file + ".gz")) return true;
-	return false;
+    if (sys::exists(file)) return true;
+    if (sys::exists(file + ".gz")) return true;
+    return false;
 }
 
 bool isCompressed(const std::string& file)
 {
-    return !sys::fs::exists(file) && sys::fs::exists(file + ".gz");
+    return !sys::exists(file) && sys::exists(file + ".gz");
 }
 
 time_t timestamp(const std::string& file)
 {
-    time_t res = sys::fs::timestamp(file, 0);
+    time_t res = sys::timestamp(file, 0);
     if (res != 0) return res;
-    return sys::fs::timestamp(file + ".gz", 0);
+    return sys::timestamp(file + ".gz", 0);
 }
 
 void compress(const std::string& file, size_t groupsize)
 {
-	utils::compress::DataCompressor compressor(file, groupsize);
-	scan(file, compressor);
-	compressor.flush();
+    utils::compress::DataCompressor compressor(file, groupsize);
+    scan(file, [&](unique_ptr<Metadata> md) { return compressor.eat(move(md)); });
+    compressor.flush();
 
-	// Set the same timestamp as the uncompressed file
-	std::auto_ptr<struct stat> st = sys::fs::stat(file);
-	struct utimbuf times;
-	times.actime = st->st_atime;
-	times.modtime = st->st_mtime;
-	utime((file + ".gz").c_str(), &times);
-	utime((file + ".gz.idx").c_str(), &times);
+    // Set the same timestamp as the uncompressed file
+    std::unique_ptr<struct stat> st = sys::stat(file);
+    struct utimbuf times;
+    times.actime = st->st_atime;
+    times.modtime = st->st_mtime;
+    utime((file + ".gz").c_str(), &times);
+    utime((file + ".gz.idx").c_str(), &times);
 
 	// TODO: delete uncompressed version
 }
 
-void Validator::validate(Metadata& md) const
+void Validator::throw_check_error(utils::sys::NamedFileDescriptor& fd, off_t offset, const std::string& msg) const
 {
-    sys::Buffer buf = md.getData();
-    validate(buf.data(), buf.size());
+    stringstream ss;
+    ss << fd.name() << ":" << offset << ": " << format() << " validation failed: " << msg;
+    throw runtime_error(ss.str());
+}
+
+void Validator::throw_check_error(const std::string& msg) const
+{
+    stringstream ss;
+    ss << format() << " validation failed: " << msg;
+    throw runtime_error(ss.str());
 }
 
 const Validator& Validator::by_filename(const std::string& filename)
 {
-	// Get the file extension
-	size_t pos = filename.rfind('.');
-	if (pos == string::npos)
-		// No extension, we do not know what it is
-		throw wibble::exception::Consistency("looking for a validator for " + filename, "file name has no extension");
-	string ext = str::tolower(filename.substr(pos+1));
+    // Get the file extension
+    size_t pos = filename.rfind('.');
+    if (pos == string::npos)
+        // No extension, we do not know what it is
+        throw runtime_error("cannot find a validator for " + filename + ": file name has no extension");
+    string ext = str::lower(filename.substr(pos+1));
 
 #ifdef HAVE_GRIBAPI
 	if (ext == "grib" || ext == "grib1" || ext == "grib2")
@@ -365,7 +335,7 @@ const Validator& Validator::by_filename(const std::string& filename)
    if (ext == "nc")
        return netcdf::validator();
 #endif
-	throw wibble::exception::Consistency("looking for a validator for " + filename, "no validator available");
+    throw runtime_error("cannot find a validator for " + filename + ": no validator available");
 }
 
 bool update_sequence_number(Metadata& md, int& usn)
@@ -375,7 +345,7 @@ bool update_sequence_number(Metadata& md, int& usn)
     if (md.source().format != "bufr")
         return false;
 
-    wibble::sys::Buffer data = md.getData();
+    const auto& data = md.getData();
     string buf((const char*)data.data(), data.size());
     usn = Bufr::update_sequence_number(buf);
     return true;
@@ -384,7 +354,7 @@ bool update_sequence_number(Metadata& md, int& usn)
 #endif
 }
 
-wibble::sys::Buffer reconstruct(const std::string& format, const Metadata& md, const std::string& value)
+std::vector<uint8_t> reconstruct(const std::string& format, const Metadata& md, const std::string& value)
 {
 #ifdef HAVE_VM2
     if (format == "vm2")
@@ -392,9 +362,8 @@ wibble::sys::Buffer reconstruct(const std::string& format, const Metadata& md, c
         return scan::Vm2::reconstruct(md, value);
     }
 #endif
-    throw wibble::exception::Consistency("reconstructing " + format + " data", "format not supported");
+    throw runtime_error("cannot reconstruct " + format + " data: format not supported");
 }
 
 }
 }
-// vim:set ts=4 sw=4:

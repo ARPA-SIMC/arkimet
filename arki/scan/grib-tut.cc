@@ -1,22 +1,3 @@
-/*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #include <arki/metadata/tests.h>
 #include <arki/scan/grib.h>
 #include <arki/types.h>
@@ -31,8 +12,8 @@
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/scan/any.h>
-#include <wibble/sys/fs.h>
-
+#include <arki/utils/sys.h>
+#include <arki/utils/string.h>
 #include <sstream>
 #include <iostream>
 #include <sys/types.h>
@@ -41,8 +22,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
@@ -52,12 +32,11 @@ struct arki_scan_grib_shar {
 TESTGRP(arki_scan_grib);
 
 // Scan a well-known grib file, with no padding between messages
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
-	Metadata md;
-	scan::Grib scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Grib scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/test.grib1");
 
@@ -65,7 +44,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -95,7 +74,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 7218, 34960));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 7218, 34960));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -118,7 +97,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 42178, 2234));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 42178, 2234));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -142,12 +121,11 @@ void to::test<1>()
 
 
 // Scan a well-known grib file, with extra padding data between messages
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
-	Metadata md;
-	scan::Grib scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Grib scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/padded.grib1");
 
@@ -155,7 +133,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/padded.grib1", 100, 7218));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/padded.grib1", 100, 7218));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -177,7 +155,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/padded.grib1", 7418, 34960));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/padded.grib1", 7418, 34960));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -199,7 +177,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/padded.grib1", 42478, 2234));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/padded.grib1", 42478, 2234));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -222,86 +200,82 @@ void to::test<2>()
 }
 
 // Scan a well-known grib file, with no padding between GRIBs
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
-	Metadata md;
-	scan::Grib scanner(false, 
-		"arki.year = 2008\n"
-		"arki.month = 7\n"
-		"arki.day = 30\n"
-		"arki.hour = 12\n"
-		"arki.minute = 30\n"
-		"arki.second = 0\n"
-		"arki.centre = 98\n"
-		"arki.subcentre = 1\n"
-		"arki.process = 2\n"
-		"arki.origin = 1\n"
-		"arki.table = 1\n"
-		"arki.product = 1\n"
-		"arki.ltype = 1\n"
-		"arki.l1 = 1\n"
-		"arki.l2 = 1\n"
-		"arki.ptype = 1\n"
-		"arki.punit = 1\n"
-		"arki.p1 = 1\n"
-		"arki.p2 = 1\n"
-		"arki.bbox = { { 45.00, 11.00 }, { 46.00, 11.00 }, { 46.00, 12.00 }, { 47.00, 13.00 }, { 45.00, 12.00 } }"
-	);
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Grib scanner("", R"(
+arki.year = 2008
+arki.month = 7
+arki.day = 30
+arki.hour = 12
+arki.minute = 30
+arki.second = 0
+arki.centre = 98
+arki.subcentre = 1
+arki.process = 2
+arki.origin = 1
+arki.table = 1
+arki.product = 1
+arki.ltype = 1
+arki.l1 = 1
+arki.l2 = 1
+arki.ptype = 1
+arki.punit = 1
+arki.p1 = 1
+arki.p2 = 1
+arki.bbox = { { 45.00, 11.00 }, { 46.00, 11.00 }, { 46.00, 12.00 }, { 47.00, 13.00 }, { 45.00, 12.00 } }
+)");
+    vector<uint8_t> buf;
 
-	scanner.open("inbound/test.grib1");
+    scanner.open("inbound/test.grib1");
 
-	// See how we scan the first BUFR
-	ensure(scanner.next(md));
+    // See how we scan the first BUFR
+    ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
 }
 
 // Test validation
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
-	Metadata md;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    vector<uint8_t> buf;
 
-	const scan::Validator& v = scan::grib::validator();
+    const scan::Validator& v = scan::grib::validator();
 
-	int fd = open("inbound/test.grib1", O_RDONLY);
+    sys::File fd("inbound/test.grib1", O_RDONLY);
+    v.validate_file(fd, 0, 7218);
+    v.validate_file(fd, 7218, 34960);
+    v.validate_file(fd, 42178, 2234);
 
-	v.validate(fd, 0, 7218, "inbound/test.grib1");
-	v.validate(fd, 7218, 34960, "inbound/test.grib1");
-	v.validate(fd, 42178, 2234, "inbound/test.grib1");
+#define ensure_throws(x) do { try { x; ensure(false); } catch (std::exception& e) { } } while (0)
 
-#define ensure_throws(x) do { try { x; ensure(false); } catch (wibble::exception::Generic& e) { } } while (0)
+    ensure_throws(v.validate_file(fd, 1, 7217));
+    ensure_throws(v.validate_file(fd, 0, 7217));
+    ensure_throws(v.validate_file(fd, 0, 7219));
+    ensure_throws(v.validate_file(fd, 7217, 34961));
+    ensure_throws(v.validate_file(fd, 42178, 2235));
+    ensure_throws(v.validate_file(fd, 44412, 0));
+    ensure_throws(v.validate_file(fd, 44412, 10));
 
-	ensure_throws(v.validate(fd, 1, 7217, "inbound/test.grib1"));
-	ensure_throws(v.validate(fd, 0, 7217, "inbound/test.grib1"));
-	ensure_throws(v.validate(fd, 0, 7219, "inbound/test.grib1"));
-	ensure_throws(v.validate(fd, 7217, 34961, "inbound/test.grib1"));
-	ensure_throws(v.validate(fd, 42178, 2235, "inbound/test.grib1"));
-	ensure_throws(v.validate(fd, 44412, 0, "inbound/test.grib1"));
-	ensure_throws(v.validate(fd, 44412, 10, "inbound/test.grib1"));
+    fd.close();
 
-	close(fd);
+    metadata::Collection mdc;
+    scan::scan("inbound/test.grib1", mdc.inserter_func());
+    buf = mdc[0].getData();
 
-	metadata::Collection mdc;
-	scan::scan("inbound/test.grib1", mdc);
-	buf = mdc[0].getData();
-
-	v.validate(buf.data(), buf.size());
-	ensure_throws(v.validate((const char*)buf.data()+1, buf.size()-1));
-	ensure_throws(v.validate(buf.data(), buf.size()-1));
+    wassert(v.validate_buf(buf.data(), buf.size()));
+    ensure_throws(v.validate_buf((const char*)buf.data()+1, buf.size()-1));
+    ensure_throws(v.validate_buf(buf.data(), buf.size()-1));
 }
 
 // Test scanning layers instead of levels
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
-	Metadata md;
-	scan::Grib scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Grib scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/layer.grib1");
 
@@ -309,7 +283,7 @@ void to::test<5>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/layer.grib1", 0, 30682));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/layer.grib1", 0, 30682));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -332,12 +306,11 @@ void to::test<5>()
 }
 
 // Scan a know item for which grib_api changed behaviour
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
-	Metadata md;
-	scan::Grib scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Grib scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/proselvo.grib1");
 
@@ -345,7 +318,7 @@ void to::test<6>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/proselvo.grib1", 0, 298));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/proselvo.grib1", 0, 298));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -368,23 +341,22 @@ void to::test<6>()
 }
 
 // Scan a know item for which grib_api changed behaviour
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
-	Metadata md;
-	scan::Grib scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Grib scanner;
+    vector<uint8_t> buf;
 
-    wrunchecked(scanner.open("inbound/cleps_pf16_HighPriority.grib2"));
+    wassert(scanner.open("inbound/cleps_pf16_HighPriority.grib2"));
 
     // See how we scan the first BUFR
     wassert(actual(scanner.next(md)).istrue());
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib2", sys::fs::abspath("."), "inbound/cleps_pf16_HighPriority.grib2", 0, 432));
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/cleps_pf16_HighPriority.grib2", 0, 432));
 
     // Check that the source can be read properly
-    wrunchecked(buf = md.getData());
+    buf = wcallchecked(md.getData());
     wassert(actual(buf.size()) == 432u);
     wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
     wassert(actual(string((const char*)buf.data() + 428, 4)) == "7777");
@@ -403,8 +375,7 @@ void to::test<7>()
 }
 
 // Scan a GRIB2 with experimental UTM areas
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
     Metadata md;
     scan::Grib scanner;
@@ -425,8 +396,7 @@ void to::test<8>()
 }
 
 // Check scanning of some Timedef cases
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
     {
         Metadata md;
@@ -447,14 +417,13 @@ void to::test<9>()
 }
 
 // Check scanning COSMO nudging timeranges
-template<> template<>
-void to::test<10>()
+def_test(10)
 {
-    WIBBLE_TEST_INFO(info);
+    ARKI_UTILS_TEST_INFO(info);
 
     {
         metadata::Collection mdc;
-        wrunchecked(scan::scan("inbound/cosmonudging-t2.grib1", mdc));
+        wassert(scan::scan("inbound/cosmonudging-t2.grib1", mdc.inserter_func()));
         wassert(actual(mdc.size()) == 35u);
         for (unsigned i = 0; i < 5; ++i)
             wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
@@ -475,7 +444,7 @@ void to::test<10>()
     }
     {
         metadata::Collection mdc;
-        wrunchecked(scan::scan("inbound/cosmonudging-t201.grib1", mdc));
+        wassert(scan::scan("inbound/cosmonudging-t201.grib1", mdc.inserter_func()));
         wassert(actual(mdc.size()) == 33u);
         wassert(actual(mdc[0]).contains("timerange", "Timedef(0s, 0, 12h)"));
         wassert(actual(mdc[1]).contains("timerange", "Timedef(0s, 0, 12h)"));
@@ -492,7 +461,7 @@ void to::test<10>()
     }
     {
         metadata::Collection mdc;
-        wrunchecked(scan::scan("inbound/cosmonudging-t202.grib1", mdc));
+        wassert(scan::scan("inbound/cosmonudging-t202.grib1", mdc.inserter_func()));
         wassert(actual(mdc.size()) == 11u);
         for (unsigned i = 0; i < 11; ++i)
             wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
@@ -502,17 +471,17 @@ void to::test<10>()
     // Shortcut to read one single GRIB from a file
     struct OneGrib
     {
-        wibble::tests::LocationInfo& wibble_test_location_info;
+        arki::utils::tests::LocationInfo& arki_utils_test_location_info;
         Metadata md;
 
-        OneGrib(wibble::tests::LocationInfo& info) : wibble_test_location_info(info) {}
+        OneGrib(arki::utils::tests::LocationInfo& info) : arki_utils_test_location_info(info) {}
         void read(const char* fname)
         {
-            wibble_test_location_info() << "Sample: " << fname;
+            arki_utils_test_location_info() << "Sample: " << fname;
             metadata::Collection mdc;
-            wrunchecked(scan::scan(fname, mdc));
+            wassert(scan::scan(fname, mdc.inserter_func()));
             wassert(actual(mdc.size()) == 1u);
-            wrunchecked(md = mdc[0]);
+            md = wcallchecked(mdc[0]);
         }
     };
 
@@ -575,22 +544,20 @@ void to::test<10>()
 }
 
 // Check scanning a GRIB2 with a bug in level scanning code
-template<> template<>
-void to::test<11>()
+def_test(11)
 {
     // FIXME: It is unsure what is the correct expected behaviour here, across
     // different versions of grib_api
 #if 0
     metadata::Collection mdc;
-    scan::scan("inbound/wronglevel.grib2", mdc);
+    scan::scan("inbound/wronglevel.grib2", mdc.inserter_func());
     ensure_equals(mdc.size(), 1u);
     ensure_equals(mdc[0].get<Level>(), Level::decodeString("GRIB2S(101,-,-)"));
 #endif
 }
 
 // Check opening very long GRIB files for scanning
-template<> template<>
-void to::test<12>()
+def_test(12)
 {
 	scan::Grib scanner;
 	int fd = open("bigfile.grib1", O_WRONLY | O_CREAT, 0644);

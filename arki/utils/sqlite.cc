@@ -1,29 +1,6 @@
-/*
- * dsindex - Dataset index infrastructure
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include <arki/utils/sqlite.h>
-#include <wibble/string.h>
+#include <arki/binary.h>
 #include <sstream>
 #include <unistd.h>
 
@@ -31,11 +8,27 @@
 //#include <iostream>
 
 using namespace std;
-using namespace wibble;
 
 namespace arki {
 namespace utils {
 namespace sqlite {
+
+// Note: msg will be deallocated using sqlite3_free
+SQLiteError::SQLiteError(char* sqlite_msg, const std::string& msg)
+    : std::runtime_error(msg + ": " + sqlite_msg)
+{
+    sqlite3_free(sqlite_msg);
+}
+
+SQLiteError::SQLiteError(sqlite3* db, const std::string& msg)
+    : std::runtime_error(msg + ": " + sqlite3_errmsg(db))
+{
+}
+
+DuplicateInsert::DuplicateInsert(const std::string& msg)
+    : std::runtime_error(msg + ": duplicate element")
+{
+}
 
 SQLiteDB::~SQLiteDB() {
 	if (m_last_insert_id) sqlite3_finalize(m_last_insert_id);
@@ -142,64 +135,114 @@ void Query::reset()
 
 void Query::bind(int idx, const char* str, int len)
 {
-	// Bind parameters.  We use SQLITE_STATIC even if the pointers will be
-	// pointing to invalid memory at exit of this function, because
-	// sqlite3_step will not be called again without rebinding parameters.
-	if (sqlite3_bind_text(m_stm, idx, str, len, SQLITE_STATIC) != SQLITE_OK)
-		m_db.throwException("binding string to " + name + " query parameter #" + str::fmt(idx));
+    // Bind parameters.  We use SQLITE_STATIC even if the pointers will be
+    // pointing to invalid memory at exit of this function, because
+    // sqlite3_step will not be called again without rebinding parameters.
+    if (sqlite3_bind_text(m_stm, idx, str, len, SQLITE_STATIC) != SQLITE_OK)
+    {
+        stringstream ss;
+        ss << "cannot bind string to " << name << " query parameter #" << idx;
+        m_db.throwException(ss.str());
+    }
 }
 
 void Query::bind(int idx, const std::string& str)
 {
-	// Bind parameters.  We use SQLITE_STATIC even if the pointers will be
-	// pointing to invalid memory at exit of this function, because
-	// sqlite3_step will not be called again without rebinding parameters.
-	if (sqlite3_bind_text(m_stm, idx, str.data(), str.size(), SQLITE_STATIC) != SQLITE_OK)
-		m_db.throwException("binding string to " + name + " query parameter #" + str::fmt(idx));
+    // Bind parameters.  We use SQLITE_STATIC assuming that the caller will
+    // keep the data alive until the end of the query
+    if (sqlite3_bind_text(m_stm, idx, str.data(), str.size(), SQLITE_STATIC) != SQLITE_OK)
+    {
+        stringstream ss;
+        ss << "cannot bind string to " << name << " query parameter #" << idx;
+        m_db.throwException(ss.str());
+    }
+}
+
+void Query::bind(int idx, const std::vector<uint8_t>& buf)
+{
+    // Bind parameters.  We use SQLITE_STATIC assuming that the caller will
+    // keep the data alive until the end of the query
+    if (sqlite3_bind_blob(m_stm, idx, buf.data(), buf.size(), SQLITE_STATIC) != SQLITE_OK)
+    {
+        stringstream ss;
+        ss << "cannot bind blob to " << name << " query parameter #" << idx;
+        m_db.throwException(ss.str());
+    }
+}
+
+void Query::bindTransient(int idx, const std::vector<uint8_t>& buf)
+{
+    if (sqlite3_bind_blob(m_stm, idx, buf.data(), buf.size(), SQLITE_TRANSIENT) != SQLITE_OK)
+    {
+        stringstream ss;
+        ss << "cannot bind buffer to " << name << " query parameter #" << idx;
+        m_db.throwException(ss.str());
+    }
 }
 
 void Query::bindTransient(int idx, const std::string& str)
 {
-	if (sqlite3_bind_text(m_stm, idx, str.data(), str.size(), SQLITE_TRANSIENT) != SQLITE_OK)
-		m_db.throwException("binding string to " + name + " query parameter #" + str::fmt(idx));
+    if (sqlite3_bind_text(m_stm, idx, str.data(), str.size(), SQLITE_TRANSIENT) != SQLITE_OK)
+    {
+        stringstream ss;
+        ss << "cannot bind string to " << name << " query parameter #" << idx;
+        m_db.throwException(ss.str());
+    }
 }
 
 void Query::bindBlob(int idx, const std::string& str)
 {
-	// Bind parameters.  We use SQLITE_STATIC even if the pointers will be
-	// pointing to invalid memory at exit of this function, because
-	// sqlite3_step will not be called again without rebinding parameters.
-	if (sqlite3_bind_blob(m_stm, idx, str.data(), str.size(), SQLITE_STATIC) != SQLITE_OK)
-		m_db.throwException("binding string to " + name + " query parameter #" + str::fmt(idx));
+    // Bind parameters.  We use SQLITE_STATIC even if the pointers will be
+    // pointing to invalid memory at exit of this function, because
+    // sqlite3_step will not be called again without rebinding parameters.
+    if (sqlite3_bind_blob(m_stm, idx, str.data(), str.size(), SQLITE_STATIC) != SQLITE_OK)
+    {
+        stringstream ss;
+        ss << "cannot bind string to " << name << " query parameter #" << idx;
+        m_db.throwException(ss.str());
+    }
 }
 
 void Query::bindBlobTransient(int idx, const std::string& str)
 {
-	if (sqlite3_bind_blob(m_stm, idx, str.data(), str.size(), SQLITE_TRANSIENT) != SQLITE_OK)
-		m_db.throwException("binding string to " + name + " query parameter #" + str::fmt(idx));
+    if (sqlite3_bind_blob(m_stm, idx, str.data(), str.size(), SQLITE_TRANSIENT) != SQLITE_OK)
+    {
+        stringstream ss;
+        ss << "cannot bind string to " << name << " query parameter #" << idx;
+        m_db.throwException(ss.str());
+    }
 }
 
 void Query::bindNull(int idx)
 {
-	if (sqlite3_bind_null(m_stm, idx) != SQLITE_OK)
-		m_db.throwException("binding NULL to " + name + " query parameter #" + str::fmt(idx));
+    if (sqlite3_bind_null(m_stm, idx) != SQLITE_OK)
+    {
+        stringstream ss;
+        ss << "cannot bind NULL to " << name << " query parameter #" << idx;
+        m_db.throwException(ss.str());
+    }
 }
 
 void Query::bindType(int idx, const types::Type& item)
 {
-    bindTransient(idx, item.encodeBinary());
+    vector<uint8_t> buf;
+    BinaryEncoder enc(buf);
+    item.encodeBinary(enc);
+    bindTransient(idx, buf);
 }
 
-auto_ptr<types::Type> Query::fetchType(int column)
+unique_ptr<types::Type> Query::fetchType(int column)
 {
-    const unsigned char* buf = (const unsigned char*)fetchBlob(column);
+    const uint8_t* buf = (const uint8_t*)fetchBlob(column);
     int len = fetchBytes(column);
-    if (len == 0) return auto_ptr<types::Type>();
+    if (len == 0) return unique_ptr<types::Type>();
 
-    const unsigned char* el_start = buf;
-    size_t el_len = len;
-    types::Code el_type = types::decodeEnvelope(el_start, el_len);
-    return types::decodeInner(el_type, el_start, el_len);
+    BinaryDecoder dec(buf, len);
+
+    TypeCode el_type;
+    BinaryDecoder inner = dec.pop_type_envelope(el_type);
+
+    return types::decodeInner(el_type, inner);
 }
 
 bool Query::step()
@@ -295,4 +338,3 @@ bool InsertQuery::step()
 }
 }
 }
-// vim:set ts=4 sw=4:

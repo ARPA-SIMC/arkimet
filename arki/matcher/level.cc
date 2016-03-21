@@ -1,30 +1,7 @@
-/*
- * matcher/level - Level matcher
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #include <arki/matcher/level.h>
 #include <arki/matcher/utils.h>
-#include <arki/metadata.h>
 
 #include <set>
 #include <stdexcept>
@@ -33,8 +10,8 @@
 #include <string>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace matcher {
@@ -276,35 +253,32 @@ std::string MatchLevelODIMH5::toString() const
 	return ss.str();
 }
 
-MatchLevel* MatchLevel::parse(const std::string& pattern)
+unique_ptr<MatchLevel> MatchLevel::parse(const std::string& pattern)
 {
-	size_t beg = 0;
-	size_t pos = pattern.find(',', beg);
-	string name;
-	string rest;
-	if (pos == string::npos)
-		name = str::trim(pattern.substr(beg));
-	else {
-		name = str::trim(pattern.substr(beg, pos-beg));
-		rest = pattern.substr(pos+1);
-	}
-	switch (types::Level::parseStyle(name))
-	{
-		case types::Level::GRIB1: return new MatchLevelGRIB1(rest);
-		case types::Level::GRIB2S: return new MatchLevelGRIB2S(rest);
-		case types::Level::GRIB2D: return new MatchLevelGRIB2D(rest);
-		case types::Level::ODIMH5: return new MatchLevelODIMH5(rest);
-		default:
-			throw wibble::exception::Consistency("parsing type of level to match", "unsupported level style: " + name);
-	}
+    size_t beg = 0;
+    size_t pos = pattern.find(',', beg);
+    string name;
+    string rest;
+    if (pos == string::npos)
+        name = str::strip(pattern.substr(beg));
+    else {
+        name = str::strip(pattern.substr(beg, pos-beg));
+        rest = pattern.substr(pos+1);
+    }
+    switch (types::Level::parseStyle(name))
+    {
+        case types::Level::GRIB1: return unique_ptr<MatchLevel>(new MatchLevelGRIB1(rest));
+        case types::Level::GRIB2S: return unique_ptr<MatchLevel>(new MatchLevelGRIB2S(rest));
+        case types::Level::GRIB2D: return unique_ptr<MatchLevel>(new MatchLevelGRIB2D(rest));
+        case types::Level::ODIMH5: return unique_ptr<MatchLevel>(new MatchLevelODIMH5(rest));
+        default: throw std::runtime_error("cannot parse type of level to match:  unsupported level style: " + name);
+    }
 }
 
 void MatchLevel::init()
 {
-    Matcher::register_matcher("level", types::TYPE_LEVEL, (MatcherType::subexpr_parser)MatchLevel::parse);
+    Matcher::register_matcher("level", TYPE_LEVEL, (MatcherType::subexpr_parser)MatchLevel::parse);
 }
 
 }
 }
-
-// vim:set ts=4 sw=4:

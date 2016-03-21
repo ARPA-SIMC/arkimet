@@ -1,59 +1,35 @@
-/*
- * dataset/ondisk2/writer - Local on disk dataset writer
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <arki/dataset/ondisk2/writer.h>
-#include <arki/dataset/maintenance.h>
-#include <arki/dataset/archive.h>
-#include <arki/dataset/data.h>
-#include <arki/types/assigneddataset.h>
-#include <arki/types/source/blob.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/matcher.h>
-#include <arki/scan/dir.h>
-#include <arki/scan/any.h>
-#include <arki/utils.h>
-#include <arki/utils/files.h>
-#include <arki/utils/compress.h>
-#include <arki/summary.h>
-#include <arki/nag.h>
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
-#include <wibble/sys/lockfile.h>
-
-#include <fstream>
+#include "arki/dataset/ondisk2/writer.h"
+#include "arki/exceptions.h"
+#include "arki/binary.h"
+#include "arki/dataset/maintenance.h"
+#include "arki/dataset/archive.h"
+#include "arki/dataset/segment.h"
+#include "arki/dataset/reporter.h"
+#include "arki/types/assigneddataset.h"
+#include "arki/types/source/blob.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/matcher.h"
+#include "arki/scan/dir.h"
+#include "arki/scan/any.h"
+#include "arki/utils.h"
+#include "arki/utils/files.h"
+#include "arki/utils/compress.h"
+#include "arki/summary.h"
+#include "arki/nag.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include <system_error>
 #include <sstream>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <cerrno>
+#include <cassert>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 using namespace arki::types;
 
@@ -62,90 +38,96 @@ namespace dataset {
 namespace ondisk2 {
 
 Writer::Writer(const ConfigFile& cfg)
-	: WritableLocal(cfg), m_cfg(cfg),
-	  m_idx(cfg)
+    : IndexedWriter(cfg), m_cfg(cfg), idx(new index::WContents(cfg))
 {
-	// Create the directory if it does not exist
-	wibble::sys::fs::mkpath(m_path);
+    m_idx = idx;
 
-	// If the index is missing, take note not to perform a repack until a
-	// check is made
-	if (!sys::fs::exists(str::joinpath(m_path, "index.sqlite")))
-		files::createDontpackFlagfile(m_path);
+    // Create the directory if it does not exist
+    sys::makedirs(m_path);
 
-	m_idx.open();
+    // If the index is missing, take note not to perform a repack until a
+    // check is made
+    if (!sys::exists(str::joinpath(m_path, "index.sqlite")))
+        files::createDontpackFlagfile(m_path);
+
+    idx->open();
 }
 
 Writer::~Writer()
 {
-	flush();
+    flush();
 }
 
-WritableDataset::AcquireResult Writer::acquire_replace_never(Metadata& md)
+std::string Writer::type() const { return "ondisk2"; }
+
+Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
-    data::Segment* w = file(md, md.source().format);
+    Segment* w = file(md, md.source().format);
     off_t ofs;
 
-    Pending p_idx = m_idx.beginTransaction();
+    Pending p_idx = idx->beginTransaction();
     Pending p_df = w->append(md, &ofs);
+    auto source = types::source::Blob::create(md.source().format, m_path, w->relname, ofs, md.data_size());
 
     try {
         int id;
-        m_idx.index(md, w->relname, ofs, &id);
+        idx->index(md, w->relname, ofs, &id);
         p_df.commit();
         p_idx.commit();
-        md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
+        md.set_source(move(source));
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
-        md.add_note("Failed to store in dataset '"+m_name+"' because the dataset already has the data: " + di.what());
+        md.add_note("Failed to store in dataset '" + m_name + "' because the dataset already has the data: " + di.what());
         return ACQ_ERROR_DUPLICATE;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '"+m_name+"': " + e.what());
+        md.add_note("Failed to store in dataset '" + m_name + "': " + e.what());
         return ACQ_ERROR;
     }
 }
 
-WritableDataset::AcquireResult Writer::acquire_replace_always(Metadata& md)
+Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 {
-    data::Segment* w = file(md, md.source().format);
+    Segment* w = file(md, md.source().format);
     off_t ofs;
 
-    Pending p_idx = m_idx.beginTransaction();
+    Pending p_idx = idx->beginTransaction();
     Pending p_df = w->append(md, &ofs);
+    auto source = types::source::Blob::create(md.source().format, m_path, w->relname, ofs, md.data_size());
 
     try {
         int id;
-        m_idx.replace(md, w->relname, ofs, &id);
+        idx->replace(md, w->relname, ofs, &id);
         // In a replace, we necessarily replace inside the same file,
         // as it depends on the metadata reftime
         //createPackFlagfile(df->pathname);
         p_df.commit();
         p_idx.commit();
-        md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
+        md.set_source(move(source));
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '"+m_name+"': " + e.what());
+        md.add_note("Failed to store in dataset '" + m_name + "': " + e.what());
         return ACQ_ERROR;
     }
 }
 
-WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
+Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     // Try to acquire without replacing
-    data::Segment* w = file(md, md.source().format);
+    Segment* w = file(md, md.source().format);
     off_t ofs;
 
-    Pending p_idx = m_idx.beginTransaction();
+    Pending p_idx = idx->beginTransaction();
     Pending p_df = w->append(md, &ofs);
+    auto source = types::source::Blob::create(md.source().format, m_path, w->relname, ofs, md.data_size());
 
     try {
         int id;
-        m_idx.index(md, w->relname, ofs, &id);
+        idx->index(md, w->relname, ofs, &id);
         p_df.commit();
         p_idx.commit();
-        md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
+        md.set_source(move(source));
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
         // It already exists, so we keep p_df uncommitted and check Update Sequence Numbers
@@ -162,13 +144,21 @@ WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 
     // Read the metadata of the existing BUFR
     Metadata old_md;
-    if (!m_idx.get_current(md, old_md))
-        throw wibble::exception::Consistency("acquiring into dataset " + m_name, "Insert reported a conflict, the index failed to find the original version");
+    if (!idx->get_current(md, old_md))
+    {
+        stringstream ss;
+        ss << "cannot acquire into dataset " << m_name << ": insert reported a conflict, the index failed to find the original version";
+        throw runtime_error(ss.str());
+    }
 
     // Read the update sequence number of the old BUFR
     int old_usn;
     if (!scan::update_sequence_number(old_md, old_usn))
-        throw wibble::exception::Consistency("acquiring into dataset " + m_name, "Insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
+    {
+        stringstream ss;
+        ss << "cannot acquire into dataset " << m_name << ": insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
+        throw runtime_error(ss.str());
+    }
 
     // If there is no new Update Sequence Number, report a duplicate
     if (old_usn > new_usn)
@@ -177,13 +167,13 @@ WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
     // Replace, reusing the pending datafile transaction from earlier
     try {
         int id;
-        m_idx.replace(md, w->relname, ofs, &id);
+        idx->replace(md, w->relname, ofs, &id);
         // In a replace, we necessarily replace inside the same file,
         // as it depends on the metadata reftime
         //createPackFlagfile(df->pathname);
         p_df.commit();
         p_idx.commit();
-        md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
+        md.set_source(move(source));
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
@@ -192,7 +182,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
     }
 }
 
-WritableDataset::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
+Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
     if (replace == REPLACE_DEFAULT) replace = m_default_replace_strategy;
 
@@ -204,295 +194,167 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy rep
         case REPLACE_ALWAYS: return acquire_replace_always(md);
         case REPLACE_HIGHER_USN: return acquire_replace_higher_usn(md);
         default:
-            throw wibble::exception::Consistency("acquiring into dataset " + m_name, "unsupported replace strategy " + str::fmt((int)replace));
+        {
+            stringstream ss;
+            ss << "cannot acquire into dataset " << m_name << ": replace strategy " << (int)replace << " is not supported";
+            throw runtime_error(ss.str());
+        }
     }
 }
 
 void Writer::remove(Metadata& md)
 {
-    const AssignedDataset* ds = md.get<AssignedDataset>();
-    if (!ds)
-        throw wibble::exception::Consistency("removing metadata from dataset", "the metadata is not assigned to this dataset");
+    const types::source::Blob* source = md.has_source_blob();
+    if (!source)
+        throw std::runtime_error("cannot remove metadata from dataset, because it has no Blob source");
 
-    remove(ds->id);
+    if (source->basedir != m_path)
+        throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir + " but this dataset is at " + m_path);
+
+    // TODO: refuse if md is in the archive
+
+    // Delete from DB, and get file name
+    Pending p_del = idx->beginTransaction();
+    idx->remove(source->filename, source->offset);
+
+    // Create flagfile
+    //createPackFlagfile(str::joinpath(m_path, file));
+
+    // Commit delete from DB
+    p_del.commit();
 
     // reset source and dataset in the metadata
     md.unset_source();
     md.unset(TYPE_ASSIGNEDDATASET);
 }
 
-void Writer::remove(const std::string& str_id)
-{
-	// TODO: refuse if md is in the archive
-
-	if (str_id.empty()) return;
-	int id = strtoul(str_id.c_str(), 0, 10);
-
-	// Delete from DB, and get file name
-	Pending p_del = m_idx.beginTransaction();
-	string file;
-	m_idx.remove(id, file);
-
-	// Create flagfile
-	//createPackFlagfile(str::joinpath(m_path, file));
-
-	// Commit delete from DB
-	p_del.commit();
-}
-
 void Writer::flush()
 {
-    WritableLocal::flush();
-    m_idx.flush();
+    SegmentedWriter::flush();
+    idx->flush();
 }
 
 Pending Writer::test_writelock()
 {
-    return m_idx.beginExclusiveTransaction();
+    return idx->beginExclusiveTransaction();
 }
 
-void Writer::sanityChecks(std::ostream& log, bool writable)
+void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
-	WritableLocal::sanityChecks(log, writable);
+    SegmentedChecker::check(reporter, fix, quick);
 
-	if (!m_idx.checkSummaryCache(log) && writable)
-	{
-		log << name() << ": rebuilding summary cache." << endl;
-		m_idx.rebuildSummaryCache();
-	}
-}
-
-static time_t override_now = 0;
-
-TestOverrideCurrentDateForMaintenance::TestOverrideCurrentDateForMaintenance(time_t ts)
-{
-    old_ts = override_now;
-    override_now = ts;
-}
-TestOverrideCurrentDateForMaintenance::~TestOverrideCurrentDateForMaintenance()
-{
-    override_now = old_ts;
-}
-
-namespace {
-struct Deleter : public maintenance::IndexFileVisitor
-{
-	std::string name;
-	std::ostream& log;
-	bool writable;
-
-	Deleter(const std::string& name, std::ostream& log, bool writable)
-		: name(name), log(log), writable(writable) {}
-
-    void operator()(const std::string& file, const metadata::Collection& mdc)
-	{
-		if (writable)
-		{
-			log << name << ": deleting file " << file << endl;
-			sys::fs::deleteIfExists(file);
-		} else
-			log << name << ": would delete file " << file << endl;
-	}
-};
-
-struct CheckAge : public maintenance::MaintFileVisitor
-{
-	maintenance::MaintFileVisitor& next;
-	const index::Contents& idx;
-	std::string archive_threshold;
-	std::string delete_threshold;
-
-    CheckAge(MaintFileVisitor& next, const index::Contents& idx, int archive_age=-1, int delete_age=-1);
-
-    void operator()(const std::string& file, data::FileState state);
-};
-
-CheckAge::CheckAge(MaintFileVisitor& next, const index::Contents& idx, int archive_age, int delete_age)
-    : next(next), idx(idx)
-{
-    time_t now = override_now ? override_now : time(NULL);
-    struct tm t;
-
-    // Go to the beginning of the day
-    now -= (now % (3600*24));
-
-	if (archive_age != -1)
-	{
-		time_t arc_thr = now - archive_age * 3600 * 24;
-		gmtime_r(&arc_thr, &t);
-		archive_threshold = str::fmtf("%04d-%02d-%02d %02d:%02d:%02d",
-				t.tm_year + 1900, t.tm_mon+1, t.tm_mday,
-				t.tm_hour, t.tm_min, t.tm_sec);
-	}
-	if (delete_age != -1)
-	{
-		time_t del_thr = now - delete_age * 3600 * 24;
-		gmtime_r(&del_thr, &t);
-		delete_threshold = str::fmtf("%04d-%02d-%02d %02d:%02d:%02d",
-				t.tm_year + 1900, t.tm_mon+1, t.tm_mday,
-				t.tm_hour, t.tm_min, t.tm_sec);
-	}
-}
-
-void CheckAge::operator()(const std::string& file, data::FileState state)
-{
-    if (archive_threshold.empty() and delete_threshold.empty())
-        next(file, state);
-    else
+    if (!idx->checkSummaryCache(*this, reporter) && fix)
     {
-        string maxdate = idx.max_file_reftime(file);
-        //cerr << "TEST " << maxdate << " WITH " << delete_threshold << " AND " << archive_threshold << endl;
-        if (not delete_threshold.empty() && delete_threshold >= maxdate)
-        {
-            nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
-            next(file, state + FILE_TO_DELETE);
-        }
-        else if (not archive_threshold.empty() && archive_threshold >= maxdate)
-        {
-            nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
-            next(file, state + FILE_TO_ARCHIVE);
-        }
-        else
-            next(file, state);
+        reporter.operation_progress(name(), "check", "rebuilding summary cache");
+        idx->rebuildSummaryCache();
     }
 }
 
-struct FileChecker : public maintenance::IndexFileVisitor
+Checker::Checker(const ConfigFile& cfg)
+    : IndexedChecker(cfg), m_cfg(cfg), idx(new index::WContents(cfg))
 {
-    data::SegmentManager& sm;
-    bool quick;
-    maintenance::MaintFileVisitor& next;
+    m_idx = idx;
 
-    FileChecker(data::SegmentManager& sm, bool quick, maintenance::MaintFileVisitor& next)
-        : sm(sm), quick(quick), next(next)
-    {
-    }
+    // Create the directory if it does not exist
+    sys::makedirs(m_path);
 
-    virtual void operator()(const std::string& relname, const metadata::Collection& mds)
-    {
-        next(relname, sm.check(relname, mds, quick));
-    }
-};
+    // If the index is missing, take note not to perform a repack until a
+    // check is made
+    if (!sys::exists(str::joinpath(m_path, "index.sqlite")))
+        files::createDontpackFlagfile(m_path);
+
+    idx->open();
 }
 
-void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
-{
-	// TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
-	// and delete the index if it fails
-
-	// Iterate subdirs in sorted order
-	// Also iterate files on index in sorted order
-	// Check each file for need to reindex or repack
-	CheckAge ca(v, m_idx, m_archive_age, m_delete_age);
-	vector<string> files = scan::dir(m_path);
-	maintenance::FindMissing fm(ca, files);
-    FileChecker checker(*m_segment_manager, quick, fm);
-	m_idx.scan_files(checker);
-	fm.end();
-	WritableLocal::maintenance(v, quick);
-}
-
-void Writer::removeAll(std::ostream& log, bool writable)
-{
-    Deleter deleter(m_name, log, writable);
-    m_idx.scan_files(deleter);
-    if (writable)
-    {
-        log << m_name << ": clearing index" << endl;
-        m_idx.reset();
-    } else
-        log << m_name << ": would clear index" << endl;
-
-	// TODO: empty the index
-	WritableLocal::removeAll(log, writable);
-}
-
+std::string Checker::type() const { return "ondisk2"; }
 
 namespace {
 
-struct Reindexer : public metadata::Observer
+/// Create unique strings from metadata
+struct IDMaker
 {
-    index::WContents& idx;
-	std::string relfile;
-	std::string basename;
+    std::set<types::Code> components;
 
-    Reindexer(index::WContents& idx, const std::string& relfile)
-        : idx(idx), relfile(relfile), basename(str::basename(relfile)) {}
+    IDMaker(const std::set<types::Code>& components) : components(components) {}
 
-    bool observe(const Metadata& md) override
+    vector<uint8_t> make_string(const Metadata& md) const
     {
-        const source::Blob& blob = md.sourceBlob();
-        try {
-            int id;
-            if (str::basename(blob.filename) != basename)
-                throw wibble::exception::Consistency(
-                        "rescanning " + relfile,
-                        "metadata points to the wrong file: " + blob.filename);
-            idx.index(md, relfile, blob.offset, &id);
-        } catch (utils::sqlite::DuplicateInsert& di) {
-            throw wibble::exception::Consistency("reindexing " + basename,
-                    "data item at offset " + str::fmt(blob.offset) + " has a duplicate elsewhere in the dataset: manual fix is required");
-        } catch (std::exception& e) {
-            // sqlite will take care of transaction consistency
-            throw wibble::exception::Consistency("reindexing " + basename,
-                    "failed to reindex data item at offset " + str::fmt(blob.offset) + ": " + e.what());
-        }
-        return true;
+        vector<uint8_t> res;
+        BinaryEncoder enc(res);
+        for (set<types::Code>::const_iterator i = components.begin(); i != components.end(); ++i)
+            if (const Type* t = md.get(*i))
+                t->encodeBinary(enc);
+        return res;
     }
 };
 
 }
 
-void Writer::rescanFile(const std::string& relpath)
+
+void Checker::rescanSegment(const std::string& relpath)
 {
     string pathname = str::joinpath(m_path, relpath);
 
     // Temporarily uncompress the file for scanning
-    auto_ptr<utils::compress::TempUnzip> tu;
+    unique_ptr<utils::compress::TempUnzip> tu;
     if (scan::isCompressed(pathname))
         tu.reset(new utils::compress::TempUnzip(pathname));
 
     // Collect the scan results in a metadata::Collector
     metadata::Collection mds;
-    if (!scan::scan(pathname, mds))
-        throw wibble::exception::Consistency("rescanning " + pathname, "file format unknown");
+    if (!scan::scan(pathname, mds.inserter_func()))
+        throw std::runtime_error("cannot rescan " + pathname + ": file format unknown");
     // cerr << " SCANNED " << pathname << ": " << mds.size() << endl;
 
-	// Lock away writes and reads
-	Pending p = m_idx.beginExclusiveTransaction();
-	// cerr << "LOCK" << endl;
+    // Lock away writes and reads
+    Pending p = idx->beginExclusiveTransaction();
+    // cerr << "LOCK" << endl;
 
-	// Remove from the index all data about the file
-	m_idx.reset(relpath);
-	// cerr << " RESET " << file << endl;
+    // Remove from the index all data about the file
+    idx->reset(relpath);
+    // cerr << " RESET " << file << endl;
 
-	// Scan the list of metadata, looking for duplicates and marking all
-	// the duplicates except the last one as deleted
-	index::IDMaker id_maker(m_idx.unique_codes());
+    // Scan the list of metadata, looking for duplicates and marking all
+    // the duplicates except the last one as deleted
+    IDMaker id_maker(idx->unique_codes());
 
-    map<string, const Metadata*> finddupes;
+    map<vector<uint8_t>, const Metadata*> finddupes;
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
-        string id = id_maker.id(**i);
+        vector<uint8_t> id = id_maker.make_string(**i);
         if (id.empty())
             continue;
-        map<string, const Metadata*>::iterator dup = finddupes.find(id);
+        auto dup = finddupes.find(id);
         if (dup == finddupes.end())
             finddupes.insert(make_pair(id, *i));
         else
             dup->second = *i;
-	}
-	// cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
+    }
+    // cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
 
-	// Send the remaining metadata to the reindexer
-	Reindexer fixer(m_idx, relpath);
-    for (map<string, const Metadata*>::const_iterator i = finddupes.begin();
-            i != finddupes.end(); ++i)
+    // Send the remaining metadata to the reindexer
+    std::string basename = str::basename(relpath);
+    for (const auto& i: finddupes)
     {
-        bool res = fixer.observe(*i->second);
-		assert(res);
-	}
-	// cerr << " REINDEXED " << pathname << endl;
+        const Metadata& md = *i.second;
+        const source::Blob& blob = md.sourceBlob();
+        try {
+            int id;
+            if (str::basename(blob.filename) != basename)
+                throw std::runtime_error("cannot rescan " + relpath + ": metadata points to the wrong file: " + blob.filename);
+            idx->index(md, relpath, blob.offset, &id);
+        } catch (utils::sqlite::DuplicateInsert& di) {
+            stringstream ss;
+            ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate elsewhere in the dataset: manual fix is required";
+            throw runtime_error(ss.str());
+        } catch (std::exception& e) {
+            stringstream ss;
+            ss << "cannot reindex " << basename << ": failed to reindex data item at offset " << blob.offset << ": " << e.what();
+            throw runtime_error(ss.str());
+            // sqlite will take care of transaction consistency
+        }
+    }
+    // cerr << " REINDEXED " << pathname << endl;
 
 	// TODO: if scan fails, remove all info from the index and rename the
 	// file to something like .broken
@@ -505,35 +367,39 @@ void Writer::rescanFile(const std::string& relpath)
 }
 
 
-size_t Writer::repackFile(const std::string& relpath)
+size_t Checker::repackSegment(const std::string& relpath)
 {
-	// Lock away writes and reads
-	Pending p = m_idx.beginExclusiveTransaction();
+    // Lock away writes and reads
+    Pending p = idx->beginExclusiveTransaction();
 
-	// Make a copy of the file with the right data in it, sorted by
-	// reftime, and update the offsets in the index
-	string pathname = str::joinpath(m_path, relpath);
+    // Make a copy of the file with the right data in it, sorted by
+    // reftime, and update the offsets in the index
+    string pathname = str::joinpath(m_path, relpath);
 
     metadata::Collection mds;
-    m_idx.scan_file(relpath, mds, "reftime, offset");
+    idx->scan_file(relpath, mds.inserter_func(), "reftime, offset");
     Pending p_repack = m_segment_manager->repack(relpath, mds);
 
     // Reindex mds
-    m_idx.reset(relpath);
+    idx->reset(relpath);
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         const source::Blob& source = (*i)->sourceBlob();
-        m_idx.index(**i, source.filename, source.offset);
+        idx->index(**i, source.filename, source.offset);
     }
 
-    size_t size_pre = sys::fs::size(pathname);
+    size_t size_pre = sys::size(pathname);
 
-	// Remove the .metadata file if present, because we are shuffling the
-	// data file and it will not be valid anymore
-	string mdpathname = pathname + ".metadata";
-	if (sys::fs::exists(mdpathname))
-		if (unlink(mdpathname.c_str()) < 0)
-			throw wibble::exception::System("removing obsolete metadata file " + mdpathname);
+    // Remove the .metadata file if present, because we are shuffling the
+    // data file and it will not be valid anymore
+    string mdpathname = pathname + ".metadata";
+    if (sys::exists(mdpathname))
+        if (unlink(mdpathname.c_str()) < 0)
+        {
+            stringstream ss;
+            ss << "cannot remove obsolete metadata file " << mdpathname;
+            throw std::system_error(errno, std::system_category(), ss.str());
+        }
 
     // Prevent reading the still open old file using the new offsets
     Metadata::flushDataReaders();
@@ -541,61 +407,66 @@ size_t Writer::repackFile(const std::string& relpath)
     // Commit the changes in the file system
     p_repack.commit();
 
-	// Commit the changes in the database
-	p.commit();
+    // Commit the changes in the database
+    p.commit();
 
-    size_t size_post = sys::fs::size(pathname);
+    size_t size_post = sys::size(pathname);
 
-	return size_pre - size_post;
+    return size_pre - size_post;
 }
 
-size_t Writer::removeFile(const std::string& relpath, bool withData)
+void Checker::indexSegment(const std::string& relpath, metadata::Collection&& contents)
 {
-    m_idx.reset(relpath);
+    throw std::runtime_error("cannot index " + relpath + ": the operation is not implemented in ondisk2 datasets");
+}
+
+size_t Checker::removeSegment(const std::string& relpath, bool withData)
+{
+    idx->reset(relpath);
     // TODO: also remove .metadata and .summary files
-    return WritableLocal::removeFile(relpath, withData);
+    return SegmentedChecker::removeSegment(relpath, withData);
 }
 
-void Writer::archiveFile(const std::string& relpath)
+void Checker::archiveSegment(const std::string& relpath)
 {
-	// Create the target directory in the archive
-	string pathname = str::joinpath(m_path, relpath);
+    // Create the target directory in the archive
+    string pathname = str::joinpath(m_path, relpath);
 
-	// Rebuild the metadata
-	metadata::Collection mds;
-	m_idx.scan_file(relpath, mds);
-	mds.writeAtomically(pathname + ".metadata");
+    // Rebuild the metadata
+    metadata::Collection mds;
+    idx->scan_file(relpath, mds.inserter_func());
+    mds.writeAtomically(pathname + ".metadata");
 
-	// Remove from index
-	m_idx.reset(relpath);
+    // Remove from index
+    idx->reset(relpath);
 
-	// Delegate the rest to WritableLocal
-	WritableLocal::archiveFile(relpath);
+    // Delegate the rest to SegmentedChecker
+    SegmentedChecker::archiveSegment(relpath);
 }
 
-size_t Writer::vacuum()
+size_t Checker::vacuum()
 {
     size_t size_pre = 0, size_post = 0;
-    if (sys::fs::size(m_idx.pathname(), 0) > 0)
+    if (sys::size(idx->pathname(), 0) > 0)
     {
-        size_pre = sys::fs::size(m_idx.pathname(), 0)
-                 + sys::fs::size(m_idx.pathname() + "-journal", 0);
-        m_idx.vacuum();
-        size_post = sys::fs::size(m_idx.pathname(), 0)
-                  + sys::fs::size(m_idx.pathname() + "-journal", 0);
+        size_pre = sys::size(idx->pathname(), 0)
+                 + sys::size(idx->pathname() + "-journal", 0);
+        idx->vacuum();
+        size_post = sys::size(idx->pathname(), 0)
+                  + sys::size(idx->pathname() + "-journal", 0);
     }
 
     // Rebuild the cached summaries, if needed
-    if (!sys::fs::exists(str::joinpath(m_path, ".summaries/all.summary")))
+    if (!sys::exists(str::joinpath(m_path, ".summaries/all.summary")))
     {
         Summary s;
-        m_idx.summaryForAll(s);
+        idx->summaryForAll(s);
     }
 
     return size_pre > size_post ? size_pre - size_post : 0;
 }
 
-WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
 	// TODO
 #if 0
@@ -629,9 +500,9 @@ WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const 
 		return ACQ_ERROR;
 	}
 #endif
+    throw std::runtime_error("testAcquire not implemented for ondisk2 datasets");
 }
 
 }
 }
 }
-// vim:set ts=4 sw=4:

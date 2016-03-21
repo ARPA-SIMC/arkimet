@@ -1,22 +1,3 @@
-/**
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #ifndef ARKI_DATASET_TESTUTILS_H
 #define ARKI_DATASET_TESTUTILS_H
 
@@ -28,10 +9,10 @@
 #include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/dataset/maintenance.h>
-#include <arki/dataset/data.h>
+#include <arki/dataset/segment.h>
 #include <arki/sort.h>
 #include <arki/scan/any.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -39,21 +20,30 @@
 namespace arki {
 struct Metadata;
 struct Dispatcher;
-struct ReadonlyDataset;
-struct WritableDataset;
 
 namespace dataset {
-struct Local;
-struct WritableLocal;
+struct Reader;
+struct Writer;
+struct Checker;
+struct LocalReader;
+struct LocalWriter;
+struct LocalChecker;
+struct SegmentedReader;
+struct SegmentedWriter;
+struct SegmentedChecker;
+struct ArchivesReader;
+struct ArchivesChecker;
 
 namespace ondisk2 {
 struct Reader;
 struct Writer;
+struct Checker;
 }
 
 namespace simple {
 struct Reader;
 struct Writer;
+struct Checker;
 }
 }
 
@@ -62,180 +52,140 @@ struct Fixture;
 }
 
 namespace tests {
-#define ensure_dispatches(x, y, z) arki::tests::impl_ensure_dispatches(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
-void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, std::auto_ptr<Metadata> md, metadata::Eater& mdc);
+#define ensure_dispatches(x, y, z) wassert(impl_ensure_dispatches((x), (y), (z)))
+void impl_ensure_dispatches(Dispatcher& dispatcher, std::unique_ptr<Metadata> md, metadata_dest_func mdc);
 
-struct OutputChecker : public std::stringstream
-{
-	std::vector<std::string> lines;
-	bool split;
-
-	// Split the output into lines if it has not been done yet
-	void splitIfNeeded();
-
-	// Join the split and marked lines
-	std::string join() const;
-	
-	OutputChecker();
-
-	void ignore_line_containing(const std::string& needle);
-
-#define ensure_line_contains(x) impl_ensure_line_contains(wibble::tests::Location(__FILE__, __LINE__, "look for " #x), (x))
-#define inner_ensure_line_contains(x) impl_ensure_line_contains(wibble::tests::Location(loc, __FILE__, __LINE__, "look for " #x), (x))
-	void impl_ensure_line_contains(const wibble::tests::Location& loc, const std::string& needle);
-
-#define ensure_all_lines_seen() impl_ensure_all_lines_seen(wibble::tests::Location(__FILE__, __LINE__, "all lines seen"))
-#define inner_ensure_all_lines_seen() impl_ensure_all_lines_seen(wibble::tests::Location(loc, __FILE__, __LINE__, "all lines seen"))
-	void impl_ensure_all_lines_seen(const wibble::tests::Location& loc);
-};
-
-struct LineChecker
-{
-    std::vector<std::string> ignore_regexps;
-    std::vector<std::string> require_contains;
-    std::vector<std::string> require_contains_re;
-
-    void ignore_regexp(const std::string& regexp);
-    void require_line_contains(const std::string& needle);
-    void require_line_contains_re(const std::string& needle);
-    void check(WIBBLE_TEST_LOCPRM, const std::string& s) const;
-};
-
-struct ForceSqlite
-{
-	bool old;
-
-	ForceSqlite(bool val = true);
-	~ForceSqlite();
-};
+unsigned count_results(dataset::Reader& ds, const dataset::DataQuery& dq);
 
 // Return the number of days passed from the given date until today
 int days_since(int year, int month, int day);
 
-// Base class for dataset tests
-struct DatasetTest
+// Return the file name of the Manifest index
+std::string manifest_idx_fname();
+
+/**
+ * Test fixture to test a dataset.
+ *
+ * It is initialized with the dataset configuration and takes care of
+ * instantiating readers, writers and checkers, and to provide common functions
+ * to test them.
+ */
+struct DatasetTest : public Fixture
 {
     enum Counted {
         COUNTED_OK,
-        COUNTED_ARC_OK,
-        COUNTED_TO_ARCHIVE,
-        COUNTED_TO_DELETE,
-        COUNTED_TO_PACK,
-        COUNTED_TO_INDEX,
-        COUNTED_TO_RESCAN,
-        COUNTED_TO_DEINDEX,
-        COUNTED_ARC_TO_INDEX,
-        COUNTED_ARC_TO_RESCAN,
-        COUNTED_ARC_TO_DEINDEX,
+        COUNTED_ARCHIVE_AGE,
+        COUNTED_DELETE_AGE,
+        COUNTED_DIRTY,
+        COUNTED_NEW,
+        COUNTED_UNALIGNED,
+        COUNTED_DELETED,
+        COUNTED_CORRUPTED,
         COUNTED_MAX,
     };
 
-	// Default dataset configuration (to be filled by subclasser)
-	ConfigFile cfg;
-    dataset::data::SegmentManager* segment_manager;
+    /*
+     * Default dataset configuration, regenerated each time by test_setup by
+     * concatenating cfg_default and cfg_instance.
+     *
+     * The 'path' value of the configuration will always be set to the absolute
+     * path of the root of the dataset (ds_root)
+     *
+     * The 'name' value of the configuration will always be set to ds_name.
+     */
+    ConfigFile cfg;
+    // Extra configuration for this instance of this fixture
+    std::string cfg_instance;
+    // Dataset name (always "testds")
+    std::string ds_name;
+    // Dataset root directory
+    std::string ds_root;
+    dataset::segment::SegmentManager* segment_manager = nullptr;
     Metadata import_results[3];
 
-    DatasetTest();
+    /**
+     * @param cfg_tail
+     *   Snippet of configuration that will be parsed by test_setup
+     */
+    DatasetTest(const std::string& cfg_instance=std::string());
     ~DatasetTest();
 
-    dataset::data::SegmentManager& segments();
+    /**
+     * Build cfg based on cfg_default and cfg_instance, and remove the dataset
+     * directory if it exists.
+     */
+    void test_setup(const std::string& cfg_default=std::string());
+    void test_teardown();
+
+    dataset::segment::SegmentManager& segments();
 
 	// Return the file name of the index of the current dataset
 	std::string idxfname(const ConfigFile* wcfg = 0) const;
-	// Return the file name of the archive index of the current dataset
-	std::string arcidxfname() const;
 
-	ReadonlyDataset* makeReader(const ConfigFile* wcfg = 0);
-	WritableDataset* makeWriter(const ConfigFile* wcfg = 0);
-	dataset::Local* makeLocalReader(const ConfigFile* wcfg = 0);
-	dataset::WritableLocal* makeLocalWriter(const ConfigFile* wcfg = 0);
-	dataset::ondisk2::Reader* makeOndisk2Reader(const ConfigFile* wcfg = 0);
-	dataset::ondisk2::Writer* makeOndisk2Writer(const ConfigFile* wcfg = 0);
-	dataset::simple::Reader* makeSimpleReader(const ConfigFile* wcfg = 0);
-	dataset::simple::Writer* makeSimpleWriter(const ConfigFile* wcfg = 0);
+    std::unique_ptr<dataset::Reader> makeReader(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::Writer> makeWriter(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::Checker> makeChecker(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::SegmentedReader> makeLocalReader(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::SegmentedWriter> makeLocalWriter(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::SegmentedChecker> makeLocalChecker(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::ondisk2::Reader> makeOndisk2Reader(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::ondisk2::Writer> makeOndisk2Writer(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::ondisk2::Checker> makeOndisk2Checker(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::simple::Reader> makeSimpleReader(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::simple::Writer> makeSimpleWriter(const ConfigFile* wcfg=0);
+    std::unique_ptr<dataset::simple::Checker> makeSimpleChecker(const ConfigFile* wcfg=0);
 
 	// Clean the dataset directory
 	void clean(const ConfigFile* wcfg = 0);
 
-	// Import a file
-	void import(const ConfigFile* wcfg = 0, const std::string& testfile = "inbound/test.grib1");
+    // Import a file
+    void import(const ConfigFile* wcfg = 0, const std::string& testfile="inbound/test.grib1");
 
-	// Recreate the dataset importing data into it
-	void clean_and_import(const ConfigFile* wcfg = 0, const std::string& testfile = "inbound/test.grib1");
+    // Recreate the dataset importing data into it
+    void clean_and_import(const ConfigFile* wcfg=nullptr, const std::string& testfile="inbound/test.grib1");
 
-#define ensure_maint_clean(...) impl_ensure_maint_clean(wibble::tests::Location(__FILE__, __LINE__, #__VA_ARGS__), ##__VA_ARGS__)
-	void impl_ensure_maint_clean(wibble::tests::Location, size_t filecount, const ConfigFile* wcfg = 0);
+    void ensure_localds_clean(size_t filecount, size_t resultcount);
 
-#define ensure_localds_clean(...) impl_ensure_localds_clean(wibble::tests::Location(__FILE__, __LINE__, #__VA_ARGS__), ##__VA_ARGS__)
-	void impl_ensure_localds_clean(const wibble::tests::Location& loc, size_t filecount, size_t resultcount, const ConfigFile* wcfg = 0);
-
-    void import_all(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture);
-    void import_all_packed(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture);
+    void import_all(const testdata::Fixture& fixture);
+    void import_all_packed(const testdata::Fixture& fixture);
 };
 
-struct DatasetTestDefaultConfig
-{
-    DatasetTestDefaultConfig(const ConfigFile& cfg);
-    ~DatasetTestDefaultConfig();
-};
-
-template<typename T>
-struct dataset_tg : public tut::test_group<T>
-{
-    ConfigFile default_config;
-
-    dataset_tg(const char* name, const std::string& config_test)
-        : tut::test_group<T>(name)
-    {
-        std::stringstream in(config_test);
-        default_config.parse(in, "(memory)");
-    }
-
-    tut::test_result run_next()
-    {
-        DatasetTestDefaultConfig dtdc(default_config);
-        return tut::test_group<T>::run_next();
-    }
-    tut::test_result run_test(int n)
-    {
-        DatasetTestDefaultConfig dtdc(default_config);
-        return tut::test_group<T>::run_test(n);
-    }
-};
-
-std::auto_ptr<dataset::WritableLocal> make_dataset_writer(const std::string& cfg, bool empty=true);
-std::auto_ptr<ReadonlyDataset> make_dataset_reader(const std::string& cfg);
+std::unique_ptr<dataset::LocalWriter> make_dataset_writer(const std::string& cfg, bool empty=true);
+std::unique_ptr<dataset::LocalChecker> make_dataset_checker(const std::string& cfg);
+std::unique_ptr<dataset::Reader> make_dataset_reader(const std::string& cfg);
 
 }
 
-struct MaintenanceCollector : public dataset::maintenance::MaintFileVisitor
+struct MaintenanceCollector
 {
     typedef tests::DatasetTest::Counted Counted;
 
-    std::map <std::string, dataset::data::FileState> fileStates;
+    std::map <std::string, dataset::segment::State> fileStates;
     size_t counts[tests::DatasetTest::COUNTED_MAX];
     static const char* names[];
     std::set<Counted> checked;
 
     MaintenanceCollector();
+    MaintenanceCollector(const MaintenanceCollector&) = delete;
+    MaintenanceCollector& operator=(const MaintenanceCollector&) = delete;
 
     void clear();
     bool isClean() const;
-    virtual void operator()(const std::string& file, dataset::data::FileState state);
+    void operator()(const std::string& file, dataset::segment::State state);
     void dump(std::ostream& out) const;
     size_t count(tests::DatasetTest::Counted state);
     std::string remaining() const;
 };
 
-struct OrderCheck : public metadata::Eater
+struct OrderCheck
 {
-    refcounted::Pointer<sort::Compare> order;
+    std::shared_ptr<sort::Compare> order;
     Metadata old;
     bool first;
 
     OrderCheck(const std::string& order);
-    virtual ~OrderCheck();
-    bool eat(std::auto_ptr<Metadata> md) override;
+    ~OrderCheck();
+    bool eat(std::unique_ptr<Metadata>&& md);
 };
 
 namespace testdata {
@@ -243,7 +193,7 @@ namespace testdata {
 struct Element
 {
     Metadata md;
-    types::Time time;
+    core::Time time;
     std::string destfile;
     Matcher matcher;
 
@@ -251,12 +201,12 @@ struct Element
 
     void set(const Metadata& md, const std::string& matcher)
     {
-        using namespace wibble;
-
         const types::reftime::Position* rt = md.get<types::reftime::Position>();
         this->md = md;
         this->time = rt->time;
-        this->destfile = str::fmtf("%04d/%02d-%02d.%s", time.vals[0], time.vals[1], time.vals[2], md.source().format.c_str());
+        char buf[32];
+        snprintf(buf, 32, "%04d/%02d-%02d.%s", time.ye, time.mo, time.da, md.source().format.c_str());
+        this->destfile = buf;
         this->matcher = Matcher::parse(matcher);
     }
 };
@@ -266,9 +216,12 @@ struct Fixture
     std::string format;
     // Maximum aggregation period that still generates more than one file
     std::string max_selective_aggregation;
+    // Index of metadata item that is in a segment by itself when the
+    // aggregation period is max_selective_aggregation
+    unsigned max_selective_aggregation_singleton_index;
     Element test_data[3];
     /// Date that falls somewhere inbetween files in the dataset
-    int selective_cutoff[6];
+    core::Time selective_cutoff;
     std::set<std::string> fnames;
     std::set<std::string> fnames_before_cutoff;
     std::set<std::string> fnames_after_cutoff;
@@ -285,9 +238,10 @@ struct GRIBData : Fixture
     GRIBData()
     {
         metadata::Collection mdc;
-        scan::scan("inbound/test.grib1", mdc);
+        scan::scan("inbound/test.grib1", mdc.inserter_func());
         format = "grib";
         max_selective_aggregation = "monthly";
+        max_selective_aggregation_singleton_index = 2;
         test_data[0].set(mdc[0], "reftime:=2007-07-08");
         test_data[1].set(mdc[1], "reftime:=2007-07-07");
         test_data[2].set(mdc[2], "reftime:=2007-10-09");
@@ -300,9 +254,10 @@ struct BUFRData : Fixture
     BUFRData()
     {
         metadata::Collection mdc;
-        scan::scan("inbound/test.bufr", mdc);
+        scan::scan("inbound/test.bufr", mdc.inserter_func());
         format = "bufr";
         max_selective_aggregation = "yearly";
+        max_selective_aggregation_singleton_index = 0;
         test_data[0].set(mdc[0], "reftime:=2005-12-01");
         test_data[1].set(mdc[1], "reftime:=2004-11-30; proddef:GRIB:blo=60");
         test_data[2].set(mdc[2], "reftime:=2004-11-30; proddef:GRIB:blo=6");
@@ -315,9 +270,10 @@ struct VM2Data : Fixture
     VM2Data()
     {
         metadata::Collection mdc;
-        scan::scan("inbound/test.vm2", mdc);
+        scan::scan("inbound/test.vm2", mdc.inserter_func());
         format = "vm2";
         max_selective_aggregation = "yearly";
+        max_selective_aggregation_singleton_index = 2;
         test_data[0].set(mdc[0], "reftime:=1987-10-31; product:VM2,227");
         test_data[1].set(mdc[1], "reftime:=1987-10-31; product:VM2,228");
         test_data[2].set(mdc[2], "reftime:=2011-01-01; product:VM2,1");
@@ -330,11 +286,12 @@ struct ODIMData : Fixture
     ODIMData()
     {
         metadata::Collection mdc;
-        format = "odim";
+        format = "odimh5";
         max_selective_aggregation = "yearly";
-        scan::scan("inbound/odimh5/COMP_CAPPI_v20.h5", mdc);
-        scan::scan("inbound/odimh5/PVOL_v20.h5", mdc);
-        scan::scan("inbound/odimh5/XSEC_v21.h5", mdc);
+        max_selective_aggregation_singleton_index = 1;
+        scan::scan("inbound/odimh5/COMP_CAPPI_v20.h5", mdc.inserter_func());
+        scan::scan("inbound/odimh5/PVOL_v20.h5", mdc.inserter_func());
+        scan::scan("inbound/odimh5/XSEC_v21.h5", mdc.inserter_func());
         test_data[0].set(mdc[0], "reftime:=2013-03-18");
         test_data[1].set(mdc[1], "reftime:=2000-01-02");
         test_data[2].set(mdc[2], "reftime:=2013-11-04");
@@ -349,6 +306,56 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
 
 namespace tests {
 
+template<typename T>
+static std::string nfiles(const T& val)
+{
+    if (val == 1)
+        return std::to_string(val) + " file";
+    else
+        return std::to_string(val) + " files";
+}
+
+
+struct ReporterExpected
+{
+    struct OperationMatch
+    {
+        std::string name;
+        std::string operation;
+        std::string message;
+
+        OperationMatch(const std::string& dsname, const std::string& operation, const std::string& message=std::string());
+        std::string error_unmatched(const std::string& type) const;
+    };
+
+    struct SegmentMatch
+    {
+        std::string name;
+        std::string message;
+
+        SegmentMatch(const std::string& dsname, const std::string& relpath, const std::string& message=std::string());
+        std::string error_unmatched(const std::string& operation) const;
+    };
+
+    std::vector<OperationMatch> progress;
+    std::vector<OperationMatch> manual_intervention;
+    std::vector<OperationMatch> aborted;
+    std::vector<OperationMatch> report;
+
+    std::vector<SegmentMatch> repacked;
+    std::vector<SegmentMatch> archived;
+    std::vector<SegmentMatch> deleted;
+    std::vector<SegmentMatch> deindexed;
+    std::vector<SegmentMatch> rescanned;
+
+    int count_repacked = -1;
+    int count_archived = -1;
+    int count_deleted = -1;
+    int count_deindexed = -1;
+    int count_rescanned = -1;
+
+    void clear();
+};
 
 
 struct MaintenanceResults
@@ -385,94 +392,45 @@ struct MaintenanceResults
     }
 };
 
-struct TestMaintenance
+template<typename DatasetChecker>
+struct ActualChecker : public arki::utils::tests::Actual<DatasetChecker*>
 {
-    dataset::WritableLocal& dataset;
-    MaintenanceResults expected;
-    bool quick;
+    ActualChecker(DatasetChecker* s) : Actual<DatasetChecker*>(s) {}
 
-    TestMaintenance(dataset::WritableLocal& dataset, const MaintenanceResults& expected, bool quick=true)
-        : dataset(dataset), expected(expected), quick(quick) {}
-
-    void check(WIBBLE_TEST_LOCPRM) const;
+    void repack(const ReporterExpected& expected, bool write=false);
+    void repack_clean(bool write=false);
+    void check(const ReporterExpected& expected, bool write=false, bool quick=true);
+    void check_clean(bool write=false, bool quick=true);
 };
 
-struct TestRepack
+struct ActualSegmentedChecker : public ActualChecker<dataset::SegmentedChecker>
 {
-    dataset::WritableLocal& dataset;
-    LineChecker expected;
-    bool write;
-
-    TestRepack(dataset::WritableLocal& dataset, const LineChecker& expected, bool write=false)
-        : dataset(dataset), expected(expected), write(write) {}
-
-    void check(WIBBLE_TEST_LOCPRM) const;
-};
-
-struct TestCheck
-{
-    dataset::WritableLocal& dataset;
-    LineChecker expected;
-    bool write;
-    bool quick;
-
-    TestCheck(dataset::WritableLocal& dataset, const LineChecker& expected, bool write=false, bool quick=true)
-        : dataset(dataset), expected(expected), write(write), quick(quick) {}
-
-    void check(WIBBLE_TEST_LOCPRM) const;
-};
-
-struct ActualWritableLocal : public wibble::tests::Actual<dataset::WritableLocal*>
-{
-    ActualWritableLocal(dataset::WritableLocal* s) : Actual<dataset::WritableLocal*>(s) {}
+    ActualSegmentedChecker(dataset::SegmentedChecker* s) : ActualChecker<dataset::SegmentedChecker>(s) {}
 
     /// Run maintenance and see that the results are as expected
-    TestMaintenance maintenance(const MaintenanceResults& expected, bool quick=true)
-    {
-        return TestMaintenance(*actual, expected, quick);
-    }
-    TestMaintenance maintenance_clean(unsigned data_count, bool quick=true)
-    {
-        MaintenanceResults expected(true, data_count);
-        expected.by_type[tests::DatasetTest::COUNTED_OK] = data_count;
-        return TestMaintenance(*actual, expected, quick);
-    }
-    TestRepack repack(const LineChecker& expected, bool write=false)
-    {
-        return TestRepack(*actual, expected, write);
-    }
-    TestRepack repack_clean(bool write=false)
-    {
-        LineChecker expected;
-        expected.ignore_regexp("total bytes freed.");
-        return TestRepack(*actual, expected, write);
-    }
-    TestCheck check(const LineChecker& expected, bool write=false, bool quick=true)
-    {
-        return TestCheck(*actual, expected, write, quick);
-    }
-    TestCheck check_clean(bool write=false)
-    {
-        LineChecker expected;
-        return TestCheck(*actual, expected, write);
-    }
+    void maintenance(const MaintenanceResults& expected, bool quick=true);
+    /// Check that a check reports all ok, and that there are data_count segments in the dataset
+    void maintenance_clean(unsigned data_count, bool quick=true);
 };
 
 /// Corrupt a datafile by overwriting the first 4 bytes of its first data
 /// element with zeros
 void corrupt_datafile(const std::string& absname);
 
-void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, dataset::data::Segment* dw, Metadata& md, int append_amount_adjust=0);
-void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, dataset::data::Segment* dw, Metadata& md);
+void test_append_transaction_ok(dataset::Segment* dw, Metadata& md, int append_amount_adjust=0);
+void test_append_transaction_rollback(dataset::Segment* dw, Metadata& md);
 
+inline arki::tests::ActualChecker<dataset::LocalChecker> actual(arki::dataset::LocalChecker* actual)
+{
+    return arki::tests::ActualChecker<dataset::LocalChecker>(actual);
 }
-
-}
-
-namespace wibble {
-namespace tests {
-
-inline arki::tests::ActualWritableLocal actual(arki::dataset::WritableLocal* actual) { return arki::tests::ActualWritableLocal(actual); }
+inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::Checker* actual) { return arki::tests::ActualChecker<dataset::Checker>(actual); }
+inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>(&actual); }
+inline arki::tests::ActualSegmentedChecker actual(arki::dataset::SegmentedChecker* actual) { return arki::tests::ActualSegmentedChecker(actual); }
+inline arki::tests::ActualSegmentedChecker actual(arki::dataset::SegmentedChecker& actual) { return arki::tests::ActualSegmentedChecker(&actual); }
+inline arki::tests::ActualSegmentedChecker actual(arki::dataset::simple::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::SegmentedChecker*)&actual); }
+inline arki::tests::ActualSegmentedChecker actual(arki::dataset::ondisk2::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::SegmentedChecker*)&actual); }
+inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::ArchivesChecker& actual) { return arki::tests::ActualChecker<dataset::Checker>((dataset::Checker*)&actual); }
 
 }
 }

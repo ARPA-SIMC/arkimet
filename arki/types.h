@@ -1,71 +1,51 @@
 #ifndef ARKI_TYPES_H
 #define ARKI_TYPES_H
 
-/*
- * types - arkimet metadata type system
- *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- * Author: Guido Billi <guidobilli@gmail.com>
- */
-
-#include <wibble/exception.h>
+/// arkimet metadata type system
 #include <arki/defs.h>
 #include <string>
-#include <iosfwd>
+#include <vector>
 #include <memory>
 
 struct lua_State;
 
-namespace wibble {
-namespace sys {
-struct Buffer;
-}
-}
-
 namespace arki {
+struct BinaryEncoder;
+struct BinaryDecoder;
 struct Emitter;
 struct Formatter;
 
-/// dynamic cast between two auto_ptr
+/// dynamic cast between two unique_ptr
 template<typename B, typename A>
-std::auto_ptr<B> downcast(std::auto_ptr<A> orig)
+std::unique_ptr<B> downcast(std::unique_ptr<A> orig)
 {
-    if (!orig.get()) return std::auto_ptr<B>();
+    if (!orig.get()) return std::unique_ptr<B>();
 
     // Cast, but leave ownership to orig
     B* dst = dynamic_cast<B*>(orig.get());
 
     // If we fail here, orig will clean it
-    if (!dst) throw wibble::exception::BadCastExt<A, B>("cannot cast smart pointer");
+    if (!dst)
+    {
+        std::string msg("cannot cast smart pointer from ");
+        msg += typeid(A).name();
+        msg += " to ";
+        msg += typeid(B).name();
+        throw std::runtime_error(std::move(msg));
+    }
 
     // Release ownership from orig: we still have the pointer in dst
     orig.release();
 
-    // Transfer ownership to the new auto_ptr and return it
-    return std::auto_ptr<B>(dst);
+    // Transfer ownership to the new unique_ptr and return it
+    return std::unique_ptr<B>(dst);
 }
 
-/// upcast between two auto_ptr
+/// upcast between two unique_ptr
 template<typename B, typename A>
-std::auto_ptr<B> upcast(std::auto_ptr<A> orig)
+std::unique_ptr<B> upcast(std::unique_ptr<A> orig)
 {
-    return std::auto_ptr<B>(orig.release());
+    return std::unique_ptr<B>(orig.release());
 }
 
 namespace emitter {
@@ -74,40 +54,9 @@ struct Mapping;
 }
 }
 
-namespace utils {
-namespace codec {
-struct Encoder;
-struct Decoder;
-}
-}
-
 namespace types {
 struct Type;
-
-/// Identifier codes used for binary serialisation
-enum Code
-{
-    TYPE_INVALID         =  0,
-    TYPE_ORIGIN          =  1,
-    TYPE_PRODUCT         =  2,
-    TYPE_LEVEL           =  3,
-    TYPE_TIMERANGE       =  4,
-    TYPE_REFTIME         =  5,
-    TYPE_NOTE            =  6,
-    TYPE_SOURCE          =  7,
-    TYPE_ASSIGNEDDATASET =  8,
-    TYPE_AREA            =  9,
-    TYPE_PRODDEF         = 10,
-    TYPE_SUMMARYITEM     = 11,
-    TYPE_SUMMARYSTATS    = 12,
-    TYPE_TIME            = 13,
-    TYPE_BBOX            = 14,
-    TYPE_RUN             = 15,
-    TYPE_TASK            = 16, // utilizzato per OdimH5 /how.task
-    TYPE_QUANTITY        = 17, // utilizzato per OdimH5 /what.quantity
-    TYPE_VALUE           = 18,
-    TYPE_MAXCODE
-};
+typedef TypeCode Code;
 
 // Parse name into a type code, returning TYPE_INVALID if it does not match
 Code checkCodeName(const std::string& name);
@@ -134,14 +83,14 @@ struct Type
      * Make a copy of this type. The caller will own the newly created object
      * returned by the function.
      *
-     * This does not return an auto_ptr to allow to use covariant return types
+     * This does not return an unique_ptr to allow to use covariant return types
      * in implementations. Use cloneType() for a version with explicit memory
      * ownership of the result.
      */
     virtual Type* clone() const = 0;
 
     /// Make a copy of this type
-    std::auto_ptr<Type> cloneType() const { return std::auto_ptr<Type>(clone()); }
+    std::unique_ptr<Type> cloneType() const { return std::unique_ptr<Type>(clone()); }
 
     /// Comparison (<0 if <, 0 if =, >0 if >)
     virtual int compare(const Type& o) const;
@@ -176,12 +125,13 @@ struct Type
 	 * Encoding to compact binary representation, without identification
 	 * envelope
 	 */
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const = 0;
+	virtual void encodeWithoutEnvelope(BinaryEncoder& enc) const = 0;
 
-    /**
-     * Encode to compact binary representation, with identification envelope
-     */
-    virtual std::string encodeBinary() const;
+    /// Encode to compact binary representation, with identification envelope
+    void encodeBinary(BinaryEncoder& enc) const;
+
+    /// Encode to compact binary representation, with identification envelope
+    std::vector<uint8_t> encodeBinary() const;
 
 	/// Write as a string to an output stream
 	virtual std::ostream& writeToOstream(std::ostream& o) const = 0;
@@ -245,7 +195,7 @@ struct Type
         return a->equals(*b);
     }
     template<typename A, typename B>
-    static inline bool nullable_equals(const std::auto_ptr<A>& a, const std::auto_ptr<B>& b)
+    static inline bool nullable_equals(const std::unique_ptr<A>& a, const std::unique_ptr<B>& b)
     {
         return nullable_equals(a.get(), b.get());
     }
@@ -261,7 +211,7 @@ struct Type
         return a->compare(*b);
     }
     template<typename A, typename B>
-    static inline bool nullable_compare(const std::auto_ptr<A>& a, const std::auto_ptr<B>& b)
+    static inline bool nullable_compare(const std::unique_ptr<A>& a, const std::unique_ptr<B>& b)
     {
         return nullable_compare(a.get(), b.get());
     }
@@ -294,7 +244,7 @@ struct StyledType : public CoreType<BASE>
 	virtual Style style() const = 0;
 
     // Default implementations of Type methods
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     int compare(const Type& o) const override;
     virtual int compare_local(const BASE& o) const { return style() - o.style(); }
 
@@ -306,27 +256,17 @@ struct StyledType : public CoreType<BASE>
 };
 
 
-/// Decode an item encoded in binary representation
-std::auto_ptr<Type> decode(const unsigned char* buf, size_t len);
-
 /**
  * Decode an item encoded in binary representation with envelope, from a
  * decoder
  */
-std::auto_ptr<Type> decode(utils::codec::Decoder& dec);
-/**
- * Decode the item envelope in buf:len
- *
- * Return the inside of the envelope start in buf and the inside length in len
- *
- * After the function returns, the start of the next envelope is at buf+len
- */
-types::Code decodeEnvelope(const unsigned char*& buf, size_t& len);
-std::auto_ptr<Type> decodeInner(types::Code, const unsigned char* buf, size_t len);
-std::auto_ptr<Type> decodeString(types::Code, const std::string& val);
-std::auto_ptr<Type> decodeMapping(const emitter::memory::Mapping& m);
+std::unique_ptr<Type> decode(BinaryDecoder& dec);
+
+std::unique_ptr<Type> decodeInner(types::Code, BinaryDecoder& dec);
+std::unique_ptr<Type> decodeString(types::Code, const std::string& val);
+std::unique_ptr<Type> decodeMapping(const emitter::memory::Mapping& m);
 /// Same as decodeMapping, but does not look for the item type in the mapping
-std::auto_ptr<Type> decodeMapping(types::Code, const emitter::memory::Mapping& m);
+std::unique_ptr<Type> decodeMapping(types::Code, const emitter::memory::Mapping& m);
 std::string tag(types::Code);
 
 /**
@@ -336,26 +276,7 @@ std::string tag(types::Code);
  * @return
  *   true if a data bundle was read, false on end of file
  */
-bool readBundle(int fd, const std::string& filename, wibble::sys::Buffer& buf, std::string& signature, unsigned& version);
-
-/**
- * Read a data bundle from a file, returning the signature string, the version
- * number and the data in a buffer.
- *
- * @return
- *   true if a data bundle was read, false on end of file
- */
-bool readBundle(std::istream& in, const std::string& filename, wibble::sys::Buffer& buf, std::string& signature, unsigned& version);
-
-/**
- * Decode the header of a data bundle from a memory buffer, returning the
- * signature string, the version number and a pointer to the data inside the
- * buffer.
- *
- * @return
- *   true if a data bundle was found, false on end of buffer
- */
-bool readBundle(const unsigned char*& buf, size_t& len, const std::string& filename, const unsigned char*& obuf, size_t& olen, std::string& signature, unsigned& version);
+bool readBundle(int fd, const std::string& filename, std::vector<uint8_t>& buf, std::string& signature, unsigned& version);
 
 }
 

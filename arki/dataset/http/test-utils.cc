@@ -1,35 +1,14 @@
-/**
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include <arki/dataset/http/test-utils.h>
-#include <wibble/net/http.h>
-#include <wibble/net/mime.h>
-
+#include <arki/utils/net/http.h>
+#include <arki/utils/net/mime.h>
+#include <arki/exceptions.h>
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace tests {
@@ -41,7 +20,7 @@ FakeRequest::FakeRequest(const std::string& tmpfname)
     strncpy(fname, tmpfname.c_str(), tmpfname.size() + 1);
     fd = mkstemp(fname);
     if (fd == -1)
-        throw wibble::exception::File(fname, "creating temporary file");
+        throw_file_error(fname, "cannot create temporary file");
     unlink(fname);
 }
 FakeRequest::~FakeRequest()
@@ -57,7 +36,7 @@ void FakeRequest::write(const std::string& str)
     {
         ssize_t res = ::write(fd, str.data() + pos, str.size() - pos);
         if (res < 0)
-            throw wibble::exception::File(fname, "writing to file");
+            throw_file_error(fname, "cannot write to file");
         pos += (size_t)res;
     }
     response_offset += str.size();
@@ -75,7 +54,7 @@ void FakeRequest::write_get(const std::string& query)
 void FakeRequest::reset()
 {
     if (lseek(fd, 0, SEEK_SET) < 0)
-        throw wibble::exception::File(fname, "seeking to start of file");
+        throw_file_error(fname, "cannot seek to start of file");
 }
 
 void FakeRequest::setup_request(net::http::Request& req)
@@ -96,24 +75,24 @@ void FakeRequest::setup_request(net::http::Request& req)
 void FakeRequest::read_response()
 {
     if (lseek(fd, response_offset, SEEK_SET) < 0)
-        throw wibble::exception::File(fname, "seeking to start of response in file");
+        throw_file_error(fname, "cannot seek to start of response in file");
 
     // Read headers
     net::mime::Reader reader;
     if (!reader.read_line(fd, response_method))
-        throw wibble::exception::Consistency("reading response method", "no headers found");
+        throw std::runtime_error("cannot read response method: no headers found");
     if (!reader.read_headers(fd, response_headers))
-        throw wibble::exception::Consistency("reading response body", "no body found");
+        throw std::runtime_error("cannot read response body: no body found");
 
     // Read the rest as reponse body
     while (true)
     {
-        char buf[4096];
+        uint8_t buf[4096];
         ssize_t res = read(fd, buf, 4096);
         if (res < 0)
-            throw wibble::exception::File(fname, "reading response body");
+            throw_file_error(fname, "cannot read response body");
         if (res == 0) break;
-        response_body.append(buf, res);
+        append_body(buf, res);
     }
 }
 
@@ -124,6 +103,15 @@ void FakeRequest::dump_headers(std::ostream& out)
         out << "header " << i->first << ": " << i->second << endl;
 }
 
+void StringFakeRequest::append_body(const uint8_t* buf, size_t len)
+{
+    response_body.append((const char*)buf, len);
+}
+
+void BufferFakeRequest::append_body(const uint8_t* buf, size_t len)
+{
+    response_body.insert(response_body.end(), buf, buf + len);
+}
+
 }
 }
-// vim:set ts=4 sw=4:

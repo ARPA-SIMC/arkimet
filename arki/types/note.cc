@@ -1,47 +1,21 @@
-/*
- * types/note - Metadata annotation
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <arki/types/note.h>
-#include <arki/types/utils.h>
-#include <arki/utils/codec.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
+#include "note.h"
+#include "utils.h"
+#include "arki/exceptions.h"
+#include "arki/binary.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/utils/lua.h"
 #include "config.h"
 #include <sstream>
 #include <cmath>
 
-#ifdef HAVE_LUA
-#include <arki/utils/lua.h>
-#endif
-
-#define CODE types::TYPE_NOTE
+#define CODE TYPE_NOTE
 #define TAG "note"
 #define SERSIZELEN 2
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::codec;
+using arki::core::Time;
 
 namespace arki {
 namespace types {
@@ -59,7 +33,7 @@ int Note::compare(const Type& o) const
 	// We should be the same kind, so upcast
 	const Note* v = dynamic_cast<const Note*>(&o);
 	if (!v)
-		throw wibble::exception::Consistency(
+		throw_consistency_error(
 			"comparing metadata types",
 			string("second element claims to be a Note, but it is a ") + typeid(&o).name() + " instead");
 
@@ -81,23 +55,19 @@ bool Note::equals(const Type& o) const
 	return time == v->time && content == v->content;
 }
 
-void Note::encodeWithoutEnvelope(Encoder& enc) const
+void Note::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
     time.encodeWithoutEnvelope(enc);
-    enc.addVarint(content.size());
-    enc.addString(content);
+    enc.add_varint(content.size());
+    enc.add_raw(content);
 }
 
-auto_ptr<Note> Note::decode(const unsigned char* buf, size_t len)
+unique_ptr<Note> Note::decode(BinaryDecoder& dec)
 {
-    using namespace utils::codec;
-
-    ensureSize(len, 5, "note time");
-    auto_ptr<Time> t = Time::decode(buf, 5);
-    Decoder dec(buf+5, len-5);
-    size_t msg_len = dec.popVarint<size_t>("note text size");
-    string msg = dec.popString(msg_len, "note text");
-    return Note::create(*t, msg);
+    Time t = Time::decode(dec);
+    size_t msg_len = dec.pop_varint<size_t>("note text size");
+    string msg = dec.pop_string(msg_len, "note text");
+    return Note::create(t, msg);
 }
 
 std::ostream& Note::writeToOstream(std::ostream& o) const
@@ -111,23 +81,23 @@ void Note::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("va", content);
 }
 
-auto_ptr<Note> Note::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Note> Note::decodeMapping(const emitter::memory::Mapping& val)
 {
     return Note::create(
-            *Time::decodeList(val["ti"].want_list("parsing Note time")),
+            Time::decodeList(val["ti"].want_list("parsing Note time")),
             val["va"].want_string("parsing Note content"));
 }
 
-auto_ptr<Note> Note::decodeString(const std::string& val)
+unique_ptr<Note> Note::decodeString(const std::string& val)
 {
     if (val.empty())
-        throw wibble::exception::Consistency("parsing Note", "string is empty");
+        throw_consistency_error("parsing Note", "string is empty");
     if (val[0] != '[')
-        throw wibble::exception::Consistency("parsing Note", "string does not start with open square bracket");
+        throw_consistency_error("parsing Note", "string does not start with open square bracket");
     size_t pos = val.find(']');
     if (pos == string::npos)
-        throw wibble::exception::Consistency("parsing Note", "no closed square bracket found");
-    return Note::create(*Time::createFromISO8601(val.substr(1, pos-1)), val.substr(pos+1));
+        throw_consistency_error("parsing Note", "no closed square bracket found");
+    return Note::create(Time::create_iso8601(val.substr(1, pos-1)), val.substr(pos+1));
 }
 
 #ifdef HAVE_LUA
@@ -148,17 +118,20 @@ Note* Note::clone() const
     return new Note(time, content);
 }
 
-auto_ptr<Note> Note::create(const std::string& content)
+unique_ptr<Note> Note::create(const std::string& content)
 {
-    return auto_ptr<Note>(new Note(content));
+    return unique_ptr<Note>(new Note(content));
 }
 
-auto_ptr<Note> Note::create(const Time& time, const std::string& content)
+unique_ptr<Note> Note::create(const Time& time, const std::string& content)
 {
-    return auto_ptr<Note>(new Note(time, content));
+    return unique_ptr<Note>(new Note(time, content));
 }
 
-static MetadataType noteType = MetadataType::create<Note>();
+void Note::init()
+{
+    MetadataType::register_type<Note>();
+}
 
 }
 }

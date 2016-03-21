@@ -1,28 +1,6 @@
 #ifndef ARKI_TYPES_VALUE_H
 #define ARKI_TYPES_VALUE_H
 
-/*
- * types/value - Metadata type to store small values
- *
- * Copyright (C) 2012--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/types.h>
 #include <string>
 
@@ -56,17 +34,17 @@ struct Value : public types::CoreType<Value>
 
     bool equals(const Type& o) const override;
     int compare(const Type& o) const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
 
     /// CODEC functions
-    static std::auto_ptr<Value> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Value> decodeString(const std::string& val);
-    static std::auto_ptr<Value> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Value> decode(BinaryDecoder& dec);
+    static std::unique_ptr<Value> decodeString(const std::string& val);
+    static std::unique_ptr<Value> decodeMapping(const emitter::memory::Mapping& val);
 
     Value* clone() const override;
-    static std::auto_ptr<Value> create(const std::string& buf);
+    static std::unique_ptr<Value> create(const std::string& buf);
 
     static void lua_loadlib(lua_State* L);
 
@@ -76,6 +54,4 @@ struct Value : public types::CoreType<Value>
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

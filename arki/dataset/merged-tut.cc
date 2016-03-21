@@ -1,23 +1,4 @@
-/*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/dataset/merged.h>
 #include <arki/configfile.h>
@@ -26,20 +7,20 @@
 #include <arki/matcher.h>
 #include <arki/scan/grib.h>
 #include <arki/dispatcher.h>
-
 #include <sstream>
 #include <iostream>
 
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::tests;
 
 struct arki_dataset_merged_shar {
-	ConfigFile config;
-	ReadonlyDataset* ds1;
-	ReadonlyDataset* ds2;
-	ReadonlyDataset* ds3;
-	dataset::Merged ds;
+    ConfigFile config;
+    dataset::Reader* ds1;
+    dataset::Reader* ds2;
+    dataset::Reader* ds3;
+    dataset::Merged ds;
 
 	arki_dataset_merged_shar() : ds1(0), ds2(0), ds3(0)
 	{
@@ -48,51 +29,50 @@ struct arki_dataset_merged_shar {
 		system("rm -rf test80/*");
 		system("rm -rf error/*");
 
-		// In-memory dataset configuration
-		string conf =
-			"[test200]\n"
-			"type = test\n"
-			"step = daily\n"
-			"filter = origin: GRIB1,200\n"
-			"index = origin, reftime\n"
-			"name = test200\n"
-			"path = test200\n"
-			"\n"
-			"[test80]\n"
-			"type = test\n"
-			"step = daily\n"
-			"filter = origin: GRIB1,80\n"
-			"index = origin, reftime\n"
-			"name = test80\n"
-			"path = test80\n"
-			"\n"
-			"[error]\n"
-			"type = error\n"
-			"step = daily\n"
-			"name = error\n"
-			"path = error\n";
-		stringstream incfg(conf);
-		config.parse(incfg, "(memory)");
+        // In-memory dataset configuration
+        string conf =
+            "[test200]\n"
+            "type = ondisk2\n"
+            "step = daily\n"
+            "filter = origin: GRIB1,200\n"
+            "index = origin, reftime\n"
+            "name = test200\n"
+            "path = test200\n"
+            "\n"
+            "[test80]\n"
+            "type = ondisk2\n"
+            "step = daily\n"
+            "filter = origin: GRIB1,80\n"
+            "index = origin, reftime\n"
+            "name = test80\n"
+            "path = test80\n"
+            "\n"
+            "[error]\n"
+            "type = error\n"
+            "step = daily\n"
+            "name = error\n"
+            "path = error\n";
+        config.parse(conf, "(memory)");
 
-		// Import data into the datasets
-		Metadata md;
-		metadata::Collection mdc;
-		scan::Grib scanner;
-		RealDispatcher dispatcher(config);
-		scanner.open("inbound/test.grib1");
-		ensure(scanner.next(md));
-		ensure_equals(dispatcher.dispatch(auto_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_OK);
-		ensure(scanner.next(md));
-		ensure_equals(dispatcher.dispatch(auto_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_OK);
-		ensure(scanner.next(md));
-		ensure_equals(dispatcher.dispatch(auto_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_ERROR);
-		ensure(!scanner.next(md));
-		dispatcher.flush();
+        // Import data into the datasets
+        Metadata md;
+        metadata::Collection mdc;
+        scan::Grib scanner;
+        RealDispatcher dispatcher(config);
+        scanner.open("inbound/test.grib1");
+        ensure(scanner.next(md));
+        ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_OK);
+        ensure(scanner.next(md));
+        ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_OK);
+        ensure(scanner.next(md));
+        ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_ERROR);
+        ensure(!scanner.next(md));
+        dispatcher.flush();
 
-		ds.addDataset(*(ds1 = ReadonlyDataset::create(*config.section("test200"))));
-		ds.addDataset(*(ds2 = ReadonlyDataset::create(*config.section("test80"))));
-		ds.addDataset(*(ds3 = ReadonlyDataset::create(*config.section("error"))));
-	}
+        ds.addDataset(*(ds1 = dataset::Reader::create(*config.section("test200"))));
+        ds.addDataset(*(ds2 = dataset::Reader::create(*config.section("test80"))));
+        ds.addDataset(*(ds3 = dataset::Reader::create(*config.section("error"))));
+    }
 
 	~arki_dataset_merged_shar()
 	{
@@ -104,16 +84,14 @@ struct arki_dataset_merged_shar {
 TESTGRP(arki_dataset_merged);
 
 // Test querying the datasets
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
-    metadata::Collection mdc;
-    ds.queryData(dataset::DataQuery(Matcher()), mdc);
+    metadata::Collection mdc(ds, Matcher());
     ensure_equals(mdc.size(), 3u);
 
 #if 0
-	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
-	metadata::Collection mdc;
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
+    metadata::Collection mdc;
 
 	testds->query(Matcher::parse("origin:GRIB1,200"), false, mdc);
 	ensure_equals(mdc.size(), 1u);

@@ -27,7 +27,7 @@
 #include <map>
 #include <vector>
 #include <sstream>
-#include <wibble/sys/childprocess.h>
+#include <arki/wibble/sys/childprocess.h>
 
 namespace arki {
 namespace utils {
@@ -105,6 +105,12 @@ struct IODispatcher
 
     /// Shortcut to send a string
     size_t send(const std::string& data)
+    {
+        return send(data.data(), data.size());
+    }
+
+    /// Shortcut to send a buffer
+    size_t send(const std::vector<uint8_t>& data)
     {
         return send(data.data(), data.size());
     }

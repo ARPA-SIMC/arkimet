@@ -1,25 +1,3 @@
-/*
- * dataset - Handle arkimet datasets
- *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 #include <arki/dataset.h>
 #include <arki/configfile.h>
@@ -29,18 +7,17 @@
 #include <arki/dataset/outbound.h>
 #include <arki/dataset/discard.h>
 #include <arki/dataset/empty.h>
+#include <arki/dataset/segment.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/sort.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/utils.h>
-#include <arki/utils/dataset.h>
+#include <arki/utils/string.h>
+#include <arki/utils/sys.h>
 #include <arki/postprocess.h>
 #include <arki/report.h>
 #include <arki/summary.h>
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
 
 #ifdef HAVE_LIBCURL
 #include <arki/dataset/http.h>
@@ -51,86 +28,119 @@
 #endif
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
-
 namespace dataset {
 
-DataQuery::DataQuery() : matcher(0), with_data(false) {}
+DataQuery::DataQuery() : with_data(false) {}
 DataQuery::DataQuery(const Matcher& matcher, bool with_data) : matcher(matcher), with_data(with_data), sorter(0) {}
 DataQuery::~DataQuery() {}
 
-}
-
-WritableDataset::WritableDataset()
+Base::Base(const std::string& name)
+    : m_name(name)
 {
 }
 
-WritableDataset::~WritableDataset()
+Base::Base(const std::string& name, const ConfigFile& cfg)
+    : m_name(name), m_cfg(cfg.values())
 {
 }
 
-void WritableDataset::flush() {}
-
-Pending WritableDataset::test_writelock() { return Pending(); }
-
-void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
+Base::Base(const ConfigFile& cfg)
+    : m_name(cfg.value("name")), m_cfg(cfg.values())
 {
-	using namespace arki::utils;
+}
 
-	switch (q.type)
-	{
-		case dataset::ByteQuery::BQ_DATA: {
-			ds::DataOnly dataonly(out);
-            ds::DataStartHookRunner dshr(dataonly, q.data_start_hook);
-			queryData(q, dshr);
-			break;
-		}
-		case dataset::ByteQuery::BQ_POSTPROCESS: {
-			Postprocess postproc(q.param);
+std::string Base::name() const
+{
+    if (m_parent)
+        return m_parent->name() + "." + m_name;
+    else
+        return m_name;
+}
+
+void Base::set_parent(Base& p)
+{
+    m_parent = &p;
+}
+
+
+void Writer::flush() {}
+
+Pending Writer::test_writelock() { return Pending(); }
+
+void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
+{
+    switch (q.type)
+    {
+        case dataset::ByteQuery::BQ_DATA: {
+            const dataset::segment::OstreamWriter* writer = nullptr;
+            bool first = true;
+            query_data(q, [&](unique_ptr<Metadata> md) {
+                if (first)
+                {
+                    if (q.data_start_hook) q.data_start_hook();
+                    first = false;
+                }
+                if (!writer)
+                    writer = dataset::segment::OstreamWriter::get(md->source().format);
+                writer->stream(*md, out);
+                return true;
+            });
+            break;
+        }
+        case dataset::ByteQuery::BQ_POSTPROCESS: {
+            Postprocess postproc(q.param);
             postproc.set_output(out);
-            postproc.validate(cfg);
-			postproc.set_data_start_hook(q.data_start_hook);
+            postproc.validate(m_cfg);
+            postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
-			queryData(q, postproc);
-			postproc.flush();
-			break;
-		}
-		case dataset::ByteQuery::BQ_REP_METADATA: {
+            query_data(q, [&](unique_ptr<Metadata> md) { return postproc.process(move(md)); });
+            postproc.flush();
+            break;
+        }
+        case dataset::ByteQuery::BQ_REP_METADATA: {
 #ifdef HAVE_LUA
-			Report rep;
-			rep.captureOutput(out);
-			rep.load(q.param);
-			queryData(q, rep);
-			rep.report();
+            Report rep;
+            rep.captureOutput(out);
+            rep.load(q.param);
+            query_data(q, [&](unique_ptr<Metadata> md) { return rep.eat(move(md)); });
+            rep.report();
 #endif
-			break;
-		}
-		case dataset::ByteQuery::BQ_REP_SUMMARY: {
+            break;
+        }
+        case dataset::ByteQuery::BQ_REP_SUMMARY: {
 #ifdef HAVE_LUA
-			Report rep;
-			rep.captureOutput(out);
-			rep.load(q.param);
-			Summary s;
-			querySummary(q.matcher, s);
-			rep(s);
-			rep.report();
+            Report rep;
+            rep.captureOutput(out);
+            rep.load(q.param);
+            Summary s;
+            query_summary(q.matcher, s);
+            rep(s);
+            rep.report();
 #endif
-			break;
-		}
-		default:
-			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)q.type));
-	}
+            break;
+        }
+        default:
+        {
+            stringstream s;
+            s << "cannot query dataset: unsupported query type: " << (int)q.type;
+            throw std::runtime_error(s.str());
+        }
+    }
 }
 
-#ifdef HAVE_LUA
-ReadonlyDataset* ReadonlyDataset::lua_check(lua_State* L, int idx)
+void Reader::expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end)
 {
-	return *(ReadonlyDataset**)luaL_checkudata(L, idx, "arki.rodataset");
 }
 
-namespace dataset {
+#ifdef HAVE_LUA
+Reader* Reader::lua_check(lua_State* L, int idx)
+{
+	return *(Reader**)luaL_checkudata(L, idx, "arki.rodataset");
+}
+
 void DataQuery::lua_from_table(lua_State* L, int idx)
 {
 	lua_pushstring(L, "matcher");
@@ -174,13 +184,61 @@ void DataQuery::lua_push_table(lua_State* L, int idx) const
 	lua_settable(L, idx);
 }
 
-}
+namespace {
 
+// Metadata consumer that passes the metadata to a Lua function
+struct LuaConsumer
+{
+    lua_State* L;
+    int funcid;
+
+    LuaConsumer(lua_State* L, int funcid) : L(L), funcid(funcid) {}
+    ~LuaConsumer()
+    {
+        // Unindex the function
+        luaL_unref(L, LUA_REGISTRYINDEX, funcid);
+    }
+
+    bool eat(std::unique_ptr<Metadata>&& md)
+    {
+        // Get the function
+        lua_rawgeti(L, LUA_REGISTRYINDEX, funcid);
+
+        // Push the metadata, handing it over to Lua's garbage collector
+        Metadata::lua_push(L, move(md));
+
+        // Call the function
+        if (lua_pcall(L, 1, 1, 0))
+        {
+            string error = lua_tostring(L, -1);
+            lua_pop(L, 1);
+            throw std::runtime_error("cannot run metadata consumer function: " + error);
+        }
+
+        int res = lua_toboolean(L, -1);
+        lua_pop(L, 1);
+        return res;
+    }
+
+    static std::unique_ptr<LuaConsumer> lua_check(lua_State* L, int idx)
+    {
+        luaL_checktype(L, idx, LUA_TFUNCTION);
+
+        // Ref the created function into the registry
+        lua_pushvalue(L, idx);
+        int funcid = luaL_ref(L, LUA_REGISTRYINDEX);
+
+        // Create a consumer using the function
+        return unique_ptr<LuaConsumer>(new LuaConsumer(L, funcid));
+    }
+};
+
+}
 
 static int arkilua_queryData(lua_State *L)
 {
 	// queryData(self, { matcher="", withdata=false, sorter="" }, consumer_func)
-	ReadonlyDataset* rd = ReadonlyDataset::lua_check(L, 1);
+	Reader* rd = Reader::lua_check(L, 1);
 	luaL_argcheck(L, lua_istable(L, 2), 2, "`table' expected");
 	luaL_argcheck(L, lua_isfunction(L, 3), 3, "`function' expected");
 
@@ -188,23 +246,23 @@ static int arkilua_queryData(lua_State *L)
 	dataset::DataQuery dq;
 	dq.lua_from_table(L, 2);
 
-	// Create metadata consumer proxy
-	std::auto_ptr<metadata::LuaConsumer> mdc = metadata::LuaConsumer::lua_check(L, 3);
+    // Create metadata consumer proxy
+    std::unique_ptr<LuaConsumer> mdc = LuaConsumer::lua_check(L, 3);
 
-	// Run the query
-	rd->queryData(dq, *mdc);
+    // Run the query
+    rd->query_data(dq, [&](unique_ptr<Metadata> md) { return mdc->eat(move(md)); });
 
-	return 0;
+    return 0;
 }
 
-static int arkilua_querySummary(lua_State *L)
+static int arkilua_query_summary(lua_State *L)
 {
-	// querySummary(self, matcher="", summary)
-	ReadonlyDataset* rd = ReadonlyDataset::lua_check(L, 1);
+	// query_summary(self, matcher="", summary)
+	Reader* rd = Reader::lua_check(L, 1);
 	Matcher matcher = Matcher::lua_check(L, 2);
 	Summary* sum = Summary::lua_check(L, 3);
 	luaL_argcheck(L, sum != NULL, 3, "`arki.summary' expected");
-	rd->querySummary(matcher, *sum);
+	rd->query_summary(matcher, *sum);
 	return 0;
 }
 
@@ -216,25 +274,23 @@ static int arkilua_tostring(lua_State *L)
 
 static const struct luaL_Reg readonlydatasetlib [] = {
 	{ "queryData", arkilua_queryData },
-	{ "querySummary", arkilua_querySummary },
+	{ "querySummary", arkilua_query_summary },
 	{ "__tostring", arkilua_tostring },
 	{NULL, NULL}
 };
 
-void ReadonlyDataset::lua_push(lua_State* L)
+void Reader::lua_push(lua_State* L)
 {
     utils::lua::push_object_ptr(L, this, "arki.rodataset", readonlydatasetlib);
 }
 #endif
 
 
-ReadonlyDataset* ReadonlyDataset::create(const ConfigFile& cfg)
+Reader* Reader::create(const ConfigFile& cfg)
 {
-	string type = wibble::str::tolower(cfg.value("type"));
-	if (type.empty())
-		type = "local";
-	
-	if (type == "ondisk2" || type == "test")
+    string type = str::lower(cfg.value("type"));
+
+	if (type == "ondisk2")
 		return new dataset::ondisk2::Reader(cfg);
 	if (type == "simple" || type == "error" || type == "duplicates")
 		return new dataset::simple::Reader(cfg);
@@ -249,49 +305,57 @@ ReadonlyDataset* ReadonlyDataset::create(const ConfigFile& cfg)
 	if (type == "file")
 		return dataset::File::create(cfg);
 
-	throw wibble::exception::Consistency("creating a dataset", "unknown dataset type \""+type+"\"");
+    throw std::runtime_error("cannot create dataset reader: unknown dataset type \""+type+"\"");
 }
 
-void ReadonlyDataset::readConfig(const std::string& path, ConfigFile& cfg)
+void Reader::readConfig(const std::string& path, ConfigFile& cfg)
 {
 #ifdef HAVE_LIBCURL
-	if (str::startsWith(path, "http://") || str::startsWith(path, "https://"))
-	{
-		return dataset::HTTP::readConfig(path, cfg);
-	} else
+    if (str::startswith(path, "http://") || str::startswith(path, "https://"))
+        return dataset::HTTP::readConfig(path, cfg);
 #endif
-	if (sys::fs::isdir(path))
-		return dataset::Local::readConfig(path, cfg);
-	else
-		return dataset::File::readConfig(path, cfg);
+    if (sys::isdir(path))
+        return dataset::LocalReader::readConfig(path, cfg);
+    else
+        return dataset::File::readConfig(path, cfg);
 }
 
-WritableDataset* WritableDataset::create(const ConfigFile& cfg)
+Writer* Writer::create(const ConfigFile& cfg)
 {
-	string type = wibble::str::tolower(cfg.value("type"));
-	if (type == "remote")
-		throw wibble::exception::Consistency("creating a dataset", "remote datasets are not writable");
-	if (type == "outbound")
-		return new dataset::Outbound(cfg);
-	if (type == "discard")
-		return new dataset::Discard(cfg);
-    /*
-    // TODO: create remote ones once implemented
-    */
-    return dataset::WritableLocal::create(cfg);
+    string type = str::lower(cfg.value("type"));
+    if (type == "remote")
+        throw std::runtime_error("cannot create dataset writer: remote datasets are not writable");
+    if (type == "outbound")
+        return new dataset::Outbound(cfg);
+    if (type == "discard")
+        return new dataset::Discard(cfg);
+    return dataset::LocalWriter::create(cfg);
 }
 
-WritableDataset::AcquireResult WritableDataset::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
-	string type = wibble::str::tolower(cfg.value("type"));
-	if (type == "remote")
-		throw wibble::exception::Consistency("simulating dataset acquisition", "remote datasets are not writable");
-	if (type == "outbound")
-		return dataset::Outbound::testAcquire(cfg, md, out);
-	if (type == "discard")
-		return dataset::Discard::testAcquire(cfg, md, out);
+    string type = str::lower(cfg.value("type"));
+    if (type == "remote")
+        throw std::runtime_error("cannot simulate dataset acquisition: remote datasets are not writable");
+    if (type == "outbound")
+        return dataset::Outbound::testAcquire(cfg, md, out);
+    if (type == "discard")
+        return dataset::Discard::testAcquire(cfg, md, out);
 
-    return dataset::WritableLocal::testAcquire(cfg, md, out);
+    return dataset::LocalWriter::testAcquire(cfg, md, out);
 }
 
+void FailChecker::removeAll(dataset::Reporter& reporter, bool writable) { throw std::runtime_error("operation not possible on dataset " + name()); }
+void FailChecker::repack(dataset::Reporter& reporter, bool writable) { throw std::runtime_error("operation not possible on dataset " + name()); }
+void FailChecker::check(dataset::Reporter& reporter, bool fix, bool quick) { throw std::runtime_error("operation not possible on dataset " + name()); }
+
+Checker* Checker::create(const ConfigFile& cfg)
+{
+    string type = str::lower(cfg.value("type"));
+    if (type == "remote" || type == "outbound" || type == "discard")
+        return new FailChecker(cfg);
+    return dataset::LocalChecker::create(cfg);
+}
+
+}
 }

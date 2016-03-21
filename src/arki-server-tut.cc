@@ -1,21 +1,3 @@
-/*
- * Copyright (C) 2007--2015  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include <arki/types/tests.h>
 #include <arki/dataset.h>
 #include <arki/dataset/http.h>
@@ -28,14 +10,12 @@
 #include <arki/dispatcher.h>
 #include <arki/types/source/blob.h>
 #include <arki/utils.h>
+#include <arki/utils/sys.h>
+#include <arki/binary.h>
 #include <arki/runtime/io.h>
 #include <arki/runtime/processor.h>
-#include <wibble/string.h>
-#include <wibble/stream/posix.h>
-
 #include <sstream>
 #include <iostream>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -44,8 +24,8 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
-using namespace wibble;
-using namespace wibble::tests;
+using namespace arki::utils;
+using namespace arki::tests;
 
 struct arki_server_shar {
     ConfigFile config;
@@ -77,21 +57,19 @@ template<> template<>
 void to::test<2>()
 {
     dataset::HTTP::readConfig("http://localhost:7117", config);
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
-    metadata::Collection mdc;
-
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
+    metadata::Collection mdc(*testds, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_url("grib1", "http://localhost:7117/dataset/test200/query"));
+    wassert(actual_type(mdc[0].source()).is_source_url("grib", "http://localhost:7117/dataset/test200/query"));
 
     mdc.clear();
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
+    mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
     ensure_equals(mdc.size(), 0u);
 
     mdc.clear();
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
+    mdc.add(*testds, Matcher::parse("origin:GRIB1,98"));
     ensure_equals(mdc.size(), 0u);
 }
 
@@ -100,32 +78,30 @@ template<> template<>
 void to::test<3>()
 {
     dataset::HTTP::readConfig("http://localhost:7117", config);
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
-    metadata::Collection mdc;
-
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true), mdc);
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
+    metadata::Collection mdc(*testds, dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true));
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
-    wassert(actual(mdc[0].getData().size()) == 7218);
+    wassert(actual_type(mdc[0].source()).is_source_inline("grib", 7218));
+    wassert(actual(mdc[0].getData().size()) == 7218u);
 
     mdc.clear();
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true), mdc);
+    mdc.add(*testds, dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true));
     ensure_equals(mdc.size(), 0u);
 
     // Try again, but let ProcessorMaker build the query
     runtime::Tempfile output;
     runtime::ProcessorMaker pm;
     pm.data_inline = true;
-    auto_ptr<runtime::DatasetProcessor> proc = pm.make(Matcher::parse("origin:GRIB1,200"), output);
+    unique_ptr<runtime::DatasetProcessor> proc = pm.make(Matcher::parse("origin:GRIB1,200"), output);
     proc->process(*testds, "test200");
     proc->end();
     mdc.clear();
-    Metadata::readFile(output.name(), mdc);
-    wassert(actual(mdc.size()) == 1);
-    wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
-    wassert(actual(mdc[0].getData().size()) == 7218);
+    Metadata::read_file(output.name(), mdc.inserter_func());
+    wassert(actual(mdc.size()) == 1u);
+    wassert(actual_type(mdc[0].source()).is_source_inline("grib", 7218));
+    wassert(actual(mdc[0].getData().size()) == 7218u);
 }
 
 // Test querying the summary
@@ -133,10 +109,10 @@ template<> template<>
 void to::test<4>()
 {
     dataset::HTTP::readConfig("http://localhost:7117", config);
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
 
     Summary summary;
-    testds->querySummary(Matcher::parse("origin:GRIB1,200"), summary);
+    testds->query_summary(Matcher::parse("origin:GRIB1,200"), summary);
     ensure_equals(summary.count(), 1u);
 }
 
@@ -145,16 +121,18 @@ template<> template<>
 void to::test<5>()
 {
     dataset::HTTP::readConfig("http://localhost:7117", config);
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
 
     ensure(dynamic_cast<dataset::HTTP*>(testds.get()) != 0);
 
     // Contrarily to ondisk, HTTP can use a stringstream
-    stringstream str;
+    sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
     bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "say ciao");
-    testds->queryBytes(bq, str);
-    ensure_equals(str.str(), "ciao\n");
+    testds->query_bytes(bq, out);
+    out.close();
+    string res = sys::read_file(out.name());
+    ensure_equals(res, "ciao\n");
 }
 
 // Test the server giving an error
@@ -162,7 +140,7 @@ template<> template<>
 void to::test<6>()
 {
     dataset::HTTP::readConfig("http://localhost:7117", config);
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
 
     dataset::HTTP* htd = dynamic_cast<dataset::HTTP*>(testds.get());
     ensure(htd != 0);
@@ -171,11 +149,11 @@ void to::test<6>()
     metadata::Collection mdc;
     htd->produce_one_wrong_query();
     try {
-        testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
+        mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
         ensure(false);
     } catch (std::exception& e) {
-        ensure_not_contains(e.what(), "<html>");
-        ensure_contains(e.what(), "subexpression 'MISCHIEF' does not contain a colon");
+        wassert(actual(e.what()).not_contains("<html>"));
+        wassert(actual(e.what()).contains("subexpression 'MISCHIEF' does not contain a colon"));
     }
     ensure_equals(mdc.size(), 0u);
 
@@ -183,22 +161,22 @@ void to::test<6>()
     Summary summary;
     htd->produce_one_wrong_query();
     try {
-        testds->querySummary(Matcher::parse("origin:GRIB1,200"), summary);
+        testds->query_summary(Matcher::parse("origin:GRIB1,200"), summary);
         ensure(false);
     } catch (std::exception& e) {}
     ensure_equals(summary.count(), 0u);
 
     // Try it on streams
-    stringstream str;
+    sys::File out(sys::File::mkstemp("test"));
     htd->produce_one_wrong_query();
     try {
         dataset::ByteQuery bq;
         bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "say ciao");
-        testds->queryBytes(bq, str);
+        testds->query_bytes(bq, out);
         ensure(false);
     } catch (std::exception& e) {}
-    ensure_equals(str.str(), "");
-    ensure_equals(str.str().size(), 0u);
+    out.close();
+    wassert(actual(sys::size(out.name())) == 0u);
 }
 
 // Test expanding a query
@@ -224,13 +202,11 @@ void to::test<8>()
     cfg.setValue("type", "remote");
     cfg.setValue("path", "http://localhost:7117");
     cfg.setValue("qmacro", "test200");
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(cfg));
-    metadata::Collection mdc;
-
-    testds->queryData(dataset::DataQuery(Matcher(), false), mdc);
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(cfg));
+    metadata::Collection mdc(*testds, Matcher());
     ensure_equals(mdc.size(), 1u);
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_url("grib1", "http://localhost:7117/dataset/test200/query"));
+    wassert(actual_type(mdc[0].source()).is_source_url("grib", "http://localhost:7117/dataset/test200/query"));
 }
 
 // Test querying the summary
@@ -242,10 +218,10 @@ void to::test<9>()
     cfg.setValue("type", "remote");
     cfg.setValue("path", "http://localhost:7117");
     cfg.setValue("qmacro", "test200");
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(cfg));
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(cfg));
 
     Summary summary;
-    testds->querySummary(Matcher(), summary);
+    testds->query_summary(Matcher(), summary);
     ensure_equals(summary.count(), 1u);
 }
 
@@ -255,20 +231,22 @@ void to::test<10>()
 {
     ConfigFile cfg;
     dataset::HTTP::readConfig("http://localhost:7117/dataset/test200", cfg);
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*cfg.section("test200")));
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*cfg.section("test200")));
 
     // Querying it should get the partial output and no error
-    stringstream str;
+    sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
     bq.setPostprocess(Matcher::parse(""), "outthenerr");
-    testds->queryBytes(bq, str);
-    ensure_contains(str.str(), "So far, so good");
+    testds->query_bytes(bq, out);
+    out.close();
+    string res = sys::read_file(out.name());
+    wassert(actual(res).contains("So far, so good"));
 
     // The postprocessor stderr should not appear
-    ensure_not_contains(str.str(), "Argh");
+    wassert(actual(res).not_contains("Argh"));
 
     // And we should not get a server error after the normal stream has started
-    ensure_not_contains(str.str(), "500 Server error");
+    wassert(actual(res).not_contains("500 Server error"));
 }
 
 // Test data integrity of postprocessed queries through a server (used to fail
@@ -279,48 +257,43 @@ void to::test<11>()
     using namespace arki::dataset;
 
     // Get the normal data
-    string plain;
+    vector<uint8_t> plain;
     {
         ConfigFile cfg;
-        cfg.setValue("type", "test");
+        cfg.setValue("type", "ondisk2");
         cfg.setValue("path", "test80");
         cfg.setValue("name", "test80");
         cfg.setValue("step", "daily");
         cfg.setValue("filter", "origin:GRIB1,80");
         cfg.setValue("postprocess", "cat,echo,say,checkfiles,error,outthenerr");
-        auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
-
-        struct Writer : public metadata::Eater
-        {
-            string& out;
-            Writer(string& out) : out(out) {}
-            bool eat(auto_ptr<Metadata> md) override
-            {
-                md->makeInline();
-                out += md->encodeBinary();
-                wibble::sys::Buffer data = md->getData();
-                out.append((const char*)data.data(), data.size());
-                return true;
-            }
-        } writer(plain);
+        unique_ptr<dataset::Reader> ds(dataset::Reader::create(cfg));
 
         DataQuery dq(Matcher::parse(""), true);
-        ds->queryData(dq, writer);
+        BinaryEncoder enc(plain);
+        ds->query_data(dq, [&](unique_ptr<Metadata> md) {
+            md->makeInline();
+            md->encodeBinary(enc);
+            enc.add_raw(md->getData());
+            return true;
+        });
     }
 
     // Capture the data after going through the postprocessor
-    stringstream postprocessed;
+    string postprocessed;
     {
+        sys::File out(sys::File::mkstemp("test"));
         dataset::HTTP::readConfig("http://localhost:7117", config);
-        auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
+        unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test80")));
         ensure(dynamic_cast<dataset::HTTP*>(testds.get()) != 0);
 
         dataset::ByteQuery bq;
         bq.setPostprocess(Matcher::parse("origin:GRIB1,80"), "cat");
-        testds->queryBytes(bq, postprocessed);
+        testds->query_bytes(bq, out);
+        out.close();
+        postprocessed = sys::read_file(out.name());
     }
 
-    ensure_equals(plain.size(), postprocessed.str().size());
+    ensure_equals(plain.size(), postprocessed.size());
 
     /*
     size_t diffs = 0;
@@ -339,18 +312,17 @@ void to::test<11>()
 
     metadata::Collection mdc1, mdc2;
     {
-        stringstream s(plain);
-        Metadata::readFile(s, metadata::ReadContext("", "plain"), mdc1);
+        Metadata::read_buffer(plain, metadata::ReadContext("", "plain"), mdc1.inserter_func());
     }
     {
-        stringstream s(postprocessed.str());
-        Metadata::readFile(s, metadata::ReadContext("", "postprocessed"), mdc2);
+        vector<uint8_t> buf(postprocessed.begin(), postprocessed.end());
+        Metadata::read_buffer(buf, metadata::ReadContext("", "postprocessed"), mdc2.inserter_func());
     }
 
     // Remove those metadata that contain test-dependent timestamps
     std::vector<Note> nonotes;
-    mdc1[0].unset(types::TYPE_ASSIGNEDDATASET);
-    mdc2[0].unset(types::TYPE_ASSIGNEDDATASET);
+    mdc1[0].unset(TYPE_ASSIGNEDDATASET);
+    mdc2[0].unset(TYPE_ASSIGNEDDATASET);
     mdc1[0].set_notes(nonotes);
     mdc2[0].set_notes(nonotes);
 
@@ -369,8 +341,8 @@ void to::test<11>()
     ensure_equals(yaml1, yaml2);
 
     // Compare data
-    wibble::sys::Buffer d1 = mdc1[0].getData();
-    wibble::sys::Buffer d2 = mdc2[0].getData();
+    const auto& d1 = mdc1[0].getData();
+    const auto& d2 = mdc2[0].getData();
 
     ensure(d1 == d2);
 }

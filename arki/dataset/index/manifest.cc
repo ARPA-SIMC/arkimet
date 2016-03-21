@@ -1,27 +1,6 @@
-/*
- * dataset/index/manifest - Index files with no duplicate checks
- *
- * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+#include "manifest.h"
 #include "arki/libconfig.h"
-#include "arki/dataset/index/manifest.h"
+#include "arki/exceptions.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/consumer.h"
@@ -33,19 +12,16 @@
 #include "arki/scan/dir.h"
 #include "arki/utils/sqlite.h"
 #include "arki/utils/files.h"
-#include "arki/utils/dataset.h"
 #include "arki/utils/compress.h"
 #include "arki/sort.h"
 #include "arki/scan/any.h"
 #include "arki/nag.h"
 #include "arki/iotrace.h"
-
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
-#include <wibble/string.h>
-
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
+#include <algorithm>
 #include <unistd.h>
-#include <fstream>
+#include <fcntl.h>
 #include <ctime>
 
 #ifdef HAVE_LUA
@@ -53,50 +29,59 @@
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::utils::sqlite;
 using namespace arki::dataset::maintenance;
+using arki::core::Time;
 
 namespace arki {
 namespace dataset {
 namespace index {
 
 namespace {
-void scan_file(data::SegmentManager& sm, const std::string& root, const std::string& relname, MaintFileVisitor& visitor, bool quick=true)
+struct HFSorter : public sort::Compare
 {
-    struct HFSorter : public sort::Compare
-    {
-        virtual int compare(const Metadata& a, const Metadata& b) const {
-            int res = Type::nullable_compare(a.get(TYPE_REFTIME), b.get(TYPE_REFTIME));
-            if (res == 0)
-                return a.source().compare(b.source());
-            return res;
-        }
-        virtual std::string toString() const {
-            return "HFSorter";
-        }
-    } cmp;
+    virtual int compare(const Metadata& a, const Metadata& b) const {
+        int res = Type::nullable_compare(a.get(TYPE_REFTIME), b.get(TYPE_REFTIME));
+        if (res == 0)
+            return a.source().compare(b.source());
+        return res;
+    }
+    virtual std::string toString() const {
+        return "HFSorter";
+    }
+};
 
+void scan_file(const std::string& root, const std::string& relname, segment::State state, segment::contents_func dest)
+{
     string absname = str::joinpath(root, relname);
 
-    // If the data file is compressed, create a temporary uncompressed copy
-    auto_ptr<utils::compress::TempUnzip> tu;
+#if 0
+    // If the segment file is compressed, create a temporary uncompressed copy
+    unique_ptr<utils::compress::TempUnzip> tu;
     if (!quick && scan::isCompressed(absname))
         tu.reset(new utils::compress::TempUnzip(absname));
+#endif
+    // TODO: turn this into a Segment::exists/Segment::scan
+    metadata::Collection contents;
+    if (sys::exists(absname + ".metadata"))
+        contents.read_from_file(absname + ".metadata");
+    else if (scan::exists(absname))
+        // If scan_file is called, the index know about the file, so instead of
+        // saying SEGMENT_NEW because we have data without metadata, we say
+        // SEGMENT_UNALIGNED because the metadata needs to be regenerated
+        // anyway
+        state += SEGMENT_UNALIGNED;
+    else
+        state += SEGMENT_DELETED;
 
-    metadata::Collection mdc;
-    scan::scan(absname, mdc);
-    //mdc.sort(""); // Sort by reftime, to find items out of order
-    mdc.sort(cmp); // Sort by reftime and by offset
-
-    // Check the state of the file
-    data::FileState state = sm.check(relname, mdc, quick);
+    HFSorter cmp;
+    contents.sort(cmp); // Sort by reftime and by offset
 
     // Pass on the file state to the visitor
-    visitor(relname, state);
+    dest(relname, state, contents);
 }
 }
 
@@ -114,9 +99,9 @@ void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
 	{
 		string pathname = str::joinpath(m_path, *i);
 
-		// Silently skip files that have been deleted
-		if (!sys::fs::access(pathname + ".summary", R_OK))
-			continue;
+        // Silently skip files that have been deleted
+        if (!sys::access(pathname + ".summary", R_OK))
+            continue;
 
 		Summary s;
 		s.readFile(pathname + ".summary");
@@ -124,67 +109,54 @@ void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
 	}
 }
 
-namespace {
-// Tweak Blob sources replacing basedir and prepending a directory to the file name
-struct FixSource : public metadata::Eater
+bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    string basedir;
-    string prepend_fname;
-    metadata::Eater& next;
+    vector<string> files;
+    fileList(q.matcher, files);
 
-    FixSource(metadata::Eater& next) : next(next) {}
+    // TODO: does it make sense to check with the summary first?
 
-    bool eat(auto_ptr<Metadata> md) override
-    {
-        if (const source::Blob* s = md->has_source_blob())
-            md->set_source(Source::createBlob(s->format, basedir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
-        return next.eat(md);
-    }
-};
-}
-
-void Manifest::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
-{
-	vector<string> files;
-	fileList(q.matcher, files);
-
-	// TODO: does it make sense to check with the summary first?
-
-    metadata::Eater* c = &consumer;
-    // Order matters here, as delete will happen in reverse order
-    refcounted::Pointer<sort::Compare> compare;
-
+    shared_ptr<sort::Compare> compare;
     if (q.sorter)
         compare = q.sorter;
     else
-        // If no sorter is provided, sort by reftime in case data files have
+        // If no sorter is provided, sort by reftime in case segment files have
         // not been sorted before archiving
         compare = sort::Compare::parse("reftime");
 
-    string absdir = sys::fs::abspath(m_path);
-    sort::Stream sorter(*compare, *c);
-    //ds::MakeAbsolute mkabs(sorter);
-    FixSource fs(sorter);
-    fs.basedir = absdir;
-    metadata::FilteredEater filter(q.matcher, fs);
+    sort::Stream sorter(*compare, dest);
+
+    string absdir = sys::abspath(m_path);
+    string prepend_fname;
+
+    metadata_dest_func fixed_dest = [&](unique_ptr<Metadata> md) {
+        // Filter using the matcher in the query
+        if (!q.matcher(*md)) return true;
+
+        // Tweak Blob sources replacing basedir and prepending a directory to the file name
+        if (const source::Blob* s = md->has_source_blob())
+            md->set_source(Source::createBlob(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
+        return sorter.add(move(md));
+    };
+
     for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
-        fs.prepend_fname = str::dirname(*i);
+        prepend_fname = str::dirname(*i);
         string fullpath = str::joinpath(absdir, *i);
         if (!scan::exists(fullpath)) continue;
         // This generates filenames relative to the metadata
         // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
-        scan::scan(absdir, *i, filter);
+        scan::scan(absdir, *i, fixed_dest);
         sorter.flush();
     }
+
+    return true;
 }
 
-void Manifest::querySummary(const Matcher& matcher, Summary& summary)
+bool Manifest::query_summary(const Matcher& matcher, Summary& summary)
 {
-	// Check if the matcher discriminates on reference times
-	const matcher::Implementation* rtmatch = 0;
-	if (matcher.m_impl)
-		rtmatch = matcher.m_impl->get(types::TYPE_REFTIME);
+    // Check if the matcher discriminates on reference times
+    auto rtmatch = matcher.get(TYPE_REFTIME);
 
 	if (!rtmatch)
 	{
@@ -192,15 +164,15 @@ void Manifest::querySummary(const Matcher& matcher, Summary& summary)
 		// global summary
 		string cache_pathname = str::joinpath(m_path, "summary");
 
-		if (sys::fs::access(cache_pathname, R_OK))
+		if (sys::access(cache_pathname, R_OK))
 		{
 			Summary s;
 			s.readFile(cache_pathname);
 			s.filter(matcher, summary);
-		} else if (sys::fs::access(m_path, W_OK)) {
-			// Rebuild the cache
-			Summary s;
-			querySummaries(Matcher(), s);
+        } else if (sys::access(m_path, W_OK)) {
+            // Rebuild the cache
+            Summary s;
+            querySummaries(Matcher(), s);
 
 			// Save the summary
 			s.writeAtomically(cache_pathname);
@@ -213,90 +185,49 @@ void Manifest::querySummary(const Matcher& matcher, Summary& summary)
 	} else {
 		querySummaries(matcher, summary);
 	}
-}
 
-namespace {
-struct NthFilter : public metadata::Eater
-{
-    metadata::Eater& next;
-    size_t idx;
-
-    NthFilter(metadata::Eater& next, size_t idx)
-        : next(next), idx(idx+1) {}
-
-    bool eat(auto_ptr<Metadata> md) override
-    {
-        switch (idx)
-        {
-            case 0: return false;
-            case 1: next.eat(md); --idx; return false;
-            default: --idx; return true;
-        }
-    }
-    bool produced() const { return idx == 0; }
-};
-}
-
-size_t Manifest::produce_nth(metadata::Eater& cons, size_t idx)
-{
-    size_t res = 0;
-    // List all files
-    vector<string> files;
-    fileList(Matcher(), files);
-
-    string absdir = sys::fs::abspath(m_path);
-    //ds::MakeAbsolute mkabs(cons);
-    FixSource fs(cons);
-    fs.basedir = absdir;
-    for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-    {
-        fs.prepend_fname = str::dirname(*i);
-        string fullpath = str::joinpath(absdir, *i);
-        if (!scan::exists(fullpath)) continue;
-        NthFilter filter(cons, idx);
-        scan::scan(absdir, *i, filter);
-        if (filter.produced())
-            ++res;
-    }
-
-    return res;
+    return true;
 }
 
 void Manifest::invalidate_summary()
 {
-    sys::fs::deleteIfExists(str::joinpath(m_path, "summary"));
+    sys::unlink_ifexists(str::joinpath(m_path, "summary"));
 }
 
 void Manifest::invalidate_summary(const std::string& relname)
 {
-    sys::fs::deleteIfExists(str::joinpath(m_path, relname) + ".summary");
+    sys::unlink_ifexists(str::joinpath(m_path, relname) + ".summary");
     invalidate_summary();
 }
 
-void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
+void Manifest::rescanSegment(const std::string& dir, const std::string& relpath)
 {
-	string pathname = str::joinpath(dir, relpath);
+    string pathname = str::joinpath(dir, relpath);
 
 	// Temporarily uncompress the file for scanning
-	auto_ptr<utils::compress::TempUnzip> tu;
+	unique_ptr<utils::compress::TempUnzip> tu;
 	if (scan::isCompressed(pathname))
 		tu.reset(new utils::compress::TempUnzip(pathname));
 
-	// Read the timestamp
-	time_t mtime = sys::fs::timestamp(pathname);
+    // Read the timestamp
+    time_t mtime = sys::timestamp(pathname);
 
     // Invalidate summary
     invalidate_summary(pathname);
 
-	// Invalidate metadata if older than data
-	time_t ts_md = sys::fs::timestamp(pathname + ".metadata", 0);
-	if (ts_md < mtime)
-		sys::fs::deleteIfExists(pathname + ".metadata");
+    // Invalidate metadata if older than data
+    time_t ts_md = sys::timestamp(pathname + ".metadata", 0);
+    if (ts_md < mtime)
+        sys::unlink_ifexists(pathname + ".metadata");
 
-	// Scan the file
-	metadata::Collection mds;
-	if (!scan::scan(pathname, mds))
-		throw wibble::exception::Consistency("rescanning " + pathname, "it does not look like a file we can scan");
+    // Scan the file
+    metadata::Collection mds;
+    if (!scan::scan(pathname, mds.inserter_func()))
+    {
+        stringstream ss;
+        ss << "cannot rescan " << pathname << ": it does not look like a file we can scan";
+        throw runtime_error(ss.str());
+    }
 
 	// Iterate the metadata, computing the summary and making the data
 	// paths relative
@@ -321,19 +252,14 @@ void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
 namespace manifest {
 static bool mft_force_sqlite = false;
 
-static bool sorter(const std::string& a, const std::string& b)
-{
-	return b < a;
-}
-
 class PlainManifest : public Manifest
 {
 	struct Info
 	{
 		std::string file;
 		time_t mtime;
-        types::Time start_time;
-        types::Time end_time;
+        core::Time start_time;
+        core::Time end_time;
 
         Info(const std::string& file, time_t mtime, const Time& start, const Time& end)
             : file(file), mtime(mtime), start_time(start), end_time(end)
@@ -355,82 +281,86 @@ class PlainManifest : public Manifest
 			return file != i.file;
 		}
 
-		void write(ostream& out) const
-		{
-			out << file << ";" << mtime << ";" << start_time.toSQL() << ";" << end_time.toSQL() << endl;
-		}
-	};
+        void write(NamedFileDescriptor& out) const
+        {
+            stringstream ss;
+            ss << file << ";" << mtime << ";" << start_time.to_sql() << ";" << end_time.to_sql() << endl;
+            out.write_all_or_throw(ss.str());
+        }
+    };
 	vector<Info> info;
 	ino_t last_inode;
 	bool dirty;
     bool rw;
 
-	/**
-	 * Reread the MANIFEST file.
-	 *
-	 * @returns true if the MANIFEST file existed, false if not
-	 */
-	bool reread()
-	{
-		string pathname(str::joinpath(m_path, "MANIFEST"));
-		ino_t inode = sys::fs::inode(pathname, 0);
+    /**
+     * Reread the MANIFEST file.
+     *
+     * @returns true if the MANIFEST file existed, false if not
+     */
+    bool reread()
+    {
+        string pathname(str::joinpath(m_path, "MANIFEST"));
+        ino_t inode = sys::inode(pathname, 0);
 
-		if (inode == last_inode) return inode != 0;
+        if (inode == last_inode) return inode != 0;
 
-		info.clear();
-		last_inode = inode;
-		if (last_inode == 0)
-			return false;
+        info.clear();
+        last_inode = inode;
+        if (last_inode == 0)
+            return false;
 
-		std::ifstream in;
-		in.open(pathname.c_str(), ios::in);
-		if (!in.is_open() || in.fail())
-			throw wibble::exception::File(pathname, "opening file for reading");
-
+        File infd(pathname, O_RDONLY);
         iotrace::trace_file(pathname, 0, 0, "read MANIFEST");
 
-		string line;
-		for (size_t lineno = 1; !in.eof(); ++lineno)
-		{
-			getline(in, line);
-			if (in.fail() && !in.eof())
-				throw wibble::exception::File(pathname, "reading one line");
+        auto reader = LineReader::from_fd(infd);
+        string line;
+        for (size_t lineno = 1; reader->getline(line); ++lineno)
+        {
+            // Skip empty lines
+            if (line.empty()) continue;
 
-			// Skip empty lines
-			if (line.empty()) continue;
-
-			size_t beg = 0;
-			size_t end = line.find(';');
-			if (end == string::npos)
-				throw wibble::exception::Consistency("parsing " + pathname + ":" + str::fmt(lineno),
-						"line has only 1 field");
+            size_t beg = 0;
+            size_t end = line.find(';');
+            if (end == string::npos)
+            {
+                stringstream ss;
+                ss << "cannot parse " << pathname << ":" << lineno << ": line has only 1 field";
+                throw runtime_error(ss.str());
+            }
 
             string file = line.substr(beg, end-beg);
 
-			beg = end + 1;
-			end = line.find(';', beg);
-			if (end == string::npos)
-				throw wibble::exception::Consistency("parsing " + pathname + ":" + str::fmt(lineno),
-						"line has only 2 fields");
+            beg = end + 1;
+            end = line.find(';', beg);
+            if (end == string::npos)
+            {
+                stringstream ss;
+                ss << "cannot parse " << pathname << ":" << lineno << ": line has only 2 fields";
+                throw runtime_error(ss.str());
+            }
 
             time_t mtime = strtoul(line.substr(beg, end-beg).c_str(), 0, 10);
 
-			beg = end + 1;
-			end = line.find(';', beg);
-			if (end == string::npos)
-				throw wibble::exception::Consistency("parsing " + pathname + ":" + str::fmt(lineno),
-						"line has only 3 fields");
+            beg = end + 1;
+            end = line.find(';', beg);
+            if (end == string::npos)
+            {
+                stringstream ss;
+                ss << "cannot parse " << pathname << ":" << lineno << ": line has only 3 fields";
+                throw runtime_error(ss.str());
+            }
 
             info.push_back(Info(
                         file, mtime,
-                        Time::create_from_SQL(line.substr(beg, end-beg)),
-                        Time::create_from_SQL(line.substr(end+1))));
+                        Time::create_sql(line.substr(beg, end-beg)),
+                        Time::create_sql(line.substr(end+1))));
         }
 
-		in.close();
-		dirty = false;
-		return true;
-	}
+        infd.close();
+        dirty = false;
+        return true;
+    }
 
 public:
 	PlainManifest(const std::string& dir)
@@ -446,7 +376,7 @@ public:
     void openRO()
     {
         if (!reread())
-            throw wibble::exception::Consistency("opening archive index", "MANIFEST does not exist in " + m_path);
+            throw std::runtime_error("cannot open archive index: MANIFEST does not exist in " + m_path);
         rw = false;
     }
 
@@ -462,8 +392,8 @@ public:
         reread();
 
         string query;
-        auto_ptr<Time> begin;
-        auto_ptr<Time> end;
+        unique_ptr<Time> begin;
+        unique_ptr<Time> end;
         if (!matcher.restrict_date_range(begin, end))
             return;
 
@@ -485,7 +415,7 @@ public:
         }
     }
 
-    bool fileTimespan(const std::string& relname, Time& start_time, Time& end_time) const override
+    bool segment_timespan(const std::string& relname, Time& start_time, Time& end_time) const override
     {
         // Lookup the file (FIXME: reimplement binary search so we
         // don't need to create a temporary Info)
@@ -501,7 +431,7 @@ public:
         }
     }
 
-    void expand_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const override
+    void expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const override
     {
         for (vector<Info>::const_iterator i = info.begin(); i != info.end(); ++i)
         {
@@ -512,9 +442,10 @@ public:
         }
     }
 
-	void vacuum()
-	{
-	}
+    size_t vacuum()
+    {
+        return 0;
+    }
 
     Pending test_writelock()
     {
@@ -526,7 +457,7 @@ public:
 		reread();
 
         // Add to index
-        auto_ptr<Reftime> rt = sum.getReferenceTime();
+        unique_ptr<Reftime> rt = sum.getReferenceTime();
 
         Info item(relname, mtime, rt->period_begin(), rt->period_end());
 
@@ -546,94 +477,54 @@ public:
 	virtual void remove(const std::string& relname)
 	{
 		reread();
-
 		vector<Info>::iterator i;
 		for (i = info.begin(); i != info.end(); ++i)
 			if (i->file == relname)
 				break;
 		if (i != info.end())
 			info.erase(i);
-
 		dirty = true;
 	}
 
-	virtual void check(data::SegmentManager& sm, MaintFileVisitor& v, bool quick=true)
-	{
-#if 0
-	// TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
-	// and delete the index if it fails
+    void list_segments(std::function<void(const std::string&)> dest) override
+    {
+        reread();
+        for (const auto& i: this->info)
+            dest(i.file);
+    }
 
-	// Iterate subdirs in sorted order
-	// Also iterate files on index in sorted order
-	// Check each file for need to reindex or repack
-	writer::CheckAge ca(v, m_idx, m_archive_age, m_delete_age);
-	vector<string> files = scan::dir(m_path);
-	maintenance::FindMissing fm(ca, files);
-	maintenance::HoleFinder hf(fm, m_path, quick);
-	m_idx.scan_files(hf);
-	hf.end();
-	fm.end();
-	if (hasArchive())
-		archive().maintenance(v);
-#endif
-		reread();
+    void scan_files(segment::contents_func v) override
+    {
+        reread();
 
-		// List of files existing on disk
-		std::vector<std::string> disk = scan::dir(m_path, true);
-		std::sort(disk.begin(), disk.end(), sorter);
+        for (const auto& i: this->info)
+        {
+            string pathname = str::joinpath(m_path, i.file);
 
-		vector<Info> info = this->info;
-		for (vector<Info>::const_iterator i = info.begin(); i != info.end(); ++i)
-		{
-			while (not disk.empty() and disk.back() < i->file)
-			{
-				nag::verbose("%s: %s is not in index", m_path.c_str(), disk.back().c_str());
-				v(disk.back(), FILE_TO_INDEX);
-				disk.pop_back();
-			}
-			if (not disk.empty() and disk.back() == i->file)
-			{
-				disk.pop_back();
+            time_t ts_data = scan::timestamp(pathname);
+            time_t ts_md = sys::timestamp(pathname + ".metadata", 0);
+            time_t ts_sum = sys::timestamp(pathname + ".summary", 0);
+            time_t ts_idx = i.mtime;
 
-				string pathname = str::joinpath(m_path, i->file);
+            segment::State state = SEGMENT_OK;
+            if (ts_idx != ts_data || ts_md < ts_data || ts_sum < ts_md)
+            {
+                // Check timestamp consistency
+                if (ts_idx != ts_data)
+                    nag::verbose("%s: %s has a timestamp (%d) different than the one in the index (%d)",
+                            m_path.c_str(), i.file.c_str(), ts_data, ts_idx);
+                if (ts_md < ts_data)
+                    nag::verbose("%s: %s has a timestamp (%d) newer that its metadata (%d)",
+                            m_path.c_str(), i.file.c_str(), ts_data, ts_md);
+                if (ts_md < ts_data)
+                    nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
+                            m_path.c_str(), i.file.c_str(), ts_md, ts_sum);
+                state = SEGMENT_UNALIGNED;
+            }
 
-				time_t ts_data = scan::timestamp(pathname);
-				time_t ts_md = sys::fs::timestamp(pathname + ".metadata", 0);
-				time_t ts_sum = sys::fs::timestamp(pathname + ".summary", 0);
-				time_t ts_idx = i->mtime;
-
-				if (ts_idx != ts_data ||
-				    ts_md < ts_data ||
-				    ts_sum < ts_md)
-				{
-					// Check timestamp consistency
-					if (ts_idx != ts_data)
-						nag::verbose("%s: %s has a timestamp (%d) different than the one in the index (%d)",
-								m_path.c_str(), i->file.c_str(), ts_data, ts_idx);
-					if (ts_md < ts_data)
-						nag::verbose("%s: %s has a timestamp (%d) newer that its metadata (%d)",
-								m_path.c_str(), i->file.c_str(), ts_data, ts_md);
-					if (ts_md < ts_data)
-						nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
-								m_path.c_str(), i->file.c_str(), ts_md, ts_sum);
-					v(i->file, FILE_TO_RESCAN);
-				}
-				else
-                    scan_file(sm, m_path, i->file, v, quick);
-			}
-			else // if (disk.empty() or disk.back() > i->file)
-			{
-				nag::verbose("%s: %s has been deleted from the archive", m_path.c_str(), i->file.c_str());
-				v(i->file, FILE_TO_DEINDEX);
-			}
-		}
-		while (not disk.empty())
-		{
-			nag::verbose("%s: %s is not in index", m_path.c_str(), disk.back().c_str());
-			v(disk.back(), FILE_TO_INDEX);
-			disk.pop_back();
-		}
-	}
+            scan_file(m_path, i.file, state, v);
+        }
+    }
 
 	void flush()
 	{
@@ -641,36 +532,31 @@ public:
         {
             string pathname(str::joinpath(m_path, "MANIFEST.tmp"));
 
-            std::ofstream out;
-            out.open(pathname.c_str(), ios::out);
-            if (!out.is_open() || out.fail())
-                throw wibble::exception::File(pathname, "opening file for writing");
-
+            File out(pathname, O_WRONLY | O_CREAT | O_TRUNC);
             for (vector<Info>::const_iterator i = info.begin();
                     i != info.end(); ++i)
                 i->write(out);
-
             out.close();
 
             if (::rename(pathname.c_str(), str::joinpath(m_path, "MANIFEST").c_str()) < 0)
-                throw wibble::exception::System("Renaming " + pathname + " to " + str::joinpath(m_path, "MANIFEST"));
+                throw_system_error("cannot rename " + pathname + " to " + str::joinpath(m_path, "MANIFEST"));
 
             invalidate_summary();
             dirty = false;
         }
 
-        if (rw && ! sys::fs::exists(str::joinpath(m_path, "summary")))
+        if (rw && ! sys::exists(str::joinpath(m_path, "summary")))
         {
             Summary s;
-            querySummary(Matcher(), s);
+            query_summary(Matcher(), s);
         }
     }
 
-	static bool exists(const std::string& dir)
-	{
-		string pathname(str::joinpath(dir, "MANIFEST"));
-		return wibble::sys::fs::access(pathname, F_OK);
-	}
+    static bool exists(const std::string& dir)
+    {
+        string pathname(str::joinpath(dir, "MANIFEST"));
+        return sys::access(pathname, F_OK);
+    }
 };
 
 
@@ -729,28 +615,32 @@ public:
         m_db.checkpoint();
 	}
 
-	void openRO()
-	{
-		string pathname(str::joinpath(m_path, "index.sqlite"));
-		if (m_db.isOpen())
-			throw wibble::exception::Consistency("opening archive index", "index " + pathname + " is already open");
+    void openRO()
+    {
+        string pathname(str::joinpath(m_path, "index.sqlite"));
+        if (m_db.isOpen())
+            throw std::runtime_error("cannot open archive index: index " + pathname + " is already open");
 
-		if (!wibble::sys::fs::access(pathname, F_OK))
-			throw wibble::exception::Consistency("opening archive index", "index " + pathname + " does not exist");
+        if (!sys::access(pathname, F_OK))
+            throw std::runtime_error("opening archive index: index " + pathname + " does not exist");
 
-		m_db.open(pathname);
-		setupPragmas();
+        m_db.open(pathname);
+        setupPragmas();
 
-		initQueries();
-	}
+        initQueries();
+    }
 
-	void openRW()
-	{
-		string pathname(str::joinpath(m_path, "index.sqlite"));
-		if (m_db.isOpen())
-			throw wibble::exception::Consistency("opening archive index", "index " + pathname + " is already open");
+    void openRW()
+    {
+        string pathname(str::joinpath(m_path, "index.sqlite"));
+        if (m_db.isOpen())
+        {
+            stringstream ss;
+            ss << "archive index " << pathname << "is already open";
+            throw runtime_error(ss.str());
+        }
 
-		bool need_create = !wibble::sys::fs::access(pathname, F_OK);
+        bool need_create = !sys::access(pathname, F_OK);
 
 		m_db.open(pathname);
 		setupPragmas();
@@ -764,8 +654,8 @@ public:
     void fileList(const Matcher& matcher, std::vector<std::string>& files) override
     {
         string query;
-        auto_ptr<Time> begin;
-        auto_ptr<Time> end;
+        unique_ptr<Time> begin;
+        unique_ptr<Time> end;
         if (!matcher.restrict_date_range(begin, end))
             return;
 
@@ -777,13 +667,13 @@ public:
             query = "SELECT file FROM files";
 
             if (begin.get())
-                query += " WHERE end_time >= '" + begin->toSQL() + "'";
+                query += " WHERE end_time >= '" + begin->to_sql() + "'";
             if (end.get())
             {
                 if (begin.get())
-                    query += " AND start_time <= '" + end->toSQL() + "'";
+                    query += " AND start_time <= '" + end->to_sql() + "'";
                 else
-                    query += " WHERE start_time <= '" + end->toSQL() + "'";
+                    query += " WHERE start_time <= '" + end->to_sql() + "'";
             }
 
             query += " ORDER BY file";
@@ -797,7 +687,7 @@ public:
 			files.push_back(q.fetchString(0));
 	}
 
-    bool fileTimespan(const std::string& relname, Time& start_time, Time& end_time) const override
+    bool segment_timespan(const std::string& relname, Time& start_time, Time& end_time) const override
     {
 		Query q("sel_file_ts", m_db);
 		q.compile("SELECT start_time, end_time FROM files WHERE file=?");
@@ -806,22 +696,22 @@ public:
         bool found = false;
         while (q.step())
         {
-            start_time.setFromSQL(q.fetchString(0));
-            end_time.setFromSQL(q.fetchString(1));
+            start_time.set_sql(q.fetchString(0));
+            end_time.set_sql(q.fetchString(1));
             found = true;
         }
         return found;
     }
 
-    void expand_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const override
+    void expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const override
     {
         Query q("sel_date_extremes", m_db);
         q.compile("SELECT MIN(start_time), MAX(end_time) FROM files");
 
         while (q.step())
         {
-            Time st(Time::create_from_SQL(q.fetchString(0)));
-            Time et(Time::create_from_SQL(q.fetchString(1)));
+            Time st(Time::create_sql(q.fetchString(0)));
+            Time et(Time::create_sql(q.fetchString(1)));
 
             if (!begin.get() || st < *begin)
                 begin.reset(new Time(st));
@@ -830,45 +720,48 @@ public:
         }
     }
 
-	void vacuum()
-	{
-		// Vacuum the database
-		try {
-			m_db.exec("VACUUM");
-			m_db.exec("ANALYZE");
-		} catch (std::exception& e) {
-			nag::warning("ignoring failed attempt to optimize database: %s", e.what());
-		}
-	}
+    size_t vacuum()
+    {
+        // Vacuum the database
+        try {
+            m_db.exec("VACUUM");
+            m_db.exec("ANALYZE");
+        } catch (std::exception& e) {
+            nag::warning("ignoring failed attempt to optimize database: %s", e.what());
+        }
+        return 0;
+    }
 
     Pending test_writelock()
     {
         return Pending(new SqliteTransaction(m_db, true));
     }
 
-	void acquire(const std::string& relname, time_t mtime, const Summary& sum)
-	{
+    void acquire(const std::string& relname, time_t mtime, const Summary& sum)
+    {
         // Add to index
-        auto_ptr<types::Reftime> rt = sum.getReferenceTime();
+        unique_ptr<types::Reftime> rt = sum.getReferenceTime();
 
-		string bt;
-		string et;
+        string bt, et;
 
         switch (rt->style())
         {
             case types::Reftime::POSITION: {
                 const reftime::Position* p = dynamic_cast<const reftime::Position*>(rt.get());
-                bt = et = p->time.toSQL();
+                bt = et = p->time.to_sql();
                 break;
             }
             case types::Reftime::PERIOD: {
                 const reftime::Period* p = dynamic_cast<const reftime::Period*>(rt.get());
-                bt = p->begin.toSQL();
-                et = p->end.toSQL();
+                bt = p->begin.to_sql();
+                et = p->end.to_sql();
                 break;
             }
-            default:
-                    throw wibble::exception::Consistency("unsupported reference time " + types::Reftime::formatStyle(rt->style()));
+            default: {
+                stringstream ss;
+                ss << "unsupported reference time " << types::Reftime::formatStyle(rt->style());
+                throw runtime_error(ss.str());
+            }
         }
 
 		m_insert.reset();
@@ -888,79 +781,61 @@ public:
 			;
 	}
 
-	virtual void check(data::SegmentManager& sm, MaintFileVisitor& v, bool quick=true)
-	{
-		// List of files existing on disk
-		std::vector<std::string> disk = scan::dir(m_path, true);
-		std::sort(disk.begin(), disk.end(), sorter);
+    void list_segments(std::function<void(const std::string&)> dest) override
+    {
+        Query q("sel_archive", m_db);
+        q.compile("SELECT DISTINCT file FROM files ORDER BY file");
 
-		// Preread the file list, so it does not get modified as we scan
-		vector< pair<string, time_t> > files;
-		{
-			Query q("sel_archive", m_db);
-			q.compile("SELECT file, mtime FROM files ORDER BY file");
+        while (q.step())
+            dest(q.fetchString(0));
+    }
 
-			while (q.step())
-				files.push_back(make_pair(q.fetchString(0), q.fetch<time_t>(1)));
-		}
+    void scan_files(segment::contents_func v) override
+    {
+        // Preread the file list, so it does not get modified as we scan
+        vector< pair<string, time_t> > files;
+        {
+            Query q("sel_archive", m_db);
+            q.compile("SELECT file, mtime FROM files ORDER BY file");
 
-		for (vector< pair<string, time_t> >::const_iterator i = files.begin(); i != files.end(); ++i)
-		{
-			while (not disk.empty() and disk.back() < i->first)
-			{
-				nag::verbose("%s: %s is not in index", m_path.c_str(), disk.back().c_str());
-				v(disk.back(), FILE_TO_INDEX);
-				disk.pop_back();
-			}
-			if (not disk.empty() and disk.back() == i->first)
-			{
-				disk.pop_back();
+            while (q.step())
+                files.push_back(make_pair(q.fetchString(0), q.fetch<time_t>(1)));
+        }
 
-				string pathname = str::joinpath(m_path, i->first);
+        for (const auto& i: files)
+        {
+            string pathname = str::joinpath(m_path, i.first);
 
-				time_t ts_data = scan::timestamp(pathname);
-				time_t ts_md = sys::fs::timestamp(pathname + ".metadata", 0);
-				time_t ts_sum = sys::fs::timestamp(pathname + ".summary", 0);
-				time_t ts_idx = i->second;
+            time_t ts_data = scan::timestamp(pathname);
+            time_t ts_md = sys::timestamp(pathname + ".metadata", 0);
+            time_t ts_sum = sys::timestamp(pathname + ".summary", 0);
+            time_t ts_idx = i.second;
 
-				if (ts_idx != ts_data ||
-				    ts_md < ts_data ||
-				    ts_sum < ts_md)
-				{
-					// Check timestamp consistency
-					if (ts_idx != ts_data)
-						nag::verbose("%s: %s has a timestamp (%d) different than the one in the index (%d)",
-								m_path.c_str(), i->first.c_str(), ts_data, ts_idx);
-					if (ts_md < ts_data)
-						nag::verbose("%s: %s has a timestamp (%d) newer that its metadata (%d)",
-								m_path.c_str(), i->first.c_str(), ts_data, ts_md);
-					if (ts_md < ts_data)
-						nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
-								m_path.c_str(), i->first.c_str(), ts_md, ts_sum);
-					v(i->first, FILE_TO_RESCAN);
-				}
-				else
-                    scan_file(sm, m_path, i->first, v, quick);
-			}
-			else // if (disk.empty() or disk.back() > i->first)
-			{
-				nag::verbose("%s: %s has been deleted from the archive", m_path.c_str(), i->first.c_str());
-				v(i->first, FILE_TO_DEINDEX);
-			}
-		}
-		while (not disk.empty())
-		{
-			nag::verbose("%s: %s is not in index", m_path.c_str(), disk.back().c_str());
-			v(disk.back(), FILE_TO_INDEX);
-			disk.pop_back();
-		}
-	}
+            segment::State state = SEGMENT_OK;
+            if (ts_idx != ts_data || ts_md < ts_data || ts_sum < ts_md)
+            {
+                // Check timestamp consistency
+                if (ts_idx != ts_data)
+                    nag::verbose("%s: %s has a timestamp (%d) different than the one in the index (%d)",
+                            m_path.c_str(), i.first.c_str(), ts_data, ts_idx);
+                if (ts_md < ts_data)
+                    nag::verbose("%s: %s has a timestamp (%d) newer that its metadata (%d)",
+                            m_path.c_str(), i.first.c_str(), ts_data, ts_md);
+                if (ts_md < ts_data)
+                    nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
+                            m_path.c_str(), i.first.c_str(), ts_md, ts_sum);
+                state = SEGMENT_UNALIGNED;
+            }
 
-	static bool exists(const std::string& dir)
-	{
-		string pathname(str::joinpath(dir, "index.sqlite"));
-		return wibble::sys::fs::access(pathname, F_OK);
-	}
+            scan_file(m_path, i.first, state, v);
+        }
+    }
+
+    static bool exists(const std::string& dir)
+    {
+        string pathname(str::joinpath(dir, "index.sqlite"));
+        return sys::access(pathname, F_OK);
+    }
 };
 
 }
@@ -981,23 +856,23 @@ bool Manifest::exists(const std::string& dir)
 	       manifest::SqliteManifest::exists(dir);
 }
 
-std::auto_ptr<Manifest> Manifest::create(const std::string& dir, const ConfigFile* cfg)
+std::unique_ptr<Manifest> Manifest::create(const std::string& dir, const ConfigFile* cfg)
 {
     std::string value;
     if (cfg) value = cfg->value("index_type");
     if (value.empty())
     {
         if (manifest::mft_force_sqlite || manifest::SqliteManifest::exists(dir))
-            return auto_ptr<Manifest>(new manifest::SqliteManifest(dir));
+            return unique_ptr<Manifest>(new manifest::SqliteManifest(dir));
         else
-            return auto_ptr<Manifest>(new manifest::PlainManifest(dir));
+            return unique_ptr<Manifest>(new manifest::PlainManifest(dir));
     }
     else if (value == "plain")
-        return auto_ptr<Manifest>(new manifest::PlainManifest(dir));
+        return unique_ptr<Manifest>(new manifest::PlainManifest(dir));
     else if (value == "sqlite")
-        return auto_ptr<Manifest>(new manifest::SqliteManifest(dir));
+        return unique_ptr<Manifest>(new manifest::SqliteManifest(dir));
     else
-        throw wibble::exception::Consistency("unsupported index_type " + value);
+        throw std::runtime_error("unsupported index_type " + value);
 }
 
 }

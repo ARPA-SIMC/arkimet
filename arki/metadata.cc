@@ -1,52 +1,30 @@
-/*
- * metadata - Handle arkimet metadata
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "metadata.h"
 #include "metadata/consumer.h"
+#include "exceptions.h"
 #include "types/value.h"
 #include "types/source/blob.h"
 #include "types/source/inline.h"
 #include "formatter.h"
-#include "utils/codec.h"
+#include "binary.h"
 #include "utils/compress.h"
-#include "utils/fd.h"
 #include "emitter.h"
 #include "emitter/memory.h"
 #include "iotrace.h"
 #include "scan/any.h"
 #include "utils/datareader.h"
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
+#include "utils/string.h"
+#include "utils/yaml.h"
 #include <unistd.h>
-#include <fstream>
 #include <cstdlib>
+#include <cerrno>
+#include <stdexcept>
+#include <fcntl.h>
 
 #ifdef HAVE_LUA
-#include <arki/utils/lua.h>
+#include "utils/lua.h"
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
 using namespace arki::utils;
 
@@ -74,9 +52,12 @@ ReadContext::ReadContext(const std::string& pathname, const std::string& basedir
 
 static inline void ensureSize(size_t len, size_t req, const char* what)
 {
-	using namespace str;
-	if (len < req)
-		throw wibble::exception::Consistency(string("parsing ") + what, "size is " + fmt(len) + " but we need at least "+fmt(req)+" for the "+what+" style");
+    if (len < req)
+    {
+        stringstream s;
+        s << "cannot parse " << what << ": size is " << len << " but we need at least " << req << " for the " << what << " style";
+        throw runtime_error(s.str());
+    }
 }
 
 template<typename ITER>
@@ -116,27 +97,29 @@ Metadata* Metadata::clone() const
     return new Metadata(*this);
 }
 
-auto_ptr<Metadata> Metadata::create_empty()
+unique_ptr<Metadata> Metadata::create_empty()
 {
-    return auto_ptr<Metadata>(new Metadata);
+    return unique_ptr<Metadata>(new Metadata);
 }
 
-auto_ptr<Metadata> Metadata::create_copy(const Metadata& md)
+unique_ptr<Metadata> Metadata::create_copy(const Metadata& md)
 {
-    return auto_ptr<Metadata>(md.clone());
+    return unique_ptr<Metadata>(md.clone());
 }
 
-auto_ptr<Metadata> Metadata::create_from_yaml(std::istream& in, const std::string& filename)
+#if 0
+unique_ptr<Metadata> Metadata::create_from_yaml(std::istream& in, const std::string& filename)
 {
-    auto_ptr<Metadata> res(create_empty());
+    unique_ptr<Metadata> res(create_empty());
     res->readYaml(in, filename);
     return res;
 }
+#endif
 
 const Source& Metadata::source() const
 {
     if (!m_source)
-        throw wibble::exception::Consistency("metadata has no source");
+        throw_consistency_error("metadata has no source");
     return *m_source;
 }
 
@@ -148,22 +131,22 @@ const types::source::Blob* Metadata::has_source_blob() const
 
 const source::Blob& Metadata::sourceBlob() const
 {
-    if (!m_source) throw wibble::exception::Consistency("metadata has no source");
+    if (!m_source) throw_consistency_error("metadata has no source");
     const source::Blob* res = dynamic_cast<source::Blob*>(m_source);
-    if (!res) throw wibble::exception::Consistency("metadata source is not a Blob source");
+    if (!res) throw_consistency_error("metadata source is not a Blob source");
     return *res;
 }
 
-void Metadata::set_source(std::auto_ptr<types::Source> s)
+void Metadata::set_source(std::unique_ptr<types::Source>&& s)
 {
     delete m_source;
     m_source = s.release();
 }
 
-void Metadata::set_source_inline(const std::string& format, wibble::sys::Buffer buf)
+void Metadata::set_source_inline(const std::string& format, std::vector<uint8_t>&& buf)
 {
-    m_data = buf;
-    set_source(Source::createInline(format, buf.size()));
+    m_data = move(buf);
+    set_source(Source::createInline(format, m_data.size()));
 }
 
 void Metadata::unset_source()
@@ -174,29 +157,24 @@ void Metadata::unset_source()
 
 std::vector<types::Note> Metadata::notes() const
 {
-	std::vector<types::Note> res;
-	const unsigned char* buf = (const unsigned char*)m_notes.data();
-	const unsigned char* end = buf + m_notes.size();
-	for (const unsigned char* cur = buf; cur < end; )
-	{
-		const unsigned char* el_start = cur;
-		size_t el_len = end - cur;
-		// Fixme: replace with types::decode when fully available
-		types::Code el_type = types::decodeEnvelope(el_start, el_len);
+    std::vector<types::Note> res;
+    BinaryDecoder dec(m_notes);
+    while (dec)
+    {
+        types::Code el_type;
+        BinaryDecoder inner = dec.pop_type_envelope(el_type);
 
-		if (el_type != types::TYPE_NOTE)
-			throw wibble::exception::Consistency(
-					"decoding binary encoded notes",
-					"item type is not a note");
-		res.push_back(*types::Note::decode(el_start, el_len));
-		cur = el_start + el_len;
-	}
-	return res;
+        if (el_type != TYPE_NOTE)
+            throw std::runtime_error("cannot decode note: item type is not a note");
+
+        res.push_back(*types::Note::decode(inner));
+    }
+    return res;
 }
 
-const std::string& Metadata::notes_encoded() const
+const std::vector<uint8_t>& Metadata::notes_encoded() const
 {
-	return m_notes;
+    return m_notes;
 }
 
 void Metadata::set_notes(const std::vector<types::Note>& notes)
@@ -206,19 +184,21 @@ void Metadata::set_notes(const std::vector<types::Note>& notes)
 		add_note(*i);
 }
 
-void Metadata::set_notes_encoded(const std::string& notes)
+void Metadata::set_notes_encoded(const std::vector<uint8_t>& notes)
 {
-	m_notes = notes;
+    m_notes = notes;
 }
 
 void Metadata::add_note(const types::Note& note)
 {
-    m_notes += note.encodeBinary();
+    BinaryEncoder enc(m_notes);
+    note.encodeBinary(enc);
 }
 
 void Metadata::add_note(const std::string& note)
 {
-    m_notes += Note(note).encodeBinary();
+    BinaryEncoder enc(m_notes);
+    Note(note).encodeBinary(enc);
 }
 
 void Metadata::clear()
@@ -243,115 +223,127 @@ int Metadata::compare(const Metadata& m) const
     return Type::nullable_compare(m_source, m.m_source);
 }
 
-bool Metadata::read(istream& in, const std::string& filename, bool readInline)
+bool Metadata::read(int in, const metadata::ReadContext& filename, bool readInline)
 {
-	wibble::sys::Buffer buf;
-	string signature;
-	unsigned version;
-	if (!types::readBundle(in, filename, buf, signature, version))
-		return false;
+    vector<uint8_t> buf;
+    string signature;
+    unsigned version;
+    if (!types::readBundle(in, filename.pathname, buf, signature, version))
+        return false;
 
-	// Ensure first 2 bytes are MD or !D
-	if (signature != "MD")
-		throw wibble::exception::Consistency("parsing file " + filename, "metadata entry does not start with 'MD'");
+    BinaryDecoder inner(buf);
 
-	read(buf, version, filename);
+    // Ensure first 2 bytes are MD or !D
+    if (signature != "MD")
+        throw_consistency_error("parsing file " + filename.pathname, "metadata entry does not start with 'MD'");
+
+    read_inner(inner, version, filename);
 
     // If the source is inline, then the data follows the metadata
     if (readInline && source().style() == types::Source::INLINE)
-        readInlineData(in, filename);
+        readInlineData(in, filename.pathname);
 
     return true;
 }
 
-bool Metadata::read(const unsigned char*& buf, size_t& len, const metadata::ReadContext& rc)
+bool Metadata::read(BinaryDecoder& dec, const metadata::ReadContext& filename, bool readInline)
 {
-	const unsigned char* obuf;
-	size_t olen;
-	string signature;
-	unsigned version;
+    if (!dec) return false;
 
-	if (!types::readBundle(buf, len, rc.pathname, obuf, olen, signature, version))
-		return false;
+    string signature;
+    unsigned version;
+    BinaryDecoder inner = dec.pop_metadata_bundle(signature, version);
 
-	// Ensure the signature is MD or !D
-	if (signature != "MD")
-		throw wibble::exception::Consistency("parsing file " + rc.pathname, "metadata entry does not start with 'MD'");
-	
-	read(obuf, olen, version, rc);
+    // Ensure first 2 bytes are MD or !D
+    if (signature != "MD")
+        throw std::runtime_error("cannot parse " + filename.pathname + ": metadata entry does not start with 'MD'");
 
-	return true;
+    read_inner(inner, version, filename);
+
+    // If the source is inline, then the data follows the metadata
+    if (readInline && source().style() == types::Source::INLINE)
+        readInlineData(dec, filename.pathname);
+
+    return true;
 }
 
-void Metadata::read(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& rc)
-{
-	read((const unsigned char*)buf.data(), buf.size(), version, rc);
-}
-
-void Metadata::read(const unsigned char* buf, size_t len, unsigned version, const metadata::ReadContext& rc)
+void Metadata::read_inner(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& rc)
 {
     clear();
 
     // Check version and ensure we can decode
     if (version != 0)
-        throw wibble::exception::Consistency("parsing file " + rc.pathname, "version of the file is " + str::fmt(version) + " but I can only decode version 0");
-	
-	// Parse the various elements
-	const unsigned char* end = buf + len;
-	for (const unsigned char* cur = buf; cur < end; )
-	{
-		const unsigned char* el_start = cur;
-		size_t el_len = end - cur;
-		// Fixme: replace with types::decode when fully available
-		types::Code el_type = types::decodeEnvelope(el_start, el_len);
+    {
+        stringstream s;
+        s << "cannot parse file " << rc.pathname << ": version of the file is " << version << " but I can only decode version 0";
+        throw runtime_error(s.str());
+    }
+
+    // Parse the various elements
+    while (dec)
+    {
+        const uint8_t* encoded_start = dec.buf;
+        TypeCode el_type;
+        BinaryDecoder inner = dec.pop_type_envelope(el_type);
+        const uint8_t* encoded_end = dec.buf;
 
         switch (el_type)
         {
-            case types::TYPE_NOTE: m_notes += string((const char*)cur, (el_start + el_len) - cur); break;
-            case types::TYPE_SOURCE: set_source(types::Source::decodeRelative(el_start, el_len, rc.basedir)); break;
+            case TYPE_NOTE:
+                m_notes.insert(m_notes.end(), encoded_start, encoded_end);
+                break;
+            case TYPE_SOURCE:
+                set_source(types::Source::decodeRelative(inner, rc.basedir));
+                break;
             default:
-                m_vals.insert(make_pair(el_type, types::decodeInner(el_type, el_start, el_len).release()));
+                m_vals.insert(make_pair(el_type, types::decodeInner(el_type, inner).release()));
                 break;
         }
-
-		cur = el_start + el_len;
-	}
-}
-
-void Metadata::readInlineData(std::istream& in, const std::string& filename)
-{
-    // If the source is inline, then the data follows the metadata
-    if (source().style() == types::Source::INLINE)
-    {
-        source::Inline* s = dynamic_cast<source::Inline*>(m_source);
-        wibble::sys::Buffer buf(s->size);
-
-        iotrace::trace_file(filename, 0, s->size, "read inline data");
-
-        // Read the inline data
-        in.read((char*)buf.data(), s->size);
-        if (in.fail())
-            throw wibble::exception::File(filename, "reading "+str::fmt(s->size)+" bytes");
-
-        m_data = buf;
     }
 }
 
-bool Metadata::readYaml(std::istream& in, const std::string& filename)
+void Metadata::readInlineData(int infd, const std::string& filename)
 {
-	using namespace str;
-	clear();
+    // If the source is inline, then the data follows the metadata
+    if (source().style() != types::Source::INLINE) return;
 
-	YamlStream yamlStream;
-	for (YamlStream::const_iterator i = yamlStream.begin(in);
-			i != yamlStream.end(); ++i)
-	{
-		types::Code type = types::parseCodeName(i->first);
-		string val = trim(i->second);
+    source::Inline* s = dynamic_cast<source::Inline*>(m_source);
+    vector<uint8_t> buf;
+    buf.resize(s->size);
+
+    iotrace::trace_file(filename, 0, s->size, "read inline data");
+
+    // Read the inline data
+    sys::NamedFileDescriptor in(infd, filename);
+    in.read_all_or_throw(buf.data(), s->size);
+    m_data = move(buf);
+}
+
+void Metadata::readInlineData(BinaryDecoder& dec, const std::string& filename)
+{
+    // If the source is inline, then the data follows the metadata
+    if (source().style() != types::Source::INLINE) return;
+
+    source::Inline* s = dynamic_cast<source::Inline*>(m_source);
+
+    BinaryDecoder data = dec.pop_data(s->size, "inline data");
+    m_data.assign(data.buf, data.buf + s->size);
+}
+
+bool Metadata::readYaml(LineReader& in, const std::string& filename)
+{
+    clear();
+
+    YamlStream yamlStream;
+    for (YamlStream::const_iterator i = yamlStream.begin(in);
+            i != yamlStream.end(); ++i)
+    {
+        types::Code type = types::parseCodeName(i->first);
+        string val = str::strip(i->second);
         switch (type)
         {
-            case types::TYPE_NOTE: add_note(*types::Note::decodeString(val)); break;
-            case types::TYPE_SOURCE: set_source(types::Source::decodeString(val)); break;
+            case TYPE_NOTE: add_note(*types::Note::decodeString(val)); break;
+            case TYPE_SOURCE: set_source(types::Source::decodeString(val)); break;
             default:
                 m_vals.insert(make_pair(type, types::decodeString(type, val).release()));
         }
@@ -359,41 +351,24 @@ bool Metadata::readYaml(std::istream& in, const std::string& filename)
     return !in.eof();
 }
 
-void Metadata::write(std::ostream& out, const std::string& filename) const
+void Metadata::write(NamedFileDescriptor& out) const
 {
     // Prepare the encoded data
-    string encoded = encodeBinary();
-
-	// Write out
-	out.write(encoded.data(), encoded.size());
-	if (out.fail())
-		throw wibble::exception::File(filename, "writing " + str::fmt(encoded.size()) + " bytes to the file");
-
-    // If the source is inline, then the data follows the metadata
-    if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
-    {
-        if (s->size != m_data.size())
-            throw wibble::exception::Consistency("writing metadata to " + filename, str::fmtf("metadata source size %zd does not match the data size %zd", (size_t)s->size, m_data.size()));
-        out.write((const char*)m_data.data(), m_data.size());
-        if (out.fail())
-            throw wibble::exception::File(filename, "writing " + str::fmt(m_data.size()) + " bytes to the file");
-    }
-}
-
-void Metadata::write(int outfd, const std::string& filename) const
-{
-    // Prepare the encoded data
-    string encoded = encodeBinary();
+    vector<uint8_t> encoded = encodeBinary();
 
     // Write out
-    utils::fd::write_all(outfd, encoded);
+    out.write_all_or_retry(encoded.data(), encoded.size());
 
     // If the source is inline, then the data follows the metadata
     if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
     {
         if (s->size != m_data.size())
-            throw wibble::exception::Consistency("writing metadata to " + filename, str::fmtf("metadata source size %zd does not match the data size %zd", (size_t)s->size, m_data.size()));
-        utils::fd::write_all(outfd, m_data.data(), m_data.size());
+        {
+            stringstream ss;
+            ss << "cannot write metadata to file " << out.name() << ": metadata size " << s->size << " does not match the data size " << m_data.size();
+            throw runtime_error(ss.str());
+        }
+        out.write_all_or_retry(m_data.data(), m_data.size());
     }
 }
 
@@ -402,11 +377,13 @@ void Metadata::writeYaml(std::ostream& out, const Formatter* formatter) const
     if (m_source) out << "Source: " << *m_source << endl;
     for (map<types::Code, types::Type*>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i)
     {
-		out << str::ucfirst(i->second->tag()) << ": ";
-		i->second->writeToOstream(out);
-		if (formatter)
-			out << "\t# " << (*formatter)(*i->second);
-		out << endl;
+        string uc = str::lower(i->second->tag());
+        uc[0] = toupper(uc[0]);
+        out << uc << ": ";
+        i->second->writeToOstream(out);
+        if (formatter)
+            out << "\t# " << (*formatter)(*i->second);
+        out << endl;
     }
 
     vector<Note> l(notes());
@@ -445,7 +422,11 @@ void Metadata::serialise(Emitter& e, const Formatter* f) const
     if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
     {
         if (s->size != m_data.size())
-            throw wibble::exception::Consistency("writing metadata to JSON", str::fmtf("metadata source size %zd does not match the data size %zd", (size_t)s->size, m_data.size()));
+        {
+            stringstream ss;
+            ss << "cannot write metadata to JSON: metadata source size " << s->size << " does not match the data size " << m_data.size();
+            throw runtime_error(ss.str());
+        }
         e.add_raw(m_data);
     }
 }
@@ -458,99 +439,124 @@ void Metadata::read(const emitter::memory::Mapping& val)
     const List& items = val["i"].want_list("parsing metadata item list");
     for (std::vector<const Node*>::const_iterator i = items.val.begin(); i != items.val.end(); ++i)
     {
-        auto_ptr<types::Type> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
-        if (item->type_code() == types::TYPE_SOURCE)
-            set_source(downcast<types::Source>(item));
+        unique_ptr<types::Type> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
+        if (item->type_code() == TYPE_SOURCE)
+            set_source(move(downcast<types::Source>(move(item))));
         else
-            set(item);
+            set(move(item));
     }
 
     // Parse notes
     const List& notes = val["n"].want_list("parsing metadata notes list");
     for (std::vector<const Node*>::const_iterator i = notes.val.begin(); i != notes.val.end(); ++i)
     {
-        auto_ptr<types::Type> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
-        if (item->type_code() == types::TYPE_NOTE)
-            add_note(*downcast<types::Note>(item));
+        unique_ptr<types::Type> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
+        if (item->type_code() == TYPE_NOTE)
+            add_note(*downcast<types::Note>(move(item)));
     }
 }
 
-string Metadata::encodeBinary() const
+std::vector<uint8_t> Metadata::encodeBinary() const
 {
-    using namespace utils::codec;
-    // Encode the various information
-    string encoded;
-    for (map<types::Code, types::Type*>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i)
-        encoded += i->second->encodeBinary();
-    encoded += m_notes;
-    if (m_source) encoded += m_source->encodeBinary();
+    vector<uint8_t> res;
+    BinaryEncoder enc(res);
+    encodeBinary(enc);
+    return res;
+}
 
-	string res;
-	Encoder enc(res);
-	// Prepend header
-	enc.addString("MD");
-	enc.addUInt(0, 2);
-	enc.addUInt(encoded.size(), 4);
-	enc.addString(encoded);
-	return res;
+void Metadata::encodeBinary(BinaryEncoder& enc) const
+{
+    // Encode the various information
+    vector<uint8_t> encoded;
+    BinaryEncoder subenc(encoded);
+    for (map<types::Code, types::Type*>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i)
+        i->second->encodeBinary(subenc);
+    subenc.add_raw(m_notes);
+    if (m_source)
+       m_source->encodeBinary(subenc);
+
+    // Prepend header
+    enc.add_string("MD");
+    enc.add_unsigned(0u, 2);
+    // TODO Make it a one pass only job, by writing zeroes here the first time round, then rewriting it with the actual length
+    enc.add_unsigned(encoded.size(), 4);
+    enc.add_raw(encoded);
 }
 
 
-wibble::sys::Buffer Metadata::getData()
+const vector<uint8_t>& Metadata::getData()
 {
     // First thing, try and return it from cache
-    if (m_data.data()) return m_data;
+    if (!m_data.empty()) return m_data;
 
     // If we don't have it in cache, try reconstructing it from the Value metadata
     if (const Value* value = get<types::Value>())
         m_data = arki::scan::reconstruct(m_source->format, *this, value->buffer);
-    if (m_data.data()) return m_data;
+    if (!m_data.empty()) return m_data;
 
     // If we don't have it in cache and we don't have a source, we cannot know
     // how to load it: give up
-    if (!m_source) throw wibble::exception::Consistency("retrieving data", "data source is not defined");
+    if (!m_source) throw_consistency_error("retrieving data", "data source is not defined");
 
     // Load it according to source
     switch (m_source->style())
     {
         case Source::INLINE:
+            throw runtime_error("cannot retrieve data: data is not found on INLINE metadata");
         case Source::URL:
-            throw wibble::exception::Consistency("retrieving data", "data is not accessible");
+            throw runtime_error("cannot retrieve data: data is not accessible for URL metadata");
         case Source::BLOB:
         {
             // Do not directly use m_data so that if dataReader.read throws an
             // exception, m_data remains empty.
             const source::Blob& s = sourceBlob();
-            wibble::sys::Buffer buf(s.size);
+            vector<uint8_t> buf;
+            buf.resize(s.size);
             metadata::dataReader.read(s.absolutePathname(), s.offset, s.size, buf.data());
-            m_data = buf;
+            m_data = move(buf);
             return m_data;
         }
         default:
-            throw wibble::exception::Consistency("retrieving data", "unsupported source style");
+            throw_consistency_error("retrieving data", "unsupported source style");
     }
 }
 
 void Metadata::drop_cached_data()
 {
-    if (const source::Blob* blob = dynamic_cast<const source::Blob*>(m_source))
-        m_data = wibble::sys::Buffer();
+    if (/*const source::Blob* blob =*/ dynamic_cast<const source::Blob*>(m_source))
+    {
+        m_data.clear();
+        m_data.shrink_to_fit();
+    }
 }
 
-void Metadata::set_cached_data(const wibble::sys::Buffer& buf)
+bool Metadata::has_cached_data() const
 {
-    m_data = buf;
+    return !m_data.empty();
+}
+
+void Metadata::set_cached_data(std::vector<uint8_t>&& buf)
+{
+    m_data = move(buf);
 }
 
 void Metadata::makeInline()
 {
-    if (!m_source) throw wibble::exception::Consistency("making source inline", "data source is not defined");
-    set_source_inline(m_source->format, getData());
+    if (!m_source) throw_consistency_error("making source inline", "data source is not defined");
+    getData();
+    set_source(Source::createInline(m_source->format, m_data.size()));
+}
+
+void Metadata::make_absolute()
+{
+    if (has_source())
+        if (const source::Blob* blob = dynamic_cast<const source::Blob*>(m_source))
+            set_source(blob->makeAbsolute());
 }
 
 size_t Metadata::data_size() const
 {
-    if (m_data.data()) return m_data.size();
+    if (!m_data.empty()) return m_data.size();
     if (!m_source) return 0;
 
     // Query according to source
@@ -566,7 +572,7 @@ size_t Metadata::data_size() const
         default:
             // An unsupported source type should make more noise than a 0
             // return type
-            throw wibble::exception::Consistency("retrieving data", "unsupported source style");
+            throw_consistency_error("retrieving data", "unsupported source style");
     }
 }
 
@@ -575,30 +581,57 @@ void Metadata::flushDataReaders()
     metadata::dataReader.flush();
 }
 
-
-void Metadata::readFile(const std::string& fname, metadata::Eater& mdc)
+void Metadata::read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& file, metadata_dest_func dest)
 {
-    metadata::ReadContext context(fname);
-    readFile(context, mdc);
+    BinaryDecoder dec(buf);
+    bool canceled = false;
+    string signature;
+    unsigned version;
+    while (dec)
+    {
+        if (canceled) continue;
+        BinaryDecoder inner = dec.pop_metadata_bundle(signature, version);
+
+        // Ensure first 2 bytes are MD or !D
+        if (signature != "MD" && signature != "!D" && signature != "MG")
+            throw std::runtime_error("cannot parse file " + file.pathname + ": metadata entry does not start with 'MD', '!D' or 'MG'");
+
+        if (signature == "MG")
+        {
+            // Handle metadata group
+            iotrace::trace_file(file.pathname, 0, 0, "read metadata group");
+            Metadata::read_group(inner, version, file, dest);
+        } else {
+            unique_ptr<Metadata> md(new Metadata);
+            iotrace::trace_file(file.pathname, 0, 0, "read metadata");
+            md->read_inner(inner, version, file);
+
+            // If the source is inline, then the data follows the metadata
+            if (md->source().style() == types::Source::INLINE)
+                md->readInlineData(dec, file.pathname);
+            canceled = !dest(move(md));
+        }
+    }
 }
 
-void Metadata::readFile(const metadata::ReadContext& file, metadata::Eater& mdc)
+void Metadata::read_file(const std::string& fname, metadata_dest_func dest)
+{
+    metadata::ReadContext context(fname);
+    read_file(context, dest);
+}
+
+void Metadata::read_file(const metadata::ReadContext& file, metadata_dest_func dest)
 {
     // Read all the metadata
-    std::ifstream in;
-    in.open(file.pathname.c_str(), ios::in);
-    if (!in.is_open() || in.fail())
-        throw wibble::exception::File(file.pathname, "opening file for reading");
-
-    readFile(in, file, mdc);
-
+    sys::File in(file.pathname, O_RDONLY);
+    read_file(in, file, dest);
     in.close();
 }
 
-void Metadata::readFile(std::istream& in, const metadata::ReadContext& file, metadata::Eater& mdc)
+void Metadata::read_file(int in, const metadata::ReadContext& file, metadata_dest_func dest)
 {
     bool canceled = false;
-    wibble::sys::Buffer buf;
+    vector<uint8_t> buf;
     string signature;
     unsigned version;
     while (types::readBundle(in, file.pathname, buf, signature, version))
@@ -607,49 +640,61 @@ void Metadata::readFile(std::istream& in, const metadata::ReadContext& file, met
 
         // Ensure first 2 bytes are MD or !D
         if (signature != "MD" && signature != "!D" && signature != "MG")
-            throw wibble::exception::Consistency("parsing file " + file.pathname, "metadata entry does not start with 'MD', '!D' or 'MG'");
+            throw_consistency_error("parsing file " + file.pathname, "metadata entry does not start with 'MD', '!D' or 'MG'");
 
         if (signature == "MG")
         {
             // Handle metadata group
             iotrace::trace_file(file.pathname, 0, 0, "read metadata group");
-            Metadata::readGroup(buf, version, file, mdc);
+            BinaryDecoder dec(buf);
+            Metadata::read_group(dec, version, file, dest);
         } else {
-            auto_ptr<Metadata> md(new Metadata);
+            unique_ptr<Metadata> md(new Metadata);
             iotrace::trace_file(file.pathname, 0, 0, "read metadata");
-            md->read(buf, version, file);
+            BinaryDecoder dec(buf);
+            md->read_inner(dec, version, file.pathname);
 
             // If the source is inline, then the data follows the metadata
             if (md->source().style() == types::Source::INLINE)
                 md->readInlineData(in, file.pathname);
-            canceled = !mdc.eat(md);
+            canceled = !dest(move(md));
         }
     }
 }
 
-void Metadata::readGroup(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& file, metadata::Eater& mdc)
+void Metadata::read_file(NamedFileDescriptor& fd, metadata_dest_func mdc)
+{
+    read_file(fd, fd.name(), mdc);
+}
+
+void Metadata::read_group(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest)
 {
     // Handle metadata group
     if (version != 0)
-        throw wibble::exception::Consistency("parsing file " + file.pathname, "can only decode metadata group version 0 (LZO compressed); found version: " + str::fmt(version));
-
-	// Read uncompressed size
-	ensureSize(buf.size(), 4, "uncompressed item size");
-	uint32_t uncsize = codec::decodeUInt((const unsigned char*)buf.data(), 4);
-
-	sys::Buffer decomp = utils::compress::unlzo((const unsigned char*)buf.data() + 4, buf.size() - 4, uncsize);
-	const unsigned char* ubuf = (const unsigned char*)decomp.data();
-	size_t len = decomp.size(); 
-	const unsigned char* ibuf;
-	size_t ilen;
-	string isig;
-	unsigned iver;
-	bool canceled = false;
-    while (!canceled && types::readBundle(ubuf, len, file.pathname, ibuf, ilen, isig, iver))
     {
-        auto_ptr<Metadata> md(new Metadata);
-        md->read(ibuf, ilen, iver, file);
-        canceled = !mdc.eat(md);
+        stringstream ss;
+        ss << "cannot parse file " << file.pathname << ": found version " << version << " but only version 0 (LZO compressed) is supported";
+        throw runtime_error(ss.str());
+    }
+
+    // Read uncompressed size
+    uint32_t uncsize = dec.pop_uint(4, "uncompressed item size");
+
+    vector<uint8_t> decomp = utils::compress::unlzo(dec.buf, dec.size, uncsize);
+    dec.buf += dec.size;
+    dec.size = 0;
+
+    BinaryDecoder unenc(decomp);
+
+    string isig;
+    unsigned iver;
+    bool canceled = false;
+    while (!canceled && unenc)
+    {
+        BinaryDecoder inner = unenc.pop_metadata_bundle(isig, iver);
+        unique_ptr<Metadata> md(new Metadata);
+        md->read_inner(inner, iver, file.pathname);
+        canceled = !dest(move(md));
     }
 }
 
@@ -662,20 +707,20 @@ struct LuaIter
 
     LuaIter(const Metadata& s) : s(s), iter(s.begin()) {}
 
-	// Lua iterator for summaries
-	static int iterate(lua_State* L)
-	{
-		LuaIter& i = **(LuaIter**)lua_touserdata(L, lua_upvalueindex(1));
-		if (i.iter != i.s.end())
-		{
-			lua_pushstring(L, str::tolower(types::formatCode(i.iter->first)).c_str());
-			i.iter->second->lua_push(L);
-			++i.iter;
-			return 2;
-		}
-		else
-			return 0;  /* no more values to return */
-	}
+    // Lua iterator for summaries
+    static int iterate(lua_State* L)
+    {
+        LuaIter& i = **(LuaIter**)lua_touserdata(L, lua_upvalueindex(1));
+        if (i.iter != i.s.end())
+        {
+            lua_pushstring(L, str::lower(types::formatCode(i.iter->first)).c_str());
+            i.iter->second->lua_push(L);
+            ++i.iter;
+            return 2;
+        }
+        else
+            return 0;  // no more values to return
+    }
 
 	static int gc (lua_State *L) {
 		LuaIter* i = *(LuaIter**)lua_touserdata(L, 1);
@@ -751,7 +796,7 @@ static int arkilua_lookup(lua_State* L)
 
 	// Get an arbitrary element by name
 	types::Code code = types::checkCodeName(key);
-	if (code == types::TYPE_INVALID)
+	if (code == TYPE_INVALID)
 	{
 		// Delegate lookup to the metatable
 		lua_getmetatable(L, 1);
@@ -759,7 +804,7 @@ static int arkilua_lookup(lua_State* L)
 		lua_gettable(L, -2);
 		// utils::lua::dumpstack(L, "postlookup", cerr);
 		return 1;
-	} else if (code == types::TYPE_SOURCE) {
+	} else if (code == TYPE_SOURCE) {
         // Return the source element
         if (md->has_source())
             md->source().lua_push(L);
@@ -819,7 +864,7 @@ static int arkilua_newindex(lua_State* L)
 
     if (key == "source")
     {
-        luaL_argcheck(L, item->type_code() == types::TYPE_SOURCE, 3, "arki.type.source expected");
+        luaL_argcheck(L, item->type_code() == TYPE_SOURCE, 3, "arki.type.source expected");
         md->set_source(downcast<Source>(item->cloneType()));
     }
 	else if (key == "notes")
@@ -925,8 +970,12 @@ static int arkilua_tostring(lua_State* L)
     luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
     vector<string> bits;
     for (Metadata::const_iterator i = md->begin(); i != md->end(); ++i)
-        bits.push_back(str::tolower(str::fmt(i->first)) + ": " + str::fmt(i->second));
-    string merged = "{" + str::join(bits.begin(), bits.end(), ", ") + "}";
+    {
+        stringstream s;
+        s << str::lower(formatCode(i->first)) << ": " << i->second;
+        bits.push_back(s.str());
+    }
+    string merged = "{" + str::join(", ", bits.begin(), bits.end()) + "}";
     lua_pushlstring(L, merged.data(), merged.size());
     return 1;
 }
@@ -990,7 +1039,7 @@ void Metadata::lua_push(lua_State* L)
 	lua_setmetatable(L, -2);
 }
 
-void Metadata::lua_push(lua_State* L, auto_ptr<Metadata> md)
+void Metadata::lua_push(lua_State* L, unique_ptr<Metadata>&& md)
 {
     // The 'metadata' object is a userdata that holds a pointer to this Metadata structure
     MetadataUD::create(L, md.release(), true);
@@ -1034,5 +1083,3 @@ void Metadata::lua_openlib(lua_State* L)
 #endif
 
 }
-
-// vim:set ts=4 sw=4:

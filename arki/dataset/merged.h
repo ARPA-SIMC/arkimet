@@ -1,27 +1,7 @@
 #ifndef ARKI_DATASET_MERGED_H
 #define ARKI_DATASET_MERGED_H
 
-/*
- * dataset/merged - Access many datasets at the same time
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// dataset/merged - Access many datasets at the same time
 
 #include <arki/dataset.h>
 #include <string>
@@ -37,25 +17,23 @@ namespace dataset {
 /**
  * Access multiple datasets together
  */
-class Merged : public ReadonlyDataset
+class Merged : public Reader
 {
 protected:
-	std::vector<ReadonlyDataset*> datasets;
+	std::vector<Reader*> datasets;
 
 public:
 	Merged();
 	virtual ~Merged();
 
-	/// Add a dataset to the group of datasets to merge
-	void addDataset(ReadonlyDataset& ds);
+    std::string type() const override;
 
-	/**
-	 * Query the dataset using the given matcher, and sending the results to
-	 * the metadata consumer.
-	 */
-	virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer);
-	virtual void querySummary(const Matcher& matcher, Summary& summary);
-	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
+	/// Add a dataset to the group of datasets to merge
+	void addDataset(Reader& ds);
+
+    void query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    void query_summary(const Matcher& matcher, Summary& summary) override;
+    void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out) override;
 };
 
 /**
@@ -63,7 +41,7 @@ public:
  */
 class AutoMerged : public Merged
 {
-	void addDataset(ReadonlyDataset& ds);
+	void addDataset(Reader& ds);
 
 public:
 	AutoMerged();
@@ -74,5 +52,4 @@ public:
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif

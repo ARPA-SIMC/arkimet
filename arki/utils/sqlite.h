@@ -1,34 +1,13 @@
 #ifndef ARKI_UTILS_SQLITE_H
 #define ARKI_UTILS_SQLITE_H
 
-/*
- * sqlite - SQLite helpers
- *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// SQLite helpers
 
 #include <arki/transaction.h>
 #include <arki/types.h>
-#include <wibble/exception.h>
-#include <wibble/string.h>
 #include <sqlite3.h>
 #include <string>
+#include <sstream>
 #include <vector>
 #include <limits>
 
@@ -40,25 +19,13 @@ namespace arki {
 namespace utils {
 namespace sqlite {
 
-class SQLiteError : public wibble::exception::Generic
+class SQLiteError : public std::runtime_error
 {
-	std::string m_error;
-
 public:
-	// Note: msg will be deallocated using sqlite3_free
-	SQLiteError(char* msg, const std::string& context)
-		: Generic(context), m_error(msg)
-	{
-		sqlite3_free(msg);
-	}
+    // Note: msg will be deallocated using sqlite3_free
+    SQLiteError(char* sqlite_msg, const std::string& msg);
 
-	SQLiteError(sqlite3* db, const std::string& context)
-		: Generic(context), m_error(sqlite3_errmsg(db)) {}
-
-	~SQLiteError() throw () {}
-
-	virtual const char* type() const throw () { return "SQLiteError"; }
-	virtual std::string desc() const throw () { return m_error; }
+    SQLiteError(sqlite3* db, const std::string& msg);
 };
 
 class SQLiteDB
@@ -99,8 +66,8 @@ public:
 	/// Run a SELECT LAST_INSERT_ROWID() statement and return the result
 	int lastInsertID();
 
-	/// Throw a SQLiteError exception with the given extra information
-	void throwException(const std::string& msg) const;
+    /// Throw a SQLiteError exception with the given extra information
+    [[noreturn]] void throwException(const std::string& msg) const;
 
 	/// Get the message describing the last error message
 	std::string errmsg() const { return sqlite3_errmsg(m_db); }
@@ -135,31 +102,48 @@ public:
 	/// Bind a query parameter
 	void bind(int idx, const char* str, int len);
 
-	/// Bind a query parameter
-	template<typename T>
-	void bind(int idx, T val)
-	{
-		using namespace wibble;
-		if (std::numeric_limits<T>::is_exact)
-		{
-			if (sizeof(T) <= 4)
-			{
-				if (sqlite3_bind_int(m_stm, idx, val) != SQLITE_OK)
-					m_db.throwException("binding int to " + name + " query parameter #" + str::fmt(idx));
-			}
-			else
-			{
-				if (sqlite3_bind_int64(m_stm, idx, val) != SQLITE_OK)
-					m_db.throwException("binding int64 to " + name + " query parameter #" + str::fmt(idx));
-			}
-		} else {
-			if (sqlite3_bind_double(m_stm, idx, val) != SQLITE_OK)
-				m_db.throwException("binding double to " + name + " query parameter #" + str::fmt(idx));
-		}
-	}
+    /// Bind a query parameter
+    template<typename T>
+    void bind(int idx, T val)
+    {
+        if (std::numeric_limits<T>::is_exact)
+        {
+            if (sizeof(T) <= 4)
+            {
+                if (sqlite3_bind_int(m_stm, idx, val) != SQLITE_OK)
+                {
+                    std::stringstream ss;
+                    ss << name << ": cannot bind query parameter #" << idx << " as int";
+                    m_db.throwException(ss.str());
+                }
+            }
+            else
+            {
+                if (sqlite3_bind_int64(m_stm, idx, val) != SQLITE_OK)
+                {
+                    std::stringstream ss;
+                    ss << name << ": cannot bind query parameter #" << idx << " as int64";
+                    m_db.throwException(ss.str());
+                }
+            }
+        } else {
+            if (sqlite3_bind_double(m_stm, idx, val) != SQLITE_OK)
+            {
+                std::stringstream ss;
+                ss << name << ": cannot bind query parameter #" << idx << " as double";
+                m_db.throwException(ss.str());
+            }
+        }
+    }
 
-	/// Bind a query parameter
-	void bind(int idx, const std::string& str);
+    /// Bind a query parameter
+    void bind(int idx, const std::string& str);
+
+    /// Bind a Blob query parameter
+    void bind(int idx, const std::vector<uint8_t>& str);
+
+    /// Bind a buffer that will not exist until the query is performed
+    void bindTransient(int idx, const std::vector<uint8_t>& buf);
 
 	/// Bind a string that will not exist until the query is performed
 	void bindTransient(int idx, const std::string& str);
@@ -218,7 +202,7 @@ public:
 	{
 		return sqlite3_column_bytes(m_stm, column);
 	}
-    std::auto_ptr<types::Type> fetchType(int column);
+    std::unique_ptr<types::Type> fetchType(int column);
 };
 
 /**
@@ -302,13 +286,9 @@ struct SqliteTransaction : public Transaction
 /**
  * Exception thrown in case of duplicate inserts
  */
-struct DuplicateInsert : public wibble::exception::Consistency
+struct DuplicateInsert : public std::runtime_error
 {
-	DuplicateInsert(const std::string& context) throw () :
-		wibble::exception::Consistency(context, "duplicate element") {}
-	~DuplicateInsert() throw () {}
-
-	virtual const char* type() const throw () { return "index::DuplicateInsert"; }
+    DuplicateInsert(const std::string& msg);
 };
 
 /**
@@ -316,15 +296,13 @@ struct DuplicateInsert : public wibble::exception::Consistency
  */
 struct InsertQuery : public utils::sqlite::Query
 {
-	InsertQuery(utils::sqlite::SQLiteDB& db) : utils::sqlite::Query("insert", db) {}
+    InsertQuery(utils::sqlite::SQLiteDB& db) : utils::sqlite::Query("insert", db) {}
 
-	// Step, but throw DuplicateInsert in case of duplicates
-	bool step();
+    // Step, but throw DuplicateInsert in case of duplicates
+    bool step();
 };
 
 }
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

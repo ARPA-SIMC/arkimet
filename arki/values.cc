@@ -1,33 +1,11 @@
-/*
- * values - Dynamic type system used by some types of arkimet metadata
- *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/exceptions.h>
 #include <arki/values.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
+#include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
+#include <memory>
 #include <cstdlib>
 #include <cctype>
 #include <cstdio>
@@ -40,9 +18,7 @@ extern "C" {
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
-using namespace arki::utils::codec;
 
 #if 0
 static void dump(const char* name, const std::string& str)
@@ -159,10 +135,12 @@ public:
 			return false;
 		return m_val < vi->m_val;
 	}
-	virtual std::string toString() const
-	{
-		return str::fmt(m_val);
-	}
+    virtual std::string toString() const
+    {
+        stringstream ss;
+        ss << m_val;
+        return ss.str();
+    }
 };
 
 struct Integer : public Common<int>
@@ -181,31 +159,28 @@ struct Integer : public Common<int>
 
 	int toInt() const { return m_val; }
 
-	/**
-	 * Encode into a compact binary representation
-	 */
-	virtual void encode(Encoder& enc) const
-	{
-		if (m_val >= -32 && m_val < 31)
-		{
-			// If it's a small one, encode in the remaining 6 bits
-			unsigned char encoded = { ENC_SINT6 << 6 };
-			if (m_val < 0)
-			{
-				encoded |= ((~(-m_val) + 1) & 0x3f);
-			} else {
-				encoded |= (m_val & 0x3f);
-			}
-			enc.addString((const char*)&encoded, 1u);
-		}
-		else 
-		{
-			// Else, encode as an integer Number
+    void encode(BinaryEncoder& enc) const override
+    {
+        if (m_val >= -32 && m_val < 31)
+        {
+            // If it's a small one, encode in the remaining 6 bits
+            uint8_t encoded = { ENC_SINT6 << 6 };
+            if (m_val < 0)
+            {
+                encoded |= ((~(-m_val) + 1) & 0x3f);
+            } else {
+                encoded |= (m_val & 0x3f);
+            }
+            enc.add_raw(&encoded, 1u);
+        }
+        else 
+        {
+            // Else, encode as an integer Number
 
-			// Type
-			unsigned char type = (ENC_NUMBER << 6) | (ENC_NUM_INTEGER << 4);
-			// Value to encode
-			unsigned int val;
+            // Type
+            uint8_t type = (ENC_NUMBER << 6) | (ENC_NUM_INTEGER << 4);
+            // Value to encode
+            unsigned int val;
 			if (m_val < 0)
 			{
 				// Sign bit
@@ -225,16 +200,16 @@ struct Integer : public Common<int>
 				nbytes = 2;
 			else if (val & 0x000000ff)
 				nbytes = 1;
-			else
-				throw wibble::exception::Consistency("encoding integer number", "value " + str::fmt(val) + " is too large to be encoded");
-				
-			type |= (nbytes-1);
-			enc.addString((const char*)&type, 1u);
-			enc.addUInt(val, nbytes);
-		}
-	}
+            else
+                throw std::runtime_error("cannot encode integer number: value " + to_string(val) + " is too large to be encoded");
 
-	static Integer* parse(const std::string& str);
+            type |= (nbytes-1);
+            enc.add_raw(&type, 1u);
+            enc.add_unsigned(val, nbytes);
+        }
+    }
+
+    static Integer* parse(const std::string& str);
 
     virtual void serialise(Emitter& e) const
     {
@@ -268,19 +243,19 @@ struct String : public Common<std::string>
 			return sortKey() - v.sortKey();
 	}
 
-	virtual void encode(Encoder& enc) const
-	{
-		if (m_val.size() < 64)
-		{
-			unsigned char type = ENC_NAME << 6;
-			type |= m_val.size() & 0x3f;
-			enc.addString((const char*)&type, 1u);
-			enc.addString(m_val);
-		}
-		else
-			// TODO: if needed, here we implement another string encoding type
-			throw wibble::exception::Consistency("encoding short string", "string '"+m_val+"' is too long: the maximum length is 63 characters, but the string is " + str::fmt(m_val.size()) + " characters long");
-	}
+    void encode(BinaryEncoder& enc) const override
+    {
+        if (m_val.size() < 64)
+        {
+            uint8_t type = ENC_NAME << 6;
+            type |= m_val.size() & 0x3f;
+            enc.add_raw(&type, 1u);
+            enc.add_raw(m_val);
+        }
+        else
+            // TODO: if needed, here we implement another string encoding type
+            throw_consistency_error("encoding short string", "string '"+m_val+"' is too long: the maximum length is 63 characters, but the string is " + to_string(m_val.size()) + " characters long");
+    }
 
 	virtual std::string toString() const
 	{
@@ -289,7 +264,7 @@ struct String : public Common<std::string>
 		if (parsesAsNumber(m_val, idummy) || needsQuoting(m_val))
 		{
 			// If it is surrounded by double quotes or it parses as a number, we need to escape it
-			return "\"" + str::c_escape(m_val) + "\"";
+			return "\"" + str::encode_cstring(m_val) + "\"";
 		} else {
 			// Else, we can use the value as it is
 			return m_val;
@@ -306,53 +281,44 @@ struct String : public Common<std::string>
 
 }
 
-Value* Value::decode(const void* buf, size_t len, size_t& used)
+Value* Value::decode(BinaryDecoder& dec)
 {
-	using namespace codec;
-
-	unsigned char* s = (unsigned char*)buf;
-
-	ensureSize(len, 1, "value type");
-	switch ((*s >> 6) & 0x3)
-	{
-		case value::ENC_SINT6:
-			used = 1;
-			if (*s & 0x20)
-				return new value::Integer(-((~(*s-1)) & 0x3f));
-			else
-				return new value::Integer(*s & 0x3f);
-		case value::ENC_NUMBER: {
-			switch ((*s >> 4) & 0x3)
-			{
-				case value::ENC_NUM_INTEGER: {
-					// Sign in the next bit.  Number of bytes in the next 3 bits.
-					unsigned nbytes = (*s & 0x7) + 1;
-					ensureSize(len, 1+nbytes, "integer number value");
-					unsigned val = decodeUInt(s+1, nbytes);
-					used = 1+nbytes;
-					return new value::Integer((*s & 0x8) ? -val : val);
-				}
-				case value::ENC_NUM_FLOAT:
-					throw wibble::exception::Consistency("decoding value", "the number value to decode is a floating point number, but decoding floating point numbers is not currently implemented");
-				case value::ENC_NUM_UNUSED:
-					throw wibble::exception::Consistency("decoding value", "the number value to decode has an unknown type");
-				case value::ENC_NUM_EXTENDED:
-					throw wibble::exception::Consistency("decoding value", "the number value to decode has an extended type, but no extended type is currently implemented");
-				default:
-					throw wibble::exception::Consistency("decoding value", "control flow should never reach here (" __FILE__ ":" + str::fmt(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
-			}
-		}
-		case value::ENC_NAME: {
-			unsigned size = *s & 0x3f;
-			ensureSize(len, 1+size, "string value");
-			used = 1+size;
-			return new value::String(string((char*)s+1, size));
-		}
-		case value::ENC_EXTENDED:
-			throw wibble::exception::Consistency("decoding value", "the encoded value has an extended type, but no extended type is currently implemented");
-		default:
-			throw wibble::exception::Consistency("decoding value", "control flow should never reach here (" __FILE__ ":" + str::fmt(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
-	}
+    uint8_t lead = dec.pop_byte("valuebag value type");
+    switch ((lead >> 6) & 0x3)
+    {
+        case value::ENC_SINT6:
+            if (lead & 0x20)
+                return new value::Integer(-((~(lead-1)) & 0x3f));
+            else
+                return new value::Integer(lead & 0x3f);
+        case value::ENC_NUMBER: {
+            switch ((lead >> 4) & 0x3)
+            {
+                case value::ENC_NUM_INTEGER: {
+                    // Sign in the next bit.  Number of bytes in the next 3 bits.
+                    unsigned nbytes = (lead & 0x7) + 1;
+                    unsigned val = dec.pop_uint(nbytes, "integer number value");
+                    return new value::Integer((lead & 0x8) ? -val : val);
+                }
+                case value::ENC_NUM_FLOAT:
+                    throw std::runtime_error("cannot decode value: the number value to decode is a floating point number, but decoding floating point numbers is not currently implemented");
+                case value::ENC_NUM_UNUSED:
+                    throw std::runtime_error("cannot decode value: the number value to decode has an unknown type");
+                case value::ENC_NUM_EXTENDED:
+                    throw std::runtime_error("cannot decode value: the number value to decode has an extended type, but no extended type is currently implemented");
+                default:
+                    throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
+            }
+        }
+        case value::ENC_NAME: {
+            unsigned size = lead & 0x3f;
+            return new value::String(dec.pop_string(size, "valuebag string value"));
+        }
+        case value::ENC_EXTENDED:
+            throw std::runtime_error("cannot decode value: the encoded value has an extended type, but no extended type is currently implemented");
+        default:
+            throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
+    }
 }
 
 Value* Value::parse(const std::string& str)
@@ -380,7 +346,7 @@ Value* Value::parse(const std::string& str, size_t& lenParsed)
 
 		// Unescape the string
 		size_t parsed;
-		string res = str::c_unescape(str.substr(begin), parsed);
+		string res = str::decode_cstring(str.substr(begin), parsed);
 
 		lenParsed = skipSpaces(str, begin + parsed);
 		return new value::String(res);
@@ -410,7 +376,7 @@ Value* Value::parse(const emitter::memory::Node& m)
     else if (m.is_string())
         return createString(m.get_string());
     else
-        throw wibble::exception::Consistency("decoding value", "value is neither integer nor string");
+        throw_consistency_error("decoding value", "value is neither integer nor string");
 }
 
 Value* Value::createInteger(int val)
@@ -577,17 +543,17 @@ void ValueBag::update(const ValueBag& vb)
 		set(i->first, i->second->clone());
 }
 
-void ValueBag::encode(Encoder& enc) const
+void ValueBag::encode(BinaryEncoder& enc) const
 {
-	for (const_iterator i = begin(); i != end(); ++i)
-	{
-		// Key length
-		enc.addUInt(i->first.size(), 1);
-		// Key
-		enc.addString(i->first);
-		// Value
-		i->second->encode(enc);
-	}
+    for (const_iterator i = begin(); i != end(); ++i)
+    {
+        // Key length
+        enc.add_unsigned(i->first.size(), 1);
+        // Key
+        enc.add_raw(i->first);
+        // Value
+        i->second->encode(enc);
+    }
 }
 
 std::string ValueBag::toString() const
@@ -618,30 +584,21 @@ void ValueBag::serialise(Emitter& e) const
 /**
  * Decode from compact binary representation
  */
-ValueBag ValueBag::decode(const void* buf, size_t len)
+ValueBag ValueBag::decode(BinaryDecoder& dec)
 {
-	using namespace codec;
+    ValueBag res;
+    while (dec)
+    {
+        // Key length
+        unsigned key_len = dec.pop_uint(1, "valuebag key length");
 
-	ValueBag res;
-	const unsigned char* start = (const unsigned char*)buf;
-	for (const unsigned char* cur = start; cur < start+len; )
-	{
-		// Key length
-		ensureSize(len, cur-start+1, "Key");
-		unsigned keyLen = decodeUInt(cur, 1);
-		cur += 1;
+        // Key
+        string key = dec.pop_string(key_len, "valuebag key");
 
-		// Key
-		ensureSize(len, cur-start+keyLen, "Key");
-		string key((const char*)cur, keyLen);
-		cur += keyLen;
-
-		// Value
-		size_t used;
-		res.set(key, Value::decode(cur, len-(cur-start), used));
-		cur += used;
-	}
-	return res;
+        // Value
+        res.set(key, Value::decode(dec));
+    }
+    return res;
 }
 
 /**
@@ -663,12 +620,12 @@ ValueBag ValueBag::parse(const std::string& str)
 		{
 			cur = skipSpaces(str, begin);
 			if (cur != str.size())
-				throw wibble::exception::Consistency("parsing key=value list", "found invalid extra characters \""+str.substr(begin)+"\" at the end of the list");
+				throw_consistency_error("parsing key=value list", "found invalid extra characters \""+str.substr(begin)+"\" at the end of the list");
 			break;
 		}
 			
 		// Read the key
-		string key = str::trim(str.substr(begin, cur-begin));
+		string key = str::strip(str.substr(begin, cur-begin));
 
 		// Skip the '=' sign
 		++cur;
@@ -678,13 +635,13 @@ ValueBag ValueBag::parse(const std::string& str)
 
 		// Parse the value
 		size_t lenParsed;
-		auto_ptr<Value> val(Value::parse(str.substr(cur), lenParsed));
+		unique_ptr<Value> val(Value::parse(str.substr(cur), lenParsed));
 
 		// Set the value
 		if (val.get())
 			res.set(key, val.release());
 		else
-			throw wibble::exception::Consistency("parsing key=value list", "cannot parse value at \""+str.substr(cur)+"\"");
+			throw_consistency_error("parsing key=value list", "cannot parse value at \""+str.substr(cur)+"\"");
 
 		// Move on to the next one
 		begin = cur + lenParsed;
@@ -741,17 +698,20 @@ void ValueBag::load_lua_table(lua_State* L, int idx)
 	lua_pushnil(L);
 	while (lua_next(L, idx))
 	{
-		// Get key
-		string key;
-		switch (lua_type(L, -2))
-		{
-			case LUA_TNUMBER: key = str::fmt(lua_tointeger(L, -2)); break;
-			case LUA_TSTRING: key = lua_tostring(L, -2); break;
-			default:
-				throw wibble::exception::Consistency("reading Lua table",
-						str::fmtf("key has type %s but only ints and strings are supported",
-							lua_typename(L, lua_type(L, -2))));
-		}
+        // Get key
+        string key;
+        switch (lua_type(L, -2))
+        {
+            case LUA_TNUMBER: key = to_string(lua_tointeger(L, -2)); break;
+            case LUA_TSTRING: key = lua_tostring(L, -2); break;
+            default:
+            {
+                char buf[256];
+                snprintf(buf, 256, "cannot read Lua table: key has type %s but only ints and strings are supported",
+                        lua_typename(L, lua_type(L, -2)));
+                throw std::runtime_error(buf);
+            }
+        }
 		// Get value
 		switch (lua_type(L, -1))
 		{
@@ -761,10 +721,13 @@ void ValueBag::load_lua_table(lua_State* L, int idx)
 			case LUA_TSTRING:
 				set(key, Value::createString(lua_tostring(L, -1)));
 				break;
-			default:
-				throw wibble::exception::Consistency("reading Lua table",
-						str::fmtf("value has type %s but only ints and strings are supported",
-							lua_typename(L, lua_type(L, -1))));
+            default:
+            {
+                char buf[256];
+                snprintf(buf, 256, "cannot read Lua table: value has type %s but only ints and strings are supported",
+                            lua_typename(L, lua_type(L, -1)));
+                throw std::runtime_error(buf);
+            }
 		}
 		lua_pop(L, 1);
 	}

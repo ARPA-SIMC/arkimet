@@ -1,40 +1,14 @@
-/*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
-#include "config.h"
-
-#include <arki/tests/tests.h>
-#include <arki/scan/dir.h>
-#include <arki/utils.h>
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
-
+#include "arki/tests/tests.h"
+#include "arki/scan/dir.h"
+#include "arki/utils.h"
+#include "arki/utils/sys.h"
 #include <algorithm>
-#include <sstream>
-#include <iostream>
-#include <fstream>
-
-#include <sys/stat.h>
 
 namespace tut {
 using namespace std;
 using namespace arki;
-using namespace wibble::sys;
+using namespace arki::tests;
+using namespace arki::utils;
 
 struct arki_scan_dir_shar {
 	arki_scan_dir_shar()
@@ -44,8 +18,7 @@ struct arki_scan_dir_shar {
 TESTGRP(arki_scan_dir);
 
 // Test DirScanner on an empty directory
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	system("rm -rf dirscanner");
 	mkdir("dirscanner", 0777);
@@ -55,8 +28,7 @@ void to::test<1>()
 }
 
 // Test DirScanner on a populated directory
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	system("rm -rf dirscanner");
 	mkdir("dirscanner", 0777);
@@ -84,8 +56,7 @@ void to::test<2>()
 }
 
 // Test file names interspersed with directory names
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 	system("rm -rf dirscanner");
 	mkdir("dirscanner", 0777);
@@ -111,5 +82,3 @@ void to::test<3>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

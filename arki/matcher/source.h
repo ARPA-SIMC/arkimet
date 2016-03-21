@@ -36,7 +36,7 @@ struct MatchSource : public Implementation
 {
     std::string name() const;
 
-    static MatchSource* parse(const std::string& pattern);
+    static std::unique_ptr<MatchSource> parse(const std::string& pattern);
     static void init();
 };
 

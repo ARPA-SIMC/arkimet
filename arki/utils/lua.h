@@ -26,8 +26,6 @@
 #include <arki/libconfig.h>
 
 #ifdef HAVE_LUA
-
-#include <wibble/string.h>
 #include <sstream>
 #include <iosfwd>
 
@@ -108,9 +106,15 @@ struct ManagedUD
 
 /**
  * Replace the 'print' function inside \a L so that all its output goes to the
- * given ostream.
+ * given ostream
  */
 void capturePrintOutput(lua_State* L, std::ostream& buf);
+
+/**
+ * Replace the 'print' function inside \a L so that all its output goes to the
+ * given file descriptor
+ */
+void capturePrintOutput(lua_State* L, int fd);
 
 /**
  * Create a string with a formatted dump of all the keys of the table at the
@@ -129,9 +133,11 @@ void dumpstack(lua_State* L, const std::string& title, std::ostream& out);
 template<typename T>
 int tostring(lua_State* L)
 {
-	T& t = **(T**)lua_touserdata(L, 1);
-	lua_pushstring(L, wibble::str::fmt(t).c_str());
-	return 1;
+    T& t = **(T**)lua_touserdata(L, 1);
+    std::stringstream ss;
+    ss << t;
+    lua_pushstring(L, ss.str().c_str());
+    return 1;
 }
 
 /**

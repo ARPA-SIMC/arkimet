@@ -1,54 +1,33 @@
-/*
- * scan/vm2 - Scan a VM2 file for metadata
- *
- * Copyright (C) 2012--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Emanuele Di Giacomo <edigiacomo@arpa.emr.it>
- */
-
-#include <arki/scan/vm2.h>
-#include <arki/types/source/blob.h>
-#include <arki/metadata.h>
-#include <arki/runtime/config.h>
-#include <arki/utils/files.h>
-#include <arki/nag.h>
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/regexp.h>
-#include <wibble/sys/fs.h>
-#include <arki/utils/lua.h>
-#include <arki/scan/any.h>
+#include "arki/scan/vm2.h"
+#include "arki/exceptions.h"
+#include "arki/core/time.h"
+#include "arki/types/source/blob.h"
+#include "arki/metadata.h"
+#include "arki/runtime/config.h"
+#include "arki/utils/files.h"
+#include "arki/nag.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/regexp.h"
+#include "arki/utils/lua.h"
+#include "arki/scan/any.h"
+#include "arki/types/area.h"
+#include "arki/types/reftime.h"
+#include "arki/types/product.h"
+#include "arki/types/value.h"
+#include "arki/utils/vm2.h"
 #include <cstring>
 #include <sstream>
 #include <iomanip>
+#include <fstream>
+#include <iostream>
 #include <unistd.h>
-
-#include <arki/types/area.h>
-#include <arki/types/time.h>
-#include <arki/types/reftime.h>
-#include <arki/types/product.h>
-#include <arki/types/value.h>
-
-#include <arki/utils/vm2.h>
 #include <meteo-vm2/parser.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
+using arki::core::Time;
 
 namespace arki {
 namespace scan {
@@ -57,34 +36,34 @@ namespace vm2 {
 
 struct VM2Validator : public Validator
 {
-	virtual ~VM2Validator() {}
+    std::string format() const override { return "VM2"; }
 
-	// Validate data found in a file
-	virtual void validate(int fd, off_t offset, size_t size, const std::string& fname) const
-	{
-		char buf[1024];
+    // Validate data found in a file
+    void validate_file(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
+    {
+        if (size >= 1024)
+            throw_check_error(fd, offset, "size of data to check (" + std::to_string(size) + ") is too long for a VM2 line");
 
-		if (pread(fd, buf, size, offset) == -1)
-			throw wibble::exception::System(fname);
+        char buf[1024];
+        size_t sz = fd.pread(buf, size, offset);
+        std::string s((const char*)buf, sz);
 
+        Regexp re(meteo::vm2::Parser::regexp_str, 0, REG_EXTENDED);
+        if (!re.match(s))
+            throw_check_error(fd, offset, "not a valid VM2 line: '" + s + "'");
+    }
+
+    // Validate a memory buffer
+    void validate_buf(const void* buf, size_t size) const override
+    {
         std::string s((const char *)buf, size);
 
-		wibble::Regexp re(meteo::vm2::Parser::regexp_str, 0, REG_EXTENDED);
-		if (!re.match(s)) 
-			throw wibble::exception::Consistency("Not a valid VM2 file", s);
-	}
-
-	// Validate a memory buffer
-	virtual void validate(const void* buf, size_t size) const
-	{
-		std::string s((const char *)buf, size);
-
-		if (size == 0)
-			throw wibble::exception::Consistency("Empty VM2 file");
-        wibble::Regexp re(meteo::vm2::Parser::regexp_str, 0, REG_EXTENDED);
-		if (!re.match(s))
-			throw wibble::exception::Consistency("Not a valid VM2 file", s);
-	}
+        if (size == 0)
+            throw_check_error("buffer is empty");
+        Regexp re(meteo::vm2::Parser::regexp_str, 0, REG_EXTENDED);
+        if (!re.match(s))
+            throw_check_error("not a valid VM2 line: '" + s + "'");
+    }
 };
 
 static VM2Validator vm_validator;
@@ -104,14 +83,14 @@ void Vm2::open(const std::string& filename)
 {
     string basedir, relname;
     utils::files::resolve_path(filename, basedir, relname);
-    open(sys::fs::abspath(filename), basedir, relname);
+    open(sys::abspath(filename), basedir, relname);
 }
 
 void Vm2::open(const std::string& filename, const std::string& basedir, const std::string& relname)
 {
     // Close the previous file if needed
     close();
-    this->filename = sys::fs::abspath(filename);
+    this->filename = sys::abspath(filename);
     this->basedir = basedir;
     this->relname = relname;
     if (relname == "-") {
@@ -120,7 +99,7 @@ void Vm2::open(const std::string& filename, const std::string& basedir, const st
         this->in = new std::ifstream(filename.c_str());
     }
     if (!in->good())
-        throw wibble::exception::File(filename, "opening file for reading");
+        throw_file_error(filename, "cannot open file for reading");
     parser = new meteo::vm2::Parser(*in);
 }
 
@@ -147,7 +126,7 @@ bool Vm2::next(Metadata& md)
                 return false;
             else
                 break;
-        } catch (wibble::exception::Consistency& e) {
+        } catch (std::exception& e) {
             nag::warning("Skipping VM2 line: %s", e.what());
         }
     }
@@ -155,9 +134,9 @@ bool Vm2::next(Metadata& md)
     size_t size = line.size();
 
     md.clear();
-    auto_ptr<source::Blob> source(source::Blob::create("vm2", basedir, relname, offset, size));
-    md.set_cached_data(wibble::sys::Buffer(line.c_str(), line.size()));
-    md.set_source(upcast<Source>(source));
+    unique_ptr<source::Blob> source(source::Blob::create("vm2", basedir, relname, offset, size));
+    md.set_cached_data(vector<uint8_t>(line.begin(), line.end()));
+    md.set_source(upcast<Source>(move(source)));
     md.add_note("Scanned from " + relname);
     md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
     md.set(Area::createVM2(value.station_id));
@@ -174,7 +153,7 @@ bool Vm2::next(Metadata& md)
     return true;
 }
 
-wibble::sys::Buffer Vm2::reconstruct(const Metadata& md, const std::string& value)
+vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& value)
 {
     stringstream res;
 
@@ -182,22 +161,22 @@ wibble::sys::Buffer Vm2::reconstruct(const Metadata& md, const std::string& valu
     const area::VM2* area = dynamic_cast<const area::VM2*>(md.get<Area>());
     const product::VM2* product = dynamic_cast<const product::VM2*>(md.get<Product>());
 
-    res << setfill('0') << setw(4) << rt->time.vals[0]
-        << setfill('0') << setw(2) << rt->time.vals[1]
-        << setfill('0') << setw(2) << rt->time.vals[2]
-        << setfill('0') << setw(2) << rt->time.vals[3]
-        << setfill('0') << setw(2) << rt->time.vals[4];
+    res << setfill('0') << setw(4) << rt->time.ye
+        << setfill('0') << setw(2) << rt->time.mo
+        << setfill('0') << setw(2) << rt->time.da
+        << setfill('0') << setw(2) << rt->time.ho
+        << setfill('0') << setw(2) << rt->time.mi;
 
-    if (rt->time.vals[5] != 0)
-        res << setfill('0') << setw(2) << rt->time.vals[5];
+    if (rt->time.se != 0)
+        res << setfill('0') << setw(2) << rt->time.se;
 
     res << "," << area->station_id()
         << "," << product->variable_id()
         << "," << value;
 
-    return wibble::sys::Buffer(res.str().data(), res.str().size());
+    string reconstructed = res.str();
+    return vector<uint8_t>(reconstructed.begin(), reconstructed.end());
 }
 
 }
 }
-// vim:set ts=4 sw=4:

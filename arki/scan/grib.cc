@@ -1,42 +1,22 @@
-/*
- * scan/grib - Scan a GRIB (version 1 or 2) file for metadata
- *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 #include "grib.h"
 #include <grib_api.h>
-#include <arki/metadata.h>
-#include <arki/runtime/config.h>
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
-#include <arki/utils/lua.h>
-#include <arki/utils/files.h>
-#include <arki/scan/any.h>
+#include "arki/metadata.h"
+#include "arki/exceptions.h"
+#include "arki/runtime/config.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/lua.h"
+#include "arki/utils/files.h"
+#include "arki/utils/sys.h"
+#include "arki/scan/any.h"
+#include <system_error>
 #include <cstring>
 #include <unistd.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace scan {
@@ -45,37 +25,37 @@ namespace grib {
 
 struct GribValidator : public Validator
 {
-	virtual ~GribValidator() {}
+    std::string format() const override { return "GRIB"; }
 
-	// Validate data found in a file
-	virtual void validate(int fd, off_t offset, size_t size, const std::string& fname) const
-	{
-		char buf[4];
-		ssize_t res;
-		if ((res = pread(fd, buf, 4, offset)) == -1)
-			throw wibble::exception::System("reading 4 bytes of GRIB header from " + fname);
-		if (res != 4)
-			throw wibble::exception::Consistency("reading 4 bytes of GRIB header from " + fname, "partial read");
-		if (memcmp(buf, "GRIB", 4) != 0)
-			throw wibble::exception::Consistency("checking GRIB segment in file " + fname, "segment does not start with 'GRIB'");
-		if ((res = pread(fd, buf, 4, offset + size - 4)) == -1)
-			throw wibble::exception::System("reading 4 bytes of GRIB trailer from " + fname);
-		if (res != 4)
-			throw wibble::exception::Consistency("reading 4 bytes of GRIB trailer from " + fname, "partial read");
-		if (memcmp(buf, "7777", 4) != 0)
-			throw wibble::exception::Consistency("checking GRIB segment in file " + fname, "segment does not end with '7777'");
-	}
+    // Validate data found in a file
+    void validate_file(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
+    {
+        if (size < 8)
+            throw_check_error(fd, offset, "file segment to check is only " + std::to_string(size) + " bytes (minimum for a GRIB is 8)");
 
-	// Validate a memory buffer
-	virtual void validate(const void* buf, size_t size) const
-	{
-		if (size < 8)
-			throw wibble::exception::Consistency("checking GRIB buffer", "buffer is shorter than 8 bytes");
-		if (memcmp(buf, "GRIB", 4) != 0)
-			throw wibble::exception::Consistency("checking GRIB buffer", "buffer does not start with 'GRIB'");
-		if (memcmp((const char*)buf + size - 4, "7777", 4) != 0)
-			throw wibble::exception::Consistency("checking GRIB buffer", "buffer does not end with '7777'");
-	}
+        char buf[4];
+        ssize_t res = fd.pread(buf, 4, offset);
+        if (res != 4)
+            throw_check_error(fd, offset, "read only " + std::to_string(res) + "/4 bytes of GRIB header");
+        if (memcmp(buf, "GRIB", 4) != 0)
+            throw_check_error(fd, offset, "data does not start with 'GRIB'");
+        res = fd.pread(buf, 4, offset + size - 4);
+        if (res != 4)
+            throw_check_error(fd, offset, "read only " + std::to_string(res) + "/4 bytes of GRIB trailer");
+        if (memcmp(buf, "7777", 4) != 0)
+            throw_check_error(fd, offset, "data does not end with '7777'");
+    }
+
+    // Validate a memory buffer
+    void validate_buf(const void* buf, size_t size) const override
+    {
+        if (size < 8)
+            throw_check_error("buffer is shorter than 8 bytes");
+        if (memcmp(buf, "GRIB", 4) != 0)
+            throw_check_error("buffer does not start with 'GRIB'");
+        if (memcmp((const char*)buf + size - 4, "7777", 4) != 0)
+            throw_check_error("buffer does not end with '7777'");
+    }
 };
 
 static GribValidator grib_validator;
@@ -241,76 +221,84 @@ GribLua::GribLua(Grib* scanner)
 
 int GribLua::load_function(const std::string& fname)
 {
-	// Compile the macro
-        if (luaL_dofile(L, fname.c_str()))
-        {
-                // Copy the error, so that it will exist after the pop
-                string error = lua_tostring(L, -1);
-                // Pop the error from the stack
-                lua_pop(L, 1);
-                throw wibble::exception::Consistency("parsing " + fname, error);
-        }
+    // Compile the macro
+    if (luaL_dofile(L, fname.c_str()))
+    {
+        // Copy the error, so that it will exist after the pop
+        string error = lua_tostring(L, -1);
+        // Pop the error from the stack
+        lua_pop(L, 1);
+        throw std::runtime_error("cannot parse " + fname + ": " + error);
+    }
 
-	// Index the scan function
-	int id = -1;
-        lua_getglobal(L, "scan");
-        if (lua_isfunction(L, -1))
-                id = luaL_ref(L, LUA_REGISTRYINDEX);
+    // Index the scan function
+    int id = -1;
+    lua_getglobal(L, "scan");
+    if (lua_isfunction(L, -1))
+        id = luaL_ref(L, LUA_REGISTRYINDEX);
 
-	// Return the ID, or -1 if no 'scan' function was defined
-	return id;
+    // Return the ID, or -1 if no 'scan' function was defined
+    return id;
 }
 
 int GribLua::load_function(const std::string& fname, const std::string& code)
 {
-	// Compile the macro
-	if (luaL_loadbuffer(L, code.data(), code.size(), fname.c_str()))
-        {
-                // Copy the error, so that it will exist after the pop
-                string error = lua_tostring(L, -1);
-                // Pop the error from the stack
-                lua_pop(L, 1);
-                throw wibble::exception::Consistency("parsing " + fname, error);
-        }
+    // Compile the macro
+    if (luaL_loadbuffer(L, code.data(), code.size(), fname.c_str()))
+    {
+        // Copy the error, so that it will exist after the pop
+        string error = lua_tostring(L, -1);
+        // Pop the error from the stack
+        lua_pop(L, 1);
+        throw std::runtime_error("cannot parse " + fname + ": " + error);
+    }
 
-	// Index the scan function
-	int id = -1;
-        lua_getglobal(L, "scan");
-        if (lua_isfunction(L, -1))
-                id = luaL_ref(L, LUA_REGISTRYINDEX);
+    // Index the scan function
+    int id = -1;
+    lua_getglobal(L, "scan");
+    if (lua_isfunction(L, -1))
+        id = luaL_ref(L, LUA_REGISTRYINDEX);
 
-	// Return the ID, or -1 if no 'scan' function was defined
-	return id;
+    // Return the ID, or -1 if no 'scan' function was defined
+    return id;
 }
 
 string GribLua::run_function(int id, Metadata& md)
 {
-        // Retrieve the Lua function registered for this
-        lua_rawgeti(L, LUA_REGISTRYINDEX, id);
+    // Retrieve the Lua function registered for this
+    lua_rawgeti(L, LUA_REGISTRYINDEX, id);
 
-	// Pass md
-	md.lua_push(L);
+    // Pass md
+    md.lua_push(L);
 
-        // Call the function
-        if (lua_pcall(L, 1, 0, 0))
-        {
-                string error = lua_tostring(L, -1);
-                lua_pop(L, 1);
-		return error;
-	} else
-		return std::string();
+    // Call the function
+    if (lua_pcall(L, 1, 0, 0))
+    {
+        string error = lua_tostring(L, -1);
+        lua_pop(L, 1);
+        return error;
+    } else
+        return std::string();
 }
 
 #define check_grib_error(error, ...) do { \
-        if (error != GRIB_SUCCESS) \
-            throw wibble::exception::Consistency(str::fmtf(__VA_ARGS__), grib_get_error_message(error)); \
+        if (error != GRIB_SUCCESS) { \
+            char buf[256]; \
+            snprintf(buf, 256, __VA_ARGS__); \
+            stringstream ss; \
+            ss << buf << ": " << grib_get_error_message(error); \
+            throw std::runtime_error(ss.str()); \
+        } \
     } while (0)
 
 // Never returns in case of error
 #define arkilua_check_gribapi(L, error, ...) do { \
-        if (error != GRIB_SUCCESS) \
+        if (error != GRIB_SUCCESS) {\
+            char buf[256]; \
+            snprintf(buf, 256, __VA_ARGS__); \
             luaL_error(L, "grib_api error \"%s\" while %s", \
-                        grib_get_error_message(error), str::fmtf(__VA_ARGS__).c_str()); \
+                        grib_get_error_message(error), buf); \
+        } \
     } while (0)
 
 // Lookup a grib value for grib.<fieldname>
@@ -461,10 +449,10 @@ int Grib::arkilua_lookup_gribd(lua_State* L)
 Grib::Grib(const std::string& grib1code, const std::string& grib2code)
 	: in(0), context(0), gh(0), L(new GribLua(this))
 {
-	// Get a grib_api context
-	context = grib_context_get_default();
-	if (!context)
-		throw wibble::exception::Consistency("getting grib_api default context", "default context is not available");
+    // Get a grib_api context
+    context = grib_context_get_default();
+    if (!context)
+        throw std::runtime_error("cannot get grib_api default context: default context is not available");
 
 	if (false)
 	{
@@ -504,7 +492,7 @@ void Grib::open(const std::string& filename)
 {
     string basedir, relname;
     utils::files::resolve_path(filename, basedir, relname);
-    open(sys::fs::abspath(filename), basedir, relname);
+    open(sys::abspath(filename), basedir, relname);
 }
 
 void Grib::open(const std::string& filename, const std::string& basedir, const std::string& relname)
@@ -515,7 +503,7 @@ void Grib::open(const std::string& filename, const std::string& basedir, const s
     this->basedir = basedir;
     this->relname = relname;
     if (!(in = fopen(filename.c_str(), "rb")))
-        throw wibble::exception::File(filename, "opening file for reading");
+        throw_file_error(filename, "cannot open file for reading");
 }
 
 void Grib::close()
@@ -558,8 +546,12 @@ bool Grib::next(Metadata& md)
 		case 1: scanGrib1(md); break;
 		case 2: scanGrib2(md); break;
 		default:
-			throw wibble::exception::Consistency("reading grib message", "GRIB edition " + str::fmt(edition) + " is not supported");
-	}
+        {
+            stringstream ss;
+            ss << "cannot read grib message: GRIB edition " << edition << " is not supported";
+            throw std::runtime_error(ss.str());
+        }
+    }
 
 	check_grib_error(grib_handle_delete(gh), "closing GRIB message");
 	gh = 0;
@@ -572,10 +564,10 @@ void Grib::setSource(Metadata& md)
 	long edition;
 	check_grib_error(grib_get_long(gh, "editionNumber", &edition), "reading edition number");
 
-	// Get the encoded GRIB buffer from the GRIB handle
-	const void* vbuf;
-	size_t size;
-	check_grib_error(grib_get_message(gh, &vbuf, &size), "accessing the encoded GRIB data");
+    // Get the encoded GRIB buffer from the GRIB handle
+    const uint8_t* vbuf;
+    size_t size;
+    check_grib_error(grib_get_message(gh, (const void **)&vbuf, &size), "accessing the encoded GRIB data");
 
 #if 0  // We cannot use this as long is too small for 64bit file offsets
 	// Get the position in the file of the en of the grib
@@ -585,16 +577,18 @@ void Grib::setSource(Metadata& md)
     off_t offset = ftello(in);
     offset -= size;
 
-	if (false)
-	{
-        md.set_source_inline("grib" + str::fmt(edition), wibble::sys::Buffer(vbuf, size));
-	}
+    if (false)
+    {
+        md.set_source_inline("grib", vector<uint8_t>(vbuf, vbuf + size));
+    }
     else
     {
-        md.set_source(Source::createBlob("grib" + str::fmt(edition), basedir, relname, offset, size));
-        md.set_cached_data(wibble::sys::Buffer(vbuf, size));
+        md.set_source(Source::createBlob("grib", basedir, relname, offset, size));
+        md.set_cached_data(vector<uint8_t>(vbuf, vbuf + size));
     }
-    md.add_note("Scanned from " + relname + ":" + str::fmt(offset) + "+" + str::fmt(size));
+    stringstream note;
+    note << "Scanned from " << relname << ":" << offset << "+" << size;
+    md.add_note(note.str());
 }
 
 void MultiGrib::setSource(Metadata& md)
@@ -611,16 +605,20 @@ void MultiGrib::setSource(Metadata& md)
     // Get the write position in the file
     streampos offset = tmpfile.tellp();
     if (tmpfile.fail())
-        throw wibble::exception::File(tmpfilename, "reading the current position");
+        throw_file_error(tmpfilename, "cannot read the current position");
 
-	// Write the data
-	tmpfile.write(buf, size);
-	if (tmpfile.fail())
-		throw wibble::exception::File(tmpfilename, "writing " + str::fmt(size) + " bytes to the file");
+    // Write the data
+    tmpfile.write(buf, size);
+    if (tmpfile.fail())
+    {
+        stringstream ss;
+        ss << "cannot write " << size << " bytes to file " << tmpfilename;
+        throw std::system_error(errno, std::system_category(), ss.str());
+    }
 
-	tmpfile.flush();
+    tmpfile.flush();
 
-    md.set_source(Source::createBlob("grib" + str::fmt(edition), "", tmpfilename, offset, size));
+    md.set_source(Source::createBlob("grib", "", tmpfilename, offset, size));
 }
 
 bool Grib::scanLua(std::vector<int> ids, Metadata& md)

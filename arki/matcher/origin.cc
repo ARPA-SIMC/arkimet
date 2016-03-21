@@ -1,34 +1,11 @@
-/*
- * matcher/origin - Origin matcher
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #include <arki/matcher/origin.h>
 #include <arki/matcher/utils.h>
-#include <arki/metadata.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace matcher {
@@ -153,35 +130,33 @@ std::string MatchOriginODIMH5::toString() const
 /*============================================================================*/
 
 
-MatchOrigin* MatchOrigin::parse(const std::string& pattern)
+unique_ptr<MatchOrigin> MatchOrigin::parse(const std::string& pattern)
 {
-	size_t beg = 0;
-	size_t pos = pattern.find(',', beg);
-	string name;
-	string rest;
-	if (pos == string::npos)
-		name = str::trim(pattern.substr(beg));
-	else {
-		name = str::trim(pattern.substr(beg, pos-beg));
-		rest = pattern.substr(pos+1);
-	}
-	switch (types::Origin::parseStyle(name))
-	{
-		case types::Origin::GRIB1: return new MatchOriginGRIB1(rest);
-		case types::Origin::GRIB2: return new MatchOriginGRIB2(rest);
-		case types::Origin::BUFR: return new MatchOriginBUFR(rest);
-		case types::Origin::ODIMH5: 	return new MatchOriginODIMH5(rest);
-		default:
-			throw wibble::exception::Consistency("parsing type of origin to match", "unsupported origin style: " + name);
-	}
+    size_t beg = 0;
+    size_t pos = pattern.find(',', beg);
+    string name;
+    string rest;
+    if (pos == string::npos)
+        name = str::strip(pattern.substr(beg));
+    else {
+        name = str::strip(pattern.substr(beg, pos-beg));
+        rest = pattern.substr(pos+1);
+    }
+    switch (types::Origin::parseStyle(name))
+    {
+        case types::Origin::GRIB1: return unique_ptr<MatchOrigin>(new MatchOriginGRIB1(rest));
+        case types::Origin::GRIB2: return unique_ptr<MatchOrigin>(new MatchOriginGRIB2(rest));
+        case types::Origin::BUFR: return unique_ptr<MatchOrigin>(new MatchOriginBUFR(rest));
+        case types::Origin::ODIMH5: return unique_ptr<MatchOrigin>(new MatchOriginODIMH5(rest));
+        default:
+            throw std::runtime_error("cannot parse type of origin to match: unsupported origin style: " + name);
+    }
 }
 
 void MatchOrigin::init()
 {
-    Matcher::register_matcher("origin", types::TYPE_ORIGIN, (MatcherType::subexpr_parser)MatchOrigin::parse);
+    Matcher::register_matcher("origin", TYPE_ORIGIN, (MatcherType::subexpr_parser)MatchOrigin::parse);
 }
 
 }
 }
-
-// vim:set ts=4 sw=4:

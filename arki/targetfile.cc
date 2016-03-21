@@ -1,35 +1,13 @@
-/*
- * arki/targetfile - Compute file names out of metadata
- *
- * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <arki/targetfile.h>
-#include <arki/metadata.h>
-#include <arki/metadata/consumer.h>
-#include <arki/runtime/config.h>
-#include <arki/runtime/io.h>
-#include <wibble/exception.h>
-#include <wibble/string.h>
+#include "arki/targetfile.h"
+#include "arki/metadata.h"
+#include "arki/metadata/consumer.h"
+#include "arki/runtime/config.h"
+#include "arki/runtime/io.h"
+#include "arki/utils/string.h"
+#include <sys/fcntl.h>
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 
@@ -103,23 +81,23 @@ Targetfile::Targetfile(const std::string& code) : L(new Lua)
 	// Create the function table
 	lua_newtable(*L);
 	lua_setglobal(*L, "targetfile");
-	
-	/// Load the targetfile functions
-	if (code.empty())
-	{
-		loadRCFiles();
-	} else {
-		if (luaL_dostring(*L, code.c_str()))
-		{
-			// Copy the error, so that it will exist after the pop
-			string error = lua_tostring(*L, -1);
-			// Pop the error from the stack
-			lua_pop(*L, 1);
-			throw wibble::exception::Consistency("executing Lua code from memory", error);
-		}
-	}
 
-	//arkilua_dumpstack(L, "Afterinit", stderr);
+    /// Load the targetfile functions
+    if (code.empty())
+    {
+        loadRCFiles();
+    } else {
+        if (luaL_dostring(*L, code.c_str()))
+        {
+            // Copy the error, so that it will exist after the pop
+            string error = lua_tostring(*L, -1);
+            // Pop the error from the stack
+            lua_pop(*L, 1);
+            throw std::runtime_error("cannot execute Lua code from memory: " + error);
+        }
+    }
+
+    //arkilua_dumpstack(L, "Afterinit", stderr);
 }
 
 Targetfile::~Targetfile()
@@ -129,57 +107,51 @@ Targetfile::~Targetfile()
 
 void Targetfile::loadRCFiles()
 {
-	vector<string> files = runtime::Config::get().dir_targetfile.list_files(".lua");
-	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-	{
-		if (luaL_dofile(*L, i->c_str()))
-		{
-			// Copy the error, so that it will exist after the pop
-			string error = lua_tostring(*L, -1);
-			// Pop the error from the stack
-			lua_pop(*L, 1);
-			throw wibble::exception::Consistency("executing Lua file " + *i, error);
-		}
-	}
+    vector<string> files = runtime::Config::get().dir_targetfile.list_files(".lua");
+    for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
+    {
+        if (luaL_dofile(*L, i->c_str()))
+        {
+            // Copy the error, so that it will exist after the pop
+            string error = lua_tostring(*L, -1);
+            // Pop the error from the stack
+            lua_pop(*L, 1);
+            throw std::runtime_error("cannot execute Lua file " + *i + ": " + error);
+        }
+    }
 }
 
 Targetfile::Func Targetfile::get(const std::string& def)
 {
-	std::map<std::string, int>::iterator i = ref_cache.find(def);
+    std::map<std::string, int>::iterator i = ref_cache.find(def);
 
-	if (i == ref_cache.end())
-	{
-		size_t pos = def.find(':');
-		if (pos == string::npos)
-			throw wibble::exception::Consistency(
-					"parsing targetfile definition \""+def+"\"",
-					"definition not in the form type:parms");
-		string type = def.substr(0, pos);
-		string parms = def.substr(pos+1);
+    if (i == ref_cache.end())
+    {
+        size_t pos = def.find(':');
+        if (pos == string::npos)
+            throw std::runtime_error("cannot parse targetfile definition \"" + def + "\": definition not in the form type:parms");
+        string type = def.substr(0, pos);
+        string parms = def.substr(pos+1);
 
-		// Get targetfile[type]
-		lua_getglobal(*L, "targetfile");
-		lua_pushlstring(*L, type.data(), type.size());
-		lua_gettable(*L, -2);
-		if (lua_type(*L, -1) == LUA_TNIL)
-		{
-			lua_pop(*L, 2);
-			throw wibble::exception::Consistency(
-					"parsing targetfile definition \""+def+"\"",
-					"no targetfile found of type \""+type+"\"");
-		}
+        // Get targetfile[type]
+        lua_getglobal(*L, "targetfile");
+        lua_pushlstring(*L, type.data(), type.size());
+        lua_gettable(*L, -2);
+        if (lua_type(*L, -1) == LUA_TNIL)
+        {
+            lua_pop(*L, 2);
+            throw std::runtime_error("cannot parse targetfile definition \"" + def + "\": no targetfile found of type \"" + type + "\"");
+        }
 
-		// Call targetfile[type](parms)
-		lua_pushlstring(*L, parms.data(), parms.size());
-		if (lua_pcall(*L, 1, 1, 0))
-		{
-			string error = lua_tostring(*L, -1);
-			lua_pop(*L, 2);
-			throw wibble::exception::Consistency(
-					"creating targetfile function \""+def+"\"",
-					error);
-		}
-		
+        // Call targetfile[type](parms)
+        lua_pushlstring(*L, parms.data(), parms.size());
+        if (lua_pcall(*L, 1, 1, 0))
+        {
+            string error = lua_tostring(*L, -1);
+            lua_pop(*L, 2);
+            throw std::runtime_error("cannot create targetfile function \"" + def + "\": " + error);
+        }
+
 		// Ref the created function into the registry
 		int idx = luaL_ref(*L, LUA_REGISTRYINDEX);
 		lua_pop(*L, 1);
@@ -201,55 +173,53 @@ std::string Targetfile::Func::operator()(Metadata& md)
 	// Push the metadata
 	md.lua_push(*L);
 
-	// Call the function
-	if (lua_pcall(*L, 1, 1, 0))
-	{
-		string error = lua_tostring(*L, -1);
-		lua_pop(*L, 1);
-		throw wibble::exception::Consistency("running targetfile function", error);
-	}
+    // Call the function
+    if (lua_pcall(*L, 1, 1, 0))
+    {
+        string error = lua_tostring(*L, -1);
+        lua_pop(*L, 1);
+        throw std::runtime_error("cannot run targetfile function" + error);
+    }
 
 	string res = lua_tostring(*L, -1);
 	lua_pop(*L, 1);
 	return res;
 }
 
-TargetfileSpy::TargetfileSpy(ReadonlyDataset& ds, runtime::Output& output, const std::string& def)
-	: func(Targetfile::instance().get(def)), ds(ds), output(output)
+TargetfileSpy::TargetfileSpy(Reader& ds, sys::NamedFileDescriptor& output, const std::string& def)
+    : Reader(ds.name()), func(Targetfile::instance().get(def)), ds(ds), output(output)
 {
 }
 
-namespace {
-struct MetadataSpy : public metadata::Eater
+TargetfileSpy::~TargetfileSpy()
 {
-    TargetfileSpy& tfs;
-    metadata::Eater& next;
-
-    MetadataSpy(TargetfileSpy& tfs, metadata::Eater& next) : tfs(tfs), next(next) {}
-
-    bool eat(auto_ptr<Metadata> md) override
-    {
-        tfs.redirect(*md);
-        return next.eat(md);
-    }
-};
+    delete cur_output;
 }
 
-void TargetfileSpy::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
+std::string TargetfileSpy::type() const { return ds.type(); }
+
+void TargetfileSpy::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-	MetadataSpy spy(*this, consumer);
-	ds.queryData(q, spy);
+    ds.query_data(q, [&](unique_ptr<Metadata> md) {
+        redirect(*md);
+        return dest(move(md));
+    });
 }
 
-void TargetfileSpy::querySummary(const Matcher& matcher, Summary& summary)
+void TargetfileSpy::query_summary(const Matcher& matcher, Summary& summary)
 {
-	ds.querySummary(matcher, summary);
+    ds.query_summary(matcher, summary);
 }
 
 void TargetfileSpy::redirect(Metadata& md)
 {
-	output.openFile(func(md), true);
+    string pathname = func(md);
+    if (!cur_output || cur_output->name() != pathname)
+    {
+        delete cur_output;
+        cur_output = new sys::File(pathname, O_WRONLY | O_CREAT | O_APPEND);
+        output = *cur_output;
+    }
 }
 
 }
-// vim:set ts=4 sw=4:

@@ -1,33 +1,11 @@
-/*
- * dataset/index/aggregate - Handle aggregate tables in SQL indices
- *
- * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include "base.h"
 #include "aggregate.h"
-#include <arki/matcher.h>
+#include "arki/matcher.h"
+#include "arki/utils/string.h"
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -147,39 +125,37 @@ int Aggregate::add_constraints(
     size_t found = 0;
     for (Attrs::const_iterator i = m_attrs.begin(); i != m_attrs.end(); ++i)
     {
-		matcher::AND::const_iterator mi = m.m_impl->find((*i)->code);
-		if (mi == m.m_impl->end())
-			continue;
+        auto mi = m.get((*i)->code);
+        if (!mi) continue;
 
-		// We found something: generate a constraint for it
-		constraints.push_back(
-				prefix + "." + (*i)->name + " " +
-				index::fmtin((*i)->query(*(mi->second->upcast<matcher::OR>()))));
-		++found;
-	}
-	return found;
+        // We found something: generate a constraint for it
+        constraints.push_back(
+                prefix + "." + (*i)->name + " " +
+                index::fmtin((*i)->query(*mi)));
+        ++found;
+    }
+    return found;
 }
 
 std::string Aggregate::make_subquery(const Matcher& m) const
 {
-	if (m.empty()) return std::string();
+    if (m.empty()) return std::string();
 
     // See if the matcher has anything that we can use
     vector<string> constraints;
     for (Attrs::const_iterator i = m_attrs.begin(); i != m_attrs.end(); ++i)
     {
-		matcher::AND::const_iterator mi = m.m_impl->find((*i)->code);
-		if (mi == m.m_impl->end())
-			continue;
+        auto mi = m.get((*i)->code);
+        if (!mi) continue;
 
-		// We found something: generate a constraint for it
-		constraints.push_back(
-				(*i)->name + " " +
-				index::fmtin((*i)->query(*(mi->second->upcast<matcher::OR>()))));
-	}
-	if (constraints.empty())
-		return std::string();
-	return "SELECT id FROM " + m_table_name + " WHERE " + str::join(constraints.begin(), constraints.end(), " AND ");
+        // We found something: generate a constraint for it
+        constraints.push_back(
+                (*i)->name + " " +
+                index::fmtin((*i)->query(*mi)));
+    }
+    if (constraints.empty())
+        return std::string();
+    return "SELECT id FROM " + m_table_name + " WHERE " + str::join(" AND ", constraints.begin(), constraints.end());
 }
 
 int Aggregate::obtain(const Metadata& md)

@@ -1,28 +1,6 @@
 #ifndef ARKI_TYPES_TIMERANGE_H
 #define ARKI_TYPES_TIMERANGE_H
 
-/*
- * types/timerange - Time span information
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/types.h>
 #include <arki/types/reftime.h>
 #include <stdint.h>
@@ -131,12 +109,12 @@ struct Timerange : public types::StyledType<Timerange>
     virtual bool get_proc_duration(int& duration, bool& is_seconds) const = 0;
 
     /// Create a Timedef equivalent of this time range
-    virtual std::auto_ptr<timerange::Timedef> to_timedef() const;
+    virtual std::unique_ptr<timerange::Timedef> to_timedef() const;
 
     /// CODEC functions
-    static std::auto_ptr<Timerange> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Timerange> decodeString(const std::string& val);
-    static std::auto_ptr<Timerange> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Timerange> decode(BinaryDecoder& dec);
+    static std::unique_ptr<Timerange> decodeString(const std::string& val);
+    static std::unique_ptr<Timerange> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 
@@ -145,12 +123,12 @@ struct Timerange : public types::StyledType<Timerange>
 
     Timerange* clone() const override = 0;
 
-    static std::auto_ptr<Timerange> createGRIB1(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
-    static std::auto_ptr<Timerange> createGRIB2(unsigned char type, unsigned char unit, signed long p1, signed long p2);
-    static std::auto_ptr<Timerange> createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit=timerange::UNIT_SECOND);
-    static std::auto_ptr<Timerange> createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit,
+    static std::unique_ptr<Timerange> createGRIB1(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
+    static std::unique_ptr<Timerange> createGRIB2(unsigned char type, unsigned char unit, signed long p1, signed long p2);
+    static std::unique_ptr<Timerange> createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit=timerange::UNIT_SECOND);
+    static std::unique_ptr<Timerange> createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit,
                                                   uint8_t stat_type, uint32_t stat_len, timerange::TimedefUnit stat_unit=timerange::UNIT_SECOND);
-    static std::auto_ptr<Timerange> createBUFR(unsigned value = 0, unsigned char unit = 254);
+    static std::unique_ptr<Timerange> createBUFR(unsigned value = 0, unsigned char unit = 254);
 };
 
 namespace timerange {
@@ -180,7 +158,7 @@ public:
 	unsigned p2() const { return m_p2; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -197,8 +175,8 @@ public:
     void getNormalised(int& type, GRIB1Unit& unit, int& p1, int& p2, bool& use_op1, bool& use_op2) const;
 
     GRIB1* clone() const override;
-    static std::auto_ptr<GRIB1> create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
-    static std::auto_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB1> create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
+    static std::unique_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
     static void arg_significance(unsigned type, bool& use_p1, bool& use_p2);
 };
 
@@ -215,7 +193,7 @@ public:
 	signed p2() const { return m_p2; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -230,8 +208,8 @@ public:
     bool equals(const Type& o) const override;
 
     GRIB2* clone() const override;
-    static std::auto_ptr<GRIB2> create(unsigned char type, unsigned char unit, signed long p1, signed long p2);
-    static std::auto_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB2> create(unsigned char type, unsigned char unit, signed long p1, signed long p2);
+    static std::unique_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class Timedef : public Timerange
@@ -258,7 +236,7 @@ public:
     unsigned stat_len() const { return m_stat_len; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -276,14 +254,14 @@ public:
      * Given a reftime representing validity time, compute and return its
      * emission time, shifting it by what is represented by this timedef
      */
-    std::auto_ptr<reftime::Position> validity_time_to_emission_time(const reftime::Position& src) const;
+    std::unique_ptr<reftime::Position> validity_time_to_emission_time(const reftime::Position& src) const;
 
     Timedef* clone() const override;
-    static std::auto_ptr<Timedef> create(uint32_t step_len, TimedefUnit step_unit=UNIT_SECOND);
-    static std::auto_ptr<Timedef> create(uint32_t step_len, TimedefUnit step_unit,
+    static std::unique_ptr<Timedef> create(uint32_t step_len, TimedefUnit step_unit=UNIT_SECOND);
+    static std::unique_ptr<Timedef> create(uint32_t step_len, TimedefUnit step_unit,
                               uint8_t stat_type, uint32_t stat_len, TimedefUnit stat_unit=UNIT_SECOND);
-    static std::auto_ptr<Timedef> createFromYaml(const std::string& str);
-    static std::auto_ptr<Timedef> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Timedef> createFromYaml(const std::string& str);
+    static std::unique_ptr<Timedef> decodeMapping(const emitter::memory::Mapping& val);
 
     /**
      * Unit conversion for code table 4.4 GRIB2 indicator of unit of time range
@@ -325,7 +303,7 @@ public:
 	unsigned months() const;
 
     Style style() const override;
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -340,8 +318,8 @@ public:
     bool equals(const Type& o) const override;
 
     BUFR* clone() const override;
-    static std::auto_ptr<BUFR> create(unsigned value = 0, unsigned char unit = 254);
-    static std::auto_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<BUFR> create(unsigned value = 0, unsigned char unit = 254);
+    static std::unique_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

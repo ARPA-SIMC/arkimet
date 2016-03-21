@@ -1,46 +1,29 @@
-/*
- * summary/stats - Implementation of a summary stats payload
- *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <arki/summary/stats.h>
-#include <arki/metadata.h>
-#include <arki/types/utils.h>
-#include <arki/utils/codec.h>
-#include <arki/utils/lua.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
+#include "arki/summary/stats.h"
+#include "arki/metadata.h"
+#include "arki/types/utils.h"
+#include "arki/binary.h"
+#include "arki/utils/lua.h"
+#include "arki/utils/string.h"
+#include "arki/utils/files.h"
+#include "arki/utils/yaml.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/exceptions.h"
 
 using namespace std;
-using namespace wibble;
-using namespace arki::utils::codec;
+using namespace arki::utils;
 using namespace arki::types;
 
 namespace arki {
 
+/*
 namespace types {
 const char* traits<summary::Stats>::type_tag = "summarystats";
-const types::Code traits<summary::Stats>::type_code = types::TYPE_SUMMARYSTATS;
+const types::Code traits<summary::Stats>::type_code = TYPE_SUMMARYSTATS;
 const size_t traits<summary::Stats>::type_sersize_bytes = 2;
 const char* traits<summary::Stats>::type_lua_tag = LUATAG_TYPES ".summary.stats";
 }
+*/
 
 namespace summary {
 
@@ -57,37 +40,25 @@ Stats::Stats(const Metadata& md)
         begin = rt->period_begin();
         end = rt->period_end();
     } else
-        throw wibble::exception::Consistency("summarising metadata", "missing reference time");
+        throw_consistency_error("summarising metadata", "missing reference time");
 }
 
-Stats* Stats::clone() const override
+Stats* Stats::clone() const
 {
     return new Stats(*this);
 }
 
-int Stats::compare(const Type& o) const
+int Stats::compare(const Stats& o) const
 {
-    int res = Type::compare(o);
-    if (res != 0) return res;
-
-    // We should be the same kind, so upcast
-    const Stats* v = dynamic_cast<const Stats*>(&o);
-    if (!v)
-        throw wibble::exception::Consistency(
-            "comparing metadata types",
-            string("second element claims to be a summary::Stats, but it is a ") + typeid(&o).name() + " instead");
-
-    if (int res = count - v->count) return res;
-    if (int res = size - v->size) return res;
-    if (int res = begin.compare(v->begin)) return res;
-    return end.compare(v->end);
+    if (int res = count - o.count) return res;
+    if (int res = size - o.size) return res;
+    if (int res = begin.compare(o.begin)) return res;
+    return end.compare(o.end);
 }
 
-bool Stats::equals(const Type& o) const
+bool Stats::equals(const Stats& o) const
 {
-    const Stats* v = dynamic_cast<const Stats*>(&o);
-    if (!v) return false;
-    return count == v->count && size == v->size && begin == v->begin && end == v->end;
+    return count == o.count && size == o.size && begin == o.begin && end == o.end;
 }
 
 void Stats::merge(const Stats& s)
@@ -119,22 +90,34 @@ void Stats::merge(const Metadata& md)
             rt->expand_date_range(begin, end);
     }
     else
-        throw wibble::exception::Consistency("summarising metadata", "missing reference time");
+        throw_consistency_error("summarising metadata", "missing reference time");
     ++count;
     size += md.data_size();
 }
 
-std::auto_ptr<types::Reftime> Stats::make_reftime() const
+std::unique_ptr<types::Reftime> Stats::make_reftime() const
 {
     return Reftime::create(begin, end);
 }
 
-void Stats::encodeWithoutEnvelope(Encoder& enc) const
+void Stats::encodeBinary(BinaryEncoder& enc) const
 {
-    auto_ptr<types::Reftime> reftime(Reftime::create(begin, end));
-    enc.addUInt(count, 4);
-    enc.addString(reftime->encodeBinary());
-    enc.addULInt(size, 8);
+    vector<uint8_t> contents;
+    contents.reserve(256);
+    BinaryEncoder contentsenc(contents);
+    encodeWithoutEnvelope(contentsenc);
+
+    enc.add_varint((unsigned)TYPE_SUMMARYSTATS);
+    enc.add_varint(contents.size());
+    enc.add_raw(contents);
+}
+
+void Stats::encodeWithoutEnvelope(BinaryEncoder& enc) const
+{
+    unique_ptr<types::Reftime> reftime(Reftime::create(begin, end));
+    enc.add_unsigned(count, 4);
+    reftime->encodeBinary(enc);
+    enc.add_unsigned(size, 8);
 }
 
 std::ostream& Stats::writeToOstream(std::ostream& o) const
@@ -153,16 +136,16 @@ void Stats::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("s", size);
 }
 
-auto_ptr<Stats> Stats::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Stats> Stats::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
-    auto_ptr<Stats> res(new Stats);
+    unique_ptr<Stats> res(new Stats);
     res->count = val["c"].want_int("parsing summary stats count");
     res->size = val["s"].want_int("parsing summary stats size");
     if (res->count)
     {
-        res->begin = *types::Time::decodeList(val["b"].want_list("parsing summary stats begin"));
-        res->end = *types::Time::decodeList(val["e"].want_list("parsing summary stats end"));
+        res->begin = core::Time::decodeList(val["b"].want_list("parsing summary stats begin"));
+        res->end = core::Time::decodeList(val["e"].want_list("parsing summary stats end"));
     }
     return res;
 }
@@ -176,70 +159,61 @@ std::string Stats::toYaml(size_t indent) const
 
 void Stats::toYaml(std::ostream& out, size_t indent) const
 {
-    auto_ptr<types::Reftime> reftime(Reftime::create(begin, end));
+    unique_ptr<types::Reftime> reftime(Reftime::create(begin, end));
     string ind(indent, ' ');
     out << ind << "Count: " << count << endl;
     out << ind << "Size: " << size << endl;
     out << ind << "Reftime: " << *reftime << endl;
 }
 
-auto_ptr<Stats> Stats::decode(const unsigned char* buf, size_t len)
+unique_ptr<Stats> Stats::decode(BinaryDecoder& dec)
 {
-    using namespace utils::codec;
-
-    auto_ptr<Stats> res(new Stats);
+    unique_ptr<Stats> res(new Stats);
 
     // First decode the count
-    if (len < 4)
-        throw wibble::exception::Consistency("parsing summary stats", "summary stats has size " + str::fmt(len) + " but at least 4 bytes are needed");
-    res->count = decodeUInt(buf, 4);
-    buf += 4; len -= 4;
+    res->count = dec.pop_uint(4, "summary stats (count)");
 
     // Then decode the reftime
-    const unsigned char* el_start = buf;
-    size_t el_len = len;
-    types::Code el_type = types::decodeEnvelope(el_start, el_len);
-    if (el_type == types::TYPE_REFTIME)
+    TypeCode code;
+    BinaryDecoder inner = dec.pop_type_envelope(code);
+    if (code == TYPE_REFTIME)
     {
-        auto_ptr<Reftime> rt(Reftime::decode(el_start, el_len));
+        unique_ptr<Reftime> rt(Reftime::decode(inner));
         res->begin = rt->period_begin();
         res->end = rt->period_end();
     }
     else
-        throw wibble::exception::Consistency("parsing summary stats", "cannot handle element " + str::fmt(el_type));
-    len -= el_start + el_len - buf;
-    buf = el_start + el_len;
+    {
+        stringstream ss;
+        ss << "cannot parse summary stats: cannot handle element " << formatCode(code);
+        throw std::runtime_error(ss.str());
+    }
 
     // Then decode the size (optional, for backward compatibility)
-    if (len < 8)
+    if (dec.size < 8)
         res->size = 0;
     else
-    {
-        res->size = decodeULInt(buf, 8);
-        buf += 8; len -= 8;
-    }
+        res->size = dec.pop_ulint(8, "summary stats (size)");
 
     return res;
 }
 
-auto_ptr<Stats> Stats::decodeString(const std::string& str)
+unique_ptr<Stats> Stats::decodeString(const std::string& str)
 {
-    using namespace str;
-
-    auto_ptr<Stats> res(new Stats);
-    stringstream in(str, ios_base::in);
+    unique_ptr<Stats> res(new Stats);
+    auto reader = LineReader::from_chars(str.data(), str.size());
     YamlStream yamlStream;
-    for (YamlStream::const_iterator i = yamlStream.begin(in);
+    for (YamlStream::const_iterator i = yamlStream.begin(*reader);
             i != yamlStream.end(); ++i)
     {
-        string name = tolower(i->first);
+        string name = str::lower(i->first);
         if (name == "count")
             res->count = strtoul(i->second.c_str(), 0, 10);
         else if (name == "size")
             res->size = strtoull(i->second.c_str(), 0, 10);
         else if (name == "reftime")
         {
-            auto_ptr<Reftime> rt(Reftime::decodeString(i->second));
+            unique_ptr<Reftime> rt(Reftime::decodeString(i->second));
             res->begin = rt->period_begin();
             res->end = rt->period_end();
         }
@@ -248,20 +222,32 @@ auto_ptr<Stats> Stats::decodeString(const std::string& str)
 }
 
 #ifdef HAVE_LUA
+void Stats::lua_push(lua_State* L) const
+{
+    lua_newtable(L);
+
+    lua_pushstring(L, "count");
+    lua_pushnumber(L, count);
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "size");
+    lua_pushnumber(L, size);
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "reftime");
+    Reftime::create(begin, end)->lua_push(L);
+    lua_settable(L, -3);
+}
+
 bool Stats::lua_lookup(lua_State* L, const std::string& name) const
 {
     if (name == "count")
         lua_pushnumber(L, count);
     else if (name == "reftime")
         Reftime::create(begin, end)->lua_push(L);
-    else
-        return types::CoreType<Stats>::lua_lookup(L, name);
     return true;
 }
 #endif
 
-static types::MetadataType summaryStatsType = types::MetadataType::create<summary::Stats>();
-
 }
 }
-#include <arki/types.tcc>

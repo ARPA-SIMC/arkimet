@@ -1,39 +1,14 @@
-/*
- * postprocess - postprocessing of result data
- *
- * Copyright (C) 2008--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include "postprocess.h"
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/utils/process.h>
-#include <arki/runtime/config.h>
-#include <wibble/string.h>
-#include <wibble/regexp.h>
-#include <wibble/operators.h>
-#include <wibble/sys/childprocess.h>
-#include <wibble/sys/process.h>
-#include <wibble/sys/fs.h>
-#include <wibble/stream/posix.h>
+#include "arki/exceptions.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/utils/process.h"
+#include "arki/runtime/config.h"
+#include "arki/utils/string.h"
+#include "arki/utils/regexp.h"
+#include "arki/wibble/sys/childprocess.h"
+#include "arki/wibble/sys/process.h"
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -50,7 +25,7 @@ typedef void (*sighandler_t)(int);
 #endif
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace {
 
@@ -86,7 +61,7 @@ struct Child : public utils::IODispatcher
     /// Subcommand with the child to run
     utils::Subcommand cmd;
     /// Non-null if we should notify the hook as soon as some data arrives from the processor
-    metadata::Hook* data_start_hook;
+    std::function<void()> data_start_hook;
     /**
      * Pipe used to send data from the subprocess to the output stream. It can
      * be -1 if the output stream does not provide a file descriptor to write
@@ -105,7 +80,6 @@ struct Child : public utils::IODispatcher
 
     Child()
         : utils::IODispatcher(cmd),
-          data_start_hook(0),
           m_nextfd(-1), m_out(0), m_err(0)
     {
     }
@@ -128,7 +102,7 @@ struct Child : public utils::IODispatcher
                     return;
                 }
                 if (errno != EINVAL)
-                    throw wibble::exception::System("splicing data from child postprocessor to destination");
+                    throw_system_error("splicing data from child postprocessor to destination");
                 // Else pass it on to the traditional method
             }
         }
@@ -140,7 +114,7 @@ struct Child : public utils::IODispatcher
         char buf[4096*2];
         ssize_t res = read(outfd, buf, 4096*2);
         if (res < 0)
-            throw wibble::exception::System("reading from child postprocessor");
+            throw_system_error("reading from child postprocessor");
         if (res == 0)
         {
             close_outfd();
@@ -149,9 +123,9 @@ struct Child : public utils::IODispatcher
         if (data_start_hook)
         {
             // Fire hook
-            (*data_start_hook)();
+            data_start_hook();
             // Only once
-            data_start_hook = 0;
+            data_start_hook = nullptr;
         }
 
         // Pass it on
@@ -169,7 +143,7 @@ struct Child : public utils::IODispatcher
                         close(m_nextfd);
                         m_nextfd = -1;
                     } else
-                        throw wibble::exception::System("writing to destination file descriptor");
+                        throw_system_error("writing to destination file descriptor");
                 }
                 pos += wres;
             }
@@ -178,7 +152,7 @@ struct Child : public utils::IODispatcher
         {
             m_out->write(buf, res);
             if (m_out->bad())
-                throw wibble::exception::System("writing to destination stream");
+                throw_system_error("writing to destination stream");
             if (m_out->eof())
                 m_out = NULL;
         }
@@ -242,26 +216,18 @@ void Postprocess::set_output(int outfd)
     m_child->m_nextfd = outfd;
 }
 
-void Postprocess::set_output(std::ostream& out)
-{
-    m_child->m_out = &out;
-    if (stream::PosixBuf* ps = dynamic_cast<stream::PosixBuf*>(out.rdbuf()))
-        m_child->m_nextfd = ps->fd();
-}
-
 void Postprocess::set_error(std::ostream& err)
 {
     m_child->m_err = &err;
 }
 
-void Postprocess::set_data_start_hook(metadata::Hook* hook)
+void Postprocess::set_data_start_hook(std::function<void()> hook)
 {
     m_child->data_start_hook = hook;
 }
 
 void Postprocess::validate(const map<string, string>& cfg)
 {
-    using namespace wibble::operators;
     // Build the set of allowed postprocessors
     set<string> allowed;
     map<string, string>::const_iterator i = cfg.find("postprocess");
@@ -275,11 +241,16 @@ void Postprocess::validate(const map<string, string>& cfg)
 
     // Validate the command
     if (m_child->cmd.args.empty())
-        throw wibble::exception::Consistency("initialising postprocessing filter", "postprocess command is empty");
+        throw std::runtime_error("cannot initialize postprocessing filter: postprocess command is empty");
     string scriptname = str::basename(m_child->cmd.args[0]);
     if (i != cfg.end() && allowed.find(scriptname) == allowed.end())
     {
-        throw wibble::exception::Consistency("initialising postprocessing filter", "postprocess command " + m_command + " is not supported by all the requested datasets (allowed postprocessors are: " + str::join(allowed.begin(), allowed.end()) + ")");
+        stringstream ss;
+        ss << "cannot initialize postprocessing filter: postprocess command "
+           << m_command
+           << " is not supported by all the requested datasets (allowed postprocessors are: " + str::join(", ", allowed.begin(), allowed.end())
+           << ")";
+        throw std::runtime_error(ss.str());
     }
 }
 
@@ -292,7 +263,7 @@ void Postprocess::start()
     m_child->start();
 }
 
-bool Postprocess::eat(auto_ptr<Metadata> md)
+bool Postprocess::process(unique_ptr<Metadata>&& md)
 {
     if (m_child->infd == -1)
         return false;
@@ -301,11 +272,11 @@ bool Postprocess::eat(auto_ptr<Metadata> md)
     // we are sending that as well
     md->makeInline();
 
-    string encoded = md->encodeBinary();
+    auto encoded = md->encodeBinary();
     if (m_child->send(encoded) < encoded.size())
         return false;
 
-    wibble::sys::Buffer data = md->getData();
+    const auto& data = md->getData();
     if (m_child->send(data.data(), data.size()) < data.size())
         return false;
 
@@ -323,12 +294,11 @@ void Postprocess::flush()
     m_child = 0;
     if (res)
     {
-        string msg = "postprocess command \"" + m_command + "\" " + sys::process::formatStatus(res);
+        string msg = "cannot run postprocessing filter: postprocess command \"" + m_command + "\" " + wibble::sys::process::formatStatus(res);
         if (!m_errors.str().empty())
-            msg += "; stderr: " + str::trim(m_errors.str());
-        throw wibble::exception::Consistency("running postprocessing filter", msg);
+            msg += "; stderr: " + str::strip(m_errors.str());
+        throw std::runtime_error(msg);
     }
 }
 
 }
-// vim:set ts=4 sw=4:

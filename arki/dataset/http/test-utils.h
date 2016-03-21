@@ -1,33 +1,17 @@
-/**
- * Copyright (C) 2010--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #ifndef ARKI_DATASET_HTTP_TESTUTILS_H
 #define ARKI_DATASET_HTTP_TESTUTILS_H
 
 #include <arki/dataset/tests.h>
 #include <string>
+#include <vector>
 #include <map>
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace net {
 namespace http {
 struct Request;
+}
 }
 }
 }
@@ -42,7 +26,6 @@ struct FakeRequest
     size_t response_offset;
     std::string response_method;
     std::map<std::string, std::string> response_headers;
-    std::string response_body;
 
     FakeRequest(const std::string& tmpfname = "fakereq.XXXXXX");
     ~FakeRequest();
@@ -51,10 +34,29 @@ struct FakeRequest
     void write_get(const std::string& query);
 
     void reset();
-    void setup_request(wibble::net::http::Request& req);
+    void setup_request(arki::utils::net::http::Request& req);
     void read_response();
 
     void dump_headers(std::ostream& out);
+
+protected:
+    virtual void append_body(const uint8_t* buf, size_t len) = 0;
+};
+
+struct StringFakeRequest : public FakeRequest
+{
+    std::string response_body;
+
+protected:
+    void append_body(const uint8_t* buf, size_t len) override;
+};
+
+struct BufferFakeRequest : public FakeRequest
+{
+    std::vector<uint8_t> response_body;
+
+protected:
+    void append_body(const uint8_t* buf, size_t len) override;
 };
 
 }

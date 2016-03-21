@@ -1,35 +1,14 @@
-/*
- * dataset/http/server - Server-side remote HTTP dataset access
- *
- * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/dataset/http/server.h>
 #include <arki/configfile.h>
 #include <arki/summary.h>
 #include <arki/sort.h>
 #include <arki/utils.h>
+#include <arki/utils/string.h>
 #include <arki/runtime.h>
 #include <arki/emitter/json.h>
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -41,7 +20,7 @@ StreamHeaders::StreamHeaders(net::http::Request& req, const std::string& fname)
 {
 }
 
-void StreamHeaders::operator()()
+void StreamHeaders::send_headers()
 {
     req.send_status_line(200, "OK");
     req.send_date_header();
@@ -52,37 +31,54 @@ void StreamHeaders::operator()()
     fired = true;
 }
 
-void StreamHeaders::send_result(const std::string& res)
+void StreamHeaders::send_result(const std::vector<uint8_t>& res)
 {
     req.send_result(res, content_type, fname + "." + ext);
 }
 
 void StreamHeaders::sendIfNotFired()
 {
-    if (!fired) operator()();
-}
-
-MetadataStreamer::MetadataStreamer(StreamHeaders& sh) : sh(sh) {}
-
-bool MetadataStreamer::eat(auto_ptr<Metadata> md)
-{
-    sh.sendIfNotFired();
-    md->write(sh.req.sock, "socket");
-    return true;
+    if (!fired) send_headers();
 }
 
 
 LegacySummaryParams::LegacySummaryParams()
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     query = add<ParamSingle>("query");
     style = add<ParamSingle>("style");
+    annotate = add<ParamSingle>("annotate");
 }
+
+void LegacySummaryParams::set_into(runtime::ProcessorMaker& pmaker) const
+{
+    using namespace net::http;
+
+    pmaker.server_side = true;
+
+    // Configure the ProcessorMaker with the request
+    if (style->empty()) {
+        ;
+    } else if (*style == "yaml") {
+        pmaker.yaml = true;
+    } else if (*style == "json") {
+        pmaker.json = true;
+    }
+    if (*annotate == "true") {
+        pmaker.annotate = true;
+    }
+
+    // Validate request
+    string errors = pmaker.verify_option_consistency();
+    if (!errors.empty())
+        throw net::http::error400(errors);
+}
+
 
 LegacyQueryParams::LegacyQueryParams(const std::string& tmpdir)
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     conf_fname_blacklist = ":";
     conf_outdir = tmpdir;
@@ -94,7 +90,7 @@ LegacyQueryParams::LegacyQueryParams(const std::string& tmpdir)
 
 static void postprocfiles_to_env(net::http::FileParamMulti& postprocfile)
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     vector<string> postproc_files;
     for (vector<FileParam::FileInfo>::const_iterator i = postprocfile.files.begin();
@@ -104,7 +100,7 @@ static void postprocfiles_to_env(net::http::FileParamMulti& postprocfile)
     if (!postproc_files.empty())
     {
         // Pass files for the postprocessor in the environment
-        string val = str::join(postproc_files.begin(), postproc_files.end(), ":");
+        string val = str::join(":", postproc_files.begin(), postproc_files.end());
         setenv("ARKI_POSTPROC_FILES", val.c_str(), 1);
     } else
         unsetenv("ARKI_POSTPROC_FILES");
@@ -112,7 +108,7 @@ static void postprocfiles_to_env(net::http::FileParamMulti& postprocfile)
 
 void LegacyQueryParams::set_into(runtime::ProcessorMaker& pmaker) const
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     pmaker.server_side = true;
 
@@ -148,14 +144,14 @@ void LegacyQueryParams::set_into(runtime::ProcessorMaker& pmaker) const
 
 QuerySummaryParams::QuerySummaryParams()
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     matcher = add<ParamSingle>("matcher");
 }
 
 QueryDataParams::QueryDataParams()
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     withdata = add<ParamSingle>("withdata");
     sorter = add<ParamSingle>("sorter");
@@ -171,7 +167,7 @@ void QueryDataParams::set_into(DataQuery& dq) const
 
 QueryBytesParams::QueryBytesParams(const std::string& tmpdir)
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     conf_fname_blacklist = ":";
     conf_outdir = tmpdir;
@@ -199,7 +195,7 @@ void QueryBytesParams::set_into(ByteQuery& dq) const
 }
 
 
-void ReadonlyDatasetServer::do_config(const ConfigFile& remote_config, net::http::Request& req)
+void ReaderServer::do_config(const ConfigFile& remote_config, net::http::Request& req)
 {
     // args = Args()
     // if "json" in args:
@@ -211,35 +207,94 @@ void ReadonlyDatasetServer::do_config(const ConfigFile& remote_config, net::http
     req.send_result(res.str(), "text/plain");
 }
 
-void ReadonlyDatasetServer::do_summary(const LegacySummaryParams& parms, net::http::Request& req)
+void ReaderServer::do_summary(const LegacySummaryParams& parms, net::http::Request& req)
 {
-    using namespace wibble::net::http;
+    Matcher matcher = Matcher::parse(*parms.query);
+    runtime::ProcessorMaker pmaker;
+    pmaker.summary = true;
+    parms.set_into(pmaker);
 
-    // Query the summary
-    Summary sum;
-    ds.querySummary(Matcher::parse(*parms.query), sum);
+    // Response header generator
+    StreamHeaders headers(req, dsname + "-summary");
 
-    if (*parms.style == "yaml")
+    // Set content type and file name accordingly
+    if (pmaker.yaml)
     {
-        stringstream res;
-        sum.writeYaml(res);
-        req.send_result(res.str(), "text/x-yaml", dsname + "-summary.yaml");
+        headers.content_type = "text/x-yaml";
+        headers.ext = "yaml";
     }
-    else if (*parms.style == "json")
+    else if (pmaker.json)
     {
-        stringstream res;
-        emitter::JSON json(res);
-        sum.serialise(json);
-        req.send_result(res.str(), "application/json", dsname + "-summary.json");
+        headers.content_type = "application/json";
+        headers.ext = "json";
+    } else if (!pmaker.report.empty()) {
+        headers.content_type = "text/plain";
+        headers.ext = "txt";
     }
-    else
+
     {
-        string res = sum.encode(true);
-        req.send_result(res, "application/octet-stream", dsname + "-summary.bin");
+        // Create Output directed to req.sock
+        sys::NamedFileDescriptor sockoutput(req.sock, "socket");
+
+        // Hook sending headers to when the subprocess start sending
+        pmaker.data_start_hook = [&]{ headers.send_headers(); };
+
+        // Create the dataset processor for this query
+        unique_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
+
+        // Process the dataset producing the output
+        p->process(ds, dsname);
+        p->end();
     }
+
+    // End of streaming
+
 }
 
-void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, net::http::Request& req)
+void ReaderServer::do_summary_short(const LegacySummaryParams& parms, arki::utils::net::http::Request& req)
+{
+    Matcher matcher = Matcher::parse(*parms.query);
+    runtime::ProcessorMaker pmaker;
+    pmaker.summary_short = true;
+    parms.set_into(pmaker);
+
+    // Response header generator
+    StreamHeaders headers(req, dsname + "-summaryshort");
+
+    // Set content type and file name accordingly
+    if (pmaker.yaml)
+    {
+        headers.content_type = "text/x-yaml";
+        headers.ext = "yaml";
+    }
+    else if (pmaker.json)
+    {
+        headers.content_type = "application/json";
+        headers.ext = "json";
+    } else if (!pmaker.report.empty()) {
+        headers.content_type = "text/plain";
+        headers.ext = "txt";
+    }
+
+    {
+        // Create Output directed to req.sock
+        sys::NamedFileDescriptor sockoutput(req.sock, "socket");
+
+        // Hook sending headers to when the subprocess start sending
+        pmaker.data_start_hook = [&]{ headers.send_headers(); };
+
+        // Create the dataset processor for this query
+        unique_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
+
+        // Process the dataset producing the output
+        p->process(ds, dsname);
+        p->end();
+    }
+
+    // End of streaming
+}
+
+void ReaderServer::do_query(const LegacyQueryParams& parms, net::http::Request& req)
 {
     // Validate query
     Matcher matcher;
@@ -280,17 +335,13 @@ void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, net::http::
 
     {
         // Create Output directed to req.sock
-        runtime::Output sockoutput(req.sock, "socket");
+        sys::NamedFileDescriptor sockoutput(req.sock, "socket");
 
-        if (pmaker.postprocess.empty())
-            // Send headers when data starts flowing
-            sockoutput.set_hook(headers);
-        else
-            // Hook sending headers to when the subprocess start sending
-            pmaker.data_start_hook = &headers;
+        // Hook sending headers to when the subprocess start sending
+        pmaker.data_start_hook = [&]{ headers.send_headers(); };
 
         // Create the dataset processor for this query
-        auto_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
+        unique_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
 
         // Process the dataset producing the output
         p->process(ds, dsname);
@@ -303,31 +354,35 @@ void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, net::http::
     // End of streaming
 }
 
-void ReadonlyDatasetServer::do_queryData(const QueryDataParams& parms, wibble::net::http::Request& req)
+void ReaderServer::do_queryData(const QueryDataParams& parms, net::http::Request& req)
 {
     // Response header generator
     StreamHeaders headers(req, dsname);
     headers.ext = "arkimet";
-    MetadataStreamer cons(headers);
     DataQuery dq;
     parms.set_into(dq);
 // TODO: hook here something that makes absolute BLOB sources or Inline sources depending on sq.with_data
-    ds.queryData(dq, cons);
+    NamedFileDescriptor out(headers.req.sock, "socket");
+    ds.query_data(dq, [&](unique_ptr<Metadata> md) {
+        headers.sendIfNotFired();
+        md->write(out);
+        return true;
+    });
 
     // If we had empty output, headers were not sent: catch up
     headers.sendIfNotFired();
 }
 
-void ReadonlyDatasetServer::do_querySummary(const QuerySummaryParams& parms, wibble::net::http::Request& req)
+void ReaderServer::do_querySummary(const QuerySummaryParams& parms, net::http::Request& req)
 {
     StreamHeaders headers(req, dsname);
     headers.ext = "summary";
     Summary s;
-    ds.querySummary(Matcher::parse(*parms.matcher), s);
+    ds.query_summary(Matcher::parse(*parms.matcher), s);
     headers.send_result(s.encode());
 }
 
-void ReadonlyDatasetServer::do_queryBytes(const QueryBytesParams& parms, wibble::net::http::Request& req)
+void ReaderServer::do_queryBytes(const QueryBytesParams& parms, net::http::Request& req)
 {
     // Response header generator
     StreamHeaders headers(req, dsname);
@@ -335,7 +390,7 @@ void ReadonlyDatasetServer::do_queryBytes(const QueryBytesParams& parms, wibble:
     ByteQuery bq;
     parms.set_into(bq);
     // Send headers when data starts flowing
-    bq.data_start_hook = &headers;
+    bq.data_start_hook = [&]{ headers.send_headers(); };
 
     // Pick a nice extension
     switch (bq.type)
@@ -346,11 +401,9 @@ void ReadonlyDatasetServer::do_queryBytes(const QueryBytesParams& parms, wibble:
         case ByteQuery::BQ_REP_SUMMARY: headers.ext = "txt";
     }
 
-    // Create Output directed to req.sock
-    runtime::Output sockoutput(req.sock, "socket");
-
     // Produce the results
-    ds.queryBytes(bq, sockoutput.stream());
+    NamedFileDescriptor out(req.sock, "socket");
+    ds.query_bytes(bq, out);
 
     // If we had empty output, headers were not sent: catch up
     headers.sendIfNotFired();
@@ -359,4 +412,3 @@ void ReadonlyDatasetServer::do_queryBytes(const QueryBytesParams& parms, wibble:
 }
 }
 }
-// vim:set ts=4 sw=4:

@@ -1,39 +1,21 @@
-/**
- * dataset/test-scenario - Build dataset scenarios for testing arkimet
- *
- * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/dataset/test-scenario.h>
+#include <arki/exceptions.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/archive.h>
+#include <arki/dataset/maintenance.h>
+#include <arki/dataset/indexed.h>
+#include <arki/dataset/reporter.h>
 #include <arki/metadata/test-generator.h>
 #include <arki/metadata/consumer.h>
 #include <arki/scan/any.h>
 #include <arki/utils.h>
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/sys.h>
+#include <arki/utils/string.h>
 #include <sstream>
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -42,7 +24,7 @@ namespace test {
 Scenario::Scenario(const std::string& name)
     : name(name), built(false)
 {
-    path = sys::fs::abspath(str::joinpath("scenarios", name));
+    path = sys::abspath(str::joinpath("scenarios", name));
     cfg.setValue("path", path);
     cfg.setValue("name", name);
 }
@@ -51,33 +33,33 @@ Scenario::~Scenario() {}
 void Scenario::build()
 {
     built = true;
-    sys::fs::mkdirIfMissing("scenarios", 0777);
-    if (sys::fs::exists(path))
-        sys::fs::rmtree(path);
+    sys::mkdir_ifmissing("scenarios", 0777);
+    if (sys::exists(path))
+        sys::rmtree(path);
     // TODO: create config file
 }
 
 ConfigFile Scenario::clone(const std::string& newpath) const
 {
     if (path.find("'") != string::npos)
-        throw wibble::exception::Consistency(
-                "cloning scenario " + name + " from " + path,
-                "cannot currently clone scenario if the old path contains \"'\"");
+        throw std::runtime_error("cannot clone scenario " + name + " from " + path + ": the old path contains \"'\"");
     if (newpath.find("'") != string::npos)
-        throw wibble::exception::Consistency(
-                "cloning scenario " + name + " to " + newpath,
-                "cannot currently clone scenario if the new path contains \"'\"");
+        throw std::runtime_error("cannot clone scenario " + name + " from " + path + ": the new path contains \"'\"");
 
-    if (sys::fs::exists(newpath))
-        sys::fs::rmtree(newpath);
+    if (sys::exists(newpath))
+        sys::rmtree(newpath);
 
     // TODO: replace "cp -a" with something that doesn't require system
-    string cmd = str::fmtf("cp -a '%s' '%s'", path.c_str(), newpath.c_str());
+    string cmd = "cp -a '" + path + "' '" + newpath + "'";
     int sres = system(cmd.c_str());
     if (sres == -1)
-        throw wibble::exception::System("Running command " + cmd);
+        throw_system_error("Running command " + cmd);
     if (sres != 0)
-        throw wibble::exception::Consistency("Running command " + cmd, str::fmtf("Command returned %d", sres));
+    {
+        stringstream ss;
+        ss << "command " << cmd << " returned error code " << sres;
+        throw std::runtime_error(ss.str());
+    }
 
     ConfigFile res;
     res.merge(cfg);
@@ -87,19 +69,15 @@ ConfigFile Scenario::clone(const std::string& newpath) const
 
 namespace {
 
-struct Importer : public metadata::Eater
+metadata_dest_func make_importer(dataset::SegmentedWriter& ds)
 {
-    dataset::WritableLocal& ds;
-
-    Importer(dataset::WritableLocal& ds) : ds(ds) {}
-    bool eat(auto_ptr<Metadata> md) override
-    {
-        WritableDataset::AcquireResult r = ds.acquire(*md);
-        if (r != WritableDataset::ACQ_OK)
-            throw wibble::exception::Consistency("building test scenario", "metadata was not imported successfully");
+    return [&](unique_ptr<Metadata> md) {
+        Writer::AcquireResult r = ds.acquire(*md);
+        if (r != Writer::ACQ_OK)
+            throw std::runtime_error("cannot build test scenario: metadata was not imported successfully");
         return true;
-    }
-};
+    };
+}
 
 /// Unlity base class for ondisk2 scenario builders
 struct Ondisk2Scenario : public Scenario
@@ -118,17 +96,21 @@ struct Ondisk2Scenario : public Scenario
         using namespace dataset;
 
         // Override current date for maintenance to 2010-09-01 + curday
-        dataset::ondisk2::TestOverrideCurrentDateForMaintenance od(t_start + 3600*24*(curday-1));
+        dataset::TestOverrideCurrentDateForMaintenance od(t_start + 3600*24*(curday-1));
 
         // Pack and archive
-        auto_ptr<WritableLocal> ds(WritableLocal::create(cfg));
+        unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
         stringstream packlog;
-        ds->repack(packlog, true);
-        if (packlog.str().find(str::fmtf("%d files archived", expected_archived)) == string::npos)
-            throw wibble::exception::Consistency(
-                    str::fmtf("checking that only %d files have been archived", expected_archived),
-                    "archive output is: " + packlog.str());
-        ds->flush();
+        OstreamReporter reporter(packlog);
+        ds->repack(reporter, true);
+        char expected[32];
+        snprintf(expected, 32, "%d files archived", expected_archived);
+        if (packlog.str().find(expected) == string::npos)
+        {
+            stringstream ss;
+            ss << "cannot check that only " << expected_archived << " files have been archived: archive output is: " << packlog.str();
+            throw std::runtime_error(ss.str());
+        }
     }
 
     /// Rename the 'last' archive to the given name
@@ -138,7 +120,7 @@ struct Ondisk2Scenario : public Scenario
         string last = str::joinpath(path, ".archive/last");
         string older = str::joinpath(path, ".archive/" + newname);
         if (rename(last.c_str(), older.c_str()) < 0)
-            throw wibble::exception::System("cannot rename " + last + " to " + older);
+            throw_system_error("cannot rename " + last + " to " + older);
     }
 
     /* Boilerplate left here in case there is something to add at a later stage
@@ -169,18 +151,23 @@ struct Ondisk2TestGrib1 : public Ondisk2Scenario
 
         Ondisk2Scenario::build();
 
-        // Generate a dataset with archived data
-        auto_ptr<WritableLocal> ds(WritableLocal::create(cfg));
+        {
+            unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
+            scan::scan("inbound/test.grib1", make_importer(*ds));
+            ds->flush();
+        }
 
-        Importer importer(*ds);
-        scan::scan("inbound/test.grib1", importer);
-        ds->flush();
+        {
+            // Generate a dataset with archived data
+            unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
 
-        // Run a check to remove new dataset marker
-        stringstream checklog;
-        ds->check(checklog, true, true);
-        if (checklog.str() != "")
-            throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
+            // Run a check to remove new dataset marker
+            stringstream checklog;
+            OstreamReporter reporter(checklog);
+            ds->check(reporter, true, true);
+            if (checklog.str() != "ondisk2-testgrib1: check 3 files ok\n")
+                throw std::runtime_error("check on new dataset failed: " + checklog.str());
+        }
     }
 };
 
@@ -203,29 +190,36 @@ struct Ondisk2Archived : public Ondisk2Scenario
 
         Ondisk2Scenario::build();
 
-        // Generate a dataset with archived data
-        auto_ptr<WritableLocal> ds(WritableLocal::create(cfg));
+        {
+            // Generate a dataset with archived data
+            unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
 
-        // Import several metadata items
-        metadata::test::Generator gen("grib1");
-        for (int i = 1; i <= 30; ++i)
-            gen.add(types::TYPE_REFTIME, str::fmtf("2010-09-%02dT00:00:00Z", i));
-        Importer importer(*ds);
-        gen.generate(importer);
-        ds->flush();
+            // Import several metadata items
+            metadata::test::Generator gen("grib1");
+            for (int i = 1; i <= 30; ++i)
+            {
+                char buf[32];
+                snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
+                gen.add(TYPE_REFTIME, buf);
+            }
+            gen.generate(make_importer(*ds));
+            ds->flush();
+        }
 
         // Run a check to remove new dataset marker
+        unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
         stringstream checklog;
-        ds->check(checklog, true, true);
-        if (checklog.str() != "")
-            throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
+        OstreamReporter reporter(checklog);
+        ds->check(reporter, true, true);
+        if (checklog.str() != "ondisk2-archived: check 0 files ok\n")
+            throw std::runtime_error("cannot run check on correct dataset: log is not empty: " + checklog.str());
 
         // Pack to build 'older' archive
-        run_repack(15, 8);
+        run_repack(16, 8);
         mvlast("older");
 
         // Pack to build 'last' archive
-        run_repack(30, 15);
+        run_repack(31, 15);
     }
 };
 
@@ -257,59 +251,63 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
         Ondisk2Scenario::build();
 
         // Generate a dataset with archived data
-        auto_ptr<WritableLocal> ds(WritableLocal::create(cfg));
+        {
+            unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
 
-        // Import several metadata items
-        metadata::test::Generator gen("grib1");
-        for (int i = 1; i <= 18; ++i)
-            gen.add(types::TYPE_REFTIME, str::fmtf("2010-09-%02dT00:00:00Z", i));
-        Importer importer(*ds);
-        gen.generate(importer);
-        ds->flush();
+            // Import several metadata items
+            metadata::test::Generator gen("grib1");
+            for (int i = 1; i <= 18; ++i)
+            {
+                char buf[32];
+                snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
+                gen.add(TYPE_REFTIME, buf);
+            }
+            gen.generate(make_importer(*ds));
+            ds->flush();
+        }
 
         // Run a check to remove new dataset marker
-        stringstream checklog;
-        ds->check(checklog, true, true);
-        if (checklog.str() != "")
-            throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
+        {
+            unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
+            stringstream checklog;
+            OstreamReporter reporter(checklog);
+            ds->check(reporter, true, true);
+            if (checklog.str() != "ondisk2-manyarchivestates: check 0 files ok\n")
+                throw std::runtime_error("cannot run check on correct dataset: log is not empty: " + checklog.str());
+        }
 
         // Pack and build 'offline' archive
-        run_repack(6, 3);
-        ds->archive().rescan_archives();
+        run_repack(7, 3);
         mvlast("offline");
         // same as ro, but only the toplevel summary is present
-        string ofsum = sys::fs::readFile(str::joinpath(path, ".archive/offline/summary"));
-        sys::fs::writeFile(
+        string ofsum = sys::read_file(str::joinpath(path, ".archive/offline/summary"));
+        sys::write_file(
                 str::joinpath(path, ".archive/offline.summary"),
                 ofsum);
-        sys::fs::rmtree(str::joinpath(path, ".archive/offline"));
+        sys::rmtree(str::joinpath(path, ".archive/offline"));
 
         // Pack and build 'wrongro' archive
-        run_repack(9, 3);
-        ds->archive().rescan_archives();
+        run_repack(10, 3);
         mvlast("wrongro");
         // same as ro, but toplevel summary does not match the data
-        sys::fs::writeFile(
+        sys::write_file(
                 str::joinpath(path, ".archive/wrongro.summary"),
                 ofsum);
 
         // Pack and build 'ro' archive
-        run_repack(12, 3);
-        ds->archive().rescan_archives();
+        run_repack(13, 3);
         mvlast("ro");
         // normal archive dir archived to mounted readonly media with dir.summary at the top
-        sys::fs::writeFile(
+        sys::write_file(
                 str::joinpath(path, ".archive/ro.summary"),
-                sys::fs::readFile(str::joinpath(path, ".archive/ro/summary")));
+                sys::read_file(str::joinpath(path, ".archive/ro/summary")));
 
         // Pack and build 'old' archive
-        run_repack(15, 3);
-        ds->archive().rescan_archives();
+        run_repack(16, 3);
         mvlast("old");
 
         // Pack and build 'last' archive
-        run_repack(18, 3);
-        ds->archive().rescan_archives();
+        run_repack(19, 3);
     }
 };
 
@@ -337,9 +335,7 @@ const Scenario& Scenario::get(const std::string& name)
     // Get the scenario
     ScenarioDB::iterator i = scenarios->find(name);
     if (i == scenarios->end())
-        throw wibble::exception::Consistency(
-                "creating test scenario \"" + name + "\"",
-                "scenario does not exist");
+        throw std::runtime_error("cannot create test scenario \"" + name + "\": scenario does not exist");
     // Build it if needed
     if (!i->second->built)
         i->second->build();
@@ -359,4 +355,3 @@ std::vector<std::string> Scenario::list()
 }
 }
 }
-// vim:set ts=4 sw=4:

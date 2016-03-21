@@ -1,37 +1,17 @@
-/*
- * Copyright (C) 2007--2013  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
-#include <wibble/sys/fs.h>
-
+#include <arki/utils/sys.h>
 #include <sstream>
 #include <iostream>
 
 namespace tut {
 using namespace std;
-using namespace wibble;
-using namespace wibble::tests;
 using namespace arki;
+using namespace arki::utils;
 using namespace arki::utils::files;
+using namespace arki::tests;
 
 struct arki_utils_files_shar {
 	arki_utils_files_shar()
@@ -134,7 +114,7 @@ void to::test<5>()
     string basedir, relname;
 
     resolve_path(".", basedir, relname);
-    wassert(actual(basedir) == sys::fs::abspath("."));
+    wassert(actual(basedir) == sys::abspath("."));
     wassert(actual(relname) == ".");
 
     resolve_path("/tmp/foo", basedir, relname);
@@ -142,7 +122,7 @@ void to::test<5>()
     wassert(actual(relname) == "/tmp/foo");
 
     resolve_path("foo/bar/../baz", basedir, relname);
-    wassert(actual(basedir) == sys::fs::abspath("."));
+    wassert(actual(basedir) == sys::abspath("."));
     wassert(actual(relname) == "foo/baz");
 }
 

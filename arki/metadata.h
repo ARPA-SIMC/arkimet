@@ -1,34 +1,13 @@
 #ifndef ARKI_METADATA_H
 #define ARKI_METADATA_H
 
-/*
- * metadata - Handle arkimet metadata
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+/// metadata - Handle arkimet metadata
 
 #include <arki/itemset.h>
 #include <arki/types.h>
 #include <arki/types/note.h>
 #include <arki/types/source.h>
-#include <wibble/sys/buffer.h>
+#include <arki/file.h>
 #include <string>
 
 struct lua_State;
@@ -42,7 +21,6 @@ struct Blob;
 }
 
 namespace metadata {
-class Eater;
 
 struct ReadContext
 {
@@ -65,13 +43,13 @@ struct Metadata : public ItemSet
 {
 protected:
     /// Annotations, kept binary-serialized to string
-    std::string m_notes;
+    std::vector<uint8_t> m_notes;
 
     /// Source of this data
     types::Source* m_source;
 
     /// Inline data, or cached version of previously read data
-    wibble::sys::Buffer m_data;
+    std::vector<uint8_t> m_data;
 
 public:
     Metadata();
@@ -90,16 +68,16 @@ public:
     /// Return the Blob source if possible, else raise an exception
     const types::source::Blob& sourceBlob() const;
     /// Set a new source, replacing the old one if present
-    void set_source(std::auto_ptr<types::Source> s);
+    void set_source(std::unique_ptr<types::Source>&& s);
     /// Set the source of this metadata as Inline, with the given data
-    void set_source_inline(const std::string& format, wibble::sys::Buffer buf);
+    void set_source_inline(const std::string& format, std::vector<uint8_t>&& buf);
     /// Unsets the source
     void unset_source();
 
     std::vector<types::Note> notes() const;
-    const std::string& notes_encoded() const;
+    const std::vector<uint8_t>& notes_encoded() const;
     void set_notes(const std::vector<types::Note>& notes);
-    void set_notes_encoded(const std::string& notes);
+    void set_notes_encoded(const std::vector<uint8_t>& notes);
     void add_note(const types::Note& note);
     void add_note(const std::string& note);
 
@@ -122,81 +100,69 @@ public:
     /// Clear all the contents of this Metadata
     void clear();
 
-	/**
-	 * Read a metadata document from the given memory buffer
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 *
-	 * If readInline is true, in case the data is transmitted inline, it reads
-	 * the data as well: this is what you expect.
-	 *
-	 * If it's false, then the reader needs to check from the Metadata source
-	 * if it is inline, and in that case proceed to read the inline data.
-	 *
-	 * @returns false when the end of the buffer is reached
-	 */
-	bool read(const unsigned char*& buf, size_t& len, const metadata::ReadContext& filename);
-
-	/**
-	 * Decode the metadata, without the outer bundle headers, from the given buffer.
-	 */
-	void read(const unsigned char* buf, size_t len, unsigned version, const metadata::ReadContext& filename);
-
-	/**
-	 * Decode the metadata, without the outer bundle headers, from the given buffer.
-	 */
-	void read(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& filename);
-
     /// Decode from structured data
-	void read(const emitter::memory::Mapping& val);
+    void read(const emitter::memory::Mapping& val);
 
-	/**
-	 * Read a metadata document from the given input stream.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 *
-	 * If readInline is true, in case the data is transmitted inline, it reads
-	 * the data as well: this is what you expect.
-	 *
-	 * If it's false, then the reader needs to check from the Metadata source
-	 * if it is inline, and in that case proceed to read the inline data.
-	 *
-	 * @returns false when end-of-file is reached
-	 */
-	bool read(std::istream& in, const std::string& filename, bool readInline = true);
+    /**
+     * Read a metadata document from the given input stream.
+     *
+     * The filename string is used to generate nicer parse error messages when
+     * throwing exceptions, and can be anything.
+     *
+     * If readInline is true, in case the data is transmitted inline, it reads
+     * the data as well: this is what you expect.
+     *
+     * If it's false, then the reader needs to check from the Metadata source
+     * if it is inline, and in that case proceed to read the inline data.
+     *
+     * @returns false when end-of-file is reached
+     */
+    bool read(int in, const metadata::ReadContext& filename, bool readInline=true);
 
-	/**
-	 * Read the inline data from the given stream
-	 */
-	void readInlineData(std::istream& in, const std::string& filename);
+    /**
+     * Read a metadata document from the given memory buffer.
+     *
+     * The filename string is used to generate nicer parse error messages when
+     * throwing exceptions, and can be anything.
+     *
+     * If readInline is true, in case the data is transmitted inline, it reads
+     * the data as well: this is what you expect.
+     *
+     * If it's false, then the reader needs to check from the Metadata source
+     * if it is inline, and in that case proceed to read the inline data.
+     *
+     * @returns false when end-of-file is reached
+     */
+    bool read(BinaryDecoder& dec, const metadata::ReadContext& filename, bool readInline=true);
 
-	/**
-	 * Read a metadata document encoded in Yaml from the given input stream.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 *
-	 * @returns false when end-of-file is reached
-	 */
-	bool readYaml(std::istream& in, const std::string& filename);
+    /**
+     * Decode the metadata, without the outer bundle headers, from the given buffer.
+     */
+    void read_inner(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& filename);
 
-	/**
-	 * Write the metadata to the given output stream.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 */
-	void write(std::ostream& out, const std::string& filename) const;
+    /// Read the inline data from the given file handle
+    void readInlineData(int in, const std::string& filename);
 
-	/**
-	 * Write the metadata to the given output stream.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 */
-	void write(int outfd, const std::string& filename) const;
+    /// Read the inline data from the given memory buffer
+    void readInlineData(BinaryDecoder& dec, const std::string& filename);
+
+    /**
+     * Read a metadata document encoded in Yaml from the given file descriptor.
+     *
+     * The filename string is used to generate nicer parse error messages when
+     * throwing exceptions, and can be anything.
+     *
+     * @returns false when end-of-file is reached
+     */
+    bool readYaml(LineReader& in, const std::string& filename);
+
+    /**
+     * Write the metadata to the given output stream.
+     *
+     * The filename string is used to generate nicer parse error messages when
+     * throwing exceptions, and can be anything.
+     */
+    void write(NamedFileDescriptor& out) const;
 
 	/**
 	 * Write the metadata as YAML text to the given output stream.
@@ -206,20 +172,24 @@ public:
     /// Serialise using an emitter
     void serialise(Emitter& e, const Formatter* f=0) const;
 
-    /**
-     * Encode to a string
-     */
-    std::string encodeBinary() const;
+    /// Encode to a buffer. Inline data will not be added.
+    std::vector<uint8_t> encodeBinary() const;
+
+    /// Encode to an Encoder. Inline data will not be added.
+    void encodeBinary(BinaryEncoder& enc) const;
 
 
     /// Get the raw data described by this metadata
-    wibble::sys::Buffer getData();
+    const std::vector<uint8_t>& getData();
+
+    /// Return True if getData can be called without causing I/O
+    bool has_cached_data() const;
 
     /**
      * Set cached data for non-inline sources, so that getData() won't have
      * to read it again.
      */
-    void set_cached_data(const wibble::sys::Buffer& buf);
+    void set_cached_data(std::vector<uint8_t>&& buf);
 
     /**
      * If the source is not inline, but the data are cached in memory, drop
@@ -232,6 +202,9 @@ public:
 
     /// Read the data and inline them in the metadata
     void makeInline();
+
+    /// Make all source blobs absolute
+    void make_absolute();
 
     /// Return the size of the data, if known, else returns 0
     size_t data_size() const;
@@ -250,31 +223,35 @@ public:
     static void flushDataReaders();
 
     /// Create an empty Metadata
-    static std::auto_ptr<Metadata> create_empty();
+    static std::unique_ptr<Metadata> create_empty();
 
     /// Create a copy of a Metadata
-    static std::auto_ptr<Metadata> create_copy(const Metadata& md);
+    static std::unique_ptr<Metadata> create_copy(const Metadata& md);
 
+#if 0
     /// Read one Metadata from a Yaml stream and return it
-    static std::auto_ptr<Metadata> create_from_yaml(std::istream& in, const std::string& filename);
+    static std::unique_ptr<Metadata> create_from_yaml(std::istream& in, const std::string& filename);
+#endif
+
+    /// Read all metadata from a buffer into the given consumer
+    static void read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& fname, metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
-    static void readFile(const std::string& fname, metadata::Eater& mdc);
+    static void read_file(const std::string& fname, metadata_dest_func dest);
 
-    /**
-     * Read all metadata from a file into the given consumer
-     */
-    static void readFile(const metadata::ReadContext& fname, metadata::Eater& mdc);
+    /// Read all metadata from a file into the given consumer
+    static void read_file(const metadata::ReadContext& fname, metadata_dest_func dest);
 
-    /**
-     * Read all metadata from a file into the given consumer
-     */
-    static void readFile(std::istream& in, const metadata::ReadContext& file, metadata::Eater& mdc);
+    /// Read all metadata from a file into the given consumer
+    static void read_file(int in, const metadata::ReadContext& file, metadata_dest_func mdc);
+
+    /// Read all metadata from a file into the given consumer
+    static void read_file(NamedFileDescriptor& fd, metadata_dest_func mdc);
 
     /**
      * Read a metadata group into the given consumer
      */
-    static void readGroup(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& file, metadata::Eater& mdc);
+    static void read_group(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest);
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Metadata
@@ -284,7 +261,7 @@ public:
      * Push a userdata to access this Metadata, and hand over its ownership to
      * Lua's garbage collector
      */
-    static void lua_push(lua_State* L, std::auto_ptr<Metadata> md);
+    static void lua_push(lua_State* L, std::unique_ptr<Metadata>&& md);
 
 	/**
 	 * Check that the element at \a idx is a Metadata userdata
@@ -300,6 +277,4 @@ public:
 };
 
 }
-
-// vim:set ts=4 sw=4:
 #endif

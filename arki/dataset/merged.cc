@@ -1,39 +1,19 @@
-/*
- * dataset/merged - Access many datasets at the same time
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <arki/dataset/merged.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/matcher.h>
-#include <arki/summary.h>
-#include <arki/sort.h>
-#include <wibble/string.h>
-#include <wibble/sys/mutex.h>
-#include <wibble/sys/thread.h>
+#include "arki/dataset/merged.h"
+#include "arki/exceptions.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/matcher.h"
+#include "arki/summary.h"
+#include "arki/sort.h"
+#include "arki/utils/string.h"
 #include <cstring>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 // #include <iostream>
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -43,13 +23,18 @@ class SyncBuffer
 {
 protected:
     static const int buf_size = 10;
-	sys::Mutex mutex;
-	sys::Condition cond;
+    std::mutex mutex;
+    std::condition_variable cond;
     Metadata* buffer[buf_size];
-	size_t head, tail, size;
-	mutable bool m_done;
+    size_t head, tail, size;
+    mutable bool m_done;
 
 public:
+    SyncBuffer(const SyncBuffer&) = delete;
+    SyncBuffer(const SyncBuffer&&) = delete;
+    SyncBuffer& operator=(const SyncBuffer&) = delete;
+    SyncBuffer& operator=(const SyncBuffer&&) = delete;
+
     SyncBuffer() : head(0), tail(0), size(buf_size), m_done(false)
     {
         memset(buffer, 0, buf_size * sizeof(Metadata*));
@@ -60,131 +45,108 @@ public:
             delete buffer[i];
     }
 
-    void push(auto_ptr<Metadata> val)
+    void push(unique_ptr<Metadata> val)
     {
-        sys::MutexLock lock(mutex);
-        while ((head + 1) % size == tail)
-            cond.wait(lock);
+        std::unique_lock<std::mutex> lock(mutex);
+        cond.wait(lock, [this] { return (head + 1) % size != tail; });
         buffer[head] = val.release();
         head = (head + 1) % size;
-        cond.broadcast();
+        cond.notify_all();
     }
 
-    auto_ptr<Metadata> pop()
+    unique_ptr<Metadata> pop()
     {
-        sys::MutexLock lock(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
         if (head == tail)
-            throw wibble::exception::Consistency("removing an element from a SyncBuffer", "the buffer is empty");
+            throw_consistency_error("removing an element from a SyncBuffer", "the buffer is empty");
         // Reset the item (this will take care, for example, to dereference
         // refcounted values in the same thread that took them over)
-        auto_ptr<Metadata> res(buffer[tail]);
+        unique_ptr<Metadata> res(buffer[tail]);
         buffer[tail] = 0;
         tail = (tail + 1) % size;
-        cond.broadcast();
+        cond.notify_all();
         return res;
     }
 
     // Get must be done by the same thread that does pop
     const Metadata* get()
     {
-        sys::MutexLock lock(mutex);
-        while (head == tail && !m_done)
-            cond.wait(lock);
+        std::unique_lock<std::mutex> lock(mutex);
+        cond.wait(lock, [this] { return head != tail || m_done; });
         if (head == tail && m_done) return 0;
         return buffer[tail];
     }
 
-	bool isDone()
-	{
-		sys::MutexLock lock(mutex);
-		if (head != tail)
-			return false;
-		return m_done;
-	}
+    bool isDone()
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (head != tail)
+            return false;
+        return m_done;
+    }
 
-	void done()
-	{
-		sys::MutexLock lock(mutex);
-		m_done = true;
-		cond.broadcast();
-	}
+    void done()
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        m_done = true;
+        cond.notify_all();
+    }
 };
 
-class MetadataReader : public sys::Thread
+class MetadataReader
 {
-private:
-	MetadataReader(const MetadataReader&);
-	MetadataReader& operator=(const MetadataReader&);
-
-protected:
-	struct Consumer : public metadata::Eater
-	{
-        SyncBuffer& buf;
-
-        Consumer(SyncBuffer& buf) : buf(buf) {}
-
-        bool eat(std::auto_ptr<Metadata> md) override
-        {
-            buf.push(md);
-            return true;
-        }
-	};
-	ReadonlyDataset* dataset;
-	const DataQuery* query;
-	string errorbuf;
-
-	virtual void* main()
-	{
-		try {
-			if (!query)
-				throw wibble::exception::Consistency("executing query in subthread", "no query has been set");
-			Consumer cons(mdbuf);
-			dataset->queryData(*query, cons);
-			mdbuf.done();
-			return 0;
-		} catch (std::exception& e) {
-			mdbuf.done();
-			errorbuf = e.what();
-			return (void*)errorbuf.c_str();
-		}
-	}
-
 public:
+    Reader* dataset = 0;
+    const DataQuery* query = 0;
+    string errorbuf;
     SyncBuffer mdbuf;
+    std::thread thread;
 
-	MetadataReader() : dataset(0), query(0) {}
+    MetadataReader() {}
 
-	void init(ReadonlyDataset& dataset, const DataQuery* query)
+    void main()
+    {
+        try {
+            if (!query)
+                throw_consistency_error("executing query in subthread", "no query has been set");
+            dataset->query_data(*query, [&](unique_ptr<Metadata> md) {
+                mdbuf.push(move(md));
+                return true;
+            });
+            mdbuf.done();
+        } catch (std::exception& e) {
+            mdbuf.done();
+            errorbuf = e.what();
+        }
+    }
+
+	void init(Reader& dataset, const DataQuery* query)
 	{
 		this->dataset = &dataset;
 		this->query = query;
 	}
 };
 
-class SummaryReader : public sys::Thread
+class SummaryReader
 {
-protected:
-	const Matcher* matcher;
-	ReadonlyDataset* dataset;
-	string errorbuf;
-
-	virtual void* main()
-	{
-		try {
-			dataset->querySummary(*matcher, summary);
-			return 0;
-		} catch (std::exception& e) {
-			errorbuf = e.what();
-			return (void*)errorbuf.c_str();
-		}
-	}
-
 public:
-	Summary summary;
+    const Matcher* matcher = 0;
+    Reader* dataset = 0;
+    Summary summary;
+    string errorbuf;
 
-	SummaryReader() : matcher(0), dataset(0) {}
+    SummaryReader() {}
 
-	void init(const Matcher& matcher, ReadonlyDataset& dataset)
+    void main()
+    {
+        try {
+            dataset->query_summary(*matcher, summary);
+        } catch (std::exception& e) {
+            errorbuf = e.what();
+        }
+    }
+
+	void init(const Matcher& matcher, Reader& dataset)
 	{
 		this->matcher = &matcher;
 		this->dataset = &dataset;
@@ -192,6 +154,7 @@ public:
 };
 
 Merged::Merged()
+    : Reader("merged")
 {
 }
 
@@ -199,46 +162,38 @@ Merged::~Merged()
 {
 }
 
-void Merged::addDataset(ReadonlyDataset& ds)
+std::string Merged::type() const { return "merged"; }
+
+void Merged::addDataset(Reader& ds)
 {
 	datasets.push_back(&ds);
 }
 
-namespace {
-template<typename T>
-struct RAIIDeleter
+void Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-	T* val;
-	RAIIDeleter(T* val) : val(val) {}
-	~RAIIDeleter() { delete[] val; }
-};
-}
+    // Handle the trivial case of only one dataset
+    if (datasets.size() == 1)
+    {
+        datasets[0]->query_data(q, dest);
+        return;
+    }
 
-void Merged::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
-{
-	// Handle the trivial case of only one dataset
-	if (datasets.size() == 1)
-	{
-		datasets[0]->queryData(q, consumer);
-		return;
-	}
+    vector<MetadataReader> readers(datasets.size());
+    vector<std::thread> threads;
 
-	MetadataReader* readers = new MetadataReader[datasets.size()];
-	RAIIDeleter<MetadataReader> cleanup(readers);
+    // Start all the readers
+    for (size_t i = 0; i < datasets.size(); ++i)
+    {
+        readers[i].init(*datasets[i], &q);
+        threads.emplace_back(&MetadataReader::main, &readers[i]);
+    }
 
-	// Start all the readers
-	for (size_t i = 0; i < datasets.size(); ++i)
-	{
-		readers[i].init(*datasets[i], &q);
-		readers[i].start();
-	}
-
-	// Output items in time-sorted order or in the order asked by q
-	// Note: we assume that every dataset will give us data sorted as q
-	// asks, so here we just merge sorted data
-	refcounted::Pointer<sort::Compare> sorter = q.sorter;
-	if (!sorter)
-		sorter = sort::Compare::parse("");
+    // Output items in time-sorted order or in the order asked by q
+    // Note: we assume that every dataset will give us data sorted as q
+    // asks, so here we just merge sorted data
+    shared_ptr<sort::Compare> sorter = q.sorter;
+    if (!sorter)
+        sorter = sort::Compare::parse("");
 
 	while (true)
 	{
@@ -256,70 +211,74 @@ void Merged::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 		}
         // When there's nothing more to read, we exit
         if (minmd == 0) break;
-        consumer.eat(readers[minmd_idx].mdbuf.pop());
+        dest(readers[minmd_idx].mdbuf.pop());
     }
 
-	// Collect all the results
-	vector<string> errors;
-	for (size_t i = 0; i < datasets.size(); ++i)
-		if (void* res = readers[i].join())
-			errors.push_back((const char*)res);
-	
-	if (!errors.empty())
-		throw wibble::exception::Consistency("running metadata queries on multiple datasets", str::join(errors.begin(), errors.end(), "; "));
+    // Collect all the results
+    vector<string> errors;
+    for (size_t i = 0; i < datasets.size(); ++i)
+    {
+        try {
+            threads[i].join();
+        } catch (std::exception& e) {
+            errors.push_back(e.what());
+            continue;
+        }
+        if (!readers[i].errorbuf.empty())
+            errors.push_back(readers[i].errorbuf);
+    }
+    if (!errors.empty())
+        throw_consistency_error("running metadata queries on multiple datasets", str::join("; ", errors.begin(), errors.end()));
 }
 
-void Merged::querySummary(const Matcher& matcher, Summary& summary)
+void Merged::query_summary(const Matcher& matcher, Summary& summary)
 {
-	using namespace wibble::str;
+    // Handle the trivial case of only one dataset
+    if (datasets.size() == 1)
+    {
+        datasets[0]->query_summary(matcher, summary);
+        return;
+    }
 
-	// Handle the trivial case of only one dataset
-	if (datasets.size() == 1)
-	{
-		datasets[0]->querySummary(matcher, summary);
-		return;
-	}
+    vector<SummaryReader> readers(datasets.size());
+    vector<std::thread> threads;
 
-	SummaryReader* readers = new SummaryReader[datasets.size()];
-	RAIIDeleter<SummaryReader> cleanup(readers);
+    // Start all the readers
+    for (size_t i = 0; i < datasets.size(); ++i)
+    {
+        readers[i].init(matcher, *datasets[i]);
+        threads.emplace_back(&SummaryReader::main, &readers[i]);
+    }
 
-	// Start all the readers
-	for (size_t i = 0; i < datasets.size(); ++i)
-	{
-		readers[i].init(matcher, *datasets[i]);
-		readers[i].start();
-	}
-
-	// Collect all the results
-	vector<string> errors;
-	for (size_t i = 0; i < datasets.size(); ++i)
-	{
-		if (void* res = readers[i].join())
-			errors.push_back((const char*)res);
-		else
-			summary.add(readers[i].summary);
-	}
-	
-	if (!errors.empty())
-		throw wibble::exception::Consistency("running summary queries on multiple datasets", str::join(errors.begin(), errors.end(), "; "));
+    // Collect all the results
+    vector<string> errors;
+    for (size_t i = 0; i < datasets.size(); ++i)
+    {
+        threads[i].join();
+        if (readers[i].errorbuf.empty())
+            summary.add(readers[i].summary);
+        else
+            errors.push_back(readers[i].errorbuf);
+    }
+    if (!errors.empty())
+        throw_consistency_error("running summary queries on multiple datasets", str::join("; ", errors.begin(), errors.end()));
 }
 
-void Merged::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
+void Merged::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
-	// Here we must serialize, as we do not know how to merge raw data streams
-	//
-	// We cannot just wrap queryData because some subdatasets could be
-	// remote, and that would mean doing postprocessing on the client side,
-	// potentially transferring terabytes of data just to produce a number
+    // Here we must serialize, as we do not know how to merge raw data streams
+    //
+    // We cannot just wrap query_data because some subdatasets could be
+    // remote, and that would mean doing postprocessing on the client side,
+    // potentially transferring terabytes of data just to produce a number
 
     // TODO: data_start_hook may be called more than once here
     // TODO: we might be able to do something smarter, like if we're merging
     // many datasets from the same server we can run it all there; if we're
     // merging all local datasets, wrap queryData; and so on.
 
-	for (std::vector<ReadonlyDataset*>::iterator i = datasets.begin();
-			i != datasets.end(); ++i)
-		(*i)->queryBytes(q, out);
+    for (auto i: datasets)
+        i->query_bytes(q, out);
 }
 
 AutoMerged::AutoMerged() {}
@@ -327,15 +286,14 @@ AutoMerged::AutoMerged(const ConfigFile& cfg)
 {
     for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
             i != cfg.sectionEnd(); ++i)
-        datasets.push_back(ReadonlyDataset::create(*(i->second)));
+        datasets.push_back(Reader::create(*(i->second)));
 }
 AutoMerged::~AutoMerged()
 {
-    for (std::vector<ReadonlyDataset*>::iterator i = datasets.begin();
+    for (std::vector<Reader*>::iterator i = datasets.begin();
             i != datasets.end(); ++i)
         delete *i;
 }
 
 }
 }
-// vim:set ts=4 sw=4:

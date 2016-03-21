@@ -1,23 +1,3 @@
-/*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/tests/tests.h>
 #include <arki/metadata/stream.h>
 #include <arki/metadata.h>
@@ -30,6 +10,8 @@
 #include <arki/types/area.h>
 #include <arki/types/proddef.h>
 #include <arki/types/assigneddataset.h>
+#include <arki/utils/sys.h>
+#include <iostream>
 
 namespace std {
 static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
@@ -43,6 +25,9 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::utils;
+using namespace arki::tests;
+using arki::core::Time;
 
 struct arki_metadata_stream_shar {
 	Metadata md;
@@ -80,30 +65,29 @@ TESTGRP(arki_metadata_stream);
 
 inline bool cmpmd(Metadata& md1, Metadata& md2)
 {
-	if (md1 != md2)
-	{
-		cerr << "----- The two metadata differ.  First one:" << endl;
-		md1.writeYaml(cerr);
-		if (md1.source().style() == Source::INLINE)
-		{
-			wibble::sys::Buffer buf = md1.getData();
-			cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
-		}
-		cerr << "----- Second one:" << endl;
-		md2.writeYaml(cerr);
-		if (md2.source().style() == Source::INLINE)
-		{
-			wibble::sys::Buffer buf = md2.getData();
-			cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
-		}
-		return false;
-	}
-	return true;
+    if (md1 != md2)
+    {
+        cerr << "----- The two metadata differ.  First one:" << endl;
+        md1.writeYaml(cerr);
+        if (md1.source().style() == Source::INLINE)
+        {
+            const auto& buf = md1.getData();
+            cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
+        }
+        cerr << "----- Second one:" << endl;
+        md2.writeYaml(cerr);
+        if (md2.source().style() == Source::INLINE)
+        {
+            const auto& buf = md2.getData();
+            cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
+        }
+        return false;
+    }
+    return true;
 }
 
 // Test metadata stream
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     // Create test metadata
     Metadata md1;
@@ -114,22 +98,24 @@ void to::test<1>()
 	md2 = md1;
 	md2.set(origin::BUFR::create(1, 2));
 
-    md1.set_source_inline("test", wibble::sys::Buffer("this is a test", 14));
+    const char* teststr = "this is a test";
+    md1.set_source_inline("test", vector<uint8_t>(teststr, teststr + 14));
 
-	// Encode everything in a buffer
-	stringstream str;
-	md1.write(str, "(memory)");
-	size_t end1 = str.tellp();
-	md2.write(str, "(memory)");
-	size_t end2 = str.tellp();
+    // Encode everything in a buffer
+    size_t end1, end2;
+    std::string input = tempfile_to_string([&](sys::NamedFileDescriptor& out) {
+        md1.write(out);
+        end1 = out.lseek(0, SEEK_CUR);
+        md2.write(out);
+        end2 = out.lseek(0, SEEK_CUR);
+    });
 
 	// Where we collect the decoded metadata
 	metadata::Collection results;
 
-	// Stream for the decoding
-	metadata::Stream mdstream(results, "test stream");
+    // Stream for the decoding
+    metadata::Stream mdstream(results.inserter_func(), "test stream");
 
-	string input = str.str();
 	size_t cur = 0;
 
 	// Not a full metadata yet
@@ -174,8 +160,7 @@ void to::test<1>()
 }
 
 // Send data split in less chunks than we have metadata
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     // Create test metadata
     Metadata md;
@@ -183,21 +168,22 @@ void to::test<2>()
     this->fill(md);
 
     // Encode it in a buffer 3 times
-    stringstream str;
-    md.write(str, "(memory)");
-    md.write(str, "(memory)");
-    md.write(str, "(memory)");
+    std::string str = tempfile_to_string([&](sys::NamedFileDescriptor& out) {
+        md.write(out);
+        md.write(out);
+        md.write(out);
+    });
 
     // Where we collect the decoded metadata
     metadata::Collection results;
 
     // Stream for the decoding
-    metadata::Stream mdstream(results, "test stream");
+    metadata::Stream mdstream(results.inserter_func(), "test stream");
 
     // Send the data in two halves
-    mdstream.readData(str.str().data(), str.str().size() / 2);
+    mdstream.readData(str.data(), str.size() / 2);
     ensure_equals(results.size(), 1u);
-    mdstream.readData(str.str().data() + str.str().size() / 2, str.str().size() - (str.str().size() / 2));
+    mdstream.readData(str.data() + str.size() / 2, str.size() - (str.size() / 2));
 
     // No bytes must be left to decode
     ensure_equals(mdstream.countBytesUnprocessed(), 0u);
@@ -210,5 +196,3 @@ void to::test<2>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

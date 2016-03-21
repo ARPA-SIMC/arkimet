@@ -1,29 +1,8 @@
 #ifndef ARKI_SORT_H
 #define ARKI_SORT_H
 
-/*
- * arki/sort - Sorting routines for metadata
- *
- * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Sorting routines for metadata
 
-#include <arki/refcounted.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/types/reftime.h>
@@ -50,7 +29,7 @@ namespace sort {
  * If an interval is specified, data is grouped in the given time intervals,
  * then every group is sorted independently from the others.
  */
-struct Compare : public refcounted::Base
+struct Compare
 {
 	/// Allowed types of sort intervals
 	enum Interval {
@@ -73,8 +52,8 @@ struct Compare : public refcounted::Base
 	/// Compute the string representation of this sorter
 	virtual std::string toString() const = 0;
 
-	/// Parse a string representation into a sorter
-	static refcounted::Pointer<Compare> parse(const std::string& expr);
+    /// Parse a string representation into a sorter
+    static std::unique_ptr<Compare> parse(const std::string& expr);
 };
 
 /// Adaptor to use compare in STL sort functions
@@ -95,28 +74,28 @@ struct STLCompare
     }
 };
 
-class Stream : public metadata::Eater
+class Stream
 {
 protected:
     const Compare& sorter;
-    metadata::Eater& nextConsumer;
+    metadata_dest_func next_dest;
     bool hasInterval;
-    std::auto_ptr<types::Time> endofperiod;
+    std::unique_ptr<core::Time> endofperiod;
     std::vector<Metadata*> buffer;
 
     void setEndOfPeriod(const types::Reftime& rt);
 
 public:
-    Stream(const Compare& sorter, metadata::Eater& nextConsumer)
-        : sorter(sorter), nextConsumer(nextConsumer)
-	{
-		hasInterval = sorter.interval() != Compare::NONE;
-	}
+    Stream(const Compare& sorter, metadata_dest_func next_dest)
+        : sorter(sorter), next_dest(next_dest)
+    {
+        hasInterval = sorter.interval() != Compare::NONE;
+    }
     ~Stream();
 
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool add(std::unique_ptr<Metadata> md);
 
-	void flush();
+    void flush();
 
 private:
     Stream(const Stream&);
@@ -125,6 +104,4 @@ private:
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

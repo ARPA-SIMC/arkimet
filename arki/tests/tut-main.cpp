@@ -1,76 +1,117 @@
-#include <wibble/tests.h>
+#include <arki/utils/tests.h>
 #include <arki/types-init.h>
 #include <signal.h>
 #include <cstring>
 #include <cstdlib>
 #include <arki/nag.h>
 
-namespace tut {
-  test_runner_singleton runner;
-}
-
-using namespace wibble;
 using namespace std;
 
-void signal_to_exception(int)          
+void signal_to_exception(int)
 {
-	  throw std::runtime_error("killing signal catched");
+    throw std::runtime_error("killing signal catched");
 }
+
+struct ArkiRunner
+{
+    arki::utils::tests::SimpleTestController controller;
+    unsigned methods_ok = 0;
+    unsigned methods_failed = 0;
+    unsigned methods_skipped = 0;
+    unsigned test_cases_ok = 0;
+    unsigned test_cases_failed = 0;
+    bool run_all = true;
+    bool success = true;
+
+    bool setup()
+    {
+        if (const char* whitelist = getenv("TEST_WHITELIST"))
+        {
+            run_all = false;
+            controller.whitelist = whitelist;
+        }
+
+        if (const char* blacklist = getenv("TEST_BLACKLIST"))
+        {
+            run_all = false;
+            controller.blacklist = blacklist;
+        }
+        return false;
+    }
+
+    void run()
+    {
+        auto& tests = arki::utils::tests::TestRegistry::get();
+        auto all_results = tests.run_tests(controller);
+
+        for (const auto& tc_res: all_results)
+        {
+            if (!tc_res.fail_setup.empty())
+            {
+                fprintf(stderr, "%s: %s\n", tc_res.test_case.c_str(), tc_res.fail_setup.c_str());
+                ++test_cases_failed;
+            } else {
+                if (!tc_res.fail_teardown.empty())
+                {
+                    fprintf(stderr, "%s: %s\n", tc_res.test_case.c_str(), tc_res.fail_teardown.c_str());
+                    ++test_cases_failed;
+                }
+                else
+                    ++test_cases_ok;
+
+                for (const auto& tm_res: tc_res.methods)
+                {
+                    if (tm_res.skipped)
+                        ++methods_skipped;
+                    else if (tm_res.is_success())
+                        ++methods_ok;
+                    else
+                    {
+                        fprintf(stderr, "\n");
+                        if (tm_res.exception_typeid.empty())
+                            fprintf(stderr, "%s.%s: %s\n", tm_res.test_case.c_str(), tm_res.test_method.c_str(), tm_res.error_message.c_str());
+                        else
+                            fprintf(stderr, "%s.%s:[%s] %s\n", tm_res.test_case.c_str(), tm_res.test_method.c_str(), tm_res.exception_typeid.c_str(), tm_res.error_message.c_str());
+                        for (const auto& frame : tm_res.error_stack)
+                            fprintf(stderr, "  %s", frame.format().c_str());
+                        ++methods_failed;
+                    }
+                }
+            }
+        }
+
+        if (test_cases_failed)
+        {
+            success = false;
+            fprintf(stderr, "\n%u/%u test cases had issues initializing or cleaning up\n",
+                    test_cases_failed, test_cases_ok + test_cases_failed);
+        }
+
+        if (methods_failed)
+        {
+            success = false;
+            fprintf(stderr, "\n%u/%u tests failed\n", methods_failed, methods_ok + methods_failed);
+        }
+        else
+            fprintf(stderr, "%u tests succeeded\n", methods_ok);
+    }
+};
 
 int main(int argc,const char* argv[])
 {
-  arki::nag::init(false, false, true);
-  arki::types::init_default_types();
-  tut::reporter visi;
+    arki::nag::init(false, false, true);
+    arki::types::init_default_types();
 
-  signal(SIGSEGV,signal_to_exception);         
-  signal(SIGILL,signal_to_exception);
+    signal(SIGSEGV,signal_to_exception);
+    signal(SIGILL,signal_to_exception);
 
-  if( (argc == 2 && (! strcmp ("help", argv[1]))) || argc > 3 )
-  {
-    std::cout << "TUT example test application." << std::endl;
-    std::cout << "Usage: example [regression] | [list] | [ group] [test]" << std::endl;
-    std::cout << "       List all groups: example list" << std::endl;
-    std::cout << "       Run all tests: example regression" << std::endl;
-    std::cout << "       Run one group: example std::auto_ptr" << std::endl;
-    std::cout << "       Run one test: example std::auto_ptr 3" << std::endl;;
-  }
+    // Run arki::tests based tests
+    ArkiRunner arki_runner;
+    if (arki_runner.setup())
+        return 0;
 
-  // std::cout << "\nFAILURE and EXCEPTION in these tests are FAKE ;)\n\n";
+    arki_runner.run();
 
-  tut::runner.get().set_callback(&visi);
-
-  try
-  {
-    if( argc == 1 || (argc == 2 && std::string(argv[1]) == "regression") )
-    {
-      tut::runner.get().run_tests();
-    }
-    else if( argc == 2 && std::string(argv[1]) == "list" )
-    {
-      std::cout << "registered test groups:" << std::endl;
-      tut::groupnames gl = tut::runner.get().list_groups();
-      tut::groupnames::const_iterator i = gl.begin();
-      tut::groupnames::const_iterator e = gl.end();
-      while( i != e )
-      {
-        std::cout << "  " << *i << std::endl;
-        ++i;
-      }
-    }
-    else if( argc == 2 && std::string(argv[1]) != "regression" )
-    {
-      tut::runner.get().run_tests(argv[1]);
-    }
-    else if( argc == 3 )
-    {
-      tut::runner.get().run_test(argv[1],::atoi(argv[2]));
-    }
-  }
-  catch( const std::exception& ex )
-  {
-    std::cerr << "tut raised exception: " << ex.what() << std::endl;
-  }
-
-  return min(visi.failures_count + visi.exceptions_count, 120);
+    if (!arki_runner.success) return 1;
+    return 0;
 }

@@ -1,37 +1,12 @@
-/*
- * matcher/reftime/parser.h - Parser for reftime expressions
- *
- * Copyright (C) 2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #include "parser.h"
+#include "arki/wibble/grcal/grcal.h"
+
+using namespace std;
+using arki::core::Time;
 
 namespace arki {
 namespace matcher {
 namespace reftime {
-
-static std::string tosql(const int* tt)
-{
-    char buf[25];
-    snprintf(buf, 25, "'%04d-%02d-%02d %02d:%02d:%02d'",
-        tt[0], tt[1], tt[2], tt[3], tt[4], tt[5]);
-    return buf;
-}
 
 static std::string tosqlTime(const int& tt)
 {
@@ -42,36 +17,41 @@ static std::string tosqlTime(const int& tt)
 
 static std::string tostringInterval(const int& tt)
 {
-    string res;
-    if (tt / 3600) res += str::fmt(tt / 3600) + "h";
-    if ((tt % 3600) / 60) res += str::fmt((tt % 3600) / 60) + "m";
-    if (tt % 60) res += str::fmt(tt % 60) + "s";
-    return res;
+    stringstream res;
+    if (tt / 3600) res << (tt / 3600) << "h";
+    if ((tt % 3600) / 60) res << ((tt % 3600) / 60) << "m";
+    if (tt % 60) res << (tt % 60) << "s";
+    return res.str();
 }
 
-static bool isnow(const int* t)
+static int time_to_seconds(const Time& t)
 {
-    for (int i = 0; i < 6; ++i)
-        if (t[i]) return false;
-    return true;
+    return t.ho * 3600 + t.mi * 60 + t.se;
 }
+
 
 struct DateLE : public DTMatch
 {
-    int ref[6];
+    Time ref;
     int tbase;
-    bool match(const int* tt) const { return date::duration(tt, ref) >= 0; }
-    bool match(const int* begin, const int* end) const { return date::duration(begin, ref) >= 0; }
-    string sql(const std::string& column) const { return column+"<="+tosql(ref); }
-    string toString() const { return "<="+date::tostring(ref); }
-    int timebase() const { return tbase; }
-    bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override
+
+    DateLE(const int* tt)
     {
-        if (begin.get() && begin->compare_raw(ref) > 0)
+        ref.set_upperbound(tt[0], tt[1], tt[2], tt[3], tt[4], tt[5]);
+        tbase = wibble::grcal::dtime::lowerbound_sec(tt + 3);
+    }
+    bool match(const core::Time& tt) const { return tt <= ref; }
+    bool match(const core::Time& begin, const core::Time& end) const { return begin <= ref; }
+    string sql(const std::string& column) const { return column + "<='" + ref.to_sql() + "'"; }
+    string toString() const { return "<=" + ref.to_sql(); }
+    int timebase() const { return tbase; }
+    bool restrict_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override
+    {
+        if (begin.get() && *begin > ref)
             return false;
 
-        if (!end.get() || end->compare_raw(ref) > 0)
-            end.reset(new types::Time(ref));
+        if (!end.get() || *end > ref)
+            end.reset(new Time(ref));
 
         return true;
     }
@@ -79,30 +59,34 @@ struct DateLE : public DTMatch
 
 DTMatch* DTMatch::createLE(const int* tt)
 {
-    auto_ptr<DateLE> res(new DateLE);
-    date::upperbound(tt, res->ref);
-    res->tbase = dtime::lowerbound_sec(tt + 3);
-    return res.release();
+    return new DateLE(tt);
 }
 
 struct DateLT : public DTMatch
 {
-    int ref[6];
-    bool match(const int* tt) const { return date::duration(tt, ref) > 0; }
-    bool match(const int* begin, const int* end) const { return date::duration(begin, ref) > 0; }
-    string sql(const std::string& column) const { return column+"<"+tosql(ref); }
-    string toString() const { return "<"+date::tostring(ref); }
-    int timebase() const { return dtime::lowerbound_sec(ref+3); }
-    bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override
+    Time ref;
+    int tbase;
+
+    DateLT(const int* tt)
     {
-        if (begin.get() && begin->compare_raw(ref) >= 0)
+        ref.set_lowerbound(tt[0], tt[1], tt[2], tt[3], tt[4], tt[5]);
+        tbase = wibble::grcal::dtime::lowerbound_sec(tt + 3);
+    }
+    bool match(const core::Time& tt) const { return tt < ref; }
+    bool match(const core::Time& begin, const core::Time& end) const { return begin < ref; }
+    string sql(const std::string& column) const { return column + "<'" + ref.to_sql() + "'"; }
+    string toString() const { return "<" + ref.to_sql(); }
+    int timebase() const { return tbase; }
+    bool restrict_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override
+    {
+        if (begin.get() && *begin >= ref)
             return false;
 
-        if (!end.get() || end->compare_raw(ref) >= 0)
+        if (!end.get() || *end >= ref)
         {
-            end.reset(new types::Time(ref));
-            --(end->vals[5]);
-            date::normalise(end->vals);
+            end.reset(new Time(ref));
+            --(end->se);
+            end->normalise();
         }
 
         return true;
@@ -111,27 +95,30 @@ struct DateLT : public DTMatch
 
 DTMatch* DTMatch::createLT(const int* tt)
 {
-    auto_ptr<DateLT> res(new DateLT);
-    date::lowerbound(tt, res->ref);
-    return res.release();
+    return new DateLT(tt);
 }
 
 struct DateGE : public DTMatch
 {
-    int ref[6];
+    Time ref;
     int tbase;
-    bool match(const int* tt) const { return date::duration(ref, tt) >= 0; }
-    bool match(const int* begin, const int* end) const { return isnow(end) || date::duration(ref, end) >= 0; }
-    string sql(const std::string& column) const { return column+">="+tosql(ref); }
-    string toString() const { return ">="+date::tostring(ref); }
-    int timebase() const { return tbase; }
-    bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override
+    DateGE(const int* tt)
     {
-        if (end.get() && end->compare_raw(ref) < 0)
+        ref.set_lowerbound(tt[0], tt[1], tt[2], tt[3], tt[4], tt[5]);
+        tbase = wibble::grcal::dtime::lowerbound_sec(tt + 3);
+    }
+    bool match(const core::Time& tt) const { return ref <= tt; }
+    bool match(const core::Time& begin, const core::Time& end) const { return ref <= end; }
+    string sql(const std::string& column) const { return column + ">='" + ref.to_sql() + "'"; }
+    string toString() const { return ">=" + ref.to_sql(); }
+    int timebase() const { return tbase; }
+    bool restrict_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override
+    {
+        if (end.get() && *end < ref)
             return false;
 
-        if (!begin.get() || begin->compare_raw(ref) < 0)
-            begin.reset(new types::Time(ref));
+        if (!begin.get() || *begin < ref)
+            begin.reset(new Time(ref));
 
         return true;
     }
@@ -139,31 +126,33 @@ struct DateGE : public DTMatch
 
 DTMatch* DTMatch::createGE(const int* tt)
 {
-    auto_ptr<DateGE> res(new DateGE);
-    date::lowerbound(tt, res->ref);
-    res->tbase = dtime::lowerbound_sec(tt + 3);
-    return res.release();
+    return new DateGE(tt);
 }
 
 struct DateGT : public DTMatch
 {
-    int ref[6];
+    Time ref;
     int tbase;
-    bool match(const int* tt) const { return date::duration(ref, tt) > 0; }
-    bool match(const int* begin, const int* end) const { return isnow(end) || date::duration(ref, end) > 0; }
-    string sql(const std::string& column) const { return column+">"+tosql(ref); }
-    string toString() const { return ">"+date::tostring(ref); }
-    int timebase() const { return tbase; }
-    bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override
+    DateGT(const int* tt)
     {
-        if (end.get() && end->compare_raw(ref) <= 0)
+        ref.set_upperbound(tt[0], tt[1], tt[2], tt[3], tt[4], tt[5]);
+        tbase = wibble::grcal::dtime::lowerbound_sec(tt + 3);
+    }
+    bool match(const core::Time& tt) const { return ref < tt; }
+    bool match(const core::Time& begin, const core::Time& end) const { return ref < end; }
+    string sql(const std::string& column) const { return column + ">'" + ref.to_sql() + "'"; }
+    string toString() const { return ">" + ref.to_sql(); }
+    int timebase() const { return tbase; }
+    bool restrict_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override
+    {
+        if (end.get() && *end <= ref)
             return false;
 
-        if (!begin.get() || begin->compare_raw(ref) <= 0)
+        if (!begin.get() || *begin <= ref)
         {
-            begin.reset(new types::Time(ref));
-            ++(begin->vals[5]);
-            date::normalise(begin->vals);
+            begin.reset(new Time(ref));
+            ++(begin->se);
+            begin->normalise();
         }
 
         return true;
@@ -172,47 +161,51 @@ struct DateGT : public DTMatch
 
 DTMatch* DTMatch::createGT(const int* tt)
 {
-    auto_ptr<DateGT> res(new DateGT);
-    date::upperbound(tt, res->ref);
-    res->tbase = dtime::lowerbound_sec(tt + 3);
-    return res.release();
+    return new DateGT(tt);
 }
 
 struct DateEQ : public DTMatch
 {
-    int geref[6];
-    int leref[6];
-    bool match(const int* tt) const
+    Time geref;
+    Time leref;
+    int tbase;
+    DateEQ(const int* tt)
     {
-        return date::duration(geref, tt) >= 0 && date::duration(tt, leref) >= 0;
+        geref.set_lowerbound(tt[0], tt[1], tt[2], tt[3], tt[4], tt[5]);
+        leref.set_upperbound(tt[0], tt[1], tt[2], tt[3], tt[4], tt[5]);
+        tbase = wibble::grcal::dtime::lowerbound_sec(tt + 3);
     }
-    bool match(const int* begin, const int* end) const
+    bool match(const core::Time& tt) const
+    {
+        return geref <= tt && tt <= leref;
+    }
+    bool match(const core::Time& begin, const core::Time& end) const
     {
         // If it's an interval, return true if we intersect it
-        return (isnow(end) || date::duration(geref, end) >= 0) && date::duration(begin, leref) >= 0;
+        return (geref <= end && begin <= leref);
     }
     string sql(const std::string& column) const
     {
-        return '(' + column + ">=" + tosql(geref) + " AND " + column + "<=" + tosql(leref) + ')';
+        return '(' + column + ">='" + geref.to_sql() + "' AND " + column + "<='" + leref.to_sql() + "')";
     }
     string toString() const
     {
-        return ">="+date::tostring(geref)+",<="+date::tostring(leref);
+        return ">=" + geref.to_sql() + ",<=" + leref.to_sql();
     }
-    int timebase() const { return dtime::lowerbound_sec(geref+3); }
-    bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override
+    int timebase() const { return tbase; }
+    bool restrict_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override
     {
-        if (begin.get() && begin->compare_raw(leref) > 0)
+        if (begin.get() && *begin > leref)
             return false;
 
-        if (end.get() && end->compare_raw(geref) < 0)
+        if (end.get() && *end < geref)
             return false;
 
-        if (!end.get() || end->compare_raw(leref) > 0)
-            end.reset(new types::Time(leref));
+        if (!end.get() || *end > leref)
+            end.reset(new Time(leref));
 
-        if (!begin.get() || begin->compare_raw(geref) < 0)
-            begin.reset(new types::Time(geref));
+        if (!begin.get() || *begin < geref)
+            begin.reset(new Time(geref));
 
         return true;
     }
@@ -220,97 +213,95 @@ struct DateEQ : public DTMatch
 
 DTMatch* DTMatch::createEQ(const int* tt)
 {
-    auto_ptr<DateEQ> res(new DateEQ);
-    date::lowerbound(tt, res->geref);
-    date::upperbound(tt, res->leref);
-    return res.release();
+    return new DateEQ(tt);
 }
 
 
 struct TimeLE : public DTMatch
 {
     int ref;
-    TimeLE(const int* tt) : ref(dtime::upperbound_sec(tt)) {}
-    bool match(const int* tt) const { return dtime::upperbound_sec(tt+3) <= ref; }
-    bool match(const int* begin, const int* end) const
+    TimeLE(const int* tt) : ref(wibble::grcal::dtime::upperbound_sec(tt)) {}
+    bool match(const core::Time& tt) const { return time_to_seconds(tt) <= ref; }
+    bool match(const core::Time& begin, const core::Time& end) const
     {
-        int d = date::duration(begin, end);
-        if (d >= 3600*24) return true;
-        if (dtime::upperbound_sec(begin+3) <= ref) return true;
-        if (dtime::upperbound_sec(end+3) <= ref) return true;
+        if (Time::duration(begin, end) >= 3600*24) return true;
+        if (time_to_seconds(begin) <= ref) return true;
+        if (time_to_seconds(end) <= ref) return true;
         return false;
     }
-    string sql(const std::string& column) const { return "TIME("+column+")<="+tosqlTime(ref); }
-    string toString() const { return "<="+dtime::tostring(ref); }
+    string sql(const std::string& column) const { return "TIME(" + column + ")<=" + tosqlTime(ref); }
+    string toString() const { return "<="+wibble::grcal::dtime::tostring(ref); }
     int timebase() const { return ref; }
+    bool restrict_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override { return true; }
 };
 struct TimeLT : public DTMatch
 {
     int ref;
-    TimeLT(const int* tt) : ref(dtime::lowerbound_sec(tt)) {}
-    bool match(const int* tt) const { return dtime::upperbound_sec(tt+3) < ref; }
-    bool match(const int* begin, const int* end) const
+    TimeLT(const int* tt) : ref(wibble::grcal::dtime::lowerbound_sec(tt)) {}
+    bool match(const core::Time& tt) const { return time_to_seconds(tt) < ref; }
+    bool match(const core::Time& begin, const core::Time& end) const
     {
-        int d = date::duration(begin, end);
-        if (d >= 3600*24) return true;
-        if (dtime::upperbound_sec(begin+3) < ref) return true;
-        if (dtime::upperbound_sec(end+3) < ref) return true;
+        if (Time::duration(begin, end) >= 3600*24) return true;
+        if (time_to_seconds(begin) < ref) return true;
+        if (time_to_seconds(end) < ref) return true;
         return false;
     }
-    string sql(const std::string& column) const { return "TIME("+column+")<"+tosqlTime(ref); }
-    string toString() const { return "<"+dtime::tostring(ref); }
+    string sql(const std::string& column) const { return "TIME(" + column + ")<" + tosqlTime(ref); }
+    string toString() const { return "<"+wibble::grcal::dtime::tostring(ref); }
     int timebase() const { return ref; }
+    bool restrict_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override { return true; }
 };
 struct TimeGT : public DTMatch
 {
     int ref;
-    TimeGT(const int* tt) : ref(dtime::upperbound_sec(tt)) {}
-    bool match(const int* tt) const { return dtime::lowerbound_sec(tt+3) > ref; }
-    bool match(const int* begin, const int* end) const
+    TimeGT(const int* tt) : ref(wibble::grcal::dtime::upperbound_sec(tt)) {}
+    bool match(const core::Time& tt) const { return time_to_seconds(tt) > ref; }
+    bool match(const core::Time& begin, const core::Time& end) const
     {
-        int d = date::duration(begin, end);
-        if (d >= 3600*24) return true;
-        if (dtime::lowerbound_sec(begin+3) > ref) return true;
-        if (dtime::lowerbound_sec(end+3) > ref) return true;
+        if (Time::duration(begin, end) >= 3600*24) return true;
+        if (time_to_seconds(begin) > ref) return true;
+        if (time_to_seconds(end) > ref) return true;
         return false;
     }
-    string sql(const std::string& column) const { return "TIME("+column+")>"+tosqlTime(ref); }
-    string toString() const { return ">"+dtime::tostring(ref); }
+    string sql(const std::string& column) const { return "TIME(" + column + ")>" + tosqlTime(ref); }
+    string toString() const { return ">"+wibble::grcal::dtime::tostring(ref); }
     int timebase() const { return ref; }
+    bool restrict_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override { return true; }
 };
 struct TimeGE : public DTMatch
 {
     int ref;
-    TimeGE(const int* tt) : ref(dtime::lowerbound_sec(tt)) {}
-    bool match(const int* tt) const { return dtime::lowerbound_sec(tt+3) >= ref; }
-    bool match(const int* begin, const int* end) const
+    TimeGE(const int* tt) : ref(wibble::grcal::dtime::lowerbound_sec(tt)) {}
+    bool match(const core::Time& tt) const { return time_to_seconds(tt) >= ref; }
+    bool match(const core::Time& begin, const core::Time& end) const
     {
-        int d = date::duration(begin, end);
-        if (d >= 3600*24) return true;
-        if (dtime::lowerbound_sec(begin+3) >= ref) return true;
-        if (dtime::lowerbound_sec(end+3) >= ref) return true;
+        if (Time::duration(begin, end) >= 3600*24) return true;
+        if (time_to_seconds(begin) >= ref) return true;
+        if (time_to_seconds(end) >= ref) return true;
         return false;
     }
-    string sql(const std::string& column) const { return "TIME("+column+")>="+tosqlTime(ref); }
-    string toString() const { return ">="+dtime::tostring(ref); }
+    string sql(const std::string& column) const { return "TIME(" + column + ")>=" + tosqlTime(ref); }
+    string toString() const { return ">="+wibble::grcal::dtime::tostring(ref); }
     int timebase() const { return ref; }
+    bool restrict_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override { return true; }
 };
 struct TimeEQ : public DTMatch
 {
     int geref;
     int leref;
-    TimeEQ(const int* tt) : geref(dtime::lowerbound_sec(tt)), leref(dtime::upperbound_sec(tt)) {}
-    bool match(const int* tt) const { return dtime::lowerbound_sec(tt+3) >= geref and dtime::upperbound_sec(tt+3) <= leref; }
-    bool match(const int* begin, const int* end) const
+    TimeEQ(const int* tt) : geref(wibble::grcal::dtime::lowerbound_sec(tt)), leref(wibble::grcal::dtime::upperbound_sec(tt)) {}
+    bool match(const core::Time& tt) const
+    {
+        int t = time_to_seconds(tt);
+        return t >= geref and t <= leref;
+    }
+    bool match(const core::Time& begin, const core::Time& end) const
     {
         // If the times are more than 24hours apart, then we necessarily cover a whole day
-        int d = date::duration(begin, end);
-        if (d >= 3600*24) return true;
-        //if (timeOnly(begin) < leref) return false;
-        //if (timeOnly(end) > geref) return false;
+        if (Time::duration(begin, end) >= 3600*24) return true;
 
-        int rb = dtime::lowerbound_sec(begin+3);
-        int re = dtime::upperbound_sec(end+3);
+        int rb = time_to_seconds(begin);
+        int re = time_to_seconds(end);
         if (rb <= re)
         {
             if (rb <= geref && leref <= re)
@@ -327,18 +318,19 @@ struct TimeEQ : public DTMatch
     string sql(const std::string& column) const
     {
         if (geref == leref)
-            return "(TIME(" + column + ")==" + tosqlTime(geref) + ')';
+            return "(TIME(" + column + ")==" + tosqlTime(geref) + ")";
         else
-            return "(TIME(" + column + ")>=" + tosqlTime(geref) + " AND TIME(" + column + ")<=" + tosqlTime(leref) + ')';
+            return "(TIME(" + column + ")>=" + tosqlTime(geref) + " AND TIME(" + column + ")<=" + tosqlTime(leref) + ")";
     }
     string toString() const
     {
         if (geref == leref)
-            return "=="+dtime::tostring(geref);
+            return "=="+wibble::grcal::dtime::tostring(geref);
         else
-            return ">="+dtime::tostring(geref)+",<="+dtime::tostring(leref);
+            return ">="+wibble::grcal::dtime::tostring(geref)+",<="+wibble::grcal::dtime::tostring(leref);
     }
     int timebase() const { return geref; }
+    bool restrict_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override { return true; }
 };
 struct TimeExact : public DTMatch
 {
@@ -350,17 +342,17 @@ struct TimeExact : public DTMatch
         //fprintf(stderr, "CREATED %zd times lead %d\n", times.size(), lead);
     }
     bool isLead() const { return lead; }
-    bool match(const int* tt) const
+    bool match(const core::Time& tt) const
     {
-        int t = dtime::lowerbound_sec(tt+3);
+        int t = time_to_seconds(tt);
         return times.find(t) != times.end();
     }
-    bool match(const int* begin, const int* end) const
+    bool restrict_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override { return true; }
+    bool match(const core::Time& begin, const core::Time& end) const
     {
-        int d = date::duration(begin, end);
-        if (d >= 3600*24) return true;
-        int rb = dtime::lowerbound_sec(begin+3);
-        int re = dtime::upperbound_sec(end+3);
+        if (Time::duration(begin, end) >= 3600*24) return true;
+        int rb = time_to_seconds(begin);
+        int re = time_to_seconds(end);
         for (set<int>::const_iterator i = times.begin(); i != times.end(); ++i)
         {
             if (rb <= re)
@@ -396,7 +388,7 @@ struct TimeExact : public DTMatch
         if (times.size() == 1)
         {
             if (lead)
-                return "==" + dtime::tostring(*times.begin());
+                return "==" + wibble::grcal::dtime::tostring(*times.begin());
             else
                 return "% 24";
         }
@@ -408,7 +400,7 @@ struct TimeExact : public DTMatch
             int b = *i;
             if (lead)
             {
-                string res = "==" + dtime::tostring(a) + "%";
+                string res = "==" + wibble::grcal::dtime::tostring(a) + "%";
                 return res + tostringInterval(b-a);
             }
             else
@@ -437,6 +429,36 @@ DTMatch* DTMatch::createTimeLT(const int* tt) { return new TimeLT(tt); }
 DTMatch* DTMatch::createTimeGE(const int* tt) { return new TimeGE(tt); }
 DTMatch* DTMatch::createTimeGT(const int* tt) { return new TimeGT(tt); }
 DTMatch* DTMatch::createTimeEQ(const int* tt) { return new TimeEQ(tt); }
+
+void Parser::mknow(int* vals)
+{
+    struct tm now;
+    gmtime_r(&tnow, &now);
+    wibble::grcal::date::fromtm(now, vals, 6);
+}
+
+void Parser::mktoday(int* vals)
+{
+    struct tm now;
+    gmtime_r(&tnow, &now);
+    wibble::grcal::date::fromtm(now, vals, 3);
+}
+
+void Parser::mkyesterday(int* vals)
+{
+    time_t tv = tnow - 3600*24;
+    struct tm v;
+    gmtime_r(&tv, &v);
+    wibble::grcal::date::fromtm(v, vals, 3);
+}
+
+void Parser::mktomorrow(int* vals)
+{
+    time_t tv = tnow + 3600*24;
+    struct tm v;
+    gmtime_r(&tv, &v);
+    wibble::grcal::date::fromtm(v, vals, 3);
+}
 
 void Parser::add_step(int val, int idx, DTMatch* base)
 {

@@ -44,8 +44,7 @@ struct arki_matcher_level_shar
 TESTGRP(arki_matcher_level);
 
 // Try matching GRIB1 level
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	Matcher m;
 
@@ -66,8 +65,7 @@ void to::test<1>()
 }
 
 // Try matching GRIB2S level
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	Matcher m;
 	md.set(level::GRIB2S::create(110, 12, 13));
@@ -107,8 +105,7 @@ void to::test<2>()
 }
 
 // Try matching GRIB2D level
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 	Matcher m;
 	md.set(level::GRIB2D::create(110, 12, 13, 114, 15, 16));
@@ -160,8 +157,7 @@ void to::test<3>()
 }
 
 // Try matching ODIMH5 level
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
 	Matcher m;
 	md.set(level::ODIMH5::create(10.123, 20.123));

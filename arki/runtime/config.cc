@@ -1,45 +1,17 @@
-/*
- * runtime/config - Common configuration-related code used in most arkimet executables
- *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include "config.h"
-
-#include <arki/runtime/config.h>
-#include <arki/utils.h>
-#include <arki/utils/files.h>
-#include <arki/matcher.h>
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
-#include <wibble/string.h>
-#include <fstream>
+#include "arki/runtime/config.h"
+#include "arki/runtime/io.h"
+#include "arki/libconfig.h"
+#include "arki/exceptions.h"
+#include "arki/utils.h"
+#include "arki/utils/files.h"
+#include "arki/matcher.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include <algorithm>
 #include <memory>
-
-#ifndef linux
-#define _POSIX_SOURCE
 #include <unistd.h>
-#endif
 
 using namespace std;
-using namespace wibble;
-using namespace wibble::commandline;
 using namespace arki::utils;
 
 namespace arki {
@@ -129,7 +101,7 @@ Config& Config::get()
 void Config::Dirlist::describe(ostream& out, const char* desc, const char* envvar) const
 {
     out << desc << ": ";
-    out << str::join(begin(), end(), ":");
+    out << str::join(":", begin(), end());
     out << endl;
     if (envvar) describe_envvar(out, envvar);
 }
@@ -146,10 +118,12 @@ std::string Config::Dirlist::find_file(const std::string& fname, bool executable
 {
     string res = find_file_noerror(fname, executable);
     if (res.empty())
+    {
+        stringstream s;
+        s << (executable ? "program" : "file") << " " << fname << " not found; tried: " << str::join(" ", begin(), end());
         // Build a nice error message
-        throw wibble::exception::Consistency(
-                str::fmtf("looking for %s %s", executable ? "program" : "file", fname.c_str()),
-                "file not found; tried: " + str::join(begin(), end()));
+        throw std::runtime_error(s.str());
+    }
     else
         return res;
 }
@@ -160,7 +134,7 @@ std::string Config::Dirlist::find_file_noerror(const std::string& fname, bool ex
     for (const_iterator i = begin(); i != end(); ++i)
     {
         string res = str::joinpath(*i, fname);
-        if (sys::fs::access(res, mode))
+        if (sys::access(res, mode))
             return res;
     }
     return std::string();
@@ -173,14 +147,14 @@ std::vector<std::string> Config::Dirlist::list_files(const std::string& ext, boo
     for (const_iterator i = begin(); i != end(); ++i)
     {
         vector<string> files;
-        sys::fs::Directory dir(*i);
-        for (sys::fs::Directory::const_iterator di = dir.begin(); di != dir.end(); ++di)
+        sys::Path dir(*i);
+        for (auto di = dir.begin(); di != dir.end(); ++di)
         {
-            string file = *di;
+            string file = di->d_name;
             // Skip hidden files
             if (file[0] == '.') continue;
             // Skip files with different ending
-            if (not str::endsWith(file, ext)) continue;
+            if (not str::endswith(file, ext)) continue;
             // Skip non-files
             if (!di.isreg()) continue;
             files.push_back(file);
@@ -204,14 +178,13 @@ std::vector<std::string> Config::Dirlist::list_files(const std::string& ext, boo
 
 void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
 {
-	using namespace wibble;
-
-	if (fileName == "-")
-	{
-		// Parse the config file from stdin
-		cfg.parse(cin, fileName);
-		return;
-	}
+    if (fileName == "-")
+    {
+        // Parse the config file from stdin
+        Stdin in;
+        cfg.parse(in);
+        return;
+    }
 
 	// Remove trailing slashes, if any
 	string fname = fileName;
@@ -219,46 +192,40 @@ void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
 		fname.resize(fname.size() - 1);
 
     // Check if it's a file or a directory
-    std::auto_ptr<struct stat> st = sys::fs::stat(fname);
+    std::unique_ptr<struct stat> st = sys::stat(fname);
     if (st.get() == 0)
-        throw wibble::exception::Consistency("reading configuration from " + fname, fname + " does not exist");
+        throw std::runtime_error("cannot read configuration from " + fname + ": it does not exist");
 	if (S_ISDIR(st->st_mode))
 	{
 		// If it's a directory, merge in its config file
 		string name = str::basename(fname);
 		string file = str::joinpath(fname, "config");
 
-		ConfigFile section;
-		ifstream in;
-		in.open(file.c_str(), ios::in);
-		if (!in.is_open() || in.fail())
-			throw wibble::exception::File(file, "opening config file for reading");
-		// Parse the config file into a new section
-		section.parse(in, file);
-		// Fill in missing bits
-		section.setValue("name", name);
-		section.setValue("path", sys::fs::abspath(fname));
-		// Merge into cfg
-		cfg.mergeInto(name, section);
-	} else {
-		// If it's a file, then it's a merged config file
-		ifstream in;
-		in.open(fname.c_str(), ios::in);
-		if (!in.is_open() || in.fail())
-			throw wibble::exception::File(fname, "opening config file for reading");
-		// Parse the config file
-		cfg.parse(in, fname);
-	}
+        ConfigFile section;
+        runtime::InputFile in(file);
+        // Parse the config file into a new section
+        section.parse(in);
+        // Fill in missing bits
+        section.setValue("name", name);
+        section.setValue("path", sys::abspath(fname));
+        // Merge into cfg
+        cfg.mergeInto(name, section);
+    } else {
+        // If it's a file, then it's a merged config file
+        runtime::InputFile in(fname);
+        // Parse the config file
+        cfg.parse(in);
+    }
 }
 
-bool parseConfigFiles(ConfigFile& cfg, const wibble::commandline::VectorOption<wibble::commandline::String>& files)
+bool parseConfigFiles(ConfigFile& cfg, const commandline::VectorOption<commandline::String>& files)
 {
        bool found = false;
        for (vector<string>::const_iterator i = files.values().begin();
                        i != files.values().end(); ++i)
        {
                parseConfigFile(cfg, *i);
-               //ReadonlyDataset::readConfig(*i, cfg);
+               //Reader::readConfig(*i, cfg);
                found = true;
        }
        return found;
@@ -319,7 +286,7 @@ void Restrict::remove_unallowed(ConfigFile& cfg)
 		cfg.deleteSection(*i);
 }
 
-void readMatcherAliasDatabase(wibble::commandline::StringOption* file)
+void readMatcherAliasDatabase(commandline::StringOption* file)
 {
 	ConfigFile cfg;
 
@@ -343,7 +310,7 @@ void readMatcherAliasDatabase(wibble::commandline::StringOption* file)
 #ifdef CONF_DIR
     // Else, CONF_DIR is tried.
     string name = string(CONF_DIR) + "/match-alias.conf";
-    auto_ptr<struct stat> st = wibble::sys::fs::stat(name);
+    unique_ptr<struct stat> st = sys::stat(name);
     if (st.get())
     {
         parseConfigFile(cfg, name);
@@ -355,7 +322,7 @@ void readMatcherAliasDatabase(wibble::commandline::StringOption* file)
 	// Else, nothing is loaded.
 }
 
-static std::string rcDirName(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dir)
+static std::string rcDirName(const std::string& nameInConfdir, const std::string& nameInEnv, commandline::StringOption* dir)
 {
 	std::string dirname;
 	char* fromEnv = 0;
@@ -377,24 +344,23 @@ static std::string rcDirName(const std::string& nameInConfdir, const std::string
 #endif
 }
 
-std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dirOption)
+std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::string& nameInEnv, commandline::StringOption* dirOption)
 {
 	std::string dirname = rcDirName(nameInConfdir, nameInEnv, dirOption);
 
-	vector<string> files;
-	wibble::sys::fs::Directory dir(dirname);
-	for (wibble::sys::fs::Directory::const_iterator i = dir.begin();
-			i != dir.end(); ++i)
-	{
-		string file = *i;
-		// Skip hidden files
-		if (file[0] == '.') continue;
-		// Skip backup files
-		if (file[file.size() - 1] == '~') continue;
+    vector<string> files;
+    sys::Path dir(dirname);
+    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
+    {
+        string file = i->d_name;
+        // Skip hidden files
+        if (file[0] == '.') continue;
+        // Skip backup files
+        if (file[file.size() - 1] == '~') continue;
         // Skip non-files
         if (!i.isreg()) continue;
-        files.push_back(wibble::str::joinpath(dirname, *i));
-	}
+        files.push_back(str::joinpath(dirname, i->d_name));
+    }
 
 	// Sort the file names
 	std::sort(files.begin(), files.end());
@@ -402,7 +368,7 @@ std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::st
 	return files;
 }
 
-std::string readRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dirOption)
+std::string readRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, commandline::StringOption* dirOption)
 {
 	vector<string> files = rcFiles(nameInConfdir, nameInEnv, dirOption);
 
@@ -414,7 +380,7 @@ std::string readRcDir(const std::string& nameInConfdir, const std::string& nameI
 	return res;
 }
 
-SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dirOption)
+SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, commandline::StringOption* dirOption)
 {
 	vector<string> files = rcFiles(nameInConfdir, nameInEnv, dirOption);
 	SourceCode res;
@@ -432,4 +398,3 @@ SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::stri
 
 }
 }
-// vim:set ts=4 sw=4:

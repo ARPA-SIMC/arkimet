@@ -1,31 +1,10 @@
 #ifndef ARKI_UTILS_COMPRESS_H
 #define ARKI_UTILS_COMPRESS_H
 
-/*
- * utils/compress - Compression/decompression utilities
- *
- * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Compression/decompression utilities
 
 #include <arki/libconfig.h>
-#include <arki/metadata/consumer.h>
-#include <wibble/sys/buffer.h>
+#include <arki/utils/sys.h>
 #include <sys/types.h>
 #include <string>
 #include <vector>
@@ -35,6 +14,8 @@ struct z_stream_s;
 typedef struct z_stream_s z_stream;
 
 namespace arki {
+struct Metadata;
+
 namespace utils {
 
 /**
@@ -52,7 +33,7 @@ namespace compress {
  *
  * Fast.
  */
-wibble::sys::Buffer lzo(const void* in, size_t in_size);
+std::vector<uint8_t> lzo(const void* in, size_t in_size);
 
 /**
  * Uncompress LZO compressed data.
@@ -60,7 +41,7 @@ wibble::sys::Buffer lzo(const void* in, size_t in_size);
  * @param size
  *   The size of the uncompressed data
  */
-wibble::sys::Buffer unlzo(const void* in, size_t in_size, size_t out_size);
+std::vector<uint8_t> unlzo(const void* in, size_t in_size, size_t out_size);
 
 /**
  * Compressor engine based on Zlib
@@ -74,10 +55,10 @@ public:
 	ZlibCompressor();
 	~ZlibCompressor();
 
-	/**
-	 * Set the data for the encoder/decoder
-	 */
-	void feedData(void* buf, size_t len);
+    /**
+     * Set the data for the encoder/decoder
+     */
+    void feedData(const void* buf, size_t len);
 
 	/**
 	 * Run an encoder loop filling in the given buffer
@@ -86,7 +67,7 @@ public:
 	 *          call run() again before feedData)
 	 */
 	size_t get(void* buf, size_t len, bool flush = false);
-	size_t get(wibble::sys::Buffer& buf, bool flush = false);
+	size_t get(std::vector<uint8_t>& buf, bool flush = false);
 
 	/**
 	 * Restart compression after a flush
@@ -125,8 +106,8 @@ struct SeekIndex
 	/// offset
 	size_t lookup(size_t unc) const;
 
-	/// Read the index from the given file descriptor
-	void read(int fd, const std::string& fname);
+    /// Read the index from the given file descriptor
+    void read(sys::File& fd);
 
 	/**
 	 * Read the index from the given file
@@ -152,21 +133,19 @@ off_t filesize(const std::string& file);
  * It also creates a compressed file index for faster seeking in the compressed
  * file.
  */
-class DataCompressor : public metadata::Eater
+class DataCompressor
 {
 protected:
-	// Output file name
-	std::string outfile;
 	// Number of data items in a compressed block
 	size_t groupsize;
-	// Compressed output
-	int outfd;
-	// Index output
-	int outidx;
+    // Compressed output
+    sys::File outfd;
+    // Index output
+    sys::File outidx;
 	// Compressor
 	ZlibCompressor compressor;
 	// Output buffer for the compressor
-	wibble::sys::Buffer outbuf;
+    std::vector<uint8_t> outbuf;
 	// Offset of end of last uncompressed data read
 	off_t unc_ofs;
 	// Offset of end of last uncompressed block written
@@ -176,18 +155,18 @@ protected:
 	// Number of data compressed so far
 	size_t count;
 
-	// End one compressed block
-	void endBlock(bool final=false);
+    // End one compressed block
+    void endBlock(bool is_final=false);
 
 public:
-	DataCompressor(const std::string& outfile, size_t groupsize = 512);
-	~DataCompressor();
+    DataCompressor(const std::string& outfile, size_t groupsize = 512);
+    ~DataCompressor();
 
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md);
 
-    void add(wibble::sys::Buffer buf);
+    void add(const std::vector<uint8_t>& buf);
 
-	void flush();
+    void flush();
 };
 
 }

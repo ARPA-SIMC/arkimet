@@ -1,39 +1,14 @@
 #ifndef ARKI_TARGETFILE_H
 #define ARKI_TARGETFILE_H
 
-/*
- * arki/targetfile - Compute file names out of metadata
- *
- * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/utils/lua.h>
+#include <arki/utils/sys.h>
 #include <arki/dataset.h>
 #include <string>
 #include <map>
 
 namespace arki {
 class Metadata;
-
-namespace runtime {
-class Output;
-}
 
 class Targetfile
 {
@@ -87,23 +62,24 @@ public:
  * Wrap a dataset. As query results arrive, use arki::Targetfile to generate a
  * file name for their output, and open/reopen an Output accordingly.
  */
-class TargetfileSpy : public ReadonlyDataset
+class TargetfileSpy : public dataset::Reader
 {
-	Targetfile::Func func;
-	ReadonlyDataset& ds;
-	runtime::Output& output;
+    Targetfile::Func func;
+    Reader& ds;
+    utils::sys::NamedFileDescriptor& output;
+    utils::sys::File* cur_output = nullptr;
 
 public:
-	TargetfileSpy(ReadonlyDataset& ds, runtime::Output& output, const std::string& def);
+    TargetfileSpy(Reader& ds, utils::sys::NamedFileDescriptor& output, const std::string& def);
+    ~TargetfileSpy();
 
-	void redirect(Metadata& md);
+    std::string type() const override;
 
-    virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer);
-    virtual void querySummary(const Matcher& matcher, Summary& summary);
+    void redirect(Metadata& md);
+
+    virtual void query_data(const dataset::DataQuery& q, metadata_dest_func dest);
+    virtual void query_summary(const Matcher& matcher, Summary& summary);
 };
 
-
 }
-
-// vim:set ts=4 sw=4:
 #endif

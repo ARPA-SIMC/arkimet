@@ -1,80 +1,59 @@
-/*
- * dispatcher - Dispatch data into dataset
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "dispatcher.h"
 #include "configfile.h"
 #include "metadata/consumer.h"
 #include "matcher.h"
 #include "dataset.h"
+#include "dataset/local.h"
 #include "validator.h"
 #include "types/reftime.h"
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
-#include <wibble/string.h>
+#include "utils/string.h"
+#include "utils/sys.h"
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
+using arki::core::Time;
 
 namespace arki {
 
 static inline Matcher getFilter(const ConfigFile* cfg)
 {
-	try {
-		return Matcher::parse(cfg->value("filter"));
-	} catch (wibble::exception::Generic& e) {
-		const ConfigFile::FilePos* fp = cfg->valueInfo("filter");
-		if (fp)
-			e.addContext("in file " + fp->pathname + ":" + str::fmt(fp->lineno));
-		throw;
-	}
+    try {
+        return Matcher::parse(cfg->value("filter"));
+    } catch (std::runtime_error& e) {
+        const configfile::Position* fp = cfg->valueInfo("filter");
+        if (fp)
+        {
+            stringstream ss;
+            ss << fp->pathname << ":" << fp->lineno << ": " << e.what();
+            throw std::runtime_error(ss.str());
+        }
+        throw;
+    }
 }
 
 Dispatcher::Dispatcher(const ConfigFile& cfg)
-	: m_can_continue(true), m_outbound_failures(0)
+    : m_can_continue(true), m_outbound_failures(0)
 {
-	// Validate the configuration, and split normal datasets from outbound
-	// datasets
-	for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
-			i != cfg.sectionEnd(); ++i)
-	{
-		if (i->first == "error" or i->first == "duplicates")
-			continue;
-		else if (i->second->value("type") == "outbound")
-		{
-			if (i->second->value("filter").empty())
-				throw wibble::exception::Consistency(
-						"configuration of dataset '"+i->first+"' does not have a 'filter' directive",
-						"reading dataset configuration");
-			outbounds.push_back(make_pair(i->first, getFilter(i->second)));
-		}
-		else {
-			if (i->second->value("filter").empty())
-				throw wibble::exception::Consistency(
-						"configuration of dataset '"+i->first+"' does not have a 'filter' directive",
-						"reading dataset configuration");
-			datasets.push_back(make_pair(i->first, getFilter(i->second)));
-		}
-	}
+    // Validate the configuration, and split normal datasets from outbound
+    // datasets
+    for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
+            i != cfg.sectionEnd(); ++i)
+    {
+        if (i->first == "error" or i->first == "duplicates")
+            continue;
+        else if (i->second->value("type") == "outbound")
+        {
+            if (i->second->value("filter").empty())
+                throw std::runtime_error("configuration of dataset '"+i->first+"' does not have a 'filter' directive");
+            outbounds.push_back(make_pair(i->first, getFilter(i->second)));
+        }
+        else {
+            if (i->second->value("filter").empty())
+                throw std::runtime_error("configuration of dataset '"+i->first+"' does not have a 'filter' directive");
+            datasets.push_back(make_pair(i->first, getFilter(i->second)));
+        }
+    }
 }
 
 Dispatcher::~Dispatcher()
@@ -94,14 +73,14 @@ void Dispatcher::hook_found_datasets(const Metadata& md, vector<string>& found)
 {
 }
 
-void Dispatcher::hook_output(auto_ptr<Metadata> md, metadata::Eater& mdc)
+void Dispatcher::hook_output(unique_ptr<Metadata> md, metadata_dest_func mdc)
 {
 }
 
-WritableDataset::AcquireResult Dispatcher::raw_dispatch_error(Metadata& md) { return raw_dispatch_dataset("error", md); }
-WritableDataset::AcquireResult Dispatcher::raw_dispatch_duplicates(Metadata& md) { return raw_dispatch_dataset("duplicates", md); }
+dataset::Writer::AcquireResult Dispatcher::raw_dispatch_error(Metadata& md) { return raw_dispatch_dataset("error", md); }
+dataset::Writer::AcquireResult Dispatcher::raw_dispatch_duplicates(Metadata& md) { return raw_dispatch_dataset("duplicates", md); }
 
-Dispatcher::Outcome Dispatcher::dispatch(auto_ptr<Metadata> md, metadata::Eater& mdc)
+Dispatcher::Outcome Dispatcher::dispatch(unique_ptr<Metadata>&& md, metadata_dest_func mdc)
 {
     Dispatcher::Outcome result;
     vector<string> found;
@@ -115,8 +94,8 @@ Dispatcher::Outcome Dispatcher::dispatch(auto_ptr<Metadata> md, metadata::Eater&
         using namespace arki::types;
         md->add_note("Validation error: reference time is missing");
         // Set today as a dummy reference time, and import into the error dataset
-        md->set(Reftime::createPosition(Time::createNow()));
-        result = raw_dispatch_error(*md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+        md->set(Reftime::createPosition(Time::create_now()));
+        result = raw_dispatch_error(*md) == dataset::Writer::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
         goto done;
     }
 
@@ -139,7 +118,7 @@ Dispatcher::Outcome Dispatcher::dispatch(auto_ptr<Metadata> md, metadata::Eater&
         if (!validates_ok)
         {
             // Dispatch directly to the error dataset
-            result = raw_dispatch_error(*md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+            result = raw_dispatch_error(*md) == dataset::Writer::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
             goto done;
         }
     }
@@ -161,9 +140,9 @@ Dispatcher::Outcome Dispatcher::dispatch(auto_ptr<Metadata> md, metadata::Eater&
         if (i->second(*md))
         {
             // Operate on a copy
-            auto_ptr<Metadata> md1(new Metadata(*md));
+            unique_ptr<Metadata> md1(new Metadata(*md));
             // File it to the outbound dataset right away
-            if (raw_dispatch_dataset(i->first, *md1) != WritableDataset::ACQ_OK)
+            if (raw_dispatch_dataset(i->first, *md1) != dataset::Writer::ACQ_OK)
             {
                 // What do we do in case of error?
                 // The dataset will already have added a note to the dataset
@@ -172,7 +151,7 @@ Dispatcher::Outcome Dispatcher::dispatch(auto_ptr<Metadata> md, metadata::Eater&
                 ++m_outbound_failures;
             }
             if (m_can_continue)
-                m_can_continue = mdc.eat(md1);
+                m_can_continue = mdc(move(md1));
         }
 
     // See how many proper datasets match this metadata
@@ -187,7 +166,7 @@ Dispatcher::Outcome Dispatcher::dispatch(auto_ptr<Metadata> md, metadata::Eater&
     if (found.empty())
     {
         md->add_note("Message could not be assigned to any dataset");
-        result = raw_dispatch_error(*md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+        result = raw_dispatch_error(*md) == dataset::Writer::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
         goto done;
     }
 
@@ -201,46 +180,45 @@ Dispatcher::Outcome Dispatcher::dispatch(auto_ptr<Metadata> md, metadata::Eater&
             else
                 msg += ", " + *i;
         md->add_note(msg);
-        result = raw_dispatch_error(*md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+        result = raw_dispatch_error(*md) == dataset::Writer::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
         goto done;
     }
 
     // Acquire into the dataset
     switch (raw_dispatch_dataset(found[0], *md))
     {
-        case WritableDataset::ACQ_OK:
+        case dataset::Writer::ACQ_OK:
             result = DISP_OK;
             break;
-        case WritableDataset::ACQ_ERROR_DUPLICATE:
+        case dataset::Writer::ACQ_ERROR_DUPLICATE:
             // If insertion in the designed dataset failed, insert in the
             // error dataset
-            result = raw_dispatch_duplicates(*md) == WritableDataset::ACQ_OK ? DISP_DUPLICATE_ERROR : DISP_NOTWRITTEN;
+            result = raw_dispatch_duplicates(*md) == dataset::Writer::ACQ_OK ? DISP_DUPLICATE_ERROR : DISP_NOTWRITTEN;
             break;
-        case WritableDataset::ACQ_ERROR:
+        case dataset::Writer::ACQ_ERROR:
         default:
             // If insertion in the designed dataset failed, insert in the
             // error dataset
-            result = raw_dispatch_error(*md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+            result = raw_dispatch_error(*md) == dataset::Writer::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
             break;
     }
 
 done:
-    hook_output(md, mdc);
+    hook_output(move(md), mdc);
     return result;
 }
 
 
 RealDispatcher::RealDispatcher(const ConfigFile& cfg)
-	: Dispatcher(cfg), pool(cfg), dserror(0), dsduplicates(0)
+    : Dispatcher(cfg), pool(cfg), dserror(0), dsduplicates(0)
 {
-	// Instantiate the error dataset in the cache
-	dserror = pool.get("error");
-	if (!dserror)
-		throw wibble::exception::Consistency(
-			"no [error] dataset found", "reading dataset configuration");
+    // Instantiate the error dataset in the cache
+    dserror = pool.get("error");
+    if (!dserror)
+        throw std::runtime_error("no [error] dataset found");
 
-	// Instantiate the duplicates dataset in the cache
-	dsduplicates = pool.get("duplicates");
+    // Instantiate the duplicates dataset in the cache
+    dsduplicates = pool.get("duplicates");
 }
 
 RealDispatcher::~RealDispatcher()
@@ -249,27 +227,27 @@ RealDispatcher::~RealDispatcher()
 	// a reference to the version inside the DatasetPool cache
 }
 
-void RealDispatcher::hook_output(auto_ptr<Metadata> md, metadata::Eater& mdc)
+void RealDispatcher::hook_output(unique_ptr<Metadata> md, metadata_dest_func mdc)
 {
     if (m_can_continue)
-        m_can_continue = mdc.eat(md);
+        m_can_continue = mdc(move(md));
 }
 
-WritableDataset::AcquireResult RealDispatcher::raw_dispatch_dataset(const std::string& name, Metadata& md)
+dataset::Writer::AcquireResult RealDispatcher::raw_dispatch_dataset(const std::string& name, Metadata& md)
 {
     // File it to the outbound dataset right away
-    WritableDataset* target = pool.get(name);
+    dataset::Writer* target = pool.get(name);
     return target->acquire(md);
 }
 
-WritableDataset::AcquireResult RealDispatcher::raw_dispatch_error(Metadata& md)
+dataset::Writer::AcquireResult RealDispatcher::raw_dispatch_error(Metadata& md)
 {
     return dserror->acquire(md);
 }
 
-WritableDataset::AcquireResult RealDispatcher::raw_dispatch_duplicates(Metadata& md)
+dataset::Writer::AcquireResult RealDispatcher::raw_dispatch_duplicates(Metadata& md)
 {
-    WritableDataset* target = dsduplicates ? dsduplicates : dserror;
+    dataset::Writer* target = dsduplicates ? dsduplicates : dserror;
     return target->acquire(md);
 }
 
@@ -278,11 +256,10 @@ void RealDispatcher::flush() { pool.flush(); }
 
 
 TestDispatcher::TestDispatcher(const ConfigFile& cfg, std::ostream& out)
-	: Dispatcher(cfg), cfg(cfg), out(out), m_count(0)
+    : Dispatcher(cfg), cfg(cfg), out(out), m_count(0)
 {
-	if (!cfg.section("error"))
-		throw wibble::exception::Consistency(
-			"no [error] dataset found", "reading dataset configuration");
+    if (!cfg.section("error"))
+        throw std::runtime_error("no [error] dataset found");
 }
 TestDispatcher::~TestDispatcher() {}
 
@@ -315,10 +292,10 @@ void TestDispatcher::hook_found_datasets(const Metadata& md, vector<string>& fou
     }
 }
 
-WritableDataset::AcquireResult TestDispatcher::raw_dispatch_dataset(const std::string& name, Metadata& md)
+dataset::Writer::AcquireResult TestDispatcher::raw_dispatch_dataset(const std::string& name, Metadata& md)
 {
     out << prefix << ": acquire to " << name << " dataset" << endl;
-    return WritableDataset::testAcquire(*cfg.section(name), md, out);
+    return dataset::Writer::testAcquire(*cfg.section(name), md, out);
 }
 
 void TestDispatcher::flush()
@@ -328,4 +305,3 @@ void TestDispatcher::flush()
 }
 
 }
-// vim:set ts=4 sw=4:

@@ -1,30 +1,13 @@
 #ifndef ARKI_SUMMARY_TABLE_H
 #define ARKI_SUMMARY_TABLE_H
 
-/*
- * summary/table - Arkimet summary implementation in tabular form
- *
- * Copyright (C) 2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// summary/table - Arkimet summary implementation in tabular form
 
 #include <arki/types.h>
+#include <arki/file.h>
 #include <arki/summary/stats.h>
+#include <vector>
+#include <array>
 #include <cstring>
 
 namespace arki {
@@ -48,58 +31,43 @@ struct Row
 {
     /// Number of item types that contribute to a summary context (same as Table::msoSize)
     static const unsigned mso_size = 10;
-    const types::Type* items[mso_size];
+    std::array<const types::Type*, mso_size> items;
     Stats stats;
 
     Row() {}
-    Row(const Row& row)
-        : stats(row.stats)
-    {
-        memcpy(items, row.items, sizeof(items));
-    }
+    Row(const Row& row) = default;
+    Row(Row&& row) = default;
     Row(const Metadata& md) : stats(Stats(md)) {}
     Row(const Stats& stats) : stats(stats) {}
 
+    Row& operator=(const Row&) = default;
+    Row& operator=(Row&&) = default;
+
     void set_to_zero()
     {
-        memset(items, 0, sizeof(items));
+        items.fill(nullptr);
     }
 
     void set_to_zero(unsigned first_el)
     {
-        memset(items + first_el, 0, (mso_size - first_el) * sizeof(const types::Type*));
+        for (unsigned i = first_el; i < items.size(); ++i)
+            items[i] = nullptr;
     }
 
     bool matches(const Matcher& matcher) const;
 
-    bool operator<(const Row& row) const;
-
-    bool operator==(const Row& row) const
-    {
-        return memcmp(items, row.items, sizeof(items)) == 0;
-    }
-
-    bool operator!=(const Row& row) const
-    {
-        return memcmp(items, row.items, sizeof(items)) != 0;
-    }
+    bool operator<(const Row& row) const { return items < row.items; }
+    bool operator==(const Row& row) const { return items == row.items; }
+    bool operator!=(const Row& row) const { return items != row.items; }
 
     void dump(std::ostream& out, unsigned indent = 0) const;
-
-private:
-    Row& operator=(const Row&);
 };
 
 class Table
 {
 protected:
     TypeIntern* interns;
-    Row* rows;
-    unsigned row_count;
-    unsigned row_capacity;
-
-    /// Ensure that we have enough capacity to add at last an item
-    void ensure_we_can_add_one();
+    std::vector<Row> rows;
 
     static void buildMsoSerLen();
     static void buildItemMsoMap();
@@ -111,13 +79,13 @@ public:
     Table();
     ~Table();
 
-    bool empty() const { return row_count == 0; }
-    unsigned size() const { return row_count; }
+    bool empty() const { return rows.empty(); }
+    size_t size() const { return rows.size(); }
 
     bool equals(const Table& table) const;
 
     /// Return the intern version of an item
-    const types::Type* intern(unsigned pos, std::auto_ptr<types::Type> item);
+    const types::Type* intern(unsigned pos, std::unique_ptr<types::Type>&& item);
 
     /// Merge a row into the table
     void merge(const Metadata& md);
@@ -138,7 +106,7 @@ public:
     void merge(const Row& row);
 
     /// Merge rows read from a yaml input stream
-    bool merge_yaml(std::istream& in, const std::string& filename);
+    bool merge_yaml(LineReader& in, const std::string& filename);
 
     void dump(std::ostream& out) const;
 

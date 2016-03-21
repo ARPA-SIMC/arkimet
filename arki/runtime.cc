@@ -1,61 +1,37 @@
-/*
- * runtime - Common code used in most arkimet executables
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
-#include <arki/runtime.h>
-
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
-#include <wibble/sys/signal.h>
-#include <wibble/string.h>
-#include <arki/configfile.h>
-#include <arki/summary.h>
-#include <arki/matcher.h>
-#include <arki/utils.h>
-#include <arki/utils/files.h>
-#include <arki/dataset.h>
-#include <arki/dataset/file.h>
-#include <arki/dataset/http.h>
-#include <arki/dataset/index/base.h>
-#include <arki/dispatcher.h>
-#include <arki/targetfile.h>
-#include <arki/formatter.h>
-#include <arki/postprocess.h>
-#include <arki/querymacro.h>
-#include <arki/sort.h>
-#include <arki/nag.h>
-#include <arki/iotrace.h>
-#include <arki/types-init.h>
-#include <arki/validator.h>
+#include "arki/runtime.h"
+#include "arki/exceptions.h"
+#include "arki/utils/string.h"
+#include "arki/configfile.h"
+#include "arki/summary.h"
+#include "arki/matcher.h"
+#include "arki/utils.h"
+#include "arki/utils/files.h"
+#include "arki/utils/string.h"
+#include "arki/dataset.h"
+#include "arki/dataset/file.h"
+#include "arki/dataset/http.h"
+#include "arki/dataset/index/base.h"
+#include "arki/dispatcher.h"
+#include "arki/targetfile.h"
+#include "arki/formatter.h"
+#include "arki/postprocess.h"
+#include "arki/querymacro.h"
+#include "arki/sort.h"
+#include "arki/nag.h"
+#include "arki/iotrace.h"
+#include "arki/types-init.h"
+#include "arki/validator.h"
+#include "arki/utils/sys.h"
+#ifdef HAVE_LUA
+#include "arki/report.h"
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <iostream>
 #include <cstdlib>
-
-#ifdef HAVE_LUA
-#include <arki/report.h>
-#endif
+#include <cassert>
 
 #if __xlC__
 // From glibc
@@ -71,8 +47,6 @@
 #endif
 
 using namespace std;
-using namespace wibble;
-using namespace wibble::commandline;
 using namespace arki::utils;
 using namespace arki::types;
 
@@ -89,9 +63,9 @@ void init()
 HandledByCommandLineParser::HandledByCommandLineParser(int status) : status(status) {}
 HandledByCommandLineParser::~HandledByCommandLineParser() {}
 
-std::auto_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query, const std::string& url)
+std::unique_ptr<dataset::Reader> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query, const std::string& url)
 {
-    auto_ptr<ReadonlyDataset> ds;
+    unique_ptr<dataset::Reader> ds;
     string baseurl = dataset::HTTP::allSameRemoteServer(cfg);
     if (baseurl.empty())
     {
@@ -108,15 +82,17 @@ std::auto_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const 
         cfg.setValue("qmacro", query);
         if (!url.empty())
             cfg.setValue("url", url);
-        ds.reset(ReadonlyDataset::create(cfg));
+        ds.reset(dataset::Reader::create(cfg));
     }
     return ds;
 }
 
 CommandLine::CommandLine(const std::string& name, int mansection)
-	: StandardParserWithManpage(name, PACKAGE_VERSION, mansection, PACKAGE_BUGREPORT),
-	  output(0), processor(0), dispatcher(0)
+    : StandardParserWithManpage(name, PACKAGE_VERSION, mansection, PACKAGE_BUGREPORT),
+      output(0), processor(0), dispatcher(0)
 {
+    using namespace arki::utils::commandline;
+
 	infoOpts = createGroup("Options controlling verbosity");
 	debug = infoOpts->add<BoolOption>("debug", 0, "debug", "", "debug output");
 	verbose = infoOpts->add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
@@ -158,6 +134,8 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 			" to be written. See /etc/arkimet/targetfile for details.");
 	summary = outputOpts->add<BoolOption>("summary", 0, "summary", "",
 			"output only the summary of the data");
+	summary_short = outputOpts->add<BoolOption>("summary-short", 0, "summary-short", "",
+			"output a list of all metadata values that exist in the summary of the data");
 	summary_restrict = outputOpts->add<StringOption>("summary-restrict", 0, "summary-restrict", "types",
 			"summarise using only the given metadata types (comma-separated list)");
 	sort = outputOpts->add<StringOption>("sort", 0, "sort", "period:order",
@@ -193,6 +171,8 @@ CommandLine::~CommandLine()
 
 void CommandLine::addScanOptions()
 {
+    using namespace arki::utils::commandline;
+
 	files = inputOpts->add<StringOption>("files", 0, "files", "file",
 			"read the list of files to scan from the given file instead of the command line");
 	moveok = inputOpts->add<StringOption>("moveok", 0, "moveok", "directory",
@@ -212,6 +192,8 @@ void CommandLine::addScanOptions()
 
 void CommandLine::addQueryOptions()
 {
+    using namespace arki::utils::commandline;
+
 	cfgfiles = inputOpts->add< VectorOption<String> >("config", 'C', "config", "file",
 		"read configuration about input sources from the given file (can be given more than once)");
 	exprfile = inputOpts->add<StringOption>("file", 'f', "file", "file",
@@ -238,13 +220,14 @@ bool CommandLine::parse(int argc, const char* argv[])
 
 	nag::init(verbose->isSet(), debug->isSet());
 
-	if (postprocess->isSet() && targetfile->isSet())
-        throw wibble::exception::BadOption("--postprocess conflicts with --targetfile");
-	if (postproc_data && postproc_data->isSet() && !postprocess->isSet())
-		throw wibble::exception::BadOption("--upload only makes sense with --postprocess");
+    if (postprocess->isSet() && targetfile->isSet())
+        throw commandline::BadOption("--postprocess conflicts with --targetfile");
+    if (postproc_data && postproc_data->isSet() && !postprocess->isSet())
+        throw commandline::BadOption("--upload only makes sense with --postprocess");
 
-	// Initialize the processor maker
+    // Initialize the processor maker
     pmaker.summary = summary->boolValue();
+    pmaker.summary_short = summary_short->boolValue();
     pmaker.yaml = yaml->boolValue();
     pmaker.json = json->boolValue();
     pmaker.annotate = annotate->boolValue();
@@ -258,7 +241,7 @@ bool CommandLine::parse(int argc, const char* argv[])
     // Run here a consistency check on the processor maker configuration
     std::string errors = pmaker.verify_option_consistency();
     if (!errors.empty())
-        throw wibble::exception::BadOption(errors);
+        throw commandline::BadOption(errors);
 	
 	return false;
 }
@@ -281,26 +264,26 @@ void CommandLine::setupProcessing()
         }
     }
 
-	// Parse the matcher query
-	if (exprfile)
-	{
-		if (exprfile->isSet())
-		{
-			// Read the entire file into memory and parse it as an expression
-			strquery = files::read_file(exprfile->stringValue());
-		} else {
-			// Read from the first commandline argument
-			if (!hasNext())
-			{
-				if (exprfile)
-					throw wibble::exception::BadOption("you need to specify a filter expression or use --"+exprfile->longNames[0]);
-				else
-					throw wibble::exception::BadOption("you need to specify a filter expression");
-			}
-			// And parse it as an expression
-			strquery = next();
-		}
-	}
+    // Parse the matcher query
+    if (exprfile)
+    {
+        if (exprfile->isSet())
+        {
+            // Read the entire file into memory and parse it as an expression
+            strquery = files::read_file(exprfile->stringValue());
+        } else {
+            // Read from the first commandline argument
+            if (!hasNext())
+            {
+                if (exprfile)
+                    throw commandline::BadOption("you need to specify a filter expression or use --"+exprfile->longNames[0]);
+                else
+                    throw commandline::BadOption("you need to specify a filter expression");
+            }
+            // And parse it as an expression
+            strquery = next();
+        }
+    }
 
 
 	// Initialise the dataset list
@@ -310,59 +293,54 @@ void CommandLine::setupProcessing()
 				i != cfgfiles->values().end(); ++i)
 			parseConfigFile(inputInfo, *i);
 
-	if (files && files->isSet())	// From --files option, looking for data files or datasets
-	{
-		// Open the file
-		string file = files->stringValue();
-		std::istream* input;
-		std::ifstream in;
-		if (file != "-")
-		{
-			in.open(file.c_str(), ios::in);
-			if (!in.is_open() || in.fail())
-				throw wibble::exception::File(file, "opening file for reading");
-			input = &in;
-		} else {
-			input = &cin;
-		}
+    if (files && files->isSet())    // From --files option, looking for data files or datasets
+    {
+        // Open the file
+        string file = files->stringValue();
+        unique_ptr<NamedFileDescriptor> in;
+        if (file != "-")
+            in.reset(new InputFile(file));
+        else
+            in.reset(new Stdin);
 
-		// Read the content and scan the related files or dataset directories
-		string line;
-		while (!input->eof())
-		{
-			getline(*input, line);
-			if (input->fail() && !input->eof())
-				throw wibble::exception::File(file, "reading one line");
-			line = str::trim(line);
-			if (line.empty())
-				continue;
-			ReadonlyDataset::readConfig(line, inputInfo);
-		}
-	}
+        // Read the content and scan the related files or dataset directories
+        auto reader = LineReader::from_fd(*in);
+        string line;
+        while (reader->getline(line))
+        {
+            line = str::strip(line);
+            if (line.empty())
+                continue;
+            dataset::Reader::readConfig(line, inputInfo);
+        }
+    }
 
-	while (hasNext())	// From command line arguments, looking for data files or datasets
-		ReadonlyDataset::readConfig(next(), inputInfo);
+    while (hasNext())	// From command line arguments, looking for data files or datasets
+        dataset::Reader::readConfig(next(), inputInfo);
 
-	if (inputInfo.sectionSize() == 0)
-		throw wibble::exception::BadOption("you need to specify at least one input file or dataset");
+    if (inputInfo.sectionSize() == 0)
+        throw commandline::BadOption("you need to specify at least one input file or dataset");
 
-	// Filter the dataset list
-	if (restr && restr->isSet())
-	{
-		Restrict rest(restr->stringValue());
-		rest.remove_unallowed(inputInfo);
-		if (inputInfo.sectionSize() == 0)
-			throw wibble::exception::BadOption("no accessible datasets found for the given --restrict value");
-	}
+    if (summary && summary->isSet() && summary_short && summary_short->isSet())
+        throw commandline::BadOption("--summary and --summary-short cannot be used together");
 
-	// Some things cannot be done when querying multiple datasets at the same time
-	if (inputInfo.sectionSize() > 1 && !dispatcher && !(qmacro && qmacro->isSet()))
-	{
-		if (postprocess->boolValue())
-			throw wibble::exception::BadOption("postprocessing is not possible when querying more than one dataset at the same time");
-		if (report->boolValue())
-			throw wibble::exception::BadOption("reports are not possible when querying more than one dataset at the same time");
-	}
+    // Filter the dataset list
+    if (restr && restr->isSet())
+    {
+        Restrict rest(restr->stringValue());
+        rest.remove_unallowed(inputInfo);
+        if (inputInfo.sectionSize() == 0)
+            throw commandline::BadOption("no accessible datasets found for the given --restrict value");
+    }
+
+    // Some things cannot be done when querying multiple datasets at the same time
+    if (inputInfo.sectionSize() > 1 && !dispatcher && !(qmacro && qmacro->isSet()))
+    {
+        if (postprocess->boolValue())
+            throw commandline::BadOption("postprocessing is not possible when querying more than one dataset at the same time");
+        if (report->boolValue())
+            throw commandline::BadOption("reports are not possible when querying more than one dataset at the same time");
+    }
 
 
     // Validate the query with all the servers
@@ -395,7 +373,7 @@ void CommandLine::setupProcessing()
                         got = dataset::HTTP::expandMatcher(strquery, server);
                         resolved_by = server;
                     }
-                } catch (wibble::exception::Generic& e) {
+                } catch (std::exception& e) {
                     // If the server cannot expand the query, we're
                     // ok as we send it expanded. What we are
                     // checking here is that the server does not
@@ -407,7 +385,7 @@ void CommandLine::setupProcessing()
                 {
                     nag::warning("%s expands the query as %s", server.c_str(), got.c_str());
                     nag::warning("%s expands the query as %s", resolved_by.c_str(), expanded.c_str());
-                    throw wibble::exception::Consistency("checking alias consistency", "two systems queried disagree about the query alias expansion");
+                    throw std::runtime_error("cannot check alias consistency: two systems queried disagree about the query alias expansion");
                 } else if (first)
                     expanded = got;
                 first = false;
@@ -423,26 +401,29 @@ void CommandLine::setupProcessing()
         }
     }
 
-	// Open output stream
+    // Open output stream
 
-	if (!output)
-		output = new Output(*outfile);
+    if (!output)
+        output = make_output(*outfile).release();
 
     // Create the core processor
-    auto_ptr<DatasetProcessor> p = pmaker.make(query, *output);
+    unique_ptr<DatasetProcessor> p = pmaker.make(query, *output);
     processor = p.release();
 
     // If targetfile is requested, wrap with the targetfile processor
     if (targetfile->isSet())
-        processor = new TargetFileProcessor(processor, targetfile->stringValue(), *output);
+    {
+        SingleOutputProcessor* sop = dynamic_cast<SingleOutputProcessor*>(processor);
+        assert(sop != nullptr);
+        processor = new TargetFileProcessor(sop, targetfile->stringValue());
+    }
 
-	// Create the dispatcher if needed
-
-	if (dispatch->isSet() || testdispatch->isSet())
-	{
-		if (dispatch->isSet() && testdispatch->isSet())
-			throw wibble::exception::BadOption("you cannot use --dispatch together with --testdispatch");
-		runtime::readMatcherAliasDatabase();
+    // Create the dispatcher if needed
+    if (dispatch->isSet() || testdispatch->isSet())
+    {
+        if (dispatch->isSet() && testdispatch->isSet())
+            throw commandline::BadOption("you cannot use --dispatch together with --testdispatch");
+        runtime::readMatcherAliasDatabase();
 
 		if (testdispatch->isSet()) {
 			for (vector<string>::const_iterator i = testdispatch->values().begin();
@@ -467,28 +448,28 @@ void CommandLine::setupProcessing()
             const ValidatorRepository& vals = ValidatorRepository::get();
 
             // Add validators to dispatcher
-            str::Split splitter(",", validate->stringValue());
+            str::Split splitter(validate->stringValue(), ",");
             for (str::Split::const_iterator iname = splitter.begin();
                     iname != splitter.end(); ++iname)
             {
                 ValidatorRepository::const_iterator i = vals.find(*iname);
                 if (i == vals.end())
-                    throw wibble::exception::BadOption("unknown validator '" + *iname + "'. You can get a list using --validate=list.");
+                    throw commandline::BadOption("unknown validator '" + *iname + "'. You can get a list using --validate=list.");
                 dispatcher->dispatcher->add_validator(*(i->second));
             }
         }
     } else {
         if (validate && validate->isSet())
-            throw wibble::exception::BadOption("--validate only makes sense with --dispatch or --testdispatch");
+            throw commandline::BadOption("--validate only makes sense with --dispatch or --testdispatch");
     }
 
-	if (postproc_data && postproc_data->isSet())
-	{
-		// Pass files for the postprocessor in the environment
-		string val = str::join(postproc_data->values().begin(), postproc_data->values().end(), ":");
-		setenv("ARKI_POSTPROC_FILES", val.c_str(), 1);
-	} else
-		unsetenv("ARKI_POSTPROC_FILES");
+    if (postproc_data && postproc_data->isSet())
+    {
+        // Pass files for the postprocessor in the environment
+        string val = str::join(":", postproc_data->values().begin(), postproc_data->values().end());
+        setenv("ARKI_POSTPROC_FILES", val.c_str(), 1);
+    } else
+        unsetenv("ARKI_POSTPROC_FILES");
 }
 
 void CommandLine::doneProcessing()
@@ -499,37 +480,37 @@ void CommandLine::doneProcessing()
 
 static std::string moveFile(const std::string& source, const std::string& targetdir)
 {
-	string targetFile = str::joinpath(targetdir, str::basename(source));
-	if (rename(source.c_str(), targetFile.c_str()) == -1)
-		throw wibble::exception::System("Moving " + source + " to " + targetFile);
-	return targetFile;
+    string targetFile = str::joinpath(targetdir, str::basename(source));
+    if (::rename(source.c_str(), targetFile.c_str()) == -1)
+        throw_system_error ("cannot move " + source + " to " + targetFile);
+    return targetFile;
 }
 
-static std::string moveFile(const ReadonlyDataset& ds, const std::string& targetdir)
+static std::string moveFile(const dataset::Reader& ds, const std::string& targetdir)
 {
-	if (const dataset::File* d = dynamic_cast<const dataset::File*>(&ds))
-		return moveFile(d->pathname(), targetdir);
-	else
-		return string();
+    if (const dataset::File* d = dynamic_cast<const dataset::File*>(&ds))
+        return moveFile(d->pathname(), targetdir);
+    else
+        return string();
 }
 
-std::auto_ptr<ReadonlyDataset> CommandLine::openSource(ConfigFile& info)
+std::unique_ptr<dataset::Reader> CommandLine::openSource(ConfigFile& info)
 {
-	if (movework && movework->isSet() && info.value("type") == "file")
-		info.setValue("path", moveFile(info.value("path"), movework->stringValue()));
+    if (movework && movework->isSet() && info.value("type") == "file")
+        info.setValue("path", moveFile(info.value("path"), movework->stringValue()));
 
-	return auto_ptr<ReadonlyDataset>(ReadonlyDataset::create(info));
+    return unique_ptr<dataset::Reader>(dataset::Reader::create(info));
 }
 
-bool CommandLine::processSource(ReadonlyDataset& ds, const std::string& name)
+bool CommandLine::processSource(dataset::Reader& ds, const std::string& name)
 {
-	if (dispatcher)
-		return dispatcher->process(ds, name);
-	processor->process(ds, name);
-	return true;
+    if (dispatcher)
+        return dispatcher->process(ds, name);
+    processor->process(ds, name);
+    return true;
 }
 
-void CommandLine::closeSource(std::auto_ptr<ReadonlyDataset> ds, bool successful)
+void CommandLine::closeSource(std::unique_ptr<dataset::Reader> ds, bool successful)
 {
 	if (successful && moveok && moveok->isSet())
 	{
@@ -562,22 +543,22 @@ MetadataDispatch::~MetadataDispatch()
 		delete dispatcher;
 }
 
-bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
+bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
 {
-	setStartTime();
-	results.clear();
+    setStartTime();
+    results.clear();
 
-	try {
-		ds.queryData(dataset::DataQuery(Matcher()), *this);
-	} catch (std::exception& e) {
-		// FIXME: this is a quick experiment: a better message can
-		// print some of the stats to document partial imports
-		//cerr << i->second->value("path") << ": import FAILED: " << e.what() << endl;
-		nag::warning("import FAILED: %s", e.what());
-		// Still process what we've got so far
-		next.process(results, name);
-		throw;
-	}
+    try {
+        ds.query_data(Matcher(), [&](unique_ptr<Metadata> md) { return this->dispatch(move(md)); });
+    } catch (std::exception& e) {
+        // FIXME: this is a quick experiment: a better message can
+        // print some of the stats to document partial imports
+        //cerr << i->second->value("path") << ": import FAILED: " << e.what() << endl;
+        nag::warning("import FAILED: %s", e.what());
+        // Still process what we've got so far
+        next.process(results, name);
+        throw;
+    }
 
 	// Process the resulting annotated metadata as a dataset
 	next.process(results, name);
@@ -604,10 +585,10 @@ bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
 	return success;
 }
 
-bool MetadataDispatch::eat(auto_ptr<Metadata> md)
+bool MetadataDispatch::dispatch(unique_ptr<Metadata>&& md)
 {
     // Dispatch to matching dataset
-    switch (dispatcher->dispatch(md, results))
+    switch (dispatcher->dispatch(move(md), results.inserter_func()))
     {
         case Dispatcher::DISP_OK:
             ++countSuccessful;
@@ -638,25 +619,29 @@ void MetadataDispatch::flush()
 
 string MetadataDispatch::summarySoFar() const
 {
-	string timeinfo;
-	if (timerisset(&startTime))
-	{
-		struct timeval now;
-		struct timeval diff;
-		gettimeofday(&now, NULL);
-		timersub(&now, &startTime, &diff);
-		timeinfo = str::fmtf(" in %d.%06d seconds", diff.tv_sec, diff.tv_usec);
-	}
-	if (!countSuccessful && !countNotImported && !countDuplicates && !countInErrorDataset)
-		return "no data processed" + timeinfo;
+    string timeinfo;
+    if (timerisset(&startTime))
+    {
+        struct timeval now;
+        struct timeval diff;
+        gettimeofday(&now, NULL);
+        timersub(&now, &startTime, &diff);
+        char buf[32];
+        snprintf(buf, 32, " in %d.%06d seconds", (int)diff.tv_sec, (int)diff.tv_usec);
+        timeinfo = buf;
+    }
+    if (!countSuccessful && !countNotImported && !countDuplicates && !countInErrorDataset)
+        return "no data processed" + timeinfo;
 
-	if (!countNotImported && !countDuplicates && !countInErrorDataset)
-	{
-		if (countSuccessful == 1)
-			return "everything ok: " + str::fmt(countSuccessful) + " message imported" + timeinfo;
-		else
-			return "everything ok: " + str::fmt(countSuccessful) + " messages imported" + timeinfo;
-	}
+    if (!countNotImported && !countDuplicates && !countInErrorDataset)
+    {
+        stringstream ss;
+        ss << "everything ok: " << countSuccessful << " message";
+        if (countSuccessful != 1)
+            ss << "s";
+        ss << " imported" + timeinfo;
+        return ss.str();
+    }
 
 	stringstream res;
 

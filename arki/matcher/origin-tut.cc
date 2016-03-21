@@ -1,21 +1,3 @@
-/*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include "config.h"
 
 #include <arki/matcher/tests.h>
@@ -30,6 +12,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::tests;
 
 struct arki_matcher_origin_shar
 {
@@ -43,8 +26,7 @@ struct arki_matcher_origin_shar
 TESTGRP(arki_matcher_origin);
 
 // Try matching GRIB origin
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	Matcher m;
 
@@ -64,8 +46,7 @@ void to::test<1>()
 }
 
 // Try matching BUFR origin
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	Matcher m;
 	md.set(origin::BUFR::create(1, 2));
@@ -84,7 +65,7 @@ void to::test<2>()
 }
 
 // Try matching ODIMH5 origin
-template<> template<> void to::test<3>()
+def_test(3)
 {
 	Matcher m;
 	md.set(origin::ODIMH5::create("wmo", "rad", "plc"));
@@ -100,7 +81,7 @@ template<> template<> void to::test<3>()
 }
 
 // Try matching ODIMH5 origin
-template<> template<> void to::test<4>()
+def_test(4)
 {
 	Matcher m;
 	md.set(origin::ODIMH5::create("wmo", "rad", "plc"));
@@ -114,5 +95,3 @@ template<> template<> void to::test<4>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

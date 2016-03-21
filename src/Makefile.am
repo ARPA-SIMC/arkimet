@@ -5,9 +5,9 @@ noinst_PROGRAMS = arki-test
 
 dist_noinst_HEADERS = bench/benchmark.h
 
-all_libs = ../arki/libarkimet.la $(WIBBLE_LIBS) $(LIBGRIB_LIBS) $(DBALLE_LIBS) $(SQLITE3_LDFLAGS) $(GRIBAPI_LIBS) $(LUA_LIBS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
+all_libs = ../arki/libarkimet.la $(LIBGRIB_LIBS) $(DBALLE_LIBS) $(SQLITE3_LDFLAGS) $(GRIBAPI_LIBS) $(LUA_LIBS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(WIBBLE_CFLAGS) $(LIBGRIB_CFLAGS) $(DBALLE_CFLAGS) $(SQLITE3_CFLAGS) $(GRIBAPI_CFLAGS) $(LUA_CFLAGS) $(ZLIB_CFLAGS) $(DEVEL_CFLAGS) -DSERVER_DIR=\"$(serverdir)\" $(EXTRA_CXXFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(LIBGRIB_CFLAGS) $(DBALLE_CFLAGS) $(SQLITE3_CFLAGS) $(GRIBAPI_CFLAGS) $(LUA_CFLAGS) $(ZLIB_CFLAGS) $(DEVEL_CFLAGS) -DSERVER_DIR=\"$(serverdir)\" $(EXTRA_CXXFLAGS) -Werror
 AM_LDFLAGS = $(EXTRA_LDFLAGS)
 
 if GEOS
@@ -89,6 +89,7 @@ check-local:
 
 test_src_SOURCES = \
 		arki-server-tut.cc \
+		../arki/utils/tests.cc \
 		../arki/types/tests.cc \
 		../arki/tests/tut-main.cpp
 test_src_LDADD = $(all_libs)

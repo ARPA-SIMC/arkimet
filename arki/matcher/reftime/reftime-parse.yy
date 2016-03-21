@@ -1,35 +1,13 @@
 %{
-/*
- * matcher/reftime/reftime.yy - Parser for reftime expressions
- *
- * Copyright (C) 2008--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include "parser.h"
+#include "arki/wibble/grcal/grcal.h"
 #include <string>
 #include <stdexcept>
 #include <ctime>
 
+using namespace std;
 using namespace arki::matcher::reftime;
-using namespace wibble::grcal;
 
 struct LexInterval {
 	int val;
@@ -98,9 +76,9 @@ static void interval_add(int* dst, const int* val, bool subtract = false)
 	}
 	pdate(" added", dst);
 
-	// Normalise
-	date::normalise(dst);
-	pdate(" normalised", dst);
+    // Normalise
+    wibble::grcal::date::normalise(dst);
+    pdate(" normalised", dst);
 
 	// Restore all the values not defined in dst and val to -1
 	for (int i = depth + 1; i < 6; ++i)
@@ -116,10 +94,10 @@ void interval_sub(int* dst, const int* val)
 // Set dst to 'val' before 'now'
 void interval_ago(int* dst, time_t& now, const int* val)
 {
-	struct tm t;
-	gmtime_r(&now, &t);
-	date::fromtm(t, dst);
-	interval_sub(dst, val);
+    struct tm t;
+    gmtime_r(&now, &t);
+    wibble::grcal::date::fromtm(t, dst);
+    interval_sub(dst, val);
 
 	// Compute how many nonzero items we have
 	int depth = 0;
@@ -212,7 +190,7 @@ Interval : INTERVAL						{ init_interval($$, $1.val, $1.idx); }
 
 Absolute : NOW							{ state.mknow($$); }
          | Date							{ copy($$, $1); }
-         | Date Daytime					{ date::mergetime($1, $2, $$); }
+         | Date Daytime					{ wibble::grcal::date::mergetime($1, $2, $$); }
          | Interval AGO					{ interval_ago($$, state.tnow, $1); }
          | Interval BEFORE Absolute		{ copy($$, $3); interval_sub($$, $1); }
          | Interval AFTER Absolute		{ copy($$, $3); interval_add($$, $1); }
@@ -266,29 +244,30 @@ void Parser::parse(const std::string& str)
 			// Parse successful
 			break;
 		case 1: {
-			// Syntax error
-			stringstream err;
-			for (vector<string>::const_iterator i = errors.begin();
-					i != errors.end(); ++i)
-			{
-				if (i != errors.begin())
-					err << "; ";
-				err << *i;
-			}
-
-			throw wibble::exception::Consistency("Parsing '"+str+"'", err.str());
+            // Syntax error
+            stringstream ss;
+            ss << "cannot parse '" << str << "': ";
+            for (vector<string>::const_iterator i = errors.begin();
+                    i != errors.end(); ++i)
+            {
+                if (i != errors.begin())
+                    ss << "; ";
+                ss << *i;
+            }
+            throw std::runtime_error(ss.str());
 		}
 		case 2:
 			// Out of memory
 			throw std::runtime_error("parser out of memory");
-		default:
-			// Should never happen
-			throw wibble::exception::Consistency("Parsing '"+str+"'", "Bison parser function returned unexpected value " + str::fmt(res));
-	}
+        default: {
+            // Should never happen
+            stringstream ss;
+            ss << "cannot parse '" << str << "': Bison parser function returned unexpected value " << res;
+            throw std::runtime_error(ss.str());
+        }
+    }
 }
 
 }
 }
 }
-
-/* vim:set syntax=yacc ts=4 sw=4: */

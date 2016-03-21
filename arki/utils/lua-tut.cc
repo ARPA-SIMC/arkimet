@@ -1,42 +1,20 @@
-/*
- * Copyright (C) 2008--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/utils/lua.h>
+#include <arki/utils/sys.h>
+#include <arki/utils/string.h>
 #include <arki/types.h>
 #include <arki/metadata.h>
 #include <arki/summary.h>
 #include <arki/matcher.h>
-#include <wibble/sys/fs.h>
-#include <wibble/string.h>
-
 #include <sstream>
 #include <iostream>
 
 namespace tut {
 using namespace std;
 using namespace arki;
-using namespace wibble;
-using namespace wibble::tests;
+using namespace arki::utils;
+using namespace arki::tests;
 
 struct arki_utils_lua_shar {
 };
@@ -148,7 +126,7 @@ void to::test<7>()
 template<> template<>
 void to::test<8>()
 {
-    WIBBLE_TEST_INFO(tinfo);
+    ARKI_UTILS_TEST_INFO(tinfo);
     Lua L;
 
 	// Define 'ensure' function
@@ -160,25 +138,23 @@ void to::test<8>()
 			"end\n";
     wassert(actual(L.run_string(ensure)) == "");
 
-	// Run the various lua examples
-	string path = "lua-examples";
-	sys::fs::Directory dir(path);
-	for (sys::fs::Directory::const_iterator d = dir.begin(); d != dir.end(); ++d)
-	{
-		if (!str::endsWith(*d, ".lua")) continue;
-		string fname = str::joinpath(path, *d);
+    // Run the various lua examples
+    string path = "lua-examples";
+    sys::Path dir(path);
+    for (sys::Path::iterator d = dir.begin(); d != dir.end(); ++d)
+    {
+        if (!str::endswith(d->d_name, ".lua")) continue;
+        string fname = str::joinpath(path, d->d_name);
         tinfo() << "current: " << fname;
-		if (luaL_dofile(L, fname.c_str()))
-		{
-			// Copy the error, so that it will exist after the pop
-			string error = lua_tostring(L, -1);
-			// Pop the error from the stack
-			lua_pop(L, 1);
-			wassert(actual(error) == "");
-		}
-	}
+        if (luaL_dofile(L, fname.c_str()))
+        {
+            // Copy the error, so that it will exist after the pop
+            string error = lua_tostring(L, -1);
+            // Pop the error from the stack
+            lua_pop(L, 1);
+            wassert(actual(error) == "");
+        }
+    }
 }
 
 }
-
-// vim:set ts=4 sw=4:

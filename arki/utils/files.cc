@@ -1,43 +1,20 @@
-/*
- * utils/files - arkimet-specific file functions
- *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
-#include <arki/utils/files.h>
-#include <arki/utils.h>
-#include <wibble/string.h>
-#include <wibble/sys/process.h>
-
+#include "arki/utils.h"
+#include "files.h"
+#include "sys.h"
+#include "string.h"
+#include <deque>
+#include <algorithm>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <system_error>
 #include <unistd.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <cerrno>
 
-
 using namespace std;
-using namespace wibble;
 
 namespace arki {
 namespace utils {
@@ -53,11 +30,11 @@ void createNewRebuildFlagfile(const std::string& pathname)
 }
 void removeRebuildFlagfile(const std::string& pathname)
 {
-    sys::fs::deleteIfExists(pathname + FLAGFILE_REBUILD);
+    sys::unlink_ifexists(pathname + FLAGFILE_REBUILD);
 }
 bool hasRebuildFlagfile(const std::string& pathname)
 {
-    return sys::fs::exists(pathname + FLAGFILE_REBUILD);
+    return sys::exists(pathname + FLAGFILE_REBUILD);
 }
 
 
@@ -71,11 +48,11 @@ void createNewPackFlagfile(const std::string& pathname)
 }
 void removePackFlagfile(const std::string& pathname)
 {
-    sys::fs::deleteIfExists(pathname + FLAGFILE_PACK);
+    sys::unlink_ifexists(pathname + FLAGFILE_PACK);
 }
 bool hasPackFlagfile(const std::string& pathname)
 {
-    return sys::fs::exists(pathname + FLAGFILE_PACK);
+    return sys::exists(pathname + FLAGFILE_PACK);
 }
 
 
@@ -89,11 +66,11 @@ void createNewIndexFlagfile(const std::string& dir)
 }
 void removeIndexFlagfile(const std::string& dir)
 {
-    sys::fs::deleteIfExists(str::joinpath(dir, FLAGFILE_INDEX));
+    sys::unlink_ifexists(str::joinpath(dir, FLAGFILE_INDEX));
 }
 bool hasIndexFlagfile(const std::string& dir)
 {
-    return sys::fs::exists(str::joinpath(dir, FLAGFILE_INDEX));
+    return sys::exists(str::joinpath(dir, FLAGFILE_INDEX));
 }
 
 
@@ -107,19 +84,31 @@ void createNewDontpackFlagfile(const std::string& dir)
 }
 void removeDontpackFlagfile(const std::string& dir)
 {
-    sys::fs::deleteIfExists(str::joinpath(dir, FLAGFILE_DONTPACK));
+    sys::unlink_ifexists(str::joinpath(dir, FLAGFILE_DONTPACK));
 }
 bool hasDontpackFlagfile(const std::string& dir)
 {
-    return sys::fs::exists(str::joinpath(dir, FLAGFILE_DONTPACK));
+    return sys::exists(str::joinpath(dir, FLAGFILE_DONTPACK));
 }
 
 std::string read_file(const std::string &file)
 {
     if (file == "-")
-        return sys::fs::readFile(cin, "(stdin)");
+    {
+        static const size_t bufsize = 4096;
+        char buf[bufsize];
+        std::string res;
+        sys::NamedFileDescriptor in(0, "(stdin)");
+        while (true)
+        {
+            size_t count = in.read(buf, bufsize);
+            if (count == 0) break;
+            res.append(buf, count);
+        }
+        return res;
+    }
     else
-        return sys::fs::readFile(file);
+        return sys::read_file(file);
 }
 
 void resolve_path(const std::string& pathname, std::string& basedir, std::string& relname)
@@ -127,13 +116,13 @@ void resolve_path(const std::string& pathname, std::string& basedir, std::string
     if (pathname[0] == '/')
         basedir.clear();
     else
-        basedir = sys::process::getcwd();
+        basedir = sys::getcwd();
     relname = str::normpath(pathname);
 }
 
 string normaliseFormat(const std::string& format)
 {
-    string f = str::tolower(format);
+    string f = str::lower(format);
     if (f == "metadata") return "arkimet";
     if (f == "grib1") return "grib";
     if (f == "grib2") return "grib";
@@ -155,18 +144,18 @@ std::string format_from_ext(const std::string& fname, const char* default_format
     else if (default_format)
         return default_format;
     else
-        throw wibble::exception::Consistency(
-                "auto-detecting format from file name " + fname,
-                "file extension not recognised");
+    {
+        stringstream ss;
+        ss << "cannot auto-detect format from file name " << fname << ": file extension not recognised";
+        throw std::runtime_error(ss.str());
+    }
 }
 
 PreserveFileTimes::PreserveFileTimes(const std::string& fname)
     : fname(fname)
 {
     struct stat st;
-    if (stat(fname.c_str(), &st) == -1)
-        throw wibble::exception::File(fname, "cannot stat file");
-
+    sys::stat(fname, st);
     times[0] = st.st_atim;
     times[1] = st.st_mtim;
 }
@@ -174,10 +163,9 @@ PreserveFileTimes::PreserveFileTimes(const std::string& fname)
 PreserveFileTimes::~PreserveFileTimes()
 {
     if (utimensat(AT_FDCWD, fname.c_str(), times, 0) == -1)
-        throw wibble::exception::File(fname, "cannot set file times");
+        throw std::system_error(errno, std::system_category(), "cannot set file times");
 }
 
 }
 }
 }
-// vim:set ts=4 sw=4:

@@ -1,231 +1,210 @@
-/*
- * dataset/file - Dataset on a single file
- *
- * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <arki/libconfig.h>
-#include <arki/dataset/file.h>
-#include <arki/metadata/consumer.h>
-#include <arki/configfile.h>
-#include <arki/matcher.h>
-#include <arki/summary.h>
-#include <arki/postprocess.h>
-#include <arki/sort.h>
-#include <arki/utils/dataset.h>
-#include <arki/utils/files.h>
-#include <arki/scan/any.h>
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
+#include "arki/libconfig.h"
+#include "arki/dataset/file.h"
+#include "arki/metadata/consumer.h"
+#include "arki/configfile.h"
+#include "arki/matcher.h"
+#include "arki/summary.h"
+#include "arki/postprocess.h"
+#include "arki/sort.h"
+#include "arki/utils/files.h"
+#include "arki/scan/any.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #ifdef HAVE_LUA
 #include <arki/report.h>
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
 
+File::File(const ConfigFile& cfg)
+    : Reader(cfg.value("name"), cfg)
+{
+    m_format = cfg.value("format");
+}
+
+void File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+{
+    scan(q, dest);
+}
+
+void File::query_summary(const Matcher& matcher, Summary& summary)
+{
+    scan(DataQuery(matcher), [&](unique_ptr<Metadata> md) { summary.add(*md); return true; });
+}
+
 void File::readConfig(const std::string& fname, ConfigFile& cfg)
 {
-	using namespace wibble;
+    ConfigFile section;
 
-	ConfigFile section;
+    if (fname == "-")
+    {
+        // If the input is stdin, make hardcoded assumptions
+        section.setValue("name", "stdin");
+        section.setValue("path", "-");
+        section.setValue("type", "file");
+        section.setValue("format", "arkimet");
+    } else if (str::endswith(fname, ":-")) {
+        // If the input is stdin, make hardcoded assumptions
+        section.setValue("name", "stdin");
+        section.setValue("path", "-");
+        section.setValue("type", "file");
+        section.setValue("format", fname.substr(0, fname.size()-2));
+    } else {
+        section.setValue("type", "file");
+        if (sys::exists(fname))
+        {
+            section.setValue("path", sys::abspath(fname));
+            section.setValue("format", files::format_from_ext(fname, "arkimet"));
+            string name = str::basename(fname);
+            section.setValue("name", name);
+        } else {
+            size_t fpos = fname.find(':');
+            if (fpos == string::npos)
+            {
+                stringstream ss;
+                ss << "dataset file " << fname << " does not exist";
+                throw runtime_error(ss.str());
+            }
+            section.setValue("format", files::normaliseFormat(fname.substr(0, fpos)));
 
-	if (fname == "-")
-	{
-		// If the input is stdin, make hardcoded assumptions
-		section.setValue("name", "stdin");
-		section.setValue("path", "-");
-		section.setValue("type", "file");
-		section.setValue("format", "arkimet");
-	} else if (str::endsWith(fname, ":-")) {
-		// If the input is stdin, make hardcoded assumptions
-		section.setValue("name", "stdin");
-		section.setValue("path", "-");
-		section.setValue("type", "file");
-		section.setValue("format", fname.substr(0, fname.size()-2));
-	} else {
-		section.setValue("type", "file");
-		if (sys::fs::exists(fname))
-		{
-                    section.setValue("path", sys::fs::abspath(fname));
-                    section.setValue("format", files::format_from_ext(fname, "arkimet"));
-                    string name = str::basename(fname);
-                    section.setValue("name", name);
-		} else {
-			size_t fpos = fname.find(':');
-			if (fpos == string::npos)
-				throw wibble::exception::Consistency("examining file " + fname, "file does not exist");
-			section.setValue("format", files::normaliseFormat(fname.substr(0, fpos)));
+            string fname1 = fname.substr(fpos+1);
+            if (!sys::exists(fname1))
+            {
+                stringstream ss;
+                ss << "dataset file " << fname1 << " does not exist";
+                throw runtime_error(ss.str());
+            }
+            section.setValue("path", sys::abspath(fname1));
+            section.setValue("name", str::basename(fname1));
+        }
+    }
 
-			string fname1 = fname.substr(fpos+1);
-			if (!sys::fs::exists(fname1))
-				throw wibble::exception::Consistency("examining file " + fname1, "file does not exist");
-			section.setValue("path", sys::fs::abspath(fname1));
-			section.setValue("name", str::basename(fname1));
-		}
-	}
-
-	// Merge into cfg
-	cfg.mergeInto(section.value("name"), section);
+    // Merge into cfg
+    cfg.mergeInto(section.value("name"), section);
 }
 
 File* File::create(const ConfigFile& cfg)
 {
-	string format = str::tolower(cfg.value("format"));
-	
-	if (format == "arkimet")
-		return new ArkimetFile(cfg);
-	if (format == "yaml")
-		return new YamlFile(cfg);
+    string format = str::lower(cfg.value("format"));
+
+    if (format == "arkimet")
+        return new ArkimetFile(cfg);
+    if (format == "yaml")
+        return new YamlFile(cfg);
 #ifdef HAVE_GRIBAPI
-	if (format == "grib")
-		return new RawFile(cfg);
+    if (format == "grib")
+        return new RawFile(cfg);
 #endif
 #ifdef HAVE_DBALLE
-	if (format == "bufr")
-		return new RawFile(cfg);
+    if (format == "bufr")
+        return new RawFile(cfg);
 #endif
 #ifdef HAVE_HDF5
-	if (format == "odimh5")
-		return new RawFile(cfg);
+    if (format == "odimh5")
+        return new RawFile(cfg);
 #endif
 #ifdef HAVE_VM2
     if (format == "vm2")
         return new RawFile(cfg);
 #endif
-	throw wibble::exception::Consistency("creating a file dataset", "unknown file format \""+format+"\"");
+
+    stringstream ss;
+    ss << "cannot create a dataset for the unknown file format \"" << format << "\"";
+    throw runtime_error(ss.str());
 }
 
-File::File(const ConfigFile& cfg)
+FdFile::FdFile(const ConfigFile& cfg) : File(cfg)
 {
-	m_pathname = cfg.value("path");
-	m_format = cfg.value("format");
+    string pathname = cfg.value("path");
+    if (pathname == "-")
+        fd = new Stdin;
+    else
+        fd = new arki::File(pathname, O_RDONLY);
 }
 
-IfstreamFile::IfstreamFile(const ConfigFile& cfg) : File(cfg), m_file(0), m_close(false)
+FdFile::~FdFile()
 {
-	if (m_pathname == "-")
-	{
-		m_file = &std::cin;
-	} else {
-		m_file = new std::ifstream(m_pathname.c_str(), ios::in);
-		if (/*!m_file->is_open() ||*/ m_file->fail())
-			throw wibble::exception::File(m_pathname, "opening file for reading");
-		m_close = true;
-	}
+    delete fd;
 }
 
-IfstreamFile::~IfstreamFile()
+std::string FdFile::pathname() const
 {
-	if (m_file && m_close)
-	{
-		delete m_file;
-	}
+    return fd->name();
 }
 
-void File::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
+static shared_ptr<sort::Stream> wrap_with_query(const dataset::DataQuery& q, metadata_dest_func& dest)
 {
-	scan(q, consumer);
+    // Wrap with a stream sorter if we need sorting
+    shared_ptr<sort::Stream> sorter;
+    if (q.sorter)
+    {
+        sorter.reset(new sort::Stream(*q.sorter, dest));
+        dest = [sorter](unique_ptr<Metadata> md) { return sorter->add(move(md)); };
+    }
+
+    dest = [dest, &q](unique_ptr<Metadata> md) {
+        // And filter using the query matcher
+        if (!q.matcher(*md)) return true;
+        return dest(move(md));
+    };
+
+    return sorter;
 }
 
-void File::querySummary(const Matcher& matcher, Summary& summary)
-{
-    metadata::SummarisingEater summariser(summary);
-    scan(DataQuery(matcher), summariser);
-}
-
-ArkimetFile::ArkimetFile(const ConfigFile& cfg) : IfstreamFile(cfg) {}
+ArkimetFile::ArkimetFile(const ConfigFile& cfg) : FdFile(cfg) {}
 ArkimetFile::~ArkimetFile() {}
-void ArkimetFile::scan(const dataset::DataQuery& q, metadata::Eater& consumer)
+void ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-	metadata::Eater* c = &consumer;
-	// Order matters here, as delete will happen in reverse order
-	auto_ptr<sort::Stream> sorter;
-
-	if (q.sorter)
-	{
-		sorter.reset(new sort::Stream(*q.sorter, *c));
-		c = sorter.get();
-	}
-
-
-    metadata::FilteredEater mf(q.matcher, *c);
-    Metadata::readFile(*m_file, m_pathname, mf);
-
-	if (sorter.get()) sorter->flush();
+    auto sorter = wrap_with_query(q, dest);
+    Metadata::read_file(*fd, dest);
+    if (sorter) sorter->flush();
 }
 
-YamlFile::YamlFile(const ConfigFile& cfg) : IfstreamFile(cfg) {}
-YamlFile::~YamlFile() {}
-void YamlFile::scan(const dataset::DataQuery& q, metadata::Eater& consumer)
+YamlFile::YamlFile(const ConfigFile& cfg) : FdFile(cfg), reader(LineReader::from_fd(*fd).release()) {}
+YamlFile::~YamlFile() { delete reader; }
+void YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-	metadata::Eater* c = &consumer;
-	// Order matters here, as delete will happen in reverse order
-	auto_ptr<sort::Stream> sorter;
-
-	if (q.sorter)
-	{
-		sorter.reset(new sort::Stream(*q.sorter, *c));
-		c = sorter.get();
-	}
+    auto sorter = wrap_with_query(q, dest);
 
     while (true)
     {
-        auto_ptr<Metadata> md(new Metadata);
-        if (!md->readYaml(*m_file, m_pathname))
+        unique_ptr<Metadata> md(new Metadata);
+        if (!md->readYaml(*reader, fd->name()))
             break;
         if (!q.matcher(*md))
             continue;
-        c->eat(md);
+        if (!dest(move(md))) break;
     }
 
-	if (sorter.get()) sorter->flush();
+    if (sorter) sorter->flush();
 }
 
-RawFile::RawFile(const ConfigFile& cfg) : File(cfg)
+RawFile::RawFile(const ConfigFile& cfg) : File(cfg), m_pathname(cfg.value("path"))
 {
 }
 
 RawFile::~RawFile() {}
 
-void RawFile::scan(const dataset::DataQuery& q, metadata::Eater& consumer)
+std::string RawFile::pathname() const
 {
-	metadata::Eater* c = &consumer;
-	auto_ptr<sort::Stream> sorter;
+    return m_pathname;
+}
 
-	if (q.sorter)
-	{
-		sorter.reset(new sort::Stream(*q.sorter, *c));
-		c = sorter.get();
-	}
-
-    metadata::FilteredEater mf(q.matcher, *c);
-	scan::scan(m_pathname, mf, m_format);
+void RawFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
+{
+    auto sorter = wrap_with_query(q, dest);
+    scan::scan(m_pathname, dest, m_format);
+    if (sorter) sorter->flush();
 }
 
 }
 }
-// vim:set ts=4 sw=4:

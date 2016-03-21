@@ -1,29 +1,9 @@
 #ifndef ARKI_RUNTIME_CONFIG_H
 #define ARKI_RUNTIME_CONFIG_H
 
-/*
- * runtime/config - Common configuration-related code used in most arkimet executables
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Common configuration-related code used in most arkimet executables
 
-#include <wibble/commandline/parser.h>
+#include <arki/utils/commandline/options.h>
 #include <arki/configfile.h>
 #include <string>
 #include <vector>
@@ -127,7 +107,7 @@ struct Config
 /**
  * Parse the config file with the given name into the ConfigFile object 'cfg'.
  *
- * Note: use ReadonlyDataset::readConfig to read dataset configuration
+ * Note: use Reader::readConfig to read dataset configuration
  */
 void parseConfigFile(ConfigFile& cfg, const std::string& fileName);
 
@@ -136,7 +116,7 @@ void parseConfigFile(ConfigFile& cfg, const std::string& fileName);
  *
  * Return true if at least one config file was found in \a files
  */
-bool parseConfigFiles(ConfigFile& cfg, const wibble::commandline::VectorOption<wibble::commandline::String>& files);
+bool parseConfigFiles(ConfigFile& cfg, const arki::utils::commandline::VectorOption<arki::utils::commandline::String>& files);
 
 /**
  * Parse a comma separated restrict list into a set of strings
@@ -166,19 +146,19 @@ struct Restrict
  * The alias database is kept statically for all the lifetime of the program,
  * and is automatically used by readQuery.
  */
-void readMatcherAliasDatabase(wibble::commandline::StringOption* file = 0);
+void readMatcherAliasDatabase(arki::utils::commandline::StringOption* file = 0);
 
 /**
  * Read the content of an rc directory, returning all the files found, sorted
  * alphabetically by name.
  */
-std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dir = 0);
+std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::string& nameInEnv, arki::utils::commandline::StringOption* dir = 0);
 
 /**
  * Read the content of an rc directory, by concatenating all non-hidden,
  * non-backup files in it, sorted alphabetically by name
  */
-std::string readRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dir = 0);
+std::string readRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, arki::utils::commandline::StringOption* dir = 0);
 
 struct FileInfo
 {
@@ -200,7 +180,7 @@ struct SourceCode : public std::vector<FileInfo>
  * information about what parts of the string belong to what file, which can be
  * used to map a string location to its original position.
  */
-SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dir = 0);
+SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, arki::utils::commandline::StringOption* dir = 0);
 
 }
 }

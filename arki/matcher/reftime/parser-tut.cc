@@ -27,6 +27,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::tests;
 using namespace arki::matcher::reftime;
 
 struct arki_matcher_reftime_parser_shar {
@@ -34,8 +35,7 @@ struct arki_matcher_reftime_parser_shar {
 TESTGRP(arki_matcher_reftime_parser);
 
 // Try matching reference times
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
 	Parser p;
 
@@ -89,8 +89,7 @@ void to::test<1>()
 }
 
 // Check that relative times are what we want
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
 	Parser p;
 	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
@@ -117,8 +116,7 @@ void to::test<2>()
 }
 
 // Expressions used before the refactoring into bison
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
 	Parser p;
 	p.parse(">=2008");
@@ -139,8 +137,7 @@ void to::test<3>()
 }
 
 // Replace the date with today, yesterday and tomorrow
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
 	Parser p;
 	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
@@ -170,8 +167,7 @@ void to::test<4>()
 }
 
 // Add a time offset before date and time
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
 	Parser p;
 	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
@@ -204,8 +200,7 @@ void to::test<5>()
 }
 
 // Use now instead of date and time
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
 	Parser p;
 	// Set the date to: Tue Mar 25 01:02:03 UTC 2008 GMT
@@ -217,8 +212,7 @@ void to::test<6>()
 }
 
 // Combine time intervals
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
 	Parser p;
 	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
@@ -251,8 +245,7 @@ void to::test<7>()
 }
 
 // 'xxx ago' should always do the right thing with regards to incomplete dates
-template<> template<>
-void to::test<8>()
+def_test(8)
 {
 	Parser p;
 	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
@@ -276,8 +269,7 @@ void to::test<8>()
 }
 
 // from and until can be used instead of >= and <=
-template<> template<>
-void to::test<9>()
+def_test(9)
 {
 	Parser p;
 	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
@@ -293,8 +285,7 @@ void to::test<9>()
 }
 
 // 'at' users can use midday, midnight and noon
-template<> template<>
-void to::test<10>()
+def_test(10)
 {
 	Parser p;
 	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
@@ -311,8 +302,7 @@ void to::test<10>()
 }
 
 // % can be replaced with 'every'
-template<> template<>
-void to::test<11>()
+def_test(11)
 {
 	Parser p;
 	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
@@ -333,8 +323,7 @@ void to::test<11>()
 }
 
 // To be elegant, 'a' or 'an' can be used instead of 1
-template<> template<>
-void to::test<12>()
+def_test(12)
 {
 	Parser p;
 	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
@@ -351,8 +340,7 @@ void to::test<12>()
 }
 
 // Time intervals within a day still work
-template<> template<>
-void to::test<13>()
+def_test(13)
 {
 	Parser p;
 	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
@@ -367,8 +355,7 @@ void to::test<13>()
 }
 
 // Check Easter-related dates
-template<> template<>
-void to::test<14>()
+def_test(14)
 {
 	Parser p;
 	p.parse(">=easter 2008");

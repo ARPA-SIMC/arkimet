@@ -1,53 +1,35 @@
-/*
- * summary/intern - Intern table to map types to unique pointers
- *
- * Copyright (C) 2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "table.h"
 #include "intern.h"
-#include <arki/metadata.h>
-#include <arki/matcher.h>
-#include <arki/types/utils.h>
-#include <arki/emitter/memory.h>
-#include <arki/summary.h>
-#include <wibble/string.h>
+#include "arki/metadata.h"
+#include "arki/matcher.h"
+#include "arki/types/utils.h"
+#include "arki/emitter/memory.h"
+#include "arki/summary.h"
+#include "arki/utils/yaml.h"
+#include "arki/utils/files.h"
+#include <system_error>
 #include <algorithm>
+#include <iostream>
 
 using namespace std;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace summary {
 
 // Metadata Scan Order
 const types::Code Table::mso[] = {
-        types::TYPE_ORIGIN,
-        types::TYPE_PRODUCT,
-        types::TYPE_LEVEL,
-        types::TYPE_TIMERANGE,
-        types::TYPE_AREA,
-        types::TYPE_PRODDEF,
-        types::TYPE_BBOX,
-        types::TYPE_RUN,
-        types::TYPE_QUANTITY,
-        types::TYPE_TASK
+        TYPE_ORIGIN,
+        TYPE_PRODUCT,
+        TYPE_LEVEL,
+        TYPE_TIMERANGE,
+        TYPE_AREA,
+        TYPE_PRODDEF,
+        TYPE_BBOX,
+        TYPE_RUN,
+        TYPE_QUANTITY,
+        TYPE_TASK
 
 };
 const size_t Table::msoSize = sizeof(mso) / sizeof(Code);
@@ -57,30 +39,19 @@ int* Table::msoSerLen = 0;
 static int* itemMsoMap = 0;
 static size_t itemMsoMapSize = 0;
 
-bool Row::operator<(const Row& row) const
-{
-    for (unsigned i = 0; i < mso_size; ++i)
-    {
-        if (items[i] < row.items[i]) return true;
-        if (items[i] > row.items[i]) return false;
-    }
-    return false;
-}
-
 bool Row::matches(const Matcher& matcher) const
 {
-    if (!matcher.m_impl) return true;
+    if (matcher.empty()) return true;
 
-    const matcher::AND& mand = *matcher.m_impl;
     for (unsigned i = 0; i < mso_size; ++i)
     {
-        matcher::AND::const_iterator j = mand.find(Table::mso[i]);
-        if (j == mand.end()) continue;
+        shared_ptr<matcher::OR> item_matcher = matcher.get(Table::mso[i]);
+        if (!item_matcher) continue;
         if (!items[i]) return false;
-        if (!j->second->matchItem(*items[i])) return false;
+        if (!item_matcher->matchItem(*items[i])) return false;
     }
-    matcher::AND::const_iterator rm = mand.find(types::TYPE_REFTIME);
-    if (rm != mand.end() && !rm->second->matchItem(*stats.make_reftime()))
+    shared_ptr<matcher::OR> reftime_matcher = matcher.get(TYPE_REFTIME);
+    if (reftime_matcher && !reftime_matcher->matchItem(*stats.make_reftime()))
         return false;
     return true;
 }
@@ -108,7 +79,7 @@ void Row::dump(std::ostream& out, unsigned indent) const
 }
 
 Table::Table()
-    : interns(new TypeIntern[Table::msoSize]), rows(0), row_count(0), row_capacity(0)
+    : interns(new TypeIntern[Table::msoSize])
 {
     buildMsoSerLen();
     buildItemMsoMap();
@@ -117,13 +88,12 @@ Table::Table()
 Table::~Table()
 {
     delete[] interns;
-    free(rows);
 }
 
 bool Table::equals(const Table& table) const
 {
-    if (row_count != table.row_count) return false;
-    for (unsigned ri = 0; ri < row_count; ++ri)
+    if (rows.size() != table.rows.size()) return false;
+    for (unsigned ri = 0; ri < rows.size(); ++ri)
     {
         Row translated(table.rows[ri].stats);
         // Translate the row in table to the pointer that we use in *this
@@ -139,17 +109,17 @@ bool Table::equals(const Table& table) const
         }
 
         // Lookup translated in this table
-        Row* pos = lower_bound(rows, rows + row_count, translated);
-        if (pos == rows + row_count) return false;
+        auto pos = lower_bound(rows.begin(), rows.end(), translated);
+        if (pos == rows.end()) return false;
         if (*pos != translated) return false;
         if (pos->stats != translated.stats) return false;
     }
     return true;
 }
 
-const types::Type* Table::intern(unsigned pos, std::auto_ptr<types::Type> item)
+const types::Type* Table::intern(unsigned pos, std::unique_ptr<types::Type>&& item)
 {
-    return interns[pos].intern(item);
+    return interns[pos].intern(move(item));
 }
 
 void Table::merge(const Metadata& md)
@@ -205,7 +175,7 @@ void Table::merge(const emitter::memory::Mapping& m)
 {
     using namespace emitter::memory;
 
-    auto_ptr<summary::Stats> stats = summary::Stats::decodeMapping(
+    unique_ptr<summary::Stats> stats = summary::Stats::decodeMapping(
             m["summarystats"].want_mapping("parsing summary item stats"));
     Row new_row(*stats);
     new_row.set_to_zero();
@@ -221,35 +191,31 @@ void Table::merge(const emitter::memory::Mapping& m)
     merge(new_row);
 }
 
-bool Table::merge_yaml(std::istream& in, const std::string& filename)
+bool Table::merge_yaml(LineReader& in, const std::string& filename)
 {
-    using namespace wibble::str;
-
     Row new_row;
     new_row.set_to_zero();
     YamlStream yamlStream;
-    for (YamlStream::const_iterator i = yamlStream.begin(in);
-            i != yamlStream.end(); ++i)
+    for (YamlStream::const_iterator i = yamlStream.begin(in); i != yamlStream.end(); ++i)
     {
         types::Code type = types::parseCodeName(i->first);
         switch (type)
         {
-            case types::TYPE_SUMMARYITEM:
+            case TYPE_SUMMARYITEM:
                 {
-                    stringstream in(i->second, ios_base::in);
+                    auto in = LineReader::from_chars(i->second.data(), i->second.size());
                     YamlStream yamlStream;
-                    for (YamlStream::const_iterator i = yamlStream.begin(in);
-                            i != yamlStream.end(); ++i)
+                    for (YamlStream::const_iterator i = yamlStream.begin(*in); i != yamlStream.end(); ++i)
                     {
                         types::Code type = types::parseCodeName(i->first);
                         int pos = summary::Visitor::posForCode(type);
                         if (pos < 0)
-                            throw wibble::exception::Consistency("parsing summary item", "found element of unsupported type " + types::formatCode(type));
+                            throw runtime_error("cannot parse summary item: found element of unsupported type " + types::formatCode(type));
                         new_row.items[pos] = interns[pos].intern(types::decodeString(type, i->second));
                     }
                 }
                 break;
-            case types::TYPE_SUMMARYSTATS:
+            case TYPE_SUMMARYSTATS:
             {
                 new_row.stats = *Stats::decodeString(i->second);
                 merge(new_row);
@@ -257,13 +223,17 @@ bool Table::merge_yaml(std::istream& in, const std::string& filename)
                 break;
             }
             default:
-                throw wibble::exception::Consistency("parsing file " + filename,
-                    "cannot handle element " + fmt(type));
+            {
+                stringstream ss;
+                ss << "cannot parse file " << filename << ": cannot handle element " << type;
+                throw std::runtime_error(ss.str());
+            }
         }
     }
     return !in.eof();
 }
 
+#if 0
 static void test_consistency(Row* rows, unsigned size, const char* context)
 {
     for (unsigned i = 0; i < size; ++i)
@@ -277,21 +247,7 @@ static void test_consistency(Row* rows, unsigned size, const char* context)
         }
     }
 }
-
-void Table::ensure_we_can_add_one()
-{
-    if (row_count + 1 >= row_capacity)
-    {
-//        test_consistency(rows, row_count, "PRE");
-        unsigned new_capacity = row_capacity == 0 ? 16 : row_capacity * 2;
-        Row* new_rows = (Row*)realloc(rows, new_capacity * sizeof(Row));
-        if (!new_rows)
-            throw wibble::exception::System("cannot allocate memory for summary table");
-        rows = new_rows;
-        row_capacity = new_capacity;
-//        test_consistency(rows, row_count, "POST");
-    }
-}
+#endif
 
 void Table::merge(const Row& row)
 {
@@ -301,34 +257,16 @@ void Table::merge(const Row& row)
     //
     // This works well even in case rows == 0, since it works in the [0, 0)
     // range, returning 0 and later matching the append case
-    Row* pos = lower_bound(rows, rows + row_count, row);
+    auto pos = lower_bound(rows.begin(), rows.end(), row);
 
-//    cerr << " INSERTION POINT " << (pos - rows) << endl;
-
-    if (pos == rows + row_count)
+    if (pos == rows.end())
     {
-//        cerr << " APPEND" << endl;
-        // Append
-        ensure_we_can_add_one();
-        // Use placement new instead of assignment, otherwise the vtable of
-        // stats will not be initialized
-        // FIXME: simplify Stats not to be a type?
-        new(rows + row_count++) Row(row);
+        rows.emplace_back(row);
     } else if (*pos == row) {
-//        cerr << " MERGE" << endl;
         // Just merge stats
         pos->stats.merge(row.stats);
     } else {
-//        cerr << " INSERT" << endl;
-        // Insert
-        unsigned idx = pos - rows;
-        // Use the array position since we may reallocate, invalidating the
-        // previous pointer
-        ensure_we_can_add_one();
-        memmove(rows + idx + 1, rows + idx, (row_count - idx) * sizeof(Row));
-        new(rows + idx) Row(row);
-        ++row_count;
-//        test_consistency(rows, row_count, "POST MEMMOVE");
+        rows.emplace(pos, row);
     }
     stats.merge(row.stats);
 }
@@ -351,15 +289,15 @@ bool Table::visit(Visitor& visitor) const
     vector<const Type*> visitmd;
     visitmd.resize(msoSize);
 
-    for (unsigned ri = 0; ri < row_count; ++ri)
+    for (const auto& row: rows)
     {
         // Set this node's metadata in visitmd
         // FIXME: change the visitor API to just get a const Type* const* and
         //        assume it's msoSize long
         for (size_t i = 0; i < msoSize; ++i)
-            visitmd[i] = rows[ri].items[i];
+            visitmd[i] = row.items[i];
 
-        if (!visitor(visitmd, rows[ri].stats))
+        if (!visitor(visitmd, row.stats))
             return false;
     }
 
@@ -371,16 +309,16 @@ bool Table::visitFiltered(const Matcher& matcher, Visitor& visitor) const
     vector<const Type*> visitmd;
     visitmd.resize(msoSize);
 
-    for (unsigned ri = 0; ri < row_count; ++ri)
+    for (const auto& row: rows)
     {
-        if (!rows[ri].matches(matcher)) continue;
+        if (!row.matches(matcher)) continue;
 
         // FIXME: change the visitor API to just get a const Type* const* and
         //        assume it's msoSize long
         for (size_t i = 0; i < msoSize; ++i)
-            visitmd[i] = rows[ri].items[i];
+            visitmd[i] = row.items[i];
 
-        if (!visitor(visitmd, rows[ri].stats))
+        if (!visitor(visitmd, row.stats))
             return false;
     }
 

@@ -1,58 +1,33 @@
-/*
- * summary - Handle a summary of a group of summary
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <arki/summary.h>
-#include <arki/summary/table.h>
-#include <arki/summary/codec.h>
-#include <arki/summary/stats.h>
-#include <arki/metadata.h>
-#include <arki/matcher.h>
-#include <arki/utils/codec.h>
-#include <arki/formatter.h>
-#include <arki/types/utils.h>
-#include <arki/types/area.h>
-#include <arki/types/time.h>
-#include <arki/utils/geosdef.h>
-#include <arki/utils/compress.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include <arki/iotrace.h>
-#include <arki/utils/lua.h>
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/sys/buffer.h>
-
-#include <fstream>
-
+#include "summary.h"
+#include "summary/table.h"
+#include "summary/codec.h"
+#include "summary/stats.h"
+#include "exceptions.h"
+#include "metadata.h"
+#include "matcher.h"
+#include "binary.h"
+#include "formatter.h"
+#include "core/time.h"
+#include "types/utils.h"
+#include "types/area.h"
+#include "utils/geosdef.h"
+#include "utils/compress.h"
+#include "emitter.h"
+#include "emitter/memory.h"
+#include "iotrace.h"
+#include "utils/lua.h"
+#include "utils/string.h"
+#include "utils/sys.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 using namespace std;
-using namespace wibble;
-using namespace arki::utils::codec;
+using namespace arki::utils;
 using namespace arki::types;
 using namespace arki::summary;
+using arki::core::Time;
 
 namespace arki {
 
@@ -88,7 +63,7 @@ struct LuaPusher: public summary::Visitor
             if (md[i])
             {
                 // Key
-                string name = str::tolower(types::formatCode(codeForPos(i)));
+                string name = str::lower(types::formatCode(codeForPos(i)));
                 lua_pushlstring(L, name.data(), name.size());
                 // Value
                 md[i]->lua_push(L);
@@ -152,7 +127,7 @@ static int arkilua_filter(lua_State* L)
         s->filter(m, *s1);
         return 0;
     } else {
-        auto_ptr<Summary> new_summary(new Summary);
+        unique_ptr<Summary> new_summary(new Summary);
         s->filter(m, *new_summary);
         SummaryUD::create(L, new_summary.release(), true);
         return 1;
@@ -289,7 +264,7 @@ struct StatsHull : public ItemVisitor
 {
     ARKI_GEOS_GEOMETRYFACTORY& gf;
     vector<ARKI_GEOS_GEOMETRY*>* geoms;
-    std::set<string> seen;
+    std::set<std::vector<uint8_t>> seen;
 
     StatsHull(ARKI_GEOS_GEOMETRYFACTORY& gf) : gf(gf), geoms(new vector<ARKI_GEOS_GEOMETRY*>) {}
     virtual ~StatsHull()
@@ -305,7 +280,10 @@ struct StatsHull : public ItemVisitor
     virtual bool operator()(const Type& type)
     {
         const Area& a = *dynamic_cast<const Area*>(&type);
-        pair<set<string>::iterator, bool> i = seen.insert(a.encodeBinary());
+        vector<uint8_t> encoded;
+        BinaryEncoder enc(encoded);
+        a.encodeBinary(enc);
+        pair<set<vector<uint8_t>>::iterator, bool> i = seen.insert(encoded);
         if (i.second)
         {
             const ARKI_GEOS_GEOMETRY* g = a.bbox();
@@ -317,14 +295,14 @@ struct StatsHull : public ItemVisitor
         return true;
     }
 
-    auto_ptr<ARKI_GEOS_GEOMETRY> makeBBox()
+    unique_ptr<ARKI_GEOS_GEOMETRY> makeBBox()
     {
         if (geoms->empty())
-            return auto_ptr<ARKI_GEOS_GEOMETRY>(0);
+            return unique_ptr<ARKI_GEOS_GEOMETRY>();
 
-        auto_ptr<ARKI_GEOS_NS::GeometryCollection> gc(gf.createGeometryCollection(geoms));
+        unique_ptr<ARKI_GEOS_NS::GeometryCollection> gc(gf.createGeometryCollection(geoms));
         geoms = 0;
-        return auto_ptr<ARKI_GEOS_GEOMETRY>(gc->convexHull());
+        return unique_ptr<ARKI_GEOS_GEOMETRY>(gc->convexHull());
     }
 };
 #endif
@@ -345,15 +323,15 @@ void Summary::dump(std::ostream& out) const
     root->dump(out);
 }
 
-auto_ptr<types::Reftime> Summary::getReferenceTime() const
+unique_ptr<types::Reftime> Summary::getReferenceTime() const
 {
     if (root->empty())
-        throw wibble::exception::Consistency("get summary reference time", "summary is empty");
+        throw_consistency_error("get summary reference time", "summary is empty");
     else
         return root->stats.make_reftime();
 }
 
-void Summary::expand_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const
+void Summary::expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
 {
     if (root->empty())
         return;
@@ -378,8 +356,9 @@ struct ResolveVisitor : public summary::Visitor
 
     ResolveVisitor(std::vector<ItemSet>& result, const Matcher& m) : result(result), added(0)
     {
-        for (matcher::AND::const_iterator i = m.m_impl->begin(); i != m.m_impl->end(); ++i)
-            codes.push_back(i->first);
+        m.foreach_type([&](types::Code code, const matcher::OR&) {
+            codes.push_back(code);
+        });
     }
     virtual ~ResolveVisitor() {}
     virtual bool operator()(const std::vector<const Type*>& md, const summary::Stats& stats)
@@ -425,21 +404,21 @@ size_t Summary::resolveMatcher(const Matcher& matcher, std::vector<ItemSet>& res
     return visitor.added;
 }
 
-std::auto_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull(ARKI_GEOS_GEOMETRYFACTORY& gf) const
+std::unique_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull(ARKI_GEOS_GEOMETRYFACTORY& gf) const
 {
 #ifdef HAVE_GEOS
     summary::StatsHull merger(gf);
-    root->visitItem(summary::Visitor::posForCode(types::TYPE_AREA), merger);
+    root->visitItem(summary::Visitor::posForCode(TYPE_AREA), merger);
     return merger.makeBBox();
 #else
-    return std::auto_ptr<ARKI_GEOS_GEOMETRY>(0);
+    return std::unique_ptr<ARKI_GEOS_GEOMETRY>(0);
 #endif
 }
 
 
 bool Summary::read(int fd, const std::string& filename)
 {
-    wibble::sys::Buffer buf;
+    vector<uint8_t> buf;
     string signature;
     unsigned version;
 
@@ -450,46 +429,40 @@ bool Summary::read(int fd, const std::string& filename)
 
     // Ensure first 2 bytes are SU
     if (signature != "SU")
-        throw wibble::exception::Consistency("parsing file " + filename, "summary entry does not start with 'SU'");
+        throw_consistency_error("parsing file " + filename, "summary entry does not start with 'SU'");
 
-    read(buf, version, filename);
+    BinaryDecoder dec(buf);
+    read_inner(dec, version, filename);
 
     return true;
 }
 
-bool Summary::read(std::istream& in, const std::string& filename)
+bool Summary::read(BinaryDecoder& dec, const std::string& filename)
 {
-    wibble::sys::Buffer buf;
     string signature;
     unsigned version;
-
-    iotrace::trace_file(filename, 0, 0, "read summary");
-
-    if (!types::readBundle(in, filename, buf, signature, version))
-        return false;
+    BinaryDecoder inner = dec.pop_metadata_bundle(signature, version);
 
     // Ensure first 2 bytes are SU
     if (signature != "SU")
-        throw wibble::exception::Consistency("parsing file " + filename, "summary entry does not start with 'SU'");
+        throw std::runtime_error("cannot parse file " + filename + ": summary entry does not start with 'SU'");
 
-    read(buf, version, filename);
+    read_inner(inner, version, filename);
 
     return true;
 }
 
-void Summary::read(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename)
+void Summary::read_inner(BinaryDecoder& dec, unsigned version, const std::string& filename)
 {
     using namespace summary;
-    summary::decode(buf, version, filename, *root);
+    summary::decode(dec, version, filename, *root);
 }
 
-std::string Summary::encode(bool compressed) const
+std::vector<uint8_t> Summary::encode(bool compressed) const
 {
-    using namespace utils::codec;
-
     // Encode
-    string inner;
-    Encoder innerenc(inner);
+    vector<uint8_t> inner;
+    BinaryEncoder innerenc(inner);
     if (!root->empty())
     {
         EncodingVisitor visitor(innerenc);
@@ -497,81 +470,58 @@ std::string Summary::encode(bool compressed) const
     }
 
     // Prepend header
-    string res;
-    Encoder enc(res);
+    vector<uint8_t> res;
+    BinaryEncoder enc(res);
     // Signature
-    enc.addString("SU", 2);
+    enc.add_string("SU");
     // Version
-    enc.addUInt(3, 2);
+    enc.add_unsigned(3u, 2);
     if (compressed)
     {
-        sys::Buffer comp = utils::compress::lzo(inner.data(), inner.size());
+        vector<uint8_t> comp = utils::compress::lzo(inner.data(), inner.size());
         if (comp.size() + 4 >= inner.size())
         {
             // No point in compressing
-            enc.addUInt(inner.size() + 1, 4);
+            enc.add_unsigned(inner.size() + 1, 4);
             // Add compression type (uncompressed)
-            enc.addUInt(0, 1);
-            enc.addString(inner);
+            enc.add_unsigned(0u, 1);
+            enc.add_raw(inner);
         } else {
             // Compression makes sense
             // Add total size
-            enc.addUInt(comp.size() + 5, 4);
+            enc.add_unsigned(comp.size() + 5, 4);
             // Add compression type (LZO)
-            enc.addUInt(1, 1);
+            enc.add_unsigned(1u, 1);
             // Add uncompressed size
-            enc.addUInt(inner.size(), 4);
+            enc.add_unsigned(inner.size(), 4);
             // Add compressed data
-            enc.addBuffer(comp);
+            enc.add_raw(comp);
         }
     } else {
-        enc.addUInt(inner.size() + 1, 4);
-        enc.addUInt(0, 1);
-        enc.addString(inner);
+        enc.add_unsigned(inner.size() + 1, 4);
+        enc.add_unsigned(0u, 1);
+        enc.add_raw(inner);
     }
     return res;
 }
 
-void Summary::write(std::ostream& out, const std::string& filename) const
+void Summary::write(int outfd, const std::string& filename) const
 {
     // Prepare the encoded data
-    string encoded = encode(true);
+    vector<uint8_t> encoded = encode(true);
 
     iotrace::trace_file(filename, 0, encoded.size(), "write summary");
 
     // Write out
+    sys::NamedFileDescriptor out(outfd, filename);
     out.write(encoded.data(), encoded.size());
-    if (out.fail())
-        throw wibble::exception::File(filename, "writing " + str::fmt(encoded.size()) + " bytes to the file");
 }
 
 void Summary::writeAtomically(const std::string& fname)
 {
-    // Write summary to disk
-    string enc = encode(true);
-    string tmpfile = fname + ".tmp" + str::fmt(getpid());
-    int fd = open(tmpfile.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    if (fd == -1)
-        throw wibble::exception::File(tmpfile, "creating temporary file for the summary");
-    try {
-        iotrace::trace_file(fname, 0, enc.size(), "write summary");
-        int res = ::write(fd, enc.data(), enc.size());
-        if (res < 0 || (unsigned)res != enc.size())
-            throw wibble::exception::File(tmpfile, "writing " + str::fmt(enc.size()) + " bytes to the file");
-
-        if (close(fd) == -1)
-        {
-            fd = -1;
-            throw wibble::exception::File(tmpfile, "closing file");
-        }
-        fd = -1;
-        if (rename(tmpfile.c_str(), fname.c_str()) == -1)
-            throw wibble::exception::System("Renaming " + tmpfile + " into " + fname);
-    } catch (...) {
-        if (fd != -1)
-            close(fd);
-        throw;
-    }
+    vector<uint8_t> enc = encode(true);
+    iotrace::trace_file(fname, 0, enc.size(), "write summary");
+    sys::write_file_atomically(fname, enc.data(), enc.size(), 0666);
 }
 
 namespace summary {
@@ -589,7 +539,9 @@ struct YamlPrinter : public Visitor
         for (vector<const Type*>::const_iterator i = md.begin(); i != md.end(); ++i)
         {
             if (!*i) continue;
-            out << indent << str::ucfirst((*i)->tag()) << ": ";
+            string ucfirst(str::lower((*i)->tag()));
+            ucfirst[0] = toupper(ucfirst[0]);
+            out << indent << ucfirst << ": ";
             (*i)->writeToOstream(out);
             if (f) out << "\t# " << (*f)(**i);
             out << endl;
@@ -597,7 +549,7 @@ struct YamlPrinter : public Visitor
 
         // Write the stats
         out << "SummaryStats:" << endl;
-        auto_ptr<Reftime> reftime(stats.make_reftime());
+        unique_ptr<Reftime> reftime(stats.make_reftime());
         out << indent << "Count: " << stats.count << endl;
         out << indent << "Size: " << stats.size << endl;
         out << indent << "Reftime: " << *reftime << endl;
@@ -615,7 +567,7 @@ bool Summary::visit(summary::Visitor& visitor) const
 bool Summary::visitFiltered(const Matcher& matcher, summary::Visitor& visitor) const
 {
     if (root->empty()) return true;
-    if (!matcher.m_impl)
+    if (matcher.empty())
         return root->visit(visitor);
     else
         return root->visitFiltered(matcher, visitor);
@@ -655,7 +607,7 @@ void Summary::serialise(Emitter& e, const Formatter* f) const
                     (*i)->serialiseLocal(e, f);
                     e.end_mapping();
                 }
-                e.add(stats.tag());
+                e.add("summarystats");
                 e.start_mapping();
                 stats.serialiseLocal(e, f);
                 e.end_mapping();
@@ -685,17 +637,12 @@ void Summary::read(const emitter::memory::Mapping& val)
 void Summary::readFile(const std::string& fname)
 {
     // Read all the metadata
-    std::ifstream in;
-    in.open(fname.c_str(), ios::in);
-    if (!in.is_open() || in.fail())
-        throw wibble::exception::File(fname, "opening file for reading");
-
+    sys::File in(fname, O_RDONLY);
     read(in, fname);
-
     in.close();
 }
 
-bool Summary::readYaml(std::istream& in, const std::string& filename)
+bool Summary::readYaml(LineReader& in, const std::string& filename)
 {
     return root->merge_yaml(in, filename);
 }
@@ -776,7 +723,7 @@ struct MatchVisitor : public Visitor
 }
 bool Summary::match(const Matcher& matcher) const
 {
-    if (root->empty() && matcher.m_impl) return false;
+    if (root->empty() && !matcher.empty()) return false;
 
     summary::MatchVisitor visitor;
     visitFiltered(matcher, visitor);

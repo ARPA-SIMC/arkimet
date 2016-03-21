@@ -1,36 +1,14 @@
-/*
- * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <arki/matcher/tests.h>
-#include <arki/postprocess.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/scan/any.h>
-#include <arki/utils/files.h>
-#include <arki/utils/fd.h>
-#include <wibble/sys/fs.h>
-
+#include "matcher/tests.h"
+#include "postprocess.h"
+#include "configfile.h"
+#include "metadata.h"
+#include "scan/any.h"
+#include "utils/files.h"
+#include "utils/sys.h"
+#include "binary.h"
 #include <sstream>
 #include <iostream>
 #include <cstdio>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -39,12 +17,12 @@
 #define STDERR_FILENO 2
 #endif
 
-using namespace wibble;
-using namespace wibble::tests;
+using namespace arki::tests;
 
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::utils;
 
 struct arki_postprocess_shar {
     ConfigFile config;
@@ -61,20 +39,18 @@ struct arki_postprocess_shar {
             "postprocess = null\n"
             "name = testall\n"
             "path = testall\n";
-        stringstream incfg(conf);
-        config.parse(incfg, "(memory)");
+        config.parse(conf, "(memory)");
     }
 
-    void produceGRIB(metadata::Eater& c)
+    void produceGRIB(Postprocess& p)
     {
-        scan::scan("inbound/test.grib1", c);
+        scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) { return p.process(move(md)); });
     }
 };
 TESTGRP(arki_postprocess);
 
 // See if the postprocess makes a difference
-template<> template<>
-void to::test<1>()
+def_test(1)
 {
     Postprocess p("null");
     p.set_output(STDERR_FILENO);
@@ -87,8 +63,7 @@ void to::test<1>()
 }
 
 // Check that it works without validation, too
-template<> template<>
-void to::test<2>()
+def_test(2)
 {
     Postprocess p("null");
     p.set_output(STDERR_FILENO);
@@ -100,106 +75,92 @@ void to::test<2>()
 }
 
 // Test actually sending some data
-template<> template<>
-void to::test<3>()
+def_test(3)
 {
-    stringstream str;
+    sys::File out(sys::File::mkstemp("test"));
     Postprocess p("countbytes");
-    p.set_output(str);
+    p.set_output(out);
     p.start();
 
     produceGRIB(p);
     p.flush();
+    out.close();
 
-    ensure_equals(str.str(), "44964\n");
+    ensure_equals(sys::read_file(out.name()), "44961\n");
 }
 
 // Test actually sending some data
-template<> template<>
-void to::test<4>()
+def_test(4)
 {
     // Get the normal data
-    string plain;
+    vector<uint8_t> plain;
     {
-        struct Writer : public metadata::Eater
-        {
-            string& out;
-            Writer(string& out) : out(out) {}
-            bool eat(auto_ptr<Metadata> md) override
-            {
-                md->makeInline();
-                out += md->encodeBinary();
-                wibble::sys::Buffer data = md->getData();
-                out.append((const char*)data.data(), data.size());
-                return true;
-            }
-        } writer(plain);
-
-        scan::scan("inbound/test.grib1", writer);
+        BinaryEncoder enc(plain);
+        scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) {
+            md->makeInline();
+            md->encodeBinary(enc);
+            const auto& data = md->getData();
+            enc.add_raw(data);
+            return true;
+        });
     }
 
     // Get the postprocessed data
-    stringstream postprocessed;
+    sys::File out(sys::File::mkstemp("test"));
     Postprocess p("cat");
-    p.set_output(postprocessed);
+    p.set_output(out);
     p.start();
-    scan::scan("inbound/test.grib1", p);
+    scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) { return p.process(move(md)); });
     p.flush();
+    out.close();
 
-    wassert(actual(plain) == postprocessed.str());
+    string postprocessed = sys::read_file(out.name());
+    wassert(actual(vector<uint8_t>(postprocessed.begin(), postprocessed.end()) == plain));
 }
 
 // Try to shift a sizeable chunk of data to the postprocessor
-template<> template<>
-void to::test<5>()
+def_test(5)
 {
-    stringstream str;
+    sys::File out(sys::File::mkstemp("test"));
     Postprocess p("countbytes");
-    p.set_output(str);
+    p.set_output(out);
     p.start();
 
     for (unsigned i = 0; i < 128; ++i)
         produceGRIB(p);
     p.flush();
+    out.close();
 
-    ensure_equals(str.str(), "5755392\n");
+    wassert(actual(sys::read_file(out.name())) == "5755008\n");
 }
 
 // Try to shift a sizeable chunk of data out of the postprocessor
-template<> template<>
-void to::test<6>()
+def_test(6)
 {
     const char* fname = "postprocess_output";
     stringstream str;
     Postprocess p("zeroes 4096");
 
-    int fd = ::open(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
-    if (fd == -1)
-        throw wibble::exception::File(fname, "opening/creating file");
-    utils::fd::TempfileHandleWatch hwfd(fname, fd);
-
+    sys::File fd(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
     p.set_output(fd);
     p.start();
 
     produceGRIB(p);
     p.flush();
 
-    wassert(actual(sys::fs::size(fname)) == 4096*1024);
+    wassert(actual(sys::size(fname)) == 4096*1024u);
+
+    sys::unlink(fname);
 }
 
 // Try to shift a sizeable chunk of data to and out of the postprocessor
-template<> template<>
-void to::test<7>()
+def_test(7)
 {
     const char* fname = "postprocess_output";
     stringstream str;
     Postprocess p("zeroes 4096");
 
-    int fd = ::open(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
-    if (fd == -1)
-        throw wibble::exception::File(fname, "opening/creating file");
-    utils::fd::TempfileHandleWatch hwfd(fname, fd);
-
+    sys::File fd(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
     p.set_output(fd);
     p.start();
 
@@ -207,10 +168,9 @@ void to::test<7>()
         produceGRIB(p);
     p.flush();
 
-    wassert(actual(sys::fs::size(fname)) == 4096*1024);
+    wassert(actual(sys::size(fname)) == 4096*1024u);
+
+    sys::unlink(fname);
 }
 
-
 }
-
-// vim:set ts=4 sw=4:

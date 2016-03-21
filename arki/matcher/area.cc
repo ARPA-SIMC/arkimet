@@ -1,41 +1,18 @@
-/*
- * matcher/area - Area matcher
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include <arki/matcher/area.h>
 #include <arki/matcher/utils.h>
-#include <arki/metadata.h>
 #include <arki/utils/geosdef.h>
-#include <wibble/regexp.h>
+#include <arki/utils/regexp.h>
 #include <strings.h>
+#include <algorithm>
 
 #ifdef HAVE_VM2
 #include <arki/utils/vm2.h>
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace matcher {
@@ -112,50 +89,50 @@ std::string MatchAreaVM2::toString() const
 }
 
 
-MatchArea* MatchArea::parse(const std::string& pattern)
+unique_ptr<MatchArea> MatchArea::parse(const std::string& pattern)
 {
-    string p = str::trim(pattern);
+    string p = str::strip(pattern);
     if (strncasecmp(p.c_str(), "grib:", 5) == 0)
     {
-        return new MatchAreaGRIB(str::trim(p.substr(5)));
+        return unique_ptr<MatchArea>(new MatchAreaGRIB(str::strip(p.substr(5))));
     } 
     else if (strncasecmp(p.c_str(), "odimh5:", 7) == 0)
     {
-        return new MatchAreaODIMH5(str::trim(p.substr(7)));
+        return unique_ptr<MatchArea>(new MatchAreaODIMH5(str::strip(p.substr(7))));
     }
 #ifdef HAVE_VM2
     else if (strncasecmp(p.c_str(), "vm2", 3) == 0)
     {
         if (strncasecmp(p.c_str(), "vm2,", 4) == 0)
-            return new MatchAreaVM2(str::trim(p.substr(4)));
+            return unique_ptr<MatchArea>(new MatchAreaVM2(str::strip(p.substr(4))));
         else
-            return new MatchAreaVM2(str::trim(p.substr(3)));
+            return unique_ptr<MatchArea>(new MatchAreaVM2(str::strip(p.substr(3))));
     }
 #endif
 #ifdef HAVE_GEOS
     else if (strncasecmp(p.c_str(), "bbox ", 5) == 0) 
     {
-        return MatchAreaBBox::parse(str::trim(p.substr(5)));
+        return unique_ptr<MatchArea>(MatchAreaBBox::parse(str::strip(p.substr(5))));
     }
 #endif
     else
-        throw wibble::exception::Consistency("parsing type of area to match", "unsupported area match: " + str::trim(p.substr(0, 5)));
+        throw std::runtime_error("cannot parse type of area to match: unsupported area match: " + str::strip(p.substr(0, 5)));
 }
 
 #ifdef HAVE_GEOS
-static auto_ptr<ARKI_GEOS_GEOMETRY> parseBBox(const ARKI_GEOS_GEOMETRYFACTORY& gf, const std::string sb)
+static unique_ptr<ARKI_GEOS_GEOMETRY> parseBBox(const ARKI_GEOS_GEOMETRYFACTORY& gf, const std::string sb)
 {
 	using namespace ARKI_GEOS_IO_NS;
 
 	WKTReader reader(&gf);
-	return auto_ptr<ARKI_GEOS_GEOMETRY>(reader.read(sb));
+	return unique_ptr<ARKI_GEOS_GEOMETRY>(reader.read(sb));
 }
 
 MatchAreaBBox::MatchAreaBBox(const std::string& verb, const std::string& geom)
 	: gf(0), geom(0), verb(verb)
 {
 	gf = new ARKI_GEOS_GEOMETRYFACTORY();
-	std::auto_ptr<ARKI_GEOS_GEOMETRY> g = parseBBox(*gf, geom);
+	std::unique_ptr<ARKI_GEOS_GEOMETRY> g = parseBBox(*gf, geom);
 	this->geom = g.release();
 	geom_str = geom;
 }
@@ -166,33 +143,33 @@ MatchAreaBBox::~MatchAreaBBox()
 	if (geom) delete geom;
 }
 
-MatchAreaBBox* MatchAreaBBox::parse(const std::string& pattern)
+unique_ptr<MatchAreaBBox> MatchAreaBBox::parse(const std::string& pattern)
 {
-	size_t beg = 0;
-	size_t pos = pattern.find(' ', beg);
-	string verb;
-	string rest;
-	if (pos == string::npos)
-		verb = str::tolower(str::trim(pattern.substr(beg)));
-	else {
-		verb = str::tolower(str::trim(pattern.substr(beg, pos-beg)));
-		rest = str::trim(pattern.substr(pos+1));
-	}
-	
-	if (verb == "equals")
-	{
-		return new MatchAreaBBoxEquals(rest);
-	} else if (verb == "intersects") {
-		return new MatchAreaBBoxIntersects(rest);
+    size_t beg = 0;
+    size_t pos = pattern.find(' ', beg);
+    string verb;
+    string rest;
+    if (pos == string::npos)
+        verb = str::lower(str::strip(pattern.substr(beg)));
+    else {
+        verb = str::lower(str::strip(pattern.substr(beg, pos-beg)));
+        rest = str::strip(pattern.substr(pos+1));
+    }
+
+    if (verb == "equals")
+    {
+        return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxEquals(rest));
+    } else if (verb == "intersects") {
+        return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxIntersects(rest));
 #ifdef ARKI_NEW_GEOS
-	} else if (verb == "covers") {
-		return new MatchAreaBBoxCovers(rest);
-	} else if (verb == "coveredby") {
-		return new MatchAreaBBoxCoveredBy(rest);
+    } else if (verb == "covers") {
+        return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxCovers(rest));
+    } else if (verb == "coveredby") {
+        return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxCoveredBy(rest));
 #endif
-	} else {
-		throw wibble::exception::Consistency("parsing type of bbox match", "unsupported match type: " + verb);
-	}
+    } else {
+        throw std::runtime_error("cannot parse type of bbox match: unsupported match type: " + verb);
+    }
 }
 
 bool MatchAreaBBox::matchItem(const Type& o) const
@@ -250,10 +227,8 @@ bool MatchAreaBBoxCoveredBy::matchGeom(const ARKI_GEOS_GEOMETRY* val) const
 
 void MatchArea::init()
 {
-    Matcher::register_matcher("area", types::TYPE_AREA, (MatcherType::subexpr_parser)MatchArea::parse);
+    Matcher::register_matcher("area", TYPE_AREA, (MatcherType::subexpr_parser)MatchArea::parse);
 }
 
 }
 }
-
-// vim:set ts=4 sw=4:

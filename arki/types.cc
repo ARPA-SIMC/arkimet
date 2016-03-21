@@ -1,39 +1,12 @@
-/*
- * types - arkimet metadata type system
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- * Author: Guido Billi <guidobilli@gmail.com>
- */
-
 #include "config.h"
-
 #include <arki/types.h>
 #include <arki/types/utils.h>
-#include <arki/utils/codec.h>
+#include <arki/binary.h>
+#include <arki/utils/sys.h>
+#include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include <arki/formatter.h>
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/sys/buffer.h>
-
 #include <cstring>
 #include <unistd.h>
 
@@ -42,15 +15,15 @@
 #endif
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace types {
 
 Code checkCodeName(const std::string& name)
 {
-	// TODO: convert into something faster, like a hash lookup or a gperf lookup
-	string nname = str::trim(str::tolower(name));
+    // TODO: convert into something faster, like a hash lookup or a gperf lookup
+    string nname = str::strip(str::lower(name));
 	if (nname == "time") return TYPE_TIME;
 	if (nname == "origin") return TYPE_ORIGIN;
 	if (nname == "product") return TYPE_PRODUCT;
@@ -74,10 +47,14 @@ Code checkCodeName(const std::string& name)
 
 Code parseCodeName(const std::string& name)
 {
-	Code res = checkCodeName(name);
-	if (res == TYPE_INVALID)
-		throw wibble::exception::Consistency("parsing yaml data", "unsupported field type: " + name);
-	return res;
+    Code res = checkCodeName(name);
+    if (res == TYPE_INVALID)
+    {
+        string msg("cannot parse yaml data: unsupported field type: ");
+        msg += name;
+        throw std::runtime_error(std::move(msg));
+    }
+    return res;
 }
 
 std::string formatCode(const Code& c)
@@ -101,8 +78,12 @@ std::string formatCode(const Code& c)
 		case TYPE_TASK:	return "TASK";
 		case TYPE_QUANTITY:	return "QUANTITY";
 		case TYPE_VALUE:	return "VALUE";
-		default: return "unknown(" + wibble::str::fmt((int)c) + ")";
-	}
+        default: {
+            stringstream res;
+            res << "unknown(" << (int)c << ")";
+            return res.str();
+        }
+    }
 }
 
 int Type::compare(const Type& o) const
@@ -113,22 +94,28 @@ int Type::compare(const Type& o) const
 bool Type::operator==(const std::string& o) const
 {
     // Temporarily decode it for comparison
-    std::auto_ptr<Type> other = decodeString(type_code(), o);
+    std::unique_ptr<Type> other = decodeString(type_code(), o);
     return operator==(*other);
 }
 
-std::string Type::encodeBinary() const
+void Type::encodeBinary(BinaryEncoder& enc) const
 {
-	using namespace utils::codec;
-	string contents;
-	Encoder contentsenc(contents);
-	encodeWithoutEnvelope(contentsenc);
-	string res;
-	Encoder enc(res);
-	enc.addVarint((unsigned)type_code());
-	enc.addVarint(contents.size());
-	enc.addString(contents);
-	return res;
+    vector<uint8_t> contents;
+    contents.reserve(256);
+    BinaryEncoder contentsenc(contents);
+    encodeWithoutEnvelope(contentsenc);
+
+    enc.add_varint((unsigned)type_code());
+    enc.add_varint(contents.size());
+    enc.add_raw(contents);
+}
+
+std::vector<uint8_t> Type::encodeBinary() const
+{
+    vector<uint8_t> contents;
+    BinaryEncoder enc(contents);
+    encodeBinary(enc);
+    return contents;
 }
 
 void Type::serialise(Emitter& e, const Formatter* f) const
@@ -142,7 +129,9 @@ void Type::serialise(Emitter& e, const Formatter* f) const
 
 std::string Type::exactQuery() const
 {
-	throw wibble::exception::Consistency("creating a query to match " + tag(), "not implemented");
+    stringstream ss;
+    ss << "creating a query to match " << tag() << " is not implemented";
+    return ss.str();
 }
 
 #ifdef HAVE_LUA
@@ -288,66 +277,31 @@ void Type::lua_loadlib(lua_State* L)
 }
 #endif
 
-types::Code decodeEnvelope(const unsigned char*& buf, size_t& len)
+unique_ptr<Type> decode(BinaryDecoder& dec)
 {
-	using namespace utils::codec;
-	using namespace str;
-
-	Decoder dec(buf, len);
-
-	// Decode the element type
-	Code code = (Code)dec.popVarint<unsigned>("element code");
-	// Decode the element size
-	size_t size = dec.popVarint<size_t>("element size");
-
-	// Finally decode the element body
-	ensureSize(dec.len, size, "element body");
-	buf = dec.buf;
-	len = size;
-	return code;
+    types::Code code;
+    BinaryDecoder inner = dec.pop_type_envelope(code);
+    return decodeInner(code, inner);
 }
 
-auto_ptr<Type> decode(const unsigned char* buf, size_t len)
+unique_ptr<Type> decodeInner(types::Code code, BinaryDecoder& dec)
 {
-	types::Code code = decodeEnvelope(buf, len);
-	return types::MetadataType::get(code)->decode_func(buf, len);
+    return types::MetadataType::get(code)->decode_func(dec);
 }
 
-auto_ptr<Type> decode(utils::codec::Decoder& dec)
-{
-    using namespace utils::codec;
-
-    // Decode the element type
-    Code code = (Code)dec.popVarint<unsigned>("element code");
-    // Decode the element size
-    size_t size = dec.popVarint<size_t>("element size");
-
-    // Finally decode the element body
-    ensureSize(dec.len, size, "element body");
-    auto_ptr<Type> res = decodeInner(code, dec.buf, size);
-    dec.buf += size;
-    dec.len -= size;
-    return res;
-}
-
-auto_ptr<Type> decodeInner(types::Code code, const unsigned char* buf, size_t len)
-{
-	return types::MetadataType::get(code)->decode_func(buf, len);
-}
-
-auto_ptr<Type> decodeString(types::Code code, const std::string& val)
+unique_ptr<Type> decodeString(types::Code code, const std::string& val)
 {
 	return types::MetadataType::get(code)->string_decode_func(val);
 }
 
-auto_ptr<Type> decodeMapping(const emitter::memory::Mapping& m)
+unique_ptr<Type> decodeMapping(const emitter::memory::Mapping& m)
 {
     using namespace emitter::memory;
     const std::string& type = m["t"].want_string("decoding item type");
     return decodeMapping(parseCodeName(type), m);
 }
 
-auto_ptr<Type> decodeMapping(types::Code code, const emitter::memory::Mapping& m)
+unique_ptr<Type> decodeMapping(types::Code code, const emitter::memory::Mapping& m)
 {
     using namespace emitter::memory;
     return types::MetadataType::get(code)->mapping_decode_func(m);
@@ -358,137 +312,41 @@ std::string tag(types::Code code)
 	return types::MetadataType::get(code)->tag;
 }
 
-bool readBundle(int fd, const std::string& filename, wibble::sys::Buffer& buf, std::string& signature, unsigned& version)
+bool readBundle(int fd, const std::string& filename, std::vector<uint8_t>& buf, std::string& signature, unsigned& version)
 {
-	using namespace utils::codec;
+    sys::NamedFileDescriptor f(fd, filename);
 
-	// Skip all leading blank bytes
-	char c;
-	while (true)
-	{
-		int res = read(fd, &c, 1);
-		if (res < 0) throw wibble::exception::File(filename, "reading first byte of header");
-		if (res == 0) return false; // EOF
-		if (c) break;
-	}
+    // Skip all leading blank bytes
+    char c;
+    while (true)
+    {
+        int res = f.read(&c, 1);
+        if (res == 0) return false; // EOF
+        if (c) break;
+    }
 
-	// Read the rest of the first 8 bytes
-	unsigned char hdr[8];
-	hdr[0] = c;
-	int res = read(fd, hdr + 1, 7);
-	if (res < 0) throw wibble::exception::File(filename, "reading 7 more bytes");
-	if (res < 7) return false; // EOF
+    // Read the rest of the first 8 bytes
+    unsigned char hdr[8];
+    hdr[0] = c;
+    size_t res = f.read(hdr + 1, 7);
+    if (res < 7) return false; // EOF
 
-	// Read the signature
-	signature.resize(2);
-	signature[0] = hdr[0];
-	signature[1] = hdr[1];
+    BinaryDecoder dec(hdr, 8);
 
-	// Get the version in next 2 bytes
-	version = decodeUInt(hdr+2, 2);
+    // Read the signature
+    signature = dec.pop_string(2, "header of metadata bundle");
 
-	// Get length from next 4 bytes
-	unsigned int len = decodeUInt(hdr+4, 4);
+    // Get the version in next 2 bytes
+    version = dec.pop_uint(2, "version of metadata bundle");
 
-	// Read the metadata body
-	buf.resize(len);
-	res = read(fd, buf.data(), len);
-	if (res < 0)
-		throw wibble::exception::File(filename, "reading " + str::fmt(len) + " bytes");
-	if ((unsigned)res != len)
-		throw wibble::exception::Consistency("reading " + filename, "read only " + str::fmt(res) + " of " + str::fmt(res) + " bytes: either the file is corrupted or it does not contain arkimet metadata");
+    // Get length from next 4 bytes
+    size_t len = dec.pop_uint(4, "size of metadata bundle");
 
-	return true;
-}
-bool readBundle(std::istream& in, const std::string& filename, wibble::sys::Buffer& buf, std::string& signature, unsigned& version)
-{
-	using namespace utils::codec;
-
-	// Skip all leading blank bytes
-	int c;
-	while ((c = in.get()) == 0 && !in.eof())
-		;
-
-	if (in.eof())
-		return false;
-
-	if (in.fail())
-		throw wibble::exception::File(filename, "reading first byte of header");
-
-	// Read the rest of the first 8 bytes
-	unsigned char hdr[8];
-	hdr[0] = c;
-	in.read((char*)hdr + 1, 7);
-	if (in.fail())
-	{
-		if (in.eof())
-			return false;
-		else
-			throw wibble::exception::File(filename, "reading 7 more bytes");
-	}
-
-	// Read the signature
-	signature.resize(2);
-	signature[0] = hdr[0];
-	signature[1] = hdr[1];
-
-	// Get the version in next 2 bytes
-	version = decodeUInt(hdr+2, 2);
-
-	// Get length from next 4 bytes
-	unsigned int len = decodeUInt(hdr+4, 4);
-
-	// Read the metadata body
-	buf.resize(len);
-	in.read((char*)buf.data(), len);
-	if (in.fail() && in.eof())
-		throw wibble::exception::Consistency("reading " + filename, "read less than " + str::fmt(len) + " bytes: either the file is corrupted or it does not contain arkimet metadata");
-	if (in.bad())
-		throw wibble::exception::File(filename, "reading " + str::fmt(len) + " bytes");
-
-	return true;
-}
-
-bool readBundle(const unsigned char*& buf, size_t& len, const std::string& filename, const unsigned char*& obuf, size_t& olen, std::string& signature, unsigned& version)
-{
-	using namespace utils::codec;
-
-	// Skip all leading blank bytes
-	while (len > 0 && *buf == 0)
-	{
-		++buf;
-		--len;
-	}
-	if (len == 0)
-		return false;
-
-	if (len < 8)
-		throw wibble::exception::Consistency("parsing " + filename, "partial data encountered: 8 bytes of header needed, " + str::fmt(len) + " found");
-
-	// Read the signature
-	signature.resize(2);
-	signature[0] = buf[0];
-	signature[1] = buf[1];
-	buf += 2; len -= 2;
-
-	// Get the version in next 2 bytes
-	version = decodeUInt(buf, 2);
-	buf += 2; len -= 2;
-	
-	// Get length from next 4 bytes
-	olen = decodeUInt(buf, 4);
-	buf += 4; len -= 4;
-
-	// Save the start of the inner data
-	obuf = buf;
-
-	// Move to the end of the inner data
-	buf += olen;
-	len -= olen;
-
-	return true;
+    // Read the metadata body
+    buf.resize(len);
+    f.read_all_or_throw(buf.data(), len);
+    return true;
 }
 
 }
 }
-// vim:set ts=4 sw=4:

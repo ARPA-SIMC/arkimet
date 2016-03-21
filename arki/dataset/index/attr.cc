@@ -1,29 +1,6 @@
-/*
- * dataset/index/attr - Generic index for metadata items
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/dataset/index/attr.h>
 #include <arki/matcher.h>
-#include <arki/utils/codec.h>
-#include <wibble/exception.h>
+#include <arki/binary.h>
 #include <sstream>
 
 using namespace std;
@@ -35,27 +12,27 @@ namespace arki {
 namespace dataset {
 namespace index {
 
-int AttrSubIndex::q_select_id(const std::string& blob) const
+int AttrSubIndex::q_select_id(const std::vector<uint8_t>& blob) const
 {
-	if (not m_select_id)
-	{
-		m_select_id = new utils::sqlite::PrecompiledQuery("sel_id", m_db);
-		m_select_id->compile("SELECT id FROM sub_" + name + " where data=?");
-	}
+    if (not m_select_id)
+    {
+        m_select_id = new utils::sqlite::PrecompiledQuery("sel_id", m_db);
+        m_select_id->compile("SELECT id FROM sub_" + name + " where data=?");
+    }
 
-	// Else, fetch it from the database
-	m_select_id->reset();
-	m_select_id->bindBlob(1, blob);
-	int id = -1;
-	while (m_select_id->step())
-	{
-		id = m_select_id->fetch<int>(0);
-	}
+    // Else, fetch it from the database
+    m_select_id->reset();
+    m_select_id->bind(1, blob);
+    int id = -1;
+    while (m_select_id->step())
+    {
+        id = m_select_id->fetch<int>(0);
+    }
 
-	return id;
+    return id;
 }
 
-auto_ptr<Type> AttrSubIndex::q_select_one(int id) const
+unique_ptr<Type> AttrSubIndex::q_select_one(int id) const
 {
 	if (not m_select_one)
 	{
@@ -68,29 +45,30 @@ auto_ptr<Type> AttrSubIndex::q_select_one(int id) const
 	m_select_one->bind(1, id);
 
     // Decode every blob and run the matcher on it
-    auto_ptr<Type> res;
-	while (m_select_one->step())
-	{
-		const void* buf = m_select_one->fetchBlob(0);
-		int len = m_select_one->fetchBytes(0);
-		res = types::decodeInner(code, (const unsigned char*)buf, len);
-	}
-	return res;
+    unique_ptr<Type> res;
+    while (m_select_one->step())
+    {
+        const void* buf = m_select_one->fetchBlob(0);
+        int len = m_select_one->fetchBytes(0);
+        BinaryDecoder dec((const uint8_t*)buf, len);
+        res = types::decodeInner(code, dec);
+    }
+    return res;
 }
 
-int AttrSubIndex::q_insert(const std::string& blob)
+int AttrSubIndex::q_insert(const std::vector<uint8_t>& blob)
 {
-	if (not m_insert)
-	{
-		m_insert = new utils::sqlite::PrecompiledQuery("attr_insert", m_db);
-		m_insert->compile("INSERT INTO sub_" + name + " (data) VALUES (?)");
-	}
+    if (not m_insert)
+    {
+        m_insert = new utils::sqlite::PrecompiledQuery("attr_insert", m_db);
+        m_insert->compile("INSERT INTO sub_" + name + " (data) VALUES (?)");
+    }
 
-	m_insert->reset();
-	m_insert->bindBlob(1, blob);
-	m_insert->step();
+    m_insert->reset();
+    m_insert->bind(1, blob);
+    m_insert->step();
 
-	return m_db.lastInsertID();
+    return m_db.lastInsertID();
 }
 
 
@@ -113,13 +91,13 @@ AttrSubIndex::~AttrSubIndex()
 
 void AttrSubIndex::add_to_cache(int id, const types::Type& item) const
 {
-    string encoded;
-    utils::codec::Encoder enc(encoded);
+    vector<uint8_t> encoded;
+    BinaryEncoder enc(encoded);
     item.encodeWithoutEnvelope(enc);
     add_to_cache(id, item, encoded);
 }
 
-void AttrSubIndex::add_to_cache(int id, const types::Type& item, const std::string& encoded) const
+void AttrSubIndex::add_to_cache(int id, const types::Type& item, const std::vector<uint8_t>& encoded) const
 {
     map<int, Type*>::iterator i = m_cache.find(id);
     if (i == m_cache.end())
@@ -138,12 +116,12 @@ int AttrSubIndex::id(const Metadata& md) const
     if (!item) return -1;
 
     // Encode the item
-    string encoded;
-    utils::codec::Encoder enc(encoded);
+    vector<uint8_t> encoded;
+    BinaryEncoder enc(encoded);
     item->encodeWithoutEnvelope(enc);
 
     // First look up in cache
-    std::map<string, int>::const_iterator i = m_id_cache.find(encoded);
+    auto i = m_id_cache.find(encoded);
     if (i != m_id_cache.end())
         return i->second;
 
@@ -168,7 +146,7 @@ void AttrSubIndex::read(int id, Metadata& md) const
         return;
     }
 
-    auto_ptr<Type> item = q_select_one(id);
+    unique_ptr<Type> item = q_select_one(id);
     md.set(item->cloneType());
     add_to_cache(id, *item);
 }
@@ -184,13 +162,14 @@ std::vector<int> AttrSubIndex::query(const matcher::OR& m) const
 
 	std::vector<int> ids;
 
-	// Decode every blob in the database and run the matcher on it
-	m_select_all->reset();
-	while (m_select_all->step())
-	{
-		const void* buf = m_select_all->fetchBlob(1);
-		int len = m_select_all->fetchBytes(1);
-        auto_ptr<Type> t = types::decodeInner(code, (const unsigned char*)buf, len);
+    // Decode every blob in the database and run the matcher on it
+    m_select_all->reset();
+    while (m_select_all->step())
+    {
+        const void* buf = m_select_all->fetchBlob(1);
+        int len = m_select_all->fetchBytes(1);
+        BinaryDecoder dec((const uint8_t*)buf, len);
+        unique_ptr<Type> t = types::decodeInner(code, dec);
         if (m.matchItem(*t))
             ids.push_back(m_select_all->fetch<int>(0));
     }
@@ -213,12 +192,12 @@ int AttrSubIndex::insert(const Metadata& md)
     if (!item) return -1;
 
     // Extract the blob to insert
-    std::string blob;
-    utils::codec::Encoder enc(blob);
+    std::vector<uint8_t> blob;
+    BinaryEncoder enc(blob);
     item->encodeWithoutEnvelope(enc);
 
     // Try to serve it from cache if possible
-    std::map<string, int>::const_iterator ci = m_id_cache.find(blob);
+    auto ci = m_id_cache.find(blob);
     if (ci != m_id_cache.end())
         return ci->second;
 
@@ -239,7 +218,7 @@ Attrs::Attrs(utils::sqlite::SQLiteDB& db, const std::set<types::Code>& attrs)
 	for (set<types::Code>::const_iterator i = attrs.begin();
 			i != attrs.end(); ++i)
 	{
-		if (*i == types::TYPE_REFTIME) continue;
+		if (*i == TYPE_REFTIME) continue;
 		m_attrs.push_back(new AttrSubIndex(db, *i));
 	}
 }

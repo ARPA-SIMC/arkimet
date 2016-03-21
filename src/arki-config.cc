@@ -1,38 +1,16 @@
-/*
- * arki-config - Configuration wizard
- *
- * Copyright (C) 2009--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+/// Configuration wizard
 #include "config.h"
-
-#include <wibble/exception.h>
-#include <wibble/commandline/parser.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
+#include <arki/exceptions.h>
+#include <arki/utils/commandline/parser.h>
+#include <arki/utils/string.h>
+#include <arki/utils/sys.h>
 #include <arki/configfile.h>
-#include <arki/dataset/targetfile.h>
+#include <arki/dataset/step.h>
 #include <arki/dataset/index/base.h>
 #include <arki/matcher.h>
 #include <arki/runtime.h>
-
 #include <map>
+#include <iostream>
 #include <cstdio>
 
 #ifdef HAVE_LIBREADLINE
@@ -59,10 +37,10 @@ extern "C" {
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
-using namespace wibble::sys;
+using namespace arki::utils;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public StandardParserWithManpage
@@ -84,6 +62,7 @@ struct Options : public StandardParserWithManpage
 
 }
 }
+}
 
 // Ask a yes/no question
 bool ask_bool(const std::string& prompt, bool def = false)
@@ -100,9 +79,9 @@ bool ask_bool(const std::string& prompt, bool def = false)
 		string answer = rl_answer;
 		free(rl_answer);
 
-		answer = str::tolower(str::trim(answer));
-		if (answer.empty())
-			return def;
+        answer = str::lower(str::strip(answer));
+        if (answer.empty())
+            return def;
 
 		if (answer == "y") return true;
 		if (answer == "n") return false;
@@ -122,14 +101,19 @@ string ask_string(const std::string& prompt, const std::string& def = std::strin
 	string answer = rl_answer;
 	free(rl_answer);
 
-	answer = str::trim(answer);
-	if (answer.empty())
-		return def;
-	return answer;
+    answer = str::strip(answer);
+    if (answer.empty())
+        return def;
+    return answer;
 }
 
 template<typename ENTRY> char ask_choice_shortcut(const ENTRY& e) { return 0; }
-template<typename ENTRY> std::string ask_choice_description(const ENTRY& e) { return str::fmt(e); }
+template<typename ENTRY> std::string ask_choice_description(const ENTRY& e)
+{
+    stringstream ss;
+    ss << e;
+    return ss.str();
+}
 
 struct AnnotatedChoice
 {
@@ -159,7 +143,7 @@ ENTRY ask_choice(const std::string& prompt, const std::vector<ENTRY>& entries, E
 			if (shortcut)
 				key = shortcut;
 			else
-				key = str::fmt(i + 1);
+				key = std::to_string(i + 1);
 			cout << " " << key << ": ";
 
 			if (entries[i] == def)
@@ -221,30 +205,30 @@ struct Wizard
 	Wizard(commandline::Options& opts) : out(cout), finished(false)
    	{
 		// Initialise the metadata descriptions
-		md_descs[types::TYPE_ORIGIN] = "description of the source of the data";
-		md_descs[types::TYPE_PRODUCT] = "product type";
-		md_descs[types::TYPE_LEVEL] = "vertical level";
-		md_descs[types::TYPE_TIMERANGE] = "time range of statistical aggregation";
-		md_descs[types::TYPE_REFTIME] = "reference time";
-		md_descs[types::TYPE_AREA] = "geographical area";
-		md_descs[types::TYPE_PRODDEF] = "product definition";
-		md_descs[types::TYPE_RUN] = "identification of the forecast run within a day";
+		md_descs[TYPE_ORIGIN] = "description of the source of the data";
+		md_descs[TYPE_PRODUCT] = "product type";
+		md_descs[TYPE_LEVEL] = "vertical level";
+		md_descs[TYPE_TIMERANGE] = "time range of statistical aggregation";
+		md_descs[TYPE_REFTIME] = "reference time";
+		md_descs[TYPE_AREA] = "geographical area";
+		md_descs[TYPE_PRODDEF] = "product definition";
+		md_descs[TYPE_RUN] = "identification of the forecast run within a day";
 
-		if (opts.hasNext())
-		{
-			string path = opts.next();
-			if (path == "config" or str::endsWith(path, "/config"))
-				configFile = path;
-			else
-				configFile = str::joinpath(path, "config");
-		} else
-			configFile = "./config";
+        if (opts.hasNext())
+        {
+            string path = opts.next();
+            if (path == "config" or str::endswith(path, "/config"))
+                configFile = path;
+            else
+                configFile = str::joinpath(path, "config");
+        } else
+            configFile = "./config";
 
-		absConfigFile = fs::abspath(configFile);
+        absConfigFile = sys::abspath(configFile);
 		datasetName = absConfigFile.substr(0, absConfigFile.size() - 7);
 		size_t pos = datasetName.rfind("/");
 		if (pos == string::npos)
-			throw wibble::exception::Consistency("computing dataset name", "config file " + absConfigFile + " cannot be in the root directory");
+			throw_consistency_error("computing dataset name", "config file " + absConfigFile + " cannot be in the root directory");
 		datasetName = datasetName.substr(pos + 1);
 	}
 
@@ -257,7 +241,7 @@ struct Wizard
 
 	void readConfig()
 	{
-		if (!fs::access(configFile, F_OK))
+		if (!sys::access(configFile, F_OK))
 		{
 			if (!ask_bool("Config file " + configFile + " does not exist: should I create it?", true))
 			{
@@ -313,13 +297,12 @@ struct Wizard
 		}
 	}
 
-	void save()
-	{
-		sys::fs::mkFilePath(configFile);
-		runtime::Output output(configFile);
-		cfg.output(output.stream(), output.name());
-		out << "Configuration saved in " << configFile << "." << endl;
-	}
+    void save()
+    {
+        sys::makedirs(str::dirname(configFile));
+        sys::write_file(configFile, cfg.serialize());
+        out << "Configuration saved in " << configFile << "." << endl;
+    }
 };
 
 class QuitAction : public Action
@@ -345,33 +328,33 @@ public:
 class StepAction : public Action
 {
 public:
-	StepAction(Wizard& state) : Action(state) {}
-	virtual std::string description() const
-	{
-		return "step: Change the granularity of data aggregation.";
-	}
-	virtual void activate()
-	{
-		string cur = str::tolower(w.cfg.value("step"));
-		vector<string> steps = dataset::TargetFile::stepList();
-		w.cfg.setValue("step",
-				ask_choice(
-					"Please choose a step for the dataset '" + w.datasetName + "':",
-				   	steps, cur));
-	}
+    StepAction(Wizard& state) : Action(state) {}
+    std::string description() const override
+    {
+        return "step: Change the granularity of data aggregation.";
+    }
+    void activate() override
+    {
+        string cur = str::lower(w.cfg.value("step"));
+        vector<string> steps = dataset::Step::list();
+        w.cfg.setValue("step",
+                ask_choice(
+                    "Please choose a step for the dataset '" + w.datasetName + "':",
+                    steps, cur));
+    }
 };
 
 class TypeAction : public Action
 {
 public:
-	TypeAction(Wizard& state) : Action(state) {}
-	virtual std::string description() const
-	{
-		return "type: Change how data is stored on disk.";
-	}
-	virtual void activate()
-	{
-		string cur = str::tolower(w.cfg.value("type"));
+    TypeAction(Wizard& state) : Action(state) {}
+    std::string description() const override
+    {
+        return "type: Change how data is stored on disk.";
+    }
+    void activate() override
+    {
+        string cur = str::lower(w.cfg.value("type"));
 		AnnotatedChoice cur_choice;
 		vector<AnnotatedChoice> types;
 		types.push_back(AnnotatedChoice("ondisk2", "for normal datasets"));
@@ -392,28 +375,28 @@ public:
 class ReplaceAction : public Action
 {
 public:
-	ReplaceAction(Wizard& state) : Action(state) {}
-	virtual bool enabled() const
-	{
-		string type = str::tolower(w.cfg.value("type"));
-		// FIXME: 'test' is deprecated, and is here only for backward
-		// compatibility
-		return type == "ondisk2" || type == "local" || type == "test";
-	}
-	virtual std::string description() const
-	{
-		if (ConfigFile::boolValue(w.cfg.value("replace")))
-			return "replace: Set duplicates to be rejected (currently they overwrite their old values).";
-		else
-			return "replace: Set duplicates to overwrite the old values (currently they are are rejected).";
-	}
-	virtual void activate()
-	{
-		if (ConfigFile::boolValue(w.cfg.value("replace")))
-			w.cfg.setValue("replace", string());
-		else
-			w.cfg.setValue("replace", "yes");
-	}
+    ReplaceAction(Wizard& state) : Action(state) {}
+    bool enabled() const override
+    {
+        string type = str::lower(w.cfg.value("type"));
+        // FIXME: 'test' is deprecated, and is here only for backward
+        // compatibility
+        return type == "ondisk2" || type == "local" || type == "test";
+    }
+    std::string description() const override
+    {
+        if (ConfigFile::boolValue(w.cfg.value("replace")))
+            return "replace: Set duplicates to be rejected (currently they overwrite their old values).";
+        else
+            return "replace: Set duplicates to overwrite the old values (currently they are are rejected).";
+    }
+    void activate() override
+    {
+        if (ConfigFile::boolValue(w.cfg.value("replace")))
+            w.cfg.setValue("replace", string());
+        else
+            w.cfg.setValue("replace", "yes");
+    }
 };
 
 class MDListAction : public Action
@@ -426,42 +409,42 @@ public:
 	MDListAction(Wizard& state, const std::string& key, const std::string& desc)
 	   	: Action(state), key(key), desc(desc)
    	{
-		metadatas.push_back(types::TYPE_ORIGIN);
-    	metadatas.push_back(types::TYPE_PRODUCT);
-    	metadatas.push_back(types::TYPE_LEVEL);
-    	metadatas.push_back(types::TYPE_TIMERANGE);
-    	metadatas.push_back(types::TYPE_REFTIME);
-    	metadatas.push_back(types::TYPE_AREA);
-    	metadatas.push_back(types::TYPE_PRODDEF);
-    	metadatas.push_back(types::TYPE_RUN);
+		metadatas.push_back(TYPE_ORIGIN);
+    	metadatas.push_back(TYPE_PRODUCT);
+    	metadatas.push_back(TYPE_LEVEL);
+    	metadatas.push_back(TYPE_TIMERANGE);
+    	metadatas.push_back(TYPE_REFTIME);
+    	metadatas.push_back(TYPE_AREA);
+    	metadatas.push_back(TYPE_PRODDEF);
+    	metadatas.push_back(TYPE_RUN);
 	}
 
-	virtual bool enabled() const
-	{
-		string type = str::tolower(w.cfg.value("type"));
-		// FIXME: 'test' is deprecated, and is here only for backward
-		// compatibility
-		return type == "ondisk2" || type == "local" || type == "test";
-	}
-	virtual std::string description() const
-	{
-		return desc;
-	}
-	virtual void activate()
-	{
-		string cur = str::tolower(w.cfg.value(key));
-		AnnotatedChoice end("quit", "No more changes to perform");
+    bool enabled() const override
+    {
+        string type = str::lower(w.cfg.value("type"));
+        // FIXME: 'test' is deprecated, and is here only for backward
+        // compatibility
+        return type == "ondisk2" || type == "local" || type == "test";
+    }
+    std::string description() const override
+    {
+        return desc;
+    }
+    void activate() override
+    {
+        string cur = str::lower(w.cfg.value(key));
+        AnnotatedChoice end("quit", "No more changes to perform");
 
 		while (true)
 		{
 			std::set<types::Code> codes = dataset::index::parseMetadataBitmask(cur);
 			vector<AnnotatedChoice> types;
-			for (vector<types::Code>::const_iterator i = metadatas.begin(); i != metadatas.end(); ++i)
-				if (codes.find(*i) == codes.end())
-					types.push_back(AnnotatedChoice(str::tolower(formatCode(*i)), w.md_descs[*i]));
-				else
-					types.push_back(AnnotatedChoice("*" + str::tolower(formatCode(*i)), w.md_descs[*i]));
-			types.push_back(end);
+            for (vector<types::Code>::const_iterator i = metadatas.begin(); i != metadatas.end(); ++i)
+                if (codes.find(*i) == codes.end())
+                    types.push_back(AnnotatedChoice(str::lower(types::formatCode(*i)), w.md_descs[*i]));
+                else
+                    types.push_back(AnnotatedChoice("*" + str::lower(types::formatCode(*i)), w.md_descs[*i]));
+            types.push_back(end);
 
 			string sel = ask_choice(
 						"Please choose a data type to add or remove:",
@@ -470,7 +453,7 @@ public:
 			if (sel == "quit")
 				break;
 			types::Code c = types::parseCodeName(sel);
-			if (c == types::TYPE_INVALID)
+			if (c == TYPE_INVALID)
 				continue;
 
 			if (codes.find(c) == codes.end())
@@ -478,16 +461,16 @@ public:
 			else
 				codes.erase(c);
 
-			cur = string();
-			for (set<types::Code>::const_iterator i = codes.begin(); i != codes.end(); ++i)
-			{
-				if (!cur.empty())
-					cur += ", ";
-				cur += str::tolower(formatCode(*i));
-			}
-		}
-		w.cfg.setValue(key, cur);
-	}
+            cur = string();
+            for (set<types::Code>::const_iterator i = codes.begin(); i != codes.end(); ++i)
+            {
+                if (!cur.empty())
+                    cur += ", ";
+                cur += str::lower(types::formatCode(*i));
+            }
+        }
+        w.cfg.setValue(key, cur);
+    }
 };
 
 class FilterAction : public Action
@@ -497,26 +480,22 @@ class FilterAction : public Action
 	vector<string> matchers;
 	AnnotatedChoice end;
 
-	string extract_subexpr(const Matcher& m, types::Code c, const std::string& def = std::string())
-	{
-		if (m.m_impl)
-		{
-			matcher::AND::const_iterator i = m.m_impl->find(c);
-			if (i != m.m_impl->end())
-			{
-				string res = i->second->toString();
-				size_t pos = res.find(":");
-				res = str::trim(res.substr(pos+1));
-				return res;
-			}
-		}
-		return def;
-	}
+    string extract_subexpr(const Matcher& m, types::Code c, const std::string& def = std::string())
+    {
+        if (auto matcher = m.get(c))
+        {
+            string res = matcher->toString();
+            size_t pos = res.find(":");
+            res = str::strip(res.substr(pos+1));
+            return res;
+        }
+        return def;
+    }
 
 public:
 	FilterAction(Wizard& state) : Action(state), end("quit", "No more changes to perform")
    	{
-		filter_help[types::TYPE_ORIGIN] = 
+		filter_help[TYPE_ORIGIN] = 
 			"Syntax:\n"
 			" - GRIB1,centre,subcentre,process\n"
 			" - GRIB2,centre,subcentre,processtype,bgprocessid,processid\n"
@@ -529,7 +508,7 @@ public:
 			" - GRIB2,98,1,2,,4\n"
 			" - BUFR,98,1\n"
 			;
-    	filter_help[types::TYPE_PRODUCT] = 
+    	filter_help[TYPE_PRODUCT] = 
 			"Syntax:\n"
 			" - GRIB1,centre,table,product\n"
 			" - GRIB2,centre,discipline,category,number\n"
@@ -542,7 +521,7 @@ public:
 			" - GRIB2,98,1,2\n"
 			" - BUFR,1,,0\n"
 			;
-    	filter_help[types::TYPE_LEVEL] = 
+    	filter_help[TYPE_LEVEL] = 
 			"Syntax:\n"
 			" - GRIB1,type,l1,l2\n"
 			" - GRIB2S,type,scale,value\n"
@@ -554,7 +533,7 @@ public:
 			" - GRIB2S,110,12,13\n"
 			" - GRIB2D,110,12,13,114,15,16\n"
 			;
-    	filter_help[types::TYPE_TIMERANGE] = 
+    	filter_help[TYPE_TIMERANGE] = 
 			"Syntax:\n"
 			" - GRIB1,type,p1,p2\n"
 			"   p1 and p2 are numbers with units, for example: 30s, 6h\n"
@@ -566,7 +545,7 @@ public:
 			" - GRIB1,2,0,6h\n"
 			" - GRIB2,1,2,3,4\n"
 			;
-    	filter_help[types::TYPE_REFTIME] = 
+    	filter_help[TYPE_REFTIME] = 
 			"Syntax:\n"
 			" - {>=|>|<=|<|=} Date: match the absolute time\n"
 			"   '=2009-01-20 12:00:00'\n"
@@ -594,7 +573,7 @@ public:
 			" - '>= 1 year ago, every 6 hours'\n"
 			" - '>= 3 weeks before today, < tomorrow'\n"
 			;
-    	filter_help[types::TYPE_AREA] = 
+    	filter_help[TYPE_AREA] = 
 			"Syntax:\n"
 			" - style:key=val[,key=val[,...]]\n"
 			" - style can be only GRIB, for now.\n"
@@ -617,7 +596,7 @@ public:
 			" - area:bbox coveredby POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))\n"
 			" - area:bbox intersects LINESTRING(10 43, 10 45, 13 45, 13 43)\n"
 			;
-    	filter_help[types::TYPE_PRODDEF] = 
+    	filter_help[TYPE_PRODDEF] = 
 			"Syntax:\n"
 			" - style:key=val[,key=val[,...]]\n"
 			" - style can be only GRIB, for now.\n"
@@ -626,50 +605,46 @@ public:
 			" - GRIB:ld=11,mt=10,nn=12\n"
 			" - GRIB:ty=1,pf=5,tf=32\n"
 			;
-    	filter_help[types::TYPE_RUN] = 
+    	filter_help[TYPE_RUN] = 
 			"Syntax:\n"
 			" - MINUTE,hour[:min]\n"
 			"Examples:\n"
 			" - MINUTE,12\n"
 			" - MINUTE,18:30\n"
 			;
-		matchers = matcher::MatcherType::matcherNames();
-		for (vector<string>::const_iterator i = matchers.begin();
-				i != matchers.end(); ++i)
-		{
-			matcher::MatcherType* info = matcher::MatcherType::find(*i);
-			types.push_back(AnnotatedChoice(str::tolower(formatCode(info->code)), w.md_descs[info->code]));
-		}
-		types.push_back(end);
-	}
+        matchers = matcher::MatcherType::matcherNames();
+        for (vector<string>::const_iterator i = matchers.begin();
+                i != matchers.end(); ++i)
+        {
+            matcher::MatcherType* info = matcher::MatcherType::find(*i);
+            types.push_back(AnnotatedChoice(str::lower(types::formatCode(info->code)), w.md_descs[info->code]));
+        }
+        types.push_back(end);
+    }
 
-	virtual bool enabled() const
-	{
-		string type = str::tolower(w.cfg.value("type"));
-		// FIXME: 'test' is deprecated, and is here only for backward
-		// compatibility
-		return type == "ondisk2" || type == "local" || type == "test";
-	}
-	virtual std::string description() const
-	{
-		return "filter: Change what kind of data goes in this dataset.";
-	}
+    bool enabled() const override
+    {
+        string type = str::lower(w.cfg.value("type"));
+        // FIXME: 'test' is deprecated, and is here only for backward
+        // compatibility
+        return type == "ondisk2" || type == "local" || type == "test";
+    }
+    std::string description() const override
+    {
+        return "filter: Change what kind of data goes in this dataset.";
+    }
 
-	string validate_subexpr(const matcher::MatcherType& t, const std::string& expr)
-	{
-		try
-		{
-			matcher::Implementation* i = t.parse_func(expr);
-			if (!i)
-				return "parse error";
-			delete i;
-			return string();
-		} catch (wibble::exception::Generic& g) {
-			return g.desc();
-		} catch (std::exception& e) {
-			return e.what();
-		}
-	}
+    string validate_subexpr(const matcher::MatcherType& t, const std::string& expr)
+    {
+        try
+        {
+            unique_ptr<matcher::Implementation> i = t.parse_func(expr);
+            if (!i) return "parse error";
+            return string();
+        } catch (std::exception& e) {
+            return e.what();
+        }
+    }
 	static const char* rl_prefill_text;
 	static int rl_prefill()
 	{
@@ -679,12 +654,12 @@ public:
 
 	std::string ask_subexpr(const matcher::MatcherType& t, std::string val)
 	{
-		// TODO: show available aliases
-		// TODO: allow ? for help
-		w.out << filter_help[t.code];
-		string prompt = "Match expression for " + str::tolower(t.name) + ": ";
-		while (true)
-		{
+        // TODO: show available aliases
+        // TODO: allow ? for help
+        w.out << filter_help[t.code];
+        string prompt = "Match expression for " + str::lower(t.name) + ": ";
+        while (true)
+        {
 			rl_startup_hook = rl_prefill;
 			rl_prefill_text = val.c_str();
 			char* rl_answer = readline(prompt.c_str());
@@ -692,7 +667,7 @@ public:
 			free(rl_answer);
 			rl_startup_hook = 0;
 
-			answer = str::trim(answer);
+			answer = str::strip(answer);
 			if (answer.empty())
 				return answer;
 			string err = validate_subexpr(t, answer);
@@ -701,12 +676,12 @@ public:
 			w.out << "Error: " + err + ": please try again." << endl;
 		}
 	}
-	virtual void activate()
-	{
-		string cur = str::tolower(w.cfg.value("filter"));
-		while (true)
-		{
-			// Show a pretty-print of the current filter
+    void activate() override
+    {
+        string cur = str::lower(w.cfg.value("filter"));
+        while (true)
+        {
+            // Show a pretty-print of the current filter
 			w.out << "Current filter:" << endl;
 			Matcher m = Matcher::parse(cur);
 			for (vector<string>::const_iterator i = matchers.begin();
@@ -724,10 +699,10 @@ public:
 			if (sel == "quit")
 				break;
 			types::Code c = types::parseCodeName(sel);
-			if (c == types::TYPE_INVALID) continue;
+			if (c == TYPE_INVALID) continue;
 
-			matcher::MatcherType* info = matcher::MatcherType::find(str::tolower(formatCode(c)));
-			if (!info) continue;
+            matcher::MatcherType* info = matcher::MatcherType::find(str::lower(types::formatCode(c)));
+            if (!info) continue;
 			
 			// Invoke the editor
 			string subexpr = extract_subexpr(m, c);
@@ -773,10 +748,10 @@ void Wizard::makeActions()
 
 int main(int argc, const char* argv[])
 {
-	wibble::commandline::Options opts;
-	try {
-		if (opts.parse(argc, argv))
-			return 0;
+    commandline::Options opts;
+    try {
+        if (opts.parse(argc, argv))
+            return 0;
         runtime::init();
 
 		// Fill in the information for the wizard 
@@ -786,17 +761,15 @@ int main(int argc, const char* argv[])
 
 		wizard.main_loop();
 
-		wizard.save();
-	} catch (wibble::exception::BadOption& e) {
-		cerr << e.desc() << endl;
-		opts.outputHelp(cerr);
-		return 1;
-	} catch (std::exception& e) {
-		cerr << e.what() << endl;
-		return 1;
-	}
+        wizard.save();
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
+        opts.outputHelp(cerr);
+        return 1;
+    } catch (std::exception& e) {
+        cerr << e.what() << endl;
+        return 1;
+    }
 
-	return 0;
+    return 0;
 }
-
-// vim:set ts=4 sw=4:

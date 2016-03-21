@@ -1,28 +1,6 @@
 #ifndef ARKI_VALUES_H
 #define ARKI_VALUES_H
 
-/*
- * values - Dynamic type system used by some types of arkimet metadata
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <string>
 #include <map>
 #include <iosfwd>
@@ -30,18 +8,14 @@
 struct lua_State;
 
 namespace arki {
+struct BinaryEncoder;
+struct BinaryDecoder;
 struct Emitter;
 
 namespace emitter {
 namespace memory {
 struct Mapping;
 struct Node;
-}
-}
-
-namespace utils {
-namespace codec {
-struct Encoder;
 }
 }
 
@@ -69,17 +43,17 @@ public:
 
 	virtual Value* clone() const = 0;
 
-	/**
-	 * Encode into a compact binary representation
-	 */
-	virtual void encode(utils::codec::Encoder& enc) const = 0;
+    /**
+     * Encode into a compact binary representation
+     */
+    virtual void encode(BinaryEncoder& enc) const = 0;
 
-	/**
-	 * Decode from compact binary representation.
-	 *
-	 * @retval used The number of bytes decoded.
-	 */
-	static Value* decode(const void* buf, size_t len, size_t& used);
+    /**
+     * Decode from compact binary representation.
+     *
+     * @retval used The number of bytes decoded.
+     */
+    static Value* decode(BinaryDecoder& dec);
 
 	/**
 	 * Encode into a string representation
@@ -138,15 +112,15 @@ struct ValueBag : public std::map<std::string, Value*>
 	 */
 	void set(const std::string& key, Value* val);
 
-	/**
-	 * Encode into a compact binary representation
-	 */
-	void encode(utils::codec::Encoder& enc) const;
+    /**
+     * Encode into a compact binary representation
+     */
+    void encode(BinaryEncoder& enc) const;
 
-	/**
-	 * Decode from compact binary representation
-	 */
-	static ValueBag decode(const void* buf, size_t len);
+    /**
+     * Decode from compact binary representation
+     */
+    static ValueBag decode(BinaryDecoder& dec);
 
 	/**
 	 * Encode into a string representation

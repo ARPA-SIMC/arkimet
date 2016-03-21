@@ -1,49 +1,57 @@
-/**
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #ifndef ARKI_TEST_UTILS_H
 #define ARKI_TEST_UTILS_H
 
-#include <wibble/tests.h>
+#include <arki/utils/tests.h>
+#include <arki/wibble/tests/tut.h>
 #include <memory>
 
+#define TESTGRP(name) \
+typedef test_group<name ## _shar> tg; \
+typedef tg::object to; \
+tg name ## _tg (#name);
+
 namespace arki {
+
+namespace utils {
+namespace sys {
+struct NamedFileDescriptor;
+}
+}
+
 namespace tests {
 
-struct ArkiCheck
+using namespace arki::utils::tests;
+using arki::utils::tests::actual;
+
+inline void ensure(bool cond)
 {
-    virtual ~ArkiCheck() {}
-    virtual void check(WIBBLE_TEST_LOCPRM) const = 0;
-};
-
-}
+    wassert(actual(cond));
 }
 
-namespace wibble {
-namespace tests {
-
-static inline void _wassert(WIBBLE_TEST_LOCPRM, std::auto_ptr<arki::tests::ArkiCheck> expr)
+template <class T,class Q>
+inline void ensure_equals(const Q& _actual, const T& expected)
 {
-    expr->check(wibble_test_location);
+    wassert(actual(_actual) == expected);
 }
+
+/**
+ * Creates a tempfile, runs body and returns the contents of the temp file after that.
+ *
+ * The temp file is created in the current directory with a fixed name; this is
+ * ok for tests that run on a temp dir, and is not to be used outside tests.
+ */
+std::string tempfile_to_string(std::function<void(arki::utils::sys::NamedFileDescriptor& out)> body);
+
+#define wruntest(func, ...) wassert(func(__VA_ARGS__))
+
+#define def_test(num) template<> template<> void to::test<num>()
+
+#define def_tests(name) \
+  class Tests : public TestCase { \
+      using TestCase::TestCase; \
+      void register_tests() override; \
+  } test##name(#name);
 
 }
 }
-
 #endif
