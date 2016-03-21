@@ -20,9 +20,11 @@ def test_venti():
     fedora_ldflags = "-Wl,-z,relro"
 
     repo = git.Repo()
+    local(cmd("git", "push", "venti"))
     with cd("~/arkimet"):
-        run(cmd("git", "fetch"))
+        #run(cmd("git", "fetch"))
         run(cmd("git", "checkout", "-B", "test_venti", repo.head.commit.hexsha))
+        run(cmd("git", "reset", "--hard"))
         run(cmd("git", "clean", "-fx"))
         run(cmd("autoreconf", "-if"))
         run(cmd("./configure",
