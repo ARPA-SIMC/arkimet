@@ -100,7 +100,7 @@ struct ByteQuery : public DataQuery
 
     std::string param;
     Type type = BQ_DATA;
-    std::function<void()> data_start_hook = nullptr;
+    std::function<void(NamedFileDescriptor&)> data_start_hook = nullptr;
 
     ByteQuery() {}
 

@@ -1,6 +1,7 @@
 #ifndef ARKI_POSTPROCESS_H
 #define ARKI_POSTPROCESS_H
 
+#include <arki/file.h>
 #include <string>
 #include <map>
 #include <sstream>
@@ -33,11 +34,6 @@ public:
      * not.
      */
     Postprocess(const std::string& command);
-    /*
-    Postprocess(const std::string& command, int outfd, const std::map<std::string, std::string>& cfg);
-    Postprocess(const std::string& command, std::ostream& out);
-    Postprocess(const std::string& command, std::ostream& out, const std::map<std::string, std::string>& cfg);
-    */
     virtual ~Postprocess();
 
     /**
@@ -49,7 +45,7 @@ public:
     void start();
 
     /// Set the output file descriptor where we send data coming from the postprocessor
-    void set_output(int outfd);
+    void set_output(NamedFileDescriptor& outfd);
 
     /// Set the output stream where we send the postprocessor stderr
     void set_error(std::ostream& err);
@@ -58,7 +54,7 @@ public:
      * Set hook to be called when the child process has produced its first
      * data, just before the data is sent to the next consumer
      */
-    void set_data_start_hook(std::function<void()> hook);
+    void set_data_start_hook(std::function<void(NamedFileDescriptor&)> hook);
 
     // Process one metadata
     bool process(std::unique_ptr<Metadata>&& md);
@@ -67,8 +63,5 @@ public:
     void flush();
 };
 
-
 }
-
-// vim:set ts=4 sw=4:
 #endif

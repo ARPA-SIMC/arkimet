@@ -206,9 +206,9 @@ struct BufState : public ReqState
 struct OstreamState : public ReqState
 {
     NamedFileDescriptor& out;
-    std::function<void()> data_start_hook;
+    std::function<void(NamedFileDescriptor&)> data_start_hook;
 
-    OstreamState(http::CurlEasy& curl, NamedFileDescriptor& out, std::function<void()> data_start_hook = 0)
+    OstreamState(http::CurlEasy& curl, NamedFileDescriptor& out, std::function<void(NamedFileDescriptor&)> data_start_hook = 0)
         : ReqState(curl), out(out), data_start_hook(data_start_hook)
     {
         checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, OstreamState::writefunc));
@@ -220,7 +220,7 @@ struct OstreamState : public ReqState
         OstreamState& s = *(OstreamState*)stream;
         if (s.data_start_hook && size > 0)
         {
-            s.data_start_hook();
+            s.data_start_hook(s.out);
             s.data_start_hook = nullptr;
         }
         if (size_t res = s.check_error(ptr, size, nmemb)) return res;

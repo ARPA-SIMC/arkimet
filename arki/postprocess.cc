@@ -60,41 +60,35 @@ struct Child : public utils::IODispatcher
 {
     /// Subcommand with the child to run
     utils::Subcommand cmd;
+
     /// Non-null if we should notify the hook as soon as some data arrives from the processor
-    std::function<void()> data_start_hook;
+    std::function<void(NamedFileDescriptor&)> data_start_hook;
+
     /**
      * Pipe used to send data from the subprocess to the output stream. It can
      * be -1 if the output stream does not provide a file descriptor to write
      * to
      */
-    int m_nextfd;
-    /**
-     * Output stream we eventually send data to.
-     *
-     * It can be NULL if we have only been given a file descriptor to send data
-     * to.
-     */
-    std::ostream* m_out;
-    /// Stream where child stderr is sent
-    std::ostream* m_err;
+    NamedFileDescriptor* m_nextfd = nullptr;
 
-    Child()
-        : utils::IODispatcher(cmd),
-          m_nextfd(-1), m_out(0), m_err(0)
+    /// Stream where child stderr is sent
+    std::ostream* m_err = 0;
+
+    Child() : utils::IODispatcher(cmd)
     {
     }
 
-    virtual void read_stdout()
+    void read_stdout() override
     {
 #if defined(__linux__)
 #ifdef HAVE_SPLICE
         // After we've seen some data, we can leave it up to splice
         if (!data_start_hook)
         {
-            if (m_nextfd != -1)
+            if (m_nextfd)
             {
                 // Try splice
-                ssize_t res = splice(outfd, NULL, m_nextfd, NULL, 4096*2, SPLICE_F_MORE);
+                ssize_t res = splice(outfd, NULL, *m_nextfd, NULL, 4096*2, SPLICE_F_MORE);
                 if (res >= 0)
                 {
                     if (res == 0)
@@ -123,42 +117,30 @@ struct Child : public utils::IODispatcher
         if (data_start_hook)
         {
             // Fire hook
-            data_start_hook();
+            data_start_hook(*m_nextfd);
             // Only once
             data_start_hook = nullptr;
         }
 
         // Pass it on
-        if (m_nextfd != -1)
+        Sigignore ignpipe(SIGPIPE);
+        size_t pos = 0;
+        while (m_nextfd && pos < (size_t)res)
         {
-            Sigignore ignpipe(SIGPIPE);
-            size_t pos = 0;
-            while (pos < (size_t)res)
+            ssize_t wres = write(*m_nextfd, buf+pos, res-pos);
+            if (wres < 0)
             {
-                ssize_t wres = write(m_nextfd, buf+pos, res-pos);
-                if (wres < 0)
+                if (errno == EPIPE)
                 {
-                    if (errno == EPIPE)
-                    {
-                        close(m_nextfd);
-                        m_nextfd = -1;
-                    } else
-                        throw_system_error("writing to destination file descriptor");
-                }
-                pos += wres;
+                    m_nextfd = nullptr;
+                } else
+                    throw_system_error("writing to destination file descriptor");
             }
-        }
-        else if (m_out != NULL)
-        {
-            m_out->write(buf, res);
-            if (m_out->bad())
-                throw_system_error("writing to destination stream");
-            if (m_out->eof())
-                m_out = NULL;
+            pos += wres;
         }
     }
 
-    virtual void read_stderr()
+    void read_stderr() override
     {
         if (m_err)
         {
@@ -211,9 +193,9 @@ Postprocess::~Postprocess()
     }
 }
 
-void Postprocess::set_output(int outfd)
+void Postprocess::set_output(NamedFileDescriptor& outfd)
 {
-    m_child->m_nextfd = outfd;
+    m_child->m_nextfd = &outfd;
 }
 
 void Postprocess::set_error(std::ostream& err)
@@ -221,7 +203,7 @@ void Postprocess::set_error(std::ostream& err)
     m_child->m_err = &err;
 }
 
-void Postprocess::set_data_start_hook(std::function<void()> hook)
+void Postprocess::set_data_start_hook(std::function<void(NamedFileDescriptor&)> hook)
 {
     m_child->data_start_hook = hook;
 }

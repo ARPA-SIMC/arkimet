@@ -102,7 +102,7 @@ struct DataProcessor : public SingleOutputProcessor
     vector<string> description_attrs;
     bool data_inline;
     bool server_side;
-    std::function<void()> data_start_hook;
+    std::function<void(NamedFileDescriptor&)> data_start_hook;
     bool any_output_generated = false;
 
     DataProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out, bool data_inline=false)
@@ -136,7 +136,7 @@ struct DataProcessor : public SingleOutputProcessor
     {
         if (!any_output_generated)
         {
-            if (data_start_hook) data_start_hook();
+            if (data_start_hook) data_start_hook(output);
             any_output_generated = true;
         }
     }
@@ -186,7 +186,7 @@ struct SummaryProcessor : public SingleOutputProcessor
     string summary_restrict;
     Summary summary;
     vector<string> description_attrs;
-    std::function<void()> data_start_hook;
+    std::function<void(NamedFileDescriptor&)> data_start_hook;
 
     SummaryProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out)
         : SingleOutputProcessor(out), matcher(q), printer(create_summary_printer(maker, output)), data_start_hook(maker.data_start_hook)
@@ -226,7 +226,7 @@ struct SummaryProcessor : public SingleOutputProcessor
 
     void do_output(const Summary& s)
     {
-        if (data_start_hook) data_start_hook();
+        if (data_start_hook) data_start_hook(output);
         printer(s);
     }
 };
@@ -259,7 +259,7 @@ struct SummaryShortProcessor : public SingleOutputProcessor
     Matcher matcher;
     summary_print_func printer;
     Summary summary;
-    std::function<void()> data_start_hook;
+    std::function<void(NamedFileDescriptor&)> data_start_hook;
     bool annotate;
     bool json;
 
@@ -269,7 +269,6 @@ struct SummaryShortProcessor : public SingleOutputProcessor
           data_start_hook(maker.data_start_hook),
           annotate(maker.annotate),
           json(maker.json)
-
     {
     }
 
@@ -287,7 +286,7 @@ struct SummaryShortProcessor : public SingleOutputProcessor
 
     void end() override
     {
-        if (data_start_hook) data_start_hook();
+        if (data_start_hook) data_start_hook(output);
         MDCollector c;
         summary.visit(c);
 

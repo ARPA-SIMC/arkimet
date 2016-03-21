@@ -53,7 +53,8 @@ TESTGRP(arki_postprocess);
 def_test(1)
 {
     Postprocess p("null");
-    p.set_output(STDERR_FILENO);
+    Stderr out;
+    p.set_output(out);
     p.validate(config.section("testall")->values());
     p.start();
 
@@ -66,7 +67,8 @@ def_test(1)
 def_test(2)
 {
     Postprocess p("null");
-    p.set_output(STDERR_FILENO);
+    Stderr out;
+    p.set_output(out);
     p.start();
 
     produceGRIB(p);

@@ -80,7 +80,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
             query_data(q, [&](unique_ptr<Metadata> md) {
                 if (first)
                 {
-                    if (q.data_start_hook) q.data_start_hook();
+                    if (q.data_start_hook) q.data_start_hook(out);
                     first = false;
                 }
                 if (!writer)

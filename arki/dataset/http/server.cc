@@ -237,7 +237,7 @@ void ReaderServer::do_summary(const LegacySummaryParams& parms, net::http::Reque
         sys::NamedFileDescriptor sockoutput(req.sock, "socket");
 
         // Hook sending headers to when the subprocess start sending
-        pmaker.data_start_hook = [&]{ headers.send_headers(); };
+        pmaker.data_start_hook = [&](NamedFileDescriptor&) { headers.send_headers(); };
 
         // Create the dataset processor for this query
         unique_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
@@ -281,7 +281,7 @@ void ReaderServer::do_summary_short(const LegacySummaryParams& parms, arki::util
         sys::NamedFileDescriptor sockoutput(req.sock, "socket");
 
         // Hook sending headers to when the subprocess start sending
-        pmaker.data_start_hook = [&]{ headers.send_headers(); };
+        pmaker.data_start_hook = [&](NamedFileDescriptor&) { headers.send_headers(); };
 
         // Create the dataset processor for this query
         unique_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
@@ -338,7 +338,7 @@ void ReaderServer::do_query(const LegacyQueryParams& parms, net::http::Request& 
         sys::NamedFileDescriptor sockoutput(req.sock, "socket");
 
         // Hook sending headers to when the subprocess start sending
-        pmaker.data_start_hook = [&]{ headers.send_headers(); };
+        pmaker.data_start_hook = [&](NamedFileDescriptor&) { headers.send_headers(); };
 
         // Create the dataset processor for this query
         unique_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
@@ -390,7 +390,7 @@ void ReaderServer::do_queryBytes(const QueryBytesParams& parms, net::http::Reque
     ByteQuery bq;
     parms.set_into(bq);
     // Send headers when data starts flowing
-    bq.data_start_hook = [&]{ headers.send_headers(); };
+    bq.data_start_hook = [&](NamedFileDescriptor&) { headers.send_headers(); };
 
     // Pick a nice extension
     switch (bq.type)
