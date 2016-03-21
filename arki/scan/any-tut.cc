@@ -105,7 +105,7 @@ def_test(2)
 {
     metadata::Collection mdc;
 #ifndef HAVE_DBALLE
-    ensure(not scan::scan("inbound/test.bufr", mdc));
+    ensure(not scan::scan("inbound/test.bufr", mdc.inserter_func()));
 #else
     vector<uint8_t> buf;
 
@@ -196,6 +196,7 @@ def_test(3)
 // Test reading update sequence numbers
 def_test(4)
 {
+#ifdef HAVE_DBALLE
     {
         // Gribs don't have update sequence numbrs, and the usn parameter must
         // be left untouched
@@ -221,6 +222,7 @@ def_test(4)
         ensure_equals(scan::update_sequence_number(mdc[0], usn), true);
         ensure_equals(usn, 2);
     }
+#endif
 }
 
 // Test reading NetCDF files

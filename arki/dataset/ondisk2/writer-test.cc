@@ -13,6 +13,7 @@
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/summary.h"
+#include "arki/libconfig.h"
 #include <sstream>
 #include <iostream>
 #include <algorithm>
@@ -620,6 +621,7 @@ add_method("summary_invalidate", [](Fixture& f) {
 // Try to reproduce a bug where two conflicting BUFR files were not properly
 // imported with USN handling
 add_method("regression_0", [](Fixture& f) {
+#ifdef HAVE_DBALLE
     ConfigFile cfg;
     cfg.setValue("path", "gts_temp");
     cfg.setValue("name", "gts_temp");
@@ -638,6 +640,7 @@ add_method("regression_0", [](Fixture& f) {
         ensure_equals(writer.acquire(md), Writer::ACQ_OK);
     ensure_equals(count, 2u);
     writer.flush();
+#endif
 });
 
 add_method("data_in_right_segment_reindex", [](Fixture& f) {

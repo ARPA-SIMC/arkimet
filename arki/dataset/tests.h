@@ -13,6 +13,7 @@
 #include <arki/sort.h>
 #include <arki/scan/any.h>
 #include <arki/utils/string.h>
+#include <arki/libconfig.h>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -253,6 +254,7 @@ struct BUFRData : Fixture
 {
     BUFRData()
     {
+#ifdef HAVE_DBALLE
         metadata::Collection mdc;
         scan::scan("inbound/test.bufr", mdc.inserter_func());
         format = "bufr";
@@ -262,6 +264,7 @@ struct BUFRData : Fixture
         test_data[1].set(mdc[1], "reftime:=2004-11-30; proddef:GRIB:blo=60");
         test_data[2].set(mdc[2], "reftime:=2004-11-30; proddef:GRIB:blo=6");
         finalise_init();
+#endif
     }
 };
 
