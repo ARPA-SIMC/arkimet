@@ -356,7 +356,6 @@ struct BinaryProcessor : public SingleOutputProcessor
         {
             description_attrs.push_back("postproc=" + maker.postprocess);
             query.setPostprocess(q, maker.postprocess);
-            query.data_start_hook = maker.data_start_hook;
 #ifdef HAVE_LUA
         } else if (!maker.report.empty()) {
             if (maker.summary)
@@ -377,6 +376,7 @@ struct BinaryProcessor : public SingleOutputProcessor
             description_attrs.push_back("sort=" + maker.sort);
             query.sorter = sort::Compare::parse(maker.sort);
         }
+        query.data_start_hook = maker.data_start_hook;
     }
 
     std::string describe() const override
