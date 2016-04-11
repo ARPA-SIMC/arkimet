@@ -664,6 +664,8 @@ def_test(15)
     metadata::Collection mdc("inbound/synop-gts.bufr");
     metadata::Collection mdc_upd("inbound/synop-gts-usn2.bufr");
 
+    wassert(actual(mdc.size()) == 1);
+
     // Acquire
     ensure_equals(bd.acquire(mdc[0]), Writer::ACQ_OK);
 
