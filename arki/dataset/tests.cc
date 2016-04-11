@@ -477,6 +477,8 @@ void corrupt_datafile(const std::string& absname)
         to_corrupt = str::joinpath(absname, selected);
     }
 
+    // fprintf(stderr, "CORRUPT %s\n", to_corrupt.c_str());
+
     // Corrupt the beginning of the file
     sys::File fd(to_corrupt, O_RDWR);
     ssize_t written = fd.pwrite("\0\0\0\0", 4, 0);
@@ -686,6 +688,12 @@ struct OperationResult : public MainteanceCheckResult
     {
         return "operation output not matched: " + type + " on " + name + ":" + operation + ": " + message;
     }
+
+    void dump(FILE* out) const
+    {
+        fprintf(out, "type %s, name %s, op %s, msg %s, matched %s\n",
+                type.c_str(), name.c_str(), operation.c_str(), message.c_str(), matched ? "true" : "false");
+    }
 };
 
 struct SegmentResult : public MainteanceCheckResult
@@ -705,6 +713,12 @@ struct SegmentResult : public MainteanceCheckResult
     string error_unmatched() const
     {
         return "segment output not matched: " + type + " on " + name + ": " + message;
+    }
+
+    void dump(FILE* out) const
+    {
+        fprintf(out, "type %s, name %s, msg %s, matched %s\n",
+                type.c_str(), name.c_str(), message.c_str(), matched ? "true" : "false");
     }
 };
 
@@ -786,6 +800,18 @@ struct MainteanceCheckResults : public std::vector<Result>
             report_extra_info(r.name, issues);
         }
     }
+
+    void dump(FILE* out) const
+    {
+        for (const auto& r: *this)
+        {
+            r.dump(out);
+            auto i = extra_info.find(r.name);
+            if (i == extra_info.end()) continue;
+            for (const auto& line: i->second)
+                fprintf(out, " extra info: %s\n", line.c_str());
+        }
+    }
 };
 
 struct CollectReporter : public dataset::Reporter
@@ -843,6 +869,14 @@ struct CollectReporter : public dataset::Reporter
             throw TestFailed(ss.str());
         }
     }
+
+    void dump(FILE* out) const
+    {
+        fprintf(out, "Operation:\n");
+        op_results.dump(out);
+        fprintf(out, "Segment:\n");
+        seg_results.dump(out);
+    }
 };
 
 template<typename Dataset>
@@ -858,6 +892,7 @@ void ActualChecker<Dataset>::check(const ReporterExpected& expected, bool write,
 {
     CollectReporter reporter;
     wassert(this->_actual->check(reporter, write, quick));
+    // reporter.dump(stderr);
     wassert(reporter.check(expected));
 }
 

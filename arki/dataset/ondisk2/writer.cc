@@ -230,7 +230,7 @@ void Writer::remove(Metadata& md)
 
 void Writer::flush()
 {
-    SegmentedWriter::flush();
+    IndexedWriter::flush();
     idx->flush();
 }
 
@@ -241,7 +241,7 @@ Pending Writer::test_writelock()
 
 void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
-    SegmentedChecker::check(reporter, fix, quick);
+    IndexedChecker::check(reporter, fix, quick);
 
     if (!idx->checkSummaryCache(*this, reporter) && fix)
     {
@@ -294,6 +294,7 @@ struct IDMaker
 void Checker::rescanSegment(const std::string& relpath)
 {
     string pathname = str::joinpath(m_path, relpath);
+    //fprintf(stderr, "Checker::rescanSegment %s\n", pathname.c_str());
 
     // Temporarily uncompress the file for scanning
     unique_ptr<utils::compress::TempUnzip> tu;
@@ -304,7 +305,7 @@ void Checker::rescanSegment(const std::string& relpath)
     metadata::Collection mds;
     if (!scan::scan(pathname, mds.inserter_func()))
         throw std::runtime_error("cannot rescan " + pathname + ": file format unknown");
-    // cerr << " SCANNED " << pathname << ": " << mds.size() << endl;
+    //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
 
     // Lock away writes and reads
     Pending p = idx->beginExclusiveTransaction();
@@ -424,7 +425,7 @@ size_t Checker::removeSegment(const std::string& relpath, bool withData)
 {
     idx->reset(relpath);
     // TODO: also remove .metadata and .summary files
-    return SegmentedChecker::removeSegment(relpath, withData);
+    return IndexedChecker::removeSegment(relpath, withData);
 }
 
 void Checker::archiveSegment(const std::string& relpath)
@@ -440,8 +441,8 @@ void Checker::archiveSegment(const std::string& relpath)
     // Remove from index
     idx->reset(relpath);
 
-    // Delegate the rest to SegmentedChecker
-    SegmentedChecker::archiveSegment(relpath);
+    // Delegate the rest to IndexedChecker
+    IndexedChecker::archiveSegment(relpath);
 }
 
 size_t Checker::vacuum()

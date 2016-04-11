@@ -326,8 +326,44 @@ State Segment::check(dataset::Reporter& reporter, const std::string& ds, const m
         ++next_sequence_expected;
     }
 
-    if (!expected.empty())
+    State res = SEGMENT_OK;
+
+    for (const auto& idx: expected)
     {
+        if (validator)
+        {
+            string fname = str::joinpath(absname, seqfile.data_fname(idx, format));
+            metadata::Collection mds;
+            try {
+                scan::scan(fname, [&](unique_ptr<Metadata> md) {
+                    mds.acquire(move(md));
+                    return true;
+                }, format);
+            } catch (std::exception& e) {
+                stringstream out;
+                out << "scan of unexpected file failed at " << absname << ":" << idx << ": " << e.what();
+                reporter.segment_info(ds, relname, out.str());
+                res = SEGMENT_DIRTY;
+                continue;
+            }
+
+            if (mds.size() == 0)
+            {
+                stringstream ss;
+                ss << "file does not contain any " << format << " items";
+                reporter.segment_info(ds, relname, ss.str());
+                res = SEGMENT_DIRTY;
+                continue;
+            }
+
+            if (mds.size() > 1)
+            {
+                stringstream ss;
+                ss << "file contains " << mds.size() << " " << format << " items instead of 1";
+                reporter.segment_info(ds, relname, ss.str());
+                return SEGMENT_CORRUPTED;
+            }
+        }
         stringstream ss;
         ss << "found " << expected.size() << " file(s) that the index does now know about";
         reporter.segment_info(ds, relname, ss.str());
@@ -340,7 +376,7 @@ State Segment::check(dataset::Reporter& reporter, const std::string& ds, const m
         reporter.segment_info(ds, relname, "contains deleted data or data to be reordered");
         return SEGMENT_DIRTY;
     } else {
-        return SEGMENT_OK;
+        return res;
     }
 }
 
@@ -352,7 +388,7 @@ void Segment::validate(Metadata& md, const scan::Validator& v)
 
         string fname = str::joinpath(absname, seqfile.data_fname(blob->offset, blob->format));
         sys::File fd(fname, O_RDONLY);
-        v.validate_file(fd, blob->offset, blob->size);
+        v.validate_file(fd, 0, blob->size);
         return;
     }
     const auto& buf = md.getData();
