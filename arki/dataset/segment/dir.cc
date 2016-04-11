@@ -350,7 +350,7 @@ void Segment::validate(Metadata& md, const scan::Validator& v)
         if (blob->filename != relname)
             throw std::runtime_error("metadata to validate does not appear to be from this segment");
 
-        string fname = seqfile.data_fname(blob->offset, blob->format);
+        string fname = str::joinpath(absname, seqfile.data_fname(blob->offset, blob->format));
         sys::File fd(fname, O_RDONLY);
         v.validate_file(fd, blob->offset, blob->size);
         return;
