@@ -87,7 +87,9 @@ int main(int argc, const char* argv[])
                 opts.closeSource(move(datasets[i]), all_successful);
         } else if (opts.qmacro->isSet()) {
             // Create the virtual qmacro dataset
+            ConfigFile cfg;
             unique_ptr<dataset::Reader> ds = runtime::make_qmacro_dataset(
+                    cfg,
                     opts.inputInfo,
                     opts.qmacro->stringValue(),
                     opts.strquery);

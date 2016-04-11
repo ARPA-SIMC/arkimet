@@ -24,7 +24,7 @@ using namespace arki::types;
 using arki::core::Time;
 
 struct arki_querymacro_shar {
-	ConfigFile cfg;
+    ConfigFile dispatch_cfg;
 
 	arki_querymacro_shar()
 	{
@@ -43,14 +43,14 @@ struct arki_querymacro_shar {
             "filter = origin: GRIB1,200\n"
             "name = testds\n"
             "path = testds\n";
-        cfg.parse(conf, "(memory)");
+        dispatch_cfg.parse(conf, "(memory)");
 
 		// Import all data from test.grib1
 		Metadata md;
 		scan::Grib scanner;
 		scanner.open("inbound/test.grib1");
 
-        dataset::ondisk2::Writer testds(*cfg.section("testds"));
+        dataset::ondisk2::Writer testds(*dispatch_cfg.section("testds"));
         vector<Time> times;
         times.push_back(Time(2009, 8, 7, 0, 0, 0));
         times.push_back(Time(2009, 8, 8, 0, 0, 0));
@@ -74,7 +74,8 @@ TESTGRP(arki_querymacro);
 // Test running queries from Lua
 def_test(1)
 {
-	Querymacro qm(cfg, "test0", "foo");
+    ConfigFile cfg;
+    Querymacro qm(cfg, dispatch_cfg, "test0", "foo");
 
 	lua_getglobal(*qm.L, "count1");
 	int count1 = lua_tointeger(*qm.L, -1);
@@ -91,7 +92,8 @@ def_test(1)
 // Lua script that simply passes through the queries
 def_test(2)
 {
-    Querymacro qm(cfg, "noop", "testds");
+    ConfigFile cfg;
+    Querymacro qm(cfg, dispatch_cfg, "noop", "testds");
 
     metadata::Collection mdc(qm, Matcher());
     ensure_equals(mdc.size(), 9u);
@@ -107,7 +109,8 @@ def_test(2)
 // Lua script that simply passes through the queries, making temporary copies of data
 def_test(3)
 {
-    Querymacro qm(cfg, "noopcopy", "testds");
+    ConfigFile cfg;
+    Querymacro qm(cfg, dispatch_cfg, "noopcopy", "testds");
 
     metadata::Collection mdc(qm, Matcher());
     ensure_equals(mdc.size(), 9u);
@@ -123,11 +126,12 @@ def_test(3)
 // Try "expa" matchers
 def_test(4)
 {
-	Querymacro qm(cfg, "expa", 
-			"ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
-			"ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
-//			utils::readFile("misc/erse00.expa")
-	);
+    ConfigFile cfg;
+    Querymacro qm(cfg, dispatch_cfg, "expa", 
+            "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
+            "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
+    //          utils::readFile("misc/erse00.expa")
+    );
 
     metadata::Collection mdc(qm, Matcher());
     ensure_equals(mdc.size(), 2u);
@@ -142,11 +146,12 @@ def_test(4)
 // Try "expa" matchers with parameter
 def_test(5)
 {
-	Querymacro qm(cfg, "expa 2009-08-08", 
-			"ds:testds. d:@. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
-			"ds:testds. d:@-1. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
-//			utils::readFile("misc/erse00.expa")
-	);
+    ConfigFile cfg;
+    Querymacro qm(cfg, dispatch_cfg, "expa 2009-08-08", 
+            "ds:testds. d:@. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
+            "ds:testds. d:@-1. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
+//          utils::readFile("misc/erse00.expa")
+    );
 
     metadata::Collection mdc(qm, Matcher());
     ensure_equals(mdc.size(), 2u);
@@ -162,13 +167,14 @@ def_test(5)
 // Try "gridspace" matchers
 def_test(6)
 {
-	{
-		Querymacro qm(cfg, "gridspace", 
-				"dataset: testds\n"
-				"addtime: 2009-08-07 00:00:00\n"
-				"add: timerange:AN; level:G00; product:GRIB1,200,140,229\n"
-				"add: timerange:GRIB1,1; level:MSL; product:GRIB1,80,2,2\n"
-		);
+    ConfigFile cfg;
+    {
+        Querymacro qm(cfg, dispatch_cfg, "gridspace", 
+                "dataset: testds\n"
+                "addtime: 2009-08-07 00:00:00\n"
+                "add: timerange:AN; level:G00; product:GRIB1,200,140,229\n"
+                "add: timerange:GRIB1,1; level:MSL; product:GRIB1,80,2,2\n"
+        );
 
         metadata::Collection mdc(qm, Matcher());
         ensure_equals(mdc.size(), 2u);
@@ -179,13 +185,13 @@ def_test(6)
         qm.query_summary(Matcher::parse(""), s);
         ensure_equals(s.count(), 2u);
     }
-	{
-		Querymacro qm(cfg, "gridspace", 
-				"dataset: testds\n"
-				"addtimes: 2009-08-07 00:00:00 2009-08-08 00:00:00 86400\n"
-				"add: timerange:AN; level:G00; product:GRIB1,200,140,229\n"
-				"add: timerange:GRIB1,1; level:MSL; product:GRIB1,80,2,2\n"
-		);
+    {
+        Querymacro qm(cfg, dispatch_cfg, "gridspace", 
+                "dataset: testds\n"
+                "addtimes: 2009-08-07 00:00:00 2009-08-08 00:00:00 86400\n"
+                "add: timerange:AN; level:G00; product:GRIB1,200,140,229\n"
+                "add: timerange:GRIB1,1; level:MSL; product:GRIB1,80,2,2\n"
+        );
 
         metadata::Collection mdc(qm, Matcher());
         ensure_equals(mdc.size(), 2u);
@@ -201,7 +207,8 @@ def_test(6)
 // Try "expa" matchers with inline option
 def_test(7)
 {
-    Querymacro qm(cfg, "expa",
+    ConfigFile cfg;
+    Querymacro qm(cfg, dispatch_cfg, "expa",
             "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
             );
@@ -221,7 +228,8 @@ def_test(7)
 // TODO: ensure sorting
 def_test(8)
 {
-    Querymacro qm(cfg, "expa",
+    ConfigFile cfg;
+    Querymacro qm(cfg, dispatch_cfg, "expa",
             "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:2009-08-08. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
             );
@@ -241,5 +249,3 @@ def_test(8)
 }
 
 }
-
-// vim:set ts=4 sw=4:

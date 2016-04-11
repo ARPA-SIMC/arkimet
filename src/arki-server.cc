@@ -381,8 +381,13 @@ struct RootQueryHandler : public LocalHandler
         string macroname = str::strip(*qmacro);
         if (macroname.empty())
             throw error400("root-level query without qmacro parameter");
+
+        ConfigFile dsconf;
+        string url(req.server_name);
+        url += req.script_name;
+        dsconf.setValue("url", url);
         unique_ptr<dataset::Reader> ds = runtime::make_qmacro_dataset(
-                req.arki_conf, macroname, *params.query, req.server_name);
+                dsconf, req.arki_conf, macroname, *params.query, req.server_name);
 
         // params.query contains the qmacro query body; we need to clear the
         // query so do_query gets an empty match expression
@@ -414,9 +419,15 @@ struct RootSummaryHandler : public LocalHandler
             // Create a merge dataset with all we have
             ds.reset(new dataset::AutoMerged(req.arki_conf));
         else
+        {
             // Create qmacro dataset
+            ConfigFile dsconf;
+            string url(req.server_name);
+            url += req.script_name;
+            dsconf.setValue("url", url);
             ds = runtime::make_qmacro_dataset(
-                req.arki_conf, macroname, *query);
+                dsconf, req.arki_conf, macroname, *query);
+        }
 
         // Query the summary
         Summary sum;

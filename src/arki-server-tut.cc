@@ -206,7 +206,7 @@ void to::test<8>()
     metadata::Collection mdc(*testds, Matcher());
     ensure_equals(mdc.size(), 1u);
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_url("grib", "http://localhost:7117/dataset/test200/query"));
+    wassert(actual_type(mdc[0].source()).is_source_url("grib", "http://localhost:7117/query"));
 }
 
 // Test querying the summary

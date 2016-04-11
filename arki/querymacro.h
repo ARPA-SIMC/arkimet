@@ -19,24 +19,23 @@ class Reader;
 class Querymacro : public dataset::Reader
 {
 protected:
-	std::map<std::string, Reader*> ds_cache;
-	// std::map<std::string, int> ref_cache;
+    std::map<std::string, Reader*> ds_cache;
 
 public:
-	const ConfigFile& cfg;
-	Lua *L;
-	int funcid_querydata;
-	int funcid_querysummary;
+    const ConfigFile& dispatch_cfg;
+    Lua *L;
+    int funcid_querydata;
+    int funcid_querysummary;
 
-	/**
-	 * Create a query macro read from the query macro file with the given
-	 * name.
-	 *
-	 * @param cfg
-	 *   Configuration used to instantiate datasets
-	 */
-	Querymacro(const ConfigFile& cfg, const std::string& name, const std::string& query);
-	virtual ~Querymacro();
+    /**
+     * Create a query macro read from the query macro file with the given
+     * name.
+     *
+     * @param cfg
+     *   Configuration used to instantiate datasets
+     */
+    Querymacro(const ConfigFile& ds_cfg, const ConfigFile& dispatch_cfg, const std::string& name, const std::string& query);
+    virtual ~Querymacro();
 
     std::string type() const override;
 

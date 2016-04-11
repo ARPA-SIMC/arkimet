@@ -63,15 +63,15 @@ void init()
 HandledByCommandLineParser::HandledByCommandLineParser(int status) : status(status) {}
 HandledByCommandLineParser::~HandledByCommandLineParser() {}
 
-std::unique_ptr<dataset::Reader> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query, const std::string& url)
+std::unique_ptr<dataset::Reader> make_qmacro_dataset(const ConfigFile& ds_cfg, const ConfigFile& dispatch_cfg, const std::string& qmacroname, const std::string& query, const std::string& url)
 {
     unique_ptr<dataset::Reader> ds;
-    string baseurl = dataset::HTTP::allSameRemoteServer(cfg);
+    string baseurl = dataset::HTTP::allSameRemoteServer(dispatch_cfg);
     if (baseurl.empty())
     {
         // Create the local query macro
         nag::verbose("Running query macro %s on local datasets", qmacroname.c_str());
-        ds.reset(new Querymacro(cfg, qmacroname, query));
+        ds.reset(new Querymacro(ds_cfg, dispatch_cfg, qmacroname, query));
     } else {
         // Create the remote query macro
         nag::verbose("Running query macro %s on %s", qmacroname.c_str(), baseurl.c_str());
