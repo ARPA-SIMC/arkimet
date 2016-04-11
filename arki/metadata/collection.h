@@ -11,6 +11,10 @@ namespace arki {
 struct Metadata;
 struct Summary;
 
+namespace metadata {
+struct ReadContext;
+}
+
 namespace core {
 struct Time;
 }
@@ -91,6 +95,9 @@ public:
      * Write all metadata to the given output file
      */
     void write_to(int out, const std::string& fname) const;
+
+    /// Read metadata from \a pathname and append them to this collection
+    void read_from_file(const metadata::ReadContext& rc);
 
     /// Read metadata from \a pathname and append them to this collection
     void read_from_file(const std::string& pathname);

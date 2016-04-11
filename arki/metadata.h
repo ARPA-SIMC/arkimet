@@ -24,11 +24,27 @@ namespace metadata {
 
 struct ReadContext
 {
+    /**
+     * Absolute path of the root directory for relative paths in the Metadata's
+     * source filenames
+     */
     std::string basedir;
+
+    /// Absolute path of the file to read
     std::string pathname;
 
     ReadContext();
+
+    /**
+     * A file to read, with metadata source filenames rooted in
+     * dirname(pathname)
+     */
     ReadContext(const std::string& pathname);
+
+    /**
+     * A file to read, with metadata source filenames rooted in the given
+     * directory.
+     */
     ReadContext(const std::string& pathname, const std::string& basedir);
 };
 

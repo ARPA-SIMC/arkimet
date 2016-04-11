@@ -189,6 +189,11 @@ void Collection::write_to(int out, const std::string& fname) const
         compressAndWrite(buf, out, fname);
 }
 
+void Collection::read_from_file(const metadata::ReadContext& rc)
+{
+    Metadata::read_file(rc, inserter_func());
+}
+
 void Collection::read_from_file(const std::string& pathname)
 {
     Metadata::read_file(pathname, inserter_func());

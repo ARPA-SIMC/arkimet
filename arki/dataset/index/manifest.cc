@@ -2,6 +2,7 @@
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
 #include "arki/dataset/maintenance.h"
+#include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/consumer.h"
 #include "arki/types/source/blob.h"
@@ -67,7 +68,15 @@ void scan_file(const std::string& root, const std::string& relname, segment::Sta
     // TODO: turn this into a Segment::exists/Segment::scan
     metadata::Collection contents;
     if (sys::exists(absname + ".metadata"))
-        contents.read_from_file(absname + ".metadata");
+    {
+        Metadata::read_file(metadata::ReadContext(absname + ".metadata", root), [&](unique_ptr<Metadata> md) {
+            // Tweak Blob sources replacing the file name with relname
+            if (const source::Blob* s = md->has_source_blob())
+                md->set_source(Source::createBlob(s->format, root, relname, s->offset, s->size));
+            contents.acquire(move(md));
+            return true;
+        });
+    }
     else if (scan::exists(absname))
         // If scan_file is called, the index know about the file, so instead of
         // saying SEGMENT_NEW because we have data without metadata, we say
