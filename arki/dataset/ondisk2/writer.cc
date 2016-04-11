@@ -469,39 +469,51 @@ size_t Checker::vacuum()
 
 Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
-	// TODO
-#if 0
-	wibble::sys::fs::Lockfile lockfile(wibble::str::joinpath(cfg.value("path"), "lock"));
+    ReplaceStrategy replace;
+    string repl = cfg.value("replace");
+    if (repl == "yes" || repl == "true" || repl == "always")
+        replace = REPLACE_ALWAYS;
+    else if (repl == "USN")
+        replace = REPLACE_HIGHER_USN;
+    else if (repl == "" || repl == "no" || repl == "never")
+        replace = REPLACE_NEVER;
+    else
+        throw std::runtime_error("Replace strategy '" + repl + "' is not recognised in dataset configuration");
 
-	string name = cfg.value("name");
-	try {
-		if (ConfigFile::boolValue(cfg.value("replace")))
-		{
-			if (cfg.value("index") != string())
-				ondisk::writer::IndexedRootDirectory::testReplace(cfg, md, out);
-			else
-				ondisk::writer::RootDirectory::testReplace(cfg, md, out);
-			return ACQ_OK;
-		} else {
-			try {
-				if (cfg.value("index") != string())
-					ondisk::writer::IndexedRootDirectory::testAcquire(cfg, md, out);
-				else
-					ondisk::writer::RootDirectory::testAcquire(cfg, md, out);
-				return ACQ_OK;
-			} catch (Index::DuplicateInsert& di) {
-				out << "Source information restored to original value" << endl;
-				out << "Failed to store in dataset '"+name+"' because the dataset already has the data: " + di.what() << endl;
-				return ACQ_ERROR_DUPLICATE;
-			}
-		}
-	} catch (std::exception& e) {
-		out << "Source information restored to original value" << endl;
-		out << "Failed to store in dataset '"+name+"': " + e.what() << endl;
-		return ACQ_ERROR;
-	}
-#endif
-    throw std::runtime_error("testAcquire not implemented for ondisk2 datasets");
+    // TODO: refuse if md is before "archive age"
+
+    if (replace == REPLACE_ALWAYS) return ACQ_OK;
+
+    index::RContents idx(cfg);
+    idx.open();
+
+    Metadata old_md;
+    bool exists = idx.get_current(md, old_md);
+
+    if (!exists) return ACQ_OK;
+
+    if (replace == REPLACE_NEVER) return ACQ_ERROR_DUPLICATE;
+
+    // We are left with the case of REPLACE_HIGHER_USN
+
+    // Read the update sequence number of the new BUFR
+    int new_usn;
+    Metadata tmpmd(md);
+    if (!scan::update_sequence_number(tmpmd, new_usn))
+        return ACQ_ERROR_DUPLICATE;
+
+    // Read the update sequence number of the old BUFR
+    int old_usn;
+    if (!scan::update_sequence_number(old_md, old_usn))
+    {
+        out << "cannot acquire into dataset: insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
+        return ACQ_ERROR;
+    }
+
+    // If there is no new Update Sequence Number, report a duplicate
+    if (old_usn > new_usn)
+        return ACQ_ERROR_DUPLICATE;
+    return ACQ_OK;
 }
 
 }
