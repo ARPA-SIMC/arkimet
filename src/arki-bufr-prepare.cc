@@ -50,7 +50,35 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-class Copier
+struct Output
+{
+    unique_ptr<dballe::File> output_ok;
+    unique_ptr<dballe::File> output_fail;
+
+    void open_ok_stdout()
+    {
+        output_ok = dballe::File::create(dballe::File::BUFR, stdout, false, "[standard output]");
+    }
+
+    void open_ok_file(const std::string& pathname)
+    {
+        output_ok = dballe::File::create(dballe::File::BUFR, pathname, "wb");
+    }
+
+    void ok(const std::string& buf)
+    {
+        if (!output_ok.get()) return;
+        output_ok->write(buf);
+    }
+
+    void fail(const std::string& buf)
+    {
+        if (!output_fail.get()) return;
+        output_fail->write(buf);
+    }
+};
+
+struct Copier
 {
 protected:
     bool override_usn_active;
@@ -90,7 +118,7 @@ protected:
         dst.load_tables();
     }
 
-    void splitmsg(const BinaryMessage& rmsg, const BufrBulletin& msg, msg::Importer& importer, dballe::File& outfile)
+    void splitmsg(const BinaryMessage& rmsg, const BufrBulletin& msg, msg::Importer& importer, Output& output)
     {
         // Create new message with the same info as the old one
         auto newmsg(BufrBulletin::create());
@@ -129,7 +157,7 @@ protected:
 
             // Write out the message
             string newrmsg = newmsg->encode();
-            outfile.write(newrmsg);
+            output.ok(newrmsg);
         }
     }
 
@@ -144,22 +172,22 @@ public:
         override_usn_value = value;
     }
 
-    void process_stdin(dballe::File& outfile)
+    void process_stdin(Output& output)
     {
         unique_ptr<dballe::File> file(dballe::File::create(dballe::File::BUFR, stdin, false, "[standard input]").release());
-        process(*file, outfile);
+        process(*file, output);
     }
 
-    void process(const std::string& filename, dballe::File& outfile)
+    void process(const std::string& filename, Output& output)
     {
         unique_ptr<dballe::File> file(dballe::File::create(dballe::File::BUFR, filename.c_str(), "r").release());
-        process(*file, outfile);
+        process(*file, output);
     }
 
-    void process(dballe::File& infile, dballe::File& outfile)
+    void process(dballe::File& infile, Output& output)
     {
         // Use .release() so the code is the same even with the new C++11's dballe
-        unique_ptr<msg::Importer> importer(msg::Importer::create(dballe::File::BUFR).release());
+        unique_ptr<msg::Importer> importer = msg::Importer::create(dballe::File::BUFR);
 
         while (BinaryMessage rmsg = infile.read())
         {
@@ -170,15 +198,17 @@ public:
                 msg = BufrBulletin::decode(rmsg.data, rmsg.pathname.c_str(), rmsg.offset);
                 decoded = true;
             } catch (std::exception& e) {
-                nag::warning("%s:%ld: BUFR #%d failed to decode: %s. Passing it through unmodified.",
+                nag::warning("%s:%ld: BUFR #%d failed to decode: %s.",
                     rmsg.pathname.c_str(), rmsg.offset, rmsg.index, e.what());
                 decoded = false;
             }
 
-            if ((!decoded || msg->subsets.size() == 1u) && !override_usn_active)
-                outfile.write(rmsg.data);
+            if (!decoded)
+                output.fail(rmsg.data);
+            else if (msg->subsets.size() == 1u && !override_usn_active)
+                output.ok(rmsg.data);
             else
-                splitmsg(rmsg, *msg, *importer, outfile);
+                splitmsg(rmsg, *msg, *importer, output);
         }
     }
 };
@@ -195,22 +225,21 @@ int main(int argc, const char* argv[])
         runtime::init();
 
         Copier copier;
-
         if (opts.force_usn->isSet())
             copier.override_usn(opts.force_usn->intValue());
 
-        unique_ptr<dballe::File> outfile;
+        Output output;
         if (opts.outfile->isSet())
-            outfile.reset(dballe::File::create(dballe::File::BUFR, opts.outfile->stringValue().c_str(), "wb").release());
+            output.open_ok_file(opts.outfile->stringValue());
         else
-            outfile.reset(dballe::File::create(dballe::File::BUFR, stdout, false, "[standard output]").release());
+            output.open_ok_stdout();
 
         if (!opts.hasNext())
         {
-            copier.process_stdin(*outfile);
+            copier.process_stdin(output);
         } else {
             while (opts.hasNext())
-                copier.process(opts.next().c_str(), *outfile);
+                copier.process(opts.next().c_str(), output);
         }
 
         return 0;
