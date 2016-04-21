@@ -27,6 +27,7 @@ struct Options : public StandardParserWithManpage
     BoolOption* verbose;
     BoolOption* debug;
     StringOption* outfile;
+    StringOption* failfile;
     IntOption* force_usn;
 
     Options() : StandardParserWithManpage("arki-bufr-prepare", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
@@ -41,6 +42,8 @@ struct Options : public StandardParserWithManpage
         verbose = add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
         outfile = add<StringOption>("output", 'o', "output", "file",
                 "write the output to the given file instead of standard output");
+        failfile = add<StringOption>("fail", 0, "fail", "file",
+                "do not ignore BUFR data that could not be decoded, but write it to the given file");
         force_usn = add<IntOption>("usn", 0, "usn", "number",
                 "overwrite the update sequence number of every BUFR message with this value");
     }
@@ -63,6 +66,11 @@ struct Output
     void open_ok_file(const std::string& pathname)
     {
         output_ok = dballe::File::create(dballe::File::BUFR, pathname, "wb");
+    }
+
+    void open_fail_file(const std::string& pathname)
+    {
+        output_fail = dballe::File::create(dballe::File::BUFR, pathname, "wb");
     }
 
     void ok(const std::string& buf)
@@ -233,6 +241,9 @@ int main(int argc, const char* argv[])
             output.open_ok_file(opts.outfile->stringValue());
         else
             output.open_ok_stdout();
+
+        if (opts.failfile->isSet())
+            output.open_fail_file(opts.failfile->stringValue());
 
         if (!opts.hasNext())
         {
