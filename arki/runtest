@@ -1,19 +1,27 @@
 #!/bin/sh -e
 
 TOP_SRCDIR=`pwd`/`dirname $0`/..
+PYTHON=${PYTHON:-python3}
 
-CMD=`pwd`/"$1"
+if [ "$1" = "nose2-3" ]
+then
+    CMD="$1 -s `pwd`"
+    DEBUG_CMD="$PYTHON `which nose2-3` -s `pwd`"
+else
+    CMD=`pwd`/"$1"
+    DEBUG_CMD="$CMD"
+fi
 
 ## Run under eatmydata if available
 
 libeatmydata="/usr/lib/libeatmydata/libeatmydata.so"
 if [ -e $libeatmydata ]
 then
-	if [ -n "$LD_PRELOAD" ]; then
-		export LD_PRELOAD="$libeatmydata $LD_PRELOAD"
-	else
-		export LD_PRELOAD="$libeatmydata"
-	fi
+    if [ -n "$LD_PRELOAD" ]; then
+        export LD_PRELOAD="$libeatmydata $LD_PRELOAD"
+    else
+        export LD_PRELOAD="$libeatmydata"
+    fi
 fi
 
 
@@ -30,18 +38,20 @@ export ARKI_QMACRO=$TOP_SRCDIR/conf/qmacro/
 export ARKI_TARGETFILE=$TOP_SRCDIR/conf/targetfile/
 export ARKI_ALIASES=$TOP_SRCDIR/test/conf/match-alias.conf
 export ARKI_POSTPROC=./postproc
+export PYTHONPATH=$TOP_SRCDIR/python/
 export METEO_VM2_SOURCE="$TOP_SRCDIR/conf/vm2/source.lua"
 ulimit -v 1048576 || true
 
 ORIGDIR=`pwd`
 if which mktemp > /dev/null
 then
-	TESTDIR="`mktemp -d`"
+    TESTDIR="`mktemp -d`"
 else
-	TESTDIR="/tmp/arkitest.$$"
-	mkdir $TESTDIR
+    TESTDIR="/tmp/arkitest.$$"
+    mkdir $TESTDIR
 fi
 
+echo "Moving to test directory $TESTDIR"
 cd "$TESTDIR"
 
 
@@ -63,7 +73,14 @@ mkdir error
 
 ## Clean up the test environment at exit unless asked otherwise
 cleanup() {
-	test -z "$PRESERVE" && cd $ORIGDIR && rm -rf "$TESTDIR"
+    if [ ! -z "$PAUSE" ]
+    then
+        echo "Post-test inspection requested."
+        echo "Exit this shell to cleanup the test environment."
+        bash
+    fi
+
+    test -z "$PRESERVE" && rm -rf "$TESTDIR"
 }
 trap cleanup EXIT
 
@@ -74,33 +91,23 @@ trap cleanup EXIT
 #echo Output saved in `pwd`/testrun-$id
 
 # Try to debug the libtool executable, if present
-DIR=`dirname $CMD`
-BASE=`basename $CMD`
-if [ ! -z "$DEBUGGER" ] && [ -x $DIR/.libs/lt-$BASE ]
+if [ ! -z "$DEBUGGER" ]
 then
-	echo "Running $DEBUGGER $DIR/.libs/lt-$BASE $ARGS"
-	RES=0
-	if ! $DEBUGGER $DIR/.libs/lt-$BASE $ARGS
-	then
-		RES=$?
-		echo "Failed with result $RES"
-	fi
+    echo "Running $DEBUGGER $DEBUG_CMD $ARGS"
+    RES=0
+    if ! libtool --mode=execute $DEBUGGER $DEBUG_CMD $ARGS
+    then
+        RES=$?
+        echo "Failed with result $RES"
+    fi
 else
-	echo "Running $DEBUGGER $CMD $ARGS"
-	RES=0
-	if !  $DEBUGGER $CMD $ARGS
-	then
-		RES=$?
-		echo "Failed with result $RES"
-	fi
-fi
-
-
-if [ ! -z "$PAUSE" ]
-then
-	echo "Post-test inspection requested."
-	echo "Exit this shell to cleanup the test environment."
-	bash
+    echo "Running $CMD $ARGS"
+    RES=0
+    if ! $CMD $ARGS
+    then
+        RES=$?
+        echo "Failed with result $RES"
+    fi
 fi
 
 exit $RES

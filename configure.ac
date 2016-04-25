@@ -5,8 +5,14 @@ AC_CONFIG_SRCDIR([configure.ac])
 AM_INIT_AUTOMAKE([foreign subdir-objects nostdinc])
 AC_CONFIG_HEADER(config.h)
 AC_CONFIG_HEADER(arki/libconfig.h)
-
 AC_CONFIG_MACRO_DIR([m4])
+
+dnl Use libtool
+dnl AM_ENABLE_STATIC
+dnl AM_DISABLE_SHARED
+LT_INIT
+LT_LANG([C++])
+AC_PROG_LIBTOOL
 
 AC_ARG_ENABLE([bufr],
     [AS_HELP_STRING(
@@ -57,17 +63,14 @@ AC_ISC_POSIX
 AC_PROG_CC
 AC_PROG_CXX
 
+dnl Use c++11
+AX_CXX_COMPILE_STDCXX_11(noext)
+
 AM_PROG_LEX
 AC_PROG_YACC
 
 AM_PROG_CC_STDC
 AC_HEADER_STDC
-
-dnl Use c++11
-AX_CXX_COMPILE_STDCXX_11(noext)
-
-dnl Check that exceptions are working
-dnl AC_CHECK_CXX_EH
 
 dnl Needed by subdir-objects
 AM_PROG_CC_C_O
@@ -85,12 +88,6 @@ then
     FILE_OFFSET_BITS_64=yes
 fi
 AM_CONDITIONAL([FILE_OFFSET_BITS_64], [test x"$FILE_OFFSET_BITS_64" = x"yes"])
-
-dnl Use libtool
-dnl AM_ENABLE_STATIC
-dnl AM_DISABLE_SHARED
-LT_INIT
-AC_PROG_LIBTOOL
 
 dnl Check what libc features are available on this system
 gl_CHECK_TYPE_STRUCT_DIRENT_D_TYPE
@@ -317,6 +314,17 @@ fi
 AM_CONDITIONAL([VM2], [test x"$have_vm2" = x"yes" ])
 
 
+dnl Check for python
+AM_PATH_PYTHON([3.3], [enable_python=$am_cv_python_version], [enable_python=no])
+if test $enable_python != no
+then
+    PYTHON_CFLAGS=`unset CFLAGS; $PYTHON-config --cflags`
+    AC_SUBST(PYTHON_CFLAGS)
+    AC_DEFINE(HAVE_PYTHON, 1, [Have Python bindings])
+fi
+AM_CONDITIONAL([DO_PYTHON], [test "$enable_python" != "no"])
+
+
 dnl Enable compile-time options for I/O profiling, if requested
 if test $enable_iotrace = yes
 then
@@ -388,6 +396,7 @@ embedded/sqlite/Makefile
 embedded/minilzo/Makefile
 arki/Makefile
 src/Makefile
+python/Makefile
 doc/Makefile
 test/Makefile
 ])
@@ -409,6 +418,7 @@ AS_HELP_STRING([GNU readline support:], [$have_readline])
 AS_HELP_STRING([LZO compression:], [$LZO_VERSION])
 AS_HELP_STRING([Zlib compression:], [$have_zlib])
 AS_HELP_STRING([SQLite version:], [$SQLITE3_VERSION])
+AS_HELP_STRING([Python:], [$enable_python])
 AS_HELP_STRING([I/O profiling:], [$enable_iotrace])
 AS_HELP_STRING([Code coverage:], [$enable_gcov])
 dnl AS_HELP_STRING([BUFR support via DB-All.e:], [$have_dballe])
