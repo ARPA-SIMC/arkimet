@@ -10,6 +10,7 @@ pyexec_LTLIBRARIES = _arkimet.la
 
 _arkimet_la_SOURCES = \
     common.cc \
+    dataset.cc \
     arkimet.cc
 _arkimet_la_CPPFLAGS = $(PYTHON_CFLAGS) -I$(top_srcdir)
 _arkimet_la_LDFLAGS = -module -avoid-version -export-symbols-regex init_arkimet
@@ -33,6 +34,7 @@ clean-local:
 
 EXTRA_DIST = \
     common.h \
+    dataset.h \
     test.py
 #    doc-arkimet \
 #    record.h \

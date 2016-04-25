@@ -1,12 +1,6 @@
 #include <Python.h>
 #include "common.h"
-#if 0
-#include "record.h"
-#include "db.h"
-#include "cursor.h"
-#include "dballe/types.h"
-#include "dballe/var.h"
-#endif
+#include "dataset.h"
 #include "config.h"
 
 #if 0
@@ -164,8 +158,8 @@ PyMODINIT_FUNC PyInit__arkimet(void)
 
     PyObject* m = PyModule_Create(&arkimet_module);
 
+    register_dataset(m);
 #if 0
-    register_record(m);
     register_db(m);
     register_cursor(m);
 #endif

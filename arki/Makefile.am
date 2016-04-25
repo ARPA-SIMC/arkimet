@@ -217,7 +217,6 @@ libarkimet_la_SOURCES += \
 		wibble/log/filters.cpp \
 		wibble/grcal/grcal.cpp \
 		core/time.cc \
-		core/tests.cc \
 		exceptions.cc \
 		nag.cc \
 		utils.cc \
@@ -248,7 +247,6 @@ libarkimet_la_SOURCES += \
 		emitter.cc \
 		emitter/memory.cc \
 		emitter/json.cc \
-		tests/tests.cc \
 		values.cc \
 		bbox.cc \
 		types.cc \
@@ -295,8 +293,10 @@ libarkimet_la_SOURCES += \
 		types-init.cc
 
 tests_arki_test_SOURCES += \
+		tests/tests.cc \
 		tests/tests-tut.cc \
 		core/time-test.cc \
+		core/tests.cc \
 		types/tests.cc \
 		utils/tests.cc \
 		utils-test.cc \
@@ -461,6 +461,7 @@ nobase_dist_arkiinclude_HEADERS += scan/odimh5.h
 libarkimet_la_SOURCES += scan/odimh5.cc
 libarkimet_la_LDFLAGS += $(HDF5_LIBS)
 tests_arki_test_SOURCES += utils/h5-tut.cc scan/odimh5-tut.cc
+tests_arki_test_LDADD += $(HDF5_LIBS)
 endif
 
 if NETCDF

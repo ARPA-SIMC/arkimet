@@ -12,89 +12,14 @@
 namespace arki {
 namespace python {
 
-#if 0
-wrpy_c_api* wrpy = 0;
-
-PyObject* format_varcode(wreport::Varcode code)
-{
-    char buf[7];
-    snprintf(buf, 7, "%c%02d%03d",
-            WR_VAR_F(code) == 0 ? 'B' :
-            WR_VAR_F(code) == 1 ? 'R' :
-            WR_VAR_F(code) == 2 ? 'C' :
-            WR_VAR_F(code) == 3 ? 'D' : '?',
-            WR_VAR_X(code), WR_VAR_Y(code));
-    return PyUnicode_FromString(buf);
-}
-
-void set_wreport_exception(const wreport::error& e)
-{
-    switch (e.code())
-    {
-        case WR_ERR_NONE:
-            PyErr_SetString(PyExc_SystemError, e.what());
-            break;
-        case WR_ERR_NOTFOUND:    // Item not found
-            PyErr_SetString(PyExc_KeyError, e.what());
-            break;
-        case WR_ERR_TYPE:        // Wrong variable type
-            PyErr_SetString(PyExc_TypeError, e.what());
-            break;
-        case WR_ERR_ALLOC:       // Cannot allocate memory
-            PyErr_SetString(PyExc_MemoryError, e.what());
-            break;
-        case WR_ERR_ODBC:        // ODBC error
-            PyErr_SetString(PyExc_OSError, e.what());
-            break;
-        case WR_ERR_HANDLES:     // Handle management error
-            PyErr_SetString(PyExc_SystemError, e.what());
-            break;
-        case WR_ERR_TOOLONG:     // Buffer is too short to fit data
-            PyErr_SetString(PyExc_ValueError, e.what());
-            break;
-        case WR_ERR_SYSTEM:      // Error reported by the system
-            PyErr_SetString(PyExc_OSError, e.what());
-            break;
-        case WR_ERR_CONSISTENCY: // Consistency check failed
-            PyErr_SetString(PyExc_RuntimeError, e.what());
-            break;
-        case WR_ERR_PARSE:       // Parse error
-            PyErr_SetString(PyExc_ValueError, e.what());
-            break;
-        case WR_ERR_WRITE:       // Write error
-            PyErr_SetString(PyExc_RuntimeError, e.what());
-            break;
-        case WR_ERR_REGEX:       // Regular expression error
-            PyErr_SetString(PyExc_ValueError, e.what());
-            break;
-        case WR_ERR_UNIMPLEMENTED: // Feature not implemented
-            PyErr_SetString(PyExc_NotImplementedError, e.what());
-            break;
-        case WR_ERR_DOMAIN:      // Value outside acceptable domain
-            PyErr_SetString(PyExc_OverflowError, e.what());
-            break;
-        default:
-            PyErr_Format(PyExc_SystemError, "unhandled exception with code %d: %s", e.code(), e.what());
-            break;
-    }
-}
-
-PyObject* raise_wreport_exception(const wreport::error& e)
-{
-    set_wreport_exception(e);
-    return nullptr;
-}
-
 void set_std_exception(const std::exception& e)
 {
     PyErr_SetString(PyExc_RuntimeError, e.what());
 }
 
-PyObject* raise_std_exception(const std::exception& e)
-{
-    set_std_exception(e);
-    return NULL;
-}
+#if 0
+wrpy_c_api* wrpy = 0;
+
 
 PyObject* datetime_to_python(const Datetime& dt)
 {
@@ -333,46 +258,6 @@ int trange_from_python(PyObject* o, Trange& out)
     return 0;
 }
 
-int string_from_python(PyObject* o, std::string& out)
-{
-#if PY_MAJOR_VERSION >= 3
-    if (PyBytes_Check(o)) {
-        const char* v = PyBytes_AsString(o);
-        if (v == NULL) return -1;
-        out = v;
-        return 0;
-    }
-#else
-    if (PyString_Check(o)) {
-        const char* v = PyString_AsString(o);
-        if (v == NULL) return -1;
-        out = v;
-        return 0;
-    }
-#endif
-    if (PyUnicode_Check(o)) {
-#if PY_MAJOR_VERSION >= 3
-        const char* v = PyUnicode_AsUTF8(o);
-        if (v == NULL) return -1;
-        out = v;
-        return 0;
-#else
-        PyObject *utf8 = PyUnicode_AsUTF8String(o);
-        const char* v = PyString_AsString(utf8);
-        if (v == NULL)
-        {
-            Py_DECREF(utf8);
-            return -1;
-        }
-        out = v;
-        Py_DECREF(utf8);
-        return 0;
-#endif
-    }
-    PyErr_SetString(PyExc_TypeError, "value must be an instance of str, bytes or unicode");
-    return -1;
-}
-
 int file_get_fileno(PyObject* o)
 {
     // fileno_value = obj.fileno()
@@ -437,9 +322,29 @@ int object_repr(PyObject* o, std::string& out)
 
     return 0;
 }
+#endif
+
+int string_from_python(PyObject* o, std::string& out)
+{
+    if (PyBytes_Check(o)) {
+        const char* v = PyBytes_AsString(o);
+        if (v == NULL) return -1;
+        out = v;
+        return 0;
+    }
+    if (PyUnicode_Check(o)) {
+        const char* v = PyUnicode_AsUTF8(o);
+        if (v == NULL) return -1;
+        out = v;
+        return 0;
+    }
+    PyErr_SetString(PyExc_TypeError, "value must be an instance of str or bytes");
+    return -1;
+}
 
 int common_init()
 {
+#if 0
     /*
      * PyDateTimeAPI, that is used by all the PyDate* and PyTime* macros, is
      * defined as a static variable defaulting to NULL, and it needs to be
@@ -457,10 +362,10 @@ int common_init()
         if (!wrpy)
             return -1;
     }
+#endif
 
     return 0;
 }
-#endif
 
 }
 }

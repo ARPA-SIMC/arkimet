@@ -2,15 +2,24 @@
 #define ARKI_PYTHON_COMMON_H
 
 #include <Python.h>
-#if 0
-#include <dballe/types.h>
-#include <wreport/python.h>
-#include <wreport/error.h>
-#include <wreport/varinfo.h>
-#endif
+#include <string>
 
 namespace arki {
 namespace python {
+
+/// Given a generic exception, set the Python error indicator appropriately.
+void set_std_exception(const std::exception& e);
+
+
+#define ARKI_CATCH_RETURN_PYO \
+      catch (std::exception& se) { \
+        set_std_exception(se); return nullptr; \
+    }
+
+#define ARKI_CATCH_RETURN_INT \
+      catch (std::exception& se) { \
+        set_std_exception(se); return -1; \
+    }
 
 #if 0
 extern wrpy_c_api* wrpy;
@@ -60,57 +69,6 @@ public:
 
 typedef py_unique_ptr<PyObject> pyo_unique_ptr;
 
-/**
- * Return a python string representing a varcode
- */
-PyObject* format_varcode(wreport::Varcode code);
-
-/// Given a wreport exception, set the Python error indicator appropriately.
-void set_wreport_exception(const wreport::error& e);
-
-/**
- * Given a wreport exception, set the Python error indicator appropriately.
- *
- * @retval
- *   Always returns NULL, so one can do:
- *   try {
- *     // ...code...
- *   } catch (wreport::error& e) {
- *     return raise_wreport_exception(e);
- *   }
- */
-PyObject* raise_wreport_exception(const wreport::error& e);
-
-/// Given a generic exception, set the Python error indicator appropriately.
-void set_std_exception(const std::exception& e);
-
-/**
- * Given a generic exception, set the Python error indicator appropriately.
- *
- * @retval
- *   Always returns NULL, so one can do:
- *   try {
- *     // ...code...
- *   } catch (std::exception& e) {
- *     return raise_std_exception(e);
- *   }
- */
-PyObject* raise_std_exception(const std::exception& e);
-
-#define DBALLE_CATCH_RETURN_PYO \
-      catch (wreport::error& e) { \
-        set_wreport_exception(e); return nullptr; \
-    } catch (std::exception& se) { \
-        set_std_exception(se); return nullptr; \
-    }
-
-#define DBALLE_CATCH_RETURN_INT \
-      catch (wreport::error& e) { \
-        set_wreport_exception(e); return -1; \
-    } catch (std::exception& se) { \
-        set_std_exception(se); return -1; \
-    }
-
 /// Convert a Datetime to a python datetime object
 PyObject* datetime_to_python(const Datetime& dt);
 
@@ -131,9 +89,6 @@ PyObject* trange_to_python(const Trange& tr);
 
 /// Convert a 3-tuple to a Trange
 int trange_from_python(PyObject* o, Trange& out);
-
-/// Convert a python string, bytes or unicode to an utf8 string
-int string_from_python(PyObject* o, std::string& out);
 
 /// Call repr() on \a o, and return the result in \a out
 int object_repr(PyObject* o, std::string& out);
@@ -156,6 +111,14 @@ int file_get_fileno(PyObject* o);
  * object stays valid.
  */
 PyObject* file_get_data(PyObject* o, char*&buf, Py_ssize_t& len);
+#endif
+
+/**
+ * Convert a python string, bytes or unicode to an utf8 string.
+ *
+ * Return 0 on success, -1 on failure
+ */
+int string_from_python(PyObject* o, std::string& out);
 
 /**
  * Initialize the python bits to use used by the common functions.
@@ -163,7 +126,6 @@ PyObject* file_get_data(PyObject* o, char*&buf, Py_ssize_t& len);
  * This can be called multiple times and will execute only once.
  */
 int common_init();
-#endif
 
 }
 }
