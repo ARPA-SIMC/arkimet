@@ -4,6 +4,7 @@ import re
 import os
 import logging
 import argparse
+import datetime
 from socketserver import ForkingMixIn
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
@@ -22,14 +23,20 @@ class Handler(BaseHTTPRequestHandler):
             path = self.re_pathsplit.split(path)
             cmd = path.pop(0)
 
-        print("SPLIT", self.path, cmd, repr(path))
-
         meth = getattr(self, "arki_" + cmd, None)
         if meth is None:
             self.send_404("Path not found")
             return
 
         meth(path)
+
+    def send_response(self, code, msg):
+        logging.info('%s - - [%s] "%s" %d -',
+                      self.client_address[0],
+                      datetime.datetime.utcnow().strftime("%d/%b/%Y:%H:%M:%S %z"),
+                      self.requestline,
+                      code)
+        super().send_response(code, msg)
 
     def send_404(self, msg):
         self.send_response(404, msg.encode("utf-8"))
@@ -47,6 +54,19 @@ class Handler(BaseHTTPRequestHandler):
         self.send_404("TODO: config")
         # ./run-local arki-query "" http://localhost:8080
         # local_handlers.add("config", new ConfigHandler);
+#struct ConfigHandler : public LocalHandler
+#{
+#    virtual void operator()(Request& req)
+#    {
+#        req.log_action("global configuration");
+#
+#        // if "json" in args:
+#        //  return server.configdict
+#        stringstream out;
+#        req.arki_conf_remote.output(out, "(memory)");
+#        req.send_result(out.str(), "text/plain");
+#    }
+#};
 
     def arki_aliases(self, path):
         self.send_404("TODO: aliases")
@@ -140,23 +160,7 @@ def main():
 
     #commandline::Options opts;
     #try {
-    #    if (opts.parse(argc, argv))
-    #        return 0;
-
     #    nag::init(opts.verbose->isSet(), opts.debug->isSet());
-
-    #    if (!opts.hasNext())
-    #        throw commandline::BadOption("please specify a configuration file");
-
-    #    local_handlers.add("", new IndexHandler);
-    #    local_handlers.add("config", new ConfigHandler);
-    #    local_handlers.add("aliases", new AliasesHandler);
-    #    local_handlers.add("qexpand", new QexpandHandler);
-    #    local_handlers.add("dataset", new DatasetHandler);
-    #    local_handlers.add("query", new RootQueryHandler);
-    #    local_handlers.add("summary", new RootSummaryHandler);
-    #    if (opts.inbound->isSet())
-    #        local_handlers.add("inbound", new InboundHandler(opts.inbound->stringValue()));
 
     #    // Configure the server and start listening
     #    ServerProcess srv(opts);
