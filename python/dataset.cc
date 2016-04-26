@@ -1,16 +1,16 @@
 #include <Python.h>
 #include "dataset.h"
 #include "common.h"
+#include "metadata.h"
 #include "arki/dataset.h"
 #include "arki/configfile.h"
+#include "arki/sort.h"
 #include <vector>
 #include "config.h"
 
 using namespace std;
 using namespace arki;
 using namespace arki::python;
-
-struct python_callback_failed : public std::exception {};
 
 extern "C" {
 
@@ -19,9 +19,9 @@ extern "C" {
  */
 
 #if 0
-static PyObject* dpy_DatasetReader_copy(dpy_DatasetReader* self)
+static PyObject* arkipy_DatasetReader_copy(arkipy_DatasetReader* self)
 {
-    dpy_DatasetReader* result = PyObject_New(dpy_DatasetReader, &dpy_DatasetReader_Type);
+    arkipy_DatasetReader* result = PyObject_New(arkipy_DatasetReader, &arkipy_DatasetReader_Type);
     if (!result) return NULL;
     try {
         result->rec = self->rec->clone().release();
@@ -30,7 +30,7 @@ static PyObject* dpy_DatasetReader_copy(dpy_DatasetReader* self)
     } DBALLE_CATCH_RETURN_PYO
 }
 
-static PyObject* dpy_DatasetReader_clear(dpy_DatasetReader* self)
+static PyObject* arkipy_DatasetReader_clear(arkipy_DatasetReader* self)
 {
     try {
         self->rec->clear();
@@ -39,7 +39,7 @@ static PyObject* dpy_DatasetReader_clear(dpy_DatasetReader* self)
     } DBALLE_CATCH_RETURN_PYO
 }
 
-static PyObject* dpy_DatasetReader_clear_vars(dpy_DatasetReader* self)
+static PyObject* arkipy_DatasetReader_clear_vars(arkipy_DatasetReader* self)
 {
     try {
         self->rec->clear_vars();
@@ -47,7 +47,7 @@ static PyObject* dpy_DatasetReader_clear_vars(dpy_DatasetReader* self)
     } DBALLE_CATCH_RETURN_PYO
 }
 
-static PyObject* dpy_DatasetReader_var(dpy_DatasetReader* self, PyObject* args)
+static PyObject* arkipy_DatasetReader_var(arkipy_DatasetReader* self, PyObject* args)
 {
     const char* name = NULL;
     if (!PyArg_ParseTuple(args, "s", &name))
@@ -58,7 +58,7 @@ static PyObject* dpy_DatasetReader_var(dpy_DatasetReader* self, PyObject* args)
     } DBALLE_CATCH_RETURN_PYO
 }
 
-static PyObject* dpy_DatasetReader_key(dpy_DatasetReader* self, PyObject* args)
+static PyObject* arkipy_DatasetReader_key(arkipy_DatasetReader* self, PyObject* args)
 {
     if (PyErr_WarnEx(PyExc_DeprecationWarning, "please use DatasetReader.var(name) instead of DatasetReader.key(name)", 1))
         return nullptr;
@@ -71,7 +71,7 @@ static PyObject* dpy_DatasetReader_key(dpy_DatasetReader* self, PyObject* args)
     } DBALLE_CATCH_RETURN_PYO
 }
 
-static PyObject* dpy_DatasetReader_update(dpy_DatasetReader* self, PyObject *args, PyObject *kw)
+static PyObject* arkipy_DatasetReader_update(arkipy_DatasetReader* self, PyObject *args, PyObject *kw)
 {
     if (kw)
     {
@@ -79,14 +79,14 @@ static PyObject* dpy_DatasetReader_update(dpy_DatasetReader* self, PyObject *arg
         Py_ssize_t pos = 0;
 
         while (PyDict_Next(kw, &pos, &key, &value))
-            if (dpy_DatasetReader_setitem(self, key, value) < 0)
+            if (arkipy_DatasetReader_setitem(self, key, value) < 0)
                 return NULL;
     }
 
     Py_RETURN_NONE;
 }
 
-static PyObject* dpy_DatasetReader_get(dpy_DatasetReader* self, PyObject *args, PyObject* kw)
+static PyObject* arkipy_DatasetReader_get(arkipy_DatasetReader* self, PyObject *args, PyObject* kw)
 {
     static char* kwlist[] = { "key", "default", NULL };
     PyObject* key;
@@ -96,7 +96,7 @@ static PyObject* dpy_DatasetReader_get(dpy_DatasetReader* self, PyObject *args, 
         return nullptr;
 
     try {
-        int has = dpy_DatasetReader_contains(self, key);
+        int has = arkipy_DatasetReader_contains(self, key);
         if (has < 0) return NULL;
         if (!has)
         {
@@ -104,12 +104,12 @@ static PyObject* dpy_DatasetReader_get(dpy_DatasetReader* self, PyObject *args, 
             return def;
         }
 
-        return dpy_DatasetReader_getitem(self, key);
+        return arkipy_DatasetReader_getitem(self, key);
     } DBALLE_CATCH_RETURN_PYO
 }
 
 
-static PyObject* dpy_DatasetReader_vars(dpy_DatasetReader* self)
+static PyObject* arkipy_DatasetReader_vars(arkipy_DatasetReader* self)
 {
     if (PyErr_WarnEx(PyExc_DeprecationWarning, "DatasetReader.vars() may disappear in a future version of DB-All.e, and no replacement is planned", 1))
         return nullptr;
@@ -136,7 +136,7 @@ static PyObject* dpy_DatasetReader_vars(dpy_DatasetReader* self)
     }
 }
 
-static PyObject* dpy_DatasetReader_date_extremes(dpy_DatasetReader* self)
+static PyObject* arkipy_DatasetReader_date_extremes(arkipy_DatasetReader* self)
 {
     if (PyErr_WarnEx(PyExc_DeprecationWarning, "DatasetReader.date_extremes may disappear in a future version of DB-All.e, and no replacement is planned", 1))
         return NULL;
@@ -157,7 +157,7 @@ static PyObject* dpy_DatasetReader_date_extremes(dpy_DatasetReader* self)
     }
 }
 
-static PyObject* dpy_DatasetReader_set_station_context(dpy_DatasetReader* self)
+static PyObject* arkipy_DatasetReader_set_station_context(arkipy_DatasetReader* self)
 {
     if (PyErr_WarnEx(PyExc_DeprecationWarning, "DatasetReader.set_station_context is deprecated in favour of using DB.query_station_data", 1))
         return NULL;
@@ -174,7 +174,7 @@ static PyObject* dpy_DatasetReader_set_station_context(dpy_DatasetReader* self)
     }
 }
 
-static PyObject* dpy_DatasetReader_set_from_string(dpy_DatasetReader* self, PyObject *args)
+static PyObject* arkipy_DatasetReader_set_from_string(arkipy_DatasetReader* self, PyObject *args)
 {
     if (PyErr_WarnEx(PyExc_DeprecationWarning, "DatasetReader.set_from_string() may disappear in a future version of DB-All.e, and no replacement is planned", 1))
         return nullptr;
@@ -220,48 +220,6 @@ struct DataQuery
 	void lua_push_table(lua_State* L, int idx) const;
 };
 
-struct ByteQuery : public DataQuery
-{
-	enum Type {
-		BQ_DATA = 0,
-		BQ_POSTPROCESS = 1,
-		BQ_REP_METADATA = 2,
-		BQ_REP_SUMMARY = 3
-	};
-
-    std::string param;
-    Type type = BQ_DATA;
-    std::function<void(NamedFileDescriptor&)> data_start_hook = nullptr;
-
-    ByteQuery() {}
-
-    void setData(const Matcher& m)
-    {
-        type = BQ_DATA;
-        matcher = m;
-    }
-
-    void setPostprocess(const Matcher& m, const std::string& procname)
-    {
-        type = BQ_POSTPROCESS;
-        matcher = m;
-        param = procname;
-    }
-
-    void setRepMetadata(const Matcher& m, const std::string& repname)
-    {
-        type = BQ_REP_METADATA;
-        matcher = m;
-        param = repname;
-    }
-
-    void setRepSummary(const Matcher& m, const std::string& repname)
-    {
-        type = BQ_REP_SUMMARY;
-        matcher = m;
-        param = repname;
-    }
-};
     /**
      * Query the dataset using the given matcher, and sending the results to
      * the given function
@@ -273,17 +231,63 @@ struct ByteQuery : public DataQuery
      * given query.
      */
     virtual void query_summary(const Matcher& matcher, Summary& summary) = 0;
-
-    /**
-     * Query the dataset obtaining a byte stream, that gets written to a file
-     * descriptor.
-     *
-     * The default implementation in Reader is based on queryData.
-     */
-    virtual void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out);
 #endif
 
-static PyObject* dpy_DatasetReader_query_bytes(dpy_DatasetReader* self, PyObject *args, PyObject* kw)
+static PyObject* arkipy_DatasetReader_query_data(arkipy_DatasetReader* self, PyObject *args, PyObject* kw)
+{
+    static const char* kwlist[] = { "on_metadata", "matcher", "with_data", "sort", NULL };
+    PyObject* arg_on_metadata = Py_None;
+    PyObject* arg_matcher = Py_None;
+    PyObject* arg_with_data = Py_None;
+    PyObject* arg_sort = Py_None;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "O|OOO", (char**)kwlist, &arg_on_metadata, &arg_matcher, &arg_with_data, &arg_sort))
+        return nullptr;
+
+    if (!PyCallable_Check(arg_on_metadata))
+    {
+        PyErr_SetString(PyExc_TypeError, "on_metadata must be a callable object");
+        return nullptr;
+    }
+    string str_matcher;
+    if (arg_matcher != Py_None && string_from_python(arg_matcher, str_matcher) == -1) return nullptr;
+    bool with_data = false;
+    if (arg_with_data != Py_None)
+    {
+        int istrue = PyObject_IsTrue(arg_with_data);
+        if (istrue == -1) return nullptr;
+        with_data = istrue == 1;
+    }
+    string sort;
+    if (arg_sort != Py_None && string_from_python(arg_sort, sort) == -1) return nullptr;
+
+    dataset::DataQuery query;
+    query.matcher = Matcher::parse(str_matcher);
+    query.with_data = with_data;
+    if (!sort.empty()) query.sorter = sort::Compare::parse(sort);
+
+    metadata_dest_func dest = [&](std::unique_ptr<Metadata>&& md) {
+        // call arg_on_metadata
+        pyo_unique_ptr args(PyTuple_Pack(1, metadata_create(move(md))));
+        if (!args) throw python_callback_failed();
+        pyo_unique_ptr res(PyObject_CallObject(arg_on_metadata, args));
+        if (!res) throw python_callback_failed();
+        // Continue if the callback returns None or True
+        if (res == Py_None) return true;
+        int cont = PyObject_IsTrue(res);
+        if (cont == -1) throw python_callback_failed();
+        return cont == 1;
+    };
+
+    try {
+        self->ds->query_data(query, dest);
+        Py_RETURN_NONE;
+    } catch (python_callback_failed) {
+        return nullptr;
+    } ARKI_CATCH_RETURN_PYO
+}
+
+static PyObject* arkipy_DatasetReader_query_bytes(arkipy_DatasetReader* self, PyObject *args, PyObject* kw)
 {
     static const char* kwlist[] = { "file", "matcher", "data_start_hook", "postprocess", "metadata_report", "summary_report", NULL };
     PyObject* arg_file = Py_None;
@@ -348,8 +352,19 @@ static PyObject* dpy_DatasetReader_query_bytes(dpy_DatasetReader* self, PyObject
     } ARKI_CATCH_RETURN_PYO
 }
 
-static PyMethodDef dpy_DatasetReader_methods[] = {
-    {"query_bytes", (PyCFunction)dpy_DatasetReader_query_bytes, METH_VARARGS | METH_KEYWORDS, R"(
+static PyMethodDef arkipy_DatasetReader_methods[] = {
+    {"query_data", (PyCFunction)arkipy_DatasetReader_query_data, METH_VARARGS | METH_KEYWORDS, R"(
+        query a dataset, processing the resulting metadata one by one.
+
+        Arguments:
+          on_metadata: a function called on each metadata, with the Metadata
+                       object as its only argument. Return None or True to
+                       continue processing results, False to stop.
+          matcher: the matcher string to filter data to return.
+          with_data: if True, also load data together with the metadata.
+          sort: string with the desired sort order of results.
+        )" },
+    {"query_bytes", (PyCFunction)arkipy_DatasetReader_query_bytes, METH_VARARGS | METH_KEYWORDS, R"(
         query a dataset, piping results to a file.
 
         The file needs to be either an integer file or socket handle, or a
@@ -363,27 +378,27 @@ static PyMethodDef dpy_DatasetReader_methods[] = {
           summary_report: name of the server-side report function to run on results summary
         )" },
 #if 0
-    {"copy", (PyCFunction)dpy_DatasetReader_copy, METH_NOARGS, "return a deep copy of the DatasetReader" },
-    {"clear", (PyCFunction)dpy_DatasetReader_clear, METH_NOARGS, "remove all data from the record" },
-    {"clear_vars", (PyCFunction)dpy_DatasetReader_clear_vars, METH_NOARGS, "remove all variables from the record, leaving the keywords intact" },
-    {"keys", (PyCFunction)dpy_DatasetReader_keys, METH_NOARGS, "return a list with all the keys set in the DatasetReader." },
-    {"items", (PyCFunction)dpy_DatasetReader_items, METH_NOARGS, "return a list with all the (key, value) tuples set in the DatasetReader." },
-    {"varitems", (PyCFunction)dpy_DatasetReader_varitems, METH_NOARGS, "return a list with all the (key, `dballe.Var`_) tuples set in the DatasetReader." },
-    {"var", (PyCFunction)dpy_DatasetReader_var, METH_VARARGS, "return a `dballe.Var`_ from the record, given its key." },
-    {"update", (PyCFunction)dpy_DatasetReader_update, METH_VARARGS | METH_KEYWORDS, "set many record keys/vars in a single shot, via kwargs" },
-    {"get", (PyCFunction)dpy_DatasetReader_get, METH_VARARGS | METH_KEYWORDS, "lookup a value, returning a fallback value (None by default) if unset" },
+    {"copy", (PyCFunction)arkipy_DatasetReader_copy, METH_NOARGS, "return a deep copy of the DatasetReader" },
+    {"clear", (PyCFunction)arkipy_DatasetReader_clear, METH_NOARGS, "remove all data from the record" },
+    {"clear_vars", (PyCFunction)arkipy_DatasetReader_clear_vars, METH_NOARGS, "remove all variables from the record, leaving the keywords intact" },
+    {"keys", (PyCFunction)arkipy_DatasetReader_keys, METH_NOARGS, "return a list with all the keys set in the DatasetReader." },
+    {"items", (PyCFunction)arkipy_DatasetReader_items, METH_NOARGS, "return a list with all the (key, value) tuples set in the DatasetReader." },
+    {"varitems", (PyCFunction)arkipy_DatasetReader_varitems, METH_NOARGS, "return a list with all the (key, `dballe.Var`_) tuples set in the DatasetReader." },
+    {"var", (PyCFunction)arkipy_DatasetReader_var, METH_VARARGS, "return a `dballe.Var`_ from the record, given its key." },
+    {"update", (PyCFunction)arkipy_DatasetReader_update, METH_VARARGS | METH_KEYWORDS, "set many record keys/vars in a single shot, via kwargs" },
+    {"get", (PyCFunction)arkipy_DatasetReader_get, METH_VARARGS | METH_KEYWORDS, "lookup a value, returning a fallback value (None by default) if unset" },
 
     // Deprecated
-    {"key", (PyCFunction)dpy_DatasetReader_var, METH_VARARGS, "(deprecated) return a `dballe.Var`_ from the record, given its key." },
-    {"vars", (PyCFunction)dpy_DatasetReader_vars, METH_NOARGS, "(deprecated) return a sequence with all the variables set on the DatasetReader. Note that this does not include keys." },
-    {"date_extremes", (PyCFunction)dpy_DatasetReader_date_extremes, METH_NOARGS, "(deprecated) get two datetime objects with the lower and upper bounds of the datetime period in this record" },
-    {"set_station_context", (PyCFunction)dpy_DatasetReader_set_station_context, METH_NOARGS, "(deprecated) set the date, level and time range values to match the station data context" },
-    {"set_from_string", (PyCFunction)dpy_DatasetReader_set_from_string, METH_VARARGS, "(deprecated) set values from a 'key=val' string" },
+    {"key", (PyCFunction)arkipy_DatasetReader_var, METH_VARARGS, "(deprecated) return a `dballe.Var`_ from the record, given its key." },
+    {"vars", (PyCFunction)arkipy_DatasetReader_vars, METH_NOARGS, "(deprecated) return a sequence with all the variables set on the DatasetReader. Note that this does not include keys." },
+    {"date_extremes", (PyCFunction)arkipy_DatasetReader_date_extremes, METH_NOARGS, "(deprecated) get two datetime objects with the lower and upper bounds of the datetime period in this record" },
+    {"set_station_context", (PyCFunction)arkipy_DatasetReader_set_station_context, METH_NOARGS, "(deprecated) set the date, level and time range values to match the station data context" },
+    {"set_from_string", (PyCFunction)arkipy_DatasetReader_set_from_string, METH_VARARGS, "(deprecated) set values from a 'key=val' string" },
 #endif
     {NULL}
 };
 
-static int dpy_DatasetReader_init(dpy_DatasetReader* self, PyObject* args, PyObject* kw)
+static int arkipy_DatasetReader_init(arkipy_DatasetReader* self, PyObject* args, PyObject* kw)
 {
     static const char* kwlist[] = { "cfg", nullptr };
     PyObject* cfg = Py_None;
@@ -415,39 +430,39 @@ static int dpy_DatasetReader_init(dpy_DatasetReader* self, PyObject* args, PyObj
     } ARKI_CATCH_RETURN_INT;
 }
 
-static void dpy_DatasetReader_dealloc(dpy_DatasetReader* self)
+static void arkipy_DatasetReader_dealloc(arkipy_DatasetReader* self)
 {
     delete self->ds;
     self->ds = nullptr;
 }
 
-static PyObject* dpy_DatasetReader_str(dpy_DatasetReader* self)
+static PyObject* arkipy_DatasetReader_str(arkipy_DatasetReader* self)
 {
     return PyUnicode_FromFormat("DatasetReader(%s, %s)", self->ds->type().c_str(), self->ds->name().c_str());
 }
 
-static PyObject* dpy_DatasetReader_repr(dpy_DatasetReader* self)
+static PyObject* arkipy_DatasetReader_repr(arkipy_DatasetReader* self)
 {
     return PyUnicode_FromFormat("DatasetReader(%s, %s)", self->ds->type().c_str(), self->ds->name().c_str());
 }
 
-PyTypeObject dpy_DatasetReader_Type = {
+PyTypeObject arkipy_DatasetReader_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "arkimet.DatasetReader",   // tp_name
-    sizeof(dpy_DatasetReader), // tp_basicsize
+    sizeof(arkipy_DatasetReader), // tp_basicsize
     0,                         // tp_itemsize
-    (destructor)dpy_DatasetReader_dealloc, // tp_dealloc
+    (destructor)arkipy_DatasetReader_dealloc, // tp_dealloc
     0,                         // tp_print
     0,                         // tp_getattr
     0,                         // tp_setattr
     0,                         // tp_compare
-    (reprfunc)dpy_DatasetReader_repr, // tp_repr
+    (reprfunc)arkipy_DatasetReader_repr, // tp_repr
     0,                         // tp_as_number
     0,                         // tp_as_sequence
     0,                         // tp_as_mapping
     0,                         // tp_hash
     0,                         // tp_call
-    (reprfunc)dpy_DatasetReader_str,  // tp_str
+    (reprfunc)arkipy_DatasetReader_str,  // tp_str
     0,                         // tp_getattro
     0,                         // tp_setattro
     0,                         // tp_as_buffer
@@ -467,7 +482,7 @@ PyTypeObject dpy_DatasetReader_Type = {
     0,                         // tp_weaklistoffset
     0,                         // tp_iter
     0,                         // tp_iternext
-    dpy_DatasetReader_methods, // tp_methods
+    arkipy_DatasetReader_methods, // tp_methods
     0,                         // tp_members
     0,                         // tp_getset
     0,                         // tp_base
@@ -475,7 +490,7 @@ PyTypeObject dpy_DatasetReader_Type = {
     0,                         // tp_descr_get
     0,                         // tp_descr_set
     0,                         // tp_dictoffset
-    (initproc)dpy_DatasetReader_init, // tp_init
+    (initproc)arkipy_DatasetReader_init, // tp_init
     0,                         // tp_alloc
     0,                         // tp_new
 };
@@ -485,21 +500,21 @@ PyTypeObject dpy_DatasetReader_Type = {
 namespace arki {
 namespace python {
 
-dpy_DatasetReader* dataset_reader_create()
+arkipy_DatasetReader* dataset_reader_create()
 {
-    return (dpy_DatasetReader*)PyObject_CallObject((PyObject*)&dpy_DatasetReader_Type, NULL);
+    return (arkipy_DatasetReader*)PyObject_CallObject((PyObject*)&arkipy_DatasetReader_Type, NULL);
 }
 
 void register_dataset(PyObject* m)
 {
     common_init();
 
-    dpy_DatasetReader_Type.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&dpy_DatasetReader_Type) < 0)
+    arkipy_DatasetReader_Type.tp_new = PyType_GenericNew;
+    if (PyType_Ready(&arkipy_DatasetReader_Type) < 0)
         return;
-    Py_INCREF(&dpy_DatasetReader_Type);
+    Py_INCREF(&arkipy_DatasetReader_Type);
 
-    PyModule_AddObject(m, "DatasetReader", (PyObject*)&dpy_DatasetReader_Type);
+    PyModule_AddObject(m, "DatasetReader", (PyObject*)&arkipy_DatasetReader_Type);
 }
 
 }

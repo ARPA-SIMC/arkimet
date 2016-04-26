@@ -1,5 +1,6 @@
 #include <Python.h>
 #include "common.h"
+#include "metadata.h"
 #include "dataset.h"
 #include "config.h"
 
@@ -158,11 +159,8 @@ PyMODINIT_FUNC PyInit__arkimet(void)
 
     PyObject* m = PyModule_Create(&arkimet_module);
 
+    register_metadata(m);
     register_dataset(m);
-#if 0
-    register_db(m);
-    register_cursor(m);
-#endif
 
     return m;
 }

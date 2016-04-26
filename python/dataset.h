@@ -14,19 +14,19 @@ extern "C" {
 typedef struct {
     PyObject_HEAD
     arki::dataset::Reader* ds;
-} dpy_DatasetReader;
+} arkipy_DatasetReader;
 
-PyAPI_DATA(PyTypeObject) dpy_DatasetReader_Type;
+PyAPI_DATA(PyTypeObject) arkipy_DatasetReader_Type;
 
-#define dpy_DatasetReader_Check(ob) \
-    (Py_TYPE(ob) == &dpy_DatasetReader_Type || \
-     PyType_IsSubtype(Py_TYPE(ob), &dpy_DatasetReader_Type))
+#define arkipy_DatasetReader_Check(ob) \
+    (Py_TYPE(ob) == &arkipy_DatasetReader_Type || \
+     PyType_IsSubtype(Py_TYPE(ob), &arkipy_DatasetReader_Type))
 }
 
 namespace arki {
 namespace python {
 
-dpy_DatasetReader* dataset_reader_create();
+arkipy_DatasetReader* dataset_reader_create();
 
 void register_dataset(PyObject* m);
 

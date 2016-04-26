@@ -7,6 +7,9 @@
 namespace arki {
 namespace python {
 
+struct python_callback_failed : public std::exception {};
+
+
 /// Given a generic exception, set the Python error indicator appropriately.
 void set_std_exception(const std::exception& e);
 
