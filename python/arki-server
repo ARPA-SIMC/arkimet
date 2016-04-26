@@ -1,0 +1,196 @@
+#!/usr/bin/python3
+
+import re
+import os
+import logging
+import argparse
+from socketserver import ForkingMixIn
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+class Server(ForkingMixIn, HTTPServer):
+    pass
+
+class Handler(BaseHTTPRequestHandler):
+    re_pathsplit = re.compile(r"/+")
+
+    def do_GET(self):
+        path = self.path.strip("/")
+        if not path:
+            cmd = "index"
+            path = []
+        else:
+            path = self.re_pathsplit.split(path)
+            cmd = path.pop(0)
+
+        print("SPLIT", self.path, cmd, repr(path))
+
+        meth = getattr(self, "arki_" + cmd, None)
+        if meth is None:
+            self.send_404("Path not found")
+            return
+
+        meth(path)
+
+    def send_404(self, msg):
+        self.send_response(404, msg.encode("utf-8"))
+        self.send_header("Content-Type", "text/plain")
+        self.end_headers()
+        #self.flush_headers()
+        self.wfile.write(msg.encode("utf-8"))
+        self.wfile.write(b"\n")
+
+    def arki_index(self, path):
+        self.send_404("TODO: index")
+        # local_handlers.add("", new IndexHandler);
+
+    def arki_config(self, path):
+        self.send_404("TODO: config")
+        # ./run-local arki-query "" http://localhost:8080
+        # local_handlers.add("config", new ConfigHandler);
+
+    def arki_aliases(self, path):
+        self.send_404("TODO: aliases")
+        # local_handlers.add("aliases", new AliasesHandler);
+
+    def arki_qexpand(self, path):
+        self.send_404("TODO: qexpand")
+        # local_handlers.add("qexpand", new QexpandHandler);
+
+    def arki_dataset(self, path):
+        self.send_404("TODO: dataset")
+        # local_handlers.add("dataset", new DatasetHandler);
+
+    def arki_query(self, path):
+        self.send_404("TODO: query")
+        # local_handlers.add("query", new RootQueryHandler);
+
+    def arki_summary(self, path):
+        self.send_404("TODO: summary")
+        # local_handlers.add("summary", new RootSummaryHandler);
+
+    #    if (opts.inbound->isSet())
+    #        local_handlers.add("inbound", new InboundHandler(opts.inbound->stringValue()));
+
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Start the arkimet server, serving the datasets found in the configuration file")
+
+    parser.add_argument("configfile", help="dataset configuration file")
+
+    parser.add_argument("--host", "--hostname", metavar="host", help="interface to listen to. Default: all interfaces")
+    parser.add_argument("--port", "-p", metavar="port", type=int, help="port to listen not. Default: 8080")
+    parser.add_argument("--url", metavar="url", help="url to use to reach the server")
+
+    parser.add_argument("--accesslog", metavar="file", help="file where to log normal access information")
+    parser.add_argument("--errorlog", metavar="file", help="file where to log errors")
+    parser.add_argument("--syslog", action="store_true", help="log to system log")
+    parser.add_argument("--quiet", action="store_true", help="do not log to standard output")
+    parser.add_argument("--verbose", action="store_true", help="verbose output")
+    parser.add_argument("--debug", action="store_true", help="debug output")
+
+#        runtest = add<StringOption>("runtest", 0, "runtest", "cmd",
+#                "start the server, run the given test command"
+#                " and return its exit status");
+#        inbound = add<StringOption>("inbound", 0, "inbound", "dir",
+#                "directory where files to import are found."
+#                " If specified, it enables a way of triggering uploads"
+#                " remotely: files found in the inbound directory can be"
+#                " remotely scanned or imported");
+
+    args = parser.parse_args()
+
+    root_logger = logging.getLogger()
+    if args.debug:
+        root_logger.setLevel(logging.DEBUG)
+    elif args.verbose:
+        root_logger.setLevel(logging.INFO)
+    elif args.quiet:
+        root_logger.setLevel(logging.ERROR)
+    else:
+        root_logger.setLevel(logging.WARN)
+
+    if not args.quiet:
+        h = logging.StreamHandler()
+        h.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s %(message)s"))
+        h.setLevel(logging.WARN)
+        root_logger.addHandler(h)
+
+    if args.accesslog:
+        h = logging.WatchedFileHandler(args.accesslog)
+        h.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s %(message)s"))
+        h.setLevel(logging.INFO)
+        class Filter:
+            def filter(self, record):
+                return record.level < logging.WARN
+        h.addFilter(Filter())
+        root_logger.addHandler(h)
+
+    if args.syslog:
+        h = logging.SyslogHandler()
+        h.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s %(message)s"))
+        root_logger.addHandler(h)
+
+
+
+    #// Initialise setproctitle hacks
+    #wibble::sys::process::initproctitle(argc, (char**)argv);
+
+    #commandline::Options opts;
+    #try {
+    #    if (opts.parse(argc, argv))
+    #        return 0;
+
+    #    nag::init(opts.verbose->isSet(), opts.debug->isSet());
+
+    #    if (!opts.hasNext())
+    #        throw commandline::BadOption("please specify a configuration file");
+
+    #    local_handlers.add("", new IndexHandler);
+    #    local_handlers.add("config", new ConfigHandler);
+    #    local_handlers.add("aliases", new AliasesHandler);
+    #    local_handlers.add("qexpand", new QexpandHandler);
+    #    local_handlers.add("dataset", new DatasetHandler);
+    #    local_handlers.add("query", new RootQueryHandler);
+    #    local_handlers.add("summary", new RootSummaryHandler);
+    #    if (opts.inbound->isSet())
+    #        local_handlers.add("inbound", new InboundHandler(opts.inbound->stringValue()));
+
+    #    // Configure the server and start listening
+    #    ServerProcess srv(opts);
+    #    srv.restart_argv = restart_argv;
+    #    srv.restart_environ = restart_environ;
+    #    srv.log << wibble::log::INFO << "Listening on " << srv.http.host << ":" << srv.http.port << " for " << srv.http.server_name << endl;
+
+    #    if (opts.runtest->isSet())
+    #    {
+    #        // Fork and start the server
+    #        srv.fork();
+
+    #        // No need to poll the server until ready, as the
+    #        // socket was already listening since before forking
+    #        int res = system(opts.runtest->stringValue().c_str());
+
+    #        srv.kill(SIGINT);
+    #        srv.wait();
+    #        return res;
+    #    } else {
+    #        return srv.main();
+    #    }
+    #} catch (commandline::BadOption& e) {
+    #    cerr << e.what() << endl;
+    #    opts.outputHelp(cerr);
+    #    return 1;
+    #} catch (std::exception& e) {
+    #    cerr << e.what() << endl;
+    #    return 1;
+    #}
+
+    httpd = Server(("", 8080), Handler)
+    httpd.serve_forever()
+
+
+if __name__ == "__main__":
+    main()
