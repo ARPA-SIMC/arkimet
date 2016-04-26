@@ -21,9 +21,6 @@ void set_std_exception(const std::exception& e);
         set_std_exception(se); return -1; \
     }
 
-#if 0
-extern wrpy_c_api* wrpy;
-
 /**
  * unique_ptr-like object that contains PyObject pointers, and that calls
  * Py_DECREF on destruction.
@@ -35,6 +32,7 @@ protected:
     Obj* ptr;
 
 public:
+    py_unique_ptr() : ptr(nullptr) {}
     py_unique_ptr(Obj* o) : ptr(o) {}
     py_unique_ptr(const py_unique_ptr&) = delete;
     py_unique_ptr(py_unique_ptr&& o) : ptr(o.ptr) { o.ptr = nullptr; }
@@ -69,6 +67,9 @@ public:
 
 typedef py_unique_ptr<PyObject> pyo_unique_ptr;
 
+#if 0
+extern wrpy_c_api* wrpy;
+
 /// Convert a Datetime to a python datetime object
 PyObject* datetime_to_python(const Datetime& dt);
 
@@ -90,20 +91,6 @@ PyObject* trange_to_python(const Trange& tr);
 /// Convert a 3-tuple to a Trange
 int trange_from_python(PyObject* o, Trange& out);
 
-/// Call repr() on \a o, and return the result in \a out
-int object_repr(PyObject* o, std::string& out);
-
-/**
- * call o.fileno() and return its result.
- *
- * In case of AttributeError and IOError (parent of UnsupportedOperation, not
- * available from C), it clear the error indicator.
- *
- * Returns -1 if fileno() was not available or some other exception happened.
- * Use PyErr_Occurred to tell between the two.
- */
-int file_get_fileno(PyObject* o);
-
 /**
  * call o.data() and return its result, both as a PyObject and as a buffer.
  *
@@ -112,6 +99,17 @@ int file_get_fileno(PyObject* o);
  */
 PyObject* file_get_data(PyObject* o, char*&buf, Py_ssize_t& len);
 #endif
+
+/// Call repr() on \a o, and return the result in \a out
+int object_repr(PyObject* o, std::string& out);
+
+/**
+ * If o is a Long, return its value. Else call o.fileno() and return its
+ * result.
+ *
+ * Returns -1 if fileno() was not available or an error occurred.
+ */
+int file_get_fileno(PyObject* o);
 
 /**
  * Convert a python string, bytes or unicode to an utf8 string.

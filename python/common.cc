@@ -2,12 +2,7 @@
 #include <Python.h>
 //#include <datetime.h>
 #include "arki/libconfig.h"
-
-#if PY_MAJOR_VERSION >= 3
-    #define PyInt_FromLong PyLong_FromLong
-    #define PyInt_AsLong PyLong_AsLong
-    #define PyInt_Type PyLong_Type
-#endif
+#include "arki/runtime.h"
 
 namespace arki {
 namespace python {
@@ -258,30 +253,6 @@ int trange_from_python(PyObject* o, Trange& out)
     return 0;
 }
 
-int file_get_fileno(PyObject* o)
-{
-    // fileno_value = obj.fileno()
-    pyo_unique_ptr fileno_meth(PyObject_GetAttrString(o, "fileno"));
-    if (!fileno_meth) return -1;
-    pyo_unique_ptr fileno_args(Py_BuildValue("()"));
-    if (!fileno_args) return -1;
-    PyObject* fileno_value = PyObject_Call(fileno_meth, fileno_args, NULL);
-    if (!fileno_value)
-    {
-        if (PyErr_ExceptionMatches(PyExc_AttributeError) || PyErr_ExceptionMatches(PyExc_IOError))
-            PyErr_Clear();
-        return -1;
-    }
-
-    // fileno = int(fileno_value)
-    if (!PyObject_TypeCheck(fileno_value, &PyInt_Type)) {
-        PyErr_SetString(PyExc_ValueError, "fileno() function must return an integer");
-        return -1;
-    }
-
-    return PyInt_AsLong(fileno_value);
-}
-
 PyObject* file_get_data(PyObject* o, char*&buf, Py_ssize_t& len)
 {
     // Use read() instead
@@ -309,6 +280,7 @@ PyObject* file_get_data(PyObject* o, char*&buf, Py_ssize_t& len)
 
     return data.release();
 }
+#endif
 
 
 int object_repr(PyObject* o, std::string& out)
@@ -322,7 +294,30 @@ int object_repr(PyObject* o, std::string& out)
 
     return 0;
 }
-#endif
+
+int file_get_fileno(PyObject* o)
+{
+    // If it is already an int handle, return it
+    if (PyLong_Check(o))
+        return PyLong_AsLong(o);
+
+    // fileno_value = obj.fileno()
+    pyo_unique_ptr fileno_meth(PyObject_GetAttrString(o, "fileno"));
+    if (!fileno_meth) return -1;
+    pyo_unique_ptr fileno_args(Py_BuildValue("()"));
+    if (!fileno_args) return -1;
+    pyo_unique_ptr fileno_value(PyObject_CallObject(fileno_meth, fileno_args));
+    if (!fileno_value) return -1;
+
+    // fileno = int(fileno_value)
+    if (!PyLong_Check(fileno_value))
+    {
+        PyErr_SetString(PyExc_ValueError, "fileno() function must return an integer");
+        return -1;
+    }
+
+    return PyLong_AsLong(fileno_value);
+}
 
 int string_from_python(PyObject* o, std::string& out)
 {
@@ -344,6 +339,7 @@ int string_from_python(PyObject* o, std::string& out)
 
 int common_init()
 {
+    runtime::init();
 #if 0
     /*
      * PyDateTimeAPI, that is used by all the PyDate* and PyTime* macros, is

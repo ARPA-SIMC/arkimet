@@ -10,6 +10,8 @@ using namespace std;
 using namespace arki;
 using namespace arki::python;
 
+struct python_callback_failed : public std::exception {};
+
 extern "C" {
 
 /*
@@ -191,9 +193,175 @@ static PyObject* dpy_DatasetReader_set_from_string(dpy_DatasetReader* self, PyOb
         return raise_std_exception(se);
     }
 }
+
+
+struct DataQuery
+{
+    /// Matcher used to select data
+    Matcher matcher;
+
+    /**
+     * Hint for the dataset backend to let them know that we also want the data
+     * and not just the metadata.
+     *
+     * This is currently only used by the HTTP client dataset, which will only
+     * download data from the server if this option is set.
+     */
+    bool with_data;
+
+    /// Optional compare function to define a custom ordering of the result
+    std::shared_ptr<sort::Compare> sorter;
+
+    DataQuery();
+    DataQuery(const Matcher& matcher, bool with_data=false);
+    ~DataQuery();
+
+	void lua_from_table(lua_State* L, int idx);
+	void lua_push_table(lua_State* L, int idx) const;
+};
+
+struct ByteQuery : public DataQuery
+{
+	enum Type {
+		BQ_DATA = 0,
+		BQ_POSTPROCESS = 1,
+		BQ_REP_METADATA = 2,
+		BQ_REP_SUMMARY = 3
+	};
+
+    std::string param;
+    Type type = BQ_DATA;
+    std::function<void(NamedFileDescriptor&)> data_start_hook = nullptr;
+
+    ByteQuery() {}
+
+    void setData(const Matcher& m)
+    {
+        type = BQ_DATA;
+        matcher = m;
+    }
+
+    void setPostprocess(const Matcher& m, const std::string& procname)
+    {
+        type = BQ_POSTPROCESS;
+        matcher = m;
+        param = procname;
+    }
+
+    void setRepMetadata(const Matcher& m, const std::string& repname)
+    {
+        type = BQ_REP_METADATA;
+        matcher = m;
+        param = repname;
+    }
+
+    void setRepSummary(const Matcher& m, const std::string& repname)
+    {
+        type = BQ_REP_SUMMARY;
+        matcher = m;
+        param = repname;
+    }
+};
+    /**
+     * Query the dataset using the given matcher, and sending the results to
+     * the given function
+     */
+    virtual void query_data(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
+
+    /**
+     * Add to summary the summary of the data that would be extracted with the
+     * given query.
+     */
+    virtual void query_summary(const Matcher& matcher, Summary& summary) = 0;
+
+    /**
+     * Query the dataset obtaining a byte stream, that gets written to a file
+     * descriptor.
+     *
+     * The default implementation in Reader is based on queryData.
+     */
+    virtual void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out);
 #endif
 
+static PyObject* dpy_DatasetReader_query_bytes(dpy_DatasetReader* self, PyObject *args, PyObject* kw)
+{
+    static const char* kwlist[] = { "file", "matcher", "data_start_hook", "postprocess", "metadata_report", "summary_report", NULL };
+    PyObject* arg_file = Py_None;
+    PyObject* arg_matcher = Py_None;
+    PyObject* arg_data_start_hook = Py_None;
+    PyObject* arg_postprocess = Py_None;
+    PyObject* arg_metadata_report = Py_None;
+    PyObject* arg_summary_report = Py_None;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "O|OOOOO", (char**)kwlist, &arg_file, &arg_matcher, &arg_data_start_hook, &arg_postprocess, &arg_metadata_report, &arg_summary_report))
+        return nullptr;
+
+    int fd = file_get_fileno(arg_file);
+    if (fd == -1) return nullptr;
+    string fd_name;
+    if (object_repr(arg_file, fd_name) == -1) return nullptr;
+    string str_matcher;
+    if (arg_matcher != Py_None && string_from_python(arg_matcher, str_matcher) == -1) return nullptr;
+    string postprocess;
+    if (arg_postprocess != Py_None && string_from_python(arg_postprocess, postprocess) == -1) return nullptr;
+    string metadata_report;
+    if (arg_metadata_report != Py_None && string_from_python(arg_metadata_report, metadata_report) == -1) return nullptr;
+    string summary_report;
+    if (arg_summary_report != Py_None && string_from_python(arg_summary_report, summary_report) == -1) return nullptr;
+    if (arg_data_start_hook != Py_None && !PyCallable_Check(arg_data_start_hook))
+    {
+        PyErr_SetString(PyExc_TypeError, "data_start_hoook must be None or a callable object");
+        return nullptr;
+    }
+
+    Matcher matcher(Matcher::parse(str_matcher));
+
+    dataset::ByteQuery query;
+    if (!metadata_report.empty())
+        query.setRepMetadata(matcher, metadata_report);
+    else if (!summary_report.empty())
+        query.setRepSummary(matcher, summary_report);
+    else if (!postprocess.empty())
+        query.setPostprocess(matcher, postprocess);
+    else
+        query.setData(matcher);
+
+    pyo_unique_ptr data_start_hook_args;
+    if (arg_data_start_hook != Py_None)
+    {
+        data_start_hook_args = pyo_unique_ptr(Py_BuildValue("()"));
+        if (!data_start_hook_args) return nullptr;
+
+        query.data_start_hook = [&](NamedFileDescriptor& fd) {
+            // call arg_data_start_hook
+            pyo_unique_ptr res(PyObject_CallObject(arg_data_start_hook, data_start_hook_args));
+            if (!res) throw python_callback_failed();
+        };
+    }
+
+    try {
+        NamedFileDescriptor out(fd, fd_name);
+        self->ds->query_bytes(query, out);
+        Py_RETURN_NONE;
+    } catch (python_callback_failed) {
+        return nullptr;
+    } ARKI_CATCH_RETURN_PYO
+}
+
 static PyMethodDef dpy_DatasetReader_methods[] = {
+    {"query_bytes", (PyCFunction)dpy_DatasetReader_query_bytes, METH_VARARGS | METH_KEYWORDS, R"(
+        query a dataset, piping results to a file.
+
+        The file needs to be either an integer file or socket handle, or a
+        file-like object with a fileno() method that returns an integer handle.
+
+        Arguments:
+          matcher: the matcher string to filter data to return
+          data_start_hook: function called before sending the data to the file
+          postprocess: name of a postprocessor to use to filter data server-side
+          metadata_report: name of the server-side report function to run on results metadata
+          summary_report: name of the server-side report function to run on results summary
+        )" },
 #if 0
     {"copy", (PyCFunction)dpy_DatasetReader_copy, METH_NOARGS, "return a deep copy of the DatasetReader" },
     {"clear", (PyCFunction)dpy_DatasetReader_clear, METH_NOARGS, "remove all data from the record" },
@@ -217,9 +385,9 @@ static PyMethodDef dpy_DatasetReader_methods[] = {
 
 static int dpy_DatasetReader_init(dpy_DatasetReader* self, PyObject* args, PyObject* kw)
 {
-    static char* kwlist[] = { "cfg", nullptr };
+    static const char* kwlist[] = { "cfg", nullptr };
     PyObject* cfg = Py_None;
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "O", kwlist, &cfg))
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "O", (char**)kwlist, &cfg))
         return -1;
 
     try {

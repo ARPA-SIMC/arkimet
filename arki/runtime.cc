@@ -55,9 +55,13 @@ namespace runtime {
 
 void init()
 {
+    static bool initialized = false;
+
+    if (initialized) return;
     types::init_default_types();
     runtime::readMatcherAliasDatabase();
     iotrace::init();
+    initialized = true;
 }
 
 HandledByCommandLineParser::HandledByCommandLineParser(int status) : status(status) {}
