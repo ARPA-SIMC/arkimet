@@ -40,6 +40,30 @@ class TestDatasetReader(unittest.TestCase):
 
         self.fail("no way yet to test sort")
 
+    def test_query_summary(self):
+        ds = arki.DatasetReader({
+            "format": "grib",
+            "name": "test.grib1",
+            "path": "inbound/test.grib1",
+            "type": "file",
+            "postprocess": "countbytes",
+        })
+
+        # No arguments
+        res = ds.query_summary()
+        self.assertIsInstance(res, arki.Summary)
+
+        # Matcher
+        res = ds.query_summary(matcher="reftime:=2007-07-08")
+        self.assertIsInstance(res, arki.Summary)
+
+        # Add to existing summary
+        s = arki.Summary()
+        res = ds.query_summary(summary=s)
+        self.assertIs(res, s)
+
+        self.fail("no way yet to test summary contents")
+
     def test_query_bytes(self):
         ds = arki.DatasetReader({
             "format": "grib",

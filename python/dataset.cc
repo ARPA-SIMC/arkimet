@@ -2,6 +2,7 @@
 #include "dataset.h"
 #include "common.h"
 #include "metadata.h"
+#include "summary.h"
 #include "arki/dataset.h"
 #include "arki/configfile.h"
 #include "arki/sort.h"
@@ -195,37 +196,6 @@ static PyObject* arkipy_DatasetReader_set_from_string(arkipy_DatasetReader* self
 }
 
 
-struct DataQuery
-{
-    /// Matcher used to select data
-    Matcher matcher;
-
-    /**
-     * Hint for the dataset backend to let them know that we also want the data
-     * and not just the metadata.
-     *
-     * This is currently only used by the HTTP client dataset, which will only
-     * download data from the server if this option is set.
-     */
-    bool with_data;
-
-    /// Optional compare function to define a custom ordering of the result
-    std::shared_ptr<sort::Compare> sorter;
-
-    DataQuery();
-    DataQuery(const Matcher& matcher, bool with_data=false);
-    ~DataQuery();
-
-	void lua_from_table(lua_State* L, int idx);
-	void lua_push_table(lua_State* L, int idx) const;
-};
-
-    /**
-     * Query the dataset using the given matcher, and sending the results to
-     * the given function
-     */
-    virtual void query_data(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
-
     /**
      * Add to summary the summary of the data that would be extracted with the
      * given query.
@@ -261,27 +231,69 @@ static PyObject* arkipy_DatasetReader_query_data(arkipy_DatasetReader* self, PyO
     string sort;
     if (arg_sort != Py_None && string_from_python(arg_sort, sort) == -1) return nullptr;
 
-    dataset::DataQuery query;
-    query.matcher = Matcher::parse(str_matcher);
-    query.with_data = with_data;
-    if (!sort.empty()) query.sorter = sort::Compare::parse(sort);
-
-    metadata_dest_func dest = [&](std::unique_ptr<Metadata>&& md) {
-        // call arg_on_metadata
-        pyo_unique_ptr args(PyTuple_Pack(1, metadata_create(move(md))));
-        if (!args) throw python_callback_failed();
-        pyo_unique_ptr res(PyObject_CallObject(arg_on_metadata, args));
-        if (!res) throw python_callback_failed();
-        // Continue if the callback returns None or True
-        if (res == Py_None) return true;
-        int cont = PyObject_IsTrue(res);
-        if (cont == -1) throw python_callback_failed();
-        return cont == 1;
-    };
-
     try {
+        dataset::DataQuery query;
+        query.matcher = Matcher::parse(str_matcher);
+        query.with_data = with_data;
+        if (!sort.empty()) query.sorter = sort::Compare::parse(sort);
+
+        metadata_dest_func dest = [&](std::unique_ptr<Metadata>&& md) {
+            // call arg_on_metadata
+            pyo_unique_ptr args(PyTuple_Pack(1, metadata_create(move(md))));
+            if (!args) throw python_callback_failed();
+            pyo_unique_ptr res(PyObject_CallObject(arg_on_metadata, args));
+            if (!res) throw python_callback_failed();
+            // Continue if the callback returns None or True
+            if (res == Py_None) return true;
+            int cont = PyObject_IsTrue(res);
+            if (cont == -1) throw python_callback_failed();
+            return cont == 1;
+        };
+
         self->ds->query_data(query, dest);
         Py_RETURN_NONE;
+    } catch (python_callback_failed) {
+        return nullptr;
+    } ARKI_CATCH_RETURN_PYO
+}
+
+static PyObject* arkipy_DatasetReader_query_summary(arkipy_DatasetReader* self, PyObject *args, PyObject* kw)
+{
+    static const char* kwlist[] = { "matcher", "summary", NULL };
+    PyObject* arg_matcher = Py_None;
+    PyObject* arg_summary = Py_None;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "|OO", (char**)kwlist, &arg_matcher, &arg_summary))
+        return nullptr;
+
+    string str_matcher;
+    if (arg_matcher != Py_None && string_from_python(arg_matcher, str_matcher) == -1) return nullptr;
+
+    Summary* summary = nullptr;
+    if (arg_summary != Py_None)
+    {
+        if (!arkipy_Summary_Check(arg_summary))
+        {
+            PyErr_SetString(PyExc_TypeError, "summary must be None or an arkimet.Summary object");
+            return nullptr;
+        } else {
+            summary = ((arkipy_Summary*)arg_summary)->summary;
+        }
+    }
+
+    try {
+        if (summary)
+        {
+            self->ds->query_summary(Matcher::parse(str_matcher), *summary);
+            Py_INCREF(arg_summary);
+            return (PyObject*)arg_summary;
+        }
+        else
+        {
+            py_unique_ptr<arkipy_Summary> res(summary_create());
+            self->ds->query_summary(Matcher::parse(str_matcher), *res->summary);
+            return (PyObject*)res.release();
+        }
     } catch (python_callback_failed) {
         return nullptr;
     } ARKI_CATCH_RETURN_PYO
@@ -318,32 +330,32 @@ static PyObject* arkipy_DatasetReader_query_bytes(arkipy_DatasetReader* self, Py
         return nullptr;
     }
 
-    Matcher matcher(Matcher::parse(str_matcher));
-
-    dataset::ByteQuery query;
-    if (!metadata_report.empty())
-        query.setRepMetadata(matcher, metadata_report);
-    else if (!summary_report.empty())
-        query.setRepSummary(matcher, summary_report);
-    else if (!postprocess.empty())
-        query.setPostprocess(matcher, postprocess);
-    else
-        query.setData(matcher);
-
-    pyo_unique_ptr data_start_hook_args;
-    if (arg_data_start_hook != Py_None)
-    {
-        data_start_hook_args = pyo_unique_ptr(Py_BuildValue("()"));
-        if (!data_start_hook_args) return nullptr;
-
-        query.data_start_hook = [&](NamedFileDescriptor& fd) {
-            // call arg_data_start_hook
-            pyo_unique_ptr res(PyObject_CallObject(arg_data_start_hook, data_start_hook_args));
-            if (!res) throw python_callback_failed();
-        };
-    }
-
     try {
+        Matcher matcher(Matcher::parse(str_matcher));
+
+        dataset::ByteQuery query;
+        if (!metadata_report.empty())
+            query.setRepMetadata(matcher, metadata_report);
+        else if (!summary_report.empty())
+            query.setRepSummary(matcher, summary_report);
+        else if (!postprocess.empty())
+            query.setPostprocess(matcher, postprocess);
+        else
+            query.setData(matcher);
+
+        pyo_unique_ptr data_start_hook_args;
+        if (arg_data_start_hook != Py_None)
+        {
+            data_start_hook_args = pyo_unique_ptr(Py_BuildValue("()"));
+            if (!data_start_hook_args) return nullptr;
+
+            query.data_start_hook = [&](NamedFileDescriptor& fd) {
+                // call arg_data_start_hook
+                pyo_unique_ptr res(PyObject_CallObject(arg_data_start_hook, data_start_hook_args));
+                if (!res) throw python_callback_failed();
+            };
+        }
+
         NamedFileDescriptor out(fd, fd_name);
         self->ds->query_bytes(query, out);
         Py_RETURN_NONE;
@@ -364,6 +376,14 @@ static PyMethodDef arkipy_DatasetReader_methods[] = {
           with_data: if True, also load data together with the metadata.
           sort: string with the desired sort order of results.
         )" },
+    {"query_summary", (PyCFunction)arkipy_DatasetReader_query_summary, METH_VARARGS | METH_KEYWORDS, R"(
+        query a dataset, returning an arkimet.Summary with the results.
+
+        Arguments:
+          matcher: the matcher string to filter data to return.
+          summary: not None, add results to this arkimet.Summary, and return
+                   it, instead of creating a new one.
+        )" },
     {"query_bytes", (PyCFunction)arkipy_DatasetReader_query_bytes, METH_VARARGS | METH_KEYWORDS, R"(
         query a dataset, piping results to a file.
 
@@ -377,24 +397,6 @@ static PyMethodDef arkipy_DatasetReader_methods[] = {
           metadata_report: name of the server-side report function to run on results metadata
           summary_report: name of the server-side report function to run on results summary
         )" },
-#if 0
-    {"copy", (PyCFunction)arkipy_DatasetReader_copy, METH_NOARGS, "return a deep copy of the DatasetReader" },
-    {"clear", (PyCFunction)arkipy_DatasetReader_clear, METH_NOARGS, "remove all data from the record" },
-    {"clear_vars", (PyCFunction)arkipy_DatasetReader_clear_vars, METH_NOARGS, "remove all variables from the record, leaving the keywords intact" },
-    {"keys", (PyCFunction)arkipy_DatasetReader_keys, METH_NOARGS, "return a list with all the keys set in the DatasetReader." },
-    {"items", (PyCFunction)arkipy_DatasetReader_items, METH_NOARGS, "return a list with all the (key, value) tuples set in the DatasetReader." },
-    {"varitems", (PyCFunction)arkipy_DatasetReader_varitems, METH_NOARGS, "return a list with all the (key, `dballe.Var`_) tuples set in the DatasetReader." },
-    {"var", (PyCFunction)arkipy_DatasetReader_var, METH_VARARGS, "return a `dballe.Var`_ from the record, given its key." },
-    {"update", (PyCFunction)arkipy_DatasetReader_update, METH_VARARGS | METH_KEYWORDS, "set many record keys/vars in a single shot, via kwargs" },
-    {"get", (PyCFunction)arkipy_DatasetReader_get, METH_VARARGS | METH_KEYWORDS, "lookup a value, returning a fallback value (None by default) if unset" },
-
-    // Deprecated
-    {"key", (PyCFunction)arkipy_DatasetReader_var, METH_VARARGS, "(deprecated) return a `dballe.Var`_ from the record, given its key." },
-    {"vars", (PyCFunction)arkipy_DatasetReader_vars, METH_NOARGS, "(deprecated) return a sequence with all the variables set on the DatasetReader. Note that this does not include keys." },
-    {"date_extremes", (PyCFunction)arkipy_DatasetReader_date_extremes, METH_NOARGS, "(deprecated) get two datetime objects with the lower and upper bounds of the datetime period in this record" },
-    {"set_station_context", (PyCFunction)arkipy_DatasetReader_set_station_context, METH_NOARGS, "(deprecated) set the date, level and time range values to match the station data context" },
-    {"set_from_string", (PyCFunction)arkipy_DatasetReader_set_from_string, METH_VARARGS, "(deprecated) set values from a 'key=val' string" },
-#endif
     {NULL}
 };
 
