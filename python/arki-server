@@ -5,15 +5,30 @@ import os
 import io
 import configparser
 import logging
+import tempfile
 import argparse
 import datetime
+import sys
+import arkimet as arki
+from werkzeug.exceptions import HTTPException, NotFound
 from socketserver import ForkingMixIn
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 class Server(ForkingMixIn, HTTPServer):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
+        from werkzeug.routing import Map, Rule
         self.url = "http://{s.server_name}:{s.server_port}".format(s=self)
+        self.url_map = Map([
+            Rule('/', endpoint='arki_index'),
+            Rule('/config', endpoint='arki_config'),
+            Rule('/qexpand', endpoint='arki_qexpand'),
+            Rule('/dataset/<name>/query', endpoint='arki_dataset_query'),
+            Rule('/dataset/<name>/config', endpoint='arki_dataset_config'),
+        ])
+
+    def process_request(self, *args, **kw):
+        super().process_request(*args, **kw)
 
     def read_config(self, pathname):
         logging.info("Reading configuration from %s", pathname)
@@ -21,36 +36,127 @@ class Server(ForkingMixIn, HTTPServer):
         self.cfg.read(pathname)
 
         # Amend configuration turning local datasets into remote dataset
+        self.remote_cfg = configparser.ConfigParser()
         for sec in self.cfg.sections():
-            self.cfg.set(sec, "path", self.url + "/dataset/" + sec);
-            self.cfg.set(sec, "type", "remote")
-            self.cfg.set(sec, "server", self.url)
+            self.remote_cfg.add_section(sec)
+            for k, v in self.cfg.items(sec):
+                self.remote_cfg.set(sec, k, v)
+            self.remote_cfg.set(sec, "path", self.url + "/dataset/" + sec);
+            self.remote_cfg.set(sec, "type", "remote")
+            self.remote_cfg.set(sec, "server", self.url)
+
+
+class DatasetQuery:
+    content_type = "application/octet-stream"
+
+    def __init__(self, dsname, cfg, request, handler):
+        self.dsname = dsname
+        self.query = request.form.get("query", "").strip()
+        self.with_data = request.form.get("with_data", "false").strip() == "true"
+        self.sort = request.form.get("sort", "").strip()
+        # TODO: arki::utils::net::http::ParamSingle* annotate;
+        # TODO: arki::utils::net::http::ParamSingle* command;
+        # TODO: arki::utils::net::http::FileParamMulti* postprocfile;
+        self.ds = arki.DatasetReader(cfg)
+        self.handler = handler
+        self.headers_sent = False
+
+    def send_headers(self):
+        self.handler.send_response(200)
+        self.handler.send_header("Content-Type", self.content_type)
+        self.handler.end_headers()
+        self.handler.flush_headers()
+        self.headers_sent = True
+
+    def run(self):
+        origdir = os.getcwd()
+        try:
+            with tempfile.TemporaryDirectory(prefix="arki-server-") as tmpdir:
+                os.chdir(tmpdir)
+                self.stream()
+                if not self.headers_sent:
+                    self.send_headers()
+        finally:
+            os.chdir(origdir)
+
+class DatasetQueryMetadata(DatasetQuery):
+    def on_metadata(self, md):
+        if not self.headers_sent:
+            self.send_headers()
+
+    def stream(self):
+        self.ds.query_data(
+            on_metadata=self.on_metadata,
+            matcher=self.query,
+            with_data=self.with_data,
+            sort=self.sort)
+
 
 
 class Handler(BaseHTTPRequestHandler):
     re_pathsplit = re.compile(r"/+")
 
+    def make_environ(self):
+        # Derived from werkzeug's WSGIRequestHandler
+        from werkzeug.urls import url_parse, url_unquote
+        from werkzeug._compat import wsgi_encoding_dance
+
+        request_url = url_parse(self.path)
+
+        url_scheme = "http"
+        path_info = url_unquote(request_url.path)
+
+        environ = {
+            'wsgi.version':         (1, 0),
+            'wsgi.url_scheme':      url_scheme,
+            'wsgi.input':           self.rfile,
+            'wsgi.errors':          sys.stderr,
+            'wsgi.multithread':     False,
+            'wsgi.multiprocess':    True,
+            'wsgi.run_once':        False,
+            'SERVER_SOFTWARE':      self.server_version,
+            'REQUEST_METHOD':       self.command,
+            'SCRIPT_NAME':          '',
+            'PATH_INFO':            wsgi_encoding_dance(path_info),
+            'QUERY_STRING':         wsgi_encoding_dance(request_url.query),
+            'CONTENT_TYPE':         self.headers.get('Content-Type', ''),
+            'CONTENT_LENGTH':       self.headers.get('Content-Length', ''),
+            'REMOTE_ADDR':          self.client_address[0],
+            'REMOTE_PORT':          self.client_address[1],
+            'SERVER_NAME':          self.server.server_address[0],
+            'SERVER_PORT':          str(self.server.server_address[1]),
+            'SERVER_PROTOCOL':      self.request_version
+        }
+
+        for key, value in self.headers.items():
+            key = 'HTTP_' + key.upper().replace('-', '_')
+            if key not in ('HTTP_CONTENT_TYPE', 'HTTP_CONTENT_LENGTH'):
+                environ[key] = value
+
+        if request_url.netloc:
+            environ['HTTP_HOST'] = request_url.netloc
+
+        return environ
+
+    def dispatch(self):
+        from werkzeug.wrappers import Request, Response
+        request = Request(self.make_environ())
+        adapter = self.server.url_map.bind_to_environ(request.environ)
+        try:
+            endpoint, values = adapter.match()
+            return getattr(self, endpoint)(request, **values)
+        except HTTPException as e:
+            self.send_response(e.code, e.description)
+            for k, v in e.get_headers():
+                self.send_header(k, v)
+            self.end_headers()
+            self.wfile.write(e.get_body(request.environ).encode("utf-8"))
+
     def do_GET(self):
-        self.handle_get_or_post()
+        self.dispatch()
 
     def do_POST(self):
-        self.handle_get_or_post()
-
-    def handle_get_or_post(self):
-        path = self.path.strip("/")
-        if not path:
-            cmd = "index"
-            path = []
-        else:
-            path = self.re_pathsplit.split(path)
-            cmd = path.pop(0)
-
-        meth = getattr(self, "arki_" + cmd, None)
-        if meth is None:
-            self.send_404("Path not found")
-            return
-
-        meth(path)
+        self.dispatch()
 
     def send_response(self, code, msg=None):
         logging.info('%s - - [%s] "%s" %d -',
@@ -60,60 +166,146 @@ class Handler(BaseHTTPRequestHandler):
                       code)
         super().send_response(code, msg)
 
-    def send_404(self, msg):
-        self.send_response(404, msg.encode("utf-8"))
-        self.send_header("Content-Type", "text/plain")
-        self.end_headers()
-        #self.flush_headers()
-        self.wfile.write(msg.encode("utf-8"))
-        self.wfile.write(b"\n")
-
-    def arki_index(self, path):
-        self.send_404("TODO: index")
+    def arki_index(self, request):
+        raise NotFound("TODO: index")
         # local_handlers.add("", new IndexHandler);
 
-    def arki_config(self, path):
+    def arki_config(self, request):
         # ./run-local arki-query "" http://localhost:8080
         # curl http://localhost:8080/config
         self.send_response(200)
         self.send_header("Content-Type", "text/plain")
         self.end_headers()
         out = io.StringIO()
-        self.server.cfg.write(out)
+        self.server.remote_cfg.write(out)
         self.wfile.write(out.getvalue().encode("utf-8"))
 
-    def arki_aliases(self, path):
-        self.send_404("TODO: aliases")
-        # local_handlers.add("aliases", new AliasesHandler);
+    def arki_dataset_config(self, request, name):
+        # ./run-local arki-query "" http://localhost:8080/dataset/<name>
+        # curl http://localhost:8080/dataset/<name>/config
+        if not self.server.remote_cfg.has_section(name):
+            raise NotFound("Dataset {} not found".format(name))
+        cfg = configparser.ConfigParser()
+        cfg.add_section(name)
+        for k, v in self.server.remote_cfg.items(name):
+            cfg.set(name, k, v)
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain")
+        self.end_headers()
+        out = io.StringIO()
+        cfg.write(out)
+        self.wfile.write(out.getvalue().encode("utf-8"))
 
-    def arki_qexpand(self, path):
+    def arki_qexpand(self, request):
         # ./run-local arki-query "" http://localhost:8080
-        self.send_404("TODO: qexpand")
-        # local_handlers.add("qexpand", new QexpandHandler);
-        req.log_action("expand aliases in query");
+        query = request.form["query"].strip()
+        expanded = arki.expand_query(query)
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain")
+        self.end_headers()
+        self.wfile.write(expanded.encode("utf-8"))
 
-        using namespace net::http;
-        Params params;
-        ParamSingle* query = params.add<ParamSingle>("query");
-        params.parse_get_or_post(req);
-        Matcher m = Matcher::parse(*query);
-        string out = m.toStringExpanded();
-        req.send_result(out, "text/plain");
+    def arki_dataset_query(self, request, name):
+        if not self.server.cfg.has_section(name):
+            raise NotFound("Dataset {} not found".format(name))
+        cfg = dict(self.server.cfg.items(name))
+        style = request.form.get("style", "metadata").strip()
 
-    def arki_dataset(self, path):
-        self.send_404("TODO: dataset")
-        # local_handlers.add("dataset", new DatasetHandler);
+        # TODO: pmaker.server_side = true;
+        # TODO: if (!sort->empty())
+        # TODO:     pmaker.sort = *sort;
+        #
+        # TODO: // Validate request
+        # TODO: string errors = pmaker.verify_option_consistency();
+        # TODO: if (!errors.empty())
+        # TODO:     throw net::http::error400(errors);
 
-    def arki_query(self, path):
-        self.send_404("TODO: query")
-        # local_handlers.add("query", new RootQueryHandler);
+        if style == "metadata":
+            Streamer = DatasetQueryMetadata
+        # TODO: // Configure the ProcessorMaker with the request
+        # TODO: if (style->empty() || *style == "metadata") {
+        # TODO:     ;
+        # TODO: } else if (*style == "yaml") {
+        # TODO:     pmaker.yaml = true;
+        # TODO: } else if (*style == "json") {
+        # TODO:     pmaker.json = true;
+        # TODO: } else if (*style == "inline") {
+        # TODO:     pmaker.data_inline = true;
+        # TODO: } else if (*style == "data") {
+        # TODO:     pmaker.data_only = true;
+        # TODO: } else if (*style == "postprocess") {
+        # TODO:     pmaker.postprocess = *command;
+        # TODO:     postprocfiles_to_env(*postprocfile);
+        # TODO: } else if (*style == "rep_metadata") {
+        # TODO:     pmaker.report = *command;
+        # TODO: } else if (*style == "rep_summary") {
+        # TODO:     pmaker.summary = true;
+        # TODO:     pmaker.report = *command;
+        # TODO: }
+        else:
+            raise NotFound("TODO: query style {}".format(style))
 
-    def arki_summary(self, path):
-        self.send_404("TODO: summary")
-        # local_handlers.add("summary", new RootSummaryHandler);
+        streamer = Streamer(name, cfg, request, self)
+        streamer.run()
 
-    #    if (opts.inbound->isSet())
-    #        local_handlers.add("inbound", new InboundHandler(opts.inbound->stringValue()));
+#    // Response header generator
+#    StreamHeaders headers(req, dsname);
+#
+#    // Set content type and file name accordingly
+#    if (pmaker.yaml)
+#    {
+#        headers.content_type = "text/x-yaml";
+#        headers.ext = "yaml";
+#    }
+#    else if (pmaker.json)
+#    {
+#        headers.content_type = "application/json";
+#        headers.ext = "json";
+#    } else if (!pmaker.report.empty()) {
+#        headers.content_type = "text/plain";
+#        headers.ext = "txt";
+#    }
+#
+#    // If we are postprocessing, we cannot monitor the postprocessor
+#    // output to hook sending headers: the postprocessor is
+#    // connected directly to the output socket.
+#    //
+#    // Therefore we need to send the headers in advance.
+#
+#    {
+#        // Create Output directed to req.sock
+#        sys::NamedFileDescriptor sockoutput(req.sock, "socket");
+#
+#        // Hook sending headers to when the subprocess start sending
+#        pmaker.data_start_hook = [&](NamedFileDescriptor&) { headers.send_headers(); };
+#
+#        // Create the dataset processor for this query
+#        unique_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
+#
+#        // Process the dataset producing the output
+#        p->process(ds, dsname);
+#        p->end();
+#    }
+
+
+#    def arki_aliases(self, path):
+#        self.send_404("TODO: aliases")
+#        # local_handlers.add("aliases", new AliasesHandler);
+#
+#    def arki_dataset(self, path):
+#        self.send_404("TODO: dataset")
+#        # local_handlers.add("dataset", new DatasetHandler);
+#
+#    def arki_query(self, path):
+#        self.send_404("TODO: query")
+#        # local_handlers.add("query", new RootQueryHandler);
+#
+#    def arki_summary(self, path):
+#        self.send_404("TODO: summary")
+#        # local_handlers.add("summary", new RootSummaryHandler);
+#
+#    #    if (opts.inbound->isSet())
+#    #        local_handlers.add("inbound", new InboundHandler(opts.inbound->stringValue()));
 
 
 def main():

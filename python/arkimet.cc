@@ -3,6 +3,7 @@
 #include "metadata.h"
 #include "summary.h"
 #include "dataset.h"
+#include "arki/matcher.h"
 #include "config.h"
 
 using namespace std;
@@ -11,7 +12,20 @@ using namespace arki::python;
 
 extern "C" {
 
+static PyObject* arkipy_expand_query(PyTypeObject *type, PyObject *args)
+{
+    const char* query;
+    if (!PyArg_ParseTuple(args, "s", &query))
+        return nullptr;
+    try {
+        Matcher m = Matcher::parse(query);
+        string out = m.toStringExpanded();
+        return PyUnicode_FromStringAndSize(out.data(), out.size());
+    } ARKI_CATCH_RETURN_PYO
+}
+
 static PyMethodDef arkimet_methods[] = {
+    { "expand_query", (PyCFunction)arkipy_expand_query, METH_VARARGS, "Return the same text query with all aliases expanded" },
     { NULL }
 };
 
