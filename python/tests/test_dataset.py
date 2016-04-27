@@ -36,9 +36,18 @@ class TestDatasetReader(unittest.TestCase):
         ds.query_data(matcher="reftime:=2007-07-08", on_metadata=count_results)
         self.assertEquals(count, 1)
 
-        self.fail("no way yet to test with_data")
+        # Output
+        with tempfile.TemporaryFile() as fd:
+            def stream_results(md):
+                md.write(fd)
+            ds.query_data(on_metadata=stream_results)
+            fd.seek(0)
+            queried = fd.read()
+        self.assertEquals(len(queried), 612)
 
-        self.fail("no way yet to test sort")
+        self.fail("sort still untested")
+
+        self.fail("no way yet to test with_data")
 
     def test_query_summary(self):
         ds = arki.DatasetReader({

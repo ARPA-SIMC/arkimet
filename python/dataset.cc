@@ -387,10 +387,10 @@ static PyMethodDef arkipy_DatasetReader_methods[] = {
     {"query_bytes", (PyCFunction)arkipy_DatasetReader_query_bytes, METH_VARARGS | METH_KEYWORDS, R"(
         query a dataset, piping results to a file.
 
-        The file needs to be either an integer file or socket handle, or a
-        file-like object with a fileno() method that returns an integer handle.
-
         Arguments:
+          file: the output file. The file needs to be either an integer file or
+                socket handle, or a file-like object with a fileno() method
+                that returns an integer handle.
           matcher: the matcher string to filter data to return
           data_start_hook: function called before sending the data to the file
           postprocess: name of a postprocessor to use to filter data server-side

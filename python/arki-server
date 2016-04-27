@@ -83,6 +83,7 @@ class DatasetQueryMetadata(DatasetQuery):
     def on_metadata(self, md):
         if not self.headers_sent:
             self.send_headers()
+        md.write(self.handler.wfile)
 
     def stream(self):
         self.ds.query_data(
@@ -97,6 +98,9 @@ class Handler(BaseHTTPRequestHandler):
     re_pathsplit = re.compile(r"/+")
 
     def make_environ(self):
+        """
+        Create an environment that can be used with werkzeug
+        """
         # Derived from werkzeug's WSGIRequestHandler
         from werkzeug.urls import url_parse, url_unquote
         from werkzeug._compat import wsgi_encoding_dance
@@ -139,6 +143,9 @@ class Handler(BaseHTTPRequestHandler):
         return environ
 
     def dispatch(self):
+        """
+        Dispatch a request to the endpoint given by self.server.url_map
+        """
         from werkzeug.wrappers import Request, Response
         request = Request(self.make_environ())
         adapter = self.server.url_map.bind_to_environ(request.environ)
@@ -159,6 +166,10 @@ class Handler(BaseHTTPRequestHandler):
         self.dispatch()
 
     def send_response(self, code, msg=None):
+        """
+        Wrap BaseHTTPRequestHandler's send_response to add logging of the
+        request
+        """
         logging.info('%s - - [%s] "%s" %d -',
                       self.client_address[0],
                       datetime.datetime.utcnow().strftime("%d/%b/%Y:%H:%M:%S %z"),
