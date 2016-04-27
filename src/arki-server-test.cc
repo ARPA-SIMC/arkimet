@@ -20,26 +20,26 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::tests;
 
-struct arki_server_shar {
-    ConfigFile config;
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
 
-    arki_server_shar()
-    {
-    }
-};
-TESTGRP(arki_server);
+    void register_tests() override;
+} test("arki_server");
+
+void Tests::register_tests() {
 
 // Query the configuration
-template<> template<>
-void to::test<1>()
-{
+add_method("config", [] {
+    ConfigFile config;
+
     dataset::HTTP::readConfig("http://localhost:7117", config);
 
     ensure(config.section("test200") != 0);
@@ -50,12 +50,11 @@ void to::test<1>()
 
     ensure(config.section("error") != 0);
     ensure_equals(config.section("error")->value("server"), "http://localhost:7117");
-}
+});
 
 // Test querying the datasets, metadata only
-template<> template<>
-void to::test<2>()
-{
+add_method("metadata", [] {
+    ConfigFile config;
     dataset::HTTP::readConfig("http://localhost:7117", config);
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
     metadata::Collection mdc(*testds, Matcher::parse("origin:GRIB1,200"));
@@ -71,12 +70,11 @@ void to::test<2>()
     mdc.clear();
     mdc.add(*testds, Matcher::parse("origin:GRIB1,98"));
     ensure_equals(mdc.size(), 0u);
-}
+});
 
 // Test querying the datasets, with inline data
-template<> template<>
-void to::test<3>()
-{
+add_method("inline", [] {
+    ConfigFile config;
     dataset::HTTP::readConfig("http://localhost:7117", config);
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
     metadata::Collection mdc(*testds, dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true));
@@ -102,24 +100,22 @@ void to::test<3>()
     wassert(actual(mdc.size()) == 1u);
     wassert(actual_type(mdc[0].source()).is_source_inline("grib", 7218));
     wassert(actual(mdc[0].getData().size()) == 7218u);
-}
+});
 
 // Test querying the summary
-template<> template<>
-void to::test<4>()
-{
+add_method("summary", [] {
+    ConfigFile config;
     dataset::HTTP::readConfig("http://localhost:7117", config);
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
 
     Summary summary;
     testds->query_summary(Matcher::parse("origin:GRIB1,200"), summary);
     ensure_equals(summary.count(), 1u);
-}
+});
 
 // Test querying with postprocessing
-template<> template<>
-void to::test<5>()
-{
+add_method("postprocess", [] {
+    ConfigFile config;
     dataset::HTTP::readConfig("http://localhost:7117", config);
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
 
@@ -133,12 +129,11 @@ void to::test<5>()
     out.close();
     string res = sys::read_file(out.name());
     ensure_equals(res, "ciao\n");
-}
+});
 
 // Test the server giving an error
-template<> template<>
-void to::test<6>()
-{
+add_method("error", [] {
+    ConfigFile config;
     dataset::HTTP::readConfig("http://localhost:7117", config);
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
 
@@ -177,12 +172,10 @@ void to::test<6>()
     } catch (std::exception& e) {}
     out.close();
     wassert(actual(sys::size(out.name())) == 0u);
-}
+});
 
 // Test expanding a query
-template<> template<>
-void to::test<7>()
-{
+add_method("qexpand", [] {
     ensure_equals(dataset::HTTP::expandMatcher("origin:GRIB1,200;product:t", "http://localhost:7117"),
           "origin:GRIB1,200; product:GRIB1,200,2,11 or GRIB1,98,128,130 or GRIB1,98,128,167 or GRIB1,200,200,11 or GRIB2,200,0,200,11");
     try {
@@ -191,12 +184,10 @@ void to::test<7>()
     } catch (...) {
         ensure(true);
     }
-}
+});
 
 // Test querying the datasets via macro
-template<> template<>
-void to::test<8>()
-{
+add_method("qmacro", [] {
     ConfigFile cfg;
     cfg.setValue("name", "noop");
     cfg.setValue("type", "remote");
@@ -207,12 +198,10 @@ void to::test<8>()
     ensure_equals(mdc.size(), 1u);
     // Check that the source record that comes out is ok
     wassert(actual_type(mdc[0].source()).is_source_url("grib", "http://localhost:7117/query"));
-}
+});
 
 // Test querying the summary
-template<> template<>
-void to::test<9>()
-{
+add_method("global_summary", [] {
     ConfigFile cfg;
     cfg.setValue("name", "noop");
     cfg.setValue("type", "remote");
@@ -223,12 +212,10 @@ void to::test<9>()
     Summary summary;
     testds->query_summary(Matcher(), summary);
     ensure_equals(summary.count(), 1u);
-}
+});
 
 // Test a postprocessor that outputs data and then exits with error
-template<> template<>
-void to::test<10>()
-{
+add_method("postproc_error", [] {
     ConfigFile cfg;
     dataset::HTTP::readConfig("http://localhost:7117/dataset/test200", cfg);
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(*cfg.section("test200")));
@@ -247,14 +234,13 @@ void to::test<10>()
 
     // And we should not get a server error after the normal stream has started
     wassert(actual(res).not_contains("500 Server error"));
-}
+});
 
 // Test data integrity of postprocessed queries through a server (used to fail
 // after offset 0xc00)
-template<> template<>
-void to::test<11>()
-{
+add_method("postproc_error1", [] {
     using namespace arki::dataset;
+    ConfigFile config;
 
     // Get the normal data
     vector<uint8_t> plain;
@@ -345,7 +331,8 @@ void to::test<11>()
     const auto& d2 = mdc2[0].getData();
 
     ensure(d1 == d2);
-}
+});
 
+}
 
 }

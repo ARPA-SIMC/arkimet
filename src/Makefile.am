@@ -86,7 +86,7 @@ check-local:
 	done
 
 test_src_SOURCES = \
-		arki-server-tut.cc \
+		arki-server-test.cc \
 		../arki/utils/tests.cc \
 		../arki/types/tests.cc \
 		../arki/tests/tut-main.cpp
