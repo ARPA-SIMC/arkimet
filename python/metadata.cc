@@ -13,6 +13,7 @@ extern "C" {
 /*
  * Metadata
  */
+
 static PyObject* arkipy_Metadata_write(arkipy_Metadata* self, PyObject *args, PyObject* kw)
 {
     static const char* kwlist[] = { "file", "format", NULL };
@@ -43,8 +44,14 @@ static PyObject* arkipy_Metadata_write(arkipy_Metadata* self, PyObject *args, Py
             return nullptr;
         }
         Py_RETURN_NONE;
-    } catch (python_callback_failed) {
-        return nullptr;
+    } ARKI_CATCH_RETURN_PYO
+}
+
+static PyObject* arkipy_Metadata_make_inline(arkipy_Metadata* self, PyObject *null)
+{
+    try {
+        self->md->makeInline();
+        Py_RETURN_NONE;
     } ARKI_CATCH_RETURN_PYO
 }
 
@@ -61,6 +68,9 @@ static PyMethodDef arkipy_Metadata_methods[] = {
                 socket handle, or a file-like object with a fileno() method
                 that returns an integer handle.
           format: "binary", "yaml", or "json". Default: "binary".
+        )" },
+    {"make_inline", (PyCFunction)arkipy_Metadata_make_inline, METH_NOARGS, R"(
+        Read the data and inline them in the metadata.
         )" },
     {NULL}
 };

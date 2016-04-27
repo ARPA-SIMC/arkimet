@@ -349,10 +349,11 @@ void HTTP::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     const char* toupload = getenv("ARKI_POSTPROC_FILES");
     if (toupload != NULL)
     {
+        unsigned count = 0;
         // Split by ':'
         str::Split splitter(toupload, ":");
         for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
-            form.addfile("postprocfile", *i);
+            form.addfile("postprocfile" + to_string(++count), *i);
     }
 	switch (q.type)
 	{

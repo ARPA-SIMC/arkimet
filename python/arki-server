@@ -14,6 +14,7 @@ from werkzeug.exceptions import HTTPException, NotFound
 from socketserver import ForkingMixIn
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
+
 class Server(ForkingMixIn, HTTPServer):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
@@ -51,6 +52,9 @@ class DatasetQuery:
 
     def __init__(self, dsname, cfg, request, handler):
         self.dsname = dsname
+        self.cfg = cfg
+        self.request = request
+        self.handler = handler
         self.query = request.form.get("query", "").strip()
         self.with_data = request.form.get("with_data", "false").strip() == "true"
         self.sort = request.form.get("sort", "").strip()
@@ -58,7 +62,6 @@ class DatasetQuery:
         # TODO: arki::utils::net::http::ParamSingle* command;
         # TODO: arki::utils::net::http::FileParamMulti* postprocfile;
         self.ds = arki.DatasetReader(cfg)
-        self.handler = handler
         self.headers_sent = False
 
     def send_headers(self):
@@ -76,8 +79,28 @@ class DatasetQuery:
                 self.stream()
                 if not self.headers_sent:
                     self.send_headers()
+        except Exception as e:
+            if not self.headers_sent:
+                self.handler.send_response(500)
+                self.handler.send_header("Content-Type", "text/plain")
+                self.handler.send_header("Arkimet-Exception", str(e))
+                self.handler.end_headers()
+                self.handler.flush_headers()
+                self.handler.wfile.write(str(e).encode("utf-8"))
+                self.handler.wfile.write(b"\n")
+            else:
+                logging.exception("Exception caught after headers have been sent")
         finally:
             os.chdir(origdir)
+
+
+class DatasetQueryData(DatasetQuery):
+    def stream(self):
+        self.ds.query_bytes(
+            file=self.handler.wfile,
+            matcher=self.query,
+            data_start_hook=self.send_headers)
+
 
 class DatasetQueryMetadata(DatasetQuery):
     def on_metadata(self, md):
@@ -92,6 +115,40 @@ class DatasetQueryMetadata(DatasetQuery):
             with_data=self.with_data,
             sort=self.sort)
 
+
+class DatasetQueryMetadataInline(DatasetQuery):
+    def on_metadata(self, md):
+        if not self.headers_sent:
+            self.send_headers()
+        md.make_inline()
+        md.write(self.handler.wfile)
+
+    def stream(self):
+        self.ds.query_data(
+            on_metadata=self.on_metadata,
+            matcher=self.query,
+            with_data=True,
+            sort=self.sort)
+
+
+class DatasetQueryPostprocess(DatasetQuery):
+    def stream(self):
+        # Iterate submitted files and export information about them to the
+        # environment
+        names = []
+        for name, file in self.request.files.items():
+            basename = os.path.basename(file.filename)
+            file.save(basename)
+            names.append(basename)
+
+        if names:
+            os.environ["ARKI_POSTPROC_FILES"] = ":".join(names)
+
+        self.ds.query_bytes(
+            file=self.handler.wfile,
+            matcher=self.query,
+            data_start_hook=self.send_headers,
+            postprocess=self.request.form.get("command", ""))
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -233,20 +290,16 @@ class Handler(BaseHTTPRequestHandler):
 
         if style == "metadata":
             Streamer = DatasetQueryMetadata
-        # TODO: // Configure the ProcessorMaker with the request
-        # TODO: if (style->empty() || *style == "metadata") {
-        # TODO:     ;
+        elif style == "inline":
+            Streamer = DatasetQueryMetadataInline
+        elif style == "data":
+            Streamer = DatasetQueryData
         # TODO: } else if (*style == "yaml") {
         # TODO:     pmaker.yaml = true;
         # TODO: } else if (*style == "json") {
         # TODO:     pmaker.json = true;
-        # TODO: } else if (*style == "inline") {
-        # TODO:     pmaker.data_inline = true;
-        # TODO: } else if (*style == "data") {
-        # TODO:     pmaker.data_only = true;
-        # TODO: } else if (*style == "postprocess") {
-        # TODO:     pmaker.postprocess = *command;
-        # TODO:     postprocfiles_to_env(*postprocfile);
+        elif style == "postprocess":
+            Streamer = DatasetQueryPostprocess
         # TODO: } else if (*style == "rep_metadata") {
         # TODO:     pmaker.report = *command;
         # TODO: } else if (*style == "rep_summary") {
