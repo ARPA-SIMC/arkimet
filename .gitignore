@@ -62,7 +62,6 @@ Makefile
 /src/arki-bufr-prepare
 /src/arki-gzip
 /src/arki-shell
-/src/arki-server
 /src/arki-inbound
 /src/arki-test
 /src/test-src

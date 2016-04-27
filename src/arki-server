@@ -243,6 +243,17 @@ class Handler(BaseHTTPRequestHandler):
 
         return environ
 
+    def log_request(self, code='-', size='-'):
+        """
+        Wrap BaseHTTPRequestHandler's send_response to add logging of the
+        request
+        """
+        logging.info('%s - - [%s] "%s" %s %s',
+                      self.client_address[0],
+                      datetime.datetime.utcnow().strftime("%d/%b/%Y:%H:%M:%S %z"),
+                      self.requestline,
+                      code, size)
+
     def dispatch(self):
         """
         Dispatch a request to the endpoint given by self.server.url_map
@@ -265,18 +276,6 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         self.dispatch()
-
-    def send_response(self, code, msg=None):
-        """
-        Wrap BaseHTTPRequestHandler's send_response to add logging of the
-        request
-        """
-        logging.info('%s - - [%s] "%s" %d -',
-                      self.client_address[0],
-                      datetime.datetime.utcnow().strftime("%d/%b/%Y:%H:%M:%S %z"),
-                      self.requestline,
-                      code)
-        super().send_response(code, msg)
 
     def arki_index(self, request):
         raise NotFound("TODO: index")
@@ -415,13 +414,21 @@ def main():
         root_logger.addHandler(h)
 
     if args.accesslog:
-        h = logging.WatchedFileHandler(args.accesslog)
+        from logging.handlers import WatchedFileHandler
+        h = WatchedFileHandler(args.accesslog)
         h.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s %(message)s"))
         h.setLevel(logging.INFO)
         class Filter:
             def filter(self, record):
                 return record.level < logging.WARN
         h.addFilter(Filter())
+        root_logger.addHandler(h)
+
+    if args.errorlog:
+        from logging.handlers import WatchedFileHandler
+        h = WatchedFileHandler(args.errorlog)
+        h.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s %(message)s"))
+        h.setLevel(logging.WARN)
         root_logger.addHandler(h)
 
     if args.syslog:
@@ -433,14 +440,19 @@ def main():
     httpd.read_config(args.configfile)
 
     if args.runtest:
+        exit_code = 0
         class TestThread(threading.Thread):
             def run(self):
-                subprocess.check_call(args.runtest, shell=True)
+                try:
+                    subprocess.check_call(args.runtest, shell=True)
+                except:
+                    exit_code = 1
                 httpd.shutdown()
         test_thread = TestThread()
         test_thread.start()
         httpd.serve_forever()
         test_thread.join()
+        sys.exit(exit_code)
     else:
         httpd.serve_forever()
 

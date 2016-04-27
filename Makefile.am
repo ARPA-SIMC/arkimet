@@ -2,10 +2,11 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = conf embedded arki src doc test
+SUBDIRS = conf embedded arki
 if DO_PYTHON
 SUBDIRS += python
 endif
+SUBDIRS += src doc test
 
 man_MANS = \
 	arki-dump.1 \
