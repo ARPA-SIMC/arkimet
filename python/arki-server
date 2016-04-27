@@ -102,6 +102,32 @@ class DatasetQueryData(DatasetQuery):
             data_start_hook=self.send_headers)
 
 
+class DatasetQueryRepMetadata(DatasetQuery):
+    content_type = "text/plain"
+
+    def stream(self):
+        self.ds.query_bytes(
+            file=self.handler.wfile,
+            matcher=self.query,
+            with_data=self.with_data,
+            sort=self.sort,
+            data_start_hook=self.send_headers,
+            metadata_report=self.request.form.get("command", ""))
+
+
+class DatasetQueryRepSummary(DatasetQuery):
+    content_type = "text/plain"
+
+    def stream(self):
+        self.ds.query_bytes(
+            file=self.handler.wfile,
+            matcher=self.query,
+            with_data=self.with_data,
+            sort=self.sort,
+            data_start_hook=self.send_headers,
+            summary_report=self.request.form.get("command", ""))
+
+
 class DatasetQueryMetadata(DatasetQuery):
     def on_metadata(self, md):
         if not self.headers_sent:
@@ -147,6 +173,8 @@ class DatasetQueryPostprocess(DatasetQuery):
         self.ds.query_bytes(
             file=self.handler.wfile,
             matcher=self.query,
+            with_data=self.with_data,
+            sort=self.sort,
             data_start_hook=self.send_headers,
             postprocess=self.request.form.get("command", ""))
 
@@ -300,12 +328,10 @@ class Handler(BaseHTTPRequestHandler):
         # TODO:     pmaker.json = true;
         elif style == "postprocess":
             Streamer = DatasetQueryPostprocess
-        # TODO: } else if (*style == "rep_metadata") {
-        # TODO:     pmaker.report = *command;
-        # TODO: } else if (*style == "rep_summary") {
-        # TODO:     pmaker.summary = true;
-        # TODO:     pmaker.report = *command;
-        # TODO: }
+        elif style == "rep_metadata":
+            Streamer = DatasetQueryRepMetadata
+        elif style == "rep_summary":
+            Streamer = DatasetQueryRepSummary
         else:
             raise NotFound("TODO: query style {}".format(style))
 

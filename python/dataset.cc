@@ -301,15 +301,17 @@ static PyObject* arkipy_DatasetReader_query_summary(arkipy_DatasetReader* self, 
 
 static PyObject* arkipy_DatasetReader_query_bytes(arkipy_DatasetReader* self, PyObject *args, PyObject* kw)
 {
-    static const char* kwlist[] = { "file", "matcher", "data_start_hook", "postprocess", "metadata_report", "summary_report", NULL };
+    static const char* kwlist[] = { "file", "matcher", "with_data", "sort", "data_start_hook", "postprocess", "metadata_report", "summary_report", NULL };
     PyObject* arg_file = Py_None;
     PyObject* arg_matcher = Py_None;
+    PyObject* arg_with_data = Py_None;
+    PyObject* arg_sort = Py_None;
     PyObject* arg_data_start_hook = Py_None;
     PyObject* arg_postprocess = Py_None;
     PyObject* arg_metadata_report = Py_None;
     PyObject* arg_summary_report = Py_None;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "O|OOOOO", (char**)kwlist, &arg_file, &arg_matcher, &arg_data_start_hook, &arg_postprocess, &arg_metadata_report, &arg_summary_report))
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "O|OOOOOOO", (char**)kwlist, &arg_file, &arg_matcher, &arg_with_data, &arg_sort, &arg_data_start_hook, &arg_postprocess, &arg_metadata_report, &arg_summary_report))
         return nullptr;
 
     int fd = file_get_fileno(arg_file);
@@ -318,6 +320,15 @@ static PyObject* arkipy_DatasetReader_query_bytes(arkipy_DatasetReader* self, Py
     if (object_repr(arg_file, fd_name) == -1) return nullptr;
     string str_matcher;
     if (arg_matcher != Py_None && string_from_python(arg_matcher, str_matcher) == -1) return nullptr;
+    bool with_data = false;
+    if (arg_with_data != Py_None)
+    {
+        int istrue = PyObject_IsTrue(arg_with_data);
+        if (istrue == -1) return nullptr;
+        with_data = istrue == 1;
+    }
+    string sort;
+    if (arg_sort != Py_None && string_from_python(arg_sort, sort) == -1) return nullptr;
     string postprocess;
     if (arg_postprocess != Py_None && string_from_python(arg_postprocess, postprocess) == -1) return nullptr;
     string metadata_report;
@@ -334,6 +345,8 @@ static PyObject* arkipy_DatasetReader_query_bytes(arkipy_DatasetReader* self, Py
         Matcher matcher(Matcher::parse(str_matcher));
 
         dataset::ByteQuery query;
+        query.with_data = with_data;
+        if (!sort.empty()) query.sorter = sort::Compare::parse(sort);
         if (!metadata_report.empty())
             query.setRepMetadata(matcher, metadata_report);
         else if (!summary_report.empty())
@@ -391,7 +404,9 @@ static PyMethodDef arkipy_DatasetReader_methods[] = {
           file: the output file. The file needs to be either an integer file or
                 socket handle, or a file-like object with a fileno() method
                 that returns an integer handle.
-          matcher: the matcher string to filter data to return
+          matcher: the matcher string to filter data to return.
+          with_data: if True, also load data together with the metadata.
+          sort: string with the desired sort order of results.
           data_start_hook: function called before sending the data to the file
           postprocess: name of a postprocessor to use to filter data server-side
           metadata_report: name of the server-side report function to run on results metadata
