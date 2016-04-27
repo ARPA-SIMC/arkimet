@@ -2,6 +2,8 @@
 
 import re
 import os
+import io
+import configparser
 import logging
 import argparse
 import datetime
@@ -9,12 +11,32 @@ from socketserver import ForkingMixIn
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 class Server(ForkingMixIn, HTTPServer):
-    pass
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        self.url = "http://{s.server_name}:{s.server_port}".format(s=self)
+
+    def read_config(self, pathname):
+        logging.info("Reading configuration from %s", pathname)
+        self.cfg = configparser.ConfigParser()
+        self.cfg.read(pathname)
+
+        # Amend configuration turning local datasets into remote dataset
+        for sec in self.cfg.sections():
+            self.cfg.set(sec, "path", self.url + "/dataset/" + sec);
+            self.cfg.set(sec, "type", "remote")
+            self.cfg.set(sec, "server", self.url)
+
 
 class Handler(BaseHTTPRequestHandler):
     re_pathsplit = re.compile(r"/+")
 
     def do_GET(self):
+        self.handle_get_or_post()
+
+    def do_POST(self):
+        self.handle_get_or_post()
+
+    def handle_get_or_post(self):
         path = self.path.strip("/")
         if not path:
             cmd = "index"
@@ -30,7 +52,7 @@ class Handler(BaseHTTPRequestHandler):
 
         meth(path)
 
-    def send_response(self, code, msg):
+    def send_response(self, code, msg=None):
         logging.info('%s - - [%s] "%s" %d -',
                       self.client_address[0],
                       datetime.datetime.utcnow().strftime("%d/%b/%Y:%H:%M:%S %z"),
@@ -51,30 +73,32 @@ class Handler(BaseHTTPRequestHandler):
         # local_handlers.add("", new IndexHandler);
 
     def arki_config(self, path):
-        self.send_404("TODO: config")
         # ./run-local arki-query "" http://localhost:8080
-        # local_handlers.add("config", new ConfigHandler);
-#struct ConfigHandler : public LocalHandler
-#{
-#    virtual void operator()(Request& req)
-#    {
-#        req.log_action("global configuration");
-#
-#        // if "json" in args:
-#        //  return server.configdict
-#        stringstream out;
-#        req.arki_conf_remote.output(out, "(memory)");
-#        req.send_result(out.str(), "text/plain");
-#    }
-#};
+        # curl http://localhost:8080/config
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain")
+        self.end_headers()
+        out = io.StringIO()
+        self.server.cfg.write(out)
+        self.wfile.write(out.getvalue().encode("utf-8"))
 
     def arki_aliases(self, path):
         self.send_404("TODO: aliases")
         # local_handlers.add("aliases", new AliasesHandler);
 
     def arki_qexpand(self, path):
+        # ./run-local arki-query "" http://localhost:8080
         self.send_404("TODO: qexpand")
         # local_handlers.add("qexpand", new QexpandHandler);
+        req.log_action("expand aliases in query");
+
+        using namespace net::http;
+        Params params;
+        ParamSingle* query = params.add<ParamSingle>("query");
+        params.parse_get_or_post(req);
+        Matcher m = Matcher::parse(*query);
+        string out = m.toStringExpanded();
+        req.send_result(out, "text/plain");
 
     def arki_dataset(self, path):
         self.send_404("TODO: dataset")
@@ -100,8 +124,8 @@ def main():
 
     parser.add_argument("configfile", help="dataset configuration file")
 
-    parser.add_argument("--host", "--hostname", metavar="host", help="interface to listen to. Default: all interfaces")
-    parser.add_argument("--port", "-p", metavar="port", type=int, help="port to listen not. Default: 8080")
+    parser.add_argument("--host", "--hostname", metavar="host", default="", help="interface to listen to. Default: all interfaces")
+    parser.add_argument("--port", "-p", metavar="port", type=int, default=8080, help="port to listen not. Default: 8080")
     parser.add_argument("--url", metavar="url", help="url to use to reach the server")
 
     parser.add_argument("--accesslog", metavar="file", help="file where to log normal access information")
@@ -135,7 +159,6 @@ def main():
     if not args.quiet:
         h = logging.StreamHandler()
         h.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s %(message)s"))
-        h.setLevel(logging.WARN)
         root_logger.addHandler(h)
 
     if args.accesslog:
@@ -192,7 +215,8 @@ def main():
     #    return 1;
     #}
 
-    httpd = Server(("", 8080), Handler)
+    httpd = Server((args.host, args.port), Handler)
+    httpd.read_config(args.configfile)
     httpd.serve_forever()
 
 

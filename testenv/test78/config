@@ -1,4 +1,4 @@
-type = test
+type = ondisk2
 step = daily
 filter = origin: GRIB1,78
 index = origin, reftime

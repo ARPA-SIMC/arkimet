@@ -1,4 +1,4 @@
-type = test
+type = ondisk2
 step = daily
 filter = origin: BUFR,254
 index = origin, reftime
