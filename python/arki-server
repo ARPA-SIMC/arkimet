@@ -8,6 +8,8 @@ import logging
 import tempfile
 import argparse
 import datetime
+import subprocess
+import threading
 import sys
 import arkimet as arki
 from werkzeug.exceptions import HTTPException, NotFound
@@ -25,6 +27,7 @@ class Server(ForkingMixIn, HTTPServer):
             Rule('/config', endpoint='arki_config'),
             Rule('/qexpand', endpoint='arki_qexpand'),
             Rule('/dataset/<name>/query', endpoint='arki_dataset_query'),
+            Rule('/dataset/<name>/summary', endpoint='arki_dataset_summary'),
             Rule('/dataset/<name>/config', endpoint='arki_dataset_config'),
         ])
 
@@ -58,15 +61,15 @@ class DatasetQuery:
         self.query = request.form.get("query", "").strip()
         self.with_data = request.form.get("with_data", "false").strip() == "true"
         self.sort = request.form.get("sort", "").strip()
-        # TODO: arki::utils::net::http::ParamSingle* annotate;
-        # TODO: arki::utils::net::http::ParamSingle* command;
-        # TODO: arki::utils::net::http::FileParamMulti* postprocfile;
         self.ds = arki.DatasetReader(cfg)
+        self.headers_filename = None
         self.headers_sent = False
 
     def send_headers(self):
         self.handler.send_response(200)
         self.handler.send_header("Content-Type", self.content_type)
+        if self.headers_filename is not None:
+            self.handler.send_header("Content-Disposition: attachment; filename=" + self.headers_filename)
         self.handler.end_headers()
         self.handler.flush_headers()
         self.headers_sent = True
@@ -94,8 +97,17 @@ class DatasetQuery:
             os.chdir(origdir)
 
 
+class DatasetQuerySummary(DatasetQuery):
+    def stream(self):
+        self.headers_filename = self.dsname + ".summary"
+        summary = self.ds.query_summary(self.query)
+        self.send_headers()
+        summary.write(self.handler.wfile)
+
+
 class DatasetQueryData(DatasetQuery):
     def stream(self):
+        self.headers_filename = self.dsname + ".data"
         self.ds.query_bytes(
             file=self.handler.wfile,
             matcher=self.query,
@@ -135,6 +147,7 @@ class DatasetQueryMetadata(DatasetQuery):
         md.write(self.handler.wfile)
 
     def stream(self):
+        self.headers_filename = self.dsname + ".arkimet"
         self.ds.query_data(
             on_metadata=self.on_metadata,
             matcher=self.query,
@@ -150,6 +163,7 @@ class DatasetQueryMetadataInline(DatasetQuery):
         md.write(self.handler.wfile)
 
     def stream(self):
+        self.headers_filename = self.dsname + ".arkimet"
         self.ds.query_data(
             on_metadata=self.on_metadata,
             matcher=self.query,
@@ -159,6 +173,8 @@ class DatasetQueryMetadataInline(DatasetQuery):
 
 class DatasetQueryPostprocess(DatasetQuery):
     def stream(self):
+        self.headers_filename = self.dsname + ".postprocessed"
+
         # Iterate submitted files and export information about them to the
         # environment
         names = []
@@ -307,25 +323,12 @@ class Handler(BaseHTTPRequestHandler):
         cfg = dict(self.server.cfg.items(name))
         style = request.form.get("style", "metadata").strip()
 
-        # TODO: pmaker.server_side = true;
-        # TODO: if (!sort->empty())
-        # TODO:     pmaker.sort = *sort;
-        #
-        # TODO: // Validate request
-        # TODO: string errors = pmaker.verify_option_consistency();
-        # TODO: if (!errors.empty())
-        # TODO:     throw net::http::error400(errors);
-
         if style == "metadata":
             Streamer = DatasetQueryMetadata
         elif style == "inline":
             Streamer = DatasetQueryMetadataInline
         elif style == "data":
             Streamer = DatasetQueryData
-        # TODO: } else if (*style == "yaml") {
-        # TODO:     pmaker.yaml = true;
-        # TODO: } else if (*style == "json") {
-        # TODO:     pmaker.json = true;
         elif style == "postprocess":
             Streamer = DatasetQueryPostprocess
         elif style == "rep_metadata":
@@ -338,45 +341,14 @@ class Handler(BaseHTTPRequestHandler):
         streamer = Streamer(name, cfg, request, self)
         streamer.run()
 
-#    // Response header generator
-#    StreamHeaders headers(req, dsname);
-#
-#    // Set content type and file name accordingly
-#    if (pmaker.yaml)
-#    {
-#        headers.content_type = "text/x-yaml";
-#        headers.ext = "yaml";
-#    }
-#    else if (pmaker.json)
-#    {
-#        headers.content_type = "application/json";
-#        headers.ext = "json";
-#    } else if (!pmaker.report.empty()) {
-#        headers.content_type = "text/plain";
-#        headers.ext = "txt";
-#    }
-#
-#    // If we are postprocessing, we cannot monitor the postprocessor
-#    // output to hook sending headers: the postprocessor is
-#    // connected directly to the output socket.
-#    //
-#    // Therefore we need to send the headers in advance.
-#
-#    {
-#        // Create Output directed to req.sock
-#        sys::NamedFileDescriptor sockoutput(req.sock, "socket");
-#
-#        // Hook sending headers to when the subprocess start sending
-#        pmaker.data_start_hook = [&](NamedFileDescriptor&) { headers.send_headers(); };
-#
-#        // Create the dataset processor for this query
-#        unique_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
-#
-#        // Process the dataset producing the output
-#        p->process(ds, dsname);
-#        p->end();
-#    }
+    def arki_dataset_summary(self, request, name):
+        if not self.server.cfg.has_section(name):
+            raise NotFound("Dataset {} not found".format(name))
+        cfg = dict(self.server.cfg.items(name))
+        style = request.form.get("style", "metadata").strip()
 
+        streamer = DatasetQuerySummary(name, cfg, request, self)
+        streamer.run()
 
 #    def arki_aliases(self, path):
 #        self.send_404("TODO: aliases")
@@ -417,9 +389,8 @@ def main():
     parser.add_argument("--verbose", action="store_true", help="verbose output")
     parser.add_argument("--debug", action="store_true", help="debug output")
 
-#        runtest = add<StringOption>("runtest", 0, "runtest", "cmd",
-#                "start the server, run the given test command"
-#                " and return its exit status");
+    parser.add_argument("--runtest", metavar="cmd", help="start the server, run the given test command and return its exit status")
+
 #        inbound = add<StringOption>("inbound", 0, "inbound", "dir",
 #                "directory where files to import are found."
 #                " If specified, it enables a way of triggering uploads"
@@ -458,48 +429,20 @@ def main():
         h.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s %(message)s"))
         root_logger.addHandler(h)
 
-
-
-    #// Initialise setproctitle hacks
-    #wibble::sys::process::initproctitle(argc, (char**)argv);
-
-    #commandline::Options opts;
-    #try {
-    #    nag::init(opts.verbose->isSet(), opts.debug->isSet());
-
-    #    // Configure the server and start listening
-    #    ServerProcess srv(opts);
-    #    srv.restart_argv = restart_argv;
-    #    srv.restart_environ = restart_environ;
-    #    srv.log << wibble::log::INFO << "Listening on " << srv.http.host << ":" << srv.http.port << " for " << srv.http.server_name << endl;
-
-    #    if (opts.runtest->isSet())
-    #    {
-    #        // Fork and start the server
-    #        srv.fork();
-
-    #        // No need to poll the server until ready, as the
-    #        // socket was already listening since before forking
-    #        int res = system(opts.runtest->stringValue().c_str());
-
-    #        srv.kill(SIGINT);
-    #        srv.wait();
-    #        return res;
-    #    } else {
-    #        return srv.main();
-    #    }
-    #} catch (commandline::BadOption& e) {
-    #    cerr << e.what() << endl;
-    #    opts.outputHelp(cerr);
-    #    return 1;
-    #} catch (std::exception& e) {
-    #    cerr << e.what() << endl;
-    #    return 1;
-    #}
-
     httpd = Server((args.host, args.port), Handler)
     httpd.read_config(args.configfile)
-    httpd.serve_forever()
+
+    if args.runtest:
+        class TestThread(threading.Thread):
+            def run(self):
+                subprocess.check_call(args.runtest, shell=True)
+                httpd.shutdown()
+        test_thread = TestThread()
+        test_thread.start()
+        httpd.serve_forever()
+        test_thread.join()
+    else:
+        httpd.serve_forever()
 
 
 if __name__ == "__main__":

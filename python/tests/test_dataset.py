@@ -71,7 +71,13 @@ class TestDatasetReader(unittest.TestCase):
         res = ds.query_summary(summary=s)
         self.assertIs(res, s)
 
-        self.fail("no way yet to test summary contents")
+        # Output
+        summary = ds.query_summary()
+        with tempfile.TemporaryFile() as fd:
+            summary.write(fd)
+            fd.seek(0)
+            queried = fd.read()
+        self.assertEquals(len(queried), 313)
 
     def test_query_bytes(self):
         ds = arki.DatasetReader({

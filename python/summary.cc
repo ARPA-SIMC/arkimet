@@ -14,7 +14,49 @@ extern "C" {
  * Summary
  */
 
+static PyObject* arkipy_Summary_write(arkipy_Summary* self, PyObject *args, PyObject* kw)
+{
+    static const char* kwlist[] = { "file", "format", NULL };
+    PyObject* arg_file = Py_None;
+    const char* format = nullptr;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "O|s", (char**)kwlist, &arg_file, &format))
+        return nullptr;
+
+    int fd = file_get_fileno(arg_file);
+    if (fd == -1) return nullptr;
+    string fd_name;
+    if (object_repr(arg_file, fd_name) == -1) return nullptr;
+
+    try {
+        if (!format || strcmp(format, "binary") == 0)
+        {
+            self->summary->write(fd, fd_name);
+        } else if (strcmp(format, "yaml") == 0) {
+            PyErr_SetString(PyExc_NotImplementedError, "serializing to YAML is not yet implemented");
+            return nullptr;
+        } else if (strcmp(format, "json") == 0) {
+            PyErr_SetString(PyExc_NotImplementedError, "serializing to JSON is not yet implemented");
+            return nullptr;
+        } else {
+            PyErr_Format(PyExc_ValueError, "Unsupported metadata serializati format: %s", format);
+            return nullptr;
+        }
+        Py_RETURN_NONE;
+    } ARKI_CATCH_RETURN_PYO
+}
+
+
 static PyMethodDef arkipy_Summary_methods[] = {
+    {"write", (PyCFunction)arkipy_Summary_write, METH_VARARGS | METH_KEYWORDS, R"(
+        Write the summary to a file.
+
+        Arguments:
+          file: the output file. The file needs to be either an integer file or
+                socket handle, or a file-like object with a fileno() method
+                that returns an integer handle.
+          format: "binary", "yaml", or "json". Default: "binary".
+        )" },
     {NULL}
 };
 

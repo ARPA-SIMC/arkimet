@@ -60,9 +60,6 @@ static PyMethodDef arkipy_Metadata_methods[] = {
     {"write", (PyCFunction)arkipy_Metadata_write, METH_VARARGS | METH_KEYWORDS, R"(
         Write the metadata to a file.
 
-        The file needs to be either an integer file or socket handle, or a
-        file-like object with a fileno() method that returns an integer handle.
-
         Arguments:
           file: the output file. The file needs to be either an integer file or
                 socket handle, or a file-like object with a fileno() method
