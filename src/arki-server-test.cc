@@ -361,6 +361,46 @@ add_method("aliases", [] {
     wassert(actual(cfg.section("origin") != nullptr).istrue());
 });
 
+// Test uploading postprocessor data
+add_method("postproc_data", [] {
+    ConfigFile cfg;
+    dataset::HTTP::readConfig("http://localhost:7117/dataset/test200", cfg);
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*cfg.section("test200")));
+    setenv("ARKI_POSTPROC_FILES", "inbound/test.grib1:inbound/padded.grib1", 1);
+
+    // Files should be uploaded and notified to the postprocessor script
+    sys::File out(sys::File::mkstemp("test"));
+    dataset::ByteQuery bq;
+    bq.setPostprocess(Matcher(), "checkfiles");
+    testds->query_bytes(bq, out);
+    out.close();
+    string res = sys::read_file(out.name());
+    wassert(actual(res) == "test.grib1:padded.grib1\n");
+});
+
+// Test access and error logs
+add_method("logs", [] {
+    ConfigFile cfg;
+    dataset::HTTP::readConfig("http://localhost:7117/dataset/test200", cfg);
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*cfg.section("test200")));
+
+    // Run a successful query
+    testds->query_data(Matcher(), [](unique_ptr<Metadata> md) { return true; });
+
+    // Run a broken query
+    dynamic_cast<dataset::HTTP*>(testds.get())->produce_one_wrong_query();
+    try {
+        testds->query_data(Matcher(), [](unique_ptr<Metadata> md) { return true; });
+        wassert(actual(false).istrue());
+    } catch (std::runtime_error& e) {
+        wassert(actual(e.what()).contains("MISCHIEF"));
+    }
+
+    // Check that something got logged
+    wassert(actual(sys::size("access.log")) > 0u);
+    wassert(actual(sys::size("error.log")) > 0u);
+});
+
 }
 
 }
