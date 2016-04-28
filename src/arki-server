@@ -440,6 +440,8 @@ def main():
 
     parser.add_argument("configfile", help="dataset configuration file")
 
+    parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+
     parser.add_argument("--host", "--hostname", metavar="host", default="", help="interface to listen to. Default: all interfaces")
     parser.add_argument("--port", "-p", metavar="port", type=int, default=8080, help="port to listen not. Default: 8080")
     parser.add_argument("--url", metavar="url", help="url to use to reach the server")

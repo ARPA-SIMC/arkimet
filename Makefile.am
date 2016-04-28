@@ -27,8 +27,12 @@ if DBALLE
 man_MANS += arki-bufr-prepare.1
 endif
 
+arki-server.1: src/arki-server
+	COLUMNS=200 ./run-local help2man --name='Arkimet server for remote dataset access' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
+
+
 arki-%.1: src/arki-% doc/mhooks-%
-	$< --manpage="$(word 2,$^)" > $@
+	./run-local $< --manpage="$(word 2,$^)" > $@ || rm -f $@
 
 #%.1: tools/%
 #	( cd tools && ./`basename $<` help manpage ) > $@

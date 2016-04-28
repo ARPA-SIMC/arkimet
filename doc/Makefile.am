@@ -12,7 +12,6 @@ dist_doc_DATA = \
 		mhooks-check \
 		mhooks-inbound \
 		mhooks-mergeconf \
-		mhooks-server \
 		mhooks-xargs \
 		mhooks-bufr-prepare \
 		lua-examples/area.lua \
