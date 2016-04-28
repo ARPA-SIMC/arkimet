@@ -128,7 +128,7 @@ add_method("postprocess", [] {
     testds->query_bytes(bq, out);
     out.close();
     string res = sys::read_file(out.name());
-    ensure_equals(res, "ciao\n");
+    wassert(actual(res) == "ciao\n");
 });
 
 // Test the server giving an error
@@ -223,7 +223,28 @@ add_method("postproc_error", [] {
     // Querying it should get the partial output and no error
     sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
-    bq.setPostprocess(Matcher::parse(""), "outthenerr");
+    bq.setPostprocess(Matcher(), "error");
+    try {
+        testds->query_bytes(bq, out);
+        // The call should fail
+        wassert(actual(false).istrue());
+    } catch (std::runtime_error& e) {
+        wassert(actual(e.what()).contains("FAIL"));
+    }
+    out.close();
+    wassert(actual(sys::size(out.name())) == 0u);
+});
+
+// Test a postprocessor that outputs data and then exits with error
+add_method("postproc_outthenerr", [] {
+    ConfigFile cfg;
+    dataset::HTTP::readConfig("http://localhost:7117/dataset/test200", cfg);
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*cfg.section("test200")));
+
+    // Querying it should get the partial output and no error
+    sys::File out(sys::File::mkstemp("test"));
+    dataset::ByteQuery bq;
+    bq.setPostprocess(Matcher(), "outthenerr");
     testds->query_bytes(bq, out);
     out.close();
     string res = sys::read_file(out.name());
@@ -279,7 +300,7 @@ add_method("postproc_error1", [] {
         postprocessed = sys::read_file(out.name());
     }
 
-    ensure_equals(plain.size(), postprocessed.size());
+    wassert(actual(plain.size()) == postprocessed.size());
 
     /*
     size_t diffs = 0;
@@ -331,6 +352,13 @@ add_method("postproc_error1", [] {
     const auto& d2 = mdc2[0].getData();
 
     ensure(d1 == d2);
+});
+
+// Test downloading the server alias database
+add_method("aliases", [] {
+    ConfigFile cfg;
+    dataset::HTTP::getAliasDatabase("http://localhost:7117", cfg);
+    wassert(actual(cfg.section("origin") != nullptr).istrue());
 });
 
 }
