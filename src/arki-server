@@ -26,6 +26,7 @@ class Server(ForkingMixIn, HTTPServer):
             Rule('/', endpoint='arki_index'),
             Rule('/config', endpoint='arki_config'),
             Rule('/qexpand', endpoint='arki_qexpand'),
+            Rule('/aliases', endpoint='arki_aliases'),
             Rule('/dataset/<name>/query', endpoint='arki_dataset_query'),
             Rule('/dataset/<name>/summary', endpoint='arki_dataset_summary'),
             Rule('/dataset/<name>/config', endpoint='arki_dataset_config'),
@@ -112,6 +113,16 @@ class ArkiQExpand(ArkiResponse):
         expanded = arki.expand_query(query)
         self.send_headers()
         self.handler.wfile.write(expanded.encode("utf-8"))
+
+
+class ArkiAliases(ArkiResponse):
+    content_type = "text/plain"
+
+    def stream(self):
+        # ./run-local arki-query "" http://localhost:8080
+        self.send_headers()
+        out = arki.matcher_alias_database()
+        self.handler.wfile.write(out.encode("utf-8"))
 
 
 class ArkiDatasetResponse(ArkiResponse):
@@ -399,10 +410,10 @@ class Handler(BaseHTTPRequestHandler):
         streamer = DatasetQuerySummary(name, cfg, request, self)
         streamer.run()
 
-#    def arki_aliases(self, path):
-#        self.send_404("TODO: aliases")
-#        # local_handlers.add("aliases", new AliasesHandler);
-#
+    def arki_aliases(self, request):
+        handler= ArkiAliases(request, self)
+        handler.run()
+
 #    def arki_dataset(self, path):
 #        self.send_404("TODO: dataset")
 #        # local_handlers.add("dataset", new DatasetHandler);
