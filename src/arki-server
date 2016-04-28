@@ -437,6 +437,8 @@ def main():
         root_logger.addHandler(h)
 
     httpd = Server((args.host, args.port), Handler)
+    if args.url:
+        httpd.url = args.url
     httpd.read_config(args.configfile)
 
     if args.runtest:
