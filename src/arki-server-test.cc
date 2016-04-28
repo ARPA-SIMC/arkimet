@@ -181,8 +181,8 @@ add_method("qexpand", [] {
     try {
         dataset::HTTP::expandMatcher("origin:GRIB1,200;product:pippo", "http://localhost:7117");
         ensure(false);
-    } catch (...) {
-        ensure(true);
+    } catch (std::runtime_error& e) {
+        wassert(actual(e.what()).contains("pippo"));
     }
 });
 

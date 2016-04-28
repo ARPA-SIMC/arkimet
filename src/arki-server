@@ -50,18 +50,12 @@ class Server(ForkingMixIn, HTTPServer):
             self.remote_cfg.set(sec, "server", self.url)
 
 
-class DatasetQuery:
+class ArkiResponse:
     content_type = "application/octet-stream"
 
-    def __init__(self, dsname, cfg, request, handler):
-        self.dsname = dsname
-        self.cfg = cfg
+    def __init__(self, request, handler):
         self.request = request
         self.handler = handler
-        self.query = request.form.get("query", "").strip()
-        self.with_data = request.form.get("with_data", "false").strip() == "true"
-        self.sort = request.form.get("sort", "").strip()
-        self.ds = arki.DatasetReader(cfg)
         self.headers_filename = None
         self.headers_sent = False
 
@@ -74,6 +68,87 @@ class DatasetQuery:
         self.handler.flush_headers()
         self.headers_sent = True
 
+    def handle_exception(self):
+        ex = sys.exc_info()[1]
+        if not self.headers_sent:
+            self.handler.send_response(500)
+            self.handler.send_header("Content-Type", "text/plain")
+            self.handler.send_header("Arkimet-Exception", str(ex))
+            self.handler.end_headers()
+            self.handler.flush_headers()
+            self.handler.wfile.write(str(ex).encode("utf-8"))
+            self.handler.wfile.write(b"\n")
+        else:
+            logging.exception("Exception caught after headers have been sent")
+
+    def run(self):
+        try:
+            self.stream()
+            if not self.headers_sent:
+                self.send_headers()
+        except Exception:
+            self.handle_exception()
+
+
+class ArkiConfig(ArkiResponse):
+    content_type = "text/plain"
+
+    def stream(self):
+        # ./run-local arki-query "" http://localhost:8080
+        # curl http://localhost:8080/config
+        out = io.StringIO()
+        self.handler.server.remote_cfg.write(out)
+        self.headers_filename = "config"
+        self.send_headers()
+        self.handler.wfile.write(out.getvalue().encode("utf-8"))
+
+
+class ArkiQExpand(ArkiResponse):
+    content_type = "text/plain"
+
+    def stream(self):
+        # ./run-local arki-query "" http://localhost:8080
+        query = self.request.form["query"].strip()
+        expanded = arki.expand_query(query)
+        self.send_headers()
+        self.handler.wfile.write(expanded.encode("utf-8"))
+
+
+class ArkiDatasetResponse(ArkiResponse):
+    def __init__(self, dsname, cfg, request, handler):
+        super().__init__(request, handler)
+        self.dsname = dsname
+        self.cfg = cfg
+
+
+class ArkiDatasetConfig(ArkiDatasetResponse):
+    content_type = "text/plain"
+
+    def stream(self):
+        # ./run-local arki-query "" http://localhost:8080/dataset/<name>
+        # curl http://localhost:8080/dataset/<name>/config
+        if not self.server.remote_cfg.has_section(name):
+            raise NotFound("Dataset {} not found".format(name))
+        cfg = configparser.ConfigParser()
+        cfg.add_section(name)
+        for k, v in self.server.remote_cfg.items(name):
+            cfg.set(name, k, v)
+
+        out = io.StringIO()
+        cfg.write(out)
+
+        self.send_headers()
+        self.handler.wfile.write(out.getvalue().encode("utf-8"))
+
+
+class DatasetQuery(ArkiDatasetResponse):
+    def __init__(self, dsname, cfg, request, handler):
+        super().__init__(dsname, cfg, request, handler)
+        self.query = request.form.get("query", "").strip()
+        self.with_data = request.form.get("with_data", "false").strip() == "true"
+        self.sort = request.form.get("sort", "").strip()
+        self.ds = arki.DatasetReader(cfg)
+
     def run(self):
         origdir = os.getcwd()
         try:
@@ -82,17 +157,8 @@ class DatasetQuery:
                 self.stream()
                 if not self.headers_sent:
                     self.send_headers()
-        except Exception as e:
-            if not self.headers_sent:
-                self.handler.send_response(500)
-                self.handler.send_header("Content-Type", "text/plain")
-                self.handler.send_header("Arkimet-Exception", str(e))
-                self.handler.end_headers()
-                self.handler.flush_headers()
-                self.handler.wfile.write(str(e).encode("utf-8"))
-                self.handler.wfile.write(b"\n")
-            else:
-                logging.exception("Exception caught after headers have been sent")
+        except Exception:
+            self.handle_exception()
         finally:
             os.chdir(origdir)
 
@@ -284,37 +350,21 @@ class Handler(BaseHTTPRequestHandler):
     def arki_config(self, request):
         # ./run-local arki-query "" http://localhost:8080
         # curl http://localhost:8080/config
-        self.send_response(200)
-        self.send_header("Content-Type", "text/plain")
-        self.end_headers()
-        out = io.StringIO()
-        self.server.remote_cfg.write(out)
-        self.wfile.write(out.getvalue().encode("utf-8"))
+        handler = ArkiConfig(request, self)
+        handler.run()
 
     def arki_dataset_config(self, request, name):
         # ./run-local arki-query "" http://localhost:8080/dataset/<name>
         # curl http://localhost:8080/dataset/<name>/config
         if not self.server.remote_cfg.has_section(name):
             raise NotFound("Dataset {} not found".format(name))
-        cfg = configparser.ConfigParser()
-        cfg.add_section(name)
-        for k, v in self.server.remote_cfg.items(name):
-            cfg.set(name, k, v)
-        self.send_response(200)
-        self.send_header("Content-Type", "text/plain")
-        self.end_headers()
-        out = io.StringIO()
-        cfg.write(out)
-        self.wfile.write(out.getvalue().encode("utf-8"))
+        handler = ArkiDatasetConfig(name, None, request, self)
+        handler.run()
 
     def arki_qexpand(self, request):
         # ./run-local arki-query "" http://localhost:8080
-        query = request.form["query"].strip()
-        expanded = arki.expand_query(query)
-        self.send_response(200)
-        self.send_header("Content-Type", "text/plain")
-        self.end_headers()
-        self.wfile.write(expanded.encode("utf-8"))
+        handler= ArkiQExpand(request, self)
+        handler.run()
 
     def arki_dataset_query(self, request, name):
         if not self.server.cfg.has_section(name):
