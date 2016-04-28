@@ -9,8 +9,6 @@ BINDIR=`dirname $0`
 setup
 trap cleanup EXIT
 
-importtest
-
 echo -n "Testing arki-scan"
 
 # Try scanning a GRIB1 file
