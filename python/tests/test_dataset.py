@@ -77,7 +77,7 @@ class TestDatasetReader(unittest.TestCase):
             summary.write(fd)
             fd.seek(0)
             queried = fd.read()
-        self.assertEquals(len(queried), 313)
+        self.assertEqual(queried[:2], b"SU")
 
     def test_query_bytes(self):
         ds = arki.DatasetReader({

@@ -4,6 +4,7 @@
 #include "summary.h"
 #include "dataset.h"
 #include "arki/matcher.h"
+#include "arki/configfile.h"
 #include "config.h"
 
 using namespace std;
@@ -24,8 +25,19 @@ static PyObject* arkipy_expand_query(PyTypeObject *type, PyObject *args)
     } ARKI_CATCH_RETURN_PYO
 }
 
+static PyObject* arkipy_matcher_alias_database(PyTypeObject *type, PyObject *none)
+{
+    try {
+        ConfigFile cfg;
+        MatcherAliasDatabase::serialise(cfg);
+        string out = cfg.serialize();
+        return PyUnicode_FromStringAndSize(out.data(), out.size());
+    } ARKI_CATCH_RETURN_PYO
+}
+
 static PyMethodDef arkimet_methods[] = {
     { "expand_query", (PyCFunction)arkipy_expand_query, METH_VARARGS, "Return the same text query with all aliases expanded" },
+    { "matcher_alias_database", (PyCFunction)arkipy_matcher_alias_database, METH_NOARGS, "Return a string with the current matcher alias database" },
     { NULL }
 };
 
