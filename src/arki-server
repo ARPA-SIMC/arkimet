@@ -127,12 +127,12 @@ class ArkiDatasetConfig(ArkiDatasetResponse):
     def stream(self):
         # ./run-local arki-query "" http://localhost:8080/dataset/<name>
         # curl http://localhost:8080/dataset/<name>/config
-        if not self.server.remote_cfg.has_section(name):
-            raise NotFound("Dataset {} not found".format(name))
+        if not self.handler.server.remote_cfg.has_section(self.dsname):
+            raise NotFound("Dataset {} not found".format(self.dsname))
         cfg = configparser.ConfigParser()
-        cfg.add_section(name)
-        for k, v in self.server.remote_cfg.items(name):
-            cfg.set(name, k, v)
+        cfg.add_section(self.dsname)
+        for k, v in self.handler.server.remote_cfg.items(self.dsname):
+            cfg.set(self.dsname, k, v)
 
         out = io.StringIO()
         cfg.write(out)
