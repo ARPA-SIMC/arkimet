@@ -55,6 +55,20 @@ static PyObject* arkipy_Metadata_make_inline(arkipy_Metadata* self, PyObject *nu
     } ARKI_CATCH_RETURN_PYO
 }
 
+static PyObject* arkipy_Metadata_make_url(arkipy_Metadata* self, PyObject *args, PyObject* kw)
+{
+    static const char* kwlist[] = { "baseurl", NULL };
+    const char* url = nullptr;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "s", (char**)kwlist, &url))
+        return nullptr;
+
+    try {
+        self->md->set_source(types::Source::createURL(self->md->source().format, url));
+        Py_RETURN_NONE;
+    } ARKI_CATCH_RETURN_PYO
+}
+
 
 static PyMethodDef arkipy_Metadata_methods[] = {
     {"write", (PyCFunction)arkipy_Metadata_write, METH_VARARGS | METH_KEYWORDS, R"(
@@ -68,6 +82,12 @@ static PyMethodDef arkipy_Metadata_methods[] = {
         )" },
     {"make_inline", (PyCFunction)arkipy_Metadata_make_inline, METH_NOARGS, R"(
         Read the data and inline them in the metadata.
+        )" },
+    {"make_url", (PyCFunction)arkipy_Metadata_make_url, METH_VARARGS | METH_KEYWORDS, R"(
+        Set the data source as URL.
+
+        Arguments:
+          baseurl: the base URL that identifies the dataset
         )" },
     {NULL}
 };

@@ -221,9 +221,11 @@ class DatasetQueryMetadata(DatasetQuery):
     def on_metadata(self, md):
         if not self.headers_sent:
             self.send_headers()
+        md.make_url(self.url)
         md.write(self.handler.wfile)
 
     def stream(self):
+        self.url = self.handler.server.url + "/dataset/" + self.dsname
         self.headers_filename = self.dsname + ".arkimet"
         self.ds.query_data(
             on_metadata=self.on_metadata,

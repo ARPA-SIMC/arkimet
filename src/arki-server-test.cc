@@ -58,18 +58,18 @@ add_method("metadata", [] {
     dataset::HTTP::readConfig("http://localhost:7117", config);
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
     metadata::Collection mdc(*testds, Matcher::parse("origin:GRIB1,200"));
-    ensure_equals(mdc.size(), 1u);
+    wassert(actual(mdc.size()) == 1u);
 
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_url("grib", "http://localhost:7117/dataset/test200/query"));
+    wassert(actual_type(mdc[0].source()).is_source_url("grib", "http://localhost:7117/dataset/test200"));
 
     mdc.clear();
     mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
-    ensure_equals(mdc.size(), 0u);
+    wassert(actual(mdc.size()) == 0u);
 
     mdc.clear();
     mdc.add(*testds, Matcher::parse("origin:GRIB1,98"));
-    ensure_equals(mdc.size(), 0u);
+    wassert(actual(mdc.size()) == 0u);
 });
 
 // Test querying the datasets, with inline data
