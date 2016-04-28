@@ -481,7 +481,7 @@ def main():
         h.setLevel(logging.INFO)
         class Filter:
             def filter(self, record):
-                return record.level < logging.WARN
+                return record.levelno < logging.WARN
         h.addFilter(Filter())
         root_logger.addHandler(h)
 
