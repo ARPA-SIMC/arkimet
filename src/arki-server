@@ -263,6 +263,7 @@ class DatasetQueryPostprocess(DatasetQuery):
             names.append(basename)
 
         if names:
+            names.sort()
             os.environ["ARKI_POSTPROC_FILES"] = ":".join(names)
 
         self.ds.query_bytes(

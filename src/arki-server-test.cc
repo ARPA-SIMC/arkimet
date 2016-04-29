@@ -375,7 +375,7 @@ add_method("postproc_data", [] {
     testds->query_bytes(bq, out);
     out.close();
     string res = sys::read_file(out.name());
-    wassert(actual(res) == "test.grib1:padded.grib1\n");
+    wassert(actual(res) == "padded.grib1:test.grib1\n");
 });
 
 // Test access and error logs
