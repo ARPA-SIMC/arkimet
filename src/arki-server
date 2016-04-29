@@ -169,18 +169,21 @@ def main():
     args = parser.parse_args()
 
     root_logger = logging.getLogger()
+
     if args.debug:
         root_logger.setLevel(logging.DEBUG)
-    elif args.verbose:
-        root_logger.setLevel(logging.INFO)
-    elif args.quiet:
-        root_logger.setLevel(logging.ERROR)
     else:
-        root_logger.setLevel(logging.WARN)
+        root_logger.setLevel(logging.INFO)
 
     if not args.quiet:
         h = logging.StreamHandler()
         h.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s %(message)s"))
+        if args.debug:
+            h.setLevel(logging.DEBUG)
+        elif args.verbose:
+            h.setLevel(logging.INFO)
+        else:
+            h.setLevel(logging.WARN)
         root_logger.addHandler(h)
 
     if args.accesslog:
