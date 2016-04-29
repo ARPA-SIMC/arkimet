@@ -20,6 +20,8 @@ _arkimet_la_LIBADD = ../arki/libarkimet.la
 
 #doc_DATA = python-arkimet.rst
 
+nodist_noinst_DATA = _arkimet.so
+
 _arkimet.so: _arkimet.la
 	test -e .libs/_arkimet.so || ( echo ".libs/_arkimet.so not built" >&2 ; exit 1 )
 	ln -fs .libs/_arkimet.so $@
