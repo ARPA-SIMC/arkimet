@@ -50,7 +50,7 @@ static PyObject* arkipy_make_qmacro_dataset(arkipy_Metadata* self, PyObject *arg
     ConfigFile cfg;
     if (configfile_from_python(arg_cfg, cfg)) return nullptr;
     ConfigFile datasets;
-    if (configfile_from_python(arg_datasets, cfg)) return nullptr;
+    if (configfile_from_python(arg_datasets, datasets)) return nullptr;
 
     try {
         std::unique_ptr<dataset::Reader> ds = runtime::make_qmacro_dataset(cfg, datasets, name, query);

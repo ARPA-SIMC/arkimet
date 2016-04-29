@@ -21,7 +21,6 @@ class ArkiView:
         self.request = request
         self.handler = handler
         self.kwargs = kw
-        self.headers_filename = None
         self.headers_sent = False
 
     def get_dataset_config(self):
@@ -52,14 +51,23 @@ class ArkiView:
         """
         return self.request.form.get("sort", "").strip()
 
+    def get_headers_filename(self):
+        """
+        Return the file name to use in the Content-Disposition header.
+
+        None if the Content-Disposition header should not be sent
+        """
+        return getattr(self, "headers_filename", None)
+
     def send_headers(self):
         """
         Send headers for a successful response
         """
         self.handler.send_response(200)
         self.handler.send_header("Content-Type", self.content_type)
-        if self.headers_filename is not None:
-            self.handler.send_header("Content-Disposition", "attachment; filename=" + self.headers_filename)
+        fname = self.get_headers_filename()
+        if fname is not None:
+            self.handler.send_header("Content-Disposition", "attachment; filename=" + fname)
         self.handler.end_headers()
         self.handler.flush_headers()
         self.headers_sent = True
@@ -72,8 +80,9 @@ class ArkiView:
         If response headers have already been sent, then there is nothing we
         can do, and just log the exception.
         """
-        ex = sys.exc_info()[1]
+        logging.exception("Exception caught after headers have been sent")
         if not self.headers_sent:
+            ex = sys.exc_info()[1]
             self.handler.send_response(500)
             self.handler.send_header("Content-Type", "text/plain")
             self.handler.send_header("Arkimet-Exception", str(ex))
@@ -81,8 +90,6 @@ class ArkiView:
             self.handler.flush_headers()
             self.handler.wfile.write(str(ex).encode("utf-8"))
             self.handler.wfile.write(b"\n")
-        else:
-            logging.exception("Exception caught after headers have been sent")
 
     def run(self):
         """
@@ -98,13 +105,13 @@ class ArkiView:
 
 class ArkiConfig(ArkiView):
     content_type = "text/plain"
+    headers_filename = "config"
 
     def stream(self):
         # ./run-local arki-query "" http://localhost:8080
         # curl http://localhost:8080/config
         out = io.StringIO()
         self.handler.server.remote_cfg.write(out)
-        self.headers_filename = "config"
         self.send_headers()
         self.handler.wfile.write(out.getvalue().encode("utf-8"))
 
@@ -138,6 +145,7 @@ class ArkiDatasetConfig(ArkiView):
         # curl http://localhost:8080/dataset/<name>/config
         if not self.handler.server.remote_cfg.has_section(self.kwargs["name"]):
             raise NotFound("Dataset {} not found".format(self.kwargs["name"]))
+        self.headers_filename = self.kwargs["name"] + ".config"
         cfg = configparser.ConfigParser()
         cfg.add_section(self.kwargs["name"])
         for k, v in self.handler.server.remote_cfg.items(self.kwargs["name"]):
@@ -171,11 +179,11 @@ class TempdirMixin:
 class ArkiDatasetQuery(TempdirMixin, ArkiView):
     headers_ext = None
 
-    def __init__(self, *args, **kw):
-        super().__init__(*args, **kw)
-        self.headers_filename = self.kwargs["name"]
+    def get_headers_filename(self):
         if self.headers_ext:
-            self.headers_filename += "." + self.headers_ext
+            return self.kwargs["name"] + "." + self.headers_ext
+        else:
+            return self.kwargs["name"]
 
 
 class ArkiDatasetSummary(ArkiDatasetQuery):
@@ -232,8 +240,11 @@ class DatasetQueryMetadata(ArkiDatasetQuery):
         md.make_url(self.url)
         md.write(self.handler.wfile)
 
+    def get_metadata_url(self):
+        return self.handler.server.url + "/dataset/" + self.kwargs["name"]
+
     def stream(self):
-        self.url = self.handler.server.url + "/dataset/" + self.kwargs["name"]
+        self.url = self.get_metadata_url()
         self.get_dataset_reader().query_data(
             on_metadata=self.on_metadata,
             matcher=self.get_query(),
@@ -282,31 +293,66 @@ class DatasetQueryPostprocess(ArkiDatasetQuery):
             postprocess=self.request.form.get("command", ""))
 
 
+def get_view_for_style(style):
+    if style == "metadata":
+        return DatasetQueryMetadata
+    elif style == "inline":
+        return DatasetQueryMetadataInline
+    elif style == "data":
+        return DatasetQueryData
+    elif style == "postprocess":
+        return DatasetQueryPostprocess
+    elif style == "rep_metadata":
+        return DatasetQueryRepMetadata
+    elif style == "rep_summary":
+        return DatasetQueryRepSummary
+    else:
+        raise NotFound("TODO: query style {}".format(style))
+
+
 def arki_dataset_query(request, handler, **kw):
     """
     Create the right view for a dataset query, given the `style` form value.
     """
     style = request.form.get("style", "metadata").strip()
-    if style == "metadata":
-        Streamer = DatasetQueryMetadata
-    elif style == "inline":
-        Streamer = DatasetQueryMetadataInline
-    elif style == "data":
-        Streamer = DatasetQueryData
-    elif style == "postprocess":
-        Streamer = DatasetQueryPostprocess
-    elif style == "rep_metadata":
-        Streamer = DatasetQueryRepMetadata
-    elif style == "rep_summary":
-        Streamer = DatasetQueryRepSummary
-    else:
-        raise NotFound("TODO: query style {}".format(style))
-    return Streamer(request, handler, **kw)
+    View = get_view_for_style(style)
+    return View(request, handler, **kw)
 
 
-    # TODO: def arki_index(self, request):
-    # TODO:     raise NotFound("TODO: index")
-    # TODO:     # local_handlers.add("", new IndexHandler);
+class QMacroMixin:
+    def get_headers_filename(self):
+        if self.headers_ext:
+            return self.request.form.get("qmacro", "").strip() + "." + self.headers_ext
+        else:
+            return self.request.form.get("qmacro", "").strip()
+
+    def get_metadata_url(self):
+        #return self.handler.server.url + "/dataset/" + self.request.form.get("qmacro", "").strip()
+        return self.handler.server.url + "/query"
+
+    def get_dataset_reader(self):
+        cfg = io.StringIO()
+        self.handler.server.cfg.write(cfg)
+        return arki.make_qmacro_dataset(
+            "url = " + self.handler.server.url,
+            cfg.getvalue(),
+            self.request.form.get("qmacro", "").strip(),
+            self.request.form.get("query", "").strip()
+        )
+
+    def get_query(self):
+        return ""
+
+def arki_query(request, handler, **kw):
+    style = request.form.get("style", "metadata").strip()
+    View = get_view_for_style(style)
+    class QMacroView(QMacroMixin, View):
+        pass
+    return QMacroView(request, handler, **kw)
+
+# TODO: def arki_index(self, request):
+# TODO:     raise NotFound("TODO: index")
+# TODO:     # local_handlers.add("", new IndexHandler);
 
 #    def arki_dataset(self, path):
 #        self.send_404("TODO: dataset")
@@ -460,42 +506,6 @@ def arki_dataset_query(request, handler, **kw):
 #            throw std::runtime_error("Unknown dataset action: \"" + action + "\"");
 #    }
 #};
-
-class ArkiQuery(ArkiView):
-    def stream(self):
-        raise NotFound("Not implemented yet")
-
-#        // Work in a temporary directory
-#        utils::MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
-#
-#        // Query parameters
-#        dataset::http::LegacyQueryParams params(tempdir.tmp_dir);
-#        params.parse_get_or_post(req);
-#
-#        // Plus a qmacro parameter
-#        ParamSingle* qmacro;
-#        qmacro = params.add<ParamSingle>("qmacro");
-#
-#        // Build the qmacro dataset
-#        string macroname = str::strip(*qmacro);
-#        if (macroname.empty())
-#            throw error400("root-level query without qmacro parameter");
-#
-#        ConfigFile dsconf;
-#        string url(req.server_name);
-#        url += req.script_name;
-#        dsconf.setValue("url", url);
-#        unique_ptr<dataset::Reader> ds = runtime::make_qmacro_dataset(
-#                dsconf, req.arki_conf, macroname, *params.query, req.server_name);
-#
-#        // params.query contains the qmacro query body; we need to clear the
-#        // query so do_query gets an empty match expression
-#        params.query->clear();
-#
-#        // Serve the result
-#        dataset::http::ReaderServer srv(*ds, macroname);
-#        srv.do_query(params, req);
-
 
 #    def arki_summary(self, path):
 #        self.send_404("TODO: summary")

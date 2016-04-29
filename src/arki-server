@@ -25,7 +25,7 @@ class Server(ForkingMixIn, HTTPServer):
             Rule('/config', endpoint='ArkiConfig'),
             Rule('/qexpand', endpoint='ArkiQExpand'),
             Rule('/aliases', endpoint='ArkiAliases'),
-            Rule('/query', endpoint='ArkiQuery'),
+            Rule('/query', endpoint='arki_query'),
             Rule('/dataset/<name>/query', endpoint='arki_dataset_query'),
             Rule('/dataset/<name>/summary', endpoint='ArkiDatasetSummary'),
             Rule('/dataset/<name>/config', endpoint='ArkiDatasetConfig'),
