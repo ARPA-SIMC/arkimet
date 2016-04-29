@@ -333,6 +333,9 @@ class QMacroMixin:
     def get_dataset_reader(self):
         cfg = io.StringIO()
         self.handler.server.cfg.write(cfg)
+#        if (macroname.empty())
+#            // Create a merge dataset with all we have
+#            ds.reset(new dataset::AutoMerged(req.arki_conf));
         return arki.make_qmacro_dataset(
             "url = " + self.handler.server.url,
             cfg.getvalue(),
@@ -350,6 +353,16 @@ def arki_query(request, handler, **kw):
         pass
     return QMacroView(request, handler, **kw)
 
+
+class ArkiSummary(QMacroMixin, ArkiView):
+    headers_ext = "summary"
+
+    def stream(self):
+        summary = self.get_dataset_reader().query_summary(self.get_query())
+        self.send_headers()
+        summary.write(self.handler.wfile)
+
+
 # TODO: def arki_index(self, request):
 # TODO:     raise NotFound("TODO: index")
 # TODO:     # local_handlers.add("", new IndexHandler);
@@ -357,14 +370,9 @@ def arki_query(request, handler, **kw):
 #    def arki_dataset(self, path):
 #        self.send_404("TODO: dataset")
 #        # local_handlers.add("dataset", new DatasetHandler);
-
 #// Dispatch dataset-specific actions
 #struct DatasetHandler : public LocalHandler
 #{
-#    DatasetHandler()
-#    {
-#    }
-#
 #    // Show the summary of a dataset
 #    void do_index(dataset::Reader& ds, const std::string& dsname, Request& req)
 #    {
@@ -506,66 +514,6 @@ def arki_query(request, handler, **kw):
 #            throw std::runtime_error("Unknown dataset action: \"" + action + "\"");
 #    }
 #};
-
-#    def arki_summary(self, path):
-#        self.send_404("TODO: summary")
-#        # local_handlers.add("summary", new RootSummaryHandler);
-
-#struct RootSummaryHandler : public LocalHandler
-#{
-#    virtual void operator()(Request& req)
-#    {
-#        req.log_action("root-level summary");
-#
-#        using namespace net::http;
-#        Params params;
-#        ParamSingle* style = params.add<ParamSingle>("style");
-#        ParamSingle* query = params.add<ParamSingle>("query");
-#        ParamSingle* qmacro = params.add<ParamSingle>("qmacro");
-#        params.parse_get_or_post(req);
-#
-#        string macroname = str::strip(*qmacro);
-#
-#        unique_ptr<dataset::Reader> ds;
-#        if (macroname.empty())
-#            // Create a merge dataset with all we have
-#            ds.reset(new dataset::AutoMerged(req.arki_conf));
-#        else
-#        {
-#            // Create qmacro dataset
-#            ConfigFile dsconf;
-#            string url(req.server_name);
-#            url += req.script_name;
-#            dsconf.setValue("url", url);
-#            ds = runtime::make_qmacro_dataset(
-#                dsconf, req.arki_conf, macroname, *query);
-#        }
-#
-#        // Query the summary
-#        Summary sum;
-#        ds->query_summary(Matcher(), sum);
-#
-#        if (*style == "yaml")
-#        {
-#            stringstream res;
-#            sum.writeYaml(res);
-#            req.send_result(res.str(), "text/x-yaml", macroname + "-summary.yaml");
-#        }
-#        else if (*style == "json")
-#        {
-#            stringstream res;
-#            emitter::JSON json(res);
-#            sum.serialise(json);
-#            req.send_result(res.str(), "application/json", macroname + "-summary.json");
-#        }
-#        else
-#        {
-#            vector<uint8_t> res = sum.encode(true);
-#            req.send_result(res, "application/octet-stream", macroname + "-summary.bin");
-#        }
-#    }
-#};
-
 
 #    #    if (opts.inbound->isSet())
 #    #        local_handlers.add("inbound", new InboundHandler(opts.inbound->stringValue()));
