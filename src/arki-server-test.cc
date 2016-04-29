@@ -195,7 +195,7 @@ add_method("qmacro", [] {
     cfg.setValue("qmacro", "test200");
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(cfg));
     metadata::Collection mdc(*testds, Matcher());
-    ensure_equals(mdc.size(), 1u);
+    wassert(actual(mdc.size()) == 1u);
     // Check that the source record that comes out is ok
     wassert(actual_type(mdc[0].source()).is_source_url("grib", "http://localhost:7117/query"));
 });
