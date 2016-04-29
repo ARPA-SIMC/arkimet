@@ -5,6 +5,8 @@
 #include <string>
 
 namespace arki {
+struct ConfigFile;
+
 namespace python {
 
 struct python_callback_failed : public std::exception {};
@@ -123,6 +125,17 @@ int file_get_fileno(PyObject* o);
  * Return 0 on success, -1 on failure
  */
 int string_from_python(PyObject* o, std::string& out);
+
+/**
+ * Fill a ConfigFile with configuration info from python.
+ *
+ * Currently this only supports:
+ *  - str or bytes, that will get parsed by ConfigFile.
+ *  - dict, that will be set as key->val into out
+ *
+ * In the future it can support reading data from a ConfigFile object.
+ */
+int configfile_from_python(PyObject* o, ConfigFile& out);
 
 /**
  * Initialize the python bits to use used by the common functions.

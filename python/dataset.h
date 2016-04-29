@@ -2,6 +2,7 @@
 #define ARKI_PYTHON_DATASET_H
 
 #include <Python.h>
+#include <memory>
 
 namespace arki {
 namespace dataset {
@@ -27,6 +28,7 @@ namespace arki {
 namespace python {
 
 arkipy_DatasetReader* dataset_reader_create();
+arkipy_DatasetReader* dataset_reader_create(std::unique_ptr<dataset::Reader>&& ds);
 
 void register_dataset(PyObject* m);
 

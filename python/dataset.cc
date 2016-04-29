@@ -19,190 +19,6 @@ extern "C" {
  * DatasetReader
  */
 
-#if 0
-static PyObject* arkipy_DatasetReader_copy(arkipy_DatasetReader* self)
-{
-    arkipy_DatasetReader* result = PyObject_New(arkipy_DatasetReader, &arkipy_DatasetReader_Type);
-    if (!result) return NULL;
-    try {
-        result->rec = self->rec->clone().release();
-        result->station_context = self->station_context;
-        return (PyObject*)result;
-    } DBALLE_CATCH_RETURN_PYO
-}
-
-static PyObject* arkipy_DatasetReader_clear(arkipy_DatasetReader* self)
-{
-    try {
-        self->rec->clear();
-        self->station_context = false;
-        Py_RETURN_NONE;
-    } DBALLE_CATCH_RETURN_PYO
-}
-
-static PyObject* arkipy_DatasetReader_clear_vars(arkipy_DatasetReader* self)
-{
-    try {
-        self->rec->clear_vars();
-        Py_RETURN_NONE;
-    } DBALLE_CATCH_RETURN_PYO
-}
-
-static PyObject* arkipy_DatasetReader_var(arkipy_DatasetReader* self, PyObject* args)
-{
-    const char* name = NULL;
-    if (!PyArg_ParseTuple(args, "s", &name))
-        return nullptr;
-
-    try {
-        return (PyObject*)wrpy->var_create_copy((*self->rec)[name]);
-    } DBALLE_CATCH_RETURN_PYO
-}
-
-static PyObject* arkipy_DatasetReader_key(arkipy_DatasetReader* self, PyObject* args)
-{
-    if (PyErr_WarnEx(PyExc_DeprecationWarning, "please use DatasetReader.var(name) instead of DatasetReader.key(name)", 1))
-        return nullptr;
-    const char* name = NULL;
-    if (!PyArg_ParseTuple(args, "s", &name))
-        return nullptr;
-
-    try {
-        return (PyObject*)wrpy->var_create_copy((*self->rec)[name]);
-    } DBALLE_CATCH_RETURN_PYO
-}
-
-static PyObject* arkipy_DatasetReader_update(arkipy_DatasetReader* self, PyObject *args, PyObject *kw)
-{
-    if (kw)
-    {
-        PyObject *key, *value;
-        Py_ssize_t pos = 0;
-
-        while (PyDict_Next(kw, &pos, &key, &value))
-            if (arkipy_DatasetReader_setitem(self, key, value) < 0)
-                return NULL;
-    }
-
-    Py_RETURN_NONE;
-}
-
-static PyObject* arkipy_DatasetReader_get(arkipy_DatasetReader* self, PyObject *args, PyObject* kw)
-{
-    static char* kwlist[] = { "key", "default", NULL };
-    PyObject* key;
-    PyObject* def = Py_None;
-
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "O|O", kwlist, &key, &def))
-        return nullptr;
-
-    try {
-        int has = arkipy_DatasetReader_contains(self, key);
-        if (has < 0) return NULL;
-        if (!has)
-        {
-            Py_INCREF(def);
-            return def;
-        }
-
-        return arkipy_DatasetReader_getitem(self, key);
-    } DBALLE_CATCH_RETURN_PYO
-}
-
-
-static PyObject* arkipy_DatasetReader_vars(arkipy_DatasetReader* self)
-{
-    if (PyErr_WarnEx(PyExc_DeprecationWarning, "DatasetReader.vars() may disappear in a future version of DB-All.e, and no replacement is planned", 1))
-        return nullptr;
-
-    const std::vector<wreport::Var*>& vars = core::DatasetReader::downcast(*self->rec).vars();
-
-    pyo_unique_ptr result(PyTuple_New(vars.size()));
-    if (!result) return NULL;
-
-    try {
-        for (size_t i = 0; i < vars.size(); ++i)
-        {
-            pyo_unique_ptr v((PyObject*)wrpy->var_create_copy(*vars[i]));
-            if (!v) return nullptr;
-
-            if (PyTuple_SetItem(result, i, v.release()))
-                return nullptr;
-        }
-        return result.release();
-    } catch (wreport::error& e) {
-        return raise_wreport_exception(e);
-    } catch (std::exception& se) {
-        return raise_std_exception(se);
-    }
-}
-
-static PyObject* arkipy_DatasetReader_date_extremes(arkipy_DatasetReader* self)
-{
-    if (PyErr_WarnEx(PyExc_DeprecationWarning, "DatasetReader.date_extremes may disappear in a future version of DB-All.e, and no replacement is planned", 1))
-        return NULL;
-
-    try {
-        DatetimeRange dtr = core::DatasetReader::downcast(*self->rec).get_datetimerange();
-
-        pyo_unique_ptr dt_min(datetime_to_python(dtr.min));
-        pyo_unique_ptr dt_max(datetime_to_python(dtr.max));
-
-        if (!dt_min || !dt_max) return NULL;
-
-        return Py_BuildValue("(NN)", dt_min.release(), dt_max.release());
-    } catch (wreport::error& e) {
-        return raise_wreport_exception(e);
-    } catch (std::exception& se) {
-        return raise_std_exception(se);
-    }
-}
-
-static PyObject* arkipy_DatasetReader_set_station_context(arkipy_DatasetReader* self)
-{
-    if (PyErr_WarnEx(PyExc_DeprecationWarning, "DatasetReader.set_station_context is deprecated in favour of using DB.query_station_data", 1))
-        return NULL;
-    try {
-        self->rec->set_datetime(Datetime());
-        self->rec->set_level(Level());
-        self->rec->set_trange(Trange());
-        self->station_context = true;
-        Py_RETURN_NONE;
-    } catch (wreport::error& e) {
-        return raise_wreport_exception(e);
-    } catch (std::exception& se) {
-        return raise_std_exception(se);
-    }
-}
-
-static PyObject* arkipy_DatasetReader_set_from_string(arkipy_DatasetReader* self, PyObject *args)
-{
-    if (PyErr_WarnEx(PyExc_DeprecationWarning, "DatasetReader.set_from_string() may disappear in a future version of DB-All.e, and no replacement is planned", 1))
-        return nullptr;
-
-    const char* str = NULL;
-    if (!PyArg_ParseTuple(args, "s", &str))
-        return NULL;
-
-    try {
-        core::DatasetReader::downcast(*self->rec).set_from_string(str);
-        self->station_context = false;
-        Py_RETURN_NONE;
-    } catch (wreport::error& e) {
-        return raise_wreport_exception(e);
-    } catch (std::exception& se) {
-        return raise_std_exception(se);
-    }
-}
-
-
-    /**
-     * Add to summary the summary of the data that would be extracted with the
-     * given query.
-     */
-    virtual void query_summary(const Matcher& matcher, Summary& summary) = 0;
-#endif
-
 static PyObject* arkipy_DatasetReader_query_data(arkipy_DatasetReader* self, PyObject *args, PyObject* kw)
 {
     static const char* kwlist[] = { "on_metadata", "matcher", "with_data", "sort", NULL };
@@ -424,25 +240,8 @@ static int arkipy_DatasetReader_init(arkipy_DatasetReader* self, PyObject* args,
 
     try {
         ConfigFile arki_cfg;
-
-        // Fill cfg with the contents of the cfg dict
-        if (!PyDict_Check(cfg))
-        {
-            PyErr_SetString(PyExc_TypeError, "cfg argument must be an instance of a dict");
-            return -1;
-        }
-        PyObject *key, *val;
-        Py_ssize_t pos = 0;
-        while (PyDict_Next(cfg, &pos, &key, &val))
-        {
-            string k, v;
-            if (string_from_python(key, k)) return -1;
-            if (string_from_python(val, v)) return -1;
-            arki_cfg.setValue(k, v);
-        }
-
+        if (configfile_from_python(cfg, arki_cfg)) return -1;
         self->ds = dataset::Reader::create(arki_cfg);
-
         return 0;
     } ARKI_CATCH_RETURN_INT;
 }
@@ -520,6 +319,14 @@ namespace python {
 arkipy_DatasetReader* dataset_reader_create()
 {
     return (arkipy_DatasetReader*)PyObject_CallObject((PyObject*)&arkipy_DatasetReader_Type, NULL);
+}
+
+arkipy_DatasetReader* dataset_reader_create(std::unique_ptr<dataset::Reader>&& ds)
+{
+    arkipy_DatasetReader* result = PyObject_New(arkipy_DatasetReader, &arkipy_DatasetReader_Type);
+    if (!result) return nullptr;
+    result->ds = ds.release();
+    return result;
 }
 
 void register_dataset(PyObject* m)
