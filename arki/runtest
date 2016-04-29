@@ -3,10 +3,21 @@
 TOP_SRCDIR=`pwd`/`dirname $0`/..
 PYTHON=${PYTHON:-python3}
 
-if [ "$1" = "nose2-3" ]
+if [ "$1" = "NOSE" ]
 then
-    CMD="$1 -s `pwd`"
-    DEBUG_CMD="$PYTHON `which nose2-3` -s `pwd`"
+    # Try to find out what is the name of the nose executable today (sigh)
+    NOSE=""
+    for cand in nose2-3 nosetests-3.5 nosetests-3.4 nosetests-3.3
+    do
+        NOSE=`which $cand 2>/dev/null` && break
+    done
+    if [ -z "$NOSE" ]
+    then
+        echo "python3-nose not found" >&2
+        exit 1
+    fi
+    CMD="$NOSE -s `pwd`"
+    DEBUG_CMD="$PYTHON $NOSE -s `pwd`"
 else
     CMD=`pwd`/"$1"
     DEBUG_CMD="$CMD"
