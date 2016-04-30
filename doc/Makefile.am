@@ -10,7 +10,6 @@ dist_doc_DATA = \
 		mhooks-query \
 		mhooks-scan \
 		mhooks-check \
-		mhooks-inbound \
 		mhooks-mergeconf \
 		mhooks-xargs \
 		mhooks-bufr-prepare \
