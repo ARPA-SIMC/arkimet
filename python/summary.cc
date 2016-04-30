@@ -46,6 +46,15 @@ static PyObject* arkipy_Summary_write(arkipy_Summary* self, PyObject *args, PyOb
     } ARKI_CATCH_RETURN_PYO
 }
 
+static PyObject* arkipy_Summary_to_python(arkipy_Summary* self, PyObject *null)
+{
+    try {
+        PythonEmitter e;
+        self->summary->serialise(e);
+        return e.release();
+    } ARKI_CATCH_RETURN_PYO
+}
+
 
 static PyMethodDef arkipy_Summary_methods[] = {
     {"write", (PyCFunction)arkipy_Summary_write, METH_VARARGS | METH_KEYWORDS, R"(
@@ -56,6 +65,9 @@ static PyMethodDef arkipy_Summary_methods[] = {
                 socket handle, or a file-like object with a fileno() method
                 that returns an integer handle.
           format: "binary", "yaml", or "json". Default: "binary".
+        )" },
+    {"to_python", (PyCFunction)arkipy_Summary_to_python, METH_NOARGS, R"(
+        Return the summary contents in a python dict
         )" },
     {NULL}
 };

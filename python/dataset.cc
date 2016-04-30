@@ -68,8 +68,6 @@ static PyObject* arkipy_DatasetReader_query_data(arkipy_DatasetReader* self, PyO
 
         self->ds->query_data(query, dest);
         Py_RETURN_NONE;
-    } catch (python_callback_failed) {
-        return nullptr;
     } ARKI_CATCH_RETURN_PYO
 }
 
@@ -110,8 +108,6 @@ static PyObject* arkipy_DatasetReader_query_summary(arkipy_DatasetReader* self, 
             self->ds->query_summary(Matcher::parse(str_matcher), *res->summary);
             return (PyObject*)res.release();
         }
-    } catch (python_callback_failed) {
-        return nullptr;
     } ARKI_CATCH_RETURN_PYO
 }
 
@@ -188,8 +184,6 @@ static PyObject* arkipy_DatasetReader_query_bytes(arkipy_DatasetReader* self, Py
         NamedFileDescriptor out(fd, fd_name);
         self->ds->query_bytes(query, out);
         Py_RETURN_NONE;
-    } catch (python_callback_failed) {
-        return nullptr;
     } ARKI_CATCH_RETURN_PYO
 }
 

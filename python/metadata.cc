@@ -69,6 +69,15 @@ static PyObject* arkipy_Metadata_make_url(arkipy_Metadata* self, PyObject *args,
     } ARKI_CATCH_RETURN_PYO
 }
 
+static PyObject* arkipy_Metadata_to_python(arkipy_Metadata* self, PyObject *null)
+{
+    try {
+        PythonEmitter e;
+        self->md->serialise(e);
+        return e.release();
+    } ARKI_CATCH_RETURN_PYO
+}
+
 
 static PyMethodDef arkipy_Metadata_methods[] = {
     {"write", (PyCFunction)arkipy_Metadata_write, METH_VARARGS | METH_KEYWORDS, R"(
@@ -88,6 +97,9 @@ static PyMethodDef arkipy_Metadata_methods[] = {
 
         Arguments:
           baseurl: the base URL that identifies the dataset
+        )" },
+    {"to_python", (PyCFunction)arkipy_Metadata_to_python, METH_NOARGS, R"(
+        Return the metadata contents in a python dict
         )" },
     {NULL}
 };

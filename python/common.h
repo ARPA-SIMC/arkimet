@@ -3,6 +3,8 @@
 
 #include <Python.h>
 #include <string>
+#include <vector>
+#include <arki/emitter.h>
 
 namespace arki {
 struct ConfigFile;
@@ -17,12 +19,16 @@ void set_std_exception(const std::exception& e);
 
 
 #define ARKI_CATCH_RETURN_PYO \
-      catch (std::exception& se) { \
+      catch (python_callback_failed&) { \
+        return nullptr; \
+    } catch (std::exception& se) { \
         set_std_exception(se); return nullptr; \
     }
 
 #define ARKI_CATCH_RETURN_INT \
-      catch (std::exception& se) { \
+      catch (python_callback_failed&) { \
+        return -1; \
+    } catch (std::exception& se) { \
         set_std_exception(se); return -1; \
     }
 
@@ -74,6 +80,51 @@ public:
 };
 
 typedef py_unique_ptr<PyObject> pyo_unique_ptr;
+
+struct PythonEmitter : public Emitter
+{
+    struct Target
+    {
+        enum State {
+            LIST,
+            MAPPING,
+            MAPPING_KEY,
+        } state;
+        PyObject* o = nullptr;
+
+        Target(State state, PyObject* o) : state(state), o(o) {}
+    };
+    std::vector<Target> stack;
+    PyObject* res = nullptr;
+
+    ~PythonEmitter();
+
+    PyObject* release()
+    {
+        PyObject* o = res;
+        res = nullptr;
+        return o;
+    }
+
+    /**
+     * Adds a value to the python object that is currnetly been built.
+     *
+     * Steals a reference to o.
+     */
+    void add_object(PyObject* o);
+
+    void start_list() override;
+    void end_list() override;
+
+    void start_mapping() override;
+    void end_mapping() override;
+
+    void add_null() override;
+    void add_bool(bool val) override;
+    void add_int(long long int val) override;
+    void add_double(double val) override;
+    void add_string(const std::string& val) override;
+};
 
 #if 0
 extern wrpy_c_api* wrpy;
