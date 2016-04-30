@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-bin_PROGRAMS = arki-check arki-query arki-dump arki-gzip arki-mergeconf arki-benchmark arki-scan arki-xargs
+bin_PROGRAMS = arki-check arki-query arki-dump arki-gzip arki-mergeconf arki-scan arki-xargs
 bin_SCRIPTS = arki-server
 noinst_PROGRAMS = arki-test
 
@@ -27,12 +27,6 @@ all_libs += $(LZO_LIBS)
 AM_CPPFLAGS += $(LZO_CFLAGS)
 endif
 
-if READLINE
-bin_PROGRAMS += arki-config
-arki_config_SOURCES = arki-config.cc
-arki_config_LDADD = $(all_libs)
-endif
-
 if DBALLE
 bin_PROGRAMS += arki-bufr-prepare
 
@@ -40,18 +34,8 @@ arki_bufr_prepare_SOURCES = arki-bufr-prepare.cc
 arki_bufr_prepare_LDADD = $(all_libs)
 endif
 
-if LUA
-bin_PROGRAMS += arki-shell
-
-arki_shell_SOURCES = arki-shell.cc
-arki_shell_LDADD = $(all_libs)
-endif
-
 arki_scan_SOURCES = arki-scan.cc
 arki_scan_LDADD = $(all_libs)
-
-arki_benchmark_SOURCES = arki-benchmark.cc bench/benchmark.cc
-arki_benchmark_LDADD = $(all_libs)
 
 arki_mergeconf_SOURCES = arki-mergeconf.cc
 arki_mergeconf_LDADD = $(all_libs)

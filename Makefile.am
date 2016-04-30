@@ -18,10 +18,6 @@ man_MANS = \
 	arki-server.1 \
 	arki-xargs.1
 
-if READLINE
-man_MANS += arki-config.1
-endif
-
 if DBALLE
 man_MANS += arki-bufr-prepare.1
 endif

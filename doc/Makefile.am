@@ -4,7 +4,6 @@ dist_doc_DATA = \
 		DATASET \
 		arkiguide.it.txt \
 		adding-formats.txt \
-		mhooks-config \
 		mhooks-dump \
 		mhooks-gzip \
 		mhooks-query \
