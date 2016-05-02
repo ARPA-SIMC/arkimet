@@ -75,20 +75,21 @@ def_test(1)
     // Test the empty table
     Table table;
     wassert(actual(table.empty()).istrue());
-    wassert(actual(table.equals(Table())).istrue());
-    wassert(actual(table.size()) == 0);
+    Table empty;
+    wassert(actual(table.equals(empty)).istrue());
+    wassert(actual(table.size()) == 0u);
 
     // Add an item and test results
     table.merge(md);
     wassert(actual(table.empty()).isfalse());
-    wassert(actual(table.equals(Table())).isfalse());
-    wassert(actual(table.size()) == 1);
+    wassert(actual(table.equals(empty)).isfalse());
+    wassert(actual(table.size()) == 1u);
 
     // Two different tables should compare the same even if they have different
     // intern pointers
     Table table1;
     table1.merge(md);
-    wassert(actual(table1.size()) == 1);
+    wassert(actual(table1.size()) == 1u);
     wassert(actual(table1.equals(table)).istrue());
 }
 
@@ -99,8 +100,8 @@ def_test(2)
     table.merge(md);
     table.merge(md);
     wassert(actual(table.empty()).isfalse());
-    wassert(actual(table.size()) == 1);
-    wassert(actual(table.stats.count) == 2);
+    wassert(actual(table.size()) == 1u);
+    wassert(actual(table.stats.count) == 2u);
 }
 
 // Build a table a bit larger, still no reallocs triggered
@@ -109,7 +110,7 @@ def_test(3)
     // Look at a bigger table
     Table table;
     fill_with_6_samples(table);
-    wassert(actual(table.size()) == 6);
+    wassert(actual(table.size()) == 6u);
 }
 
 // Build a table large enough to trigger a realloc
@@ -118,7 +119,7 @@ def_test(4)
     // Look at an even bigger table, this should trigger a realloc
     Table table3;
     fill_with_27_samples(table3);
-    wassert(actual(table3.size()) == 27);
+    wassert(actual(table3.size()) == 27u);
     // Compare with itself to access all elements of the table and see if we got garbage
     wassert(actual(table3.equals(table3)).istrue());
 }
@@ -127,8 +128,8 @@ def_test(4)
 def_test(5)
 {
     Row row1;
-    wassert(actual(row1.stats.count) == 0);
-    wassert(actual(row1.stats.size) == 0);
+    wassert(actual(row1.stats.count) == 0u);
+    wassert(actual(row1.stats.size) == 0u);
 
     for (unsigned i = 0; i < Row::mso_size; ++i)
         row1.items[i] = (const Type*)(i + 1);

@@ -90,8 +90,48 @@ Table::~Table()
     delete[] interns;
 }
 
-bool Table::equals(const Table& table) const
+void Table::want_clean()
 {
+    if (!dirty) return;
+
+    // Sort the rows
+    std::sort(rows.begin(), rows.end());
+
+    // If the table has only one item, it is trivially sorted and unique
+    if (rows.size() == 1)
+    {
+        dirty = false;
+        return;
+    }
+
+    // Merge consecutive rows with the same metadata
+    vector<Row>::iterator read = rows.begin() + 1;
+    vector<Row>::iterator write = rows.begin();
+
+    while (true)
+    {
+        if (read == rows.end()) break;
+        if (*read == *write)
+        {
+            write->stats.merge(read->stats);
+            ++read;
+            continue;
+        } else {
+            ++write;
+            if (read != write)
+                *write = *read;
+            ++read;
+        }
+    }
+    rows.resize(write - rows.begin() + 1);
+    dirty = false;
+}
+
+bool Table::equals(Table& table)
+{
+    want_clean();
+    table.want_clean();
+
     if (rows.size() != table.rows.size()) return false;
     for (unsigned ri = 0; ri < rows.size(); ++ri)
     {
@@ -253,6 +293,7 @@ void Table::merge(const Row& row)
 {
 //    cerr << "MERGE " << this << " cur_size: " << row_count << " [" << rows << ", " << (rows + row_count) << ")" << " stats count " << row.stats.count << endl;
 //    row.dump(cerr);
+#if 0
     // Find the insertion point
     //
     // This works well even in case rows == 0, since it works in the [0, 0)
@@ -269,14 +310,21 @@ void Table::merge(const Row& row)
         rows.emplace(pos, row);
     }
     stats.merge(row.stats);
+#endif
+    rows.emplace_back(row);
+    stats.merge(row.stats);
+    dirty = true;
 }
 
-void Table::dump(std::ostream& out) const
+void Table::dump(std::ostream& out)
 {
+    want_clean();
 }
 
-bool Table::visitItem(size_t msoidx, ItemVisitor& visitor) const
+bool Table::visitItem(size_t msoidx, ItemVisitor& visitor)
 {
+    want_clean();
+
     const TypeIntern& intern = interns[msoidx];
     for (TypeIntern::const_iterator i = intern.begin(); i != intern.end(); ++i)
         if (!visitor(**i))
@@ -284,8 +332,10 @@ bool Table::visitItem(size_t msoidx, ItemVisitor& visitor) const
     return true;
 }
 
-bool Table::visit(Visitor& visitor) const
+bool Table::visit(Visitor& visitor)
 {
+    want_clean();
+
     vector<const Type*> visitmd;
     visitmd.resize(msoSize);
 
@@ -304,8 +354,10 @@ bool Table::visit(Visitor& visitor) const
     return true;
 }
 
-bool Table::visitFiltered(const Matcher& matcher, Visitor& visitor) const
+bool Table::visitFiltered(const Matcher& matcher, Visitor& visitor)
 {
+    want_clean();
+
     vector<const Type*> visitmd;
     visitmd.resize(msoSize);
 
