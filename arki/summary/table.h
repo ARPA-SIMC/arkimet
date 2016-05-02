@@ -68,9 +68,12 @@ class Table
 protected:
     TypeIntern* interns;
     std::vector<Row> rows;
+    unsigned dirty = 0;
 
     static void buildMsoSerLen();
     static void buildItemMsoMap();
+
+    void want_clean();
 
 public:
     /// Aggregated global statistics
@@ -80,9 +83,9 @@ public:
     ~Table();
 
     bool empty() const { return rows.empty(); }
-    size_t size() const { return rows.size(); }
+    size_t size() { want_clean(); return rows.size(); }
 
-    bool equals(const Table& table) const;
+    bool equals(Table& table);
 
     /// Return the intern version of an item
     const types::Type* intern(unsigned pos, std::unique_ptr<types::Type>&& item);
@@ -108,23 +111,23 @@ public:
     /// Merge rows read from a yaml input stream
     bool merge_yaml(LineReader& in, const std::string& filename);
 
-    void dump(std::ostream& out) const;
+    void dump(std::ostream& out);
 
     // Notifies the visitor of all the values of the given metadata item.
     // Due to the internal structure, the same item can be notified more than once.
-    bool visitItem(size_t msoidx, ItemVisitor& visitor) const;
+    bool visitItem(size_t msoidx, ItemVisitor& visitor);
 
     /**
      * Visit all the contents of this node, notifying visitor of all the full
      * nodes found
      */
-    bool visit(Visitor& visitor) const;
+    bool visit(Visitor& visitor);
 
     /**
      * Visit all the contents of this node, notifying visitor of all the full
      * nodes found that match the matcher
      */
-    bool visitFiltered(const Matcher& matcher, Visitor& visitor) const;
+    bool visitFiltered(const Matcher& matcher, Visitor& visitor);
 
     /// Number of item types that contribute to a summary context
     static const size_t msoSize;
