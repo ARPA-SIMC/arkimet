@@ -3,6 +3,9 @@ import os
 import io
 import tempfile
 import configparser
+import html
+from urllib.parse import quote_plus
+from contextlib import contextmanager
 import logging
 import arkimet as arki
 
@@ -101,6 +104,70 @@ class ArkiView:
                 self.send_headers()
         except Exception:
             self.handle_exception()
+
+
+class HTMLWriter:
+    def __init__(self):
+        self.out = io.StringIO()
+
+    def print(self, *args, **kw):
+        kw["file"] = self.out
+        print(*args, **kw)
+
+    @contextmanager
+    def html(self):
+        self.print("<html>")
+        yield
+        self.print("</html>")
+
+    @contextmanager
+    def body(self):
+        self.print("<body>")
+        yield
+        self.print("</body>")
+
+    @contextmanager
+    def ul(self):
+        self.print("<ul>")
+        yield
+        self.print("</ul>")
+
+    @contextmanager
+    def li(self):
+        self.print("<li>")
+        yield
+        self.print("</li>")
+
+    def head(self, title):
+        self.print("<head><title>{title}</title></head>".format(title=html.escape(title)))
+
+    def p(self, text):
+        self.print("<p>{text}</p>".format(text=html.escape(text)))
+
+    def h1(self, text):
+        self.print("<h1>{text}</h1>".format(text=html.escape(text)))
+
+    def a(self, href, text):
+        self.print("<a href='{href}'>{text}</a>".format(
+            href=quote_plus(href), text=html.escape(text)))
+
+
+class ArkiIndex(ArkiView):
+    content_type = "text/html"
+
+    def stream(self):
+        page = HTMLWriter()
+        with page.html():
+            page.head("Dataset index")
+            with page.body():
+                page.p("Available datasets:")
+                with page.ul():
+                    for sec in self.handler.server.cfg.sections():
+                        with page.li():
+                            page.a("/dataset/" + sec, sec)
+            page.a("/query", "Perform a query")
+        self.send_headers()
+        self.handler.wfile.write(page.out.getvalue().encode("utf-8"))
 
 
 class ArkiConfig(ArkiView):
@@ -361,6 +428,39 @@ class ArkiSummary(QMacroMixin, ArkiView):
         summary = self.get_dataset_reader().query_summary(self.get_query())
         self.send_headers()
         summary.write(self.handler.wfile)
+
+
+class ArkiDatasetIndex(ArkiView):
+    content_type = "text/html"
+
+    def stream(self):
+        name = self.kwargs["name"]
+
+        page = HTMLWriter()
+        with page.html():
+            page.head("Dataset " + name)
+            with page.body():
+                page.h1("Dataset " + name)
+                with page.ul():
+                    with page.li(): page.a("/", "All datasets")
+                    with page.li(): page.a("/dataset/" + name + "/queryform", "Query")
+                    with page.li(): page.a("/dataset/" + name + "/summary", "Download summary")
+
+                # res << "<p>Summary of dataset <b>" << dsname << "</b>:</p>" << endl;
+                # res << "<pre>" << endl;
+                # try {
+                #     Report rep("dsinfo");
+                #     rep.captureOutput(res);
+                #     rep(sum);
+                #     rep.report();
+                # } catch (std::exception& e) {
+                #     sum.writeYaml(res);
+                # }
+                # res << "</pre>" << endl;
+                # res << "</body>" << endl;
+                # res << "</html>" << endl;
+        self.send_headers()
+        self.handler.wfile.write(page.out.getvalue().encode("utf-8"))
 
 
 # TODO: def arki_index(self, request):
