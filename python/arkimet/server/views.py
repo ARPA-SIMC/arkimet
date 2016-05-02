@@ -138,6 +138,22 @@ class HTMLWriter:
         yield
         self.print("</li>")
 
+    @contextmanager
+    def tag(self, name, **kw):
+        self.print("<{name}{attrs}>".format(
+            name=name,
+            attrs=" ".join("{key}='{val}'".format(key, quote_plus(val)) for key, val in kw.items()),
+        ))
+        yield
+        self.print("</{name}>".format(name=name))
+
+    def inline_tag(self, name, text="", **kw):
+        self.print("<{name}{attrs}>{text}</{name}>".format(
+            name=name,
+            attrs=" ".join("{key}='{val}'".format(key, quote_plus(val)) for key, val in kw.items()),
+            text=text,
+        ))
+
     def head(self, title):
         self.print("<head><title>{title}</title></head>".format(title=html.escape(title)))
 
@@ -436,6 +452,10 @@ class ArkiDatasetIndex(ArkiView):
     def stream(self):
         name = self.kwargs["name"]
 
+#        // Query the summary
+#        Summary sum;
+#        ds.query_summary(Matcher(), sum);
+
         page = HTMLWriter()
         with page.html():
             page.head("Dataset " + name)
@@ -443,7 +463,6 @@ class ArkiDatasetIndex(ArkiView):
                 page.h1("Dataset " + name)
                 with page.ul():
                     with page.li(): page.a("/", "All datasets")
-                    with page.li(): page.a("/dataset/" + name + "/queryform", "Query")
                     with page.li(): page.a("/dataset/" + name + "/summary", "Download summary")
 
                 # res << "<p>Summary of dataset <b>" << dsname << "</b>:</p>" << endl;
@@ -461,161 +480,3 @@ class ArkiDatasetIndex(ArkiView):
                 # res << "</html>" << endl;
         self.send_headers()
         self.handler.wfile.write(page.out.getvalue().encode("utf-8"))
-
-
-# TODO: def arki_index(self, request):
-# TODO:     raise NotFound("TODO: index")
-# TODO:     # local_handlers.add("", new IndexHandler);
-
-#    def arki_dataset(self, path):
-#        self.send_404("TODO: dataset")
-#        # local_handlers.add("dataset", new DatasetHandler);
-#// Dispatch dataset-specific actions
-#struct DatasetHandler : public LocalHandler
-#{
-#    // Show the summary of a dataset
-#    void do_index(dataset::Reader& ds, const std::string& dsname, Request& req)
-#    {
-#        req.log_action("index of dataset " + dsname);
-#
-#        // Query the summary
-#        Summary sum;
-#        ds.query_summary(Matcher(), sum);
-#
-#        // Create the output page
-#        stringstream res;
-#        res << "<html>" << endl;
-#        res << "<head><title>Dataset " << dsname << "</title></head>" << endl;
-#        res << "<body>" << endl;
-#        res << "<ul>" << endl;
-#        res << "<li><a href='/'>All datasets</a></li>" << endl;
-#        res << "<li><a href='/dataset/" << dsname << "/queryform'>Query</a></li>" << endl;
-#        res << "<li><a href='/dataset/" << dsname << "/summary'>Download summary</a></li>" << endl;
-#        res << "</ul>" << endl;
-#        res << "<p>Summary of dataset <b>" << dsname << "</b>:</p>" << endl;
-#        res << "<pre>" << endl;
-#        try {
-#            Report rep("dsinfo");
-#            rep.captureOutput(res);
-#            rep(sum);
-#            rep.report();
-#        } catch (std::exception& e) {
-#            sum.writeYaml(res);
-#        }
-#        res << "</pre>" << endl;
-#        res << "</body>" << endl;
-#        res << "</html>" << endl;
-#
-#        req.send_result(res.str());
-#    }
-#
-#    // Show a form to query the dataset
-#    void do_queryform(const std::string& dsname, Request& req)
-#    {
-#        req.log_action("query form for dataset " + dsname);
-#
-#        stringstream res;
-#        res << "<html>" << endl;
-#        res << "<head><title>Query dataset " << dsname << "</title></head>" << endl;
-#        res << "<body>" << endl;
-#        res << "  Please type or paste your query and press submit:" << endl;
-#        res << "  <form action='/dataset/" << dsname << "/query' method='push'>" << endl;
-#        res << "    <textarea name='query' cols='80' rows='15'>" << endl;
-#        res << "    </textarea>" << endl;
-#        res << "    <br/>" << endl;
-#        res << "    <select name='style'>" << endl;
-#        res << "      <option value='data'>Data</option>" << endl;
-#        res << "      <option value='yaml'>Human-readable metadata</option>" << endl;
-#        res << "      <option value='json'>JSON metadata</option>" << endl;
-#        res << "      <option value='inline'>Binary metadata and data</option>" << endl;
-#        res << "      <option value='md'>Binary metadata</option>" << endl;
-#        res << "    </select>" << endl;
-#        res << "    <br/>" << endl;
-#        res << "    <input type='submit'>" << endl;
-#        res << "  </form>" << endl;
-#        res << "</body>" << endl;
-#        res << "</html>" << endl;
-#        req.send_result(res.str());
-#    }
-#
-#    virtual void operator()(Request& req)
-#    {
-#        string dsname = req.pop_path_info();
-#        if (dsname.empty())
-#            throw net::http::error404();
-#
-#        string action = req.pop_path_info();
-#        if (action.empty())
-#            action = "index";
-#
-#        unique_ptr<dataset::Reader> ds = req.get_dataset(dsname);
-#
-#        if (action == "index")
-#            do_index(*ds, dsname, req);
-#        else if (action == "queryform")
-#            do_queryform(dsname, req);
-#        else if (action == "config")
-#        {
-#            req.log_action("configuration for dataset " + dsname);
-#            dataset::http::ReaderServer srv(*ds, dsname);
-#            srv.do_config(req.get_config_remote(dsname), req);
-#        }
-#        else if (action == "summary")
-#        {
-#            req.log_action("summary for dataset " + dsname);
-#            dataset::http::ReaderServer srv(*ds, dsname);
-#            dataset::http::LegacySummaryParams params;
-#            params.parse_get_or_post(req);
-#            srv.do_summary(params, req);
-#        }
-#        else if (action == "summaryshort")
-#        {
-#            req.log_action("summary-short for dataset " + dsname);
-#            dataset::http::ReaderServer srv(*ds, dsname);
-#            dataset::http::LegacySummaryParams params;
-#            params.parse_get_or_post(req);
-#            srv.do_summary_short(params, req);
-#        }
-#        else if (action == "query")
-#        {
-#            req.log_action("query dataset " + dsname);
-#            dataset::http::ReaderServer srv(*ds, dsname);
-#            utils::MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
-#            dataset::http::LegacyQueryParams params(tempdir.tmp_dir);
-#            params.parse_get_or_post(req);
-#            srv.do_query(params, req);
-#        }
-#        else if (action == "querydata")
-#        {
-#            req.log_action("querydata in dataset " + dsname);
-#            dataset::http::ReaderServer srv(*ds, dsname);
-#            dataset::http::QueryDataParams params;
-#            params.parse_get_or_post(req);
-#            srv.do_queryData(params, req);
-#        }
-#        else if (action == "querysummary")
-#        {
-#            req.log_action("querysummary in dataset " + dsname);
-#            dataset::http::ReaderServer srv(*ds, dsname);
-#            dataset::http::QuerySummaryParams params;
-#            params.parse_get_or_post(req);
-#            srv.do_querySummary(params, req);
-#        }
-#        else if (action == "querybytes")
-#        {
-#            req.log_action("querybytes in dataset " + dsname);
-#            dataset::http::ReaderServer srv(*ds, dsname);
-#            utils::MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
-#            dataset::http::QueryBytesParams params(tempdir.tmp_dir);
-#            params.parse_get_or_post(req);
-#            srv.do_queryBytes(params, req);
-#        }
-#        else
-#            throw std::runtime_error("Unknown dataset action: \"" + action + "\"");
-#    }
-#};
-
-#    #    if (opts.inbound->isSet())
-#    #        local_handlers.add("inbound", new InboundHandler(opts.inbound->stringValue()));
-
-
