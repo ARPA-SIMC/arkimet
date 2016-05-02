@@ -9,7 +9,6 @@
 #include "arki/dataset.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
-#include "arki/types/assigneddataset.h"
 #include "arki/types/value.h"
 #include "arki/summary.h"
 #include "arki/summary/stats.h"

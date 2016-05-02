@@ -5,7 +5,6 @@
 #include "arki/dataset/archive.h"
 #include "arki/dataset/segment.h"
 #include "arki/dataset/reporter.h"
-#include "arki/types/assigneddataset.h"
 #include "arki/types/source/blob.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"

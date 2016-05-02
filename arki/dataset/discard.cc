@@ -2,7 +2,6 @@
 #include <arki/dataset/discard.h>
 #include <arki/metadata.h>
 #include <arki/configfile.h>
-#include <arki/types/assigneddataset.h>
 #include <iostream>
 
 using namespace std;
