@@ -68,7 +68,7 @@ class Table
 protected:
     TypeIntern* interns;
     std::vector<Row> rows;
-    bool dirty = false;
+    unsigned dirty = 0;
 
     static void buildMsoSerLen();
     static void buildItemMsoMap();

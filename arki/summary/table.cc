@@ -92,7 +92,7 @@ Table::~Table()
 
 void Table::want_clean()
 {
-    if (!dirty) return;
+    if (dirty == 0) return;
 
     // Sort the rows
     std::sort(rows.begin(), rows.end());
@@ -100,7 +100,7 @@ void Table::want_clean()
     // If the table has only one item, it is trivially sorted and unique
     if (rows.size() == 1)
     {
-        dirty = false;
+        dirty = 0;
         return;
     }
 
@@ -124,7 +124,7 @@ void Table::want_clean()
         }
     }
     rows.resize(write - rows.begin() + 1);
-    dirty = false;
+    dirty = 0;
 }
 
 bool Table::equals(Table& table)
@@ -291,6 +291,10 @@ static void test_consistency(Row* rows, unsigned size, const char* context)
 
 void Table::merge(const Row& row)
 {
+    // Occasionally clean the table in case we are adding a lot of metadata one
+    // by one, to prevent the intermediate table from exploding in size
+    if (dirty > 100000)
+        want_clean();
 //    cerr << "MERGE " << this << " cur_size: " << row_count << " [" << rows << ", " << (rows + row_count) << ")" << " stats count " << row.stats.count << endl;
 //    row.dump(cerr);
 #if 0
@@ -313,7 +317,7 @@ void Table::merge(const Row& row)
 #endif
     rows.emplace_back(row);
     stats.merge(row.stats);
-    dirty = true;
+    ++dirty;
 }
 
 void Table::dump(std::ostream& out)
