@@ -4,7 +4,7 @@ import io
 import tempfile
 import configparser
 import html
-from urllib.parse import quote_plus
+from urllib.parse import quote
 from contextlib import contextmanager
 import logging
 import arkimet as arki
@@ -142,7 +142,7 @@ class HTMLWriter:
     def tag(self, name, **kw):
         self.print("<{name}{attrs}>".format(
             name=name,
-            attrs=" ".join("{key}='{val}'".format(key, quote_plus(val)) for key, val in kw.items()),
+            attrs=" ".join("{key}='{val}'".format(key, quote(val)) for key, val in kw.items()),
         ))
         yield
         self.print("</{name}>".format(name=name))
@@ -150,7 +150,7 @@ class HTMLWriter:
     def inline_tag(self, name, text="", **kw):
         self.print("<{name}{attrs}>{text}</{name}>".format(
             name=name,
-            attrs=" ".join("{key}='{val}'".format(key, quote_plus(val)) for key, val in kw.items()),
+            attrs=" ".join("{key}='{val}'".format(key, quote(val)) for key, val in kw.items()),
             text=text,
         ))
 
@@ -165,7 +165,7 @@ class HTMLWriter:
 
     def a(self, href, text):
         self.print("<a href='{href}'>{text}</a>".format(
-            href=quote_plus(href), text=html.escape(text)))
+            href=quote(href), text=html.escape(text)))
 
 
 class ArkiIndex(ArkiView):
@@ -461,9 +461,13 @@ class ArkiDatasetIndex(ArkiView):
             page.head("Dataset " + name)
             with page.body():
                 page.h1("Dataset " + name)
+                page.p("Configuration:")
+                with page.tag("pre"):
+                    for k, v in sorted(self.handler.server.remote_cfg[name].items()):
+                        print("{k} = {v}".format(k=html.escape(k), v=html.escape(v)), file=page.out)
                 with page.ul():
-                    with page.li(): page.a("/", "All datasets")
                     with page.li(): page.a("/dataset/" + name + "/summary", "Download summary")
+                    with page.li(): page.a("/", "List of all datasets")
 
                 # res << "<p>Summary of dataset <b>" << dsname << "</b>:</p>" << endl;
                 # res << "<pre>" << endl;
