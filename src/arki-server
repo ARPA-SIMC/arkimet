@@ -13,6 +13,7 @@ from arkimet.server import views
 from werkzeug.exceptions import HTTPException, NotFound
 from socketserver import ForkingMixIn
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from setproctitle import setproctitle
 
 
 class Server(ForkingMixIn, HTTPServer):
@@ -32,9 +33,6 @@ class Server(ForkingMixIn, HTTPServer):
             Rule('/dataset/<name>/summary', endpoint='ArkiDatasetSummary'),
             Rule('/dataset/<name>/config', endpoint='ArkiDatasetConfig'),
         ])
-
-    def process_request(self, *args, **kw):
-        super().process_request(*args, **kw)
 
     def read_config(self, pathname):
         logging.info("Reading configuration from %s", pathname)
@@ -117,6 +115,7 @@ class Handler(BaseHTTPRequestHandler):
         """
         from werkzeug.wrappers import Request, Response
         request = Request(self.make_environ())
+        setproctitle("arki-server {} for {}".format(request.base_url, request.remote_addr))
         adapter = self.server.url_map.bind_to_environ(request.environ)
         try:
             endpoint, values = adapter.match()
