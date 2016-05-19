@@ -14,8 +14,8 @@ Requires: hdf5, meteo-vm2 >= 0.12, grib_api-1.10.0, python3, python3-lxml, pytho
 Requires(preun): /sbin/chkconfig, /sbin/service
 Requires(post): /sbin/chkconfig, /sbin/service
 
-%{!?python3_sitelib: %define python_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
-%{!?python3_sitearch: %define python_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
+%{!?python3_sitelib: %define python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
+%{!?python3_sitearch: %define python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 Requires: python >= 3.3
 
@@ -85,12 +85,12 @@ install -bD -m0755 %{SOURCE2} %{buildroot}%{_sysconfdir}/default/arki-server
 %{_libdir}/libarkimet.so.*
 %{_sysconfdir}/rc.d/init.d/%{name}
 %config(noreplace) %{_sysconfdir}/default/arki-server
-%dir %{python_sitelib}/arkimet
-%{python_sitelib}/arkimet/*
-%dir %{python_sitearch}
-%{python_sitearch}/*.a
-%{python_sitearch}/*.la
-%{python_sitearch}/*.so*
+%dir %{python3_sitelib}/arkimet
+%{python3_sitelib}/arkimet/*
+%dir %{python3_sitearch}
+%{python3_sitearch}/*.a
+%{python3_sitearch}/*.la
+%{python3_sitearch}/*.so*
 %doc %{_mandir}/man1/*
 %doc README TODO
 %doc %{_docdir}/arkimet/*
