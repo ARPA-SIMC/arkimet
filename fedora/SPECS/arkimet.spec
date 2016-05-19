@@ -14,9 +14,8 @@ Requires: hdf5, meteo-vm2 >= 0.12, grib_api-1.10.0, python3, python3-lxml, pytho
 Requires(preun): /sbin/chkconfig, /sbin/service
 Requires(post): /sbin/chkconfig, /sbin/service
 
-%{!?python_sitelib: %define python_sitelib %(python3 -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
-%{!?python_sitearch: %define python_sitearch %(python3 -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
-%{!?python_siteinc: %define python_siteinc %(python3 -c "from distutils.sysconfig import get_python_inc; print get_python_inc()")}
+%{!?python3_sitelib: %define python_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
+%{!?python3_sitearch: %define python_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 Requires: python >= 3.3
 
