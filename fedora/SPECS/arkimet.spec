@@ -10,7 +10,7 @@ Source1: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/
 Source2: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.default
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 BuildRequires: doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl-devel, geos-devel, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 3.0, flex, bison, meteo-vm2-devel >= 0.12, hdf5-devel
-Requires: hdf5, meteo-vm2 >= 0.12, grib_api-1.10.0
+Requires: hdf5, meteo-vm2 >= 0.12, grib_api-1.10.0, python3, python3-lxml, python3-werkzeug
 Requires(preun): /sbin/chkconfig, /sbin/service
 Requires(post): /sbin/chkconfig, /sbin/service
 
@@ -21,14 +21,32 @@ Requires(post): /sbin/chkconfig, /sbin/service
 Requires: python >= 2.5
 
 %description
- Description to be written.
+Arkimet is a set of tools to organize, archive and distribute 
+data files.
+It currently supports data in GRIB, BUFR, HDF5 and VM2 formats. 
+
+Arkimet manages a set of datasets, each of which contains 
+omogeneous data. It exploits the commonalities between the data 
+in a dataset to implement a fast, powerful and space-efficient 
+indexing system. 
+When data is ingested into arkimet, it is scanned and annotated 
+with metadata, such as reference time and product information, 
+then it is dispatched to one of the datasets configured in the 
+system. 
+Datasets can be queried with a comprehensive query language, 
+both locally and over the network using an HTTP-based protocol. 
+Old data can be archived using an automatic maintenance procedure,
+and archives can be taken offline and back online at will. 
+A summary of offline data is kept online, so that arkimet is able 
+to report that more data for a query would be available but is 
+currently offline.
 
 %package  -n arkimet-devel
-Summary:  Archive for weather information (development library)
+Summary:  Arkimet developement library
 Group:    Applications/Meteo
 
 %description -n arkimet-devel
- Description to be written.
+ Arkimet developement library
 
 %prep
 %setup -q -n %{name}-%{version}-%{release}
@@ -65,8 +83,15 @@ install -bD -m0755 %{SOURCE2} %{buildroot}%{_sysconfdir}/default/arki-server
 %{_sysconfdir}/arkimet/targetfile/*
 %{_sysconfdir}/arkimet/vm2/*
 %{_bindir}/*
+%{_libdir}/libarkimet.so.*
 %{_sysconfdir}/rc.d/init.d/%{name}
 %config(noreplace) %{_sysconfdir}/default/arki-server
+%dir %{python_sitelib}/arkimet
+%{python_sitelib}/arkimet/*
+%dir %{python_sitearch}
+%{python_sitearch}/*.a
+%{python_sitearch}/*.la
+%{python_sitearch}/*.so*
 %doc %{_mandir}/man1/*
 %doc README TODO
 %doc %{_docdir}/arkimet/*
@@ -75,9 +100,9 @@ install -bD -m0755 %{SOURCE2} %{buildroot}%{_sysconfdir}/default/arki-server
 %defattr(-,root,root,-)
 %{_libdir}/libarkimet*.a
 %{_libdir}/libarkimet*.la
+%{_libdir}/libarkimet.so
 %dir %{_includedir}/arki
 %{_includedir}/arki/*
-
 
 %pre
 #/sbin/service %{name} stop >/dev/null 2>&1
