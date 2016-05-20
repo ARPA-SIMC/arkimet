@@ -17,8 +17,6 @@ Requires(post): /sbin/chkconfig, /sbin/service
 %{!?python3_sitelib: %define python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %{!?python3_sitearch: %define python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
-Requires: python >= 3.3
-
 %description
 Arkimet is a set of tools to organize, archive and distribute 
 data files.
