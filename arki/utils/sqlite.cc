@@ -82,7 +82,7 @@ void SQLiteDB::exec(const std::string& query)
 
 void SQLiteDB::checkpoint()
 {
-    int rc = sqlite3_wal_checkpoint_v2(m_db, NULL, SQLITE_CHECKPOINT_RESTART, NULL, NULL);
+    int rc = sqlite3_wal_checkpoint_v2(m_db, NULL, SQLITE_CHECKPOINT_PASSIVE, NULL, NULL);
     if (rc != SQLITE_OK)
         throw SQLiteError(m_db, "checkpointing database");
 }
