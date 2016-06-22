@@ -10,8 +10,8 @@
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "wibble/sys/childprocess.h"
 #include <sys/fcntl.h>
-#include <thread>
 
 using namespace std;
 using namespace arki;
@@ -43,7 +43,7 @@ struct FixtureWriter : public DatasetTest
 };
 
 template<class Fixture>
-struct ConcurrentImporter
+struct ConcurrentImporter : public wibble::sys::ChildProcess
 {
     Fixture& fixture;
     unsigned initial;
@@ -54,7 +54,7 @@ struct ConcurrentImporter
     {
     }
 
-    void run()
+    virtual int main() override
     {
         auto ds(fixture.makeWriter());
 
@@ -65,6 +65,8 @@ struct ConcurrentImporter
             md.set(types::Reftime::createPosition(core::Time(2016, 6, 1, 0, 0, i)));
             wassert(actual(ds->acquire(md)) == dataset::Writer::ACQ_OK);
         }
+
+        return 0;
     }
 };
 
@@ -111,13 +113,13 @@ this->add_method("concurrent_import", [](Fixture& f) {
     ConcurrentImporter<Fixture> i1(f, 1, 3);
     ConcurrentImporter<Fixture> i2(f, 2, 3);
 
-    std::thread t0([&] { i0.run(); });
-    std::thread t1([&] { i1.run(); });
-    std::thread t2([&] { i2.run(); });
+    i0.fork();
+    i1.fork();
+    i2.fork();
 
-    t0.join();
-    t1.join();
-    t2.join();
+    i0.wait();
+    i1.wait();
+    i2.wait();
 
     auto reader = f.makeReader();
     metadata::Collection mdc(*reader, Matcher());
