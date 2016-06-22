@@ -149,7 +149,7 @@ void LocalWriter::acquire_lock()
 #ifdef F_OFD_SETLKW
     if (fcntl(lockfile, F_OFD_SETLKW, &ds_lock) == -1)
 #else
-#warn old style locks make concurrency tests unreliable in the test suite
+#warning old style locks make concurrency tests unreliable in the test suite
     if (fcntl(lockfile, F_SETLKW, &ds_lock) == -1)
 #endif
         throw_file_error(lockfile.name(), "cannot lock the file for writing");
@@ -163,7 +163,7 @@ void LocalWriter::release_lock()
 #ifdef F_OFD_SETLK
     fcntl(lockfile, F_OFD_SETLK, &ds_lock);
 #else
-#warn old style locks make concurrency tests unreliable in the test suite
+#warning old style locks make concurrency tests unreliable in the test suite
     fcntl(lockfile, F_SETLK, &ds_lock);
 #endif
     locked = false;
