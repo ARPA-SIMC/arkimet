@@ -149,10 +149,8 @@ void LocalWriter::acquire_lock()
 #ifdef F_OFD_SETLKW
     if (fcntl(lockfile, F_OFD_SETLKW, &ds_lock) == -1)
 #else
-#pragma GCC diagnostic push
-#pragma GCC diagnostic warning "-Wcpp"
-#warning "old style locks make concurrency tests unreliable in the test suite"
-#pragma GCC diagnostic pop
+// This stops compilation with -Werror, I still have not found a way to just output diagnostics
+//#warning "old style locks make concurrency tests unreliable in the test suite"
     if (fcntl(lockfile, F_SETLKW, &ds_lock) == -1)
 #endif
         throw_file_error(lockfile.name(), "cannot lock the file for writing");
@@ -166,10 +164,8 @@ void LocalWriter::release_lock()
 #ifdef F_OFD_SETLK
     fcntl(lockfile, F_OFD_SETLK, &ds_lock);
 #else
-#pragma GCC diagnostic push
-#pragma GCC diagnostic warning "-Wcpp"
-#warning "old style locks make concurrency tests unreliable in the test suite"
-#pragma GCC diagnostic pop
+// This stops compilation with -Werror, I still have not found a way to just output diagnostics
+//#warning "old style locks make concurrency tests unreliable in the test suite"
     fcntl(lockfile, F_SETLK, &ds_lock);
 #endif
     locked = false;
