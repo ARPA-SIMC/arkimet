@@ -2,29 +2,32 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = conf embedded arki src doc test
+SUBDIRS = conf embedded arki
+if DO_PYTHON
+SUBDIRS += python
+endif
+SUBDIRS += src doc test
 
 man_MANS = \
 	arki-dump.1 \
 	arki-gzip.1 \
 	arki-query.1 \
 	arki-check.1 \
-	arki-inbound.1 \
 	arki-mergeconf.1 \
 	arki-scan.1 \
 	arki-server.1 \
 	arki-xargs.1
 
-if READLINE
-man_MANS += arki-config.1
-endif
-
 if DBALLE
 man_MANS += arki-bufr-prepare.1
 endif
 
+arki-server.1: src/arki-server
+	COLUMNS=200 ./run-local help2man --name='Arkimet server for remote dataset access' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
+
+
 arki-%.1: src/arki-% doc/mhooks-%
-	$< --manpage="$(word 2,$^)" > $@
+	./run-local $< --manpage="$(word 2,$^)" > $@ || rm -f $@
 
 #%.1: tools/%
 #	( cd tools && ./`basename $<` help manpage ) > $@

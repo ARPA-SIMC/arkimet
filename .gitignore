@@ -41,7 +41,6 @@ Makefile
 /arki/libconfig.h
 /arki/stamp-h2
 /arki-check.1
-/arki-config.1
 /arki-dump.1
 /arki-mergeconf.1
 /arki-query.1
@@ -50,10 +49,7 @@ Makefile
 /arki-bufr-prepare.1
 /arki-gzip.1
 /arki-server.1
-/arki-inbound.1
-/src/arki-benchmark
 /src/arki-check
-/src/arki-config
 /src/arki-dump
 /src/arki-mergeconf
 /src/arki-query
@@ -61,9 +57,6 @@ Makefile
 /src/arki-xargs
 /src/arki-bufr-prepare
 /src/arki-gzip
-/src/arki-shell
-/src/arki-server
-/src/arki-inbound
 /src/arki-test
 /src/test-src
 /arki/tests/arki-test

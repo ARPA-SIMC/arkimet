@@ -8,7 +8,6 @@
 #include <arki/types/source/blob.h>
 #include <arki/summary.h>
 #include <arki/matcher.h>
-#include <arki/types/assigneddataset.h>
 #include <arki/scan/grib.h>
 #include <arki/scan/any.h>
 #include <arki/utils/files.h>

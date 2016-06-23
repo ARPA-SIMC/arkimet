@@ -1,9 +1,7 @@
 #include "config.h"
-
 #include <arki/dataset/tests.h>
 #include <arki/dataset/simple/reader.h>
 #include <arki/dataset/simple/writer.h>
-#include <arki/types/assigneddataset.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>

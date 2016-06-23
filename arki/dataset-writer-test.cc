@@ -3,12 +3,14 @@
 #include "arki/metadata/collection.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
+#include "arki/types/reftime.h"
 #include "arki/scan/any.h"
 #include "arki/configfile.h"
 #include "arki/utils/files.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "wibble/sys/childprocess.h"
 #include <sys/fcntl.h>
 
 using namespace std;
@@ -40,6 +42,33 @@ struct FixtureWriter : public DatasetTest
     }
 };
 
+template<class Fixture>
+struct ConcurrentImporter : public wibble::sys::ChildProcess
+{
+    Fixture& fixture;
+    unsigned initial;
+    unsigned increment;
+
+    ConcurrentImporter(Fixture& fixture, unsigned initial, unsigned increment)
+        : fixture(fixture), initial(initial), increment(increment)
+    {
+    }
+
+    virtual int main() override
+    {
+        auto ds(fixture.makeWriter());
+
+        Metadata md = fixture.td.test_data[0].md;
+
+        for (unsigned i = initial; i < 60; i += increment)
+        {
+            md.set(types::Reftime::createPosition(core::Time(2016, 6, 1, 0, 0, i)));
+            wassert(actual(ds->acquire(md)) == dataset::Writer::ACQ_OK);
+        }
+
+        return 0;
+    }
+};
 
 template<class Data>
 class TestsWriter : public FixtureTestCase<FixtureWriter<Data>>
@@ -76,6 +105,30 @@ this->add_method("import", [](Fixture& f) {
         wassert(actual(ds->acquire(md)) == dataset::Writer::ACQ_OK);
         wassert(actual_file(str::joinpath(f.ds_root, f.td.test_data[i].destfile)).exists());
         wassert(actual_type(md.source()).is_source_blob(f.td.format, f.ds_root, f.td.test_data[i].destfile));
+    }
+});
+
+this->add_method("concurrent_import", [](Fixture& f) {
+    ConcurrentImporter<Fixture> i0(f, 0, 3);
+    ConcurrentImporter<Fixture> i1(f, 1, 3);
+    ConcurrentImporter<Fixture> i2(f, 2, 3);
+
+    i0.fork();
+    i1.fork();
+    i2.fork();
+
+    i0.wait();
+    i1.wait();
+    i2.wait();
+
+    auto reader = f.makeReader();
+    metadata::Collection mdc(*reader, Matcher());
+    wassert(actual(mdc.size()) == 60u);
+
+    for (int i = 0; i < 60; ++i)
+    {
+        auto rt = mdc[i].get<types::reftime::Position>();
+        wassert(actual(rt->time.se) == i);
     }
 });
 

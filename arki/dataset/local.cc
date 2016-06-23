@@ -1,6 +1,7 @@
 #include "local.h"
 #include "segmented.h"
 #include "archive.h"
+#include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/utils/files.h"
 #include "arki/configfile.h"
@@ -125,7 +126,7 @@ void LocalReader::readConfig(const std::string& path, ConfigFile& cfg)
 }
 
 LocalWriter::LocalWriter(const ConfigFile& cfg)
-    : Writer(cfg.value("name"), cfg), m_path(cfg.value("path"))
+    : Writer(cfg.value("name"), cfg), m_path(cfg.value("path")), lockfile(str::joinpath(m_path, "lock"))
 {
     // Create the directory if it does not exist
     sys::makedirs(m_path);
@@ -133,6 +134,41 @@ LocalWriter::LocalWriter(const ConfigFile& cfg)
 
 LocalWriter::~LocalWriter()
 {
+}
+
+void LocalWriter::acquire_lock()
+{
+    if (locked) return;
+    if ((int)lockfile == -1) lockfile.open(O_RDWR | O_CREAT, 0777);
+    ds_lock.l_type = F_WRLCK;
+    ds_lock.l_whence = SEEK_SET;
+    ds_lock.l_start = 0;
+    ds_lock.l_len = 0;
+    ds_lock.l_pid = 0;
+    // Use SETLKW, so that if it is already locked, we just wait
+#ifdef F_OFD_SETLKW
+    if (fcntl(lockfile, F_OFD_SETLKW, &ds_lock) == -1)
+#else
+// This stops compilation with -Werror, I still have not found a way to just output diagnostics
+//#warning "old style locks make concurrency tests unreliable in the test suite"
+    if (fcntl(lockfile, F_SETLKW, &ds_lock) == -1)
+#endif
+        throw_file_error(lockfile.name(), "cannot lock the file for writing");
+    locked = true;
+}
+
+void LocalWriter::release_lock()
+{
+    if (!locked) return;
+    ds_lock.l_type = F_UNLCK;
+#ifdef F_OFD_SETLK
+    fcntl(lockfile, F_OFD_SETLK, &ds_lock);
+#else
+// This stops compilation with -Werror, I still have not found a way to just output diagnostics
+//#warning "old style locks make concurrency tests unreliable in the test suite"
+    fcntl(lockfile, F_SETLK, &ds_lock);
+#endif
+    locked = false;
 }
 
 LocalWriter* LocalWriter::create(const ConfigFile& cfg)

@@ -11,7 +11,6 @@
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/sort.h>
-#include <arki/types/assigneddataset.h>
 #include <arki/utils.h>
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>

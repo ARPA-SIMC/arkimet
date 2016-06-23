@@ -39,6 +39,7 @@ Writer::Writer(const ConfigFile& cfg)
     if (!index::Manifest::exists(m_path))
         files::createDontpackFlagfile(m_path);
 
+    acquire_lock();
     unique_ptr<index::Manifest> mft = index::Manifest::create(m_path, &cfg);
     m_mft = mft.release();
     m_mft->openRW();
@@ -62,6 +63,7 @@ Segment* Writer::file(const Metadata& md, const std::string& format)
 
 Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
+    acquire_lock();
     // TODO: refuse if md is before "archive age"
     Segment* writer = file(md, md.source().format);
     datafile::MdBuf* mdbuf = static_cast<datafile::MdBuf*>(writer->payload);
@@ -94,6 +96,7 @@ void Writer::flush()
 {
     SegmentedWriter::flush();
     m_mft->flush();
+    release_lock();
 }
 
 Pending Writer::test_writelock()

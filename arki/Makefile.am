@@ -43,9 +43,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/file.h \
 		dataset/gridquery.h \
 		dataset.h \
-		dataset/http/inbound.h \
-		dataset/http/server.h \
-		dataset/http/test-utils.h \
 		dataset/index.h \
 		dataset/index/attr.h \
 		dataset/index/base.h \
@@ -170,9 +167,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/commandline/options.h \
 		utils/commandline/parser.h \
 		utils/commandline/wordwrap.h \
-		utils/net/mime.h \
-		utils/net/server.h \
-		utils/net/http.h \
 		values.h
 
 BUILT_SOURCES = \
@@ -210,14 +204,8 @@ libarkimet_la_SOURCES += \
 		wibble/sys/childprocess.cpp \
 		wibble/sys/exec.cpp \
 		wibble/sys/signal.cpp \
-		wibble/log/file.cpp \
-		wibble/log/stream.cpp \
-		wibble/log/ostream.cpp \
-		wibble/log/syslog.cpp \
-		wibble/log/filters.cpp \
 		wibble/grcal/grcal.cpp \
 		core/time.cc \
-		core/tests.cc \
 		exceptions.cc \
 		nag.cc \
 		utils.cc \
@@ -238,9 +226,6 @@ libarkimet_la_SOURCES += \
 		utils/commandline/parser.cpp \
 		utils/commandline/engine.cpp \
 		utils/commandline/wordwrap.cpp \
-		utils/net/mime.cpp \
-		utils/net/server.cpp \
-		utils/net/http.cpp \
 		binary.cc \
 		file.cc \
 		configfile.cc \
@@ -248,7 +233,6 @@ libarkimet_la_SOURCES += \
 		emitter.cc \
 		emitter/memory.cc \
 		emitter/json.cc \
-		tests/tests.cc \
 		values.cc \
 		bbox.cc \
 		types.cc \
@@ -295,8 +279,10 @@ libarkimet_la_SOURCES += \
 		types-init.cc
 
 tests_arki_test_SOURCES += \
+		tests/tests.cc \
 		tests/tests-tut.cc \
 		core/time-test.cc \
+		core/tests.cc \
 		types/tests.cc \
 		utils/tests.cc \
 		utils-test.cc \
@@ -461,6 +447,7 @@ nobase_dist_arkiinclude_HEADERS += scan/odimh5.h
 libarkimet_la_SOURCES += scan/odimh5.cc
 libarkimet_la_LDFLAGS += $(HDF5_LIBS)
 tests_arki_test_SOURCES += utils/h5-tut.cc scan/odimh5-tut.cc
+tests_arki_test_LDADD += $(HDF5_LIBS)
 endif
 
 if NETCDF
@@ -513,8 +500,6 @@ libarkimet_la_SOURCES += \
 		dataset/ondisk2.cc \
 		dataset/ondisk2/reader.cc \
 		dataset/ondisk2/writer.cc \
-		dataset/http/server.cc \
-		dataset/http/inbound.cc \
 		dataset/outbound.cc \
 		dataset/offline.cc \
 		dataset/discard.cc \
@@ -560,9 +545,6 @@ tests_arki_test_SOURCES += \
 		dataset/ondisk2/reader-tut.cc \
 		dataset/ondisk2/writer-test.cc \
 		dataset/ondisk2/test-utils.cc \
-		dataset/http/server-test.cc \
-		dataset/http/inbound-test.cc \
-		dataset/http/test-utils.cc \
 		dataset/outbound-tut.cc \
 		dataset/offline-test.cc \
 		dataset/discard-tut.cc \

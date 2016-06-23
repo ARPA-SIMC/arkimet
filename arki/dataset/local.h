@@ -5,6 +5,8 @@
 
 #include <arki/dataset.h>
 #include <string>
+#include <arki/file.h>
+#include <fcntl.h>
 
 namespace arki {
 class ConfigFile;
@@ -60,6 +62,12 @@ class LocalWriter : public Writer
 {
 protected:
     std::string m_path;
+    struct flock ds_lock;
+    bool locked = false;
+    arki::File lockfile;
+
+    void acquire_lock();
+    void release_lock();
 
 public:
     LocalWriter(const ConfigFile& cfg);

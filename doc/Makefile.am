@@ -4,15 +4,12 @@ dist_doc_DATA = \
 		DATASET \
 		arkiguide.it.txt \
 		adding-formats.txt \
-		mhooks-config \
 		mhooks-dump \
 		mhooks-gzip \
 		mhooks-query \
 		mhooks-scan \
 		mhooks-check \
-		mhooks-inbound \
 		mhooks-mergeconf \
-		mhooks-server \
 		mhooks-xargs \
 		mhooks-bufr-prepare \
 		lua-examples/area.lua \

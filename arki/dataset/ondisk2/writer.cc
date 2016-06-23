@@ -5,7 +5,6 @@
 #include "arki/dataset/archive.h"
 #include "arki/dataset/segment.h"
 #include "arki/dataset/reporter.h"
-#include "arki/types/assigneddataset.h"
 #include "arki/types/source/blob.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
@@ -37,6 +36,7 @@ namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
+
 Writer::Writer(const ConfigFile& cfg)
     : IndexedWriter(cfg), m_cfg(cfg), idx(new index::WContents(cfg))
 {
@@ -50,6 +50,7 @@ Writer::Writer(const ConfigFile& cfg)
     if (!sys::exists(str::joinpath(m_path, "index.sqlite")))
         files::createDontpackFlagfile(m_path);
 
+    acquire_lock();
     idx->open();
 }
 
@@ -184,6 +185,8 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 
 Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
+    acquire_lock();
+
     if (replace == REPLACE_DEFAULT) replace = m_default_replace_strategy;
 
     // TODO: refuse if md is before "archive age"
@@ -204,6 +207,8 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 
 void Writer::remove(Metadata& md)
 {
+    acquire_lock();
+
     const types::source::Blob* source = md.has_source_blob();
     if (!source)
         throw std::runtime_error("cannot remove metadata from dataset, because it has no Blob source");
@@ -232,6 +237,7 @@ void Writer::flush()
 {
     IndexedWriter::flush();
     idx->flush();
+    release_lock();
 }
 
 Pending Writer::test_writelock()
