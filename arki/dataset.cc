@@ -8,6 +8,7 @@
 #include <arki/dataset/discard.h>
 #include <arki/dataset/empty.h>
 #include <arki/dataset/segment.h>
+#include <arki/dataset/sharded.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/sort.h>
@@ -287,6 +288,9 @@ void Reader::lua_push(lua_State* L)
 
 Reader* Reader::create(const ConfigFile& cfg)
 {
+    if (!cfg.value("shard").empty())
+        return new dataset::sharded::Reader(cfg);
+
     string type = str::lower(cfg.value("type"));
 
 	if (type == "ondisk2")
@@ -321,6 +325,9 @@ void Reader::readConfig(const std::string& path, ConfigFile& cfg)
 
 Writer* Writer::create(const ConfigFile& cfg)
 {
+    if (!cfg.value("shard").empty())
+        return new dataset::sharded::Writer(cfg);
+
     string type = str::lower(cfg.value("type"));
     if (type == "remote")
         throw std::runtime_error("cannot create dataset writer: remote datasets are not writable");
@@ -350,6 +357,9 @@ void FailChecker::check(dataset::Reporter& reporter, bool fix, bool quick) { thr
 
 Checker* Checker::create(const ConfigFile& cfg)
 {
+    if (!cfg.value("shard").empty())
+        return new dataset::sharded::Checker(cfg);
+
     string type = str::lower(cfg.value("type"));
     if (type == "remote" || type == "outbound" || type == "discard")
         return new FailChecker(cfg);
