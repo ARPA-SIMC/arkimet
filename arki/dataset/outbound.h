@@ -22,12 +22,16 @@ namespace dataset {
 class Outbound : public SegmentedWriter
 {
 protected:
+    std::shared_ptr<const SegmentedConfig> m_config;
+
     void storeBlob(Metadata& md, const std::string& reldest);
 
 public:
     // Initialise the dataset with the information from the configurationa in 'cfg'
-    Outbound(const ConfigFile& cfg);
+    Outbound(std::shared_ptr<const SegmentedConfig> config);
     virtual ~Outbound();
+
+    const SegmentedConfig& config() const override { return *m_config; }
 
     std::string type() const override;
 

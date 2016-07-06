@@ -7,14 +7,8 @@ using namespace std;
 namespace arki {
 namespace dataset {
 
-Empty::Empty(const ConfigFile& cfg)
-	: LocalReader(cfg)
-{
-}
-
-Empty::~Empty()
-{
-}
+Empty::Empty(std::shared_ptr<const Config> config) : m_config(config) {}
+Empty::~Empty() {}
 
 }
 }

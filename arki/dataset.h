@@ -145,6 +145,7 @@ struct Config : public std::enable_shared_from_this<Config>
     std::map<std::string, std::string> cfg;
 
     Config();
+    Config(const std::string& name);
     Config(const ConfigFile& cfg);
     virtual ~Config() {}
 
@@ -152,7 +153,7 @@ struct Config : public std::enable_shared_from_this<Config>
     virtual Writer* create_writer() const;
     virtual Checker* create_checker() const;
 
-    static std::shared_ptr<Config> create(const ConfigFile& cfg);
+    static std::shared_ptr<const Config> create(const ConfigFile& cfg);
 };
 
 /**

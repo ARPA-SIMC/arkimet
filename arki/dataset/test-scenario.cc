@@ -1,6 +1,7 @@
 #include <arki/dataset/test-scenario.h>
 #include <arki/exceptions.h>
 #include <arki/dataset/ondisk2.h>
+#include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/archive.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/dataset/indexed.h>
@@ -99,10 +100,11 @@ struct Ondisk2Scenario : public Scenario
         dataset::TestOverrideCurrentDateForMaintenance od(t_start + 3600*24*(curday-1));
 
         // Pack and archive
-        unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
+        auto config = ondisk2::Config::create(cfg);
+        ondisk2::Checker ds(config);
         stringstream packlog;
         OstreamReporter reporter(packlog);
-        ds->repack(reporter, true);
+        ds.repack(reporter, true);
         char expected[32];
         snprintf(expected, 32, "%d files archived", expected_archived);
         if (packlog.str().find(expected) == string::npos)
@@ -150,21 +152,22 @@ struct Ondisk2TestGrib1 : public Ondisk2Scenario
         using namespace arki::dataset;
 
         Ondisk2Scenario::build();
+        auto config = ondisk2::Config::create(cfg);
 
         {
-            unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
-            scan::scan("inbound/test.grib1", make_importer(*ds));
-            ds->flush();
+            ondisk2::Writer ds(config);
+            scan::scan("inbound/test.grib1", make_importer(ds));
+            ds.flush();
         }
 
         {
             // Generate a dataset with archived data
-            unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
+            ondisk2::Checker ds(config);
 
             // Run a check to remove new dataset marker
             stringstream checklog;
             OstreamReporter reporter(checklog);
-            ds->check(reporter, true, true);
+            ds.check(reporter, true, true);
             if (checklog.str() != "ondisk2-testgrib1: check 3 files ok\n")
                 throw std::runtime_error("check on new dataset failed: " + checklog.str());
         }
@@ -189,10 +192,11 @@ struct Ondisk2Archived : public Ondisk2Scenario
         using namespace arki::dataset;
 
         Ondisk2Scenario::build();
+        auto config = ondisk2::Config::create(cfg);
 
         {
             // Generate a dataset with archived data
-            unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
+            ondisk2::Writer ds(config);
 
             // Import several metadata items
             metadata::test::Generator gen("grib1");
@@ -202,15 +206,15 @@ struct Ondisk2Archived : public Ondisk2Scenario
                 snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
                 gen.add(TYPE_REFTIME, buf);
             }
-            gen.generate(make_importer(*ds));
-            ds->flush();
+            gen.generate(make_importer(ds));
+            ds.flush();
         }
 
         // Run a check to remove new dataset marker
-        unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
+        ondisk2::Checker ds(config);
         stringstream checklog;
         OstreamReporter reporter(checklog);
-        ds->check(reporter, true, true);
+        ds.check(reporter, true, true);
         if (checklog.str() != "ondisk2-archived: check 0 files ok\n")
             throw std::runtime_error("cannot run check on correct dataset: log is not empty: " + checklog.str());
 
@@ -249,10 +253,11 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
         using namespace arki::dataset;
 
         Ondisk2Scenario::build();
+        auto config = ondisk2::Config::create(cfg);
 
         // Generate a dataset with archived data
         {
-            unique_ptr<SegmentedWriter> ds(SegmentedWriter::create(cfg));
+            ondisk2::Writer ds(config);
 
             // Import several metadata items
             metadata::test::Generator gen("grib1");
@@ -262,16 +267,16 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
                 snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
                 gen.add(TYPE_REFTIME, buf);
             }
-            gen.generate(make_importer(*ds));
-            ds->flush();
+            gen.generate(make_importer(ds));
+            ds.flush();
         }
 
         // Run a check to remove new dataset marker
         {
-            unique_ptr<SegmentedChecker> ds(SegmentedChecker::create(cfg));
+            ondisk2::Checker ds(config);
             stringstream checklog;
             OstreamReporter reporter(checklog);
-            ds->check(reporter, true, true);
+            ds.check(reporter, true, true);
             if (checklog.str() != "ondisk2-manyarchivestates: check 0 files ok\n")
                 throw std::runtime_error("cannot run check on correct dataset: log is not empty: " + checklog.str());
         }

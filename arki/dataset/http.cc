@@ -91,15 +91,19 @@ struct CurlForm
 
 	curl_httppost* ptr() { return post; }
 };
-	
 
 }
 
-HTTP::HTTP(const ConfigFile& cfg)
-    : Reader(cfg), m_mischief(false)
+HTTPConfig::HTTPConfig(const ConfigFile& cfg)
+    : dataset::Config(cfg),
+      baseurl(cfg.value("path")),
+      qmacro(cfg.value("qmacro"))
 {
-    m_baseurl = cfg.value("path");
-    m_qmacro = cfg.value("qmacro");
+}
+
+HTTP::HTTP(std::shared_ptr<const HTTPConfig> config)
+    : m_config(config), m_mischief(false)
+{
 }
 
 HTTP::~HTTP()
@@ -260,7 +264,7 @@ void HTTP::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     if (m_qmacro.empty())
         postdata = "query=" + str::encode_url(q.matcher.toStringExpanded());
     else
-        postdata = "query=" + str::encode_url(m_qmacro) + "&qmacro=" + str::encode_url(m_name);
+        postdata = "query=" + str::encode_url(m_qmacro) + "&qmacro=" + str::encode_url(name());
     if (q.sorter)
         postdata += "&sort=" + str::encode_url(q.sorter->toString());
     if (m_mischief)
@@ -298,7 +302,7 @@ void HTTP::query_summary(const Matcher& matcher, Summary& summary)
     if (m_qmacro.empty())
         postdata = "query=" + str::encode_url(matcher.toStringExpanded());
     else
-        postdata = "query=" + str::encode_url(m_qmacro) + "&qmacro=" + str::encode_url(m_name);
+        postdata = "query=" + str::encode_url(m_qmacro) + "&qmacro=" + str::encode_url(name());
     if (m_mischief)
     {
         postdata += str::encode_url(";MISCHIEF");
@@ -341,7 +345,7 @@ void HTTP::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 			form.addstring("query", q.matcher.toStringExpanded());
 	} else {
 		form.addstring("query", m_qmacro);
-		form.addstring("qmacro", m_name);
+		form.addstring("qmacro", name());
 	}
 	if (q.sorter)
 		form.addstring("sort", q.sorter->toString());

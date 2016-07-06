@@ -39,6 +39,8 @@ DataQuery::~DataQuery() {}
 
 Config::Config() {}
 
+Config::Config(const std::string& name) : name(name) {}
+
 Config::Config(const ConfigFile& cfg)
     : name(cfg.value("name")), cfg(cfg.values())
 {
@@ -48,7 +50,7 @@ Reader* Config::create_reader() const { throw std::runtime_error("reader not imp
 Writer* Config::create_writer() const { throw std::runtime_error("writer not implemented for dataset " + name); }
 Checker* Config::create_checker() const { throw std::runtime_error("checker not implemented for dataset " + name); }
 
-std::shared_ptr<Config> create(const ConfigFile& cfg)
+std::shared_ptr<const Config> create(const ConfigFile& cfg)
 {
 // TODO    if (!cfg.value("shard").empty())
 // TODO        return new dataset::sharded::Reader(cfg);
@@ -56,9 +58,9 @@ std::shared_ptr<Config> create(const ConfigFile& cfg)
     string type = str::lower(cfg.value("type"));
 
     if (type == "ondisk2")
-        return shared_ptr<Config>(new dataset::ondisk2::Config(cfg));
-// TODO	if (type == "simple" || type == "error" || type == "duplicates")
-// TODO		return new dataset::simple::Reader(cfg);
+        return dataset::ondisk2::Config::create(cfg);
+    if (type == "simple" || type == "error" || type == "duplicates")
+        return dataset::simple::Config::create(cfg);
 // TODO#ifdef HAVE_LIBCURL
 // TODO	if (type == "remote")
 // TODO		return new dataset::HTTP(cfg);
@@ -67,9 +69,9 @@ std::shared_ptr<Config> create(const ConfigFile& cfg)
 // TODO		return new dataset::Empty(cfg);
 // TODO	if (type == "discard")
 // TODO		return new dataset::Empty(cfg);
-// TODO	if (type == "file")
-// TODO		return dataset::File::create(cfg);
-// TODO
+    if (type == "file")
+        return dataset::FileConfig::create(cfg);
+
     throw std::runtime_error("cannot use configuration: unknown dataset type \""+type+"\"");
 }
 

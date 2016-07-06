@@ -29,6 +29,11 @@ FileConfig::FileConfig(const ConfigFile& cfg)
 {
 }
 
+std::shared_ptr<const FileConfig> FileConfig::create(const ConfigFile& cfg)
+{
+    return std::shared_ptr<const FileConfig>(new FileConfig(cfg));
+}
+
 Reader* FileConfig::create_reader() const
 {
     if (format == "arkimet")

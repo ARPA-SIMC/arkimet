@@ -38,6 +38,14 @@ struct CurlEasy
 
 }
 
+struct HTTPConfig : public dataset::Config
+{
+    std::string baseurl;
+    std::string qmacro;
+
+    HTTPConfig(const ConfigFile& cfg);
+};
+
 /**
  * Remote HTTP access to a Dataset.
  *
@@ -49,16 +57,18 @@ struct CurlEasy
 class HTTP : public Reader
 {
 protected:
+    std::shared_ptr<const HTTPConfig> m_config;
     std::string m_baseurl;
     std::string m_qmacro;
     http::CurlEasy m_curl;
     bool m_mischief;
 
 public:
-	// Initialise the dataset with the information from the configurationa in 'cfg'
-	HTTP(const ConfigFile& cfg);
-	virtual ~HTTP();
+    // Initialise the dataset with the information from the configurationa in 'cfg'
+    HTTP(std::shared_ptr<const HTTPConfig> config);
+    virtual ~HTTP();
 
+    const HTTPConfig& config() const override { return *m_config; }
     std::string type() const override;
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;

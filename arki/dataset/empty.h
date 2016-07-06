@@ -3,7 +3,7 @@
 
 /// Virtual read only dataset that is always empty
 
-#include <arki/dataset/local.h>
+#include <arki/dataset.h>
 #include <string>
 
 namespace arki {
@@ -16,25 +16,22 @@ namespace dataset {
 /**
  * Dataset that is always empty
  */
-class Empty : public LocalReader
+class Empty : public Reader
 {
+protected:
+    std::shared_ptr<const Config> m_config;
+
 public:
-    // Initialise the dataset with the information from the configurationa in 'cfg'
-    Empty(const ConfigFile& cfg);
+    Empty(std::shared_ptr<const Config> config);
     virtual ~Empty();
 
+    const Config& config() const override { return *m_config; }
     std::string type() const override { return "empty"; }
 
     // Nothing to do: the dataset is always empty
     void query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)>) override {}
     void query_summary(const Matcher& matcher, Summary& summary) override {}
     void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out) override {}
-
-    //void rescanFile(const std::string& relpath) override {}
-    //size_t repackFile(const std::string& relpath) override { return 0; }
-    //size_t removeFile(const std::string& relpath, bool withData=false) override { return 0; }
-    //void archiveFile(const std::string& relpath) override {}
-    //size_t vacuum() override { return 0; }
 };
 
 }

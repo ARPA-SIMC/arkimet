@@ -19,6 +19,7 @@ class Reader;
 class Querymacro : public dataset::Reader
 {
 protected:
+    std::shared_ptr<const dataset::Config> m_config;
     std::map<std::string, Reader*> ds_cache;
 
 public:
@@ -37,6 +38,7 @@ public:
     Querymacro(const ConfigFile& ds_cfg, const ConfigFile& dispatch_cfg, const std::string& name, const std::string& query);
     virtual ~Querymacro();
 
+    const dataset::Config& config() const override { return *m_config; }
     std::string type() const override;
 
 	/**

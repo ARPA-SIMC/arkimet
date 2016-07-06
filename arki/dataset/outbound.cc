@@ -14,8 +14,8 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-Outbound::Outbound(const ConfigFile& cfg)
-    : SegmentedWriter(cfg)
+Outbound::Outbound(std::shared_ptr<const SegmentedConfig> config)
+    : m_config(config)
 {
 }
 
@@ -34,8 +34,8 @@ void Outbound::storeBlob(Metadata& md, const std::string& reldest)
 
 Writer::AcquireResult Outbound::acquire(Metadata& md, ReplaceStrategy replace)
 {
-    string reldest = (*m_step)(md);
-    string dest = m_path + "/" + reldest;
+    string reldest = config().step()(md);
+    string dest = path() + "/" + reldest;
 
     sys::makedirs(str::dirname(dest));
 
@@ -43,7 +43,7 @@ Writer::AcquireResult Outbound::acquire(Metadata& md, ReplaceStrategy replace)
         storeBlob(md, reldest);
         return ACQ_OK;
     } catch (std::exception& e) {
-        md.add_note("Failed to store in dataset '"+m_name+"': " + e.what());
+        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
         return ACQ_ERROR;
     }
 
@@ -59,12 +59,12 @@ void Outbound::remove(Metadata&)
 
 void Outbound::removeAll(std::ostream& log, bool writable)
 {
-    log << m_name << ": cleaning dataset not implemented" << endl;
+    log << name() << ": cleaning dataset not implemented" << endl;
 }
 
 Writer::AcquireResult Outbound::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
-    unique_ptr<Step> tf(Step::create(cfg));
+    unique_ptr<Step> tf(Step::create(cfg.value("step")));
     string dest = cfg.value("path") + "/" + (*tf)(md) + "." + md.source().format;
     out << "Assigning to dataset " << cfg.value("name") << " in file " << dest << endl;
     return ACQ_OK;

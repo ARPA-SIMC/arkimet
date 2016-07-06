@@ -24,6 +24,8 @@ public:
     std::string format;
 
     Reader* create_reader() const override;
+
+    static std::shared_ptr<const FileConfig> create(const ConfigFile& cfg);
 };
 
 /**
