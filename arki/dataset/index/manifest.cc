@@ -95,27 +95,26 @@ void scan_file(const std::string& root, const std::string& relname, segment::Sta
 }
 
 
-Manifest::Manifest(const ConfigFile& cfg) : m_path(cfg.value("path")) {}
 Manifest::Manifest(const std::string& path) : m_path(path) {}
 Manifest::~Manifest() {}
 
 void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
 {
-	vector<string> files;
-	fileList(matcher, files);
+    vector<string> files;
+    fileList(matcher, files);
 
-	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-	{
-		string pathname = str::joinpath(m_path, *i);
+    for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
+    {
+        string pathname = str::joinpath(m_path, *i);
 
         // Silently skip files that have been deleted
         if (!sys::access(pathname + ".summary", R_OK))
             continue;
 
-		Summary s;
-		s.readFile(pathname + ".summary");
-		s.filter(matcher, summary);
-	}
+        Summary s;
+        s.readFile(pathname + ".summary");
+        s.filter(matcher, summary);
+    }
 }
 
 bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
@@ -167,33 +166,33 @@ bool Manifest::query_summary(const Matcher& matcher, Summary& summary)
     // Check if the matcher discriminates on reference times
     auto rtmatch = matcher.get(TYPE_REFTIME);
 
-	if (!rtmatch)
-	{
-		// The matcher does not contain reftime, we can work with a
-		// global summary
-		string cache_pathname = str::joinpath(m_path, "summary");
+    if (!rtmatch)
+    {
+        // The matcher does not contain reftime, we can work with a
+        // global summary
+        string cache_pathname = str::joinpath(m_path, "summary");
 
-		if (sys::access(cache_pathname, R_OK))
-		{
-			Summary s;
-			s.readFile(cache_pathname);
-			s.filter(matcher, summary);
+        if (sys::access(cache_pathname, R_OK))
+        {
+            Summary s;
+            s.readFile(cache_pathname);
+            s.filter(matcher, summary);
         } else if (sys::access(m_path, W_OK)) {
             // Rebuild the cache
             Summary s;
             querySummaries(Matcher(), s);
 
-			// Save the summary
-			s.writeAtomically(cache_pathname);
+            // Save the summary
+            s.writeAtomically(cache_pathname);
 
-			// Query the newly generated summary that we still have
-			// in memory
-			s.filter(matcher, summary);
-		} else
-			querySummaries(matcher, summary);
-	} else {
-		querySummaries(matcher, summary);
-	}
+            // Query the newly generated summary that we still have
+            // in memory
+            s.filter(matcher, summary);
+        } else
+            querySummaries(matcher, summary);
+    } else {
+        querySummaries(matcher, summary);
+    }
 
     return true;
 }
@@ -213,10 +212,10 @@ void Manifest::rescanSegment(const std::string& dir, const std::string& relpath)
 {
     string pathname = str::joinpath(dir, relpath);
 
-	// Temporarily uncompress the file for scanning
-	unique_ptr<utils::compress::TempUnzip> tu;
-	if (scan::isCompressed(pathname))
-		tu.reset(new utils::compress::TempUnzip(pathname));
+    // Temporarily uncompress the file for scanning
+    unique_ptr<utils::compress::TempUnzip> tu;
+    if (scan::isCompressed(pathname))
+        tu.reset(new utils::compress::TempUnzip(pathname));
 
     // Read the timestamp
     time_t mtime = sys::timestamp(pathname);
@@ -238,9 +237,9 @@ void Manifest::rescanSegment(const std::string& dir, const std::string& relpath)
         throw runtime_error(ss.str());
     }
 
-	// Iterate the metadata, computing the summary and making the data
-	// paths relative
-	Summary sum;
+    // Iterate the metadata, computing the summary and making the data
+    // paths relative
+    Summary sum;
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         const source::Blob& s = (*i)->sourceBlob();
@@ -248,14 +247,14 @@ void Manifest::rescanSegment(const std::string& dir, const std::string& relpath)
         sum.add(**i);
     }
 
-	// Regenerate .metadata
-	mds.writeAtomically(pathname + ".metadata");
+    // Regenerate .metadata
+    mds.writeAtomically(pathname + ".metadata");
 
-	// Regenerate .summary
-	sum.writeAtomically(pathname + ".summary");
+    // Regenerate .summary
+    sum.writeAtomically(pathname + ".summary");
 
-	// Add to manifest
-	acquire(relpath, mtime, sum);
+    // Add to manifest
+    acquire(relpath, mtime, sum);
 }
 
 namespace manifest {
@@ -263,10 +262,10 @@ static bool mft_force_sqlite = false;
 
 class PlainManifest : public Manifest
 {
-	struct Info
-	{
-		std::string file;
-		time_t mtime;
+    struct Info
+    {
+        std::string file;
+        time_t mtime;
         core::Time start_time;
         core::Time end_time;
 
@@ -275,20 +274,20 @@ class PlainManifest : public Manifest
         {
         }
 
-		bool operator<(const Info& i) const
-		{
-			return file < i.file;
-		}
+        bool operator<(const Info& i) const
+        {
+            return file < i.file;
+        }
 
-		bool operator==(const Info& i) const
-		{
-			return file == i.file;
-		}
+        bool operator==(const Info& i) const
+        {
+            return file == i.file;
+        }
 
-		bool operator!=(const Info& i) const
-		{
-			return file != i.file;
-		}
+        bool operator!=(const Info& i) const
+        {
+            return file != i.file;
+        }
 
         void write(NamedFileDescriptor& out) const
         {
@@ -297,9 +296,9 @@ class PlainManifest : public Manifest
             out.write_all_or_throw(ss.str());
         }
     };
-	vector<Info> info;
-	ino_t last_inode;
-	bool dirty;
+    vector<Info> info;
+    ino_t last_inode;
+    bool dirty;
     bool rw;
 
     /**
@@ -372,15 +371,15 @@ class PlainManifest : public Manifest
     }
 
 public:
-	PlainManifest(const std::string& dir)
-		: Manifest(dir), last_inode(0), dirty(false), rw(false)
-	{
-	}
+    PlainManifest(const std::string& dir)
+        : Manifest(dir), last_inode(0), dirty(false), rw(false)
+    {
+    }
 
-	virtual ~PlainManifest()
-	{
-		flush();
-	}
+    virtual ~PlainManifest()
+    {
+        flush();
+    }
 
     void openRO()
     {
@@ -461,39 +460,39 @@ public:
         return Pending();
     }
 
-	void acquire(const std::string& relname, time_t mtime, const Summary& sum)
-	{
-		reread();
+    void acquire(const std::string& relname, time_t mtime, const Summary& sum)
+    {
+        reread();
 
         // Add to index
         unique_ptr<Reftime> rt = sum.getReferenceTime();
 
         Info item(relname, mtime, rt->period_begin(), rt->period_end());
 
-		// Insertion sort; at the end, everything is already sorted and we
-		// avoid inserting lots of duplicate items
-		vector<Info>::iterator lb = lower_bound(info.begin(), info.end(), item);
-		if (lb == info.end())
-			info.push_back(item);
-		else if (*lb != item)
-			info.insert(lb, item);
-		else
-			*lb = item;
+        // Insertion sort; at the end, everything is already sorted and we
+        // avoid inserting lots of duplicate items
+        vector<Info>::iterator lb = lower_bound(info.begin(), info.end(), item);
+        if (lb == info.end())
+            info.push_back(item);
+        else if (*lb != item)
+            info.insert(lb, item);
+        else
+            *lb = item;
 
-		dirty = true;
-	}
+        dirty = true;
+    }
 
-	virtual void remove(const std::string& relname)
-	{
-		reread();
-		vector<Info>::iterator i;
-		for (i = info.begin(); i != info.end(); ++i)
-			if (i->file == relname)
-				break;
-		if (i != info.end())
-			info.erase(i);
-		dirty = true;
-	}
+    virtual void remove(const std::string& relname)
+    {
+        reread();
+        vector<Info>::iterator i;
+        for (i = info.begin(); i != info.end(); ++i)
+            if (i->file == relname)
+                break;
+        if (i != info.end())
+            info.erase(i);
+        dirty = true;
+    }
 
     void list_segments(std::function<void(const std::string&)> dest) override
     {
@@ -535,8 +534,8 @@ public:
         }
     }
 
-	void flush()
-	{
+    void flush()
+    {
         if (dirty)
         {
             string pathname(str::joinpath(m_path, "MANIFEST.tmp"));
@@ -571,58 +570,58 @@ public:
 
 class SqliteManifest : public Manifest
 {
-	mutable utils::sqlite::SQLiteDB m_db;
-	utils::sqlite::InsertQuery m_insert;
+    mutable utils::sqlite::SQLiteDB m_db;
+    utils::sqlite::InsertQuery m_insert;
 
-	void setupPragmas()
-	{
-		// Also, since the way we do inserts cause no trouble if a reader reads a
-		// partial insert, we do not need read locking
-		//m_db.exec("PRAGMA read_uncommitted = 1");
-		// Use new features, if we write we read it, so we do not need to
-		// support sqlite < 3.3.0 if we are above that version
-		m_db.exec("PRAGMA legacy_file_format = 0");
+    void setupPragmas()
+    {
+        // Also, since the way we do inserts cause no trouble if a reader reads a
+        // partial insert, we do not need read locking
+        //m_db.exec("PRAGMA read_uncommitted = 1");
+        // Use new features, if we write we read it, so we do not need to
+        // support sqlite < 3.3.0 if we are above that version
+        m_db.exec("PRAGMA legacy_file_format = 0");
         // Enable WAL journaling, which doesn't lock reads while writing
-		m_db.exec("PRAGMA journal_mode = WAL");
-	}
+        m_db.exec("PRAGMA journal_mode = WAL");
+    }
 
-	void initQueries()
-	{
-		m_insert.compile("INSERT OR REPLACE INTO files (file, mtime, start_time, end_time) VALUES (?, ?, ?, ?)");
-	}
+    void initQueries()
+    {
+        m_insert.compile("INSERT OR REPLACE INTO files (file, mtime, start_time, end_time) VALUES (?, ?, ?, ?)");
+    }
 
-	void initDB()
-	{
-		// Create the main table
-		string query = "CREATE TABLE IF NOT EXISTS files ("
-			"id INTEGER PRIMARY KEY,"
-			" file TEXT NOT NULL,"
-			" mtime INTEGER NOT NULL,"
-			" start_time TEXT NOT NULL,"
-			" end_time TEXT NOT NULL,"
-			" UNIQUE(file) )";
-		m_db.exec(query);
-		m_db.exec("CREATE INDEX idx_files_start ON files (start_time)");
-		m_db.exec("CREATE INDEX idx_files_end ON files (end_time)");
-	}
+    void initDB()
+    {
+        // Create the main table
+        string query = "CREATE TABLE IF NOT EXISTS files ("
+            "id INTEGER PRIMARY KEY,"
+            " file TEXT NOT NULL,"
+            " mtime INTEGER NOT NULL,"
+            " start_time TEXT NOT NULL,"
+            " end_time TEXT NOT NULL,"
+            " UNIQUE(file) )";
+        m_db.exec(query);
+        m_db.exec("CREATE INDEX idx_files_start ON files (start_time)");
+        m_db.exec("CREATE INDEX idx_files_end ON files (end_time)");
+    }
 
 
 public:
-	SqliteManifest(const std::string& dir)
-		: Manifest(dir), m_insert(m_db)
-	{
-	}
+    SqliteManifest(const std::string& dir)
+        : Manifest(dir), m_insert(m_db)
+    {
+    }
 
-	virtual ~SqliteManifest()
-	{
-	}
+    virtual ~SqliteManifest()
+    {
+    }
 
-	void flush()
-	{
+    void flush()
+    {
         // Not needed for index data consistency, but we need it to ensure file
         // timestamps are consistent at this point.
         m_db.checkpoint();
-	}
+    }
 
     void openRO()
     {
@@ -651,14 +650,14 @@ public:
 
         bool need_create = !sys::access(pathname, F_OK);
 
-		m_db.open(pathname);
-		setupPragmas();
-		
-		if (need_create)
-			initDB();
+        m_db.open(pathname);
+        setupPragmas();
+        
+        if (need_create)
+            initDB();
 
-		initQueries();
-	}
+        initQueries();
+    }
 
     void fileList(const Matcher& matcher, std::vector<std::string>& files) override
     {
@@ -688,19 +687,19 @@ public:
             query += " ORDER BY file";
         }
 
-		// cerr << "Query: " << query << endl;
-		
-		Query q("sel_archive", m_db);
-		q.compile(query);
-		while (q.step())
-			files.push_back(q.fetchString(0));
-	}
+        // cerr << "Query: " << query << endl;
+        
+        Query q("sel_archive", m_db);
+        q.compile(query);
+        while (q.step())
+            files.push_back(q.fetchString(0));
+    }
 
     bool segment_timespan(const std::string& relname, Time& start_time, Time& end_time) const override
     {
-		Query q("sel_file_ts", m_db);
-		q.compile("SELECT start_time, end_time FROM files WHERE file=?");
-		q.bind(1, relname);
+        Query q("sel_file_ts", m_db);
+        q.compile("SELECT start_time, end_time FROM files WHERE file=?");
+        q.bind(1, relname);
 
         bool found = false;
         while (q.step())
@@ -773,22 +772,22 @@ public:
             }
         }
 
-		m_insert.reset();
-		m_insert.bind(1, relname);
-		m_insert.bind(2, mtime);
-		m_insert.bind(3, bt);
-		m_insert.bind(4, et);
-		m_insert.step();
-	}
+        m_insert.reset();
+        m_insert.bind(1, relname);
+        m_insert.bind(2, mtime);
+        m_insert.bind(3, bt);
+        m_insert.bind(4, et);
+        m_insert.step();
+    }
 
-	virtual void remove(const std::string& relname)
-	{
-		Query q("del_file", m_db);
-		q.compile("DELETE FROM files WHERE file=?");
-		q.bind(1, relname);
-		while (q.step())
-			;
-	}
+    virtual void remove(const std::string& relname)
+    {
+        Query q("del_file", m_db);
+        q.compile("DELETE FROM files WHERE file=?");
+        q.bind(1, relname);
+        while (q.step())
+            ;
+    }
 
     void list_segments(std::function<void(const std::string&)> dest) override
     {
@@ -851,37 +850,35 @@ public:
 
 bool Manifest::get_force_sqlite()
 {
-	return manifest::mft_force_sqlite;
+    return manifest::mft_force_sqlite;
 }
 
 void Manifest::set_force_sqlite(bool val)
 {
-	manifest::mft_force_sqlite = val;
+    manifest::mft_force_sqlite = val;
 }
 
 bool Manifest::exists(const std::string& dir)
 {
-	return manifest::PlainManifest::exists(dir) ||
-	       manifest::SqliteManifest::exists(dir);
+    return manifest::PlainManifest::exists(dir) ||
+        manifest::SqliteManifest::exists(dir);
 }
 
-std::unique_ptr<Manifest> Manifest::create(const std::string& dir, const ConfigFile* cfg)
+std::unique_ptr<Manifest> Manifest::create(const std::string& dir, const std::string& index_type)
 {
-    std::string value;
-    if (cfg) value = cfg->value("index_type");
-    if (value.empty())
+    if (index_type.empty())
     {
         if (manifest::mft_force_sqlite || manifest::SqliteManifest::exists(dir))
             return unique_ptr<Manifest>(new manifest::SqliteManifest(dir));
         else
             return unique_ptr<Manifest>(new manifest::PlainManifest(dir));
     }
-    else if (value == "plain")
+    else if (index_type == "plain")
         return unique_ptr<Manifest>(new manifest::PlainManifest(dir));
-    else if (value == "sqlite")
+    else if (index_type == "sqlite")
         return unique_ptr<Manifest>(new manifest::SqliteManifest(dir));
     else
-        throw std::runtime_error("unsupported index_type " + value);
+        throw std::runtime_error("unsupported index_type " + index_type);
 }
 
 }

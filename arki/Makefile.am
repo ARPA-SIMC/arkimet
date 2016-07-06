@@ -64,6 +64,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/offline.h \
 		dataset/sharded.h \
 		datasetpool.h \
+		dataset/simple.h \
 		dataset/simple/datafile.h \
 		dataset/simple/reader.h \
 		dataset/simple/writer.h \
@@ -495,6 +496,7 @@ libarkimet_la_SOURCES += \
 		dataset/indexed.cc \
 		dataset/file.cc \
 		dataset/archive.cc \
+		dataset/simple.cc \
 		dataset/simple/datafile.cc \
 		dataset/simple/reader.cc \
 		dataset/simple/writer.cc \
@@ -540,6 +542,7 @@ tests_arki_test_SOURCES += \
 		dataset/indexed-test.cc \
 		dataset/file-tut.cc \
 		dataset/archive-test.cc \
+		dataset/simple-test.cc \
 		dataset/simple/datafile-tut.cc \
 		dataset/simple/reader-test.cc \
 		dataset/simple/writer-test.cc \

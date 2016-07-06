@@ -7,6 +7,12 @@ namespace arki {
 namespace dataset {
 class Index;
 
+struct IndexedConfig : public SegmentedConfig
+{
+    using SegmentedConfig::SegmentedConfig;
+};
+
+
 /// SegmentedReader that can make use of an index
 class IndexedReader : public SegmentedReader
 {
@@ -14,8 +20,10 @@ protected:
     Index* m_idx = nullptr;
 
 public:
-    IndexedReader(const ConfigFile& cfg);
+    using SegmentedReader::SegmentedReader;
     ~IndexedReader();
+
+    const IndexedConfig& config() const override = 0;
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
@@ -34,8 +42,10 @@ protected:
     Index* m_idx = nullptr;
 
 public:
-    IndexedWriter(const ConfigFile& cfg);
+    using SegmentedWriter::SegmentedWriter;
     ~IndexedWriter();
+
+    const IndexedConfig& config() const override = 0;
 };
 
 class IndexedChecker : public SegmentedChecker
@@ -44,8 +54,10 @@ protected:
     Index* m_idx = nullptr;
 
 public:
-    IndexedChecker(const ConfigFile& cfg);
+    using SegmentedChecker::SegmentedChecker;
     ~IndexedChecker();
+
+    const IndexedConfig& config() const override = 0;
 
     void maintenance(dataset::Reporter& reporter, segment::state_func v, bool quick=true) override;
     void removeAll(Reporter& reporter, bool writable) override;

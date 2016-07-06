@@ -37,27 +37,48 @@ DataQuery::DataQuery() : with_data(false) {}
 DataQuery::DataQuery(const Matcher& matcher, bool with_data) : matcher(matcher), with_data(with_data), sorter(0) {}
 DataQuery::~DataQuery() {}
 
-Base::Base(const std::string& name)
-    : m_name(name)
+Config::Config() {}
+
+Config::Config(const ConfigFile& cfg)
+    : name(cfg.value("name")), cfg(cfg.values())
 {
 }
 
-Base::Base(const std::string& name, const ConfigFile& cfg)
-    : m_name(name), m_cfg(cfg.values())
-{
-}
+Reader* Config::create_reader() const { throw std::runtime_error("reader not implemented for dataset " + name); }
+Writer* Config::create_writer() const { throw std::runtime_error("writer not implemented for dataset " + name); }
+Checker* Config::create_checker() const { throw std::runtime_error("checker not implemented for dataset " + name); }
 
-Base::Base(const ConfigFile& cfg)
-    : m_name(cfg.value("name")), m_cfg(cfg.values())
+std::shared_ptr<Config> create(const ConfigFile& cfg)
 {
+// TODO    if (!cfg.value("shard").empty())
+// TODO        return new dataset::sharded::Reader(cfg);
+// TODO
+    string type = str::lower(cfg.value("type"));
+
+    if (type == "ondisk2")
+        return shared_ptr<Config>(new dataset::ondisk2::Config(cfg));
+// TODO	if (type == "simple" || type == "error" || type == "duplicates")
+// TODO		return new dataset::simple::Reader(cfg);
+// TODO#ifdef HAVE_LIBCURL
+// TODO	if (type == "remote")
+// TODO		return new dataset::HTTP(cfg);
+// TODO#endif
+// TODO	if (type == "outbound")
+// TODO		return new dataset::Empty(cfg);
+// TODO	if (type == "discard")
+// TODO		return new dataset::Empty(cfg);
+// TODO	if (type == "file")
+// TODO		return dataset::File::create(cfg);
+// TODO
+    throw std::runtime_error("cannot use configuration: unknown dataset type \""+type+"\"");
 }
 
 std::string Base::name() const
 {
     if (m_parent)
-        return m_parent->name() + "." + m_name;
+        return m_parent->name() + "." + config().name;
     else
-        return m_name;
+        return config().name;
 }
 
 void Base::set_parent(Base& p)
@@ -93,7 +114,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
         case dataset::ByteQuery::BQ_POSTPROCESS: {
             Postprocess postproc(q.param);
             postproc.set_output(out);
-            postproc.validate(m_cfg);
+            postproc.validate(config().cfg);
             postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
             query_data(q, [&](unique_ptr<Metadata> md) { return postproc.process(move(md)); });
@@ -288,27 +309,29 @@ void Reader::lua_push(lua_State* L)
 
 Reader* Reader::create(const ConfigFile& cfg)
 {
-    if (!cfg.value("shard").empty())
-        return new dataset::sharded::Reader(cfg);
-
-    string type = str::lower(cfg.value("type"));
-
-	if (type == "ondisk2")
-		return new dataset::ondisk2::Reader(cfg);
-	if (type == "simple" || type == "error" || type == "duplicates")
-		return new dataset::simple::Reader(cfg);
-#ifdef HAVE_LIBCURL
-	if (type == "remote")
-		return new dataset::HTTP(cfg);
-#endif
-	if (type == "outbound")
-		return new dataset::Empty(cfg);
-	if (type == "discard")
-		return new dataset::Empty(cfg);
-	if (type == "file")
-		return dataset::File::create(cfg);
-
-    throw std::runtime_error("cannot create dataset reader: unknown dataset type \""+type+"\"");
+    auto config = Config::create(cfg);
+    return config->create_reader();
+//    if (!cfg.value("shard").empty())
+//        return new dataset::sharded::Reader(cfg);
+//
+//    string type = str::lower(cfg.value("type"));
+//
+//	if (type == "ondisk2")
+//		return new dataset::ondisk2::Reader(cfg);
+//	if (type == "simple" || type == "error" || type == "duplicates")
+//		return new dataset::simple::Reader(cfg);
+//#ifdef HAVE_LIBCURL
+//	if (type == "remote")
+//		return new dataset::HTTP(cfg);
+//#endif
+//	if (type == "outbound")
+//		return new dataset::Empty(cfg);
+//	if (type == "discard")
+//		return new dataset::Empty(cfg);
+//	if (type == "file")
+//		return dataset::File::create(cfg);
+//
+//    throw std::runtime_error("cannot create dataset reader: unknown dataset type \""+type+"\"");
 }
 
 void Reader::readConfig(const std::string& path, ConfigFile& cfg)
@@ -325,17 +348,19 @@ void Reader::readConfig(const std::string& path, ConfigFile& cfg)
 
 Writer* Writer::create(const ConfigFile& cfg)
 {
-    if (!cfg.value("shard").empty())
-        return new dataset::sharded::Writer(cfg);
-
-    string type = str::lower(cfg.value("type"));
-    if (type == "remote")
-        throw std::runtime_error("cannot create dataset writer: remote datasets are not writable");
-    if (type == "outbound")
-        return new dataset::Outbound(cfg);
-    if (type == "discard")
-        return new dataset::Discard(cfg);
-    return dataset::LocalWriter::create(cfg);
+    auto config = Config::create(cfg);
+    return config->create_writer();
+//    if (!cfg.value("shard").empty())
+//        return new dataset::sharded::Writer(cfg);
+//
+//    string type = str::lower(cfg.value("type"));
+//    if (type == "remote")
+//        throw std::runtime_error("cannot create dataset writer: remote datasets are not writable");
+//    if (type == "outbound")
+//        return new dataset::Outbound(cfg);
+//    if (type == "discard")
+//        return new dataset::Discard(cfg);
+//    return dataset::LocalWriter::create(cfg);
 }
 
 Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
@@ -357,13 +382,15 @@ void FailChecker::check(dataset::Reporter& reporter, bool fix, bool quick) { thr
 
 Checker* Checker::create(const ConfigFile& cfg)
 {
-    if (!cfg.value("shard").empty())
-        return new dataset::sharded::Checker(cfg);
-
-    string type = str::lower(cfg.value("type"));
-    if (type == "remote" || type == "outbound" || type == "discard")
-        return new FailChecker(cfg);
-    return dataset::LocalChecker::create(cfg);
+    auto config = Config::create(cfg);
+    return config->create_checker();
+//    if (!cfg.value("shard").empty())
+//        return new dataset::sharded::Checker(cfg);
+//
+//    string type = str::lower(cfg.value("type"));
+//    if (type == "remote" || type == "outbound" || type == "discard")
+//        return new FailChecker(cfg);
+//    return dataset::LocalChecker::create(cfg);
 }
 
 }

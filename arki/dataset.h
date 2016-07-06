@@ -62,6 +62,9 @@ class Compare;
  * to allow complex data searches across datasets.
  */
 namespace dataset {
+class Reader;
+class Writer;
+class Checker;
 struct Reporter;
 
 struct DataQuery
@@ -132,18 +135,32 @@ struct ByteQuery : public DataQuery
     }
 };
 
+/// Base dataset configuration
+struct Config : public std::enable_shared_from_this<Config>
+{
+    /// Dataset name
+    std::string name;
+
+    /// Raw configuration key-value pairs (normally extracted from ConfigFile)
+    std::map<std::string, std::string> cfg;
+
+    Config();
+    Config(const ConfigFile& cfg);
+    virtual ~Config() {}
+
+    virtual Reader* create_reader() const;
+    virtual Writer* create_writer() const;
+    virtual Checker* create_checker() const;
+
+    static std::shared_ptr<Config> create(const ConfigFile& cfg);
+};
+
 /**
  * Base class for all dataset Readers, Writers and Checkers.
  */
 struct Base
 {
 protected:
-    /// Dataset name
-    std::string m_name;
-
-    /// Dataset configuration key-value pairs (normally extracted from ConfigFile)
-    std::map<std::string, std::string> m_cfg;
-
     /**
      * Parent dataset.
      *
@@ -152,9 +169,7 @@ protected:
     Base* m_parent = nullptr;
 
 public:
-    Base(const std::string& name);
-    Base(const std::string& name, const ConfigFile& cfg);
-    Base(const ConfigFile& cfg);
+    Base() {}
     Base(const Base&) = delete;
     Base(const Base&&) = delete;
     virtual ~Base() {}
@@ -162,7 +177,10 @@ public:
     Base& operator=(Base&&) = delete;
 
     /// Return the dataset configuration
-    const std::map<std::string, std::string>& cfg() const { return m_cfg; }
+    virtual const Config& config() const = 0;
+
+    /// Return the dataset configuration
+    const std::map<std::string, std::string>& cfg() const { return config().cfg; }
 
     /// Return a name identifying the dataset type
     virtual std::string type() const = 0;
@@ -362,7 +380,9 @@ struct Checker : public dataset::Base
  */
 struct NullChecker : public Checker
 {
-    using Checker::Checker;
+    std::shared_ptr<const Config> m_config;
+    NullChecker(std::shared_ptr<const Config> config) : m_config(config) {}
+    const Config& config() const override { return *m_config; }
     std::string type() const override { return "null"; }
     void removeAll(dataset::Reporter& reporter, bool writable=false) override {}
     void repack(dataset::Reporter& reporter, bool writable=false) override {}
@@ -375,7 +395,9 @@ struct NullChecker : public Checker
  */
 struct FailChecker : public Checker
 {
-    using Checker::Checker;
+    std::shared_ptr<const Config> m_config;
+    FailChecker(std::shared_ptr<const Config> config) : m_config(config) {}
+    const Config& config() const override { return *m_config; }
     std::string type() const override { return "fail"; }
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
     void repack(dataset::Reporter& reporter, bool writable=false) override;
@@ -384,6 +406,4 @@ struct FailChecker : public Checker
 
 }
 }
-
-
 #endif

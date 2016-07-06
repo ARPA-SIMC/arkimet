@@ -7,10 +7,16 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-OfflineReader::OfflineReader(const std::string& fname)
-    : Reader(str::basename(fname)), fname(fname)
+OfflineConfig::OfflineConfig(const std::string& pathname)
+    : summary_pathname(pathname + ".summary")
 {
-    sum.readFile(fname);
+}
+
+
+OfflineReader::OfflineReader(std::shared_ptr<const OfflineConfig> config)
+    : m_config(config)
+{
+    sum.readFile(config->summary_pathname);
 }
 
 std::string OfflineReader::type() const { return "offline"; }

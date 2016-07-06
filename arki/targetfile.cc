@@ -186,8 +186,14 @@ std::string Targetfile::Func::operator()(Metadata& md)
 	return res;
 }
 
+TargetfileSpyConfig::TargetfileSpyConfig(const dataset::Config& src)
+{
+    name = src.name;
+    cfg = src.cfg;
+}
+
 TargetfileSpy::TargetfileSpy(Reader& ds, sys::NamedFileDescriptor& output, const std::string& def)
-    : Reader(ds.name()), func(Targetfile::instance().get(def)), ds(ds), output(output)
+    : m_config(new TargetfileSpyConfig(ds.config())), func(Targetfile::instance().get(def)), ds(ds), output(output)
 {
 }
 

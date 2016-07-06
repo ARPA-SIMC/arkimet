@@ -11,12 +11,12 @@ namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
-Reader::Reader(const ConfigFile& cfg)
-    : IndexedReader(cfg)
+Reader::Reader(std::shared_ptr<const ondisk2::Config> config)
+    : m_config(config)
 {
-    if (sys::access(str::joinpath(m_path, "index.sqlite"), F_OK))
+    if (sys::access(str::joinpath(config->path, "index.sqlite"), F_OK))
     {
-        unique_ptr<index::RContents> idx(new index::RContents(cfg));
+        unique_ptr<index::RContents> idx(new index::RContents(m_config));
         idx->open();
         m_idx = idx.release();
     }

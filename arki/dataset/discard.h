@@ -18,7 +18,9 @@ namespace dataset {
 class Discard : public Writer
 {
 public:
-    using Writer::Writer;
+    std::shared_ptr<Config> m_config;
+    Discard(std::shared_ptr<Config> config) : m_config(config) {}
+    const Config& config() const override { return *m_config; }
 
     std::string type() const override { return "discard"; }
 

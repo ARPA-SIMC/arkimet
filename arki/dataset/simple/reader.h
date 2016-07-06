@@ -3,7 +3,7 @@
 
 /// Reader for simple datasets with no duplicate checks
 
-#include <arki/dataset/indexed.h>
+#include <arki/dataset/simple.h>
 #include <string>
 
 namespace arki {
@@ -16,11 +16,14 @@ namespace simple {
 class Reader : public IndexedReader
 {
 protected:
+    std::shared_ptr<const simple::Config> m_config;
     index::Manifest* m_mft = nullptr;
 
 public:
-    Reader(const ConfigFile& cfg);
+    Reader(std::shared_ptr<const simple::Config> config);
     virtual ~Reader();
+
+    const simple::Config& config() const override { return *m_config; }
 
     std::string type() const override;
 

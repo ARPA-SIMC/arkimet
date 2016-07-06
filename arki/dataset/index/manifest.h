@@ -21,9 +21,8 @@ protected:
 	void querySummaries(const Matcher& matcher, Summary& summary);
 
 public:
-	Manifest(const ConfigFile& cfg);
-	Manifest(const std::string& path);
-	virtual ~Manifest();
+    Manifest(const std::string& path);
+    virtual ~Manifest();
 
 	virtual void openRO() = 0;
 	virtual void openRW() = 0;
@@ -57,11 +56,11 @@ public:
 
     void rescanSegment(const std::string& dir, const std::string& relpath);
 
-	static bool exists(const std::string& dir);
-    static std::unique_ptr<Manifest> create(const std::string& dir, const ConfigFile* cfg=0);
+    static bool exists(const std::string& dir);
+    static std::unique_ptr<Manifest> create(const std::string& dir, const std::string& index_type=std::string());
 
-	static bool get_force_sqlite();
-	static void set_force_sqlite(bool val);
+    static bool get_force_sqlite();
+    static void set_force_sqlite(bool val);
 };
 
 }

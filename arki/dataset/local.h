@@ -14,24 +14,45 @@ class Metadata;
 class Matcher;
 
 namespace dataset {
+class LocalConfig;
+class ArchivesConfig;
 class ArchivesReader;
 class ArchivesChecker;
+
+class LocalConfig : public Config
+{
+protected:
+    mutable std::shared_ptr<ArchivesConfig> m_archives_config;
+
+public:
+    /// Root path of the dataset
+    std::string path;
+
+    /// Pathname of the dataset's lock file
+    std::string lockfile_pathname;
+
+    int archive_age = -1;
+    int delete_age = -1;
+
+    LocalConfig(const ConfigFile& cfg);
+
+    std::shared_ptr<ArchivesConfig> archives_config() const;
+};
 
 template<typename Parent, typename Archives>
 class LocalBase : public Parent
 {
 protected:
-    std::string m_path;
     Archives* m_archive = nullptr;
-    int m_archive_age = -1;
-    int m_delete_age = -1;
 
 public:
-    LocalBase(const ConfigFile& cfg);
+    using Parent::Parent;
     ~LocalBase();
 
+    const LocalConfig& config() const override = 0;
+
     /// Return the dataset path
-    const std::string& path() const { return m_path; }
+    const std::string& path() const { return config().path; }
 
     /// Check if the dataset has archived data
     bool hasArchive() const;
@@ -46,7 +67,7 @@ public:
 class LocalReader : public LocalBase<Reader, ArchivesReader>
 {
 public:
-    LocalReader(const ConfigFile& cfg);
+    using LocalBase::LocalBase;
     ~LocalReader();
 
     // Base implementations that queries the archives if they exist
@@ -58,23 +79,34 @@ public:
     static void readConfig(const std::string& path, ConfigFile& cfg);
 };
 
-class LocalWriter : public Writer
+struct LocalLock
 {
-protected:
-    std::string m_path;
     struct flock ds_lock;
     bool locked = false;
     arki::File lockfile;
 
+    LocalLock(const std::string& pathname);
+    ~LocalLock();
+
+    void acquire();
+    void release();
+};
+
+class LocalWriter : public Writer
+{
+protected:
+    LocalLock* lock = nullptr;
     void acquire_lock();
     void release_lock();
 
 public:
-    LocalWriter(const ConfigFile& cfg);
+    using Writer::Writer;
     ~LocalWriter();
 
+    const LocalConfig& config() const override = 0;
+
     /// Return the dataset path
-    const std::string& path() const { return m_path; }
+    const std::string& path() const { return config().path; }
 
     /**
      * Instantiate an appropriate Dataset for the given configuration
@@ -96,7 +128,7 @@ public:
 
 struct LocalChecker : public LocalBase<Checker, ArchivesChecker>
 {
-    LocalChecker(const ConfigFile& cfg);
+    using LocalBase::LocalBase;
     ~LocalChecker();
 
     void repack(dataset::Reporter& reporter, bool writable=false) override;

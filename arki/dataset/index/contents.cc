@@ -57,41 +57,26 @@ struct IndexGlobalData
 static IndexGlobalData igd;
 
 
-Contents::Contents(const ConfigFile& cfg)
-    : m_name(cfg.value("name")), m_root(sys::abspath(cfg.value("path"))),
-      m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
-      m_uniques(0), m_others(0), m_smallfiles(ConfigFile::boolValue(cfg.value("smallfiles"))),
-      scache(str::joinpath(m_root, ".summaries"))
+Contents::Contents(std::shared_ptr<const ondisk2::Config> config)
+    : m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
+      m_uniques(0), m_others(0), scache(config->summary_cache_pathname)
 {
-	string indexpath = cfg.value("indexfile");
-	if (indexpath.empty())
-		indexpath = "index.sqlite";
+    m_components_indexed = parseMetadataBitmask(config->index);
 
-    if (indexpath == ":memory:")
-        m_pathname = indexpath;
-    else
-        m_pathname = m_root.empty() ? indexpath : str::joinpath(m_root, indexpath);
+    // What metadata components we use to create a unique id
+    std::set<types::Code> unique_members = parseMetadataBitmask(config->unique);
+    unique_members.erase(TYPE_REFTIME);
+    if (not unique_members.empty())
+        m_uniques = new Aggregate(m_db, "mduniq", unique_members);
 
-	// What metadata components we index
-	string index = cfg.value("index");
-	if (index.empty())
-		index = "origin, product, level, timerange, area, proddef, run";
-	m_components_indexed = parseMetadataBitmask(index);
-
-	// What metadata components we use to create a unique id
-	std::set<types::Code> unique_members = parseMetadataBitmask(cfg.value("unique"));
-	unique_members.erase(TYPE_REFTIME);
-	if (not unique_members.empty())
-		m_uniques = new Aggregate(m_db, "mduniq", unique_members);
-
-	// Instantiate m_others at initQueries time, so we can scan the
-	// database to see if some attributes are not available
+    // Instantiate m_others at initQueries time, so we can scan the
+    // database to see if some attributes are not available
 }
 
 Contents::~Contents()
 {
-	if (m_uniques) delete m_uniques;
-	if (m_others) delete m_others;
+    if (m_uniques) delete m_uniques;
+    if (m_others) delete m_others;
 }
 
 std::set<types::Code> Contents::available_other_tables() const
@@ -452,7 +437,7 @@ void Contents::build_md(Query& q, Metadata& md) const
 {
     // Rebuild the Metadata
     md.set_source(Source::createBlob(
-            q.fetchString(1), m_root, q.fetchString(2),
+            q.fetchString(1), config().path, q.fetchString(2),
             q.fetch<uint64_t>(3), q.fetch<uint64_t>(4)));
     // md.notes = mdq.fetchItems<types::Note>(5);
     const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(5);
@@ -558,7 +543,7 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     // now
     if (tmpfile.get() != 0)
     {
-        metadata::ReadContext rc(tmpfile->name(), m_root);
+        metadata::ReadContext rc(tmpfile->name(), config().path);
         Metadata::read_file(rc, dest);
     }
 
@@ -862,10 +847,8 @@ bool Contents::checkSummaryCache(const dataset::Base& ds, Reporter& reporter) co
     return scache.check(ds, reporter);
 }
 
-RContents::RContents(const ConfigFile& cfg)
-    : Contents(cfg)
-{
-}
+RContents::RContents(std::shared_ptr<const ondisk2::Config> config)
+    : Contents(config) {}
 
 RContents::~RContents()
 {
@@ -876,18 +859,18 @@ void RContents::open()
     if (m_db.isOpen())
     {
         stringstream ss;
-        ss << "dataset index " << m_pathname << " is already open";
+        ss << "dataset index " << pathname() << " is already open";
         throw runtime_error(ss.str());
     }
 
-    if (!sys::access(m_pathname, F_OK))
+    if (!sys::access(pathname(), F_OK))
     {
         stringstream ss;
-        ss << "dataset index " << m_pathname << " does not exist";
+        ss << "dataset index " << pathname() << " does not exist";
         throw runtime_error(ss.str());
     }
 
-    m_db.open(m_pathname);
+    m_db.open(pathname());
     setupPragmas();
 
     initQueries();
@@ -900,9 +883,8 @@ void RContents::initQueries()
     Contents::initQueries();
 }
 
-WContents::WContents(const ConfigFile& cfg)
-    : Contents(cfg), m_insert(m_db),
-          m_delete("delete", m_db), m_replace("replace", m_db)
+WContents::WContents(std::shared_ptr<const ondisk2::Config> config)
+    : Contents(config), m_insert(m_db), m_delete("delete", m_db), m_replace("replace", m_db)
 {
 }
 
@@ -915,13 +897,13 @@ bool WContents::open()
     if (m_db.isOpen())
     {
         stringstream ss;
-        ss << "dataset index " << m_pathname << " is already open";
+        ss << "dataset index " << pathname() << " is already open";
         throw runtime_error(ss.str());
     }
 
-    bool need_create = !sys::access(m_pathname, F_OK);
+    bool need_create = !sys::access(pathname(), F_OK);
 
-	m_db.open(m_pathname);
+    m_db.open(pathname());
 	setupPragmas();
 	
 	if (need_create)

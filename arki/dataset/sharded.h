@@ -12,7 +12,6 @@ namespace sharded {
 class Reader : public LocalReader
 {
 public:
-    Reader(const ConfigFile& cfg);
     ~Reader();
 
     std::string type() const override;
@@ -24,7 +23,6 @@ public:
 class Writer : public LocalWriter
 {
 public:
-    Writer(const ConfigFile& cfg);
     ~Writer();
 
     std::string type() const override;
@@ -37,7 +35,6 @@ public:
 class Checker : public LocalChecker
 {
 public:
-    Checker(const ConfigFile& cfg);
     ~Checker();
 
     std::string type() const override;

@@ -7,7 +7,10 @@ using namespace std;
 namespace arki {
 namespace dataset {
 
-Memory::Memory() : Reader("memory") {}
+Memory::Memory()
+{
+    m_config.name = "memory";
+}
 Memory::~Memory() {}
 
 std::string Memory::type() const { return "memory"; }

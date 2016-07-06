@@ -48,7 +48,7 @@ struct Yearly : public BaseStep
         return true;
     }
 
-    std::string operator()(const Metadata& md) override
+    std::string operator()(const Metadata& md) const override
     {
         const Time& tt = md.get<reftime::Position>()->time;
         char buf[9];
@@ -72,7 +72,7 @@ struct Monthly : public BaseStep
         return true;
     }
 
-    std::string operator()(const Metadata& md) override
+    std::string operator()(const Metadata& md) const override
     {
         const Time& tt = md.get<reftime::Position>()->time;
         char buf[10];
@@ -104,7 +104,7 @@ struct Biweekly : public BaseStep
         return true;
     }
 
-    std::string operator()(const Metadata& md) override
+    std::string operator()(const Metadata& md) const override
     {
         const Time& tt = md.get<reftime::Position>()->time;
         char buf[10];
@@ -137,7 +137,7 @@ struct Weekly : public BaseStep
         return true;
     }
 
-    std::string operator()(const Metadata& md) override
+    std::string operator()(const Metadata& md) const override
     {
         const Time& tt = md.get<reftime::Position>()->time;
         char buf[10];
@@ -163,7 +163,7 @@ struct Daily : public BaseStep
         return true;
     }
 
-    std::string operator()(const Metadata& md) override
+    std::string operator()(const Metadata& md) const override
     {
         const Time& tt = md.get<reftime::Position>()->time;
         char buf[15];
@@ -172,23 +172,20 @@ struct Daily : public BaseStep
     }
 };
 
-Step* Step::create(const ConfigFile& cfg)
+Step* Step::create(const std::string& type)
 {
-    string step = str::lower(cfg.value("step"));
-    if (step.empty()) return nullptr;
-
-    if (step == Daily::name())
+    if (type == Daily::name())
         return new Daily;
-    else if (step == Weekly::name())
+    else if (type == Weekly::name())
         return new Weekly;
-    else if (step == Biweekly::name())
+    else if (type == Biweekly::name())
         return new Biweekly;
-    else if (step == Monthly::name())
+    else if (type == Monthly::name())
         return new Monthly;
-    else if (step == Yearly::name())
+    else if (type == Yearly::name())
         return new Yearly;
     else
-        throw std::runtime_error("step '"+step+"' is not supported.  Valid values are daily, weekly, biweekly, monthly and yearly.");
+        throw std::runtime_error("step '" + type + "' is not supported.  Valid values are daily, weekly, biweekly, monthly and yearly.");
 }
 
 std::vector<std::string> Step::list()

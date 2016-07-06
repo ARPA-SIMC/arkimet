@@ -56,6 +56,11 @@ public:
 	static Targetfile& instance();
 };
 
+struct TargetfileSpyConfig : public dataset::Config
+{
+    TargetfileSpyConfig(const dataset::Config& src);
+};
+
 /**
  * Dynamically open an Output according to what is coming out of a dataset.
  *
@@ -64,6 +69,7 @@ public:
  */
 class TargetfileSpy : public dataset::Reader
 {
+    std::shared_ptr<TargetfileSpyConfig> m_config;
     Targetfile::Func func;
     Reader& ds;
     utils::sys::NamedFileDescriptor& output;
@@ -73,6 +79,7 @@ public:
     TargetfileSpy(Reader& ds, utils::sys::NamedFileDescriptor& output, const std::string& def);
     ~TargetfileSpy();
 
+    const dataset::Config& config() const override { return *m_config; }
     std::string type() const override;
 
     void redirect(Metadata& md);

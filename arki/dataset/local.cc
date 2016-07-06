@@ -21,18 +21,25 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-template<typename Parent, typename Archive>
-LocalBase<Parent, Archive>::LocalBase(const ConfigFile& cfg)
-    : Parent(cfg.value("name"), cfg), m_path(cfg.value("path"))
+LocalConfig::LocalConfig(const ConfigFile& cfg)
+    : Config(cfg), path(sys::abspath(cfg.value("path"))), lockfile_pathname(str::joinpath(path, "lock"))
 {
     string tmp = cfg.value("archive age");
     if (!tmp.empty())
-        m_archive_age = std::stoi(tmp);
+        archive_age = std::stoi(tmp);
 
     tmp = cfg.value("delete age");
     if (!tmp.empty())
-        m_delete_age = std::stoi(tmp);
+        delete_age = std::stoi(tmp);
 }
+
+std::shared_ptr<ArchivesConfig> LocalConfig::archives_config() const
+{
+    if (!m_archives_config)
+        m_archives_config = std::shared_ptr<ArchivesConfig>(new ArchivesConfig(path));
+    return m_archives_config;
+}
+
 
 template<typename Parent, typename Archive>
 LocalBase<Parent, Archive>::~LocalBase()
@@ -43,7 +50,7 @@ LocalBase<Parent, Archive>::~LocalBase()
 template<typename Parent, typename Archive>
 bool LocalBase<Parent, Archive>::hasArchive() const
 {
-    string arcdir = str::joinpath(m_path, ".archive");
+    string arcdir = str::joinpath(path(), ".archive");
     return sys::exists(arcdir);
 }
 
@@ -52,16 +59,12 @@ Archive& LocalBase<Parent, Archive>::archive()
 {
     if (!m_archive)
     {
-        m_archive = new Archive(m_path);
+        m_archive = new Archive(config().archives_config());
         m_archive->set_parent(*this);
     }
     return *m_archive;
 }
 
-
-LocalReader::LocalReader(const ConfigFile& cfg) : LocalBase(cfg)
-{
-}
 
 LocalReader::~LocalReader()
 {
@@ -125,18 +128,16 @@ void LocalReader::readConfig(const std::string& path, ConfigFile& cfg)
     }
 }
 
-LocalWriter::LocalWriter(const ConfigFile& cfg)
-    : Writer(cfg.value("name"), cfg), m_path(cfg.value("path")), lockfile(str::joinpath(m_path, "lock"))
-{
-    // Create the directory if it does not exist
-    sys::makedirs(m_path);
-}
-
-LocalWriter::~LocalWriter()
+LocalLock::LocalLock(const std::string& pathname)
+    : lockfile(pathname)
 {
 }
 
-void LocalWriter::acquire_lock()
+LocalLock::~LocalLock()
+{
+}
+
+void LocalLock::acquire()
 {
     if (locked) return;
     if ((int)lockfile == -1) lockfile.open(O_RDWR | O_CREAT, 0777);
@@ -157,7 +158,7 @@ void LocalWriter::acquire_lock()
     locked = true;
 }
 
-void LocalWriter::release_lock()
+void LocalLock::release()
 {
     if (!locked) return;
     ds_lock.l_type = F_UNLCK;
@@ -171,6 +172,33 @@ void LocalWriter::release_lock()
     locked = false;
 }
 
+
+#if 0
+LocalWriter::LocalWriter(const ConfigFile& cfg)
+    : lockfile(str::joinpath(m_path, "lock"))
+{
+    // Create the directory if it does not exist
+    sys::makedirs(m_path);
+}
+#endif
+
+LocalWriter::~LocalWriter()
+{
+    delete lock;
+}
+
+void LocalWriter::acquire_lock()
+{
+    if (!lock) lock = new LocalLock(config().lockfile_pathname);
+    lock->acquire();
+}
+
+void LocalWriter::release_lock()
+{
+    if (!lock) lock = new LocalLock(config().lockfile_pathname);
+    lock->release();
+}
+
 LocalWriter* LocalWriter::create(const ConfigFile& cfg)
 {
     return SegmentedWriter::create(cfg);
@@ -182,11 +210,13 @@ LocalWriter::AcquireResult LocalWriter::testAcquire(const ConfigFile& cfg, const
 }
 
 
+#if 0
 LocalChecker::LocalChecker(const ConfigFile& cfg) : LocalBase(cfg)
 {
     // Create the directory if it does not exist
     sys::makedirs(m_path);
 }
+#endif
 
 LocalChecker::~LocalChecker()
 {

@@ -6,21 +6,18 @@ namespace arki {
 namespace dataset {
 namespace sharded {
 
-Reader::Reader(const ConfigFile& cfg) : LocalReader(cfg) {}
 Reader::~Reader() {}
 std::string Reader::type() const { throw std::runtime_error("not implemented"); }
 void Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest) { throw std::runtime_error("not implemented"); }
 void Reader::query_summary(const Matcher& matcher, Summary& summary) { throw std::runtime_error("not implemented"); }
 void Reader::expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) { throw std::runtime_error("not implemented"); }
 
-Writer::Writer(const ConfigFile& cfg) : LocalWriter(cfg) {}
 Writer::~Writer() {}
 std::string Writer::type() const { throw std::runtime_error("not implemented"); }
 Writer::AcquireResult Writer::acquire(Metadata& md, Writer::ReplaceStrategy replace) { throw std::runtime_error("not implemented"); }
 void Writer::remove(Metadata& md) { throw std::runtime_error("not implemented"); }
 void Writer::flush() { throw std::runtime_error("not implemented"); }
 
-Checker::Checker(const ConfigFile& cfg) : LocalChecker(cfg) {}
 Checker::~Checker() {}
 std::string Checker::type() const { throw std::runtime_error("not implemented"); }
 void Checker::removeAll(dataset::Reporter& reporter, bool writable) { throw std::runtime_error("not implemented"); }

@@ -31,16 +31,16 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
-Writer::Writer(const ConfigFile& cfg)
-    : IndexedWriter(cfg), m_mft(0)
+Writer::Writer(std::shared_ptr<const simple::Config> config)
+    : m_config(config), m_mft(0)
 {
     // If the index is missing, take note not to perform a repack until a
     // check is made
-    if (!index::Manifest::exists(m_path))
-        files::createDontpackFlagfile(m_path);
+    if (!index::Manifest::exists(config->path))
+        files::createDontpackFlagfile(config->path);
 
     acquire_lock();
-    unique_ptr<index::Manifest> mft = index::Manifest::create(m_path, &cfg);
+    unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->index_type);
     m_mft = mft.release();
     m_mft->openRW();
     m_idx = m_mft;
@@ -71,19 +71,19 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     // Try appending
     try {
         off_t offset = writer->append(md);
-        auto source = types::source::Blob::create(md.source().format, m_path, writer->relname, offset, md.data_size());
+        auto source = types::source::Blob::create(md.source().format, config().path, writer->relname, offset, md.data_size());
         md.set_source(move(source));
         mdbuf->add(md);
         m_mft->acquire(writer->relname, sys::timestamp(mdbuf->pathname, 0), mdbuf->sum);
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '"+m_name+"': " + e.what());
+        md.add_note("Failed to store in dataset '" + config().name + "': " + e.what());
         return ACQ_ERROR;
     }
 
-	// After appending, keep updated info in-memory, and update manifest on
-	// flush when the Datafile structures are deallocated
+    // After appending, keep updated info in-memory, and update manifest on
+    // flush when the Datafile structures are deallocated
 }
 
 void Writer::remove(Metadata& md)
@@ -113,15 +113,15 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
 
 
 
-Checker::Checker(const ConfigFile& cfg)
-    : IndexedChecker(cfg), m_mft(0)
+Checker::Checker(std::shared_ptr<const simple::Config> config)
+    : m_config(config), m_mft(0)
 {
     // If the index is missing, take note not to perform a repack until a
     // check is made
-    if (!index::Manifest::exists(m_path))
-        files::createDontpackFlagfile(m_path);
+    if (!index::Manifest::exists(config->path))
+        files::createDontpackFlagfile(config->path);
 
-    unique_ptr<index::Manifest> mft = index::Manifest::create(m_path, &cfg);
+    unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->index_type);
     m_mft = mft.release();
     m_mft->openRW();
     m_idx = m_mft;
@@ -136,7 +136,7 @@ std::string Checker::type() const { return "simple"; }
 
 void Checker::indexSegment(const std::string& relname, metadata::Collection&& mds)
 {
-    string pathname = str::joinpath(m_path, relname);
+    string pathname = str::joinpath(config().path, relname);
     time_t mtime = scan::timestamp(pathname);
     if (mtime == 0)
         throw std::runtime_error("cannot acquire " + pathname + ": file does not exist");
@@ -161,17 +161,17 @@ void Checker::indexSegment(const std::string& relname, metadata::Collection&& md
 void Checker::rescanSegment(const std::string& relpath)
 {
     // Delete cached info to force a full rescan
-    string pathname = str::joinpath(m_path, relpath);
+    string pathname = str::joinpath(config().path, relpath);
     sys::unlink_ifexists(pathname + ".metadata");
     sys::unlink_ifexists(pathname + ".summary");
 
-    m_mft->rescanSegment(m_path, relpath);
+    m_mft->rescanSegment(config().path, relpath);
 }
 
 
 size_t Checker::repackSegment(const std::string& relpath)
 {
-    string pathname = str::joinpath(m_path, relpath);
+    string pathname = str::joinpath(config().path, relpath);
 
     // Read the metadata
     metadata::Collection mdc;
@@ -181,7 +181,7 @@ size_t Checker::repackSegment(const std::string& relpath)
     mdc.sort();
 
     // Write out the data with the new order
-    Pending p_repack = m_segment_manager->repack(relpath, mdc);
+    Pending p_repack = segment_manager().repack(relpath, mdc);
 
     // Strip paths from mds sources
     mdc.strip_source_paths();
@@ -199,8 +199,8 @@ size_t Checker::repackSegment(const std::string& relpath)
 
     size_t size_post = sys::size(pathname);
 
-	// Write out the new metadata
-	mdc.writeAtomically(pathname + ".metadata");
+    // Write out the new metadata
+    mdc.writeAtomically(pathname + ".metadata");
 
     // Regenerate the summary. It is unchanged, really, but its timestamp
     // has become obsolete by now
@@ -212,7 +212,7 @@ size_t Checker::repackSegment(const std::string& relpath)
     time_t mtime = sys::timestamp(pathname);
     m_mft->acquire(relpath, mtime, sum);
 
-	return size_pre - size_post;
+    return size_pre - size_post;
 }
 
 size_t Checker::removeSegment(const std::string& relpath, bool withData)
