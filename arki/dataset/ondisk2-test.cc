@@ -72,9 +72,9 @@ add_method("acquire", [](Fixture& f) {
     // Flush the changes and check that everything is allright
     writer->flush();
 
-    wassert(actual_file("test200/2007/07-08.grib").exists());
-    wassert(actual_file("test200/index.sqlite").exists());
-    wassert(actual(sys::timestamp("test200/2007/07-08.grib")) <= sys::timestamp("test200/index.sqlite"));
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/index.sqlite").exists());
+    wassert(actual(sys::timestamp("testds/2007/07-08.grib")) <= sys::timestamp("testds/index.sqlite"));
 });
 
 // Test replacing an element

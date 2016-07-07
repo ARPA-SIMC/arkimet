@@ -34,12 +34,15 @@ namespace simple {
 Writer::Writer(std::shared_ptr<const simple::Config> config)
     : m_config(config), m_mft(0)
 {
+    sys::mkdir_ifmissing(config->path, 0777);
+
+    acquire_lock();
+
     // If the index is missing, take note not to perform a repack until a
     // check is made
     if (!index::Manifest::exists(config->path))
         files::createDontpackFlagfile(config->path);
 
-    acquire_lock();
     unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->index_type);
     m_mft = mft.release();
     m_mft->openRW();

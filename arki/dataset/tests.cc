@@ -125,7 +125,7 @@ dataset::segment::SegmentManager& DatasetTest::segments()
 {
     if (!segment_manager)
     {
-        const dataset::SegmentedConfig* c = dynamic_cast<const dataset::SegmentedConfig*>(m_config.get());
+        const dataset::SegmentedConfig* c = dynamic_cast<const dataset::SegmentedConfig*>(dataset_config().get());
         if (!c) throw std::runtime_error("DatasetTest::segments called on a non-segmented dataset");
         segment_manager = c->create_segment_manager().release();
     }
