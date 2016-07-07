@@ -87,6 +87,7 @@ def_test(1)
     unique_ptr<WContents> test = createIndex<WContents>(
         "type = ondisk2\n"
         "path = .\n"
+        "step = daily\n"
         "indexfile = :memory:\n"
         "index = origin, product, level\n"
         "unique = origin, product, level, timerange, area, proddef, reftime\n"
@@ -132,6 +133,7 @@ def_test(2)
     unique_ptr<WContents> test = createIndex<WContents>(
         "type = ondisk2\n"
         "path = .\n"
+        "step = daily\n"
         "indexfile = :memory:\n"
         "unique = origin, product, level, timerange, area, proddef, reftime\n"
         "index = origin, product, level, timerange, area, proddef, reftime\n"
@@ -246,6 +248,7 @@ def_test(3)
     string cfg = 
         "type = ondisk2\n"
         "path = .\n"
+        "step = daily\n"
         "indexfile = file1\n"
         "unique = origin, product, level, timerange, area, proddef, reftime\n"
         "index = origin, product, level, timerange, area, proddef, reftime\n";
@@ -301,6 +304,7 @@ def_test(4)
     unique_ptr<WContents> test = createIndex<WContents>(
         "type = ondisk2\n"
         "path = .\n"
+        "step = daily\n"
         "indexfile = file1\n"
         "index = origin, product, level\n"
         "unique = origin, product, level, timerange, area, proddef, reftime\n"
@@ -350,6 +354,7 @@ def_test(5)
     unique_ptr<WContents> test = createIndex<WContents>(
         "type = ondisk2\n"
         "path = \n"
+        "step = daily\n"
         "indexfile = file1\n"
         "index = origin, product, level\n"
         "unique = origin, product, level, timerange, area, proddef, reftime\n"
@@ -411,6 +416,7 @@ def_test(6)
     unique_ptr<WContents> test = createIndex<WContents>(
         "type = ondisk2\n"
         "path = .\n"
+        "step = daily\n"
         "indexfile = file1\n"
         "index = origin, product, level\n"
         "unique = origin, product, level, timerange, area, proddef, reftime\n"
@@ -457,6 +463,7 @@ def_test(7)
         unique_ptr<WContents> test = createIndex<WContents>(
                 "type = ondisk2\n"
                 "path = .\n"
+                "step = daily\n"
                 "indexfile = file1\n"
                 "index = origin, product, level\n"
                 "unique = origin, product, level, timerange, area, proddef, reftime\n"
@@ -499,6 +506,7 @@ def_test(7)
         unique_ptr<WContents> test = createIndex<WContents>(
                 "type = ondisk2\n"
                 "path = .\n"
+                "step = daily\n"
                 "indexfile = file1\n"
                 "index = origin, product, level\n"
                 "unique = origin, product, level, timerange, area, proddef, reftime\n"

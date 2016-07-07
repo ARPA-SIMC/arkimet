@@ -47,6 +47,7 @@ static ConfigFile make_config(const std::string& dir)
     ConfigFile cfg;
     cfg.setValue("name", str::basename(dir));
     cfg.setValue("path", dir);
+    cfg.setValue("step", "monthly");
     return cfg;
 }
 
