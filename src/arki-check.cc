@@ -113,15 +113,16 @@ struct WorkerOnWritable : public Worker
 {
     void process(const ConfigFile& cfg) override
     {
-        unique_ptr<dataset::LocalChecker> ds;
+        unique_ptr<dataset::Checker> ds;
         try {
-            ds.reset(dataset::LocalChecker::create(cfg));
+            auto config = dataset::Config::create(cfg);
+            ds = config->create_checker();
         } catch (std::exception& e) {
             throw SkipDataset(e.what());
         }
         operator()(*ds);
     }
-    virtual void operator()(dataset::LocalChecker& w) = 0;
+    virtual void operator()(dataset::Checker& w) = 0;
 };
 
 struct Maintainer : public WorkerOnWritable
@@ -133,7 +134,7 @@ struct Maintainer : public WorkerOnWritable
 	{
 	}
 
-    void operator()(dataset::LocalChecker& w) override
+    void operator()(dataset::Checker& w) override
     {
         dataset::OstreamReporter r(cerr);
         w.check(r, fix, quick);
@@ -148,7 +149,7 @@ struct Repacker : public WorkerOnWritable
 
 	Repacker(bool fix) : fix(fix) {}
 
-    void operator()(dataset::LocalChecker& w) override
+    void operator()(dataset::Checker& w) override
     {
         dataset::OstreamReporter r(cout);
         w.repack(r, fix);
@@ -163,7 +164,7 @@ struct RemoveAller : public WorkerOnWritable
 
 	RemoveAller(bool fix) : fix(fix) {}
 
-    void operator()(dataset::LocalChecker& w) override
+    void operator()(dataset::Checker& w) override
     {
         dataset::OstreamReporter r(cout);
         w.removeAll(r, fix);
@@ -254,7 +255,7 @@ int main(int argc, const char* argv[])
         {
             if (opts.op_remove->stringValue().empty())
                 throw commandline::BadOption("you need to give a file name to --remove");
-            LocalWriterPool pool(cfg);
+            WriterPool pool(cfg);
             // Read all metadata from the file specified in --remove
             metadata::Collection todolist(opts.op_remove->stringValue());
             // Datasets where each metadata comes from

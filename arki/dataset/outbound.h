@@ -12,6 +12,17 @@ class Metadata;
 class Matcher;
 
 namespace dataset {
+namespace outbound {
+
+struct Config : public dataset::SegmentedConfig
+{
+    Config(const ConfigFile& cfg);
+
+    std::unique_ptr<dataset::Reader> create_reader() const override;
+    std::unique_ptr<dataset::Writer> create_writer() const override;
+
+    static std::shared_ptr<const Config> create(const ConfigFile& cfg);
+};
 
 /**
  * Store-only dataset.
@@ -19,7 +30,7 @@ namespace dataset {
  * This dataset is not used for archival, but only to store data as an outbound
  * area.
  */
-class Outbound : public SegmentedWriter
+class Writer : public SegmentedWriter
 {
 protected:
     std::shared_ptr<const SegmentedConfig> m_config;
@@ -28,8 +39,8 @@ protected:
 
 public:
     // Initialise the dataset with the information from the configurationa in 'cfg'
-    Outbound(std::shared_ptr<const SegmentedConfig> config);
-    virtual ~Outbound();
+    Writer(std::shared_ptr<const SegmentedConfig> config);
+    virtual ~Writer();
 
     const SegmentedConfig& config() const override { return *m_config; }
 
@@ -50,6 +61,7 @@ public:
     static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
+}
 }
 }
 #endif

@@ -41,6 +41,8 @@ public:
     const Step& step() const { return *m_step; }
 
     std::unique_ptr<segment::SegmentManager> create_segment_manager() const;
+
+    static std::shared_ptr<const SegmentedConfig> create(const ConfigFile& cfg);
 };
 
 /**
@@ -83,11 +85,6 @@ public:
 
     virtual void flush();
 
-    /**
-     * Instantiate an appropriate Writer for the given configuration
-     */
-    //static SegmentedWriter* create(const ConfigFile& cfg);
-
     static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
@@ -108,11 +105,6 @@ public:
 
     void repack(dataset::Reporter& reporter, bool writable=false) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
-
-    /**
-     * Instantiate an appropriate SegmentedChecker for the given configuration
-     */
-    // static SegmentedChecker* create(const ConfigFile& cfg);
 
     /**
      * Perform dataset maintenance, sending information to \a v

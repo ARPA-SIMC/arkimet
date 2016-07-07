@@ -5,7 +5,7 @@
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/summary.h>
-#include <arki/dataset/ondisk2.h>
+#include <arki/dataset/ondisk2/writer.h>
 #include <arki/sort.h>
 #include <arki/scan/grib.h>
 #include <arki/utils.h>
@@ -50,7 +50,8 @@ struct arki_querymacro_shar {
 		scan::Grib scanner;
 		scanner.open("inbound/test.grib1");
 
-        dataset::ondisk2::Writer testds(*dispatch_cfg.section("testds"));
+        auto config = dataset::ondisk2::Config::create(*dispatch_cfg.section("testds"));
+        dataset::ondisk2::Writer testds(config);
         vector<Time> times;
         times.push_back(Time(2009, 8, 7, 0, 0, 0));
         times.push_back(Time(2009, 8, 8, 0, 0, 0));

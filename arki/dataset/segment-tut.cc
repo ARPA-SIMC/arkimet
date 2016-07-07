@@ -4,6 +4,7 @@
 #include <arki/utils/sys.h>
 #include <arki/utils/string.h>
 #include "segment.h"
+#include "segmented.h"
 #include "segment/lines.h"
 
 namespace tut {
@@ -88,6 +89,8 @@ struct TestSegments
         else
             sys::unlink_ifexists(pathname);
 
+        cfg.setValue("name", "test");
+        cfg.setValue("step", "daily");
         cfg.setValue("path", pathname);
         if (!cfg_segments.empty())
             cfg.setValue("segments", cfg_segments);
@@ -97,7 +100,8 @@ struct TestSegments
     {
         ConfigFile cfg1(cfg);
         cfg1.setValue("mockdata", "true");
-        unique_ptr<segment::SegmentManager> segment_manager(segment::SegmentManager::get(cfg1));
+        auto config = dataset::SegmentedConfig::create(cfg1);
+        auto segment_manager = config->create_segment_manager();
 
         // Import 2 gigabytes of data in a single segment
         metadata::Collection mds;

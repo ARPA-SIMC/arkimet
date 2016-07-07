@@ -44,6 +44,10 @@ struct HTTPConfig : public dataset::Config
     std::string qmacro;
 
     HTTPConfig(const ConfigFile& cfg);
+
+    static std::shared_ptr<const HTTPConfig> create(const ConfigFile& cfg);
+
+    std::unique_ptr<Reader> create_reader() const override;
 };
 
 /**

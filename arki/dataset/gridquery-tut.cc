@@ -64,7 +64,7 @@ struct arki_dataset_gridquery_shar {
         ensure(!scanner.next(md));
         dispatcher.flush();
 
-        ds = dataset::Reader::create(*config.section("testds"));
+        ds = dataset::Reader::create(*config.section("testds")).release();
     }
 
 	~arki_dataset_gridquery_shar()

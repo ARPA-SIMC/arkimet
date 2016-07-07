@@ -146,8 +146,8 @@ dataset::Reader* Querymacro::dataset(const std::string& name)
     {
         ConfigFile* dscfg = dispatch_cfg.section(name);
         if (!dscfg) return 0;
-        dataset::Reader* ds = dataset::Reader::create(*dscfg);
-        pair<map<string, dataset::Reader*>::iterator, bool> res = ds_cache.insert(make_pair(name, ds));
+        auto ds = dataset::Reader::create(*dscfg);
+        pair<map<string, dataset::Reader*>::iterator, bool> res = ds_cache.insert(make_pair(name, ds.release()));
         i = res.first;
     }
     return i->second;

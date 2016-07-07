@@ -50,7 +50,12 @@ SegmentedConfig::~SegmentedConfig()
 
 std::unique_ptr<segment::SegmentManager> SegmentedConfig::create_segment_manager() const
 {
-    return segment::SegmentManager::get(path, mock_data, force_dir_segments);
+    return segment::SegmentManager::get(path, force_dir_segments, mock_data);
+}
+
+std::shared_ptr<const SegmentedConfig> SegmentedConfig::create(const ConfigFile& cfg)
+{
+    return std::shared_ptr<const SegmentedConfig>(new SegmentedConfig(cfg));
 }
 
 
@@ -89,22 +94,6 @@ void SegmentedWriter::flush()
 {
     m_segment_manager->flush_writers();
 }
-
-#if 0
-SegmentedWriter* SegmentedWriter::create(const ConfigFile& cfg)
-{
-    string type = str::lower(cfg.value("type"));
-    if (type.empty())
-        type = "local";
-
-    if (type == "ondisk2" || type == "test")
-        return new dataset::ondisk2::Writer(cfg);
-    if (type == "simple" || type == "error" || type == "duplicates")
-        return new dataset::simple::Writer(cfg);
-
-    throw std::runtime_error("cannot create dataset: unknown dataset type \""+type+"\"");
-}
-#endif
 
 LocalWriter::AcquireResult SegmentedWriter::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
@@ -275,22 +264,6 @@ void SegmentedChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
 
     LocalChecker::check(reporter, fix, quick);
 }
-
-#if 0
-SegmentedChecker* SegmentedChecker::create(const ConfigFile& cfg)
-{
-    string type = str::lower(cfg.value("type"));
-    if (type.empty())
-        type = "local";
-
-    if (type == "ondisk2" || type == "test")
-        return new dataset::ondisk2::Checker(cfg);
-    if (type == "simple" || type == "error" || type == "duplicates")
-        return new dataset::simple::Checker(cfg);
-
-    throw std::runtime_error("cannot create dataset: unknown dataset type \""+type+"\"");
-}
-#endif
 
 }
 }

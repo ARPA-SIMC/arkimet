@@ -101,6 +101,16 @@ HTTPConfig::HTTPConfig(const ConfigFile& cfg)
 {
 }
 
+std::unique_ptr<Reader> HTTPConfig::create_reader() const
+{
+    return std::unique_ptr<Reader>(new HTTP(dynamic_pointer_cast<const HTTPConfig>(shared_from_this())));
+}
+
+std::shared_ptr<const HTTPConfig> HTTPConfig::create(const ConfigFile& cfg)
+{
+    return std::shared_ptr<const HTTPConfig>(new HTTPConfig(cfg));
+}
+
 HTTP::HTTP(std::shared_ptr<const HTTPConfig> config)
     : m_config(config), m_mischief(false)
 {

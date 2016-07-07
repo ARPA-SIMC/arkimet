@@ -34,27 +34,27 @@ std::shared_ptr<const FileConfig> FileConfig::create(const ConfigFile& cfg)
     return std::shared_ptr<const FileConfig>(new FileConfig(cfg));
 }
 
-Reader* FileConfig::create_reader() const
+std::unique_ptr<Reader> FileConfig::create_reader() const
 {
     if (format == "arkimet")
-        return new ArkimetFile(dynamic_pointer_cast<const FileConfig>(shared_from_this()));
+        return std::unique_ptr<Reader>(new ArkimetFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
     if (format == "yaml")
-        return new YamlFile(dynamic_pointer_cast<const FileConfig>(shared_from_this()));
+        return std::unique_ptr<Reader>(new YamlFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
 #ifdef HAVE_GRIBAPI
     if (format == "grib")
-        return new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this()));
+        return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
 #endif
 #ifdef HAVE_DBALLE
     if (format == "bufr")
-        return new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this()));
+        return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
 #endif
 #ifdef HAVE_HDF5
     if (format == "odimh5")
-        return new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this()));
+        return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
 #endif
 #ifdef HAVE_VM2
     if (format == "vm2")
-        return new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this()));
+        return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
 #endif
 
     throw runtime_error(pathname + ": unknown fiel format \"" + format + "\"");

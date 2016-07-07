@@ -33,9 +33,9 @@ std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
     return std::shared_ptr<const Config>(new Config(cfg));
 }
 
-dataset::Reader* Config::create_reader() const { return new ondisk2::Reader(dynamic_pointer_cast<const ondisk2::Config>(shared_from_this())); }
-dataset::Writer* Config::create_writer() const { return new ondisk2::Writer(dynamic_pointer_cast<const ondisk2::Config>(shared_from_this())); }
-dataset::Checker* Config::create_checker() const { return new ondisk2::Checker(dynamic_pointer_cast<const ondisk2::Config>(shared_from_this())); }
+std::unique_ptr<dataset::Reader> Config::create_reader() const { return std::unique_ptr<dataset::Reader>(new ondisk2::Reader(dynamic_pointer_cast<const ondisk2::Config>(shared_from_this()))); }
+std::unique_ptr<dataset::Writer> Config::create_writer() const { return std::unique_ptr<dataset::Writer>(new ondisk2::Writer(dynamic_pointer_cast<const ondisk2::Config>(shared_from_this()))); }
+std::unique_ptr<dataset::Checker> Config::create_checker() const { return std::unique_ptr<dataset::Checker>(new ondisk2::Checker(dynamic_pointer_cast<const ondisk2::Config>(shared_from_this()))); }
 
 }
 }

@@ -149,9 +149,9 @@ struct Config : public std::enable_shared_from_this<Config>
     Config(const ConfigFile& cfg);
     virtual ~Config() {}
 
-    virtual Reader* create_reader() const;
-    virtual Writer* create_writer() const;
-    virtual Checker* create_checker() const;
+    virtual std::unique_ptr<Reader> create_reader() const;
+    virtual std::unique_ptr<Writer> create_writer() const;
+    virtual std::unique_ptr<Checker> create_checker() const;
 
     static std::shared_ptr<const Config> create(const ConfigFile& cfg);
 };
@@ -247,7 +247,7 @@ public:
     /**
      * Instantiate an appropriate Reader for the given configuration
      */
-    static Reader* create(const ConfigFile& cfg);
+    static std::unique_ptr<Reader> create(const ConfigFile& cfg);
 
 	/**
 	 * Read the configuration of the dataset(s) at the given path or URL,
@@ -330,7 +330,7 @@ public:
     /**
      * Instantiate an appropriate Writer for the given configuration
      */
-    static Writer* create(const ConfigFile& cfg);
+    static std::unique_ptr<Writer> create(const ConfigFile& cfg);
 
 	/**
 	 * Simulate acquiring the given metadata item (and related data) in this
@@ -373,36 +373,7 @@ struct Checker : public dataset::Base
     /**
      * Instantiate an appropriate Checker for the given configuration
      */
-    static Checker* create(const ConfigFile& cfg);
-};
-
-/**
- * Checker that does nothing
- */
-struct NullChecker : public Checker
-{
-    std::shared_ptr<const Config> m_config;
-    NullChecker(std::shared_ptr<const Config> config) : m_config(config) {}
-    const Config& config() const override { return *m_config; }
-    std::string type() const override { return "null"; }
-    void removeAll(dataset::Reporter& reporter, bool writable=false) override {}
-    void repack(dataset::Reporter& reporter, bool writable=false) override {}
-    void check(dataset::Reporter& reporter, bool fix, bool quick) override {}
-};
-
-/**
- * Checker that raises an exception on each operation notifying that the
- * operation is not possible
- */
-struct FailChecker : public Checker
-{
-    std::shared_ptr<const Config> m_config;
-    FailChecker(std::shared_ptr<const Config> config) : m_config(config) {}
-    const Config& config() const override { return *m_config; }
-    std::string type() const override { return "fail"; }
-    void removeAll(dataset::Reporter& reporter, bool writable=false) override;
-    void repack(dataset::Reporter& reporter, bool writable=false) override;
-    void check(dataset::Reporter& reporter, bool fix, bool quick) override;
+    static std::unique_ptr<Checker> create(const ConfigFile& cfg);
 };
 
 }

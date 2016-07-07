@@ -43,6 +43,8 @@ struct ArchivesConfig : public dataset::Config
     std::string root;
 
     ArchivesConfig(const std::string& root);
+
+    static std::shared_ptr<const ArchivesConfig> create(const std::string& root);
 };
 
 /**

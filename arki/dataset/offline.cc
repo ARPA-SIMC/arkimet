@@ -12,6 +12,11 @@ OfflineConfig::OfflineConfig(const std::string& pathname)
 {
 }
 
+std::shared_ptr<const OfflineConfig> OfflineConfig::create(const std::string& pathname)
+{
+    return std::shared_ptr<const OfflineConfig>(new OfflineConfig(pathname));
+}
+
 
 OfflineReader::OfflineReader(std::shared_ptr<const OfflineConfig> config)
     : m_config(config)

@@ -20,6 +20,8 @@ struct OfflineConfig : public dataset::Config
     std::string summary_pathname;
 
     OfflineConfig(const std::string& pathname);
+
+    static std::shared_ptr<const OfflineConfig> create(const std::string& pathname);
 };
 
 

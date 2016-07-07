@@ -173,15 +173,6 @@ void LocalLock::release()
 }
 
 
-#if 0
-LocalWriter::LocalWriter(const ConfigFile& cfg)
-    : lockfile(str::joinpath(m_path, "lock"))
-{
-    // Create the directory if it does not exist
-    sys::makedirs(m_path);
-}
-#endif
-
 LocalWriter::~LocalWriter()
 {
     delete lock;
@@ -199,24 +190,11 @@ void LocalWriter::release_lock()
     lock->release();
 }
 
-LocalWriter* LocalWriter::create(const ConfigFile& cfg)
-{
-    return SegmentedWriter::create(cfg);
-}
-
 LocalWriter::AcquireResult LocalWriter::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
     return SegmentedWriter::testAcquire(cfg, md, out);
 }
 
-
-#if 0
-LocalChecker::LocalChecker(const ConfigFile& cfg) : LocalBase(cfg)
-{
-    // Create the directory if it does not exist
-    sys::makedirs(m_path);
-}
-#endif
 
 LocalChecker::~LocalChecker()
 {
@@ -232,11 +210,6 @@ void LocalChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
     if (hasArchive())
         archive().check(reporter, fix, quick);
-}
-
-LocalChecker* LocalChecker::create(const ConfigFile& cfg)
-{
-    return SegmentedChecker::create(cfg);
 }
 
 

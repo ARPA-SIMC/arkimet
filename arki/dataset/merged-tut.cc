@@ -69,9 +69,9 @@ struct arki_dataset_merged_shar {
         ensure(!scanner.next(md));
         dispatcher.flush();
 
-        ds.addDataset(*(ds1 = dataset::Reader::create(*config.section("test200"))));
-        ds.addDataset(*(ds2 = dataset::Reader::create(*config.section("test80"))));
-        ds.addDataset(*(ds3 = dataset::Reader::create(*config.section("error"))));
+        ds.addDataset(*(ds1 = dataset::Reader::create(*config.section("test200")).release()));
+        ds.addDataset(*(ds2 = dataset::Reader::create(*config.section("test80")).release()));
+        ds.addDataset(*(ds3 = dataset::Reader::create(*config.section("error")).release()));
     }
 
 	~arki_dataset_merged_shar()

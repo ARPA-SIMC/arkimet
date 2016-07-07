@@ -23,7 +23,7 @@ public:
     std::string pathname;
     std::string format;
 
-    Reader* create_reader() const override;
+    std::unique_ptr<Reader> create_reader() const override;
 
     static std::shared_ptr<const FileConfig> create(const ConfigFile& cfg);
 };

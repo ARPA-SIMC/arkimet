@@ -5,6 +5,7 @@
 #include "simple/writer.h"
 #include "offline.h"
 #include "maintenance.h"
+#include "empty.h"
 #include "arki/configfile.h"
 #include "arki/libconfig.h"
 #include "arki/matcher.h"
@@ -239,7 +240,7 @@ struct ArchivesCheckerRoot: public ArchivesRoot<Checker>
             } else {
                 std::shared_ptr<dataset::Config> config(new dataset::Config(make_config(pathname)));
                 config->name = "pathname";
-                res.reset(new NullChecker(config));
+                res.reset(new empty::Checker(config));
             }
         } else {
             std::shared_ptr<const simple::Config> config(new simple::Config(make_config(pathname)));
@@ -256,6 +257,11 @@ ArchivesConfig::ArchivesConfig(const std::string& root)
     : root(root)
 {
     name = "archives";
+}
+
+std::shared_ptr<const ArchivesConfig> ArchivesConfig::create(const std::string& root)
+{
+    return std::shared_ptr<const ArchivesConfig>(new ArchivesConfig(root));
 }
 
 

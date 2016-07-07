@@ -19,9 +19,9 @@ std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
     return std::shared_ptr<const Config>(new Config(cfg));
 }
 
-dataset::Reader* Config::create_reader() const { return new simple::Reader(dynamic_pointer_cast<const simple::Config>(shared_from_this())); }
-dataset::Writer* Config::create_writer() const { return new simple::Writer(dynamic_pointer_cast<const simple::Config>(shared_from_this())); }
-dataset::Checker* Config::create_checker() const { return new simple::Checker(dynamic_pointer_cast<const simple::Config>(shared_from_this())); }
+std::unique_ptr<dataset::Reader> Config::create_reader() const { return std::unique_ptr<dataset::Reader>(new simple::Reader(dynamic_pointer_cast<const simple::Config>(shared_from_this()))); }
+std::unique_ptr<dataset::Writer> Config::create_writer() const { return std::unique_ptr<dataset::Writer>(new simple::Writer(dynamic_pointer_cast<const simple::Config>(shared_from_this()))); }
+std::unique_ptr<dataset::Checker> Config::create_checker() const { return std::unique_ptr<dataset::Checker>(new simple::Checker(dynamic_pointer_cast<const simple::Config>(shared_from_this()))); }
 
 }
 }

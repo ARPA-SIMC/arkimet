@@ -73,7 +73,7 @@ void TestsReader<Data>::register_tests() {
 typedef FixtureReader<Data> Fixture;
 
 this->add_method("querydata", [](Fixture& f) {
-    auto ds(f.makeReader());
+    auto ds(f.config().create_reader());
 
     acct::plain_data_read_count.reset();
 
@@ -114,7 +114,7 @@ this->add_method("querydata", [](Fixture& f) {
 });
 
 this->add_method("querysummary", [](Fixture& f) {
-    auto ds(f.makeReader());
+    auto ds(f.config().create_reader());
 
     // Query summary of everything
     {
@@ -139,7 +139,7 @@ this->add_method("querysummary", [](Fixture& f) {
 });
 
 this->add_method("querybytes", [](Fixture& f) {
-    auto ds(f.makeReader());
+    auto ds(f.config().create_reader());
 
     for (unsigned i = 0; i < 3; ++i)
     {
@@ -168,7 +168,7 @@ this->add_method("querybytes", [](Fixture& f) {
 this->add_method("query_data", [](Fixture& f) {
     // Test querying with data only
     f.clean_and_import();
-    auto reader(f.makeReader());
+    auto reader(f.config().create_reader());
 
     sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
@@ -184,7 +184,7 @@ this->add_method("query_inline", [](Fixture& f) {
     using namespace arki::types;
 
     f.clean_and_import();
-    auto reader(f.makeReader());
+    auto reader(f.config().create_reader());
 
     metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 1u);
@@ -206,7 +206,7 @@ this->add_method("query_inline", [](Fixture& f) {
 });
 
 this->add_method("querybytes_integrity", [](Fixture& f) {
-    auto ds(f.makeReader());
+    auto ds(f.config().create_reader());
 
     // Query everything
     dataset::ByteQuery bq;
@@ -231,7 +231,7 @@ this->add_method("querybytes_integrity", [](Fixture& f) {
 });
 
 this->add_method("postprocess", [](Fixture& f) {
-    auto ds(f.makeReader());
+    auto ds(f.config().create_reader());
 
     // Do a simple export first, to get the exact metadata that would come
     // out
@@ -257,11 +257,11 @@ this->add_method("postprocess", [](Fixture& f) {
 
 this->add_method("locked", [](Fixture& f) {
     // Lock a dataset for writing
-    auto wds(f.makeWriter());
+    auto wds(f.config().create_writer());
     Pending p = wds->test_writelock();
 
     // Try to read from it, it should still work with WAL
-    auto rds(f.makeReader());
+    auto rds(f.config().create_reader());
     dataset::ByteQuery bq;
     bq.setData(Matcher());
     sys::File out("/dev/null", O_WRONLY);

@@ -17,9 +17,9 @@ struct Config : public dataset::IndexedConfig
 
     Config(const ConfigFile& cfg);
 
-    dataset::Reader* create_reader() const override;
-    dataset::Writer* create_writer() const override;
-    dataset::Checker* create_checker() const override;
+    std::unique_ptr<dataset::Reader> create_reader() const override;
+    std::unique_ptr<dataset::Writer> create_writer() const override;
+    std::unique_ptr<dataset::Checker> create_checker() const override;
 
     static std::shared_ptr<const Config> create(const ConfigFile& cfg);
 };

@@ -42,21 +42,21 @@ add_method("instantiate", [](Fixture& f) {
     type = f.cfg.value("_reader");
     if (!type.empty())
     {
-        auto reader = f.makeReader();
+        auto reader = f.config().create_reader();
         wassert(actual(reader->type()) == type);
     }
 
     type = f.cfg.value("_writer");
     if (!type.empty())
     {
-        auto writer = f.makeWriter();
+        auto writer = f.config().create_writer();
         wassert(actual(writer->type()) == type);
     }
 
     type = f.cfg.value("_checker");
     if (!type.empty())
     {
-        auto checker = f.makeChecker();
+        auto checker = f.config().create_checker();
         wassert(actual(checker->type()) == type);
     }
 });

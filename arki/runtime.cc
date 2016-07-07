@@ -86,7 +86,7 @@ std::unique_ptr<dataset::Reader> make_qmacro_dataset(const ConfigFile& ds_cfg, c
         cfg.setValue("qmacro", query);
         if (!url.empty())
             cfg.setValue("url", url);
-        ds.reset(dataset::Reader::create(cfg));
+        ds = dataset::Reader::create(cfg);
     }
     return ds;
 }
@@ -493,7 +493,7 @@ static std::string moveFile(const std::string& source, const std::string& target
 static std::string moveFile(const dataset::Reader& ds, const std::string& targetdir)
 {
     if (const dataset::File* d = dynamic_cast<const dataset::File*>(&ds))
-        return moveFile(d->pathname(), targetdir);
+        return moveFile(d->config().pathname, targetdir);
     else
         return string();
 }

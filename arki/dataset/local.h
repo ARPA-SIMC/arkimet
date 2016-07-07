@@ -109,11 +109,6 @@ public:
     const std::string& path() const { return config().path; }
 
     /**
-     * Instantiate an appropriate Dataset for the given configuration
-     */
-    static LocalWriter* create(const ConfigFile& cfg);
-
-    /**
      * Simulate acquiring the given metadata item (and related data) in this
      * dataset.
      *
@@ -133,11 +128,6 @@ struct LocalChecker : public LocalBase<Checker, ArchivesChecker>
 
     void repack(dataset::Reporter& reporter, bool writable=false) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
-
-    /**
-     * Instantiate an appropriate Dataset for the given configuration
-     */
-    static LocalChecker* create(const ConfigFile& cfg);
 };
 
 }

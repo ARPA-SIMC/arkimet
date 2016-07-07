@@ -38,7 +38,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/segment/lines.h \
 		dataset/segment/dir.h \
 		dataset/segment/tests.h \
-		dataset/discard.h \
 		dataset/empty.h \
 		dataset/file.h \
 		dataset/gridquery.h \
@@ -506,7 +505,6 @@ libarkimet_la_SOURCES += \
 		dataset/sharded.cc \
 		dataset/outbound.cc \
 		dataset/offline.cc \
-		dataset/discard.cc \
 		dataset/empty.cc \
 		dataset/merged.cc \
 		dataset/gridquery.cc \
@@ -546,15 +544,14 @@ tests_arki_test_SOURCES += \
 		dataset/simple/datafile-tut.cc \
 		dataset/simple/reader-test.cc \
 		dataset/simple/writer-test.cc \
-		dataset/ondisk2-tut.cc \
-		dataset/ondisk2/reader-tut.cc \
+		dataset/ondisk2-test.cc \
+		dataset/ondisk2/reader-test.cc \
 		dataset/ondisk2/writer-test.cc \
 		dataset/ondisk2/test-utils.cc \
 		dataset/sharded-test.cc \
 		dataset/outbound-tut.cc \
 		dataset/offline-test.cc \
-		dataset/discard-tut.cc \
-		dataset/empty-tut.cc \
+		dataset/empty-test.cc \
 		dataset/merged-tut.cc \
 		dataset/gridquery-tut.cc \
 		dataset/test-scenario-test.cc \
