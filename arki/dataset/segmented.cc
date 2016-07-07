@@ -87,12 +87,12 @@ segment::SegmentManager& SegmentedWriter::segment_manager()
 Segment* SegmentedWriter::file(const Metadata& md, const std::string& format)
 {
     string relname = config().step()(md) + "." + md.source().format;
-    return m_segment_manager->get_segment(format, relname);
+    return segment_manager().get_segment(format, relname);
 }
 
 void SegmentedWriter::flush()
 {
-    m_segment_manager->flush_writers();
+    segment_manager().flush_writers();
 }
 
 LocalWriter::AcquireResult SegmentedWriter::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
@@ -189,7 +189,7 @@ void SegmentedChecker::archiveSegment(const std::string& relpath)
 size_t SegmentedChecker::removeSegment(const std::string& relpath, bool withData)
 {
     if (withData)
-        return m_segment_manager->remove(relpath);
+        return segment_manager().remove(relpath);
     else
         return 0;
 }

@@ -38,7 +38,7 @@ namespace ondisk2 {
 
 
 Writer::Writer(std::shared_ptr<const ondisk2::Config> config)
-    : idx(new index::WContents(config))
+    : m_config(config), idx(new index::WContents(config))
 {
     m_idx = idx;
 
@@ -257,7 +257,7 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
 }
 
 Checker::Checker(std::shared_ptr<const ondisk2::Config> config)
-    : idx(new index::WContents(config))
+    : m_config(config), idx(new index::WContents(config))
 {
     m_idx = idx;
 

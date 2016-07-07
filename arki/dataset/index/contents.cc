@@ -58,7 +58,7 @@ static IndexGlobalData igd;
 
 
 Contents::Contents(std::shared_ptr<const ondisk2::Config> config)
-    : m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
+    : m_config(config),  m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
       m_uniques(0), m_others(0), scache(config->summary_cache_pathname)
 {
     m_components_indexed = parseMetadataBitmask(config->index);
