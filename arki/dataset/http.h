@@ -62,8 +62,6 @@ class HTTP : public Reader
 {
 protected:
     std::shared_ptr<const HTTPConfig> m_config;
-    std::string m_baseurl;
-    std::string m_qmacro;
     http::CurlEasy m_curl;
     bool m_mischief;
 

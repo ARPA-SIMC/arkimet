@@ -267,14 +267,14 @@ void HTTP::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     m_curl.reset();
 
-    string url = str::joinpath(m_baseurl, "query");
+    string url = str::joinpath(config().baseurl, "query");
     checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
     checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
     string postdata;
-    if (m_qmacro.empty())
+    if (config().qmacro.empty())
         postdata = "query=" + str::encode_url(q.matcher.toStringExpanded());
     else
-        postdata = "query=" + str::encode_url(m_qmacro) + "&qmacro=" + str::encode_url(name());
+        postdata = "query=" + str::encode_url(config().qmacro) + "&qmacro=" + str::encode_url(name());
     if (q.sorter)
         postdata += "&sort=" + str::encode_url(q.sorter->toString());
     if (m_mischief)
@@ -290,7 +290,7 @@ void HTTP::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 	// Size of postfields argument if it's non text
 	checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
 
-    MDStreamState s(m_curl, dest, m_baseurl);
+    MDStreamState s(m_curl, dest, config().baseurl);
     // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
 	CURLcode code = curl_easy_perform(m_curl);
@@ -305,14 +305,14 @@ void HTTP::query_summary(const Matcher& matcher, Summary& summary)
 {
     m_curl.reset();
 
-    string url = str::joinpath(m_baseurl, "summary");
+    string url = str::joinpath(config().baseurl, "summary");
     checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
     checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
     string postdata;
-    if (m_qmacro.empty())
+    if (config().qmacro.empty())
         postdata = "query=" + str::encode_url(matcher.toStringExpanded());
     else
-        postdata = "query=" + str::encode_url(m_qmacro) + "&qmacro=" + str::encode_url(name());
+        postdata = "query=" + str::encode_url(config().qmacro) + "&qmacro=" + str::encode_url(name());
     if (m_mischief)
     {
         postdata += str::encode_url(";MISCHIEF");
@@ -342,10 +342,10 @@ void HTTP::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
     m_curl.reset();
     http::CurlForm form;
-    string url = str::joinpath(m_baseurl, "query");
+    string url = str::joinpath(config().baseurl, "query");
     checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
     checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
-	if (m_qmacro.empty())
+	if (config().qmacro.empty())
 	{
 		if (m_mischief)
 		{
@@ -354,7 +354,7 @@ void HTTP::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 		} else
 			form.addstring("query", q.matcher.toStringExpanded());
 	} else {
-		form.addstring("query", m_qmacro);
+		form.addstring("query", config().qmacro);
 		form.addstring("qmacro", name());
 	}
 	if (q.sorter)
