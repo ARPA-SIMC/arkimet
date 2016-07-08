@@ -28,7 +28,7 @@ class Tests : public FixtureTestCase<Fixture>
     void register_tests() override;
 };
 
-Tests test("arki_dataset_esimple");
+Tests test("arki_dataset_simple");
 
 void Tests::register_tests() {
 

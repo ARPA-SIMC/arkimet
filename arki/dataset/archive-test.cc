@@ -186,6 +186,7 @@ add_method("reader_empty_last", [](Fixture& f) {
         ConfigFile cfg;
         cfg.setValue("name", "foo");
         cfg.setValue("path", sys::abspath("testds/.archive/foo"));
+        cfg.setValue("type", "simple");
         cfg.setValue("step", "daily");
         auto config = dataset::Config::create(cfg);
         auto writer = config->create_writer();

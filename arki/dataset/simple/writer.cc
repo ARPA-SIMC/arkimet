@@ -48,6 +48,8 @@ Writer::Writer(std::shared_ptr<const simple::Config> config)
     m_mft = mft.release();
     m_mft->openRW();
     m_idx = m_mft;
+
+    release_lock();
 }
 
 Writer::~Writer()
@@ -134,6 +136,8 @@ Checker::Checker(std::shared_ptr<const simple::Config> config)
     m_mft = mft.release();
     m_mft->openRW();
     m_idx = m_mft;
+
+    release_lock();
 }
 
 Checker::~Checker()
@@ -142,6 +146,10 @@ Checker::~Checker()
 }
 
 std::string Checker::type() const { return "simple"; }
+
+void Checker::removeAll(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::removeAll(reporter, writable); release_lock(); }
+void Checker::repack(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::repack(reporter, writable); release_lock(); }
+void Checker::check(dataset::Reporter& reporter, bool fix, bool quick) { acquire_lock(); IndexedChecker::check(reporter, fix, quick); release_lock(); }
 
 void Checker::indexSegment(const std::string& relname, metadata::Collection&& mds)
 {

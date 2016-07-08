@@ -26,7 +26,7 @@ add_method("read", []() {
     mdc.add_to_summary(sum);
     sum.writeAtomically("test-offline.summary");
 
-    auto config = dataset::OfflineConfig::create("test-offline.summary");
+    auto config = dataset::OfflineConfig::create("test-offline");
     dataset::OfflineReader reader(config);
     size_t count = 0;
     reader.query_data(Matcher(), [&](unique_ptr<Metadata>) { ++count; return true; });

@@ -67,6 +67,8 @@ public:
 
     std::string type() const override;
 
+    void removeAll(dataset::Reporter& reporter, bool writable=false) override;
+    void repack(dataset::Reporter& reporter, bool writable=false) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
 
     void rescanSegment(const std::string& relpath) override;
