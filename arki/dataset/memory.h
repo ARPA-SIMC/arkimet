@@ -20,9 +20,14 @@ namespace dataset {
  */
 struct Memory : public metadata::Collection, public Reader
 {
+protected:
+    dataset::Config m_config;
+
 public:
     Memory();
     virtual ~Memory();
+
+    const Config& config() const override { return m_config; }
 
     std::string type() const override;
     void query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest) override;

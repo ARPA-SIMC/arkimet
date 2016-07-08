@@ -32,7 +32,7 @@ struct Fixture : public DatasetTest {
 
     void run_maker(ProcessorMaker& pm, Matcher matcher=Matcher())
     {
-        auto ds(makeReader());
+        auto ds(config().create_reader());
 
         if (sys::exists("pm-out"))
             sys::unlink("pm-out");

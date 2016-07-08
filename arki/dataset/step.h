@@ -26,7 +26,7 @@ namespace dataset {
 struct Step
 {
     virtual ~Step() {}
-    virtual std::string operator()(const Metadata& md) = 0;
+    virtual std::string operator()(const Metadata& md) const = 0;
 
     /**
      * Get the timespan of a file by just looking at its path.
@@ -45,13 +45,9 @@ struct Step
     virtual bool pathMatches(const std::string& path, const matcher::OR& m) const = 0;
 
     /**
-     * Create a TargetFile according to the given configuration.
-     *
-     * Returns nullptr if no 'step' was requested in the configuration.
-     *
-     * Usually, only the 'step' configuration key is considered.
+     * Create a Step according to the given step type name.
      */
-    static Step* create(const ConfigFile& cfg);
+    static Step* create(const std::string& type);
 
     /**
      * Return the list of available steps

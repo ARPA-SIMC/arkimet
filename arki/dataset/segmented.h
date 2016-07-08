@@ -8,35 +8,68 @@ namespace arki {
 namespace dataset {
 class Step;
 
-struct SegmentedBase
+struct SegmentedConfig : public LocalConfig
 {
 protected:
-    segment::SegmentManager* m_segment_manager;
+    /// dataset::Step for this configuration
+    Step* m_step = nullptr;
 
 public:
-    SegmentedBase(const ConfigFile& cfg);
-    ~SegmentedBase();
+    /// Name of the dataset::Step used to dispatch data into segments
+    std::string step_name;
+
+    /// What replace strategy to use when acquire() is called with REPLACE_DEFAULT
+    Writer::ReplaceStrategy default_replace_strategy;
+
+    /**
+     * If false, autodetect segment types base on data types.
+     *
+     * If true, directory segments are always used regardless of data type.
+     */
+    bool force_dir_segments = false;
+
+    /**
+     * If true, segments on disk will contain holes and allocate no disk space.
+     *
+     * This is only used for testing.
+     */
+    bool mock_data = false;
+
+    SegmentedConfig(const ConfigFile& cfg);
+    ~SegmentedConfig();
+
+    const Step& step() const { return *m_step; }
+
+    std::unique_ptr<segment::SegmentManager> create_segment_manager() const;
+
+    static std::shared_ptr<const SegmentedConfig> create(const ConfigFile& cfg);
 };
 
 /**
  * LocalReader dataset with data stored in segment files
  */
-class SegmentedReader : public LocalReader, public SegmentedBase
+class SegmentedReader : public LocalReader
 {
+private:
+    segment::SegmentManager* m_segment_manager = nullptr;
+
 public:
-    SegmentedReader(const ConfigFile& cfg);
+    using LocalReader::LocalReader;
     ~SegmentedReader();
+
+    const SegmentedConfig& config() const override = 0;
+    segment::SegmentManager& segment_manager();
 };
 
 /**
  * LocalWriter dataset with data stored in segment files
  */
-class SegmentedWriter : public LocalWriter, public SegmentedBase
+class SegmentedWriter : public LocalWriter
 {
-protected:
-    ReplaceStrategy m_default_replace_strategy;
-    Step* m_step;
+private:
+    segment::SegmentManager* m_segment_manager = nullptr;
 
+protected:
     /**
      * Return an instance of the Segment for the file where the given metadata
      * should be written
@@ -44,15 +77,13 @@ protected:
     Segment* file(const Metadata& md, const std::string& format);
 
 public:
-    SegmentedWriter(const ConfigFile& cfg);
+    using LocalWriter::LocalWriter;
     ~SegmentedWriter();
 
-    virtual void flush();
+    const SegmentedConfig& config() const override = 0;
+    segment::SegmentManager& segment_manager();
 
-    /**
-     * Instantiate an appropriate Writer for the given configuration
-     */
-    static SegmentedWriter* create(const ConfigFile& cfg);
+    virtual void flush();
 
     static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
@@ -60,22 +91,20 @@ public:
 /**
  * LocalChecker with data stored in segment files
  */
-class SegmentedChecker : public LocalChecker, public SegmentedBase
+class SegmentedChecker : public LocalChecker
 {
-protected:
-    Step* m_step;
+private:
+    segment::SegmentManager* m_segment_manager = nullptr;
 
 public:
-    SegmentedChecker(const ConfigFile& cfg);
+    using LocalChecker::LocalChecker;
     ~SegmentedChecker();
+
+    const SegmentedConfig& config() const override = 0;
+    segment::SegmentManager& segment_manager();
 
     void repack(dataset::Reporter& reporter, bool writable=false) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
-
-    /**
-     * Instantiate an appropriate SegmentedChecker for the given configuration
-     */
-    static SegmentedChecker* create(const ConfigFile& cfg);
 
     /**
      * Perform dataset maintenance, sending information to \a v

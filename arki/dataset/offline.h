@@ -12,16 +12,31 @@ namespace dataset {
 class DataQuery;
 class ByteQuery;
 
+struct OfflineConfig : public dataset::Config
+{
+    /**
+     * Pathname to the .summary file which describes the data that is offline
+     */
+    std::string summary_pathname;
+
+    OfflineConfig(const std::string& pathname);
+
+    static std::shared_ptr<const OfflineConfig> create(const std::string& pathname);
+};
+
+
 /**
  * Archive that has been put offline (only a summary file is left)
  */
 struct OfflineReader : public Reader
 {
-    std::string fname;
+    std::shared_ptr<const OfflineConfig> m_config;
     Summary sum;
 
-    OfflineReader(const std::string& fname);
+    OfflineReader(std::shared_ptr<const OfflineConfig> config);
     ~OfflineReader() {}
+
+    const OfflineConfig& config() const override { return *m_config; }
 
     std::string type() const override;
 

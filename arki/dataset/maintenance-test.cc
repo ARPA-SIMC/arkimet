@@ -56,7 +56,7 @@ class Tests : public FixtureTestCase<Fixture>
             f.import();
 
             {
-                auto writer(f.makeLocalChecker());
+                auto writer(f.config().create_checker());
                 ReporterExpected e;
                 e.report.emplace_back("testds", "check", "2 files ok");
                 e.repacked.emplace_back("testds", "2007/07-07.grib");
@@ -109,28 +109,28 @@ class Tests : public FixtureTestCase<Fixture>
             f.clean_and_import();
 
             // Ensure the archive appears clean
-            wassert(actual(f.makeLocalChecker().get()).maintenance_clean(3));
+            wassert(actual(f.makeSegmentedChecker().get()).maintenance_clean(3));
 
             // Change timestamp and rescan the file
             {
                 struct utimbuf oldts = { 199926000, 199926000 };
                 ensure(utime("testds/2007/07-08.grib", &oldts) == 0);
 
-                auto writer(f.makeLocalChecker());
+                auto writer(f.makeSegmentedChecker());
                 writer->rescanSegment("2007/07-08.grib");
             }
 
             // Ensure that the archive is still clean
-            wassert(actual(f.makeLocalChecker().get()).maintenance_clean(3));
+            wassert(actual(f.makeSegmentedChecker().get()).maintenance_clean(3));
 
             // Repack the file
             {
-                auto writer(f.makeLocalChecker());
+                auto writer(f.makeSegmentedChecker());
                 ensure_equals(writer->repackSegment("2007/07-08.grib"), 0u);
             }
 
             // Ensure that the archive is still clean
-            wassert(actual(f.makeLocalChecker().get()).maintenance_clean(3));
+            wassert(actual(f.makeSegmentedChecker().get()).maintenance_clean(3));
         });
         add_method("repack_delete", [](Fixture& f) {
             // Test accuracy of maintenance scan, on a dataset with one file to both repack and delete
@@ -146,7 +146,7 @@ class Tests : public FixtureTestCase<Fixture>
             f.import_all(data);
 
             {
-                auto writer(f.makeLocalChecker());
+                auto writer(f.makeSegmentedChecker());
                 arki::tests::MaintenanceResults expected(false, 1);
                 // A repack is still needed because the data is not sorted by reftime
                 expected.by_type[DatasetTest::COUNTED_DIRTY] = 1;
@@ -157,16 +157,16 @@ class Tests : public FixtureTestCase<Fixture>
 
             // Perform packing and check that things are still ok afterwards
             {
-                auto writer(f.makeLocalChecker());
+                auto writer(f.makeSegmentedChecker());
                 ReporterExpected e;
                 e.deleted.emplace_back("testds", "20/2007.grib");
                 wassert(actual(writer.get()).repack(e, true));
             }
-            wassert(actual(f.makeLocalChecker().get()).maintenance_clean(0));
+            wassert(actual(f.makeSegmentedChecker().get()).maintenance_clean(0));
 
             // Perform full maintenance and check that things are still ok afterwards
             {
-                auto checker(f.makeLocalChecker());
+                auto checker(f.makeSegmentedChecker());
                 wassert(actual(checker.get()).check_clean(true, true));
             }
         });
@@ -184,7 +184,7 @@ class Tests : public FixtureTestCase<Fixture>
             f.import_all(data);
 
             {
-                auto writer(f.makeLocalChecker());
+                auto writer(f.makeSegmentedChecker());
                 MaintenanceResults expected(false, 1);
                 // A repack is still needed because the data is not sorted by reftime
                 expected.by_type[DatasetTest::COUNTED_DIRTY] = 1;
@@ -195,7 +195,7 @@ class Tests : public FixtureTestCase<Fixture>
 
             // Perform packing and check that things are still ok afterwards
             {
-                auto writer(f.makeLocalChecker());
+                auto writer(f.makeSegmentedChecker());
 
                 ReporterExpected e;
                 e.repacked.emplace_back("testds", "20/2007.grib");

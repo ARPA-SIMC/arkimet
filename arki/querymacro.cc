@@ -67,8 +67,9 @@ static const struct luaL_Reg querymacrolib[] = {
 };
 
 Querymacro::Querymacro(const ConfigFile& ds_cfg, const ConfigFile& dispatch_cfg, const std::string& name, const std::string& query)
-    : Reader(ds_cfg), dispatch_cfg(dispatch_cfg), L(new Lua), funcid_querydata(-1), funcid_querysummary(-1)
+    : dispatch_cfg(dispatch_cfg), L(new Lua), funcid_querydata(-1), funcid_querysummary(-1)
 {
+    m_config = std::shared_ptr<const dataset::Config>(new dataset::Config(ds_cfg));
 	Summary::lua_openlib(*L);
 	Matcher::lua_openlib(*L);
 	dataset::GridQuery::lua_openlib(*L);
@@ -145,8 +146,8 @@ dataset::Reader* Querymacro::dataset(const std::string& name)
     {
         ConfigFile* dscfg = dispatch_cfg.section(name);
         if (!dscfg) return 0;
-        dataset::Reader* ds = dataset::Reader::create(*dscfg);
-        pair<map<string, dataset::Reader*>::iterator, bool> res = ds_cache.insert(make_pair(name, ds));
+        auto ds = dataset::Reader::create(*dscfg);
+        pair<map<string, dataset::Reader*>::iterator, bool> res = ds_cache.insert(make_pair(name, ds.release()));
         i = res.first;
     }
     return i->second;

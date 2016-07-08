@@ -27,16 +27,17 @@ using namespace arki::utils;
 
 // Create a dataset index gived its configuration
 template<typename INDEX>
-static inline unique_ptr<INDEX> createIndex(const std::string& config)
+static inline unique_ptr<WContents> createIndex(const std::string& text_cfg)
 {
     ConfigFile cfg;
-    cfg.parse(config);
-    return unique_ptr<INDEX>(new INDEX(cfg));
+    cfg.parse(text_cfg);
+    auto config = dataset::ondisk2::Config::create(cfg);
+    return unique_ptr<INDEX>(new INDEX(config));
 }
 
 struct arki_dataset_index_contents_shar {
-	Metadata md;
-	Metadata md1;
+    Metadata md;
+    Metadata md1;
 
     arki_dataset_index_contents_shar()
     {
@@ -83,32 +84,33 @@ void query_index(WContents& idx, const dataset::DataQuery& q, metadata::Collecti
 // Trying indexing a few metadata
 def_test(1)
 {
-	unique_ptr<WContents> test = createIndex<WContents>(
-		"type = ondisk2\n"
-		"path = .\n"
-		"indexfile = :memory:\n"
-		"index = origin, product, level\n"
-		"unique = origin, product, level, timerange, area, proddef, reftime\n"
-	);
-	ensure(test.get() != 0);
-	Pending p;
+    unique_ptr<WContents> test = createIndex<WContents>(
+        "type = ondisk2\n"
+        "path = .\n"
+        "step = daily\n"
+        "indexfile = :memory:\n"
+        "index = origin, product, level\n"
+        "unique = origin, product, level, timerange, area, proddef, reftime\n"
+    );
+    ensure(test.get() != 0);
+    Pending p;
 
-	test->open();
-	p = test->beginTransaction();
-	
-	// Index a metadata
-	int id = test->id(md);
-	ensure_equals(id, -1);
-	test->index(md, "test-md", 0, &id);
-	ensure_equals(id, 1);
-	ensure_equals(test->id(md), 1);
+    test->open();
+    p = test->beginTransaction();
+    
+    // Index a metadata
+    int id = test->id(md);
+    ensure_equals(id, -1);
+    test->index(md, "test-md", 0, &id);
+    ensure_equals(id, 1);
+    ensure_equals(test->id(md), 1);
 
-	// Index a second one
-	id = test->id(md1);
-	ensure_equals(id, -1);
-	test->index(md1, "test-md1", 0, &id);
-	ensure_equals(id, 2);
-	ensure_equals(test->id(md1), 2);
+    // Index a second one
+    id = test->id(md1);
+    ensure_equals(id, -1);
+    test->index(md1, "test-md1", 0, &id);
+    ensure_equals(id, 2);
+    ensure_equals(test->id(md1), 2);
 
     // Query various kinds of metadata
     metadata::Collection mdc;
@@ -128,29 +130,30 @@ def_test(1)
 // See if remove works
 def_test(2)
 {
-	unique_ptr<WContents> test = createIndex<WContents>(
-		"type = ondisk2\n"
-		"path = .\n"
-		"indexfile = :memory:\n"
-		"unique = origin, product, level, timerange, area, proddef, reftime\n"
-		"index = origin, product, level, timerange, area, proddef, reftime\n"
-	);
-	ensure(test.get() != 0);
-	Pending p;
+    unique_ptr<WContents> test = createIndex<WContents>(
+        "type = ondisk2\n"
+        "path = .\n"
+        "step = daily\n"
+        "indexfile = :memory:\n"
+        "unique = origin, product, level, timerange, area, proddef, reftime\n"
+        "index = origin, product, level, timerange, area, proddef, reftime\n"
+    );
+    ensure(test.get() != 0);
+    Pending p;
 
-	test->open();
-	p = test->beginTransaction();
-	
-	// Index a metadata
-	test->index(md, "test-md", 0);
-	int id = test->id(md);
+    test->open();
+    p = test->beginTransaction();
+    
+    // Index a metadata
+    test->index(md, "test-md", 0);
+    //int id = test->id(md);
 
-	// Index it again and ensure that it fails
-	try {
-		test->index(md, "test-md", 0);
-		ensure(false);
-	} catch (utils::sqlite::DuplicateInsert& e) {
-	}
+    // Index it again and ensure that it fails
+    try {
+        test->index(md, "test-md", 0);
+        ensure(false);
+    } catch (utils::sqlite::DuplicateInsert& e) {
+    }
 
     // Index a second one
     test->index(md1, "test-md1", 0);
@@ -178,12 +181,12 @@ def_test(2)
     query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
     ensure_equals(mdc.size(), 1u);
 
-	// It should be the second item we inserted
-	ensure_equals(test->id(mdc[0]), id1);
-	mdc.clear();
+    // It should be the second item we inserted
+    ensure_equals(test->id(mdc[0]), id1);
+    mdc.clear();
 
-	// Replace it with a different one
-	test->replace(md1, "test-md", 0);
+    // Replace it with a different one
+    test->replace(md1, "test-md", 0);
 
     // See that it changed
     query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
@@ -191,14 +194,14 @@ def_test(2)
     const source::Blob& blob = mdc[0].sourceBlob();
     ensure_equals(blob.filename, "test-md");
 
-	p.commit();
+    p.commit();
 }
 
 namespace {
 struct ReadHang : public wibble::sys::ChildProcess
 {
-	ConfigFile cfg;
-	int commfd;
+    ConfigFile cfg;
+    int commfd;
 
     ReadHang(const std::string& cfgstr)
     {
@@ -208,7 +211,8 @@ struct ReadHang : public wibble::sys::ChildProcess
     int main() override
     {
         try {
-            RContents idx(cfg);
+            auto config = dataset::ondisk2::Config::create(cfg);
+            RContents idx(config);
             idx.open();
             idx.query_data(Matcher::parse("origin:GRIB1"), [&](unique_ptr<Metadata> md) {
                 fputs("H\n", stdout);
@@ -223,10 +227,10 @@ struct ReadHang : public wibble::sys::ChildProcess
         return 0;
     }
 
-	void start()
-	{
-		forkAndRedirect(0, &commfd);
-	}
+    void start()
+    {
+        forkAndRedirect(0, &commfd);
+    }
 
     char waitUntilHung()
     {
@@ -241,31 +245,32 @@ struct ReadHang : public wibble::sys::ChildProcess
 // Test concurrent read and update
 def_test(3)
 {
-	string cfg = 
-		"type = ondisk2\n"
-		"path = .\n"
-		"indexfile = file1\n"
-		"unique = origin, product, level, timerange, area, proddef, reftime\n"
-		"index = origin, product, level, timerange, area, proddef, reftime\n";
+    string cfg = 
+        "type = ondisk2\n"
+        "path = .\n"
+        "step = daily\n"
+        "indexfile = file1\n"
+        "unique = origin, product, level, timerange, area, proddef, reftime\n"
+        "index = origin, product, level, timerange, area, proddef, reftime\n";
 
-	// Remove index if it exists
-	unlink("file1");
+    // Remove index if it exists
+    unlink("file1");
 
-	// Create the index and index two metadata
-	{
-		unique_ptr<WContents> test1 = createIndex<WContents>(cfg);
-		test1->open();
+    // Create the index and index two metadata
+    {
+        unique_ptr<WContents> test1 = createIndex<WContents>(cfg);
+        test1->open();
 
-		Pending p = test1->beginTransaction();
-		test1->index(md, "test-md", 0);
-		test1->index(md1, "test-md1", 0);
-		p.commit();
-	}
+        Pending p = test1->beginTransaction();
+        test1->index(md, "test-md", 0);
+        test1->index(md1, "test-md1", 0);
+        p.commit();
+    }
 
-	// Query the index and hang
-	ReadHang readHang(cfg);
-	readHang.start();
-	ensure_equals(readHang.waitUntilHung(), 'H');
+    // Query the index and hang
+    ReadHang readHang(cfg);
+    readHang.start();
+    ensure_equals(readHang.waitUntilHung(), 'H');
 
     // Now try to index another element
     Metadata md3;
@@ -278,51 +283,52 @@ def_test(3)
     md3.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
     md3.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
     md3.add_note("this is a test");
-	{
-		unique_ptr<WContents> test1 = createIndex<WContents>(cfg);
-		test1->open();
-		Pending p = test1->beginTransaction();
-		test1->index(md3, "test-md1", 0);
-		p.commit();
-	}
+    {
+        unique_ptr<WContents> test1 = createIndex<WContents>(cfg);
+        test1->open();
+        Pending p = test1->beginTransaction();
+        test1->index(md3, "test-md1", 0);
+        p.commit();
+    }
 
-	readHang.kill(9);
-	readHang.wait();
+    readHang.kill(9);
+    readHang.wait();
 }
 
 // Test getting the metadata corresponding to a file
 def_test(4)
 {
-	// Remove index if it exists
-	unlink("file1");
+    // Remove index if it exists
+    unlink("file1");
 
-	unique_ptr<WContents> test = createIndex<WContents>(
-		"type = ondisk2\n"
-		"path = .\n"
-		"indexfile = file1\n"
-		"index = origin, product, level\n"
-		"unique = origin, product, level, timerange, area, proddef, reftime\n"
-	);
-	ensure(test.get() != 0);
-	Pending p;
+    unique_ptr<WContents> test = createIndex<WContents>(
+        "type = ondisk2\n"
+        "path = .\n"
+        "step = daily\n"
+        "indexfile = file1\n"
+        "index = origin, product, level\n"
+        "unique = origin, product, level, timerange, area, proddef, reftime\n"
+    );
+    ensure(test.get() != 0);
+    Pending p;
 
     metadata::Collection src;
     scan::scan("inbound/test.grib1", src.inserter_func());
     ensure_equals(src.size(), 3u);
 
-	test->open();
-	p = test->beginTransaction();
-	
-	// Index two metadata in one file
-	test->index(md, "test-md", 0);
-	test->index(md1, "test-md", 10);
+    test->open();
+    p = test->beginTransaction();
+    
+    // Index two metadata in one file
+    test->index(md, "test-md", 0);
+    test->index(md1, "test-md", 10);
 
-	// Index three other metadata in a separate file
-	test->index(src[0], "test-md1", 0);
-	test->index(src[1], "test-md1", 10);
-	test->index(src[2], "test-md1", 20);
+    // Index three other metadata in a separate file
+    test->index(src[0], "test-md1", 0);
+    test->index(src[1], "test-md1", 10);
+    test->index(src[2], "test-md1", 20);
 
-	p.commit();
+    p.commit();
 
     // Get the metadata corresponding to one file
     metadata::Collection mdc;
@@ -342,21 +348,22 @@ def_test(4)
 // Try a summary query that used to be badly generated
 def_test(5)
 {
-	// Remove index if it exists
-	unlink("file1");
+    // Remove index if it exists
+    unlink("file1");
 
-	unique_ptr<WContents> test = createIndex<WContents>(
-		"type = ondisk2\n"
-		"path = \n"
-		"indexfile = file1\n"
-		"index = origin, product, level\n"
-		"unique = origin, product, level, timerange, area, proddef, reftime\n"
-	);
-	ensure(test.get() != 0);
-	Pending p;
+    unique_ptr<WContents> test = createIndex<WContents>(
+        "type = ondisk2\n"
+        "path = \n"
+        "step = daily\n"
+        "indexfile = file1\n"
+        "index = origin, product, level\n"
+        "unique = origin, product, level, timerange, area, proddef, reftime\n"
+    );
+    ensure(test.get() != 0);
+    Pending p;
 
-	test->open();
-	p = test->beginTransaction();
+    test->open();
+    p = test->beginTransaction();
 
     // Index some metadata
     test->index(md, "test-md", 0);
@@ -403,21 +410,22 @@ def_test(6)
     md.set_source(Source::createBlob("grib", "", "antani", 0x100000000LLU, 2000));
     md1.set_source(Source::createBlob("grib", "", "blinda", 0xFFFFffffFFFF0000LLU, 0xFFFF));
 
-	// Remove index if it exists
-	unlink("file1");
+    // Remove index if it exists
+    unlink("file1");
 
-	unique_ptr<WContents> test = createIndex<WContents>(
-		"type = ondisk2\n"
-		"path = .\n"
-		"indexfile = file1\n"
-		"index = origin, product, level\n"
-		"unique = origin, product, level, timerange, area, proddef, reftime\n"
-	);
-	ensure(test.get() != 0);
-	Pending p;
+    unique_ptr<WContents> test = createIndex<WContents>(
+        "type = ondisk2\n"
+        "path = .\n"
+        "step = daily\n"
+        "indexfile = file1\n"
+        "index = origin, product, level\n"
+        "unique = origin, product, level, timerange, area, proddef, reftime\n"
+    );
+    ensure(test.get() != 0);
+    Pending p;
 
-	test->open();
-	p = test->beginTransaction();
+    test->open();
+    p = test->beginTransaction();
 
     // Index the two metadata
     test->index(md, "test-md", md.sourceBlob().offset);
@@ -455,6 +463,7 @@ def_test(7)
         unique_ptr<WContents> test = createIndex<WContents>(
                 "type = ondisk2\n"
                 "path = .\n"
+                "step = daily\n"
                 "indexfile = file1\n"
                 "index = origin, product, level\n"
                 "unique = origin, product, level, timerange, area, proddef, reftime\n"
@@ -497,6 +506,7 @@ def_test(7)
         unique_ptr<WContents> test = createIndex<WContents>(
                 "type = ondisk2\n"
                 "path = .\n"
+                "step = daily\n"
                 "indexfile = file1\n"
                 "index = origin, product, level\n"
                 "unique = origin, product, level, timerange, area, proddef, reftime\n"

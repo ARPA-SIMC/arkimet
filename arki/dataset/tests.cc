@@ -2,7 +2,8 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/dataset/local.h"
-#include "arki/dataset/ondisk2.h"
+#include "arki/dataset/ondisk2/reader.h"
+#include "arki/dataset/ondisk2/writer.h"
 #include "arki/dataset/simple/reader.h"
 #include "arki/dataset/simple/writer.h"
 #include "arki/dataset/index/manifest.h"
@@ -98,22 +99,46 @@ void DatasetTest::test_teardown()
 {
     delete segment_manager;
     segment_manager = nullptr;
+    m_config.reset();
+}
+
+const Config& DatasetTest::config()
+{
+    if (!m_config)
+        m_config = dataset::Config::create(cfg);
+    return *m_config;
+}
+
+std::shared_ptr<const dataset::Config> DatasetTest::dataset_config()
+{
+    config();
+    return m_config;
+}
+
+std::shared_ptr<const dataset::ondisk2::Config> DatasetTest::ondisk2_config()
+{
+    config();
+    return dynamic_pointer_cast<const dataset::ondisk2::Config>(m_config);
 }
 
 dataset::segment::SegmentManager& DatasetTest::segments()
 {
     if (!segment_manager)
-        segment_manager = dataset::segment::SegmentManager::get(cfg).release();
+    {
+        const dataset::SegmentedConfig* c = dynamic_cast<const dataset::SegmentedConfig*>(dataset_config().get());
+        if (!c) throw std::runtime_error("DatasetTest::segments called on a non-segmented dataset");
+        segment_manager = c->create_segment_manager().release();
+    }
     return *segment_manager;
 }
 
 std::string DatasetTest::idxfname(const ConfigFile* wcfg) const
 {
-	if (!wcfg) wcfg = &cfg;
-	if (wcfg->value("type") == "ondisk2")
-		return "index.sqlite";
-	else
-		return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
+    if (!wcfg) wcfg = &cfg;
+    if (wcfg->value("type") == "ondisk2")
+        return "index.sqlite";
+    else
+        return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
 std::string manifest_idx_fname()
@@ -121,125 +146,97 @@ std::string manifest_idx_fname()
     return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
-std::unique_ptr<Reader> DatasetTest::makeReader(const ConfigFile* wcfg)
+std::unique_ptr<dataset::SegmentedReader> DatasetTest::makeSegmentedReader()
 {
-    if (!wcfg) wcfg = &cfg;
-    unique_ptr<Reader> ds(Reader::create(*wcfg));
-    wassert(actual(ds.get()));
-    return ds;
+    auto ds = config().create_reader();
+    dataset::SegmentedReader* r = dynamic_cast<dataset::SegmentedReader*>(ds.get());
+    if (!r) throw std::runtime_error("makeSegmentedReader called while testing a non-segmented dataset");
+    ds.release();
+    return unique_ptr<dataset::SegmentedReader>(r);
 }
 
-std::unique_ptr<Writer> DatasetTest::makeWriter(const ConfigFile* wcfg)
+std::unique_ptr<dataset::SegmentedWriter> DatasetTest::makeSegmentedWriter()
 {
-    if (!wcfg) wcfg = &cfg;
-    unique_ptr<Writer> ds(Writer::create(*wcfg));
-    wassert(actual(ds.get()));
-    return ds;
+    auto ds = config().create_writer();
+    dataset::SegmentedWriter* r = dynamic_cast<dataset::SegmentedWriter*>(ds.get());
+    if (!r) throw std::runtime_error("makeSegmentedWriter called while testing a non-segmented dataset");
+    ds.release();
+    return unique_ptr<dataset::SegmentedWriter>(r);
 }
 
-std::unique_ptr<Checker> DatasetTest::makeChecker(const ConfigFile* wcfg)
+std::unique_ptr<dataset::SegmentedChecker> DatasetTest::makeSegmentedChecker()
 {
-    if (!wcfg) wcfg = &cfg;
-    unique_ptr<Checker> ds(Checker::create(*wcfg));
-    wassert(actual(ds.get()));
-    return ds;
+    auto ds = config().create_checker();
+    dataset::SegmentedChecker* r = dynamic_cast<dataset::SegmentedChecker*>(ds.get());
+    if (!r) throw std::runtime_error("makeSegmentedChecker called while testing a non-segmented dataset");
+    ds.release();
+    return unique_ptr<dataset::SegmentedChecker>(r);
 }
 
-std::unique_ptr<dataset::SegmentedReader> DatasetTest::makeLocalReader(const ConfigFile* wcfg)
+std::unique_ptr<dataset::ondisk2::Reader> DatasetTest::makeOndisk2Reader()
 {
-    auto ds = makeReader(wcfg);
-    wassert(actual(ds.get()));
-    unique_ptr<dataset::SegmentedReader> wl(dynamic_cast<dataset::SegmentedReader*>(ds.release()));
-    wassert(actual(wl.get()));
-    return wl;
+    auto ds = config().create_reader();
+    dataset::ondisk2::Reader* r = dynamic_cast<dataset::ondisk2::Reader*>(ds.get());
+    if (!r) throw std::runtime_error("makeOndisk2Reader called while testing a non-ondisk2 dataset");
+    ds.release();
+    return unique_ptr<dataset::ondisk2::Reader>(r);
 }
 
-std::unique_ptr<dataset::SegmentedWriter> DatasetTest::makeLocalWriter(const ConfigFile* wcfg)
+std::unique_ptr<dataset::ondisk2::Writer> DatasetTest::makeOndisk2Writer()
 {
-    auto ds = makeWriter(wcfg);
-    wassert(actual(ds.get()));
-    unique_ptr<dataset::SegmentedWriter> wl(dynamic_cast<dataset::SegmentedWriter*>(ds.release()));
-    wassert(actual(wl.get()));
-    return wl;
+    auto ds = config().create_writer();
+    dataset::ondisk2::Writer* r = dynamic_cast<dataset::ondisk2::Writer*>(ds.get());
+    if (!r) throw std::runtime_error("makeOndisk2Writer called while testing a non-ondisk2 dataset");
+    ds.release();
+    return unique_ptr<dataset::ondisk2::Writer>(r);
 }
 
-std::unique_ptr<dataset::SegmentedChecker> DatasetTest::makeLocalChecker(const ConfigFile* wcfg)
+std::unique_ptr<dataset::ondisk2::Checker> DatasetTest::makeOndisk2Checker()
 {
-    auto ds = makeChecker(wcfg);
-    wassert(actual(ds.get()));
-    unique_ptr<dataset::SegmentedChecker> wl(dynamic_cast<dataset::SegmentedChecker*>(ds.release()));
-    wassert(actual(wl.get()));
-    return wl;
+    auto ds = config().create_checker();
+    dataset::ondisk2::Checker* r = dynamic_cast<dataset::ondisk2::Checker*>(ds.get());
+    if (!r) throw std::runtime_error("makeOndisk2Checker called while testing a non-ondisk2 dataset");
+    ds.release();
+    return unique_ptr<dataset::ondisk2::Checker>(r);
 }
 
-std::unique_ptr<dataset::ondisk2::Reader> DatasetTest::makeOndisk2Reader(const ConfigFile* wcfg)
+std::unique_ptr<dataset::simple::Reader> DatasetTest::makeSimpleReader()
 {
-    auto ds = makeReader(wcfg);
-    wassert(actual(ds.get()));
-    unique_ptr<dataset::ondisk2::Reader> wl(dynamic_cast<dataset::ondisk2::Reader*>(ds.release()));
-    wassert(actual(wl.get()));
-    return wl;
+    auto ds = config().create_reader();
+    dataset::simple::Reader* r = dynamic_cast<dataset::simple::Reader*>(ds.get());
+    if (!r) throw std::runtime_error("makeSimpleReader called while testing a non-simple dataset");
+    ds.release();
+    return unique_ptr<dataset::simple::Reader>(r);
 }
 
-std::unique_ptr<dataset::ondisk2::Writer> DatasetTest::makeOndisk2Writer(const ConfigFile* wcfg)
+std::unique_ptr<dataset::simple::Writer> DatasetTest::makeSimpleWriter()
 {
-    auto ds = makeWriter(wcfg);
-    wassert(actual(ds.get()));
-    unique_ptr<dataset::ondisk2::Writer> wl(dynamic_cast<dataset::ondisk2::Writer*>(ds.release()));
-    wassert(actual(wl.get()));
-    return wl;
+    auto ds = config().create_writer();
+    dataset::simple::Writer* r = dynamic_cast<dataset::simple::Writer*>(ds.get());
+    if (!r) throw std::runtime_error("makeSimpleWriter called while testing a non-simple dataset");
+    ds.release();
+    return unique_ptr<dataset::simple::Writer>(r);
 }
 
-std::unique_ptr<dataset::ondisk2::Checker> DatasetTest::makeOndisk2Checker(const ConfigFile* wcfg)
+std::unique_ptr<dataset::simple::Checker> DatasetTest::makeSimpleChecker()
 {
-    auto ds = makeChecker(wcfg);
-    wassert(actual(ds.get()));
-    unique_ptr<dataset::ondisk2::Checker> wl(dynamic_cast<dataset::ondisk2::Checker*>(ds.release()));
-    wassert(actual(wl.get()));
-    return wl;
+    auto ds = config().create_checker();
+    dataset::simple::Checker* r = dynamic_cast<dataset::simple::Checker*>(ds.get());
+    if (!r) throw std::runtime_error("makeSimpleChecker called while testing a non-simple dataset");
+    ds.release();
+    return unique_ptr<dataset::simple::Checker>(r);
 }
 
-std::unique_ptr<dataset::simple::Reader> DatasetTest::makeSimpleReader(const ConfigFile* wcfg)
+void DatasetTest::clean()
 {
-    auto ds = makeReader(wcfg);
-    wassert(actual(ds.get()));
-    unique_ptr<dataset::simple::Reader> wl(dynamic_cast<dataset::simple::Reader*>(ds.release()));
-    wassert(actual(wl.get()));
-    return wl;
+    if (sys::exists(ds_root)) sys::rmtree(ds_root);
+    sys::mkdir_ifmissing(ds_root);
 }
 
-std::unique_ptr<dataset::simple::Writer> DatasetTest::makeSimpleWriter(const ConfigFile* wcfg)
+void DatasetTest::import(const std::string& testfile)
 {
-    auto ds = makeWriter(wcfg);
-    wassert(actual(ds.get()));
-    unique_ptr<dataset::simple::Writer> wl(dynamic_cast<dataset::simple::Writer*>(ds.release()));
-    wassert(actual(wl.get()));
-    return wl;
-}
-
-std::unique_ptr<dataset::simple::Checker> DatasetTest::makeSimpleChecker(const ConfigFile* wcfg)
-{
-    auto ds = makeChecker(wcfg);
-    wassert(actual(ds.get()));
-    unique_ptr<dataset::simple::Checker> wl(dynamic_cast<dataset::simple::Checker*>(ds.release()));
-    wassert(actual(wl.get()));
-    return wl;
-}
-
-void DatasetTest::clean(const ConfigFile* wcfg)
-{
-	if (!wcfg) wcfg = &cfg;
-
-	system(("rm -rf " + wcfg->value("path")).c_str());
-	system(("mkdir " + wcfg->value("path")).c_str());
-}
-
-void DatasetTest::import(const ConfigFile* wcfg, const std::string& testfile)
-{
-    if (!wcfg) wcfg = &cfg;
-
     {
-        std::unique_ptr<Writer> writer(makeWriter(wcfg));
+        std::unique_ptr<Writer> writer(config().create_writer());
         metadata::Collection data(testfile);
         for (auto& md: data)
         {
@@ -248,26 +245,29 @@ void DatasetTest::import(const ConfigFile* wcfg, const std::string& testfile)
         }
     }
 
-    utils::files::removeDontpackFlagfile(wcfg->value("path"));
+    utils::files::removeDontpackFlagfile(ds_root);
 }
 
-void DatasetTest::clean_and_import(const ConfigFile* wcfg, const std::string& testfile)
+void DatasetTest::clean_and_import(const std::string& testfile)
 {
-	if (!wcfg) wcfg = &cfg;
+    clean();
+    import(testfile);
+}
 
-	clean(wcfg);
-	import(wcfg, testfile);
+metadata::Collection DatasetTest::query(const dataset::DataQuery& q)
+{
+    return metadata::Collection(*config().create_reader(), q);
 }
 
 void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount)
 {
     nag::TestCollect tc;
     {
-        unique_ptr<dataset::SegmentedChecker> writer(makeLocalChecker());
-        wassert(actual(writer.get()).maintenance_clean(filecount));
+        auto checker = makeSegmentedChecker();
+        wassert(actual(checker.get()).maintenance_clean(filecount));
     }
 
-    unique_ptr<dataset::LocalReader> reader(makeLocalReader());
+    auto reader = makeSegmentedReader();
     metadata::Collection mdc(*reader, Matcher());
     wassert(actual(mdc.size()) == resultcount);
 
@@ -280,7 +280,7 @@ void DatasetTest::import_all(const testdata::Fixture& fixture)
 {
     clean();
 
-    std::unique_ptr<LocalWriter> writer(makeLocalWriter());
+    auto writer = config().create_writer();
     for (int i = 0; i < 3; ++i)
     {
         import_results[i] = fixture.test_data[i].md;
@@ -293,13 +293,13 @@ void DatasetTest::import_all(const testdata::Fixture& fixture)
 
 void DatasetTest::import_all_packed(const testdata::Fixture& fixture)
 {
-    wruntest(import_all, fixture);
+    wassert(import_all(fixture));
 
     // Pack the dataset in case something imported data out of order
     {
-        unique_ptr<LocalChecker> writer(makeLocalChecker());
+        auto checker = config().create_checker();
         NullReporter r;
-        wassert(writer->repack(r, true));
+        wassert(checker->repack(r, true));
     }
 }
 
@@ -484,45 +484,6 @@ void corrupt_datafile(const std::string& absname)
     ssize_t written = fd.pwrite("\0\0\0\0", 4, 0);
     if (written != 4)
         throw std::runtime_error("cannot corrupt " + to_corrupt + ": wrote less than 4 bytes");
-}
-
-std::unique_ptr<dataset::LocalWriter> make_dataset_writer(const std::string& cfgstr, bool empty)
-{
-    // Parse configuration
-    ConfigFile cfg;
-    cfg.parse(cfgstr);
-    wassert(actual(cfg.value("path").empty()).isfalse());
-
-    // Remove the dataset directory if it exists
-    if (empty && sys::isdir(cfg.value("path"))) sys::rmtree(cfg.value("path"));
-
-    unique_ptr<dataset::LocalWriter> ds(dataset::LocalWriter::create(cfg));
-    wassert(actual(ds.get()).istrue());
-    return ds;
-}
-
-std::unique_ptr<Reader> make_dataset_reader(const std::string& cfgstr)
-{
-    // Parse configuration
-    ConfigFile cfg;
-    cfg.parse(cfgstr);
-    wassert(actual(cfg.value("path").empty()).isfalse());
-
-    unique_ptr<Reader> ds(Reader::create(cfg));
-    wassert(actual(ds.get()).istrue());
-    return ds;
-}
-
-std::unique_ptr<dataset::LocalChecker> make_dataset_checker(const std::string& cfgstr)
-{
-    // Parse configuration
-    ConfigFile cfg;
-    cfg.parse(cfgstr);
-    wassert(actual(cfg.value("path").empty()).isfalse());
-
-    unique_ptr<dataset::LocalChecker> ds(dataset::LocalChecker::create(cfg));
-    wassert(actual(ds.get()).istrue());
-    return ds;
 }
 
 void test_append_transaction_ok(dataset::Segment* dw, Metadata& md, int append_amount_adjust)

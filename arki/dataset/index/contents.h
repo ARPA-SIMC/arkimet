@@ -6,6 +6,7 @@
 #include <arki/dataset/index.h>
 #include <arki/transaction.h>
 #include <arki/utils/sqlite.h>
+#include <arki/dataset/ondisk2.h>
 #include <arki/dataset/segment.h>
 #include <arki/dataset/index/attr.h>
 #include <arki/dataset/index/aggregate.h>
@@ -48,25 +49,17 @@ struct Others;
 class Contents : public dataset::Index
 {
 protected:
-    /// Dataset name
-    std::string m_name;
-    /// Absolute path to the root directory of the dataset
-    std::string m_root;
-    /// Absolute path of the index database
-    std::string m_pathname;
+    std::shared_ptr<const ondisk2::Config> m_config;
 
-	mutable utils::sqlite::SQLiteDB m_db;
-	mutable utils::sqlite::PrecompiledQuery m_get_id;
-	mutable utils::sqlite::PrecompiledQuery m_get_current;
+    mutable utils::sqlite::SQLiteDB m_db;
+    mutable utils::sqlite::PrecompiledQuery m_get_id;
+    mutable utils::sqlite::PrecompiledQuery m_get_current;
 
-	// Subtables
-	Aggregate* m_uniques;
-	Aggregate* m_others;
+    // Subtables
+    Aggregate* m_uniques;
+    Aggregate* m_others;
 
-    // True if small files are stored in the index
-    bool m_smallfiles;
-
-	std::set<types::Code> m_components_indexed;
+    std::set<types::Code> m_components_indexed;
 
     mutable SummaryCache scache;
 
@@ -98,11 +91,14 @@ protected:
      */
     void build_md(utils::sqlite::Query& q, Metadata& md) const;
 
-    Contents(const ConfigFile& cfg);
+    Contents(std::shared_ptr<const ondisk2::Config> config);
+
 public:
     ~Contents();
 
-	const std::string& pathname() const { return m_pathname; }
+    const ondisk2::Config& config() const { return *m_config; }
+
+    const std::string& pathname() const { return config().index_pathname; }
 
 	inline bool is_indexed(types::Code c) const
 	{
@@ -218,8 +214,8 @@ protected:
 	void initQueries();
 
 public:
-	RContents(const ConfigFile& cfg);
-	~RContents();
+    RContents(std::shared_ptr<const ondisk2::Config> config);
+    ~RContents();
 
 	/// Initialise access to the index
 	void open();
@@ -246,8 +242,8 @@ protected:
 	void bindInsertParams(utils::sqlite::Query& q, const Metadata& md, const std::string& file, uint64_t ofs, char* timebuf);
 
 public:
-	WContents(const ConfigFile& cfg);
-	~WContents();
+    WContents(std::shared_ptr<const ondisk2::Config> config);
+    ~WContents();
 
 	/**
 	 * Initialise access to the index

@@ -235,7 +235,7 @@ static int arkipy_DatasetReader_init(arkipy_DatasetReader* self, PyObject* args,
     try {
         ConfigFile arki_cfg;
         if (configfile_from_python(cfg, arki_cfg)) return -1;
-        self->ds = dataset::Reader::create(arki_cfg);
+        self->ds = dataset::Reader::create(arki_cfg).release();
         return 0;
     } ARKI_CATCH_RETURN_INT;
 }

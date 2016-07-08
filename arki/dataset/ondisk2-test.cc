@@ -1,7 +1,7 @@
 #include <arki/dataset/tests.h>
 #include <arki/exceptions.h>
-#include <arki/dataset/ondisk2.h>
-//#include <arki/dataset/ondisk2/maintenance.h>
+#include <arki/dataset/ondisk2/reader.h>
+#include <arki/dataset/ondisk2/writer.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
@@ -18,15 +18,131 @@
 #include <sstream>
 #include <iostream>
 
-namespace tut {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
-using namespace arki::types;
-using namespace arki::dataset;
 using namespace arki::utils;
 using namespace arki::tests;
+using namespace arki::types;
 
+namespace {
+
+struct Fixture : public DatasetTest {
+    using DatasetTest::DatasetTest;
+
+    void test_setup()
+    {
+        DatasetTest::test_setup(R"(
+            type=ondisk2
+            step=daily
+        )");
+    }
+
+    // Recreate the dataset importing data into it
+    void clean_and_import(const std::string& testfile="inbound/test.grib1")
+    {
+        DatasetTest::clean_and_import(testfile);
+        wassert(ensure_localds_clean(3, 3));
+    }
+};
+
+class Tests : public FixtureTestCase<Fixture>
+{
+    using FixtureTestCase::FixtureTestCase;
+
+    void register_tests() override;
+};
+
+Tests tests("arki_dataset_ondisk2");
+
+
+void Tests::register_tests() {
+
+// Test acquiring data
+add_method("acquire", [](Fixture& f) {
+    metadata::Collection mdc("inbound/test.grib1");
+
+    auto writer = f.makeOndisk2Writer();
+
+    // Import once in the empty dataset
+    wassert(actual(writer->acquire(mdc[0])) == dataset::Writer::ACQ_OK);
+
+    // See if we catch duplicate imports
+    wassert(actual(writer->acquire(mdc[0])) == dataset::Writer::ACQ_ERROR_DUPLICATE);
+
+    // Flush the changes and check that everything is allright
+    writer->flush();
+
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/index.sqlite").exists());
+    wassert(actual(sys::timestamp("testds/2007/07-08.grib")) <= sys::timestamp("testds/index.sqlite"));
+});
+
+// Test replacing an element
+add_method("replace", [](Fixture& f) {
+    f.import();
+
+    metadata::Collection mdc = f.query(Matcher::parse("origin:GRIB1,80"));
+    wassert(actual(mdc.size()) == 1u);
+
+    // Take note of the original source
+    unique_ptr<source::Blob> blob1(mdc[0].sourceBlob().clone());
+
+    // Reimport, replacing
+    {
+        auto writer = f.makeOndisk2Writer();
+        if (writer->acquire(mdc[0], dataset::Writer::REPLACE_ALWAYS) != dataset::Writer::ACQ_OK)
+        {
+            std::vector<Note> notes = mdc[0].notes();
+            for (size_t i = 0; i < notes.size(); ++i)
+                cerr << " md note: " << notes[i] << endl;
+            wassert(throw TestFailed("acquire result was not ACQ_OK"));
+        }
+        writer->flush();
+    }
+
+    // Fetch the element again
+    mdc = f.query(Matcher::parse("origin:GRIB1,80"));
+    wassert(actual(mdc.size()) == 1u);
+
+    // Get the new source
+    unique_ptr<source::Blob> blob2(mdc[0].sourceBlob().clone());
+
+    // Ensure that it's on the same file (since the reftime did not change)
+    wassert(actual(blob1->filename) == blob2->filename);
+
+    // Ensure that it's on a different position
+    wassert(actual(blob1->offset) < blob2->offset);
+
+    // Ensure that it's the same length
+    wassert(actual(blob1->size) == blob2->size);
+});
+
+// Test removing an element
+add_method("remove", [](Fixture& f) {
+    f.import();
+
+    metadata::Collection mdc = f.query(Matcher::parse("origin:GRIB1,200"));
+
+    // Check that it has a source and metadata element
+    wassert(actual(mdc[0].has_source_blob()).istrue());
+
+    // Remove it
+    {
+        auto writer = f.makeOndisk2Writer();
+        writer->remove(mdc[0]);
+        writer->flush();
+    }
+
+    // Check that it does not have a source and metadata element
+    wassert(actual(mdc[0].has_source()).isfalse());
+
+    // Try to fetch the element again
+    mdc = f.query(Matcher::parse("origin:GRIB1,200"));
+    wassert(actual(mdc.size()) == 0u);
+});
+
+
+#if 0
 struct arki_dataset_ondisk2_shar {
 	ConfigFile config;
 	ConfigFile configAll;
@@ -147,190 +263,6 @@ static string emptystring;
 #define string() emptystring
 #endif
 
-// Test acquiring data
-def_test(1)
-{
-	// Clean the dataset
-	system("rm -rf test200/*");
-
-    metadata::Collection mdc("inbound/test.grib1");
-
-    dataset::ondisk2::Writer d200(*config.section("test200"));
-
-    // Import once in the empty dataset
-    Writer::AcquireResult res = d200.acquire(mdc[0]);
-    ensure_equals(res, Writer::ACQ_OK);
-#if 0
-    for (vector<Note>::const_iterator i = md.notes.begin();
-            i != md.notes.end(); ++i)
-        cerr << *i << endl;
-#endif
-    // See if we catch duplicate imports
-    res = d200.acquire(mdc[0]);
-    ensure_equals(res, Writer::ACQ_ERROR_DUPLICATE);
-
-    // Flush the changes and check that everything is allright
-    d200.flush();
-
-    ensure(sys::exists("test200/2007/07-08.grib"));
-    ensure(sys::exists("test200/index.sqlite"));
-    ensure(sys::timestamp("test200/2007/07-08.grib") <= sys::timestamp("test200/index.sqlite"));
-//2	ensure(!hasRebuildFlagfile("test200/2007/07-08.grib"));
-//2	ensure(!hasIndexFlagfile("test200"));
-}
-
-// Test querying the datasets
-def_test(2)
-{
-	acquireSamples();
-	unique_ptr<Reader> testds(Reader::create(*config.section("test200")));
-	metadata::Collection mdc;
-
-    mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
-    ensure_equals(mdc.size(), 1u);
-
-    // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("test200"), "2007/07-08.grib", 0, 7218));
-
-    mdc.clear();
-    mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
-    ensure_equals(mdc.size(), 0u);
-
-    mdc.clear();
-    mdc.add(*testds, Matcher::parse("origin:GRIB1,98"));
-    ensure_equals(mdc.size(), 0u);
-}
-
-// Test querying the datasets
-def_test(3)
-{
-    acquireSamples();
-    unique_ptr<Reader> testds(Reader::create(*config.section("test80")));
-    metadata::Collection mdc;
-    mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
-    ensure_equals(mdc.size(), 0u);
-
-    mdc.clear();
-    mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
-    ensure_equals(mdc.size(), 1u);
-
-    // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("test80"), "2007/07-07.grib", 0, 34960));
-
-    mdc.clear();
-    mdc.add(*testds, Matcher::parse("origin:GRIB1,98"));
-    ensure_equals(mdc.size(), 0u);
-}
-
-// Test querying the datasets
-def_test(4)
-{
-    acquireSamples();
-    unique_ptr<Reader> testds(Reader::create(*config.section("test98")));
-    metadata::Collection mdc;
-    mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
-    ensure_equals(mdc.size(), 0u);
-
-    mdc.clear();
-    mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
-    ensure_equals(mdc.size(), 0u);
-
-    mdc.clear();
-    mdc.add(*testds, Matcher::parse("origin:GRIB1,98"));
-    ensure_equals(mdc.size(), 1u);
-
-    // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("test98"), "2007/10-09.grib", 0, 2234));
-}
-
-// Test replacing an element
-def_test(5)
-{
-	acquireSamples();
-
-	metadata::Collection mdc;
-	{
-		unique_ptr<Reader> testds(Reader::create(*config.section("test80")));
-
-        // Fetch an element
-        mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
-        ensure_equals(mdc.size(), 1u);
-    }
-
-    // Take note of the original source
-    unique_ptr<source::Blob> blob1(mdc[0].sourceBlob().clone());
-
-    {
-        unique_ptr<Writer> testds(Writer::create(*config.section("test80")));
-        // Replace it
-        if (testds->acquire(mdc[0], Writer::REPLACE_ALWAYS) != Writer::ACQ_OK)
-        {
-            std::vector<Note> notes = mdc[0].notes();
-            for (size_t i = 0; i < notes.size(); ++i)
-                cerr << " md note: " << notes[i] << endl;
-            ensure(false);
-        }
-        testds->flush();
-    }
-
-    {
-        unique_ptr<Reader> testds(Reader::create(*config.section("test80")));
-
-        // Fetch the element again
-        mdc.clear();
-        mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
-        ensure_equals(mdc.size(), 1u);
-    }
-
-    // Take note of the original source
-    unique_ptr<source::Blob> blob2(mdc[0].sourceBlob().clone());
-
-	// Ensure that it's on the same file (since the reftime did not change)
-	ensure_equals(blob1->filename, blob2->filename);
-
-	// Ensure that it's on a different position
-	ensure(blob1->offset < blob2->offset);
-
-	// Ensure that it's the same length
-	ensure_equals(blob1->size, blob2->size);
-}
-
-// Test removing an element
-def_test(6)
-{
-	acquireSamples();
-	metadata::Collection mdc;
-	{
-		unique_ptr<Reader> testds(Reader::create(*config.section("test200")));
-
-        // Fetch an element
-        mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
-        ensure_equals(mdc.size(), 1u);
-    }
-
-    // Check that it has a source and metadata element
-    wassert(actual(mdc[0].has_source_blob()).istrue());
-
-    {
-        unique_ptr<Writer> testds(Writer::create(*config.section("test200")));
-        ensure(!sys::exists("test200/2007/07-08.grib.needs-pack"));
-        // Remove it
-        testds->remove(mdc[0]);
-        testds->flush();
-        ensure(!sys::exists("test200/2007/07-08.grib.needs-pack"));
-    }
-
-    // Check that it does not have a source and metadata element
-    wassert(actual(mdc[0].has_source()).isfalse());
-
-    // Try to fetch the element again
-    {
-        unique_ptr<Reader> testds(Reader::create(*config.section("test200")));
-        mdc.clear();
-        mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
-        ensure_equals(mdc.size(), 0u);
-    }
-}
 
 // Test reindexing
 def_test(7)
@@ -503,92 +435,6 @@ def_test(12)
     ensure_equals(res.size(), 44412u);
 }
 
-namespace {
-struct ReadHang : public wibble::sys::ChildProcess
-{
-    const ConfigFile& cfg;
-    int commfd;
-
-    ReadHang(const ConfigFile& cfg) : cfg(cfg) {}
-
-    bool eat(unique_ptr<Metadata>&& md)
-	{
-		// Notify start of reading
-		cout << "H" << endl;
-		// Get stuck while reading
-		while (true)
-			usleep(100000);
-		return true;
-	}
-
-    virtual int main()
-    {
-        try {
-            ondisk2::Reader reader(cfg);
-            reader.query_data(Matcher(), [&](unique_ptr<Metadata> md) { return eat(move(md)); });
-        } catch (std::exception& e) {
-			cerr << e.what() << endl;
-			cout << "E" << endl;
-			return 1;
-		}
-		return 0;
-	}
-
-	void start()
-	{
-		forkAndRedirect(0, &commfd);
-	}
-
-    char waitUntilHung()
-    {
-        char buf[2];
-        if (read(commfd, buf, 1) != 1)
-            throw_system_error("reading 1 byte from child process");
-        return buf[0];
-    }
-};
-}
-
-// Test acquiring with a reader who's stuck on output
-def_test(13)
-{
-	// Clean the dataset
-	system("rm -rf test200/*");
-
-	Metadata md;
-
-	// Import one grib in the dataset
-	{
-		scan::Grib scanner;
-		scanner.open("inbound/test.grib1");
-
-        dataset::ondisk2::Writer d200(*config.section("test200"));
-        scanner.next(md);
-        ensure(d200.acquire(md) == Writer::ACQ_OK);
-        d200.flush();
-    }
-
-	// Query the index and hang
-	ReadHang readHang(*config.section("test200"));
-	readHang.start();
-	ensure_equals(readHang.waitUntilHung(), 'H');
-
-	// Import another grib in the dataset
-	{
-		scan::Grib scanner;
-		scanner.open("inbound/test.grib1");
-
-        dataset::ondisk2::Writer d200(*config.section("test200"));
-        scanner.next(md);
-        scanner.next(md);
-        ensure(d200.acquire(md) == Writer::ACQ_OK);
-        d200.flush();
-    }
-
-	readHang.kill(9);
-	readHang.wait();
-}
-
 // Test acquiring data on a compressed file
 def_test(14)
 {
@@ -744,5 +590,8 @@ def_test(16)
     reader->query_bytes(bq, out);
 }
 
+#endif
+
+}
 
 }

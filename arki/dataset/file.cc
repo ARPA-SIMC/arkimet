@@ -15,9 +15,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#ifdef HAVE_LUA
-#include <arki/report.h>
-#endif
 
 using namespace std;
 using namespace arki::utils;
@@ -25,10 +22,42 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-File::File(const ConfigFile& cfg)
-    : Reader(cfg.value("name"), cfg)
+FileConfig::FileConfig(const ConfigFile& cfg)
+    : dataset::Config(cfg),
+      pathname(cfg.value("path")),
+      format(cfg.value("format"))
 {
-    m_format = cfg.value("format");
+}
+
+std::shared_ptr<const FileConfig> FileConfig::create(const ConfigFile& cfg)
+{
+    return std::shared_ptr<const FileConfig>(new FileConfig(cfg));
+}
+
+std::unique_ptr<Reader> FileConfig::create_reader() const
+{
+    if (format == "arkimet")
+        return std::unique_ptr<Reader>(new ArkimetFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
+    if (format == "yaml")
+        return std::unique_ptr<Reader>(new YamlFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
+#ifdef HAVE_GRIBAPI
+    if (format == "grib")
+        return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
+#endif
+#ifdef HAVE_DBALLE
+    if (format == "bufr")
+        return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
+#endif
+#ifdef HAVE_HDF5
+    if (format == "odimh5")
+        return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
+#endif
+#ifdef HAVE_VM2
+    if (format == "vm2")
+        return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
+#endif
+
+    throw runtime_error(pathname + ": unknown fiel format \"" + format + "\"");
 }
 
 void File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
@@ -92,6 +121,7 @@ void File::readConfig(const std::string& fname, ConfigFile& cfg)
     cfg.mergeInto(section.value("name"), section);
 }
 
+#if 0
 File* File::create(const ConfigFile& cfg)
 {
     string format = str::lower(cfg.value("format"));
@@ -121,14 +151,16 @@ File* File::create(const ConfigFile& cfg)
     ss << "cannot create a dataset for the unknown file format \"" << format << "\"";
     throw runtime_error(ss.str());
 }
+#endif
 
-FdFile::FdFile(const ConfigFile& cfg) : File(cfg)
+FdFile::FdFile(std::shared_ptr<const FileConfig> config)
+    : m_config(config)
 {
-    string pathname = cfg.value("path");
-    if (pathname == "-")
+    const std::string& path = config->pathname;
+    if (path == "-")
         fd = new Stdin;
     else
-        fd = new arki::File(pathname, O_RDONLY);
+        fd = new arki::File(path, O_RDONLY);
 }
 
 FdFile::~FdFile()
@@ -136,10 +168,6 @@ FdFile::~FdFile()
     delete fd;
 }
 
-std::string FdFile::pathname() const
-{
-    return fd->name();
-}
 
 static shared_ptr<sort::Stream> wrap_with_query(const dataset::DataQuery& q, metadata_dest_func& dest)
 {
@@ -160,8 +188,9 @@ static shared_ptr<sort::Stream> wrap_with_query(const dataset::DataQuery& q, met
     return sorter;
 }
 
-ArkimetFile::ArkimetFile(const ConfigFile& cfg) : FdFile(cfg) {}
+
 ArkimetFile::~ArkimetFile() {}
+
 void ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     auto sorter = wrap_with_query(q, dest);
@@ -169,8 +198,12 @@ void ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
     if (sorter) sorter->flush();
 }
 
-YamlFile::YamlFile(const ConfigFile& cfg) : FdFile(cfg), reader(LineReader::from_fd(*fd).release()) {}
+
+YamlFile::YamlFile(std::shared_ptr<FileConfig> config)
+    : FdFile(config), reader(LineReader::from_fd(*fd).release()) {}
+
 YamlFile::~YamlFile() { delete reader; }
+
 void YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     auto sorter = wrap_with_query(q, dest);
@@ -188,21 +221,18 @@ void YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
     if (sorter) sorter->flush();
 }
 
-RawFile::RawFile(const ConfigFile& cfg) : File(cfg), m_pathname(cfg.value("path"))
+
+RawFile::RawFile(std::shared_ptr<const FileConfig> config)
+    : m_config(config)
 {
 }
 
 RawFile::~RawFile() {}
 
-std::string RawFile::pathname() const
-{
-    return m_pathname;
-}
-
 void RawFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     auto sorter = wrap_with_query(q, dest);
-    scan::scan(m_pathname, dest, m_format);
+    scan::scan(config().pathname, dest, config().format);
     if (sorter) sorter->flush();
 }
 

@@ -12,58 +12,41 @@ using namespace arki::utils;
 
 namespace arki {
 
-template<typename DATASET>
-DatasetPool<DATASET>::DatasetPool(const ConfigFile& cfg) : cfg(cfg)
-{
-}
-
-template<typename DATASET>
-DatasetPool<DATASET>::~DatasetPool()
-{
-	// Delete the cached datasets
-	for (typename std::map<std::string, DATASET*>::iterator i = cache.begin();
-			i != cache.end(); ++i)
-		delete i->second;
-}
-
-template<typename DATASET>
-DATASET* DatasetPool<DATASET>::get(const std::string& name)
-{
-	typename map<string, DATASET*>::iterator ci = cache.find(name);
-	if (ci == cache.end())
-	{
-		ConfigFile* cfgsec = cfg.section(name);
-		if (!cfgsec) return 0;
-		DATASET* target = DATASET::create(*cfgsec);
-		cache.insert(make_pair(name, target));
-		return target;
-	} else {
-		return ci->second;
-	}
-}
-
-
-ReaderPool::ReaderPool(const ConfigFile& cfg)
-    : DatasetPool<dataset::Reader>(cfg) {}
-
 WriterPool::WriterPool(const ConfigFile& cfg)
-    : DatasetPool<dataset::Writer>(cfg) {}
+    : cfg(cfg)
+{
+}
+
+
+WriterPool::~WriterPool()
+{
+    // Delete the cached datasets
+    for (auto& i: cache)
+        delete i.second;
+}
+
+dataset::Writer* WriterPool::get(const std::string& name)
+{
+    auto ci = cache.find(name);
+    if (ci == cache.end())
+    {
+        ConfigFile* cfgsec = cfg.section(name);
+        if (!cfgsec) return nullptr;
+        auto config = dataset::Config::create(*cfgsec);
+        dataset::Writer* writer = config->create_writer().release();
+        cache.insert(make_pair(name, writer));
+        return writer;
+    } else {
+        return ci->second;
+    }
+}
+
 
 void WriterPool::flush()
 {
     for (auto& i: cache)
         i.second->flush();
 }
-
-LocalWriterPool::LocalWriterPool(const ConfigFile& cfg)
-    : DatasetPool<dataset::LocalWriter>(cfg) {}
-
-void LocalWriterPool::flush()
-{
-    for (auto& i: cache)
-        i.second->flush();
-}
-
 
 namespace {
 
@@ -121,23 +104,20 @@ struct PathMatch
 
 }
 
-dataset::LocalWriter* LocalWriterPool::for_path(const std::string& pathname)
+dataset::Writer* WriterPool::for_path(const std::string& pathname)
 {
     PathMatch pmatch(pathname);
 
     for (const auto& dsi: cache)
     {
-        string dspath = dsi.second->path();
+        dataset::LocalWriter* writer = dynamic_cast<dataset::LocalWriter*>(dsi.second);
+        if (!writer) continue;
+        string dspath = writer->path();
         if (pmatch.is_under(dspath))
-            return dsi.second;
+            return writer;
     }
 
     return nullptr;
 }
-
-// Explicit template instantiations
-template class DatasetPool<dataset::Reader>;
-template class DatasetPool<dataset::Writer>;
-template class DatasetPool<dataset::LocalWriter>;
 
 }

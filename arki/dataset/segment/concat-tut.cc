@@ -73,13 +73,13 @@ def_test(1)
         //wassert(actual(sys::size(fname)) == 0u);
 
         // Try a successful transaction
-        wruntest(test_append_transaction_ok, w.get(), mdc[0]);
+        wassert(test_append_transaction_ok(w.get(), mdc[0]));
 
         // Then fail one
-        wruntest(test_append_transaction_rollback, w.get(), mdc[1]);
+        wassert(test_append_transaction_rollback(w.get(), mdc[1]));
 
         // Then succeed again
-        wruntest(test_append_transaction_ok, w.get(), mdc[2]);
+        wassert(test_append_transaction_ok(w.get(), mdc[2]));
     }
 
     // Data writer goes out of scope, file is closed and flushed
@@ -106,13 +106,13 @@ def_test(2)
         wassert(actual(sys::size(fname)) == 0x7FFFFFFFu);
 
         // Try a successful transaction
-        wruntest(test_append_transaction_ok, dw.get(), mdc[0]);
+        wassert(test_append_transaction_ok(dw.get(), mdc[0]));
 
         // Then fail one
-        wruntest(test_append_transaction_rollback, dw.get(), mdc[1]);
+        wassert(test_append_transaction_rollback(dw.get(), mdc[1]));
 
         // Then succeed again
-        wruntest(test_append_transaction_ok, dw.get(), mdc[2]);
+        wassert(test_append_transaction_ok(dw.get(), mdc[2]));
     }
 
     wassert(actual(sys::size(fname)) == 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]));
@@ -158,7 +158,7 @@ def_test(5)
         }
     } test;
 
-    wruntest(test.run);
+    wassert(test.run());
 }
 def_test(6)
 {
@@ -170,7 +170,7 @@ def_test(6)
         }
     } test;
 
-    wruntest(test.run);
+    wassert(test.run());
 }
 
 }

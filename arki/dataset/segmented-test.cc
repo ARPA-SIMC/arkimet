@@ -53,11 +53,10 @@ void Tests::register_tests() {
 
 add_method("compressed", [](Fixture& f) {
     // Test moving into archive data that have been compressed
-    ConfigFile cfg = f.cfg;
-    cfg.setValue("archive age", days_since(2007, 9, 1));
+    f.cfg.setValue("archive age", days_since(2007, 9, 1));
 
     // Import and compress all the files
-    f.clean_and_import(&cfg);
+    f.clean_and_import();
     scan::compress("testds/2007/07-07.grib");
     scan::compress("testds/2007/07-08.grib");
     scan::compress("testds/2007/10-09.grib");
@@ -67,14 +66,14 @@ add_method("compressed", [](Fixture& f) {
 
     // Test that querying returns all items
     {
-        std::unique_ptr<Reader> reader(f.makeReader(&cfg));
+        auto reader(f.config().create_reader());
         unsigned count = count_results(*reader, Matcher());
         ensure_equals(count, 3u);
     }
 
     // Check if files to archive are detected
     {
-        auto writer(f.makeLocalChecker(&cfg));
+        auto writer(f.makeSegmentedChecker());
 
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 1;
@@ -84,7 +83,7 @@ add_method("compressed", [](Fixture& f) {
 
     // Perform packing and check that things are still ok afterwards
     {
-        auto writer(f.makeLocalChecker(&cfg));
+        auto writer(f.makeSegmentedChecker());
         ReporterExpected e;
         e.archived.emplace_back("testds", "2007/07-07.grib");
         e.archived.emplace_back("testds", "2007/07-08.grib");
@@ -115,7 +114,7 @@ add_method("compressed", [](Fixture& f) {
 
     // Maintenance should now show a normal situation
     {
-        auto writer(f.makeLocalChecker(&cfg));
+        auto writer(f.makeSegmentedChecker());
         ReporterExpected e;
         e.report.emplace_back("testds", "check", "1 file ok");
         e.report.emplace_back("testds.archives.last", "check", "2 files ok");
@@ -124,7 +123,7 @@ add_method("compressed", [](Fixture& f) {
 
     // Perform full maintenance and check that things are still ok afterwards
     {
-        auto writer(f.makeLocalChecker(&cfg));
+        auto writer(f.makeSegmentedChecker());
         wassert(actual(writer.get()).check_clean(true, true));
 
         ReporterExpected e;
@@ -135,7 +134,7 @@ add_method("compressed", [](Fixture& f) {
 
     // Test that querying returns all items
     {
-        std::unique_ptr<Reader> reader(f.makeReader(&cfg));
+        auto reader = f.config().create_reader();
         ensure_equals(count_results(*reader, Matcher()), 3u);
     }
 });
@@ -143,19 +142,17 @@ add_method("compressed", [](Fixture& f) {
 add_method("query_archived", [](Fixture& f) {
     // Test querying with archived data
     using namespace arki::types;
-
-    ConfigFile cfg = f.cfg;
-    cfg.setValue("archive age", days_since(2007, 9, 1));
-    f.clean_and_import(&cfg);
+    f.cfg.setValue("archive age", days_since(2007, 9, 1));
+    f.clean_and_import();
     {
-        auto writer(f.makeLocalChecker(&cfg));
+        auto writer(f.makeSegmentedChecker());
         ReporterExpected e;
         e.archived.emplace_back("testds", "2007/07-07.grib");
         e.archived.emplace_back("testds", "2007/07-08.grib");
         wassert(actual(writer.get()).repack(e, true));
     }
 
-    std::unique_ptr<Reader> reader(f.makeReader(&cfg));
+    auto reader = f.config().create_reader();
     metadata::Collection mdc(*reader, Matcher::parse(""));
     wassert(actual(mdc.size()) == 3u);
 
@@ -229,10 +226,9 @@ add_method("query_archived", [](Fixture& f) {
 add_method("empty_dirs", [](Fixture& f) {
     // Tolerate empty dirs
     // Start with an empty dir
-    system("rm -rf testds");
-    system("mkdir testds");
+    f.clean();
 
-    std::unique_ptr<Reader> reader(f.makeReader());
+    auto reader = f.config().create_reader();
 
     metadata::Collection mdc(*reader, Matcher());
     ensure(mdc.empty());
@@ -254,7 +250,7 @@ add_method("query_lots", [](Fixture& f) {
 
     f.clean();
     {
-        std::unique_ptr<Writer> writer(f.makeWriter());
+        auto writer = f.config().create_writer();
 
         // Reverse order of import, so we can check if things get sorted properly when querying
         for (int month = 12; month >= 1; --month)
@@ -321,14 +317,14 @@ add_method("query_lots", [](Fixture& f) {
     };
 
     {
-        std::unique_ptr<Reader> reader(f.makeReader());
+        auto reader = f.config().create_reader();
         CheckReftimeSortOrder cso;
         reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { return cso.eat(move(md)); });
         wassert(actual(cso.seen) == 16128u);
     }
 
     {
-        std::unique_ptr<Reader> reader(f.makeReader());
+        auto reader = f.config().create_reader();
         CheckAllSortOrder cso;
         dataset::DataQuery dq(Matcher::parse(""));
         dq.sorter = sort::Compare::parse("reftime,area,product");

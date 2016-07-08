@@ -5,9 +5,9 @@
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/simple/reader.h>
 #include <arki/dataset/outbound.h>
-#include <arki/dataset/discard.h>
 #include <arki/dataset/empty.h>
 #include <arki/dataset/segment.h>
+#include <arki/dataset/sharded.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/sort.h>
@@ -36,27 +36,51 @@ DataQuery::DataQuery() : with_data(false) {}
 DataQuery::DataQuery(const Matcher& matcher, bool with_data) : matcher(matcher), with_data(with_data), sorter(0) {}
 DataQuery::~DataQuery() {}
 
-Base::Base(const std::string& name)
-    : m_name(name)
+Config::Config() {}
+
+Config::Config(const std::string& name) : name(name) {}
+
+Config::Config(const ConfigFile& cfg)
+    : name(cfg.value("name")), cfg(cfg.values())
 {
 }
 
-Base::Base(const std::string& name, const ConfigFile& cfg)
-    : m_name(name), m_cfg(cfg.values())
+std::unique_ptr<Reader> Config::create_reader() const { throw std::runtime_error("reader not implemented for dataset " + name); }
+std::unique_ptr<Writer> Config::create_writer() const { throw std::runtime_error("writer not implemented for dataset " + name); }
+std::unique_ptr<Checker> Config::create_checker() const { throw std::runtime_error("checker not implemented for dataset " + name); }
+
+std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
 {
+// TODO    if (!cfg.value("shard").empty())
+// TODO        return new dataset::sharded::Reader(cfg);
+// TODO
+    string type = str::lower(cfg.value("type"));
+
+    if (type == "ondisk2")
+        return dataset::ondisk2::Config::create(cfg);
+    if (type == "simple" || type == "error" || type == "duplicates")
+        return dataset::simple::Config::create(cfg);
+#ifdef HAVE_LIBCURL
+    if (type == "remote")
+        return dataset::HTTPConfig::create(cfg);
+#endif
+    if (type == "outbound")
+        return outbound::Config::create(cfg);
+    if (type == "discard")
+        return empty::Config::create(cfg);
+    if (type == "file")
+        return dataset::FileConfig::create(cfg);
+
+    throw std::runtime_error("cannot use configuration: unknown dataset type \""+type+"\"");
 }
 
-Base::Base(const ConfigFile& cfg)
-    : m_name(cfg.value("name")), m_cfg(cfg.values())
-{
-}
 
 std::string Base::name() const
 {
     if (m_parent)
-        return m_parent->name() + "." + m_name;
+        return m_parent->name() + "." + config().name;
     else
-        return m_name;
+        return config().name;
 }
 
 void Base::set_parent(Base& p)
@@ -64,10 +88,6 @@ void Base::set_parent(Base& p)
     m_parent = &p;
 }
 
-
-void Writer::flush() {}
-
-Pending Writer::test_writelock() { return Pending(); }
 
 void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
@@ -92,7 +112,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
         case dataset::ByteQuery::BQ_POSTPROCESS: {
             Postprocess postproc(q.param);
             postproc.set_output(out);
-            postproc.validate(m_cfg);
+            postproc.validate(config().cfg);
             postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
             query_data(q, [&](unique_ptr<Metadata> md) { return postproc.process(move(md)); });
@@ -137,50 +157,50 @@ void Reader::expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_p
 #ifdef HAVE_LUA
 Reader* Reader::lua_check(lua_State* L, int idx)
 {
-	return *(Reader**)luaL_checkudata(L, idx, "arki.rodataset");
+    return *(Reader**)luaL_checkudata(L, idx, "arki.rodataset");
 }
 
 void DataQuery::lua_from_table(lua_State* L, int idx)
 {
-	lua_pushstring(L, "matcher");
-	lua_gettable(L, 2);
-	matcher = Matcher::lua_check(L, -1);
-	lua_pop(L, 1);
+    lua_pushstring(L, "matcher");
+    lua_gettable(L, 2);
+    matcher = Matcher::lua_check(L, -1);
+    lua_pop(L, 1);
 
-	lua_pushstring(L, "sorter");
-	lua_gettable(L, 2);
-	const char* str_sorter = lua_tostring(L, -1);
-	lua_pop(L, 1);
-	if (str_sorter)
-		sorter = sort::Compare::parse(str_sorter);
-	else
-		sorter = 0;
+    lua_pushstring(L, "sorter");
+    lua_gettable(L, 2);
+    const char* str_sorter = lua_tostring(L, -1);
+    lua_pop(L, 1);
+    if (str_sorter)
+        sorter = sort::Compare::parse(str_sorter);
+    else
+        sorter = 0;
 }
 
 void DataQuery::lua_push_table(lua_State* L, int idx) const
 {
-	string str;
+    string str;
 
-	if (idx < 0) idx -= 2;
+    if (idx < 0) idx -= 2;
 
-	// table["matcher"] = this->matcher
-	lua_pushstring(L, "matcher");
-	str = matcher.toString();
-	lua_pushstring(L, str.c_str());
-	lua_settable(L, idx);
+    // table["matcher"] = this->matcher
+    lua_pushstring(L, "matcher");
+    str = matcher.toString();
+    lua_pushstring(L, str.c_str());
+    lua_settable(L, idx);
 
-	// table["sorter"] = this->sorter
-	lua_pushstring(L, "sorter");
-	if (sorter)
-	{
-		str = sorter->toString();
-		lua_pushstring(L, str.c_str());
-	}
-	else
-	{
-		lua_pushnil(L);
-	}
-	lua_settable(L, idx);
+    // table["sorter"] = this->sorter
+    lua_pushstring(L, "sorter");
+    if (sorter)
+    {
+        str = sorter->toString();
+        lua_pushstring(L, str.c_str());
+    }
+    else
+    {
+        lua_pushnil(L);
+    }
+    lua_settable(L, idx);
 }
 
 namespace {
@@ -236,14 +256,14 @@ struct LuaConsumer
 
 static int arkilua_queryData(lua_State *L)
 {
-	// queryData(self, { matcher="", withdata=false, sorter="" }, consumer_func)
-	Reader* rd = Reader::lua_check(L, 1);
-	luaL_argcheck(L, lua_istable(L, 2), 2, "`table' expected");
-	luaL_argcheck(L, lua_isfunction(L, 3), 3, "`function' expected");
+    // queryData(self, { matcher="", withdata=false, sorter="" }, consumer_func)
+    Reader* rd = Reader::lua_check(L, 1);
+    luaL_argcheck(L, lua_istable(L, 2), 2, "`table' expected");
+    luaL_argcheck(L, lua_isfunction(L, 3), 3, "`function' expected");
 
-	// Create a DataQuery with data from the table
-	dataset::DataQuery dq;
-	dq.lua_from_table(L, 2);
+    // Create a DataQuery with data from the table
+    dataset::DataQuery dq;
+    dq.lua_from_table(L, 2);
 
     // Create metadata consumer proxy
     std::unique_ptr<LuaConsumer> mdc = LuaConsumer::lua_check(L, 3);
@@ -256,26 +276,26 @@ static int arkilua_queryData(lua_State *L)
 
 static int arkilua_query_summary(lua_State *L)
 {
-	// query_summary(self, matcher="", summary)
-	Reader* rd = Reader::lua_check(L, 1);
-	Matcher matcher = Matcher::lua_check(L, 2);
-	Summary* sum = Summary::lua_check(L, 3);
-	luaL_argcheck(L, sum != NULL, 3, "`arki.summary' expected");
-	rd->query_summary(matcher, *sum);
-	return 0;
+    // query_summary(self, matcher="", summary)
+    Reader* rd = Reader::lua_check(L, 1);
+    Matcher matcher = Matcher::lua_check(L, 2);
+    Summary* sum = Summary::lua_check(L, 3);
+    luaL_argcheck(L, sum != NULL, 3, "`arki.summary' expected");
+    rd->query_summary(matcher, *sum);
+    return 0;
 }
 
 static int arkilua_tostring(lua_State *L)
 {
-	lua_pushstring(L, "dataset");
-	return 1;
+    lua_pushstring(L, "dataset");
+    return 1;
 }
 
 static const struct luaL_Reg readonlydatasetlib [] = {
-	{ "queryData", arkilua_queryData },
-	{ "querySummary", arkilua_query_summary },
-	{ "__tostring", arkilua_tostring },
-	{NULL, NULL}
+    { "queryData", arkilua_queryData },
+    { "querySummary", arkilua_query_summary },
+    { "__tostring", arkilua_tostring },
+    {NULL, NULL}
 };
 
 void Reader::lua_push(lua_State* L)
@@ -284,27 +304,10 @@ void Reader::lua_push(lua_State* L)
 }
 #endif
 
-
-Reader* Reader::create(const ConfigFile& cfg)
+std::unique_ptr<Reader> Reader::create(const ConfigFile& cfg)
 {
-    string type = str::lower(cfg.value("type"));
-
-	if (type == "ondisk2")
-		return new dataset::ondisk2::Reader(cfg);
-	if (type == "simple" || type == "error" || type == "duplicates")
-		return new dataset::simple::Reader(cfg);
-#ifdef HAVE_LIBCURL
-	if (type == "remote")
-		return new dataset::HTTP(cfg);
-#endif
-	if (type == "outbound")
-		return new dataset::Empty(cfg);
-	if (type == "discard")
-		return new dataset::Empty(cfg);
-	if (type == "file")
-		return dataset::File::create(cfg);
-
-    throw std::runtime_error("cannot create dataset reader: unknown dataset type \""+type+"\"");
+    auto config = Config::create(cfg);
+    return config->create_reader();
 }
 
 void Reader::readConfig(const std::string& path, ConfigFile& cfg)
@@ -319,16 +322,16 @@ void Reader::readConfig(const std::string& path, ConfigFile& cfg)
         return dataset::File::readConfig(path, cfg);
 }
 
-Writer* Writer::create(const ConfigFile& cfg)
+
+
+void Writer::flush() {}
+
+Pending Writer::test_writelock() { return Pending(); }
+
+std::unique_ptr<Writer> Writer::create(const ConfigFile& cfg)
 {
-    string type = str::lower(cfg.value("type"));
-    if (type == "remote")
-        throw std::runtime_error("cannot create dataset writer: remote datasets are not writable");
-    if (type == "outbound")
-        return new dataset::Outbound(cfg);
-    if (type == "discard")
-        return new dataset::Discard(cfg);
-    return dataset::LocalWriter::create(cfg);
+    auto config = Config::create(cfg);
+    return config->create_writer();
 }
 
 Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
@@ -337,23 +340,18 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
     if (type == "remote")
         throw std::runtime_error("cannot simulate dataset acquisition: remote datasets are not writable");
     if (type == "outbound")
-        return dataset::Outbound::testAcquire(cfg, md, out);
+        return outbound::Writer::testAcquire(cfg, md, out);
     if (type == "discard")
-        return dataset::Discard::testAcquire(cfg, md, out);
+        return empty::Writer::testAcquire(cfg, md, out);
 
     return dataset::LocalWriter::testAcquire(cfg, md, out);
 }
 
-void FailChecker::removeAll(dataset::Reporter& reporter, bool writable) { throw std::runtime_error("operation not possible on dataset " + name()); }
-void FailChecker::repack(dataset::Reporter& reporter, bool writable) { throw std::runtime_error("operation not possible on dataset " + name()); }
-void FailChecker::check(dataset::Reporter& reporter, bool fix, bool quick) { throw std::runtime_error("operation not possible on dataset " + name()); }
 
-Checker* Checker::create(const ConfigFile& cfg)
+std::unique_ptr<Checker> Checker::create(const ConfigFile& cfg)
 {
-    string type = str::lower(cfg.value("type"));
-    if (type == "remote" || type == "outbound" || type == "discard")
-        return new FailChecker(cfg);
-    return dataset::LocalChecker::create(cfg);
+    auto config = Config::create(cfg);
+    return config->create_checker();
 }
 
 }

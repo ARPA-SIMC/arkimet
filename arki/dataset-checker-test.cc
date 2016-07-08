@@ -85,7 +85,7 @@ this->add_method("clean", [](Fixture& f) {
 
     // Ensure everything appears clean
     {
-        auto checker(f.makeChecker());
+        auto checker(f.config().create_checker());
         wassert(actual(checker.get()).check_clean(false, true));
 
         // Check that maintenance does not accidentally create an archive
@@ -94,21 +94,21 @@ this->add_method("clean", [](Fixture& f) {
 
     // Ensure packing has nothing to report
     {
-        auto checker(f.makeChecker());
+        auto checker(f.config().create_checker());
         wassert(actual(checker.get()).repack_clean(false));
         wassert(actual(checker.get()).check_clean(false, true));
     }
 
     // Perform packing and check that things are still ok afterwards
     {
-        auto checker(f.makeChecker());
+        auto checker(f.config().create_checker());
         wassert(actual(checker.get()).repack_clean(true));
         wassert(actual(checker.get()).check_clean(false, true));
     }
 
     // Perform full maintenance and check that things are still ok afterwards
     {
-        auto checker(f.makeChecker());
+        auto checker(f.config().create_checker());
         wassert(actual(checker.get()).check_clean(true, true));
         wassert(actual(checker.get()).check_clean(false, true));
     }
@@ -121,7 +121,7 @@ this->add_method("archive_age", [](Fixture& f) {
 
     // Check if files to archive are detected
     {
-        auto checker(f.makeChecker());
+        auto checker(f.config().create_checker());
         ReporterExpected e;
         //e.report.emplace_back("testds.archives.last", "check", nfiles(f.td.fnames_before_cutoff.size()) + " ok");
         e.report.emplace_back("testds", "repack", nfiles(f.td.fnames_after_cutoff.size()) + " ok");
@@ -132,7 +132,7 @@ this->add_method("archive_age", [](Fixture& f) {
 
     // Perform packing and check that things are still ok afterwards
     {
-        auto checker(f.makeChecker());
+        auto checker(f.config().create_checker());
         ReporterExpected e;
         for (set<string>::const_iterator i = f.td.fnames_before_cutoff.begin();
                 i != f.td.fnames_before_cutoff.end(); ++i)
@@ -152,7 +152,7 @@ this->add_method("archive_age", [](Fixture& f) {
 
     // Maintenance should now show a normal situation
     {
-        auto checker(f.makeChecker());
+        auto checker(f.config().create_checker());
         ReporterExpected e;
         e.report.emplace_back("testds.archives.last", "check", nfiles(f.td.fnames_before_cutoff.size()) + " ok");
         e.report.emplace_back("testds", "check", nfiles(f.td.fnames_after_cutoff.size()) + " ok");
@@ -161,14 +161,14 @@ this->add_method("archive_age", [](Fixture& f) {
 
     // Perform full maintenance and check that things are still ok afterwards
     {
-        auto checker(f.makeChecker());
+        auto checker(f.config().create_checker());
         wassert(actual(checker.get()).check_clean(true, true));
         wassert(actual(checker.get()).repack_clean(false));
     }
 
     // Test that querying returns all items
     {
-        auto reader(f.makeReader());
+        auto reader(f.config().create_reader());
 
         unsigned count = 0;
         reader->query_data(Matcher(), [&](unique_ptr<Metadata>) { ++count; return true; });
@@ -182,7 +182,7 @@ this->add_method("delete_age", [](Fixture& f) {
     wassert(f.import_all(f.td));
 
     {
-        auto checker(f.makeChecker());
+        auto checker(f.config().create_checker());
         ReporterExpected e;
 
         // Check if files to delete are detected
@@ -198,7 +198,7 @@ this->add_method("delete_age", [](Fixture& f) {
         wassert(actual(checker.get()).repack(e, true));
     }
 
-    auto checker(f.makeChecker());
+    auto checker(f.config().create_checker());
     wassert(actual(checker.get()).check_clean(false, true));
 });
 
@@ -217,7 +217,7 @@ this->add_method("scan_truncated", [](Fixture& f) {
 
     // See that the truncated file is detected
     {
-        auto checker(f.makeChecker());
+        auto checker(f.config().create_checker());
         ReporterExpected e;
         e.rescanned.emplace_back("testds", truncated_fname);
         wassert(actual(checker.get()).check(e, false, true));
@@ -225,7 +225,7 @@ this->add_method("scan_truncated", [](Fixture& f) {
 
     // Perform packing and check that nothing has happened
     {
-        auto checker(f.makeChecker());
+        auto checker(f.config().create_checker());
         wassert(actual(checker.get()).repack_clean(true));
 
         ReporterExpected e;
@@ -235,7 +235,7 @@ this->add_method("scan_truncated", [](Fixture& f) {
 
     // Perform full maintenance and check that things are still ok afterwards
     {
-        auto checker(f.makeChecker());
+        auto checker(f.config().create_checker());
         ReporterExpected e;
         e.rescanned.emplace_back("testds", truncated_fname);
         wassert(actual(checker.get()).check(e, true, true));
@@ -245,7 +245,7 @@ this->add_method("scan_truncated", [](Fixture& f) {
 
     // Try querying and make sure we get the two files
     {
-        auto reader(f.makeReader());
+        auto reader(f.config().create_reader());
 
         unsigned count = 0;
         reader->query_data(Matcher(), [&](unique_ptr<Metadata>) { ++count; return true; });
@@ -277,7 +277,7 @@ this->add_method("scan_corrupted", [](Fixture& f) {
 
     {
         ReporterExpected e;
-        auto checker(f.makeChecker());
+        auto checker(f.config().create_checker());
 
         // A quick check has nothing to complain
         wassert(actual(checker.get()).check_clean(false, true));
@@ -308,7 +308,7 @@ this->add_method("scan_corrupted", [](Fixture& f) {
     }
 
     // Try querying and make sure we get the two files
-    auto reader(f.makeReader());
+    auto reader(f.config().create_reader());
     unsigned count = 0;
     reader->query_data(Matcher(), [&](unique_ptr<Metadata>) { ++count; return true; });
     wassert(actual(count) == 2u);
@@ -323,7 +323,7 @@ this->add_method("repack_deleted", [](Fixture& f) {
     f.segments().remove(deleted_fname);
 
     {
-        auto checker(f.makeChecker());
+        auto checker(f.config().create_checker());
         ReporterExpected e;
 
         // Initial check finds the deleted file
@@ -346,7 +346,7 @@ this->add_method("repack_deleted", [](Fixture& f) {
     }
 
     // Try querying and make sure we get the two files
-    auto reader(f.makeReader());
+    auto reader(f.config().create_reader());
     unsigned count = 0;
     reader->query_data(Matcher(), [&](unique_ptr<Metadata>) { ++count; return true; });
     wassert(actual(count) == 2u);
@@ -361,7 +361,7 @@ this->add_method("check_deleted", [](Fixture& f) {
     f.segments().remove(deleted_fname);
 
     {
-        auto checker(f.makeChecker());
+        auto checker(f.config().create_checker());
         ReporterExpected e;
 
         // Initial check finds the deleted file
@@ -378,7 +378,7 @@ this->add_method("check_deleted", [](Fixture& f) {
     }
 
     // Try querying and make sure we get the two files
-    auto reader(f.makeReader());
+    auto reader(f.config().create_reader());
     unsigned count = 0;
     reader->query_data(Matcher(), [&](unique_ptr<Metadata>) { ++count; return true; });
     wassert(actual(count) == 2u);
@@ -394,7 +394,7 @@ this->add_method("scan_noindex", [](Fixture& f) {
     sys::write_file("testds/2014/01.grib1.tmp", "GRIB garbage 7777");
 
     {
-        auto checker(f.makeChecker());
+        auto checker(f.config().create_checker());
         ReporterExpected e;
 
         // See if the files to index are detected
@@ -417,7 +417,7 @@ this->add_method("scan_noindex", [](Fixture& f) {
     }
 
     // Try querying and make sure we get the three files
-    auto reader(f.makeReader());
+    auto reader(f.config().create_reader());
     unsigned count = 0;
     reader->query_data(Matcher(), [&](unique_ptr<Metadata>) { ++count; return true; });
     wassert(actual(count) == 3u);

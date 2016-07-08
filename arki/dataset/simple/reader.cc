@@ -10,15 +10,15 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
-Reader::Reader(const ConfigFile& cfg)
-    : IndexedReader(cfg)
+Reader::Reader(std::shared_ptr<const simple::Config> config)
+    : m_config(config)
 {
     // Create the directory if it does not exist
-    sys::makedirs(m_path);
+    sys::makedirs(config->path);
 
-    if (index::Manifest::exists(m_path))
+    if (index::Manifest::exists(config->path))
     {
-        unique_ptr<index::Manifest> mft = index::Manifest::create(m_path);
+        unique_ptr<index::Manifest> mft = index::Manifest::create(config->path);
         mft->openRO();
         m_idx = m_mft = mft.release();
     }

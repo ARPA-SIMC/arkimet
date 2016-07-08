@@ -37,21 +37,24 @@ namespace dataset {
 namespace ondisk2 {
 
 
-Writer::Writer(const ConfigFile& cfg)
-    : IndexedWriter(cfg), m_cfg(cfg), idx(new index::WContents(cfg))
+Writer::Writer(std::shared_ptr<const ondisk2::Config> config)
+    : m_config(config), idx(new index::WContents(config))
 {
     m_idx = idx;
 
     // Create the directory if it does not exist
-    sys::makedirs(m_path);
+    sys::makedirs(config->path);
+
+    acquire_lock();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
-    if (!sys::exists(str::joinpath(m_path, "index.sqlite")))
-        files::createDontpackFlagfile(m_path);
+    if (!sys::exists(config->index_pathname))
+        files::createDontpackFlagfile(config->path);
 
-    acquire_lock();
     idx->open();
+
+    release_lock();
 }
 
 Writer::~Writer()
@@ -68,7 +71,7 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 
     Pending p_idx = idx->beginTransaction();
     Pending p_df = w->append(md, &ofs);
-    auto source = types::source::Blob::create(md.source().format, m_path, w->relname, ofs, md.data_size());
+    auto source = types::source::Blob::create(md.source().format, config().path, w->relname, ofs, md.data_size());
 
     try {
         int id;
@@ -78,11 +81,11 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
         md.set_source(move(source));
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
-        md.add_note("Failed to store in dataset '" + m_name + "' because the dataset already has the data: " + di.what());
+        md.add_note("Failed to store in dataset '" + name() + "' because the dataset already has the data: " + di.what());
         return ACQ_ERROR_DUPLICATE;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '" + m_name + "': " + e.what());
+        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
         return ACQ_ERROR;
     }
 }
@@ -94,7 +97,7 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 
     Pending p_idx = idx->beginTransaction();
     Pending p_df = w->append(md, &ofs);
-    auto source = types::source::Blob::create(md.source().format, m_path, w->relname, ofs, md.data_size());
+    auto source = types::source::Blob::create(md.source().format, config().path, w->relname, ofs, md.data_size());
 
     try {
         int id;
@@ -108,7 +111,7 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '" + m_name + "': " + e.what());
+        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
         return ACQ_ERROR;
     }
 }
@@ -121,7 +124,7 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 
     Pending p_idx = idx->beginTransaction();
     Pending p_df = w->append(md, &ofs);
-    auto source = types::source::Blob::create(md.source().format, m_path, w->relname, ofs, md.data_size());
+    auto source = types::source::Blob::create(md.source().format, config().path, w->relname, ofs, md.data_size());
 
     try {
         int id;
@@ -134,7 +137,7 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
         // It already exists, so we keep p_df uncommitted and check Update Sequence Numbers
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '"+m_name+"': " + e.what());
+        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
         return ACQ_ERROR;
     }
 
@@ -148,7 +151,7 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
     if (!idx->get_current(md, old_md))
     {
         stringstream ss;
-        ss << "cannot acquire into dataset " << m_name << ": insert reported a conflict, the index failed to find the original version";
+        ss << "cannot acquire into dataset " << name() << ": insert reported a conflict, the index failed to find the original version";
         throw runtime_error(ss.str());
     }
 
@@ -157,7 +160,7 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
     if (!scan::update_sequence_number(old_md, old_usn))
     {
         stringstream ss;
-        ss << "cannot acquire into dataset " << m_name << ": insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
+        ss << "cannot acquire into dataset " << name() << ": insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
         throw runtime_error(ss.str());
     }
 
@@ -178,7 +181,7 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '"+m_name+"': " + e.what());
+        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
         return ACQ_ERROR;
     }
 }
@@ -187,7 +190,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
     acquire_lock();
 
-    if (replace == REPLACE_DEFAULT) replace = m_default_replace_strategy;
+    if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
 
     // TODO: refuse if md is before "archive age"
 
@@ -199,7 +202,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
         default:
         {
             stringstream ss;
-            ss << "cannot acquire into dataset " << m_name << ": replace strategy " << (int)replace << " is not supported";
+            ss << "cannot acquire into dataset " << name() << ": replace strategy " << (int)replace << " is not supported";
             throw runtime_error(ss.str());
         }
     }
@@ -213,8 +216,8 @@ void Writer::remove(Metadata& md)
     if (!source)
         throw std::runtime_error("cannot remove metadata from dataset, because it has no Blob source");
 
-    if (source->basedir != m_path)
-        throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir + " but this dataset is at " + m_path);
+    if (source->basedir != config().path)
+        throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir + " but this dataset is at " + config().path);
 
     // TODO: refuse if md is in the archive
 
@@ -223,7 +226,7 @@ void Writer::remove(Metadata& md)
     idx->remove(source->filename, source->offset);
 
     // Create flagfile
-    //createPackFlagfile(str::joinpath(m_path, file));
+    //createPackFlagfile(str::joinpath(config().path, file));
 
     // Commit delete from DB
     p_del.commit();
@@ -245,8 +248,36 @@ Pending Writer::test_writelock()
     return idx->beginExclusiveTransaction();
 }
 
+
+Checker::Checker(std::shared_ptr<const ondisk2::Config> config)
+    : m_config(config), idx(new index::WContents(config))
+{
+    m_idx = idx;
+
+    // Create the directory if it does not exist
+    sys::makedirs(config->path);
+
+    acquire_lock();
+
+    // If the index is missing, take note not to perform a repack until a
+    // check is made
+    if (!sys::exists(config->index_pathname))
+        files::createDontpackFlagfile(config->path);
+
+    idx->open();
+
+    release_lock();
+}
+
+std::string Checker::type() const { return "ondisk2"; }
+
+void Checker::removeAll(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::removeAll(reporter, writable); release_lock(); }
+void Checker::repack(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::repack(reporter, writable); release_lock(); }
+
 void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
+    acquire_lock();
+
     IndexedChecker::check(reporter, fix, quick);
 
     if (!idx->checkSummaryCache(*this, reporter) && fix)
@@ -254,25 +285,10 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
         reporter.operation_progress(name(), "check", "rebuilding summary cache");
         idx->rebuildSummaryCache();
     }
+
+    release_lock();
 }
 
-Checker::Checker(const ConfigFile& cfg)
-    : IndexedChecker(cfg), m_cfg(cfg), idx(new index::WContents(cfg))
-{
-    m_idx = idx;
-
-    // Create the directory if it does not exist
-    sys::makedirs(m_path);
-
-    // If the index is missing, take note not to perform a repack until a
-    // check is made
-    if (!sys::exists(str::joinpath(m_path, "index.sqlite")))
-        files::createDontpackFlagfile(m_path);
-
-    idx->open();
-}
-
-std::string Checker::type() const { return "ondisk2"; }
 
 namespace {
 
@@ -299,7 +315,7 @@ struct IDMaker
 
 void Checker::rescanSegment(const std::string& relpath)
 {
-    string pathname = str::joinpath(m_path, relpath);
+    string pathname = str::joinpath(config().path, relpath);
     //fprintf(stderr, "Checker::rescanSegment %s\n", pathname.c_str());
 
     // Temporarily uncompress the file for scanning
@@ -363,14 +379,14 @@ void Checker::rescanSegment(const std::string& relpath)
     }
     // cerr << " REINDEXED " << pathname << endl;
 
-	// TODO: if scan fails, remove all info from the index and rename the
-	// file to something like .broken
+    // TODO: if scan fails, remove all info from the index and rename the
+    // file to something like .broken
 
-	// Commit the changes on the database
-	p.commit();
-	// cerr << " COMMITTED" << endl;
+    // Commit the changes on the database
+    p.commit();
+    // cerr << " COMMITTED" << endl;
 
-	// TODO: remove relevant summary
+    // TODO: remove relevant summary
 }
 
 
@@ -381,11 +397,11 @@ size_t Checker::repackSegment(const std::string& relpath)
 
     // Make a copy of the file with the right data in it, sorted by
     // reftime, and update the offsets in the index
-    string pathname = str::joinpath(m_path, relpath);
+    string pathname = str::joinpath(config().path, relpath);
 
     metadata::Collection mds;
     idx->scan_file(relpath, mds.inserter_func(), "reftime, offset");
-    Pending p_repack = m_segment_manager->repack(relpath, mds);
+    Pending p_repack = segment_manager().repack(relpath, mds);
 
     // Reindex mds
     idx->reset(relpath);
@@ -437,7 +453,7 @@ size_t Checker::removeSegment(const std::string& relpath, bool withData)
 void Checker::archiveSegment(const std::string& relpath)
 {
     // Create the target directory in the archive
-    string pathname = str::joinpath(m_path, relpath);
+    string pathname = str::joinpath(config().path, relpath);
 
     // Rebuild the metadata
     metadata::Collection mds;
@@ -464,7 +480,7 @@ size_t Checker::vacuum()
     }
 
     // Rebuild the cached summaries, if needed
-    if (!sys::exists(str::joinpath(m_path, ".summaries/all.summary")))
+    if (!sys::exists(str::joinpath(config().path, ".summaries/all.summary")))
     {
         Summary s;
         idx->summaryForAll(s);
@@ -490,7 +506,8 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
 
     if (replace == REPLACE_ALWAYS) return ACQ_OK;
 
-    index::RContents idx(cfg);
+    std::shared_ptr<const ondisk2::Config> config(new ondisk2::Config(cfg));
+    index::RContents idx(config);
     idx.open();
 
     Metadata old_md;

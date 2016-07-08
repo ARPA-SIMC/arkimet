@@ -42,8 +42,6 @@ inline void ensure_equals(const Q& _actual, const T& expected)
  */
 std::string tempfile_to_string(std::function<void(arki::utils::sys::NamedFileDescriptor& out)> body);
 
-#define wruntest(func, ...) wassert(func(__VA_ARGS__))
-
 #define def_test(num) template<> template<> void to::test<num>()
 
 #define def_tests(name) \

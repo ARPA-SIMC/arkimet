@@ -10,8 +10,10 @@
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/exceptions.h"
 #include "wibble/sys/childprocess.h"
 #include <sys/fcntl.h>
+#include <iostream>
 
 using namespace std;
 using namespace arki;
@@ -56,7 +58,7 @@ struct ConcurrentImporter : public wibble::sys::ChildProcess
 
     virtual int main() override
     {
-        auto ds(fixture.makeWriter());
+        auto ds(fixture.config().create_writer());
 
         Metadata md = fixture.td.test_data[0].md;
 
@@ -67,6 +69,50 @@ struct ConcurrentImporter : public wibble::sys::ChildProcess
         }
 
         return 0;
+    }
+};
+
+struct ReadHang : public wibble::sys::ChildProcess
+{
+    std::shared_ptr<const dataset::Config> config;
+    int commfd;
+
+    ReadHang(std::shared_ptr<const dataset::Config> config) : config(config) {}
+
+    bool eat(unique_ptr<Metadata>&& md)
+    {
+        // Notify start of reading
+        cout << "H" << endl;
+        // Get stuck while reading
+        while (true)
+            usleep(100000);
+        return true;
+    }
+
+    int main() override
+    {
+        try {
+            auto reader = config->create_reader();
+            reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { return eat(move(md)); });
+        } catch (std::exception& e) {
+            cerr << e.what() << endl;
+            cout << "E" << endl;
+            return 1;
+        }
+        return 0;
+    }
+
+    void start()
+    {
+        forkAndRedirect(0, &commfd);
+    }
+
+    char waitUntilHung()
+    {
+        char buf[2];
+        if (read(commfd, buf, 1) != 1)
+            throw_system_error("reading 1 byte from child process");
+        return buf[0];
     }
 };
 
@@ -97,7 +143,7 @@ void TestsWriter<Data>::register_tests() {
 typedef FixtureWriter<Data> Fixture;
 
 this->add_method("import", [](Fixture& f) {
-    auto ds(f.makeWriter());
+    auto ds = f.config().create_writer();
 
     for (unsigned i = 0; i < 3; ++i)
     {
@@ -121,7 +167,7 @@ this->add_method("concurrent_import", [](Fixture& f) {
     i1.wait();
     i2.wait();
 
-    auto reader = f.makeReader();
+    auto reader = f.config().create_reader();
     metadata::Collection mdc(*reader, Matcher());
     wassert(actual(mdc.size()) == 60u);
 
@@ -130,6 +176,37 @@ this->add_method("concurrent_import", [](Fixture& f) {
         auto rt = mdc[i].get<types::reftime::Position>();
         wassert(actual(rt->time.se) == i);
     }
+});
+
+// Test acquiring with a reader who's stuck on output
+this->add_method("import_with_hung_reader", [](Fixture& f) {
+
+    metadata::Collection mdc("inbound/test-sorted.grib1");
+
+    // Import one grib in the dataset
+    {
+        auto ds = f.config().create_writer();
+        wassert(actual(ds->acquire(mdc[0])) == dataset::Writer::ACQ_OK);
+        ds->flush();
+    }
+
+    // Query the index and hang
+    ReadHang readHang(f.dataset_config());
+    readHang.start();
+    wassert(actual(readHang.waitUntilHung()) == 'H');
+
+    // Import another grib in the dataset
+    {
+        auto ds = f.config().create_writer();
+        wassert(actual(ds->acquire(mdc[1])) == dataset::Writer::ACQ_OK);
+        ds->flush();
+    }
+
+    readHang.kill(9);
+    readHang.wait();
+
+    metadata::Collection mdc1(*f.config().create_reader(), Matcher());
+    wassert(actual(mdc1.size()) == 2u);
 });
 
 

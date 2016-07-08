@@ -1,6 +1,6 @@
 #include "segmented.h"
 #include "step.h"
-#include "ondisk2.h"
+#include "ondisk2/writer.h"
 #include "simple/writer.h"
 #include "maintenance.h"
 #include "archive.h"
@@ -21,74 +21,78 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-SegmentedBase::SegmentedBase(const ConfigFile& cfg)
-    : m_segment_manager(segment::SegmentManager::get(cfg).release())
+SegmentedConfig::SegmentedConfig(const ConfigFile& cfg)
+    : LocalConfig(cfg),
+      step_name(str::lower(cfg.value("step"))),
+      force_dir_segments(cfg.value("segments") == "dir"),
+      mock_data(cfg.value("mockdata") == "true")
 {
-}
-
-SegmentedBase::~SegmentedBase()
-{
-    delete m_segment_manager;
-}
-
-
-SegmentedReader::SegmentedReader(const ConfigFile& cfg)
-    : LocalReader(cfg), SegmentedBase(cfg)
-{
-}
-
-SegmentedReader::~SegmentedReader()
-{
-}
-
-
-SegmentedWriter::SegmentedWriter(const ConfigFile& cfg)
-    : LocalWriter(cfg), SegmentedBase(cfg),
-      m_default_replace_strategy(REPLACE_NEVER),
-      m_step(Step::create(cfg))
-{
-    if (!m_step)
-        throw std::runtime_error("cannot create a writer for dataset " + m_name + ": no step has been configured");
+    if (step_name.empty())
+        throw std::runtime_error("Dataset " + name + " misses step= configuration");
 
     string repl = cfg.value("replace");
     if (repl == "yes" || repl == "true" || repl == "always")
-        m_default_replace_strategy = REPLACE_ALWAYS;
+        default_replace_strategy = Writer::REPLACE_ALWAYS;
     else if (repl == "USN")
-        m_default_replace_strategy = REPLACE_HIGHER_USN;
+        default_replace_strategy = Writer::REPLACE_HIGHER_USN;
     else if (repl == "" || repl == "no" || repl == "never")
-        m_default_replace_strategy = REPLACE_NEVER;
+        default_replace_strategy = Writer::REPLACE_NEVER;
     else
-        throw std::runtime_error("Replace strategy '" + repl + "' is not recognised in configuration for dataset " + m_name);
+        throw std::runtime_error("Replace strategy '" + repl + "' is not recognised in the configuration of dataset " + name);
+
+    m_step = Step::create(step_name);
 }
 
-SegmentedWriter::~SegmentedWriter()
+SegmentedConfig::~SegmentedConfig()
 {
     delete m_step;
 }
 
+std::unique_ptr<segment::SegmentManager> SegmentedConfig::create_segment_manager() const
+{
+    return segment::SegmentManager::get(path, force_dir_segments, mock_data);
+}
+
+std::shared_ptr<const SegmentedConfig> SegmentedConfig::create(const ConfigFile& cfg)
+{
+    return std::shared_ptr<const SegmentedConfig>(new SegmentedConfig(cfg));
+}
+
+
+SegmentedReader::~SegmentedReader()
+{
+    delete m_segment_manager;
+}
+
+segment::SegmentManager& SegmentedReader::segment_manager()
+{
+    if (!m_segment_manager)
+        m_segment_manager = config().create_segment_manager().release();
+    return *m_segment_manager;
+}
+
+
+SegmentedWriter::~SegmentedWriter()
+{
+    delete m_segment_manager;
+}
+
+segment::SegmentManager& SegmentedWriter::segment_manager()
+{
+    if (!m_segment_manager)
+        m_segment_manager = config().create_segment_manager().release();
+    return *m_segment_manager;
+}
+
 Segment* SegmentedWriter::file(const Metadata& md, const std::string& format)
 {
-    string relname = (*m_step)(md) + "." + md.source().format;
-    return m_segment_manager->get_segment(format, relname);
+    string relname = config().step()(md) + "." + md.source().format;
+    return segment_manager().get_segment(format, relname);
 }
 
 void SegmentedWriter::flush()
 {
-    m_segment_manager->flush_writers();
-}
-
-SegmentedWriter* SegmentedWriter::create(const ConfigFile& cfg)
-{
-    string type = str::lower(cfg.value("type"));
-    if (type.empty())
-        type = "local";
-
-    if (type == "ondisk2" || type == "test")
-        return new dataset::ondisk2::Writer(cfg);
-    if (type == "simple" || type == "error" || type == "duplicates")
-        return new dataset::simple::Writer(cfg);
-
-    throw std::runtime_error("cannot create dataset: unknown dataset type \""+type+"\"");
+    segment_manager().flush_writers();
 }
 
 LocalWriter::AcquireResult SegmentedWriter::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
@@ -106,15 +110,16 @@ LocalWriter::AcquireResult SegmentedWriter::testAcquire(const ConfigFile& cfg, c
 }
 
 
-
-SegmentedChecker::SegmentedChecker(const ConfigFile& cfg)
-    : LocalChecker(cfg), SegmentedBase(cfg), m_step(Step::create(cfg))
-{
-}
-
 SegmentedChecker::~SegmentedChecker()
 {
-    delete m_step;
+    delete m_segment_manager;
+}
+
+segment::SegmentManager& SegmentedChecker::segment_manager()
+{
+    if (!m_segment_manager)
+        m_segment_manager = config().create_segment_manager().release();
+    return *m_segment_manager;
 }
 
 void SegmentedChecker::archiveSegment(const std::string& relpath)
@@ -122,9 +127,10 @@ void SegmentedChecker::archiveSegment(const std::string& relpath)
     // TODO: this is a hack to ensure that 'last' is created (and clean) before we start moving files into it.
     archive();
 
-    string pathname = str::joinpath(m_path, relpath);
+    const string& root = config().path;
+    string pathname = str::joinpath(root, relpath);
     string arcrelname = str::joinpath("last", relpath);
-    string arcabsname = str::joinpath(m_path, ".archive", arcrelname);
+    string arcabsname = str::joinpath(root, ".archive", arcrelname);
     sys::makedirs(str::dirname(arcabsname));
 
     // Sanity checks: avoid conflicts
@@ -183,7 +189,7 @@ void SegmentedChecker::archiveSegment(const std::string& relpath)
 size_t SegmentedChecker::removeSegment(const std::string& relpath, bool withData)
 {
     if (withData)
-        return m_segment_manager->remove(relpath);
+        return segment_manager().remove(relpath);
     else
         return 0;
 }
@@ -201,7 +207,9 @@ void SegmentedChecker::removeAll(dataset::Reporter& reporter, bool writable)
 
 void SegmentedChecker::repack(dataset::Reporter& reporter, bool writable)
 {
-    if (files::hasDontpackFlagfile(m_path))
+    const string& root = config().path;
+
+    if (files::hasDontpackFlagfile(root))
     {
         reporter.operation_aborted(name(), "repack", "dataset needs checking first");
         return;
@@ -221,7 +229,7 @@ void SegmentedChecker::repack(dataset::Reporter& reporter, bool writable)
         });
         repacker->end();
     } catch (...) {
-        files::createDontpackFlagfile(m_path);
+        files::createDontpackFlagfile(root);
         throw;
     }
 
@@ -230,6 +238,8 @@ void SegmentedChecker::repack(dataset::Reporter& reporter, bool writable)
 
 void SegmentedChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
+    const string& root = config().path;
+
     if (fix)
     {
         maintenance::RealFixer fixer(reporter, *this);
@@ -239,11 +249,11 @@ void SegmentedChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
             }, quick);
             fixer.end();
         } catch (...) {
-            files::createDontpackFlagfile(m_path);
+            files::createDontpackFlagfile(root);
             throw;
         }
 
-        files::removeDontpackFlagfile(m_path);
+        files::removeDontpackFlagfile(root);
     } else {
         maintenance::MockFixer fixer(reporter, *this);
         maintenance(reporter, [&](const std::string& relpath, segment::State state) {
@@ -253,20 +263,6 @@ void SegmentedChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
     }
 
     LocalChecker::check(reporter, fix, quick);
-}
-
-SegmentedChecker* SegmentedChecker::create(const ConfigFile& cfg)
-{
-    string type = str::lower(cfg.value("type"));
-    if (type.empty())
-        type = "local";
-
-    if (type == "ondisk2" || type == "test")
-        return new dataset::ondisk2::Checker(cfg);
-    if (type == "simple" || type == "error" || type == "duplicates")
-        return new dataset::simple::Checker(cfg);
-
-    throw std::runtime_error("cannot create dataset: unknown dataset type \""+type+"\"");
 }
 
 }

@@ -267,26 +267,16 @@ void SegmentManager::flush_writers()
     segments.clear();
 }
 
-std::unique_ptr<SegmentManager> SegmentManager::get(const std::string& root)
+std::unique_ptr<SegmentManager> SegmentManager::get(const std::string& root, bool force_dir, bool mock_data)
 {
-    return unique_ptr<SegmentManager>(new AutoSegmentManager(root));
-}
-
-std::unique_ptr<SegmentManager> SegmentManager::get(const ConfigFile& cfg)
-{
-    string root = cfg.value("path");
-    bool mockdata = cfg.value("mockdata") == "true";
-    if (cfg.value("segments") == "dir")
-    {
-        if (mockdata)
+    if (force_dir)
+        if (mock_data)
             return unique_ptr<SegmentManager>(new HoleDirSegmentManager(root));
         else
             return unique_ptr<SegmentManager>(new ForceDirSegmentManager(root));
-    }
     else
-        return unique_ptr<SegmentManager>(new AutoSegmentManager(root, mockdata));
+        return unique_ptr<SegmentManager>(new AutoSegmentManager(root, mock_data));
 }
-
 
 }
 }

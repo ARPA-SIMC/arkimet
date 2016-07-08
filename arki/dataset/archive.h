@@ -38,6 +38,15 @@ bool is_archive(const std::string& dir);
 
 }
 
+struct ArchivesConfig : public dataset::Config
+{
+    std::string root;
+
+    ArchivesConfig(const std::string& root);
+
+    static std::shared_ptr<const ArchivesConfig> create(const std::string& root);
+};
+
 /**
  * Set of archives.
  *
@@ -62,15 +71,17 @@ bool is_archive(const std::string& dir);
 class ArchivesReader : public Reader
 {
 protected:
+    std::shared_ptr<const ArchivesConfig> m_config;
     archive::ArchivesReaderRoot* archives = nullptr;
 
     void summary_for_all(Summary& out);
 
 public:
-    ArchivesReader(const std::string& root);
+    ArchivesReader(std::shared_ptr<const ArchivesConfig> config);
     virtual ~ArchivesReader();
 
     std::string type() const override;
+    const ArchivesConfig& config() const override { return *m_config; }
 
     void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
@@ -81,14 +92,16 @@ public:
 class ArchivesChecker : public Checker
 {
 protected:
+    std::shared_ptr<const ArchivesConfig> m_config;
     archive::ArchivesCheckerRoot* archives = nullptr;
 
 public:
     /// Create an archive for the dataset at the given root dir.
-    ArchivesChecker(const std::string& root);
+    ArchivesChecker(std::shared_ptr<const ArchivesConfig> config);
     virtual ~ArchivesChecker();
 
     std::string type() const override;
+    const ArchivesConfig& config() const override { return *m_config; }
 
     void indexSegment(const std::string& relname, metadata::Collection&& mds);
 

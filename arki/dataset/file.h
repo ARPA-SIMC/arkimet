@@ -15,52 +15,56 @@ class Matcher;
 
 namespace dataset {
 
+class FileConfig : public dataset::Config
+{
+public:
+    FileConfig(const ConfigFile& cfg);
+
+    std::string pathname;
+    std::string format;
+
+    std::unique_ptr<Reader> create_reader() const override;
+
+    static std::shared_ptr<const FileConfig> create(const ConfigFile& cfg);
+};
+
 /**
  * Dataset on a single file
  */
 class File : public Reader
 {
 protected:
-    std::string m_format;
+    virtual void scan(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
 
 public:
-    File(const ConfigFile& cfg);
-
     std::string type() const override { return "file"; }
-
-    virtual std::string pathname() const = 0;
-
-    virtual void scan(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
+    const FileConfig& config() const override = 0;
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
 
-	static void readConfig(const std::string& path, ConfigFile& cfg);
-
-	/**
-	 * Instantiate an appropriate File dataset for the given configuration
-	 */
-	static File* create(const ConfigFile& cfg);
+    static void readConfig(const std::string& path, ConfigFile& cfg);
 };
 
 class FdFile : public File
 {
 protected:
+    std::shared_ptr<const FileConfig> m_config;
     NamedFileDescriptor* fd = nullptr;
 
 public:
-    FdFile(const ConfigFile& cfg);
+    FdFile(std::shared_ptr<const FileConfig> config);
     virtual ~FdFile();
 
-    std::string pathname() const override;
+    const FileConfig& config() const override { return *m_config; }
 };
 
 class ArkimetFile : public FdFile
 {
 public:
-	// Initialise the dataset with the information from the configurationa in 'cfg'
-	ArkimetFile(const ConfigFile& cfg);
-	virtual ~ArkimetFile();
+    using FdFile::FdFile;
+
+    virtual ~ArkimetFile();
 
     void scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
 };
@@ -71,9 +75,11 @@ protected:
     LineReader* reader;
 
 public:
-	// Initialise the dataset with the information from the configurationa in 'cfg'
-	YamlFile(const ConfigFile& cfg);
-	virtual ~YamlFile();
+    using FdFile::FdFile;
+
+    // Initialise the dataset with the information from the configurationa in 'cfg'
+    YamlFile(std::shared_ptr<FileConfig> config);
+    virtual ~YamlFile();
 
     void scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
 };
@@ -81,16 +87,16 @@ public:
 class RawFile : public File
 {
 protected:
-    std::string m_pathname;
+    std::shared_ptr<const FileConfig> m_config;
 
 public:
-	// Initialise the dataset with the information from the configuration in 'cfg'
-	RawFile(const ConfigFile& cfg);
-	virtual ~RawFile();
+    // Initialise the dataset with the information from the configuration in 'cfg'
+    RawFile(std::shared_ptr<const FileConfig> config);
+    virtual ~RawFile();
+
+    const FileConfig& config() const override { return *m_config; }
 
     void scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
-
-    std::string pathname() const override;
 };
 
 }

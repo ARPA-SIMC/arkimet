@@ -3,7 +3,7 @@
 
 /// dataset/ondisk2/writer - Local on disk dataset writer
 
-#include <arki/dataset/indexed.h>
+#include <arki/dataset/ondisk2.h>
 #include <arki/configfile.h>
 #include <arki/dataset/index/contents.h>
 #include <string>
@@ -25,7 +25,7 @@ class RealFixer;
 class Writer : public IndexedWriter
 {
 protected:
-	ConfigFile m_cfg;
+    std::shared_ptr<const ondisk2::Config> m_config;
     index::WContents* idx;
 
     AcquireResult acquire_replace_never(Metadata& md);
@@ -33,8 +33,10 @@ protected:
     AcquireResult acquire_replace_higher_usn(Metadata& md);
 
 public:
-    Writer(const ConfigFile& cfg);
+    Writer(std::shared_ptr<const ondisk2::Config> config);
     virtual ~Writer();
+
+    const ondisk2::Config& config() const override { return *m_config; }
 
     std::string type() const override;
 
@@ -43,26 +45,30 @@ public:
     void flush() override;
     virtual Pending test_writelock();
 
-	/**
-	 * Iterate through the contents of the dataset, in depth-first order.
-	 */
-	//void depthFirstVisit(Visitor& v);
+    /**
+     * Iterate through the contents of the dataset, in depth-first order.
+     */
+    //void depthFirstVisit(Visitor& v);
 
-	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
+    static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 
 };
 
 class Checker : public IndexedChecker
 {
 protected:
-    ConfigFile m_cfg;
+    std::shared_ptr<const ondisk2::Config> m_config;
     index::WContents* idx;
 
 public:
-    Checker(const ConfigFile& cfg);
+    Checker(std::shared_ptr<const ondisk2::Config> config);
+
+    const ondisk2::Config& config() const override { return *m_config; }
 
     std::string type() const override;
 
+    void removeAll(dataset::Reporter& reporter, bool writable=false) override;
+    void repack(dataset::Reporter& reporter, bool writable=false) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
 
     void rescanSegment(const std::string& relpath) override;

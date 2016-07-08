@@ -168,10 +168,6 @@ struct FindMissing
 
 }
 
-IndexedReader::IndexedReader(const ConfigFile& cfg)
-    : SegmentedReader(cfg)
-{
-}
 
 IndexedReader::~IndexedReader()
 {
@@ -184,7 +180,7 @@ void IndexedReader::query_data(const dataset::DataQuery& q, metadata_dest_func d
     if (!m_idx) return;
     // FIXME: this is cargo culted from the old ondisk2 reader: what is the use case for this?
     if (!m_idx->query_data(q, dest))
-        throw std::runtime_error("cannot query " + m_path + ": index could not be used");
+        throw std::runtime_error("cannot query " + config().path + ": index could not be used");
 }
 
 void IndexedReader::query_summary(const Matcher& matcher, Summary& summary)
@@ -194,25 +190,15 @@ void IndexedReader::query_summary(const Matcher& matcher, Summary& summary)
     if (!m_idx) return;
     // FIXME: this is cargo culted from the old ondisk2 reader: what is the use case for this?
     if (!m_idx->query_summary(matcher, summary))
-        throw std::runtime_error("cannot query " + m_path + ": index could not be used");
+        throw std::runtime_error("cannot query " + config().path + ": index could not be used");
 }
 
-
-IndexedWriter::IndexedWriter(const ConfigFile& cfg)
-    : SegmentedWriter(cfg)
-{
-}
 
 IndexedWriter::~IndexedWriter()
 {
     delete m_idx;
 }
 
-
-IndexedChecker::IndexedChecker(const ConfigFile& cfg)
-    : SegmentedChecker(cfg)
-{
-}
 
 IndexedChecker::~IndexedChecker()
 {
@@ -230,7 +216,7 @@ void IndexedChecker::maintenance(dataset::Reporter& reporter, segment::state_fun
     // FindMissing accumulates states instead of acting on files right away;
     // this has the desirable side effect of avoiding modifying the index while
     // it is being iterated
-    FindMissing fm(*this, m_path);
+    FindMissing fm(*this, config().path);
     m_idx->scan_files([&](const std::string& relpath, segment::State state, const metadata::Collection& mds) {
         // Compute the span of reftimes inside the segment
         unique_ptr<Time> md_begin;
@@ -248,11 +234,11 @@ void IndexedChecker::maintenance(dataset::Reporter& reporter, segment::state_fun
                 state = SEGMENT_CORRUPTED;
                 md_begin.reset(new Time(0, 0, 0));
                 md_until.reset(new Time(0, 0, 0));
-            } else if (m_step) {
-                // If we have a step, ensure that the reftime span fits inside the segment step
+            } else {
+                // Ensure that the reftime span fits inside the segment step
                 Time seg_begin;
                 Time seg_until;
-                if (m_step->path_timespan(relpath, seg_begin, seg_until))
+                if (config().step().path_timespan(relpath, seg_begin, seg_until))
                 {
                     if (*md_begin < seg_begin || *md_until > seg_until)
                     {
@@ -270,7 +256,7 @@ void IndexedChecker::maintenance(dataset::Reporter& reporter, segment::state_fun
         }
 
         if (state.is_ok())
-            state = m_segment_manager->check(reporter, name(), relpath, mds, quick);
+            state = segment_manager().check(reporter, name(), relpath, mds, quick);
         fm.check(relpath, state, *md_begin, *md_until);
     });
     fm.end();
@@ -278,7 +264,7 @@ void IndexedChecker::maintenance(dataset::Reporter& reporter, segment::state_fun
     // Second pass: checking if segments are old enough to be deleted or
     // archived
 
-    CheckAge ca(*this, m_archive_age, m_delete_age);
+    CheckAge ca(*this, config().archive_age, config().delete_age);
     for (const auto& seginfo: fm.results)
         v(seginfo.relpath, ca.check(seginfo));
 

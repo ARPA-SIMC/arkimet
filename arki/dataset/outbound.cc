@@ -1,5 +1,6 @@
 #include "outbound.h"
 #include "step.h"
+#include "empty.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/dataset/segment.h"
@@ -13,29 +14,46 @@ using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
+namespace outbound {
 
-Outbound::Outbound(const ConfigFile& cfg)
-    : SegmentedWriter(cfg)
+Config::Config(const ConfigFile& cfg)
+    : dataset::SegmentedConfig(cfg)
 {
 }
 
-Outbound::~Outbound()
+std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
+{
+    return std::shared_ptr<const Config>(new Config(cfg));
+}
+
+std::unique_ptr<dataset::Reader> Config::create_reader() const { return std::unique_ptr<dataset::Reader>(new empty::Reader(shared_from_this())); }
+std::unique_ptr<dataset::Writer> Config::create_writer() const { return std::unique_ptr<dataset::Writer>(new Writer(dynamic_pointer_cast<const Config>(shared_from_this()))); }
+
+
+Writer::Writer(std::shared_ptr<const SegmentedConfig> config)
+    : m_config(config)
+{
+    // Create the directory if it does not exist
+    sys::makedirs(config->path);
+}
+
+Writer::~Writer()
 {
 }
 
-std::string Outbound::type() const { return "outbound"; }
+std::string Writer::type() const { return "outbound"; }
 
-void Outbound::storeBlob(Metadata& md, const std::string& reldest)
+void Writer::storeBlob(Metadata& md, const std::string& reldest)
 {
     // Write using segment::Writer
     Segment* w = file(md, md.source().format);
     w->append(md);
 }
 
-Writer::AcquireResult Outbound::acquire(Metadata& md, ReplaceStrategy replace)
+Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
-    string reldest = (*m_step)(md);
-    string dest = m_path + "/" + reldest;
+    string reldest = config().step()(md);
+    string dest = path() + "/" + reldest;
 
     sys::makedirs(str::dirname(dest));
 
@@ -43,7 +61,7 @@ Writer::AcquireResult Outbound::acquire(Metadata& md, ReplaceStrategy replace)
         storeBlob(md, reldest);
         return ACQ_OK;
     } catch (std::exception& e) {
-        md.add_note("Failed to store in dataset '"+m_name+"': " + e.what());
+        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
         return ACQ_ERROR;
     }
 
@@ -52,23 +70,24 @@ Writer::AcquireResult Outbound::acquire(Metadata& md, ReplaceStrategy replace)
     throw std::runtime_error("this code path should never be reached (it is here to appease a compiler warning)");
 }
 
-void Outbound::remove(Metadata&)
+void Writer::remove(Metadata&)
 {
     throw std::runtime_error("cannot remove data from outbound dataset: dataset does not support removing items");
 }
 
-void Outbound::removeAll(std::ostream& log, bool writable)
+void Writer::removeAll(std::ostream& log, bool writable)
 {
-    log << m_name << ": cleaning dataset not implemented" << endl;
+    log << name() << ": cleaning dataset not implemented" << endl;
 }
 
-Writer::AcquireResult Outbound::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
-    unique_ptr<Step> tf(Step::create(cfg));
+    unique_ptr<Step> tf(Step::create(cfg.value("step")));
     string dest = cfg.value("path") + "/" + (*tf)(md) + "." + md.source().format;
     out << "Assigning to dataset " << cfg.value("name") << " in file " << dest << endl;
     return ACQ_OK;
 }
 
+}
 }
 }

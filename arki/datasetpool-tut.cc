@@ -41,18 +41,8 @@ struct arki_datasetpool_shar {
 };
 TESTGRP(arki_datasetpool);
 
-// Test instantiating readonly datasets
-def_test(1)
-{
-	ReaderPool pool(config);
-	ensure(pool.get("error") != 0);
-	ensure(pool.get("test200") != 0);
-	ensure(pool.get("test80") != 0);
-	ensure(pool.get("duplicates") == 0);
-}
-
 // Test instantiating writable datasets
-def_test(2)
+def_test(1)
 {
     WriterPool pool(config);
     ensure(pool.get("error") != 0);

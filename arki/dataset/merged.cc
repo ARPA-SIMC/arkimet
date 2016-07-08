@@ -120,11 +120,11 @@ public:
         }
     }
 
-	void init(Reader& dataset, const DataQuery* query)
-	{
-		this->dataset = &dataset;
-		this->query = query;
-	}
+    void init(Reader& dataset, const DataQuery* query)
+    {
+        this->dataset = &dataset;
+        this->query = query;
+    }
 };
 
 class SummaryReader
@@ -146,16 +146,18 @@ public:
         }
     }
 
-	void init(const Matcher& matcher, Reader& dataset)
-	{
-		this->matcher = &matcher;
-		this->dataset = &dataset;
-	}
+    void init(const Matcher& matcher, Reader& dataset)
+    {
+        this->matcher = &matcher;
+        this->dataset = &dataset;
+    }
 };
 
 Merged::Merged()
-    : Reader("merged")
 {
+    dataset::Config* cfg;
+    m_config = std::shared_ptr<const dataset::Config>(cfg = new dataset::Config);
+    cfg->name = "merged";
 }
 
 Merged::~Merged()
@@ -166,7 +168,7 @@ std::string Merged::type() const { return "merged"; }
 
 void Merged::addDataset(Reader& ds)
 {
-	datasets.push_back(&ds);
+    datasets.push_back(&ds);
 }
 
 void Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
@@ -195,20 +197,20 @@ void Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     if (!sorter)
         sorter = sort::Compare::parse("");
 
-	while (true)
-	{
+    while (true)
+    {
         const Metadata* minmd = 0;
         int minmd_idx = 0;
-		for (size_t i = 0; i < datasets.size(); ++i)
-		{
+        for (size_t i = 0; i < datasets.size(); ++i)
+        {
             const Metadata* md = readers[i].mdbuf.get();
             if (!md) continue;
-			if (!minmd || sorter->compare(*md, *minmd) < 0)
-			{
-				minmd = md;
-				minmd_idx = i;
-			}
-		}
+            if (!minmd || sorter->compare(*md, *minmd) < 0)
+            {
+                minmd = md;
+                minmd_idx = i;
+            }
+        }
         // When there's nothing more to read, we exit
         if (minmd == 0) break;
         dest(readers[minmd_idx].mdbuf.pop());
@@ -279,20 +281,6 @@ void Merged::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 
     for (auto i: datasets)
         i->query_bytes(q, out);
-}
-
-AutoMerged::AutoMerged() {}
-AutoMerged::AutoMerged(const ConfigFile& cfg)
-{
-    for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
-            i != cfg.sectionEnd(); ++i)
-        datasets.push_back(Reader::create(*(i->second)));
-}
-AutoMerged::~AutoMerged()
-{
-    for (std::vector<Reader*>::iterator i = datasets.begin();
-            i != datasets.end(); ++i)
-        delete *i;
 }
 
 }

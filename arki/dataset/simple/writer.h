@@ -3,7 +3,7 @@
 
 /// dataset/simple/writer - Writer for simple datasets with no duplicate checks
 
-#include <arki/dataset/indexed.h>
+#include <arki/dataset/simple.h>
 #include <arki/configfile.h>
 
 #include <string>
@@ -23,14 +23,17 @@ class Reader;
 class Writer : public IndexedWriter
 {
 protected:
+    std::shared_ptr<const simple::Config> m_config;
     index::Manifest* m_mft;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
     Segment* file(const Metadata& md, const std::string& format);
 
 public:
-    Writer(const ConfigFile& cfg);
+    Writer(std::shared_ptr<const simple::Config> config);
     virtual ~Writer();
+
+    const simple::Config& config() const override { return *m_config; }
 
     std::string type() const override;
 
@@ -46,16 +49,23 @@ public:
 class Checker : public IndexedChecker
 {
 protected:
+    std::shared_ptr<const simple::Config> m_config;
     index::Manifest* m_mft;
 
     /// Return a (shared) instance of the Segment for the given relative pathname
     Segment* file(const Metadata& md, const std::string& format);
 
 public:
-    Checker(const ConfigFile& cfg);
+    Checker(std::shared_ptr<const simple::Config> config);
     virtual ~Checker();
 
+    const simple::Config& config() const override { return *m_config; }
+
     std::string type() const override;
+
+    void removeAll(dataset::Reporter& reporter, bool writable=false) override;
+    void repack(dataset::Reporter& reporter, bool writable=false) override;
+    void check(dataset::Reporter& reporter, bool fix, bool quick) override;
 
     void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
     void rescanSegment(const std::string& relpath) override;

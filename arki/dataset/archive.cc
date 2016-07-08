@@ -5,6 +5,7 @@
 #include "simple/writer.h"
 #include "offline.h"
 #include "maintenance.h"
+#include "empty.h"
 #include "arki/configfile.h"
 #include "arki/libconfig.h"
 #include "arki/matcher.h"
@@ -40,25 +41,16 @@ bool is_archive(const std::string& dir)
     return index::Manifest::exists(dir);
 }
 
+
 static ConfigFile make_config(const std::string& dir)
 {
     ConfigFile cfg;
     cfg.setValue("name", str::basename(dir));
     cfg.setValue("path", dir);
+    cfg.setValue("step", "monthly");
     return cfg;
 }
 
-static ConfigFile make_config(const std::string& name, const std::string& dir)
-{
-    ConfigFile cfg;
-    cfg.setValue("name", name);
-    cfg.setValue("path", dir);
-    return cfg;
-}
-
-}
-
-namespace archive {
 
 template<typename Archive>
 struct ArchivesRoot
@@ -182,11 +174,17 @@ struct ArchivesRoot
         if (sys::exists(pathname + ".summary"))
         {
             if (index::Manifest::exists(pathname))
-                res.reset(new simple::Reader(make_config(pathname)));
-            else
-                res.reset(new OfflineReader(pathname + ".summary"));
-        } else
-            res.reset(new simple::Reader(make_config(pathname)));
+            {
+                std::shared_ptr<const simple::Config> config(new simple::Config(make_config(pathname)));
+                res.reset(new simple::Reader(config));
+            } else {
+                std::shared_ptr<const OfflineConfig> config(new OfflineConfig(pathname));
+                res.reset(new OfflineReader(config));
+            }
+        } else {
+            std::shared_ptr<const simple::Config> config(new simple::Config(make_config(pathname)));
+            res.reset(new simple::Reader(config));
+        }
         res->set_parent(parent);
         return res;
     }
@@ -237,11 +235,18 @@ struct ArchivesCheckerRoot: public ArchivesRoot<Checker>
         if (sys::exists(pathname + ".summary"))
         {
             if (index::Manifest::exists(pathname))
-                res.reset(new simple::Checker(make_config(pathname)));
-            else
-                res.reset(new NullChecker(make_config(pathname)));
-        } else
-            res.reset(new simple::Checker(make_config(pathname)));
+            {
+                std::shared_ptr<const simple::Config> config(new simple::Config(make_config(pathname)));
+                res.reset(new simple::Checker(config));
+            } else {
+                std::shared_ptr<dataset::Config> config(new dataset::Config(make_config(pathname)));
+                config->name = "pathname";
+                res.reset(new empty::Checker(config));
+            }
+        } else {
+            std::shared_ptr<const simple::Config> config(new simple::Config(make_config(pathname)));
+            res.reset(new simple::Checker(config));
+        }
         res->set_parent(parent);
         return res;
     }
@@ -249,9 +254,20 @@ struct ArchivesCheckerRoot: public ArchivesRoot<Checker>
 
 }
 
+ArchivesConfig::ArchivesConfig(const std::string& root)
+    : root(root)
+{
+    name = "archives";
+}
 
-ArchivesReader::ArchivesReader(const std::string& root)
-    : Reader("archives"), archives(new archive::ArchivesReaderRoot(root, *this))
+std::shared_ptr<const ArchivesConfig> ArchivesConfig::create(const std::string& root)
+{
+    return std::shared_ptr<const ArchivesConfig>(new ArchivesConfig(root));
+}
+
+
+ArchivesReader::ArchivesReader(std::shared_ptr<const ArchivesConfig> config)
+    : m_config(config), archives(new archive::ArchivesReaderRoot(config->root, *this))
 {
     archives->rescan();
 }
@@ -323,8 +339,8 @@ void ArchivesReader::query_summary(const Matcher& matcher, Summary& summary)
 
 
 
-ArchivesChecker::ArchivesChecker(const std::string& root)
-    : Checker(archive::make_config("archives", root)), archives(new archive::ArchivesCheckerRoot(root, *this))
+ArchivesChecker::ArchivesChecker(std::shared_ptr<const ArchivesConfig> config)
+    : m_config(config), archives(new archive::ArchivesCheckerRoot(config->root, *this))
 {
     archives->rescan();
 }

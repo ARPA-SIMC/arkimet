@@ -163,7 +163,7 @@ def_test(2)
         }
     } test;
 
-    wruntest(test.run);
+    wassert(test.run());
 }
 def_test(3)
 {
@@ -175,7 +175,7 @@ def_test(3)
         }
     } test;
 
-    wruntest(test.run);
+    wassert(test.run());
 }
 
 }

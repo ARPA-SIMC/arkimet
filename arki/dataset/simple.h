@@ -1,19 +1,15 @@
-#ifndef ARKI_DATASET_ONDISK2_H
-#define ARKI_DATASET_ONDISK2_H
+#ifndef ARKI_DATASET_SIMPLE_H
+#define ARKI_DATASET_SIMPLE_H
 
 #include <arki/dataset/indexed.h>
 
 namespace arki {
 namespace dataset {
-namespace ondisk2 {
+namespace simple {
 
 struct Config : public dataset::IndexedConfig
 {
-    bool smallfiles;
-    std::string summary_cache_pathname;
-    std::string index_pathname;
-    std::string index;
-    std::string unique;
+    std::string index_type;
 
     Config(const ConfigFile& cfg);
 
@@ -27,5 +23,4 @@ struct Config : public dataset::IndexedConfig
 }
 }
 }
-
 #endif

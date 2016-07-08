@@ -229,11 +229,8 @@ public:
      */
     virtual void truncate(const std::string& relname, size_t offset) = 0;
 
-    /// Create a SegmentManager using default options
-    static std::unique_ptr<SegmentManager> get(const std::string& root);
-
-    /// Create a new SegmentManager given a dataset's configuration
-    static std::unique_ptr<SegmentManager> get(const ConfigFile& cfg);
+    /// Create a SegmentManager
+    static std::unique_ptr<SegmentManager> get(const std::string& root, bool force_dir=false, bool mock_data=false);
 };
 
 }

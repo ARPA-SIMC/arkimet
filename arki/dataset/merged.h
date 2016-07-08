@@ -20,36 +20,24 @@ namespace dataset {
 class Merged : public Reader
 {
 protected:
-	std::vector<Reader*> datasets;
+    std::shared_ptr<const Config> m_config;
+    std::vector<Reader*> datasets;
 
 public:
-	Merged();
-	virtual ~Merged();
+    Merged();
+    virtual ~Merged();
 
+    const Config& config() const override { return *m_config; }
     std::string type() const override;
 
-	/// Add a dataset to the group of datasets to merge
-	void addDataset(Reader& ds);
+    /// Add a dataset to the group of datasets to merge
+    void addDataset(Reader& ds);
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
     void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out) override;
 };
 
-/**
- * Same as Merged, but take care of instantiating and managing the child datasets
- */
-class AutoMerged : public Merged
-{
-	void addDataset(Reader& ds);
-
-public:
-	AutoMerged();
-	AutoMerged(const ConfigFile& cfg);
-	virtual ~AutoMerged();
-};
-
 }
 }
-
 #endif
