@@ -45,12 +45,13 @@ Writer::Writer(std::shared_ptr<const ondisk2::Config> config)
     // Create the directory if it does not exist
     sys::makedirs(config->path);
 
+    acquire_lock();
+
     // If the index is missing, take note not to perform a repack until a
     // check is made
     if (!sys::exists(config->index_pathname))
         files::createDontpackFlagfile(config->path);
 
-    acquire_lock();
     idx->open();
 }
 
@@ -263,6 +264,8 @@ Checker::Checker(std::shared_ptr<const ondisk2::Config> config)
 
     // Create the directory if it does not exist
     sys::makedirs(config->path);
+
+    acquire_lock();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made

@@ -34,7 +34,8 @@ namespace simple {
 Writer::Writer(std::shared_ptr<const simple::Config> config)
     : m_config(config), m_mft(0)
 {
-    sys::mkdir_ifmissing(config->path, 0777);
+    // Create the directory if it does not exist
+    sys::makedirs(config->path);
 
     acquire_lock();
 
@@ -119,6 +120,11 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
 Checker::Checker(std::shared_ptr<const simple::Config> config)
     : m_config(config), m_mft(0)
 {
+    // Create the directory if it does not exist
+    sys::makedirs(config->path);
+
+    acquire_lock();
+
     // If the index is missing, take note not to perform a repack until a
     // check is made
     if (!index::Manifest::exists(config->path))

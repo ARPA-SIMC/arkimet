@@ -39,20 +39,20 @@ namespace index {
 
 struct IndexGlobalData
 {
-	std::set<types::Code> all_components;
+    std::set<types::Code> all_components;
 
-	IndexGlobalData() {
-		all_components.insert(TYPE_ORIGIN);
-		all_components.insert(TYPE_PRODUCT);
-		all_components.insert(TYPE_LEVEL);
-		all_components.insert(TYPE_TIMERANGE);
-		all_components.insert(TYPE_AREA);
-		all_components.insert(TYPE_PRODDEF);
-		all_components.insert(TYPE_RUN);
-		//all_components.insert(TYPE_REFTIME);
-		all_components.insert(TYPE_QUANTITY);
-		all_components.insert(TYPE_TASK);
-	}
+    IndexGlobalData() {
+        all_components.insert(TYPE_ORIGIN);
+        all_components.insert(TYPE_PRODUCT);
+        all_components.insert(TYPE_LEVEL);
+        all_components.insert(TYPE_TIMERANGE);
+        all_components.insert(TYPE_AREA);
+        all_components.insert(TYPE_PRODDEF);
+        all_components.insert(TYPE_RUN);
+        //all_components.insert(TYPE_REFTIME);
+        all_components.insert(TYPE_QUANTITY);
+        all_components.insert(TYPE_TASK);
+    }
 };
 static IndexGlobalData igd;
 
@@ -81,71 +81,71 @@ Contents::~Contents()
 
 std::set<types::Code> Contents::available_other_tables() const
 {
-	// See what metadata types are already handled by m_uniques,
-	// if any
-	std::set<types::Code> unique_members;
-	if (m_uniques)
-		unique_members = m_uniques->members();
+    // See what metadata types are already handled by m_uniques,
+    // if any
+    std::set<types::Code> unique_members;
+    if (m_uniques)
+        unique_members = m_uniques->members();
 
-	// See what columns are available in the database
-	std::set<types::Code> available_columns;
-	Query q("gettables", m_db);
-	q.compile("SELECT name FROM sqlite_master WHERE type='table'");
-	while (q.step())
-	{
+    // See what columns are available in the database
+    std::set<types::Code> available_columns;
+    Query q("gettables", m_db);
+    q.compile("SELECT name FROM sqlite_master WHERE type='table'");
+    while (q.step())
+    {
         string name = q.fetchString(0);
         if (!str::startswith(name, "sub_"))
             continue;
-		types::Code code = types::checkCodeName(name.substr(4));
-		if (code != TYPE_INVALID
-		 && unique_members.find(code) == unique_members.end()
-		 && igd.all_components.find(code) != igd.all_components.end())
-			available_columns.insert(code);
-	}
+        types::Code code = types::checkCodeName(name.substr(4));
+        if (code != TYPE_INVALID
+         && unique_members.find(code) == unique_members.end()
+         && igd.all_components.find(code) != igd.all_components.end())
+            available_columns.insert(code);
+    }
 
-	return available_columns;
+    return available_columns;
 }
 
 std::set<types::Code> Contents::all_other_tables() const
 {
-	std::set<types::Code> res;
+    std::set<types::Code> res;
 
-	// See what metadata types are already handled by m_uniques,
-	// if any
-	std::set<types::Code> unique_members;
-	if (m_uniques)
-		unique_members = m_uniques->members();
+    // See what metadata types are already handled by m_uniques,
+    // if any
+    std::set<types::Code> unique_members;
+    if (m_uniques)
+        unique_members = m_uniques->members();
 
-	// Handle all the rest
-	for (std::set<types::Code>::const_iterator i = igd.all_components.begin();
-			i != igd.all_components.end(); ++i)
-		if (unique_members.find(*i) == unique_members.end())
-			res.insert(*i);
-	return res;
+    // Handle all the rest
+    for (std::set<types::Code>::const_iterator i = igd.all_components.begin();
+            i != igd.all_components.end(); ++i)
+        if (unique_members.find(*i) == unique_members.end())
+            res.insert(*i);
+    return res;
 }
 
 void Contents::initQueries()
 {
-	if (!m_others)
-	{
-		std::set<types::Code> other_members = available_other_tables();
-		if (not other_members.empty())
-			m_others = new Aggregate(m_db, "mdother", other_members);
-	}
+    if (!m_others)
+    {
+        std::set<types::Code> other_members = available_other_tables();
+        if (not other_members.empty())
+            m_others = new Aggregate(m_db, "mdother", other_members);
+    }
 
-	if (m_uniques) m_uniques->initQueries();
-	if (m_others) m_others->initQueries();
+    if (m_uniques) m_uniques->initQueries();
+    if (m_others) m_others->initQueries();
 
-	string query = "SELECT id FROM md WHERE reftime=?";
-	if (m_uniques) query += " AND uniq=?";
-	if (m_others) query += " AND other=?";
-    if (m_smallfiles) query += " AND data=?";
-	m_get_id.compile(query);
+    string query = "SELECT id FROM md WHERE reftime=?";
+    if (m_uniques) query += " AND uniq=?";
+    if (m_others) query += " AND other=?";
+    if (config().smallfiles) query += " AND data=?";
+    m_get_id.compile(query);
 
     query = "SELECT id, format, file, offset, size, notes, reftime";
     if (m_uniques) query += ", uniq";
     if (m_others) query += ", other";
-    if (m_smallfiles) query += ", data";
+    if (config().smallfiles) query += ", data";
     query += " FROM md WHERE reftime=?";
     if (m_uniques) query += " AND uniq=?";
     m_get_current.compile(query);
@@ -153,36 +153,36 @@ void Contents::initQueries()
 
 std::set<types::Code> Contents::unique_codes() const
 {
-	std::set<types::Code> res;
-	if (m_uniques) res = m_uniques->members();
-	res.insert(TYPE_REFTIME);
-	return res;
+    std::set<types::Code> res;
+    if (m_uniques) res = m_uniques->members();
+    res.insert(TYPE_REFTIME);
+    return res;
 }
 
 void Contents::setupPragmas()
 {
-	// Faster but riskier, since we do not have a flagfile to trap
-	// interrupted transactions
-	//m_db.exec("PRAGMA synchronous = OFF");
-	// Faster but riskier, since we do not have a flagfile to trap
-	// interrupted transactions
-	//m_db.exec("PRAGMA journal_mode = MEMORY");
-	// Truncate the journal instead of delete: faster on many file systems
-	// m_db.exec("PRAGMA journal_mode = TRUNCATE");
-	// Zero the header of the journal instead of delete: faster on many file systems
+    // Faster but riskier, since we do not have a flagfile to trap
+    // interrupted transactions
+    //m_db.exec("PRAGMA synchronous = OFF");
+    // Faster but riskier, since we do not have a flagfile to trap
+    // interrupted transactions
+    //m_db.exec("PRAGMA journal_mode = MEMORY");
+    // Truncate the journal instead of delete: faster on many file systems
+    // m_db.exec("PRAGMA journal_mode = TRUNCATE");
+    // Zero the header of the journal instead of delete: faster on many file systems
     // Use a WAL journal, which allows reads and writes together
     m_db.exec("PRAGMA journal_mode = WAL");
-	// Also, since the way we do inserts cause no trouble if a reader reads a
-	// partial insert, we do not need read locking
-	//m_db.exec("PRAGMA read_uncommitted = 1");
-	// Use new features, if we write we read it, so we do not need to
-	// support sqlite < 3.3.0 if we are above that version
-	m_db.exec("PRAGMA legacy_file_format = 0");
+    // Also, since the way we do inserts cause no trouble if a reader reads a
+    // partial insert, we do not need read locking
+    //m_db.exec("PRAGMA read_uncommitted = 1");
+    // Use new features, if we write we read it, so we do not need to
+    // support sqlite < 3.3.0 if we are above that version
+    m_db.exec("PRAGMA legacy_file_format = 0");
 }
 
 int Contents::id(const Metadata& md) const
 {
-	m_get_id.reset();
+    m_get_id.reset();
 
     int idx = 0;
     const reftime::Position* rt = md.get<reftime::Position>();
@@ -190,27 +190,27 @@ int Contents::id(const Metadata& md) const
     string sqltime = rt->time.to_sql();
     m_get_id.bind(++idx, sqltime);
 
-	if (m_uniques)
-	{
-		int id = m_uniques->get(md);
-		// If we do not have this aggregate, then we do not have this metadata
-		if (id == -1) return -1;
-		m_get_id.bind(++idx, id);
-	}
+    if (m_uniques)
+    {
+        int id = m_uniques->get(md);
+        // If we do not have this aggregate, then we do not have this metadata
+        if (id == -1) return -1;
+        m_get_id.bind(++idx, id);
+    }
 
-	if (m_others)
-	{
-		int id = m_others->get(md);
-		// If we do not have this aggregate, then we do not have this metadata
-		if (id == -1) return -1;
-		m_get_id.bind(++idx, id);
-	}
+    if (m_others)
+    {
+        int id = m_others->get(md);
+        // If we do not have this aggregate, then we do not have this metadata
+        if (id == -1) return -1;
+        m_get_id.bind(++idx, id);
+    }
 
-	int id = -1;
-	while (m_get_id.step())
-		id = m_get_id.fetch<int>(0);
+    int id = -1;
+    while (m_get_id.step())
+        id = m_get_id.fetch<int>(0);
 
-	return id;
+    return id;
 }
 
 bool Contents::get_current(const Metadata& md, Metadata& current) const
@@ -244,12 +244,12 @@ bool Contents::get_current(const Metadata& md, Metadata& current) const
 
 size_t Contents::count() const
 {
-	Query sq("count", m_db);
-	sq.compile("SELECT COUNT(*) FROM md");
-	size_t res = 0;
-	while (sq.step())
-		res = sq.fetch<size_t>(0);
-	return res;
+    Query sq("count", m_db);
+    sq.compile("SELECT COUNT(*) FROM md");
+    size_t res = 0;
+    while (sq.step())
+        res = sq.fetch<size_t>(0);
+    return res;
 }
 
 void Contents::list_segments(std::function<void(const std::string&)> dest)
@@ -265,7 +265,7 @@ void Contents::scan_files(segment::contents_func v)
     string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
     if (m_uniques) query += ", m.uniq";
     if (m_others) query += ", m.other";
-    if (m_smallfiles) query += ", m.data";
+    if (config().smallfiles) query += ", m.data";
     query += " FROM md AS m";
     query += " ORDER BY m.file, m.reftime, m.offset";
 
@@ -299,16 +299,16 @@ void Contents::scan_files(segment::contents_func v)
 
 void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& orderBy) const
 {
-	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
-	if (m_uniques) query += ", m.uniq";
-	if (m_others) query += ", m.other";
-    if (m_smallfiles) query += ", m.data";
-	query += " FROM md AS m";
+    string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
+    if (m_uniques) query += ", m.uniq";
+    if (m_others) query += ", m.other";
+    if (config().smallfiles) query += ", m.data";
+    query += " FROM md AS m";
     query += " WHERE m.file=? ORDER BY " + orderBy;
 
-	Query mdq("scan_file_md", m_db);
-	mdq.compile(query);
-	mdq.bind(1, relname);
+    Query mdq("scan_file_md", m_db);
+    mdq.compile(query);
+    mdq.bind(1, relname);
 
     while (mdq.step())
     {
@@ -355,11 +355,11 @@ static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begi
 
 bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) const
 {
-	vector<string> constraints;
+    vector<string> constraints;
 
-	// Add database constraints
-	if (not m.empty())
-	{
+    // Add database constraints
+    if (not m.empty())
+    {
         unique_ptr<Time> begin;
         unique_ptr<Time> end;
         if (!m.restrict_date_range(begin, end))
@@ -404,29 +404,29 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
                 constraints.push_back(reftime->toReftimeSQL("reftime"));
         }
 
-		// Join with the aggregate tables and add constraints on aggregate tables
-		if (m_uniques)
-		{
-			string s = m_uniques->make_subquery(m);
-			if (!s.empty())
-				constraints.push_back("uniq IN ("+s+")");
-		}
+        // Join with the aggregate tables and add constraints on aggregate tables
+        if (m_uniques)
+        {
+            string s = m_uniques->make_subquery(m);
+            if (!s.empty())
+                constraints.push_back("uniq IN ("+s+")");
+        }
 
-		if (m_others)
-		{
-			string s = m_others->make_subquery(m);
-			if (!s.empty())
-				constraints.push_back("other IN ("+s+")");
-		}
-	}
+        if (m_others)
+        {
+            string s = m_others->make_subquery(m);
+            if (!s.empty())
+                constraints.push_back("other IN ("+s+")");
+        }
+    }
 
-	/*
-	if (not m.empty() and constraints.size() != m.m_impl->size())
-		// We can only see what we index, the rest is lost
-		// TODO: add a filter to the query results, before the
-		//       postprocessor that pulls in data from disk
-		return false;
-	*/
+    /*
+    if (not m.empty() and constraints.size() != m.m_impl->size())
+        // We can only see what we index, the rest is lost
+        // TODO: add a filter to the query results, before the
+        //       postprocessor that pulls in data from disk
+        return false;
+    */
 
     if (!constraints.empty())
         query += " WHERE " + str::join(" AND ", constraints.begin(), constraints.end());
@@ -457,7 +457,7 @@ void Contents::build_md(Query& q, Metadata& md) const
             m_others->read(q.fetch<int>(j), md);
         ++j;
     }
-    if (m_smallfiles)
+    if (config().smallfiles)
     {
         if (!q.isNULL(j))
         {
@@ -472,46 +472,46 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 
-	if (m_uniques) query += ", m.uniq";
-	if (m_others) query += ", m.other";
-	if (m_smallfiles) query += ", m.data";
+    if (m_uniques) query += ", m.uniq";
+    if (m_others) query += ", m.other";
+    if (config().smallfiles) query += ", m.data";
 
-	query += " FROM md AS m";
+    query += " FROM md AS m";
 
-	try {
-		if (!addJoinsAndConstraints(q.matcher, query))
-			return false;
-	} catch (NotFound) {
-		// If one of the subqueries did not find any match, we can directly
-		// return true here, as we are not going to get any result
-		return true;
-	}
+    try {
+        if (!addJoinsAndConstraints(q.matcher, query))
+            return false;
+    } catch (NotFound) {
+        // If one of the subqueries did not find any match, we can directly
+        // return true here, as we are not going to get any result
+        return true;
+    }
 
-	query += " ORDER BY m.reftime";
+    query += " ORDER BY m.reftime";
 
-	nag::verbose("Running query %s", query.c_str());
+    nag::verbose("Running query %s", query.c_str());
 
-	metadata::Collection mdbuf;
-	string last_fname;
-	unique_ptr<runtime::Tempfile> tmpfile;
+    metadata::Collection mdbuf;
+    string last_fname;
+    unique_ptr<runtime::Tempfile> tmpfile;
 
-	// Limited scope for mdq, so we finalize the query before starting to
-	// emit results
-	{
-		Query mdq("mdq", m_db);
-		mdq.compile(query);
+    // Limited scope for mdq, so we finalize the query before starting to
+    // emit results
+    {
+        Query mdq("mdq", m_db);
+        mdq.compile(query);
 
-		// TODO: see if it's worth sorting mdbuf by file and offset
+        // TODO: see if it's worth sorting mdbuf by file and offset
 
 //fprintf(stderr, "PRE\n");
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
-		while (mdq.step())
-		{
-			// At file boundary, sort and write out what we have so
-			// far, so we don't keep it all in memory
-			string srcname = mdq.fetchString(2);
-			if (srcname != last_fname)
-			{
+        while (mdq.step())
+        {
+            // At file boundary, sort and write out what we have so
+            // far, so we don't keep it all in memory
+            string srcname = mdq.fetchString(2);
+            if (srcname != last_fname)
+            {
                 // Note: since we chunk at file boundary, and since files
                 // cluster data by reftime, we guarantee that sorting is
                 // consistent as long as data is required to be sorted by
@@ -556,7 +556,7 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 //fprintf(stderr, "POSTQ %zd\n", mdbuf.size());
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
 
-	return true;
+    return true;
 }
 
 void Contents::rebuildSummaryCache()
@@ -569,29 +569,29 @@ void Contents::rebuildSummaryCache()
 
 void Contents::querySummaryFromDB(const std::string& where, Summary& summary) const
 {
-	string query = "SELECT COUNT(1), SUM(size), MIN(reftime), MAX(reftime)";
+    string query = "SELECT COUNT(1), SUM(size), MIN(reftime), MAX(reftime)";
 
-	if (m_uniques) query += ", uniq";
-	if (m_others) query += ", other";
+    if (m_uniques) query += ", uniq";
+    if (m_others) query += ", other";
 
-	query += " FROM md";
-	if (!where.empty())
-		query += " WHERE " + where;
+    query += " FROM md";
+    if (!where.empty())
+        query += " WHERE " + where;
 
-	if (m_uniques && m_others)
-		query += " GROUP BY uniq, other";
-	else if (m_uniques)
-		query += " GROUP BY uniq";
-	else if (m_others)
-		query += " GROUP BY other";
+    if (m_uniques && m_others)
+        query += " GROUP BY uniq, other";
+    else if (m_uniques)
+        query += " GROUP BY uniq";
+    else if (m_others)
+        query += " GROUP BY other";
 
-	nag::verbose("Running query %s", query.c_str());
+    nag::verbose("Running query %s", query.c_str());
 
-	Query sq("sq", m_db);
-	sq.compile(query);
+    Query sq("sq", m_db);
+    sq.compile(query);
 
-	while (sq.step())
-	{
+    while (sq.step())
+    {
         // Fill in the summary statistics
         summary::Stats st;
         st.count = sq.fetch<size_t>(0);
@@ -602,14 +602,14 @@ void Contents::querySummaryFromDB(const std::string& where, Summary& summary) co
         // Fill in the metadata fields
         Metadata md;
         int j = 4;
-		if (m_uniques)
-		{
+        if (m_uniques)
+        {
             if (!sq.isNULL(j))
                 m_uniques->read(sq.fetch<int>(j), md);
             ++j;
-		}
-		if (m_others)
-		{
+        }
+        if (m_others)
+        {
             if (!sq.isNULL(j))
                 m_others->read(sq.fetch<int>(j), md);
             ++j;
@@ -657,12 +657,12 @@ void Contents::summaryForAll(Summary& out) const
             {
                 summaryForMonth(year, month, out);
 
-				// Increment the month
-				month = (month%12) + 1;
-				if (month == 1)
-					++year;
-			}
-		}
+                // Increment the month
+                month = (month%12) + 1;
+                if (month == 1)
+                    ++year;
+            }
+        }
 
         scache.write(out);
     }
@@ -670,36 +670,36 @@ void Contents::summaryForAll(Summary& out) const
 
 bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
 {
-	string query = "SELECT COUNT(1), SUM(size), MIN(reftime), MAX(reftime)";
+    string query = "SELECT COUNT(1), SUM(size), MIN(reftime), MAX(reftime)";
 
-	if (m_uniques) query += ", uniq";
-	if (m_others) query += ", other";
+    if (m_uniques) query += ", uniq";
+    if (m_others) query += ", other";
 
-	query += " FROM md";
+    query += " FROM md";
 
-	try {
-		if (!addJoinsAndConstraints(m, query))
-			return false;
-	} catch (NotFound) {
-		// If one of the subqueries did not find any match, we can directly
-		// return true here, as we are not going to get any result
-		return true;
-	}
+    try {
+        if (!addJoinsAndConstraints(m, query))
+            return false;
+    } catch (NotFound) {
+        // If one of the subqueries did not find any match, we can directly
+        // return true here, as we are not going to get any result
+        return true;
+    }
 
-	if (m_uniques && m_others)
-		query += " GROUP BY uniq, other";
-	else if (m_uniques)
-		query += " GROUP BY uniq";
-	else if (m_others)
-		query += " GROUP BY other";
+    if (m_uniques && m_others)
+        query += " GROUP BY uniq, other";
+    else if (m_uniques)
+        query += " GROUP BY uniq";
+    else if (m_others)
+        query += " GROUP BY other";
 
-	nag::verbose("Running query %s", query.c_str());
+    nag::verbose("Running query %s", query.c_str());
 
-	Query sq("sq", m_db);
-	sq.compile(query);
+    Query sq("sq", m_db);
+    sq.compile(query);
 
-	while (sq.step())
-	{
+    while (sq.step())
+    {
         // Fill in the summary statistics
         summary::Stats st;
         st.count = sq.fetch<size_t>(0);
@@ -710,14 +710,14 @@ bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
         // Fill in the metadata fields
         Metadata md;
         int j = 4;
-		if (m_uniques)
-		{
+        if (m_uniques)
+        {
             if (!sq.isNULL(j))
                 m_uniques->read(sq.fetch<int>(j), md);
             ++j;
-		}
-		if (m_others)
-		{
+        }
+        if (m_others)
+        {
             if (!sq.isNULL(j))
                 m_others->read(sq.fetch<int>(j), md);
             ++j;
@@ -904,95 +904,95 @@ bool WContents::open()
     bool need_create = !sys::access(pathname(), F_OK);
 
     m_db.open(pathname());
-	setupPragmas();
-	
-	if (need_create)
-	{
-		if (!m_others)
-		{
-			std::set<types::Code> other_members = all_other_tables();
-			if (not other_members.empty())
-				m_others = new Aggregate(m_db, "mdother", other_members);
-		}
-		initDB();
-	}
+    setupPragmas();
 
-	initQueries();
+    if (need_create)
+    {
+        if (!m_others)
+        {
+            std::set<types::Code> other_members = all_other_tables();
+            if (not other_members.empty())
+                m_others = new Aggregate(m_db, "mdother", other_members);
+        }
+        initDB();
+    }
+
+    initQueries();
 
     scache.openRW();
 
-	return need_create;
+    return need_create;
 }
 
 void WContents::initQueries()
 {
     Contents::initQueries();
 
-	// Precompile insert query
-	string un_ot;
-	string placeholders;
-	if (m_uniques)
-	{
-		un_ot += ", uniq";
-		placeholders += ", ?";
-	}
-	if (m_others)
-	{
-		un_ot += ", other";
-		placeholders += ", ?";
-	}
-    if (m_smallfiles)
+    // Precompile insert query
+    string un_ot;
+    string placeholders;
+    if (m_uniques)
+    {
+        un_ot += ", uniq";
+        placeholders += ", ?";
+    }
+    if (m_others)
+    {
+        un_ot += ", other";
+        placeholders += ", ?";
+    }
+    if (config().smallfiles)
     {
         un_ot += ", data";
         placeholders += ", ?";
     }
 
-	// Precompile insert
-	m_insert.compile("INSERT INTO md (format, file, offset, size, notes, reftime" + un_ot + ")"
-			 " VALUES (?, ?, ?, ?, ?, ?" + placeholders + ")");
+    // Precompile insert
+    m_insert.compile("INSERT INTO md (format, file, offset, size, notes, reftime" + un_ot + ")"
+             " VALUES (?, ?, ?, ?, ?, ?" + placeholders + ")");
 
-	// Precompile replace
-	m_replace.compile("INSERT OR REPLACE INTO md (format, file, offset, size, notes, reftime" + un_ot + ")"
-		          " VALUES (?, ?, ?, ?, ?, ?" + placeholders + ")");
+    // Precompile replace
+    m_replace.compile("INSERT OR REPLACE INTO md (format, file, offset, size, notes, reftime" + un_ot + ")"
+                  " VALUES (?, ?, ?, ?, ?, ?" + placeholders + ")");
 
-	// Precompile remove query
-	m_delete.compile("DELETE FROM md WHERE id=?");
+    // Precompile remove query
+    m_delete.compile("DELETE FROM md WHERE id=?");
 }
 
 void WContents::initDB()
 {
-	if (m_uniques) m_uniques->initDB(m_components_indexed);
-	if (m_others) m_others->initDB(m_components_indexed);
+    if (m_uniques) m_uniques->initDB(m_components_indexed);
+    if (m_others) m_others->initDB(m_components_indexed);
 
-	// Create the main table
-	string query = "CREATE TABLE IF NOT EXISTS md ("
-		"id INTEGER PRIMARY KEY,"
-		" format TEXT NOT NULL,"
-		" file TEXT NOT NULL,"
-		" offset INTEGER NOT NULL,"
-		" size INTEGER NOT NULL,"
-		" notes BLOB,"
-		" reftime TEXT NOT NULL";
-	if (m_uniques) query += ", uniq INTEGER NOT NULL";
-	if (m_others) query += ", other INTEGER NOT NULL";
-	if (m_smallfiles) query += ", data TEXT";
-	if (m_uniques)
-		query += ", UNIQUE(reftime, uniq)";
-	else
-		query += ", UNIQUE(reftime)";
-	query += ")";
-	m_db.exec(query);
+    // Create the main table
+    string query = "CREATE TABLE IF NOT EXISTS md ("
+        "id INTEGER PRIMARY KEY,"
+        " format TEXT NOT NULL,"
+        " file TEXT NOT NULL,"
+        " offset INTEGER NOT NULL,"
+        " size INTEGER NOT NULL,"
+        " notes BLOB,"
+        " reftime TEXT NOT NULL";
+    if (m_uniques) query += ", uniq INTEGER NOT NULL";
+    if (m_others) query += ", other INTEGER NOT NULL";
+    if (config().smallfiles) query += ", data TEXT";
+    if (m_uniques)
+        query += ", UNIQUE(reftime, uniq)";
+    else
+        query += ", UNIQUE(reftime)";
+    query += ")";
+    m_db.exec(query);
 
-	// Create indices on the main table
-	m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_reftime ON md (reftime)");
-	m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_file ON md (file)");
-	if (m_uniques) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_uniq ON md (uniq)");
-	if (m_others) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_other ON md (other)");
+    // Create indices on the main table
+    m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_reftime ON md (reftime)");
+    m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_file ON md (file)");
+    if (m_uniques) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_uniq ON md (uniq)");
+    if (m_others) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_other ON md (other)");
 }
 
 void WContents::bindInsertParams(Query& q, const Metadata& md, const std::string& file, uint64_t ofs, char* timebuf)
 {
-	int idx = 0;
+    int idx = 0;
 
     q.bind(++idx, md.source().format);
     q.bind(++idx, file);
@@ -1010,17 +1010,17 @@ void WContents::bindInsertParams(Query& q, const Metadata& md, const std::string
         q.bindNull(++idx);
     }
 
-	if (m_uniques)
-	{
-		int id = m_uniques->obtain(md);
-		q.bind(++idx, id);
-	}
-	if (m_others)
-	{
-		int id = m_others->obtain(md);
-		q.bind(++idx, id);
-	}
-    if (m_smallfiles)
+    if (m_uniques)
+    {
+        int id = m_uniques->obtain(md);
+        q.bind(++idx, id);
+    }
+    if (m_others)
+    {
+        int id = m_others->obtain(md);
+        q.bind(++idx, id);
+    }
+    if (config().smallfiles)
     {
         if (const types::Value* v = md.get<types::Value>())
         {
@@ -1033,26 +1033,26 @@ void WContents::bindInsertParams(Query& q, const Metadata& md, const std::string
 
 Pending WContents::beginTransaction()
 {
-	return Pending(new SqliteTransaction(m_db));
+    return Pending(new SqliteTransaction(m_db));
 }
 
 Pending WContents::beginExclusiveTransaction()
 {
-	return Pending(new SqliteTransaction(m_db, true));
+    return Pending(new SqliteTransaction(m_db, true));
 }
 
 void WContents::index(const Metadata& md, const std::string& file, uint64_t ofs, int* id)
 {
-	m_insert.reset();
+    m_insert.reset();
 
-	char buf[25];
-	bindInsertParams(m_insert, md, file, ofs, buf);
+    char buf[25];
+    bindInsertParams(m_insert, md, file, ofs, buf);
 
-	while (m_insert.step())
-		;
+    while (m_insert.step())
+        ;
 
-	if (id)
-		*id = m_db.lastInsertID();
+    if (id)
+        *id = m_db.lastInsertID();
 
     // Invalidate the summary cache for this month
     scache.invalidate(md);
@@ -1060,16 +1060,16 @@ void WContents::index(const Metadata& md, const std::string& file, uint64_t ofs,
 
 void WContents::replace(Metadata& md, const std::string& file, uint64_t ofs, int* id)
 {
-	m_replace.reset();
+    m_replace.reset();
 
-	char buf[25];
-	bindInsertParams(m_replace, md, file, ofs, buf);
+    char buf[25];
+    bindInsertParams(m_replace, md, file, ofs, buf);
 
-	while (m_replace.step())
-		;
+    while (m_replace.step())
+        ;
 
-	if (id)
-		*id = m_db.lastInsertID();
+    if (id)
+        *id = m_db.lastInsertID();
 
     // Invalidate the summary cache for this month
     scache.invalidate(md);
@@ -1116,28 +1116,28 @@ void WContents::reset(const std::string& file)
 {
     // Get the file date extremes to invalidate the summary cache
     string fmin, fmax;
-	{
-		Query sq("file_reftime_extremes", m_db);
-		sq.compile("SELECT MIN(reftime), MAX(reftime) FROM md WHERE file=?");
-		sq.bind(1, file);
-		while (sq.step())
-		{
-			fmin = sq.fetchString(0);
-			fmax = sq.fetchString(1);
-		}
-		// If it did not find the file in the database, we do not need
-		// to remove it
-		if (fmin.empty())
-			return;
+    {
+        Query sq("file_reftime_extremes", m_db);
+        sq.compile("SELECT MIN(reftime), MAX(reftime) FROM md WHERE file=?");
+        sq.bind(1, file);
+        while (sq.step())
+        {
+            fmin = sq.fetchString(0);
+            fmax = sq.fetchString(1);
+        }
+        // If it did not find the file in the database, we do not need
+        // to remove it
+        if (fmin.empty())
+            return;
     }
     Time tmin(Time::create_sql(fmin).start_of_month());
     Time tmax(Time::create_sql(fmax).start_of_month());
 
-	// Clean the database
-	Query query("reset_datafile", m_db);
-	query.compile("DELETE FROM md WHERE file = ?");
-	query.bind(1, file);
-	query.step();
+    // Clean the database
+    Query query("reset_datafile", m_db);
+    query.compile("DELETE FROM md WHERE file = ?");
+    query.bind(1, file);
+    query.step();
 
     // Clean affected summary cache
     scache.invalidate(tmin, tmax);
@@ -1145,14 +1145,14 @@ void WContents::reset(const std::string& file)
 
 void WContents::vacuum()
 {
-	m_db.exec("PRAGMA journal_mode = TRUNCATE");
-	if (m_uniques)
-		m_db.exec("delete from mduniq where id not in (select uniq from md)");
-	if (m_others)
-		m_db.exec("delete from mdother where id not in (select other from md)");
-	m_db.exec("VACUUM");
-	m_db.exec("ANALYZE");
-	m_db.exec("PRAGMA journal_mode = PERSIST");
+    m_db.exec("PRAGMA journal_mode = TRUNCATE");
+    if (m_uniques)
+        m_db.exec("delete from mduniq where id not in (select uniq from md)");
+    if (m_others)
+        m_db.exec("delete from mdother where id not in (select other from md)");
+    m_db.exec("VACUUM");
+    m_db.exec("ANALYZE");
+    m_db.exec("PRAGMA journal_mode = PERSIST");
 }
 
 void WContents::flush()

@@ -59,9 +59,6 @@ protected:
     Aggregate* m_uniques;
     Aggregate* m_others;
 
-    // True if small files are stored in the index
-    bool m_smallfiles;
-
     std::set<types::Code> m_components_indexed;
 
     mutable SummaryCache scache;

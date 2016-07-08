@@ -123,6 +123,12 @@ public:
 
 struct LocalChecker : public LocalBase<Checker, ArchivesChecker>
 {
+protected:
+    LocalLock* lock = nullptr;
+    void acquire_lock();
+    void release_lock();
+
+public:
     using LocalBase::LocalBase;
     ~LocalChecker();
 

@@ -33,6 +33,8 @@ std::unique_ptr<dataset::Writer> Config::create_writer() const { return std::uni
 Writer::Writer(std::shared_ptr<const SegmentedConfig> config)
     : m_config(config)
 {
+    // Create the directory if it does not exist
+    sys::makedirs(config->path);
 }
 
 Writer::~Writer()

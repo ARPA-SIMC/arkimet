@@ -39,7 +39,8 @@ add_method("summaries", []() {
     const auto& scen = dataset::test::Scenario::get("ondisk2-testgrib1");
     ConfigFile cfg = scen.clone("testds");
     // Empty the summary cache
-    sys::rmtree("testds/.summaries");
+    //sys::rmtree("testds/.summaries");
+    system("rm testds/.summaries/*");
 
     auto config = dataset::Config::create(cfg);
     auto reader = config->create_reader();

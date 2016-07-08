@@ -198,6 +198,19 @@ LocalWriter::AcquireResult LocalWriter::testAcquire(const ConfigFile& cfg, const
 
 LocalChecker::~LocalChecker()
 {
+    delete lock;
+}
+
+void LocalChecker::acquire_lock()
+{
+    if (!lock) lock = new LocalLock(config().lockfile_pathname);
+    lock->acquire();
+}
+
+void LocalChecker::release_lock()
+{
+    if (!lock) lock = new LocalLock(config().lockfile_pathname);
+    lock->release();
 }
 
 void LocalChecker::repack(dataset::Reporter& reporter, bool writable)
