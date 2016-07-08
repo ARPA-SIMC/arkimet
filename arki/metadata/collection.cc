@@ -215,16 +215,16 @@ void Collection::appendTo(const std::string& fname) const
 
 std::string Collection::ensureContiguousData(const std::string& source) const
 {
-	// Check that the metadata completely cover the data file
-	if (empty()) return std::string();
+    // Check that the metadata completely cover the data file
+    if (empty()) return std::string();
 
-	string fname;
-	off_t last_end = 0;
+    string fname;
+    off_t last_end = 0;
     for (vector<Metadata*>::const_iterator i = vals.begin(); i != vals.end(); ++i)
     {
         const source::Blob& s = (*i)->sourceBlob();
         if (s.offset != (size_t)last_end)
-            throw std::runtime_error("cannot validzate " + source +
+            throw std::runtime_error("cannot validate " + source +
                     ": metadata element points to data that does not start at the end of the previous element");
         if (i == vals.begin())
         {
