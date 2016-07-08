@@ -128,13 +128,13 @@ struct TestSegments
 def_test(2)
 {
     TestSegments ts;
-    wruntest(ts.test_repack);
+    wassert(ts.test_repack());
 }
 
 def_test(3)
 {
     TestSegments ts("dir");
-    wruntest(ts.test_repack);
+    wassert(ts.test_repack());
 }
 
 }

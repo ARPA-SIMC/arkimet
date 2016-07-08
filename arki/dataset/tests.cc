@@ -293,7 +293,7 @@ void DatasetTest::import_all(const testdata::Fixture& fixture)
 
 void DatasetTest::import_all_packed(const testdata::Fixture& fixture)
 {
-    wruntest(import_all, fixture);
+    wassert(import_all(fixture));
 
     // Pack the dataset in case something imported data out of order
     {

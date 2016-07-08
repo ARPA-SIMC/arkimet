@@ -159,7 +159,7 @@ add_method("yaml", [](Fixture& f) {
 
     wassert(actual(Source::createBlob("grib", "", "fname", 1, 2)) == md1.source());
     wassert(actual(md1.source().format) == "grib");
-    wruntest(f.ensure_md_matches_prefill, md1);
+    wassert(f.ensure_md_matches_prefill(md1));
 
     // Test PERIOD reference times
     md.set(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
@@ -195,7 +195,7 @@ add_method("json", [](Fixture& f) {
 
     wassert(actual(Source::createBlob("grib", "", "fname", 1, 2)) == md1.source());
     wassert(actual(md1.source().format) == "grib");
-    wruntest(f.ensure_md_matches_prefill, md1);
+    wassert(f.ensure_md_matches_prefill(md1));
 
 
     // Test PERIOD reference times

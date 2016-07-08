@@ -62,7 +62,7 @@ struct Fixture : public DatasetTest {
     {
         cfg.setValue("step", fixture.max_selective_aggregation);
         cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
-        wruntest(import_all, fixture);
+        wassert(import_all(fixture));
         Metadata& md = find_imported_second_in_file();
         const source::Blob& second_in_segment = md.sourceBlob();
         holed_fname = second_in_segment.filename;
@@ -85,7 +85,7 @@ struct Fixture : public DatasetTest {
     void import_and_delete_one_file(const testdata::Fixture& fixture, std::string& removed_fname)
     {
         cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
-        wruntest(import_all, fixture);
+        wassert(import_all(fixture));
 
         // Remove all the elements in one file
         {
@@ -110,7 +110,7 @@ struct Fixture : public DatasetTest {
     void test_hole_file_and_repack(const testdata::Fixture& fixture)
     {
         string holed_fname;
-        wruntest(import_and_make_hole, fixture, holed_fname);
+        wassert(import_and_make_hole(fixture, holed_fname));
 
         {
             // Test packing has something to report
@@ -139,7 +139,7 @@ struct Fixture : public DatasetTest {
     void test_delete_file_and_repack(const testdata::Fixture& fixture)
     {
         string removed_fname;
-        wruntest(import_and_delete_one_file, fixture, removed_fname);
+        wassert(import_and_delete_one_file(fixture, removed_fname));
 
         {
             // Test packing has something to report
@@ -168,7 +168,7 @@ struct Fixture : public DatasetTest {
     void test_hole_file_and_check(const testdata::Fixture& fixture)
     {
         string holed_fname;
-        wruntest(import_and_make_hole, fixture, holed_fname);
+        wassert(import_and_make_hole(fixture, holed_fname));
 
         {
             // Test check has something to report
@@ -198,7 +198,7 @@ struct Fixture : public DatasetTest {
     void test_delete_file_and_check(const testdata::Fixture& fixture)
     {
         string removed_fname;
-        wruntest(import_and_delete_one_file, fixture, removed_fname);
+        wassert(import_and_delete_one_file(fixture, removed_fname));
 
         {
             // Test packing has something to report
@@ -228,7 +228,7 @@ struct Fixture : public DatasetTest {
     void test_delete_index_and_check(const testdata::Fixture& fixture)
     {
         cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
-        wruntest(import_all_packed, fixture);
+        wassert(import_all_packed(fixture));
 
         // Query everything when the dataset is in a clean state
         metadata::Collection mdc_pre = query(Matcher());
@@ -283,63 +283,63 @@ void Tests::register_tests() {
 // Add here only simple-specific tests that are not convered by tests in dataset-writer-test.cc
 
 add_method("hole_file_and_repack", [](Fixture& f) {
-    wruntest(f.test_hole_file_and_repack, testdata::GRIBData());
-    wruntest(f.test_hole_file_and_repack, testdata::BUFRData());
-    wruntest(f.test_hole_file_and_repack, testdata::VM2Data());
-    wruntest(f.test_hole_file_and_repack, testdata::ODIMData());
+    wassert(f.test_hole_file_and_repack(testdata::GRIBData()));
+    wassert(f.test_hole_file_and_repack(testdata::BUFRData()));
+    wassert(f.test_hole_file_and_repack(testdata::VM2Data()));
+    wassert(f.test_hole_file_and_repack(testdata::ODIMData()));
     f.cfg.setValue("segments", "dir");
-    wruntest(f.test_hole_file_and_repack, testdata::GRIBData());
-    wruntest(f.test_hole_file_and_repack, testdata::BUFRData());
-    wruntest(f.test_hole_file_and_repack, testdata::VM2Data());
-    wruntest(f.test_hole_file_and_repack, testdata::ODIMData());
+    wassert(f.test_hole_file_and_repack(testdata::GRIBData()));
+    wassert(f.test_hole_file_and_repack(testdata::BUFRData()));
+    wassert(f.test_hole_file_and_repack(testdata::VM2Data()));
+    wassert(f.test_hole_file_and_repack(testdata::ODIMData()));
 });
 
 add_method("delete_file_and_repack", [](Fixture& f) {
-    wruntest(f.test_delete_file_and_repack, testdata::GRIBData());
-    wruntest(f.test_delete_file_and_repack, testdata::BUFRData());
-    wruntest(f.test_delete_file_and_repack, testdata::VM2Data());
-    wruntest(f.test_delete_file_and_repack, testdata::ODIMData());
+    wassert(f.test_delete_file_and_repack(testdata::GRIBData()));
+    wassert(f.test_delete_file_and_repack(testdata::BUFRData()));
+    wassert(f.test_delete_file_and_repack(testdata::VM2Data()));
+    wassert(f.test_delete_file_and_repack(testdata::ODIMData()));
     f.cfg.setValue("segments", "dir");
-    wruntest(f.test_delete_file_and_repack, testdata::GRIBData());
-    wruntest(f.test_delete_file_and_repack, testdata::BUFRData());
-    wruntest(f.test_delete_file_and_repack, testdata::VM2Data());
-    wruntest(f.test_delete_file_and_repack, testdata::ODIMData());
+    wassert(f.test_delete_file_and_repack(testdata::GRIBData()));
+    wassert(f.test_delete_file_and_repack(testdata::BUFRData()));
+    wassert(f.test_delete_file_and_repack(testdata::VM2Data()));
+    wassert(f.test_delete_file_and_repack(testdata::ODIMData()));
 });
 
 add_method("hole_file_and_check", [](Fixture& f) {
-    wruntest(f.test_hole_file_and_check, testdata::GRIBData());
-    wruntest(f.test_hole_file_and_check, testdata::BUFRData());
-    wruntest(f.test_hole_file_and_check, testdata::VM2Data());
-    wruntest(f.test_hole_file_and_check, testdata::ODIMData());
+    wassert(f.test_hole_file_and_check(testdata::GRIBData()));
+    wassert(f.test_hole_file_and_check(testdata::BUFRData()));
+    wassert(f.test_hole_file_and_check(testdata::VM2Data()));
+    wassert(f.test_hole_file_and_check(testdata::ODIMData()));
     f.cfg.setValue("segments", "dir");
-    wruntest(f.test_hole_file_and_check, testdata::GRIBData());
-    wruntest(f.test_hole_file_and_check, testdata::BUFRData());
-    wruntest(f.test_hole_file_and_check, testdata::VM2Data());
-    wruntest(f.test_hole_file_and_check, testdata::ODIMData());
+    wassert(f.test_hole_file_and_check(testdata::GRIBData()));
+    wassert(f.test_hole_file_and_check(testdata::BUFRData()));
+    wassert(f.test_hole_file_and_check(testdata::VM2Data()));
+    wassert(f.test_hole_file_and_check(testdata::ODIMData()));
 });
 
 add_method("delete_file_and_check", [](Fixture& f) {
-    wruntest(f.test_delete_file_and_check, testdata::GRIBData());
-    wruntest(f.test_delete_file_and_check, testdata::BUFRData());
-    wruntest(f.test_delete_file_and_check, testdata::VM2Data());
-    wruntest(f.test_delete_file_and_check, testdata::ODIMData());
+    wassert(f.test_delete_file_and_check(testdata::GRIBData()));
+    wassert(f.test_delete_file_and_check(testdata::BUFRData()));
+    wassert(f.test_delete_file_and_check(testdata::VM2Data()));
+    wassert(f.test_delete_file_and_check(testdata::ODIMData()));
     f.cfg.setValue("segments", "dir");
-    wruntest(f.test_delete_file_and_check, testdata::GRIBData());
-    wruntest(f.test_delete_file_and_check, testdata::BUFRData());
-    wruntest(f.test_delete_file_and_check, testdata::VM2Data());
-    wruntest(f.test_delete_file_and_check, testdata::ODIMData());
+    wassert(f.test_delete_file_and_check(testdata::GRIBData()));
+    wassert(f.test_delete_file_and_check(testdata::BUFRData()));
+    wassert(f.test_delete_file_and_check(testdata::VM2Data()));
+    wassert(f.test_delete_file_and_check(testdata::ODIMData()));
 });
 
 add_method("delete_index_and_check", [](Fixture& f) {
-    wruntest(f.test_delete_index_and_check, testdata::GRIBData());
-    wruntest(f.test_delete_index_and_check, testdata::BUFRData());
-    wruntest(f.test_delete_index_and_check, testdata::VM2Data());
-    wruntest(f.test_delete_index_and_check, testdata::ODIMData());
+    wassert(f.test_delete_index_and_check(testdata::GRIBData()));
+    wassert(f.test_delete_index_and_check(testdata::BUFRData()));
+    wassert(f.test_delete_index_and_check(testdata::VM2Data()));
+    wassert(f.test_delete_index_and_check(testdata::ODIMData()));
     f.cfg.setValue("segments", "dir");
-    wruntest(f.test_delete_index_and_check, testdata::GRIBData());
-    wruntest(f.test_delete_index_and_check, testdata::BUFRData());
-    wruntest(f.test_delete_index_and_check, testdata::VM2Data());
-    wruntest(f.test_delete_index_and_check, testdata::ODIMData());
+    wassert(f.test_delete_index_and_check(testdata::GRIBData()));
+    wassert(f.test_delete_index_and_check(testdata::BUFRData()));
+    wassert(f.test_delete_index_and_check(testdata::VM2Data()));
+    wassert(f.test_delete_index_and_check(testdata::ODIMData()));
 });
 
 // Test recreating a dataset from just a datafile with duplicate data and a rebuild flagfile
