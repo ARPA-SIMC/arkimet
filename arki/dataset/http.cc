@@ -92,35 +92,34 @@ struct CurlForm
 	curl_httppost* ptr() { return post; }
 };
 
-}
 
-HTTPConfig::HTTPConfig(const ConfigFile& cfg)
+Config::Config(const ConfigFile& cfg)
     : dataset::Config(cfg),
       baseurl(cfg.value("path")),
       qmacro(cfg.value("qmacro"))
 {
 }
 
-std::unique_ptr<Reader> HTTPConfig::create_reader() const
+std::unique_ptr<dataset::Reader> Config::create_reader() const
 {
-    return std::unique_ptr<Reader>(new HTTP(dynamic_pointer_cast<const HTTPConfig>(shared_from_this())));
+    return std::unique_ptr<dataset::Reader>(new Reader(dynamic_pointer_cast<const Config>(shared_from_this())));
 }
 
-std::shared_ptr<const HTTPConfig> HTTPConfig::create(const ConfigFile& cfg)
+std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
 {
-    return std::shared_ptr<const HTTPConfig>(new HTTPConfig(cfg));
+    return std::shared_ptr<const Config>(new Config(cfg));
 }
 
-HTTP::HTTP(std::shared_ptr<const HTTPConfig> config)
+Reader::Reader(std::shared_ptr<const Config> config)
     : m_config(config), m_mischief(false)
 {
 }
 
-HTTP::~HTTP()
+Reader::~Reader()
 {
 }
 
-std::string HTTP::type() const { return "http"; }
+std::string Reader::type() const { return "http"; }
 
 struct ReqState
 {
@@ -263,7 +262,7 @@ struct MDStreamState : public ReqState
 };
 
 
-void HTTP::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+void Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     m_curl.reset();
 
@@ -301,7 +300,7 @@ void HTTP::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 		s.throwError("querying summary from " + url);
 }
 
-void HTTP::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::query_summary(const Matcher& matcher, Summary& summary)
 {
     m_curl.reset();
 
@@ -338,7 +337,7 @@ void HTTP::query_summary(const Matcher& matcher, Summary& summary)
     summary.read(dec, url);
 }
 
-void HTTP::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
+void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
     m_curl.reset();
     http::CurlForm form;
@@ -407,7 +406,7 @@ void HTTP::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 		s.throwError("querying data from " + url);
 }
 
-void HTTP::readConfig(const std::string& path, ConfigFile& cfg)
+void Reader::readConfig(const std::string& path, ConfigFile& cfg)
 {
 	using namespace http;
 
@@ -429,12 +428,12 @@ void HTTP::readConfig(const std::string& path, ConfigFile& cfg)
     cfg.parse(content.buf, url);
 }
 
-void HTTP::produce_one_wrong_query()
+void Reader::produce_one_wrong_query()
 {
 	m_mischief = true;
 }
 
-std::string HTTP::expandMatcher(const std::string& matcher, const std::string& server)
+std::string Reader::expandMatcher(const std::string& matcher, const std::string& server)
 {
 	using namespace http;
 
@@ -460,7 +459,7 @@ std::string HTTP::expandMatcher(const std::string& matcher, const std::string& s
     return str::strip(content.buf);
 }
 
-void HTTP::getAliasDatabase(const std::string& server, ConfigFile& cfg)
+void Reader::getAliasDatabase(const std::string& server, ConfigFile& cfg)
 {
 	using namespace http;
 
@@ -490,7 +489,7 @@ static string geturlprefix(const std::string& s)
 	return s.substr(0, pos);
 }
 
-std::string HTTP::allSameRemoteServer(const ConfigFile& cfg)
+std::string Reader::allSameRemoteServer(const ConfigFile& cfg)
 {
     string base;
     for (ConfigFile::const_section_iterator i = cfg.sectionBegin(); i != cfg.sectionEnd(); ++i)
@@ -630,5 +629,6 @@ void HTTPInbound::dispatch(const std::string& fname, const std::string& format, 
         s.throwError("querying inbound/scan from " + url);
 }
 
+}
 }
 }

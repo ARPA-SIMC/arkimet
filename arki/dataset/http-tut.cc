@@ -99,7 +99,7 @@ def_test(1)
         ConfigFile cfg;
         cfg.parse(conf);
 
-        ensure_equals(HTTP::allSameRemoteServer(cfg), "http://foo.bar/foo");
+        ensure_equals(http::Reader::allSameRemoteServer(cfg), "http://foo.bar/foo");
     }
 
     {
@@ -118,7 +118,7 @@ def_test(1)
         ConfigFile cfg;
         cfg.parse(conf);
 
-        ensure_equals(HTTP::allSameRemoteServer(cfg), "");
+        ensure_equals(http::Reader::allSameRemoteServer(cfg), "");
     }
 
     {
@@ -137,7 +137,7 @@ def_test(1)
         ConfigFile cfg;
         cfg.parse(conf);
 
-        ensure_equals(HTTP::allSameRemoteServer(cfg), "");
+        ensure_equals(http::Reader::allSameRemoteServer(cfg), "");
     }
 #if 0
     unique_ptr<Reader> testds(Reader::create(*config.section("test200")));

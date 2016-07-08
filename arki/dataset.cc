@@ -62,7 +62,7 @@ std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
         return dataset::simple::Config::create(cfg);
 #ifdef HAVE_LIBCURL
     if (type == "remote")
-        return dataset::HTTPConfig::create(cfg);
+        return dataset::http::Config::create(cfg);
 #endif
     if (type == "outbound")
         return outbound::Config::create(cfg);
@@ -314,7 +314,7 @@ void Reader::readConfig(const std::string& path, ConfigFile& cfg)
 {
 #ifdef HAVE_LIBCURL
     if (str::startswith(path, "http://") || str::startswith(path, "https://"))
-        return dataset::HTTP::readConfig(path, cfg);
+        return dataset::http::Reader::readConfig(path, cfg);
 #endif
     if (sys::isdir(path))
         return dataset::LocalReader::readConfig(path, cfg);
