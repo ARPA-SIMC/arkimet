@@ -68,8 +68,8 @@ void GridQuery::consolidate()
     if (times.empty())
         throw std::runtime_error("cannot consolidate GridQuery: no times have been requested");
 
-	// Sort times
-	std::sort(times.begin(), times.end());
+    // Sort times
+    std::sort(times.begin(), times.end());
 
 	// Compute wantedidx
 	for (std::vector<ItemSet>::const_iterator i = items.begin(); i != items.end(); ++i)

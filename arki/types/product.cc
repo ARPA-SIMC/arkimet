@@ -347,8 +347,8 @@ int GRIB1::compare_local(const Product& o) const
             "comparing metadata types",
             string("second element claims to be a GRIB1 Product, but it is a ") + typeid(&o).name() + " instead");
 
-	if (int res = m_origin - v->m_origin) return res;
-	if (int res = m_table - v->m_table) return res;
+    if (int res = m_origin - v->m_origin) return res;
+    if (int res = m_table - v->m_table) return res;
 	return m_product - v->m_product;
 }
 
@@ -482,9 +482,9 @@ int GRIB2::compare_local(const Product& o) const
             "comparing metadata types",
             string("second element claims to be a GRIB2 Product, but it is a ") + typeid(&o).name() + " instead");
 
-	if (int res = m_centre - v->m_centre) return res;
-	if (int res = m_discipline - v->m_discipline) return res;
-	if (int res = m_category - v->m_category) return res;
+    if (int res = m_centre - v->m_centre) return res;
+    if (int res = m_discipline - v->m_discipline) return res;
+    if (int res = m_category - v->m_category) return res;
     if (int res = m_number - v->m_number) return res;
     if (int res = m_table_version - v->m_table_version) return res;
     return m_local_table_version - v->m_local_table_version;
@@ -630,10 +630,10 @@ int BUFR::compare_local(const Product& o) const
             "comparing metadata types",
             string("second element claims to be a BUFR Product, but it is a ") + typeid(&o).name() + " instead");
 
-	if (int res = m_type - v->m_type) return res;
-	if (int res = m_subtype - v->m_subtype) return res;
-	if (int res = m_localsubtype - v->m_localsubtype) return res;
-	return m_values.compare(v->m_values);
+    if (int res = m_type - v->m_type) return res;
+    if (int res = m_subtype - v->m_subtype) return res;
+    if (int res = m_localsubtype - v->m_localsubtype) return res;
+    return m_values.compare(v->m_values);
 }
 bool BUFR::equals(const Type& o) const
 {
@@ -793,7 +793,7 @@ int ODIMH5::compare_local(const Product& o) const
                 "comparing metadata types",
                 string("second element claims to be a ODIMH5 Product, but it is a ") + typeid(&o).name() + " instead");
 
-	if (int resi = m_obj.compare(v->m_obj)) 	return resi;
+    if (int resi = m_obj.compare(v->m_obj)) 	return resi;
 	if (int resi = m_prod.compare(v->m_prod)) 	return resi;
 	/*REMOVED: if (double resd = m_prodpar1 - v->m_prodpar1) 	return resd > 0 ? 1 : -1; */
 	/*REMOVED: if (double resd = m_prodpar2 - v->m_prodpar2) 	return resd > 0 ? 1 : -1; */

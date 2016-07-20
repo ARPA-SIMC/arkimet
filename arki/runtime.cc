@@ -246,8 +246,8 @@ bool CommandLine::parse(int argc, const char* argv[])
     std::string errors = pmaker.verify_option_consistency();
     if (!errors.empty())
         throw commandline::BadOption(errors);
-	
-	return false;
+
+    return false;
 }
 
 void CommandLine::setupProcessing()

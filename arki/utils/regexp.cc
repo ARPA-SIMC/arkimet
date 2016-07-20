@@ -45,8 +45,8 @@ Regexp::Regexp(const string& expr, int match_count, int flags)
     if (res)
         throw RegexpError(re, res, "cannot compile regexp \"" + expr + "\"");
 
-	if (match_count > 0)
-		pmatch = new regmatch_t[match_count];
+    if (match_count > 0)
+        pmatch = new regmatch_t[match_count];
 }
 
 Regexp::~Regexp() throw ()
