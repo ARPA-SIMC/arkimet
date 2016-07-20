@@ -50,15 +50,15 @@ int BufrLua::get_scan_func(MsgType type)
     if (fname.empty())
         return scan_funcs[type] = -1;
 
-	// Compile the macro
-        if (luaL_dofile(L, fname.c_str()))
-        {
-                // Copy the error, so that it will exist after the pop
-                string error = lua_tostring(L, -1);
-                // Pop the error from the stack
-                lua_pop(L, 1);
-                throw_consistency_error("parsing " + fname, error);
-        }
+    // Compile the macro
+    if (luaL_dofile(L, fname.c_str()))
+    {
+        // Copy the error, so that it will exist after the pop
+        string error = lua_tostring(L, -1);
+        // Pop the error from the stack
+        lua_pop(L, 1);
+        throw_consistency_error("parsing " + fname, error);
+    }
 
 	// Index the queryData function
 	int id = -1;

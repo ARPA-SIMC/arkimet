@@ -320,8 +320,8 @@ void Aliases::add(const MatcherType& type, const ConfigFile& entries)
 	/*
 	 * Try multiple times to catch aliases referring to other aliases.
 	 * We continue until the number of aliases to parse stops decreasing.
-	 */
-	for (size_t pass = 0; !aliases.empty(); ++pass)
+     */
+    for (size_t pass = 0; !aliases.empty(); ++pass)
 	{
 		failed.clear();
 		for (vector< pair<string, string> >::const_iterator i = aliases.begin();

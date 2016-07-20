@@ -85,7 +85,7 @@ void Report::create_lua_object()
         throw std::runtime_error("cannot load report code from " + m_filename + ": the Report variable is not a table");
 
 	// Get the readMetadata function
-	lua_pushstring(*L, "readMetadata");
+    lua_pushstring(*L, "readMetadata");
 	lua_gettable(*L, -2);
 	if (lua_type(*L, -1) == LUA_TNIL)
 	{

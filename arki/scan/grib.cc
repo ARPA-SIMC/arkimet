@@ -454,8 +454,8 @@ Grib::Grib(const std::string& grib1code, const std::string& grib2code)
     if (!context)
         throw std::runtime_error("cannot get grib_api default context: default context is not available");
 
-	if (false)
-	{
+    if (false)
+    {
 		// If we inline the data, we can also do multigrib
 		grib_multi_support_on(context);
 	} else {
@@ -474,9 +474,9 @@ Grib::Grib(const std::string& grib1code, const std::string& grib2code)
 
 Grib::~Grib()
 {
-	if (gh) check_grib_error(grib_handle_delete(gh), "closing GRIB message");
-	if (in) fclose(in);
-	if (L) delete L;
+    if (gh) check_grib_error(grib_handle_delete(gh), "closing GRIB message");
+    if (in) fclose(in);
+    if (L) delete L;
 }
 
 MultiGrib::MultiGrib(const std::string& tmpfilename, std::ostream& tmpfile)
