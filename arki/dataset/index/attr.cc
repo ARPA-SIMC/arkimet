@@ -83,10 +83,10 @@ AttrSubIndex::~AttrSubIndex()
 {
     for (map<int, Type*>::iterator i = m_cache.begin(); i != m_cache.end(); ++i)
         delete i->second;
-	if (m_select_id) delete m_select_id;
-	if (m_select_one) delete m_select_one;
-	if (m_select_all) delete m_select_all;
-	if (m_insert) delete m_insert;
+    if (m_select_id) delete m_select_id;
+    if (m_select_one) delete m_select_one;
+    if (m_select_all) delete m_select_all;
+    if (m_insert) delete m_insert;
 }
 
 void AttrSubIndex::add_to_cache(int id, const types::Type& item) const
@@ -125,8 +125,8 @@ int AttrSubIndex::id(const Metadata& md) const
     if (i != m_id_cache.end())
         return i->second;
 
-	// Else, fetch it from the database
-	int id = q_select_id(encoded);
+    // Else, fetch it from the database
+    int id = q_select_id(encoded);
 
     // Add it to the cache
     if (id != -1)
@@ -201,11 +201,11 @@ int AttrSubIndex::insert(const Metadata& md)
     if (ci != m_id_cache.end())
         return ci->second;
 
-	// Check if we already have the blob in the database
-	int id = q_select_id(blob);
-	if (id == -1)
-		// If not, insert it
-		id = q_insert(blob);
+    // Check if we already have the blob in the database
+    int id = q_select_id(blob);
+    if (id == -1)
+        // If not, insert it
+        id = q_insert(blob);
 
     add_to_cache(id, *item, blob);
     return id;

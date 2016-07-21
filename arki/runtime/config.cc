@@ -195,8 +195,8 @@ void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
     std::unique_ptr<struct stat> st = sys::stat(fname);
     if (st.get() == 0)
         throw std::runtime_error("cannot read configuration from " + fname + ": it does not exist");
-	if (S_ISDIR(st->st_mode))
-	{
+    if (S_ISDIR(st->st_mode))
+    {
 		// If it's a directory, merge in its config file
 		string name = str::basename(fname);
 		string file = str::joinpath(fname, "config");

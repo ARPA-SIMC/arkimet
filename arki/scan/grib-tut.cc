@@ -362,7 +362,7 @@ def_test(7)
     wassert(actual(string((const char*)buf.data() + 428, 4)) == "7777");
 
     wassert(actual(md).contains("origin", "GRIB2(250, 98, 4, 255, 131)"));
-    wassert(actual(md).contains("product", "GRIB2(250, 2, 0, 0)"));
+    wassert(actual(md).contains("product", "GRIB2(250, 2, 0, 0, 5, 0)"));
     wassert(actual(md).contains("level", "GRIB2S(1, -, -)"));
     wassert(actual(md).contains("timerange", "Timedef(0, 254, 0s)"));
     wassert(actual(md).contains("area", "GRIB(Ni=511,Nj=415,latfirst=-16125000,latlast=9750000,lonfirst=344250000,lonlast=16125000,latp=-40000000,lonp=10000000,rot=0,tn=1)"));
@@ -383,7 +383,7 @@ def_test(8)
     ensure(scanner.next(md));
 
     wassert(actual(md).contains("origin", "GRIB2(00200, 00000, 000, 000, 203)"));
-    wassert(actual(md).contains("product", "GRIB2(200, 0, 200, 33)"));
+    wassert(actual(md).contains("product", "GRIB2(200, 0, 200, 33, 5, 0)"));
     wassert(actual(md).contains("level", "GRIB2S(103, 0, 10)"));
     wassert(actual(md).contains("timerange", "Timedef(0s, 254, 0s)"));
     wassert(actual(md).contains("area", "GRIB(Ni=90, Nj=52, fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)"));

@@ -160,7 +160,7 @@ PreserveFileTimes::PreserveFileTimes(const std::string& fname)
     times[1] = st.st_mtim;
 }
 
-PreserveFileTimes::~PreserveFileTimes()
+PreserveFileTimes::~PreserveFileTimes() noexcept(false)
 {
     if (utimensat(AT_FDCWD, fname.c_str(), times, 0) == -1)
         throw std::system_error(errno, std::system_category(), "cannot set file times");

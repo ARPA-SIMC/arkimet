@@ -215,7 +215,7 @@ static const struct luaL_Reg summarylib [] = {
 static void arkilua_getmetatable(lua_State* L)
 {
     // Set the metatable for the userdata
-    if (luaL_newmetatable(L, "arki.summary"));
+    if (luaL_newmetatable(L, "arki.summary"))
     {
         // If the metatable wasn't previously created, create it now
         lua_pushstring(L, "__index");

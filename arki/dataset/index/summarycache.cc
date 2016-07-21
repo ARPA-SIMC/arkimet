@@ -116,7 +116,7 @@ void SummaryCache::invalidate(const Time& tmin, const Time& tmax)
     bool deleted = false;
     for (Time t = tmin; t <= tmax; t = t.start_of_next_month())
     {
-        if (sys::unlink_ifexists(summary_pathname(t.ye, t.mo)));
+        if (sys::unlink_ifexists(summary_pathname(t.ye, t.mo)))
             deleted = true;
     }
     if (deleted)
