@@ -18,9 +18,9 @@ ensure_not_matches(sample, "product:GRIB1,200")
 ensure_not_matches(sample, "product:GRIB1,98,0,11")
 
 -- GRIB2
--- Syntax: product:GRIB2,centre,discipline,category,number
--- Any of centre, discipline, category or number can be omitted; if omitted,
--- any value will match
+-- Syntax: product:GRIB2,centre,discipline,category,number,tablesVersion,localTablesVersion
+-- Any of centre, discipline, category, number, tablesVersion or
+-- localTablesVersion can be omitted; if omitted, any value will match
 
 sample:set(arki_product.grib2(98, 0, 1, 2))
 
