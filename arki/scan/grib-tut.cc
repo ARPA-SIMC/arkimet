@@ -383,7 +383,7 @@ def_test(8)
     ensure(scanner.next(md));
 
     wassert(actual(md).contains("origin", "GRIB2(00200, 00000, 000, 000, 203)"));
-    wassert(actual(md).contains("product", "GRIB2(200, 0, 200, 33)"));
+    wassert(actual(md).contains("product", "GRIB2(200, 0, 200, 33, 5, 0)"));
     wassert(actual(md).contains("level", "GRIB2S(103, 0, 10)"));
     wassert(actual(md).contains("timerange", "Timedef(0s, 254, 0s)"));
     wassert(actual(md).contains("area", "GRIB(Ni=90, Nj=52, fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)"));
