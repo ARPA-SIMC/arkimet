@@ -111,7 +111,7 @@ struct PreserveFileTimes
     struct timespec times[2];
 
     PreserveFileTimes(const std::string& fname);
-    ~PreserveFileTimes();
+    ~PreserveFileTimes() noexcept(false);
 };
 
 }

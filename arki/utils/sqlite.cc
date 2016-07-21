@@ -38,9 +38,10 @@ SQLiteDB::~SQLiteDB() {
 		//while (sqlite3_stmt* stm = sqlite3_next_stmt(m_db, 0))
 		//	sqlite3_finalize(stm);
 
-		int rc = sqlite3_close(m_db);
-		if (rc) throw SQLiteError(m_db, "closing database");
-	}
+        //int rc = sqlite3_close(m_db);
+        //if (rc) throw SQLiteError(m_db, "closing database");
+        sqlite3_close(m_db);
+    }
 }
 void SQLiteDB::open(const std::string& pathname, int timeout_ms)
 {

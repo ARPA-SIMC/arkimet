@@ -474,7 +474,8 @@ Grib::Grib(const std::string& grib1code, const std::string& grib2code)
 
 Grib::~Grib()
 {
-    if (gh) check_grib_error(grib_handle_delete(gh), "closing GRIB message");
+    //if (gh) check_grib_error(grib_handle_delete(gh), "closing GRIB message");
+    if (gh) grib_handle_delete(gh);
     if (in) fclose(in);
     if (L) delete L;
 }
