@@ -12,7 +12,7 @@ struct SegmentedConfig : public LocalConfig
 {
 protected:
     /// dataset::Step for this configuration
-    Step* m_step = nullptr;
+    std::shared_ptr<Step> m_step;
 
 public:
     /// Name of the dataset::Step used to dispatch data into segments

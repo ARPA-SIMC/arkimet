@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace arki {
 class Metadata;
@@ -27,6 +28,7 @@ struct Step
 {
     virtual ~Step() {}
     virtual std::string operator()(const Metadata& md) const = 0;
+    virtual std::string path_in_shard(const Metadata& md) const = 0;
 
     /**
      * Get the timespan of a file by just looking at its path.
@@ -47,12 +49,37 @@ struct Step
     /**
      * Create a Step according to the given step type name.
      */
-    static Step* create(const std::string& type);
+    static std::shared_ptr<Step> create(const std::string& type);
 
     /**
      * Return the list of available steps
      */
     static std::vector<std::string> list();
+};
+
+
+/**
+ * Generate paths from the root of sharded datasets.
+ */
+struct ShardedStep
+{
+    virtual ~ShardedStep() {}
+
+    /// Return the path to the root of the sharded dataset for this datum
+    virtual std::string shard_path(const Metadata& md) const = 0;
+
+    /**
+     * Return the Step to use for the dataset shard for a datum.
+     *
+     * The result of substep() is the same for all Metadata elements that
+     * share the same shard_path()
+     */
+    //virtual std::shared_ptr<Step> substep(const Metadata& md) const = 0;
+
+    /**
+     * Create a Step according to the given step type name.
+     */
+    static std::shared_ptr<ShardedStep> create(const std::string& shard_type, const std::string& type);
 };
 
 }

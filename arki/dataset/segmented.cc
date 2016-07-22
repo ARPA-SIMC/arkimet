@@ -40,12 +40,12 @@ SegmentedConfig::SegmentedConfig(const ConfigFile& cfg)
     else
         throw std::runtime_error("Replace strategy '" + repl + "' is not recognised in the configuration of dataset " + name);
 
+    std::string shard = cfg.value("shard");
     m_step = Step::create(step_name);
 }
 
 SegmentedConfig::~SegmentedConfig()
 {
-    delete m_step;
 }
 
 std::unique_ptr<segment::SegmentManager> SegmentedConfig::create_segment_manager() const

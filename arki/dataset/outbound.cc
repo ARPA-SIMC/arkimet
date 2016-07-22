@@ -82,7 +82,7 @@ void Writer::removeAll(std::ostream& log, bool writable)
 
 Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
-    unique_ptr<Step> tf(Step::create(cfg.value("step")));
+    auto tf = Step::create(cfg.value("step"));
     string dest = cfg.value("path") + "/" + (*tf)(md) + "." + md.source().format;
     out << "Assigning to dataset " << cfg.value("name") << " in file " << dest << endl;
     return ACQ_OK;
