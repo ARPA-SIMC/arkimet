@@ -24,6 +24,8 @@ class LocalConfig : public Config
 protected:
     mutable std::shared_ptr<ArchivesConfig> m_archives_config;
 
+    void to_shard(const std::string& shard_path);
+
 public:
     /// Root path of the dataset
     std::string path;

@@ -2,6 +2,7 @@
 #define ARKI_DATASET_ONDISK2_H
 
 #include <arki/dataset/indexed.h>
+#include <arki/dataset/sharded.h>
 
 namespace arki {
 namespace dataset {
@@ -9,6 +10,7 @@ namespace ondisk2 {
 
 struct Config : public dataset::IndexedConfig
 {
+    ShardingConfig sharding;
     bool smallfiles;
     std::string summary_cache_pathname;
     std::string index_pathname;

@@ -2,6 +2,7 @@
 #define ARKI_DATASET_SIMPLE_H
 
 #include <arki/dataset/indexed.h>
+#include <arki/dataset/sharded.h>
 
 namespace arki {
 namespace dataset {
@@ -9,9 +10,13 @@ namespace simple {
 
 struct Config : public dataset::IndexedConfig
 {
+    ShardingConfig sharding;
     std::string index_type;
 
+    Config(const Config&) = default;
     Config(const ConfigFile& cfg);
+
+    std::shared_ptr<const Config> createShard(const Metadata&) const;
 
     std::unique_ptr<dataset::Reader> create_reader() const override;
     std::unique_ptr<dataset::Writer> create_writer() const override;

@@ -18,11 +18,11 @@ namespace {
 
 struct Fixture : public arki::utils::tests::Fixture
 {
-    Metadata md;
+    core::Time time;
 
     Fixture()
+        : time(2007, 6, 5, 4, 3, 2)
     {
-        md.set("reftime", "2007-06-05T04:03:02Z");
     }
 };
 
@@ -44,7 +44,7 @@ void Tests::register_tests() {
 add_method("yearly", [](Fixture& f) {
     auto step = Step::create("yearly");
 
-    ensure_equals((*step)(f.md), "20/2007");
+    ensure_equals((*step)(f.time), "20/2007");
     ensure(step->pathMatches("20/2007.test", mimpl(Matcher::parse("reftime:>2006"))));
     ensure(step->pathMatches("20/2007.test", mimpl(Matcher::parse("reftime:<=2008"))));
     ensure(not step->pathMatches("20/2007.test", mimpl(Matcher::parse("reftime:>2007"))));
@@ -54,25 +54,25 @@ add_method("yearly", [](Fixture& f) {
 add_method("monthly", [](Fixture& f) {
     auto step = Step::create("monthly");
 
-    wassert(actual((*step)(f.md)) == "2007/06");
+    wassert(actual((*step)(f.time)) == "2007/06");
 });
 
 add_method("biweekly", [](Fixture& f) {
     auto step = Step::create("biweekly");
 
-    wassert(actual((*step)(f.md)) == "2007/06-1");
+    wassert(actual((*step)(f.time)) == "2007/06-1");
 });
 
 add_method("weekly", [](Fixture& f) {
     auto step = Step::create("weekly");
 
-    wassert(actual((*step)(f.md)) == "2007/06-1");
+    wassert(actual((*step)(f.time)) == "2007/06-1");
 });
 
 add_method("daily", [](Fixture& f) {
     auto step = Step::create("daily");
 
-    wassert(actual((*step)(f.md)) == "2007/06-05");
+    wassert(actual((*step)(f.time)) == "2007/06-05");
 });
 
 }

@@ -361,14 +361,14 @@ struct ShardWeekly : public BaseShardStep
 
 std::shared_ptr<ShardStep> ShardStep::create(const std::string& shard_type, const std::string& type)
 {
-    if (type == ShardWeekly::name())
+    if (shard_type == ShardWeekly::name())
         return shared_ptr<ShardStep>(new ShardWeekly(type));
-    else if (type == ShardMonthly::name())
+    else if (shard_type == ShardMonthly::name())
         return shared_ptr<ShardStep>(new ShardMonthly(type));
-    else if (type == ShardYearly::name())
+    else if (shard_type == ShardYearly::name())
         return shared_ptr<ShardStep>(new ShardYearly(type));
     else
-        throw std::runtime_error("shard step '" + type + "' is not supported.  Valid values are weekly, monthly, and yearly.");
+        throw std::runtime_error("shard step '" + shard_type + "' is not supported.  Valid values are weekly, monthly, and yearly.");
 }
 
 }

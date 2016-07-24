@@ -11,7 +11,7 @@ namespace dataset {
 namespace ondisk2 {
 
 Config::Config(const ConfigFile& cfg)
-    : dataset::IndexedConfig(cfg),
+    : dataset::IndexedConfig(cfg), sharding(cfg),
       smallfiles(ConfigFile::boolValue(cfg.value("smallfiles"))),
       summary_cache_pathname(str::joinpath(path, ".summaries")),
       index_pathname(cfg.value("indexfile")),

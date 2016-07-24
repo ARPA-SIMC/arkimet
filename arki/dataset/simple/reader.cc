@@ -40,6 +40,8 @@ void Reader::expand_date_range(unique_ptr<core::Time>& begin, unique_ptr<core::T
     m_mft->expand_date_range(begin, end);
 }
 
+std::string ShardingReader::type() const { return "simple"; }
+
 }
 }
 }

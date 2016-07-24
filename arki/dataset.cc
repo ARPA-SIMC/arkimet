@@ -7,7 +7,6 @@
 #include <arki/dataset/outbound.h>
 #include <arki/dataset/empty.h>
 #include <arki/dataset/segment.h>
-#include <arki/dataset/sharded.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/sort.h>

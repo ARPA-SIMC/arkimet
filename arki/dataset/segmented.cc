@@ -49,6 +49,12 @@ SegmentedConfig::~SegmentedConfig()
 {
 }
 
+void SegmentedConfig::to_shard(const std::string& shard_path, std::shared_ptr<Step> step)
+{
+    LocalConfig::to_shard(shard_path);
+    m_step = step;
+}
+
 std::unique_ptr<segment::SegmentManager> SegmentedConfig::create_segment_manager() const
 {
     return segment::SegmentManager::get(path, force_dir_segments, mock_data);

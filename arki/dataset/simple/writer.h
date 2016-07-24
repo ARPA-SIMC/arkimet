@@ -46,6 +46,14 @@ public:
     static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
+class ShardingWriter : public sharded::Writer<simple::Config>
+{
+    using sharded::Writer<simple::Config>::Writer;
+
+    const simple::Config& config() const override { return *m_config; }
+    std::string type() const override;
+};
+
 class Checker : public IndexedChecker
 {
 protected:
@@ -73,6 +81,14 @@ public:
     void archiveSegment(const std::string& relpath) override;
     size_t removeSegment(const std::string& relpath, bool withData=false) override;
     size_t vacuum() override;
+};
+
+class ShardingChecker : public sharded::Checker<simple::Config>
+{
+    using sharded::Checker<simple::Config>::Checker;
+
+    const simple::Config& config() const override { return *m_config; }
+    std::string type() const override;
 };
 
 }

@@ -28,7 +28,9 @@ class Tests : public FixtureTestCase<Fixture>
 };
 
 Tests test_simple("arki_dataset_instantiate_simple", "type=simple\n_reader=simple\n_writer=simple\n_checker=simple\n");
+Tests test_simple_sharded("arki_dataset_instantiate_simple_sharded", "type=simple\n_reader=simple\n_writer=simple\n_checker=simple\nshard=yearly\n");
 Tests test_ondisk2("arki_dataset_instantiate_ondisk2", "type=ondisk2\n_reader=ondisk2\n_writer=ondisk2\n_checker=ondisk2\n");
+Tests test_ondisk2_sharded("arki_dataset_instantiate_ondisk2_sharded", "type=ondisk2\n_reader=ondisk2\n_writer=ondisk2\n_checker=ondisk2\nshard=yearly\n");
 Tests test_error("arki_dataset_instantiate_error", "type=error\n_reader=simple\n_writer=simple\n_checker=simple\n");
 Tests test_duplicates("arki_dataset_instantiate_duplicates", "type=duplicates\n_reader=simple\n_writer=simple\n_checker=simple\n");
 Tests test_outbound("arki_dataset_instantiate_outbound", "type=outbound\n_reader=empty\n_writer=outbound\n");

@@ -118,6 +118,8 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
 }
 
 
+std::string ShardingWriter::type() const { return "simple"; }
+
 
 Checker::Checker(std::shared_ptr<const simple::Config> config)
     : m_config(config), m_mft(0)
@@ -252,6 +254,8 @@ size_t Checker::vacuum()
     return m_mft->vacuum();
 }
 
+
+std::string ShardingChecker::type() const { return "simple"; }
 
 }
 }

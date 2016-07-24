@@ -56,15 +56,19 @@ class TestsReader : public FixtureTestCase<FixtureReader<Data>>
 
 TestsReader<testdata::GRIBData> test_reader_grib_ondisk2("arki_dataset_reader_grib_ondisk2", "type=ondisk2\n");
 TestsReader<testdata::GRIBData> test_reader_grib_simple_plain("arki_dataset_reader_grib_simple_plain", "type=simple\nindex_type=plain\n");
+TestsReader<testdata::GRIBData> test_reader_grib_simple_plain_sharded("arki_dataset_reader_grib_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsReader<testdata::GRIBData> test_reader_grib_simple_sqlite("arki_dataset_reader_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsReader<testdata::BUFRData> test_reader_bufr_ondisk2("arki_dataset_reader_bufr_ondisk2", "type=ondisk2\n");
 TestsReader<testdata::BUFRData> test_reader_bufr_simple_plain("arki_dataset_reader_bufr_simple_plain", "type=simple\nindex_type=plain\n");
+TestsReader<testdata::BUFRData> test_reader_bufr_simple_plain_sharded("arki_dataset_reader_bufr_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsReader<testdata::BUFRData> test_reader_bufr_simple_sqlite("arki_dataset_reader_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsReader<testdata::VM2Data> test_reader_vm2_ondisk2("arki_dataset_reader_vm2_ondisk2", "type=ondisk2\n");
 TestsReader<testdata::VM2Data> test_reader_vm2_simple_plain("arki_dataset_reader_vm2_simple_plain", "type=simple\nindex_type=plain\n");
+TestsReader<testdata::VM2Data> test_reader_vm2_simple_plain_sharded("arki_dataset_reader_vm2_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsReader<testdata::VM2Data> test_reader_vm2_simple_sqlite("arki_dataset_reader_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsReader<testdata::ODIMData> test_reader_odim_ondisk2("arki_dataset_reader_odim_ondisk2", "type=ondisk2\n");
 TestsReader<testdata::ODIMData> test_reader_odim_simple_plain("arki_dataset_reader_odim_simple_plain", "type=simple\nindex_type=plain\n");
+TestsReader<testdata::ODIMData> test_reader_odim_simple_plain_sharded("arki_dataset_reader_odilym_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsReader<testdata::ODIMData> test_reader_odim_simple_sqlite("arki_dataset_reader_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
 
 template<class Data>

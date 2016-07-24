@@ -14,6 +14,10 @@ protected:
     /// dataset::Step for this configuration
     std::shared_ptr<Step> m_step;
 
+    SegmentedConfig(const SegmentedConfig& cfg) = default;
+
+    void to_shard(const std::string& shard_path, std::shared_ptr<Step> step);
+
 public:
     /// Name of the dataset::Step used to dispatch data into segments
     std::string step_name;

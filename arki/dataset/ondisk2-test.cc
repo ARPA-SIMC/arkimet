@@ -278,7 +278,7 @@ add_method("acquire_replace_usn", [](Fixture& f) {
     metadata::Collection mdc("inbound/synop-gts.bufr");
     metadata::Collection mdc_upd("inbound/synop-gts-usn2.bufr");
 
-    wassert(actual(mdc.size()) == 1);
+    wassert(actual(mdc.size()) == 1u);
 
     // Acquire
     wassert(actual(writer->acquire(mdc[0])) == dataset::Writer::ACQ_OK);
