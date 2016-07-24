@@ -2,6 +2,7 @@
 #define ARKI_DATASET_SHARD_H
 
 #include <arki/dataset/local.h>
+#include <unordered_map>
 
 namespace arki {
 namespace dataset {
@@ -45,6 +46,10 @@ class Writer : public LocalWriter
 {
 protected:
     std::shared_ptr<const Config> m_config;
+    const ShardingConfig& sharding;
+    std::unordered_map<std::string, dataset::Writer*> shards;
+
+    dataset::Writer& shard(const core::Time& time);
 
 public:
     Writer(std::shared_ptr<const Config> config);
@@ -61,6 +66,7 @@ class Checker : public LocalChecker
 {
 protected:
     std::shared_ptr<const Config> m_config;
+    const ShardingConfig& sharding;
 
 public:
     Checker(std::shared_ptr<const Config> config);
@@ -72,11 +78,11 @@ public:
 };
 
 extern template class Reader<simple::Config>;
-extern template class Reader<ondisk2::Config>;
+//extern template class Reader<ondisk2::Config>;
 extern template class Writer<simple::Config>;
-extern template class Writer<ondisk2::Config>;
+//extern template class Writer<ondisk2::Config>;
 extern template class Checker<simple::Config>;
-extern template class Checker<ondisk2::Config>;
+//extern template class Checker<ondisk2::Config>;
 
 }
 }

@@ -19,9 +19,8 @@ Config::Config(const ConfigFile& cfg)
 {
 }
 
-std::shared_ptr<const Config> Config::createShard(const Metadata& md) const
+std::shared_ptr<const Config> Config::create_shard(const core::Time& time) const
 {
-    const core::Time& time = md.get<types::reftime::Position>()->time;
     std::string shard_path = sharding.step->shard_path(time);
     std::unique_ptr<Config> cfg(new Config(*this));
     cfg->sharding.active = false;

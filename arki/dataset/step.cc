@@ -308,6 +308,8 @@ struct BaseShardStep : public ShardStep
             return shared_ptr<Step>(new SubWeekly(year));
         else if (type == SubMonthly::name())
             return shared_ptr<Step>(new SubMonthly(year));
+        else if (type == Yearly::name())
+            return shared_ptr<Step>(new Yearly());
         else
             throw std::runtime_error("step '" + type + "' is not supported.  Valid values are daily, weekly, and monthly.");
     }

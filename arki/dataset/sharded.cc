@@ -1,8 +1,10 @@
 #include "sharded.h"
-#include "arki/configfile.h"
 #include "step.h"
 #include "simple.h"
 #include "ondisk2.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/types/reftime.h"
 #include "arki/utils/sys.h"
 
 using namespace std;
@@ -43,28 +45,67 @@ void Reader<Config>::expand_date_range(std::unique_ptr<core::Time>& begin, std::
 
 template<typename Config>
 Writer<Config>::Writer(std::shared_ptr<const Config> config)
-    : m_config(config)
+    : m_config(config), sharding(config->sharding)
 {
     // Create the directory if it does not exist
     sys::makedirs(config->path);
 }
 
 template<typename Config>
-Writer<Config>::~Writer() {}
+Writer<Config>::~Writer()
+{
+    for (auto& i: shards)
+        delete i.second;
+}
 
 template<typename Config>
-dataset::Writer::AcquireResult Writer<Config>::acquire(Metadata& md, dataset::Writer::ReplaceStrategy replace) { throw std::runtime_error("not implemented"); }
+dataset::Writer& Writer<Config>::shard(const core::Time& time)
+{
+    std::string shard_path = sharding.step->shard_path(time);
+    auto res = shards.find(shard_path);
+    if (res == shards.end())
+    {
+        std::shared_ptr<const Config> shard_cfg = m_config->create_shard(time);
+        auto writer = shard_cfg->create_writer();
+        auto i = shards.emplace(make_pair(shard_path, writer.release()));
+        return *i.first->second;
+    } else
+        return *res->second;
+}
 
 template<typename Config>
-void Writer<Config>::remove(Metadata& md) { throw std::runtime_error("not implemented"); }
+dataset::Writer::AcquireResult Writer<Config>::acquire(Metadata& md, dataset::Writer::ReplaceStrategy replace)
+{
+    const core::Time& time = md.get<types::reftime::Position>()->time;
+    return shard(time).acquire(md, replace);
+}
 
 template<typename Config>
-void Writer<Config>::flush() { throw std::runtime_error("not implemented"); }
+void Writer<Config>::remove(Metadata& md)
+{
+    for (auto& i: shards)
+        delete i.second;
+    const core::Time& time = md.get<types::reftime::Position>()->time;
+    return shard(time).remove(md);
+}
+
+template<typename Config>
+void Writer<Config>::flush()
+{
+    // Flush all shards
+    for (auto& i: shards)
+        i.second->flush();
+
+    // Deallocate all cached shards
+    for (auto& i: shards)
+        delete i.second;
+    shards.clear();
+}
 
 
 template<typename Config>
 Checker<Config>::Checker(std::shared_ptr<const Config> config)
-    : m_config(config)
+    : m_config(config), sharding(config->sharding)
 {
     // Create the directory if it does not exist
     sys::makedirs(config->path);
@@ -84,11 +125,11 @@ void Checker<Config>::check(dataset::Reporter& reporter, bool fix, bool quick) {
 
 
 template class Reader<simple::Config>;
-template class Reader<ondisk2::Config>;
+//template class Reader<ondisk2::Config>;
 template class Writer<simple::Config>;
-template class Writer<ondisk2::Config>;
+//template class Writer<ondisk2::Config>;
 template class Checker<simple::Config>;
-template class Checker<ondisk2::Config>;
+//template class Checker<ondisk2::Config>;
 
 }
 }

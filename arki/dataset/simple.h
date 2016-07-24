@@ -3,6 +3,7 @@
 
 #include <arki/dataset/indexed.h>
 #include <arki/dataset/sharded.h>
+#include <arki/core/time.h>
 
 namespace arki {
 namespace dataset {
@@ -16,7 +17,7 @@ struct Config : public dataset::IndexedConfig
     Config(const Config&) = default;
     Config(const ConfigFile& cfg);
 
-    std::shared_ptr<const Config> createShard(const Metadata&) const;
+    std::shared_ptr<const Config> create_shard(const core::Time&) const;
 
     std::unique_ptr<dataset::Reader> create_reader() const override;
     std::unique_ptr<dataset::Writer> create_writer() const override;
