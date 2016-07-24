@@ -8,6 +8,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/scan/any.h"
+#include "arki/types/reftime.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
@@ -86,7 +87,8 @@ segment::SegmentManager& SegmentedWriter::segment_manager()
 
 Segment* SegmentedWriter::file(const Metadata& md, const std::string& format)
 {
-    string relname = config().step()(md) + "." + md.source().format;
+    const core::Time& time = md.get<types::reftime::Position>()->time;
+    string relname = config().step()(time) + "." + md.source().format;
     return segment_manager().get_segment(format, relname);
 }
 

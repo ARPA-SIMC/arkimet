@@ -3,6 +3,7 @@
 #include "empty.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
+#include "arki/types/reftime.h"
 #include "arki/dataset/segment.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -52,7 +53,8 @@ void Writer::storeBlob(Metadata& md, const std::string& reldest)
 
 Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
-    string reldest = config().step()(md);
+    const core::Time& time = md.get<types::reftime::Position>()->time;
+    string reldest = config().step()(time);
     string dest = path() + "/" + reldest;
 
     sys::makedirs(str::dirname(dest));
@@ -82,8 +84,9 @@ void Writer::removeAll(std::ostream& log, bool writable)
 
 Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
+    const core::Time& time = md.get<types::reftime::Position>()->time;
     auto tf = Step::create(cfg.value("step"));
-    string dest = cfg.value("path") + "/" + (*tf)(md) + "." + md.source().format;
+    string dest = cfg.value("path") + "/" + (*tf)(time) + "." + md.source().format;
     out << "Assigning to dataset " << cfg.value("name") << " in file " << dest << endl;
     return ACQ_OK;
 }

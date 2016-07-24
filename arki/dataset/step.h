@@ -8,8 +8,6 @@
 #include <memory>
 
 namespace arki {
-class Metadata;
-class ConfigFile;
 
 namespace core {
 class Time;
@@ -27,8 +25,7 @@ namespace dataset {
 struct Step
 {
     virtual ~Step() {}
-    virtual std::string operator()(const Metadata& md) const = 0;
-    virtual std::string path_in_shard(const Metadata& md) const = 0;
+    virtual std::string operator()(const core::Time& time) const = 0;
 
     /**
      * Get the timespan of a file by just looking at its path.
@@ -61,12 +58,12 @@ struct Step
 /**
  * Generate paths from the root of sharded datasets.
  */
-struct ShardedStep
+struct ShardStep
 {
-    virtual ~ShardedStep() {}
+    virtual ~ShardStep() {}
 
     /// Return the path to the root of the sharded dataset for this datum
-    virtual std::string shard_path(const Metadata& md) const = 0;
+    virtual std::string shard_path(const core::Time& time) const = 0;
 
     /**
      * Return the Step to use for the dataset shard for a datum.
@@ -74,12 +71,12 @@ struct ShardedStep
      * The result of substep() is the same for all Metadata elements that
      * share the same shard_path()
      */
-    //virtual std::shared_ptr<Step> substep(const Metadata& md) const = 0;
+    virtual std::shared_ptr<Step> substep(const core::Time& time) const = 0;
 
     /**
      * Create a Step according to the given step type name.
      */
-    static std::shared_ptr<ShardedStep> create(const std::string& shard_type, const std::string& type);
+    static std::shared_ptr<ShardStep> create(const std::string& shard_type, const std::string& type);
 };
 
 }
