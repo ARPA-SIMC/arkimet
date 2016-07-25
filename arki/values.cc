@@ -702,7 +702,7 @@ void ValueBag::load_lua_table(lua_State* L, int idx)
         string key;
         switch (lua_type(L, -2))
         {
-            case LUA_TNUMBER: key = to_string(lua_tointeger(L, -2)); break;
+            case LUA_TNUMBER: key = to_string((int)lua_tonumber(L, -2)); break;
             case LUA_TSTRING: key = lua_tostring(L, -2); break;
             default:
             {
@@ -716,7 +716,7 @@ void ValueBag::load_lua_table(lua_State* L, int idx)
 		switch (lua_type(L, -1))
 		{
 			case LUA_TNUMBER: 
-				set(key, Value::createInteger(lua_tointeger(L, -1)));
+				set(key, Value::createInteger(lua_tonumber(L, -1)));
 				break;
 			case LUA_TSTRING:
 				set(key, Value::createString(lua_tostring(L, -1)));
