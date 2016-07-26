@@ -10,7 +10,7 @@ Source1: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/
 Source2: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.default
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 BuildRequires: doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl-devel, geos-devel, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 3.0, flex, bison, meteo-vm2-devel >= 0.12, hdf5-devel, python3, python3-werkzeug, python3-setproctitle
-Requires: hdf5, meteo-vm2 >= 0.12, grib_api-1.10.0, python3, python3-lxml, python3-werkzeug, python3-setproctitle
+Requires: hdf5, meteo-vm2 >= 0.12, grib_api, python3, python3-lxml, python3-werkzeug, python3-setproctitle
 Requires(preun): /sbin/chkconfig, /sbin/service
 Requires(post): /sbin/chkconfig, /sbin/service
 
