@@ -11,30 +11,34 @@ class ShardStep;
 namespace simple { class Config; }
 namespace ondisk2 { class Config; }
 
-struct ShardingConfig
+namespace sharded {
+
+template<typename Base>
+struct Config : public Base
 {
-    bool active = false;
-    std::shared_ptr<ShardStep> step;
+    bool sharded = false;
+    std::shared_ptr<ShardStep> shard_step;
 
-    ShardingConfig(const ConfigFile& cfg);
+    Config(const ConfigFile& cfg);
 
-    std::unique_ptr<Reader> create_shard_reader(const core::Time& time) const;
-    std::unique_ptr<Writer> create_shard_writer(const core::Time& time) const;
-    std::unique_ptr<Checker> create_shard_checker(const core::Time& time) const;
+    virtual std::shared_ptr<const dataset::Config> create_shard(const core::Time&) const = 0;
+
+    // TODO: add method to iterate all shards, generating their config
+    // TODO: add method to iterate all shards for a given matcher, generating their config
 };
 
-namespace sharded {
 
 template<typename Config>
 class Reader : public LocalReader
 {
 protected:
     std::shared_ptr<const Config> m_config;
-    const ShardingConfig& sharding;
 
 public:
     Reader(std::shared_ptr<const Config> config);
     ~Reader();
+
+    const Config& config() const override { return *m_config; }
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
@@ -46,7 +50,6 @@ class Writer : public LocalWriter
 {
 protected:
     std::shared_ptr<const Config> m_config;
-    const ShardingConfig& sharding;
     std::unordered_map<std::string, dataset::Writer*> shards;
 
     dataset::Writer& shard(const core::Time& time);
@@ -54,6 +57,8 @@ protected:
 public:
     Writer(std::shared_ptr<const Config> config);
     ~Writer();
+
+    const Config& config() const override { return *m_config; }
 
     AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
     void remove(Metadata& md) override;
@@ -66,23 +71,31 @@ class Checker : public LocalChecker
 {
 protected:
     std::shared_ptr<const Config> m_config;
-    const ShardingConfig& sharding;
 
 public:
     Checker(std::shared_ptr<const Config> config);
     ~Checker();
+
+    const Config& config() const override { return *m_config; }
 
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
     void repack(dataset::Reporter& reporter, bool writable=false) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
 };
 
-extern template class Reader<simple::Config>;
-//extern template class Reader<ondisk2::Config>;
-extern template class Writer<simple::Config>;
-//extern template class Writer<ondisk2::Config>;
-extern template class Checker<simple::Config>;
-//extern template class Checker<ondisk2::Config>;
+// gcc bug? If these are uncommented, some template instantiation happens
+// before gcc can know that IndexedConfig is a dataset::Config, and as a
+// consequence template instantiation fails on covariant return types.
+// What I expect should happen is that all template instantiation is delayed
+// until the non-extern explicit instantiation is found, and which point the
+// whole class hierarchy is known.
+//extern template class Config<dataset::IndexedConfig>;
+//extern template class Reader<simple::Config>;
+////extern template class Reader<ondisk2::Config>;
+//extern template class Writer<simple::Config>;
+////extern template class Writer<ondisk2::Config>;
+//extern template class Checker<simple::Config>;
+////extern template class Checker<ondisk2::Config>;
 
 }
 }

@@ -3,9 +3,9 @@
 #include "arki/types/reftime.h"
 #include "arki/utils/pcounter.h"
 #include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include <algorithm>
 #include <cstdint>
-#include <inttypes.h>
-#include <sstream>
 #include <cstdio>
 
 using namespace std;
@@ -328,6 +328,21 @@ struct ShardYearly : public BaseShardStep
         snprintf(buf, 9, "%04d", tt.ye);
         return buf;
     }
+
+    std::vector<core::Time> list_shards(const std::string& pathname) const override
+    {
+        std::vector<core::Time> res;
+        sys::Path dir(pathname);
+        for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+        {
+            if (!f.isdir()) continue;
+            int year;
+            if (sscanf(f->d_name, "%04d", &year) != 1) continue;
+            res.emplace_back(core::Time(year, 1, 1, 0, 0, 0));
+        }
+        std::sort(res.begin(), res.end());
+        return res;
+    }
 };
 
 struct ShardMonthly : public BaseShardStep
@@ -343,6 +358,21 @@ struct ShardMonthly : public BaseShardStep
         snprintf(buf, 10, "%04d-%02d", tt.ye, tt.mo);
         return buf;
     }
+
+    std::vector<core::Time> list_shards(const std::string& pathname) const override
+    {
+        std::vector<core::Time> res;
+        sys::Path dir(pathname);
+        for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+        {
+            if (!f.isdir()) continue;
+            int ye, mo;
+            if (sscanf(f->d_name, "%04d-%02d", &ye, &mo) != 2) continue;
+            res.emplace_back(core::Time(ye, mo, 1, 0, 0, 0));
+        }
+        std::sort(res.begin(), res.end());
+        return res;
+    }
 };
 
 struct ShardWeekly : public BaseShardStep
@@ -357,6 +387,21 @@ struct ShardWeekly : public BaseShardStep
         char buf[10];
         snprintf(buf, 10, "%04d-%02d-%1d", tt.ye, tt.mo, (((tt.da - 1) / 7) + 1));
         return buf;
+    }
+
+    std::vector<core::Time> list_shards(const std::string& pathname) const override
+    {
+        std::vector<core::Time> res;
+        sys::Path dir(pathname);
+        for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+        {
+            if (!f.isdir()) continue;
+            int ye, mo, we;
+            if (sscanf(f->d_name, "%04d-%02d-%1d", &ye, &mo, &we) != 3) continue;
+            res.emplace_back(core::Time(ye, mo, (we - 1) * 7 + 1, 0, 0, 0));
+        }
+        std::sort(res.begin(), res.end());
+        return res;
     }
 };
 

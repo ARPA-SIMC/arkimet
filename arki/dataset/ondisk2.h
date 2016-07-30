@@ -10,7 +10,6 @@ namespace ondisk2 {
 
 struct Config : public dataset::IndexedConfig
 {
-    ShardingConfig sharding;
     bool smallfiles;
     std::string summary_cache_pathname;
     std::string index_pathname;

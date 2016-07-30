@@ -74,6 +74,14 @@ struct ShardStep
     virtual std::shared_ptr<Step> substep(const core::Time& time) const = 0;
 
     /**
+     * List all the shards inside a directory.
+     *
+     * @returns a sorted vector of Time entries of the start of the time range
+     *          of each shard.
+     */
+    virtual std::vector<core::Time> list_shards(const std::string& pathname) const = 0;
+
+    /**
      * Create a Step according to the given step type name.
      */
     static std::shared_ptr<ShardStep> create(const std::string& shard_type, const std::string& type);

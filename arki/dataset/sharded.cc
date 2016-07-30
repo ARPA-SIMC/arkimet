@@ -13,18 +13,20 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-ShardingConfig::ShardingConfig(const ConfigFile& cfg)
-    : active(!cfg.value("shard").empty())
+namespace sharded {
+
+template<typename Base>
+Config<Base>::Config(const ConfigFile& cfg)
+    : Base(cfg), sharded(!cfg.value("shard").empty())
 {
     std::string shard = cfg.value("shard");
-    step = ShardStep::create(shard, cfg.value("step"));
+    shard_step = ShardStep::create(shard, cfg.value("step"));
 }
 
-namespace sharded {
 
 template<typename Config>
 Reader<Config>::Reader(std::shared_ptr<const Config> config)
-    : m_config(config), sharding(config->sharding)
+    : m_config(config)
 {
     // Create the directory if it does not exist
     sys::makedirs(config->path);
@@ -45,7 +47,7 @@ void Reader<Config>::expand_date_range(std::unique_ptr<core::Time>& begin, std::
 
 template<typename Config>
 Writer<Config>::Writer(std::shared_ptr<const Config> config)
-    : m_config(config), sharding(config->sharding)
+    : m_config(config)
 {
     // Create the directory if it does not exist
     sys::makedirs(config->path);
@@ -61,11 +63,11 @@ Writer<Config>::~Writer()
 template<typename Config>
 dataset::Writer& Writer<Config>::shard(const core::Time& time)
 {
-    std::string shard_path = sharding.step->shard_path(time);
+    std::string shard_path = config().shard_step->shard_path(time);
     auto res = shards.find(shard_path);
     if (res == shards.end())
     {
-        std::shared_ptr<const Config> shard_cfg = m_config->create_shard(time);
+        std::shared_ptr<const dataset::Config> shard_cfg = m_config->create_shard(time);
         auto writer = shard_cfg->create_writer();
         auto i = shards.emplace(make_pair(shard_path, writer.release()));
         return *i.first->second;
@@ -105,7 +107,7 @@ void Writer<Config>::flush()
 
 template<typename Config>
 Checker<Config>::Checker(std::shared_ptr<const Config> config)
-    : m_config(config), sharding(config->sharding)
+    : m_config(config)
 {
     // Create the directory if it does not exist
     sys::makedirs(config->path);
@@ -124,6 +126,7 @@ template<typename Config>
 void Checker<Config>::check(dataset::Reporter& reporter, bool fix, bool quick) { throw std::runtime_error("not implemented"); }
 
 
+template class Config<dataset::IndexedConfig>;
 template class Reader<simple::Config>;
 //template class Reader<ondisk2::Config>;
 template class Writer<simple::Config>;
