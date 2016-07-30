@@ -8,15 +8,19 @@ namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
-struct Config : public dataset::IndexedConfig
+struct Config : public sharded::Config<dataset::IndexedConfig>
 {
     bool smallfiles;
     std::string summary_cache_pathname;
+    std::string indexfile;
     std::string index_pathname;
     std::string index;
     std::string unique;
 
+    Config(const Config&) = default;
     Config(const ConfigFile& cfg);
+
+    std::shared_ptr<const dataset::Config> create_shard(const core::Time&) const override;
 
     std::unique_ptr<dataset::Reader> create_reader() const override;
     std::unique_ptr<dataset::Writer> create_writer() const override;

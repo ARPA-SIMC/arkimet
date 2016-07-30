@@ -23,8 +23,6 @@ std::shared_ptr<const dataset::Config> Config::create_shard(const core::Time& ti
 {
     std::string shard_path = shard_step->shard_path(time);
     std::unique_ptr<Config> cfg(new Config(*this));
-    cfg->sharded = false;
-    cfg->shard_step = std::shared_ptr<ShardStep>();
     cfg->to_shard(shard_path, shard_step->substep(time));
     return std::shared_ptr<const dataset::Config>(cfg.release());
 }

@@ -7,6 +7,7 @@
 namespace arki {
 namespace dataset {
 class ShardStep;
+class Step;
 
 namespace simple { class Config; }
 namespace ondisk2 { class Config; }
@@ -23,8 +24,15 @@ struct Config : public Base
 
     virtual std::shared_ptr<const dataset::Config> create_shard(const core::Time&) const = 0;
 
-    // TODO: add method to iterate all shards, generating their config
-    // TODO: add method to iterate all shards for a given matcher, generating their config
+    // Iterate all shards, in ascending time order, generating their config
+    virtual void all_shards(std::function<void(std::shared_ptr<const dataset::Config>)>) const;
+
+    // Iterate all shards matching a matcher, in ascending time order,
+    // generating their config
+    virtual void query_shards(const Matcher& matcher, std::function<void(std::shared_ptr<const dataset::Config>)>) const;
+
+protected:
+    void to_shard(const std::string& shard_path, std::shared_ptr<Step> step);
 };
 
 

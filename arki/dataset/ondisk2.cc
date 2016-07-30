@@ -2,6 +2,7 @@
 #include "ondisk2/reader.h"
 #include "ondisk2/writer.h"
 #include "arki/utils/string.h"
+#include "step.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -11,21 +12,36 @@ namespace dataset {
 namespace ondisk2 {
 
 Config::Config(const ConfigFile& cfg)
-    : dataset::IndexedConfig(cfg),
+    : sharded::Config<dataset::IndexedConfig>(cfg),
       smallfiles(ConfigFile::boolValue(cfg.value("smallfiles"))),
       summary_cache_pathname(str::joinpath(path, ".summaries")),
-      index_pathname(cfg.value("indexfile")),
+      indexfile(cfg.value("indexfile")),
       index(cfg.value("index")),
       unique(cfg.value("unique"))
 {
     if (index_pathname.empty())
         index_pathname = "index.sqlite";
 
-    if (index_pathname != ":memory:")
-        index_pathname = str::joinpath(path, index_pathname);
+    if (indexfile != ":memory:")
+        index_pathname = str::joinpath(path, indexfile);
+    else
+        index_pathname = indexfile;
 
     if (index.empty())
         index = "origin, product, level, timerange, area, proddef, run";
+}
+
+std::shared_ptr<const dataset::Config> Config::create_shard(const core::Time& time) const
+{
+    std::string shard_path = shard_step->shard_path(time);
+    std::unique_ptr<Config> cfg(new Config(*this));
+    cfg->to_shard(shard_path, shard_step->substep(time));
+    cfg->summary_cache_pathname = str::joinpath(cfg->path, ".summaries");
+    if (cfg->indexfile != ":memory:")
+        cfg->index_pathname = str::joinpath(path, cfg->indexfile);
+    else
+        cfg->index_pathname = cfg->indexfile;
+    return std::shared_ptr<const dataset::Config>(cfg.release());
 }
 
 std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)

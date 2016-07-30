@@ -23,6 +23,38 @@ Config<Base>::Config(const ConfigFile& cfg)
     shard_step = ShardStep::create(shard, cfg.value("step"));
 }
 
+template<typename Base>
+void Config<Base>::all_shards(std::function<void(std::shared_ptr<const dataset::Config>)> f) const
+{
+    std::vector<core::Time> shards = shard_step->list_shards(this->path);
+    for (const auto& t: shards)
+        f(create_shard(t));
+}
+
+template<typename Base>
+void Config<Base>::query_shards(const Matcher& matcher, std::function<void(std::shared_ptr<const dataset::Config>)> f) const
+{
+    std::vector<core::Time> shards = shard_step->list_shards(this->path);
+    unique_ptr<core::Time> begin;
+    unique_ptr<core::Time> end;
+    if (!matcher.restrict_date_range(begin, end))
+        // The matcher matches an impossible reftime span: return right away
+        return;
+    for (const auto& t: shards)
+    {
+        if (begin && *begin > t) continue;
+        if (end && *end < t) continue;
+        f(create_shard(t));
+    }
+}
+
+template<typename Base>
+void Config<Base>::to_shard(const std::string& shard_path, std::shared_ptr<Step> step)
+{
+    Base::to_shard(shard_path, step);
+    sharded = false;
+    shard_step = std::shared_ptr<ShardStep>();
+}
 
 template<typename Config>
 Reader<Config>::Reader(std::shared_ptr<const Config> config)
@@ -36,13 +68,28 @@ template<typename Config>
 Reader<Config>::~Reader() {}
 
 template<typename Config>
-void Reader<Config>::query_data(const dataset::DataQuery& q, metadata_dest_func dest) { throw std::runtime_error("not implemented"); }
+void Reader<Config>::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+{
+    config().query_shards(q.matcher, [&](std::shared_ptr<const dataset::Config> cfg) {
+        cfg->create_reader()->query_data(q, dest);
+    });
+}
 
 template<typename Config>
-void Reader<Config>::query_summary(const Matcher& matcher, Summary& summary) { throw std::runtime_error("not implemented"); }
+void Reader<Config>::query_summary(const Matcher& matcher, Summary& summary)
+{
+    config().query_shards(matcher, [&](std::shared_ptr<const dataset::Config> cfg) {
+        cfg->create_reader()->query_summary(matcher, summary);
+    });
+}
 
 template<typename Config>
-void Reader<Config>::expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) { throw std::runtime_error("not implemented"); }
+void Reader<Config>::expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end)
+{
+    config().all_shards([&](std::shared_ptr<const dataset::Config> cfg) {
+        cfg->create_reader()->expand_date_range(begin, end);
+    });
+}
 
 
 template<typename Config>
@@ -117,22 +164,22 @@ template<typename Config>
 Checker<Config>::~Checker() {}
 
 template<typename Config>
-void Checker<Config>::removeAll(dataset::Reporter& reporter, bool writable) { throw std::runtime_error("not implemented"); }
+void Checker<Config>::removeAll(dataset::Reporter& reporter, bool writable) { throw std::runtime_error("checker not implemented"); }
 
 template<typename Config>
-void Checker<Config>::repack(dataset::Reporter& reporter, bool writable) { throw std::runtime_error("not implemented"); }
+void Checker<Config>::repack(dataset::Reporter& reporter, bool writable) { throw std::runtime_error("checker not implemented"); }
 
 template<typename Config>
-void Checker<Config>::check(dataset::Reporter& reporter, bool fix, bool quick) { throw std::runtime_error("not implemented"); }
+void Checker<Config>::check(dataset::Reporter& reporter, bool fix, bool quick) { throw std::runtime_error("checker not implemented"); }
 
 
 template class Config<dataset::IndexedConfig>;
 template class Reader<simple::Config>;
-//template class Reader<ondisk2::Config>;
+template class Reader<ondisk2::Config>;
 template class Writer<simple::Config>;
-//template class Writer<ondisk2::Config>;
+template class Writer<ondisk2::Config>;
 template class Checker<simple::Config>;
-//template class Checker<ondisk2::Config>;
+template class Checker<ondisk2::Config>;
 
 }
 }
