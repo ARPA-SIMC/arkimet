@@ -329,16 +329,16 @@ struct ShardYearly : public BaseShardStep
         return buf;
     }
 
-    std::vector<core::Time> list_shards(const std::string& pathname) const override
+    std::vector<std::pair<core::Time, core::Time>> list_shards(const std::string& pathname) const override
     {
-        std::vector<core::Time> res;
+        std::vector<std::pair<core::Time, core::Time>> res;
         sys::Path dir(pathname);
         for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
         {
             if (!f.isdir()) continue;
             int year;
             if (sscanf(f->d_name, "%04d", &year) != 1) continue;
-            res.emplace_back(core::Time(year, 1, 1, 0, 0, 0));
+            res.emplace_back(make_pair(core::Time(year, 1, 1, 0, 0, 0), core::Time(year, 12, 31, 23, 59, 59)));
         }
         std::sort(res.begin(), res.end());
         return res;
@@ -359,16 +359,17 @@ struct ShardMonthly : public BaseShardStep
         return buf;
     }
 
-    std::vector<core::Time> list_shards(const std::string& pathname) const override
+    std::vector<std::pair<core::Time, core::Time>> list_shards(const std::string& pathname) const override
     {
-        std::vector<core::Time> res;
+        std::vector<std::pair<core::Time, core::Time>> res;
         sys::Path dir(pathname);
         for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
         {
             if (!f.isdir()) continue;
             int ye, mo;
             if (sscanf(f->d_name, "%04d-%02d", &ye, &mo) != 2) continue;
-            res.emplace_back(core::Time(ye, mo, 1, 0, 0, 0));
+            core::Time begin(ye, mo, 1, 0, 0, 0);
+            res.emplace_back(make_pair(begin, begin.end_of_month()));
         }
         std::sort(res.begin(), res.end());
         return res;
@@ -389,16 +390,19 @@ struct ShardWeekly : public BaseShardStep
         return buf;
     }
 
-    std::vector<core::Time> list_shards(const std::string& pathname) const override
+    std::vector<std::pair<core::Time, core::Time>> list_shards(const std::string& pathname) const override
     {
-        std::vector<core::Time> res;
+        std::vector<std::pair<core::Time, core::Time>> res;
         sys::Path dir(pathname);
         for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
         {
             if (!f.isdir()) continue;
             int ye, mo, we;
             if (sscanf(f->d_name, "%04d-%02d-%1d", &ye, &mo, &we) != 3) continue;
-            res.emplace_back(core::Time(ye, mo, (we - 1) * 7 + 1, 0, 0, 0));
+            core::Time begin(ye, mo, (we - 1) * 7 + 1, 0, 0, 0);
+            core::Time end(ye, mo, (we - 1) * 7 + 8, 0, 0, 0);
+            end.normalise();
+            res.emplace_back(make_pair(begin, end));
         }
         std::sort(res.begin(), res.end());
         return res;

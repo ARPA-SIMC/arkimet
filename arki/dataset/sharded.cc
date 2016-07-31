@@ -26,15 +26,15 @@ Config<Base>::Config(const ConfigFile& cfg)
 template<typename Base>
 void Config<Base>::all_shards(std::function<void(std::shared_ptr<const dataset::Config>)> f) const
 {
-    std::vector<core::Time> shards = shard_step->list_shards(this->path);
+    auto shards = shard_step->list_shards(this->path);
     for (const auto& t: shards)
-        f(create_shard(t));
+        f(create_shard(t.first));
 }
 
 template<typename Base>
 void Config<Base>::query_shards(const Matcher& matcher, std::function<void(std::shared_ptr<const dataset::Config>)> f) const
 {
-    std::vector<core::Time> shards = shard_step->list_shards(this->path);
+    auto shards = shard_step->list_shards(this->path);
     unique_ptr<core::Time> begin;
     unique_ptr<core::Time> end;
     if (!matcher.restrict_date_range(begin, end))
@@ -42,9 +42,9 @@ void Config<Base>::query_shards(const Matcher& matcher, std::function<void(std::
         return;
     for (const auto& t: shards)
     {
-        if (begin && *begin > t) continue;
-        if (end && *end < t) continue;
-        f(create_shard(t));
+        if (begin && *begin > t.second) continue;
+        if (end && *end < t.first) continue;
+        f(create_shard(t.first));
     }
 }
 
@@ -164,13 +164,28 @@ template<typename Config>
 Checker<Config>::~Checker() {}
 
 template<typename Config>
-void Checker<Config>::removeAll(dataset::Reporter& reporter, bool writable) { throw std::runtime_error("checker not implemented"); }
+void Checker<Config>::removeAll(dataset::Reporter& reporter, bool writable)
+{
+    config().all_shards([&](std::shared_ptr<const dataset::Config> cfg) {
+        cfg->create_checker()->removeAll(reporter, writable);
+    });
+}
 
 template<typename Config>
-void Checker<Config>::repack(dataset::Reporter& reporter, bool writable) { throw std::runtime_error("checker not implemented"); }
+void Checker<Config>::repack(dataset::Reporter& reporter, bool writable)
+{
+    config().all_shards([&](std::shared_ptr<const dataset::Config> cfg) {
+        cfg->create_checker()->repack(reporter, writable);
+    });
+}
 
 template<typename Config>
-void Checker<Config>::check(dataset::Reporter& reporter, bool fix, bool quick) { throw std::runtime_error("checker not implemented"); }
+void Checker<Config>::check(dataset::Reporter& reporter, bool fix, bool quick)
+{
+    config().all_shards([&](std::shared_ptr<const dataset::Config> cfg) {
+        cfg->create_checker()->check(reporter, fix, quick);
+    });
+}
 
 
 template class Config<dataset::IndexedConfig>;

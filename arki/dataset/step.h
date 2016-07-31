@@ -79,7 +79,7 @@ struct ShardStep
      * @returns a sorted vector of Time entries of the start of the time range
      *          of each shard.
      */
-    virtual std::vector<core::Time> list_shards(const std::string& pathname) const = 0;
+    virtual std::vector<std::pair<core::Time, core::Time>> list_shards(const std::string& pathname) const = 0;
 
     /**
      * Create a Step according to the given step type name.
