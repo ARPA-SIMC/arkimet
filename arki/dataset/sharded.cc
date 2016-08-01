@@ -21,7 +21,8 @@ Config<Base>::Config(const ConfigFile& cfg)
     : Base(cfg), sharded(!cfg.value("shard").empty())
 {
     std::string shard = cfg.value("shard");
-    shard_step = ShardStep::create(shard, cfg.value("step"));
+    if (!shard.empty())
+        shard_step = ShardStep::create(shard, cfg.value("step"));
 }
 
 template<typename Base>
