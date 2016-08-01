@@ -473,16 +473,25 @@ bool unlink_ifexists(const std::string& file);
  */
 bool rename_ifexists(const std::string& src, const std::string& dst);
 
-/// Create the given directory, if it does not already exists.
-/// It will complain if the given pathname already exists but is not a
-/// directory.
-void mkdir_ifmissing(const char* pathname, mode_t mode=0777);
+/**
+ * Create the given directory, if it does not already exists.
+ *
+ * It will throw an exception if the given pathname already exists but is not a
+ * directory.
+ *
+ * @returns true if the directory was created, false if it already existed.
+ */
+bool mkdir_ifmissing(const char* pathname, mode_t mode=0777);
 
-void mkdir_ifmissing(const std::string& pathname, mode_t mode=0777);
+bool mkdir_ifmissing(const std::string& pathname, mode_t mode=0777);
 
-/// Create all the component of the given directory, including the directory
-/// itself.
-void makedirs(const std::string& pathname, mode_t=0777);
+/**
+ * Create all the component of the given directory, including the directory
+ * itself.
+ *
+ * @returns true if the directory was created, false if it already existed.
+ */
+bool makedirs(const std::string& pathname, mode_t=0777);
 
 /**
  * Compute the absolute path of an executable.

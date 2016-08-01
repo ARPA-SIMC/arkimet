@@ -764,13 +764,13 @@ bool rename_ifexists(const std::string& src, const std::string& dst)
 }
 
 template<typename String>
-static void impl_mkdir_ifmissing(String pathname, mode_t mode)
+static bool impl_mkdir_ifmissing(String pathname, mode_t mode)
 {
     for (unsigned i = 0; i < 5; ++i)
     {
         // If it does not exist, make it
         if (::mkdir(to_cstring(pathname), mode) != -1)
-            return;
+            return true;
 
         // throw on all errors except EEXIST. Note that EEXIST "includes the case
         // where pathname is a symbolic link, dangling or not."
@@ -805,33 +805,33 @@ static void impl_mkdir_ifmissing(String pathname, mode_t mode)
         }
         else
             // If it exists and it is a directory, we're fine
-            return;
+            return false;
     }
     std::stringstream msg;
     msg << pathname << " exists and looks like a dangling symlink";
     throw std::runtime_error(msg.str());
 }
 
-void mkdir_ifmissing(const char* pathname, mode_t mode)
+bool mkdir_ifmissing(const char* pathname, mode_t mode)
 {
     return impl_mkdir_ifmissing(pathname, mode);
 }
 
-void mkdir_ifmissing(const std::string& pathname, mode_t mode)
+bool mkdir_ifmissing(const std::string& pathname, mode_t mode)
 {
     return impl_mkdir_ifmissing(pathname, mode);
 }
 
-void makedirs(const std::string& pathname, mode_t mode)
+bool makedirs(const std::string& pathname, mode_t mode)
 {
-    if (pathname == "/" || pathname == ".") return;
+    if (pathname == "/" || pathname == ".") return false;
     std::string parent = str::dirname(pathname);
 
     // First ensure that the upper path exists
     makedirs(parent, mode);
 
     // Then create this dir
-    mkdir_ifmissing(pathname, mode);
+    return mkdir_ifmissing(pathname, mode);
 }
 
 std::string which(const std::string& name)
