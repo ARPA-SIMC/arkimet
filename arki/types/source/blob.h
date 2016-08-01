@@ -64,6 +64,15 @@ struct Blob : public Source
      */
     std::unique_ptr<Blob> makeAbsolute() const;
 
+    /**
+     * Return a new source identical to this one, but relative to path instead
+     * of the current basedir.
+     *
+     * Throws an exception if path is not a directory that contains the current
+     * absolute source pathname.
+     */
+    std::unique_ptr<Blob> makeRelativeTo(const std::string& path) const;
+
     static std::unique_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Blob> decodeMapping(const emitter::memory::Mapping& val);
 };

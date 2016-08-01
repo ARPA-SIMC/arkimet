@@ -5,6 +5,7 @@
 #include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/types/reftime.h"
+#include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
 
 using namespace std;
@@ -126,7 +127,10 @@ template<typename Config>
 dataset::Writer::AcquireResult Writer<Config>::acquire(Metadata& md, dataset::Writer::ReplaceStrategy replace)
 {
     const core::Time& time = md.get<types::reftime::Position>()->time;
-    return shard(time).acquire(md, replace);
+    auto res = shard(time).acquire(md, replace);
+    const auto& source = md.sourceBlob();
+    md.set_source(source.makeRelativeTo(path()));
+    return res;
 }
 
 template<typename Config>

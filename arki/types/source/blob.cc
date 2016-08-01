@@ -122,6 +122,18 @@ std::unique_ptr<Blob> Blob::makeAbsolute() const
     return res;
 }
 
+std::unique_ptr<Blob> Blob::makeRelativeTo(const std::string& path) const
+{
+    string pathname = absolutePathname();
+    if (not str::startswith(pathname, path))
+        throw std::runtime_error(pathname + " is not contained inside " + path);
+    size_t cut = path.size();
+    while (pathname[cut] == '/')
+        ++cut;
+    std::unique_ptr<Blob> res = Blob::create(format, path, pathname.substr(cut), offset, size);
+    return res;
+}
+
 std::string Blob::absolutePathname() const
 {
     if (!filename.empty() && filename[0] == '/')
