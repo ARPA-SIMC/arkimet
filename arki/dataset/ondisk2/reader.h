@@ -24,6 +24,14 @@ public:
     std::string type() const override;
 };
 
+class ShardingReader : public sharded::Reader<ondisk2::Config>
+{
+    using sharded::Reader<ondisk2::Config>::Reader;
+
+    const ondisk2::Config& config() const override { return *m_config; }
+    std::string type() const override;
+};
+
 }
 }
 }
