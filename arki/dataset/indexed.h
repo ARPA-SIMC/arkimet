@@ -59,7 +59,7 @@ public:
 
     const IndexedConfig& config() const override = 0;
 
-    void maintenance(dataset::Reporter& reporter, segment::state_func v, bool quick=true) override;
+    SegmentsState scan(dataset::Reporter& reporter, bool quick=true) override;
     void removeAll(Reporter& reporter, bool writable) override;
 };
 

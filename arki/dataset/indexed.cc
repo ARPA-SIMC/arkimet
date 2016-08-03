@@ -205,14 +205,8 @@ IndexedChecker::~IndexedChecker()
     delete m_idx;
 }
 
-void IndexedChecker::maintenance(dataset::Reporter& reporter, segment::state_func v, bool quick)
+SegmentsState IndexedChecker::scan(dataset::Reporter& reporter, bool quick)
 {
-    // TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
-    // and delete the index if it fails
-
-    // First pass: detect files that have been added or removed compared to the
-    // index
-
     // FindMissing accumulates states instead of acting on files right away;
     // this has the desirable side effect of avoiding modifying the index while
     // it is being iterated
@@ -265,11 +259,14 @@ void IndexedChecker::maintenance(dataset::Reporter& reporter, segment::state_fun
     // archived
 
     CheckAge ca(*this, config().archive_age, config().delete_age);
+    SegmentsState state;
     for (const auto& seginfo: fm.results)
-        v(seginfo.relpath, ca.check(seginfo));
-
-    SegmentedChecker::maintenance(reporter, v, quick);
+        state.insert(make_pair(seginfo.relpath, dataset::SegmentState(ca.check(seginfo), seginfo.md_begin, seginfo.md_until)));
+    return state;
 }
+
+// TODO: during checks, run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
+// and delete the index if it fails
 
 void IndexedChecker::removeAll(Reporter& reporter, bool writable)
 {

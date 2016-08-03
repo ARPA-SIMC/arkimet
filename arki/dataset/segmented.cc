@@ -203,10 +203,6 @@ size_t SegmentedChecker::removeSegment(const std::string& relpath, bool withData
         return 0;
 }
 
-void SegmentedChecker::maintenance(dataset::Reporter& reporter, segment::state_func v, bool quick)
-{
-}
-
 void SegmentedChecker::removeAll(dataset::Reporter& reporter, bool writable)
 {
     // TODO: decide if we're removing archives at all
@@ -225,17 +221,17 @@ void SegmentedChecker::repack(dataset::Reporter& reporter, bool writable)
     }
 
     unique_ptr<maintenance::Agent> repacker;
-
     if (writable)
         // No safeguard against a deleted index: we catch that in the
         // constructor and create the don't pack flagfile
         repacker.reset(new maintenance::RealRepacker(reporter, *this));
     else
         repacker.reset(new maintenance::MockRepacker(reporter, *this));
+
     try {
-        maintenance(reporter, [&](const std::string& relpath, segment::State state) {
-            (*repacker)(relpath, state);
-        });
+        SegmentsState state = scan(reporter);
+        for (const auto& i: state)
+            (*repacker)(i.first, i.second.state);
         repacker->end();
     } catch (...) {
         files::createDontpackFlagfile(root);
@@ -253,9 +249,9 @@ void SegmentedChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
     {
         maintenance::RealFixer fixer(reporter, *this);
         try {
-            maintenance(reporter, [&](const std::string& relpath, segment::State state) {
-                fixer(relpath, state);
-            }, quick);
+            SegmentsState state = scan(reporter, quick);
+            for (const auto& i: state)
+                fixer(i.first, i.second.state);
             fixer.end();
         } catch (...) {
             files::createDontpackFlagfile(root);
@@ -265,9 +261,9 @@ void SegmentedChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
         files::removeDontpackFlagfile(root);
     } else {
         maintenance::MockFixer fixer(reporter, *this);
-        maintenance(reporter, [&](const std::string& relpath, segment::State state) {
-            fixer(relpath, state);
-        }, quick);
+        SegmentsState state = scan(reporter, quick);
+        for (const auto& i: state)
+            fixer(i.first, i.second.state);
         fixer.end();
     }
 

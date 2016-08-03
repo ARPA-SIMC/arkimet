@@ -35,8 +35,8 @@ static const unsigned SEGMENT_UNALIGNED   = 1 << 1; /// Segment contents are inc
 static const unsigned SEGMENT_DELETED     = 1 << 2; /// Segment is known to some index, but does not exist on disk
 static const unsigned SEGMENT_NEW         = 1 << 3; /// Segment exists on disk but is not known to any index
 static const unsigned SEGMENT_CORRUPTED   = 1 << 4; /// File is broken in a way that needs manual intervention
-static const unsigned SEGMENT_ARCHIVE_AGE = 1 << 5; /// File is ok, but old enough to be archived
-static const unsigned SEGMENT_DELETE_AGE  = 1 << 6; /// File is ok, but old enough to be deleted
+static const unsigned SEGMENT_ARCHIVE_AGE = 1 << 5; /// File is old enough to be archived
+static const unsigned SEGMENT_DELETE_AGE  = 1 << 6; /// File is old enough to be deleted
 
 namespace segment {
 

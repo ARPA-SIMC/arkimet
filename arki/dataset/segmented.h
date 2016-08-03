@@ -3,6 +3,7 @@
 
 #include <arki/dataset/local.h>
 #include <arki/dataset/segment.h>
+#include <arki/core/time.h>
 
 namespace arki {
 namespace dataset {
@@ -92,6 +93,37 @@ public:
     static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
+
+/**
+ * State of a segment in the dataset
+ */
+struct SegmentState
+{
+    // Segment state
+    segment::State state;
+    // Minimum reference time of data that can fit in the segment
+    core::Time begin;
+    // Maximum reference time of data that can fit in the segment
+    core::Time until;
+
+    SegmentState(segment::State state)
+        : state(state), begin(0, 0, 0), until(0, 0, 0) {}
+    SegmentState(segment::State state, const core::Time& begin, const core::Time& until)
+        : state(state), begin(begin), until(until) {}
+    SegmentState(const SegmentState&) = default;
+    SegmentState(SegmentState&&) = default;
+};
+
+
+/**
+ * State of all segments in the dataset
+ */
+struct SegmentsState : public std::map<std::string, SegmentState>
+{
+    using std::map<std::string, SegmentState>::map;
+};
+
+
 /**
  * LocalChecker with data stored in segment files
  */
@@ -111,20 +143,10 @@ public:
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
 
     /**
-     * Perform dataset maintenance, sending information to \a v
-     *
-     * Subclassers should call LocalWriter's maintenance method at the
-     * end of their own maintenance, as it takes care of performing
-     * maintainance of archives, if present.
-     *
-     * @params v
-     *   The visitor-style class that gets notified of the state of the
-     *   various files in the dataset
-     * @params quick
-     *   If false, contents of the data files will also be checked for
-     *   consistency
+     * Scan the dataset, computing the state of each unarchived segment that is
+     * either on disk or known by the index.
      */
-    virtual void maintenance(dataset::Reporter& reporter, segment::state_func dest, bool quick=true);
+    virtual SegmentsState scan(dataset::Reporter& reporter, bool quick=true) = 0;
 
     /// Remove all data from the dataset
     void removeAll(dataset::Reporter& reporter, bool writable) override;

@@ -536,7 +536,9 @@ void ActualSegmentedChecker::maintenance(const MaintenanceResults& expected, boo
 {
     MaintenanceCollector c;
     dataset::NullReporter rep;
-    wassert(_actual->maintenance(rep, [&](const std::string& relpath, segment::State state) { c(relpath, state); }, quick));
+    SegmentsState state = wcallchecked(_actual->scan(rep, quick));
+    for (const auto& i: state)
+        c(i.first, i.second.state);
 
     bool ok = true;
     if (expected.files_seen != -1 && c.fileStates.size() != (unsigned)expected.files_seen)
