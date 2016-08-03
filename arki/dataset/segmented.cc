@@ -100,7 +100,8 @@ Segment* SegmentedWriter::file(const Metadata& md, const std::string& format)
 
 void SegmentedWriter::flush()
 {
-    segment_manager().flush_writers();
+    if (m_segment_manager)
+        m_segment_manager->flush_writers();
 }
 
 LocalWriter::AcquireResult SegmentedWriter::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)

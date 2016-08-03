@@ -22,14 +22,21 @@ struct Config : public Base
 
     Config(const ConfigFile& cfg);
 
-    virtual std::shared_ptr<const dataset::Config> create_shard(const core::Time&) const = 0;
+    /**
+     * Create the configuration for a shard that can contain a data with the
+     * given reference time.
+     *
+     * Return the shard relative path name, and the dataset::Config for the
+     * shard.
+     */
+    virtual std::pair<std::string, std::shared_ptr<const dataset::Config>> create_shard(const core::Time&) const = 0;
 
     // Iterate all shards, in ascending time order, generating their config
-    virtual void all_shards(std::function<void(std::shared_ptr<const dataset::Config>)>) const;
+    virtual void all_shards(std::function<void(const std::string& shard_relpath, std::shared_ptr<const dataset::Config>)>) const;
 
     // Iterate all shards matching a matcher, in ascending time order,
     // generating their config
-    virtual void query_shards(const Matcher& matcher, std::function<void(std::shared_ptr<const dataset::Config>)>) const;
+    virtual void query_shards(const Matcher& matcher, std::function<void(const std::string& shard_relpath, std::shared_ptr<const dataset::Config>)>) const;
 
 protected:
     void to_shard(const std::string& shard_path, std::shared_ptr<Step> step);

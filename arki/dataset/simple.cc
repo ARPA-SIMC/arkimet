@@ -19,12 +19,12 @@ Config::Config(const ConfigFile& cfg)
 {
 }
 
-std::shared_ptr<const dataset::Config> Config::create_shard(const core::Time& time) const
+std::pair<std::string, std::shared_ptr<const dataset::Config>> Config::create_shard(const core::Time& time) const
 {
     std::string shard_path = shard_step->shard_path(time);
     std::unique_ptr<Config> cfg(new Config(*this));
     cfg->to_shard(shard_path, shard_step->substep(time));
-    return std::shared_ptr<const dataset::Config>(cfg.release());
+    return make_pair(shard_path, std::shared_ptr<const dataset::Config>(cfg.release()));
 }
 
 std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)

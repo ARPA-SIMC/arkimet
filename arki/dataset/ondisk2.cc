@@ -31,7 +31,7 @@ Config::Config(const ConfigFile& cfg)
         index = "origin, product, level, timerange, area, proddef, run";
 }
 
-std::shared_ptr<const dataset::Config> Config::create_shard(const core::Time& time) const
+std::pair<std::string, std::shared_ptr<const dataset::Config>> Config::create_shard(const core::Time& time) const
 {
     std::string shard_path = shard_step->shard_path(time);
     std::unique_ptr<Config> cfg(new Config(*this));
@@ -41,7 +41,7 @@ std::shared_ptr<const dataset::Config> Config::create_shard(const core::Time& ti
         cfg->index_pathname = str::joinpath(cfg->path, cfg->indexfile);
     else
         cfg->index_pathname = cfg->indexfile;
-    return std::shared_ptr<const dataset::Config>(cfg.release());
+    return make_pair(shard_path, std::shared_ptr<const dataset::Config>(cfg.release()));
 }
 
 std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)

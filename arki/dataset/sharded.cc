@@ -2,11 +2,13 @@
 #include "step.h"
 #include "simple.h"
 #include "ondisk2.h"
+#include "reporter.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -26,15 +28,18 @@ Config<Base>::Config(const ConfigFile& cfg)
 }
 
 template<typename Base>
-void Config<Base>::all_shards(std::function<void(std::shared_ptr<const dataset::Config>)> f) const
+void Config<Base>::all_shards(std::function<void(const std::string&, std::shared_ptr<const dataset::Config>)> f) const
 {
     auto shards = shard_step->list_shards(this->path);
     for (const auto& t: shards)
-        f(create_shard(t.first));
+    {
+        auto shard = create_shard(t.first);
+        f(shard.first, shard.second);
+    }
 }
 
 template<typename Base>
-void Config<Base>::query_shards(const Matcher& matcher, std::function<void(std::shared_ptr<const dataset::Config>)> f) const
+void Config<Base>::query_shards(const Matcher& matcher, std::function<void(const std::string&, std::shared_ptr<const dataset::Config>)> f) const
 {
     auto shards = shard_step->list_shards(this->path);
     unique_ptr<core::Time> begin;
@@ -46,7 +51,8 @@ void Config<Base>::query_shards(const Matcher& matcher, std::function<void(std::
     {
         if (begin && *begin > t.second) continue;
         if (end && *end < t.first) continue;
-        f(create_shard(t.first));
+        auto shard = create_shard(t.first);
+        f(shard.first, shard.second);
     }
 }
 
@@ -72,7 +78,7 @@ Reader<Config>::~Reader() {}
 template<typename Config>
 void Reader<Config>::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    config().query_shards(q.matcher, [&](std::shared_ptr<const dataset::Config> cfg) {
+    config().query_shards(q.matcher, [&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
         cfg->create_reader()->query_data(q, dest);
     });
 }
@@ -80,7 +86,7 @@ void Reader<Config>::query_data(const dataset::DataQuery& q, metadata_dest_func 
 template<typename Config>
 void Reader<Config>::query_summary(const Matcher& matcher, Summary& summary)
 {
-    config().query_shards(matcher, [&](std::shared_ptr<const dataset::Config> cfg) {
+    config().query_shards(matcher, [&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
         cfg->create_reader()->query_summary(matcher, summary);
     });
 }
@@ -88,7 +94,7 @@ void Reader<Config>::query_summary(const Matcher& matcher, Summary& summary)
 template<typename Config>
 void Reader<Config>::expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end)
 {
-    config().all_shards([&](std::shared_ptr<const dataset::Config> cfg) {
+    config().all_shards([&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
         cfg->create_reader()->expand_date_range(begin, end);
     });
 }
@@ -116,8 +122,8 @@ dataset::Writer& Writer<Config>::shard(const core::Time& time)
     auto res = shards.find(shard_path);
     if (res == shards.end())
     {
-        std::shared_ptr<const dataset::Config> shard_cfg = m_config->create_shard(time);
-        auto writer = shard_cfg->create_writer();
+        auto shard = m_config->create_shard(time);
+        auto writer = shard.second->create_writer();
         auto i = shards.emplace(make_pair(shard_path, writer.release()));
         return *i.first->second;
     } else
@@ -168,27 +174,83 @@ Checker<Config>::Checker(std::shared_ptr<const Config> config)
 template<typename Config>
 Checker<Config>::~Checker() {}
 
+namespace {
+
+struct ShardedReporter : public dataset::Reporter
+{
+    dataset::Reporter& orig;
+    std::string shard_relpath;
+
+    ShardedReporter(dataset::Reporter& orig, const std::string& shard_relpath) : orig(orig), shard_relpath(shard_relpath) {}
+
+    void operation_progress(const std::string& ds, const std::string& operation, const std::string& message) override
+    {
+        orig.operation_progress(ds, operation, shard_relpath + ": " + message);
+    }
+    void operation_manual_intervention(const std::string& ds, const std::string& operation, const std::string& message) override
+    {
+        orig.operation_manual_intervention(ds, operation, shard_relpath + ": " + message);
+    }
+    void operation_aborted(const std::string& ds, const std::string& operation, const std::string& message) override
+    {
+        orig.operation_aborted(ds, operation, shard_relpath + ": " + message);
+    }
+    void operation_report(const std::string& ds, const std::string& operation, const std::string& message) override
+    {
+        orig.operation_report(ds, operation, shard_relpath + ": " + message);
+    }
+    void segment_info(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        orig.segment_info(ds, str::joinpath(shard_relpath, relpath), message);
+    }
+    void segment_repack(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        orig.segment_repack(ds, str::joinpath(shard_relpath, relpath), message);
+    }
+    void segment_archive(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        orig.segment_archive(ds, str::joinpath(shard_relpath, relpath), message);
+    }
+    void segment_delete(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        orig.segment_delete(ds, str::joinpath(shard_relpath, relpath), message);
+    }
+    void segment_deindex(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        orig.segment_deindex(ds, str::joinpath(shard_relpath, relpath), message);
+    }
+    void segment_rescan(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        orig.segment_rescan(ds, str::joinpath(shard_relpath, relpath), message);
+    }
+};
+
+}
+
 template<typename Config>
 void Checker<Config>::removeAll(dataset::Reporter& reporter, bool writable)
 {
-    config().all_shards([&](std::shared_ptr<const dataset::Config> cfg) {
-        cfg->create_checker()->removeAll(reporter, writable);
+    config().all_shards([&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
+        ShardedReporter rep(reporter, shard_relpath);
+        cfg->create_checker()->removeAll(rep, writable);
     });
 }
 
 template<typename Config>
 void Checker<Config>::repack(dataset::Reporter& reporter, bool writable)
 {
-    config().all_shards([&](std::shared_ptr<const dataset::Config> cfg) {
-        cfg->create_checker()->repack(reporter, writable);
+    config().all_shards([&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
+        ShardedReporter rep(reporter, shard_relpath);
+        cfg->create_checker()->repack(rep, writable);
     });
 }
 
 template<typename Config>
 void Checker<Config>::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
-    config().all_shards([&](std::shared_ptr<const dataset::Config> cfg) {
-        cfg->create_checker()->check(reporter, fix, quick);
+    config().all_shards([&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
+        ShardedReporter rep(reporter, shard_relpath);
+        cfg->create_checker()->check(rep, fix, quick);
     });
 }
 
