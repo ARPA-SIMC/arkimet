@@ -2,6 +2,7 @@
 #define ARKI_DATASET_SHARD_H
 
 #include <arki/dataset/local.h>
+#include <arki/dataset/segmented.h>
 #include <unordered_map>
 
 namespace arki {
@@ -82,10 +83,15 @@ public:
 };
 
 template<typename Config>
-class Checker : public LocalChecker
+class Checker : public segmented::Checker
 {
 protected:
     std::shared_ptr<const Config> m_config;
+    std::unordered_map<std::string, segmented::Checker*> shards;
+
+    segmented::Checker& shard(const core::Time& time);
+    segmented::Checker& shard(const std::string& shard_path);
+    segmented::Checker& shard(const std::string& shard_path, std::shared_ptr<const dataset::Config> config);
 
 public:
     Checker(std::shared_ptr<const Config> config);
@@ -94,8 +100,14 @@ public:
     const Config& config() const override { return *m_config; }
 
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
-    void repack(dataset::Reporter& reporter, bool writable=false) override;
-    void check(dataset::Reporter& reporter, bool fix, bool quick) override;
+
+    segmented::State scan(dataset::Reporter& reporter, bool quick=true) override;
+    void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
+    void rescanSegment(const std::string& relpath) override;
+    size_t repackSegment(const std::string& relpath) override;
+    size_t removeSegment(const std::string& relpath, bool withData=false) override;
+    void archiveSegment(const std::string& relpath) override;
+    size_t vacuum() override;
 };
 
 // gcc bug? If these are uncommented, some template instantiation happens

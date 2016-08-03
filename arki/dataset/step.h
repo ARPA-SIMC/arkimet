@@ -74,6 +74,11 @@ struct ShardStep
     virtual std::shared_ptr<Step> substep(const core::Time& time) const = 0;
 
     /**
+     * Return the time bounds of a shard given its relative path.
+     */
+    virtual std::pair<core::Time, core::Time> shard_span(const std::string& shard_path) const = 0;
+
+    /**
      * List all the shards inside a directory.
      *
      * @returns a sorted vector of Time entries of the start of the time range

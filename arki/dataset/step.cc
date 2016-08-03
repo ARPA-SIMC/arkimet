@@ -313,6 +313,21 @@ struct BaseShardStep : public ShardStep
         else
             throw std::runtime_error("step '" + type + "' is not supported.  Valid values are daily, weekly, and monthly.");
     }
+
+    std::vector<std::pair<core::Time, core::Time>> list_shards(const std::string& pathname) const override
+    {
+        std::vector<std::pair<core::Time, core::Time>> res;
+        sys::Path dir(pathname);
+        for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+        {
+            if (!f.isdir()) continue;
+            auto span = shard_span(f->d_name);
+            if (span.first.ye == 0) continue;
+            res.emplace_back(span);
+        }
+        std::sort(res.begin(), res.end());
+        return res;
+    }
 };
 
 struct ShardYearly : public BaseShardStep
@@ -329,19 +344,12 @@ struct ShardYearly : public BaseShardStep
         return buf;
     }
 
-    std::vector<std::pair<core::Time, core::Time>> list_shards(const std::string& pathname) const override
+    std::pair<core::Time, core::Time> shard_span(const std::string& shard_path) const override
     {
-        std::vector<std::pair<core::Time, core::Time>> res;
-        sys::Path dir(pathname);
-        for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
-        {
-            if (!f.isdir()) continue;
-            int year;
-            if (sscanf(f->d_name, "%04d", &year) != 1) continue;
-            res.emplace_back(make_pair(core::Time(year, 1, 1, 0, 0, 0), core::Time(year, 12, 31, 23, 59, 59)));
-        }
-        std::sort(res.begin(), res.end());
-        return res;
+        int year;
+        if (sscanf(shard_path.c_str(), "%04d", &year) != 1)
+            return make_pair(core::Time(0, 0, 0), core::Time(0, 0, 0));
+        return make_pair(core::Time(year, 1, 1, 0, 0, 0), core::Time(year, 12, 31, 23, 59, 59));
     }
 };
 
@@ -359,20 +367,13 @@ struct ShardMonthly : public BaseShardStep
         return buf;
     }
 
-    std::vector<std::pair<core::Time, core::Time>> list_shards(const std::string& pathname) const override
+    std::pair<core::Time, core::Time> shard_span(const std::string& shard_path) const override
     {
-        std::vector<std::pair<core::Time, core::Time>> res;
-        sys::Path dir(pathname);
-        for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
-        {
-            if (!f.isdir()) continue;
-            int ye, mo;
-            if (sscanf(f->d_name, "%04d-%02d", &ye, &mo) != 2) continue;
-            core::Time begin(ye, mo, 1, 0, 0, 0);
-            res.emplace_back(make_pair(begin, begin.end_of_month()));
-        }
-        std::sort(res.begin(), res.end());
-        return res;
+        int ye, mo;
+        if (sscanf(shard_path.c_str(), "%04d-%02d", &ye, &mo) != 2)
+            return make_pair(core::Time(0, 0, 0), core::Time(0, 0, 0));
+        core::Time begin(ye, mo, 1, 0, 0, 0);
+        return make_pair(begin, begin.end_of_month());
     }
 };
 
@@ -390,22 +391,15 @@ struct ShardWeekly : public BaseShardStep
         return buf;
     }
 
-    std::vector<std::pair<core::Time, core::Time>> list_shards(const std::string& pathname) const override
+    std::pair<core::Time, core::Time> shard_span(const std::string& shard_path) const override
     {
-        std::vector<std::pair<core::Time, core::Time>> res;
-        sys::Path dir(pathname);
-        for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
-        {
-            if (!f.isdir()) continue;
-            int ye, mo, we;
-            if (sscanf(f->d_name, "%04d-%02d-%1d", &ye, &mo, &we) != 3) continue;
-            core::Time begin(ye, mo, (we - 1) * 7 + 1, 0, 0, 0);
-            core::Time end(ye, mo, (we - 1) * 7 + 8, 0, 0, 0);
-            end.normalise();
-            res.emplace_back(make_pair(begin, end));
-        }
-        std::sort(res.begin(), res.end());
-        return res;
+        int ye, mo, we;
+        if (sscanf(shard_path.c_str(), "%04d-%02d-%1d", &ye, &mo, &we) != 3)
+            return make_pair(core::Time(0, 0, 0), core::Time(0, 0, 0));
+        core::Time begin(ye, mo, (we - 1) * 7 + 1, 0, 0, 0);
+        core::Time end(ye, mo, (we - 1) * 7 + 8, 0, 0, 0);
+        end.normalise();
+        return make_pair(begin, end);
     }
 };
 

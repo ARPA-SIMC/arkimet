@@ -172,7 +172,58 @@ Checker<Config>::Checker(std::shared_ptr<const Config> config)
 }
 
 template<typename Config>
-Checker<Config>::~Checker() {}
+Checker<Config>::~Checker()
+{
+    for (auto& i: shards)
+        delete i.second;
+}
+
+template<typename Config>
+segmented::Checker& Checker<Config>::shard(const core::Time& time)
+{
+    std::string shard_path = config().shard_step->shard_path(time);
+    auto res = shards.find(shard_path);
+    if (res == shards.end())
+    {
+        auto shard = m_config->create_shard(time);
+        auto checker = shard.second->create_checker();
+        segmented::Checker* sc = dynamic_cast<segmented::Checker*>(checker.get());
+        if (!sc) throw std::runtime_error("shard dataset for " + shard_path + " did not create a segmented checker");
+        auto i = shards.emplace(make_pair(shard_path, (checker.release(), sc)));
+        return *i.first->second;
+    } else
+        return *res->second;
+}
+
+template<typename Config>
+segmented::Checker& Checker<Config>::shard(const std::string& shard_path)
+{
+    auto res = shards.find(shard_path);
+    if (res == shards.end())
+    {
+        auto span = config().shard_step->shard_span(shard_path);
+        auto shard = m_config->create_shard(span.first);
+        auto checker = shard.second->create_checker();
+        segmented::Checker* sc = dynamic_cast<segmented::Checker*>(checker.get());
+        auto i = shards.emplace(make_pair(shard_path, (checker.release(), sc)));
+        return *i.first->second;
+    } else
+        return *res->second;
+}
+
+template<typename Config>
+segmented::Checker& Checker<Config>::shard(const std::string& shard_path, std::shared_ptr<const dataset::Config> config)
+{
+    auto res = shards.find(shard_path);
+    if (res == shards.end())
+    {
+        auto checker = config->create_checker();
+        segmented::Checker* sc = dynamic_cast<segmented::Checker*>(checker.get());
+        auto i = shards.emplace(make_pair(shard_path, (checker.release(), sc)));
+        return *i.first->second;
+    } else
+        return *res->second;
+}
 
 namespace {
 
@@ -232,26 +283,71 @@ void Checker<Config>::removeAll(dataset::Reporter& reporter, bool writable)
 {
     config().all_shards([&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
         ShardedReporter rep(reporter, shard_relpath);
-        cfg->create_checker()->removeAll(rep, writable);
+        shard(shard_relpath, cfg).removeAll(rep, writable);
     });
 }
 
 template<typename Config>
-void Checker<Config>::repack(dataset::Reporter& reporter, bool writable)
+segmented::State Checker<Config>::scan(dataset::Reporter& reporter, bool quick)
 {
+    segmented::State res;
+
     config().all_shards([&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
         ShardedReporter rep(reporter, shard_relpath);
-        cfg->create_checker()->repack(rep, writable);
+        segmented::State partial = shard(shard_relpath, cfg).scan(reporter, quick);
+        for (const auto& i: partial)
+            res.insert(make_pair(str::joinpath(shard_relpath, i.first), i.second));
     });
+
+    return res;
 }
 
 template<typename Config>
-void Checker<Config>::check(dataset::Reporter& reporter, bool fix, bool quick)
+void Checker<Config>::indexSegment(const std::string& relpath, metadata::Collection&& contents)
 {
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    shard(relpath.substr(0, pos)).indexSegment(relpath.substr(pos + 1), move(contents));
+}
+
+template<typename Config>
+void Checker<Config>::rescanSegment(const std::string& relpath)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    shard(relpath.substr(0, pos)).rescanSegment(relpath.substr(pos + 1));
+}
+
+template<typename Config>
+size_t Checker<Config>::repackSegment(const std::string& relpath)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).repackSegment(relpath.substr(pos + 1));
+}
+
+template<typename Config>
+size_t Checker<Config>::removeSegment(const std::string& relpath, bool withData)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).removeSegment(relpath.substr(pos + 1));
+}
+
+template<typename Config>
+void Checker<Config>::archiveSegment(const std::string& relpath)
+{
+    throw std::runtime_error("archiveSegment not implemented");
+}
+
+template<typename Config>
+size_t Checker<Config>::vacuum()
+{
+    size_t res = 0;
     config().all_shards([&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
-        ShardedReporter rep(reporter, shard_relpath);
-        cfg->create_checker()->check(rep, fix, quick);
+        res += shard(shard_relpath, cfg).vacuum();
     });
+    return res;
 }
 
 
