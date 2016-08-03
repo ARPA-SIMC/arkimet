@@ -18,7 +18,7 @@ namespace dataset {
 namespace outbound {
 
 Config::Config(const ConfigFile& cfg)
-    : dataset::SegmentedConfig(cfg)
+    : segmented::Config(cfg)
 {
 }
 
@@ -31,7 +31,7 @@ std::unique_ptr<dataset::Reader> Config::create_reader() const { return std::uni
 std::unique_ptr<dataset::Writer> Config::create_writer() const { return std::unique_ptr<dataset::Writer>(new Writer(dynamic_pointer_cast<const Config>(shared_from_this()))); }
 
 
-Writer::Writer(std::shared_ptr<const SegmentedConfig> config)
+Writer::Writer(std::shared_ptr<const segmented::Config> config)
     : m_config(config)
 {
     // Create the directory if it does not exist

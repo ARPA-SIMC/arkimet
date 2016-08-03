@@ -63,9 +63,9 @@ IndexedChecker::~IndexedChecker()
     delete m_idx;
 }
 
-SegmentsState IndexedChecker::scan(dataset::Reporter& reporter, bool quick)
+segmented::State IndexedChecker::scan(dataset::Reporter& reporter, bool quick)
 {
-    SegmentsState segments_state;
+    segmented::State segments_state;
 
     //
     // Populate segments_state with the contents of the index
@@ -112,7 +112,7 @@ SegmentsState IndexedChecker::scan(dataset::Reporter& reporter, bool quick)
         if (state.is_ok())
             state = segment_manager().check(reporter, name(), relpath, mds, quick);
 
-        segments_state.insert(make_pair(relpath, dataset::SegmentState(state, *md_begin, *md_until)));
+        segments_state.insert(make_pair(relpath, segmented::SegmentState(state, *md_begin, *md_until)));
     });
 
 
@@ -137,7 +137,7 @@ SegmentsState IndexedChecker::scan(dataset::Reporter& reporter, bool quick)
     for (const auto& relpath : disk)
     {
         reporter.segment_info(name(), relpath, "segment found on disk but not in index");
-        segments_state.insert(make_pair(relpath, dataset::SegmentState(SEGMENT_NEW)));
+        segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_NEW)));
     }
 
 
@@ -200,7 +200,7 @@ void IndexedChecker::removeAll(Reporter& reporter, bool writable)
         } else
             reporter.segment_delete(name(), relpath, "should be deleted");
     });
-    SegmentedChecker::removeAll(reporter, writable);
+    segmented::Checker::removeAll(reporter, writable);
 }
 
 }

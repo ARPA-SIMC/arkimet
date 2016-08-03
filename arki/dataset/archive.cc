@@ -395,7 +395,7 @@ void ArchivesChecker::indexSegment(const std::string& relname, metadata::Collect
     string name = poppath(path);
     if (Checker* a = archives->lookup(name))
     {
-        if (SegmentedChecker* sc = dynamic_cast<SegmentedChecker*>(a))
+        if (segmented::Checker* sc = dynamic_cast<segmented::Checker*>(a))
             sc->indexSegment(path, move(mds));
         else
             throw std::runtime_error(this->name() + ": cannot acquire " + relname + ": archive " + name + " is not writable");

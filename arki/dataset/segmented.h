@@ -9,13 +9,15 @@ namespace arki {
 namespace dataset {
 class Step;
 
-struct SegmentedConfig : public LocalConfig
+namespace segmented {
+
+struct Config : public LocalConfig
 {
 protected:
     /// dataset::Step for this configuration
     std::shared_ptr<Step> m_step;
 
-    SegmentedConfig(const SegmentedConfig& cfg) = default;
+    Config(const Config& cfg) = default;
 
     void to_shard(const std::string& shard_path, std::shared_ptr<Step> step);
 
@@ -24,7 +26,7 @@ public:
     std::string step_name;
 
     /// What replace strategy to use when acquire() is called with REPLACE_DEFAULT
-    Writer::ReplaceStrategy default_replace_strategy;
+    dataset::Writer::ReplaceStrategy default_replace_strategy;
 
     /**
      * If false, autodetect segment types base on data types.
@@ -40,36 +42,36 @@ public:
      */
     bool mock_data = false;
 
-    SegmentedConfig(const ConfigFile& cfg);
-    ~SegmentedConfig();
+    Config(const ConfigFile& cfg);
+    ~Config();
 
     const Step& step() const { return *m_step; }
 
     std::unique_ptr<segment::SegmentManager> create_segment_manager() const;
 
-    static std::shared_ptr<const SegmentedConfig> create(const ConfigFile& cfg);
+    static std::shared_ptr<const Config> create(const ConfigFile& cfg);
 };
 
 /**
  * LocalReader dataset with data stored in segment files
  */
-class SegmentedReader : public LocalReader
+class Reader : public LocalReader
 {
 private:
     segment::SegmentManager* m_segment_manager = nullptr;
 
 public:
     using LocalReader::LocalReader;
-    ~SegmentedReader();
+    ~Reader();
 
-    const SegmentedConfig& config() const override = 0;
+    const Config& config() const override = 0;
     segment::SegmentManager& segment_manager();
 };
 
 /**
  * LocalWriter dataset with data stored in segment files
  */
-class SegmentedWriter : public LocalWriter
+class Writer : public LocalWriter
 {
 private:
     segment::SegmentManager* m_segment_manager = nullptr;
@@ -83,9 +85,9 @@ protected:
 
 public:
     using LocalWriter::LocalWriter;
-    ~SegmentedWriter();
+    ~Writer();
 
-    const SegmentedConfig& config() const override = 0;
+    const Config& config() const override = 0;
     segment::SegmentManager& segment_manager();
 
     virtual void flush();
@@ -118,7 +120,7 @@ struct SegmentState
 /**
  * State of all segments in the dataset
  */
-struct SegmentsState : public std::map<std::string, SegmentState>
+struct State : public std::map<std::string, SegmentState>
 {
     using std::map<std::string, SegmentState>::map;
 };
@@ -127,16 +129,16 @@ struct SegmentsState : public std::map<std::string, SegmentState>
 /**
  * LocalChecker with data stored in segment files
  */
-class SegmentedChecker : public LocalChecker
+class Checker : public LocalChecker
 {
 private:
     segment::SegmentManager* m_segment_manager = nullptr;
 
 public:
     using LocalChecker::LocalChecker;
-    ~SegmentedChecker();
+    ~Checker();
 
-    const SegmentedConfig& config() const override = 0;
+    const Config& config() const override = 0;
     segment::SegmentManager& segment_manager();
 
     void repack(dataset::Reporter& reporter, bool writable=false) override;
@@ -146,7 +148,7 @@ public:
      * Scan the dataset, computing the state of each unarchived segment that is
      * either on disk or known by the index.
      */
-    virtual SegmentsState scan(dataset::Reporter& reporter, bool quick=true) = 0;
+    virtual State scan(dataset::Reporter& reporter, bool quick=true) = 0;
 
     /// Remove all data from the dataset
     void removeAll(dataset::Reporter& reporter, bool writable) override;
@@ -196,6 +198,7 @@ public:
     virtual size_t vacuum() = 0;
 };
 
+}
 }
 }
 #endif

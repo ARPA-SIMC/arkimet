@@ -21,8 +21,9 @@ using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
+namespace segmented {
 
-SegmentedConfig::SegmentedConfig(const ConfigFile& cfg)
+Config::Config(const ConfigFile& cfg)
     : LocalConfig(cfg),
       step_name(str::lower(cfg.value("step"))),
       force_dir_segments(cfg.value("segments") == "dir"),
@@ -45,33 +46,33 @@ SegmentedConfig::SegmentedConfig(const ConfigFile& cfg)
     m_step = Step::create(step_name);
 }
 
-SegmentedConfig::~SegmentedConfig()
+Config::~Config()
 {
 }
 
-void SegmentedConfig::to_shard(const std::string& shard_path, std::shared_ptr<Step> step)
+void Config::to_shard(const std::string& shard_path, std::shared_ptr<Step> step)
 {
     LocalConfig::to_shard(shard_path);
     m_step = step;
 }
 
-std::unique_ptr<segment::SegmentManager> SegmentedConfig::create_segment_manager() const
+std::unique_ptr<segment::SegmentManager> Config::create_segment_manager() const
 {
     return segment::SegmentManager::get(path, force_dir_segments, mock_data);
 }
 
-std::shared_ptr<const SegmentedConfig> SegmentedConfig::create(const ConfigFile& cfg)
+std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
 {
-    return std::shared_ptr<const SegmentedConfig>(new SegmentedConfig(cfg));
+    return std::shared_ptr<const Config>(new Config(cfg));
 }
 
 
-SegmentedReader::~SegmentedReader()
+Reader::~Reader()
 {
     delete m_segment_manager;
 }
 
-segment::SegmentManager& SegmentedReader::segment_manager()
+segment::SegmentManager& Reader::segment_manager()
 {
     if (!m_segment_manager)
         m_segment_manager = config().create_segment_manager().release();
@@ -79,32 +80,32 @@ segment::SegmentManager& SegmentedReader::segment_manager()
 }
 
 
-SegmentedWriter::~SegmentedWriter()
+Writer::~Writer()
 {
     delete m_segment_manager;
 }
 
-segment::SegmentManager& SegmentedWriter::segment_manager()
+segment::SegmentManager& Writer::segment_manager()
 {
     if (!m_segment_manager)
         m_segment_manager = config().create_segment_manager().release();
     return *m_segment_manager;
 }
 
-Segment* SegmentedWriter::file(const Metadata& md, const std::string& format)
+Segment* Writer::file(const Metadata& md, const std::string& format)
 {
     const core::Time& time = md.get<types::reftime::Position>()->time;
     string relname = config().step()(time) + "." + md.source().format;
     return segment_manager().get_segment(format, relname);
 }
 
-void SegmentedWriter::flush()
+void Writer::flush()
 {
     if (m_segment_manager)
         m_segment_manager->flush_writers();
 }
 
-LocalWriter::AcquireResult SegmentedWriter::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+LocalWriter::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
     string type = str::lower(cfg.value("type"));
     if (type.empty())
@@ -119,19 +120,19 @@ LocalWriter::AcquireResult SegmentedWriter::testAcquire(const ConfigFile& cfg, c
 }
 
 
-SegmentedChecker::~SegmentedChecker()
+Checker::~Checker()
 {
     delete m_segment_manager;
 }
 
-segment::SegmentManager& SegmentedChecker::segment_manager()
+segment::SegmentManager& Checker::segment_manager()
 {
     if (!m_segment_manager)
         m_segment_manager = config().create_segment_manager().release();
     return *m_segment_manager;
 }
 
-void SegmentedChecker::archiveSegment(const std::string& relpath)
+void Checker::archiveSegment(const std::string& relpath)
 {
     // TODO: this is a hack to ensure that 'last' is created (and clean) before we start moving files into it.
     archive();
@@ -195,7 +196,7 @@ void SegmentedChecker::archiveSegment(const std::string& relpath)
     archive().indexSegment(arcrelname, move(mdc));
 }
 
-size_t SegmentedChecker::removeSegment(const std::string& relpath, bool withData)
+size_t Checker::removeSegment(const std::string& relpath, bool withData)
 {
     if (withData)
         return segment_manager().remove(relpath);
@@ -203,14 +204,14 @@ size_t SegmentedChecker::removeSegment(const std::string& relpath, bool withData
         return 0;
 }
 
-void SegmentedChecker::removeAll(dataset::Reporter& reporter, bool writable)
+void Checker::removeAll(dataset::Reporter& reporter, bool writable)
 {
     // TODO: decide if we're removing archives at all
     // TODO: if (hasArchive())
     // TODO:    archive().removeAll(reporter, writable);
 }
 
-void SegmentedChecker::repack(dataset::Reporter& reporter, bool writable)
+void Checker::repack(dataset::Reporter& reporter, bool writable)
 {
     const string& root = config().path;
 
@@ -229,7 +230,7 @@ void SegmentedChecker::repack(dataset::Reporter& reporter, bool writable)
         repacker.reset(new maintenance::MockRepacker(reporter, *this));
 
     try {
-        SegmentsState state = scan(reporter);
+        State state = scan(reporter);
         for (const auto& i: state)
             (*repacker)(i.first, i.second.state);
         repacker->end();
@@ -241,7 +242,7 @@ void SegmentedChecker::repack(dataset::Reporter& reporter, bool writable)
     LocalChecker::repack(reporter, writable);
 }
 
-void SegmentedChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
+void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
     const string& root = config().path;
 
@@ -249,7 +250,7 @@ void SegmentedChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
     {
         maintenance::RealFixer fixer(reporter, *this);
         try {
-            SegmentsState state = scan(reporter, quick);
+            State state = scan(reporter, quick);
             for (const auto& i: state)
                 fixer(i.first, i.second.state);
             fixer.end();
@@ -261,7 +262,7 @@ void SegmentedChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
         files::removeDontpackFlagfile(root);
     } else {
         maintenance::MockFixer fixer(reporter, *this);
-        SegmentsState state = scan(reporter, quick);
+        State state = scan(reporter, quick);
         for (const auto& i: state)
             fixer(i.first, i.second.state);
         fixer.end();
@@ -270,5 +271,6 @@ void SegmentedChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
     LocalChecker::check(reporter, fix, quick);
 }
 
+}
 }
 }

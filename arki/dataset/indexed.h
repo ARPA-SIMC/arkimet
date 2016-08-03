@@ -7,20 +7,20 @@ namespace arki {
 namespace dataset {
 class Index;
 
-struct IndexedConfig : public SegmentedConfig
+struct IndexedConfig : public segmented::Config
 {
-    using SegmentedConfig::SegmentedConfig;
+    using segmented::Config::Config;
 };
 
 
-/// SegmentedReader that can make use of an index
-class IndexedReader : public SegmentedReader
+/// segmented::Reader that can make use of an index
+class IndexedReader : public segmented::Reader
 {
 protected:
     Index* m_idx = nullptr;
 
 public:
-    using SegmentedReader::SegmentedReader;
+    using segmented::Reader::Reader;
     ~IndexedReader();
 
     const IndexedConfig& config() const override = 0;
@@ -36,30 +36,30 @@ public:
     bool hasWorkingIndex() const { return m_idx != 0; }
 };
 
-class IndexedWriter : public SegmentedWriter
+class IndexedWriter : public segmented::Writer
 {
 protected:
     Index* m_idx = nullptr;
 
 public:
-    using SegmentedWriter::SegmentedWriter;
+    using segmented::Writer::Writer;
     ~IndexedWriter();
 
     const IndexedConfig& config() const override = 0;
 };
 
-class IndexedChecker : public SegmentedChecker
+class IndexedChecker : public segmented::Checker
 {
 protected:
     Index* m_idx = nullptr;
 
 public:
-    using SegmentedChecker::SegmentedChecker;
+    using segmented::Checker::Checker;
     ~IndexedChecker();
 
     const IndexedConfig& config() const override = 0;
 
-    SegmentsState scan(dataset::Reporter& reporter, bool quick=true) override;
+    segmented::State scan(dataset::Reporter& reporter, bool quick=true) override;
     void removeAll(Reporter& reporter, bool writable) override;
 };
 

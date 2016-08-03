@@ -70,7 +70,7 @@ ConfigFile Scenario::clone(const std::string& newpath) const
 
 namespace {
 
-metadata_dest_func make_importer(dataset::SegmentedWriter& ds)
+metadata_dest_func make_importer(segmented::Writer& ds)
 {
     return [&](unique_ptr<Metadata> md) {
         Writer::AcquireResult r = ds.acquire(*md);

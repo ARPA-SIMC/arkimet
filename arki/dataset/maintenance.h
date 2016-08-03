@@ -20,8 +20,11 @@ class Validator;
 
 namespace dataset {
 class Reporter;
-class SegmentedChecker;
 class Step;
+
+namespace segmented {
+class Checker;
+}
 
 namespace maintenance {
 
@@ -37,10 +40,10 @@ struct Dumper
 struct Agent
 {
     dataset::Reporter& reporter;
-    SegmentedChecker& w;
+    segmented::Checker& w;
     bool lineStart;
 
-    Agent(dataset::Reporter& reporter, SegmentedChecker& w);
+    Agent(dataset::Reporter& reporter, segmented::Checker& w);
     Agent(const Agent&) = delete;
     Agent& operator=(const Agent&) = delete;
 

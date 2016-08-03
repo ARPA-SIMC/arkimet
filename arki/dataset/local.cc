@@ -201,7 +201,7 @@ void LocalWriter::release_lock()
 
 LocalWriter::AcquireResult LocalWriter::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
-    return SegmentedWriter::testAcquire(cfg, md, out);
+    return segmented::Writer::testAcquire(cfg, md, out);
 }
 
 

@@ -125,7 +125,7 @@ dataset::segment::SegmentManager& DatasetTest::segments()
 {
     if (!segment_manager)
     {
-        const dataset::SegmentedConfig* c = dynamic_cast<const dataset::SegmentedConfig*>(dataset_config().get());
+        const dataset::segmented::Config* c = dynamic_cast<const dataset::segmented::Config*>(dataset_config().get());
         if (!c) throw std::runtime_error("DatasetTest::segments called on a non-segmented dataset");
         segment_manager = c->create_segment_manager().release();
     }
@@ -146,31 +146,31 @@ std::string manifest_idx_fname()
     return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
-std::unique_ptr<dataset::SegmentedReader> DatasetTest::makeSegmentedReader()
+std::unique_ptr<dataset::segmented::Reader> DatasetTest::makeSegmentedReader()
 {
     auto ds = config().create_reader();
-    dataset::SegmentedReader* r = dynamic_cast<dataset::SegmentedReader*>(ds.get());
+    dataset::segmented::Reader* r = dynamic_cast<dataset::segmented::Reader*>(ds.get());
     if (!r) throw std::runtime_error("makeSegmentedReader called while testing a non-segmented dataset");
     ds.release();
-    return unique_ptr<dataset::SegmentedReader>(r);
+    return unique_ptr<dataset::segmented::Reader>(r);
 }
 
-std::unique_ptr<dataset::SegmentedWriter> DatasetTest::makeSegmentedWriter()
+std::unique_ptr<dataset::segmented::Writer> DatasetTest::makeSegmentedWriter()
 {
     auto ds = config().create_writer();
-    dataset::SegmentedWriter* r = dynamic_cast<dataset::SegmentedWriter*>(ds.get());
+    dataset::segmented::Writer* r = dynamic_cast<dataset::segmented::Writer*>(ds.get());
     if (!r) throw std::runtime_error("makeSegmentedWriter called while testing a non-segmented dataset");
     ds.release();
-    return unique_ptr<dataset::SegmentedWriter>(r);
+    return unique_ptr<dataset::segmented::Writer>(r);
 }
 
-std::unique_ptr<dataset::SegmentedChecker> DatasetTest::makeSegmentedChecker()
+std::unique_ptr<dataset::segmented::Checker> DatasetTest::makeSegmentedChecker()
 {
     auto ds = config().create_checker();
-    dataset::SegmentedChecker* r = dynamic_cast<dataset::SegmentedChecker*>(ds.get());
+    dataset::segmented::Checker* r = dynamic_cast<dataset::segmented::Checker*>(ds.get());
     if (!r) throw std::runtime_error("makeSegmentedChecker called while testing a non-segmented dataset");
     ds.release();
-    return unique_ptr<dataset::SegmentedChecker>(r);
+    return unique_ptr<dataset::segmented::Checker>(r);
 }
 
 std::unique_ptr<dataset::ondisk2::Reader> DatasetTest::makeOndisk2Reader()
@@ -536,7 +536,7 @@ void ActualSegmentedChecker::maintenance(const MaintenanceResults& expected, boo
 {
     MaintenanceCollector c;
     dataset::NullReporter rep;
-    SegmentsState state = wcallchecked(_actual->scan(rep, quick));
+    segmented::State state = wcallchecked(_actual->scan(rep, quick));
     for (const auto& i: state)
         c(i.first, i.second.state);
 
@@ -925,5 +925,5 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
 
 template class ActualChecker<dataset::Checker>;
 template class ActualChecker<dataset::LocalChecker>;
-template class ActualChecker<dataset::SegmentedChecker>;
+template class ActualChecker<dataset::segmented::Checker>;
 }
