@@ -181,6 +181,13 @@ void Checker::releaseSegment(const std::string& relpath, const std::string& dest
 
 void Checker::archiveSegment(const std::string& relpath)
 {
+    // TODO: this is a hack to ensure that 'last' is created (and clean) before
+    // we start moving files into it. The "created" part is not a problem:
+    // releaseSegment will create all relevant paths. The "clean" part is the
+    // problem, because opening a writer on an already existing path creates a
+    // needs-check-do-not-pack file
+    archive();
+
     const string& root = config().path;
     string arcrelname = str::joinpath("last", relpath);
     string arcabsname = str::joinpath(root, ".archive", arcrelname);
