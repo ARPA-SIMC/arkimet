@@ -215,7 +215,7 @@ struct Ondisk2Archived : public Ondisk2Scenario
         stringstream checklog;
         OstreamReporter reporter(checklog);
         ds.check(reporter, true, true);
-        if (checklog.str() != "ondisk2-archived: check 0 files ok\n")
+        if (!str::endswith(checklog.str(), "ondisk2-archived: check 0 files ok\n"))
             throw std::runtime_error("cannot run check on correct dataset: log is not empty: " + checklog.str());
 
         // Pack to build 'older' archive
@@ -277,7 +277,7 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
             stringstream checklog;
             OstreamReporter reporter(checklog);
             ds.check(reporter, true, true);
-            if (checklog.str() != "ondisk2-manyarchivestates: check 0 files ok\n")
+            if (!str::endswith(checklog.str(), "ondisk2-manyarchivestates: check 0 files ok\n"))
                 throw std::runtime_error("cannot run check on correct dataset: log is not empty: " + checklog.str());
         }
 
