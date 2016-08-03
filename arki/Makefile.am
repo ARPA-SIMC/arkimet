@@ -418,7 +418,7 @@ tests_arki_test_SOURCES += \
 		matcher/task-tut.cc \
 		matcher/quantity-tut.cc \
 		scan/any-tut.cc \
-		scan/dir-tut.cc \
+		scan/dir-test.cc \
 		runtime/io-tut.cc \
 		runtime/config-tut.cc
 

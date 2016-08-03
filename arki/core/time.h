@@ -64,6 +64,8 @@ public:
     /// Create a Time object with the current time
     static Time create_now();
 
+    /// Set all components to 0
+    void unset();
 
     /// Set from the 6 components
     void set(int ye, int mo, int da, int ho=0, int mi=0, int se=0);

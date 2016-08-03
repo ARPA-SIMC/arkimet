@@ -15,7 +15,7 @@ using namespace arki::utils;
 namespace arki {
 namespace scan {
 
-static void scan(vector<string>& res, const std::string& top, const std::string& root, bool files_in_root, int level = 0)
+static void scan(set<string>& res, const std::string& top, const std::string& root, bool files_in_root, int level = 0)
 {
     sys::Path dir(root);
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
@@ -43,24 +43,23 @@ static void scan(vector<string>& res, const std::string& top, const std::string&
             if (scan::canScan(pathname))
                 // Skip files in the root dir
                 // We point to a good file, keep it
-                res.push_back(pathname.substr(top.size() + 1));
+                res.insert(pathname.substr(top.size() + 1));
         }
     }
 }
 
-std::vector<std::string> dir(const std::string& root, bool files_in_root)
+std::set<std::string> dir(const std::string& root, bool files_in_root)
 {
-	string m_root = root;
+    string m_root = root;
 
-	// Trim trailing '/'
-	while (m_root.size() > 1 and m_root[m_root.size()-1] == '/')
-		m_root.resize(m_root.size() - 1);
+    // Trim trailing '/'
+    while (m_root.size() > 1 and m_root[m_root.size()-1] == '/')
+        m_root.resize(m_root.size() - 1);
 
-	vector<string> res;
-	scan(res, m_root, m_root, files_in_root);
-	return res;
+    set<string> res;
+    scan(res, m_root, m_root, files_in_root);
+    return res;
 }
 
 }
 }
-// vim:set ts=4 sw=4:
