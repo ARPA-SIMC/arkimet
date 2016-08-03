@@ -132,26 +132,21 @@ segment::SegmentManager& Checker::segment_manager()
     return *m_segment_manager;
 }
 
-void Checker::archiveSegment(const std::string& relpath)
+void Checker::releaseSegment(const std::string& relpath, const std::string& destpath)
 {
-    // TODO: this is a hack to ensure that 'last' is created (and clean) before we start moving files into it.
-    archive();
-
     const string& root = config().path;
     string pathname = str::joinpath(root, relpath);
-    string arcrelname = str::joinpath("last", relpath);
-    string arcabsname = str::joinpath(root, ".archive", arcrelname);
-    sys::makedirs(str::dirname(arcabsname));
+    sys::makedirs(str::dirname(destpath));
 
     // Sanity checks: avoid conflicts
-    if (sys::exists(arcabsname))
+    if (sys::exists(destpath))
     {
         stringstream ss;
-        ss << "cannot archive " << pathname << " to " << arcabsname << " because the destination already exists";
+        ss << "cannot archive " << pathname << " to " << destpath << " because the destination already exists";
         throw runtime_error(ss.str());
     }
     string src = pathname;
-    string dst = arcabsname;
+    string dst = destpath;
     bool compressed = scan::isCompressed(pathname);
     if (compressed)
     {
@@ -166,8 +161,8 @@ void Checker::archiveSegment(const std::string& relpath)
     }
 
     // Remove stale metadata and summaries that may have been left around
-    sys::unlink_ifexists(arcabsname + ".metadata");
-    sys::unlink_ifexists(arcabsname + ".summary");
+    sys::unlink_ifexists(destpath + ".metadata");
+    sys::unlink_ifexists(destpath + ".summary");
 
     // Move data to archive
     if (rename(src.c_str(), dst.c_str()) < 0)
@@ -177,11 +172,21 @@ void Checker::archiveSegment(const std::string& relpath)
         throw std::system_error(errno, std::system_category(), ss.str());
     }
     if (compressed)
-        sys::rename_ifexists(pathname + ".gz.idx", arcabsname + ".gz.idx");
+        sys::rename_ifexists(src + ".idx", dst + ".idx");
 
     // Move metadata to archive
-    sys::rename_ifexists(pathname + ".metadata", arcabsname + ".metadata");
-    sys::rename_ifexists(pathname + ".summary", arcabsname + ".summary");
+    sys::rename_ifexists(pathname + ".metadata", destpath + ".metadata");
+    sys::rename_ifexists(pathname + ".summary", destpath + ".summary");
+}
+
+void Checker::archiveSegment(const std::string& relpath)
+{
+    const string& root = config().path;
+    string arcrelname = str::joinpath("last", relpath);
+    string arcabsname = str::joinpath(root, ".archive", arcrelname);
+    releaseSegment(relpath, arcabsname);
+
+    bool compressed = scan::isCompressed(arcabsname);
 
     // Acquire in the achive
     metadata::Collection mdc;

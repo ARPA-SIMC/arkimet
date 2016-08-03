@@ -3,12 +3,16 @@
 #include "simple.h"
 #include "ondisk2.h"
 #include "reporter.h"
+#include "archive.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
+#include "arki/utils/compress.h"
+#include "arki/scan/any.h"
+#include "arki/metadata/collection.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -335,9 +339,11 @@ size_t Checker<Config>::removeSegment(const std::string& relpath, bool withData)
 }
 
 template<typename Config>
-void Checker<Config>::archiveSegment(const std::string& relpath)
+void Checker<Config>::releaseSegment(const std::string& relpath, const std::string& destpath)
 {
-    throw std::runtime_error("archiveSegment not implemented");
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).releaseSegment(relpath.substr(pos + 1), destpath);
 }
 
 template<typename Config>

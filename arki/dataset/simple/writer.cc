@@ -240,13 +240,12 @@ size_t Checker::removeSegment(const std::string& relpath, bool withData)
     return segmented::Checker::removeSegment(relpath, withData);
 }
 
-void Checker::archiveSegment(const std::string& relpath)
+void Checker::releaseSegment(const std::string& relpath, const std::string& destpath)
 {
     // Remove from index
     m_mft->remove(relpath);
 
-    // Delegate the rest to segmented::Checker
-    segmented::Checker::archiveSegment(relpath);
+    IndexedChecker::releaseSegment(relpath, destpath);
 }
 
 size_t Checker::vacuum()

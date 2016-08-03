@@ -182,6 +182,13 @@ public:
     virtual size_t removeSegment(const std::string& relpath, bool withData=false) = 0;
 
     /**
+     * Release the segment from the dataset and move it to destpath.
+     *
+     * Destpath must be on the same filesystem as the segment.
+     */
+    virtual void releaseSegment(const std::string& relpath, const std::string& destpath) = 0;
+
+    /**
      * Move the file to archive
      *
      * The default implementation moves the file and its associated

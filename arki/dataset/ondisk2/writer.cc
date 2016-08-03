@@ -453,9 +453,8 @@ size_t Checker::removeSegment(const std::string& relpath, bool withData)
     return IndexedChecker::removeSegment(relpath, withData);
 }
 
-void Checker::archiveSegment(const std::string& relpath)
+void Checker::releaseSegment(const std::string& relpath, const std::string& destpath)
 {
-    // Create the target directory in the archive
     string pathname = str::joinpath(config().path, relpath);
 
     // Rebuild the metadata
@@ -466,8 +465,7 @@ void Checker::archiveSegment(const std::string& relpath)
     // Remove from index
     idx->reset(relpath);
 
-    // Delegate the rest to IndexedChecker
-    IndexedChecker::archiveSegment(relpath);
+    IndexedChecker::releaseSegment(relpath, destpath);
 }
 
 size_t Checker::vacuum()
