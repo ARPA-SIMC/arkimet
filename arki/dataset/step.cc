@@ -246,7 +246,7 @@ struct SubDaily : public BaseStep
     bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
     {
         int mo, da;
-        if (sscanf(path.c_str(), "%02d-%02d", &mo, &da) == 0)
+        if (sscanf(path.c_str(), "%02d/%02d", &mo, &da) == 0)
             return false;
         start_time.set_lowerbound(year, mo, da);
         end_time.set_upperbound(year, mo, da);
