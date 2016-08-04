@@ -147,7 +147,7 @@ std::string DatasetTest::destfile(const testdata::Element& el) const
     if (cfg.value("shard").empty())
         snprintf(buf, 32, "%04d/%02d-%02d.%s", el.time.ye, el.time.mo, el.time.da, el.md.source().format.c_str());
     else
-        snprintf(buf, 32, "%04d/%04d/%02d-%02d.%s", el.time.ye, el.time.ye, el.time.mo, el.time.da, el.md.source().format.c_str());
+        snprintf(buf, 32, "%04d/%02d/%02d.%s", el.time.ye, el.time.mo, el.time.da, el.md.source().format.c_str());
     return buf;
 }
 

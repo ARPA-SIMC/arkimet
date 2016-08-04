@@ -257,7 +257,7 @@ struct SubDaily : public BaseStep
     {
         const Time& tt = time;
         char buf[15];
-        snprintf(buf, 15, "%02d-%02d", tt.mo, tt.da);
+        snprintf(buf, 15, "%02d/%02d", tt.mo, tt.da);
         return buf;
     }
 };
