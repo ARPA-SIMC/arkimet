@@ -86,16 +86,16 @@ struct Fixture : public DatasetTest {
         {
             auto writer = makeOndisk2Writer();
             for (int i = 0; i < 3; ++i)
-                if (fixture.test_data[i].destfile == fixture.test_data[0].destfile)
+                if (destfile(fixture.test_data[i]) == destfile(fixture.test_data[0]))
                     writer->remove(import_results[i]);
             writer->flush();
         }
 
-        removed_fname = fixture.test_data[0].destfile;
+        removed_fname = destfile(fixture.test_data[0]);
 
         {
-            arki::tests::MaintenanceResults expected(false, fixture.count_dataset_files());
-            expected.by_type[COUNTED_OK] = fixture.count_dataset_files() - 1;
+            arki::tests::MaintenanceResults expected(false, count_dataset_files(fixture));
+            expected.by_type[COUNTED_OK] = count_dataset_files(fixture) - 1;
             expected.by_type[COUNTED_NEW] = 1;
             wassert(actual(*makeOndisk2Checker()).maintenance(expected));
         }
@@ -172,7 +172,7 @@ add_method("delete_file_and_repack", [](Fixture& f) {
         e.deleted.emplace_back("testds", removed_fname);
         wassert(actual(*checker).repack(e, true));
 
-        wassert(actual(*checker).maintenance_clean(fixture.count_dataset_files() - 1));
+        wassert(actual(*checker).maintenance_clean(f.count_dataset_files(fixture) - 1));
     }
 
     // Ensure that we have the summary cache
@@ -232,7 +232,7 @@ add_method("delete_file_and_check", [](Fixture& f) {
         e.rescanned.emplace_back("testds", removed_fname);
         wassert(actual(*checker).check(e, true));
 
-        wassert(actual(*checker).maintenance_clean(fixture.count_dataset_files()));
+        wassert(actual(*checker).maintenance_clean(f.count_dataset_files(fixture)));
     }
 
     // Ensure that we have the summary cache
@@ -255,8 +255,8 @@ add_method("delete_index_and_check", [](Fixture& f) {
 
     // All files are found as files to be indexed
     {
-        arki::tests::MaintenanceResults expected(false, fixture.count_dataset_files());
-        expected.by_type[DatasetTest::COUNTED_NEW] = fixture.count_dataset_files();
+        arki::tests::MaintenanceResults expected(false, f.count_dataset_files(fixture));
+        expected.by_type[DatasetTest::COUNTED_NEW] = f.count_dataset_files(fixture);
         wassert(actual(*f.makeOndisk2Checker()).maintenance(expected));
     }
 
@@ -264,12 +264,11 @@ add_method("delete_index_and_check", [](Fixture& f) {
     {
         auto checker = f.makeOndisk2Checker();
         ReporterExpected e;
-        for (set<string>::const_iterator i = fixture.fnames.begin();
-                i != fixture.fnames.end(); ++i)
-            e.rescanned.emplace_back("testds", *i);
+        for (const auto& i: f.destfiles(fixture))
+            e.rescanned.emplace_back("testds", i);
         wassert(actual(*checker).check(e, true));
 
-        wassert(actual(*checker).maintenance_clean(fixture.fnames.size()));
+        wassert(actual(*checker).maintenance_clean(f.count_dataset_files(fixture)));
         wassert(actual(*checker).repack_clean(true));
     }
 

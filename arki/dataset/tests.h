@@ -55,9 +55,11 @@ struct Checker;
 
 namespace testdata {
 struct Fixture;
+struct Element;
 }
 
 namespace tests {
+
 #define ensure_dispatches(x, y, z) wassert(impl_ensure_dispatches((x), (y), (z)))
 void impl_ensure_dispatches(Dispatcher& dispatcher, std::unique_ptr<Metadata> md, metadata_dest_func mdc);
 
@@ -140,6 +142,24 @@ public:
     // Return the file name of the index of the current dataset
     std::string idxfname(const ConfigFile* wcfg = 0) const;
 
+    /**
+     * Return the segment pathname in the current dataset where el is expected
+     * to have been imported
+     */
+    std::string destfile(const testdata::Element& el) const;
+
+    /**
+     * Return all the distinct segment pathnames in the current dataset after f
+     * has been imported
+     */
+    std::set<std::string> destfiles(const testdata::Fixture& f) const;
+
+    /**
+     * Return the number of distinct dataset segments created by importing f in
+     * the test dataset
+     */
+    unsigned count_dataset_files(const testdata::Fixture& f) const;
+
     std::unique_ptr<dataset::segmented::Reader> makeSegmentedReader();
     std::unique_ptr<dataset::segmented::Writer> makeSegmentedWriter();
     std::unique_ptr<dataset::segmented::Checker> makeSegmentedChecker();
@@ -207,7 +227,6 @@ struct Element
 {
     Metadata md;
     core::Time time;
-    std::string destfile;
     Matcher matcher;
 
     Element() : time(0, 0, 0) {}
@@ -217,9 +236,6 @@ struct Element
         const types::reftime::Position* rt = md.get<types::reftime::Position>();
         this->md = md;
         this->time = rt->time;
-        char buf[32];
-        snprintf(buf, 32, "%04d/%02d-%02d.%s", time.ye, time.mo, time.da, md.source().format.c_str());
-        this->destfile = buf;
         this->matcher = Matcher::parse(matcher);
     }
 };
@@ -235,11 +251,7 @@ struct Fixture
     Element test_data[3];
     /// Date that falls somewhere inbetween files in the dataset
     core::Time selective_cutoff;
-    std::set<std::string> fnames;
-    std::set<std::string> fnames_before_cutoff;
-    std::set<std::string> fnames_after_cutoff;
 
-    unsigned count_dataset_files() const;
     // Value for "archive age" or "delete age" that would work on part of the
     // dataset, but not all of it
     unsigned selective_days_since() const;

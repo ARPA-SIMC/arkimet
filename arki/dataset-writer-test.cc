@@ -141,7 +141,7 @@ TestsWriter<testdata::GRIBData> test_writer_grib_simple_plain("arki_dataset_writ
 TestsWriter<testdata::GRIBData> test_writer_grib_simple_plain_sharded("arki_dataset_writer_grib_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsWriter<testdata::GRIBData> test_writer_grib_simple_sqlite("arki_dataset_writer_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsWriter<testdata::BUFRData> test_writer_bufr_ondisk2("arki_dataset_writer_bufr_ondisk2", "type=ondisk2\n");
-TestsWriter<testdata::BUFRData> test_writer_bufr_ondisk2_sharded("arki_dataset_writer_bufr_ondisk2", "type=ondisk2\nshard=yearly\n");
+TestsWriter<testdata::BUFRData> test_writer_bufr_ondisk2_sharded("arki_dataset_writer_bufr_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
 TestsWriter<testdata::BUFRData> test_writer_bufr_simple_plain("arki_dataset_writer_bufr_simple_plain", "type=simple\nindex_type=plain\n");
 TestsWriter<testdata::BUFRData> test_writer_bufr_simple_plain_sharded("arki_dataset_writer_bufr_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsWriter<testdata::BUFRData> test_writer_bufr_simple_sqlite("arki_dataset_writer_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
@@ -210,8 +210,8 @@ this->add_method("import", [](Fixture& f) {
     {
         Metadata md = f.td.test_data[i].md;
         wassert(actual(ds->acquire(md)) == dataset::Writer::ACQ_OK);
-        wassert(actual_file(str::joinpath(f.ds_root, f.td.test_data[i].destfile)).exists());
-        wassert(actual_type(md.source()).is_source_blob(f.td.format, f.ds_root, f.td.test_data[i].destfile));
+        wassert(actual_file(str::joinpath(f.ds_root, f.destfile(f.td.test_data[i]))).exists());
+        wassert(actual_type(md.source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.test_data[i])));
     }
 });
 

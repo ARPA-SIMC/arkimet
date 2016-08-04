@@ -48,63 +48,6 @@ struct Fixture : public DatasetTest {
             unique = origin, reftime
         )");
     }
-
-    Metadata& find_imported_second_in_file()
-    {
-        // Find the imported_result element whose offset is > 0
-        for (int i = 0; i < 3; ++i)
-            if (import_results[i].sourceBlob().offset > 0)
-                return import_results[i];
-        throw std::runtime_error("second in file not found");
-    }
-
-    void import_and_make_hole(const testdata::Fixture& fixture, std::string& holed_fname)
-    {
-        cfg.setValue("step", fixture.max_selective_aggregation);
-        cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
-        wassert(import_all(fixture));
-        Metadata& md = find_imported_second_in_file();
-        const source::Blob& second_in_segment = md.sourceBlob();
-        holed_fname = second_in_segment.filename;
-
-        {
-            // Remove one element
-            auto writer = makeOndisk2Writer();
-            writer->remove(md);
-            writer->flush();
-        }
-
-        {
-            arki::tests::MaintenanceResults expected(false, 2);
-            expected.by_type[COUNTED_OK] = 1;
-            expected.by_type[COUNTED_DIRTY] = 1;
-            wassert(actual(*makeOndisk2Checker()).maintenance(expected));
-        }
-    }
-
-    void import_and_delete_one_file(const testdata::Fixture& fixture, std::string& removed_fname)
-    {
-        cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
-        wassert(import_all(fixture));
-
-        // Remove all the elements in one file
-        {
-            auto writer = makeOndisk2Writer();
-            for (int i = 0; i < 3; ++i)
-                if (fixture.test_data[i].destfile == fixture.test_data[0].destfile)
-                    writer->remove(import_results[i]);
-            writer->flush();
-        }
-
-        removed_fname = fixture.test_data[0].destfile;
-
-        {
-            arki::tests::MaintenanceResults expected(false, fixture.count_dataset_files());
-            expected.by_type[COUNTED_OK] = fixture.count_dataset_files() - 1;
-            expected.by_type[COUNTED_NEW] = 1;
-            wassert(actual(*makeOndisk2Checker()).maintenance(expected));
-        }
-    }
 };
 
 

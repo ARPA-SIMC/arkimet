@@ -24,6 +24,8 @@ struct FixtureChecker : public DatasetTest
     using DatasetTest::DatasetTest;
 
     Data td;
+    std::set<std::string> destfiles_before_cutoff;
+    std::set<std::string> destfiles_after_cutoff;
 
     void test_setup()
     {
@@ -31,6 +33,15 @@ struct FixtureChecker : public DatasetTest
             unique=reftime, origin, product, level, timerange, area
             step=daily
         )");
+
+        destfiles_before_cutoff.clear();
+        destfiles_after_cutoff.clear();
+        // Partition data in two groups: before and after selective_cutoff
+        for (unsigned i = 0; i < 3; ++i)
+            if (td.test_data[i].time < td.selective_cutoff)
+                destfiles_before_cutoff.insert(destfile(td.test_data[i]));
+            else
+                destfiles_after_cutoff.insert(destfile(td.test_data[i]));
     }
 
     const types::source::Blob& find_imported_second_in_file()
@@ -82,9 +93,9 @@ void TestsChecker<Data>::register_tests() {
 typedef FixtureChecker<Data> Fixture;
 
 this->add_method("preconditions", [](Fixture& f) {
-    wassert(actual(f.td.fnames_before_cutoff.size()) > 0u);
-    wassert(actual(f.td.fnames_after_cutoff.size()) > 0u);
-    wassert(actual(f.td.fnames_before_cutoff.size() + f.td.fnames_after_cutoff.size()) == f.td.count_dataset_files());
+    wassert(actual(f.destfiles_before_cutoff.size()) > 0u);
+    wassert(actual(f.destfiles_after_cutoff.size()) > 0u);
+    wassert(actual(f.destfiles_before_cutoff.size() + f.destfiles_after_cutoff.size()) == f.count_dataset_files(f.td));
 });
 
 // Test accuracy of maintenance scan, on perfect dataset
@@ -132,8 +143,8 @@ this->add_method("archive_age", [](Fixture& f) {
         auto checker(f.config().create_checker());
         ReporterExpected e;
         //e.report.emplace_back("testds.archives.last", "check", nfiles(f.td.fnames_before_cutoff.size()) + " ok");
-        e.report.emplace_back("testds", "repack", nfiles(f.td.fnames_after_cutoff.size()) + " ok");
-        for (const auto& fn: f.td.fnames_before_cutoff)
+        e.report.emplace_back("testds", "repack", nfiles(f.destfiles_after_cutoff.size()) + " ok");
+        for (const auto& fn: f.destfiles_before_cutoff)
             e.archived.emplace_back("testds", fn);
         wassert(actual(checker.get()).repack(e, false));
     }
@@ -142,28 +153,26 @@ this->add_method("archive_age", [](Fixture& f) {
     {
         auto checker(f.config().create_checker());
         ReporterExpected e;
-        for (set<string>::const_iterator i = f.td.fnames_before_cutoff.begin();
-                i != f.td.fnames_before_cutoff.end(); ++i)
-            e.archived.emplace_back("testds", *i);
+        for (const auto& i: f.destfiles_before_cutoff)
+            e.archived.emplace_back("testds", i);
         wassert(actual(checker.get()).repack(e, true));
     }
 
     // Check that the files have been moved to the archive
-    for (set<string>::const_iterator i = f.td.fnames_before_cutoff.begin();
-            i != f.td.fnames_before_cutoff.end(); ++i)
+    for (const auto& i: f.destfiles_before_cutoff)
     {
-        wassert(actual_file("testds/.archive/last/" + *i).exists());
-        wassert(actual_file("testds/.archive/last/" + *i + ".metadata").exists());
-        wassert(actual_file("testds/.archive/last/" + *i + ".summary").exists());
-        wassert(actual_file("testds/" + *i).not_exists());
+        wassert(actual_file("testds/.archive/last/" + i).exists());
+        wassert(actual_file("testds/.archive/last/" + i + ".metadata").exists());
+        wassert(actual_file("testds/.archive/last/" + i + ".summary").exists());
+        wassert(actual_file("testds/" + i).not_exists());
     }
 
     // Maintenance should now show a normal situation
     {
         auto checker(f.config().create_checker());
         ReporterExpected e;
-        e.report.emplace_back("testds.archives.last", "check", nfiles(f.td.fnames_before_cutoff.size()) + " ok");
-        e.report.emplace_back("testds", "check", nfiles(f.td.fnames_after_cutoff.size()) + " ok");
+        e.report.emplace_back("testds.archives.last", "check", nfiles(f.destfiles_before_cutoff.size()) + " ok");
+        e.report.emplace_back("testds", "check", nfiles(f.destfiles_after_cutoff.size()) + " ok");
         wassert(actual(checker.get()).check(e, false, true));
     }
 
@@ -195,13 +204,13 @@ this->add_method("delete_age", [](Fixture& f) {
 
         // Check if files to delete are detected
         e.clear();
-        for (const auto& i: f.td.fnames_before_cutoff)
+        for (const auto& i: f.destfiles_before_cutoff)
             e.deleted.emplace_back("testds", i);
         wassert(actual(checker.get()).repack(e, false));
 
         // Perform packing and check that things are still ok afterwards
         e.clear();
-        for (const auto& i: f.td.fnames_before_cutoff)
+        for (const auto& i: f.destfiles_before_cutoff)
             e.deleted.emplace_back("testds", i);
         wassert(actual(checker.get()).repack(e, true));
     }
@@ -408,13 +417,13 @@ this->add_method("scan_noindex", [](Fixture& f) {
         // See if the files to index are detected
         e.clear();
         for (const auto& i: f.td.test_data)
-            e.rescanned.emplace_back("testds", i.destfile);
+            e.rescanned.emplace_back("testds", f.destfile(i));
         wassert(actual(checker.get()).check(e, false, true));
 
         // Perform full maintenance and check that things are still ok afterwards
         e.clear();
         for (const auto& i: f.td.test_data)
-            e.rescanned.emplace_back("testds", i.destfile);
+            e.rescanned.emplace_back("testds", f.destfile(i));
         wassert(actual(checker.get()).check(e, true, true));
 
         wassert(actual(checker.get()).check_clean(false, true));

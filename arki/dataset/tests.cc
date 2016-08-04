@@ -141,6 +141,29 @@ std::string DatasetTest::idxfname(const ConfigFile* wcfg) const
         return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
+std::string DatasetTest::destfile(const testdata::Element& el) const
+{
+    char buf[32];
+    if (cfg.value("shard").empty())
+        snprintf(buf, 32, "%04d/%02d-%02d.%s", el.time.ye, el.time.mo, el.time.da, el.md.source().format.c_str());
+    else
+        snprintf(buf, 32, "%04d/%04d/%02d-%02d.%s", el.time.ye, el.time.ye, el.time.mo, el.time.da, el.md.source().format.c_str());
+    return buf;
+}
+
+std::set<std::string> DatasetTest::destfiles(const testdata::Fixture& f) const
+{
+    std::set<std::string> fnames;
+    for (unsigned i = 0; i < 3; ++i)
+        fnames.insert(destfile(f.test_data[i]));
+    return fnames;
+}
+
+unsigned DatasetTest::count_dataset_files(const testdata::Fixture& f) const
+{
+    return destfiles(f).size();
+}
+
 std::string manifest_idx_fname()
 {
     return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
@@ -884,21 +907,6 @@ void Fixture::finalise_init()
     selective_cutoff = min({test_data[0].time, test_data[1].time, test_data[2].time});
     ++selective_cutoff.mo;
     selective_cutoff.normalise();
-
-    // Partition data in two groups: before and after selective_cutoff
-    for (int i = 0; i < 3; ++i)
-    {
-        fnames.insert(test_data[i].destfile);
-        if (test_data[i].time < selective_cutoff)
-            fnames_before_cutoff.insert(test_data[i].destfile);
-        else
-            fnames_after_cutoff.insert(test_data[i].destfile);
-    }
-}
-
-unsigned Fixture::count_dataset_files() const
-{
-    return fnames.size();
 }
 
 unsigned Fixture::selective_days_since() const
