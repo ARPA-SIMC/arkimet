@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.0
-Release: 8
+Release: 9
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -9,8 +9,8 @@ Source0: https://github.com/arpa-simc/%{name}/archive/v%{version}-%{release}.tar
 Source1: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.init
 Source2: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.default
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
-BuildRequires: doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl-devel, geos-devel, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 3.0, flex, bison, meteo-vm2-devel >= 0.12, hdf5-devel, python3
-Requires: hdf5, meteo-vm2 >= 0.12, grib_api-1.10.0, python3, python3-lxml, python3-werkzeug
+BuildRequires: doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl-devel, geos-devel, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 3.0, flex, bison, meteo-vm2-devel >= 0.12, hdf5-devel, python3, python3-werkzeug, python3-setproctitle
+Requires: hdf5, meteo-vm2 >= 0.12, grib_api, python3, python3-lxml, python3-werkzeug, python3-setproctitle
 Requires(preun): /sbin/chkconfig, /sbin/service
 Requires(post): /sbin/chkconfig, /sbin/service
 
@@ -121,6 +121,10 @@ else
 fi
 
 %changelog
+* Fri Jul 22 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-9%{dist}
+- fixed tests
+- fixed #37
+
 * Thu May 19 2016 Daniele Branchini <dbranchini@arpa.emr.it> - 1.0-8%{dist}
 - arki-server rewrote in python
 
