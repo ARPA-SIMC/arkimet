@@ -38,8 +38,8 @@ void LocalConfig::to_shard(const std::string& shard_path)
     m_archives_config = std::shared_ptr<ArchivesConfig>();
     path = str::joinpath(path, shard_path);
     lockfile_pathname = str::joinpath(path, "lock");
-    archive_age = -1;
-    delete_age = -1;
+    //archive_age = -1;
+    //delete_age = -1;
 }
 
 std::shared_ptr<ArchivesConfig> LocalConfig::archives_config() const
