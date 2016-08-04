@@ -23,6 +23,12 @@ namespace arki {
 namespace dataset {
 namespace segmented {
 
+void State::dump(FILE* out) const
+{
+    for (const auto& i: *this)
+        fprintf(stderr, "%s: %s %s to %s\n", i.first.c_str(), i.second.state.to_string().c_str(), i.second.begin.to_iso8601(' ').c_str(), i.second.until.to_iso8601(' ').c_str());
+}
+
 Config::Config(const ConfigFile& cfg)
     : LocalConfig(cfg),
       step_name(str::lower(cfg.value("step"))),
