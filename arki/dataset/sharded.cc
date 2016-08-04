@@ -337,7 +337,7 @@ size_t Checker<Config>::removeSegment(const std::string& relpath, bool withData)
 {
     size_t pos = relpath.find('/');
     if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
-    return shard(relpath.substr(0, pos)).removeSegment(relpath.substr(pos + 1));
+    return shard(relpath.substr(0, pos)).removeSegment(relpath.substr(pos + 1), withData);
 }
 
 template<typename Config>
