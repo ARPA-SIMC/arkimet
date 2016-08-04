@@ -1,13 +1,11 @@
 #include "step.h"
-#include "arki/configfile.h"
-#include "arki/metadata.h"
 #include "arki/matcher.h"
 #include "arki/types/reftime.h"
 #include "arki/utils/pcounter.h"
 #include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include <algorithm>
 #include <cstdint>
-#include <inttypes.h>
-#include <sstream>
 #include <cstdio>
 
 using namespace std;
@@ -48,9 +46,9 @@ struct Yearly : public BaseStep
         return true;
     }
 
-    std::string operator()(const Metadata& md) const override
+    std::string operator()(const core::Time& time) const override
     {
-        const Time& tt = md.get<reftime::Position>()->time;
+        const Time& tt = time;
         char buf[9];
         snprintf(buf, 9, "%02d/%04d", tt.ye/100, tt.ye);
         return buf;
@@ -72,11 +70,39 @@ struct Monthly : public BaseStep
         return true;
     }
 
-    std::string operator()(const Metadata& md) const override
+    std::string operator()(const core::Time& time) const override
     {
-        const Time& tt = md.get<reftime::Position>()->time;
+        const Time& tt = time;
         char buf[10];
         snprintf(buf, 10, "%04d/%02d", tt.ye, tt.mo);
+        return buf;
+    }
+};
+
+struct SubMonthly : public BaseStep
+{
+    int year;
+
+    SubMonthly(int year) : year(year) {}
+
+    static const char* name() { return "monthly"; }
+
+    bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
+    {
+        int mo;
+        if (sscanf(path.c_str(), "%02d", &mo) == 0)
+            return false;
+
+        start_time.set_lowerbound(year, mo);
+        end_time.set_upperbound(year, mo);
+        return true;
+    }
+
+    std::string operator()(const core::Time& time) const override
+    {
+        const Time& tt = time;
+        char buf[10];
+        snprintf(buf, 10, "%02d", tt.mo);
         return buf;
     }
 };
@@ -104,9 +130,9 @@ struct Biweekly : public BaseStep
         return true;
     }
 
-    std::string operator()(const Metadata& md) const override
+    std::string operator()(const core::Time& time) const override
     {
-        const Time& tt = md.get<reftime::Position>()->time;
+        const Time& tt = time;
         char buf[10];
         snprintf(buf, 10, "%04d/%02d-", tt.ye, tt.mo);
         stringstream res;
@@ -137,11 +163,48 @@ struct Weekly : public BaseStep
         return true;
     }
 
-    std::string operator()(const Metadata& md) const override
+    std::string operator()(const core::Time& time) const override
     {
-        const Time& tt = md.get<reftime::Position>()->time;
+        const Time& tt = time;
         char buf[10];
         snprintf(buf, 10, "%04d/%02d-", tt.ye, tt.mo);
+        stringstream res;
+        res << buf;
+        res << (((tt.da - 1) / 7) + 1);
+        return res.str();
+    }
+};
+
+struct SubWeekly : public BaseStep
+{
+    int year;
+
+    SubWeekly(int year) : year(year) {}
+
+    static const char* name() { return "weekly"; }
+
+    bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
+    {
+        int mo = -1, week = -1;
+        if (sscanf(path.c_str(), "%02d-%d", &mo, &week) == 0)
+            return false;
+        int min_da = -1;
+        int max_da = -1;
+        if (week != -1)
+        {
+            min_da = (week - 1) * 7 + 1;
+            max_da = min_da + 6;
+        }
+        start_time.set_lowerbound(year, mo, min_da);
+        end_time.set_upperbound(year, mo, max_da);
+        return true;
+    }
+
+    std::string operator()(const core::Time& time) const override
+    {
+        const Time& tt = time;
+        char buf[10];
+        snprintf(buf, 10, "%02d-", tt.mo);
         stringstream res;
         res << buf;
         res << (((tt.da - 1) / 7) + 1);
@@ -163,29 +226,56 @@ struct Daily : public BaseStep
         return true;
     }
 
-    std::string operator()(const Metadata& md) const override
+    std::string operator()(const core::Time& time) const override
     {
-        const Time& tt = md.get<reftime::Position>()->time;
+        const Time& tt = time;
         char buf[15];
         snprintf(buf, 15, "%04d/%02d-%02d", tt.ye, tt.mo, tt.da);
         return buf;
     }
 };
 
-Step* Step::create(const std::string& type)
+struct SubDaily : public BaseStep
+{
+    int year;
+
+    SubDaily(int year) : year(year) {}
+
+    static const char* name() { return "daily"; }
+
+    bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
+    {
+        int mo, da;
+        if (sscanf(path.c_str(), "%02d/%02d", &mo, &da) == 0)
+            return false;
+        start_time.set_lowerbound(year, mo, da);
+        end_time.set_upperbound(year, mo, da);
+        return true;
+    }
+
+    std::string operator()(const core::Time& time) const override
+    {
+        const Time& tt = time;
+        char buf[15];
+        snprintf(buf, 15, "%02d/%02d", tt.mo, tt.da);
+        return buf;
+    }
+};
+
+std::shared_ptr<Step> Step::create(const std::string& type)
 {
     if (type == Daily::name())
-        return new Daily;
+        return shared_ptr<Step>(new Daily);
     else if (type == Weekly::name())
-        return new Weekly;
+        return shared_ptr<Step>(new Weekly);
     else if (type == Biweekly::name())
-        return new Biweekly;
+        return shared_ptr<Step>(new Biweekly);
     else if (type == Monthly::name())
-        return new Monthly;
+        return shared_ptr<Step>(new Monthly);
     else if (type == Yearly::name())
-        return new Yearly;
+        return shared_ptr<Step>(new Yearly);
     else
-        throw std::runtime_error("step '" + type + "' is not supported.  Valid values are daily, weekly, biweekly, monthly and yearly.");
+        throw std::runtime_error("step '" + type + "' is not supported.  Valid values are daily, weekly, biweekly, monthly, and yearly.");
 }
 
 std::vector<std::string> Step::list()
@@ -198,6 +288,132 @@ std::vector<std::string> Step::list()
         Yearly::name(),
     };
     return res;
+}
+
+
+struct BaseShardStep : public ShardStep
+{
+    std::string type;
+
+    BaseShardStep(const std::string& type) : type(type) {}
+
+    std::shared_ptr<Step> substep(const core::Time& time) const override
+    {
+        const Time& tt = time;
+        auto year = tt.ye;
+
+        if (type == SubDaily::name())
+            return shared_ptr<Step>(new SubDaily(year));
+        else if (type == SubWeekly::name())
+            return shared_ptr<Step>(new SubWeekly(year));
+        else if (type == SubMonthly::name())
+            return shared_ptr<Step>(new SubMonthly(year));
+        else if (type == Yearly::name())
+            return shared_ptr<Step>(new Yearly());
+        else
+            throw std::runtime_error("step '" + type + "' is not supported.  Valid values are daily, weekly, and monthly.");
+    }
+
+    std::vector<std::pair<core::Time, core::Time>> list_shards(const std::string& pathname) const override
+    {
+        std::vector<std::pair<core::Time, core::Time>> res;
+        sys::Path dir(pathname);
+        for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+        {
+            if (!f.isdir()) continue;
+            auto span = shard_span(f->d_name);
+            if (span.first.ye == 0) continue;
+            res.emplace_back(span);
+        }
+        std::sort(res.begin(), res.end());
+        return res;
+    }
+};
+
+struct ShardYearly : public BaseShardStep
+{
+    using BaseShardStep::BaseShardStep;
+
+    static const char* name() { return "yearly"; }
+
+    std::string shard_path(const core::Time& time) const override
+    {
+        const Time& tt = time;
+        char buf[9];
+        snprintf(buf, 9, "%04d", tt.ye);
+        return buf;
+    }
+
+    std::pair<core::Time, core::Time> shard_span(const std::string& shard_path) const override
+    {
+        int year;
+        if (sscanf(shard_path.c_str(), "%04d", &year) != 1)
+            return make_pair(core::Time(0, 0, 0), core::Time(0, 0, 0));
+        return make_pair(core::Time(year, 1, 1, 0, 0, 0), core::Time(year, 12, 31, 23, 59, 59));
+    }
+};
+
+struct ShardMonthly : public BaseShardStep
+{
+    using BaseShardStep::BaseShardStep;
+
+    static const char* name() { return "monthly"; }
+
+    std::string shard_path(const core::Time& time) const override
+    {
+        const Time& tt = time;
+        char buf[10];
+        snprintf(buf, 10, "%04d-%02d", tt.ye, tt.mo);
+        return buf;
+    }
+
+    std::pair<core::Time, core::Time> shard_span(const std::string& shard_path) const override
+    {
+        int ye, mo;
+        if (sscanf(shard_path.c_str(), "%04d-%02d", &ye, &mo) != 2)
+            return make_pair(core::Time(0, 0, 0), core::Time(0, 0, 0));
+        core::Time begin(ye, mo, 1, 0, 0, 0);
+        return make_pair(begin, begin.end_of_month());
+    }
+};
+
+struct ShardWeekly : public BaseShardStep
+{
+    using BaseShardStep::BaseShardStep;
+
+    static const char* name() { return "weekly"; }
+
+    std::string shard_path(const core::Time& time) const override
+    {
+        const Time& tt = time;
+        char buf[10];
+        snprintf(buf, 10, "%04d-%02d-%1d", tt.ye, tt.mo, (((tt.da - 1) / 7) + 1));
+        return buf;
+    }
+
+    std::pair<core::Time, core::Time> shard_span(const std::string& shard_path) const override
+    {
+        int ye, mo, we;
+        if (sscanf(shard_path.c_str(), "%04d-%02d-%1d", &ye, &mo, &we) != 3)
+            return make_pair(core::Time(0, 0, 0), core::Time(0, 0, 0));
+        core::Time begin(ye, mo, (we - 1) * 7 + 1, 0, 0, 0);
+        core::Time end(ye, mo, (we - 1) * 7 + 8, 0, 0, 0);
+        end.normalise();
+        return make_pair(begin, end);
+    }
+};
+
+
+std::shared_ptr<ShardStep> ShardStep::create(const std::string& shard_type, const std::string& type)
+{
+    if (shard_type == ShardWeekly::name())
+        return shared_ptr<ShardStep>(new ShardWeekly(type));
+    else if (shard_type == ShardMonthly::name())
+        return shared_ptr<ShardStep>(new ShardMonthly(type));
+    else if (shard_type == ShardYearly::name())
+        return shared_ptr<ShardStep>(new ShardYearly(type));
+    else
+        throw std::runtime_error("shard step '" + shard_type + "' is not supported.  Valid values are weekly, monthly, and yearly.");
 }
 
 }

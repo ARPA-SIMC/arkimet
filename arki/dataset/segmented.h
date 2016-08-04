@@ -3,23 +3,30 @@
 
 #include <arki/dataset/local.h>
 #include <arki/dataset/segment.h>
+#include <arki/core/time.h>
 
 namespace arki {
 namespace dataset {
 class Step;
 
-struct SegmentedConfig : public LocalConfig
+namespace segmented {
+
+struct Config : public LocalConfig
 {
 protected:
     /// dataset::Step for this configuration
-    Step* m_step = nullptr;
+    std::shared_ptr<Step> m_step;
+
+    Config(const Config& cfg) = default;
+
+    void to_shard(const std::string& shard_path, std::shared_ptr<Step> step);
 
 public:
     /// Name of the dataset::Step used to dispatch data into segments
     std::string step_name;
 
     /// What replace strategy to use when acquire() is called with REPLACE_DEFAULT
-    Writer::ReplaceStrategy default_replace_strategy;
+    dataset::Writer::ReplaceStrategy default_replace_strategy;
 
     /**
      * If false, autodetect segment types base on data types.
@@ -35,36 +42,36 @@ public:
      */
     bool mock_data = false;
 
-    SegmentedConfig(const ConfigFile& cfg);
-    ~SegmentedConfig();
+    Config(const ConfigFile& cfg);
+    ~Config();
 
     const Step& step() const { return *m_step; }
 
     std::unique_ptr<segment::SegmentManager> create_segment_manager() const;
 
-    static std::shared_ptr<const SegmentedConfig> create(const ConfigFile& cfg);
+    static std::shared_ptr<const Config> create(const ConfigFile& cfg);
 };
 
 /**
  * LocalReader dataset with data stored in segment files
  */
-class SegmentedReader : public LocalReader
+class Reader : public LocalReader
 {
 private:
     segment::SegmentManager* m_segment_manager = nullptr;
 
 public:
     using LocalReader::LocalReader;
-    ~SegmentedReader();
+    ~Reader();
 
-    const SegmentedConfig& config() const override = 0;
+    const Config& config() const override = 0;
     segment::SegmentManager& segment_manager();
 };
 
 /**
  * LocalWriter dataset with data stored in segment files
  */
-class SegmentedWriter : public LocalWriter
+class Writer : public LocalWriter
 {
 private:
     segment::SegmentManager* m_segment_manager = nullptr;
@@ -78,9 +85,9 @@ protected:
 
 public:
     using LocalWriter::LocalWriter;
-    ~SegmentedWriter();
+    ~Writer();
 
-    const SegmentedConfig& config() const override = 0;
+    const Config& config() const override = 0;
     segment::SegmentManager& segment_manager();
 
     virtual void flush();
@@ -88,39 +95,62 @@ public:
     static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
+
+/**
+ * State of a segment in the dataset
+ */
+struct SegmentState
+{
+    // Segment state
+    segment::State state;
+    // Minimum reference time of data that can fit in the segment
+    core::Time begin;
+    // Maximum reference time of data that can fit in the segment
+    core::Time until;
+
+    SegmentState(segment::State state)
+        : state(state), begin(0, 0, 0), until(0, 0, 0) {}
+    SegmentState(segment::State state, const core::Time& begin, const core::Time& until)
+        : state(state), begin(begin), until(until) {}
+    SegmentState(const SegmentState&) = default;
+    SegmentState(SegmentState&&) = default;
+};
+
+
+/**
+ * State of all segments in the dataset
+ */
+struct State : public std::map<std::string, SegmentState>
+{
+    using std::map<std::string, SegmentState>::map;
+
+    void dump(FILE* out) const;
+};
+
+
 /**
  * LocalChecker with data stored in segment files
  */
-class SegmentedChecker : public LocalChecker
+class Checker : public LocalChecker
 {
 private:
     segment::SegmentManager* m_segment_manager = nullptr;
 
 public:
     using LocalChecker::LocalChecker;
-    ~SegmentedChecker();
+    ~Checker();
 
-    const SegmentedConfig& config() const override = 0;
+    const Config& config() const override = 0;
     segment::SegmentManager& segment_manager();
 
     void repack(dataset::Reporter& reporter, bool writable=false) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
 
     /**
-     * Perform dataset maintenance, sending information to \a v
-     *
-     * Subclassers should call LocalWriter's maintenance method at the
-     * end of their own maintenance, as it takes care of performing
-     * maintainance of archives, if present.
-     *
-     * @params v
-     *   The visitor-style class that gets notified of the state of the
-     *   various files in the dataset
-     * @params quick
-     *   If false, contents of the data files will also be checked for
-     *   consistency
+     * Scan the dataset, computing the state of each unarchived segment that is
+     * either on disk or known by the index.
      */
-    virtual void maintenance(dataset::Reporter& reporter, segment::state_func dest, bool quick=true);
+    virtual State scan(dataset::Reporter& reporter, bool quick=true) = 0;
 
     /// Remove all data from the dataset
     void removeAll(dataset::Reporter& reporter, bool writable) override;
@@ -154,6 +184,13 @@ public:
     virtual size_t removeSegment(const std::string& relpath, bool withData=false) = 0;
 
     /**
+     * Release the segment from the dataset and move it to destpath.
+     *
+     * Destpath must be on the same filesystem as the segment.
+     */
+    virtual void releaseSegment(const std::string& relpath, const std::string& destpath) = 0;
+
+    /**
      * Move the file to archive
      *
      * The default implementation moves the file and its associated
@@ -170,6 +207,7 @@ public:
     virtual size_t vacuum() = 0;
 };
 
+}
 }
 }
 #endif

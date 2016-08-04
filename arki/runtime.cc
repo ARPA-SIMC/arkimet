@@ -70,7 +70,7 @@ HandledByCommandLineParser::~HandledByCommandLineParser() {}
 std::unique_ptr<dataset::Reader> make_qmacro_dataset(const ConfigFile& ds_cfg, const ConfigFile& dispatch_cfg, const std::string& qmacroname, const std::string& query, const std::string& url)
 {
     unique_ptr<dataset::Reader> ds;
-    string baseurl = dataset::HTTP::allSameRemoteServer(dispatch_cfg);
+    string baseurl = dataset::http::Reader::allSameRemoteServer(dispatch_cfg);
     if (baseurl.empty())
     {
         // Create the local query macro
@@ -374,7 +374,7 @@ void CommandLine::setupProcessing()
                         got = Matcher::parse(strquery).toStringExpanded();
                         resolved_by = "local system";
                     } else {
-                        got = dataset::HTTP::expandMatcher(strquery, server);
+                        got = dataset::http::Reader::expandMatcher(strquery, server);
                         resolved_by = server;
                     }
                 } catch (std::exception& e) {

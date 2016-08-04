@@ -14,7 +14,7 @@ class Matcher;
 namespace dataset {
 namespace outbound {
 
-struct Config : public dataset::SegmentedConfig
+struct Config : public segmented::Config
 {
     Config(const ConfigFile& cfg);
 
@@ -30,19 +30,19 @@ struct Config : public dataset::SegmentedConfig
  * This dataset is not used for archival, but only to store data as an outbound
  * area.
  */
-class Writer : public SegmentedWriter
+class Writer : public segmented::Writer
 {
 protected:
-    std::shared_ptr<const SegmentedConfig> m_config;
+    std::shared_ptr<const segmented::Config> m_config;
 
     void storeBlob(Metadata& md, const std::string& reldest);
 
 public:
     // Initialise the dataset with the information from the configurationa in 'cfg'
-    Writer(std::shared_ptr<const SegmentedConfig> config);
+    Writer(std::shared_ptr<const segmented::Config> config);
     virtual ~Writer();
 
-    const SegmentedConfig& config() const override { return *m_config; }
+    const segmented::Config& config() const override { return *m_config; }
 
     std::string type() const override;
 

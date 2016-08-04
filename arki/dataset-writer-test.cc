@@ -116,6 +116,17 @@ struct ReadHang : public wibble::sys::ChildProcess
     }
 };
 
+class Tests : public FixtureTestCase<DatasetTest>
+{
+    using FixtureTestCase::FixtureTestCase;
+
+    void register_tests() override;
+};
+
+Tests test_writer_ondisk2("arki_dataset_writer_ondisk2", "type=ondisk2\n");
+Tests test_writer_simple_plain("arki_dataset_writer_simple_plain", "type=simple\nindex_type=plain\n");
+Tests test_writer_simple_sqlite("arki_dataset_writer_simple_sqlite", "type=simple\nindex_type=sqlite");
+
 template<class Data>
 class TestsWriter : public FixtureTestCase<FixtureWriter<Data>>
 {
@@ -125,17 +136,67 @@ class TestsWriter : public FixtureTestCase<FixtureWriter<Data>>
 };
 
 TestsWriter<testdata::GRIBData> test_writer_grib_ondisk2("arki_dataset_writer_grib_ondisk2", "type=ondisk2\n");
+TestsWriter<testdata::GRIBData> test_writer_grib_ondisk2_sharded("arki_dataset_writer_grib_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
 TestsWriter<testdata::GRIBData> test_writer_grib_simple_plain("arki_dataset_writer_grib_simple_plain", "type=simple\nindex_type=plain\n");
+TestsWriter<testdata::GRIBData> test_writer_grib_simple_plain_sharded("arki_dataset_writer_grib_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsWriter<testdata::GRIBData> test_writer_grib_simple_sqlite("arki_dataset_writer_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsWriter<testdata::BUFRData> test_writer_bufr_ondisk2("arki_dataset_writer_bufr_ondisk2", "type=ondisk2\n");
+TestsWriter<testdata::BUFRData> test_writer_bufr_ondisk2_sharded("arki_dataset_writer_bufr_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
 TestsWriter<testdata::BUFRData> test_writer_bufr_simple_plain("arki_dataset_writer_bufr_simple_plain", "type=simple\nindex_type=plain\n");
+TestsWriter<testdata::BUFRData> test_writer_bufr_simple_plain_sharded("arki_dataset_writer_bufr_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsWriter<testdata::BUFRData> test_writer_bufr_simple_sqlite("arki_dataset_writer_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsWriter<testdata::VM2Data> test_writer_vm2_ondisk2("arki_dataset_writer_vm2_ondisk2", "type=ondisk2\n");
+TestsWriter<testdata::VM2Data> test_writer_vm2_ondisk2_sharded("arki_dataset_writer_vm2_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
 TestsWriter<testdata::VM2Data> test_writer_vm2_simple_plain("arki_dataset_writer_vm2_simple_plain", "type=simple\nindex_type=plain\n");
+TestsWriter<testdata::VM2Data> test_writer_vm2_simple_plain_sharded("arki_dataset_writer_vm2_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsWriter<testdata::VM2Data> test_writer_vm2_simple_sqlite("arki_dataset_writer_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsWriter<testdata::ODIMData> test_writer_odim_ondisk2("arki_dataset_writer_odim_ondisk2", "type=ondisk2\n");
+TestsWriter<testdata::ODIMData> test_writer_odim_ondisk2_sharded("arki_dataset_writer_odim_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
 TestsWriter<testdata::ODIMData> test_writer_odim_simple_plain("arki_dataset_writer_odim_simple_plain", "type=simple\nindex_type=plain\n");
+TestsWriter<testdata::ODIMData> test_writer_odim_simple_plain_sharded("arki_dataset_writer_odim_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsWriter<testdata::ODIMData> test_writer_odim_simple_sqlite("arki_dataset_writer_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
+
+void Tests::register_tests() {
+
+// Test a dataset with very large mock files in it
+add_method("import_largefile", [](Fixture& f) {
+    // A dataset with hole files
+    f.cfg.setValue("step", "daily");
+    f.cfg.setValue("segments", "dir");
+    f.cfg.setValue("mockdata", "true");
+
+    {
+        // Import 24*30*10Mb=7.2Gb of data
+        auto writer = f.config().create_writer();
+        for (unsigned day = 1; day <= 30; ++day)
+        {
+            for (unsigned hour = 0; hour < 24; ++hour)
+            {
+                Metadata md = testdata::make_large_mock("grib", 10*1024*1024, 12, day, hour);
+                dataset::Writer::AcquireResult res = writer->acquire(md);
+                wassert(actual(res) == dataset::Writer::ACQ_OK);
+            }
+        }
+        writer->flush();
+    }
+
+    auto checker = f.config().create_checker();
+    wassert(actual(*checker).check_clean());
+
+    // Query it, without data
+    auto reader = f.config().create_reader();
+    metadata::Collection mdc(*reader, Matcher::parse(""));
+    wassert(actual(mdc.size()) == 720u);
+
+    // Query it, streaming its data to /dev/null
+    sys::File out("/dev/null", O_WRONLY);
+    dataset::ByteQuery bq;
+    bq.setData(Matcher());
+    reader->query_bytes(bq, out);
+});
+
+}
+
 
 template<class Data>
 void TestsWriter<Data>::register_tests() {
@@ -149,8 +210,8 @@ this->add_method("import", [](Fixture& f) {
     {
         Metadata md = f.td.test_data[i].md;
         wassert(actual(ds->acquire(md)) == dataset::Writer::ACQ_OK);
-        wassert(actual_file(str::joinpath(f.ds_root, f.td.test_data[i].destfile)).exists());
-        wassert(actual_type(md.source()).is_source_blob(f.td.format, f.ds_root, f.td.test_data[i].destfile));
+        wassert(actual_file(str::joinpath(f.ds_root, f.destfile(f.td.test_data[i]))).exists());
+        wassert(actual_type(md.source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.test_data[i])));
     }
 });
 
@@ -208,7 +269,6 @@ this->add_method("import_with_hung_reader", [](Fixture& f) {
     metadata::Collection mdc1(*f.config().create_reader(), Matcher());
     wassert(actual(mdc1.size()) == 2u);
 });
-
 
 }
 }

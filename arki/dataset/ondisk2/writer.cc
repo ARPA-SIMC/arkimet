@@ -43,13 +43,13 @@ Writer::Writer(std::shared_ptr<const ondisk2::Config> config)
     m_idx = idx;
 
     // Create the directory if it does not exist
-    sys::makedirs(config->path);
+    bool dir_created = sys::makedirs(config->path);
 
     acquire_lock();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
-    if (!sys::exists(config->index_pathname))
+    if (!dir_created and !sys::exists(config->index_pathname))
         files::createDontpackFlagfile(config->path);
 
     idx->open();
@@ -249,19 +249,22 @@ Pending Writer::test_writelock()
 }
 
 
+std::string ShardingWriter::type() const { return "ondisk2"; }
+
+
 Checker::Checker(std::shared_ptr<const ondisk2::Config> config)
     : m_config(config), idx(new index::WContents(config))
 {
     m_idx = idx;
 
     // Create the directory if it does not exist
-    sys::makedirs(config->path);
+    bool dir_created = sys::makedirs(config->path);
 
     acquire_lock();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
-    if (!sys::exists(config->index_pathname))
+    if (!dir_created && !sys::exists(config->index_pathname))
         files::createDontpackFlagfile(config->path);
 
     idx->open();
@@ -450,9 +453,8 @@ size_t Checker::removeSegment(const std::string& relpath, bool withData)
     return IndexedChecker::removeSegment(relpath, withData);
 }
 
-void Checker::archiveSegment(const std::string& relpath)
+void Checker::releaseSegment(const std::string& relpath, const std::string& destpath)
 {
-    // Create the target directory in the archive
     string pathname = str::joinpath(config().path, relpath);
 
     // Rebuild the metadata
@@ -463,8 +465,7 @@ void Checker::archiveSegment(const std::string& relpath)
     // Remove from index
     idx->reset(relpath);
 
-    // Delegate the rest to IndexedChecker
-    IndexedChecker::archiveSegment(relpath);
+    IndexedChecker::releaseSegment(relpath, destpath);
 }
 
 size_t Checker::vacuum()
@@ -538,6 +539,8 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
         return ACQ_ERROR_DUPLICATE;
     return ACQ_OK;
 }
+
+std::string ShardingChecker::type() const { return "ondisk2"; }
 
 }
 }

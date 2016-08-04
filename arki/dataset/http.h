@@ -36,18 +36,16 @@ struct CurlEasy
 	operator const CURL*() const { return m_curl; }
 };
 
-}
-
-struct HTTPConfig : public dataset::Config
+struct Config : public dataset::Config
 {
     std::string baseurl;
     std::string qmacro;
 
-    HTTPConfig(const ConfigFile& cfg);
+    Config(const ConfigFile& cfg);
 
-    static std::shared_ptr<const HTTPConfig> create(const ConfigFile& cfg);
+    static std::shared_ptr<const Config> create(const ConfigFile& cfg);
 
-    std::unique_ptr<Reader> create_reader() const override;
+    std::unique_ptr<dataset::Reader> create_reader() const override;
 };
 
 /**
@@ -58,19 +56,19 @@ struct HTTPConfig : public dataset::Config
  *
  * The dataset is read only: remote import of new data is not supported.
  */
-class HTTP : public Reader
+class Reader : public dataset::Reader
 {
 protected:
-    std::shared_ptr<const HTTPConfig> m_config;
+    std::shared_ptr<const Config> m_config;
     http::CurlEasy m_curl;
     bool m_mischief;
 
 public:
     // Initialise the dataset with the information from the configurationa in 'cfg'
-    HTTP(std::shared_ptr<const HTTPConfig> config);
-    virtual ~HTTP();
+    Reader(std::shared_ptr<const Config> config);
+    virtual ~Reader();
 
-    const HTTPConfig& config() const override { return *m_config; }
+    const Config& config() const override { return *m_config; }
     std::string type() const override;
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
@@ -131,6 +129,7 @@ public:
     void dispatch(const std::string& fname, const std::string& format, metadata_dest_func consumer);
 };
 
+}
 }
 }
 #endif

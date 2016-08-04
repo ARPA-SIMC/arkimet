@@ -235,7 +235,7 @@ int main(int argc, const char* argv[])
             ConfigFile cfg;
             if (opts.hasNext())
             {
-                dataset::HTTP::getAliasDatabase(opts.next(), cfg);
+                dataset::http::Reader::getAliasDatabase(opts.next(), cfg);
             } else {
                 MatcherAliasDatabase::serialise(cfg);
             }

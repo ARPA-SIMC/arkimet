@@ -38,10 +38,20 @@ Time Time::create_sql(const std::string& str)
 
 Time Time::create_now()
 {
-    time_t timet_now = time(0);
+    time_t timet_now = time(nullptr);
     struct tm now;
     gmtime_r(&timet_now, &now);
     return Time(now);
+}
+
+void Time::unset()
+{
+    this->ye = 0;
+    this->mo = 0;
+    this->da = 0;
+    this->ho = 0;
+    this->mi = 0;
+    this->se = 0;
 }
 
 void Time::set(int ye, int mo, int da, int ho, int mi, int se)

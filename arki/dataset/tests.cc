@@ -125,7 +125,7 @@ dataset::segment::SegmentManager& DatasetTest::segments()
 {
     if (!segment_manager)
     {
-        const dataset::SegmentedConfig* c = dynamic_cast<const dataset::SegmentedConfig*>(dataset_config().get());
+        const dataset::segmented::Config* c = dynamic_cast<const dataset::segmented::Config*>(dataset_config().get());
         if (!c) throw std::runtime_error("DatasetTest::segments called on a non-segmented dataset");
         segment_manager = c->create_segment_manager().release();
     }
@@ -141,36 +141,59 @@ std::string DatasetTest::idxfname(const ConfigFile* wcfg) const
         return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
+std::string DatasetTest::destfile(const testdata::Element& el) const
+{
+    char buf[32];
+    if (cfg.value("shard").empty())
+        snprintf(buf, 32, "%04d/%02d-%02d.%s", el.time.ye, el.time.mo, el.time.da, el.md.source().format.c_str());
+    else
+        snprintf(buf, 32, "%04d/%02d/%02d.%s", el.time.ye, el.time.mo, el.time.da, el.md.source().format.c_str());
+    return buf;
+}
+
+std::set<std::string> DatasetTest::destfiles(const testdata::Fixture& f) const
+{
+    std::set<std::string> fnames;
+    for (unsigned i = 0; i < 3; ++i)
+        fnames.insert(destfile(f.test_data[i]));
+    return fnames;
+}
+
+unsigned DatasetTest::count_dataset_files(const testdata::Fixture& f) const
+{
+    return destfiles(f).size();
+}
+
 std::string manifest_idx_fname()
 {
     return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
-std::unique_ptr<dataset::SegmentedReader> DatasetTest::makeSegmentedReader()
+std::unique_ptr<dataset::segmented::Reader> DatasetTest::makeSegmentedReader()
 {
     auto ds = config().create_reader();
-    dataset::SegmentedReader* r = dynamic_cast<dataset::SegmentedReader*>(ds.get());
+    dataset::segmented::Reader* r = dynamic_cast<dataset::segmented::Reader*>(ds.get());
     if (!r) throw std::runtime_error("makeSegmentedReader called while testing a non-segmented dataset");
     ds.release();
-    return unique_ptr<dataset::SegmentedReader>(r);
+    return unique_ptr<dataset::segmented::Reader>(r);
 }
 
-std::unique_ptr<dataset::SegmentedWriter> DatasetTest::makeSegmentedWriter()
+std::unique_ptr<dataset::segmented::Writer> DatasetTest::makeSegmentedWriter()
 {
     auto ds = config().create_writer();
-    dataset::SegmentedWriter* r = dynamic_cast<dataset::SegmentedWriter*>(ds.get());
+    dataset::segmented::Writer* r = dynamic_cast<dataset::segmented::Writer*>(ds.get());
     if (!r) throw std::runtime_error("makeSegmentedWriter called while testing a non-segmented dataset");
     ds.release();
-    return unique_ptr<dataset::SegmentedWriter>(r);
+    return unique_ptr<dataset::segmented::Writer>(r);
 }
 
-std::unique_ptr<dataset::SegmentedChecker> DatasetTest::makeSegmentedChecker()
+std::unique_ptr<dataset::segmented::Checker> DatasetTest::makeSegmentedChecker()
 {
     auto ds = config().create_checker();
-    dataset::SegmentedChecker* r = dynamic_cast<dataset::SegmentedChecker*>(ds.get());
+    dataset::segmented::Checker* r = dynamic_cast<dataset::segmented::Checker*>(ds.get());
     if (!r) throw std::runtime_error("makeSegmentedChecker called while testing a non-segmented dataset");
     ds.release();
-    return unique_ptr<dataset::SegmentedChecker>(r);
+    return unique_ptr<dataset::segmented::Checker>(r);
 }
 
 std::unique_ptr<dataset::ondisk2::Reader> DatasetTest::makeOndisk2Reader()
@@ -536,7 +559,9 @@ void ActualSegmentedChecker::maintenance(const MaintenanceResults& expected, boo
 {
     MaintenanceCollector c;
     dataset::NullReporter rep;
-    wassert(_actual->maintenance(rep, [&](const std::string& relpath, segment::State state) { c(relpath, state); }, quick));
+    segmented::State state = wcallchecked(_actual->scan(rep, quick));
+    for (const auto& i: state)
+        c(i.first, i.second.state);
 
     bool ok = true;
     if (expected.files_seen != -1 && c.fileStates.size() != (unsigned)expected.files_seen)
@@ -845,6 +870,7 @@ void ActualChecker<Dataset>::repack(const ReporterExpected& expected, bool write
 {
     CollectReporter reporter;
     wassert(this->_actual->repack(reporter, write));
+    // reporter.dump(stderr);
     wassert(reporter.check(expected));
 }
 
@@ -881,21 +907,6 @@ void Fixture::finalise_init()
     selective_cutoff = min({test_data[0].time, test_data[1].time, test_data[2].time});
     ++selective_cutoff.mo;
     selective_cutoff.normalise();
-
-    // Partition data in two groups: before and after selective_cutoff
-    for (int i = 0; i < 3; ++i)
-    {
-        fnames.insert(test_data[i].destfile);
-        if (test_data[i].time < selective_cutoff)
-            fnames_before_cutoff.insert(test_data[i].destfile);
-        else
-            fnames_after_cutoff.insert(test_data[i].destfile);
-    }
-}
-
-unsigned Fixture::count_dataset_files() const
-{
-    return fnames.size();
 }
 
 unsigned Fixture::selective_days_since() const
@@ -922,5 +933,5 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
 
 template class ActualChecker<dataset::Checker>;
 template class ActualChecker<dataset::LocalChecker>;
-template class ActualChecker<dataset::SegmentedChecker>;
+template class ActualChecker<dataset::segmented::Checker>;
 }

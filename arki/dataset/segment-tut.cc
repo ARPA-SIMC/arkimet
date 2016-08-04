@@ -100,7 +100,7 @@ struct TestSegments
     {
         ConfigFile cfg1(cfg);
         cfg1.setValue("mockdata", "true");
-        auto config = dataset::SegmentedConfig::create(cfg1);
+        auto config = dataset::segmented::Config::create(cfg1);
         auto segment_manager = config->create_segment_manager();
 
         // Import 2 gigabytes of data in a single segment

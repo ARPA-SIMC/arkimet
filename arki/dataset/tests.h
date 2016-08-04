@@ -30,11 +30,14 @@ struct Checker;
 struct LocalReader;
 struct LocalWriter;
 struct LocalChecker;
-struct SegmentedReader;
-struct SegmentedWriter;
-struct SegmentedChecker;
 struct ArchivesReader;
 struct ArchivesChecker;
+
+namespace segmented {
+struct Reader;
+struct Writer;
+struct Checker;
+}
 
 namespace ondisk2 {
 struct Config;
@@ -52,9 +55,11 @@ struct Checker;
 
 namespace testdata {
 struct Fixture;
+struct Element;
 }
 
 namespace tests {
+
 #define ensure_dispatches(x, y, z) wassert(impl_ensure_dispatches((x), (y), (z)))
 void impl_ensure_dispatches(Dispatcher& dispatcher, std::unique_ptr<Metadata> md, metadata_dest_func mdc);
 
@@ -137,9 +142,27 @@ public:
     // Return the file name of the index of the current dataset
     std::string idxfname(const ConfigFile* wcfg = 0) const;
 
-    std::unique_ptr<dataset::SegmentedReader> makeSegmentedReader();
-    std::unique_ptr<dataset::SegmentedWriter> makeSegmentedWriter();
-    std::unique_ptr<dataset::SegmentedChecker> makeSegmentedChecker();
+    /**
+     * Return the segment pathname in the current dataset where el is expected
+     * to have been imported
+     */
+    std::string destfile(const testdata::Element& el) const;
+
+    /**
+     * Return all the distinct segment pathnames in the current dataset after f
+     * has been imported
+     */
+    std::set<std::string> destfiles(const testdata::Fixture& f) const;
+
+    /**
+     * Return the number of distinct dataset segments created by importing f in
+     * the test dataset
+     */
+    unsigned count_dataset_files(const testdata::Fixture& f) const;
+
+    std::unique_ptr<dataset::segmented::Reader> makeSegmentedReader();
+    std::unique_ptr<dataset::segmented::Writer> makeSegmentedWriter();
+    std::unique_ptr<dataset::segmented::Checker> makeSegmentedChecker();
     std::unique_ptr<dataset::ondisk2::Reader> makeOndisk2Reader();
     std::unique_ptr<dataset::ondisk2::Writer> makeOndisk2Writer();
     std::unique_ptr<dataset::ondisk2::Checker> makeOndisk2Checker();
@@ -204,7 +227,6 @@ struct Element
 {
     Metadata md;
     core::Time time;
-    std::string destfile;
     Matcher matcher;
 
     Element() : time(0, 0, 0) {}
@@ -214,9 +236,6 @@ struct Element
         const types::reftime::Position* rt = md.get<types::reftime::Position>();
         this->md = md;
         this->time = rt->time;
-        char buf[32];
-        snprintf(buf, 32, "%04d/%02d-%02d.%s", time.ye, time.mo, time.da, md.source().format.c_str());
-        this->destfile = buf;
         this->matcher = Matcher::parse(matcher);
     }
 };
@@ -232,11 +251,7 @@ struct Fixture
     Element test_data[3];
     /// Date that falls somewhere inbetween files in the dataset
     core::Time selective_cutoff;
-    std::set<std::string> fnames;
-    std::set<std::string> fnames_before_cutoff;
-    std::set<std::string> fnames_after_cutoff;
 
-    unsigned count_dataset_files() const;
     // Value for "archive age" or "delete age" that would work on part of the
     // dataset, but not all of it
     unsigned selective_days_since() const;
@@ -415,9 +430,9 @@ struct ActualChecker : public arki::utils::tests::Actual<DatasetChecker*>
     void check_clean(bool write=false, bool quick=true);
 };
 
-struct ActualSegmentedChecker : public ActualChecker<dataset::SegmentedChecker>
+struct ActualSegmentedChecker : public ActualChecker<dataset::segmented::Checker>
 {
-    ActualSegmentedChecker(dataset::SegmentedChecker* s) : ActualChecker<dataset::SegmentedChecker>(s) {}
+    ActualSegmentedChecker(dataset::segmented::Checker* s) : ActualChecker<dataset::segmented::Checker>(s) {}
 
     /// Run maintenance and see that the results are as expected
     void maintenance(const MaintenanceResults& expected, bool quick=true);
@@ -438,10 +453,10 @@ inline arki::tests::ActualChecker<dataset::LocalChecker> actual(arki::dataset::L
 }
 inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::Checker* actual) { return arki::tests::ActualChecker<dataset::Checker>(actual); }
 inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>(&actual); }
-inline arki::tests::ActualSegmentedChecker actual(arki::dataset::SegmentedChecker* actual) { return arki::tests::ActualSegmentedChecker(actual); }
-inline arki::tests::ActualSegmentedChecker actual(arki::dataset::SegmentedChecker& actual) { return arki::tests::ActualSegmentedChecker(&actual); }
-inline arki::tests::ActualSegmentedChecker actual(arki::dataset::simple::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::SegmentedChecker*)&actual); }
-inline arki::tests::ActualSegmentedChecker actual(arki::dataset::ondisk2::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::SegmentedChecker*)&actual); }
+inline arki::tests::ActualSegmentedChecker actual(arki::dataset::segmented::Checker* actual) { return arki::tests::ActualSegmentedChecker(actual); }
+inline arki::tests::ActualSegmentedChecker actual(arki::dataset::segmented::Checker& actual) { return arki::tests::ActualSegmentedChecker(&actual); }
+inline arki::tests::ActualSegmentedChecker actual(arki::dataset::simple::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::segmented::Checker*)&actual); }
+inline arki::tests::ActualSegmentedChecker actual(arki::dataset::ondisk2::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::segmented::Checker*)&actual); }
 inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::ArchivesChecker& actual) { return arki::tests::ActualChecker<dataset::Checker>((dataset::Checker*)&actual); }
 
 }

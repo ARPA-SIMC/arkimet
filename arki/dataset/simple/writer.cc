@@ -61,7 +61,7 @@ std::string Writer::type() const { return "simple"; }
 
 Segment* Writer::file(const Metadata& md, const std::string& format)
 {
-    Segment* writer = SegmentedWriter::file(md, format);
+    Segment* writer = segmented::Writer::file(md, format);
     if (!writer->payload)
         writer->payload = new datafile::MdBuf(writer->absname);
     return writer;
@@ -100,7 +100,7 @@ void Writer::remove(Metadata& md)
 
 void Writer::flush()
 {
-    SegmentedWriter::flush();
+    segmented::Writer::flush();
     m_mft->flush();
     release_lock();
 }
@@ -117,6 +117,8 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
     return ACQ_OK;
 }
 
+
+std::string ShardingWriter::type() const { return "simple"; }
 
 
 Checker::Checker(std::shared_ptr<const simple::Config> config)
@@ -235,16 +237,15 @@ size_t Checker::repackSegment(const std::string& relpath)
 size_t Checker::removeSegment(const std::string& relpath, bool withData)
 {
     m_mft->remove(relpath);
-    return SegmentedChecker::removeSegment(relpath, withData);
+    return segmented::Checker::removeSegment(relpath, withData);
 }
 
-void Checker::archiveSegment(const std::string& relpath)
+void Checker::releaseSegment(const std::string& relpath, const std::string& destpath)
 {
     // Remove from index
     m_mft->remove(relpath);
 
-    // Delegate the rest to SegmentedChecker
-    SegmentedChecker::archiveSegment(relpath);
+    IndexedChecker::releaseSegment(relpath, destpath);
 }
 
 size_t Checker::vacuum()
@@ -252,6 +253,8 @@ size_t Checker::vacuum()
     return m_mft->vacuum();
 }
 
+
+std::string ShardingChecker::type() const { return "simple"; }
 
 }
 }

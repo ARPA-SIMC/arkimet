@@ -53,7 +53,7 @@ void Dumper::operator()(const std::string& file, segment::State state)
 
 // Agent
 
-Agent::Agent(dataset::Reporter& reporter, SegmentedChecker& w)
+Agent::Agent(dataset::Reporter& reporter, segmented::Checker& w)
     : reporter(reporter), w(w), lineStart(true)
 {
 }

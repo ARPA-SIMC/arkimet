@@ -5,10 +5,9 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace arki {
-class Metadata;
-class ConfigFile;
 
 namespace core {
 class Time;
@@ -26,7 +25,7 @@ namespace dataset {
 struct Step
 {
     virtual ~Step() {}
-    virtual std::string operator()(const Metadata& md) const = 0;
+    virtual std::string operator()(const core::Time& time) const = 0;
 
     /**
      * Get the timespan of a file by just looking at its path.
@@ -47,12 +46,50 @@ struct Step
     /**
      * Create a Step according to the given step type name.
      */
-    static Step* create(const std::string& type);
+    static std::shared_ptr<Step> create(const std::string& type);
 
     /**
      * Return the list of available steps
      */
     static std::vector<std::string> list();
+};
+
+
+/**
+ * Generate paths from the root of sharded datasets.
+ */
+struct ShardStep
+{
+    virtual ~ShardStep() {}
+
+    /// Return the path to the root of the sharded dataset for this datum
+    virtual std::string shard_path(const core::Time& time) const = 0;
+
+    /**
+     * Return the Step to use for the dataset shard for a datum.
+     *
+     * The result of substep() is the same for all Metadata elements that
+     * share the same shard_path()
+     */
+    virtual std::shared_ptr<Step> substep(const core::Time& time) const = 0;
+
+    /**
+     * Return the time bounds of a shard given its relative path.
+     */
+    virtual std::pair<core::Time, core::Time> shard_span(const std::string& shard_path) const = 0;
+
+    /**
+     * List all the shards inside a directory.
+     *
+     * @returns a sorted vector of Time entries of the start of the time range
+     *          of each shard.
+     */
+    virtual std::vector<std::pair<core::Time, core::Time>> list_shards(const std::string& pathname) const = 0;
+
+    /**
+     * Create a Step according to the given step type name.
+     */
+    static std::shared_ptr<ShardStep> create(const std::string& shard_type, const std::string& type);
 };
 
 }

@@ -33,6 +33,15 @@ LocalConfig::LocalConfig(const ConfigFile& cfg)
         delete_age = std::stoi(tmp);
 }
 
+void LocalConfig::to_shard(const std::string& shard_path)
+{
+    m_archives_config = std::shared_ptr<ArchivesConfig>();
+    path = str::joinpath(path, shard_path);
+    lockfile_pathname = str::joinpath(path, "lock");
+    //archive_age = -1;
+    //delete_age = -1;
+}
+
 std::shared_ptr<ArchivesConfig> LocalConfig::archives_config() const
 {
     if (!m_archives_config)
@@ -192,7 +201,7 @@ void LocalWriter::release_lock()
 
 LocalWriter::AcquireResult LocalWriter::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
-    return SegmentedWriter::testAcquire(cfg, md, out);
+    return segmented::Writer::testAcquire(cfg, md, out);
 }
 
 
