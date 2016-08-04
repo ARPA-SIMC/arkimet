@@ -82,6 +82,7 @@ Reader<Config>::~Reader() {}
 template<typename Config>
 void Reader<Config>::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
+    LocalReader::query_data(q, dest);
     config().query_shards(q.matcher, [&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
         cfg->create_reader()->query_data(q, dest);
     });
@@ -90,6 +91,7 @@ void Reader<Config>::query_data(const dataset::DataQuery& q, metadata_dest_func 
 template<typename Config>
 void Reader<Config>::query_summary(const Matcher& matcher, Summary& summary)
 {
+    LocalReader::query_summary(matcher, summary);
     config().query_shards(matcher, [&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
         cfg->create_reader()->query_summary(matcher, summary);
     });
