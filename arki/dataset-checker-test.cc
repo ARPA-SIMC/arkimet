@@ -407,6 +407,14 @@ this->add_method("scan_noindex", [](Fixture& f) {
     wassert(f.import_all_packed(f.td));
     sys::unlink_ifexists("testds/index.sqlite");
     sys::unlink_ifexists("testds/MANIFEST");
+    for (unsigned i = 0; i < 3; ++i)
+    {
+        char buf[32];
+        snprintf(buf, 32, "testds/%04d/index.sqlite", f.td.test_data[i].time.ye);
+        sys::unlink_ifexists(buf);
+        snprintf(buf, 32, "testds/%04d/MANIFEST", f.td.test_data[i].time.ye);
+        sys::unlink_ifexists(buf);
+    }
     sys::makedirs("testds/2014/");
     sys::write_file("testds/2014/01.grib1.tmp", "GRIB garbage 7777");
 
