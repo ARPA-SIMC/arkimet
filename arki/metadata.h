@@ -30,7 +30,10 @@ struct ReadContext
      */
     std::string basedir;
 
-    /// Absolute path of the file to read
+    /**
+     * Absolute path of the file to read if basedir is empty, else relative
+     * path rooted on basedir.
+     */
     std::string pathname;
 
     ReadContext();

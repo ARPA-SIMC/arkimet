@@ -39,12 +39,12 @@ arki::utils::DataReader dataReader;
 ReadContext::ReadContext() {}
 
 ReadContext::ReadContext(const std::string& pathname)
-    : basedir(str::dirname(pathname)), pathname(pathname)
+    : basedir(str::dirname(sys::abspath(pathname))), pathname(pathname)
 {
 }
 
 ReadContext::ReadContext(const std::string& pathname, const std::string& basedir)
-    : basedir(basedir), pathname(pathname)
+    : basedir(sys::abspath(basedir)), pathname(pathname)
 {
 }
 
@@ -652,7 +652,7 @@ void Metadata::read_file(int in, const metadata::ReadContext& file, metadata_des
             unique_ptr<Metadata> md(new Metadata);
             iotrace::trace_file(file.pathname, 0, 0, "read metadata");
             BinaryDecoder dec(buf);
-            md->read_inner(dec, version, file.pathname);
+            md->read_inner(dec, version, file);
 
             // If the source is inline, then the data follows the metadata
             if (md->source().style() == types::Source::INLINE)
@@ -693,7 +693,7 @@ void Metadata::read_group(BinaryDecoder& dec, unsigned version, const metadata::
     {
         BinaryDecoder inner = unenc.pop_metadata_bundle(isig, iver);
         unique_ptr<Metadata> md(new Metadata);
-        md->read_inner(inner, iver, file.pathname);
+        md->read_inner(inner, iver, file);
         canceled = !dest(move(md));
     }
 }

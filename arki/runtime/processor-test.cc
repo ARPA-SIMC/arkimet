@@ -62,9 +62,9 @@ add_method("metadata_binary", [](Fixture& f) {
     mdc.read_from_file("pm-out");
 
     wassert(actual(mdc.size()) == 3u);
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib", ".", sys::abspath("testds/2007/07-07.grib"), 0, 34960));
-    wassert(actual_type(mdc[1].source()).is_source_blob("grib", ".", sys::abspath("testds/2007/07-08.grib"), 0, 7218));
-    wassert(actual_type(mdc[2].source()).is_source_blob("grib", ".", sys::abspath("testds/2007/10-09.grib"), 0, 2234));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("."), sys::abspath("testds/2007/07-07.grib"), 0, 34960));
+    wassert(actual_type(mdc[1].source()).is_source_blob("grib", sys::abspath("."), sys::abspath("testds/2007/07-08.grib"), 0, 7218));
+    wassert(actual_type(mdc[2].source()).is_source_blob("grib", sys::abspath("."), sys::abspath("testds/2007/10-09.grib"), 0, 2234));
 });
 
 // Export inline data

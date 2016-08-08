@@ -1,20 +1,21 @@
 #include "metadata.h"
-#include <arki/types/tests.h>
-#include <arki/tests/lua.h>
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/types/level.h>
-#include <arki/types/timerange.h>
-#include <arki/types/reftime.h>
-#include <arki/types/area.h>
-#include <arki/types/proddef.h>
-#include <arki/types/assigneddataset.h>
-#include <arki/types/source/blob.h>
-#include <arki/binary.h>
-#include <arki/emitter/json.h>
-#include <arki/emitter/memory.h>
-#include <arki/utils/sys.h>
-#include <arki/utils/files.h>
+#include "metadata/collection.h"
+#include "types/tests.h"
+#include "tests/lua.h"
+#include "types/origin.h"
+#include "types/product.h"
+#include "types/level.h"
+#include "types/timerange.h"
+#include "types/reftime.h"
+#include "types/area.h"
+#include "types/proddef.h"
+#include "types/assigneddataset.h"
+#include "types/source/blob.h"
+#include "binary.h"
+#include "emitter/json.h"
+#include "emitter/memory.h"
+#include "utils/sys.h"
+#include "utils/files.h"
 #include <fcntl.h>
 
 namespace std {
@@ -123,12 +124,13 @@ add_method("binary", [](Fixture& f) {
     vector<uint8_t> encoded = md.encodeBinary();
     wassert(actual((char)encoded[0]) == 'M');
     wassert(actual((char)encoded[1]) == 'D');
+    sys::write_file("test.md", encoded.data(), encoded.size());
 
     Metadata md1;
     BinaryDecoder dec(encoded);
-    wassert(md1.read(dec, metadata::ReadContext("(test memory buffer)")));
+    wassert(md1.read(dec, metadata::ReadContext("(test memory buffer)", "testdir")));
 
-    wassert(actual(Source::createBlob("grib", "", "fname", 1, 2)) == md1.source());
+    wassert(actual(Source::createBlob("grib", "testdir", "fname", 1, 2)) == md1.source());
     wassert(actual(md1.source().format) == "grib");
     wassert(f.ensure_md_matches_prefill(md1));
 
@@ -142,6 +144,25 @@ add_method("binary", [](Fixture& f) {
     wassert(md2.read(dec1, metadata::ReadContext("(test memory buffer)"), false));
 
     wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
+
+
+    // Test methods to load metadata from files
+    metadata::Collection mds;
+    std::string dir = sys::abspath(".");
+
+    Metadata::read_file(metadata::ReadContext("test.md", "/tmp"), mds.inserter_func());
+    wassert(actual(mds.size()) == 1u);
+    wassert(actual_type(mds[0].source()).is_source_blob("grib", "/tmp", "fname", 1, 2));
+    mds.clear();
+
+    Metadata::read_file("test.md", mds.inserter_func());
+    wassert(actual(mds.size()) == 1u);
+    wassert(actual_type(mds[0].source()).is_source_blob("grib", dir, "fname", 1, 2));
+
+    /*
+    /// Read all metadata from a file into the given consumer
+    static void read_file(const metadata::ReadContext& fname, metadata_dest_func dest);
+    */
 });
 
 // Test Yaml encoding and decoding
