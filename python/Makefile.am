@@ -4,7 +4,7 @@ TESTS_ENVIRONMENT = $(top_srcdir)/arki/runtest
 
 #TESTS = test.py
 
-pkgpython_PYTHON = arkimet/__init__.py
+nobase_python_PYTHON = arkimet/__init__.py arkimet/server/__init__.py arkimet/server/views.py
 
 pyexec_LTLIBRARIES = _arkimet.la
 
