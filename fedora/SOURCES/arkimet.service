@@ -1,0 +1,20 @@
+[Unit]
+Description=Arkimet server
+# check the following
+After=network.target remote-fs.target
+
+[Service]
+# arki-server does not fork :-( Type=simple must be used
+#Type=forking
+Type=simple
+# no environment variable accepted here
+User=arkimet
+# pidfile useless?
+#PIDFile=/var/run/arkimet.pid
+EnvironmentFile=/etc/sysconfig/arkimet
+ExecStart=/usr/bin/arki-server $NETWORK_OPTIONS --accesslog=${LOGDIR}/server-access.log --errorlog=${LOGDIR}/server-error.log $OTHER_OPTIONS $DATASET_CONFIG
+
+[Install]
+# check the following
+WantedBy=multi-user.target
+

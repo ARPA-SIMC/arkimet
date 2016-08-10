@@ -1,13 +1,13 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.0
-Release: 9
+Release: 10
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
 Source0: https://github.com/arpa-simc/%{name}/archive/v%{version}-%{release}.tar.gz#/%{name}-%{version}-%{release}.tar.gz
-Source1: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.init
-Source2: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.default
+Source1: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.service
+Source2: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.sysconfig
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 BuildRequires: doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl-devel, geos-devel, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 3.0, flex, bison, meteo-vm2-devel >= 0.12, hdf5-devel, python3, python3-werkzeug, python3-setproctitle
 Requires: hdf5, meteo-vm2 >= 0.12, grib_api, python3, python3-lxml, python3-werkzeug, python3-setproctitle
@@ -58,8 +58,8 @@ make check
 [ "%{buildroot}" != / ] && rm -rf %{buildroot}
 %makeinstall
 
-install -D -m0755 %{SOURCE1} %{buildroot}%{_sysconfdir}/rc.d/init.d/%{name}
-install -bD -m0755 %{SOURCE2} %{buildroot}%{_sysconfdir}/default/arki-server
+install -D -m0644 %{SOURCE1} %{buildroot}%{_unitdir}/%{name}.service
+install -bD -m0644 %{SOURCE2} %{buildroot}%{_sysconfdir}/sysconfig/%{name}
 
 
 %clean
@@ -81,8 +81,8 @@ install -bD -m0755 %{SOURCE2} %{buildroot}%{_sysconfdir}/default/arki-server
 %{_sysconfdir}/arkimet/vm2/*
 %{_bindir}/*
 %{_libdir}/libarkimet.so.*
-%{_sysconfdir}/rc.d/init.d/%{name}
-%config(noreplace) %{_sysconfdir}/default/arki-server
+%{_unitdir}/%{name}.service
+%config(noreplace) %{_sysconfdir}/sysconfig/arkimet
 %dir %{python3_sitelib}/arkimet
 %{python3_sitelib}/arkimet/*
 %dir %{python3_sitearch}
@@ -121,6 +121,9 @@ else
 fi
 
 %changelog
+* Wed Aug 10 2016 Davide Cesari <dcesari@arpae.it> - 1.0-10%{dist}
+- switch to systemd
+
 * Fri Jul 22 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-9%{dist}
 - fixed tests
 - fixed #37
