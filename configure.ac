@@ -49,6 +49,13 @@ AC_ARG_ENABLE([geos],
     [],
     [enable_geos="yes"])
 
+AC_ARG_ENABLE([python],
+    [AS_HELP_STRING(
+        [--enable-python],
+        [build with python support])],
+    [],
+    [enable_python="yes"])
+
 if test x$enable_gcov = xyes
 then
 	AM_DISABLE_SHARED
@@ -315,12 +322,15 @@ AM_CONDITIONAL([VM2], [test x"$have_vm2" = x"yes" ])
 
 
 dnl Check for python
+if test $enable_python = yes
+then
 AM_PATH_PYTHON([3.3], [enable_python=$am_cv_python_version], [enable_python=no])
 if test $enable_python != no
 then
     PYTHON_CFLAGS=`unset CFLAGS; $PYTHON-config --cflags`
     AC_SUBST(PYTHON_CFLAGS)
     AC_DEFINE(HAVE_PYTHON, 1, [Have Python bindings])
+fi
 fi
 AM_CONDITIONAL([DO_PYTHON], [test "$enable_python" != "no"])
 
