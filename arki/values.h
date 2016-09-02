@@ -141,7 +141,8 @@ struct ValueBag : public std::map<std::string, Value*>
 	/// Push to the LUA stack a table with the data of this ValueBag
 	void lua_push(lua_State* L) const;
 
-	/// Fill in the ValueBag from the Lua table on top of the stack
+    // Fill in the ValueBag from the Lua table on top of the stack.
+    // The values can be string or integer (numbers will be truncated).
 	void load_lua_table(lua_State* L, int idx = -1);
 
 private:
