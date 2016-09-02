@@ -132,7 +132,7 @@ def_test(5)
     wassert(actual(row1.stats.size) == 0u);
 
     for (unsigned i = 0; i < Row::mso_size; ++i)
-        row1.items[i] = (const Type*)(i + 1);
+        row1.items[i] = (const Type*)((const char*)0 + i + 1);
 
     Row row2(row1);
     wassert(actual(row1 == row2).istrue());

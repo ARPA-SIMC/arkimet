@@ -284,7 +284,7 @@ add_method("binary_fd", [](Fixture& f) {
 add_method("decode_issue_24", [](Fixture& f) {
     unsigned count = 0;
     Metadata::read_file("inbound/issue24.arkimet", [&](unique_ptr<Metadata> md) { ++count; return true; });
-    wassert(actual(count) == 1);
+    wassert(actual(count) == 1u);
 });
 
 // Test Lua functions
