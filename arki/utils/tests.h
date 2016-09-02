@@ -99,7 +99,7 @@ struct TestStack : public std::vector<TestStackFrame>
 };
 
 /**
- * Exception raised when a test assertion fails, normally by
+ * Exception thrown when a test assertion fails, normally by
  * Location::fail_test
  */
 struct TestFailed : public std::exception
@@ -129,6 +129,13 @@ struct TestFailed : public std::exception
 
     template<typename ...Args>
     void add_stack_info(Args&&... args) { stack.emplace_back(std::forward<Args>(args)...); }
+};
+
+/**
+ * Exception thrown when a test or a test case needs to be skipped
+ */
+struct TestSkipped : public std::exception
+{
 };
 
 /**
@@ -405,7 +412,7 @@ struct TestMethodResult
     /// Stack frame of where the error happened
     TestStack error_stack;
 
-    /// If non-empty, the test raised an exception and this is its type ID
+    /// If non-empty, the test threw an exception and this is its type ID
     std::string exception_typeid;
 
     /// True if the test has been skipped

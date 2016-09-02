@@ -469,6 +469,10 @@ TestCaseResult TestCase::run_tests(TestController& controller)
 
     try {
         setup();
+    } catch (TestSkipped) {
+        res.skipped = true;
+        controller.test_case_end(*this, res);
+        return res;
     } catch (std::exception& e) {
         res.set_setup_failed(e);
         controller.test_case_end(*this, res);
@@ -505,6 +509,10 @@ TestMethodResult TestCase::run_test(TestController& controller, TestMethod& meth
     bool run = true;
     try {
         method_setup(res);
+    } catch (TestSkipped) {
+        res.skipped = true;
+        controller.test_method_end(method, res);
+        return res;
     } catch (std::exception& e) {
         res.set_setup_exception(e);
         run = false;
@@ -514,6 +522,8 @@ TestMethodResult TestCase::run_test(TestController& controller, TestMethod& meth
     {
         try {
             method.test_function();
+        } catch (TestSkipped) {
+            res.skipped = true;
         } catch (TestFailed& e) {
             // Location::fail_test() was called
             res.set_failed(e);
