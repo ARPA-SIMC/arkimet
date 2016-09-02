@@ -132,6 +132,11 @@ public:
      */
     void test_setup(const std::string& cfg_default=std::string());
     void test_teardown();
+    /**
+     * Teardown and setup test again, to run two different configuration in the
+     * same test case
+     */
+    void reset_test(const std::string& cfg_default=std::string());
 
     const dataset::Config& config();
     std::shared_ptr<const dataset::Config> dataset_config();

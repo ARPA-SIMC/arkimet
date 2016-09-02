@@ -102,6 +102,12 @@ void DatasetTest::test_teardown()
     m_config.reset();
 }
 
+void DatasetTest::reset_test(const std::string& cfg_default)
+{
+    test_teardown();
+    test_setup(cfg_default);
+}
+
 const Config& DatasetTest::config()
 {
     if (!m_config)
