@@ -1,5 +1,6 @@
 #include "tests.h"
 #include "segmented.h"
+#include "indexed.h"
 #include "maintenance.h"
 #include "arki/types/source/blob.h"
 #include "arki/metadata.h"
@@ -332,6 +333,37 @@ add_method("query_lots", [](Fixture& f) {
         wassert(actual(cso.seen) == 16128u);
     }
 });
+
+// Ensure that the segment is not archived if it can still accept new data
+// after the archive cutoff (regardless of the data currently in the
+// segment)
+add_method("archive_age", [](Fixture& f) {
+    // TZ=UTC date --date="2008-01-01 00:00:00" +%s
+    time_t start2008 = 1199145600;
+
+    f.cfg.setValue("archive age", "1");
+    f.cfg.setValue("step", "yearly");
+
+    // Import a file with a known reftime
+    // Reftime: 2007-07-08T13:00:00Z
+    metadata::Collection mds("inbound/test.grib1");
+    dataset::Writer::AcquireResult res = wcallchecked(f.makeSegmentedWriter()->acquire(mds[0]));
+    wassert(actual(res) == dataset::Writer::ACQ_OK);
+    wassert(actual(f.makeSegmentedChecker().get()).check_clean(true));
+
+    {
+        TestOverrideCurrentDateForMaintenance o(start2008);
+        wassert(actual(f.makeSegmentedChecker().get()).repack_clean(false));
+    }
+
+    {
+        TestOverrideCurrentDateForMaintenance o(start2008 + 86400);
+        ReporterExpected e;
+        e.archived.emplace_back("testds", "20/2007.grib");
+        wassert(actual(f.makeSegmentedChecker().get()).repack(e, false));
+    }
+});
+
 
 }
 }
