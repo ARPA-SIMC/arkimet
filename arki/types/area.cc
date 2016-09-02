@@ -34,11 +34,6 @@ const types::Code traits<Area>::type_code = CODE;
 const size_t traits<Area>::type_sersize_bytes = SERSIZELEN;
 const char* traits<Area>::type_lua_tag = LUATAG_TYPES ".area";
 
-namespace area {
-// FIXME: move as a singleton to arki/bbox.cc?
-static __thread BBox* bbox = 0;
-}
-
 // Style constants
 const unsigned char Area::GRIB;
 const unsigned char Area::ODIMH5;
@@ -73,17 +68,14 @@ Area::Area() : cached_bbox(0)
 const ARKI_GEOS_GEOMETRY* Area::bbox() const
 {
 #ifdef HAVE_GEOS
-	if (!cached_bbox)
-	{
-		// Create the bbox generator if missing
-		if (!area::bbox) area::bbox = new BBox();
-
-		std::unique_ptr<ARKI_GEOS_GEOMETRY> res = (*area::bbox)(*this);
-		if (res.get())
-			cached_bbox = res.release();
-	}
+    if (!cached_bbox)
+    {
+        std::unique_ptr<ARKI_GEOS_GEOMETRY> res = BBox::get_singleton()(*this);
+        if (res.get())
+            cached_bbox = res.release();
+    }
 #endif
-	return cached_bbox;
+    return cached_bbox;
 }
 
 unique_ptr<Area> Area::decode(BinaryDecoder& dec)

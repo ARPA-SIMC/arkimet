@@ -10,6 +10,7 @@
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
 #include <memory>
+#include <iostream>
 
 using namespace std;
 using namespace arki;
@@ -122,6 +123,7 @@ int main(int argc, const char* argv[])
 		// If requested, compute extra information
 		if (opts.extra->boolValue())
 		{
+#ifdef HAVE_GEOS
 			ARKI_GEOS_GEOMETRYFACTORY gf;
 
 			for (ConfigFile::section_iterator i = cfg.sectionBegin();
@@ -133,13 +135,12 @@ int main(int argc, const char* argv[])
                 Summary sum;
                 d->query_summary(Matcher(), sum);
 
-#ifdef HAVE_GEOS
 				// Compute bounding box, and store the WKT in bounding
 				unique_ptr<ARKI_GEOS_GEOMETRY> bbox = sum.getConvexHull(gf);
 				if (bbox.get())
 					i->second->setValue("bounding", bbox->toString());
-#endif
 			}
+#endif
 		}
 
 

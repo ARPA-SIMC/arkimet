@@ -127,6 +127,7 @@ struct YamlPrinter
 
 }
 
+#ifdef HAVE_GEOS
 // Add to \a s the info from all data read from \a in
 static void addToSummary(sys::NamedFileDescriptor& in, Summary& s)
 {
@@ -160,6 +161,7 @@ static void addToSummary(sys::NamedFileDescriptor& in, Summary& s)
         }
     }
 }
+#endif
 
 int main(int argc, const char* argv[])
 {

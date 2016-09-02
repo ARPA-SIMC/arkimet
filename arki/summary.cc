@@ -411,7 +411,7 @@ std::unique_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull(ARKI_GEOS_GEOMETRYFAC
     root->visitItem(summary::Visitor::posForCode(TYPE_AREA), merger);
     return merger.makeBBox();
 #else
-    return std::unique_ptr<ARKI_GEOS_GEOMETRY>(0);
+    return std::unique_ptr<ARKI_GEOS_GEOMETRY>();
 #endif
 }
 

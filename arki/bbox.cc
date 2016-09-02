@@ -92,6 +92,7 @@ BBox::~BBox()
 	if (gf) delete gf;
 }
 
+#ifdef HAVE_GEOS
 static vector< pair<double, double> > bbox(lua_State* L)
 {
     lua_getglobal(L, "bbox");
@@ -147,6 +148,7 @@ static vector< pair<double, double> > bbox(lua_State* L)
         }
     }
 }
+#endif
 
 std::unique_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const types::Area& v) const
 {
@@ -181,8 +183,16 @@ std::unique_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const types::Area& v) const
 		}
 	}
 #else
-	return unique_ptr<ARKI_GEOS_GEOMETRY>(0);
+	return unique_ptr<ARKI_GEOS_GEOMETRY>();
 #endif
+}
+
+const BBox& BBox::get_singleton()
+{
+    static __thread BBox* bbox = 0;
+    if (!bbox)
+        bbox = new BBox();
+    return *bbox;
 }
 
 }
