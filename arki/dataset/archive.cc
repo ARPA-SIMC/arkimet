@@ -405,5 +405,23 @@ void ArchivesChecker::indexSegment(const std::string& relname, metadata::Collect
     archives->invalidate_summary_cache();
 }
 
+void ArchivesChecker::releaseSegment(const std::string& relpath, const std::string& destpath)
+{
+    string path = relpath;
+    string name = poppath(path);
+    if (name != "last") throw std::runtime_error(this->name() + ": cannot release segment " + relpath + ": segment is not in last/ archive");
+
+    if (Checker* a = archives->lookup(name))
+    {
+        if (segmented::Checker* sc = dynamic_cast<segmented::Checker*>(a))
+            sc->releaseSegment(path, destpath);
+        else
+            throw std::runtime_error(this->name() + ": cannot acquire " + relpath + ": archive " + name + " is not writable");
+    }
+    else
+        throw std::runtime_error(this->name() + ": cannot acquire " + relpath + ": archive " + name + " does not exist in " + archives->archive_root);
+    archives->invalidate_summary_cache();
+}
+
 }
 }

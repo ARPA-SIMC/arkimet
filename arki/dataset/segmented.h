@@ -200,6 +200,11 @@ public:
     virtual void archiveSegment(const std::string& relpath);
 
     /**
+     * Move a segment from the last/ archive back to the main dataset
+     */
+    virtual void unarchive_segment(const std::string& relpath);
+
+    /**
      * Perform generic packing and optimisations
      *
      * @returns The number of bytes freed on disk with this operation

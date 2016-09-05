@@ -195,23 +195,45 @@ void Checker::archiveSegment(const std::string& relpath)
     archive();
 
     const string& root = config().path;
-    string arcrelname = str::joinpath("last", relpath);
-    string arcabsname = str::joinpath(root, ".archive", arcrelname);
-    releaseSegment(relpath, arcabsname);
+    string arcrelpath = str::joinpath("last", relpath);
+    string arcabspath = str::joinpath(root, ".archive", arcrelpath);
+    releaseSegment(relpath, arcabspath);
 
-    bool compressed = scan::isCompressed(arcabsname);
+    bool compressed = scan::isCompressed(arcabspath);
 
     // Acquire in the achive
     metadata::Collection mdc;
-    if (sys::exists(arcabsname + ".metadata"))
-        mdc.read_from_file(arcabsname + ".metadata");
+    if (sys::exists(arcabspath + ".metadata"))
+        mdc.read_from_file(arcabspath + ".metadata");
     else if (compressed) {
-        utils::compress::TempUnzip tu(arcabsname);
-        scan::scan(arcabsname, mdc.inserter_func());
+        utils::compress::TempUnzip tu(arcabspath);
+        scan::scan(arcabspath, mdc.inserter_func());
     } else
-        scan::scan(arcabsname, mdc.inserter_func());
+        scan::scan(arcabspath, mdc.inserter_func());
 
-    archive().indexSegment(arcrelname, move(mdc));
+    archive().indexSegment(arcrelpath, move(mdc));
+}
+
+void Checker::unarchive_segment(const std::string& relpath)
+{
+    const string& root = config().path;
+    string abspath = str::joinpath(root, relpath);
+    string arcrelpath = str::joinpath("last", relpath);
+    archive().releaseSegment(arcrelpath, abspath);
+
+    bool compressed = scan::isCompressed(abspath);
+
+    // Acquire in the achive
+    metadata::Collection mdc;
+    if (sys::exists(abspath + ".metadata"))
+        mdc.read_from_file(abspath + ".metadata");
+    else if (compressed) {
+        utils::compress::TempUnzip tu(abspath);
+        scan::scan(abspath, mdc.inserter_func());
+    } else
+        scan::scan(abspath, mdc.inserter_func());
+
+    indexSegment(relpath, move(mdc));
 }
 
 size_t Checker::removeSegment(const std::string& relpath, bool withData)

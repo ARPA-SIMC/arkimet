@@ -125,14 +125,20 @@ runtest() {
         name=$1
         shift
     fi
-    if eval $@
+    if eval $@ >stdout 2>stderr
     then
         echo -n '.'
         OKCOUNT=`expr $OKCOUNT + 1`
     else
         echo "Failed: $name"
+        echo "Stdout:"
+        cat stdout
+        echo "Stderr:"
+        cat stderr
         BADCOUNT=`expr $BADCOUNT + 1`
     fi
+
+    rm -f stdout stderr
 }
 
 testtotals() {
