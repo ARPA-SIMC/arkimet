@@ -443,7 +443,19 @@ size_t Checker::repackSegment(const std::string& relpath)
 
 void Checker::indexSegment(const std::string& relpath, metadata::Collection&& contents)
 {
-    throw std::runtime_error("cannot index " + relpath + ": the operation is not implemented in ondisk2 datasets");
+    // Add to index
+    Pending p_idx = idx->beginTransaction();
+    for (auto& md: contents)
+    {
+        const auto& src = md->sourceBlob();
+        int id;
+        idx->index(*md, relpath, src.offset, &id);
+    }
+    p_idx.commit();
+
+    // Remove .metadata and .summary files
+    sys::unlink_ifexists(str::joinpath(config().path, relpath) + ".metadata");
+    sys::unlink_ifexists(str::joinpath(config().path, relpath) + ".summary");
 }
 
 size_t Checker::removeSegment(const std::string& relpath, bool withData)
