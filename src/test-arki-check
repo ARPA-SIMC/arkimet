@@ -1,0 +1,29 @@
+#!/bin/sh -e
+
+test -z "$ARGS" || exit 0
+
+BINDIR=`dirname $0`
+
+. $BINDIR/testlib.sh
+
+setup
+trap cleanup EXIT
+
+echo -n "Testing arki-check"
+
+importtest
+
+echo "archive age = 1" >> test200/config
+
+# Try checking a dataset
+runtest "arki-check test200 --fix"
+runtest "arki-check --repack --fix test200"
+runtest "test -e test200/.archive/last/2007/07-08.grib"
+runtest "arki-check --unarchive=2007/07-08.grib test200"
+runtest "test -e test200/2007/07-08.grib"
+
+runtest "arki-query --yaml '' test200/ | grep -q 'test200/2007/07-08.grib:0+7218'"
+
+testtotals
+
+exit $BADCOUNT

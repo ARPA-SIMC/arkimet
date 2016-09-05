@@ -5,6 +5,7 @@
 #include <arki/configfile.h>
 #include <arki/datasetpool.h>
 #include <arki/dataset/local.h>
+#include <arki/dataset/segmented.h>
 #include <arki/dataset/reporter.h>
 #include <arki/metadata/consumer.h>
 #include <arki/types/source/blob.h>
@@ -37,6 +38,7 @@ struct Options : public StandardParserWithManpage
 	BoolOption* remove_all;
 	BoolOption* stats;
 	StringOption* op_remove;
+	StringOption* op_unarchive;
 	StringOption* restr;
 
 	Options() : StandardParserWithManpage("arki-check", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
@@ -65,8 +67,10 @@ struct Options : public StandardParserWithManpage
 			"Compute statistics about the various datasets.");
 		op_remove = add<StringOption>("remove", 0, "remove", "file",
 			"Given metadata extracted from one or more datasets, remove it from the datasets where it is stored");
-		restr = add<StringOption>("restrict", 0, "restrict", "names",
-			"restrict operations to only those datasets that allow one of the given (comma separated) names");
+        op_unarchive = add<StringOption>("unarchive", 0, "unarchive", "file",
+                "Given a pathname relative to .archive/last, move it out of the archive and back to the main dataset");
+        restr = add<StringOption>("restrict", 0, "restrict", "names",
+                "Restrict operations to only those datasets that allow one of the given (comma separated) names");
     }
 
     /**
@@ -173,6 +177,22 @@ struct RemoveAller : public WorkerOnWritable
     void done() {}
 };
 
+struct Unarchiver : public WorkerOnWritable
+{
+    std::string relpath;
+
+    Unarchiver(const std::string& relpath) : relpath(relpath) {}
+
+    void operator()(dataset::Checker& w) override
+    {
+        using namespace arki::dataset;
+        if (segmented::Checker* c = dynamic_cast<segmented::Checker*>(&w))
+            c->unarchive_segment(relpath);
+    }
+
+    void done() override {}
+};
+
 #if 0
 struct Invalidator : public Worker
 {
@@ -234,6 +254,7 @@ int main(int argc, const char* argv[])
         if (opts.repack->isSet()) ++actionCount;
         if (opts.remove_all->isSet()) ++actionCount;
         if (opts.op_remove->isSet()) ++actionCount;
+        if (opts.op_unarchive->isSet()) ++actionCount;
         if (actionCount > 1)
             throw commandline::BadOption("only one of --stats, --invalidate, --repack, --remove, or --remove-all can be given in one invocation");
 
@@ -251,8 +272,7 @@ int main(int argc, const char* argv[])
 			rest.remove_unallowed(cfg);
 		}
 
-        if (opts.op_remove->isSet())
-        {
+        if (opts.op_remove->isSet()) {
             if (opts.op_remove->stringValue().empty())
                 throw commandline::BadOption("you need to give a file name to --remove");
             WriterPool pool(cfg);
@@ -305,9 +325,11 @@ int main(int argc, const char* argv[])
 				worker.reset(new RemoveAller(opts.fix->boolValue()));
 			else if (opts.repack->boolValue())
 				worker.reset(new Repacker(opts.fix->boolValue()));
-			else
-				worker.reset(new Maintainer(opts.fix->boolValue(),
-						not opts.accurate->boolValue()));
+            else if (opts.op_unarchive->boolValue())
+                worker.reset(new Unarchiver(opts.op_unarchive->stringValue()));
+            else
+                worker.reset(new Maintainer(opts.fix->boolValue(),
+                             not opts.accurate->boolValue()));
 
             // Harvest the paths from it
             for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
