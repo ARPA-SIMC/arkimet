@@ -104,6 +104,7 @@ public:
     const ArchivesConfig& config() const override { return *m_config; }
 
     void indexSegment(const std::string& relname, metadata::Collection&& mds);
+    void releaseSegment(const std::string& relpath, const std::string& destpath);
 
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
     void repack(dataset::Reporter& reporter, bool writable=false) override;

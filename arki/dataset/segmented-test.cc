@@ -394,6 +394,57 @@ add_method("delete_age", [](Fixture& f) {
     }
 });
 
+add_method("unarchive_segment", [](Fixture& f) {
+    // TZ=UTC date --date="2007-07-09 00:00:00" +%s
+    time_t now = 1183939200;
+    f.cfg.setValue("archive age", "1");
+    // Import a file with a known reftime
+    // Reftime: 2007-07-08T13:00:00Z
+    // Reftime: 2007-07-07T00:00:00Z
+    // Reftime: 2007-10-09T00:00:00Z
+    f.clean_and_import();
+
+    // Archive one segment
+    {
+        TestOverrideCurrentDateForMaintenance o(now);
+        ReporterExpected e;
+        e.archived.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(f.makeSegmentedChecker().get()).repack(e, true));
+    }
+
+    // Check that segments are where we expect them
+    ensure(sys::exists("testds/.archive/last/2007/07-07.grib"));
+    ensure(sys::exists("testds/.archive/last/2007/07-07.grib.metadata"));
+    ensure(sys::exists("testds/.archive/last/2007/07-07.grib.summary"));
+    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib"));
+    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib.metadata"));
+    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib.summary"));
+    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib"));
+    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib.metadata"));
+    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib.summary"));
+    ensure(!sys::exists("testds/2007/07-07.grib"));
+    ensure(sys::exists("testds/2007/07-08.grib"));
+    ensure(sys::exists("testds/2007/10-09.grib"));
+
+    {
+        f.makeSegmentedChecker()->unarchive_segment("2007/07-07.grib");
+    }
+
+    ensure(!sys::exists("testds/.archive/last/2007/07-07.grib"));
+    ensure(!sys::exists("testds/.archive/last/2007/07-07.grib.metadata"));
+    ensure(!sys::exists("testds/.archive/last/2007/07-07.grib.summary"));
+    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib"));
+    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib.metadata"));
+    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib.summary"));
+    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib"));
+    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib.metadata"));
+    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib.summary"));
+    ensure(sys::exists("testds/2007/07-07.grib"));
+    ensure(sys::exists("testds/2007/07-08.grib"));
+    ensure(sys::exists("testds/2007/10-09.grib"));
+});
+
+
 
 }
 }
