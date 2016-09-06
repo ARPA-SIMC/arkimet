@@ -37,6 +37,7 @@ struct Options : public StandardParserWithManpage
 	BoolOption* invalidate;
 	BoolOption* remove_all;
 	BoolOption* stats;
+    BoolOption* op_state;
 	StringOption* op_remove;
 	StringOption* op_unarchive;
 	StringOption* restr;
@@ -69,6 +70,8 @@ struct Options : public StandardParserWithManpage
 			"Given metadata extracted from one or more datasets, remove it from the datasets where it is stored");
         op_unarchive = add<StringOption>("unarchive", 0, "unarchive", "file",
                 "Given a pathname relative to .archive/last, move it out of the archive and back to the main dataset");
+        op_state = add<BoolOption>("state", 0, "state", "",
+                "Scan the dataset and print its state");
         restr = add<StringOption>("restrict", 0, "restrict", "names",
                 "Restrict operations to only those datasets that allow one of the given (comma separated) names");
     }
@@ -193,6 +196,26 @@ struct Unarchiver : public WorkerOnWritable
     void done() override {}
 };
 
+struct PrintState : public WorkerOnWritable
+{
+    bool quick;
+
+    PrintState(bool quick) : quick(quick) {}
+
+    void operator()(dataset::Checker& w) override
+    {
+        using namespace arki::dataset;
+        if (segmented::Checker* c = dynamic_cast<segmented::Checker*>(&w))
+        {
+            OstreamReporter r(cerr);
+            segmented::State state = c->scan(r, quick);
+            state.dump(stdout);
+        }
+    }
+
+    void done() override {}
+};
+
 #if 0
 struct Invalidator : public Worker
 {
@@ -255,8 +278,9 @@ int main(int argc, const char* argv[])
         if (opts.remove_all->isSet()) ++actionCount;
         if (opts.op_remove->isSet()) ++actionCount;
         if (opts.op_unarchive->isSet()) ++actionCount;
+        if (opts.op_state->isSet()) ++actionCount;
         if (actionCount > 1)
-            throw commandline::BadOption("only one of --stats, --invalidate, --repack, --remove, or --remove-all can be given in one invocation");
+            throw commandline::BadOption("only one of --stats, --invalidate, --repack, --remove, --remove-all, --unarchive, or --state can be given in one invocation");
 
         // Read the config file(s)
         ConfigFile cfg;
@@ -327,6 +351,8 @@ int main(int argc, const char* argv[])
 				worker.reset(new Repacker(opts.fix->boolValue()));
             else if (opts.op_unarchive->boolValue())
                 worker.reset(new Unarchiver(opts.op_unarchive->stringValue()));
+            else if (opts.op_state->boolValue())
+                worker.reset(new PrintState(not opts.accurate->boolValue()));
             else
                 worker.reset(new Maintainer(opts.fix->boolValue(),
                              not opts.accurate->boolValue()));
