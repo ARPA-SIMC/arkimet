@@ -35,6 +35,7 @@ arki-%.1: src/arki-% doc/mhooks-%
 EXTRA_DIST = \
 	     README \
 	     README.Cineca \
+	     NEWS.md \
 	     update-tags \
 	     autogen.sh
 
