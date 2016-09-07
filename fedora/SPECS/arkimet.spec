@@ -107,11 +107,10 @@ install -bD -m0644 %{SOURCE2} %{buildroot}%{_sysconfdir}/sysconfig/%{name}
 %{_includedir}/arki/*
 
 %pre
-#/sbin/service %{name} stop >/dev/null 2>&1
 
 %post
 /sbin/ldconfig
-/sbin/chkconfig --add %{name}
+
 
 %preun
 
@@ -119,10 +118,9 @@ install -bD -m0644 %{SOURCE2} %{buildroot}%{_sysconfdir}/sysconfig/%{name}
 /sbin/ldconfig
 if [ "$1" = "0" ]; then
   # non e' un upgrade, e' una disinstallazione definitiva
-  #/sbin/chkconfig --del %{name} (pare farlo in automatico)
   :
 else
-  /sbin/service %{name} condrestart >/dev/null 2>&1
+  /usr/bin/systemctl try-restart %{name}
 fi
 
 %changelog
