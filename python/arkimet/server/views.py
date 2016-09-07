@@ -3,6 +3,7 @@ import os
 import io
 import tempfile
 import configparser
+import time
 import html
 from urllib.parse import quote
 from contextlib import contextmanager
@@ -25,15 +26,22 @@ class ArkiView:
         self.handler = handler
         self.kwargs = kw
         self.headers_sent = False
+        # Information to be logged about this query
+        self.info = {
+            "view": self.__class__.__name__,
+            "ts_start": time.time(),
+        }
 
     def get_dataset_config(self):
         """
         Return a dict with the configuration of the dataset named in
         self.kwargs["name"]
         """
-        if not self.handler.server.cfg.has_section(self.kwargs["name"]):
-            raise NotFound("Dataset {} not found".format(self.kwargs["name"]))
-        return dict(self.handler.server.cfg.items(self.kwargs["name"]))
+        name = self.kwargs["name"]
+        self.info["dataset"] = name
+        if not self.handler.server.cfg.has_section(name):
+            raise NotFound("Dataset {} not found".format(name))
+        return dict(self.handler.server.cfg.items(name))
 
     def get_dataset_reader(self):
         """
@@ -46,13 +54,17 @@ class ArkiView:
         """
         Return the dataset query matcher string
         """
-        return self.request.form.get("query", "").strip()
+        query = self.request.form.get("query", "").strip()
+        if query: self.info["query"] = query
+        return query
 
     def get_sort(self):
         """
         Return the sort order string
         """
-        return self.request.form.get("sort", "").strip()
+        sort = self.request.form.get("sort", "").strip()
+        if sort: self.info["sort"] = sort
+        return sort
 
     def get_headers_filename(self):
         """
@@ -66,6 +78,7 @@ class ArkiView:
         """
         Send headers for a successful response
         """
+        self.info["ts_headers"] = time.time()
         self.handler.send_response(200)
         self.handler.send_header("Content-Type", self.content_type)
         fname = self.get_headers_filename()
@@ -94,6 +107,10 @@ class ArkiView:
             self.handler.wfile.write(str(ex).encode("utf-8"))
             self.handler.wfile.write(b"\n")
 
+    def log_end(self):
+        self.info["ts_end"] = time.time()
+        logging.info("Query: %r", self.info, extra={"perf": self.info})
+
     def run(self):
         """
         Generate a response
@@ -104,6 +121,7 @@ class ArkiView:
                 self.send_headers()
         except Exception:
             self.handle_exception()
+        self.log_end()
 
 
 class HTMLWriter:
@@ -257,6 +275,7 @@ class TempdirMixin:
             self.handle_exception()
         finally:
             os.chdir(origdir)
+        self.log_end()
 
 
 class ArkiDatasetQuery(TempdirMixin, ArkiView):
@@ -367,13 +386,16 @@ class DatasetQueryPostprocess(ArkiDatasetQuery):
             names.sort()
             os.environ["ARKI_POSTPROC_FILES"] = ":".join(names)
 
+        command = self.request.form.get("command", "")
+        self.info["postprocess"] = command
+
         self.get_dataset_reader().query_bytes(
             file=self.handler.wfile,
             matcher=self.get_query(),
             with_data=True,
             sort=self.get_sort(),
             data_start_hook=self.send_headers,
-            postprocess=self.request.form.get("command", ""))
+            postprocess=command)
 
 
 def get_view_for_style(style):
