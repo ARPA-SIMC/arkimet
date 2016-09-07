@@ -104,10 +104,10 @@ class Handler(BaseHTTPRequestHandler):
         request
         """
         logging.info('%s - - [%s] "%s" %s %s',
-                      self.client_address[0],
-                      datetime.datetime.utcnow().strftime("%d/%b/%Y:%H:%M:%S %z"),
-                      self.requestline,
-                      code, size)
+                     self.client_address[0],
+                     datetime.datetime.utcnow().strftime("%d/%b/%Y:%H:%M:%S +0000"),
+                     self.requestline,
+                     code, size, extra={"access_log": True})
 
     def dispatch(self):
         """
@@ -193,6 +193,7 @@ def main():
         h.setLevel(logging.INFO)
         class Filter:
             def filter(self, record):
+                if not getattr(record, "access_log", False): return False
                 return record.levelno < logging.WARN
         h.addFilter(Filter())
         root_logger.addHandler(h)
