@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.0
-Release: 11
+Release: 12
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -124,6 +124,19 @@ else
 fi
 
 %changelog
+* Wed Sep 7 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-12%{dist}
+- fixed #47
+- implemented `arki-check --unarchive=segment`, to move a segment from
+    `.archives/last` back to the main dataset.
+- removed wibble dependency
+- fine tuning of systemd scripts
+- implemented sharded datasets: in a dataset configuration, use
+    `shard=yearly`, `shard=monthly`, or `shard=weekly`, to have the dataset
+    create subdatasets where data will be saved. Locking will only happen at
+    the subdataset level.
+- implemented `arki-check --state` to show the computed state of each segment
+    in a dataset.
+
 * Wed Aug 10 2016 Davide Cesari <dcesari@arpae.it> - 1.0-10%{dist}
 - switch to systemd
 

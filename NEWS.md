@@ -1,4 +1,4 @@
-# New in version 1.1
+# New in version 1.0
 
  *  Removed dependency on libwibble
 
@@ -16,9 +16,6 @@
 
  *  Implemented `arki-check --state` to show the computed state of each segment
     in a dataset.
-
-
-# New in version 1.0
 
  *  Removed arki-check --scantest
 
