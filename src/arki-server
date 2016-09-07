@@ -152,6 +152,7 @@ def main():
     parser.add_argument("--url", metavar="url", help="url to use to reach the server")
 
     parser.add_argument("--accesslog", metavar="file", help="file where to log normal access information")
+    parser.add_argument("--perflog", metavar="file", help="file where to log query information and performance statistics")
     parser.add_argument("--errorlog", metavar="file", help="file where to log errors")
     parser.add_argument("--syslog", action="store_true", help="log to system log")
     parser.add_argument("--quiet", action="store_true", help="do not log to standard output")
@@ -184,6 +185,10 @@ def main():
             h.setLevel(logging.INFO)
         else:
             h.setLevel(logging.WARN)
+        class Filter:
+            def filter(self, record):
+                return getattr(record, "perf", None) is None
+        h.addFilter(Filter())
         root_logger.addHandler(h)
 
     if args.accesslog:
@@ -195,6 +200,22 @@ def main():
             def filter(self, record):
                 if not getattr(record, "access_log", False): return False
                 return record.levelno < logging.WARN
+        h.addFilter(Filter())
+        root_logger.addHandler(h)
+
+    if args.perflog:
+        from logging.handlers import WatchedFileHandler
+        h = WatchedFileHandler(args.perflog)
+        class PerfFormatter(logging.Formatter):
+            def format(self, record):
+                import json
+                info = getattr(record, "perf", None)
+                return json.dumps(info)
+        h.setFormatter(PerfFormatter())
+        h.setLevel(logging.INFO)
+        class Filter:
+            def filter(self, record):
+                return getattr(record, "perf", None) is not None
         h.addFilter(Filter())
         root_logger.addHandler(h)
 
