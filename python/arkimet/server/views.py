@@ -26,11 +26,10 @@ class ArkiView:
         self.handler = handler
         self.kwargs = kw
         self.headers_sent = False
-        self.ts_start = time.time()
-        self.ts_headers = None
         # Information to be logged about this query
         self.info = {
             "view": self.__class__.__name__,
+            "ts_start": time.time(),
         }
 
     def get_dataset_config(self):
@@ -79,7 +78,7 @@ class ArkiView:
         """
         Send headers for a successful response
         """
-        self.ts_headers = time.time()
+        self.info["ts_headers"] = time.time()
         self.handler.send_response(200)
         self.handler.send_header("Content-Type", self.content_type)
         fname = self.get_headers_filename()
@@ -109,12 +108,7 @@ class ArkiView:
             self.handler.wfile.write(b"\n")
 
     def log_end(self):
-        ts_end = time.time()
-        self.info.update(
-            ts_head=self.ts_headers - self.ts_start,
-            ts_stream=ts_end - self.ts_headers,
-            ts_total=ts_end - self.ts_start,
-        )
+        self.info["ts_end"] = time.time()
         logging.info("Query: %r", self.info, extra={"perf": self.info})
 
     def run(self):
