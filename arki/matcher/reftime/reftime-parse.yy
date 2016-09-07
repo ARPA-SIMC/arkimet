@@ -1,6 +1,7 @@
 %{
 #include "config.h"
 #include "parser.h"
+#include "arki/core/fuzzytime.h"
 #include "arki/wibble/grcal/grcal.h"
 #include <string>
 #include <stdexcept>
@@ -115,7 +116,7 @@ void interval_ago(int* dst, time_t& now, const int* val)
 %}
 
 %union {
-	int dtspec[6];
+	arki::core::FuzzyTime dtspec;
 	int tspec[3];
 	struct LexInterval lexInterval;
 	int interval[6];

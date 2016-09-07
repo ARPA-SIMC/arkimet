@@ -6,6 +6,7 @@ struct LexInterval {
 
 #include "config.h"
 #include "parser.h"
+#include "arki/core/fuzzytime.h"
 #include "arki/wibble/grcal/grcal.h"
 #include "reftime-parse.hh"
 #include <string>
@@ -106,67 +107,32 @@ struct Parser
 /**
  * Parser for Easter times
  */
-struct EParser : public Parser
+arki::core::FuzzyTime parse_easter(const std::string& str)
 {
-    int* res;
-
-    EParser(const std::string& str, int* res) : Parser(str), res(res)
-    {
-        if (str.size() < 4)
-            error("expecting at least 4 characters");
-        // Parse the year directly
-        res[0] = strtoul(str.substr(str.size() - 4).c_str(), 0, 10);
-        wibble::grcal::date::easter(res[0], &res[1], &res[2]);
-        res[3] = res[4] = res[5] = -1;
-    }
-};
+    if (str.size() < 4)
+        throw std::runtime_error("cannot parse reftime match expression \"" + str + "\": expecting at least 4 characters");
+    arki::core::FuzzyTime res;
+    // Parse the year directly
+    res.ye = std::stoi(str.substr(str.size() - 4));
+    wibble::grcal::date::easter(res.ye, &res.mo, &res.da);
+    return res;
+}
 
 /**
  * Simple recursive descent parser for reftimes
  */
 struct DTParser : public Parser
 {
-	int* res;
-	int res_cur;
+	DTParser(const std::string& str) : Parser(str) {}
 
-	DTParser(const std::string& str, int* res) : Parser(str), res(res), res_cur(0) {}
-
-	void getDate()
-	{
-		// Year
-		num();
-		// Month
-		if (!eat('-')) return;
-		num();
-		// Day
-		if (!eat('-')) return;
-		num();
-		// Eat optional 'T' at the end of the date
-		if (cur != str.end() && (*cur == 'T' || *cur == 't')) ++cur;
-		// Eat optional spaces
-		eatSpaces();
-		// Hour
-		if (cur == str.end()) return;
-		num();
-		getTime();
-	}
-	void getTime()
-	{
-		// Minute
-		if (!eat(':')) return;
-		num();
-		// Second
-		if (!eat(':')) return;
-		num();
-	}
-	void num()
+	int num()
 	{
 		string val;
 		for ( ; cur != str.end() && isdigit(*cur); ++cur)
 			val += *cur;
 		if (val.empty())
 			error("number expected");
-		res[res_cur++] = strtoul(val.c_str(), 0, 10);
+		return strtoul(val.c_str(), 0, 10);
 	}
 	bool eat(char c)
 	{
@@ -176,36 +142,76 @@ struct DTParser : public Parser
 		return true;
 		//error(string("expected '") + c + "'");
 	}
-};
-
-struct DParser : public DTParser
-{
-	DParser(const std::string& str, int* res) : DTParser(str, res)
+	bool eatOneOf(const char* chars)
 	{
-		this->res = res;
-		for (int i = 0; i < 6; ++i)
-			res[i] = -1;
-		getDate();
+		if (cur == str.end() || strchr(chars, *cur) == NULL)
+			return false;
+		++cur;
+		return true;
+	}
+    void end()
+    {
 		if (cur != str.end())
 			error("trailing characters found");
-	}
-};
-
-struct TParser : public DTParser
-{
-	TParser(const std::string& str, int* res) : DTParser(str, res)
+    }
+    arki::core::FuzzyTime getDate()
 	{
-		this->res = res;
-		for (int i = 0; i < 6; ++i)
-			res[i] = -1;
+        arki::core::FuzzyTime res;
+
+		// Year
+		res.ye = num();
+		// Month
+		if (!eat('-')) return res;
+		res.mo = num();
+		// Day
+		if (!eat('-')) return res;
+		res.da = num();
+		// Eat optional 'T' at the end of the date
+		if (cur != str.end() && (*cur == 'T' || *cur == 't')) ++cur;
+		// Eat optional spaces
+		eatSpaces();
 		// Hour
-		num();
-		getTime();
-		if (cur != str.end() && (*cur == 'z' || *cur == 'Z'))
-			++cur;
-		if (cur != str.end())
-			error("trailing characters found");
+		if (cur == str.end()) return res;
+		res.ho = num();
+		// Minute
+		if (!eat(':')) return res;
+		res.mi = num();
+		// Second
+		if (!eat(':')) return res;
+		res.se = num();
+
+        return res;
 	}
+
+	void getTime(int* res)
+	{
+		// Hour
+		res[0] = num();
+		// Minute
+		if (!eat(':')) return;
+		res[1] = num();
+		// Second
+		if (!eat(':')) return;
+		res[2] = num();
+	}
+};
+
+arki::core::FuzzyTime parse_datetime(const std::string& str)
+{
+    DTParser parser(str);
+    arki::core::FuzzyTime res = parser.getDate();
+    parser.end();
+    return res;
+}
+
+void parse_time(const std::string& str, int* res)
+{
+    DTParser parser(str);
+    for (int i = 0; i < 3; ++i)
+        res[i] = -1;
+    parser.getTime(res);
+    parser.eatOneOf("zZ");
+    parser.end();
 };
 
 struct ISParser : public Parser
@@ -396,11 +402,11 @@ timeunit  (h|hour|hours|m|min|minute|minutes|s|sec|second|seconds)
 %%
 
 [0-9]{4}(-[0-9]{1,2}(-[0-9]{1,2}T?)?)?  {
-		DParser p(std::string(yytext, yyleng), yylval->dtspec);
+		yylval->dtspec = parse_datetime(std::string(yytext, yyleng));
 		return DATE;
 }
 [0-9]{1,2}(:[0-9]{2}(:[0-9]{2}Z?)?)?  {
-		TParser p(std::string(yytext, yyleng), yylval->tspec);
+		parse_time(std::string(yytext, yyleng), yylval->tspec);
 		return TIME;
 }
 [0-9]+{space}?{unit} {
@@ -416,21 +422,21 @@ an?{space}{unit} {
 		return STEP;
 }
 easter{space}?[0-9]{4} {
-			  EParser p(std::string(yytext, yyleng), yylval->dtspec);
-			  return DATE;
+        yylval->dtspec = parse_easter(std::string(yytext, yyleng));
+        return DATE;
 }
 (processione{space})?san{space}?luca{space}?[0-9]{4} {
-              // Compute easter
-              EParser p(std::string(yytext, yyleng), yylval->dtspec);
-              // Add 5 weeks - 1 day
-              yylval->dtspec[2] += 35-1;
-              // Lowerbound
-              yylval->dtspec[3] = yylval->dtspec[4] = yylval->dtspec[5] = 0;
-              // Normalise
-              wibble::grcal::date::normalise(yylval->dtspec);
-              // Put missing values back
-              yylval->dtspec[3] = yylval->dtspec[4] = yylval->dtspec[5] = -1;
-              return DATE;
+        // Compute easter
+        yylval->dtspec = parse_easter(std::string(yytext, yyleng));
+        // Add 5 weeks - 1 day
+        yylval->dtspec.da += 35-1;
+        // Lowerbound
+        yylval->dtspec.ho = yylval->dtspec.mi = yylval->dtspec.se = 0;
+        // Normalise
+        wibble::grcal::date::normalise(yylval->dtspec);
+        // Put missing values back
+        yylval->dtspec.ho = yylval->dtspec.mi = yylval->dtspec.se = -1;
+        return DATE;
 }
 now         { return NOW; }
 today       { return TODAY; }
@@ -461,5 +467,3 @@ until		{ return LE; }
 .			{ yylval->error = yytext[0]; return UNEXPECTED; }
 
 %%
-
-/* vim:set syntax=lex ts=4 sw=4: */
