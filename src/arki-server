@@ -210,7 +210,7 @@ def main():
             def format(self, record):
                 import json
                 info = getattr(record, "perf", None)
-                return json.dumps(info)
+                return json.dumps(info, sort_keys=True)
         h.setFormatter(PerfFormatter())
         h.setLevel(logging.INFO)
         class Filter:
