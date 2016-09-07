@@ -137,6 +137,52 @@ class Handler(BaseHTTPRequestHandler):
         self.dispatch()
 
 
+class JournaldFormatter(logging.Formatter):
+    """
+    Format log entries for printing to stdout/stderr adding logging priority in
+    a way that can be interpreted by journald.
+
+    See http://0pointer.de/blog/projects/journal-submit.html
+    """
+    # http://elinux.org/Debugging_by_printing#Log_Levels
+    # Name      String Meaning alias function
+    # KERN_EMERG   "0" Emergency messages, system is about to crash or is unstable pr_emerg
+    # KERN_ALERT   "1" Something bad happened and action must be taken immediately pr_alert
+    # KERN_CRIT    "2" A critical condition occurred like a serious hardware/software failure  pr_crit
+    # KERN_ERR     "3" An error condition, often used by drivers to indicate difficulties with the hardware    pr_err
+    # KERN_WARNING "4" A warning, meaning nothing serious by itself but might indicate problems    pr_warning
+    # KERN_NOTICE  "5" Nothing serious, but notably nevertheless. Often used to report security events.    pr_notice
+    # KERN_INFO    "6" Informational message e.g. startup information at driver initialization pr_info
+    # KERN_DEBUG   "7" Debug messages  pr_debug, pr_devel if DEBUG is defined
+    # KERN_DEFAULT "d" The default kernel loglevel
+    # KERN_CONT    ""  "continued" line of log printout (only done after a line that had no enclosing \n) [1]  pr_cont
+    level_map = {
+        logging.DEBUG: 7,
+        logging.INFO: 6,
+        logging.WARNING: 4,
+        logging.ERROR: 3,
+        logging.CRITICAL: 2,
+    }
+    def format(self, record):
+        return "<{}>{}".format(
+            self.level_map.get(record.levelno, 4),
+            record.getMessage(),
+        )
+        return ""
+
+
+class DefaultLogFilter:
+    """
+    Filter for the default log message destination (usually stdout)
+    """
+    def __init__(self, has_accesslog):
+        self.has_accesslog = bool(has_accesslog)
+
+    def filter(self, record):
+        if self.has_accesslog and getattr(record, "access_log", False): return False
+        return getattr(record, "perf", None) is None
+
+
 def main():
     import argparse
 
@@ -158,6 +204,7 @@ def main():
     parser.add_argument("--quiet", action="store_true", help="do not log to standard output")
     parser.add_argument("--verbose", action="store_true", help="verbose output")
     parser.add_argument("--debug", action="store_true", help="debug output")
+    parser.add_argument("--journald", action="store_true", help="log to standard error in a way compatible with journald")
 
     parser.add_argument("--runtest", metavar="cmd", help="start the server, run the given test command and return its exit status")
 
@@ -178,23 +225,23 @@ def main():
 
     if not args.quiet:
         h = logging.StreamHandler()
-        h.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s %(message)s"))
+        if args.journald:
+            h.setFormatter(JournaldFormatter())
+        else:
+            h.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s %(message)s"))
         if args.debug:
             h.setLevel(logging.DEBUG)
         elif args.verbose:
             h.setLevel(logging.INFO)
         else:
             h.setLevel(logging.WARN)
-        class Filter:
-            def filter(self, record):
-                return getattr(record, "perf", None) is None
-        h.addFilter(Filter())
+        h.addFilter(DefaultLogFilter(args.accesslog))
         root_logger.addHandler(h)
 
     if args.accesslog:
         from logging.handlers import WatchedFileHandler
         h = WatchedFileHandler(args.accesslog)
-        h.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s %(message)s"))
+        h.setFormatter(logging.Formatter("%(message)s"))
         h.setLevel(logging.INFO)
         class Filter:
             def filter(self, record):
