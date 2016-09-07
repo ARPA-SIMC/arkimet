@@ -15,7 +15,7 @@ InaccessibleDirectories=/home
 
 EnvironmentFile=/etc/sysconfig/arkimet
 ExecStartPre=/usr/bin/test -n "$DATASET_CONFIG"
-ExecStart=/usr/bin/arki-server $NETWORK_OPTIONS --accesslog=${LOGDIR}/server-access.log --errorlog=${LOGDIR}/server-error.log $OTHER_OPTIONS $DATASET_CONFIG
+ExecStart=/usr/bin/arki-server $NETWORK_OPTIONS --accesslog=${LOGDIR}/server-access.log --errorlog=${LOGDIR}/server-error.log --journald $OTHER_OPTIONS $DATASET_CONFIG
 
 [Install]
 # check the following
