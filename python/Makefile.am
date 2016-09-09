@@ -40,8 +40,7 @@ EXTRA_DIST = \
     common.h \
     metadata.h \
     summary.h \
-    dataset.h \
-    test.py
+    dataset.h
 #    doc-arkimet \
 #    testlib.py \
 #    $(arkimet_python_tests)
