@@ -170,13 +170,13 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/commandline/wordwrap.h \
 		values.h
 
-BUILT_SOURCES = \
-		$(srcdir)/matcher/reftime/reftime-lex.h \
-		$(srcdir)/matcher/reftime/reftime-lex.cc \
-		$(srcdir)/matcher/reftime/reftime-parse.hh \
-		$(srcdir)/matcher/reftime/reftime-parse.cc
+reftime_parser_built_sources = \
+		matcher/reftime/reftime-lex.h \
+		matcher/reftime/reftime-lex.cc \
+		matcher/reftime/reftime-parse.hh \
+		matcher/reftime/reftime-parse.cc
 
-all_built_sources: $(BUILT_SOURCES)
+BUILT_SOURCES = $(reftime_parser_built_sources)
 
 %-lex.h %-lex.cc: %-lex.ll
 	$(srcdir)/buildflex $<
@@ -610,4 +610,4 @@ tests_arki_test_LDADD += libarkimet.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthrea
 EXTRA_DIST = runtest buildbison buildflex \
 	     matcher/reftime/reftime-lex.ll \
 	     matcher/reftime/reftime-parse.yy \
-	     $(all_built_sources)
+	     $(reftime_parser_built_sources)
