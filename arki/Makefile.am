@@ -169,6 +169,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/commandline/options.h \
 		utils/commandline/parser.h \
 		utils/commandline/wordwrap.h \
+		utils/tests.h \
 		values.h
 
 reftime_parser_built_sources = \
