@@ -94,6 +94,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		matcher/timerange.h \
 		matcher/utils.h \
 		metadata/collection.h \
+		metadata/consumer.h \
 		metadata/clusterer.h \
 		metadata/xargs.h \
 		metadatagrid.h \
@@ -371,6 +372,7 @@ libarkimet_la_SOURCES += \
 		metadata/collection.cc \
 		metadata/stream.cc \
 		metadata/clusterer.cc \
+		metadata/consumer.cc \
 		metadata/test-generator.cc \
 		summary/stats.cc \
 		summary/intern.cc \
