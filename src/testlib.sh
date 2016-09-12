@@ -58,6 +58,7 @@ setup() {
     mkdir inbound
     # Put data in test inbound area
     cp -a "$TOP_SRCDIR/test/data/"* inbound/
+    chmod u+w -R "$TESTDIR"
     # Create test dataset directories
     mkdir test200
     mkdir test80

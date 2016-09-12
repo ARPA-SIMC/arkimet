@@ -74,7 +74,7 @@ cp -a "$TOP_SRCDIR/test/misc" ./
 cp -a "$TOP_SRCDIR/doc/lua-examples" ./
 cp -a "$TOP_SRCDIR/doc/matcher" ./
 # Ensure that the directory can be removed at cleanup
-chmod u+w -R .
+chmod u+w -R "$TESTDIR"
 # Create test dataset directories
 mkdir test200
 mkdir test80
