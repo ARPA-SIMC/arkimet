@@ -37,6 +37,7 @@ EXTRA_DIST = \
 	     README.Cineca \
 	     NEWS.md \
 	     update-tags \
-	     autogen.sh
+	     autogen.sh \
+	     run-local
 
 CLEANFILES = $(man_MANS)
