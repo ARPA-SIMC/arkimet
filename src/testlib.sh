@@ -24,7 +24,7 @@ setup() {
     TOP_BUILDDIR=$(readlink -f ..)
     BINDIR=$TOP_BUILDDIR/src
 
-    export PATH="$TOP_SRCDIR/src:$TOP_BINDIR/src:$PATH"
+    export PATH="$TOP_SRCDIR/src:$TOP_BUILDDIR/src:$PATH"
 
     CMD=`pwd`/"$1"
 
