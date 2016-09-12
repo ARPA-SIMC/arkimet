@@ -62,8 +62,8 @@ test_scripts = test-arki-scan test-arki-query test-arki-xargs test-arki-check ru
 check_PROGRAMS = test-src
 
 check-local:
-	for test in $(srcdir)/$(test_scripts); do \
-		./$$test ; \
+	for test in $(test_scripts); do \
+		$(srcdir)/$$test ; \
 	done
 
 test_src_SOURCES = \
