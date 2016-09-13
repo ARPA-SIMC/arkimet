@@ -66,11 +66,7 @@ check-local:
 		$(srcdir)/$$test ; \
 	done
 
-test_src_SOURCES = \
-		arki-server-test.cc \
-		../arki/utils/tests.cc \
-		../arki/types/tests.cc \
-		../arki/tests/tut-main.cpp
-test_src_LDADD = $(all_libs)
+test_src_SOURCES = arki-server-test.cc
+test_src_LDADD = $(all_libs) ../arki/libarkimet-test.la
 
 EXTRA_DIST = testlib.sh $(test_scripts)

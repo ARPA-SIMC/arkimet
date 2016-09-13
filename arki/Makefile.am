@@ -188,11 +188,14 @@ BUILT_SOURCES = $(reftime_parser_built_sources)
 
 lib_LTLIBRARIES = libarkimet.la
 
+noinst_LTLIBRARIES = libarkimet-test.la
+
 # Build these incrementally
 libarkimet_la_CPPFLAGS = $(AM_CPPFLAGS) -Werror
 libarkimet_la_SOURCES =
 libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
-tests_arki_test_SOURCES = tests/tut-main.cpp
+libarkimet_test_la_SOURCES = tests/tut-main.cpp
+tests_arki_test_SOURCES =
 tests_arki_test_LDADD =
 
 
@@ -281,13 +284,15 @@ libarkimet_la_SOURCES += \
 		runtime/io.cc \
 		types-init.cc
 
-tests_arki_test_SOURCES += \
+libarkimet_test_la_SOURCES += \
 		tests/tests.cc \
-		tests/tests-tut.cc \
-		core/time-test.cc \
 		core/tests.cc \
 		types/tests.cc \
-		utils/tests.cc \
+		utils/tests.cc
+
+tests_arki_test_SOURCES += \
+		tests/tests-tut.cc \
+		core/time-test.cc \
 		utils-test.cc \
 		utils/accounting-tut.cc \
 		utils/gzip-test.cc \
@@ -608,7 +613,7 @@ check-local:
 		$(TESTS_ENVIRONMENT) $$test ; \
 	done
 
-tests_arki_test_LDADD += libarkimet.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
+tests_arki_test_LDADD += libarkimet.la libarkimet-test.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
 
 EXTRA_DIST = runtest buildbison buildflex \
 	     matcher/reftime/reftime-lex.ll \
