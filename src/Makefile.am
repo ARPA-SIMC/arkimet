@@ -1,7 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 
 bin_PROGRAMS = arki-check arki-query arki-dump arki-gzip arki-mergeconf arki-scan arki-xargs
-bin_SCRIPTS = arki-server
+dist_bin_SCRIPTS = arki-server
 noinst_PROGRAMS = arki-test
 
 dist_noinst_HEADERS = bench/benchmark.h
@@ -63,14 +63,10 @@ check_PROGRAMS = test-src
 
 check-local:
 	for test in $(test_scripts); do \
-		./$$test ; \
+		$(srcdir)/$$test ; \
 	done
 
-test_src_SOURCES = \
-		arki-server-test.cc \
-		../arki/utils/tests.cc \
-		../arki/types/tests.cc \
-		../arki/tests/tut-main.cpp
-test_src_LDADD = $(all_libs)
+test_src_SOURCES = arki-server-test.cc
+test_src_LDADD = $(all_libs) ../arki/libarkimet-test.la
 
 EXTRA_DIST = testlib.sh $(test_scripts)

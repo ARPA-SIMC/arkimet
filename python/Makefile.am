@@ -14,7 +14,7 @@ _arkimet_la_SOURCES = \
     summary.cc \
     dataset.cc \
     arkimet.cc
-_arkimet_la_CPPFLAGS = $(PYTHON_CFLAGS) -I$(top_srcdir)
+_arkimet_la_CPPFLAGS = $(PYTHON_CFLAGS) -I$(top_srcdir) -I$(top_builddir)
 _arkimet_la_LDFLAGS = -module -avoid-version -export-symbols-regex init_arkimet
 _arkimet_la_LIBADD = ../arki/libarkimet.la
 
