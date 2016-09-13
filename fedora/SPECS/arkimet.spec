@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.0
-Release: 12
+Release: 13
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -14,7 +14,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 %else
 %define python3_vers python3
 %endif
-BuildRequires: doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl-devel, geos-devel, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 3.0, flex, bison, meteo-vm2-devel >= 0.12, hdf5-devel, %{python3_vers}, %{python3_vers}-werkzeug, %{python3_vers}-setproctitle
+BuildRequires: doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl-devel, geos-devel, popt-devel, help2man, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 3.0, flex, bison, meteo-vm2-devel >= 0.12, hdf5-devel, %{python3_vers}, %{python3_vers}-devel, %{python3_vers}-werkzeug, %{python3_vers}-setproctitle, %{python3_vers}-nose
 Requires: hdf5, meteo-vm2 >= 0.12, grib_api, %{python3_vers}, %{python3_vers}-lxml, %{python3_vers}-werkzeug, %{python3_vers}-setproctitle
 Requires(preun): /sbin/chkconfig, /sbin/service
 Requires(post): /sbin/chkconfig, /sbin/service
@@ -124,6 +124,11 @@ else
 fi
 
 %changelog
+* Tue Sep 13 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-13%{dist}
+- fixed #49
+- implemented output format `arki-server --journald`
+- implemented output format `arki-server --perflog`
+
 * Wed Sep 7 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-12%{dist}
 - fixed #47
 - implemented `arki-check --unarchive=segment`, to move a segment from
