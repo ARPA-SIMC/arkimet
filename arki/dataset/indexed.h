@@ -61,6 +61,7 @@ public:
 
     segmented::State scan(dataset::Reporter& reporter, bool quick=true) override;
     void removeAll(Reporter& reporter, bool writable) override;
+    void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
 };
 
 /**
