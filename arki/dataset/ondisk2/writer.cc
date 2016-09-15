@@ -25,6 +25,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <cstring>
 #include <cerrno>
 #include <cassert>
 
@@ -500,6 +501,78 @@ size_t Checker::vacuum()
     }
 
     return size_pre > size_post ? size_pre - size_post : 0;
+}
+
+void Checker::check_issue51(dataset::Reporter& reporter, bool fix)
+{
+    // Broken metadata for each segment
+    std::map<string, metadata::Collection> broken_mds;
+
+    // Iterate all segments
+    idx->scan_files([&](const std::string& relpath, segment::State state, const metadata::Collection& mds) {
+        if (mds.empty()) return;
+        File datafile(str::joinpath(config().path, relpath), O_RDONLY);
+        // Iterate all metadata in the segment
+        for (const auto& md: mds) {
+            const auto& blob = md->sourceBlob();
+            // Keep only segments with grib or bufr files
+            if (blob.format != "grib" && blob.format != "bufr")
+                return;
+            // Read the last 4 characters
+            char tail[4];
+            if (datafile.pread(tail, 4, blob.offset + blob.size - 4) != 4)
+            {
+                reporter.segment_info(name(), relpath, "cannot read 4 bytes at position " + std::to_string(blob.offset + blob.size - 4));
+                return;
+            }
+            // Check if it ends with 7777
+            if (memcmp(tail, "7777", 4) == 0)
+                continue;
+            // If it instead ends with 777?, take note of it
+            if (memcmp(tail, "777", 3) == 0)
+                broken_mds[relpath].push_back(*md);
+            else
+                reporter.segment_info(name(), relpath, "end marker 7777 or 777? not found at position " + std::to_string(blob.offset + blob.size - 4));
+        }
+    });
+
+    if (!fix)
+    {
+        for (const auto& i: broken_mds)
+            reporter.segment_issue51(name(), i.first, "segment contains data with corrupted terminator signature");
+    } else {
+        for (const auto& i: broken_mds)
+        {
+            // Make a backup copy with .issue51 extension, if it doesn't already exist
+            std::string abspath = str::joinpath(config().path, i.first);
+            std::string backup = abspath + ".issue51";
+            if (!sys::exists(backup))
+            {
+                File src(abspath, O_RDONLY);
+                File dst(backup, O_WRONLY | O_CREAT | O_EXCL);
+                std::array<char, 40960> buffer;
+                while (true)
+                {
+                    size_t sz = src.read(buffer.data(), buffer.size());
+                    if (!sz) break;
+                    dst.write_all_or_throw(buffer.data(), sz);
+                }
+            }
+
+            // Fix the file
+            File datafile(abspath, O_RDWR);
+            for (const auto& md: i.second) {
+                const auto& blob = md->sourceBlob();
+                // Keep only segments with grib or bufr files
+                if (blob.format != "grib" && blob.format != "bufr")
+                    return;
+                datafile.pwrite("7", 1, blob.offset + blob.size - 1);
+            }
+            reporter.segment_issue51(name(), i.first, "fixed corrupted terminator signatures");
+        }
+    }
+
+    return IndexedChecker::check_issue51(reporter, fix);
 }
 
 Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)

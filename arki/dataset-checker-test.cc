@@ -1,5 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
+#include "arki/dataset/local.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
@@ -446,6 +447,56 @@ this->add_method("scan_noindex", [](Fixture& f) {
     unsigned count = 0;
     reader->query_data(Matcher(), [&](unique_ptr<Metadata>) { ++count; return true; });
     wassert(actual(count) == 3u);
+});
+
+// Test check_issue51
+this->add_method("check_issue51", [](Fixture& f) {
+    f.cfg.setValue("step", "yearly");
+    if (f.td.format != "grib" && f.td.format != "bufr") return;
+    wassert(f.import_all_packed(f.td));
+
+    // Get metadata for all data in the dataset and corrupt the last character
+    // of them all
+    metadata::Collection mds = f.query(Matcher());
+    wassert(actual(mds.size()) == 3u);
+    set<string> destfiles;
+    for (const auto& md: mds)
+    {
+        const auto& blob = md->sourceBlob();
+        if (f.cfg.value("shard").empty())
+            destfiles.insert(blob.filename);
+        else
+            destfiles.insert(str::joinpath(str::basename(blob.basedir), blob.filename));
+        File f(blob.absolutePathname(), O_RDWR);
+        f.lseek(blob.offset + blob.size - 1);
+        f.write_all_or_throw("\x0d", 1);
+        f.close();
+    }
+
+    auto checker(f.config().create_checker());
+
+    // See if check_issue51 finds the problem
+    {
+        ReporterExpected e;
+        for (const auto& relpath: destfiles)
+            e.issue51.emplace_back("testds", relpath, "segment contains data with corrupted terminator signature");
+        wassert(actual(checker.get()).check_issue51(e, false));
+    }
+
+    // See if check_issue51 fixes the problem
+    {
+        ReporterExpected e;
+        for (const auto& relpath: destfiles)
+            e.issue51.emplace_back("testds", relpath, "fixed corrupted terminator signatures");
+        wassert(actual(checker.get()).check_issue51(e, true));
+    }
+
+    // Check that the backup files exist
+    for (const auto& relpath: destfiles)
+        wassert(actual_file(str::joinpath(f.local_config()->path, relpath) + ".issue51").exists());
+
+    // Do a thorough check to see if everything is ok
+    wassert(actual(checker.get()).check_clean(false, false));
 });
 
 }

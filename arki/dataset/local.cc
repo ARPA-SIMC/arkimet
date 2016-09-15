@@ -234,6 +234,11 @@ void LocalChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
         archive().check(reporter, fix, quick);
 }
 
+void LocalChecker::check_issue51(dataset::Reporter& reporter, bool fix)
+{
+    if (hasArchive())
+        archive().check_issue51(reporter, fix);
+}
 
 template class LocalBase<Reader, ArchivesReader>;
 template class LocalBase<Checker, ArchivesChecker>;

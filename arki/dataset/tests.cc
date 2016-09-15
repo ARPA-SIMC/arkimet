@@ -121,6 +121,12 @@ std::shared_ptr<const dataset::Config> DatasetTest::dataset_config()
     return m_config;
 }
 
+std::shared_ptr<const dataset::LocalConfig> DatasetTest::local_config()
+{
+    config();
+    return dynamic_pointer_cast<const dataset::LocalConfig>(m_config);
+}
+
 std::shared_ptr<const dataset::ondisk2::Config> DatasetTest::ondisk2_config()
 {
     config();
@@ -642,12 +648,14 @@ void ReporterExpected::clear()
     deleted.clear();
     deindexed.clear();
     rescanned.clear();
+    issue51.clear();
 
     count_repacked = -1;
     count_archived = -1;
     count_deleted = -1;
     count_deindexed = -1;
     count_rescanned = -1;
+    count_issue51 = -1;
 }
 
 
@@ -825,6 +833,7 @@ struct CollectReporter : public dataset::Reporter
     void segment_delete(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("deleted", ds, relpath, message); }
     void segment_deindex(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("deindexed", ds, relpath, message); }
     void segment_rescan(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("rescanned", ds, relpath, message); }
+    void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("issue51", ds, relpath, message); }
 
     void check(const ReporterExpected& expected)
     {
@@ -843,12 +852,14 @@ struct CollectReporter : public dataset::Reporter
         seg_results.match("deleted", expected.deleted, issues);
         seg_results.match("deindexed", expected.deindexed, issues);
         seg_results.match("rescanned", expected.rescanned, issues);
+        seg_results.match("issue51", expected.issue51, issues);
 
         seg_results.count_equals("repacked", expected.count_repacked, issues);
         seg_results.count_equals("archived", expected.count_archived, issues);
         seg_results.count_equals("deleted", expected.count_deleted, issues);
         seg_results.count_equals("deindexed", expected.count_deindexed, issues);
         seg_results.count_equals("rescanned", expected.count_rescanned, issues);
+        seg_results.count_equals("issue51", expected.count_issue51, issues);
 
         seg_results.report_unmatched(issues);
 
@@ -890,6 +901,15 @@ void ActualChecker<Dataset>::check(const ReporterExpected& expected, bool write,
 }
 
 template<typename Dataset>
+void ActualChecker<Dataset>::check_issue51(const ReporterExpected& expected, bool write)
+{
+    CollectReporter reporter;
+    wassert(this->_actual->check_issue51(reporter, write));
+    // reporter.dump(stderr);
+    wassert(reporter.check(expected));
+}
+
+template<typename Dataset>
 void ActualChecker<Dataset>::repack_clean(bool write)
 {
     ReporterExpected e;
@@ -901,6 +921,13 @@ void ActualChecker<Dataset>::check_clean(bool write, bool quick)
 {
     ReporterExpected e;
     check(e, write, quick);
+}
+
+template<typename Dataset>
+void ActualChecker<Dataset>::check_issue51_clean(bool write)
+{
+    ReporterExpected e;
+    check_issue51(e, write);
 }
 
 }

@@ -102,6 +102,7 @@ public:
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
 
     segmented::State scan(dataset::Reporter& reporter, bool quick=true) override;
+    void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
     void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
     void rescanSegment(const std::string& relpath) override;
     size_t repackSegment(const std::string& relpath) override;

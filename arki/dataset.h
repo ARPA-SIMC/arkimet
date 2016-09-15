@@ -371,6 +371,14 @@ struct Checker : public dataset::Base
     virtual void check(dataset::Reporter& reporter, bool fix, bool quick) = 0;
 
     /**
+     * Check consistency of the last byte of GRIB and BUFR data in the archive,
+     * optionally fixing it.
+     *
+     * See https://github.com/ARPA-SIMC/arkimet/issues/51 for details.
+     */
+    virtual void check_issue51(dataset::Reporter& reporter, bool fix=false);
+
+    /**
      * Instantiate an appropriate Checker for the given configuration
      */
     static std::unique_ptr<Checker> create(const ConfigFile& cfg);
