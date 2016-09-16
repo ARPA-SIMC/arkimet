@@ -109,6 +109,7 @@ public:
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
     void repack(dataset::Reporter& reporter, bool writable=false) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
+    void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
 };
 
 }
