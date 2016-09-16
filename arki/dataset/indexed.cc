@@ -270,7 +270,7 @@ void IndexedChecker::check_issue51(dataset::Reporter& reporter, bool fix)
             if (!sys::exists(backup))
             {
                 File src(abspath, O_RDONLY);
-                File dst(backup, O_WRONLY | O_CREAT | O_EXCL);
+                File dst(backup, O_WRONLY | O_CREAT | O_EXCL, 0666);
                 std::array<char, 40960> buffer;
                 while (true)
                 {
