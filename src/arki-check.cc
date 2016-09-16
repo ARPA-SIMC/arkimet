@@ -73,7 +73,7 @@ struct Options : public StandardParserWithManpage
                 "Given a pathname relative to .archive/last, move it out of the archive and back to the main dataset");
         op_state = add<BoolOption>("state", 0, "state", "",
                 "Scan the dataset and print its state");
-        op_issue51 = add<BoolOption>("issue51", 0, "issue51", ""
+        op_issue51 = add<BoolOption>("issue51", 0, "issue51", "",
                 "Check a dataset for corrupted terminator bytes (see issue #51)");
         restr = add<StringOption>("restrict", 0, "restrict", "names",
                 "Restrict operations to only those datasets that allow one of the given (comma separated) names");
