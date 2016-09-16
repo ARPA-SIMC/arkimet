@@ -217,6 +217,7 @@ void IndexedChecker::check_issue51(dataset::Reporter& reporter, bool fix)
     // Iterate all segments
     m_idx->scan_files([&](const std::string& relpath, segment::State state, const metadata::Collection& mds) {
         if (mds.empty()) return;
+        nag::verbose("Checking %s:%s", name().c_str(), relpath.c_str());
         File datafile(str::joinpath(config().path, relpath), O_RDONLY);
         // Iterate all metadata in the segment
         for (const auto& md: mds) {
