@@ -217,14 +217,20 @@ void IndexedChecker::check_issue51(dataset::Reporter& reporter, bool fix)
     // Iterate all segments
     m_idx->scan_files([&](const std::string& relpath, segment::State state, const metadata::Collection& mds) {
         if (mds.empty()) return;
-        nag::verbose("Checking %s:%s", name().c_str(), relpath.c_str());
         File datafile(str::joinpath(config().path, relpath), O_RDONLY);
         // Iterate all metadata in the segment
+        unsigned count_otherformat = 0;
+        unsigned count_ok = 0;
+        unsigned count_issue51 = 0;
+        unsigned count_corrupted = 0;
         for (const auto& md: mds) {
             const auto& blob = md->sourceBlob();
             // Keep only segments with grib or bufr files
             if (blob.format != "grib" && blob.format != "bufr")
-                return;
+            {
+                ++count_otherformat;
+                continue;
+            }
             // Read the last 4 characters
             char tail[4];
             if (datafile.pread(tail, 4, blob.offset + blob.size - 4) != 4)
@@ -234,13 +240,21 @@ void IndexedChecker::check_issue51(dataset::Reporter& reporter, bool fix)
             }
             // Check if it ends with 7777
             if (memcmp(tail, "7777", 4) == 0)
+            {
+                ++count_ok;
                 continue;
+            }
             // If it instead ends with 777?, take note of it
             if (memcmp(tail, "777", 3) == 0)
+            {
+                ++count_issue51;
                 broken_mds[relpath].push_back(*md);
-            else
+            } else {
+                ++count_corrupted;
                 reporter.segment_info(name(), relpath, "end marker 7777 or 777? not found at position " + std::to_string(blob.offset + blob.size - 4));
+            }
         }
+        nag::verbose("Checked %s:%s: %u ok, %u other formats, %u issue51, %u corrupted", name().c_str(), relpath.c_str(), count_ok, count_otherformat, count_issue51, count_corrupted);
     });
 
     if (!fix)
