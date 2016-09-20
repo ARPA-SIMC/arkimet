@@ -114,11 +114,12 @@ install -bD -m0644 %{SOURCE2} %{buildroot}%{_sysconfdir}/sysconfig/%{name}
 
 %postun
 /sbin/ldconfig
+/usr/bin/systemctl daemon-reload
 if [ "$1" = "0" ]; then
-  # non e' un upgrade, e' una disinstallazione definitiva
-  :
+    # non e' un upgrade, e' una disinstallazione definitiva
+    :
 else
-  /usr/bin/systemctl try-restart %{name}
+    /usr/bin/systemctl try-restart %{name}
 fi
 
 %changelog
