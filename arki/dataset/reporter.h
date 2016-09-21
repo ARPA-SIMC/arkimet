@@ -25,6 +25,7 @@ struct Reporter
     virtual void segment_delete(const std::string& ds, const std::string& relpath, const std::string& message) = 0;
     virtual void segment_deindex(const std::string& ds, const std::string& relpath, const std::string& message) = 0;
     virtual void segment_rescan(const std::string& ds, const std::string& relpath, const std::string& message) = 0;
+    virtual void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) = 0;
 };
 
 struct NullReporter : public Reporter
@@ -39,6 +40,7 @@ struct NullReporter : public Reporter
     void segment_delete(const std::string& ds, const std::string& relpath, const std::string& message) override {}
     void segment_deindex(const std::string& ds, const std::string& relpath, const std::string& message) override {}
     void segment_rescan(const std::string& ds, const std::string& relpath, const std::string& message) override {}
+    void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override {}
 };
 
 struct OstreamReporter : public Reporter
@@ -57,6 +59,7 @@ struct OstreamReporter : public Reporter
     void segment_delete(const std::string& ds, const std::string& relpath, const std::string& message) override;
     void segment_deindex(const std::string& ds, const std::string& relpath, const std::string& message) override;
     void segment_rescan(const std::string& ds, const std::string& relpath, const std::string& message) override;
+    void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override;
 };
 
 }

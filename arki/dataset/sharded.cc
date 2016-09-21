@@ -280,6 +280,10 @@ struct ShardedReporter : public dataset::Reporter
     {
         orig.segment_rescan(ds, str::joinpath(shard_relpath, relpath), message);
     }
+    void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        orig.segment_issue51(ds, str::joinpath(shard_relpath, relpath), message);
+    }
 };
 
 }
@@ -306,6 +310,15 @@ segmented::State Checker<Config>::scan(dataset::Reporter& reporter, bool quick)
     });
 
     return res;
+}
+
+template<typename Config>
+void Checker<Config>::check_issue51(dataset::Reporter& reporter, bool fix)
+{
+    config().all_shards([&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
+        ShardedReporter rep(reporter, shard_relpath);
+        shard(shard_relpath, cfg).check_issue51(rep, fix);
+    });
 }
 
 template<typename Config>

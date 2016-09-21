@@ -27,6 +27,7 @@ namespace dataset {
 struct Reader;
 struct Writer;
 struct Checker;
+struct LocalConfig;
 struct LocalReader;
 struct LocalWriter;
 struct LocalChecker;
@@ -140,6 +141,7 @@ public:
 
     const dataset::Config& config();
     std::shared_ptr<const dataset::Config> dataset_config();
+    std::shared_ptr<const dataset::LocalConfig> local_config();
     std::shared_ptr<const dataset::ondisk2::Config> ondisk2_config();
 
     dataset::segment::SegmentManager& segments();
@@ -379,12 +381,14 @@ struct ReporterExpected
     std::vector<SegmentMatch> deleted;
     std::vector<SegmentMatch> deindexed;
     std::vector<SegmentMatch> rescanned;
+    std::vector<SegmentMatch> issue51;
 
     int count_repacked = -1;
     int count_archived = -1;
     int count_deleted = -1;
     int count_deindexed = -1;
     int count_rescanned = -1;
+    int count_issue51 = -1;
 
     void clear();
 };
@@ -433,6 +437,8 @@ struct ActualChecker : public arki::utils::tests::Actual<DatasetChecker*>
     void repack_clean(bool write=false);
     void check(const ReporterExpected& expected, bool write=false, bool quick=true);
     void check_clean(bool write=false, bool quick=true);
+    void check_issue51(const ReporterExpected& expected, bool write=false);
+    void check_issue51_clean(bool write=false);
 };
 
 struct ActualSegmentedChecker : public ActualChecker<dataset::segmented::Checker>

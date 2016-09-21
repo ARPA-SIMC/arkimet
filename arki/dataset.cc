@@ -353,5 +353,10 @@ std::unique_ptr<Checker> Checker::create(const ConfigFile& cfg)
     return config->create_checker();
 }
 
+void Checker::check_issue51(dataset::Reporter& reporter, bool fix)
+{
+    throw std::runtime_error(name() + ": check_issue51 not implemented for this dataset");
+}
+
 }
 }

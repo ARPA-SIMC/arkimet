@@ -373,6 +373,13 @@ void ArchivesChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
     });
 }
 
+void ArchivesChecker::check_issue51(dataset::Reporter& reporter, bool fix)
+{
+    archives->iter([&](Checker& a) {
+        a.check_issue51(reporter, fix);
+    });
+}
+
 static std::string poppath(std::string& path)
 {
 	size_t start = 0;

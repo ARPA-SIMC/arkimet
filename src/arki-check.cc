@@ -38,6 +38,7 @@ struct Options : public StandardParserWithManpage
 	BoolOption* remove_all;
 	BoolOption* stats;
     BoolOption* op_state;
+    BoolOption* op_issue51;
 	StringOption* op_remove;
 	StringOption* op_unarchive;
 	StringOption* restr;
@@ -72,6 +73,8 @@ struct Options : public StandardParserWithManpage
                 "Given a pathname relative to .archive/last, move it out of the archive and back to the main dataset");
         op_state = add<BoolOption>("state", 0, "state", "",
                 "Scan the dataset and print its state");
+        op_issue51 = add<BoolOption>("issue51", 0, "issue51", "",
+                "Check a dataset for corrupted terminator bytes (see issue #51)");
         restr = add<StringOption>("restrict", 0, "restrict", "names",
                 "Restrict operations to only those datasets that allow one of the given (comma separated) names");
     }
@@ -196,6 +199,21 @@ struct Unarchiver : public WorkerOnWritable
     void done() override {}
 };
 
+struct Issue51 : public WorkerOnWritable
+{
+    bool fix;
+
+    Issue51(bool fix) : fix(fix) {}
+
+    void operator()(dataset::Checker& w) override
+    {
+        dataset::OstreamReporter r(cout);
+        w.check_issue51(r, fix);
+    }
+
+    void done() override {}
+};
+
 struct PrintState : public WorkerOnWritable
 {
     bool quick;
@@ -279,8 +297,9 @@ int main(int argc, const char* argv[])
         if (opts.op_remove->isSet()) ++actionCount;
         if (opts.op_unarchive->isSet()) ++actionCount;
         if (opts.op_state->isSet()) ++actionCount;
+        if (opts.op_issue51->isSet()) ++actionCount;
         if (actionCount > 1)
-            throw commandline::BadOption("only one of --stats, --invalidate, --repack, --remove, --remove-all, --unarchive, or --state can be given in one invocation");
+            throw commandline::BadOption("only one of --stats, --invalidate, --repack, --remove, --remove-all, --unarchive, --state, or --issue51 can be given in one invocation");
 
         // Read the config file(s)
         ConfigFile cfg;
@@ -353,6 +372,8 @@ int main(int argc, const char* argv[])
                 worker.reset(new Unarchiver(opts.op_unarchive->stringValue()));
             else if (opts.op_state->boolValue())
                 worker.reset(new PrintState(not opts.accurate->boolValue()));
+            else if (opts.op_issue51->boolValue())
+                worker.reset(new Issue51(opts.fix->boolValue()));
             else
                 worker.reset(new Maintainer(opts.fix->boolValue(),
                              not opts.accurate->boolValue()));
