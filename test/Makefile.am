@@ -15,8 +15,12 @@ EXTRA_DIST = \
 	     dataset1/config \
 	     misc/erse00.expa \
 	     misc/rec-ts-alias.conf \
+	     postproc/cat \
 	     postproc/checkfiles \
+	     postproc/countbytes \
 	     postproc/error \
 	     postproc/null \
+	     postproc/outthenerr \
 	     postproc/say \
-	     postproc/testcountbytes
+	     postproc/testcountbytes \
+	     postproc/zeroes

@@ -9,9 +9,11 @@ After=network.target remote-fs.target
 Type=simple
 # no environment variable accepted here
 User=arkimet
+
 PrivateDevices=true
 PrivateTmp=yes
-InaccessibleDirectories=/home
+# this seems to break fedora20 installations
+#InaccessibleDirectories=/home
 
 EnvironmentFile=/etc/sysconfig/arkimet
 ExecStartPre=/usr/bin/test -n "$DATASET_CONFIG"
@@ -20,4 +22,3 @@ ExecStart=/usr/bin/arki-server $NETWORK_OPTIONS --accesslog=${LOGDIR}/server-acc
 [Install]
 # check the following
 WantedBy=multi-user.target
-

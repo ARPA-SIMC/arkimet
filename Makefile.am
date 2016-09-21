@@ -23,11 +23,11 @@ man_MANS += arki-bufr-prepare.1
 endif
 
 arki-server.1: src/arki-server
-	COLUMNS=200 ./run-local help2man --name='Arkimet server for remote dataset access' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
+	COLUMNS=200 $(srcdir)/run-local help2man --name='Arkimet server for remote dataset access' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
 
 
 arki-%.1: src/arki-% doc/mhooks-%
-	./run-local $< --manpage="$(word 2,$^)" > $@ || rm -f $@
+	$(srcdir)/run-local $< --manpage="$(word 2,$^)" > $@ || rm -f $@
 
 #%.1: tools/%
 #	( cd tools && ./`basename $<` help manpage ) > $@
@@ -37,6 +37,7 @@ EXTRA_DIST = \
 	     README.Cineca \
 	     NEWS.md \
 	     update-tags \
-	     autogen.sh
+	     autogen.sh \
+	     run-local
 
 CLEANFILES = $(man_MANS)

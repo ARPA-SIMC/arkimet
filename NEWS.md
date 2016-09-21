@@ -4,6 +4,10 @@
 
  *  Minimal python3 bindings, and arki-server rewritten in python
 
+ *  Added `arki-server --journald` to format output messages so that they can be interpreted by journald
+
+ *  Added `arki-server --perflog` to log json info records for each query
+
  *  Implemented sharded datasets: in a dataset configuration, use
     `shard=yearly`, `shard=monthly`, or `shard=weekly`, to have the dataset
     create subdatasets where data will be saved. Locking will only happen at

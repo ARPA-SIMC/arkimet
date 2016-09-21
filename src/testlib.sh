@@ -21,9 +21,10 @@ setup() {
     fi
 
     TOP_SRCDIR=$(readlink -f $(pwd)/$(dirname $0)/..)
-    BINDIR=$TOP_SRCDIR/src
+    TOP_BUILDDIR=$(readlink -f ..)
+    BINDIR=$TOP_BUILDDIR/src
 
-    export PATH="$BINDIR:$PATH"
+    export PATH="$TOP_SRCDIR/src:$TOP_BUILDDIR/src:$PATH"
 
     CMD=`pwd`/"$1"
 
@@ -57,6 +58,7 @@ setup() {
     mkdir inbound
     # Put data in test inbound area
     cp -a "$TOP_SRCDIR/test/data/"* inbound/
+    chmod u+w -R "$TESTDIR"
     # Create test dataset directories
     mkdir test200
     mkdir test80

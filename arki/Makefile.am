@@ -94,6 +94,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		matcher/timerange.h \
 		matcher/utils.h \
 		metadata/collection.h \
+		metadata/consumer.h \
 		metadata/clusterer.h \
 		metadata/xargs.h \
 		metadatagrid.h \
@@ -168,15 +169,16 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/commandline/options.h \
 		utils/commandline/parser.h \
 		utils/commandline/wordwrap.h \
+		utils/tests.h \
 		values.h
 
-BUILT_SOURCES = \
-		$(srcdir)/matcher/reftime/reftime-lex.h \
-		$(srcdir)/matcher/reftime/reftime-lex.cc \
-		$(srcdir)/matcher/reftime/reftime-parse.hh \
-		$(srcdir)/matcher/reftime/reftime-parse.cc
+reftime_parser_built_sources = \
+		matcher/reftime/reftime-lex.h \
+		matcher/reftime/reftime-lex.cc \
+		matcher/reftime/reftime-parse.hh \
+		matcher/reftime/reftime-parse.cc
 
-all_built_sources: $(BUILT_SOURCES)
+BUILT_SOURCES = $(reftime_parser_built_sources)
 
 %-lex.h %-lex.cc: %-lex.ll
 	$(srcdir)/buildflex $<
@@ -186,11 +188,14 @@ all_built_sources: $(BUILT_SOURCES)
 
 lib_LTLIBRARIES = libarkimet.la
 
+noinst_LTLIBRARIES = libarkimet-test.la
+
 # Build these incrementally
 libarkimet_la_CPPFLAGS = $(AM_CPPFLAGS) -Werror
 libarkimet_la_SOURCES =
 libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
-tests_arki_test_SOURCES = tests/tut-main.cpp
+libarkimet_test_la_SOURCES = tests/tut-main.cpp
+tests_arki_test_SOURCES =
 tests_arki_test_LDADD =
 
 
@@ -279,13 +284,15 @@ libarkimet_la_SOURCES += \
 		runtime/io.cc \
 		types-init.cc
 
-tests_arki_test_SOURCES += \
+libarkimet_test_la_SOURCES += \
 		tests/tests.cc \
-		tests/tests-tut.cc \
-		core/time-test.cc \
 		core/tests.cc \
 		types/tests.cc \
-		utils/tests.cc \
+		utils/tests.cc
+
+tests_arki_test_SOURCES += \
+		tests/tests-tut.cc \
+		core/time-test.cc \
 		utils-test.cc \
 		utils/accounting-tut.cc \
 		utils/gzip-test.cc \
@@ -371,6 +378,7 @@ libarkimet_la_SOURCES += \
 		metadata/collection.cc \
 		metadata/stream.cc \
 		metadata/clusterer.cc \
+		metadata/consumer.cc \
 		metadata/test-generator.cc \
 		summary/stats.cc \
 		summary/intern.cc \
@@ -605,9 +613,9 @@ check-local:
 		$(TESTS_ENVIRONMENT) $$test ; \
 	done
 
-tests_arki_test_LDADD += libarkimet.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
+tests_arki_test_LDADD += libarkimet.la libarkimet-test.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
 
 EXTRA_DIST = runtest buildbison buildflex \
 	     matcher/reftime/reftime-lex.ll \
 	     matcher/reftime/reftime-parse.yy \
-	     $(all_built_sources)
+	     $(reftime_parser_built_sources)
