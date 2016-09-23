@@ -5,6 +5,7 @@
 
 #include <arki/utils/lua.h>
 #include <arki/dataset.h>
+#include <arki/configfile.h>
 #include <string>
 #include <map>
 
@@ -23,8 +24,8 @@ protected:
     std::map<std::string, Reader*> ds_cache;
 
 public:
-    const ConfigFile& dispatch_cfg;
-    Lua *L;
+    ConfigFile dispatch_cfg;
+    Lua *L = nullptr;
     int funcid_querydata;
     int funcid_querysummary;
 
