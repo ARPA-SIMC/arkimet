@@ -200,6 +200,20 @@ add_method("qmacro", [] {
     wassert(actual_type(mdc[0].source()).is_source_url("grib", "http://localhost:7117/query"));
 });
 
+// Test querying the datasets via macro
+add_method("expa", [] {
+    ConfigFile cfg;
+    cfg.setValue("name", "expa 2007-07-08");
+    cfg.setValue("type", "remote");
+    cfg.setValue("path", "http://localhost:7117/");
+    cfg.setValue("qmacro", "ds:test200. d:@. t:1300. s:GRIB1/0/0h/0h. l:GRIB1/1. v:GRIB1/200/140/229.");
+    unique_ptr<dataset::Reader> testds(dataset::Reader::create(cfg));
+    metadata::Collection mdc(*testds, Matcher());
+    wassert(actual(mdc.size()) == 1u);
+    // Check that the source record that comes out is ok
+    wassert(actual_type(mdc[0].source()).is_source_url("grib", "http://localhost:7117/query"));
+});
+
 // Test querying the summary
 add_method("global_summary", [] {
     ConfigFile cfg;
