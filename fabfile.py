@@ -93,7 +93,7 @@ def test_ventiquattro():
                 "CXXFLAGS=" + fedora_cxxflags,
                 "LDFLAGS=" + fedora_ldflags))
         run(cmd("make"))
-        run(cmd("make check"))
+        run(cmd("make", "check"))
 
 
 def test():
