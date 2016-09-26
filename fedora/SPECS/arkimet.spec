@@ -44,6 +44,7 @@ currently offline.
 %package  -n arkimet-devel
 Summary:  Arkimet developement library
 Group:    Applications/Meteo
+Requires: libdballe-devel, grib_api-devel, libwreport-devel, %{python3_vers}-devel, meteo-vm2-devel, hdf5-devel, sqlite-devel, curl-devel
 
 %description -n arkimet-devel
  Arkimet developement library
