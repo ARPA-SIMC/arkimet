@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.0
-Release: 14
+Release: 15
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -123,6 +123,10 @@ else
 fi
 
 %changelog
+* Mon Sep 26 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-15%{dist}
+- fixed #53
+- fixed #51
+
 * Tue Sep 20 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-14%{dist}
 - fixed dependencies
 - commented out directive in systemd script that caused fedora20 server to hang
