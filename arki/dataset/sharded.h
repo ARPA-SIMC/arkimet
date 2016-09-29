@@ -39,6 +39,8 @@ struct Config : public Base
     // generating their config
     virtual void query_shards(const Matcher& matcher, std::function<void(const std::string& shard_relpath, std::shared_ptr<const dataset::Config>)>) const;
 
+    bool relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const override;
+
 protected:
     void to_shard(const std::string& shard_path, std::shared_ptr<Step> step);
 };

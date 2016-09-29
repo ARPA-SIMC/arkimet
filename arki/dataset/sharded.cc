@@ -61,12 +61,32 @@ void Config<Base>::query_shards(const Matcher& matcher, std::function<void(const
 }
 
 template<typename Base>
+bool Config<Base>::relpath_timespan(const std::string& relpath, core::Time& start_time, core::Time& end_time) const
+{
+    if (shard_step)
+    {
+        size_t pos = relpath.find('/');
+        if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+        string shard_path = relpath.substr(0, pos);
+        string segment_path = relpath.substr(pos + 1);
+
+        auto span = shard_step->shard_span(shard_path);
+        auto shard = create_shard(span.first);
+        auto cfg = dynamic_pointer_cast<const segmented::Config>(shard.second);
+        return cfg->relpath_timespan(segment_path, start_time, end_time);
+    } else {
+        return Base::relpath_timespan(relpath, start_time, end_time);
+    }
+}
+
+template<typename Base>
 void Config<Base>::to_shard(const std::string& shard_path, std::shared_ptr<Step> step)
 {
     Base::to_shard(shard_path, step);
     sharded = false;
     shard_step = std::shared_ptr<ShardStep>();
 }
+
 
 template<typename Config>
 Reader<Config>::Reader(std::shared_ptr<const Config> config)

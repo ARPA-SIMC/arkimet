@@ -45,6 +45,8 @@ public:
     Config(const ConfigFile& cfg);
     ~Config();
 
+    virtual bool relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const;
+
     const Step& step() const { return *m_step; }
 
     std::unique_ptr<segment::SegmentManager> create_segment_manager() const;

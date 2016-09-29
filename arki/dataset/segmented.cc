@@ -62,6 +62,11 @@ void Config::to_shard(const std::string& shard_path, std::shared_ptr<Step> step)
     m_step = step;
 }
 
+bool Config::relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const
+{
+    return step().path_timespan(path, start_time, end_time);
+}
+
 std::unique_ptr<segment::SegmentManager> Config::create_segment_manager() const
 {
     return segment::SegmentManager::get(path, force_dir_segments, mock_data);
@@ -194,8 +199,21 @@ void Checker::archiveSegment(const std::string& relpath)
     // needs-check-do-not-pack file
     archive();
 
+    // Get the format for this relpath
+    size_t pos = relpath.rfind(".");
+    if (pos == string::npos)
+        throw std::runtime_error(name() + " cannot archive segment " + relpath + " because it does not have a format extension");
+    string format = relpath.substr(pos + 1);
+
+    // Get the time range for this relpath
+    core::Time start_time, end_time;
+    if (!config().relpath_timespan(relpath, start_time, end_time))
+        throw std::runtime_error(name() + " cannot archive segment " + relpath + " because its name does not match the dataset step");
+
+    // Get the archive relpath for this segment
+    string arcrelpath = str::joinpath("last", config().step()(start_time)) + "." + format;
+
     const string& root = config().path;
-    string arcrelpath = str::joinpath("last", relpath);
     string arcabspath = str::joinpath(root, ".archive", arcrelpath);
     releaseSegment(relpath, arcabspath);
 
