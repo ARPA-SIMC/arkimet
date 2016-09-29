@@ -163,6 +163,13 @@ std::string DatasetTest::destfile(const testdata::Element& el) const
     return buf;
 }
 
+std::string DatasetTest::archive_destfile(const testdata::Element& el) const
+{
+    char buf[64];
+    snprintf(buf, 64, ".archive/last/%04d/%02d-%02d.%s", el.time.ye, el.time.mo, el.time.da, el.md.source().format.c_str());
+    return buf;
+}
+
 std::set<std::string> DatasetTest::destfiles(const testdata::Fixture& f) const
 {
     std::set<std::string> fnames;

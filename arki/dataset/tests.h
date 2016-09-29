@@ -156,6 +156,12 @@ public:
     std::string destfile(const testdata::Element& el) const;
 
     /**
+     * Return the segment pathname in the current dataset where el is expected
+     * to have been archived
+     */
+    std::string archive_destfile(const testdata::Element& el) const;
+
+    /**
      * Return all the distinct segment pathnames in the current dataset after f
      * has been imported
      */

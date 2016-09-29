@@ -160,12 +160,15 @@ this->add_method("archive_age", [](Fixture& f) {
     }
 
     // Check that the files have been moved to the archive
-    for (const auto& i: f.destfiles_before_cutoff)
+    for (const auto& el: f.td.test_data)
     {
-        wassert(actual_file("testds/.archive/last/" + i).exists());
-        wassert(actual_file("testds/.archive/last/" + i + ".metadata").exists());
-        wassert(actual_file("testds/.archive/last/" + i + ".summary").exists());
-        wassert(actual_file("testds/" + i).not_exists());
+        if (el.time >= f.td.selective_cutoff) continue;
+        string relpath = f.destfile(el);
+        string arcrelpath = f.archive_destfile(el);
+        wassert(actual_file("testds/" + arcrelpath).exists());
+        wassert(actual_file("testds/" + arcrelpath + ".metadata").exists());
+        wassert(actual_file("testds/" + arcrelpath + ".summary").exists());
+        wassert(actual_file("testds/" + relpath).not_exists());
     }
 
     // Maintenance should now show a normal situation
