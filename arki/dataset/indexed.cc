@@ -163,13 +163,13 @@ segmented::State IndexedChecker::scan(dataset::Reporter& reporter, bool quick)
     {
         time_t arc_thr = now - config().archive_age * 3600 * 24;
         gmtime_r(&arc_thr, &t);
-        archive_threshold.set(t);
+        archive_threshold.set_tm(t);
     }
     if (config().delete_age != -1)
     {
         time_t del_thr = now - config().delete_age * 3600 * 24;
         gmtime_r(&del_thr, &t);
-        delete_threshold.set(t);
+        delete_threshold.set_tm(t);
     }
 
     for (auto& i: segments_state)

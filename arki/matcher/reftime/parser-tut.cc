@@ -202,13 +202,13 @@ def_test(5)
 // Use now instead of date and time
 def_test(6)
 {
-	Parser p;
-	// Set the date to: Tue Mar 25 01:02:03 UTC 2008 GMT
-	p.tnow = 1206403200 + 3600+120+3;
+    Parser p;
+    // Set the date to: Tue Mar 25 01:02:03 UTC 2008 GMT
+    p.tnow = 1206403200 + 3600+120+3;
 
-	// The resulting datetime should be GMT
-	p.parse(">=now");
-	ensure_equals(p.res[0]->toString(), ">=2008-03-25 01:02:03");
+    // The resulting datetime should be GMT
+    p.parse(">=now");
+    wassert(actual(p.res[0]->toString()) == ">=2008-03-25 01:02:03");
 }
 
 // Combine time intervals
@@ -247,41 +247,41 @@ def_test(7)
 // 'xxx ago' should always do the right thing with regards to incomplete dates
 def_test(8)
 {
-	Parser p;
-	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
-	p.tnow = 1206403200;
+    Parser p;
+    // Set the date to: Tue Mar 25 00:00:00 UTC 2008
+    p.tnow = 1206403200;
 
-	p.parse(">=3 years ago");
-	ensure_equals(p.res.size(), 1u);
-	ensure_equals(p.res[0]->toString(), ">=2005-01-01 00:00:00");
+    p.parse(">=3 years ago");
+    wassert(actual(p.res.size()) == 1u);
+    wassert(actual(p.res[0]->toString()) == ">=2005-01-01 00:00:00");
 
-	p.parse(">=2 days ago");
-	ensure_equals(p.res.size(), 1u);
-	ensure_equals(p.res[0]->toString(), ">=2008-03-23 00:00:00");
+    p.parse(">=2 days ago");
+    wassert(actual(p.res.size()) == 1u);
+    wassert(actual(p.res[0]->toString()) == ">=2008-03-23 00:00:00");
 
-	p.parse(">=3 hours ago");
-	ensure_equals(p.res.size(), 1u);
-	ensure_equals(p.res[0]->toString(), ">=2008-03-24 21:00:00");
+    p.parse(">=3 hours ago");
+    wassert(actual(p.res.size()) == 1u);
+    wassert(actual(p.res[0]->toString()) == ">=2008-03-24 21:00:00");
 
-	p.parse(">=3 seconds ago");
-	ensure_equals(p.res.size(), 1u);
-	ensure_equals(p.res[0]->toString(), ">=2008-03-24 23:59:57");
+    p.parse(">=3 seconds ago");
+    wassert(actual(p.res.size()) == 1u);
+    wassert(actual(p.res[0]->toString()) == ">=2008-03-24 23:59:57");
 }
 
 // from and until can be used instead of >= and <=
 def_test(9)
 {
-	Parser p;
-	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
-	p.tnow = 1206403200;
+    Parser p;
+    // Set the date to: Tue Mar 25 00:00:00 UTC 2008
+    p.tnow = 1206403200;
 
-	p.parse("from yesterday");
-	ensure_equals(p.res.size(), 1u);
-	ensure_equals(p.res[0]->toString(), ">=2008-03-24 00:00:00");
+    p.parse("from yesterday");
+    wassert(actual(p.res.size()) == 1u);
+    wassert(actual(p.res[0]->toString()) == ">=2008-03-24 00:00:00");
 
-	p.parse("until 3 years after today");
-	ensure_equals(p.res.size(), 1u);
-	ensure_equals(p.res[0]->toString(), "<=2011-03-25 23:59:59");
+    p.parse("until 3 years after today");
+    wassert(actual(p.res.size()) == 1u);
+    wassert(actual(p.res[0]->toString()) == "<=2011-03-25 23:59:59");
 }
 
 // 'at' users can use midday, midnight and noon
@@ -325,33 +325,33 @@ def_test(11)
 // To be elegant, 'a' or 'an' can be used instead of 1
 def_test(12)
 {
-	Parser p;
-	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
-	p.tnow = 1206403200;
+    Parser p;
+    // Set the date to: Tue Mar 25 00:00:00 UTC 2008
+    p.tnow = 1206403200;
 
-	p.parse("from a week ago every 3 hours");
-	ensure_equals(p.res.size(), 2u);
-	ensure_equals(p.res[0]->toString(), ">=2008-03-18 00:00:00");
-	ensure_equals(p.res[1]->toString(), "%3h");
+    p.parse("from a week ago every 3 hours");
+    wassert(actual(p.res.size()) == 2u);
+    wassert(actual(p.res[0]->toString()) == ">=2008-03-18 00:00:00");
+    wassert(actual(p.res[1]->toString()) == "%3h");
 
-	p.parse(">=an hour ago");
-	ensure_equals(p.res.size(), 1u);
-	ensure_equals(p.res[0]->toString(), ">=2008-03-24 23:00:00");
+    p.parse(">=an hour ago");
+    wassert(actual(p.res.size()) == 1u);
+    wassert(actual(p.res[0]->toString()) == ">=2008-03-24 23:00:00");
 }
 
 // Time intervals within a day still work
 def_test(13)
 {
-	Parser p;
-	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
-	p.tnow = 1206403200;
+    Parser p;
+    // Set the date to: Tue Mar 25 00:00:00 UTC 2008
+    p.tnow = 1206403200;
 
-	p.parse("=1 month ago, from 03:00, until 18:00, every 1 hour");
-	ensure_equals(p.res.size(), 4u);
-	ensure_equals(p.res[0]->toString(), ">=2008-02-01 00:00:00,<=2008-02-29 23:59:59");
-	ensure_equals(p.res[1]->toString(), ">=03:00:00");
-	ensure_equals(p.res[2]->toString(), "<=18:00:59");
-	ensure_equals(p.res[3]->toString(), "==00:00:00%1h");
+    p.parse("=1 month ago, from 03:00, until 18:00, every 1 hour");
+    wassert(actual(p.res.size()) == 4u);
+    wassert(actual(p.res[0]->toString()) == ">=2008-02-01 00:00:00,<=2008-02-29 23:59:59");
+    wassert(actual(p.res[1]->toString()) == ">=03:00:00");
+    wassert(actual(p.res[2]->toString()) == "<=18:00:59");
+    wassert(actual(p.res[3]->toString()) == "==00:00:00%1h");
 }
 
 // Check Easter-related dates

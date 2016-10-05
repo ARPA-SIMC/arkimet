@@ -11,8 +11,15 @@ using namespace std;
 using namespace arki::matcher::reftime;
 
 struct LexInterval {
-	int val;
-	int idx;
+    /// Value of the interval
+    int val;
+    /// Unit of the interval (0: year... 5: second)
+    int idx;
+
+    void add_to(int* vals) const
+    {
+        vals[idx] += val;
+    }
 };
 
 #include "reftime-parse.hh"
@@ -35,88 +42,133 @@ void pdate(const char* msg, const int* date)
 
 static void arki_reftimeerror(yyscan_t yyscanner, arki::matcher::reftime::Parser& state, const char* s);
 
-static inline void copy(int* dst, const int* src)
+static inline void interval_copy(int* dst, const int* src)
 {
-	for (int i = 0; i < 6; ++i)
-		dst[i] = src[i];
+    for (unsigned i = 0; i < 6; ++i)
+       dst[i] = src[i];
 }
 
-static inline void init_interval(int* dst, int val, int idx)
+static inline void init_interval(int* dst, const LexInterval& interval)
 {
-	for (int i = 0; i < 6; ++i)
-		if (i == idx)
-			dst[i] = val;
-		else
-			dst[i] = 0;
+    for (int i = 0; i < 6; ++i)
+        if (i == interval.idx)
+            dst[i] = interval.val;
+        else
+            dst[i] = 0;
 }
 
-static void interval_add(int* dst, const int* val, bool subtract = false)
+// Compute where the 0s begin
+static unsigned interval_depth(const int* val)
 {
-	pdate("add", val);
-	pdate(" add to", dst);
+    unsigned depth = 0;
+    for (unsigned i = 0; i < 6; ++i)
+        if (val[i])
+            depth = i + 1;
+    return depth;
+}
 
-	// Compute what's the last valid item between dst and val
-	int depth = 0;
-	for (int i = 0; i < 6; ++i)
-	{
-		if (val[i] !=  0)
-			depth = i;
-		else if (dst[i] != -1)
-			depth = i;
-	}
+// Compute where the -1s begin
+static unsigned interval_depth(const arki::core::FuzzyTime& t)
+{
+    unsigned depth = 0;
+    if (t.ye == -1) depth = 1;
+    if (t.mo == -1) depth = 2;
+    if (t.da == -1) depth = 3;
+    if (t.ho == -1) depth = 4;
+    if (t.mi == -1) depth = 5;
+    if (t.se == -1) depth = 6;
+    return depth;
+}
 
-	// Lowerbound dst, adding val values to it
-	for (int i = 0; i < 6; ++i)
-	{
-		if (dst[i] == -1)
-			dst[i] = (i == 1 || i == 2) ? 1 : 0;
-		if (subtract)
-			dst[i] -= val[i];
-		else
-			dst[i] += val[i];
-	}
-	pdate(" added", dst);
+static void interval_add(arki::core::FuzzyTime& dst, const int* val, bool subtract=false)
+{
+    pdate("add", val);
+    pdate(" add to", dst);
+
+    // Compute what's the last valid item between dst and val
+    unsigned depth = max(interval_depth(val), interval_depth(dst));
+
+    // Lowerbound dst, adding val values to it
+    arki::core::Time lb = dst.lowerbound();
+    if (subtract)
+    {
+        lb.ye -= val[0];
+        lb.mo -= val[1];
+        lb.da -= val[2];
+        lb.ho -= val[3];
+        lb.mi -= val[4];
+        lb.se -= val[5];
+    } else {
+        lb.ye += val[0];
+        lb.mo += val[1];
+        lb.da += val[2];
+        lb.ho += val[3];
+        lb.mi += val[4];
+        lb.se += val[5];
+    }
+    pdate(" added", dst);
 
     // Normalise
-    wibble::grcal::date::normalise(dst);
+    lb.normalise();
+    dst = lb;
     pdate(" normalised", dst);
 
-	// Restore all the values not defined in dst and val to -1
-	for (int i = depth + 1; i < 6; ++i)
-		dst[i] = -1;
-	pdate(" readded missing", dst);
+    // Restore all the values not defined in dst and val to -1
+    switch (depth)
+    {
+        case 0: dst.ye = -1;
+        case 1: dst.mo = -1;
+        case 2: dst.da = -1;
+        case 3: dst.ho = -1;
+        case 4: dst.mi = -1;
+        case 5: dst.se = -1;
+    }
+    pdate(" readded missing", dst);
 }
 
-void interval_sub(int* dst, const int* val)
+void interval_sub(arki::core::FuzzyTime& dst, const int* val)
 {
-	interval_add(dst, val, true);
+    interval_add(dst, val, true);
 }
 
 // Set dst to 'val' before 'now'
-void interval_ago(int* dst, time_t& now, const int* val)
+arki::core::FuzzyTime* interval_ago(const int* val, time_t now)
 {
-    struct tm t;
-    gmtime_r(&now, &t);
-    wibble::grcal::date::fromtm(t, dst);
-    interval_sub(dst, val);
+    struct tm v;
+    gmtime_r(&now, &v);
+    std::unique_ptr<arki::core::FuzzyTime> res(new arki::core::FuzzyTime(v));
+    interval_sub(*res, val);
 
-	// Compute how many nonzero items we have
-	int depth = 0;
-	for (int i = 0; i < 6; ++i)
-		if (val[i])
-			depth = i+1;
+    // Compute how many nonzero items we have
+    unsigned depth = interval_depth(val);
 
-	// Set all the elements after the position of the last nonzero item to
-	// -1
-	for (int i = depth; i < 6; ++i)
-		dst[i] = -1;
+    // Set all the elements after the position of the last nonzero item to -1
+    switch (depth)
+    {
+        case 0: res->ye = -1;
+        case 1: res->mo = -1;
+        case 2: res->da = -1;
+        case 3: res->ho = -1;
+        case 4: res->mi = -1;
+        case 5: res->se = -1;
+    }
+
+    return res.release();
 }
 
+static void mergetime(arki::core::FuzzyTime& dt, const int* time)
+{
+    dt.mo = dt.mo != -1 ? dt.mo : 1;
+    dt.da = dt.da != -1 ? dt.da : 1;
+    dt.ho = time[0];
+    dt.mi = time[1];
+    dt.se = time[2];
+}
 
 %}
 
 %union {
-	arki::core::FuzzyTime dtspec;
+	arki::core::FuzzyTime* dtspec;
 	int tspec[3];
 	struct LexInterval lexInterval;
 	int interval[6];
@@ -184,26 +236,26 @@ TimeExpr : GE Daytime		{ $$ = DTMatch::createTimeGE($2); }
 		 | EQ Daytime		{ $$ = DTMatch::createTimeEQ($2); }
 		 ;
 
-Interval : INTERVAL						{ init_interval($$, $1.val, $1.idx); }
-		 | Interval INTERVAL		    { copy($$, $1); $$[$2.idx] += $2.val; }
-		 | Interval AND INTERVAL		{ copy($$, $1); $$[$3.idx] += $3.val; }
-		 ;
-
-Absolute : NOW							{ state.mknow($$); }
-         | Date							{ copy($$, $1); }
-         | Date Daytime					{ wibble::grcal::date::mergetime($1, $2, $$); }
-         | Interval AGO					{ interval_ago($$, state.tnow, $1); }
-         | Interval BEFORE Absolute		{ copy($$, $3); interval_sub($$, $1); }
-         | Interval AFTER Absolute		{ copy($$, $3); interval_add($$, $1); }
-         | Absolute PLUS Interval		{ copy($$, $1); interval_add($$, $3); }
-         | Absolute MINUS Interval		{ copy($$, $1); interval_sub($$, $3); }
+Interval : INTERVAL                     { init_interval($$, $1); }
+         | Interval INTERVAL            { interval_copy($$, $1); $2.add_to($$); }
+         | Interval AND INTERVAL        { interval_copy($$, $1); $3.add_to($$); }
          ;
 
-Date	 : TODAY						{ state.mktoday($$); }
-	 	 | YESTERDAY					{ state.mkyesterday($$); }
-	 	 | TOMORROW						{ state.mktomorrow($$); }
-	 	 | DATE							{ }
-	 	 ;
+Absolute : NOW                          { $$ = state.mknow(); }
+         | Date                         { $$ = $1; }
+         | Date Daytime                 { $$ = $1; mergetime(*$$, $2); }
+         | Interval AGO                 { $$ = interval_ago($1, state.tnow); }
+         | Interval BEFORE Absolute     { $$ = $3; interval_sub(*$$, $1); }
+         | Interval AFTER Absolute      { $$ = $3; interval_add(*$$, $1); }
+         | Absolute PLUS Interval       { $$ = $1; interval_add(*$$, $3); }
+         | Absolute MINUS Interval      { $$ = $1; interval_sub(*$$, $3); }
+         ;
+
+Date     : TODAY                        { $$ = state.mktoday(); }
+         | YESTERDAY                    { $$ = state.mkyesterday(); }
+         | TOMORROW                     { $$ = state.mktomorrow(); }
+         | DATE                         { }
+         ;
 
 Daytime : MIDDAY						{ $$[0] = 12; $$[1] = 0; $$[2] = 0; }
         | NOON							{ $$[0] = 12; $$[1] = 0; $$[2] = 0; }

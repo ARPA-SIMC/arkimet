@@ -3,8 +3,19 @@
 namespace arki {
 namespace core {
 
-FuzzyTime::FuzzyTime(int ye, int mo, int da, int ho, int mi, int se)
-    : ye(ye), mo(mo), da(da), ho(ho), mi(mi), se(se) {}
+Time FuzzyTime::lowerbound()
+{
+    Time res;
+    res.set_lowerbound(ye, mo, da, ho, mi, se);
+    return res;
+}
+
+Time FuzzyTime::upperbound()
+{
+    Time res;
+    res.set_upperbound(ye, mo, da, ho, mi, se);
+    return res;
+}
 
 }
 }

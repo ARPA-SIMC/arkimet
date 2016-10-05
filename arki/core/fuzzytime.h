@@ -1,6 +1,8 @@
 #ifndef ARKI_CORE_FUZZYTIME_H
 #define ARKI_CORE_FUZZYTIME_H
 
+#include <arki/core/time.h>
+
 namespace arki {
 namespace core {
 
@@ -10,33 +12,23 @@ namespace core {
  * Any FuzzyTime member can be -1, to mean "any". After the first element set
  * to -1, all following elements are ignored and assumed to all be -1.
  */
-class FuzzyTime
+class FuzzyTime : public TimeBase
 {
 public:
-    /// Year
-    int ye = -1;
+    using TimeBase::TimeBase;
+    using TimeBase::operator=;
 
-    /// Month
-    int mo = -1;
+    FuzzyTime() : TimeBase(-1, -1, -1, -1, -1, -1) {}
 
-    /// Day
-    int da = -1;
+    /// A time given its 6 components
+    FuzzyTime(int ye, int mo=-1, int da=-1, int ho=-1, int mi=-1, int se=-1)
+        : TimeBase(ye, mo, da, ho, mi, se) {}
 
-    /// Hour
-    int ho = -1;
+    /// Return a Time object with the earlier possible time
+    Time lowerbound();
 
-    /// Minute
-    int mi = -1;
-
-    /// Second
-    int se = -1;
-
-    FuzzyTime() = default;
-    FuzzyTime(const FuzzyTime&) = default;
-    FuzzyTime(FuzzyTime&&) = default;
-    FuzzyTime(int ye, int mo=-1, int da=-1, int ho=-1, int mi=-1, int se=-1);
-    FuzzyTime& operator=(const FuzzyTime&) = default;
-    FuzzyTime& operator=(FuzzyTime&&) = default;
+    /// Return a Time object with the latest possible time
+    Time upperbound();
 };
 
 }

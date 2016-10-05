@@ -3,10 +3,20 @@
 
 using namespace std;
 using arki::core::Time;
+using arki::core::FuzzyTime;
 
 namespace arki {
 namespace matcher {
 namespace reftime {
+
+static int lowerbound_sec(const FuzzyTime& t)
+{
+    int res = 0;
+    if (t.ho != -1) res += t.ho * 3600;
+    if (t.mi != -1) res += t.mi * 60;
+    if (t.se != -1) res += t.se;
+    return res;
+}
 
 static std::string tosqlTime(const int& tt)
 {
@@ -35,10 +45,10 @@ struct DateLE : public DTMatch
     Time ref;
     int tbase;
 
-    DateLE(const int* tt)
+    DateLE(FuzzyTime* tt)
+        : ref(tt->upperbound()), tbase(lowerbound_sec(*tt))
     {
-        ref.set_upperbound(tt[0], tt[1], tt[2], tt[3], tt[4], tt[5]);
-        tbase = wibble::grcal::dtime::lowerbound_sec(tt + 3);
+        delete tt;
     }
     bool match(const core::Time& tt) const { return tt <= ref; }
     bool match(const core::Time& begin, const core::Time& end) const { return begin <= ref; }
@@ -57,7 +67,7 @@ struct DateLE : public DTMatch
     }
 };
 
-DTMatch* DTMatch::createLE(const int* tt)
+DTMatch* DTMatch::createLE(FuzzyTime* tt)
 {
     return new DateLE(tt);
 }
@@ -67,10 +77,10 @@ struct DateLT : public DTMatch
     Time ref;
     int tbase;
 
-    DateLT(const int* tt)
+    DateLT(FuzzyTime* tt)
+        : ref(tt->lowerbound()), tbase(lowerbound_sec(*tt))
     {
-        ref.set_lowerbound(tt[0], tt[1], tt[2], tt[3], tt[4], tt[5]);
-        tbase = wibble::grcal::dtime::lowerbound_sec(tt + 3);
+        delete tt;
     }
     bool match(const core::Time& tt) const { return tt < ref; }
     bool match(const core::Time& begin, const core::Time& end) const { return begin < ref; }
@@ -93,7 +103,7 @@ struct DateLT : public DTMatch
     }
 };
 
-DTMatch* DTMatch::createLT(const int* tt)
+DTMatch* DTMatch::createLT(FuzzyTime* tt)
 {
     return new DateLT(tt);
 }
@@ -102,10 +112,10 @@ struct DateGE : public DTMatch
 {
     Time ref;
     int tbase;
-    DateGE(const int* tt)
+    DateGE(FuzzyTime* tt)
+        : ref(tt->lowerbound()), tbase(lowerbound_sec(*tt))
     {
-        ref.set_lowerbound(tt[0], tt[1], tt[2], tt[3], tt[4], tt[5]);
-        tbase = wibble::grcal::dtime::lowerbound_sec(tt + 3);
+        delete tt;
     }
     bool match(const core::Time& tt) const { return ref <= tt; }
     bool match(const core::Time& begin, const core::Time& end) const { return ref <= end; }
@@ -124,7 +134,7 @@ struct DateGE : public DTMatch
     }
 };
 
-DTMatch* DTMatch::createGE(const int* tt)
+DTMatch* DTMatch::createGE(FuzzyTime* tt)
 {
     return new DateGE(tt);
 }
@@ -133,10 +143,10 @@ struct DateGT : public DTMatch
 {
     Time ref;
     int tbase;
-    DateGT(const int* tt)
+    DateGT(FuzzyTime* tt)
+        : ref(tt->upperbound()), tbase(lowerbound_sec(*tt))
     {
-        ref.set_upperbound(tt[0], tt[1], tt[2], tt[3], tt[4], tt[5]);
-        tbase = wibble::grcal::dtime::lowerbound_sec(tt + 3);
+        delete tt;
     }
     bool match(const core::Time& tt) const { return ref < tt; }
     bool match(const core::Time& begin, const core::Time& end) const { return ref < end; }
@@ -159,7 +169,7 @@ struct DateGT : public DTMatch
     }
 };
 
-DTMatch* DTMatch::createGT(const int* tt)
+DTMatch* DTMatch::createGT(FuzzyTime* tt)
 {
     return new DateGT(tt);
 }
@@ -169,11 +179,10 @@ struct DateEQ : public DTMatch
     Time geref;
     Time leref;
     int tbase;
-    DateEQ(const int* tt)
+    DateEQ(FuzzyTime* tt)
+        : geref(tt->lowerbound()), leref(tt->upperbound()), tbase(lowerbound_sec(*tt))
     {
-        geref.set_lowerbound(tt[0], tt[1], tt[2], tt[3], tt[4], tt[5]);
-        leref.set_upperbound(tt[0], tt[1], tt[2], tt[3], tt[4], tt[5]);
-        tbase = wibble::grcal::dtime::lowerbound_sec(tt + 3);
+        delete tt;
     }
     bool match(const core::Time& tt) const
     {
@@ -211,7 +220,7 @@ struct DateEQ : public DTMatch
     }
 };
 
-DTMatch* DTMatch::createEQ(const int* tt)
+DTMatch* DTMatch::createEQ(FuzzyTime* tt)
 {
     return new DateEQ(tt);
 }
@@ -430,36 +439,6 @@ DTMatch* DTMatch::createTimeGE(const int* tt) { return new TimeGE(tt); }
 DTMatch* DTMatch::createTimeGT(const int* tt) { return new TimeGT(tt); }
 DTMatch* DTMatch::createTimeEQ(const int* tt) { return new TimeEQ(tt); }
 
-void Parser::mknow(int* vals)
-{
-    struct tm now;
-    gmtime_r(&tnow, &now);
-    wibble::grcal::date::fromtm(now, vals, 6);
-}
-
-void Parser::mktoday(int* vals)
-{
-    struct tm now;
-    gmtime_r(&tnow, &now);
-    wibble::grcal::date::fromtm(now, vals, 3);
-}
-
-void Parser::mkyesterday(int* vals)
-{
-    time_t tv = tnow - 3600*24;
-    struct tm v;
-    gmtime_r(&tv, &v);
-    wibble::grcal::date::fromtm(v, vals, 3);
-}
-
-void Parser::mktomorrow(int* vals)
-{
-    time_t tv = tnow + 3600*24;
-    struct tm v;
-    gmtime_r(&tv, &v);
-    wibble::grcal::date::fromtm(v, vals, 3);
-}
-
 void Parser::add_step(int val, int idx, DTMatch* base)
 {
     //fprintf(stderr, "ADD STEP %d %d %s\n", val, idx, base ? base->toString().c_str() : "NONE");
@@ -477,6 +456,44 @@ void Parser::add_step(int val, int idx, DTMatch* base)
 
     res.push_back(new TimeExact(times, base==0));
 }
+
+arki::core::FuzzyTime* Parser::mknow()
+{
+    struct tm v;
+    gmtime_r(&tnow, &v);
+    unique_ptr<arki::core::FuzzyTime> res(new arki::core::FuzzyTime(v));
+    return res.release();
+}
+
+arki::core::FuzzyTime* Parser::mktoday()
+{
+    struct tm v;
+    gmtime_r(&tnow, &v);
+    unique_ptr<arki::core::FuzzyTime> res(new arki::core::FuzzyTime(v));
+    res->ho = res->mi = res->se = -1;
+    return res.release();
+}
+
+arki::core::FuzzyTime* Parser::mkyesterday()
+{
+    time_t tv = tnow - 3600*24;
+    struct tm v;
+    gmtime_r(&tv, &v);
+    unique_ptr<arki::core::FuzzyTime> res(new arki::core::FuzzyTime(v));
+    res->ho = res->mi = res->se = -1;
+    return res.release();
+}
+
+arki::core::FuzzyTime* Parser::mktomorrow()
+{
+    time_t tv = tnow + 3600*24;
+    struct tm v;
+    gmtime_r(&tv, &v);
+    unique_ptr<arki::core::FuzzyTime> res(new arki::core::FuzzyTime(v));
+    res->ho = res->mi = res->se = -1;
+    return res.release();
+}
+
 
 }
 }

@@ -107,15 +107,15 @@ struct Parser
 /**
  * Parser for Easter times
  */
-arki::core::FuzzyTime parse_easter(const std::string& str)
+arki::core::FuzzyTime* parse_easter(const std::string& str)
 {
     if (str.size() < 4)
         throw std::runtime_error("cannot parse reftime match expression \"" + str + "\": expecting at least 4 characters");
-    arki::core::FuzzyTime res;
+    std::unique_ptr<arki::core::FuzzyTime> res(new arki::core::FuzzyTime);
     // Parse the year directly
-    res.ye = std::stoi(str.substr(str.size() - 4));
-    wibble::grcal::date::easter(res.ye, &res.mo, &res.da);
-    return res;
+    res->ye = std::stoi(str.substr(str.size() - 4));
+    wibble::grcal::date::easter(res->ye, &res->mo, &res->da);
+    return res.release();
 }
 
 /**
@@ -154,34 +154,34 @@ struct DTParser : public Parser
 		if (cur != str.end())
 			error("trailing characters found");
     }
-    arki::core::FuzzyTime getDate()
-	{
-        arki::core::FuzzyTime res;
+    std::unique_ptr<arki::core::FuzzyTime> getDate()
+    {
+        std::unique_ptr<arki::core::FuzzyTime> res(new arki::core::FuzzyTime);
 
-		// Year
-		res.ye = num();
-		// Month
-		if (!eat('-')) return res;
-		res.mo = num();
-		// Day
-		if (!eat('-')) return res;
-		res.da = num();
-		// Eat optional 'T' at the end of the date
-		if (cur != str.end() && (*cur == 'T' || *cur == 't')) ++cur;
-		// Eat optional spaces
-		eatSpaces();
-		// Hour
-		if (cur == str.end()) return res;
-		res.ho = num();
-		// Minute
-		if (!eat(':')) return res;
-		res.mi = num();
-		// Second
-		if (!eat(':')) return res;
-		res.se = num();
+        // Year
+        res->ye = num();
+        // Month
+        if (!eat('-')) return res;
+        res->mo = num();
+        // Day
+        if (!eat('-')) return res;
+        res->da = num();
+        // Eat optional 'T' at the end of the date
+        if (cur != str.end() && (*cur == 'T' || *cur == 't')) ++cur;
+        // Eat optional spaces
+        eatSpaces();
+        // Hour
+        if (cur == str.end()) return res;
+        res->ho = num();
+        // Minute
+        if (!eat(':')) return res;
+        res->mi = num();
+        // Second
+        if (!eat(':')) return res;
+        res->se = num();
 
         return res;
-	}
+    }
 
 	void getTime(int* res)
 	{
@@ -196,12 +196,12 @@ struct DTParser : public Parser
 	}
 };
 
-arki::core::FuzzyTime parse_datetime(const std::string& str)
+arki::core::FuzzyTime* parse_datetime(const std::string& str)
 {
     DTParser parser(str);
-    arki::core::FuzzyTime res = parser.getDate();
+    auto res = parser.getDate();
     parser.end();
-    return res;
+    return res.release();
 }
 
 void parse_time(const std::string& str, int* res)
@@ -428,14 +428,14 @@ easter{space}?[0-9]{4} {
 (processione{space})?san{space}?luca{space}?[0-9]{4} {
         // Compute easter
         yylval->dtspec = parse_easter(std::string(yytext, yyleng));
-        // Add 5 weeks - 1 day
-        yylval->dtspec.da += 35-1;
         // Lowerbound
-        yylval->dtspec.ho = yylval->dtspec.mi = yylval->dtspec.se = 0;
-        // Normalise
-        wibble::grcal::date::normalise(yylval->dtspec);
+        arki::core::Time lb = yylval->dtspec->lowerbound();
+        // Add 5 weeks - 1 day
+        lb.da += 35-1;
+        lb.normalise();
         // Put missing values back
-        yylval->dtspec.ho = yylval->dtspec.mi = yylval->dtspec.se = -1;
+        *(yylval->dtspec) = lb;
+        yylval->dtspec->ho = yylval->dtspec->mi = yylval->dtspec->se = -1;
         return DATE;
 }
 now         { return NOW; }
