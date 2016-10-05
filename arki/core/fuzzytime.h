@@ -29,6 +29,12 @@ public:
 
     /// Return a Time object with the latest possible time
     Time upperbound();
+
+    /// Return the time formatted as a string in SQL-like format
+    std::string to_string() const;
+
+    /// Set to easter day, with ho, mi, and se, set to -1
+    void set_easter(int year);
 };
 
 }

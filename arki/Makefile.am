@@ -20,7 +20,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		wibble/sys/signal.h \
 		wibble/sys/filelock.h \
 		wibble/tests/tut.h \
-		wibble/grcal/grcal.h \
 		core/time.h \
 		core/fuzzytime.h \
 		core/tests.h \
@@ -211,7 +210,6 @@ libarkimet_la_SOURCES += \
 		wibble/sys/childprocess.cpp \
 		wibble/sys/exec.cpp \
 		wibble/sys/signal.cpp \
-		wibble/grcal/grcal.cpp \
 		core/time.cc \
 		core/fuzzytime.cc \
 		exceptions.cc \

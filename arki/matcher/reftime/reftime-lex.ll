@@ -7,7 +7,6 @@ struct LexInterval {
 #include "config.h"
 #include "parser.h"
 #include "arki/core/fuzzytime.h"
-#include "arki/wibble/grcal/grcal.h"
 #include "reftime-parse.hh"
 #include <string>
 #include <ctype.h>
@@ -113,8 +112,7 @@ arki::core::FuzzyTime* parse_easter(const std::string& str)
         throw std::runtime_error("cannot parse reftime match expression \"" + str + "\": expecting at least 4 characters");
     std::unique_ptr<arki::core::FuzzyTime> res(new arki::core::FuzzyTime);
     // Parse the year directly
-    res->ye = std::stoi(str.substr(str.size() - 4));
-    wibble::grcal::date::easter(res->ye, &res->mo, &res->da);
+    res->set_easter(std::stoi(str.substr(str.size() - 4)));
     return res.release();
 }
 

@@ -2,7 +2,6 @@
 #include "config.h"
 #include "parser.h"
 #include "arki/core/fuzzytime.h"
-#include "arki/wibble/grcal/grcal.h"
 #include <string>
 #include <stdexcept>
 #include <ctime>
@@ -27,14 +26,19 @@ struct LexInterval {
 
 //#define YYDEBUG 1
 
-//#define DEBUG_PARSER
+// #define DEBUG_PARSER
 
 #ifdef DEBUG_PARSER
 #include <stdio.h>
 
+void pdate(const char* msg, const arki::core::FuzzyTime& date)
+{
+    fprintf(stderr, "%s: %s\n", msg, date.to_string().c_str());
+}
+
 void pdate(const char* msg, const int* date)
 {
-	fprintf(stderr, "%s: %04d-%02d-%02d %02d:%02d:%02d\n", msg, date[0], date[1], date[2], date[3], date[4], date[5]);
+    fprintf(stderr, "%s: %04d-%02d-%02d %02d:%02d:%02d\n", msg, date[0], date[1], date[2], date[3], date[4], date[5]);
 }
 #else
 #define pdate(msg, date) do {} while(0)
@@ -71,12 +75,12 @@ static unsigned interval_depth(const int* val)
 static unsigned interval_depth(const arki::core::FuzzyTime& t)
 {
     unsigned depth = 0;
-    if (t.ye == -1) depth = 1;
-    if (t.mo == -1) depth = 2;
-    if (t.da == -1) depth = 3;
-    if (t.ho == -1) depth = 4;
-    if (t.mi == -1) depth = 5;
-    if (t.se == -1) depth = 6;
+    if (t.ye != -1) depth = 1;
+    if (t.mo != -1) depth = 2;
+    if (t.da != -1) depth = 3;
+    if (t.ho != -1) depth = 4;
+    if (t.mi != -1) depth = 5;
+    if (t.se != -1) depth = 6;
     return depth;
 }
 

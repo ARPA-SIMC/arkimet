@@ -64,6 +64,9 @@ public:
     /// Set with the current date and time
     void set_now();
 
+    /// Set to 00:00:00 on easter day
+    void set_easter(int year);
+
     int compare(const TimeBase& o) const;
     bool operator<(const TimeBase& o) const { return compare(o) < 0; }
     bool operator<=(const TimeBase& o) const { return compare(o) <= 0; }
