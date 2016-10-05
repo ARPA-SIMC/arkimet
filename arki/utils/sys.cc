@@ -473,21 +473,11 @@ Path::iterator::iterator(Path& dir)
     : path(&dir)
 {
     this->dir = dir.fdopendir();
-
-    long name_max = fpathconf(dir.fd, _PC_NAME_MAX);
-    if (name_max == -1) // Limit not defined, or error: take a guess
-        name_max = 255;
-    size_t len = offsetof(dirent, d_name) + name_max + 1;
-    cur_entry = (struct dirent*)malloc(len);
-    if (cur_entry == NULL)
-        throw std::bad_alloc();
-
     operator++();
 }
 
 Path::iterator::~iterator()
 {
-    if (cur_entry) free(cur_entry);
     if (dir) closedir(dir);
 }
 
@@ -506,12 +496,12 @@ bool Path::iterator::operator!=(const iterator& i) const
 
 void Path::iterator::operator++()
 {
-    struct dirent* result;
-    if (readdir_r(dir, cur_entry, &result) != 0)
-        path->throw_error("cannot readdir_r");
-
-    if (result == nullptr)
+    errno = 0;
+    cur_entry = readdir(dir);
+    if (cur_entry == nullptr)
     {
+        if (errno) path->throw_error("cannot readdir");
+
         // Turn into an end iterator
         free(cur_entry);
         cur_entry = nullptr;
