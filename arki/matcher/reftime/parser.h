@@ -2,7 +2,7 @@
 #define ARKI_MATCHER_REFTIME_PARSER_H
 
 #include <arki/types.h>
-#include <arki/core/time.h>
+#include <arki/core/fuzzytime.h>
 #include <arki/utils/string.h>
 #include <string>
 #include <ctime>
@@ -43,11 +43,11 @@ struct DTMatch
      */
     virtual bool restrict_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const = 0;
 
-    static DTMatch* createLE(const int* tt);
-    static DTMatch* createLT(const int* tt);
-    static DTMatch* createGE(const int* tt);
-    static DTMatch* createGT(const int* tt);
-    static DTMatch* createEQ(const int* tt);
+    static DTMatch* createLE(core::FuzzyTime* tt);
+    static DTMatch* createLT(core::FuzzyTime* tt);
+    static DTMatch* createGE(core::FuzzyTime* tt);
+    static DTMatch* createGT(core::FuzzyTime* tt);
+    static DTMatch* createEQ(core::FuzzyTime* tt);
 
     static DTMatch* createTimeLE(const int* tt);
     static DTMatch* createTimeLT(const int* tt);
@@ -81,12 +81,12 @@ struct Parser
 
     void add_step(int val, int idx, DTMatch* base=0);
 
-    void mknow(int* vals);
-    void mktoday(int* vals);
-    void mkyesterday(int* vals);
-    void mktomorrow(int* vals);
-
     void parse(const std::string& str);
+
+    arki::core::FuzzyTime* mknow();
+    arki::core::FuzzyTime* mktoday();
+    arki::core::FuzzyTime* mkyesterday();
+    arki::core::FuzzyTime* mktomorrow();
 };
 
 }

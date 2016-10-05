@@ -17,10 +17,91 @@ using namespace arki::utils;
 namespace arki {
 namespace core {
 
-Time::Time() {}
-Time::Time(int ye, int mo, int da, int ho, int mi, int se)
-    : ye(ye), mo(mo), da(da), ho(ho), mi(mi), se(se) {}
-Time::Time(struct tm& t) { set(t); }
+TimeBase::TimeBase(struct tm& t) { set_tm(t); }
+
+void TimeBase::set_tm(struct tm& t)
+{
+    ye = t.tm_year + 1900;
+    mo = t.tm_mon + 1;
+    da = t.tm_mday;
+    ho = t.tm_hour;
+    mi = t.tm_min;
+    se = t.tm_sec;
+}
+
+void TimeBase::set_iso8601(const std::string& str)
+{
+    int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &ye, &mo, &da, &ho, &mi, &se);
+    if (count < 6)
+        count = sscanf(str.c_str(), "%d-%d-%dT%d:%d:%d", &ye, &mo, &da, &ho, &mi, &se);
+    if (count < 6)
+        throw std::runtime_error("Cannot parse ISO-8601 string '" + str + "'");
+}
+
+void TimeBase::set_sql(const std::string& str)
+{
+    int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &ye, &mo, &da, &ho, &mi, &se);
+    if (count == 0)
+        throw std::runtime_error("Cannot parse SQL string '" + str + "'");
+}
+
+void TimeBase::set_now()
+{
+    time_t timet_now = time(0);
+    struct tm now;
+    gmtime_r(&timet_now, &now);
+    set_tm(now);
+}
+
+void TimeBase::set_easter(int year)
+{
+    // Meeus/Jones/Butcher Gregorian algorithm
+    // from http://en.wikipedia.org/wiki/Computus
+    int a = year % 19;
+    int b = year / 100;
+    int c = year % 100;
+    int d = b / 4;
+    int e = b % 4;
+    int f = (b + 8) / 25;
+    int g = (b - f + 1) / 3;
+    int h = (19 * a + b - d - g + 15) % 30;
+    int i = c / 4;
+    int k = c % 4;
+    int L = (32 + 2 * e + 2 * i - h - k) % 7;
+    int m = (a + 11 * h + 22 * L) / 451;
+    ye = year;
+    mo = (h + L - 7 * m + 114) / 31;
+    da = ((h + L - 7 * m + 114) % 31) + 1;
+    ho = 0;
+    mi = 0;
+    se = 0;
+}
+
+int TimeBase::compare(const TimeBase& o) const
+{
+    if (int res = ye - o.ye) return res;
+    if (int res = mo - o.mo) return res;
+    if (int res = da - o.da) return res;
+    if (int res = ho - o.ho) return res;
+    if (int res = mi - o.mi) return res;
+    return se - o.se;
+}
+
+bool TimeBase::operator==(const TimeBase& o) const
+{
+    return ye == o.ye && mo == o.mo && da == o.da
+        && ho == o.ho && mi == o.mi && se == o.se;
+}
+
+bool TimeBase::operator!=(const TimeBase& o) const
+{
+    return ye != o.ye || mo != o.mo || da != o.da
+        || ho != o.ho || mi != o.mi || se != o.se;
+}
+
+bool TimeBase::operator!=(const TimeBase& o) const;
+
+
 
 Time Time::create_iso8601(const std::string& str)
 {
@@ -122,68 +203,9 @@ void Time::set_upperbound(int ye, int mo, int da, int ho, int mi, int se)
     normalise();
 }
 
-void Time::set(struct tm& t)
-{
-    ye = t.tm_year + 1900;
-    mo = t.tm_mon + 1;
-    da = t.tm_mday;
-    ho = t.tm_hour;
-    mi = t.tm_min;
-    se = t.tm_sec;
-}
-
-void Time::set_iso8601(const std::string& str)
-{
-    int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &ye, &mo, &da, &ho, &mi, &se);
-    if (count < 6)
-        count = sscanf(str.c_str(), "%d-%d-%dT%d:%d:%d", &ye, &mo, &da, &ho, &mi, &se);
-    if (count < 6)
-        throw std::runtime_error("Cannot parse ISO-8601 string '" + str + "'");
-}
-
-void Time::set_sql(const std::string& str)
-{
-    int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &ye, &mo, &da, &ho, &mi, &se);
-    if (count == 0)
-        throw std::runtime_error("Cannot parse SQL string '" + str + "'");
-}
-
-void Time::set_now()
-{
-    time_t timet_now = time(0);
-    struct tm now;
-    gmtime_r(&timet_now, &now);
-    set(now);
-}
-
-
-int Time::compare(const Time& o) const
-{
-    if (int res = ye - o.ye) return res;
-    if (int res = mo - o.mo) return res;
-    if (int res = da - o.da) return res;
-    if (int res = ho - o.ho) return res;
-    if (int res = mi - o.mi) return res;
-    return se - o.se;
-}
-
-bool Time::operator==(const Time& o) const
-{
-    return ye == o.ye && mo == o.mo && da == o.da
-        && ho == o.ho && mi == o.mi && se == o.se;
-}
-
-bool Time::operator!=(const Time& o) const
-{
-    return ye != o.ye || mo != o.mo || da != o.da
-        || ho != o.ho || mi != o.mi || se != o.se;
-}
-
-bool Time::operator!=(const Time& o) const;
-
 bool Time::operator==(const std::string& o) const
 {
-    return operator==(Time::create_iso8601(o));
+    return TimeBase::operator==(Time::create_iso8601(o));
 }
 
 Time Time::start_of_month() const

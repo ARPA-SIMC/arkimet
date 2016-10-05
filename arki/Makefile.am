@@ -20,8 +20,8 @@ nobase_dist_arkiinclude_HEADERS = \
 		wibble/sys/signal.h \
 		wibble/sys/filelock.h \
 		wibble/tests/tut.h \
-		wibble/grcal/grcal.h \
 		core/time.h \
+		core/fuzzytime.h \
 		core/tests.h \
 		binary.h \
 		defs.h \
@@ -210,8 +210,8 @@ libarkimet_la_SOURCES += \
 		wibble/sys/childprocess.cpp \
 		wibble/sys/exec.cpp \
 		wibble/sys/signal.cpp \
-		wibble/grcal/grcal.cpp \
 		core/time.cc \
+		core/fuzzytime.cc \
 		exceptions.cc \
 		nag.cc \
 		utils.cc \
@@ -293,6 +293,7 @@ libarkimet_test_la_SOURCES += \
 tests_arki_test_SOURCES += \
 		tests/tests-tut.cc \
 		core/time-test.cc \
+		core/fuzzytime-test.cc \
 		utils-test.cc \
 		utils/accounting-tut.cc \
 		utils/gzip-test.cc \

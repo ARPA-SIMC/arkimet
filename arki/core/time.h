@@ -20,12 +20,7 @@ struct Mapping;
 
 namespace core {
 
-/**
- * A point in time, in UTC.
- *
- * If all the time components are 0, it is to be interpreted as `unset`
- */
-class Time
+class TimeBase
 {
 public:
     /// Year
@@ -46,14 +41,58 @@ public:
     /// Second
     int se;
 
-    /// An uninitialized time
-    Time();
-
-    /// A time given its 6 components
-    Time(int ye, int mo, int da=1, int ho=0, int mi=0, int se=0);
+    TimeBase() = default;
+    TimeBase(const TimeBase&) = default;
+    TimeBase(TimeBase&&) = default;
+    TimeBase(int ye, int mo, int da, int ho, int mi, int se)
+        : ye(ye), mo(mo), da(da), ho(ho), mi(mi), se(se) {}
+    TimeBase& operator=(const TimeBase&) = default;
+    TimeBase& operator=(TimeBase&&) = default;
 
     /// A time from a struct tm
-    Time(struct tm& t);
+    TimeBase(struct tm& t);
+
+    /// Set from a struct tm
+    void set_tm(struct tm& t);
+
+    /// Set from a ISO8601 string
+    void set_iso8601(const std::string& str);
+
+    /// Set from a SQL string
+    void set_sql(const std::string& str);
+
+    /// Set with the current date and time
+    void set_now();
+
+    /// Set to 00:00:00 on easter day
+    void set_easter(int year);
+
+    int compare(const TimeBase& o) const;
+    bool operator<(const TimeBase& o) const { return compare(o) < 0; }
+    bool operator<=(const TimeBase& o) const { return compare(o) <= 0; }
+    bool operator>(const TimeBase& o) const { return compare(o) > 0; }
+    bool operator>=(const TimeBase& o) const { return compare(o) >= 0; }
+
+    bool operator==(const TimeBase& o) const;
+    bool operator!=(const TimeBase& o) const;
+};
+
+
+/**
+ * A point in time, in UTC.
+ *
+ * If all the time components are 0, it is to be interpreted as `unset`
+ */
+class Time : public TimeBase
+{
+public:
+    Time() : TimeBase() {}
+
+    /// A time given its 6 components
+    Time(int ye, int mo, int da=1, int ho=0, int mi=0, int se=0)
+        : TimeBase(ye, mo, da, ho, mi, se) {}
+
+    Time(struct tm& t) : TimeBase(t) {}
 
     /// Create a Time object from a string in ISO-8601 format
     static Time create_iso8601(const std::string& str);
@@ -82,26 +121,7 @@ public:
      */
     void set_upperbound(int ye, int mo=-1, int da=-1, int ho=-1, int mi=-1, int se=-1);
 
-    /// Set from a struct tm
-    void set(struct tm& t);
-
-    /// Set from a ISO8601 string
-    void set_iso8601(const std::string& str);
-
-    /// Set from a SQL string
-    void set_sql(const std::string& str);
-
-    /// Set with the current date and time
-    void set_now();
-
-    int compare(const Time& o) const;
-    bool operator<(const Time& o) const { return compare(o) < 0; }
-    bool operator<=(const Time& o) const { return compare(o) <= 0; }
-    bool operator>(const Time& o) const { return compare(o) > 0; }
-    bool operator>=(const Time& o) const { return compare(o) >= 0; }
-
-    bool operator==(const Time& o) const;
-    bool operator!=(const Time& o) const;
+    bool operator==(const TimeBase& o) const { return TimeBase::operator==(o); }
 
     /// Compare with a stringified version, useful for testing
     bool operator==(const std::string& o) const;
