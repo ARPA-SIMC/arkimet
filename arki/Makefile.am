@@ -16,9 +16,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		wibble/sys/process.h \
 		wibble/sys/childprocess.h \
 		wibble/sys/exec.h \
-		wibble/sys/fs.h \
 		wibble/sys/signal.h \
-		wibble/sys/filelock.h \
 		wibble/tests/tut.h \
 		core/time.h \
 		core/fuzzytime.h \
@@ -204,8 +202,6 @@ tests_arki_test_LDADD =
 #
 if DEVEL_DO_TYPES
 libarkimet_la_SOURCES += \
-		wibble/sys/fs.cpp \
-		wibble/sys/filelock.cpp \
 		wibble/sys/process.cpp \
 		wibble/sys/childprocess.cpp \
 		wibble/sys/exec.cpp \
