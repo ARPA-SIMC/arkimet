@@ -58,25 +58,25 @@ add_method("grib1_details", [] {
     o = Level::createGRIB1(103, 132);
     wassert(actual(o->style()) == Level::GRIB1);
     v = dynamic_cast<level::GRIB1*>(o.get());
-    wassert(actual(v->type()) == 103);
-    wassert(actual(v->l1()) == 132);
-    wassert(actual(v->l2()) == 0);
+    wassert(actual(v->type()) == 103u);
+    wassert(actual(v->l1()) == 132u);
+    wassert(actual(v->l2()) == 0u);
     wassert(actual(v->valType()) == 1);
 
     o = Level::createGRIB1(103, 13200);
     wassert(actual(o->style()) == Level::GRIB1);
     v = dynamic_cast<level::GRIB1*>(o.get());
-    wassert(actual(v->type()) == 103);
-    wassert(actual(v->l1()) == 13200);
-    wassert(actual(v->l2()) == 0);
+    wassert(actual(v->type()) == 103u);
+    wassert(actual(v->l1()) == 13200u);
+    wassert(actual(v->l2()) == 0u);
     wassert(actual(v->valType()) == 1);
 
     o = Level::createGRIB1(104, 132, 231);
     wassert(actual(o->style()) == Level::GRIB1);
     v = dynamic_cast<level::GRIB1*>(o.get());
-    wassert(actual(v->type()) == 104);
-    wassert(actual(v->l1()) == 132);
-    wassert(actual(v->l2()) == 231);
+    wassert(actual(v->type()) == 104u);
+    wassert(actual(v->l1()) == 132u);
+    wassert(actual(v->l2()) == 231u);
     wassert(actual(v->valType()) == 2);
 });
 
@@ -105,9 +105,9 @@ add_method("grib2s_details", [] {
     o = Level::createGRIB2S(100, 100, 500);
     wassert(actual(o->style()) == Level::GRIB2S);
     v = dynamic_cast<level::GRIB2S*>(o.get());
-    wassert(actual(v->type()) == 100);
-    wassert(actual(v->scale()) == 100);
-    wassert(actual(v->value()) == 500);
+    wassert(actual(v->type()) == 100u);
+    wassert(actual(v->scale()) == 100u);
+    wassert(actual(v->value()) == 500u);
 
     o = Level::createGRIB2S(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE);
     wassert(actual(o->style()) == Level::GRIB2S);
@@ -156,12 +156,12 @@ add_method("grib2d_details", [] {
     o = Level::createGRIB2D(100, 100, 500, 100, 100, 1000);
     wassert(actual(o->style()) == Level::GRIB2D);
     v = dynamic_cast<level::GRIB2D*>(o.get());
-    wassert(actual(v->type1()) == 100);
-    wassert(actual(v->scale1()) == 100);
-    wassert(actual(v->value1()) == 500);
-    wassert(actual(v->type2()) == 100);
-    wassert(actual(v->scale2()) == 100);
-    wassert(actual(v->value2()) == 1000);
+    wassert(actual(v->type1()) == 100u);
+    wassert(actual(v->scale1()) == 100u);
+    wassert(actual(v->value1()) == 500u);
+    wassert(actual(v->type2()) == 100u);
+    wassert(actual(v->scale2()) == 100u);
+    wassert(actual(v->value2()) == 1000u);
 
     o = Level::createGRIB2D(
             level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE,
