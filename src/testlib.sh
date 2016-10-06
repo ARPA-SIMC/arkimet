@@ -42,6 +42,7 @@ setup() {
     export ARKI_POSTPROC=$TOP_SRCDIR/test/postproc/
     export ARKI_ALIASES=$TOP_SRCDIR/test/conf/match-alias.conf
     export PYTHONPATH="$PYTHONPATH:$TOP_SRCDIR/python"
+    export METEO_VM2_SOURCE="$TOP_SRCDIR/conf/vm2/source.lua"
     export http_proxy=
     ulimit -v 1048576 || true
 

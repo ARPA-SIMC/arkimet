@@ -24,6 +24,23 @@ runtest "test -e test200/2007/07-08.grib"
 
 runtest "arki-query --yaml '' test200/ | grep -q 'test200/2007/07-08.grib:0+7218'"
 
+# Reproduce issue 57
+mkdir -p issue57/2016
+cat > issue57/config <<EOF
+type = ondisk2
+filter = area:VM2,
+step = daily
+unique = reftime, area, product
+EOF
+echo "201610050000,12626,139,70,,,000000000" > issue57/2016/10-05.vm2
+runtest "arki-check -f issue57"
+arki-query '' issue57 > issue57/todelete.md
+runtest "test -s issue57/todelete.md"
+runtest "arki-check --remove=issue57/todelete.md issue57"
+arki-query '' issue57 > issue57/todelete.md
+runtest "test -S issue57/todelete.md"
+
+
 testtotals
 
 exit $BADCOUNT
