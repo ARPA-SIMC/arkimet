@@ -1,7 +1,7 @@
 #ifndef ARKI_DISPATCHER_H
 #define ARKI_DISPATCHER_H
 
-#include <arki/datasetpool.h>
+#include <arki/datasets.h>
 #include <arki/dataset.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>

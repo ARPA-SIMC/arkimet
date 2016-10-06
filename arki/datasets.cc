@@ -1,10 +1,10 @@
-#include "arki/datasetpool.h"
-#include "arki/utils/string.h"
-#include "arki/configfile.h"
-#include "arki/dataset.h"
-#include "arki/dataset/local.h"
-#include "arki/utils/sys.h"
-#include "arki/utils/string.h"
+#include "datasets.h"
+#include "utils/string.h"
+#include "configfile.h"
+#include "dataset.h"
+#include "dataset/local.h"
+#include "utils/sys.h"
+#include "utils/string.h"
 #include "config.h"
 
 using namespace std;

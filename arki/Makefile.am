@@ -60,7 +60,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/outbound.h \
 		dataset/offline.h \
 		dataset/sharded.h \
-		datasetpool.h \
 		dataset/simple.h \
 		dataset/simple/datafile.h \
 		dataset/simple/reader.h \
@@ -68,6 +67,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/step.h \
 		dataset/test-scenario.h \
 		dataset/tests.h \
+		datasets.h \
 		dispatcher.h \
 		emitter.h \
 		emitter/json.h \
@@ -514,7 +514,7 @@ libarkimet_la_SOURCES += \
 		dataset/merged.cc \
 		dataset/gridquery.cc \
 		dataset/test-scenario.cc \
-		datasetpool.cc \
+		datasets.cc \
 		metadatagrid.cc \
 		dispatcher.cc \
 		querymacro.cc
@@ -568,7 +568,7 @@ tests_arki_test_SOURCES += \
 		metadatagrid-test.cc \
 		postprocess-tut.cc \
 		querymacro-tut.cc \
-		datasetpool-tut.cc \
+		datasets-test.cc \
 		dispatcher-tut.cc \
 		runtime/processor-test.cc \
 		runtime-test.cc

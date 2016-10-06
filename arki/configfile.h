@@ -65,9 +65,10 @@ protected:
 	std::map<std::string, ConfigFile*> sections;
 
 public:
-	ConfigFile();
-	ConfigFile(const ConfigFile& cfg);
-	~ConfigFile();
+    ConfigFile();
+    ConfigFile(const ConfigFile& cfg);
+    ConfigFile(const std::string& cfg, const std::string& pathname="memory buffer");
+    ~ConfigFile();
 
     ConfigFile& operator=(const ConfigFile& cfg);
 
