@@ -3,7 +3,7 @@
 #include <arki/exceptions.h>
 #include <arki/utils/commandline/parser.h>
 #include <arki/configfile.h>
-#include <arki/datasetpool.h>
+#include <arki/datasets.h>
 #include <arki/dataset/local.h>
 #include <arki/dataset/segmented.h>
 #include <arki/dataset/reporter.h>
@@ -318,11 +318,12 @@ int main(int argc, const char* argv[])
         if (opts.op_remove->isSet()) {
             if (opts.op_remove->stringValue().empty())
                 throw commandline::BadOption("you need to give a file name to --remove");
-            WriterPool pool(cfg);
+            Datasets datasets(cfg);
+            WriterPool pool(datasets);
             // Read all metadata from the file specified in --remove
             metadata::Collection todolist(opts.op_remove->stringValue());
             // Datasets where each metadata comes from
-            vector<dataset::Writer*> datasets;
+            vector<std::string> dsnames;
             // Verify that all metadata items can be mapped to a dataset
             unsigned count = 1;
             for (const auto& md: todolist)
@@ -334,7 +335,7 @@ int main(int argc, const char* argv[])
                    throw std::runtime_error(ss.str());
                 }
 
-                dataset::Writer* ds = pool.for_path(md->sourceBlob().absolutePathname());
+                auto ds = datasets.for_path(md->sourceBlob().absolutePathname());
                 if (!ds)
                 {
                    stringstream ss;
@@ -342,14 +343,14 @@ int main(int argc, const char* argv[])
                    throw std::runtime_error(ss.str());
                 }
 
-                datasets.push_back(ds);
+                dsnames.push_back(ds->name);
                 ++count;
             }
             // Perform removals
             count = 1;
             for (unsigned i = 0; i < todolist.size(); ++i)
             {
-                dataset::Writer* ds = datasets[i];
+                auto ds = pool.get(dsnames[i]);
                 try {
                     ds->remove(todolist[i]);
                 } catch (std::exception& e) {

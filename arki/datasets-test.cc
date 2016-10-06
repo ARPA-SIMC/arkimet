@@ -44,11 +44,16 @@ add_method("instantiate", [] {
     // In-memory dataset configuration
     ConfigFile config(sample_config, "(memory)");
 
-    WriterPool pool(config);
+    Datasets datasets(config);
+    WriterPool pool(datasets);
     wassert(actual(pool.get("error")).istrue());
     wassert(actual(pool.get("test200")).istrue());
     wassert(actual(pool.get("test80")).istrue());
-    wassert(actual(pool.get("duplicates")).isfalse());
+    try {
+        pool.get("duplicates");
+        throw TestFailed("looking up nonexisting dataset should throw runtime_error");
+    } catch (runtime_error&) {
+    }
 });
 
 }

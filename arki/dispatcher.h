@@ -106,13 +106,14 @@ public:
 class RealDispatcher : public Dispatcher
 {
 protected:
+    Datasets datasets;
     WriterPool pool;
 
     // Error dataset
-    dataset::Writer* dserror;
+    std::shared_ptr<dataset::Writer> dserror;
 
     // Duplicates dataset
-    dataset::Writer* dsduplicates;
+    std::shared_ptr<dataset::Writer> dsduplicates;
 
     void hook_output(std::unique_ptr<Metadata> md, metadata_dest_func mdc) override;
     dataset::Writer::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) override;

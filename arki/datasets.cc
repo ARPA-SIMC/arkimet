@@ -10,44 +10,6 @@
 using namespace std;
 using namespace arki::utils;
 
-namespace arki {
-
-WriterPool::WriterPool(const ConfigFile& cfg)
-    : cfg(cfg)
-{
-}
-
-
-WriterPool::~WriterPool()
-{
-    // Delete the cached datasets
-    for (auto& i: cache)
-        delete i.second;
-}
-
-dataset::Writer* WriterPool::get(const std::string& name)
-{
-    auto ci = cache.find(name);
-    if (ci == cache.end())
-    {
-        ConfigFile* cfgsec = cfg.section(name);
-        if (!cfgsec) return nullptr;
-        auto config = dataset::Config::create(*cfgsec);
-        dataset::Writer* writer = config->create_writer().release();
-        cache.insert(make_pair(name, writer));
-        return writer;
-    } else {
-        return ci->second;
-    }
-}
-
-
-void WriterPool::flush()
-{
-    for (auto& i: cache)
-        i.second->flush();
-}
-
 namespace {
 
 struct FSPos
@@ -104,20 +66,85 @@ struct PathMatch
 
 }
 
-dataset::Writer* WriterPool::for_path(const std::string& pathname)
+
+namespace arki {
+
+Datasets::Datasets(const ConfigFile& cfg)
+{
+    for (auto section = cfg.sectionBegin(); section != cfg.sectionEnd(); ++section)
+        configs.insert(make_pair(section->first, dataset::Config::create(*section->second)));
+}
+
+std::shared_ptr<const dataset::Config> Datasets::get(const std::string& name) const
+{
+    auto res = configs.find(name);
+    if (res == configs.end())
+        throw std::runtime_error("dataset " + name + " not found");
+    return res->second;
+}
+
+bool Datasets::has(const std::string& name) const
+{
+    return configs.find(name) != configs.end();
+}
+
+std::shared_ptr<const dataset::LocalConfig> Datasets::for_path(const std::string& pathname)
 {
     PathMatch pmatch(pathname);
 
-    for (const auto& dsi: cache)
+    for (const auto& dsi: configs)
     {
-        dataset::LocalWriter* writer = dynamic_cast<dataset::LocalWriter*>(dsi.second);
-        if (!writer) continue;
-        string dspath = writer->path();
-        if (pmatch.is_under(dspath))
-            return writer;
+        auto lcfg = dynamic_pointer_cast<const dataset::LocalConfig>(dsi.second);
+        if (!lcfg) continue;
+        if (pmatch.is_under(lcfg->path))
+            return lcfg;
     }
 
-    return nullptr;
+    return std::shared_ptr<const dataset::LocalConfig>();
+}
+
+
+WriterPool::WriterPool(const Datasets& datasets)
+    : datasets(datasets)
+{
+}
+
+WriterPool::~WriterPool()
+{
+}
+
+std::shared_ptr<dataset::Writer> WriterPool::get(const std::string& name)
+{
+    auto ci = cache.find(name);
+    if (ci == cache.end())
+    {
+        auto config = datasets.get(name);
+        shared_ptr<dataset::Writer> writer(config->create_writer());
+        cache.insert(make_pair(name, writer));
+        return writer;
+    } else {
+        return ci->second;
+    }
+}
+
+std::shared_ptr<dataset::Writer> WriterPool::get_error()
+{
+    return get("error");
+}
+
+std::shared_ptr<dataset::Writer> WriterPool::get_duplicates()
+{
+    if (datasets.has("duplicates"))
+        return get("duplicates");
+    else
+        return get_error();
+}
+
+
+void WriterPool::flush()
+{
+    for (auto& i: cache)
+        i.second->flush();
 }
 
 }
