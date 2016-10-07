@@ -196,6 +196,8 @@ struct Ondisk2Archived : public Ondisk2Scenario
         auto config = ondisk2::Config::create(cfg);
 
         {
+            // 2000-01-01: make sure data we import are not older than archive age
+            auto o = dataset::SessionTime::local_override(946681200);
             // Generate a dataset with archived data
             ondisk2::Writer ds(config);
 
@@ -258,6 +260,9 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
 
         // Generate a dataset with archived data
         {
+            // 2000-01-01: make sure data we import are not older than archive age
+            auto o = dataset::SessionTime::local_override(946681200);
+
             ondisk2::Writer ds(config);
 
             // Import several metadata items

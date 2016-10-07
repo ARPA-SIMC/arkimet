@@ -159,6 +159,9 @@ dataset::Writer& Writer<Config>::shard(const core::Time& time)
 template<typename Config>
 dataset::Writer::AcquireResult Writer<Config>::acquire(Metadata& md, dataset::Writer::ReplaceStrategy replace)
 {
+    auto age_check = check_acquire_age(md);
+    if (age_check.first) return age_check.second;
+
     const core::Time& time = md.get<types::reftime::Position>()->time;
     auto res = shard(time).acquire(md, replace);
     const auto& source = md.sourceBlob();

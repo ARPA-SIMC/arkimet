@@ -1,6 +1,8 @@
 #include "local.h"
 #include "segmented.h"
 #include "archive.h"
+#include "arki/dataset/time.h"
+#include "arki/types/reftime.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/utils/files.h"
@@ -197,6 +199,26 @@ void LocalWriter::release_lock()
 {
     if (!lock) lock = new LocalLock(config().lockfile_pathname);
     lock->release();
+}
+
+std::pair<bool, Writer::AcquireResult> LocalWriter::check_acquire_age(Metadata& md) const
+{
+    const auto& st = SessionTime::get();
+    const types::reftime::Position* rt = md.get<types::reftime::Position>();
+
+    if (config().delete_age != -1 && rt->time < st.age_threshold(config().delete_age))
+    {
+        md.add_note("Safely discarded: data is older than delete age");
+        return make_pair(true, ACQ_OK);
+    }
+
+    if (config().archive_age != -1 && rt->time < st.age_threshold(config().archive_age))
+    {
+        md.add_note("Import refused: data is older than archive age");
+        return make_pair(true, ACQ_ERROR);
+    }
+
+    return make_pair(false, ACQ_OK);
 }
 
 LocalWriter::AcquireResult LocalWriter::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)

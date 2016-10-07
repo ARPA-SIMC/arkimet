@@ -133,6 +133,8 @@ public:
      */
     void test_setup(const std::string& cfg_default=std::string());
     void test_teardown();
+    /// Clear cached dataset::* instantiations
+    void test_reread_config();
     /**
      * Teardown and setup test again, to run two different configuration in the
      * same test case

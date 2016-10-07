@@ -66,6 +66,21 @@ const SessionTime& SessionTime::get()
     return *current_session_time;
 }
 
+core::Time SessionTime::age_threshold(unsigned age) const
+{
+    time_t tnow = now();
+
+    // Go to the beginning of the day
+    tnow -= (tnow % (3600*24));
+
+    time_t thr = tnow - age * 3600 * 24;
+
+    struct tm t;
+    gmtime_r(&thr, &t);
+
+    return core::Time(t);
+}
+
 SessionTime::Override SessionTime::local_override(time_t new_value)
 {
     if (!current_session_time)
