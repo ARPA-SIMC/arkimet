@@ -144,7 +144,7 @@ class TestDatasetReader(unittest.TestCase):
         ds = arki.make_qmacro_dataset(
             {},
             """
-[test]
+[test200]
 format = grib
 name = test.grib1
 path = inbound/test.grib1
