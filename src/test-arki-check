@@ -38,7 +38,7 @@ arki-query '' issue57 > issue57/todelete.md
 runtest "test -s issue57/todelete.md"
 runtest "arki-check --remove=issue57/todelete.md issue57"
 arki-query '' issue57 > issue57/todelete.md
-runtest "test -S issue57/todelete.md"
+runtest "test -f issue57/todelete.md && ! test -s issue57/todelete.md"
 
 
 testtotals
