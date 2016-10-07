@@ -68,6 +68,9 @@ const SessionTime& SessionTime::get()
 
 SessionTime::Override SessionTime::local_override(time_t new_value)
 {
+    if (!current_session_time)
+        current_session_time = new CurrentTime;
+
     SessionTime::Override res(current_session_time);
     current_session_time = new FixedTime(new_value);
     return res;
