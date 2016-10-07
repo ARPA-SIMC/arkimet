@@ -2,6 +2,7 @@
 #include "segmented.h"
 #include "indexed.h"
 #include "maintenance.h"
+#include "arki/dataset/time.h"
 #include "arki/types/source/blob.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -352,12 +353,12 @@ add_method("archive_age", [](Fixture& f) {
     wassert(actual(f.makeSegmentedChecker().get()).check_clean(true));
 
     {
-        TestOverrideCurrentDateForMaintenance o(start2008);
+        auto o = dataset::SessionTime::local_override(start2008);
         wassert(actual(f.makeSegmentedChecker().get()).repack_clean(false));
     }
 
     {
-        TestOverrideCurrentDateForMaintenance o(start2008 + 86400);
+        auto o = dataset::SessionTime::local_override(start2008 + 86400);
         ReporterExpected e;
         e.archived.emplace_back("testds", "20/2007.grib");
         wassert(actual(f.makeSegmentedChecker().get()).repack(e, false));
@@ -382,12 +383,12 @@ add_method("delete_age", [](Fixture& f) {
     wassert(actual(f.makeSegmentedChecker().get()).check_clean(true));
 
     {
-        TestOverrideCurrentDateForMaintenance o(start2008);
+        auto o = dataset::SessionTime::local_override(start2008);
         wassert(actual(f.makeSegmentedChecker().get()).repack_clean(false));
     }
 
     {
-        TestOverrideCurrentDateForMaintenance o(start2008 + 86400);
+        auto o = dataset::SessionTime::local_override(start2008 + 86400);
         ReporterExpected e;
         e.deleted.emplace_back("testds", "20/2007.grib");
         wassert(actual(f.makeSegmentedChecker().get()).repack(e, false));
@@ -406,7 +407,7 @@ add_method("unarchive_segment", [](Fixture& f) {
 
     // Archive one segment
     {
-        TestOverrideCurrentDateForMaintenance o(now);
+        auto o = dataset::SessionTime::local_override(now);
         ReporterExpected e;
         e.archived.emplace_back("testds", "2007/07-07.grib");
         wassert(actual(f.makeSegmentedChecker().get()).repack(e, true));

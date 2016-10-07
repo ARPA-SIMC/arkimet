@@ -3,6 +3,7 @@
 #include "maintenance.h"
 #include "step.h"
 #include "reporter.h"
+#include "arki/dataset/time.h"
 #include "arki/scan/dir.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
@@ -19,19 +20,6 @@ using arki::core::Time;
 
 namespace arki {
 namespace dataset {
-
-static time_t override_now = 0;
-
-TestOverrideCurrentDateForMaintenance::TestOverrideCurrentDateForMaintenance(time_t ts)
-{
-    old_ts = override_now;
-    override_now = ts;
-}
-TestOverrideCurrentDateForMaintenance::~TestOverrideCurrentDateForMaintenance()
-{
-    override_now = old_ts;
-}
-
 
 IndexedReader::~IndexedReader()
 {
@@ -153,7 +141,7 @@ segmented::State IndexedChecker::scan(dataset::Reporter& reporter, bool quick)
 
     Time archive_threshold(0, 0, 0);
     Time delete_threshold(0, 0, 0);
-    time_t now = override_now ? override_now : time(nullptr);
+    time_t now = SessionTime::get().now();
     struct tm t;
 
     // Go to the beginning of the day
