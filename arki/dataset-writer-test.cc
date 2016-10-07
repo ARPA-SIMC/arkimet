@@ -1,5 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
+#include "arki/dataset/time.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
@@ -213,6 +214,38 @@ this->add_method("import", [](Fixture& f) {
         wassert(actual_file(str::joinpath(f.ds_root, f.destfile(f.td.test_data[i]))).exists());
         wassert(actual_type(md.source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.test_data[i])));
     }
+});
+
+this->add_method("import_before_archive_age", [](Fixture& f) {
+    auto o = dataset::SessionTime::local_override(1483225200); // date +%s --date="2017-01-01"
+    f.cfg.setValue("archive age", "1");
+    auto ds = f.config().create_writer();
+
+    for (unsigned i = 0; i < 3; ++i)
+    {
+        Metadata md = f.td.test_data[i].md;
+        wassert(actual(ds->acquire(md)) == dataset::Writer::ACQ_ERROR);
+        wassert(actual(md.notes().back().content).contains("is older than archive age"));
+    }
+
+    metadata::Collection mdc(*f.config().create_reader(), Matcher());
+    wassert(actual(mdc.size()) == 0u);
+});
+
+this->add_method("import_before_delete_age", [](Fixture& f) {
+    auto o = dataset::SessionTime::local_override(1483225200); // date +%s --date="2017-01-01"
+    f.cfg.setValue("delete age", "1");
+    auto ds = f.config().create_writer();
+
+    for (unsigned i = 0; i < 3; ++i)
+    {
+        Metadata md = f.td.test_data[i].md;
+        wassert(actual(ds->acquire(md)) == dataset::Writer::ACQ_OK);
+        wassert(actual(md.notes().back().content).contains("is older than delete age"));
+    }
+
+    metadata::Collection mdc(*f.config().create_reader(), Matcher());
+    wassert(actual(mdc.size()) == 0u);
 });
 
 this->add_method("concurrent_import", [](Fixture& f) {
