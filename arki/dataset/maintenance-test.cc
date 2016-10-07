@@ -136,14 +136,15 @@ class Tests : public FixtureTestCase<Fixture>
             // Test accuracy of maintenance scan, on a dataset with one file to both repack and delete
             f.cfg.setValue("step", "yearly");
 
+            testdata::GRIBData data;
+            f.import_all(data);
+            f.test_reread_config();
+
             // Data are from 07, 08, 10 2007
             Time treshold(2008, 1, 1);
             Time now = Time::create_now();
             long long int duration = Time::duration(treshold, now);
             f.cfg.setValue("delete age", duration/(3600*24));
-
-            testdata::GRIBData data;
-            f.import_all(data);
 
             {
                 auto writer(f.makeSegmentedChecker());
@@ -174,14 +175,15 @@ class Tests : public FixtureTestCase<Fixture>
             // Test accuracy of maintenance scan, on a dataset with one file to both repack and archive
             f.cfg.setValue("step", "yearly");
 
+            testdata::GRIBData data;
+            f.import_all(data);
+            f.test_reread_config();
+
             // Data are from 07, 08, 10 2007
             Time treshold(2008, 1, 1);
             Time now = Time::create_now();
             long long int duration = Time::duration(treshold, now);
             f.cfg.setValue("archive age", duration/(3600*24));
-
-            testdata::GRIBData data;
-            f.import_all(data);
 
             {
                 auto writer(f.makeSegmentedChecker());

@@ -101,6 +101,15 @@ protected:
     void acquire_lock();
     void release_lock();
 
+    /**
+     * Check if the data to be acquired is older than acquire or delete age.
+     *
+     * If it is, return true and the import result value.
+     *
+     * If it is not, returns false and AcquireResult should be ignored.
+     */
+    std::pair<bool, AcquireResult> check_acquire_age(Metadata& md) const;
+
 public:
     using Writer::Writer;
     ~LocalWriter();

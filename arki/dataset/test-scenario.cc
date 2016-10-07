@@ -1,17 +1,18 @@
-#include <arki/dataset/test-scenario.h>
-#include <arki/exceptions.h>
-#include <arki/dataset/ondisk2.h>
-#include <arki/dataset/ondisk2/writer.h>
-#include <arki/dataset/archive.h>
-#include <arki/dataset/maintenance.h>
-#include <arki/dataset/indexed.h>
-#include <arki/dataset/reporter.h>
-#include <arki/metadata/test-generator.h>
-#include <arki/metadata/consumer.h>
-#include <arki/scan/any.h>
-#include <arki/utils.h>
-#include <arki/utils/sys.h>
-#include <arki/utils/string.h>
+#include "arki/dataset/test-scenario.h"
+#include "arki/exceptions.h"
+#include "arki/dataset/ondisk2.h"
+#include "arki/dataset/ondisk2/writer.h"
+#include "arki/dataset/archive.h"
+#include "arki/dataset/maintenance.h"
+#include "arki/dataset/indexed.h"
+#include "arki/dataset/reporter.h"
+#include "arki/dataset/time.h"
+#include "arki/metadata/test-generator.h"
+#include "arki/metadata/consumer.h"
+#include "arki/scan/any.h"
+#include "arki/utils.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 #include <sstream>
 
 using namespace std;
@@ -97,7 +98,7 @@ struct Ondisk2Scenario : public Scenario
         using namespace dataset;
 
         // Override current date for maintenance to 2010-09-01 + curday
-        dataset::TestOverrideCurrentDateForMaintenance od(t_start + 3600*24*(curday-1));
+        auto od = dataset::SessionTime::local_override(t_start + 3600*24*(curday-1));
 
         // Pack and archive
         auto config = ondisk2::Config::create(cfg);
@@ -195,6 +196,8 @@ struct Ondisk2Archived : public Ondisk2Scenario
         auto config = ondisk2::Config::create(cfg);
 
         {
+            // 2000-01-01: make sure data we import are not older than archive age
+            auto o = dataset::SessionTime::local_override(946681200);
             // Generate a dataset with archived data
             ondisk2::Writer ds(config);
 
@@ -257,6 +260,9 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
 
         // Generate a dataset with archived data
         {
+            // 2000-01-01: make sure data we import are not older than archive age
+            auto o = dataset::SessionTime::local_override(946681200);
+
             ondisk2::Writer ds(config);
 
             // Import several metadata items

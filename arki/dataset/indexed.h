@@ -64,20 +64,6 @@ public:
     void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
 };
 
-/**
- * Temporarily override the current date used to check data age.
- *
- * This is used to be able to write unit tests that run the same independently
- * of when they are run.
- */
-struct TestOverrideCurrentDateForMaintenance
-{
-    time_t old_ts;
-
-    TestOverrideCurrentDateForMaintenance(time_t ts);
-    ~TestOverrideCurrentDateForMaintenance();
-};
-
 }
 }
 #endif

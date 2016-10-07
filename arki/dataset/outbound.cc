@@ -53,6 +53,9 @@ void Writer::storeBlob(Metadata& md, const std::string& reldest)
 
 Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
+    auto age_check = check_acquire_age(md);
+    if (age_check.first) return age_check.second;
+
     const core::Time& time = md.get<types::reftime::Position>()->time;
     string reldest = config().step()(time);
     string dest = path() + "/" + reldest;

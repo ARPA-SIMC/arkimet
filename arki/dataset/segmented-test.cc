@@ -2,6 +2,7 @@
 #include "segmented.h"
 #include "indexed.h"
 #include "maintenance.h"
+#include "arki/dataset/time.h"
 #include "arki/types/source/blob.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -53,11 +54,12 @@ Tests test_simple_sqlite("arki_dataset_segmented_simple_sqlite", "type=simple\ni
 void Tests::register_tests() {
 
 add_method("compressed", [](Fixture& f) {
+    // Import and compress all the files
+    f.clean_and_import();
+    f.test_reread_config();
     // Test moving into archive data that have been compressed
     f.cfg.setValue("archive age", days_since(2007, 9, 1));
 
-    // Import and compress all the files
-    f.clean_and_import();
     scan::compress("testds/2007/07-07.grib");
     scan::compress("testds/2007/07-08.grib");
     scan::compress("testds/2007/10-09.grib");
@@ -143,8 +145,9 @@ add_method("compressed", [](Fixture& f) {
 add_method("query_archived", [](Fixture& f) {
     // Test querying with archived data
     using namespace arki::types;
-    f.cfg.setValue("archive age", days_since(2007, 9, 1));
     f.clean_and_import();
+    f.test_reread_config();
+    f.cfg.setValue("archive age", days_since(2007, 9, 1));
     {
         auto writer(f.makeSegmentedChecker());
         ReporterExpected e;
@@ -338,10 +341,6 @@ add_method("query_lots", [](Fixture& f) {
 // after the archive cutoff (regardless of the data currently in the
 // segment)
 add_method("archive_age", [](Fixture& f) {
-    // TZ=UTC date --date="2008-01-01 00:00:00" +%s
-    time_t start2008 = 1199145600;
-
-    f.cfg.setValue("archive age", "1");
     f.cfg.setValue("step", "yearly");
 
     // Import a file with a known reftime
@@ -351,13 +350,20 @@ add_method("archive_age", [](Fixture& f) {
     wassert(actual(res) == dataset::Writer::ACQ_OK);
     wassert(actual(f.makeSegmentedChecker().get()).check_clean(true));
 
+    f.test_reread_config();
+
+    // TZ=UTC date --date="2008-01-01 00:00:00" +%s
+    time_t start2008 = 1199145600;
+
+    f.cfg.setValue("archive age", "1");
+
     {
-        TestOverrideCurrentDateForMaintenance o(start2008);
+        auto o = dataset::SessionTime::local_override(start2008);
         wassert(actual(f.makeSegmentedChecker().get()).repack_clean(false));
     }
 
     {
-        TestOverrideCurrentDateForMaintenance o(start2008 + 86400);
+        auto o = dataset::SessionTime::local_override(start2008 + 86400);
         ReporterExpected e;
         e.archived.emplace_back("testds", "20/2007.grib");
         wassert(actual(f.makeSegmentedChecker().get()).repack(e, false));
@@ -368,10 +374,6 @@ add_method("archive_age", [](Fixture& f) {
 // after the archive cutoff (regardless of the data currently in the
 // segment)
 add_method("delete_age", [](Fixture& f) {
-    // TZ=UTC date --date="2008-01-01 00:00:00" +%s
-    time_t start2008 = 1199145600;
-
-    f.cfg.setValue("delete age", "1");
     f.cfg.setValue("step", "yearly");
 
     // Import a file with a known reftime
@@ -381,13 +383,19 @@ add_method("delete_age", [](Fixture& f) {
     wassert(actual(res) == dataset::Writer::ACQ_OK);
     wassert(actual(f.makeSegmentedChecker().get()).check_clean(true));
 
+    // TZ=UTC date --date="2008-01-01 00:00:00" +%s
+    time_t start2008 = 1199145600;
+
+    f.test_reread_config();
+    f.cfg.setValue("delete age", "1");
+
     {
-        TestOverrideCurrentDateForMaintenance o(start2008);
+        auto o = dataset::SessionTime::local_override(start2008);
         wassert(actual(f.makeSegmentedChecker().get()).repack_clean(false));
     }
 
     {
-        TestOverrideCurrentDateForMaintenance o(start2008 + 86400);
+        auto o = dataset::SessionTime::local_override(start2008 + 86400);
         ReporterExpected e;
         e.deleted.emplace_back("testds", "20/2007.grib");
         wassert(actual(f.makeSegmentedChecker().get()).repack(e, false));
@@ -395,18 +403,20 @@ add_method("delete_age", [](Fixture& f) {
 });
 
 add_method("unarchive_segment", [](Fixture& f) {
-    // TZ=UTC date --date="2007-07-09 00:00:00" +%s
-    time_t now = 1183939200;
-    f.cfg.setValue("archive age", "1");
     // Import a file with a known reftime
     // Reftime: 2007-07-08T13:00:00Z
     // Reftime: 2007-07-07T00:00:00Z
     // Reftime: 2007-10-09T00:00:00Z
     f.clean_and_import();
+    f.test_reread_config();
+
+    // TZ=UTC date --date="2007-07-09 00:00:00" +%s
+    time_t now = 1183939200;
+    f.cfg.setValue("archive age", "1");
 
     // Archive one segment
     {
-        TestOverrideCurrentDateForMaintenance o(now);
+        auto o = dataset::SessionTime::local_override(now);
         ReporterExpected e;
         e.archived.emplace_back("testds", "2007/07-07.grib");
         wassert(actual(f.makeSegmentedChecker().get()).repack(e, true));

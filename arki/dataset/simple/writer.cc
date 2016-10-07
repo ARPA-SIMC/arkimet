@@ -69,6 +69,9 @@ Segment* Writer::file(const Metadata& md, const std::string& format)
 
 Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
+    auto age_check = check_acquire_age(md);
+    if (age_check.first) return age_check.second;
+
     acquire_lock();
     // TODO: refuse if md is before "archive age"
     Segment* writer = file(md, md.source().format);

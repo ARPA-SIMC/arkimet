@@ -3,6 +3,7 @@
 #include "maintenance.h"
 #include "step.h"
 #include "reporter.h"
+#include "arki/dataset/time.h"
 #include "arki/scan/dir.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
@@ -19,19 +20,6 @@ using arki::core::Time;
 
 namespace arki {
 namespace dataset {
-
-static time_t override_now = 0;
-
-TestOverrideCurrentDateForMaintenance::TestOverrideCurrentDateForMaintenance(time_t ts)
-{
-    old_ts = override_now;
-    override_now = ts;
-}
-TestOverrideCurrentDateForMaintenance::~TestOverrideCurrentDateForMaintenance()
-{
-    override_now = old_ts;
-}
-
 
 IndexedReader::~IndexedReader()
 {
@@ -153,24 +141,12 @@ segmented::State IndexedChecker::scan(dataset::Reporter& reporter, bool quick)
 
     Time archive_threshold(0, 0, 0);
     Time delete_threshold(0, 0, 0);
-    time_t now = override_now ? override_now : time(nullptr);
-    struct tm t;
-
-    // Go to the beginning of the day
-    now -= (now % (3600*24));
+    const auto& st = SessionTime::get();
 
     if (config().archive_age != -1)
-    {
-        time_t arc_thr = now - config().archive_age * 3600 * 24;
-        gmtime_r(&arc_thr, &t);
-        archive_threshold.set_tm(t);
-    }
+        archive_threshold = st.age_threshold(config().archive_age);
     if (config().delete_age != -1)
-    {
-        time_t del_thr = now - config().delete_age * 3600 * 24;
-        gmtime_r(&del_thr, &t);
-        delete_threshold.set_tm(t);
-    }
+        delete_threshold = st.age_threshold(config().delete_age);
 
     for (auto& i: segments_state)
     {

@@ -136,8 +136,9 @@ this->add_method("clean", [](Fixture& f) {
 
 // Test accuracy of maintenance scan, on perfect dataset, with data to archive
 this->add_method("archive_age", [](Fixture& f) {
-    f.cfg.setValue("archive age", f.td.selective_days_since());
     wassert(f.import_all(f.td));
+    f.test_reread_config();
+    f.cfg.setValue("archive age", f.td.selective_days_since());
 
     // Check if files to archive are detected
     {
@@ -199,8 +200,9 @@ this->add_method("archive_age", [](Fixture& f) {
 
 // Test accuracy of maintenance scan, on perfect dataset, with data to delete
 this->add_method("delete_age", [](Fixture& f) {
-    f.cfg.setValue("delete age", f.td.selective_days_since());
     wassert(f.import_all(f.td));
+    f.test_reread_config();
+    f.cfg.setValue("delete age", f.td.selective_days_since());
 
     {
         auto checker(f.config().create_checker());
@@ -277,7 +279,7 @@ this->add_method("scan_truncated", [](Fixture& f) {
 // Test accuracy of maintenance scan, on a dataset with a corrupted data file
 this->add_method("scan_corrupted", [](Fixture& f) {
     /**
-     * Here we have inconsistent behaviou across segment types and data types,
+     * Here we have inconsistent behaviour across segment types and data types,
      * because:
      *  - some formats detect corruption, some formats skip garbage
      *  - concatenated data in files may skip corrupted data as garbage, but

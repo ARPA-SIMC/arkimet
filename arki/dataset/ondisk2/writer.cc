@@ -188,6 +188,9 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 
 Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
+    auto age_check = check_acquire_age(md);
+    if (age_check.first) return age_check.second;
+
     acquire_lock();
 
     if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
