@@ -210,21 +210,17 @@ done:
 
 
 RealDispatcher::RealDispatcher(const ConfigFile& cfg)
-    : Dispatcher(cfg), pool(cfg), dserror(0), dsduplicates(0)
+    : Dispatcher(cfg), datasets(cfg), pool(datasets), dserror(0), dsduplicates(0)
 {
     // Instantiate the error dataset in the cache
-    dserror = pool.get("error");
-    if (!dserror)
-        throw std::runtime_error("no [error] dataset found");
+    dserror = pool.get_error();
 
     // Instantiate the duplicates dataset in the cache
-    dsduplicates = pool.get("duplicates");
+    dsduplicates = pool.get_duplicates();
 }
 
 RealDispatcher::~RealDispatcher()
 {
-	// The error and duplicates datasets do not want deallocation, as they are
-	// a reference to the version inside the DatasetPool cache
 }
 
 void RealDispatcher::hook_output(unique_ptr<Metadata> md, metadata_dest_func mdc)
@@ -235,9 +231,7 @@ void RealDispatcher::hook_output(unique_ptr<Metadata> md, metadata_dest_func mdc
 
 dataset::Writer::AcquireResult RealDispatcher::raw_dispatch_dataset(const std::string& name, Metadata& md)
 {
-    // File it to the outbound dataset right away
-    dataset::Writer* target = pool.get(name);
-    return target->acquire(md);
+    return pool.get(name)->acquire(md);
 }
 
 dataset::Writer::AcquireResult RealDispatcher::raw_dispatch_error(Metadata& md)
@@ -247,8 +241,7 @@ dataset::Writer::AcquireResult RealDispatcher::raw_dispatch_error(Metadata& md)
 
 dataset::Writer::AcquireResult RealDispatcher::raw_dispatch_duplicates(Metadata& md)
 {
-    dataset::Writer* target = dsduplicates ? dsduplicates : dserror;
-    return target->acquire(md);
+    return dsduplicates->acquire(md);
 }
 
 void RealDispatcher::flush() { pool.flush(); }

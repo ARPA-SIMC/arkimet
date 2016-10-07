@@ -113,6 +113,11 @@ ConfigFile::ConfigFile(const ConfigFile& cfg)
     merge(cfg);
 }
 
+ConfigFile::ConfigFile(const std::string& cfg, const std::string& pathname)
+{
+    parse(cfg, pathname);
+}
+
 ConfigFile::~ConfigFile()
 {
 	for (std::map<string, ConfigFile*>::iterator i = sections.begin();

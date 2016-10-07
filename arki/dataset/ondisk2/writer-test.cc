@@ -484,6 +484,33 @@ add_method("pack_vm2", [](Fixture& f) {
     wassert(actual(mdc_packed[1].getData()) == orig_data[3]);
 });
 
+// Test removal of VM2 data
+add_method("issue57", [](Fixture& f) {
+    f.cfg.setValue("unique", "reftime, area, product");
+
+    // Import the sample file
+    sys::write_file("issue57.vm2", "201610050000,12626,139,70,,,000000000\n");
+    metadata::Collection input("issue57.vm2");
+    {
+        auto writer = f.makeOndisk2Writer();
+        wassert(actual(writer->acquire(input[0])) == dataset::Writer::ACQ_OK);
+    }
+
+    // Query back the data
+    metadata::Collection queried(*f.makeOndisk2Reader(), Matcher());
+    wassert(actual(queried.size()) == 1);
+
+    // Delete the data
+    {
+        auto writer = f.makeOndisk2Writer();
+        writer->remove(queried[0]);
+    }
+
+    // Query back the data
+    metadata::Collection after_delete(*f.makeOndisk2Reader(), Matcher());
+    wassert(actual(after_delete.size()) == 0);
+});
+
 }
 
 }
