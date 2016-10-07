@@ -9,12 +9,12 @@
 
 namespace arki {
 class ConfigFile;
+class Metadata;
 
 namespace dataset {
 class Config;
 class Reader;
 class Writer;
-class LocalConfig;
 }
 
 /**
@@ -35,11 +35,13 @@ public:
     bool has(const std::string& name) const;
 
     /**
-     * Look for the dataset that contains the given path.
+     * Look for the dataset that contains the given metadata item, and make the
+     * metadata source relative to it.
      *
-     * Returns an empty shared_ptr if not found.
+     * If not dataset contains the metadata, returns an empty shared_ptr and
+     * leaves \a md untouched.
      */
-    std::shared_ptr<const dataset::LocalConfig> for_path(const std::string& pathname);
+    std::shared_ptr<const dataset::Config> locate_metadata(Metadata& md);
 };
 
 

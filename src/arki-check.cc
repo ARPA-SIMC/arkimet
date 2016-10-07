@@ -321,7 +321,8 @@ int main(int argc, const char* argv[])
             Datasets datasets(cfg);
             WriterPool pool(datasets);
             // Read all metadata from the file specified in --remove
-            metadata::Collection todolist(opts.op_remove->stringValue());
+            metadata::Collection todolist;
+            todolist.read_from_file(opts.op_remove->stringValue());
             // Datasets where each metadata comes from
             vector<std::string> dsnames;
             // Verify that all metadata items can be mapped to a dataset
@@ -335,7 +336,7 @@ int main(int argc, const char* argv[])
                    throw std::runtime_error(ss.str());
                 }
 
-                auto ds = datasets.for_path(md->sourceBlob().absolutePathname());
+                auto ds = datasets.locate_metadata(*md);
                 if (!ds)
                 {
                    stringstream ss;

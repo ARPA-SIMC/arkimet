@@ -5,6 +5,8 @@
 #include "dataset/local.h"
 #include "utils/sys.h"
 #include "utils/string.h"
+#include "metadata.h"
+#include "types/source/blob.h"
 #include "config.h"
 
 using namespace std;
@@ -88,8 +90,11 @@ bool Datasets::has(const std::string& name) const
     return configs.find(name) != configs.end();
 }
 
-std::shared_ptr<const dataset::LocalConfig> Datasets::for_path(const std::string& pathname)
+std::shared_ptr<const dataset::Config> Datasets::locate_metadata(Metadata& md)
 {
+    const auto& source = md.sourceBlob();
+    std::string pathname = source.absolutePathname();
+
     PathMatch pmatch(pathname);
 
     for (const auto& dsi: configs)
@@ -97,7 +102,10 @@ std::shared_ptr<const dataset::LocalConfig> Datasets::for_path(const std::string
         auto lcfg = dynamic_pointer_cast<const dataset::LocalConfig>(dsi.second);
         if (!lcfg) continue;
         if (pmatch.is_under(lcfg->path))
-            return lcfg;
+        {
+            md.set_source(source.makeRelativeTo(lcfg->path));
+            return dsi.second;
+        }
     }
 
     return std::shared_ptr<const dataset::LocalConfig>();
