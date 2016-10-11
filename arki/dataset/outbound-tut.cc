@@ -70,6 +70,21 @@ struct arki_dataset_outbound_shar {
 };
 TESTGRP(arki_dataset_outbound);
 
+namespace {
+void dispatches(Dispatcher& dispatcher, Metadata& md)
+{
+    Dispatcher::Outcome res = dispatcher.dispatch(md);
+    // If dispatch fails, print the notes
+    if (res != Dispatcher::DISP_OK)
+    {
+        cerr << "Failed dispatch notes:" << endl;
+        for (const auto& n: md.notes())
+            cerr << "   " << n << endl;
+    }
+    wassert(actual(res) == Dispatcher::DISP_OK);
+}
+}
+
 // Test acquiring the data
 def_test(1)
 {
@@ -78,22 +93,25 @@ def_test(1)
     metadata::Collection mdc;
     scan::Grib scanner;
     RealDispatcher dispatcher(config);
+    dispatcher.outbound_md_dest = mdc.inserter_func();
     scanner.open("inbound/test.grib1");
-    ensure(scanner.next(md));
-    ensure_dispatches(dispatcher, unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func());
-    ensure_equals(dispatcher.outboundFailures(), 0u);
-    ensure_equals(mdc.size(), 2u);
-    ensure(scanner.next(md));
-    ensure_dispatches(dispatcher, unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func());
-    ensure_equals(dispatcher.outboundFailures(), 0u);
-    ensure_equals(mdc.size(), 4u);
-    ensure(scanner.next(md));
-    ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_ERROR);
-    ensure_equals(dispatcher.outboundFailures(), 0u);
-    ensure_equals(mdc.size(), 5u);
+
+    wassert(actual(scanner.next(md)).istrue());
+    wassert(dispatches(dispatcher, md));
+    wassert(actual(dispatcher.outboundFailures()) == 0u);
+    wassert(actual(mdc.size()) == 1u);
+
+    wassert(actual(scanner.next(md)).istrue());
+    wassert(dispatches(dispatcher, md));
+    wassert(actual(dispatcher.outboundFailures()) == 0u);
+    wassert(actual(mdc.size()) == 2u);
+
+    wassert(actual(scanner.next(md)).istrue());
+    wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dispatcher.outboundFailures()) == 0u);
+    wassert(actual(mdc.size()) == 2u);
+
     ensure(!scanner.next(md));
 }
 
 }
-
-// vim:set ts=4 sw=4:

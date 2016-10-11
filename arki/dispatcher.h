@@ -34,9 +34,6 @@ protected:
     /// Hook called with the list of matching datasets for a message
     virtual void hook_found_datasets(const Metadata& md, std::vector<std::string>& found);
 
-    /// Hook called to output the final metadata to a consumer
-    virtual void hook_output(std::unique_ptr<Metadata> md, metadata_dest_func mdc);
-
     virtual dataset::Writer::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) = 0;
     virtual dataset::Writer::AcquireResult raw_dispatch_error(Metadata& md);
     virtual dataset::Writer::AcquireResult raw_dispatch_duplicates(Metadata& md);
@@ -52,6 +49,10 @@ public:
 		/// Had problems, and even writing in the error dataset failed
 		DISP_NOTWRITTEN
 	};
+
+    /// If set, send here metadata sent to outbound datasets
+    metadata_dest_func outbound_md_dest;
+
 
 	Dispatcher(const ConfigFile& cfg);
 	virtual ~Dispatcher();
@@ -84,7 +85,7 @@ public:
      *
      * @returns The outcome of the dispatch.
      */
-    Outcome dispatch(std::unique_ptr<Metadata>&& md, metadata_dest_func mdc);
+    Outcome dispatch(Metadata& md);
 
     virtual void flush() = 0;
 };
@@ -115,7 +116,6 @@ protected:
     // Duplicates dataset
     std::shared_ptr<dataset::Writer> dsduplicates;
 
-    void hook_output(std::unique_ptr<Metadata> md, metadata_dest_func mdc) override;
     dataset::Writer::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) override;
     dataset::Writer::AcquireResult raw_dispatch_error(Metadata& md) override;
     dataset::Writer::AcquireResult raw_dispatch_duplicates(Metadata& md) override;

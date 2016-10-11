@@ -80,6 +80,8 @@ struct CommandLine : public utils::commandline::StandardParserWithManpage
     utils::commandline::StringOption* moveok;
     utils::commandline::StringOption* moveko;
     utils::commandline::StringOption* movework;
+    utils::commandline::StringOption* copyok;
+    utils::commandline::StringOption* copyko;
     utils::commandline::StringOption* summary_restrict;
     utils::commandline::StringOption* validate;
     utils::commandline::VectorOption<utils::commandline::ExistingFile>* postproc_data;

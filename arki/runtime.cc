@@ -103,12 +103,13 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 	status = infoOpts->add<BoolOption>("status", 0, "status", "",
 			"print to standard error a line per every file with a summary of how it was handled");
 
-	// Used only if requested
-	inputOpts = createGroup("Options controlling input data");
-	cfgfiles = 0; exprfile = 0; qmacro = 0;
-	files = 0; moveok = moveko = movework = 0;
-	restr = 0;
-	ignore_duplicates = 0;
+    // Used only if requested
+    inputOpts = createGroup("Options controlling input data");
+    cfgfiles = 0; exprfile = 0; qmacro = 0;
+    files = 0; moveok = moveko = movework = 0;
+    copyok = copyko = 0;
+    restr = 0;
+    ignore_duplicates = 0;
     validate = 0;
 
 	outputOpts = createGroup("Options controlling output style");
@@ -187,6 +188,10 @@ void CommandLine::addScanOptions()
 			"move input files here before opening them. This is useful to "
 			"catch the cases where arki-scan crashes without having a "
 			"chance to handle errors.");
+    copyok = inputOpts->add<StringOption>("copyok", 0, "copyok", "directory",
+            "copy the data from input files that was imported successfully to the given directory");
+    copyko = inputOpts->add<StringOption>("copyko", 0, "copyko", "directory",
+            "copy the data from input files that had problems to the given directory");
 	ignore_duplicates = dispatchOpts->add<BoolOption>("ignore-duplicates", 0, "ignore-duplicates", "",
 			"do not consider the run unsuccessful in case of duplicates");
     validate = dispatchOpts->add<StringOption>("validate", 0, "validate", "checks",
@@ -592,27 +597,28 @@ bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
 bool MetadataDispatch::dispatch(unique_ptr<Metadata>&& md)
 {
     // Dispatch to matching dataset
-    switch (dispatcher->dispatch(move(md), results.inserter_func()))
+    switch (dispatcher->dispatch(*md))
     {
         case Dispatcher::DISP_OK:
+            // TODO: copyok goes here
             ++countSuccessful;
             break;
         case Dispatcher::DISP_DUPLICATE_ERROR:
+            // TODO: copyko goes here
             ++countDuplicates;
             break;
         case Dispatcher::DISP_ERROR:
+            // TODO: copyko goes here
             ++countInErrorDataset;
             break;
         case Dispatcher::DISP_NOTWRITTEN:
+            // TODO: copyko goes here
             // If dispatching failed, add a big note about it.
-            // Analising the notes in the output should be enough to catch this
-            // even happening.
-            // No point adding the note here: md has already been consumed by 'results'
-            //md->add_note("WARNING: The data has not been imported in ANY dataset");
+            md->add_note("WARNING: The data has not been imported in ANY dataset");
             ++countNotImported;
             break;
     }
-
+    results.acquire(move(md));
     return dispatcher->canContinue();
 }
 

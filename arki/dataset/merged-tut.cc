@@ -56,16 +56,15 @@ struct arki_dataset_merged_shar {
 
         // Import data into the datasets
         Metadata md;
-        metadata::Collection mdc;
         scan::Grib scanner;
         RealDispatcher dispatcher(config);
         scanner.open("inbound/test.grib1");
         ensure(scanner.next(md));
-        ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_OK);
+        wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_OK);
         ensure(scanner.next(md));
-        ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_OK);
+        wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_OK);
         ensure(scanner.next(md));
-        ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_ERROR);
+        wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_ERROR);
         ensure(!scanner.next(md));
         dispatcher.flush();
 
