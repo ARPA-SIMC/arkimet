@@ -467,6 +467,11 @@ void CommandLine::setupProcessing()
                 dispatcher->dispatcher->add_validator(*(i->second));
             }
         }
+
+        if (copyok && copyok->isSet())
+            dispatcher->dir_copyok = copyok->stringValue();
+        if (copyko && copyko->isSet())
+            dispatcher->dir_copyko = copyko->stringValue();
     } else {
         if (validate && validate->isSet())
             throw commandline::BadOption("--validate only makes sense with --dispatch or --testdispatch");
@@ -557,6 +562,16 @@ bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
     setStartTime();
     results.clear();
 
+    if (!dir_copyok.empty())
+        copyok.reset(new arki::File(str::joinpath(dir_copyok, str::basename(name)), O_WRONLY | O_APPEND | O_CREAT));
+    else
+        copyok.release();
+
+    if (!dir_copyko.empty())
+        copyko.reset(new arki::File(str::joinpath(dir_copyko, str::basename(name)), O_WRONLY | O_APPEND | O_CREAT));
+    else
+        copyko.release();
+
     try {
         ds.query_data(Matcher(), [&](unique_ptr<Metadata> md) { return this->dispatch(move(md)); });
     } catch (std::exception& e) {
@@ -600,19 +615,19 @@ bool MetadataDispatch::dispatch(unique_ptr<Metadata>&& md)
     switch (dispatcher->dispatch(*md))
     {
         case Dispatcher::DISP_OK:
-            // TODO: copyok goes here
+            do_copyok(*md);
             ++countSuccessful;
             break;
         case Dispatcher::DISP_DUPLICATE_ERROR:
-            // TODO: copyko goes here
+            do_copyko(*md);
             ++countDuplicates;
             break;
         case Dispatcher::DISP_ERROR:
-            // TODO: copyko goes here
+            do_copyko(*md);
             ++countInErrorDataset;
             break;
         case Dispatcher::DISP_NOTWRITTEN:
-            // TODO: copyko goes here
+            do_copyko(*md);
             // If dispatching failed, add a big note about it.
             md->add_note("WARNING: The data has not been imported in ANY dataset");
             ++countNotImported;
@@ -620,6 +635,18 @@ bool MetadataDispatch::dispatch(unique_ptr<Metadata>&& md)
     }
     results.acquire(move(md));
     return dispatcher->canContinue();
+}
+
+void MetadataDispatch::do_copyok(Metadata& md)
+{
+    if (copyok && copyok->is_open())
+        copyok->write_all_or_throw(md.getData());
+}
+
+void MetadataDispatch::do_copyko(Metadata& md)
+{
+    if (copyko && copyko->is_open())
+        copyko->write_all_or_throw(md.getData());
 }
 
 void MetadataDispatch::flush()

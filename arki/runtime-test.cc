@@ -1,15 +1,27 @@
 #include "config.h"
-
-#include <arki/tests/tests.h>
-#include <arki/utils/sys.h>
-#include <arki/runtime.h>
+#include "arki/tests/tests.h"
+#include "arki/utils/sys.h"
+#include "arki/runtime.h"
+#include "arki/runtime/processor.h"
+#include "arki/dataset/file.h"
 
 namespace {
 using namespace std;
 using namespace arki;
+using namespace arki::utils;
 using namespace arki::tests;
 
 def_tests(arki_runtime);
+
+struct CollectProcessor : public runtime::DatasetProcessor
+{
+    metadata::Collection mdc;
+
+    void process(dataset::Reader& ds, const std::string& name) override {
+        mdc.add(ds, Matcher());
+    }
+    std::string describe() const { return "[test]CollectProcessor"; }
+};
 
 void Tests::register_tests() {
 
@@ -72,6 +84,63 @@ add_method("files", [] {
         return 1;
     }
 */
+});
+
+add_method("copyok", [] {
+    ConfigFile cfg(R"(
+[test200]
+type = ondisk2
+step = daily
+filter = origin: GRIB1,200
+index = origin, reftime
+name = test200
+path = test200
+
+[test80]
+type = ondisk2
+step = daily
+filter = origin: GRIB1,80
+index = origin, reftime
+name = test80
+path = test80
+
+[error]
+type = error
+step = daily
+name = error
+path = error
+
+[duplicates]
+type = duplicates
+step = daily
+name = duplicates
+path = duplicates
+    )");
+    CollectProcessor output;
+    runtime::MetadataDispatch dispatch(cfg, output);
+    dispatch.dir_copyok = "copyok/copyok";
+    dispatch.dir_copyko = "copyok/copyko";
+    sys::makedirs(dispatch.dir_copyok);
+    sys::makedirs(dispatch.dir_copyko);
+
+    ConfigFile in_cfg;
+    wassert(actual_file("inbound/test.grib1").exists());
+    dataset::File::readConfig("inbound/test.grib1", in_cfg);
+    auto in_config = dataset::FileConfig::create(*in_cfg.sectionBegin()->second);
+    auto reader = in_config->create_reader();
+
+    wassert(actual(dispatch.process(*reader, "test.grib1")).isfalse());
+
+    /*
+    for (const auto& md: output.mdc)
+        for (const auto& n: md->notes())
+            fprintf(stderr, "%s\n", n.content.c_str());
+    */
+
+    wassert(actual_file("copyok/copyok/test.grib1").exists());
+    wassert(actual(sys::size("copyok/copyok/test.grib1")) == 42178u);
+    wassert(actual_file("copyok/copyko/test.grib1").exists());
+    wassert(actual(sys::size("copyok/copyko/test.grib1")) == 2234u);
 });
 
 }
