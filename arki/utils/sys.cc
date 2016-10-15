@@ -237,6 +237,8 @@ void FileDescriptor::throw_runtime_error(const char* desc)
     throw std::runtime_error(desc);
 }
 
+bool FileDescriptor::is_open() const { return fd != -1; }
+
 void FileDescriptor::close()
 {
     if (fd == -1) return;
@@ -376,11 +378,31 @@ void NamedFileDescriptor::throw_runtime_error(const char* desc)
 
 
 /*
+ * ManagedNamedFileDescriptor
+ */
+
+ManagedNamedFileDescriptor::~ManagedNamedFileDescriptor()
+{
+    if (fd != -1) ::close(fd);
+}
+
+ManagedNamedFileDescriptor& ManagedNamedFileDescriptor::operator=(ManagedNamedFileDescriptor&& o)
+{
+    if (&o == this) return *this;
+    close();
+    fd = o.fd;
+    pathname = std::move(o.pathname);
+    o.fd = -1;
+    return *this;
+}
+
+
+/*
  * Path
  */
 
 Path::Path(const char* pathname, int flags)
-    : NamedFileDescriptor(-1, pathname)
+    : ManagedNamedFileDescriptor(-1, pathname)
 {
     fd = open(pathname, flags | O_PATH);
     if (fd == -1)
@@ -388,7 +410,7 @@ Path::Path(const char* pathname, int flags)
 }
 
 Path::Path(const std::string& pathname, int flags)
-    : NamedFileDescriptor(-1, pathname)
+    : ManagedNamedFileDescriptor(-1, pathname)
 {
     fd = open(pathname.c_str(), flags | O_PATH);
     if (fd == -1)
@@ -396,15 +418,9 @@ Path::Path(const std::string& pathname, int flags)
 }
 
 Path::Path(Path& parent, const char* pathname, int flags)
-    : NamedFileDescriptor(parent.openat(pathname, flags | O_PATH),
+    : ManagedNamedFileDescriptor(parent.openat(pathname, flags | O_PATH),
             str::joinpath(parent.name(), pathname))
 {
-}
-
-Path::~Path()
-{
-    if (fd != -1)
-        ::close(fd);
 }
 
 DIR* Path::fdopendir()
@@ -628,23 +644,19 @@ void Path::rmtree()
  */
 
 File::File(const std::string& pathname)
-    : NamedFileDescriptor(-1, pathname)
+    : ManagedNamedFileDescriptor(-1, pathname)
 {
 }
 
 File::File(const std::string& pathname, int flags, mode_t mode)
-    : NamedFileDescriptor(-1, pathname)
+    : ManagedNamedFileDescriptor(-1, pathname)
 {
     open(flags, mode);
 }
 
-File::~File()
-{
-    if (fd != -1) ::close(fd);
-}
-
 void File::open(int flags, mode_t mode)
 {
+    close();
     fd = ::open(pathname.c_str(), flags, mode);
     if (fd == -1)
         throw std::system_error(errno, std::system_category(), "cannot open file " + pathname);
@@ -652,6 +664,7 @@ void File::open(int flags, mode_t mode)
 
 bool File::open_ifexists(int flags, mode_t mode)
 {
+    close();
     fd = ::open(pathname.c_str(), flags, mode);
     if (fd != -1) return true;
     if (errno == ENOENT) return false;
