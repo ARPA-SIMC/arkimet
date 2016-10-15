@@ -73,29 +73,25 @@ void Dispatcher::hook_found_datasets(const Metadata& md, vector<string>& found)
 {
 }
 
-void Dispatcher::hook_output(unique_ptr<Metadata> md, metadata_dest_func mdc)
-{
-}
-
 dataset::Writer::AcquireResult Dispatcher::raw_dispatch_error(Metadata& md) { return raw_dispatch_dataset("error", md); }
 dataset::Writer::AcquireResult Dispatcher::raw_dispatch_duplicates(Metadata& md) { return raw_dispatch_dataset("duplicates", md); }
 
-Dispatcher::Outcome Dispatcher::dispatch(unique_ptr<Metadata>&& md, metadata_dest_func mdc)
+Dispatcher::Outcome Dispatcher::dispatch(Metadata& md)
 {
     Dispatcher::Outcome result;
     vector<string> found;
 
-    hook_pre_dispatch(*md);
+    hook_pre_dispatch(md);
 
     // Ensure that we have a reference time
-    const reftime::Position* rt = md->get<types::reftime::Position>();
+    const reftime::Position* rt = md.get<types::reftime::Position>();
     if (!rt)
     {
         using namespace arki::types;
-        md->add_note("Validation error: reference time is missing");
+        md.add_note("Validation error: reference time is missing");
         // Set today as a dummy reference time, and import into the error dataset
-        md->set(Reftime::createPosition(Time::create_now()));
-        result = raw_dispatch_error(*md) == dataset::Writer::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+        md.set(Reftime::createPosition(Time::create_now()));
+        result = raw_dispatch_error(md) == dataset::Writer::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
         goto done;
     }
 
@@ -108,17 +104,17 @@ Dispatcher::Outcome Dispatcher::dispatch(unique_ptr<Metadata>&& md, metadata_des
         // Run validators
         for (vector<const Validator*>::const_iterator i = validators.begin();
                 i != validators.end(); ++i)
-            validates_ok = validates_ok && (**i)(*md, errors);
+            validates_ok = validates_ok && (**i)(md, errors);
 
         // Annotate with the validation errors
         for (vector<string>::const_iterator i = errors.begin();
                 i != errors.end(); ++i)
-            md->add_note("Validation error: " + *i);
+            md.add_note("Validation error: " + *i);
 
         if (!validates_ok)
         {
             // Dispatch directly to the error dataset
-            result = raw_dispatch_error(*md) == dataset::Writer::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+            result = raw_dispatch_error(md) == dataset::Writer::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
             goto done;
         }
     }
@@ -127,9 +123,9 @@ Dispatcher::Outcome Dispatcher::dispatch(unique_ptr<Metadata>&& md, metadata_des
     // Fetch the data into memory here, so that if problems arise we do not
     // fail in bits of code that are more critical
     try {
-        md->getData();
+        md.getData();
     } catch (std::exception& e) {
-        md->add_note(string("Failed to read the data associated with the metadata: ") + e.what());
+        md.add_note(string("Failed to read the data associated with the metadata: ") + e.what());
         result = DISP_NOTWRITTEN;
         goto done;
     }
@@ -137,10 +133,10 @@ Dispatcher::Outcome Dispatcher::dispatch(unique_ptr<Metadata>&& md, metadata_des
     // See what outbound datasets match this metadata
     for (vector< pair<string, Matcher> >::const_iterator i = outbounds.begin();
             i != outbounds.end(); ++i)
-        if (i->second(*md))
+        if (i->second(md))
         {
             // Operate on a copy
-            unique_ptr<Metadata> md1(new Metadata(*md));
+            unique_ptr<Metadata> md1(new Metadata(md));
             // File it to the outbound dataset right away
             if (raw_dispatch_dataset(i->first, *md1) != dataset::Writer::ACQ_OK)
             {
@@ -150,23 +146,22 @@ Dispatcher::Outcome Dispatcher::dispatch(unique_ptr<Metadata>&& md, metadata_des
                 // count of failures.
                 ++m_outbound_failures;
             }
-            if (m_can_continue)
-                m_can_continue = mdc(move(md1));
+            if (outbound_md_dest) outbound_md_dest(move(md1));
         }
 
     // See how many proper datasets match this metadata
     for (vector< pair<string, Matcher> >::const_iterator i = datasets.begin();
             i != datasets.end(); ++i)
-        if (i->second(*md))
+        if (i->second(md))
             found.push_back(i->first);
-    hook_found_datasets(*md, found);
+    hook_found_datasets(md, found);
 
     // If we found only one dataset, acquire it in that dataset; else,
     // acquire it in the error dataset
     if (found.empty())
     {
-        md->add_note("Message could not be assigned to any dataset");
-        result = raw_dispatch_error(*md) == dataset::Writer::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+        md.add_note("Message could not be assigned to any dataset");
+        result = raw_dispatch_error(md) == dataset::Writer::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
         goto done;
     }
 
@@ -179,13 +174,13 @@ Dispatcher::Outcome Dispatcher::dispatch(unique_ptr<Metadata>&& md, metadata_des
                 msg += *i;
             else
                 msg += ", " + *i;
-        md->add_note(msg);
-        result = raw_dispatch_error(*md) == dataset::Writer::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+        md.add_note(msg);
+        result = raw_dispatch_error(md) == dataset::Writer::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
         goto done;
     }
 
     // Acquire into the dataset
-    switch (raw_dispatch_dataset(found[0], *md))
+    switch (raw_dispatch_dataset(found[0], md))
     {
         case dataset::Writer::ACQ_OK:
             result = DISP_OK;
@@ -193,18 +188,17 @@ Dispatcher::Outcome Dispatcher::dispatch(unique_ptr<Metadata>&& md, metadata_des
         case dataset::Writer::ACQ_ERROR_DUPLICATE:
             // If insertion in the designed dataset failed, insert in the
             // error dataset
-            result = raw_dispatch_duplicates(*md) == dataset::Writer::ACQ_OK ? DISP_DUPLICATE_ERROR : DISP_NOTWRITTEN;
+            result = raw_dispatch_duplicates(md) == dataset::Writer::ACQ_OK ? DISP_DUPLICATE_ERROR : DISP_NOTWRITTEN;
             break;
         case dataset::Writer::ACQ_ERROR:
         default:
             // If insertion in the designed dataset failed, insert in the
             // error dataset
-            result = raw_dispatch_error(*md) == dataset::Writer::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+            result = raw_dispatch_error(md) == dataset::Writer::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
             break;
     }
 
 done:
-    hook_output(move(md), mdc);
     return result;
 }
 
@@ -221,12 +215,6 @@ RealDispatcher::RealDispatcher(const ConfigFile& cfg)
 
 RealDispatcher::~RealDispatcher()
 {
-}
-
-void RealDispatcher::hook_output(unique_ptr<Metadata> md, metadata_dest_func mdc)
-{
-    if (m_can_continue)
-        m_can_continue = mdc(move(md));
 }
 
 dataset::Writer::AcquireResult RealDispatcher::raw_dispatch_dataset(const std::string& name, Metadata& md)

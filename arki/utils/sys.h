@@ -164,6 +164,14 @@ public:
      */
     [[noreturn]] virtual void throw_runtime_error(const char* desc);
 
+    /// Check if the file descriptor is open (that is, if it is not -1)
+    bool is_open() const;
+
+    /**
+     * Close the file descriptor, setting its value to -1.
+     *
+     * Does nothing if the file descriptor is already closed
+     */
     void close();
 
     void fstat(struct stat& st);
@@ -252,10 +260,35 @@ public:
     const std::string& name() const { return pathname; }
 };
 
+
+/**
+ * File descriptor that gets automatically closed in the object destructor.
+ */
+struct ManagedNamedFileDescriptor : public NamedFileDescriptor
+{
+    using NamedFileDescriptor::NamedFileDescriptor;
+
+    ManagedNamedFileDescriptor(ManagedNamedFileDescriptor&&) = default;
+    ManagedNamedFileDescriptor(const ManagedNamedFileDescriptor&) = delete;
+
+    /**
+     * The destructor closes the file descriptor, but does not check errors on
+     * ::close().
+     *
+     * In normal program flow, it is a good idea to explicitly call
+     * ManagedNamedFileDescriptor::close() in places where it can throw safely.
+     */
+    ~ManagedNamedFileDescriptor();
+
+    ManagedNamedFileDescriptor& operator=(const ManagedNamedFileDescriptor&) = delete;
+    ManagedNamedFileDescriptor& operator=(ManagedNamedFileDescriptor&&);
+};
+
+
 /**
  * Wrap a path on the file system opened with O_PATH.
  */
-struct Path : public NamedFileDescriptor
+struct Path : public ManagedNamedFileDescriptor
 {
     /**
      * Iterator for directory entries
@@ -309,7 +342,7 @@ struct Path : public NamedFileDescriptor
         bool issock() const;
     };
 
-    using NamedFileDescriptor::NamedFileDescriptor;
+    using ManagedNamedFileDescriptor::ManagedNamedFileDescriptor;
 
     /**
      * Open the given pathname with flags | O_PATH.
@@ -327,15 +360,6 @@ struct Path : public NamedFileDescriptor
     Path(Path&&) = default;
     Path& operator=(const Path&) = delete;
     Path& operator=(Path&&) = default;
-
-    /**
-     * The destructor closes the file descriptor, but does not check errors on
-     * ::close().
-     *
-     * In normal program flow, it is a good idea to explicitly call
-     * Path::close() in places where it can throw safely.
-     */
-    ~Path();
 
     DIR* fdopendir();
 
@@ -367,12 +391,12 @@ struct Path : public NamedFileDescriptor
 
 
 /**
- * open(2) file descriptors
+ * File in the file system
  */
-class File : public NamedFileDescriptor
+class File : public ManagedNamedFileDescriptor
 {
 public:
-    using NamedFileDescriptor::NamedFileDescriptor;
+    using ManagedNamedFileDescriptor::ManagedNamedFileDescriptor;
 
     File(File&&) = default;
     File(const File&) = delete;
@@ -384,15 +408,6 @@ public:
 
     /// Wrapper around open(2)
     File(const std::string& pathname, int flags, mode_t mode=0777);
-
-    /**
-     * The destructor closes the file descriptor, but does not check errors on
-     * ::close().
-     *
-     * In normal program flow, it is a good idea to explicitly call
-     * File::close() in places where it can throw safely.
-     */
-    ~File();
 
     File& operator=(const File&) = delete;
     File& operator=(File&&) = default;

@@ -80,6 +80,8 @@ struct CommandLine : public utils::commandline::StandardParserWithManpage
     utils::commandline::StringOption* moveok;
     utils::commandline::StringOption* moveko;
     utils::commandline::StringOption* movework;
+    utils::commandline::StringOption* copyok;
+    utils::commandline::StringOption* copyko;
     utils::commandline::StringOption* summary_restrict;
     utils::commandline::StringOption* validate;
     utils::commandline::VectorOption<utils::commandline::ExistingFile>* postproc_data;
@@ -177,6 +179,19 @@ struct MetadataDispatch
 	// it to 0 anytime.
 	int countNotImported;
 
+    /// Directory where we store copyok files
+    std::string dir_copyok;
+
+    /// Directory where we store copyko files
+    std::string dir_copyko;
+
+    /// File to which we send data that was successfully imported
+    std::unique_ptr<arki::File> copyok;
+
+    /// File to which we send data that was not successfully imported
+    std::unique_ptr<arki::File> copyko;
+
+
     MetadataDispatch(const ConfigFile& cfg, DatasetProcessor& next, bool test=false);
     ~MetadataDispatch();
 
@@ -199,6 +214,9 @@ struct MetadataDispatch
 
 protected:
     bool dispatch(std::unique_ptr<Metadata>&& md);
+
+    void do_copyok(Metadata& md);
+    void do_copyko(Metadata& md);
 };
 
 

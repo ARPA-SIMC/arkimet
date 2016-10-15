@@ -103,12 +103,13 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 	status = infoOpts->add<BoolOption>("status", 0, "status", "",
 			"print to standard error a line per every file with a summary of how it was handled");
 
-	// Used only if requested
-	inputOpts = createGroup("Options controlling input data");
-	cfgfiles = 0; exprfile = 0; qmacro = 0;
-	files = 0; moveok = moveko = movework = 0;
-	restr = 0;
-	ignore_duplicates = 0;
+    // Used only if requested
+    inputOpts = createGroup("Options controlling input data");
+    cfgfiles = 0; exprfile = 0; qmacro = 0;
+    files = 0; moveok = moveko = movework = 0;
+    copyok = copyko = 0;
+    restr = 0;
+    ignore_duplicates = 0;
     validate = 0;
 
 	outputOpts = createGroup("Options controlling output style");
@@ -187,6 +188,10 @@ void CommandLine::addScanOptions()
 			"move input files here before opening them. This is useful to "
 			"catch the cases where arki-scan crashes without having a "
 			"chance to handle errors.");
+    copyok = inputOpts->add<StringOption>("copyok", 0, "copyok", "directory",
+            "copy the data from input files that was imported successfully to the given directory");
+    copyko = inputOpts->add<StringOption>("copyko", 0, "copyko", "directory",
+            "copy the data from input files that had problems to the given directory");
 	ignore_duplicates = dispatchOpts->add<BoolOption>("ignore-duplicates", 0, "ignore-duplicates", "",
 			"do not consider the run unsuccessful in case of duplicates");
     validate = dispatchOpts->add<StringOption>("validate", 0, "validate", "checks",
@@ -462,6 +467,11 @@ void CommandLine::setupProcessing()
                 dispatcher->dispatcher->add_validator(*(i->second));
             }
         }
+
+        if (copyok && copyok->isSet())
+            dispatcher->dir_copyok = copyok->stringValue();
+        if (copyko && copyko->isSet())
+            dispatcher->dir_copyko = copyko->stringValue();
     } else {
         if (validate && validate->isSet())
             throw commandline::BadOption("--validate only makes sense with --dispatch or --testdispatch");
@@ -552,6 +562,16 @@ bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
     setStartTime();
     results.clear();
 
+    if (!dir_copyok.empty())
+        copyok.reset(new arki::File(str::joinpath(dir_copyok, str::basename(name)), O_WRONLY | O_APPEND | O_CREAT));
+    else
+        copyok.release();
+
+    if (!dir_copyko.empty())
+        copyko.reset(new arki::File(str::joinpath(dir_copyko, str::basename(name)), O_WRONLY | O_APPEND | O_CREAT));
+    else
+        copyko.release();
+
     try {
         ds.query_data(Matcher(), [&](unique_ptr<Metadata> md) { return this->dispatch(move(md)); });
     } catch (std::exception& e) {
@@ -592,28 +612,41 @@ bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
 bool MetadataDispatch::dispatch(unique_ptr<Metadata>&& md)
 {
     // Dispatch to matching dataset
-    switch (dispatcher->dispatch(move(md), results.inserter_func()))
+    switch (dispatcher->dispatch(*md))
     {
         case Dispatcher::DISP_OK:
+            do_copyok(*md);
             ++countSuccessful;
             break;
         case Dispatcher::DISP_DUPLICATE_ERROR:
+            do_copyko(*md);
             ++countDuplicates;
             break;
         case Dispatcher::DISP_ERROR:
+            do_copyko(*md);
             ++countInErrorDataset;
             break;
         case Dispatcher::DISP_NOTWRITTEN:
+            do_copyko(*md);
             // If dispatching failed, add a big note about it.
-            // Analising the notes in the output should be enough to catch this
-            // even happening.
-            // No point adding the note here: md has already been consumed by 'results'
-            //md->add_note("WARNING: The data has not been imported in ANY dataset");
+            md->add_note("WARNING: The data has not been imported in ANY dataset");
             ++countNotImported;
             break;
     }
-
+    results.acquire(move(md));
     return dispatcher->canContinue();
+}
+
+void MetadataDispatch::do_copyok(Metadata& md)
+{
+    if (copyok && copyok->is_open())
+        copyok->write_all_or_throw(md.getData());
+}
+
+void MetadataDispatch::do_copyko(Metadata& md)
+{
+    if (copyko && copyko->is_open())
+        copyko->write_all_or_throw(md.getData());
 }
 
 void MetadataDispatch::flush()

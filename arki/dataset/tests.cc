@@ -45,26 +45,6 @@ unsigned count_results(Reader& ds, const dataset::DataQuery& dq)
     return count;
 }
 
-void impl_ensure_dispatches(Dispatcher& dispatcher, unique_ptr<Metadata> md, metadata_dest_func mdc)
-{
-    metadata::Collection c;
-    Dispatcher::Outcome res = dispatcher.dispatch(move(md), c.inserter_func());
-    // If dispatch fails, print the notes
-    if (res != Dispatcher::DISP_OK)
-    {
-        for (vector<Metadata*>::const_iterator i = c.begin(); i != c.end(); ++i)
-        {
-            cerr << "Failed dispatch notes:" << endl;
-            std::vector<Note> notes = (*i)->notes();
-            for (std::vector<Note>::const_iterator j = notes.begin();
-                    j != notes.end(); ++j)
-                cerr << "   " << *j << endl;
-        }
-    }
-    wassert(actual(res) == Dispatcher::DISP_OK);
-    c.move_to(mdc);
-}
-
 int days_since(int year, int month, int day)
 {
     // Data are from 07, 08, 10 2007

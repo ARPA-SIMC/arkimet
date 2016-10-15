@@ -64,11 +64,6 @@ inline std::string dsname(const Metadata& md)
     return str::basename(md.sourceBlob().basedir);
 }
 
-inline unique_ptr<Metadata> wrap(const Metadata& md)
-{
-    return unique_ptr<Metadata>(new Metadata(md));
-}
-
 }
 
 // Test simple dispatching
@@ -79,19 +74,18 @@ def_test(1)
     plain_data_read_count.reset();
 
     Metadata md;
-    metadata::Collection mdc;
     scan::Grib scanner;
     RealDispatcher dispatcher(config);
     scanner.open("inbound/test.grib1");
     ensure(scanner.next(md));
-    ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_OK);
-    wassert(actual(dsname(mdc.back())) == "test200");
+    wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_OK);
+    wassert(actual(dsname(md)) == "test200");
     ensure(scanner.next(md));
-    ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_OK);
-    wassert(actual(dsname(mdc.back())) == "test80");
+    wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_OK);
+    wassert(actual(dsname(md)) == "test80");
     ensure(scanner.next(md));
-    ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(mdc.back())) == "error");
+    wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dsname(md)) == "error");
     ensure(!scanner.next(md));
 
     dispatcher.flush();
@@ -121,11 +115,9 @@ def_test(2)
     Matcher matcher = Matcher::parse("origin:BUFR,200; product:BUFR:t=temp");
     ensure(matcher(source[0]));
 
-    metadata::Collection mdc;
     RealDispatcher dispatcher(config);
-    ensure_equals(dispatcher.dispatch(wrap(source[0]), mdc.inserter_func()), Dispatcher::DISP_OK);
-    wassert(actual(mdc.back().sourceBlob()) == source[0].sourceBlob());
-
+    wassert(actual(dispatcher.dispatch(source[0])) == Dispatcher::DISP_OK);
+    wassert(actual(source[0].sourceBlob()) == source[0].sourceBlob());
     dispatcher.flush();
 #endif
 }
@@ -134,21 +126,20 @@ def_test(2)
 def_test(3)
 {
     Metadata md;
-    metadata::Collection mdc;
     scan::Grib scanner;
     RealDispatcher dispatcher(config);
     validators::FailAlways fail_always;
     dispatcher.add_validator(fail_always);
     scanner.open("inbound/test.grib1");
     ensure(scanner.next(md));
-    ensure_equals(dispatcher.dispatch(wrap(md), mdc.inserter_func()), Dispatcher::DISP_ERROR);
-    ensure_equals(dsname(mdc.back()), "error");
+    wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dsname(md)) == "error");
     ensure(scanner.next(md));
-    ensure_equals(dispatcher.dispatch(wrap(md), mdc.inserter_func()), Dispatcher::DISP_ERROR);
-    ensure_equals(dsname(mdc.back()), "error");
+    wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dsname(md)) == "error");
     ensure(scanner.next(md));
-    ensure_equals(dispatcher.dispatch(wrap(md), mdc.inserter_func()), Dispatcher::DISP_ERROR);
-    ensure_equals(dsname(mdc.back()), "error");
+    wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dsname(md)) == "error");
     ensure(!scanner.next(md));
     dispatcher.flush();
 }
@@ -160,21 +151,18 @@ def_test(4)
     wassert(actual(source.size()) == 6u);
 
     RealDispatcher dispatcher(config);
-    metadata::Collection mdc;
-
-    wassert(actual(dispatcher.dispatch(wrap(source[0]), mdc.inserter_func())) == Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(mdc.back())) == "error");
-    wassert(actual(dispatcher.dispatch(wrap(source[1]), mdc.inserter_func())) == Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(mdc.back())) == "error");
-    wassert(actual(dispatcher.dispatch(wrap(source[2]), mdc.inserter_func())) == Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(mdc.back())) == "error");
-    wassert(actual(dispatcher.dispatch(wrap(source[3]), mdc.inserter_func())) == Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(mdc.back())) == "error");
-    wassert(actual(dispatcher.dispatch(wrap(source[4]), mdc.inserter_func())) == Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(mdc.back())) == "error");
-    wassert(actual(dispatcher.dispatch(wrap(source[5]), mdc.inserter_func())) == Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(mdc.back())) == "error");
-
+    wassert(actual(dispatcher.dispatch(source[0])) == Dispatcher::DISP_ERROR);
+    wassert(actual(dsname(source[0])) == "error");
+    wassert(actual(dispatcher.dispatch(source[1])) == Dispatcher::DISP_ERROR);
+    wassert(actual(dsname(source[1])) == "error");
+    wassert(actual(dispatcher.dispatch(source[2])) == Dispatcher::DISP_ERROR);
+    wassert(actual(dsname(source[2])) == "error");
+    wassert(actual(dispatcher.dispatch(source[3])) == Dispatcher::DISP_ERROR);
+    wassert(actual(dsname(source[3])) == "error");
+    wassert(actual(dispatcher.dispatch(source[4])) == Dispatcher::DISP_ERROR);
+    wassert(actual(dsname(source[4])) == "error");
+    wassert(actual(dispatcher.dispatch(source[5])) == Dispatcher::DISP_ERROR);
+    wassert(actual(dsname(source[5])) == "error");
     dispatcher.flush();
 }
 
