@@ -57,7 +57,7 @@ std::unique_ptr<Reader> FileConfig::create_reader() const
         return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
 #endif
 
-    throw runtime_error(pathname + ": unknown fiel format \"" + format + "\"");
+    throw runtime_error(pathname + ": unknown file format \"" + format + "\"");
 }
 
 void File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
