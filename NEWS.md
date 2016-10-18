@@ -4,7 +4,8 @@
 
  *  Minimal python3 bindings, and arki-server rewritten in python
 
- *  Added `arki-server --journald` to format output messages so that they can be interpreted by journald
+ *  Added `arki-server --journald` to format output messages so that they can be
+    interpreted by journald
 
  *  Added `arki-server --perflog` to log json info records for each query
 
@@ -20,6 +21,10 @@
 
  *  Implemented `arki-check --state` to show the computed state of each segment
     in a dataset.
+
+ *  Implemented `--copyok` and `--copyko` options for `arki-scan` to copy
+    somewhere every successfully imported (or failed) single message (i.e. a
+    single grib in a multiple grib input file)
 
  *  Removed arki-check --scantest
 
