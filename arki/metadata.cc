@@ -32,8 +32,7 @@ namespace arki {
 
 namespace metadata {
 
-// TODO: @WARNING this is NOT thread safe
-arki::utils::DataReader dataReader;
+thread_local arki::utils::DataReader dataReader;
 
 
 ReadContext::ReadContext() {}

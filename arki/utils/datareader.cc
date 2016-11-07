@@ -208,16 +208,13 @@ public:
 DataReader::DataReader() : last(0) {}
 DataReader::~DataReader()
 {
-	flush();
+    flush();
 }
 
 void DataReader::flush()
 {
-	if (last)
-	{
-		delete last;
-		last = 0;
-	}
+    delete last;
+    last = 0;
 }
 
 void DataReader::read(const std::string& fname, off_t ofs, size_t size, void* buf)
