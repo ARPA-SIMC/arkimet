@@ -87,11 +87,9 @@ add_method("files", [] {
 });
 
 add_method("copyok", [] {
-    sys::rmtree("test200");
-    sys::rmtree("test80");
-    sys::rmtree("error");
-    sys::rmtree("duplicates");
-    sys::rmtree("copyok");
+    for (auto path: { "test200", "test80", "error", "duplicates", "copyok" })
+        if (sys::exists(path))
+            sys::rmtree(path);;
     ConfigFile cfg(R"(
 [test200]
 type = ondisk2
