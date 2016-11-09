@@ -9,6 +9,8 @@ from urllib.parse import quote
 from contextlib import contextmanager
 import logging
 import arkimet as arki
+from werkzeug.exceptions import NotFound
+
 
 class ArkiView:
     """
