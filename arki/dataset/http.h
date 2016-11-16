@@ -6,6 +6,7 @@
 #include <arki/dataset/local.h>
 #include <curl/curl.h>
 #include <string>
+#include <sstream>
 
 namespace arki {
 class ConfigFile;
@@ -22,18 +23,77 @@ public:
     Exception(CURLcode code, const std::string& extrainfo, const std::string& context);
 };
 
+struct Request;
+
+
 struct CurlEasy
 {
-	CURL* m_curl;
-	char* m_errbuf;
+    CURL* m_curl = nullptr;
+    char* m_errbuf;
 
-	CurlEasy();
-	~CurlEasy();
+    CurlEasy();
+    CurlEasy(const CurlEasy&) = delete;
+    CurlEasy(CurlEasy&&) = delete;
+    ~CurlEasy();
 
-	void reset();
+    CurlEasy& operator=(const CurlEasy&) = delete;
+    CurlEasy& operator=(CurlEasy&&) = delete;
 
-	operator CURL*() { return m_curl; }
-	operator const CURL*() const { return m_curl; }
+    void reset();
+
+    operator CURL*() { return m_curl; }
+    operator const CURL*() const { return m_curl; }
+};
+
+
+class CurlForm
+{
+protected:
+    curl_httppost* post = nullptr;
+    curl_httppost* last = nullptr;
+
+public:
+    ~CurlForm();
+
+    void clear();
+    void add_string(const std::string& key, const std::string& val);
+    void add_file(const std::string& key, const std::string& pathname);
+
+    curl_httppost* get() { return post; }
+};
+
+
+struct Request
+{
+    CurlEasy& curl;
+    std::string method;
+    std::string url;
+    CurlForm post_data;
+    long response_code = -1;
+    std::stringstream response_error;
+    std::string arkimet_exception_message;
+
+    Request(CurlEasy& curl);
+    virtual ~Request();
+
+    void set_url(const std::string& url);
+    void set_method(const std::string& method);
+
+    /// Set up \a curl to process this request
+    virtual void perform();
+
+protected:
+    /// Process one full line of headers
+    virtual void process_header_line(const std::string& line);
+
+    /// Process a chunk of response body
+    virtual size_t process_body_chunk(void *ptr, size_t size, size_t nmemb, void *stream) = 0;
+
+    // Curl callback to process header data
+    static size_t headerfunc(void *ptr, size_t size, size_t nmemb, void *stream);
+
+    // Curl callback to process response body data
+    static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream);
 };
 
 struct Config : public dataset::Config
@@ -62,6 +122,8 @@ protected:
     std::shared_ptr<const Config> m_config;
     http::CurlEasy m_curl;
     bool m_mischief;
+    void set_post_query(Request& request, const std::string& query);
+    void set_post_query(Request& request, const dataset::DataQuery& q);
 
 public:
     // Initialise the dataset with the information from the configurationa in 'cfg'
@@ -75,36 +137,36 @@ public:
     void query_summary(const Matcher& matcher, Summary& summary) override;
     void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out) override;
 
-	static void readConfig(const std::string& path, ConfigFile& cfg);
+    static void readConfig(const std::string& path, ConfigFile& cfg);
 
-	/**
-	 * Expand the given matcher expression using the aliases on this server
-	 */
-	static std::string expandMatcher(const std::string& matcher, const std::string& server);
+    /**
+     * Expand the given matcher expression using the aliases on this server
+     */
+    static std::string expandMatcher(const std::string& matcher, const std::string& server);
 
-	/**
-	 * Read the alias database from the given remote dataset
-	 */
-	static void getAliasDatabase(const std::string& server, ConfigFile& cfg);
+    /**
+     * Read the alias database from the given remote dataset
+     */
+    static void getAliasDatabase(const std::string& server, ConfigFile& cfg);
 
-	/**
-	 * Introduce a syntax error in the next query sent to the server.
-	 *
-	 * This is only used by test suites: since the queries are preparsed
-	 * client-side, there is no other obvious way to produce a repeatable error
-	 * message in the server.  You have to call it before every query you want
-	 * to fail.
-	 */
-	void produce_one_wrong_query();
+    /**
+     * Introduce a syntax error in the next query sent to the server.
+     *
+     * This is only used by test suites: since the queries are preparsed
+     * client-side, there is no other obvious way to produce a repeatable error
+     * message in the server.  You have to call it before every query you want
+     * to fail.
+     */
+    void produce_one_wrong_query();
 
-	/**
-	 * Check if all the datasets in the given config are remote and from
-	 * the same server.
-	 *
-	 * @return the common server URL, or the empty string if some datasets
-	 * are local or from different servers
-	 */
-	static std::string allSameRemoteServer(const ConfigFile& cfg);
+    /**
+     * Check if all the datasets in the given config are remote and from
+     * the same server.
+     *
+     * @return the common server URL, or the empty string if some datasets
+     * are local or from different servers
+     */
+    static std::string allSameRemoteServer(const ConfigFile& cfg);
 };
 
 class HTTPInbound
