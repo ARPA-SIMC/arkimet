@@ -25,6 +25,7 @@ public:
 
 struct Request;
 
+
 struct CurlEasy
 {
     CURL* m_curl = nullptr;
@@ -44,11 +45,30 @@ struct CurlEasy
     operator const CURL*() const { return m_curl; }
 };
 
+
+class CurlForm
+{
+protected:
+    curl_httppost* post = nullptr;
+    curl_httppost* last = nullptr;
+
+public:
+    ~CurlForm();
+
+    void clear();
+    void add_string(const std::string& key, const std::string& val);
+    void add_file(const std::string& key, const std::string& pathname);
+
+    curl_httppost* get() { return post; }
+};
+
+
 struct Request
 {
     CurlEasy& curl;
     std::string method;
     std::string url;
+    CurlForm post_data;
     long response_code = -1;
     std::stringstream response_error;
     std::string arkimet_exception_message;
@@ -102,6 +122,8 @@ protected:
     std::shared_ptr<const Config> m_config;
     http::CurlEasy m_curl;
     bool m_mischief;
+    void set_post_query(Request& request, const std::string& query);
+    void set_post_query(Request& request, const dataset::DataQuery& q);
 
 public:
     // Initialise the dataset with the information from the configurationa in 'cfg'

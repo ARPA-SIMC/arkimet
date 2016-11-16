@@ -63,6 +63,34 @@ void CurlEasy::reset()
 }
 
 
+CurlForm::~CurlForm()
+{
+    if (post) curl_formfree(post);
+}
+
+void CurlForm::clear()
+{
+    if (post) curl_formfree(post);
+    post = last = nullptr;
+}
+
+void CurlForm::add_string(const std::string& key, const std::string& val)
+{
+    curl_formadd(&post, &last,
+            CURLFORM_COPYNAME, key.c_str(),
+            CURLFORM_COPYCONTENTS, val.c_str(),
+            CURLFORM_END);
+}
+
+void CurlForm::add_file(const std::string& key, const std::string& pathname)
+{
+    curl_formadd(&post, &last,
+            CURLFORM_COPYNAME, key.c_str(),
+            CURLFORM_FILE, pathname.c_str(),
+            CURLFORM_END);
+}
+
+
 Request::Request(CurlEasy& curl)
     : curl(curl), method("GET")
 {
@@ -86,7 +114,10 @@ void Request::perform()
     response_code = -1;
     checked("setting url", curl_easy_setopt(curl, CURLOPT_URL, url.c_str()));
     if (method == "POST")
+    {
         checked("selecting POST method", curl_easy_setopt(curl, CURLOPT_POST, 1));
+        checked("setting POST data", curl_easy_setopt(curl, CURLOPT_HTTPPOST, post_data.get()));
+    }
     else if (method == "GET")
         checked("selecting GET method", curl_easy_setopt(curl, CURLOPT_HTTPGET, 1));
     else
@@ -160,7 +191,7 @@ size_t Request::writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
     if (req.response_code == -1)
         checked("reading response code", curl_easy_getinfo(req.curl, CURLINFO_RESPONSE_CODE, &req.response_code));
 
-    if (req.response_code < 300)
+    if (req.response_code >= 300)
     {
         // If we have an error, save it in response_error
         req.response_error.write((const char*)ptr, size * nmemb);
@@ -170,36 +201,6 @@ size_t Request::writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
     return req.process_body_chunk(ptr, size, nmemb, stream);
 }
 
-
-struct CurlForm
-{
-	curl_httppost* post;
-	curl_httppost* last;
-
-	CurlForm() : post(0), last(0) {}
-	~CurlForm()
-	{
-		if (post) curl_formfree(post);
-	}
-
-	void addstring(const std::string& key, const std::string& val)
-	{
-		curl_formadd(&post, &last,
-				CURLFORM_COPYNAME, key.c_str(),
-				CURLFORM_COPYCONTENTS, val.c_str(),
-				CURLFORM_END);
-	}
-
-	void addfile(const std::string& key, const std::string& pathname)
-	{
-		curl_formadd(&post, &last,
-				CURLFORM_COPYNAME, key.c_str(),
-				CURLFORM_FILE, pathname.c_str(),
-				CURLFORM_END);
-	}
-
-	curl_httppost* ptr() { return post; }
-};
 
 
 Config::Config(const ConfigFile& cfg)
@@ -281,6 +282,32 @@ struct MDStreamState : public Request
     }
 };
 
+void Reader::set_post_query(Request& request, const std::string& query)
+{
+    if (config().qmacro.empty())
+    {
+        if (m_mischief)
+        {
+            request.post_data.add_string("query", query + ";MISCHIEF");
+            m_mischief = false;
+        } else
+            request.post_data.add_string("query", query);
+    }
+    else
+    {
+        request.post_data.add_string("query", config().qmacro);
+        request.post_data.add_string("qmacro", name());
+    }
+}
+
+void Reader::set_post_query(Request& request, const dataset::DataQuery& q)
+{
+    set_post_query(request, q.matcher.toStringExpanded());
+    if (q.sorter)
+        request.post_data.add_string("sort", q.sorter->toString());
+    if (q.with_data)
+        request.post_data.add_string("style", "inline");
+}
 
 void Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
@@ -289,25 +316,7 @@ void Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     MDStreamState request(m_curl, dest, config().baseurl);
     request.set_url(str::joinpath(config().baseurl, "query"));
     request.set_method("POST");
-    string postdata;
-    if (config().qmacro.empty())
-        postdata = "query=" + str::encode_url(q.matcher.toStringExpanded());
-    else
-        postdata = "query=" + str::encode_url(config().qmacro) + "&qmacro=" + str::encode_url(name());
-    if (q.sorter)
-        postdata += "&sort=" + str::encode_url(q.sorter->toString());
-    if (m_mischief)
-    {
-        postdata += str::encode_url(";MISCHIEF");
-        m_mischief = false;
-    }
-    if (q.with_data)
-        postdata += "&style=inline";
-    //fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
-    checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
-    // Size of postfields argument if it's non text
-    checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
-
+    set_post_query(request, q);
     request.perform();
 }
 
@@ -318,22 +327,7 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
     BufState<std::vector<uint8_t>> request(m_curl);
     request.set_url(str::joinpath(config().baseurl, "summary"));
     request.set_method("POST");
-    string postdata;
-    if (config().qmacro.empty())
-        postdata = "query=" + str::encode_url(matcher.toStringExpanded());
-    else
-        postdata = "query=" + str::encode_url(config().qmacro) + "&qmacro=" + str::encode_url(name());
-    if (m_mischief)
-    {
-        postdata += str::encode_url(";MISCHIEF");
-        m_mischief = false;
-    }
-    //fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
-    //fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
-    checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
-    // Size of postfields argument if it's non text
-    checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
-
+    set_post_query(request, matcher.toStringExpanded());
     request.perform();
 
     BinaryDecoder dec(request.buf);
@@ -347,22 +341,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     OstreamState request(m_curl, out, q.data_start_hook);
     request.set_url(str::joinpath(config().baseurl, "query"));
     request.set_method("POST");
-
-    http::CurlForm form;
-	if (config().qmacro.empty())
-	{
-		if (m_mischief)
-		{
-			form.addstring("query", q.matcher.toStringExpanded() + ";MISCHIEF");
-			m_mischief = false;
-		} else
-			form.addstring("query", q.matcher.toStringExpanded());
-	} else {
-		form.addstring("query", config().qmacro);
-		form.addstring("qmacro", name());
-	}
-	if (q.sorter)
-		form.addstring("sort", q.sorter->toString());
+    set_post_query(request, q);
 
     const char* toupload = getenv("ARKI_POSTPROC_FILES");
     if (toupload != NULL)
@@ -371,36 +350,31 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
         // Split by ':'
         str::Split splitter(toupload, ":");
         for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
-            form.addfile("postprocfile" + to_string(++count), *i);
+            request.post_data.add_file("postprocfile" + to_string(++count), *i);
     }
-	switch (q.type)
-	{
-		case dataset::ByteQuery::BQ_DATA:
-			form.addstring("style", "data");
-			break;
-		case dataset::ByteQuery::BQ_POSTPROCESS:
-			form.addstring("style", "postprocess");
-			form.addstring("command", q.param);
-			break;
-		case dataset::ByteQuery::BQ_REP_METADATA:
-			form.addstring("style", "rep_metadata");
-			form.addstring("command", q.param);
-			break;
-		case dataset::ByteQuery::BQ_REP_SUMMARY:
-			form.addstring("style", "rep_summary");
-			form.addstring("command", q.param);
-			break;
-		default: {
+    switch (q.type)
+    {
+        case dataset::ByteQuery::BQ_DATA:
+            request.post_data.add_string("style", "data");
+            break;
+        case dataset::ByteQuery::BQ_POSTPROCESS:
+            request.post_data.add_string("style", "postprocess");
+            request.post_data.add_string("command", q.param);
+            break;
+        case dataset::ByteQuery::BQ_REP_METADATA:
+            request.post_data.add_string("style", "rep_metadata");
+            request.post_data.add_string("command", q.param);
+            break;
+        case dataset::ByteQuery::BQ_REP_SUMMARY:
+            request.post_data.add_string("style", "rep_summary");
+            request.post_data.add_string("command", q.param);
+            break;
+        default: {
             stringstream ss;
             ss << "cannot query dataset: unsupported query type: " << (int)q.type;
             throw std::runtime_error(ss.str());
         }
     }
-	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
-	//fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
-	// Set the form info 
-	curl_easy_setopt(m_curl, CURLOPT_HTTPPOST, form.ptr());
-
     request.perform();
 }
 
@@ -432,10 +406,7 @@ std::string Reader::expandMatcher(const std::string& matcher, const std::string&
     BufState<std::string> request(m_curl);
     request.set_url(str::joinpath(server, "qexpand"));
     request.set_method("POST");
-    string postdata = "query=" + str::encode_url(matcher) + "\n";
-    checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
-    checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
-
+    request.post_data.add_string("query", matcher);
     request.perform();
 
     return str::strip(request.buf);
@@ -509,18 +480,9 @@ void HTTPInbound::scan(const std::string& fname, const std::string& format, meta
     MDStreamState request(m_curl, dest, m_baseurl);
     request.set_url(str::joinpath(m_baseurl, "inbound/scan"));
     request.set_method("POST");
-    string postdata;
-    if (format.empty())
-        postdata = "file=" + str::encode_url(fname);
-    else
-        postdata = "file=" + str::encode_url(fname) + "&format=" + str::encode_url(format);
-
-    //fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
-    //fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
-    checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
-    // Size of postfields argument if it's non text
-    checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
-
+    request.post_data.add_string("file", fname);
+    if (!format.empty())
+        request.post_data.add_string("format", format);
     request.perform();
 }
 
@@ -531,18 +493,9 @@ void HTTPInbound::testdispatch(const std::string& fname, const std::string& form
     OstreamState request(m_curl, out);
     request.set_url(str::joinpath(m_baseurl, "inbound/testdispatch"));
     request.set_method("POST");
-    string postdata;
-    if (format.empty())
-        postdata = "file=" + str::encode_url(fname);
-    else
-        postdata = "file=" + str::encode_url(fname) + "&format=" + str::encode_url(format);
-
-    //fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
-    //fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
-    checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
-    // Size of postfields argument if it's non text
-    checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
-
+    request.post_data.add_string("file", fname);
+    if (!format.empty())
+        request.post_data.add_string("format", format);
     request.perform();
 }
 
@@ -553,18 +506,9 @@ void HTTPInbound::dispatch(const std::string& fname, const std::string& format, 
     MDStreamState request(m_curl, consumer, m_baseurl);
     request.set_url(str::joinpath(m_baseurl, "inbound/dispatch"));
     request.set_method("POST");
-    string postdata;
-    if (format.empty())
-        postdata = "file=" + str::encode_url(fname);
-    else
-        postdata = "file=" + str::encode_url(fname) + "&format=" + str::encode_url(format);
-
-    //fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
-    //fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
-    checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
-    // Size of postfields argument if it's non text
-    checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
-
+    request.post_data.add_string("file", fname);
+    if (!format.empty())
+        request.post_data.add_string("format", format);
     request.perform();
 }
 
