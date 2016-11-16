@@ -6,6 +6,7 @@
 #include <arki/dataset/local.h>
 #include <curl/curl.h>
 #include <string>
+#include <sstream>
 
 namespace arki {
 class ConfigFile;
@@ -22,18 +23,57 @@ public:
     Exception(CURLcode code, const std::string& extrainfo, const std::string& context);
 };
 
+struct Request;
+
 struct CurlEasy
 {
-	CURL* m_curl;
-	char* m_errbuf;
+    CURL* m_curl = nullptr;
+    char* m_errbuf;
 
-	CurlEasy();
-	~CurlEasy();
+    CurlEasy();
+    CurlEasy(const CurlEasy&) = delete;
+    CurlEasy(CurlEasy&&) = delete;
+    ~CurlEasy();
 
-	void reset();
+    CurlEasy& operator=(const CurlEasy&) = delete;
+    CurlEasy& operator=(CurlEasy&&) = delete;
 
-	operator CURL*() { return m_curl; }
-	operator const CURL*() const { return m_curl; }
+    void reset();
+
+    operator CURL*() { return m_curl; }
+    operator const CURL*() const { return m_curl; }
+};
+
+struct Request
+{
+    CurlEasy& curl;
+    std::string method;
+    std::string url;
+    long response_code = -1;
+    std::stringstream response_error;
+    std::string arkimet_exception_message;
+
+    Request(CurlEasy& curl);
+    virtual ~Request();
+
+    void set_url(const std::string& url);
+    void set_method(const std::string& method);
+
+    /// Set up \a curl to process this request
+    virtual void perform();
+
+protected:
+    /// Process one full line of headers
+    virtual void process_header_line(const std::string& line);
+
+    /// Process a chunk of response body
+    virtual size_t process_body_chunk(void *ptr, size_t size, size_t nmemb, void *stream) = 0;
+
+    // Curl callback to process header data
+    static size_t headerfunc(void *ptr, size_t size, size_t nmemb, void *stream);
+
+    // Curl callback to process response body data
+    static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream);
 };
 
 struct Config : public dataset::Config
