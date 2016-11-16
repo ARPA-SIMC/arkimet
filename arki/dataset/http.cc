@@ -19,10 +19,10 @@ namespace arki {
 namespace dataset {
 
 #define checked(context, stmt) do {\
-		CURLcode errcode = stmt; \
-		if (errcode != CURLE_OK) \
-			throw http::Exception(errcode, context); \
-	} while (0)
+        CURLcode errcode = stmt; \
+        if (errcode != CURLE_OK) \
+            throw http::Exception(errcode, context); \
+    } while (0)
 
 
 namespace http {
@@ -427,10 +427,10 @@ void Reader::getAliasDatabase(const std::string& server, ConfigFile& cfg)
 
 static string geturlprefix(const std::string& s)
 {
-	// Take until /dataset/
-	size_t pos = s.find("/dataset/");
-	if (pos == string::npos) return string();
-	return s.substr(0, pos);
+    // Take until /dataset/
+    size_t pos = s.find("/dataset/");
+    if (pos == string::npos) return string();
+    return s.substr(0, pos);
 }
 
 std::string Reader::allSameRemoteServer(const ConfigFile& cfg)
@@ -439,15 +439,15 @@ std::string Reader::allSameRemoteServer(const ConfigFile& cfg)
     for (ConfigFile::const_section_iterator i = cfg.sectionBegin(); i != cfg.sectionEnd(); ++i)
     {
         string type = str::lower(i->second->value("type"));
-		if (type != "remote") return string();
-		string urlprefix = geturlprefix(i->second->value("path"));
-		if (urlprefix.empty()) return string();
-		if (base.empty())
-			base = urlprefix;
-		else if (base != urlprefix)
-			return string();
-	}
-	return base;
+        if (type != "remote") return string();
+        string urlprefix = geturlprefix(i->second->value("path"));
+        if (urlprefix.empty()) return string();
+        if (base.empty())
+            base = urlprefix;
+        else if (base != urlprefix)
+            return string();
+    }
+    return base;
 }
 
 HTTPInbound::HTTPInbound(const std::string& baseurl)

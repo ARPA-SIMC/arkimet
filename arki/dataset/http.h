@@ -137,36 +137,36 @@ public:
     void query_summary(const Matcher& matcher, Summary& summary) override;
     void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out) override;
 
-	static void readConfig(const std::string& path, ConfigFile& cfg);
+    static void readConfig(const std::string& path, ConfigFile& cfg);
 
-	/**
-	 * Expand the given matcher expression using the aliases on this server
-	 */
-	static std::string expandMatcher(const std::string& matcher, const std::string& server);
+    /**
+     * Expand the given matcher expression using the aliases on this server
+     */
+    static std::string expandMatcher(const std::string& matcher, const std::string& server);
 
-	/**
-	 * Read the alias database from the given remote dataset
-	 */
-	static void getAliasDatabase(const std::string& server, ConfigFile& cfg);
+    /**
+     * Read the alias database from the given remote dataset
+     */
+    static void getAliasDatabase(const std::string& server, ConfigFile& cfg);
 
-	/**
-	 * Introduce a syntax error in the next query sent to the server.
-	 *
-	 * This is only used by test suites: since the queries are preparsed
-	 * client-side, there is no other obvious way to produce a repeatable error
-	 * message in the server.  You have to call it before every query you want
-	 * to fail.
-	 */
-	void produce_one_wrong_query();
+    /**
+     * Introduce a syntax error in the next query sent to the server.
+     *
+     * This is only used by test suites: since the queries are preparsed
+     * client-side, there is no other obvious way to produce a repeatable error
+     * message in the server.  You have to call it before every query you want
+     * to fail.
+     */
+    void produce_one_wrong_query();
 
-	/**
-	 * Check if all the datasets in the given config are remote and from
-	 * the same server.
-	 *
-	 * @return the common server URL, or the empty string if some datasets
-	 * are local or from different servers
-	 */
-	static std::string allSameRemoteServer(const ConfigFile& cfg);
+    /**
+     * Check if all the datasets in the given config are remote and from
+     * the same server.
+     *
+     * @return the common server URL, or the empty string if some datasets
+     * are local or from different servers
+     */
+    static std::string allSameRemoteServer(const ConfigFile& cfg);
 };
 
 class HTTPInbound
