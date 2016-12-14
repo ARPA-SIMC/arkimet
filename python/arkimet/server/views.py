@@ -56,7 +56,7 @@ class ArkiView:
         """
         Return the dataset query matcher string
         """
-        query = self.request.form.get("query", "").strip()
+        query = self.request.values.get("query", "").strip()
         if query: self.info["query"] = query
         return query
 
@@ -64,7 +64,7 @@ class ArkiView:
         """
         Return the sort order string
         """
-        sort = self.request.form.get("sort", "").strip()
+        sort = self.request.values.get("sort", "").strip()
         if sort: self.info["sort"] = sort
         return sort
 
@@ -224,7 +224,7 @@ class ArkiQExpand(ArkiView):
 
     def stream(self):
         # ./run-local arki-query "" http://localhost:8080
-        query = self.request.form["query"].strip()
+        query = self.request.values["query"].strip()
         expanded = arki.expand_query(query)
         self.send_headers()
         self.handler.wfile.write(expanded.encode("utf-8"))
@@ -320,7 +320,7 @@ class DatasetQueryRepMetadata(ArkiDatasetQuery):
             matcher=self.get_query(),
             sort=self.get_sort(),
             data_start_hook=self.send_headers,
-            metadata_report=self.request.form.get("command", ""))
+            metadata_report=self.request.values.get("command", ""))
 
 
 class DatasetQueryRepSummary(ArkiDatasetQuery):
@@ -332,7 +332,7 @@ class DatasetQueryRepSummary(ArkiDatasetQuery):
             file=self.handler.wfile,
             matcher=self.get_query(),
             data_start_hook=self.send_headers,
-            summary_report=self.request.form.get("command", ""))
+            summary_report=self.request.values.get("command", ""))
 
 
 class DatasetQueryMetadata(ArkiDatasetQuery):
@@ -388,7 +388,7 @@ class DatasetQueryPostprocess(ArkiDatasetQuery):
             names.sort()
             os.environ["ARKI_POSTPROC_FILES"] = ":".join(names)
 
-        command = self.request.form.get("command", "")
+        command = self.request.values.get("command", "")
         self.info["postprocess"] = command
 
         self.get_dataset_reader().query_bytes(
@@ -421,7 +421,7 @@ def arki_dataset_query(request, handler, **kw):
     """
     Create the right view for a dataset query, given the `style` form value.
     """
-    style = request.form.get("style", "metadata").strip()
+    style = request.values.get("style", "metadata").strip()
     View = get_view_for_style(style)
     return View(request, handler, **kw)
 
@@ -429,12 +429,12 @@ def arki_dataset_query(request, handler, **kw):
 class QMacroMixin:
     def get_headers_filename(self):
         if self.headers_ext:
-            return self.request.form.get("qmacro", "").strip() + "." + self.headers_ext
+            return self.request.values.get("qmacro", "").strip() + "." + self.headers_ext
         else:
-            return self.request.form.get("qmacro", "").strip()
+            return self.request.values.get("qmacro", "").strip()
 
     def get_metadata_url(self):
-        #return self.handler.server.url + "/dataset/" + self.request.form.get("qmacro", "").strip()
+        #return self.handler.server.url + "/dataset/" + self.request.values.get("qmacro", "").strip()
         return self.handler.server.url + "/query"
 
     def get_dataset_reader(self):
@@ -446,15 +446,15 @@ class QMacroMixin:
         return arki.make_qmacro_dataset(
             "url = " + self.handler.server.url,
             cfg.getvalue(),
-            self.request.form.get("qmacro", "").strip(),
-            self.request.form.get("query", "").strip()
+            self.request.values.get("qmacro", "").strip(),
+            self.request.values.get("query", "").strip()
         )
 
     def get_query(self):
         return ""
 
 def arki_query(request, handler, **kw):
-    style = request.form.get("style", "metadata").strip()
+    style = request.values.get("style", "metadata").strip()
     View = get_view_for_style(style)
     class QMacroView(QMacroMixin, View):
         pass
