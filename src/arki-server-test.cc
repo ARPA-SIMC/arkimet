@@ -415,6 +415,45 @@ add_method("logs", [] {
     wassert(actual(sys::size("error.log")) > 0u);
 });
 
+// Test style=json binary queries
+add_method("query_summary_style_binary", [] {
+    dataset::http::CurlEasy curl;
+
+    dataset::http::BufState<std::string> request(curl);
+    request.set_url("http://localhost:7117/dataset/test200/summary?style=binary");
+    request.set_method("POST");
+    request.post_data.add_string("query", Matcher().toStringExpanded());
+    request.perform();
+
+    wassert(actual(request.buf).startswith("SU"));
+});
+
+// Test style=json summary queries
+add_method("query_summary_style_json", [] {
+    dataset::http::CurlEasy curl;
+
+    dataset::http::BufState<std::string> request(curl);
+    request.set_url("http://localhost:7117/dataset/test200/summary?style=json");
+    request.set_method("POST");
+    request.post_data.add_string("query", Matcher().toStringExpanded());
+    request.perform();
+
+    wassert(actual(request.buf).startswith("{"));
+});
+
+// Test style=yaml summary queries
+add_method("query_summary_style_yaml", [] {
+    dataset::http::CurlEasy curl;
+
+    dataset::http::BufState<std::string> request(curl);
+    request.set_url("http://localhost:7117/dataset/test200/summary?style=yaml");
+    request.set_method("POST");
+    request.post_data.add_string("query", Matcher().toStringExpanded());
+    request.perform();
+
+    wassert(actual(request.buf).startswith("SummaryItem"));
+});
+
 }
 
 }

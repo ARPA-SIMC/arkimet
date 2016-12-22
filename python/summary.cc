@@ -2,10 +2,14 @@
 #include "summary.h"
 #include "common.h"
 #include "arki/summary.h"
+#include "arki/emitter/json.h"
+#include "arki/utils/sys.h"
 #include "config.h"
+#include <sstream>
 
 using namespace std;
 using namespace arki;
+using namespace arki::utils;
 using namespace arki::python;
 
 extern "C" {
@@ -33,10 +37,17 @@ static PyObject* arkipy_Summary_write(arkipy_Summary* self, PyObject *args, PyOb
         {
             self->summary->write(fd, fd_name);
         } else if (strcmp(format, "yaml") == 0) {
-            PyErr_SetString(PyExc_NotImplementedError, "serializing to YAML is not yet implemented");
+            std::stringstream buf;
+            self->summary->writeYaml(buf);
+            sys::NamedFileDescriptor outfd(fd, fd_name);
+            outfd.write_all_or_retry(buf.str());
             return nullptr;
         } else if (strcmp(format, "json") == 0) {
-            PyErr_SetString(PyExc_NotImplementedError, "serializing to JSON is not yet implemented");
+            std::stringstream buf;
+            arki::emitter::JSON output(buf);
+            self->summary->serialise(output);
+            sys::NamedFileDescriptor outfd(fd, fd_name);
+            outfd.write_all_or_retry(buf.str());
             return nullptr;
         } else {
             PyErr_Format(PyExc_ValueError, "Unsupported metadata serializati format: %s", format);

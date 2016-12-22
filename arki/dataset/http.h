@@ -96,6 +96,22 @@ protected:
     static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream);
 };
 
+
+template<typename Container>
+struct BufState : public Request
+{
+    using Request::Request;
+
+    Container buf;
+
+    size_t process_body_chunk(void *ptr, size_t size, size_t nmemb, void *stream) override
+    {
+        buf.insert(buf.end(), (uint8_t*)ptr, (uint8_t*)ptr + size * nmemb);
+        return size * nmemb;
+    }
+};
+
+
 struct Config : public dataset::Config
 {
     std::string baseurl;

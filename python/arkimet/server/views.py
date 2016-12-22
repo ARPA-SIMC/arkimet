@@ -296,7 +296,7 @@ class ArkiDatasetSummary(ArkiDatasetQuery):
     def stream(self):
         summary = self.get_dataset_reader().query_summary(self.get_query())
         self.send_headers()
-        summary.write(self.handler.wfile)
+        summary.write(self.handler.wfile, format=self.request.values.get("style", "binary").strip())
 
 
 class DatasetQueryData(ArkiDatasetQuery):
@@ -467,7 +467,7 @@ class ArkiSummary(QMacroMixin, ArkiView):
     def stream(self):
         summary = self.get_dataset_reader().query_summary(self.get_query())
         self.send_headers()
-        summary.write(self.handler.wfile)
+        summary.write(self.handler.wfile, format=self.request.values.get("style", "binary").strip())
 
 
 class ArkiDatasetIndex(ArkiView):

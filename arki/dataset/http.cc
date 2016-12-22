@@ -231,20 +231,6 @@ Reader::~Reader()
 
 std::string Reader::type() const { return "http"; }
 
-template<typename Container>
-struct BufState : public Request
-{
-    using Request::Request;
-
-    Container buf;
-
-    size_t process_body_chunk(void *ptr, size_t size, size_t nmemb, void *stream) override
-    {
-        buf.insert(buf.end(), (uint8_t*)ptr, (uint8_t*)ptr + size * nmemb);
-        return size * nmemb;
-    }
-};
-
 struct OstreamState : public Request
 {
     NamedFileDescriptor& out;
