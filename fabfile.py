@@ -25,7 +25,7 @@ def test_venti():
     push_url = remote.config_reader.get("url")
     remote_dir = re.sub(r"^ssh://[^/]+", "", push_url)
 
-    local(cmd("git", "push", "venti", "HEAD"))
+    local(cmd("git", "push", "--force", "venti", "HEAD"))
     with cd(remote_dir):
         run(cmd("git", "checkout", "-B", "test_venti", repo.head.commit.hexsha))
         run(cmd("git", "reset", "--hard"))
@@ -65,7 +65,7 @@ def test_ventiquattro():
     push_url = remote.config_reader.get("url")
     remote_dir = re.sub(r"^ssh://[^/]+", "", push_url)
 
-    local(cmd("git", "push", "ventiquattro", "HEAD"))
+    local(cmd("git", "push", "--force", "ventiquattro", "HEAD"))
     with cd(remote_dir):
         run(cmd("git", "checkout", "-B", "test_venti", repo.head.commit.hexsha))
         run(cmd("git", "reset", "--hard"))
