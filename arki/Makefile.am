@@ -116,6 +116,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		summary/table.h \
 		summary/codec.h \
 		summary/stats.h \
+		summary/short.h \
 		targetfile.h \
 		tests/tests.h \
 		transaction.h \
@@ -382,6 +383,7 @@ libarkimet_la_SOURCES += \
 		summary/intern.cc \
 		summary/table.cc \
 		summary/codec.cc \
+		summary/short.cc \
 		summary.cc \
 		sort.cc \
 		formatter.cc \
@@ -409,6 +411,7 @@ tests_arki_test_SOURCES += \
 		summary/intern-tut.cc \
 		summary/table-tut.cc \
 		summary/stats-tut.cc \
+		summary/short-test.cc \
 		matcher-test.cc \
 		matcher/utils-tut.cc \
 		matcher/origin-tut.cc \
