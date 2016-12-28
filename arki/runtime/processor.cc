@@ -7,9 +7,9 @@
 #include "arki/emitter/json.h"
 #include "arki/targetfile.h"
 #include "arki/summary.h"
+#include "arki/summary/short.h"
 #include "arki/sort.h"
 #include "arki/utils/string.h"
-#include "arki/types/typeset.h"
 #include "arki/summary/stats.h"
 
 using namespace std;
@@ -231,29 +231,6 @@ struct SummaryProcessor : public SingleOutputProcessor
     }
 };
 
-namespace {
-
-struct MDCollector : public summary::Visitor
-{
-    std::map<types::Code, types::TypeSet> items;
-    summary::Stats stats;
-
-    bool operator()(const std::vector<const types::Type*>& md, const summary::Stats& stats) override
-    {
-        for (size_t i = 0; i < md.size(); ++i)
-        {
-            if (!md[i]) continue;
-            types::Code code = codeForPos(i);
-            items[code].insert(*md[i]);
-        }
-        // TODO: with public access to summary->root.stats() the merge could be skipped
-        this->stats.merge(stats);
-        return true;
-    }
-};
-
-}
-
 struct SummaryShortProcessor : public SingleOutputProcessor
 {
     Matcher matcher;
@@ -287,7 +264,7 @@ struct SummaryShortProcessor : public SingleOutputProcessor
     void end() override
     {
         if (data_start_hook) data_start_hook(output);
-        MDCollector c;
+        summary::Short c;
         summary.visit(c);
 
         shared_ptr<Formatter> formatter;
@@ -298,45 +275,10 @@ struct SummaryShortProcessor : public SingleOutputProcessor
         if (json)
         {
             emitter::JSON json(ss);
-            json.start_mapping();
-
-            json.add("items");
-            json.start_mapping();
-            json.add("summarystats");
-            json.start_mapping();
-            c.stats.serialiseLocal(json, formatter.get());
-            json.end_mapping();
-            for (const auto& i: c.items)
-            {
-                json.add(str::lower(types::formatCode(i.first)));
-                json.start_list();
-                for (const auto& mi: i.second)
-                    json.add_type(*mi, formatter.get());
-                json.end_list();
-            }
-            json.end_mapping();
-            json.end_mapping();
+            c.serialise(json, formatter.get());
         }
         else
-        {
-            ss << "SummaryStats:" << endl;
-            ss << "  " << "Size: " << summary.size() << endl;
-            ss << "  " << "Count: " << summary.count() << endl;
-            ss << "  " << "Reftime: " << *summary.getReferenceTime() << endl;
-            ss << "Items:" << endl;
-            for (const auto& i: c.items)
-            {
-                string uc = str::lower(types::formatCode(i.first));
-                uc[0] = toupper(uc[0]);
-                ss << "  " << uc << ":" << endl;
-                for (const auto& mi: i.second) {
-                    ss << "    " << *mi;
-                    if (formatter.get())
-                        ss << "\t# " << (*formatter.get())(*mi);
-                    ss << endl;
-                }
-            }
-        }
+            c.writeYaml(ss, formatter.get());
 
         output.write_all_or_retry(ss.str());
     }
