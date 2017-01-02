@@ -55,7 +55,8 @@ static PyObject* arkipy_DatasetReader_query_data(arkipy_DatasetReader* self, PyO
 
         metadata_dest_func dest = [&](std::unique_ptr<Metadata>&& md) {
             // call arg_on_metadata
-            pyo_unique_ptr args(PyTuple_Pack(1, metadata_create(move(md))));
+            py_unique_ptr<arkipy_Metadata> pymd(metadata_create(move(md)));
+            pyo_unique_ptr args(PyTuple_Pack(1, pymd.get()));
             if (!args) throw python_callback_failed();
             pyo_unique_ptr res(PyObject_CallObject(arg_on_metadata, args));
             if (!res) throw python_callback_failed();

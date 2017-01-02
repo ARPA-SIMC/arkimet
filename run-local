@@ -17,4 +17,6 @@ export LD_LIBRARY_PATH="$TOP_SRCDIR/arki:$LD_LIBRARY_PATH"
 export METEO_VM2_SOURCE="$TOP_SRCDIR/conf/vm2/source.lua"
 export PYTHONPATH="$TOP_SRCDIR/python"
 
+#ulimit -v 1048576
+
 exec "$@"
