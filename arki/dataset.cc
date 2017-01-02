@@ -6,6 +6,7 @@
 #include <arki/dataset/simple/reader.h>
 #include <arki/dataset/outbound.h>
 #include <arki/dataset/empty.h>
+#include <arki/dataset/testlarge.h>
 #include <arki/dataset/segment.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
@@ -69,6 +70,8 @@ std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
         return empty::Config::create(cfg);
     if (type == "file")
         return dataset::FileConfig::create(cfg);
+    if (type == "testlarge")
+        return testlarge::Config::create(cfg);
 
     throw std::runtime_error("cannot use configuration: unknown dataset type \""+type+"\"");
 }

@@ -38,6 +38,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/segment/dir.h \
 		dataset/segment/tests.h \
 		dataset/empty.h \
+		dataset/testlarge.h \
 		dataset/file.h \
 		dataset/gridquery.h \
 		dataset.h \
@@ -516,6 +517,7 @@ libarkimet_la_SOURCES += \
 		dataset/outbound.cc \
 		dataset/offline.cc \
 		dataset/empty.cc \
+		dataset/testlarge.cc \
 		dataset/merged.cc \
 		dataset/gridquery.cc \
 		dataset/test-scenario.cc \
@@ -564,6 +566,7 @@ tests_arki_test_SOURCES += \
 		dataset/outbound-tut.cc \
 		dataset/offline-test.cc \
 		dataset/empty-test.cc \
+		dataset/testlarge-test.cc \
 		dataset/merged-tut.cc \
 		dataset/gridquery-tut.cc \
 		dataset/test-scenario-test.cc \

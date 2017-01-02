@@ -162,3 +162,16 @@ type = file
         # No arguments
         ds.query_data(on_metadata=count_results)
         self.assertEquals(count, 1)
+
+    def test_query_data_memoryusage(self):
+        ds = arki.DatasetReader({
+            "type": "testlarge",
+        })
+        count = 0
+        def count_results(md):
+            nonlocal count
+            count += 1
+
+        # No arguments
+        ds.query_data(on_metadata=count_results)
+        self.assertEquals(count, 24841)
