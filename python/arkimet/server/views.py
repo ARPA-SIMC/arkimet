@@ -299,6 +299,15 @@ class ArkiDatasetSummary(ArkiDatasetQuery):
         summary.write(self.handler.wfile, format=self.request.values.get("style", "binary").strip())
 
 
+class ArkiDatasetSummaryShort(ArkiDatasetQuery):
+    headers_ext = "summary"
+
+    def stream(self):
+        summary = self.get_dataset_reader().query_summary(self.get_query())
+        self.send_headers()
+        summary.write_short(self.handler.wfile, format=self.request.values.get("style", "yaml").strip())
+
+
 class DatasetQueryData(ArkiDatasetQuery):
     headers_ext = "data"
 

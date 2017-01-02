@@ -454,6 +454,32 @@ add_method("query_summary_style_yaml", [] {
     wassert(actual(request.buf).startswith("SummaryItem"));
 });
 
+// Test style=json summary queries
+add_method("query_summaryshort_style_json", [] {
+    dataset::http::CurlEasy curl;
+
+    dataset::http::BufState<std::string> request(curl);
+    request.set_url("http://localhost:7117/dataset/test200/summaryshort?style=json");
+    request.set_method("POST");
+    request.post_data.add_string("query", Matcher().toStringExpanded());
+    request.perform();
+
+    wassert(actual(request.buf).startswith("{"));
+});
+
+// Test style=yaml summary queries
+add_method("query_summaryshort_style_yaml", [] {
+    dataset::http::CurlEasy curl;
+
+    dataset::http::BufState<std::string> request(curl);
+    request.set_url("http://localhost:7117/dataset/test200/summaryshort?style=yaml");
+    request.set_method("POST");
+    request.post_data.add_string("query", Matcher().toStringExpanded());
+    request.perform();
+
+    wassert(actual(request.buf).startswith("SummaryStats"));
+});
+
 }
 
 }
