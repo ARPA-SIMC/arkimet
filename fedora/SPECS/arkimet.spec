@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.0
-Release: 17
+Release: 18
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -124,8 +124,11 @@ else
 fi
 
 %changelog
+* Tue Jan 3 2017 Daniele Branchini <dbranchini@arpae.it> - 1.0-18%{dist}
+- fixed #63, #64, #66, #68, #70
+
 * Thu Dec 15 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-17%{dist}
-- fixed #9, #61, #62, #63
+- fixed #9, #61, #62
 
 * Tue Oct 18 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-16%{dist}
 - fixed #55, #56, #57, #43, #48
