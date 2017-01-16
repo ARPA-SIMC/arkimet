@@ -1,6 +1,6 @@
 = ArkiGuida =
-Emanuele Di Giacomo <edigiacomo@arpa.emr.it>
-v0.7, 2013-12-04
+Emanuele Di Giacomo <edigiacomo@arpae.it>
+v0.8, 2017-01-16
 :lang: it
 
 == Introduzione ==
@@ -431,6 +431,13 @@ reftime: >= 2013-04-12, <= 2013-04-14 12:58
 # Tutti i prodotti GRIB1 con centro di emissione 200
 reftime: = today; origin: GRIB1,200
 
+# Tutte le precipitazioni comprese in un dato bounding box 
+latmax="45.10"
+latmin="43."
+lonmax="13."
+lonmin="9."
+area: bbox coveredby POLYGON(($lonmin $latmin,$lonmin $latmax, $lonmax $latmax, $lonmax $latmin, $lonmin $latmin)) ; product:VM2,160
+
 # Solo i volumi polari ODIMH5 di ieri
 reftime: = yesterday; product: ODIMH5,PVOL,SCAN
 
@@ -617,9 +624,9 @@ permette di gestire agevolmente l'encoding dei caratteri non alfanumerici.
 L'url completo sarebbe qualcosa tipo:
 `http://my-host:8090/dataset/lmsmr4x52/query?query=Reftime%3A%3Dtoday%3Btimerange%3AGRIB1%2C0%2C0&style=data`
 
-== Estensioni ==
+== Casi d'uso ==
 
-*TODO*
+Quello che segue è un elenco di attività tipiche complementari a quelle di archiviazione e estrazione dati descritte finora.
 
 === Postprocessamento lato client ===
 
@@ -720,15 +727,48 @@ output il risultato.
 Generalmente, i postprocessatori sono shell script che usano al loro interno il
 comando `arki-xargs`.
 
+=== Cancellazione dati specifici ===
+
+E' possibile rimuovere da un dataset uno specifico segmento di dati con l'opzione  `arki-check --remove`
+
+.Esempio di cancellazione tramite reftime
+====
+----
+# controllo effettiva presenza del dato che voglio cancellare 
+$ arki-query --yaml 'reftime:=2017-01-13 9:15' /dataset/odimSPC/
+
+Source: BLOB(odimh5,/dataset/odimSPC/2017/01-13.odimh5:66+6058054)
+Origin: ODIMH5(16144, IY46, itspc)
+Product: ODIMH5(PVOL, SCAN)
+Level: ODIMH5(0.5, 5)
+Reftime: 2017-01-13T09:15:00Z
+Area: ODIMH5(lat=44654701, lon=11623600, radius=125000)
+Task: Pioggia_std
+Quantity: DBZH, TH, VRAD, WRAD
+Note: [2017-01-13T09:18:02Z]Scanned from /autofs/ftpuser/radar/INPUT_MSE/MSS1701309150U.101.h5:0+6058054
+
+# preparo i metadata del dato da cancellare
+$ arki-query 'reftime:=2017-01-13 9:15' /dataset/odimSPC/ > /tmp/delete.md
+
+# cancello il dato
+$ arki-check --remove=/tmp/delete.md /dataset/odimSPC/
+----
+
+E' possibile concatenare i file di metadata:
+
+----
+$ arki-query 'reftime:=2017-01-13 9:10' /dataset/odimSPC/ >> /tmp/delete.md
+----
+
+E' possibile controllarne il contenuto:
+
+----
+$ arki-scan --yaml arkimet:/tmp/delete.md
+----
+
+====
+
 === Query macro ===
-
-*TODO*
-
-=== Modifiche all'importatore ===
-
-*TODO*
-
-=== Bounding box ===
 
 *TODO*
 
@@ -749,6 +789,8 @@ directory in alfabetico, quindi è possibile inserire anche delle funzioni di
 utilità che possono essere richiamate.
 
 === Arkiweb ===
+
+E' disponibile un'interfaccia web ad arkimet al momento non ancora distribuita pubblicamente
 
 *TODO*
 
