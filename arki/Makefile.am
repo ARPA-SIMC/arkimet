@@ -68,6 +68,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/simple/writer.h \
 		dataset/iseg.h \
 		dataset/iseg/datafile.h \
+		dataset/iseg/index.h \
 		dataset/iseg/reader.h \
 		dataset/iseg/writer.h \
 		dataset/step.h \
@@ -516,6 +517,7 @@ libarkimet_la_SOURCES += \
 		dataset/simple/writer.cc \
 		dataset/iseg.cc \
 		dataset/iseg/datafile.cc \
+		dataset/iseg/index.cc \
 		dataset/iseg/reader.cc \
 		dataset/iseg/writer.cc \
 		dataset/ondisk2.cc \
@@ -567,6 +569,7 @@ tests_arki_test_SOURCES += \
 		dataset/simple/writer-test.cc \
 		dataset/iseg-test.cc \
 		dataset/iseg/datafile-test.cc \
+		dataset/iseg/index-test.cc \
 		dataset/iseg/reader-test.cc \
 		dataset/iseg/writer-test.cc \
 		dataset/ondisk2-test.cc \

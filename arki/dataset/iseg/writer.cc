@@ -1,5 +1,5 @@
 #include "arki/dataset/iseg/writer.h"
-#include "arki/dataset/iseg/datafile.h"
+#include "arki/dataset/iseg/index.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/segment.h"
 #include "arki/types/source/blob.h"
@@ -35,9 +35,6 @@ Writer::Writer(std::shared_ptr<const iseg::Config> config)
 {
     // Create the directory if it does not exist
     sys::makedirs(config->path);
-
-    //acquire_lock();
-    //release_lock();
 }
 
 Writer::~Writer()
@@ -51,7 +48,7 @@ Segment* Writer::file(const Metadata& md, const std::string& format)
 {
     Segment* writer = segmented::Writer::file(md, format);
     if (!writer->payload)
-        writer->payload = new datafile::MdBuf(writer->absname);
+        writer->payload = new Index(writer->absname);
     return writer;
 }
 
@@ -60,17 +57,16 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     auto age_check = check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
-    acquire_lock();
-    // TODO: refuse if md is before "archive age"
+    //acquire_lock();
     Segment* writer = file(md, md.source().format);
-    datafile::MdBuf* mdbuf = static_cast<datafile::MdBuf*>(writer->payload);
+    //Index* idx = static_cast<Index*>(writer->payload);
 
     // Try appending
     try {
         off_t offset = writer->append(md);
         auto source = types::source::Blob::create(md.source().format, config().path, writer->relname, offset, md.data_size());
         md.set_source(move(source));
-        mdbuf->add(md);
+        //mdbuf->add(md);
         //m_mft->acquire(writer->relname, sys::timestamp(mdbuf->pathname, 0), mdbuf->sum);
         return ACQ_OK;
     } catch (std::exception& e) {
