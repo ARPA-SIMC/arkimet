@@ -65,7 +65,7 @@ add_method("acquire", [](Fixture& f) {
     metadata::Collection mdc("inbound/test.grib1");
     Metadata& md = mdc[0];
 
-    auto writer = f.makeSimpleWriter();
+    auto writer = f.makeIsegWriter();
 
     // Import once in the empty dataset
     Writer::AcquireResult res = writer->acquire(md);
@@ -108,14 +108,14 @@ add_method("append", [](Fixture& f) {
 
     // Import once in the empty dataset
     {
-        auto writer = f.makeSimpleWriter();
+        auto writer = f.makeIsegWriter();
         Writer::AcquireResult res = writer->acquire(mdc[0]);
         ensure_equals(res, Writer::ACQ_OK);
     }
 
     // Import another one, appending to the file
     {
-        auto writer = f.makeSimpleWriter();
+        auto writer = f.makeIsegWriter();
         Writer::AcquireResult res = writer->acquire(mdc[1]);
         ensure_equals(res, Writer::ACQ_OK);
         ensure_equals(dsname(mdc[1]), "testds");
@@ -148,13 +148,13 @@ add_method("scan_nonindexed", [](Fixture& f) {
 
     // Query now is ok, but empty
     {
-        metadata::Collection mdc(*f.makeSimpleReader(), Matcher());
+        metadata::Collection mdc(*f.makeIsegReader(), Matcher());
         ensure_equals(mdc.size(), 0u);
     }
 
     // Maintenance should show one file to index
     {
-        auto checker = f.makeSimpleChecker();
+        auto checker = f.makeIsegChecker();
         MaintenanceResults expected(false, 1);
         expected.by_type[DatasetTest::COUNTED_NEW] = 1;
         wassert(actual(*checker).maintenance(expected));
@@ -162,7 +162,7 @@ add_method("scan_nonindexed", [](Fixture& f) {
     }
 
     {
-        auto checker = f.makeSimpleChecker();
+        auto checker = f.makeIsegChecker();
 
         // Check should reindex the file
         {
@@ -181,13 +181,13 @@ add_method("scan_nonindexed", [](Fixture& f) {
 
     // Remove the file from the index
     {
-        auto checker = f.makeSimpleChecker();
+        auto checker = f.makeIsegChecker();
         checker->removeSegment("2007/07.grib", false);
     }
 
     // Repack should delete the files not in index
     {
-        auto checker = f.makeSimpleChecker();
+        auto checker = f.makeIsegChecker();
         ReporterExpected e;
         e.deleted.emplace_back("testds", "2007/07.grib", "42178 freed");
         wassert(actual(*checker).repack(e, true));
@@ -216,13 +216,13 @@ add_method("scan_missing_md_summary", [](Fixture& f) {
 
     // Query is ok
     {
-        metadata::Collection mdc(*f.makeSimpleReader(), Matcher());
+        metadata::Collection mdc(*f.makeIsegReader(), Matcher());
         ensure_equals(mdc.size(), 3u);
     }
 
     // Maintenance should show one file to rescan
     {
-        auto checker = f.makeSimpleChecker();
+        auto checker = f.makeIsegChecker();
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
         expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 1;
@@ -231,7 +231,7 @@ add_method("scan_missing_md_summary", [](Fixture& f) {
 
     // Fix the dataset
     {
-        auto checker = f.makeSimpleChecker();
+        auto checker = f.makeIsegChecker();
 
         // Check should reindex the file
         ReporterExpected e;
@@ -263,7 +263,7 @@ add_method("scan_missing_md_summary", [](Fixture& f) {
 
     // And repack should have changed nothing
     {
-        metadata::Collection mdc(*f.makeSimpleReader(), Matcher());
+        metadata::Collection mdc(*f.makeIsegReader(), Matcher());
         ensure_equals(mdc.size(), 3u);
     }
     ensure(sys::exists("testds/2007/07-08.grib"));
@@ -290,13 +290,13 @@ add_method("scan_missing_summary", [](Fixture& f) {
 
     // Query is ok
     {
-        metadata::Collection mdc(*f.makeSimpleReader(), Matcher());
+        metadata::Collection mdc(*f.makeIsegReader(), Matcher());
         ensure_equals(mdc.size(), 3u);
     }
 
     // Maintenance should show one file to rescan
     {
-        auto checker = f.makeSimpleChecker();
+        auto checker = f.makeIsegChecker();
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
         expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 1;
@@ -305,7 +305,7 @@ add_method("scan_missing_summary", [](Fixture& f) {
 
     // Fix the dataset
     {
-        auto checker = f.makeSimpleChecker();
+        auto checker = f.makeIsegChecker();
 
         // Check should reindex the file
         ReporterExpected e;
@@ -331,11 +331,11 @@ add_method("scan_missing_summary", [](Fixture& f) {
     ensure(sys::exists("testds/" + f.idxfname()));
 
     // Repack here should act as if the dataset were empty
-    wassert(actual(*f.makeSimpleChecker()).repack_clean(true));
+    wassert(actual(*f.makeIsegChecker()).repack_clean(true));
 
     // And repack should have changed nothing
     {
-        auto reader = f.makeSimpleReader();
+        auto reader = f.makeIsegReader();
         metadata::Collection mdc(*reader, Matcher());
         ensure_equals(mdc.size(), 3u);
     }
@@ -386,7 +386,7 @@ add_method("scan_compressed", [](Fixture& f) {
     // Cannot query anymore
     {
         metadata::Collection mdc;
-        auto reader = f.makeSimpleReader();
+        auto reader = f.makeIsegReader();
         try {
             mdc.add(*reader, Matcher());
             ensure(false);
@@ -397,7 +397,7 @@ add_method("scan_compressed", [](Fixture& f) {
 
     // Maintenance should show one file to rescan
     {
-        auto checker = f.makeSimpleChecker();
+        auto checker = f.makeIsegChecker();
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
         expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 1;
@@ -406,7 +406,7 @@ add_method("scan_compressed", [](Fixture& f) {
 
     // Fix the dataset
     {
-        auto checker = f.makeSimpleChecker();
+        auto checker = f.makeIsegChecker();
 
         // Check should reindex the file
         ReporterExpected e;
@@ -437,14 +437,14 @@ add_method("scan_compressed", [](Fixture& f) {
     // Repack here should act as if the dataset were empty
     {
         // Repack should find nothing to repack
-        auto checker = f.makeSimpleChecker();
+        auto checker = f.makeIsegChecker();
         wassert(actual(*checker).repack_clean(true));
     }
 
     // And repack should have changed nothing
     {
         metadata::Collection mdc;
-        auto reader = f.makeSimpleReader();
+        auto reader = f.makeIsegReader();
         try {
             mdc.add(*reader, Matcher());
             ensure(false);
@@ -477,14 +477,14 @@ add_method("scan_missingdata", [](Fixture& f) {
 
     // Query is ok
     {
-        auto reader = f.makeSimpleReader();
+        auto reader = f.makeIsegReader();
         metadata::Collection mdc(*reader, Matcher());
         ensure_equals(mdc.size(), 2u);
     }
 
     // Maintenance should show one file to rescan
     {
-        auto checker = f.makeSimpleChecker();
+        auto checker = f.makeIsegChecker();
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
         expected.by_type[DatasetTest::COUNTED_DELETED] = 1;
@@ -493,7 +493,7 @@ add_method("scan_missingdata", [](Fixture& f) {
 
     // Fix the dataset
     {
-        auto checker = f.makeSimpleChecker();
+        auto checker = f.makeIsegChecker();
 
         // Check should reindex the file
         ReporterExpected e;
@@ -518,7 +518,7 @@ add_method("scan_missingdata", [](Fixture& f) {
     // Repack here should act as if the dataset were empty
     {
         // Repack should tidy up the index
-        auto checker = f.makeSimpleChecker();
+        auto checker = f.makeIsegChecker();
         ReporterExpected e;
         e.deindexed.emplace_back("testds", "2007/07-08.grib");
         wassert(actual(*checker).repack(e, true));

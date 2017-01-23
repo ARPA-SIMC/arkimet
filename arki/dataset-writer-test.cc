@@ -141,21 +141,25 @@ TestsWriter<testdata::GRIBData> test_writer_grib_ondisk2_sharded("arki_dataset_w
 TestsWriter<testdata::GRIBData> test_writer_grib_simple_plain("arki_dataset_writer_grib_simple_plain", "type=simple\nindex_type=plain\n");
 TestsWriter<testdata::GRIBData> test_writer_grib_simple_plain_sharded("arki_dataset_writer_grib_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsWriter<testdata::GRIBData> test_writer_grib_simple_sqlite("arki_dataset_writer_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsWriter<testdata::GRIBData> test_writer_grib_iseg("arki_dataset_writer_grib_iseg", "type=iseg\n");
 TestsWriter<testdata::BUFRData> test_writer_bufr_ondisk2("arki_dataset_writer_bufr_ondisk2", "type=ondisk2\n");
 TestsWriter<testdata::BUFRData> test_writer_bufr_ondisk2_sharded("arki_dataset_writer_bufr_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
 TestsWriter<testdata::BUFRData> test_writer_bufr_simple_plain("arki_dataset_writer_bufr_simple_plain", "type=simple\nindex_type=plain\n");
 TestsWriter<testdata::BUFRData> test_writer_bufr_simple_plain_sharded("arki_dataset_writer_bufr_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsWriter<testdata::BUFRData> test_writer_bufr_simple_sqlite("arki_dataset_writer_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsWriter<testdata::BUFRData> test_writer_bufr_iseg("arki_dataset_writer_bufr_iseg", "type=iseg\n");
 TestsWriter<testdata::VM2Data> test_writer_vm2_ondisk2("arki_dataset_writer_vm2_ondisk2", "type=ondisk2\n");
 TestsWriter<testdata::VM2Data> test_writer_vm2_ondisk2_sharded("arki_dataset_writer_vm2_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
 TestsWriter<testdata::VM2Data> test_writer_vm2_simple_plain("arki_dataset_writer_vm2_simple_plain", "type=simple\nindex_type=plain\n");
 TestsWriter<testdata::VM2Data> test_writer_vm2_simple_plain_sharded("arki_dataset_writer_vm2_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsWriter<testdata::VM2Data> test_writer_vm2_simple_sqlite("arki_dataset_writer_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsWriter<testdata::VM2Data> test_writer_vm2_iseg("arki_dataset_writer_vm2_iseg", "type=iseg\n");
 TestsWriter<testdata::ODIMData> test_writer_odim_ondisk2("arki_dataset_writer_odim_ondisk2", "type=ondisk2\n");
 TestsWriter<testdata::ODIMData> test_writer_odim_ondisk2_sharded("arki_dataset_writer_odim_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
 TestsWriter<testdata::ODIMData> test_writer_odim_simple_plain("arki_dataset_writer_odim_simple_plain", "type=simple\nindex_type=plain\n");
 TestsWriter<testdata::ODIMData> test_writer_odim_simple_plain_sharded("arki_dataset_writer_odim_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsWriter<testdata::ODIMData> test_writer_odim_simple_sqlite("arki_dataset_writer_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsWriter<testdata::ODIMData> test_writer_odim_iseg("arki_dataset_writer_odim_iseg", "type=iseg\n");
 
 void Tests::register_tests() {
 

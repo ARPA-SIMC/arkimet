@@ -6,6 +6,8 @@
 #include "arki/dataset/ondisk2/writer.h"
 #include "arki/dataset/simple/reader.h"
 #include "arki/dataset/simple/writer.h"
+#include "arki/dataset/iseg/reader.h"
+#include "arki/dataset/iseg/writer.h"
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dispatcher.h"
@@ -252,6 +254,33 @@ std::unique_ptr<dataset::simple::Checker> DatasetTest::makeSimpleChecker()
     if (!r) throw std::runtime_error("makeSimpleChecker called while testing a non-simple dataset");
     ds.release();
     return unique_ptr<dataset::simple::Checker>(r);
+}
+
+std::unique_ptr<dataset::iseg::Reader> DatasetTest::makeIsegReader()
+{
+    auto ds = config().create_reader();
+    dataset::iseg::Reader* r = dynamic_cast<dataset::iseg::Reader*>(ds.get());
+    if (!r) throw std::runtime_error("makeIsegReader called while testing a non-iseg dataset");
+    ds.release();
+    return unique_ptr<dataset::iseg::Reader>(r);
+}
+
+std::unique_ptr<dataset::iseg::Writer> DatasetTest::makeIsegWriter()
+{
+    auto ds = config().create_writer();
+    dataset::iseg::Writer* r = dynamic_cast<dataset::iseg::Writer*>(ds.get());
+    if (!r) throw std::runtime_error("makeIsegWriter called while testing a non-iseg dataset");
+    ds.release();
+    return unique_ptr<dataset::iseg::Writer>(r);
+}
+
+std::unique_ptr<dataset::iseg::Checker> DatasetTest::makeIsegChecker()
+{
+    auto ds = config().create_checker();
+    dataset::iseg::Checker* r = dynamic_cast<dataset::iseg::Checker*>(ds.get());
+    if (!r) throw std::runtime_error("makeIsegChecker called while testing a non-iseg dataset");
+    ds.release();
+    return unique_ptr<dataset::iseg::Checker>(r);
 }
 
 void DatasetTest::clean()

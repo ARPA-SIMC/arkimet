@@ -52,6 +52,12 @@ struct Reader;
 struct Writer;
 struct Checker;
 }
+
+namespace iseg {
+struct Reader;
+struct Writer;
+struct Checker;
+}
 }
 
 namespace testdata {
@@ -181,6 +187,9 @@ public:
     std::unique_ptr<dataset::simple::Reader> makeSimpleReader();
     std::unique_ptr<dataset::simple::Writer> makeSimpleWriter();
     std::unique_ptr<dataset::simple::Checker> makeSimpleChecker();
+    std::unique_ptr<dataset::iseg::Reader> makeIsegReader();
+    std::unique_ptr<dataset::iseg::Writer> makeIsegWriter();
+    std::unique_ptr<dataset::iseg::Checker> makeIsegChecker();
 
     // Clean the dataset directory
     void clean();
@@ -473,6 +482,7 @@ inline arki::tests::ActualSegmentedChecker actual(arki::dataset::segmented::Chec
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::segmented::Checker& actual) { return arki::tests::ActualSegmentedChecker(&actual); }
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::simple::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::segmented::Checker*)&actual); }
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::ondisk2::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::segmented::Checker*)&actual); }
+inline arki::tests::ActualSegmentedChecker actual(arki::dataset::iseg::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::segmented::Checker*)&actual); }
 inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::ArchivesChecker& actual) { return arki::tests::ActualChecker<dataset::Checker>((dataset::Checker*)&actual); }
 
 }

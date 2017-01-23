@@ -2,6 +2,7 @@
 #include "step.h"
 #include "ondisk2/writer.h"
 #include "simple/writer.h"
+#include "iseg/writer.h"
 #include "maintenance.h"
 #include "archive.h"
 #include "reporter.h"
@@ -122,6 +123,8 @@ LocalWriter::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Meta
     if (type.empty())
         type = "local";
 
+    if (type == "iseg")
+        return dataset::iseg::Writer::testAcquire(cfg, md, out);
     if (type == "ondisk2" || type == "test")
         return dataset::ondisk2::Writer::testAcquire(cfg, md, out);
     if (type == "simple" || type == "error" || type == "duplicates")
