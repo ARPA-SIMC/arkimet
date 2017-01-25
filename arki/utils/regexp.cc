@@ -55,7 +55,26 @@ Regexp::~Regexp() throw ()
 	if (pmatch)
 		delete[] pmatch;
 }
-	
+
+bool Regexp::match(const char* str, int flags)
+{
+    int res;
+
+    if (nmatch)
+    {
+        res = regexec(&re, str, nmatch, pmatch, flags);
+        lastMatch = str;
+    }
+    else
+        res = regexec(&re, str, 0, 0, flags);
+
+    switch (res)
+    {
+        case 0: return true;
+        case REG_NOMATCH: return false;
+        default: throw RegexpError(re, res, "cannot match string \"" + string(str) + "\"");
+    }
+}
 
 bool Regexp::match(const string& str, int flags)
 {
