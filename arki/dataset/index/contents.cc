@@ -133,9 +133,6 @@ void Contents::initQueries()
             m_others = new Aggregate(m_db, "mdother", other_members);
     }
 
-    if (m_uniques) m_uniques->initQueries();
-    if (m_others) m_others->initQueries();
-
     string query = "SELECT id FROM md WHERE reftime=?";
     if (m_uniques) query += " AND uniq=?";
     if (m_others) query += " AND other=?";

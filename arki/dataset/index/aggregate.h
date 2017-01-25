@@ -45,6 +45,10 @@ protected:
 	mutable utils::sqlite::PrecompiledQuery q_select_by_id;
 	mutable utils::sqlite::PrecompiledQuery q_insert;
 
+    void init_select() const;
+    void init_select_by_id() const;
+    void init_insert() const;
+
 public:
 	Aggregate(utils::sqlite::SQLiteDB& db,
 		  const std::string& table_name,
@@ -54,8 +58,6 @@ public:
 		  q_select_by_id("selbyid", db),
 		  q_insert("ins", db) {}
 	~Aggregate() {}
-
-	void initQueries();
 
 	/**
 	 * Get the set of types::Code handled by this aggregate

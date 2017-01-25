@@ -967,8 +967,8 @@ void WIndex::compile_insert()
              " VALUES (?, ?, ?, ?" + placeholders + ")");
 
     // Precompile replace
-    m_replace.compile("INSERT OR REPLACE INTO md (format, file, offset, size, notes, reftime" + un_ot + ")"
-                  " VALUES (?, ?, ?, ?, ?, ?" + placeholders + ")");
+    m_replace.compile("INSERT OR REPLACE INTO md (offset, size, notes, reftime" + un_ot + ")"
+                  " VALUES (?, ?, ?, ?" + placeholders + ")");
 }
 
 #if 0
