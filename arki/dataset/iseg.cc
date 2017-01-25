@@ -17,10 +17,14 @@ namespace iseg {
 
 Config::Config(const ConfigFile& cfg)
     : segmented::Config(cfg),
+      format(cfg.value("format")),
       smallfiles(ConfigFile::boolValue(cfg.value("smallfiles"))),
       index(index::parseMetadataBitmask(cfg.value("index"))),
       unique(index::parseMetadataBitmask(cfg.value("unique")))
 {
+    if (format.empty())
+        throw std::runtime_error("Dataset " + name + " misses format= configuration");
+
     unique.erase(TYPE_REFTIME);
 }
 

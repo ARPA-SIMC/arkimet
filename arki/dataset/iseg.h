@@ -12,6 +12,7 @@ namespace iseg {
 
 struct Config : public segmented::Config
 {
+    std::string format;
     bool smallfiles;
     std::string index_type;
     std::set<types::Code> index;

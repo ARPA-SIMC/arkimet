@@ -13,6 +13,7 @@ namespace core {
 class Time;
 }
 
+class Matcher;
 namespace matcher {
 class OR;
 }
@@ -42,6 +43,12 @@ struct Step
      * Currently it can only look at the reftime part of the matcher.
      */
     virtual bool pathMatches(const std::string& path, const matcher::OR& m) const = 0;
+
+    /**
+     * List existing paths whose segments could intersect the reftime part of
+     * the given matcher
+     */
+    virtual void list_segments(const std::string& root, const std::string& format, const Matcher& m, std::function<void(std::string&&)> dest) const = 0;
 
     /**
      * Create a Step according to the given step type name.

@@ -4,6 +4,7 @@
 #include "arki/utils/pcounter.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/regexp.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
@@ -17,6 +18,36 @@ using arki::core::Time;
 namespace arki {
 namespace dataset {
 
+struct PathQuery
+{
+    const std::string& root;
+    const std::string& format;
+    const matcher::OR* m = nullptr;
+
+    PathQuery(const std::string& root, const std::string& format, const Matcher& m)
+        : root(root), format(format)
+    {
+        auto rt_matcher = m->get(TYPE_REFTIME);
+        if (rt_matcher)
+            this->m = rt_matcher.get();
+    }
+};
+
+struct StepParser
+{
+    // Depth at which segments are found
+    const unsigned max_depth;
+    unsigned depth = 0;
+
+    StepParser(unsigned max_depth) : max_depth(max_depth) {}
+
+    // Timespan of what has been parsed so far
+    virtual void timespan(Time& start_time, Time& end_time) = 0;
+
+    virtual bool parse_component(const PathQuery& q, unsigned depth, const char* name) = 0;
+};
+
+
 struct BaseStep : public Step
 {
     bool pathMatches(const std::string& path, const matcher::OR& m) const override
@@ -27,6 +58,154 @@ struct BaseStep : public Step
             return false;
         auto rt = Reftime::createPeriod(min, max);
         return m.matchItem(*rt);
+    }
+
+    void list_segments(const std::string& root, const std::string& format, const Matcher& m, std::function<void(std::string&&)> dest) const override
+    {
+        throw std::runtime_error("list_segments not implemented for this step");
+    }
+
+    void impl_list_segments(const PathQuery& q, StepParser& sp, std::function<void(std::string&& s)> dest) const
+    {
+        impl_list_segments(q, sp, string(), 0, dest);
+    }
+
+    void impl_list_segments(const PathQuery& q, StepParser& sp, const std::string& relpath, unsigned depth, std::function<void(std::string&& s)> dest) const
+    {
+        bool is_leaf = depth == sp.max_depth;
+        string root;
+        if (depth == 0)
+            root = q.root;
+        else
+            root = str::joinpath(q.root, relpath);
+
+        sys::Path dir(root);
+        for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+        {
+            if (!is_leaf && !f.isdir()) continue;
+            if (is_leaf && f.isdir()) continue;
+            if (!sp.parse_component(q, depth, f->d_name)) continue;
+
+            // Its period must match the matcher in q
+            if (q.m)
+            {
+                core::Time begin;
+                core::Time until;
+                sp.timespan(begin, until);
+                auto rt = Reftime::createPeriod(begin, until);
+                if (!q.m->matchItem(*rt)) continue;
+            }
+
+            if (is_leaf)
+                dest(str::joinpath(relpath, f->d_name));
+            else
+                impl_list_segments(q, sp, str::joinpath(relpath, f->d_name), depth + 1, dest);
+        }
+    }
+
+#if 0
+    virtual void subpath_timespan(unsigned value, Time& start_time, Time& end_time) const = 0;
+    virtual void segment_timespan(unsigned sp_value, const Regexp& re, Time& start_time, Time& end_time) const = 0;
+
+    void list_subpaths(const PathQuery& q, unsigned length, std::function<void(unsigned value, const char* name)> dest) const
+    {
+        sys::Path dir(q.root);
+        for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+        {
+            // Must be a directory
+            if (!f.isdir()) continue;
+
+            // Must be a number of length digits
+            char* endptr;
+            unsigned value = strtoul(f->d_name, &endptr, 10);
+            if (endptr != f->d_name + length || *endptr) continue;
+
+            // Its period must match the matcher in q
+            core::Time begin;
+            core::Time until;
+            subpath_timespan(value, begin, until);
+            auto rt = Reftime::createPeriod(begin, until);
+            if (!q.m.matchItem(*rt)) continue;
+
+            dest(value, f->d_name);
+        }
+    }
+
+    std::vector<std::string> impl_list_paths(const PathQuery& q, unsigned sp_length, ERegexp& segment_re) const
+    {
+        vector<string> relpaths;
+
+        list_subpaths(q, sp_length, [&](unsigned value, const char* sp_name) {
+            list_subpaths(q, value, sp_name, [&](const char* name) {
+                if (!segment_re.match(name)) return;
+
+                // Its period must match the matcher in q
+                core::Time begin;
+                core::Time until;
+                segment_timespan(value, segment_re, begin, until);
+                auto rt = Reftime::createPeriod(begin, until);
+                if (!q.m.matchItem(*rt)) return;
+
+                relpaths.push_back(str::joinpath(sp_name, name));
+            });
+        });
+
+        std::sort(relpaths.begin(), relpaths.end());
+        return relpaths;
+    }
+#endif
+};
+
+struct SubStep : public BaseStep
+{
+    int year;
+    SubStep(int year) : year(year) {}
+};
+
+struct YearlyStepParser : public StepParser
+{
+    ERegexp re_century;
+    ERegexp re_year;
+    unsigned century;
+    unsigned year;
+
+    YearlyStepParser() :
+        StepParser(2),
+        re_century("^(\\d{2})$", 1),
+        re_year("^(\\d{4})\\.(\\w+)$", 2) {}
+
+    bool parse_component(const PathQuery& q, unsigned depth, const char* name) override
+    {
+        this->depth = depth;
+        switch (depth)
+        {
+            case 0:
+                if (!re_century.match(name)) return false;
+                century = std::stoul(re_century[1]);
+                return true;
+            case 1:
+                if (!re_year.match(name)) return false;
+                if (re_year[2] != q.format) return false;
+                year = std::stoul(re_year[1]);
+                return true;
+            default:
+                throw std::runtime_error("invalid depth " + std::to_string(depth));
+        }
+    }
+
+    void timespan(Time& start_time, Time& end_time) override
+    {
+        switch (depth)
+        {
+            case 0:
+                start_time.set_lowerbound(century * 100);
+                end_time.set_upperbound(century * 100 + 99);
+                break;
+            case 1:
+                start_time.set_lowerbound(year);
+                end_time.set_upperbound(year);
+                break;
+        }
     }
 };
 
@@ -44,6 +223,12 @@ struct Yearly : public BaseStep
         start_time.set_lowerbound(ye);
         end_time.set_upperbound(ye);
         return true;
+    }
+
+    void list_segments(const std::string& root, const std::string& format, const Matcher& m, std::function<void(std::string&&)> dest) const override
+    {
+        YearlyStepParser sp;
+        impl_list_segments(PathQuery(root, format, m), sp, dest);
     }
 
     std::string operator()(const core::Time& time) const override
@@ -77,13 +262,32 @@ struct Monthly : public BaseStep
         snprintf(buf, 10, "%04d/%02d", tt.ye, tt.mo);
         return buf;
     }
+
+#if 0
+    void subpath_timespan(unsigned sp_value, Time& start_time, Time& end_time) const override
+    {
+        start_time.set_lowerbound(sp_value);
+        end_time.set_upperbound(sp_value);
+    }
+
+    void segment_timespan(unsigned sp_value, const Regexp& re, Time& start_time, Time& end_time) const override
+    {
+        unsigned month = strtoul(re[1].c_str(), 0, 10);
+        start_time.set_lowerbound(sp_value, month);
+        end_time.set_upperbound(sp_value, month);
+    }
+
+    std::vector<std::string> list_paths(const PathQuery& q) const override
+    {
+        ERegexp re("^(\\d{2})$", 1);
+        return impl_list_paths(q, 4, re);
+    }
+#endif
 };
 
-struct SubMonthly : public BaseStep
+struct SubMonthly : public SubStep
 {
-    int year;
-
-    SubMonthly(int year) : year(year) {}
+    using SubStep::SubStep;
 
     static const char* name() { return "monthly"; }
 
@@ -140,6 +344,34 @@ struct Biweekly : public BaseStep
         res << (tt.da > 15 ? 2 : 1);
         return res.str();
     }
+
+#if 0
+    void subpath_timespan(unsigned sp_value, Time& start_time, Time& end_time) const override
+    {
+        start_time.set_lowerbound(sp_value);
+        end_time.set_upperbound(sp_value);
+    }
+
+    void segment_timespan(unsigned sp_value, const Regexp& re, Time& start_time, Time& end_time) const override
+    {
+        unsigned month = strtoul(re[1].c_str(), 0, 10);
+        unsigned biweek = strtoul(re[2].c_str(), 0, 10);
+        if (biweek == 1)
+        {
+            start_time.set_lowerbound(sp_value, month);
+            end_time.set_upperbound(sp_value, month, 15);
+        } else {
+            start_time.set_lowerbound(sp_value, month, 16);
+            end_time.set_upperbound(sp_value, month);
+        }
+    }
+
+    std::vector<std::string> list_paths(const PathQuery& q) const override
+    {
+        ERegexp re("^(\\d{2})-(\\d)$", 2);
+        return impl_list_paths(q, 4, re);
+    }
+#endif
 };
 
 struct Weekly : public BaseStep
@@ -175,11 +407,9 @@ struct Weekly : public BaseStep
     }
 };
 
-struct SubWeekly : public BaseStep
+struct SubWeekly : public SubStep
 {
-    int year;
-
-    SubWeekly(int year) : year(year) {}
+    using SubStep::SubStep;
 
     static const char* name() { return "weekly"; }
 
@@ -235,11 +465,9 @@ struct Daily : public BaseStep
     }
 };
 
-struct SubDaily : public BaseStep
+struct SubDaily : public SubStep
 {
-    int year;
-
-    SubDaily(int year) : year(year) {}
+    using SubStep::SubStep;
 
     static const char* name() { return "daily"; }
 
