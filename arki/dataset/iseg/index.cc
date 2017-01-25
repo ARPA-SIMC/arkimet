@@ -58,9 +58,10 @@ struct IndexGlobalData
 static IndexGlobalData igd;
 
 
-Index::Index(std::shared_ptr<const iseg::Config> config, const std::string& data_pathname)
+Index::Index(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath)
     : m_config(config),
-      data_pathname(data_pathname),
+      data_relpath(data_relpath),
+      data_pathname(str::joinpath(config->path, data_relpath)),
       index_pathname(data_pathname + ".index")
 #if 0
     :  m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
@@ -70,8 +71,8 @@ Index::Index(std::shared_ptr<const iseg::Config> config, const std::string& data
     if (not config->unique.empty())
         m_uniques = new Aggregate(m_db, "mduniq", config->unique);
 
-    // Instantiate m_others at initQueries time, so we can scan the
-    // database to see if some attributes are not available
+    // Instantiate m_others after the database has been opened, so we can scan
+    // the database to see if some attributes are not available
 }
 
 Index::~Index()
@@ -80,8 +81,7 @@ Index::~Index()
     delete m_others;
 }
 
-#if 0
-std::set<types::Code> Contents::available_other_tables() const
+std::set<types::Code> Index::available_other_tables() const
 {
     // See what metadata types are already handled by m_uniques,
     // if any
@@ -107,7 +107,6 @@ std::set<types::Code> Contents::available_other_tables() const
 
     return available_columns;
 }
-#endif
 
 std::set<types::Code> Index::all_other_tables() const
 {
@@ -127,19 +126,16 @@ std::set<types::Code> Index::all_other_tables() const
     return res;
 }
 
+void Index::init_others()
+{
+    std::set<types::Code> other_members = available_other_tables();
+    if (not other_members.empty())
+        m_others = new Aggregate(m_db, "mdother", other_members);
+}
+
 #if 0
 void Contents::initQueries()
 {
-    if (!m_others)
-    {
-        std::set<types::Code> other_members = available_other_tables();
-        if (not other_members.empty())
-            m_others = new Aggregate(m_db, "mdother", other_members);
-    }
-
-    if (m_uniques) m_uniques->initQueries();
-    if (m_others) m_others->initQueries();
-
     string query = "SELECT id FROM md WHERE reftime=?";
     if (m_uniques) query += " AND uniq=?";
     if (m_others) query += " AND other=?";
@@ -258,51 +254,6 @@ size_t Contents::count() const
     return res;
 }
 
-void Contents::list_segments(std::function<void(const std::string&)> dest)
-{
-    Query sq("list_segments", m_db);
-    sq.compile("SELECT DISTINCT file FROM md ORDER BY file");
-    while (sq.step())
-        dest(sq.fetchString(0));
-}
-
-void Contents::scan_files(segment::contents_func v)
-{
-    string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
-    if (m_uniques) query += ", m.uniq";
-    if (m_others) query += ", m.other";
-    if (config().smallfiles) query += ", m.data";
-    query += " FROM md AS m";
-    query += " ORDER BY m.file, m.reftime, m.offset";
-
-    Query mdq("scan_files_md", m_db);
-    mdq.compile(query);
-
-    string last_file;
-    metadata::Collection mdc;
-    while (mdq.step())
-    {
-        string file = mdq.fetchString(2);
-        if (file != last_file)
-        {
-            if (!last_file.empty())
-            {
-                v(last_file, SEGMENT_OK, mdc);
-                mdc.clear();
-            }
-            last_file = file;
-        }
-
-        // Rebuild the Metadata
-        unique_ptr<Metadata> md(new Metadata);
-        build_md(mdq, *md);
-        mdc.acquire(move(md));
-    }
-
-    if (!last_file.empty())
-        v(last_file, SEGMENT_OK, mdc);
-}
-
 void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& orderBy) const
 {
     string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
@@ -339,6 +290,7 @@ bool Contents::segment_timespan(const std::string& relname, Time& start_time, Ti
     }
     return res;
 }
+#endif
 
 static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begin, unique_ptr<Time>& end)
 {
@@ -359,7 +311,7 @@ static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begi
     }
 }
 
-bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) const
+void Index::add_joins_and_constraints(const Matcher& m, std::string& query) const
 {
     vector<string> constraints;
 
@@ -426,31 +378,22 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
         }
     }
 
-    /*
-    if (not m.empty() and constraints.size() != m.m_impl->size())
-        // We can only see what we index, the rest is lost
-        // TODO: add a filter to the query results, before the
-        //       postprocessor that pulls in data from disk
-        return false;
-    */
-
     if (!constraints.empty())
         query += " WHERE " + str::join(" AND ", constraints.begin(), constraints.end());
-    return true;
 }
 
-void Contents::build_md(Query& q, Metadata& md) const
+void Index::build_md(Query& q, Metadata& md) const
 {
     // Rebuild the Metadata
     md.set_source(Source::createBlob(
-            q.fetchString(1), config().path, q.fetchString(2),
-            q.fetch<uint64_t>(3), q.fetch<uint64_t>(4)));
+            config().format, config().path, data_relpath,
+            q.fetch<uint64_t>(0), q.fetch<uint64_t>(1)));
     // md.notes = mdq.fetchItems<types::Note>(5);
-    const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(5);
-    int notes_l = q.fetchBytes(5);
+    const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(2);
+    int notes_l = q.fetchBytes(2);
     md.set_notes_encoded(vector<uint8_t>(notes_p, notes_p + notes_l));
-    md.set(Reftime::createPosition(Time::create_sql(q.fetchString(6))));
-    int j = 7;
+    md.set(Reftime::createPosition(Time::create_sql(q.fetchString(3))));
+    int j = 4;
     if (m_uniques)
     {
         if (!q.isNULL(j))
@@ -474,9 +417,9 @@ void Contents::build_md(Query& q, Metadata& md) const
     }
 }
 
-bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+void Index::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
+    string query = "SELECT m.offset, m.size, m.notes, m.reftime";
 
     if (m_uniques) query += ", m.uniq";
     if (m_others) query += ", m.other";
@@ -485,12 +428,11 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     query += " FROM md AS m";
 
     try {
-        if (!addJoinsAndConstraints(q.matcher, query))
-            return false;
+        add_joins_and_constraints(q.matcher, query);
     } catch (NotFound) {
         // If one of the subqueries did not find any match, we can directly
         // return true here, as we are not going to get any result
-        return true;
+        return;
     }
 
     query += " ORDER BY m.reftime";
@@ -499,7 +441,6 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 
     metadata::Collection mdbuf;
     string last_fname;
-    unique_ptr<runtime::Tempfile> tmpfile;
 
     // Limited scope for mdq, so we finalize the query before starting to
     // emit results
@@ -513,27 +454,6 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
         while (mdq.step())
         {
-            // At file boundary, sort and write out what we have so
-            // far, so we don't keep it all in memory
-            string srcname = mdq.fetchString(2);
-            if (srcname != last_fname)
-            {
-                // Note: since we chunk at file boundary, and since files
-                // cluster data by reftime, we guarantee that sorting is
-                // consistent as long as data is required to be sorted by
-                // reftime first.
-                if (mdbuf.size() > 8192)
-                {
-                    // If we pile up too many metadata, write them out
-                    if (q.sorter) mdbuf.sort(*q.sorter);
-                    if (tmpfile.get() == 0)
-                        tmpfile.reset(new runtime::Tempfile);
-                    mdbuf.write_to(*tmpfile, tmpfile->name());
-                    mdbuf.clear();
-                }
-                last_fname = srcname;
-            }
-
             // Rebuild the Metadata
             unique_ptr<Metadata> md(new Metadata);
             build_md(mdq, *md);
@@ -542,15 +462,6 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         }
 //fprintf(stderr, "POST %zd\n", mdbuf.size());
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
-    }
-//if (tmpfile.get()) system(str::fmtf("ls -la --si %s >&2", tmpfile->name().c_str()).c_str());
-
-    // If we had buffered some sorted metadata to a temporary file, replay them
-    // now
-    if (tmpfile.get() != 0)
-    {
-        metadata::ReadContext rc(tmpfile->name(), config().path);
-        Metadata::read_file(rc, dest);
     }
 
     // Sort and output the rest
@@ -561,10 +472,9 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 
 //fprintf(stderr, "POSTQ %zd\n", mdbuf.size());
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
-
-    return true;
 }
 
+#if 0
 void Contents::rebuildSummaryCache()
 {
     scache.invalidate();
@@ -852,46 +762,28 @@ bool Contents::checkSummaryCache(const dataset::Base& ds, Reporter& reporter) co
 {
     return scache.check(ds, reporter);
 }
-
-RContents::RContents(std::shared_ptr<const ondisk2::Config> config)
-    : Contents(config) {}
-
-RContents::~RContents()
-{
-}
-
-void RContents::open()
-{
-    if (m_db.isOpen())
-    {
-        stringstream ss;
-        ss << "dataset index " << pathname() << " is already open";
-        throw runtime_error(ss.str());
-    }
-
-    if (!sys::access(pathname(), F_OK))
-    {
-        stringstream ss;
-        ss << "dataset index " << pathname() << " does not exist";
-        throw runtime_error(ss.str());
-    }
-
-    m_db.open(pathname());
-    setupPragmas();
-
-    initQueries();
-
-    scache.openRO();
-}
-
-void RContents::initQueries()
-{
-    Contents::initQueries();
-}
 #endif
 
-WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_pathname)
-    : Index(config, data_pathname), m_insert(m_db), m_replace("replace", m_db) //m_delete("delete", m_db)
+RIndex::RIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath)
+    : Index(config, data_relpath)
+{
+    if (!sys::access(index_pathname, F_OK))
+    {
+        stringstream ss;
+        ss << "dataset index " << index_pathname << " does not exist";
+        throw runtime_error(ss.str());
+    }
+
+    m_db.open(index_pathname);
+    setup_pragmas();
+    init_others();
+
+    //scache.openRO();
+}
+
+
+WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath)
+    : Index(config, data_relpath), m_insert(m_db), m_replace("replace", m_db) //m_delete("delete", m_db)
 {
     bool need_create = !sys::access(index_pathname, F_OK);
 
@@ -907,9 +799,8 @@ WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& da
                 m_others = new Aggregate(m_db, "mdother", other_members);
         }
         init_db();
-    }
-
-    //initQueries();
+    } else
+        init_others();
 
     //scache.openRW();
 }

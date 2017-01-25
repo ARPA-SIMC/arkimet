@@ -1,6 +1,6 @@
 #include "config.h"
 #include "reader.h"
-#include "arki/dataset/index/manifest.h"
+#include "index.h"
 #include "arki/dataset/step.h"
 #include "arki/utils/sys.h"
 #include <algorithm>
@@ -44,13 +44,9 @@ void Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     segmented::Reader::query_data(q, dest);
 
     list_segments(q.matcher, [&](const std::string& relpath) {
+        RIndex idx(m_config, relpath);
+        idx.query_data(q, dest);
     });
-#if 0
-    if (!m_idx) return;
-    // FIXME: this is cargo culted from the old ondisk2 reader: what is the use case for this?
-    if (!m_idx->query_data(q, dest))
-        throw std::runtime_error("cannot query " + config().path + ": index could not be used");
-#endif
 }
 
 void Reader::query_summary(const Matcher& matcher, Summary& summary)

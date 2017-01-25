@@ -48,7 +48,7 @@ Segment* Writer::file(const Metadata& md, const std::string& format)
 {
     Segment* writer = segmented::Writer::file(md, format);
     if (!writer->payload)
-        writer->payload = new WIndex(m_config, writer->absname);
+        writer->payload = new WIndex(m_config, writer->relname);
     return writer;
 }
 

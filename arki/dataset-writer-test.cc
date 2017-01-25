@@ -159,7 +159,7 @@ TestsWriter<testdata::ODIMData> test_writer_odim_ondisk2_sharded("arki_dataset_w
 TestsWriter<testdata::ODIMData> test_writer_odim_simple_plain("arki_dataset_writer_odim_simple_plain", "type=simple\nindex_type=plain\n");
 TestsWriter<testdata::ODIMData> test_writer_odim_simple_plain_sharded("arki_dataset_writer_odim_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsWriter<testdata::ODIMData> test_writer_odim_simple_sqlite("arki_dataset_writer_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
-TestsWriter<testdata::ODIMData> test_writer_odim_iseg("arki_dataset_writer_odim_iseg", "type=iseg\nformat=odim\n");
+TestsWriter<testdata::ODIMData> test_writer_odim_iseg("arki_dataset_writer_odim_iseg", "type=iseg\nformat=odimh5\n");
 
 void Tests::register_tests() {
 

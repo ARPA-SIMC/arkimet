@@ -75,7 +75,7 @@ struct BaseStep : public Step
 
     void impl_list_segments(const PathQuery& q, StepParser& sp, const std::string& relpath, unsigned depth, std::function<void(std::string&& s)> dest) const
     {
-        bool is_leaf = depth == sp.max_depth;
+        bool is_leaf = depth == sp.max_depth - 1;
         string root;
         if (depth == 0)
             root = q.root;
@@ -85,8 +85,8 @@ struct BaseStep : public Step
         sys::Path dir(root);
         for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
         {
+            if (f->d_name[0] == '.') continue;
             if (!is_leaf && !f.isdir()) continue;
-            if (is_leaf && f.isdir()) continue;
             if (!sp.parse_component(q, depth, f->d_name)) continue;
 
             // Its period must match the matcher in q
@@ -122,8 +122,8 @@ struct YearlyStepParser : public StepParser
 
     YearlyStepParser() :
         StepParser(2),
-        re_century("^(\\d{2})$", 1),
-        re_year("^(\\d{4})\\.(\\w+)$", 2) {}
+        re_century("^([[:digit:]]{2})$", 2),
+        re_year("^([[:digit:]]{4})\\.([[:alnum:]]+)$", 3) {}
 
     bool parse_component(const PathQuery& q, unsigned depth, const char* name) override
     {
@@ -200,8 +200,8 @@ struct MonthlyStepParser : public StepParser
 
     MonthlyStepParser() :
         StepParser(2),
-        re_year("^(\\d{4})$", 1),
-        re_month("^(\\d{2})\\.(\\w+)$", 2) {}
+        re_year("^([[:digit:]]{4})$", 2),
+        re_month("^([[:digit:]]{2})\\.([[:alnum:]]+)$", 3) {}
 
     bool parse_component(const PathQuery& q, unsigned depth, const char* name) override
     {
@@ -283,7 +283,7 @@ struct Monthly : public BaseStep
 
     std::vector<std::string> list_paths(const PathQuery& q) const override
     {
-        ERegexp re("^(\\d{2})$", 1);
+        ERegexp re("^([[:digit:]]{2})$", 1);
         return impl_list_paths(q, 4, re);
     }
 #endif
@@ -372,7 +372,7 @@ struct Biweekly : public BaseStep
 
     std::vector<std::string> list_paths(const PathQuery& q) const override
     {
-        ERegexp re("^(\\d{2})-(\\d)$", 2);
+        ERegexp re("^([[:digit:]]{2})-([[:digit:]])$", 2);
         return impl_list_paths(q, 4, re);
     }
 #endif
@@ -456,8 +456,8 @@ struct DailyStepParser : public StepParser
 
     DailyStepParser() :
         StepParser(2),
-        re_year("^(\\d{4})$", 1),
-        re_month("^(\\d{2})-(\\d{2})\\.(\\w+)$", 3) {}
+        re_year("^([[:digit:]]{4})$", 2),
+        re_month("^([[:digit:]]{2})-([[:digit:]]{2})\\.([[:alnum:]]+)$", 4) {}
 
     bool parse_component(const PathQuery& q, unsigned depth, const char* name) override
     {
@@ -466,7 +466,7 @@ struct DailyStepParser : public StepParser
         {
             case 0:
                 if (!re_year.match(name)) return false;
-                year = std::stoul(re_year[1]);
+                year = std::stoul(re_year[0]);
                 return true;
             case 1:
                 if (!re_month.match(name)) return false;

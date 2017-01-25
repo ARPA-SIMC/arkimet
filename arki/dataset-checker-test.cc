@@ -90,7 +90,7 @@ TestsChecker<testdata::ODIMData> test_checker_odim_ondisk2_sharded("arki_dataset
 TestsChecker<testdata::ODIMData> test_checker_odim_simple_plain("arki_dataset_checker_odim_simple_plain", "type=simple\nindex_type=plain\n");
 TestsChecker<testdata::ODIMData> test_checker_odim_simple_plain_sharded("arki_dataset_checker_odim_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsChecker<testdata::ODIMData> test_checker_odim_simple_sqlite("arki_dataset_checker_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
-TestsChecker<testdata::ODIMData> test_checker_odim_iseg("arki_dataset_checker_odim_iseg", "type=iseg\nformat=odim\n");
+TestsChecker<testdata::ODIMData> test_checker_odim_iseg("arki_dataset_checker_odim_iseg", "type=iseg\nformat=odimh5\n");
 
 template<class Data>
 void TestsChecker<Data>::register_tests() {

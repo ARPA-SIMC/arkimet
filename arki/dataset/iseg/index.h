@@ -54,6 +54,9 @@ protected:
     std::shared_ptr<const iseg::Config> m_config;
     mutable utils::sqlite::SQLiteDB m_db;
 
+    /// Relative pathname of the segment from the root of the dataset
+    std::string data_relpath;
+
     /// Absolute pathname of the data file that we index
     std::string data_pathname;
 
@@ -67,45 +70,45 @@ protected:
     /// Run PRAGMA calls to setup database behaviour
     void setup_pragmas();
 
+    /// Get a list of all other attribute tables available in the database
+    std::set<types::Code> available_other_tables() const;
+
+    /// Initialize m_others
+    void init_others();
+
     /// Get a list of all other attribute tables that can be created in the database
     std::set<types::Code> all_other_tables() const;
 
 #if 0
-
     mutable utils::sqlite::PrecompiledQuery m_get_id;
     mutable utils::sqlite::PrecompiledQuery m_get_current;
 
     mutable SummaryCache scache;
+#endif
 
-	/**
-	 * Add to 'query' the SQL joins and constraints based on the given matcher.
-	 *
-	 * An example string that can be added is:
-	 *  "JOIN mduniq AS u ON uniq = u.id WHERE reftime = (...) AND u.origin IN (1, 2, 3)"
-	 *
-	 * @return true if the index could be used for the query, false if the
-	 * query does not use the index and a full scan should be used instead
-	 *
-	 * It can raise dataset::index::NotFound if some parts of m do not
-	 * match any metadata in the database.
-	 */
-	bool addJoinsAndConstraints(const Matcher& m, std::string& query) const;
-
-	/// Get a list of all other attribute tables available in the database
-	std::set<types::Code> available_other_tables() const;
+    /**
+     * Add to 'query' the SQL joins and constraints based on the given matcher.
+     *
+     * An example string that can be added is:
+     *  "JOIN mduniq AS u ON uniq = u.id WHERE reftime = (...) AND u.origin IN (1, 2, 3)"
+     *
+     * @return true if the index could be used for the query, false if the
+     * query does not use the index and a full scan should be used instead
+     *
+     * It can raise dataset::index::NotFound if some parts of m do not
+     * match any metadata in the database.
+     */
+    void add_joins_and_constraints(const Matcher& m, std::string& query) const;
 
     /**
      * Rebuild the metadata from the rows in an index query.
      *
      * The rows should be:
-     * m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime[, uniq][, other]
+     * m.offset, m.size, m.notes, m.reftime[, uniq][, other]
      */
     void build_md(utils::sqlite::Query& q, Metadata& md) const;
 
-    Contents(std::shared_ptr<const ondisk2::Config> config);
-#endif
-
-    Index(std::shared_ptr<const iseg::Config> config, const std::string& data_pathname);
+    Index(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath);
 
 public:
     ~Index();
@@ -150,20 +153,15 @@ public:
 	size_t count() const;
 
     /**
-     * Scan all file info in the database, sorted by file and offset
-     */
-    void scan_files(segment::contents_func v) override;
-
-    void list_segments(std::function<void(const std::string&)> dest) override;
-
-    /**
      * Send the metadata of all data items inside a file to the given consumer
      */
     void scan_file(const std::string& relname, metadata_dest_func consumer, const std::string& orderBy = "offset") const;
 
     bool segment_timespan(const std::string& relname, core::Time& start_time, core::Time& end_time) const override;
+#endif
 
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    void query_data(const dataset::DataQuery& q, metadata_dest_func dest);
+#if 0
     bool query_summary(const Matcher& m, Summary& summary) override;
 
 	/**
@@ -215,26 +213,11 @@ public:
 #endif
 };
 
-#if 0
-class RContents : public Contents
+class RIndex : public Index
 {
-protected:
-	/**
-	 * Precompile queries.
-	 *
-	 * This must be called after the database schema has been created, as a
-	 * change in the database schema invalidates precompiled queries.
-	 */
-	void initQueries();
-
 public:
-    RContents(std::shared_ptr<const ondisk2::Config> config);
-    ~RContents();
-
-	/// Initialise access to the index
-	void open();
+    RIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath);
 };
-#endif
 
 class WIndex : public Index
 {
@@ -244,14 +227,6 @@ protected:
 
 #if 0
 	utils::sqlite::PrecompiledQuery m_delete;
-
-	/**
-	 * Precompile queries.
-	 *
-	 * This must be called after the database schema has been created, as a
-	 * change in the database schema invalidates precompiled queries.
-	 */
-	void initQueries();
 #endif
 
     /// Create the tables in the database
@@ -261,7 +236,7 @@ protected:
     void bind_insert(utils::sqlite::Query& q, const Metadata& md, uint64_t ofs, char* timebuf);
 
 public:
-    WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_pathname);
+    WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath);
 #if 0
     ~WContents();
 
