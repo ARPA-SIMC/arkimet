@@ -82,16 +82,19 @@ public:
 class Query
 {
 protected:
-	// This is just a copy of what is in the main index
-	SQLiteDB& m_db;
-	// Precompiled statement
-	sqlite3_stmt* m_stm;
-	// Name of the query, to use in error messages
-	std::string name;
+    // This is just a copy of what is in the main index
+    SQLiteDB& m_db;
+    // Precompiled statement
+    sqlite3_stmt* m_stm = nullptr;
+    // Name of the query, to use in error messages
+    std::string name;
 
 public:
-	Query(const std::string& name, SQLiteDB& db) : m_db(db), m_stm(0), name(name) {}
-	~Query();
+    Query(const std::string& name, SQLiteDB& db) : m_db(db), name(name) {}
+    ~Query();
+
+    /// Check if the query has already been compiled
+    bool compiled() const { return m_stm != nullptr; }
 
 	/// Compile the query
 	void compile(const std::string& query);
@@ -211,7 +214,7 @@ public:
 class PrecompiledQuery : public Query
 {
 public:
-	PrecompiledQuery(const std::string& name, SQLiteDB& db) : Query(name, db) {}
+    using Query::Query;
 };
 
 /**

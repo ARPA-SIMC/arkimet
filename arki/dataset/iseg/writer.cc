@@ -48,8 +48,126 @@ Segment* Writer::file(const Metadata& md, const std::string& format)
 {
     Segment* writer = segmented::Writer::file(md, format);
     if (!writer->payload)
-        writer->payload = new Index(writer->absname);
+        writer->payload = new WIndex(m_config, writer->absname);
     return writer;
+}
+
+Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
+{
+    Segment* writer = file(md, md.source().format);
+    WIndex* idx = static_cast<WIndex*>(writer->payload);
+    Pending p_idx = idx->begin_transaction();
+
+    off_t ofs;
+    Pending p_df = writer->append(md, &ofs);
+    auto source = types::source::Blob::create(md.source().format, config().path, writer->relname, ofs, md.data_size());
+
+    try {
+        idx->index(md, ofs);
+        p_df.commit();
+        p_idx.commit();
+        md.set_source(move(source));
+        return ACQ_OK;
+    } catch (utils::sqlite::DuplicateInsert& di) {
+        md.add_note("Failed to store in dataset '" + name() + "' because the dataset already has the data: " + di.what());
+        return ACQ_ERROR_DUPLICATE;
+    } catch (std::exception& e) {
+        // sqlite will take care of transaction consistency
+        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
+        return ACQ_ERROR;
+    }
+}
+
+Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
+{
+    Segment* writer = file(md, md.source().format);
+    WIndex* idx = static_cast<WIndex*>(writer->payload);
+    Pending p_idx = idx->begin_transaction();
+
+    off_t ofs;
+    Pending p_df = writer->append(md, &ofs);
+    auto source = types::source::Blob::create(md.source().format, config().path, writer->relname, ofs, md.data_size());
+
+    try {
+        idx->replace(md, ofs);
+        p_df.commit();
+        p_idx.commit();
+        md.set_source(move(source));
+        return ACQ_OK;
+    } catch (std::exception& e) {
+        // sqlite will take care of transaction consistency
+        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
+        return ACQ_ERROR;
+    }
+}
+
+Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
+{
+    Segment* writer = file(md, md.source().format);
+    WIndex* idx = static_cast<WIndex*>(writer->payload);
+    Pending p_idx = idx->begin_transaction();
+
+    off_t ofs;
+    Pending p_df = writer->append(md, &ofs);
+    auto source = types::source::Blob::create(md.source().format, config().path, writer->relname, ofs, md.data_size());
+
+    try {
+        // Try to acquire without replacing
+        idx->index(md, ofs);
+        p_df.commit();
+        p_idx.commit();
+        md.set_source(move(source));
+        return ACQ_OK;
+    } catch (utils::sqlite::DuplicateInsert& di) {
+        // It already exists, so we keep p_df uncommitted and check Update Sequence Numbers
+    } catch (std::exception& e) {
+        // sqlite will take care of transaction consistency
+        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
+        return ACQ_ERROR;
+    }
+
+    // Read the update sequence number of the new BUFR
+    int new_usn;
+    if (!scan::update_sequence_number(md, new_usn))
+        return ACQ_ERROR_DUPLICATE;
+
+    // Read the metadata of the existing BUFR
+    throw std::runtime_error("iseg::Writer::acquire_replace_higher_usn not yet implemented");
+#if 0
+    Metadata old_md;
+    if (!idx->get_current(md, old_md))
+    {
+        stringstream ss;
+        ss << "cannot acquire into dataset " << name() << ": insert reported a conflict, the index failed to find the original version";
+        throw runtime_error(ss.str());
+    }
+
+    // Read the update sequence number of the old BUFR
+    int old_usn;
+    if (!scan::update_sequence_number(old_md, old_usn))
+    {
+        stringstream ss;
+        ss << "cannot acquire into dataset " << name() << ": insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
+        throw runtime_error(ss.str());
+    }
+
+    // If there is no new Update Sequence Number, report a duplicate
+    if (old_usn > new_usn)
+        return ACQ_ERROR_DUPLICATE;
+
+    // Replace, reusing the pending datafile transaction from earlier
+    try {
+        idx->replace(md, ofs);
+        p_df.commit();
+        p_idx.commit();
+        md.set_source(move(source));
+        return ACQ_OK;
+    } catch (std::exception& e) {
+        // sqlite will take care of transaction consistency
+        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
+        return ACQ_ERROR;
+    }
+#endif
 }
 
 Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
@@ -57,26 +175,22 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     auto age_check = check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
-    //acquire_lock();
-    Segment* writer = file(md, md.source().format);
-    //Index* idx = static_cast<Index*>(writer->payload);
+    acquire_lock();
 
-    // Try appending
-    try {
-        off_t offset = writer->append(md);
-        auto source = types::source::Blob::create(md.source().format, config().path, writer->relname, offset, md.data_size());
-        md.set_source(move(source));
-        //mdbuf->add(md);
-        //m_mft->acquire(writer->relname, sys::timestamp(mdbuf->pathname, 0), mdbuf->sum);
-        return ACQ_OK;
-    } catch (std::exception& e) {
-        // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '" + config().name + "': " + e.what());
-        return ACQ_ERROR;
+    if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
+
+    switch (replace)
+    {
+        case REPLACE_NEVER: return acquire_replace_never(md);
+        case REPLACE_ALWAYS: return acquire_replace_always(md);
+        case REPLACE_HIGHER_USN: return acquire_replace_higher_usn(md);
+        default:
+        {
+            stringstream ss;
+            ss << "cannot acquire into dataset " << name() << ": replace strategy " << (int)replace << " is not supported";
+            throw runtime_error(ss.str());
+        }
     }
-
-    // After appending, keep updated info in-memory, and update manifest on
-    // flush when the Datafile structures are deallocated
 }
 
 void Writer::remove(Metadata& md)

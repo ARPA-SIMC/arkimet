@@ -24,6 +24,10 @@ protected:
     /// Return a (shared) instance of the Datafile for the given relative pathname
     Segment* file(const Metadata& md, const std::string& format);
 
+    AcquireResult acquire_replace_never(Metadata& md);
+    AcquireResult acquire_replace_always(Metadata& md);
+    AcquireResult acquire_replace_higher_usn(Metadata& md);
+
 public:
     Writer(std::shared_ptr<const iseg::Config> config);
     virtual ~Writer();

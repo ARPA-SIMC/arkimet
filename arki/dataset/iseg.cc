@@ -2,6 +2,8 @@
 #include "iseg/reader.h"
 #include "iseg/writer.h"
 #include "step.h"
+#include "arki/defs.h"
+#include "arki/dataset/index/base.h"
 #include "arki/utils/string.h"
 #include "arki/metadata.h"
 #include "arki/types/reftime.h"
@@ -14,8 +16,12 @@ namespace dataset {
 namespace iseg {
 
 Config::Config(const ConfigFile& cfg)
-    : segmented::Config(cfg)
+    : segmented::Config(cfg),
+      smallfiles(ConfigFile::boolValue(cfg.value("smallfiles"))),
+      index(index::parseMetadataBitmask(cfg.value("index"))),
+      unique(index::parseMetadataBitmask(cfg.value("unique")))
 {
+    unique.erase(TYPE_REFTIME);
 }
 
 std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)

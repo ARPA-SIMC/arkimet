@@ -6,6 +6,7 @@
 #include <arki/transaction.h>
 #include <arki/utils/sqlite.h>
 #include <arki/dataset/segment.h>
+#include <arki/dataset/iseg.h>
 #include <arki/dataset/index/attr.h>
 #include <arki/dataset/index/aggregate.h>
 //#include <arki/dataset/index/summarycache.h>
@@ -49,19 +50,30 @@ namespace iseg {
  */
 class Index : public Segment::Payload
 {
-#if 0
 protected:
-    std::shared_ptr<const ondisk2::Config> m_config;
-
+    std::shared_ptr<const iseg::Config> m_config;
     mutable utils::sqlite::SQLiteDB m_db;
-    mutable utils::sqlite::PrecompiledQuery m_get_id;
-    mutable utils::sqlite::PrecompiledQuery m_get_current;
+
+    /// Absolute pathname of the data file that we index
+    std::string data_pathname;
+
+    /// Absolute pathname of the index file
+    std::string index_pathname;
 
     // Subtables
-    Aggregate* m_uniques;
-    Aggregate* m_others;
+    index::Aggregate* m_uniques = nullptr;
+    index::Aggregate* m_others = nullptr;
 
-    std::set<types::Code> m_components_indexed;
+    /// Run PRAGMA calls to setup database behaviour
+    void setup_pragmas();
+
+    /// Get a list of all other attribute tables that can be created in the database
+    std::set<types::Code> all_other_tables() const;
+
+#if 0
+
+    mutable utils::sqlite::PrecompiledQuery m_get_id;
+    mutable utils::sqlite::PrecompiledQuery m_get_current;
 
     mutable SummaryCache scache;
 
@@ -82,9 +94,6 @@ protected:
 	/// Get a list of all other attribute tables available in the database
 	std::set<types::Code> available_other_tables() const;
 
-	/// Get a list of all other attribute tables that can be created in the database
-	std::set<types::Code> all_other_tables() const;
-
     /**
      * Rebuild the metadata from the rows in an index query.
      *
@@ -96,17 +105,14 @@ protected:
     Contents(std::shared_ptr<const ondisk2::Config> config);
 #endif
 
-    std::string data_pathname;
-    std::string index_pathname;
+    Index(std::shared_ptr<const iseg::Config> config, const std::string& data_pathname);
 
 public:
-    Index(const std::string& data_pathname);
+    ~Index();
 
-    //~Index();
+    const iseg::Config& config() const { return *m_config; }
 
 #if 0
-    const ondisk2::Config& config() const { return *m_config; }
-
     const std::string& pathname() const { return config().index_pathname; }
 
 	inline bool is_indexed(types::Code c) const
@@ -126,9 +132,6 @@ public:
 	 * change in the database schema invalidates precompiled queries.
 	 */
 	void initQueries();
-
-	/// Run PRAGMA calls to setup database behaviour
-	void setupPragmas();
 
 	/// Return the database ID of a metadata in this index.  If the
 	/// metadata is not there, return -1.
@@ -231,13 +234,16 @@ public:
 	/// Initialise access to the index
 	void open();
 };
+#endif
 
-class WContents : public Contents
+class WIndex : public Index
 {
 protected:
-	utils::sqlite::InsertQuery m_insert;
+    utils::sqlite::InsertQuery m_insert;
+    utils::sqlite::PrecompiledQuery m_replace;
+
+#if 0
 	utils::sqlite::PrecompiledQuery m_delete;
-	utils::sqlite::PrecompiledQuery m_replace;
 
 	/**
 	 * Precompile queries.
@@ -246,14 +252,17 @@ protected:
 	 * change in the database schema invalidates precompiled queries.
 	 */
 	void initQueries();
+#endif
 
-	/// Create the tables in the database
-	void initDB();
+    /// Create the tables in the database
+    void init_db();
 
-	void bindInsertParams(utils::sqlite::Query& q, const Metadata& md, const std::string& file, uint64_t ofs, char* timebuf);
+    void compile_insert();
+    void bind_insert(utils::sqlite::Query& q, const Metadata& md, uint64_t ofs, char* timebuf);
 
 public:
-    WContents(std::shared_ptr<const ondisk2::Config> config);
+    WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_pathname);
+#if 0
     ~WContents();
 
 	/**
@@ -263,29 +272,25 @@ public:
 	 * if it reused the existing index
 	 */
 	bool open();
+#endif
 
-	/// Begin a transaction and return the corresponding Pending object
-	Pending beginTransaction();
+    /// Begin a transaction and return the corresponding Pending object
+    Pending begin_transaction();
 
-	/// Begin an EXCLUSIVE transaction and return the corresponding Pending object
-	Pending beginExclusiveTransaction();
+    /// Begin an EXCLUSIVE transaction and return the corresponding Pending object
+    Pending begin_exclusive_transaction();
 
-	/**
-	 * Index the given metadata item.
-	 *
-	 * @retval id
-	 *   The id of the metadata in the database
-	 */
-	void index(const Metadata& md, const std::string& file, uint64_t ofs, int* id = 0);
+    /**
+     * Index the given metadata item.
+     */
+    void index(const Metadata& md, uint64_t ofs);
 
-	/**
-	 * Index the given metadata item, or replace it in the index.
-	 *
-	 * @retval id
-	 *   The id of the metadata in the database
-	 */
-	void replace(Metadata& md, const std::string& file, uint64_t ofs, int* id = 0);
+    /**
+     * Index the given metadata item, or replace it in the index.
+     */
+    void replace(Metadata& md, uint64_t ofs);
 
+#if 0
     /**
      * Remove the given metadata item from the index.
      *
@@ -309,8 +314,8 @@ public:
 
     /// Flush the journal contents to the main database
     void flush();
-};
 #endif
+};
 
 }
 }

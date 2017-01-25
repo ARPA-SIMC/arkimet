@@ -7,6 +7,7 @@
 #include "arki/matcher.h"
 #include "arki/matcher/reftime.h"
 #include "arki/dataset.h"
+#include "arki/dataset/index/base.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/types/value.h"
@@ -37,7 +38,6 @@ namespace arki {
 namespace dataset {
 namespace iseg {
 
-#if 0
 struct IndexGlobalData
 {
     std::set<types::Code> all_components;
@@ -56,37 +56,31 @@ struct IndexGlobalData
     }
 };
 static IndexGlobalData igd;
-#endif
 
-Index::Index(const std::string& data_pathname)
-    : data_pathname(data_pathname),
+
+Index::Index(std::shared_ptr<const iseg::Config> config, const std::string& data_pathname)
+    : m_config(config),
+      data_pathname(data_pathname),
       index_pathname(data_pathname + ".index")
 #if 0
-    : m_config(config),  m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
-      m_uniques(0), m_others(0), scache(config->summary_cache_pathname)
+    :  m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
+      scache(config->summary_cache_pathname)
 #endif
 {
-#if 0
-    m_components_indexed = parseMetadataBitmask(config->index);
-
-    // What metadata components we use to create a unique id
-    std::set<types::Code> unique_members = parseMetadataBitmask(config->unique);
-    unique_members.erase(TYPE_REFTIME);
-    if (not unique_members.empty())
-        m_uniques = new Aggregate(m_db, "mduniq", unique_members);
-#endif
+    if (not config->unique.empty())
+        m_uniques = new Aggregate(m_db, "mduniq", config->unique);
 
     // Instantiate m_others at initQueries time, so we can scan the
     // database to see if some attributes are not available
 }
 
-#if 0
-Contents::~Contents()
+Index::~Index()
 {
-    if (m_uniques) delete m_uniques;
-    if (m_others) delete m_others;
+    delete m_uniques;
+    delete m_others;
 }
 
+#if 0
 std::set<types::Code> Contents::available_other_tables() const
 {
     // See what metadata types are already handled by m_uniques,
@@ -113,8 +107,9 @@ std::set<types::Code> Contents::available_other_tables() const
 
     return available_columns;
 }
+#endif
 
-std::set<types::Code> Contents::all_other_tables() const
+std::set<types::Code> Index::all_other_tables() const
 {
     std::set<types::Code> res;
 
@@ -132,6 +127,7 @@ std::set<types::Code> Contents::all_other_tables() const
     return res;
 }
 
+#if 0
 void Contents::initQueries()
 {
     if (!m_others)
@@ -166,8 +162,9 @@ std::set<types::Code> Contents::unique_codes() const
     res.insert(TYPE_REFTIME);
     return res;
 }
+#endif
 
-void Contents::setupPragmas()
+void Index::setup_pragmas()
 {
     // Faster but riskier, since we do not have a flagfile to trap
     // interrupted transactions
@@ -188,6 +185,7 @@ void Contents::setupPragmas()
     m_db.exec("PRAGMA legacy_file_format = 0");
 }
 
+#if 0
 int Contents::id(const Metadata& md) const
 {
     m_get_id.reset();
@@ -890,29 +888,15 @@ void RContents::initQueries()
 {
     Contents::initQueries();
 }
+#endif
 
-WContents::WContents(std::shared_ptr<const ondisk2::Config> config)
-    : Contents(config), m_insert(m_db), m_delete("delete", m_db), m_replace("replace", m_db)
+WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_pathname)
+    : Index(config, data_pathname), m_insert(m_db), m_replace("replace", m_db) //m_delete("delete", m_db)
 {
-}
+    bool need_create = !sys::access(index_pathname, F_OK);
 
-WContents::~WContents()
-{
-}
-
-bool WContents::open()
-{
-    if (m_db.isOpen())
-    {
-        stringstream ss;
-        ss << "dataset index " << pathname() << " is already open";
-        throw runtime_error(ss.str());
-    }
-
-    bool need_create = !sys::access(pathname(), F_OK);
-
-    m_db.open(pathname());
-    setupPragmas();
+    m_db.open(index_pathname);
+    setup_pragmas();
 
     if (need_create)
     {
@@ -922,20 +906,43 @@ bool WContents::open()
             if (not other_members.empty())
                 m_others = new Aggregate(m_db, "mdother", other_members);
         }
-        initDB();
+        init_db();
     }
 
-    initQueries();
+    //initQueries();
 
-    scache.openRW();
-
-    return need_create;
+    //scache.openRW();
 }
 
-void WContents::initQueries()
+void WIndex::init_db()
 {
-    Contents::initQueries();
+    if (m_uniques) m_uniques->initDB(config().index);
+    if (m_others) m_others->initDB(config().index);
 
+    // Create the main table
+    string query = "CREATE TABLE IF NOT EXISTS md ("
+        " offset INTEGER PRIMARY KEY,"
+        " size INTEGER NOT NULL,"
+        " notes BLOB,"
+        " reftime TEXT NOT NULL";
+    if (m_uniques) query += ", uniq INTEGER NOT NULL";
+    if (m_others) query += ", other INTEGER NOT NULL";
+    if (config().smallfiles) query += ", data TEXT";
+    if (m_uniques)
+        query += ", UNIQUE(reftime, uniq)";
+    else
+        query += ", UNIQUE(reftime)";
+    query += ")";
+    m_db.exec(query);
+
+    // Create indices on the main table
+    m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_reftime ON md (reftime)");
+    if (m_uniques) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_uniq ON md (uniq)");
+    if (m_others) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_other ON md (other)");
+}
+
+void WIndex::compile_insert()
+{
     // Precompile insert query
     string un_ot;
     string placeholders;
@@ -956,57 +963,32 @@ void WContents::initQueries()
     }
 
     // Precompile insert
-    m_insert.compile("INSERT INTO md (format, file, offset, size, notes, reftime" + un_ot + ")"
-             " VALUES (?, ?, ?, ?, ?, ?" + placeholders + ")");
+    m_insert.compile("INSERT INTO md (offset, size, notes, reftime" + un_ot + ")"
+             " VALUES (?, ?, ?, ?" + placeholders + ")");
 
     // Precompile replace
     m_replace.compile("INSERT OR REPLACE INTO md (format, file, offset, size, notes, reftime" + un_ot + ")"
                   " VALUES (?, ?, ?, ?, ?, ?" + placeholders + ")");
+}
+
+#if 0
+void WContents::initQueries()
+{
+    Contents::initQueries();
+
+    compile_insert();
 
     // Precompile remove query
     m_delete.compile("DELETE FROM md WHERE id=?");
 }
+#endif
 
-void WContents::initDB()
-{
-    if (m_uniques) m_uniques->initDB(m_components_indexed);
-    if (m_others) m_others->initDB(m_components_indexed);
-
-    // Create the main table
-    string query = "CREATE TABLE IF NOT EXISTS md ("
-        "id INTEGER PRIMARY KEY,"
-        " format TEXT NOT NULL,"
-        " file TEXT NOT NULL,"
-        " offset INTEGER NOT NULL,"
-        " size INTEGER NOT NULL,"
-        " notes BLOB,"
-        " reftime TEXT NOT NULL";
-    if (m_uniques) query += ", uniq INTEGER NOT NULL";
-    if (m_others) query += ", other INTEGER NOT NULL";
-    if (config().smallfiles) query += ", data TEXT";
-    if (m_uniques)
-        query += ", UNIQUE(reftime, uniq)";
-    else
-        query += ", UNIQUE(reftime)";
-    query += ")";
-    m_db.exec(query);
-
-    // Create indices on the main table
-    m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_reftime ON md (reftime)");
-    m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_file ON md (file)");
-    if (m_uniques) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_uniq ON md (uniq)");
-    if (m_others) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_other ON md (other)");
-}
-
-void WContents::bindInsertParams(Query& q, const Metadata& md, const std::string& file, uint64_t ofs, char* timebuf)
+void WIndex::bind_insert(Query& q, const Metadata& md, uint64_t ofs, char* timebuf)
 {
     int idx = 0;
 
-    q.bind(++idx, md.source().format);
-    q.bind(++idx, file);
     q.bind(++idx, ofs);
     q.bind(++idx, md.data_size());
-    //q.bindItems(++idx, md.notes);
     q.bind(++idx, md.notes_encoded());
 
     if (const reftime::Position* reftime = md.get<reftime::Position>())
@@ -1039,50 +1021,49 @@ void WContents::bindInsertParams(Query& q, const Metadata& md, const std::string
     }
 }
 
-Pending WContents::beginTransaction()
+Pending WIndex::begin_transaction()
 {
     return Pending(new SqliteTransaction(m_db));
 }
 
-Pending WContents::beginExclusiveTransaction()
+Pending WIndex::begin_exclusive_transaction()
 {
     return Pending(new SqliteTransaction(m_db, true));
 }
 
-void WContents::index(const Metadata& md, const std::string& file, uint64_t ofs, int* id)
+void WIndex::index(const Metadata& md, uint64_t ofs)
 {
+    if (!m_insert.compiled())
+        compile_insert();
     m_insert.reset();
 
     char buf[25];
-    bindInsertParams(m_insert, md, file, ofs, buf);
+    bind_insert(m_insert, md, ofs, buf);
 
     while (m_insert.step())
         ;
 
-    if (id)
-        *id = m_db.lastInsertID();
-
     // Invalidate the summary cache for this month
-    scache.invalidate(md);
+    //scache.invalidate(md);
 }
 
-void WContents::replace(Metadata& md, const std::string& file, uint64_t ofs, int* id)
+void WIndex::replace(Metadata& md, uint64_t ofs)
 {
+    if (!m_replace.compiled())
+        compile_insert();
     m_replace.reset();
 
     char buf[25];
-    bindInsertParams(m_replace, md, file, ofs, buf);
+    bind_insert(m_replace, md, ofs, buf);
 
     while (m_replace.step())
         ;
 
-    if (id)
-        *id = m_db.lastInsertID();
-
     // Invalidate the summary cache for this month
-    scache.invalidate(md);
+    // scache.invalidate(md);
 }
 
+#if 0
 void WContents::remove(const std::string& relname, off_t ofs)
 {
     Query fetch_id("byfile", m_db);

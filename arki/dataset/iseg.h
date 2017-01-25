@@ -3,6 +3,8 @@
 
 #include <arki/dataset/segmented.h>
 #include <arki/core/time.h>
+#include <arki/types.h>
+#include <set>
 
 namespace arki {
 namespace dataset {
@@ -10,7 +12,10 @@ namespace iseg {
 
 struct Config : public segmented::Config
 {
+    bool smallfiles;
     std::string index_type;
+    std::set<types::Code> index;
+    std::set<types::Code> unique;
 
     Config(const Config&) = default;
     Config(const ConfigFile& cfg);
