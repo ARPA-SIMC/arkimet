@@ -259,6 +259,12 @@ struct Element
         this->time = rt->time;
         this->matcher = Matcher::parse(matcher);
     }
+
+    std::string data()
+    {
+        auto res = md.getData();
+        return std::string(res.begin(), res.end());
+    }
 };
 
 struct Fixture

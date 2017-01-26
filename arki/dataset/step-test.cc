@@ -73,6 +73,14 @@ add_method("yearly", [](Fixture& f) {
     wassert(actual(res.size()) == 2u);
     wassert(actual(res[0]) == "19/1998.grib");
     wassert(actual(res[1]) == "20/2001.grib");
+
+    res.clear();
+    step->list_segments("test_step", "grib", Matcher(), [&](std::string&& s) { res.emplace_back(move(s)); });
+    wassert(actual(res.size()) == 3u);
+
+    res.clear();
+    step->list_segments("test_step", "grib", Matcher::parse("origin:GRIB1,98"), [&](std::string&& s) { res.emplace_back(move(s)); });
+    wassert(actual(res.size()) == 3u);
 });
 
 add_method("monthly", [](Fixture& f) {
@@ -98,6 +106,14 @@ add_method("monthly", [](Fixture& f) {
     wassert(actual(res[1]) == "2008/06.grib");
     wassert(actual(res[2]) == "2008/07.grib");
     wassert(actual(res[3]) == "2009/11.grib");
+
+    res.clear();
+    step->list_segments("test_step", "grib", Matcher(), [&](std::string&& s) { res.emplace_back(move(s)); });
+    wassert(actual(res.size()) == 5u);
+
+    res.clear();
+    step->list_segments("test_step", "grib", Matcher::parse("origin:GRIB1,98"), [&](std::string&& s) { res.emplace_back(move(s)); });
+    wassert(actual(res.size()) == 5u);
 });
 
 add_method("biweekly", [](Fixture& f) {
@@ -135,6 +151,14 @@ add_method("daily", [](Fixture& f) {
     wassert(actual(res[1]) == "2008/06-01.grib");
     wassert(actual(res[2]) == "2008/06-05.grib");
     wassert(actual(res[3]) == "2009/12-29.grib");
+
+    res.clear();
+    step->list_segments("test_step", "grib", Matcher(), [&](std::string&& s) { res.emplace_back(move(s)); });
+    wassert(actual(res.size()) == 5u);
+
+    res.clear();
+    step->list_segments("test_step", "grib", Matcher::parse("origin:GRIB1,98"), [&](std::string&& s) { res.emplace_back(move(s)); });
+    wassert(actual(res.size()) == 5u);
 });
 
 }

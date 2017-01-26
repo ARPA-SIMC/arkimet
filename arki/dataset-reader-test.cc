@@ -179,42 +179,40 @@ this->add_method("querybytes", [](Fixture& f) {
 
 this->add_method("query_data", [](Fixture& f) {
     // Test querying with data only
-    f.clean_and_import();
     auto reader(f.config().create_reader());
 
     sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
-    bq.setData(Matcher::parse("origin:GRIB1,200"));
+    bq.setData(f.td.test_data[1].matcher);
     reader->query_bytes(bq, out);
 
     string res = sys::read_file(out.name());
-    ensure_equals(res.substr(0, 4), "GRIB");
+    wassert(actual(res.substr(0, 8)) == f.td.test_data[1].data().substr(0, 8));
 });
 
 this->add_method("query_inline", [](Fixture& f) {
     // Test querying with inline data
     using namespace arki::types;
 
-    f.clean_and_import();
     auto reader(f.config().create_reader());
 
-    metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,200"));
-    ensure_equals(mdc.size(), 1u);
+    metadata::Collection mdc(*reader, f.td.test_data[0].matcher);
+    wassert(actual(mdc.size()) == 1u);
 
     // Check that the source record that comes out is ok
     //wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
 
     // Check that data is accessible
     const auto& buf = mdc[0].getData();
-    ensure_equals(buf.size(), 7218u);
+    wassert(actual(buf.size()) == f.td.test_data[0].md.sourceBlob().size);
 
     mdc.clear();
-    mdc.add(*reader, Matcher::parse("origin:GRIB1,80"));
-    ensure_equals(mdc.size(), 1u);
+    mdc.add(*reader, f.td.test_data[1].matcher);
+    wassert(actual(mdc.size()) == 1u);
 
     mdc.clear();
-    mdc.add(*reader, Matcher::parse("origin:GRIB1,98"));
-    ensure_equals(mdc.size(), 1u);
+    mdc.add(*reader, f.td.test_data[2].matcher);
+    wassert(actual(mdc.size()) == 1u);
 });
 
 this->add_method("querybytes_integrity", [](Fixture& f) {
