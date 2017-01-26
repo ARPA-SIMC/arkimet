@@ -163,17 +163,19 @@ public:
     void query_data(const dataset::DataQuery& q, metadata_dest_func dest);
 #if 0
     bool query_summary(const Matcher& m, Summary& summary) override;
+#endif
 
-	/**
-	 * Query this index, returning a summary
-	 *
-	 * Summary caches are not used, and the database is always queried.
-	 *
-	 * @return true if the index could be used for the query, false if the
-	 * query does not use the index and a full scan should be used instead
-	 */
-	bool querySummaryFromDB(const Matcher& m, Summary& summary) const;
+    /**
+     * Query this index, returning a summary
+     *
+     * Summary caches are not used, and the database is always queried.
+     *
+     * @return true if the index could be used for the query, false if the
+     * query does not use the index and a full scan should be used instead
+     */
+    bool query_summary_from_db(const Matcher& m, Summary& summary) const;
 
+#if 0
 	/**
 	 * Query summary information from DB using the given WHERE body
 	 */

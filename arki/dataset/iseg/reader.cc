@@ -54,14 +54,11 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
     // Query the archives first
     segmented::Reader::query_summary(matcher, summary);
 
+    // TODO: use summary cache if available
     list_segments(matcher, [&](const std::string& relpath) {
+        RIndex idx(m_config, relpath);
+        idx.query_summary_from_db(matcher, summary);
     });
-#if 0
-    if (!m_idx) return;
-    // FIXME: this is cargo culted from the old ondisk2 reader: what is the use case for this?
-    if (!m_idx->query_summary(matcher, summary))
-        throw std::runtime_error("cannot query " + config().path + ": index could not be used");
-#endif
 }
 
 void Reader::expand_date_range(unique_ptr<core::Time>& begin, unique_ptr<core::Time>& end)

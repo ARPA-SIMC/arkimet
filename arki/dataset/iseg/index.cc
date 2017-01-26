@@ -583,8 +583,9 @@ void Contents::summaryForAll(Summary& out) const
         scache.write(out);
     }
 }
+#endif
 
-bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
+bool Index::query_summary_from_db(const Matcher& m, Summary& summary) const
 {
     string query = "SELECT COUNT(1), SUM(size), MIN(reftime), MAX(reftime)";
 
@@ -594,8 +595,7 @@ bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
     query += " FROM md";
 
     try {
-        if (!addJoinsAndConstraints(m, query))
-            return false;
+        add_joins_and_constraints(m, query);
     } catch (NotFound) {
         // If one of the subqueries did not find any match, we can directly
         // return true here, as we are not going to get any result
@@ -646,6 +646,7 @@ bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
     return true;
 }
 
+#if 0
 static inline bool range_envelopes_full_month(const Time& begin, const Time& end)
 {
     bool begins_at_beginning = begin.da == 1 && begin.ho == 0 && begin.mi == 0 && begin.se == 0;
