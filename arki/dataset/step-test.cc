@@ -81,6 +81,14 @@ add_method("yearly", [](Fixture& f) {
     res.clear();
     step->list_segments("test_step", "grib", Matcher::parse("origin:GRIB1,98"), [&](std::string&& s) { res.emplace_back(move(s)); });
     wassert(actual(res.size()) == 3u);
+
+    std::unique_ptr<core::Time> begin;
+    std::unique_ptr<core::Time> until;
+    step->time_extremes("test_step", "grib", begin, until);
+    wassert(actual(begin.get()).istrue());
+    wassert(actual(until.get()).istrue());
+    wassert(actual(*begin) == core::Time(1998, 1, 1));
+    wassert(actual(*until) == core::Time(2002, 12, 31, 23, 59, 59));
 });
 
 add_method("monthly", [](Fixture& f) {
@@ -114,6 +122,14 @@ add_method("monthly", [](Fixture& f) {
     res.clear();
     step->list_segments("test_step", "grib", Matcher::parse("origin:GRIB1,98"), [&](std::string&& s) { res.emplace_back(move(s)); });
     wassert(actual(res.size()) == 5u);
+
+    std::unique_ptr<core::Time> begin;
+    std::unique_ptr<core::Time> until;
+    step->time_extremes("test_step", "grib", begin, until);
+    wassert(actual(begin.get()).istrue());
+    wassert(actual(until.get()).istrue());
+    wassert(actual(*begin) == core::Time(2007, 1, 1));
+    wassert(actual(*until) == core::Time(2009, 12, 31, 23, 59, 59));
 });
 
 add_method("biweekly", [](Fixture& f) {
@@ -159,6 +175,14 @@ add_method("daily", [](Fixture& f) {
     res.clear();
     step->list_segments("test_step", "grib", Matcher::parse("origin:GRIB1,98"), [&](std::string&& s) { res.emplace_back(move(s)); });
     wassert(actual(res.size()) == 5u);
+
+    std::unique_ptr<core::Time> begin;
+    std::unique_ptr<core::Time> until;
+    step->time_extremes("test_step", "grib", begin, until);
+    wassert(actual(begin.get()).istrue());
+    wassert(actual(until.get()).istrue());
+    wassert(actual(*begin) == core::Time(2007, 1, 1));
+    wassert(actual(*until) == core::Time(2009, 12, 30, 23, 59, 59));
 });
 
 }

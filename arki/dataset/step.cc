@@ -18,6 +18,264 @@ using arki::core::Time;
 namespace arki {
 namespace dataset {
 
+namespace step {
+
+Dirs::Dirs(const std::string& root, const std::string& format)
+    : root(root), format(format) {}
+
+void Dirs::list(const Matcher& m, std::function<void(std::unique_ptr<Files>)> dest) const
+{
+    sys::Path dir(root);
+    for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+    {
+        if (f->d_name[0] == '.') continue;
+        if (!f.isdir()) continue;
+        int value;
+        if (!parse(f->d_name, value)) continue;
+
+        // Its period must match the matcher in q
+        if (!m.empty())
+        {
+            auto rt = to_period(value);
+            if (!m(*rt)) continue;
+        }
+
+        dest(move(make_files(f->d_name, value)));
+    }
+}
+
+void Dirs::extremes(std::unique_ptr<types::reftime::Period>& first, std::unique_ptr<types::reftime::Period>& last) const
+{
+    sys::Path dir(root);
+
+    std::vector<std::pair<int, std::string>> subdirs;
+    for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+    {
+        if (f->d_name[0] == '.') continue;
+        if (!f.isdir()) continue;
+        int value;
+        if (!parse(f->d_name, value)) continue;
+        subdirs.push_back(make_pair(value, f->d_name));
+    }
+
+    if (subdirs.empty())
+    {
+        first.release();
+        last.release();
+        return;
+    }
+
+    std::sort(subdirs.begin(), subdirs.end());
+
+    for (const auto& sd: subdirs)
+    {
+        auto files = make_files(sd.second, sd.first);
+        first = files->first();
+        if (first) break;
+    }
+
+    for (auto i = subdirs.crbegin(); i != subdirs.crend(); ++i)
+    {
+        auto files = make_files(i->second, i->first);
+        last = files->last();
+        if (first) break;
+    }
+}
+
+
+Files::Files(const Dirs& dirs, const std::string& relpath, int value)
+    : dirs(dirs), relpath(relpath), value(value) {}
+
+void Files::list(const Matcher& m, std::function<void(std::string&& relpath)> dest) const
+{
+    auto re = make_regexp();
+    sys::Path dir(str::joinpath(dirs.root, this->relpath));
+    for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+    {
+        if (f->d_name[0] == '.') continue;
+        if (!re->match(f->d_name)) continue;
+        if (re->last_match() != dirs.format) continue;
+
+        // Its period must match the matcher in q
+        if (!m.empty())
+        {
+            auto rt = to_period(*re);
+            if (!m(*rt)) continue;
+        }
+
+        dest(str::joinpath(relpath, f->d_name));
+    }
+}
+
+std::unique_ptr<types::reftime::Period> Files::first() const
+{
+    string res_name;
+    std::unique_ptr<types::reftime::Period> res;
+
+    auto re = make_regexp();
+    sys::Path dir(str::joinpath(dirs.root, this->relpath));
+    for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+    {
+        if (f->d_name[0] == '.') continue;
+        if (!re->match(f->d_name)) continue;
+        if (re->last_match() != dirs.format) continue;
+        if (res_name.empty() || res_name > f->d_name)
+        {
+            res_name = f->d_name;
+            res = to_period(*re);
+        }
+    }
+    return res;
+}
+
+std::unique_ptr<types::reftime::Period> Files::last() const
+{
+    string res_name;
+    std::unique_ptr<types::reftime::Period> res;
+
+    auto re = make_regexp();
+    sys::Path dir(str::joinpath(dirs.root, this->relpath));
+    for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+    {
+        if (f->d_name[0] == '.') continue;
+        if (!re->match(f->d_name)) continue;
+        if (re->last_match() != dirs.format) continue;
+        if (res_name.empty() || res_name < f->d_name)
+        {
+            res_name = f->d_name;
+            res = to_period(*re);
+        }
+    }
+    return res;
+}
+
+
+template<typename FILES>
+struct CenturyDirs : public Dirs
+{
+    using Dirs::Dirs;
+
+    bool parse(const char* name, int& value) const override
+    {
+        char* endptr;
+        value = strtoul(name, &endptr, 10);
+        if (endptr - name != 2) return false;
+        if (*endptr) return false;
+        return true;
+    }
+
+    virtual std::unique_ptr<types::reftime::Period> to_period(int value) const
+    {
+        return unique_ptr<types::reftime::Period>(new reftime::Period(
+            core::Time::create_lowerbound(value * 100),
+            core::Time::create_upperbound(value * 100 + 99)));
+    }
+
+    virtual std::unique_ptr<Files> make_files(const std::string& name, int value) const
+    {
+        return std::unique_ptr<Files>(new FILES(*this, name, value));
+    }
+};
+
+template<typename FILES>
+struct YearDirs : public Dirs
+{
+    using Dirs::Dirs;
+
+    bool parse(const char* name, int& value) const override
+    {
+        char* endptr;
+        value = strtoul(name, &endptr, 10);
+        if (endptr - name != 4) return false;
+        if (*endptr) return false;
+        return true;
+    }
+
+    virtual std::unique_ptr<types::reftime::Period> to_period(int value) const
+    {
+        return unique_ptr<types::reftime::Period>(new reftime::Period(
+            core::Time::create_lowerbound(value),
+            core::Time::create_upperbound(value)));
+    }
+
+    virtual std::unique_ptr<Files> make_files(const std::string& name, int value) const
+    {
+        return std::unique_ptr<Files>(new FILES(*this, name, value));
+    }
+};
+
+struct YearFiles : public Files
+{
+    using Files::Files;
+
+    std::unique_ptr<Regexp> make_regexp() const override
+    {
+        return unique_ptr<Regexp>(new ERegexp("^([[:digit:]]{4})\\.([[:alnum:]]+)$", 3));
+    }
+
+    std::unique_ptr<types::reftime::Period> to_period(const Regexp& re) const
+    {
+        unsigned year = std::stoul(re[1]);
+        return unique_ptr<types::reftime::Period>(new reftime::Period(
+                core::Time::create_lowerbound(year),
+                core::Time::create_upperbound(year)));
+    }
+};
+
+struct MonthFiles : public Files
+{
+    using Files::Files;
+
+    std::unique_ptr<Regexp> make_regexp() const override
+    {
+        return unique_ptr<Regexp>(new ERegexp("^([[:digit:]]{2})\\.([[:alnum:]]+)$", 3));
+    }
+
+    std::unique_ptr<types::reftime::Period> to_period(const Regexp& re) const
+    {
+        unsigned month = std::stoul(re[1]);
+        return unique_ptr<types::reftime::Period>(new reftime::Period(
+                core::Time::create_lowerbound(value, month),
+                core::Time::create_upperbound(value, month)));
+    }
+};
+
+struct MonthDayFiles : public Files
+{
+    using Files::Files;
+
+    std::unique_ptr<Regexp> make_regexp() const override
+    {
+        return unique_ptr<Regexp>(new ERegexp("^([[:digit:]]{2})-([[:digit:]]{2})\\.([[:alnum:]]+)$", 4));
+    }
+
+    std::unique_ptr<types::reftime::Period> to_period(const Regexp& re) const
+    {
+        unsigned month = std::stoul(re[1]);
+        unsigned day = std::stoul(re[2]);
+        return unique_ptr<types::reftime::Period>(new reftime::Period(
+                core::Time::create_lowerbound(value, month, day),
+                core::Time::create_upperbound(value, month, day)));
+    }
+};
+
+
+}
+
+
+struct StepQuery
+{
+    const std::string& root;
+    const std::string& format;
+
+    StepQuery(const std::string& root, const std::string& format)
+        : root(root), format(format) {}
+
+    virtual void list_segments(const Matcher& m, std::function<void(std::string&&)> dest) const = 0;
+    virtual void time_extremes(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& until) const = 0;
+};
+
+
 struct PathQuery
 {
     const std::string& root;
@@ -53,6 +311,28 @@ struct StepParser
 
 struct BaseStep : public Step
 {
+    std::unique_ptr<step::Dirs> explore(const std::string& root, const std::string& format) const override
+    {
+        throw std::runtime_error("Step::explore not available for " + root);
+    }
+
+    void time_extremes(const std::string& root, const std::string& format, std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& until) const override
+    {
+        auto dirs(explore(root, format));
+        std::unique_ptr<types::reftime::Period> first;
+        std::unique_ptr<types::reftime::Period> last;
+        dirs->extremes(first, last);
+
+        if (!first)
+        {
+            begin.release();
+            until.release();
+        } else {
+            begin.reset(new Time(first->begin));
+            until.reset(new Time(last->end));
+        }
+    }
+
     bool pathMatches(const std::string& path, const matcher::OR& m) const override
     {
         Time min;
@@ -65,45 +345,10 @@ struct BaseStep : public Step
 
     void list_segments(const std::string& root, const std::string& format, const Matcher& m, std::function<void(std::string&&)> dest) const override
     {
-        throw std::runtime_error("list_segments not implemented for this step");
-    }
-
-    void impl_list_segments(const PathQuery& q, StepParser& sp, std::function<void(std::string&& s)> dest) const
-    {
-        impl_list_segments(q, sp, string(), 0, dest);
-    }
-
-    void impl_list_segments(const PathQuery& q, StepParser& sp, const std::string& relpath, unsigned depth, std::function<void(std::string&& s)> dest) const
-    {
-        bool is_leaf = depth == sp.max_depth - 1;
-        string root;
-        if (depth == 0)
-            root = q.root;
-        else
-            root = str::joinpath(q.root, relpath);
-
-        sys::Path dir(root);
-        for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
-        {
-            if (f->d_name[0] == '.') continue;
-            if (!is_leaf && !f.isdir()) continue;
-            if (!sp.parse_component(q, depth, f->d_name)) continue;
-
-            // Its period must match the matcher in q
-            if (q.m)
-            {
-                core::Time begin;
-                core::Time until;
-                sp.timespan(begin, until);
-                auto rt = Reftime::createPeriod(begin, until);
-                if (!q.m->matchItem(*rt)) continue;
-            }
-
-            if (is_leaf)
-                dest(str::joinpath(relpath, f->d_name));
-            else
-                impl_list_segments(q, sp, str::joinpath(relpath, f->d_name), depth + 1, dest);
-        }
+        auto dirs(explore(root, format));
+        dirs->list(m, [&](std::unique_ptr<step::Files> files) {
+            files->list(m, dest);
+        });
     }
 };
 
@@ -113,56 +358,14 @@ struct SubStep : public BaseStep
     SubStep(int year) : year(year) {}
 };
 
-struct YearlyStepParser : public StepParser
-{
-    ERegexp re_century;
-    ERegexp re_year;
-    unsigned century;
-    unsigned year;
-
-    YearlyStepParser() :
-        StepParser(2),
-        re_century("^([[:digit:]]{2})$", 2),
-        re_year("^([[:digit:]]{4})\\.([[:alnum:]]+)$", 3) {}
-
-    bool parse_component(const PathQuery& q, unsigned depth, const char* name) override
-    {
-        this->depth = depth;
-        switch (depth)
-        {
-            case 0:
-                if (!re_century.match(name)) return false;
-                century = std::stoul(re_century[1]);
-                return true;
-            case 1:
-                if (!re_year.match(name)) return false;
-                if (re_year[2] != q.format) return false;
-                year = std::stoul(re_year[1]);
-                return true;
-            default:
-                throw std::runtime_error("invalid depth " + std::to_string(depth));
-        }
-    }
-
-    void timespan(Time& start_time, Time& end_time) override
-    {
-        switch (depth)
-        {
-            case 0:
-                start_time.set_lowerbound(century * 100);
-                end_time.set_upperbound(century * 100 + 99);
-                break;
-            case 1:
-                start_time.set_lowerbound(year);
-                end_time.set_upperbound(year);
-                break;
-        }
-    }
-};
-
 struct Yearly : public BaseStep
 {
     static const char* name() { return "yearly"; }
+
+    std::unique_ptr<step::Dirs> explore(const std::string& root, const std::string& format) const override
+    {
+        return std::unique_ptr<step::Dirs>(new step::CenturyDirs<step::YearFiles>(root, format));
+    }
 
     bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
     {
@@ -176,12 +379,6 @@ struct Yearly : public BaseStep
         return true;
     }
 
-    void list_segments(const std::string& root, const std::string& format, const Matcher& m, std::function<void(std::string&&)> dest) const override
-    {
-        YearlyStepParser sp;
-        impl_list_segments(PathQuery(root, format, m), sp, dest);
-    }
-
     std::string operator()(const core::Time& time) const override
     {
         const Time& tt = time;
@@ -191,56 +388,14 @@ struct Yearly : public BaseStep
     }
 };
 
-struct MonthlyStepParser : public StepParser
-{
-    ERegexp re_year;
-    ERegexp re_month;
-    unsigned year;
-    unsigned month;
-
-    MonthlyStepParser() :
-        StepParser(2),
-        re_year("^([[:digit:]]{4})$", 2),
-        re_month("^([[:digit:]]{2})\\.([[:alnum:]]+)$", 3) {}
-
-    bool parse_component(const PathQuery& q, unsigned depth, const char* name) override
-    {
-        this->depth = depth;
-        switch (depth)
-        {
-            case 0:
-                if (!re_year.match(name)) return false;
-                year = std::stoul(re_year[1]);
-                return true;
-            case 1:
-                if (!re_month.match(name)) return false;
-                if (re_month[2] != q.format) return false;
-                month = std::stoul(re_month[1]);
-                return true;
-            default:
-                throw std::runtime_error("invalid depth " + std::to_string(depth));
-        }
-    }
-
-    void timespan(Time& start_time, Time& end_time) override
-    {
-        switch (depth)
-        {
-            case 0:
-                start_time.set_lowerbound(year);
-                end_time.set_upperbound(year);
-                break;
-            case 1:
-                start_time.set_lowerbound(year, month);
-                end_time.set_upperbound(year, month);
-                break;
-        }
-    }
-};
-
 struct Monthly : public BaseStep
 {
     static const char* name() { return "monthly"; }
+
+    std::unique_ptr<step::Dirs> explore(const std::string& root, const std::string& format) const override
+    {
+        return std::unique_ptr<step::Dirs>(new step::YearDirs<step::MonthFiles>(root, format));
+    }
 
     bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
     {
@@ -253,12 +408,6 @@ struct Monthly : public BaseStep
         return true;
     }
 
-    void list_segments(const std::string& root, const std::string& format, const Matcher& m, std::function<void(std::string&&)> dest) const override
-    {
-        MonthlyStepParser sp;
-        impl_list_segments(PathQuery(root, format, m), sp, dest);
-    }
-
     std::string operator()(const core::Time& time) const override
     {
         const Time& tt = time;
@@ -266,27 +415,6 @@ struct Monthly : public BaseStep
         snprintf(buf, 10, "%04d/%02d", tt.ye, tt.mo);
         return buf;
     }
-
-#if 0
-    void subpath_timespan(unsigned sp_value, Time& start_time, Time& end_time) const override
-    {
-        start_time.set_lowerbound(sp_value);
-        end_time.set_upperbound(sp_value);
-    }
-
-    void segment_timespan(unsigned sp_value, const Regexp& re, Time& start_time, Time& end_time) const override
-    {
-        unsigned month = strtoul(re[1].c_str(), 0, 10);
-        start_time.set_lowerbound(sp_value, month);
-        end_time.set_upperbound(sp_value, month);
-    }
-
-    std::vector<std::string> list_paths(const PathQuery& q) const override
-    {
-        ERegexp re("^([[:digit:]]{2})$", 1);
-        return impl_list_paths(q, 4, re);
-    }
-#endif
 };
 
 struct SubMonthly : public SubStep
@@ -348,34 +476,6 @@ struct Biweekly : public BaseStep
         res << (tt.da > 15 ? 2 : 1);
         return res.str();
     }
-
-#if 0
-    void subpath_timespan(unsigned sp_value, Time& start_time, Time& end_time) const override
-    {
-        start_time.set_lowerbound(sp_value);
-        end_time.set_upperbound(sp_value);
-    }
-
-    void segment_timespan(unsigned sp_value, const Regexp& re, Time& start_time, Time& end_time) const override
-    {
-        unsigned month = strtoul(re[1].c_str(), 0, 10);
-        unsigned biweek = strtoul(re[2].c_str(), 0, 10);
-        if (biweek == 1)
-        {
-            start_time.set_lowerbound(sp_value, month);
-            end_time.set_upperbound(sp_value, month, 15);
-        } else {
-            start_time.set_lowerbound(sp_value, month, 16);
-            end_time.set_upperbound(sp_value, month);
-        }
-    }
-
-    std::vector<std::string> list_paths(const PathQuery& q) const override
-    {
-        ERegexp re("^([[:digit:]]{2})-([[:digit:]])$", 2);
-        return impl_list_paths(q, 4, re);
-    }
-#endif
 };
 
 struct Weekly : public BaseStep
@@ -446,58 +546,14 @@ struct SubWeekly : public SubStep
     }
 };
 
-struct DailyStepParser : public StepParser
-{
-    ERegexp re_year;
-    ERegexp re_month;
-    unsigned year;
-    unsigned month;
-    unsigned day;
-
-    DailyStepParser() :
-        StepParser(2),
-        re_year("^([[:digit:]]{4})$", 2),
-        re_month("^([[:digit:]]{2})-([[:digit:]]{2})\\.([[:alnum:]]+)$", 4) {}
-
-    bool parse_component(const PathQuery& q, unsigned depth, const char* name) override
-    {
-        this->depth = depth;
-        switch (depth)
-        {
-            case 0:
-                if (!re_year.match(name)) return false;
-                year = std::stoul(re_year[0]);
-                return true;
-            case 1:
-                if (!re_month.match(name)) return false;
-                if (re_month[3] != q.format) return false;
-                month = std::stoul(re_month[1]);
-                day = std::stoul(re_month[2]);
-                return true;
-            default:
-                throw std::runtime_error("invalid depth " + std::to_string(depth));
-        }
-    }
-
-    void timespan(Time& start_time, Time& end_time) override
-    {
-        switch (depth)
-        {
-            case 0:
-                start_time.set_lowerbound(year);
-                end_time.set_upperbound(year);
-                break;
-            case 1:
-                start_time.set_lowerbound(year, month, day);
-                end_time.set_upperbound(year, month, day);
-                break;
-        }
-    }
-};
-
 struct Daily : public BaseStep
 {
     static const char* name() { return "daily"; }
+
+    std::unique_ptr<step::Dirs> explore(const std::string& root, const std::string& format) const override
+    {
+        return std::unique_ptr<step::Dirs>(new step::YearDirs<step::MonthDayFiles>(root, format));
+    }
 
     bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
     {
@@ -507,12 +563,6 @@ struct Daily : public BaseStep
         start_time.set_lowerbound(ye, mo, da);
         end_time.set_upperbound(ye, mo, da);
         return true;
-    }
-
-    void list_segments(const std::string& root, const std::string& format, const Matcher& m, std::function<void(std::string&&)> dest) const override
-    {
-        DailyStepParser sp;
-        impl_list_segments(PathQuery(root, format, m), sp, dest);
     }
 
     std::string operator()(const core::Time& time) const override

@@ -40,7 +40,10 @@ public:
        $1... 0 is whole-regexp match, not a capture. TODO
        the range is miscalculated (an off-by-one, wrt. the
        counterintuitive match counting). */
-    std::string operator[](int idx);
+    std::string operator[](int idx) const;
+
+    std::string first_match() const;
+    std::string last_match() const;
 
     size_t matchStart(int idx);
     size_t matchEnd(int idx);

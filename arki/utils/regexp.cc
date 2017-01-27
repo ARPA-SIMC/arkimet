@@ -96,7 +96,7 @@ bool Regexp::match(const string& str, int flags)
     }
 }
 
-string Regexp::operator[](int idx)
+string Regexp::operator[](int idx) const
 {
     if (idx >= nmatch)
     {
@@ -110,6 +110,10 @@ string Regexp::operator[](int idx)
 
     return string(lastMatch, pmatch[idx].rm_so, pmatch[idx].rm_eo - pmatch[idx].rm_so);
 }
+
+std::string Regexp::first_match() const { return operator[](1); }
+
+std::string Regexp::last_match() const { return operator[](nmatch - 1); }
 
 size_t Regexp::matchStart(int idx)
 {
