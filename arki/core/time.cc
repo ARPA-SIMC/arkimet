@@ -125,6 +125,20 @@ Time Time::create_now()
     return Time(now);
 }
 
+Time Time::create_lowerbound(int ye, int mo, int da, int ho, int mi, int se)
+{
+    Time res;
+    res.set_lowerbound(ye, mo, da, ho, mi, se);
+    return res;
+}
+
+Time Time::create_upperbound(int ye, int mo, int da, int ho, int mi, int se)
+{
+    Time res;
+    res.set_upperbound(ye, mo, da, ho, mi, se);
+    return res;
+}
+
 void Time::unset()
 {
     this->ye = 0;
