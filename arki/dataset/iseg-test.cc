@@ -17,6 +17,7 @@ struct Fixture : public DatasetTest
         DatasetTest::test_setup(R"(
             type = iseg
             step = daily
+            format = grib
         )");
     }
 };

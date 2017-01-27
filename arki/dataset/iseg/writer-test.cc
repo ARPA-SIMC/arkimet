@@ -34,6 +34,7 @@ struct Fixture : public DatasetTest {
         DatasetTest::test_setup(R"(
             type=iseg
             step=daily
+            format=grib
         )");
     }
 
@@ -51,7 +52,7 @@ class Tests : public FixtureTestCase<Fixture>
     using FixtureTestCase::FixtureTestCase;
 
     void register_tests() override;
-} test("arki_dataset_iseg");
+} test("arki_dataset_iseg_writer");
 
 void Tests::register_tests() {
 

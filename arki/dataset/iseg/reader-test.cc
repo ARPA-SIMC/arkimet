@@ -30,6 +30,7 @@ struct Fixture : public DatasetTest {
             type = iseg
             step = daily
             postprocess = testcountbytes
+            format = grib
         )");
 
         clean_and_import();
@@ -43,7 +44,7 @@ class Tests : public FixtureTestCase<Fixture>
     void register_tests() override;
 };
 
-Tests test_plain("arki_dataset_iseg_reader_plain");
+Tests test_plain("arki_dataset_iseg_reader");
 
 void Tests::register_tests() {
 
