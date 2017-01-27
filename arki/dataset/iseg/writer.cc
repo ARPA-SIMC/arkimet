@@ -35,6 +35,7 @@ Writer::Writer(std::shared_ptr<const iseg::Config> config)
 {
     // Create the directory if it does not exist
     sys::makedirs(config->path);
+    scache.openRW();
 }
 
 Writer::~Writer()
@@ -64,6 +65,8 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 
     try {
         idx->index(md, ofs);
+        // Invalidate the summary cache for this month
+        scache.invalidate(md);
         p_df.commit();
         p_idx.commit();
         md.set_source(move(source));
@@ -90,6 +93,8 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 
     try {
         idx->replace(md, ofs);
+        // Invalidate the summary cache for this month
+        scache.invalidate(md);
         p_df.commit();
         p_idx.commit();
         md.set_source(move(source));
@@ -114,6 +119,8 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
     try {
         // Try to acquire without replacing
         idx->index(md, ofs);
+        // Invalidate the summary cache for this month
+        scache.invalidate(md);
         p_df.commit();
         p_idx.commit();
         md.set_source(move(source));

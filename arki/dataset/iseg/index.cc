@@ -646,19 +646,6 @@ bool Index::query_summary_from_db(const Matcher& m, Summary& summary) const
 }
 
 #if 0
-static inline bool range_envelopes_full_month(const Time& begin, const Time& end)
-{
-    bool begins_at_beginning = begin.da == 1 && begin.ho == 0 && begin.mi == 0 && begin.se == 0;
-    if (begins_at_beginning)
-        return end >= begin.end_of_month();
-
-    bool ends_at_end = end.da == Time::days_in_month(end.ye, end.mo) && end.ho == 23 && end.mi == 59 && end.se == 59;
-    if (ends_at_end)
-        return begin <= end.start_of_month();
-
-    return end.ye == begin.ye + begin.mo / 12 && end.mo == (begin.mo % 12) + 1;
-}
-
 bool Contents::query_summary(const Matcher& matcher, Summary& summary)
 {
     // Check if the matcher discriminates on reference times
@@ -933,9 +920,6 @@ void WIndex::index(const Metadata& md, uint64_t ofs)
 
     while (m_insert.step())
         ;
-
-    // Invalidate the summary cache for this month
-    //scache.invalidate(md);
 }
 
 void WIndex::replace(Metadata& md, uint64_t ofs)
@@ -949,9 +933,6 @@ void WIndex::replace(Metadata& md, uint64_t ofs)
 
     while (m_replace.step())
         ;
-
-    // Invalidate the summary cache for this month
-    // scache.invalidate(md);
 }
 
 #if 0

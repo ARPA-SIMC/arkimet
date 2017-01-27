@@ -18,6 +18,7 @@ Reader::Reader(std::shared_ptr<const iseg::Config> config)
 {
     // Create the directory if it does not exist
     sys::makedirs(config->path);
+    scache.openRW();
 }
 
 Reader::~Reader()
