@@ -64,8 +64,7 @@ Index::Index(std::shared_ptr<const iseg::Config> config, const std::string& data
       data_pathname(str::joinpath(config->path, data_relpath)),
       index_pathname(data_pathname + ".index")
 #if 0
-    :  m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
-      scache(config->summary_cache_pathname)
+    :  m_get_id("getid", m_db), m_get_current("getcurrent", m_db)
 #endif
 {
     if (not config->unique.empty())

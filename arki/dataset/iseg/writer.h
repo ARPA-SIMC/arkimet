@@ -4,6 +4,7 @@
 /// dataset/iseg/writer - Writer for datasets with one index per segment
 
 #include <arki/dataset/iseg.h>
+#include <arki/dataset/index/summarycache.h>
 #include <arki/configfile.h>
 
 #include <string>
@@ -20,6 +21,7 @@ class Writer : public segmented::Writer
 {
 protected:
     std::shared_ptr<const iseg::Config> m_config;
+    index::SummaryCache scache;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
     Segment* file(const Metadata& md, const std::string& format);

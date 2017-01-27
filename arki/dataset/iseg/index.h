@@ -82,8 +82,6 @@ protected:
 #if 0
     mutable utils::sqlite::PrecompiledQuery m_get_id;
     mutable utils::sqlite::PrecompiledQuery m_get_current;
-
-    mutable SummaryCache scache;
 #endif
 
     /**

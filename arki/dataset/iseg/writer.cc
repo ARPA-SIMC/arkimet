@@ -31,7 +31,7 @@ namespace dataset {
 namespace iseg {
 
 Writer::Writer(std::shared_ptr<const iseg::Config> config)
-    : m_config(config)
+    : m_config(config), scache(config->summary_cache_pathname)
 {
     // Create the directory if it does not exist
     sys::makedirs(config->path);

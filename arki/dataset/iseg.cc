@@ -20,7 +20,8 @@ Config::Config(const ConfigFile& cfg)
       format(cfg.value("format")),
       smallfiles(ConfigFile::boolValue(cfg.value("smallfiles"))),
       index(index::parseMetadataBitmask(cfg.value("index"))),
-      unique(index::parseMetadataBitmask(cfg.value("unique")))
+      unique(index::parseMetadataBitmask(cfg.value("unique"))),
+      summary_cache_pathname(str::joinpath(path, ".summaries"))
 {
     if (format.empty())
         throw std::runtime_error("Dataset " + name + " misses format= configuration");
