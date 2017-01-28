@@ -17,6 +17,8 @@
 #include "arki/nag.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
+#include "arki/utils/compress.h"
+#include "arki/binary.h"
 #include <algorithm>
 #include <ctime>
 #include <cstdio>
@@ -235,7 +237,10 @@ void Writer::remove(Metadata& md)
 void Writer::flush()
 {
     segmented::Writer::flush();
-    //m_mft->flush();
+    segment_manager().foreach_cached([](Segment& s) {
+        WIndex* idx = static_cast<WIndex*>(s.payload);
+        idx->flush();
+    });
     release_lock();
 }
 
@@ -274,7 +279,21 @@ void Checker::list_segments(std::function<void(const std::string& relpath)> dest
         dest(relpath);
 }
 
-void Checker::removeAll(dataset::Reporter& reporter, bool writable) { acquire_lock(); segmented::Checker::removeAll(reporter, writable); release_lock(); }
+void Checker::removeAll(dataset::Reporter& reporter, bool writable)
+{
+    acquire_lock();
+    config().step().list_segments(config().path, config().format, Matcher(), [&](std::string&& relpath) {
+        if (writable)
+        {
+            size_t freed = removeSegment(relpath, true);
+            reporter.segment_delete(name(), relpath, "deleted (" + std::to_string(freed) + " freed)");
+        } else
+            reporter.segment_delete(name(), relpath, "should be deleted");
+    });
+    segmented::Checker::removeAll(reporter, writable);
+    release_lock();
+}
+
 segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
 {
     segmented::State segments_state;
@@ -335,6 +354,14 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
         segments_state.insert(make_pair(relpath, segmented::SegmentState(state, *md_begin, *md_until)));
     });
 
+    // Look for .index files without segments next to them
+    config().step().list_segments(config().path, config().format + ".index", Matcher(), [&](std::string&& relpath) {
+        relpath.resize(relpath.size() - 6);
+        if (segments_state.find(relpath) != segments_state.end()) return;
+        reporter.segment_info(name(), relpath, "segment found in index but not on disk");
+        segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_DELETED)));
+    });
+
     //
     // Check if segments are old enough to be deleted or archived
     //
@@ -367,8 +394,20 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
 
     return segments_state;
 }
-void Checker::repack(dataset::Reporter& reporter, bool writable) { acquire_lock(); segmented::Checker::repack(reporter, writable); release_lock(); }
-void Checker::check(dataset::Reporter& reporter, bool fix, bool quick) { acquire_lock(); segmented::Checker::check(reporter, fix, quick); release_lock(); }
+
+void Checker::repack(dataset::Reporter& reporter, bool writable)
+{
+    acquire_lock();
+    segmented::Checker::repack(reporter, writable);
+    release_lock();
+}
+
+void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
+{
+    acquire_lock();
+    segmented::Checker::check(reporter, fix, quick);
+    release_lock();
+}
 
 void Checker::indexSegment(const std::string& relname, metadata::Collection&& mds)
 {
@@ -394,14 +433,101 @@ void Checker::indexSegment(const std::string& relname, metadata::Collection&& md
     //m_mft->flush();
 }
 
+namespace {
+
+/// Create unique strings from metadata
+struct IDMaker
+{
+    std::set<types::Code> components;
+
+    IDMaker(const std::set<types::Code>& components) : components(components) {}
+
+    vector<uint8_t> make_string(const Metadata& md) const
+    {
+        vector<uint8_t> res;
+        BinaryEncoder enc(res);
+        for (set<types::Code>::const_iterator i = components.begin(); i != components.end(); ++i)
+            if (const Type* t = md.get(*i))
+                t->encodeBinary(enc);
+        return res;
+    }
+};
+
+}
+
 void Checker::rescanSegment(const std::string& relpath)
 {
-    // Delete cached info to force a full rescan
     string pathname = str::joinpath(config().path, relpath);
-    sys::unlink_ifexists(pathname + ".metadata");
-    sys::unlink_ifexists(pathname + ".summary");
+    //fprintf(stderr, "Checker::rescanSegment %s\n", pathname.c_str());
 
-    //m_mft->rescanSegment(config().path, relpath);
+    // Temporarily uncompress the file for scanning
+    unique_ptr<utils::compress::TempUnzip> tu;
+    if (scan::isCompressed(pathname))
+        tu.reset(new utils::compress::TempUnzip(pathname));
+
+    // Collect the scan results in a metadata::Collector
+    metadata::Collection mds;
+    if (!scan::scan(pathname, mds.inserter_func()))
+        throw std::runtime_error("cannot rescan " + pathname + ": file format unknown");
+    //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
+
+    WIndex idx(m_config, relpath);
+
+    // Lock away writes and reads
+    Pending p = idx.begin_exclusive_transaction();
+
+    // Remove from the index all data about the file
+    idx.reset();
+
+    // Scan the list of metadata, looking for duplicates and marking all
+    // the duplicates except the last one as deleted
+    IDMaker id_maker(idx.unique_codes());
+
+    map<vector<uint8_t>, const Metadata*> finddupes;
+    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+    {
+        vector<uint8_t> id = id_maker.make_string(**i);
+        if (id.empty())
+            continue;
+        auto dup = finddupes.find(id);
+        if (dup == finddupes.end())
+            finddupes.insert(make_pair(id, *i));
+        else
+            dup->second = *i;
+    }
+    // cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
+
+    // Send the remaining metadata to the reindexer
+    std::string basename = str::basename(relpath);
+    for (const auto& i: finddupes)
+    {
+        const Metadata& md = *i.second;
+        const source::Blob& blob = md.sourceBlob();
+        try {
+            if (str::basename(blob.filename) != basename)
+                throw std::runtime_error("cannot rescan " + relpath + ": metadata points to the wrong file: " + blob.filename);
+            idx.index(md, blob.offset);
+        } catch (utils::sqlite::DuplicateInsert& di) {
+            stringstream ss;
+            ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate elsewhere in the dataset: manual fix is required";
+            throw runtime_error(ss.str());
+        } catch (std::exception& e) {
+            stringstream ss;
+            ss << "cannot reindex " << basename << ": failed to reindex data item at offset " << blob.offset << ": " << e.what();
+            throw runtime_error(ss.str());
+            // sqlite will take care of transaction consistency
+        }
+    }
+    // cerr << " REINDEXED " << pathname << endl;
+
+    // TODO: if scan fails, remove all info from the index and rename the
+    // file to something like .broken
+
+    // Commit the changes on the database
+    p.commit();
+    // cerr << " COMMITTED" << endl;
+
+    // TODO: remove relevant summary
 }
 
 
@@ -457,8 +583,10 @@ size_t Checker::repackSegment(const std::string& relpath)
 
 size_t Checker::removeSegment(const std::string& relpath, bool withData)
 {
-    sys::unlink_ifexists(str::joinpath(config().path, relpath + ".index"));
-    return segmented::Checker::removeSegment(relpath, withData);
+    string idx_abspath = str::joinpath(config().path, relpath + ".index");
+    size_t res = sys::size(idx_abspath);
+    sys::unlink_ifexists(idx_abspath);
+    return res + segmented::Checker::removeSegment(relpath, withData);
 }
 
 void Checker::releaseSegment(const std::string& relpath, const std::string& destpath)

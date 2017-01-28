@@ -149,15 +149,15 @@ void Contents::initQueries()
     if (m_uniques) query += " AND uniq=?";
     m_get_current.compile(query);
 }
+#endif
 
-std::set<types::Code> Contents::unique_codes() const
+std::set<types::Code> Index::unique_codes() const
 {
     std::set<types::Code> res;
     if (m_uniques) res = m_uniques->members();
     res.insert(TYPE_REFTIME);
     return res;
 }
-#endif
 
 void Index::setup_pragmas()
 {
@@ -944,14 +944,12 @@ void WIndex::remove(off_t ofs)
         ;
 }
 
-#if 0
-void WContents::flush()
+void WIndex::flush()
 {
     // Not needed for index data consistency, but we need it to ensure file
     // timestamps are consistent at this point.
     m_db.checkpoint();
 }
-#endif
 
 void WIndex::reset()
 {

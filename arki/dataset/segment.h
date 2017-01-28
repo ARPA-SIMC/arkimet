@@ -184,6 +184,12 @@ public:
         // Set the first element to val
         return items[0] = val.release();
     }
+
+    void foreach_cached(std::function<void(Segment&)> func)
+    {
+        for (unsigned i = 0; i < max_size && items[i]; ++i)
+            func(*items[i]);
+    }
 };
 
 }
@@ -198,6 +204,9 @@ public:
     virtual ~SegmentManager();
 
     void flush_writers();
+
+    /// Run a function on each cached segment
+    void foreach_cached(std::function<void(Segment&)>);
 
     virtual Segment* get_segment(const std::string& relname) = 0;
     virtual Segment* get_segment(const std::string& format, const std::string& relname) = 0;

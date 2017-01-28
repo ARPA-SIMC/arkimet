@@ -45,9 +45,9 @@ public:
     std::string first_match() const;
     std::string last_match() const;
 
-    size_t matchStart(int idx);
-    size_t matchEnd(int idx);
-    size_t matchLength(int idx);
+    size_t match_start(int idx);
+    size_t match_end(int idx);
+    size_t match_length(int idx);
 
 private:
     Regexp(const Regexp&);

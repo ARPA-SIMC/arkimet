@@ -267,6 +267,11 @@ void SegmentManager::flush_writers()
     segments.clear();
 }
 
+void SegmentManager::foreach_cached(std::function<void(Segment&)> func)
+{
+    segments.foreach_cached(func);
+}
+
 std::unique_ptr<SegmentManager> SegmentManager::get(const std::string& root, bool force_dir, bool mock_data)
 {
     if (force_dir)

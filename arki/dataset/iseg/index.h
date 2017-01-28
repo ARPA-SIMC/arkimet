@@ -113,6 +113,11 @@ public:
 
     const iseg::Config& config() const { return *m_config; }
 
+    /**
+     * Set of metadata types that make a metadata unique
+     */
+    std::set<types::Code> unique_codes() const;
+
 #if 0
     const std::string& pathname() const { return config().index_pathname; }
 
@@ -120,11 +125,6 @@ public:
 	{
 		return m_components_indexed.find(c) != m_components_indexed.end();
 	}
-
-	/**
-	 * Set of metadata types that make a metadata unique
-	 */
-	std::set<types::Code> unique_codes() const;
 
 	/**
 	 * Precompile queries.
@@ -266,11 +266,8 @@ public:
      */
     void remove(off_t ofs);
 
-#if 0
-
     /// Flush the journal contents to the main database
     void flush();
-#endif
 
     /**
      * Remove all entries from the index

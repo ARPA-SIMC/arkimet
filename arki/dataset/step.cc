@@ -94,7 +94,7 @@ void Files::list(const Matcher& m, std::function<void(std::string&& relpath)> de
     {
         if (f->d_name[0] == '.') continue;
         if (!re->match(f->d_name)) continue;
-        if (re->last_match() != dirs.format) continue;
+        if (dirs.format != f->d_name + re->match_end(0)) continue;
 
         // Its period must match the matcher in q
         if (!m.empty())
@@ -118,7 +118,7 @@ std::unique_ptr<types::reftime::Period> Files::first() const
     {
         if (f->d_name[0] == '.') continue;
         if (!re->match(f->d_name)) continue;
-        if (re->last_match() != dirs.format) continue;
+        if (dirs.format != f->d_name + re->match_end(0)) continue;
         if (res_name.empty() || res_name > f->d_name)
         {
             res_name = f->d_name;
@@ -139,7 +139,7 @@ std::unique_ptr<types::reftime::Period> Files::last() const
     {
         if (f->d_name[0] == '.') continue;
         if (!re->match(f->d_name)) continue;
-        if (re->last_match() != dirs.format) continue;
+        if (dirs.format != f->d_name + re->match_end(0)) continue;
         if (res_name.empty() || res_name < f->d_name)
         {
             res_name = f->d_name;
@@ -210,7 +210,7 @@ struct YearFiles : public Files
 
     std::unique_ptr<Regexp> make_regexp() const override
     {
-        return unique_ptr<Regexp>(new ERegexp("^([[:digit:]]{4})\\.([[:alnum:]]+)$", 3));
+        return unique_ptr<Regexp>(new ERegexp("^([[:digit:]]{4})\\.", 2));
     }
 
     std::unique_ptr<types::reftime::Period> to_period(const Regexp& re) const
@@ -228,7 +228,7 @@ struct MonthFiles : public Files
 
     std::unique_ptr<Regexp> make_regexp() const override
     {
-        return unique_ptr<Regexp>(new ERegexp("^([[:digit:]]{2})\\.([[:alnum:]]+)$", 3));
+        return unique_ptr<Regexp>(new ERegexp("^([[:digit:]]{2})\\.", 2));
     }
 
     std::unique_ptr<types::reftime::Period> to_period(const Regexp& re) const
@@ -246,7 +246,7 @@ struct MonthDayFiles : public Files
 
     std::unique_ptr<Regexp> make_regexp() const override
     {
-        return unique_ptr<Regexp>(new ERegexp("^([[:digit:]]{2})-([[:digit:]]{2})\\.([[:alnum:]]+)$", 4));
+        return unique_ptr<Regexp>(new ERegexp("^([[:digit:]]{2})-([[:digit:]]{2})\\.", 3));
     }
 
     std::unique_ptr<types::reftime::Period> to_period(const Regexp& re) const
