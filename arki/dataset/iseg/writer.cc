@@ -206,8 +206,30 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 
 void Writer::remove(Metadata& md)
 {
-    // Nothing to do
-    throw std::runtime_error("cannot remove data from iseg dataset: dataset does not support removing items");
+    Segment* writer = file(md, md.source().format);
+    WIndex* idx = static_cast<WIndex*>(writer->payload);
+
+    const types::source::Blob* source = md.has_source_blob();
+    if (!source)
+        throw std::runtime_error("cannot remove metadata from dataset, because it has no Blob source");
+
+    if (source->basedir != config().path)
+        throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir + " but this dataset is at " + config().path);
+
+    // TODO: refuse if md is in the archive
+
+    // Delete from DB, and get file name
+    Pending p_del = idx->begin_transaction();
+    idx->remove(source->offset);
+
+    // Commit delete from DB
+    p_del.commit();
+
+    // reset source and dataset in the metadata
+    md.unset_source();
+    md.unset(TYPE_ASSIGNEDDATASET);
+
+    scache.invalidate(md);
 }
 
 void Writer::flush()

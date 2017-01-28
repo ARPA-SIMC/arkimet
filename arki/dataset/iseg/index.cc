@@ -770,7 +770,7 @@ RIndex::RIndex(std::shared_ptr<const iseg::Config> config, const std::string& da
 
 
 WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath)
-    : Index(config, data_relpath), m_insert(m_db), m_replace("replace", m_db) //m_delete("delete", m_db)
+    : Index(config, data_relpath), m_insert(m_db), m_replace("replace", m_db)
 {
     bool need_create = !sys::access(index_pathname, F_OK);
 
@@ -935,38 +935,16 @@ void WIndex::replace(Metadata& md, uint64_t ofs)
         ;
 }
 
-#if 0
-void WContents::remove(const std::string& relname, off_t ofs)
+void WIndex::remove(off_t ofs)
 {
-    Query fetch_id("byfile", m_db);
-    fetch_id.compile("SELECT id, reftime FROM md WHERE file=? AND offset=?");
-    fetch_id.bind(1, relname);
-    fetch_id.bind(2, ofs);
-    int id = 0;
-    string reftime;
-    while (fetch_id.step())
-    {
-        id = fetch_id.fetch<int>(0);
-        reftime = fetch_id.fetchString(1);
-    }
-    if (reftime.empty())
-    {
-        stringstream ss;
-        ss << "cannot remove item " << relname << ":" << ofs << " because it does not exist in the index";
-        throw runtime_error(ss.str());
-    }
-
-    // Invalidate the summary cache for this month
-    Time rt(Time::create_sql(reftime));
-    scache.invalidate(rt.ye, rt.mo);
-
-    // DELETE FROM md WHERE id=?
-    m_delete.reset();
-    m_delete.bind(1, id);
-    while (m_delete.step())
+    Query remove("remove", m_db);
+    remove.compile("DELETE FROM md WHERE offset=?");
+    remove.bind(1, ofs);
+    while (remove.step())
         ;
 }
 
+#if 0
 void WContents::flush()
 {
     // Not needed for index data consistency, but we need it to ensure file

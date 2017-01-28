@@ -225,10 +225,6 @@ protected:
     utils::sqlite::InsertQuery m_insert;
     utils::sqlite::PrecompiledQuery m_replace;
 
-#if 0
-	utils::sqlite::PrecompiledQuery m_delete;
-#endif
-
     /// Create the tables in the database
     void init_db();
 
@@ -265,14 +261,12 @@ public:
      */
     void replace(Metadata& md, uint64_t ofs);
 
-#if 0
     /**
      * Remove the given metadata item from the index.
-     *
-     * The removal will only take place when the commit() method will be called
-     * on the Pending object.
      */
-    void remove(const std::string& relname, off_t ofs);
+    void remove(off_t ofs);
+
+#if 0
 
     /// Flush the journal contents to the main database
     void flush();
