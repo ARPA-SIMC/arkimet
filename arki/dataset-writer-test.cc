@@ -278,13 +278,12 @@ this->add_method("concurrent_import", [](Fixture& f) {
 
 // Test acquiring with a reader who's stuck on output
 this->add_method("import_with_hung_reader", [](Fixture& f) {
-
-    metadata::Collection mdc("inbound/test-sorted.grib1");
+    f.clean();
 
     // Import one grib in the dataset
     {
         auto ds = f.config().create_writer();
-        wassert(actual(ds->acquire(mdc[0])) == dataset::Writer::ACQ_OK);
+        wassert(actual(ds->acquire(f.td.test_data[0].md)) == dataset::Writer::ACQ_OK);
         ds->flush();
     }
 
@@ -296,7 +295,7 @@ this->add_method("import_with_hung_reader", [](Fixture& f) {
     // Import another grib in the dataset
     {
         auto ds = f.config().create_writer();
-        wassert(actual(ds->acquire(mdc[1])) == dataset::Writer::ACQ_OK);
+        wassert(actual(ds->acquire(f.td.test_data[1].md)) == dataset::Writer::ACQ_OK);
         ds->flush();
     }
 
