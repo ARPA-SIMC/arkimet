@@ -425,6 +425,7 @@ this->add_method("scan_noindex", [](Fixture& f) {
         snprintf(buf, 32, "testds/%04d/MANIFEST", f.td.test_data[i].time.ye);
         sys::unlink_ifexists(buf);
     }
+    system("find testds -name '*.index' -delete");
     sys::makedirs("testds/2014/");
     sys::write_file("testds/2014/01.grib1.tmp", "GRIB garbage 7777");
 
