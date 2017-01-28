@@ -327,7 +327,7 @@ void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount)
     metadata::Collection mdc(*reader, Matcher());
     wassert(actual(mdc.size()) == resultcount);
 
-    if (filecount > 0)
+    if (filecount > 0 && reader->type() != "iseg")
         wassert(actual_file(str::joinpath(reader->path(), idxfname())).exists());
     tc.clear();
 }

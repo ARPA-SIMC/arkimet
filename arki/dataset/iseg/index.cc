@@ -253,28 +253,6 @@ size_t Contents::count() const
     return res;
 }
 
-void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& orderBy) const
-{
-    string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
-    if (m_uniques) query += ", m.uniq";
-    if (m_others) query += ", m.other";
-    if (config().smallfiles) query += ", m.data";
-    query += " FROM md AS m";
-    query += " WHERE m.file=? ORDER BY " + orderBy;
-
-    Query mdq("scan_file_md", m_db);
-    mdq.compile(query);
-    mdq.bind(1, relname);
-
-    while (mdq.step())
-    {
-        // Rebuild the Metadata
-        unique_ptr<Metadata> md(new Metadata);
-        build_md(mdq, *md);
-        dest(move(md));
-    }
-}
-
 bool Contents::segment_timespan(const std::string& relname, Time& start_time, Time& end_time) const
 {
     Query sq("max_file_reftime", m_db);
@@ -290,6 +268,28 @@ bool Contents::segment_timespan(const std::string& relname, Time& start_time, Ti
     return res;
 }
 #endif
+
+void Index::scan(metadata_dest_func dest, const std::string& order_by) const
+{
+    string query = "SELECT m.offset, m.size, m.notes, m.reftime";
+    if (m_uniques) query += ", m.uniq";
+    if (m_others) query += ", m.other";
+    if (config().smallfiles) query += ", m.data";
+    query += " FROM md AS m";
+    query += " ORDER BY " + order_by;
+
+    Query mdq("scan_file_md", m_db);
+    mdq.compile(query);
+
+    while (mdq.step())
+    {
+        // Rebuild the Metadata
+        unique_ptr<Metadata> md(new Metadata);
+        build_md(mdq, *md);
+        dest(move(md));
+    }
+}
+
 
 static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begin, unique_ptr<Time>& end)
 {
@@ -967,44 +967,20 @@ void WContents::remove(const std::string& relname, off_t ofs)
         ;
 }
 
-void WContents::reset()
+void WContents::flush()
+{
+    // Not needed for index data consistency, but we need it to ensure file
+    // timestamps are consistent at this point.
+    m_db.checkpoint();
+}
+#endif
+
+void WIndex::reset()
 {
     m_db.exec("DELETE FROM md");
-    scache.invalidate();
 }
 
-void WContents::reset(const std::string& file)
-{
-    // Get the file date extremes to invalidate the summary cache
-    string fmin, fmax;
-    {
-        Query sq("file_reftime_extremes", m_db);
-        sq.compile("SELECT MIN(reftime), MAX(reftime) FROM md WHERE file=?");
-        sq.bind(1, file);
-        while (sq.step())
-        {
-            fmin = sq.fetchString(0);
-            fmax = sq.fetchString(1);
-        }
-        // If it did not find the file in the database, we do not need
-        // to remove it
-        if (fmin.empty())
-            return;
-    }
-    Time tmin(Time::create_sql(fmin).start_of_month());
-    Time tmax(Time::create_sql(fmax).start_of_month());
-
-    // Clean the database
-    Query query("reset_datafile", m_db);
-    query.compile("DELETE FROM md WHERE file = ?");
-    query.bind(1, file);
-    query.step();
-
-    // Clean affected summary cache
-    scache.invalidate(tmin, tmax);
-}
-
-void WContents::vacuum()
+void WIndex::vacuum()
 {
     m_db.exec("PRAGMA journal_mode = TRUNCATE");
     if (m_uniques)
@@ -1015,14 +991,6 @@ void WContents::vacuum()
     m_db.exec("ANALYZE");
     m_db.exec("PRAGMA journal_mode = PERSIST");
 }
-
-void WContents::flush()
-{
-    // Not needed for index data consistency, but we need it to ensure file
-    // timestamps are consistent at this point.
-    m_db.checkpoint();
-}
-#endif
 
 }
 }

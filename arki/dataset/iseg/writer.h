@@ -53,6 +53,8 @@ class Checker : public segmented::Checker
 protected:
     std::shared_ptr<const iseg::Config> m_config;
 
+    void list_segments(std::function<void(const std::string& relpath)> dest);
+
     /// Return a (shared) instance of the Segment for the given relative pathname
     Segment* file(const Metadata& md, const std::string& format);
 

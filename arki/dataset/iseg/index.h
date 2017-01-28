@@ -150,13 +150,13 @@ public:
 	/// Return the number of items currently indexed by this index
 	size_t count() const;
 
-    /**
-     * Send the metadata of all data items inside a file to the given consumer
-     */
-    void scan_file(const std::string& relname, metadata_dest_func consumer, const std::string& orderBy = "offset") const;
-
     bool segment_timespan(const std::string& relname, core::Time& start_time, core::Time& end_time) const override;
 #endif
+
+    /**
+     * Send the metadata of all data items known by the index
+     */
+    void scan(metadata_dest_func consumer, const std::string& order_by="offset") const;
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func dest);
 #if 0
@@ -274,22 +274,17 @@ public:
      */
     void remove(const std::string& relname, off_t ofs);
 
-	/**
-	 * Remove all entries from the index
-	 */
-	void reset();
-
-	/**
-	 * Remove all entries from the index that are related to the given data file
-	 */
-	void reset(const std::string& datafile);
-
-	/// Tidy up the database and reclaim deleted space
-	void vacuum();
-
     /// Flush the journal contents to the main database
     void flush();
 #endif
+
+    /**
+     * Remove all entries from the index
+     */
+    void reset();
+
+    /// Tidy up the database and reclaim deleted space
+    void vacuum();
 };
 
 }
