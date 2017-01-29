@@ -1,6 +1,7 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
 #include "arki/dataset/time.h"
+#include "arki/dataset/reporter.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
@@ -26,17 +27,13 @@ namespace {
 template<class Data>
 struct FixtureWriter : public DatasetTest
 {
-    using DatasetTest::DatasetTest;
-
     Data td;
 
-    void test_setup()
-    {
-        DatasetTest::test_setup(R"(
+    FixtureWriter(const std::string& cfg_instance=std::string())
+        : DatasetTest(R"(
             step = daily
             unique = product, area, reftime
-        )");
-    }
+        )" + cfg_instance) {}
 
     bool smallfiles() const
     {
@@ -207,6 +204,30 @@ this->add_method("import_with_hung_reader", [](Fixture& f) {
 
     metadata::Collection mdc1(*f.config().create_reader(), Matcher());
     wassert(actual(mdc1.size()) == 2u);
+});
+
+this->add_method("repack_during_read", [](Fixture& f) {
+    auto orig_data = f.td.earliest_element().md.getData();
+
+    f.reset_test("step=yearly");
+    f.import_all(f.td);
+
+    auto reader = f.dataset_config()->create_reader();
+    reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+        {
+            auto checker = f.dataset_config()->create_checker();
+            dataset::NullReporter rep;
+            try {
+                checker->repack(rep, true, dataset::Checker::TEST_MISCHIEF_SHUFFLE);
+            } catch (std::exception& e) {
+                wassert(actual(e.what()).contains("database is locked"));
+            }
+        }
+
+        auto data = md->getData();
+        wassert(actual(data == orig_data).istrue());
+        return false;
+    });
 });
 
 }
