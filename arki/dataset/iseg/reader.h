@@ -18,7 +18,7 @@ protected:
     index::SummaryCache scache;
 
     /// List all existing segments matched by the reftime part of matcher
-    void list_segments(const Matcher& matcher, std::function<void(const std::string& relpath)> dest);
+    bool list_segments(const Matcher& matcher, std::function<bool(const std::string& relpath)> dest);
 
     /**
      * Compute the summary for the given month, and output it to \a

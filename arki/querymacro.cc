@@ -165,9 +165,10 @@ void Querymacro::query_data(const dataset::DataQuery& q, metadata_dest_func dest
     q.lua_push_table(*L, -1);
 
     // Push consumer C closure
+    shared_ptr<sort::Stream> sorter;
     if (q.sorter)
     {
-        shared_ptr<sort::Stream> sorter(new sort::Stream(*q.sorter, dest));
+        sorter.reset(new sort::Stream(*q.sorter, dest));
         dest = [sorter](unique_ptr<Metadata> md) { return sorter->add(move(md)); };
     }
 
@@ -181,6 +182,8 @@ void Querymacro::query_data(const dataset::DataQuery& q, metadata_dest_func dest
         lua_pop(*L, 1);
         throw std::runtime_error("cannot run queryData function: " + error);
     }
+
+    if (sorter) sorter->flush();
 }
 
 void Querymacro::query_summary(const Matcher& matcher, Summary& summary)

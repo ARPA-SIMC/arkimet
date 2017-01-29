@@ -283,6 +283,9 @@ struct Fixture
     // dataset, but not all of it
     unsigned selective_days_since() const;
     void finalise_init();
+
+    // Return the element with the earliest reftime
+    Element& earliest_element();
 };
 
 struct GRIBData : Fixture

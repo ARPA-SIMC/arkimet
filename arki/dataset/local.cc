@@ -244,10 +244,10 @@ void LocalChecker::release_lock()
     lock->release();
 }
 
-void LocalChecker::repack(dataset::Reporter& reporter, bool writable)
+void LocalChecker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
     if (hasArchive())
-        archive().repack(reporter, writable);
+        archive().repack(reporter, writable, test_flags);
 }
 
 void LocalChecker::check(dataset::Reporter& reporter, bool fix, bool quick)

@@ -91,11 +91,16 @@ public:
     {
         hasInterval = sorter.interval() != Compare::NONE;
     }
-    ~Stream();
 
     bool add(std::unique_ptr<Metadata> md);
 
-    void flush();
+    /**
+     * Send all currently buffered data to next_dest.
+     *
+     * Returns true if next_dest always returned true, false if sending was
+     * interrupted because of next_dest returning false.
+     */
+    bool flush();
 
 private:
     Stream(const Stream&);

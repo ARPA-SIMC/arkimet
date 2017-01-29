@@ -158,7 +158,13 @@ public:
      */
     void scan(metadata_dest_func consumer, const std::string& order_by="offset") const;
 
-    void query_data(const dataset::DataQuery& q, metadata_dest_func dest);
+    /**
+     * Query data sending the results to the given consumer.
+     *
+     * Returns true if dest returned true all the time, false if generation
+     * stopped because dest returned false.
+     */
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest);
 #if 0
     bool query_summary(const Matcher& m, Summary& summary) override;
 #endif

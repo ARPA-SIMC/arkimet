@@ -359,10 +359,10 @@ void ArchivesChecker::removeAll(Reporter& reporter, bool writable)
     });
 }
 
-void ArchivesChecker::repack(dataset::Reporter& reporter, bool writable)
+void ArchivesChecker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
     archives->iter([&](Checker& a) {
-        a.repack(reporter, writable);
+        a.repack(reporter, writable, test_flags);
     });
 }
 

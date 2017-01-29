@@ -349,6 +349,10 @@ struct Checker : public dataset::Base
 {
     using Base::Base;
 
+    enum {
+        TEST_MISCHIEF_SHUFFLE = 1,
+    };
+
     /**
      * Reset this dataset, removing all data, indices and caches
      */
@@ -359,8 +363,11 @@ struct Checker : public dataset::Base
      *
      * If writable is false, the process is simulated but no changes are
      * saved.
+     *
+     * test_flags are used to select alternate and usually undesirable repack
+     * behaviours during tests, and should always be 0 outside tests.
      */
-    virtual void repack(dataset::Reporter& reporter, bool writable=false) = 0;
+    virtual void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) = 0;
 
     /**
      * Check the dataset for errors, logging status to the given file.

@@ -280,7 +280,7 @@ Checker::Checker(std::shared_ptr<const ondisk2::Config> config)
 std::string Checker::type() const { return "ondisk2"; }
 
 void Checker::removeAll(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::removeAll(reporter, writable); release_lock(); }
-void Checker::repack(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::repack(reporter, writable); release_lock(); }
+void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags) { acquire_lock(); IndexedChecker::repack(reporter, writable, test_flags); release_lock(); }
 
 void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {

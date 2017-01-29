@@ -145,7 +145,7 @@ public:
     const Config& config() const override = 0;
     segment::SegmentManager& segment_manager();
 
-    void repack(dataset::Reporter& reporter, bool writable=false) override;
+    void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
 
     /**

@@ -968,6 +968,17 @@ unsigned Fixture::selective_days_since() const
     return tests::days_since(selective_cutoff.ye, selective_cutoff.mo, selective_cutoff.da);
 }
 
+Element& Fixture::earliest_element()
+{
+    Element* res = nullptr;
+
+    for (auto& e: test_data)
+        if (!res || *e.md.get(TYPE_REFTIME) < *res->md.get(TYPE_REFTIME))
+            res = &e;
+
+    return *res;
+}
+
 Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour)
 {
     Metadata md;

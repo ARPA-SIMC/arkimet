@@ -155,7 +155,8 @@ bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         // This generates filenames relative to the metadata
         // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
         scan::scan(absdir, *i, fixed_dest);
-        sorter.flush();
+        if (!sorter.flush())
+            return false;
     }
 
     return true;

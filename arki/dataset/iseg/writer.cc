@@ -487,10 +487,10 @@ void Checker::check_issue51(dataset::Reporter& reporter, bool fix)
 }
 
 
-void Checker::repack(dataset::Reporter& reporter, bool writable)
+void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
     acquire_lock();
-    segmented::Checker::repack(reporter, writable);
+    segmented::Checker::repack(reporter, writable, test_flags);
     release_lock();
 }
 

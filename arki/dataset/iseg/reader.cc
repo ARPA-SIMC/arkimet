@@ -32,13 +32,15 @@ bool Reader::is_dataset(const std::string& dir)
     return true;
 }
 
-void Reader::list_segments(const Matcher& matcher, std::function<void(const std::string& relpath)> dest)
+bool Reader::list_segments(const Matcher& matcher, std::function<bool(const std::string& relpath)> dest)
 {
     vector<string> seg_relpaths;
     config().step().list_segments(config().path, config().format, matcher, [&](std::string&& s) { seg_relpaths.emplace_back(move(s)); });
     std::sort(seg_relpaths.begin(), seg_relpaths.end());
     for (const auto& relpath: seg_relpaths)
-        dest(relpath);
+        if (!dest(relpath))
+            return false;
+    return true;
 }
 
 void Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
@@ -47,7 +49,7 @@ void Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 
     list_segments(q.matcher, [&](const std::string& relpath) {
         RIndex idx(m_config, relpath);
-        idx.query_data(q, dest);
+        return idx.query_data(q, dest);
     });
 }
 
@@ -56,6 +58,7 @@ void Reader::summary_from_indices(const Matcher& matcher, Summary& summary)
     list_segments(matcher, [&](const std::string& relpath) {
         RIndex idx(m_config, relpath);
         idx.query_summary_from_db(matcher, summary);
+        return true;
     });
 }
 

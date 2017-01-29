@@ -150,11 +150,6 @@ unique_ptr<Compare> Compare::parse(const std::string& expr)
     }
 }
 
-Stream::~Stream()
-{
-    flush();
-}
-
 void Stream::setEndOfPeriod(const types::Reftime& rt)
 {
     Time begin = rt.period_begin();
@@ -195,21 +190,28 @@ bool Stream::add(unique_ptr<Metadata> m)
     return true;
 }
 
-void Stream::flush()
+bool Stream::flush()
 {
-    if (buffer.empty()) return;
+    if (buffer.empty()) return true;
+    bool res = true;
     std::stable_sort(buffer.begin(), buffer.end(), STLCompare(sorter));
     for (vector<Metadata*>::iterator i = buffer.begin(); i != buffer.end(); ++i)
     {
         unique_ptr<Metadata> md(*i);
         *i = 0;
-        if (!next_dest(move(md))) break;
+        if (!next_dest(move(md)))
+        {
+            res = false;
+            break;
+        }
     }
 
     // Delete all leftover metadata, if any
     for (vector<Metadata*>::iterator i = buffer.begin(); i != buffer.end(); ++i)
         delete *i;
     buffer.clear();
+
+    return res;
 }
 
 }

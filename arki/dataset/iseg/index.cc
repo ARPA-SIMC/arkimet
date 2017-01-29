@@ -416,7 +416,7 @@ void Index::build_md(Query& q, Metadata& md) const
     }
 }
 
-void Index::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Index::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     string query = "SELECT m.offset, m.size, m.notes, m.reftime";
 
@@ -431,7 +431,7 @@ void Index::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     } catch (NotFound) {
         // If one of the subqueries did not find any match, we can directly
         // return true here, as we are not going to get any result
-        return;
+        return true;
     }
 
     query += " ORDER BY m.reftime";
@@ -467,7 +467,7 @@ void Index::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     if (q.sorter) mdbuf.sort(*q.sorter);
 
     // pass it to consumer
-    mdbuf.move_to(dest);
+    return mdbuf.move_to(dest);
 
 //fprintf(stderr, "POSTQ %zd\n", mdbuf.size());
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());

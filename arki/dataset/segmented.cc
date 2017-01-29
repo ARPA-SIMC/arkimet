@@ -272,7 +272,7 @@ void Checker::removeAll(dataset::Reporter& reporter, bool writable)
     // TODO:    archive().removeAll(reporter, writable);
 }
 
-void Checker::repack(dataset::Reporter& reporter, bool writable)
+void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
     const string& root = config().path;
 

@@ -278,6 +278,21 @@ this->add_method("locked", [](Fixture& f) {
     rds->query_bytes(bq, out);
 });
 
+this->add_method("interrupted_read", [](Fixture& f) {
+    auto orig_data = f.td.earliest_element().md.getData();
+
+    unsigned count = 0;
+    auto reader = f.dataset_config()->create_reader();
+    reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+        auto data = md->getData();
+        wassert(actual(data == orig_data).istrue());
+        ++count;
+        return false;
+    });
+
+    wassert(actual(count) == 1);
+});
+
 }
 
 }
