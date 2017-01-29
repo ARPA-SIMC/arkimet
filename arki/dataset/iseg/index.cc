@@ -446,8 +446,6 @@ bool Index::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     metadata::Collection mdbuf;
     string last_fname;
 
-    Pending p = begin_transaction();
-
     // Limited scope for mdq, so we finalize the query before starting to
     // emit results
     {
@@ -475,8 +473,6 @@ bool Index::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 
     // pass it to consumer
     bool res = mdbuf.move_to(dest);
-
-    p.commit();
 
 //fprintf(stderr, "POSTQ %zd\n", mdbuf.size());
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
@@ -774,8 +770,6 @@ RIndex::RIndex(std::shared_ptr<const iseg::Config> config, const std::string& da
     m_db.open(index_pathname);
     setup_pragmas();
     init_others();
-
-    //scache.openRO();
 }
 
 
@@ -798,8 +792,6 @@ WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& da
         init_db();
     } else
         init_others();
-
-    //scache.openRW();
 }
 
 void WIndex::init_db()
@@ -858,18 +850,6 @@ void WIndex::compile_insert()
     m_replace.compile("INSERT OR REPLACE INTO md (offset, size, notes, reftime" + un_ot + ")"
                   " VALUES (?, ?, ?, ?" + placeholders + ")");
 }
-
-#if 0
-void WContents::initQueries()
-{
-    Contents::initQueries();
-
-    compile_insert();
-
-    // Precompile remove query
-    m_delete.compile("DELETE FROM md WHERE id=?");
-}
-#endif
 
 void WIndex::bind_insert(Query& q, const Metadata& md, uint64_t ofs, char* timebuf)
 {
@@ -963,14 +943,14 @@ void WIndex::reset()
 
 void WIndex::vacuum()
 {
-    m_db.exec("PRAGMA journal_mode = TRUNCATE");
+    //m_db.exec("PRAGMA journal_mode = TRUNCATE");
     if (m_uniques)
         m_db.exec("delete from mduniq where id not in (select uniq from md)");
     if (m_others)
         m_db.exec("delete from mdother where id not in (select other from md)");
     m_db.exec("VACUUM");
     m_db.exec("ANALYZE");
-    m_db.exec("PRAGMA journal_mode = PERSIST");
+    //m_db.exec("PRAGMA journal_mode = PERSIST");
 }
 
 }

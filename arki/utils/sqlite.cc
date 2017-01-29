@@ -279,8 +279,8 @@ void OneShotQuery::initQueries()
 
 void OneShotQuery::operator()()
 {
-	m_db.exec(m_query);
-	
+    m_db.exec(m_query);
+
 #if 0
 	// One day someone will tell me how come I can't precompile a BEGIN
 

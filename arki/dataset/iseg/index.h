@@ -113,6 +113,8 @@ public:
 
     const iseg::Config& config() const { return *m_config; }
 
+    utils::sqlite::SQLiteDB& db() { return m_db; }
+
     /**
      * Set of metadata types that make a metadata unique
      */
