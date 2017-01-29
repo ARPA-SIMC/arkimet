@@ -748,6 +748,8 @@ struct BaseShardStep : public ShardStep
             return shared_ptr<Step>(new SubMonthly(year));
         else if (type == Yearly::name())
             return shared_ptr<Step>(new Yearly());
+        else if (type == Single::name())
+            return shared_ptr<Step>(new Single());
         else
             throw std::runtime_error("step '" + type + "' is not supported.  Valid values are daily, weekly, and monthly.");
     }
@@ -765,6 +767,25 @@ struct BaseShardStep : public ShardStep
         }
         std::sort(res.begin(), res.end());
         return res;
+    }
+};
+
+struct ShardSingle : public BaseShardStep
+{
+    using BaseShardStep::BaseShardStep;
+
+    static const char* name() { return "single"; }
+
+    std::string shard_path(const core::Time& time) const override
+    {
+        return "all";
+    }
+
+    std::pair<core::Time, core::Time> shard_span(const std::string& shard_path) const override
+    {
+        if (shard_path != "all")
+            return make_pair(core::Time(0, 0, 0), core::Time(0, 0, 0));
+        return make_pair(core::Time::create_lowerbound(1000), core::Time::create_upperbound(99999));
     }
 };
 
