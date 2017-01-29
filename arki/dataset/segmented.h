@@ -176,7 +176,7 @@ public:
      *
      * @returns The number of bytes freed on disk with this operation
      */
-    virtual size_t repackSegment(const std::string& relpath) = 0;
+    virtual size_t repackSegment(const std::string& relpath, unsigned test_flags=0) = 0;
 
     /**
      * Remove the file from the dataset

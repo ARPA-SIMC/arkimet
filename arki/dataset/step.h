@@ -41,29 +41,22 @@ struct Files;
  */
 class Dirs
 {
-protected:
+public:
     const std::string& root;
     const std::string& format;
 
-    virtual bool parse(const char* name, int& value) const = 0;
-    virtual std::unique_ptr<types::reftime::Period> to_period(int value) const = 0;
-    virtual std::unique_ptr<Files> make_files(const std::string& name, int value) const = 0;
-
-public:
     Dirs(const std::string& root, const std::string& format);
 
     /**
      * Generate all the matching file-containing directories under this one.
      */
-    void list(const Matcher& m, std::function<void(std::unique_ptr<Files>)> dest) const;
+    virtual void list(const Matcher& m, std::function<void(std::unique_ptr<Files>)> dest) const = 0;
 
     /**
      * Return the Reftime periods of the first and last segment under this
      * directory.
      */
-    void extremes(std::unique_ptr<types::reftime::Period>& first, std::unique_ptr<types::reftime::Period>& last) const;
-
-    friend class Files;
+    virtual void extremes(std::unique_ptr<types::reftime::Period>& first, std::unique_ptr<types::reftime::Period>& last) const = 0;
 };
 
 /**
@@ -76,26 +69,23 @@ protected:
     std::string relpath;
     int value;
 
-    virtual std::unique_ptr<utils::Regexp> make_regexp() const = 0;
-    virtual std::unique_ptr<types::reftime::Period> to_period(const utils::Regexp& re) const = 0;
-
 public:
     Files(const Dirs& dirs, const std::string& relpath, int value);
 
     /**
      * List all matching segments in this directory, with paths relative to dirs.root
      */
-    void list(const Matcher& m, std::function<void(std::string&& relpath)> dest) const;
+    virtual void list(const Matcher& m, std::function<void(std::string&& relpath)> dest) const = 0;
 
     /**
      * Return the first segment in this directory, with path relative to dirs.root
      */
-    std::unique_ptr<types::reftime::Period> first() const;
+    virtual std::unique_ptr<types::reftime::Period> first() const = 0;
 
     /**
      * Return the last segment in this directory, with path relative to dirs.root
      */
-    std::unique_ptr<types::reftime::Period> last() const;
+    virtual std::unique_ptr<types::reftime::Period> last() const = 0;
 };
 
 }

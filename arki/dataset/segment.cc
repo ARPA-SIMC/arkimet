@@ -158,12 +158,12 @@ struct BaseSegmentManager : public SegmentManager
 
     virtual unique_ptr<Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
 
-    Pending repack(const std::string& relname, metadata::Collection& mds)
+    Pending repack(const std::string& relname, metadata::Collection& mds, unsigned test_flags=0)
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
         unique_ptr<Segment> maint(create_for_format(format, relname, absname));
-        return maint->repack(root, mds);
+        return maint->repack(root, mds, test_flags);
     }
 
     State check(dataset::Reporter& reporter, const std::string& ds, const std::string& relname, const metadata::Collection& mds, bool quick=true)

@@ -80,6 +80,11 @@ Index::~Index()
     delete m_others;
 }
 
+Pending Index::begin_transaction()
+{
+    return Pending(new SqliteTransaction(m_db));
+}
+
 std::set<types::Code> Index::available_other_tables() const
 {
     // See what metadata types are already handled by m_uniques,
@@ -441,6 +446,8 @@ bool Index::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     metadata::Collection mdbuf;
     string last_fname;
 
+    Pending p = begin_transaction();
+
     // Limited scope for mdq, so we finalize the query before starting to
     // emit results
     {
@@ -467,10 +474,13 @@ bool Index::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     if (q.sorter) mdbuf.sort(*q.sorter);
 
     // pass it to consumer
-    return mdbuf.move_to(dest);
+    bool res = mdbuf.move_to(dest);
+
+    p.commit();
 
 //fprintf(stderr, "POSTQ %zd\n", mdbuf.size());
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
+    return res;
 }
 
 #if 0
@@ -899,14 +909,9 @@ void WIndex::bind_insert(Query& q, const Metadata& md, uint64_t ofs, char* timeb
     }
 }
 
-Pending WIndex::begin_transaction()
-{
-    return Pending(new SqliteTransaction(m_db));
-}
-
 Pending WIndex::begin_exclusive_transaction()
 {
-    return Pending(new SqliteTransaction(m_db, true));
+    return Pending(new SqliteTransaction(m_db, "EXCLUSIVE"));
 }
 
 void WIndex::index(const Metadata& md, uint64_t ofs)

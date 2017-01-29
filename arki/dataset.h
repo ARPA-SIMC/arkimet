@@ -352,10 +352,6 @@ struct Checker : public dataset::Base
 {
     using Base::Base;
 
-    enum {
-        TEST_MISCHIEF_SHUFFLE = 1,
-    };
-
     /**
      * Reset this dataset, removing all data, indices and caches
      */

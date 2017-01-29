@@ -240,7 +240,8 @@ Pending Segment::repack(
         const std::string& relname,
         metadata::Collection& mds,
         Segment* make_repack_segment(const std::string&, const std::string&),
-        bool skip_validation)
+        bool skip_validation,
+        unsigned test_flags)
 {
     struct Rename : public Transaction
     {
@@ -284,6 +285,9 @@ Pending Segment::repack(
 
     // Create a writer for the temp file
     unique_ptr<Segment> writer(make_repack_segment(tmprelname, tmpabsname));
+
+    if (test_flags & TEST_MISCHIEF_MOVE_DATA)
+        writer->test_add_padding(1);
 
     // Fill the temp file with all the data in the right order
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)

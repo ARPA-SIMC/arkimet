@@ -38,6 +38,8 @@ static const unsigned SEGMENT_CORRUPTED   = 1 << 4; /// File is broken in a way 
 static const unsigned SEGMENT_ARCHIVE_AGE = 1 << 5; /// File is old enough to be archived
 static const unsigned SEGMENT_DELETE_AGE  = 1 << 6; /// File is old enough to be deleted
 
+static const unsigned TEST_MISCHIEF_MOVE_DATA = 1; /// During repack, move all data to a different location than it was before
+
 namespace segment {
 
 /**
@@ -217,7 +219,7 @@ public:
      *
      * The source metadata in mds will be updated to point to the new file.
      */
-    virtual Pending repack(const std::string& relname, metadata::Collection& mds) = 0;
+    virtual Pending repack(const std::string& relname, metadata::Collection& mds, unsigned test_flags=0) = 0;
 
     /**
      * Check the given file against its expected set of contents.
@@ -254,8 +256,16 @@ public:
  * directory with each data item in a different file, for formats like HDF5
  * that cannot be trivially concatenated in the same file.
  */
-struct Segment
+class Segment
 {
+protected:
+    /**
+     * Add padding data inside the segment.
+     *
+     * This is only used in unit tests.
+     */
+    virtual void test_add_padding(unsigned size) = 0;
+
 public:
     std::string relname;
     std::string absname;
@@ -305,7 +315,7 @@ public:
     virtual segment::State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
     virtual void truncate(size_t offset) = 0;
-    virtual Pending repack(const std::string& rootdir, metadata::Collection& mds) = 0;
+    virtual Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) = 0;
 
     virtual void validate(Metadata& md, const scan::Validator& v) = 0;
 };

@@ -49,7 +49,8 @@ public:
             const std::string& relname,
             metadata::Collection& mds,
             fd::Segment* make_repack_segment(const std::string&, const std::string&),
-            bool skip_validation=false);
+            bool skip_validation=false,
+            unsigned test_flags=0);
 };
 
 }

@@ -743,7 +743,7 @@ public:
 
     Pending test_writelock()
     {
-        return Pending(new SqliteTransaction(m_db, true));
+        return Pending(new SqliteTransaction(m_db, "EXCLUSIVE"));
     }
 
     void acquire(const std::string& relname, time_t mtime, const Summary& sum)

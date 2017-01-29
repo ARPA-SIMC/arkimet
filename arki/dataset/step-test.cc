@@ -51,6 +51,40 @@ inline const matcher::OR& mimpl(const Matcher& m)
 
 void Tests::register_tests() {
 
+add_method("single", [](Fixture& f) {
+    auto step = Step::create("single");
+
+    wassert(actual((*step)(f.time)) == "all");
+    ensure(step->pathMatches("all.test", mimpl(Matcher::parse("reftime:>2006"))));
+    ensure(step->pathMatches("all.test", mimpl(Matcher::parse("reftime:<=2008"))));
+
+    sys::mkdir_ifmissing("test_step/");
+    createFlagfile("test_step/all.grib");
+    createFlagfile("test_step/all.bufr");
+
+    vector<string> res;
+    step->list_segments("test_step", "grib", Matcher::parse("reftime:<2002"), [&](std::string&& s) { res.emplace_back(move(s)); });
+    std::sort(res.begin(), res.end());
+    wassert(actual(res.size()) == 1u);
+    wassert(actual(res[0]) == "all.grib");
+
+    res.clear();
+    step->list_segments("test_step", "grib", Matcher(), [&](std::string&& s) { res.emplace_back(move(s)); });
+    wassert(actual(res.size()) == 1u);
+
+    res.clear();
+    step->list_segments("test_step", "grib", Matcher::parse("origin:GRIB1,98"), [&](std::string&& s) { res.emplace_back(move(s)); });
+    wassert(actual(res.size()) == 1u);
+
+    std::unique_ptr<core::Time> begin;
+    std::unique_ptr<core::Time> until;
+    step->time_extremes("test_step", "grib", begin, until);
+    wassert(actual(begin.get()).istrue());
+    wassert(actual(until.get()).istrue());
+    wassert(actual(*begin) == core::Time(1000, 1, 1));
+    wassert(actual(*until) == core::Time(99999, 12, 31, 23, 59, 59));
+});
+
 add_method("yearly", [](Fixture& f) {
     auto step = Step::create("yearly");
 

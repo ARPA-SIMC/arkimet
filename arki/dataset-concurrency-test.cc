@@ -209,7 +209,7 @@ this->add_method("import_with_hung_reader", [](Fixture& f) {
 this->add_method("repack_during_read", [](Fixture& f) {
     auto orig_data = f.td.earliest_element().md.getData();
 
-    f.reset_test("step=yearly");
+    f.reset_test("step=single");
     f.import_all(f.td);
 
     auto reader = f.dataset_config()->create_reader();
@@ -218,7 +218,7 @@ this->add_method("repack_during_read", [](Fixture& f) {
             auto checker = f.dataset_config()->create_checker();
             dataset::NullReporter rep;
             try {
-                checker->repack(rep, true, dataset::Checker::TEST_MISCHIEF_SHUFFLE);
+                checker->repack(rep, true, dataset::TEST_MISCHIEF_MOVE_DATA);
             } catch (std::exception& e) {
                 wassert(actual(e.what()).contains("database is locked"));
             }

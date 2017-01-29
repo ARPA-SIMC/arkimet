@@ -1031,7 +1031,7 @@ Pending WContents::beginTransaction()
 
 Pending WContents::beginExclusiveTransaction()
 {
-    return Pending(new SqliteTransaction(m_db, true));
+    return Pending(new SqliteTransaction(m_db, "EXCLUSIVE"));
 }
 
 void WContents::index(const Metadata& md, const std::string& file, uint64_t ofs, int* id)

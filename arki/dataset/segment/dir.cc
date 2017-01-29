@@ -125,6 +125,27 @@ void SequenceFile::close()
     fd = -1;
 }
 
+void SequenceFile::test_add_padding(unsigned size)
+{
+    FdLock lock(pathname, fd);
+    uint64_t cur;
+
+    // Read the value in the sequence file
+    ssize_t count = pread(fd, &cur, sizeof(cur), 0);
+    if (count < 0)
+        throw_file_error(pathname, "cannot read sequence file");
+
+    if ((size_t)count < sizeof(cur))
+        cur = size;
+    else
+        cur += size;
+
+    // Write it out
+    count = pwrite(fd, &cur, sizeof(cur), 0);
+    if (count < 0)
+        throw_file_error(pathname, "cannot write sequence file");
+}
+
 std::pair<std::string, size_t> SequenceFile::next(const std::string& format)
 {
     FdLock lock(pathname, fd);
@@ -193,6 +214,12 @@ void Segment::open()
 void Segment::close()
 {
     seqfile.close();
+}
+
+void Segment::test_add_padding(unsigned size)
+{
+    open();
+    seqfile.test_add_padding(size);
 }
 
 size_t Segment::write_file(Metadata& md, File& fd)
@@ -440,7 +467,7 @@ void Segment::truncate(size_t offset)
     });
 }
 
-Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds)
+Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
     close();
 
@@ -507,6 +534,9 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds)
 
     // Create a writer for the temp dir
     unique_ptr<dir::Segment> writer(make_segment(format, tmprelname, tmpabsname));
+
+    if (test_flags & TEST_MISCHIEF_MOVE_DATA)
+        writer->test_add_padding(1);
 
     // Fill the temp file with all the data in the right order
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)

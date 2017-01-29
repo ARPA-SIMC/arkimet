@@ -12,6 +12,9 @@ namespace concat {
 
 class Segment : public fd::Segment
 {
+protected:
+    void test_add_padding(unsigned size) override;
+
 public:
     Segment(const std::string& relname, const std::string& absname);
 
@@ -20,7 +23,7 @@ public:
     Pending append(Metadata& md, off_t* ofs) override;
 
     State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
-    Pending repack(const std::string& rootdir, metadata::Collection& mds) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
 };
 
 class HoleSegment : public concat::Segment
@@ -31,7 +34,7 @@ public:
 
     void write(const std::vector<uint8_t>& buf) override;
 
-    Pending repack(const std::string& rootdir, metadata::Collection& mds) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
 };
 
 class OstreamWriter : public segment::OstreamWriter

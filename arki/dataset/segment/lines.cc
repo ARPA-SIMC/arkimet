@@ -81,6 +81,13 @@ Segment::Segment(const std::string& relname, const std::string& absname)
 {
 }
 
+void Segment::test_add_padding(unsigned size)
+{
+    open();
+    for (unsigned i = 0; i < size; ++i)
+        fd.write("\n", 1);
+}
+
 void Segment::write(const std::vector<uint8_t>& buf)
 {
     struct iovec todo[2] = {
@@ -166,10 +173,10 @@ static fd::Segment* make_repack_segment(const std::string& relname, const std::s
     return res.release();
 }
 
-Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds)
+Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
     close();
-    return fd::Segment::repack(rootdir, relname, mds, make_repack_segment);
+    return fd::Segment::repack(rootdir, relname, mds, make_repack_segment, false, test_flags);
 }
 
 OstreamWriter::OstreamWriter()

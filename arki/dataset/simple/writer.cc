@@ -191,7 +191,7 @@ void Checker::rescanSegment(const std::string& relpath)
 }
 
 
-size_t Checker::repackSegment(const std::string& relpath)
+size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
 {
     string pathname = str::joinpath(config().path, relpath);
 
@@ -203,7 +203,7 @@ size_t Checker::repackSegment(const std::string& relpath)
     mdc.sort();
 
     // Write out the data with the new order
-    Pending p_repack = segment_manager().repack(relpath, mdc);
+    Pending p_repack = segment_manager().repack(relpath, mdc, test_flags);
 
     // Strip paths from mds sources
     mdc.strip_source_paths();

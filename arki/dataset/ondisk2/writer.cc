@@ -398,7 +398,7 @@ void Checker::rescanSegment(const std::string& relpath)
 }
 
 
-size_t Checker::repackSegment(const std::string& relpath)
+size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
 {
     // Lock away writes and reads
     Pending p = idx->beginExclusiveTransaction();
@@ -409,7 +409,7 @@ size_t Checker::repackSegment(const std::string& relpath)
 
     metadata::Collection mds;
     idx->scan_file(relpath, mds.inserter_func(), "reftime, offset");
-    Pending p_repack = segment_manager().repack(relpath, mds);
+    Pending p_repack = segment_manager().repack(relpath, mds, test_flags);
 
     // Reindex mds
     idx->reset(relpath);

@@ -80,6 +80,13 @@ Segment::Segment(const std::string& relname, const std::string& absname)
 {
 }
 
+void Segment::test_add_padding(unsigned size)
+{
+    open();
+    for (unsigned i = 0; i < size; ++i)
+        fd.write("", 1);
+}
+
 off_t Segment::append(Metadata& md)
 {
     open();
@@ -156,9 +163,9 @@ static fd::Segment* make_repack_segment(const std::string& relname, const std::s
     res->truncate_and_open();
     return res.release();
 }
-Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds)
+Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
-    return fd::Segment::repack(rootdir, relname, mds, make_repack_segment);
+    return fd::Segment::repack(rootdir, relname, mds, make_repack_segment, false, test_flags);
 }
 
 static fd::Segment* make_repack_hole_segment(const std::string& relname, const std::string& absname)
@@ -167,10 +174,10 @@ static fd::Segment* make_repack_hole_segment(const std::string& relname, const s
     res->truncate_and_open();
     return res.release();
 }
-Pending HoleSegment::repack(const std::string& rootdir, metadata::Collection& mds)
+Pending HoleSegment::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
     close();
-    return fd::Segment::repack(rootdir, relname, mds, make_repack_hole_segment, true);
+    return fd::Segment::repack(rootdir, relname, mds, make_repack_hole_segment, true, test_flags);
 }
 
 OstreamWriter::OstreamWriter()

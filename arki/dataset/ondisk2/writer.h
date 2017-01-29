@@ -82,7 +82,7 @@ public:
 
     void rescanSegment(const std::string& relpath) override;
     void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
-    size_t repackSegment(const std::string& relpath) override;
+    size_t repackSegment(const std::string& relpath, unsigned test_flags=0) override;
     size_t removeSegment(const std::string& relpath, bool withData=false) override;
     void releaseSegment(const std::string& relpath, const std::string& destpath) override;
     size_t vacuum() override;

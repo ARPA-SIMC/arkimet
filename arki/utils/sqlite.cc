@@ -304,6 +304,10 @@ void OneShotQuery::operator()()
 #endif
 }
 
+Committer::Committer(SQLiteDB& db, const char* type)
+    : begin(db, "begin", type ? string("BEGIN ") + type : "BEGIN"),
+      commit(db, "commit", "COMMIT"),
+      rollback(db, "rollback", "ROLLBACK") {}
 
 void SqliteTransaction::commit()
 {

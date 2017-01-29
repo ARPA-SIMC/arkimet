@@ -366,11 +366,11 @@ void Checker<Config>::rescanSegment(const std::string& relpath)
 }
 
 template<typename Config>
-size_t Checker<Config>::repackSegment(const std::string& relpath)
+size_t Checker<Config>::repackSegment(const std::string& relpath, unsigned test_flags)
 {
     size_t pos = relpath.find('/');
     if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
-    return shard(relpath.substr(0, pos)).repackSegment(relpath.substr(pos + 1));
+    return shard(relpath.substr(0, pos)).repackSegment(relpath.substr(pos + 1), test_flags);
 }
 
 template<typename Config>

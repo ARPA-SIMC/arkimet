@@ -118,6 +118,9 @@ public:
      */
     std::set<types::Code> unique_codes() const;
 
+    /// Begin a transaction and return the corresponding Pending object
+    Pending begin_transaction();
+
 #if 0
     const std::string& pathname() const { return config().index_pathname; }
 
@@ -250,9 +253,6 @@ public:
 	 */
 	bool open();
 #endif
-
-    /// Begin a transaction and return the corresponding Pending object
-    Pending begin_transaction();
 
     /// Begin an EXCLUSIVE transaction and return the corresponding Pending object
     Pending begin_exclusive_transaction();
