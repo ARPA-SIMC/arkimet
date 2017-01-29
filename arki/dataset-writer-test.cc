@@ -12,9 +12,7 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/exceptions.h"
-#include "wibble/sys/childprocess.h"
 #include <sys/fcntl.h>
-#include <iostream>
 
 using namespace std;
 using namespace arki;
