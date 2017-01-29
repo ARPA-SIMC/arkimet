@@ -295,7 +295,7 @@ void Reader::set_post_query(Request& request, const dataset::DataQuery& q)
         request.post_data.add_string("style", "inline");
 }
 
-void Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     m_curl.reset();
 
@@ -304,6 +304,8 @@ void Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     request.set_method("POST");
     set_post_query(request, q);
     request.perform();
+
+    return !request.mdc.consumer_canceled();
 }
 
 void Reader::query_summary(const Matcher& matcher, Summary& summary)

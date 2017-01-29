@@ -171,14 +171,11 @@ void Merged::addDataset(Reader& ds)
     datasets.push_back(&ds);
 }
 
-void Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     // Handle the trivial case of only one dataset
     if (datasets.size() == 1)
-    {
-        datasets[0]->query_data(q, dest);
-        return;
-    }
+        return datasets[0]->query_data(q, dest);
 
     vector<MetadataReader> readers(datasets.size());
     vector<std::thread> threads;
@@ -197,6 +194,7 @@ void Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     if (!sorter)
         sorter = sort::Compare::parse("");
 
+    bool canceled = false;
     while (true)
     {
         const Metadata* minmd = 0;
@@ -213,7 +211,9 @@ void Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         }
         // When there's nothing more to read, we exit
         if (minmd == 0) break;
-        dest(readers[minmd_idx].mdbuf.pop());
+        if (!canceled)
+            if (!dest(readers[minmd_idx].mdbuf.pop()))
+                canceled = true;
     }
 
     // Collect all the results
@@ -231,6 +231,8 @@ void Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     }
     if (!errors.empty())
         throw_consistency_error("running metadata queries on multiple datasets", str::join("; ", errors.begin(), errors.end()));
+
+    return canceled;
 }
 
 void Merged::query_summary(const Matcher& matcher, Summary& summary)

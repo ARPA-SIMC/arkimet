@@ -26,11 +26,12 @@ IndexedReader::~IndexedReader()
     delete m_idx;
 }
 
-void IndexedReader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool IndexedReader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    LocalReader::query_data(q, dest);
-    if (!m_idx) return;
-    m_idx->query_data(q, dest);
+    if (!LocalReader::query_data(q, dest))
+        return false;
+    if (!m_idx) return true;
+    return m_idx->query_data(q, dest);
 }
 
 void IndexedReader::query_summary(const Matcher& matcher, Summary& summary)

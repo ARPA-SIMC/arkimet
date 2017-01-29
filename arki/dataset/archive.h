@@ -84,7 +84,7 @@ public:
     const ArchivesConfig& config() const override { return *m_config; }
 
     void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
-    void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
 };

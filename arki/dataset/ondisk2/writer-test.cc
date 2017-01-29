@@ -498,7 +498,7 @@ add_method("issue57", [](Fixture& f) {
 
     // Query back the data
     metadata::Collection queried(*f.makeOndisk2Reader(), Matcher());
-    wassert(actual(queried.size()) == 1);
+    wassert(actual(queried.size()) == 1u);
 
     // Delete the data
     {
@@ -508,7 +508,7 @@ add_method("issue57", [](Fixture& f) {
 
     // Query back the data
     metadata::Collection after_delete(*f.makeOndisk2Reader(), Matcher());
-    wassert(actual(after_delete.size()) == 0);
+    wassert(actual(after_delete.size()) == 0u);
 });
 
 }

@@ -25,7 +25,7 @@ public:
 
     const IndexedConfig& config() const override = 0;
 
-    void query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
 
     /**

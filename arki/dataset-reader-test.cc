@@ -290,7 +290,7 @@ this->add_method("interrupted_read", [](Fixture& f) {
         return false;
     });
 
-    wassert(actual(count) == 1);
+    wassert(actual(count) == 1u);
 });
 
 }

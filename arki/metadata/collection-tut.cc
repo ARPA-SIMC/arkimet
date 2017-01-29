@@ -65,10 +65,10 @@ def_test(1)
     for (Collection::const_iterator i = c.begin(); i != c.end(); ++i)
         (*i)->drop_cached_data();
 
-	// Ensure that all data can still be read
-	utils::acct::gzip_data_read_count.reset();
-	utils::acct::gzip_forward_seek_bytes.reset();
-	utils::acct::gzip_idx_reposition_count.reset();
+    // Ensure that all data can still be read
+    utils::acct::gzip_data_read_count.reset();
+    utils::acct::gzip_forward_seek_bytes.reset();
+    utils::acct::gzip_idx_reposition_count.reset();
     for (int i = 0; i < repeats; ++i)
     {
         const auto& b = c[i].getData();
@@ -84,10 +84,10 @@ def_test(1)
     for (Collection::const_iterator i = c.begin(); i != c.end(); ++i)
         (*i)->drop_cached_data();
 
-	// Try to read backwards to avoid sequential reads
-	utils::acct::gzip_data_read_count.reset();
-	utils::acct::gzip_forward_seek_bytes.reset();
-	utils::acct::gzip_idx_reposition_count.reset();
+    // Try to read backwards to avoid sequential reads
+    utils::acct::gzip_data_read_count.reset();
+    utils::acct::gzip_forward_seek_bytes.reset();
+    utils::acct::gzip_idx_reposition_count.reset();
     for (int i = repeats-1; i >= 0; --i)
     {
         const auto& b = c[i].getData();
@@ -102,10 +102,10 @@ def_test(1)
     for (Collection::const_iterator i = c.begin(); i != c.end(); ++i)
         (*i)->drop_cached_data();
 
-	// Read each other one
-	utils::acct::gzip_data_read_count.reset();
-	utils::acct::gzip_forward_seek_bytes.reset();
-	utils::acct::gzip_idx_reposition_count.reset();
+    // Read each other one
+    utils::acct::gzip_data_read_count.reset();
+    utils::acct::gzip_forward_seek_bytes.reset();
+    utils::acct::gzip_idx_reposition_count.reset();
     for (int i = 0; i < repeats; i += 2)
     {
         const auto& b = c[i].getData();

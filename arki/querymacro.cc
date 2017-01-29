@@ -153,9 +153,9 @@ dataset::Reader* Querymacro::dataset(const std::string& name)
     return i->second;
 }
 
-void Querymacro::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Querymacro::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    if (funcid_querydata == -1) return;
+    if (funcid_querydata == -1) return true;
 
     // Retrieve the Lua function registered for this
     lua_rawgeti(*L, LUA_REGISTRYINDEX, funcid_querydata);
@@ -183,7 +183,8 @@ void Querymacro::query_data(const dataset::DataQuery& q, metadata_dest_func dest
         throw std::runtime_error("cannot run queryData function: " + error);
     }
 
-    if (sorter) sorter->flush();
+    if (sorter) return sorter->flush();
+    return true;
 }
 
 void Querymacro::query_summary(const Matcher& matcher, Summary& summary)

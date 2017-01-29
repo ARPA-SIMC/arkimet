@@ -20,6 +20,7 @@ class Stream
     std::vector<uint8_t> buffer;
     enum { METADATA, DATA } state;
     size_t dataToGet;
+    bool canceled = false;
 
 	bool checkMetadata();
 	bool checkData();
@@ -28,6 +29,11 @@ class Stream
 public:
     Stream(metadata_dest_func consumer, const std::string& streamname)
         : consumer(consumer), streamname(streamname), state(METADATA) {}
+
+    /**
+     * Return true if the consumer canceled receiving data
+     */
+    bool consumer_canceled() const { return canceled; }
 
 	/**
 	 * Return the number of bytes that have not been processed yet

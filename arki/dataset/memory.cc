@@ -15,7 +15,7 @@ Memory::~Memory() {}
 
 std::string Memory::type() const { return "memory"; }
 
-void Memory::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest)
+bool Memory::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest)
 {
     if (q.sorter)
         sort(*q.sorter);
@@ -23,7 +23,9 @@ void Memory::query_data(const dataset::DataQuery& q, std::function<bool(std::uni
     for (const_iterator i = begin(); i != end(); ++i)
         if (q.matcher(**i))
             if (!dest(Metadata::create_copy(**i)))
-                break;
+                return false;
+
+    return true;
 }
 
 void Memory::query_summary(const Matcher& matcher, Summary& summary)

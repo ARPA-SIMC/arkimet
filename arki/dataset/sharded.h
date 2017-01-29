@@ -37,7 +37,7 @@ struct Config : public Base
 
     // Iterate all shards matching a matcher, in ascending time order,
     // generating their config
-    virtual void query_shards(const Matcher& matcher, std::function<void(const std::string& shard_relpath, std::shared_ptr<const dataset::Config>)>) const;
+    virtual bool query_shards(const Matcher& matcher, std::function<bool(const std::string& shard_relpath, std::shared_ptr<const dataset::Config>)>) const;
 
     bool relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const override;
 
@@ -58,7 +58,7 @@ public:
 
     const Config& config() const override { return *m_config; }
 
-    void query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
     void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) override;
 };

@@ -206,9 +206,12 @@ public:
 
     /**
      * Query the dataset using the given matcher, and sending the results to
-     * the given function
+     * the given function.
+     *
+     * Returns true if dest always returned true, false if iteration stopped
+     * because dest returned false.
      */
-    virtual void query_data(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
+    virtual bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
 
     /**
      * Add to summary the summary of the data that would be extracted with the

@@ -253,24 +253,24 @@ public:
 #endif
 
     /// Read all metadata from a buffer into the given consumer
-    static void read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& fname, metadata_dest_func dest);
+    static bool read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& fname, metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
-    static void read_file(const std::string& fname, metadata_dest_func dest);
+    static bool read_file(const std::string& fname, metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
-    static void read_file(const metadata::ReadContext& fname, metadata_dest_func dest);
+    static bool read_file(const metadata::ReadContext& fname, metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
-    static void read_file(int in, const metadata::ReadContext& file, metadata_dest_func mdc);
+    static bool read_file(int in, const metadata::ReadContext& file, metadata_dest_func mdc);
 
     /// Read all metadata from a file into the given consumer
-    static void read_file(NamedFileDescriptor& fd, metadata_dest_func mdc);
+    static bool read_file(NamedFileDescriptor& fd, metadata_dest_func mdc);
 
     /**
      * Read a metadata group into the given consumer
      */
-    static void read_group(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest);
+    static bool read_group(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest);
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Metadata

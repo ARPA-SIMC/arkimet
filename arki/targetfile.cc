@@ -204,9 +204,9 @@ TargetfileSpy::~TargetfileSpy()
 
 std::string TargetfileSpy::type() const { return ds.type(); }
 
-void TargetfileSpy::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool TargetfileSpy::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    ds.query_data(q, [&](unique_ptr<Metadata> md) {
+    return ds.query_data(q, [&](unique_ptr<Metadata> md) {
         redirect(*md);
         return dest(move(md));
     });
