@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <cstring>
 
 using namespace std;
 
@@ -19,6 +20,30 @@ namespace arki {
 namespace utils {
 
 namespace datareader {
+
+struct RLock
+{
+    sys::FileDescriptor& fd;
+    struct flock lock;
+
+    RLock(sys::FileDescriptor& fd, off_t start, off_t len)
+        : fd(fd)
+    {
+        memset(&lock, 0, sizeof(lock));
+        lock.l_type = F_RDLCK;
+        lock.l_whence = SEEK_SET;
+        lock.l_start = start;
+        lock.l_len = len;
+        fd.ofd_setlkw(lock);
+    }
+    ~RLock()
+    {
+        // TODO: consider a non-throwing setlk implementation to avoid throwing
+        // in destructors
+        lock.l_type = F_UNLCK;
+        fd.ofd_setlk(lock);
+    }
+};
 
 struct FileReader : public Reader
 {
@@ -43,12 +68,15 @@ public:
     {
         if (posix_fadvise(fd, ofs, size, POSIX_FADV_DONTNEED) != 0)
             nag::debug("fadvise on %s failed: %m", fd.name().c_str());
-        ssize_t res = fd.pread(buf, size, ofs);
-        if ((size_t)res != size)
         {
-            stringstream ss;
-            ss << fd.name() << ": read only " << res << "/" << size << " bytes at offset " << ofs;
-            throw std::runtime_error(ss.str());
+            RLock lock(fd, ofs, size);
+            ssize_t res = fd.pread(buf, size, ofs);
+            if ((size_t)res != size)
+            {
+                stringstream ss;
+                ss << fd.name() << ": read only " << res << "/" << size << " bytes at offset " << ofs;
+                throw std::runtime_error(ss.str());
+            }
         }
         acct::plain_data_read_count.incr();
         iotrace::trace_file(fd.name(), ofs, size, "read data");
