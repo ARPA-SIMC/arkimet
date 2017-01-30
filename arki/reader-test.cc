@@ -1,7 +1,6 @@
-#include "config.h"
+#include "reader.h"
 #include "arki/tests/tests.h"
 #include "arki/metadata/collection.h"
-#include "arki/utils/datareader.h"
 #include "arki/utils/sys.h"
 #include "arki/scan/any.h"
 #include <cstdlib>
@@ -24,7 +23,7 @@ void Tests::register_tests() {
 
 // Read an uncompressed file
 add_method("uncompressed", [] {
-    utils::DataReader dr;
+    reader::DataReader dr;
 
     vector<uint8_t> buf;
     buf.resize(7218);
@@ -40,7 +39,7 @@ add_method("uncompressed", [] {
 
 // Read an uncompressed file without index
 add_method("uncompressed_noidx", [] {
-    utils::DataReader dr;
+    reader::DataReader dr;
 
     sys::unlink_ifexists("testcompr.grib1");
     sys::unlink_ifexists("testcompr.grib1.gz");
@@ -61,7 +60,7 @@ add_method("uncompressed_noidx", [] {
 
 // Read an uncompressed file with the index
 add_method("uncompressed_idx", [] {
-    utils::DataReader dr;
+    reader::DataReader dr;
 
     sys::unlink_ifexists("testcompr.grib1");
     sys::unlink_ifexists("testcompr.grib1.gz");
@@ -86,7 +85,7 @@ add_method("uncompressed_idx", [] {
 
 // Don't segfault on nonexisting files
 add_method("missing", [] {
-    utils::DataReader dr;
+    reader::DataReader dr;
     vector<uint8_t> buf(7218);
     sys::unlink_ifexists("test.grib1");
 	try {

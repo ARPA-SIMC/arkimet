@@ -1,5 +1,5 @@
-#ifndef ARKI_UTILS_DATAREADER_H
-#define ARKI_UTILS_DATAREADER_H
+#ifndef ARKI_READER_H
+#define ARKI_READER_H
 
 /// Generic interface to read data files
 #include <arki/libconfig.h>
@@ -8,9 +8,8 @@
 #include <sys/types.h>
 
 namespace arki {
-namespace utils {
+namespace reader {
 
-namespace datareader {
 struct Reader
 {
 public:
@@ -19,7 +18,6 @@ public:
 	virtual void read(off_t ofs, size_t size, void* buf) = 0;
 	virtual bool is(const std::string& fname) = 0;
 };
-}
 
 /**
  * Read data from files, keeping the last file open.
@@ -29,8 +27,8 @@ public:
 class DataReader
 {
 protected:
-	datareader::Reader* last;
-	
+    reader::Reader* last;
+
 public:
 	DataReader();
 	~DataReader();

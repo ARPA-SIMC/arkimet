@@ -2,13 +2,13 @@
 #include "source/blob.h"
 #include "source/inline.h"
 #include "source/url.h"
-#include <arki/binary.h>
-#include <arki/exceptions.h>
-#include <arki/types/utils.h>
-#include <arki/utils/lua.h>
-#include <arki/utils/datareader.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
+#include "arki/reader.h"
+#include "arki/binary.h"
+#include "arki/exceptions.h"
+#include "arki/types/utils.h"
+#include "arki/utils/lua.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
 #include <sstream>
 
 #define CODE TYPE_SOURCE

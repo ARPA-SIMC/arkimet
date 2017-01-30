@@ -1,13 +1,13 @@
-#include <arki/utils/datareader.h>
-#include <arki/utils.h>
-#include <arki/utils/accounting.h>
-#include <arki/utils/compress.h>
-#include <arki/utils/files.h>
-#include <arki/utils/string.h>
-#include <arki/utils/sys.h>
-#include <arki/utils/gzip.h>
-#include <arki/nag.h>
-#include <arki/iotrace.h>
+#include "reader.h"
+#include "arki/utils.h"
+#include "arki/utils/accounting.h"
+#include "arki/utils/compress.h"
+#include "arki/utils/files.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/gzip.h"
+#include "arki/nag.h"
+#include "arki/iotrace.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -15,11 +15,10 @@
 #include <cstring>
 
 using namespace std;
+using namespace arki::utils;
 
 namespace arki {
-namespace utils {
-
-namespace datareader {
+namespace reader {
 
 struct RLock
 {
@@ -231,8 +230,6 @@ public:
     }
 };
 
-}
-
 DataReader::DataReader() : last(0) {}
 DataReader::~DataReader()
 {
@@ -257,14 +254,14 @@ void DataReader::read(const std::string& fname, off_t ofs, size_t size, void* bu
         if (st.get())
         {
             if (S_ISDIR(st->st_mode))
-                last = new datareader::DirReader(fname);
+                last = new reader::DirReader(fname);
             else
-                last = new datareader::FileReader(fname);
+                last = new reader::FileReader(fname);
         }
         else if (sys::exists(fname + ".gz.idx"))
-            last = new datareader::IdxZlibFileReader(fname);
+            last = new reader::IdxZlibFileReader(fname);
         else if (sys::exists(fname + ".gz"))
-            last = new datareader::ZlibFileReader(fname);
+            last = new reader::ZlibFileReader(fname);
         else
         {
             stringstream ss;

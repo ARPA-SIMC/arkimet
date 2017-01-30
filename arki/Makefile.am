@@ -106,6 +106,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		metadata/stream.h \
 		metadata/tests.h \
 		metadata/test-generator.h \
+		reader.h \
 		nag.h \
 		postprocess.h \
 		querymacro.h \
@@ -153,7 +154,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/accounting.h \
 		utils/gzip.h \
 		utils/compress.h \
-		utils/datareader.h \
 		utils/files.h \
 		utils/geosdef.h \
 		utils/geosfwd.h \
@@ -375,7 +375,6 @@ endif
 if DEVEL_DO_METADATA
 libarkimet_la_SOURCES += \
 		utils/h5.cc \
-		utils/datareader.cc \
 		utils/compress.cc \
 		utils/sqlite.cc \
 		metadata.cc \
@@ -384,6 +383,7 @@ libarkimet_la_SOURCES += \
 		metadata/clusterer.cc \
 		metadata/consumer.cc \
 		metadata/test-generator.cc \
+		reader.cc \
 		summary/stats.cc \
 		summary/intern.cc \
 		summary/table.cc \
@@ -400,7 +400,6 @@ libarkimet_la_SOURCES += \
 tests_arki_test_SOURCES += \
 		metadata/tests.cc \
 		matcher/tests.cc \
-		utils/datareader-test.cc \
 		utils/compress-tut.cc \
 		utils/sqlite-tut.cc \
 		sort-test.cc \
@@ -412,6 +411,7 @@ tests_arki_test_SOURCES += \
 		metadata/clusterer-tut.cc \
 		metadata/stream-tut.cc \
 		metadata/test-generator-tut.cc \
+		reader-test.cc \
 		summary-test.cc \
 		summary/intern-tut.cc \
 		summary/table-tut.cc \

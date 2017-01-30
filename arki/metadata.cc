@@ -11,7 +11,7 @@
 #include "emitter/memory.h"
 #include "iotrace.h"
 #include "scan/any.h"
-#include "utils/datareader.h"
+#include "reader.h"
 #include "utils/string.h"
 #include "utils/yaml.h"
 #include <unistd.h>
@@ -32,7 +32,7 @@ namespace arki {
 
 namespace metadata {
 
-thread_local arki::utils::DataReader dataReader;
+thread_local arki::reader::DataReader dataReader;
 
 
 ReadContext::ReadContext() {}
