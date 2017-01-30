@@ -40,6 +40,16 @@ public:
      */
     void append_unlock(off_t wrpos);
 
+    /**
+     * Lock the whole segment for repacking
+     */
+    void repack_lock();
+
+    /**
+     * Unlock the segment after repacking
+     */
+    void repack_unlock();
+
     virtual void write(const std::vector<uint8_t>& buf);
     void fdtruncate(off_t pos);
     State check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);

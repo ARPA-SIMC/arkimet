@@ -185,6 +185,28 @@ void Segment::append_unlock(off_t wrpos)
     fd.ofd_setlk(lock);
 }
 
+void Segment::repack_lock()
+{
+    struct flock lock;
+    memset(&lock, 0, sizeof(lock));
+    lock.l_type = F_WRLCK;
+    lock.l_whence = SEEK_SET;
+    lock.l_start = 0;
+    lock.l_len = 0;
+    fd.ofd_setlkw(lock);
+}
+
+void Segment::repack_unlock()
+{
+    struct flock lock;
+    memset(&lock, 0, sizeof(lock));
+    lock.l_type = F_UNLCK;
+    lock.l_whence = SEEK_SET;
+    lock.l_start = 0;
+    lock.l_len = 0;
+    fd.ofd_setlk(lock);
+}
+
 void Segment::fdtruncate(off_t pos)
 {
     open();
