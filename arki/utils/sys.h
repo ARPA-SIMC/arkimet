@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <fcntl.h>
 
 namespace arki {
 namespace utils {
@@ -230,6 +231,32 @@ public:
     void ftruncate(off_t length);
 
     MMap mmap(size_t length, int prot, int flags, off_t offset=0);
+
+    /**
+     * Open file description locks F_OFD_SETLK operation.
+     *
+     * Returns true if the lock was obtained, false if acquiring the lock
+     * failed.
+     */
+    bool ofd_setlk(struct ::flock&);
+
+    /**
+     * Open file description locks F_OFD_SETLKW operation.
+     *
+     * Returns true if the lock was obtained, false if a signal was received
+     * while waiting for the lock.
+     *
+     * If retry_on_signal is true, acquiring the lock is automatically retried
+     * in case of signals, and the function always returns true.
+     */
+    bool ofd_setlkw(struct ::flock&, bool retry_on_signal=true);
+
+    /**
+     * Open file description locks F_OFD_GETLK operation.
+     *
+     * Returns true if the lock would have been obtainable, false if not.
+     */
+    bool ofd_getlk(struct ::flock&);
 
     operator int() const { return fd; }
 };
