@@ -1,27 +1,29 @@
 #include "config.h"
-#include <arki/tests/tests.h>
-#include <arki/metadata/collection.h>
-#include <arki/utils/datareader.h>
-#include <arki/utils/sys.h>
-#include <arki/scan/any.h>
+#include "arki/tests/tests.h"
+#include "arki/metadata/collection.h"
+#include "arki/utils/datareader.h"
+#include "arki/utils/sys.h"
+#include "arki/scan/any.h"
 #include <cstdlib>
 #include <sstream>
 #include <iostream>
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::utils;
 using namespace arki::tests;
 
-struct arki_utils_datareader_shar {
-};
-TESTGRP(arki_utils_datareader);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_utils_datareader");
+
+void Tests::register_tests() {
 
 // Read an uncompressed file
-template<> template<>
-void to::test<1>()
-{
+add_method("uncompressed", [] {
     utils::DataReader dr;
 
     vector<uint8_t> buf;
@@ -34,12 +36,10 @@ void to::test<1>()
 	dr.read("inbound/test.grib1", 7218, 34960, buf.data());
 	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
 	ensure_equals(string((const char*)buf.data() + 34956, 4), "7777");
-}
+});
 
 // Read an uncompressed file without index
-template<> template<>
-void to::test<2>()
-{
+add_method("uncompressed_noidx", [] {
     utils::DataReader dr;
 
     sys::unlink_ifexists("testcompr.grib1");
@@ -57,12 +57,10 @@ void to::test<2>()
 	dr.read("testcompr.grib1", 7218, 34960, buf.data());
 	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
 	ensure_equals(string((const char*)buf.data() + 34956, 4), "7777");
-}
+});
 
 // Read an uncompressed file with the index
-template<> template<>
-void to::test<3>()
-{
+add_method("uncompressed_idx", [] {
     utils::DataReader dr;
 
     sys::unlink_ifexists("testcompr.grib1");
@@ -84,12 +82,10 @@ void to::test<3>()
 	dr.read("testcompr.grib1", 7218, 34960, buf.data());
 	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
 	ensure_equals(string((const char*)buf.data() + 34956, 4), "7777");
-}
+});
 
 // Don't segfault on nonexisting files
-template<> template<>
-void to::test<4>()
-{
+add_method("missing", [] {
     utils::DataReader dr;
     vector<uint8_t> buf(7218);
     sys::unlink_ifexists("test.grib1");
@@ -99,6 +95,8 @@ void to::test<4>()
 	} catch (std::exception& e) {
 		ensure(string(e.what()).find("file does not exist") != string::npos);
 	}
+});
+
 }
 
 }

@@ -400,7 +400,7 @@ libarkimet_la_SOURCES += \
 tests_arki_test_SOURCES += \
 		metadata/tests.cc \
 		matcher/tests.cc \
-		utils/datareader-tut.cc \
+		utils/datareader-test.cc \
 		utils/compress-tut.cc \
 		utils/sqlite-tut.cc \
 		sort-test.cc \
