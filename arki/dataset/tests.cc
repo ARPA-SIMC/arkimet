@@ -359,7 +359,6 @@ void DatasetTest::import_all_packed(const testdata::Fixture& fixture)
     }
 }
 
-
 }
 
 MaintenanceCollector::MaintenanceCollector()

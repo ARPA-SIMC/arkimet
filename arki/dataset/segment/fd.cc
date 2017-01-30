@@ -185,28 +185,6 @@ void Segment::append_unlock(off_t wrpos)
     fd.ofd_setlk(lock);
 }
 
-void Segment::repack_lock()
-{
-    struct flock lock;
-    memset(&lock, 0, sizeof(lock));
-    lock.l_type = F_WRLCK;
-    lock.l_whence = SEEK_SET;
-    lock.l_start = 0;
-    lock.l_len = 0;
-    fd.ofd_setlkw(lock);
-}
-
-void Segment::repack_unlock()
-{
-    struct flock lock;
-    memset(&lock, 0, sizeof(lock));
-    lock.l_type = F_UNLCK;
-    lock.l_whence = SEEK_SET;
-    lock.l_start = 0;
-    lock.l_len = 0;
-    fd.ofd_setlk(lock);
-}
-
 void Segment::fdtruncate(off_t pos)
 {
     open();
@@ -365,13 +343,15 @@ Pending Segment::repack(
 {
     struct Rename : public Transaction
     {
+        sys::File src;
         std::string tmpabsname;
         std::string absname;
         bool fired;
 
         Rename(const std::string& tmpabsname, const std::string& absname)
-            : tmpabsname(tmpabsname), absname(absname), fired(false)
+            : src(absname, O_RDWR), tmpabsname(tmpabsname), absname(absname), fired(false)
         {
+            repack_lock();
         }
 
         virtual ~Rename()
@@ -379,12 +359,46 @@ Pending Segment::repack(
             if (!fired) rollback();
         }
 
+        /**
+         * Lock the whole segment for repacking
+         */
+        void repack_lock()
+        {
+            struct flock lock;
+            memset(&lock, 0, sizeof(lock));
+            lock.l_type = F_WRLCK;
+            lock.l_whence = SEEK_SET;
+            lock.l_start = 0;
+            lock.l_len = 0;
+            src.ofd_setlkw(lock);
+        }
+
+        /**
+         * Unlock the segment after repacking
+         */
+        void repack_unlock()
+        {
+            struct flock lock;
+            memset(&lock, 0, sizeof(lock));
+            lock.l_type = F_UNLCK;
+            lock.l_whence = SEEK_SET;
+            lock.l_start = 0;
+            lock.l_len = 0;
+            src.ofd_setlk(lock);
+        }
+
         virtual void commit()
         {
             if (fired) return;
             // Rename the data file to its final name
-            if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
-                throw_system_error("cannot rename " + tmpabsname + " to " + absname);
+            try {
+                if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
+                    throw_system_error("cannot rename " + tmpabsname + " to " + absname);
+            } catch (...) {
+                repack_unlock();
+                throw;
+            }
+            repack_unlock();
             fired = true;
         }
 
@@ -392,6 +406,7 @@ Pending Segment::repack(
         {
             if (fired) return;
             unlink(tmpabsname.c_str());
+            repack_unlock();
             fired = true;
         }
     };
@@ -403,6 +418,9 @@ Pending Segment::repack(
     // Get a validator for this file
     const scan::Validator& validator = scan::Validator::by_filename(absname);
 
+    Rename* rename;
+    Pending p(rename = new Rename(tmpabsname, absname));
+
     // Create a writer for the temp file
     unique_ptr<Segment> writer(make_repack_segment(tmprelname, tmpabsname));
 
@@ -413,7 +431,7 @@ Pending Segment::repack(
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         // Read the data
-        const auto& buf = (*i)->getData();
+        const auto& buf = (*i)->getData(rename->src, false);
         // Validate it
         if (!skip_validation)
             validator.validate_buf(buf.data(), buf.size());
@@ -429,7 +447,7 @@ Pending Segment::repack(
     // Close the temp file
     writer.release();
 
-    return new Rename(tmpabsname, absname);
+    return p;
 }
 
 }

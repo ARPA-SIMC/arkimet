@@ -201,6 +201,16 @@ public:
     /// Get the raw data described by this metadata
     const std::vector<uint8_t>& getData();
 
+    /**
+     * Get the raw data described by this metadata, read from the given file
+     * descriptor. It is up to the caller to ensure that fd is open on the
+     * right file.
+     *
+     * If rlock is true, the file descriptor will be locked for reading during
+     * I/O
+     */
+    const std::vector<uint8_t>& getData(NamedFileDescriptor& fd, bool rlock=true);
+
     /// Return True if getData can be called without causing I/O
     bool has_cached_data() const;
 

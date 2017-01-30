@@ -520,6 +520,46 @@ const vector<uint8_t>& Metadata::getData()
     }
 }
 
+const vector<uint8_t>& Metadata::getData(NamedFileDescriptor& fd, bool rlock)
+{
+    // First thing, try and return it from cache
+    if (!m_data.empty()) return m_data;
+
+    // If we don't have it in cache, try reconstructing it from the Value metadata
+    if (const Value* value = get<types::Value>())
+        m_data = arki::scan::reconstruct(m_source->format, *this, value->buffer);
+    if (!m_data.empty()) return m_data;
+
+    // If we don't have it in cache and we don't have a source, we cannot know
+    // how to load it: give up
+    if (!m_source) throw runtime_error("cannot retrieve data: data source is not defined");
+
+    // Load it according to source
+    switch (m_source->style())
+    {
+        case Source::INLINE:
+            throw runtime_error("cannot retrieve data: data is not found on INLINE metadata");
+        case Source::URL:
+            throw runtime_error("cannot retrieve data: data is not accessible for URL metadata");
+        case Source::BLOB:
+        {
+            if (rlock)
+                throw std::runtime_error("cannot retrieve data: read locking in this method is not yet implemented");
+            // Do not directly use m_data so that if dataReader.read throws an
+            // exception, m_data remains empty.
+            const source::Blob& s = sourceBlob();
+            vector<uint8_t> buf;
+            buf.resize(s.size);
+            if (fd.pread(buf.data(), s.size, s.offset) != s.size)
+                throw runtime_error("cannot retrieve data: only partial data has been read");
+            m_data = move(buf);
+            return m_data;
+        }
+        default:
+            throw runtime_error("cannot retrieve data: unsupported source style");
+    }
+}
+
 void Metadata::drop_cached_data()
 {
     if (/*const source::Blob* blob =*/ dynamic_cast<const source::Blob*>(m_source))
