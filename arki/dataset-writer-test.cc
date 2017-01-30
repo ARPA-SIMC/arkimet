@@ -53,7 +53,7 @@ class Tests : public FixtureTestCase<DatasetTest>
 Tests test_writer_ondisk2("arki_dataset_writer_ondisk2", "type=ondisk2\n");
 Tests test_writer_simple_plain("arki_dataset_writer_simple_plain", "type=simple\nindex_type=plain\n");
 Tests test_writer_simple_sqlite("arki_dataset_writer_simple_sqlite", "type=simple\nindex_type=sqlite");
-Tests test_writer_iseg("arki_dataset_writer_simple_sqlite", "type=iseg\nformat=grib");
+Tests test_writer_iseg("arki_dataset_writer_iseg", "type=iseg\nformat=grib");
 
 template<class Data>
 class TestsWriter : public FixtureTestCase<FixtureWriter<Data>>
