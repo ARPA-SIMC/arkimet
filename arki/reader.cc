@@ -274,5 +274,64 @@ void DataReader::read(const std::string& fname, off_t ofs, size_t size, void* bu
     last->read(ofs, size, buf);
 }
 
+std::shared_ptr<Reader> Registry::instantiate(const std::string& abspath)
+{
+    // Open the new file
+    std::unique_ptr<struct stat> st = sys::stat(abspath);
+    if (st.get())
+    {
+        if (S_ISDIR(st->st_mode))
+            return make_shared<reader::DirReader>(abspath);
+        else
+            return make_shared<reader::FileReader>(abspath);
+    }
+    else if (sys::exists(abspath + ".gz.idx"))
+        return make_shared<reader::IdxZlibFileReader>(abspath);
+    else if (sys::exists(abspath + ".gz"))
+        return make_shared<reader::ZlibFileReader>(abspath);
+    else
+    {
+        stringstream ss;
+        ss << "file " << abspath << " not found";
+        throw std::runtime_error(ss.str());
+    }
+}
+
+std::shared_ptr<Reader> Registry::reader(const std::string& abspath)
+{
+    auto res = cache.find(abspath);
+    if (res == cache.end())
+    {
+        auto reader = instantiate(abspath);
+        cache.insert(make_pair(abspath, reader));
+        return reader;
+    }
+
+    if (res->second.expired())
+    {
+        auto reader = instantiate(abspath);
+        res->second = reader;
+        return reader;
+    }
+
+    return res->second.lock();
+}
+
+void Registry::cleanup()
+{
+    auto i = cache.begin();
+    while (i != cache.end())
+    {
+        if (i->second.expired())
+        {
+            auto next = i;
+            ++next;
+            cache.erase(i);
+            i = next;
+        } else
+            ++i;
+    }
+}
+
 }
 }

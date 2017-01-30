@@ -17,7 +17,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_utils_datareader");
+} test("arki_reader");
 
 void Tests::register_tests() {
 
