@@ -286,9 +286,9 @@ void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_f
     if (writable)
         // No safeguard against a deleted index: we catch that in the
         // constructor and create the don't pack flagfile
-        repacker.reset(new maintenance::RealRepacker(reporter, *this));
+        repacker.reset(new maintenance::RealRepacker(reporter, *this, test_flags));
     else
-        repacker.reset(new maintenance::MockRepacker(reporter, *this));
+        repacker.reset(new maintenance::MockRepacker(reporter, *this, test_flags));
 
     try {
         State state = scan(reporter);

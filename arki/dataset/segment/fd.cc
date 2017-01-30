@@ -346,12 +346,12 @@ Pending Segment::repack(
         sys::File src;
         std::string tmpabsname;
         std::string absname;
-        bool fired;
+        bool fired = false;
 
-        Rename(const std::string& tmpabsname, const std::string& absname)
-            : src(absname, O_RDWR), tmpabsname(tmpabsname), absname(absname), fired(false)
+        Rename(const std::string& tmpabsname, const std::string& absname, bool lock_nowait)
+            : src(absname, O_RDWR), tmpabsname(tmpabsname), absname(absname)
         {
-            repack_lock();
+            repack_lock(lock_nowait);
         }
 
         virtual ~Rename()
@@ -362,7 +362,7 @@ Pending Segment::repack(
         /**
          * Lock the whole segment for repacking
          */
-        void repack_lock()
+        void repack_lock(bool lock_nowait)
         {
             struct flock lock;
             memset(&lock, 0, sizeof(lock));
@@ -370,7 +370,13 @@ Pending Segment::repack(
             lock.l_whence = SEEK_SET;
             lock.l_start = 0;
             lock.l_len = 0;
-            src.ofd_setlkw(lock);
+            if (lock_nowait)
+            {
+                if (!src.ofd_setlk(lock))
+                    throw std::runtime_error("segment to repack is locked");
+            }
+            else
+                src.ofd_setlkw(lock);
         }
 
         /**
@@ -419,7 +425,7 @@ Pending Segment::repack(
     const scan::Validator& validator = scan::Validator::by_filename(absname);
 
     Rename* rename;
-    Pending p(rename = new Rename(tmpabsname, absname));
+    Pending p(rename = new Rename(tmpabsname, absname, test_flags & TEST_MISCHIEF_LOCK_NOWAIT));
 
     // Create a writer for the temp file
     unique_ptr<Segment> writer(make_repack_segment(tmprelname, tmpabsname));

@@ -53,8 +53,8 @@ void Dumper::operator()(const std::string& file, segment::State state)
 
 // Agent
 
-Agent::Agent(dataset::Reporter& reporter, segmented::Checker& w)
-    : reporter(reporter), w(w), lineStart(true)
+Agent::Agent(dataset::Reporter& reporter, segmented::Checker& w, unsigned test_flags)
+    : reporter(reporter), w(w), lineStart(true), test_flags(test_flags)
 {
 }
 
@@ -160,7 +160,7 @@ void RealRepacker::operator()(const std::string& relpath, segment::State state)
     if (state.has(SEGMENT_DIRTY) && !state.has(SEGMENT_DELETE_AGE))
     {
         // Repack the file
-        size_t saved = w.repackSegment(relpath);
+        size_t saved = w.repackSegment(relpath, test_flags);
         reporter.segment_repack(w.name(), relpath, "repacked (" + std::to_string(saved) + " freed)");
         ++m_count_packed;
         m_count_freed += saved;

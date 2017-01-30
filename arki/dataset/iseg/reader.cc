@@ -3,8 +3,10 @@
 #include "index.h"
 #include "arki/dataset/step.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 #include "arki/summary.h"
 #include <algorithm>
+#include <cstring>
 
 using namespace std;
 using namespace arki::utils;
@@ -49,6 +51,17 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 
     return list_segments(q.matcher, [&](const std::string& relpath) {
         RIndex idx(m_config, relpath);
+
+        // Lock the segment for reading
+        File src(str::joinpath(config().path, relpath), O_RDONLY);
+        struct flock lock;
+        memset(&lock, 0, sizeof(lock));
+        lock.l_type = F_RDLCK;
+        lock.l_whence = SEEK_SET;
+        lock.l_start = 0;
+        lock.l_len = 0;
+        src.ofd_setlkw(lock);
+
         return idx.query_data(q, dest);
     });
 }

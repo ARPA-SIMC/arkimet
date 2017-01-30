@@ -39,6 +39,7 @@ static const unsigned SEGMENT_ARCHIVE_AGE = 1 << 5; /// File is old enough to be
 static const unsigned SEGMENT_DELETE_AGE  = 1 << 6; /// File is old enough to be deleted
 
 static const unsigned TEST_MISCHIEF_MOVE_DATA = 1; /// During repack, move all data to a different location than it was before
+static const unsigned TEST_MISCHIEF_LOCK_NOWAIT = 2; /// During repack, fail if locks cannot be obtained
 
 namespace segment {
 
