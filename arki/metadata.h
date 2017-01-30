@@ -20,6 +20,10 @@ struct Blob;
 }
 }
 
+namespace reader {
+struct Reader;
+}
+
 namespace metadata {
 
 struct ReadContext
@@ -66,6 +70,12 @@ protected:
 
     /// Source of this data
     types::Source* m_source;
+
+    /**
+     * If the metadata refers to data that is accessible from a file, this is
+     * the reader used to load the data
+     */
+    std::shared_ptr<reader::Reader> m_reader;
 
     /// Inline data, or cached version of previously read data
     std::vector<uint8_t> m_data;
@@ -228,6 +238,16 @@ public:
      * by a getData() call or a set_cached_data() call.
      */
     void drop_cached_data();
+
+    /**
+     * If this metadata is keeping a pointer to a reader to access its data,
+     * drop the pointer to the reader.
+     *
+     * This can be used to disconnect the metadata from an existing open file
+     * in some special operations, like replacing a file with its compressed
+     * version.
+     */
+    void drop_cached_reader();
 
     /// Read the data and inline them in the metadata
     void makeInline();

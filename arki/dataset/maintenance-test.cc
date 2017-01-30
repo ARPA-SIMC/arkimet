@@ -214,5 +214,7 @@ Tests test_simple_sqlite("arki_dataset_maintenance_simple_sqlite", "type=simple\
 Tests test_ondisk2_dir("arki_dataset_maintenance_ondisk2_dirs", "type=ondisk2\nsegments=dir\n");
 Tests test_simple_plain_dir("arki_dataset_maintenance_simple_plain_dirs", "type=simple\nindex_type=plain\nsegments=dir\n");
 Tests test_simple_sqlite_dir("arki_dataset_maintenance_simple_sqlite_dirs", "type=simple\nindex_type=sqlite\nsegments=dir\n");
+Tests test_iseg("arki_dataset_maintenance_iseg", "type=iseg\nformat=grib\n");
+Tests test_iseg_dir("arki_dataset_maintenance_iseg_dir", "type=iseg\nformat=grib\nsegments=dir\n");
 
 }

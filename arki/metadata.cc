@@ -32,7 +32,7 @@ namespace arki {
 
 namespace metadata {
 
-thread_local arki::reader::DataReader dataReader;
+arki::reader::Registry readers;
 
 
 ReadContext::ReadContext() {}
@@ -88,6 +88,7 @@ Metadata& Metadata::operator=(const Metadata& o)
     m_source = o.m_source ? o.m_source->clone() : 0;
     m_notes = o.m_notes;
     m_data = o.m_data;
+    m_reader = o.m_reader;
     return *this;
 }
 
@@ -140,6 +141,14 @@ void Metadata::set_source(std::unique_ptr<types::Source>&& s)
 {
     delete m_source;
     m_source = s.release();
+
+    if (const source::Blob* src = dynamic_cast<source::Blob*>(m_source))
+    {
+        string abspath = src->absolutePathname();
+        if (!m_reader || !m_reader->is(abspath))
+            m_reader = metadata::readers.reader(abspath);
+    } else
+        m_reader.reset();
 }
 
 void Metadata::set_source_inline(const std::string& format, std::vector<uint8_t>&& buf)
@@ -152,6 +161,7 @@ void Metadata::unset_source()
 {
     delete m_source;
     m_source = 0;
+    m_reader.reset();
 }
 
 std::vector<types::Note> Metadata::notes() const
@@ -509,9 +519,11 @@ const vector<uint8_t>& Metadata::getData()
             // Do not directly use m_data so that if dataReader.read throws an
             // exception, m_data remains empty.
             const source::Blob& s = sourceBlob();
+            if (!m_reader)
+                m_reader = metadata::readers.reader(s.absolutePathname());
             vector<uint8_t> buf;
             buf.resize(s.size);
-            metadata::dataReader.read(s.absolutePathname(), s.offset, s.size, buf.data());
+            m_reader->read(s.offset, s.size, buf.data());
             m_data = move(buf);
             return m_data;
         }
@@ -569,6 +581,11 @@ void Metadata::drop_cached_data()
     }
 }
 
+void Metadata::drop_cached_reader()
+{
+    m_reader.reset();
+}
+
 bool Metadata::has_cached_data() const
 {
     return !m_data.empty();
@@ -617,7 +634,7 @@ size_t Metadata::data_size() const
 
 void Metadata::flushDataReaders()
 {
-    metadata::dataReader.flush();
+    metadata::readers.cleanup();
 }
 
 bool Metadata::read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& file, metadata_dest_func dest)

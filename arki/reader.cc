@@ -230,50 +230,6 @@ public:
     }
 };
 
-DataReader::DataReader() : last(0) {}
-DataReader::~DataReader()
-{
-    flush();
-}
-
-void DataReader::flush()
-{
-    delete last;
-    last = 0;
-}
-
-void DataReader::read(const std::string& fname, off_t ofs, size_t size, void* buf)
-{
-	if (!last || !last->is(fname))
-	{
-		// Close the last file
-		flush();
-
-        // Open the new file
-        std::unique_ptr<struct stat> st = sys::stat(fname);
-        if (st.get())
-        {
-            if (S_ISDIR(st->st_mode))
-                last = new reader::DirReader(fname);
-            else
-                last = new reader::FileReader(fname);
-        }
-        else if (sys::exists(fname + ".gz.idx"))
-            last = new reader::IdxZlibFileReader(fname);
-        else if (sys::exists(fname + ".gz"))
-            last = new reader::ZlibFileReader(fname);
-        else
-        {
-            stringstream ss;
-            ss << "file " << fname << " not found";
-            throw std::runtime_error(ss.str());
-        }
-    }
-
-    // Read the data
-    last->read(ofs, size, buf);
-}
-
 std::shared_ptr<Reader> Registry::instantiate(const std::string& abspath)
 {
     // Open the new file

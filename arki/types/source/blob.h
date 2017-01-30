@@ -4,11 +4,6 @@
 #include <arki/types/source.h>
 
 namespace arki {
-
-namespace utils {
-struct DataReader;
-}
-
 namespace types {
 namespace source {
 

@@ -407,9 +407,9 @@ tests_arki_test_SOURCES += \
 		validator-test.cc \
 		bbox-test.cc \
 		metadata-test.cc \
-		metadata/collection-tut.cc \
+		metadata/collection-test.cc \
 		metadata/clusterer-tut.cc \
-		metadata/stream-tut.cc \
+		metadata/stream-test.cc \
 		metadata/test-generator-tut.cc \
 		reader-test.cc \
 		summary-test.cc \

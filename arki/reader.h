@@ -40,24 +40,6 @@ public:
     void cleanup();
 };
 
-/**
- * Read data from files, keeping the last file open.
- *
- * This optimizes for sequentially reading data from files.
- */
-class DataReader
-{
-protected:
-    reader::Reader* last;
-
-public:
-	DataReader();
-	~DataReader();
-
-	void read(const std::string& fname, off_t ofs, size_t size, void* buf);
-	void flush();
-};
-
 }
 }
 #endif

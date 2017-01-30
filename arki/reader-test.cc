@@ -23,23 +23,24 @@ void Tests::register_tests() {
 
 // Read an uncompressed file
 add_method("uncompressed", [] {
-    reader::DataReader dr;
+    reader::Registry readers;
+    auto dr = readers.reader("inbound/test.grib1");
 
     vector<uint8_t> buf;
     buf.resize(7218);
-    dr.read("inbound/test.grib1", 0, 7218, buf.data());
-	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
-	ensure_equals(string((const char*)buf.data() + 7214, 4), "7777");
+    dr->read(0, 7218, buf.data());
+    wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
+    wassert(actual(string((const char*)buf.data() + 7214, 4)) == "7777");
 
-	buf.resize(34960);
-	dr.read("inbound/test.grib1", 7218, 34960, buf.data());
-	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
-	ensure_equals(string((const char*)buf.data() + 34956, 4), "7777");
+    buf.resize(34960);
+    dr->read(7218, 34960, buf.data());
+    wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
+    wassert(actual(string((const char*)buf.data() + 34956, 4)) == "7777");
 });
 
 // Read an uncompressed file without index
 add_method("uncompressed_noidx", [] {
-    reader::DataReader dr;
+    reader::Registry readers;
 
     sys::unlink_ifexists("testcompr.grib1");
     sys::unlink_ifexists("testcompr.grib1.gz");
@@ -48,19 +49,20 @@ add_method("uncompressed_noidx", [] {
 
     vector<uint8_t> buf;
     buf.resize(7218);
-    dr.read("testcompr.grib1", 0, 7218, buf.data());
-	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
-	ensure_equals(string((const char*)buf.data() + 7214, 4), "7777");
+    auto dr = readers.reader("testcompr.grib1");
+    dr->read(0, 7218, buf.data());
+    wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
+    wassert(actual(string((const char*)buf.data() + 7214, 4)) == "7777");
 
-	buf.resize(34960);
-	dr.read("testcompr.grib1", 7218, 34960, buf.data());
-	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
-	ensure_equals(string((const char*)buf.data() + 34956, 4), "7777");
+    buf.resize(34960);
+    dr->read(7218, 34960, buf.data());
+    wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
+    wassert(actual(string((const char*)buf.data() + 34956, 4)) == "7777");
 });
 
 // Read an uncompressed file with the index
 add_method("uncompressed_idx", [] {
-    reader::DataReader dr;
+    reader::Registry readers;
 
     sys::unlink_ifexists("testcompr.grib1");
     sys::unlink_ifexists("testcompr.grib1.gz");
@@ -73,27 +75,30 @@ add_method("uncompressed_idx", [] {
 
     vector<uint8_t> buf;
     buf.resize(7218);
-    dr.read("testcompr.grib1", 0, 7218, buf.data());
-	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
-	ensure_equals(string((const char*)buf.data() + 7214, 4), "7777");
+    auto dr = readers.reader("testcompr.grib1");
+    dr->read(0, 7218, buf.data());
+    wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
+    wassert(actual(string((const char*)buf.data() + 7214, 4)) == "7777");
 
-	buf.resize(34960);
-	dr.read("testcompr.grib1", 7218, 34960, buf.data());
-	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
-	ensure_equals(string((const char*)buf.data() + 34956, 4), "7777");
+    buf.resize(34960);
+    dr->read(7218, 34960, buf.data());
+    wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
+    wassert(actual(string((const char*)buf.data() + 34956, 4)) == "7777");
 });
 
 // Don't segfault on nonexisting files
 add_method("missing", [] {
-    reader::DataReader dr;
+    reader::Registry readers;
+
     vector<uint8_t> buf(7218);
     sys::unlink_ifexists("test.grib1");
-	try {
-		dr.read("test.grib1", 0, 7218, buf.data());
-		ensure(false);
-	} catch (std::exception& e) {
-		ensure(string(e.what()).find("file does not exist") != string::npos);
-	}
+    try {
+        auto dr = readers.reader("test.grib1");
+        dr->read(0, 7218, buf.data());
+        ensure(false);
+    } catch (std::exception& e) {
+        ensure(string(e.what()).find("file does not exist") != string::npos);
+    }
 });
 
 }
