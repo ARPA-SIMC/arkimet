@@ -554,7 +554,7 @@ tests_arki_test_SOURCES += \
 		dataset/index/manifest-test.cc \
 		dataset/index/aggregate-tut.cc \
 		dataset/index/summarycache-tut.cc \
-		dataset/index/contents-tut.cc \
+		dataset/index/contents-test.cc \
 		dataset/step-test.cc \
 		dataset/local-test.cc \
 		dataset/segmented-test.cc \
