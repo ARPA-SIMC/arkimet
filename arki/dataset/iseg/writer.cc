@@ -68,7 +68,7 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 
     off_t ofs;
     Pending p_df = writer->append(md, &ofs);
-    auto source = types::source::Blob::create(md.source().format, config().path, writer->relname, ofs, md.data_size());
+    auto source = types::source::Blob::create_unlocked(md.source().format, config().path, writer->relname, ofs, md.data_size());
 
     try {
         idx->index(md, ofs);
@@ -76,6 +76,7 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
         scache.invalidate(md);
         p_df.commit();
         p_idx.commit();
+        source->lock();
         md.set_source(move(source));
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
@@ -96,7 +97,7 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 
     off_t ofs;
     Pending p_df = writer->append(md, &ofs);
-    auto source = types::source::Blob::create(md.source().format, config().path, writer->relname, ofs, md.data_size());
+    auto source = types::source::Blob::create_unlocked(md.source().format, config().path, writer->relname, ofs, md.data_size());
 
     try {
         idx->replace(md, ofs);
@@ -104,6 +105,7 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
         scache.invalidate(md);
         p_df.commit();
         p_idx.commit();
+        source->lock();
         md.set_source(move(source));
         return ACQ_OK;
     } catch (std::exception& e) {
@@ -121,7 +123,7 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 
     off_t ofs;
     Pending p_df = writer->append(md, &ofs);
-    auto source = types::source::Blob::create(md.source().format, config().path, writer->relname, ofs, md.data_size());
+    auto source = types::source::Blob::create_unlocked(md.source().format, config().path, writer->relname, ofs, md.data_size());
 
     try {
         // Try to acquire without replacing
@@ -130,6 +132,7 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
         scache.invalidate(md);
         p_df.commit();
         p_idx.commit();
+        source->lock();
         md.set_source(move(source));
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
@@ -174,6 +177,7 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
         idx->replace(md, ofs);
         p_df.commit();
         p_idx.commit();
+        source->lock();
         md.set_source(move(source));
         return ACQ_OK;
     } catch (std::exception& e) {

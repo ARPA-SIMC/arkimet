@@ -50,13 +50,19 @@ bool Lock::ofd_setlkw(sys::NamedFileDescriptor& fd, bool retry_on_signal)
 bool Lock::ofd_getlk(sys::NamedFileDescriptor& fd) { return fd.ofd_getlk(*this); }
 
 Lock::TestNowait::TestNowait()
+    : orig(test_nowait)
 {
     test_nowait = true;
 }
 
 Lock::TestNowait::~TestNowait()
 {
-    test_nowait = false;
+    test_nowait = orig;
+}
+
+void Lock::test_set_nowait_default(bool value)
+{
+    test_nowait = value;
 }
 
 }

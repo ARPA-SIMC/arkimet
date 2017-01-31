@@ -27,9 +27,17 @@ struct Lock : public ::flock
      */
     struct TestNowait
     {
+        bool orig;
         TestNowait();
         ~TestNowait();
     };
+
+    /**
+     * Set the default behaviour for the test nowait feature: when set to true,
+     * if the lock is busy ofd_setlkw will throw an exception instead of
+     * waiting.
+     */
+    static void test_set_nowait_default(bool value);
 };
 
 }
