@@ -445,13 +445,13 @@ add_method("pack_vm2", [](Fixture& f) {
                 writer->remove(mdc_imported[i]);
     }
 
-    // Ensure the archive has items to pack
+    // Ensure the dataset has items to pack
     {
         arki::tests::MaintenanceResults expected(false, 2);
         expected.by_type[DatasetTest::COUNTED_DIRTY] = 2;
         wassert(actual(*f.makeOndisk2Checker()).maintenance(expected));
 
-        ensure(!sys::exists("testds/.archive"));
+        wassert(actual_file("testds/.archive").not_exists());
     }
 
     // Perform packing and check that things are still ok afterwards

@@ -35,6 +35,18 @@ public:
     std::shared_ptr<Reader> reader(const std::string& abspath);
 
     /**
+     * Remove from the cache the reader for the given file, if it exists.
+     *
+     * Calls to reader(abspath) after invalidation will instantiate a new
+     * reader, even if some reader for this file is still used by some existing
+     * metadata.
+     *
+     * This is useful to make sure that after a repack, new metadata will refer
+     * to the new file.
+     */
+    void invalidate(const std::string& abspath);
+
+    /**
      * Remove expired entries from the cache
      */
     void cleanup();

@@ -20,34 +20,11 @@ using namespace arki::utils;
 namespace arki {
 namespace reader {
 
-struct RLock
-{
-    sys::FileDescriptor& fd;
-    struct flock lock;
-
-    RLock(sys::FileDescriptor& fd, off_t start, off_t len)
-        : fd(fd)
-    {
-        memset(&lock, 0, sizeof(lock));
-        lock.l_type = F_RDLCK;
-        lock.l_whence = SEEK_SET;
-        lock.l_start = start;
-        lock.l_len = len;
-        fd.ofd_setlkw(lock);
-    }
-    ~RLock()
-    {
-        // TODO: consider a non-throwing setlk implementation to avoid throwing
-        // in destructors
-        lock.l_type = F_UNLCK;
-        fd.ofd_setlk(lock);
-    }
-};
-
 struct FileReader : public Reader
 {
 public:
     sys::File fd;
+    struct flock lock;
 
     FileReader(const std::string& fname)
         : fd(fname, O_RDONLY
@@ -56,6 +33,20 @@ public:
 #endif
             )
     {
+        memset(&lock, 0, sizeof(lock));
+        lock.l_type = F_RDLCK;
+        lock.l_whence = SEEK_SET;
+        lock.l_start = 0;
+        lock.l_len = 0;
+        fd.ofd_setlkw(lock);
+    }
+
+    ~FileReader()
+    {
+        // TODO: consider a non-throwing setlk implementation to avoid throwing
+        // in destructors
+        lock.l_type = F_UNLCK;
+        fd.ofd_setlk(lock);
     }
 
     bool is(const std::string& fname)
@@ -67,15 +58,12 @@ public:
     {
         if (posix_fadvise(fd, ofs, size, POSIX_FADV_DONTNEED) != 0)
             nag::debug("fadvise on %s failed: %m", fd.name().c_str());
+        ssize_t res = fd.pread(buf, size, ofs);
+        if ((size_t)res != size)
         {
-            RLock lock(fd, ofs, size);
-            ssize_t res = fd.pread(buf, size, ofs);
-            if ((size_t)res != size)
-            {
-                stringstream ss;
-                ss << fd.name() << ": read only " << res << "/" << size << " bytes at offset " << ofs;
-                throw std::runtime_error(ss.str());
-            }
+            stringstream ss;
+            ss << fd.name() << ": read only " << res << "/" << size << " bytes at offset " << ofs;
+            throw std::runtime_error(ss.str());
         }
         acct::plain_data_read_count.incr();
         iotrace::trace_file(fd.name(), ofs, size, "read data");
@@ -271,6 +259,11 @@ std::shared_ptr<Reader> Registry::reader(const std::string& abspath)
     }
 
     return res->second.lock();
+}
+
+void Registry::invalidate(const std::string& abspath)
+{
+    cache.erase(abspath);
 }
 
 void Registry::cleanup()
