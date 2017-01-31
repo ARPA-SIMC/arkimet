@@ -2,8 +2,14 @@
 #define ARKI_TYPES_SOURCE_BLOB_H
 
 #include <arki/types/source.h>
+#include <arki/file.h>
 
 namespace arki {
+
+namespace reader {
+struct Reader;
+}
+
 namespace types {
 namespace source {
 
@@ -29,6 +35,15 @@ struct Blob : public Source
 
     uint64_t offset;
     uint64_t size;
+
+    /**
+     * Reader used to load the data pointed by this blob.
+     *
+     * The reader will keep a read lock on the file, to prevent it from being
+     * modified while it can still potentially be read
+     */
+    std::shared_ptr<reader::Reader> reader;
+
 
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
@@ -68,7 +83,27 @@ struct Blob : public Source
      */
     std::unique_ptr<Blob> makeRelativeTo(const std::string& path) const;
 
+    /**
+     * Make sure this blob has a reader that keeps a read lock on the source file
+     */
+    void lock();
+
+    /**
+     * Make sure this blob is not holding a read lock on the source file
+     */
+    void unlock();
+
+    /**
+     * Get the data referred by this blob, read from the given file descriptor.
+     * It is up to the caller to ensure that fd is open on the right file.
+     *
+     * If rlock is true, the file descriptor will be locked for reading during
+     * I/O
+     */
+    std::vector<uint8_t> readData(NamedFileDescriptor& fd, bool rlock=true) const;
+
     static std::unique_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
+    static std::unique_ptr<Blob> create_unlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Blob> decodeMapping(const emitter::memory::Mapping& val);
 };
 

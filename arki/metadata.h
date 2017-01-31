@@ -71,12 +71,6 @@ protected:
     /// Source of this data
     types::Source* m_source;
 
-    /**
-     * If the metadata refers to data that is accessible from a file, this is
-     * the reader used to load the data
-     */
-    std::shared_ptr<reader::Reader> m_reader;
-
     /// Inline data, or cached version of previously read data
     std::vector<uint8_t> m_data;
 
@@ -96,6 +90,8 @@ public:
     const types::source::Blob* has_source_blob() const;
     /// Return the Blob source if possible, else raise an exception
     const types::source::Blob& sourceBlob() const;
+    /// Return the Blob source if possible, else raise an exception
+    types::source::Blob& sourceBlob();
     /// Set a new source, replacing the old one if present
     void set_source(std::unique_ptr<types::Source>&& s);
     /// Set the source of this metadata as Inline, with the given data
@@ -211,16 +207,6 @@ public:
     /// Get the raw data described by this metadata
     const std::vector<uint8_t>& getData();
 
-    /**
-     * Get the raw data described by this metadata, read from the given file
-     * descriptor. It is up to the caller to ensure that fd is open on the
-     * right file.
-     *
-     * If rlock is true, the file descriptor will be locked for reading during
-     * I/O
-     */
-    const std::vector<uint8_t>& getData(NamedFileDescriptor& fd, bool rlock=true);
-
     /// Return True if getData can be called without causing I/O
     bool has_cached_data() const;
 
@@ -238,16 +224,6 @@ public:
      * by a getData() call or a set_cached_data() call.
      */
     void drop_cached_data();
-
-    /**
-     * If this metadata is keeping a pointer to a reader to access its data,
-     * drop the pointer to the reader.
-     *
-     * This can be used to disconnect the metadata from an existing open file
-     * in some special operations, like replacing a file with its compressed
-     * version.
-     */
-    void drop_cached_reader();
 
     /// Read the data and inline them in the metadata
     void makeInline();

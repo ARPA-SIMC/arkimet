@@ -38,7 +38,7 @@ add_generic_test("url",
 
 // Check Blob
 add_method("blob_details", [] {
-    unique_ptr<Source> o = Source::createBlob("test", "", "testfile", 21, 42);
+    unique_ptr<Source> o = Source::createBlobUnlocked("test", "", "testfile", 21, 42);
     wassert(actual(o).is_source_blob("test", "", "testfile", 21u, 42u));
 
 	#if 0
@@ -49,9 +49,9 @@ add_method("blob_details", [] {
 	ensure_equals(size, 42u);
 	#endif
 
-    wassert(actual(o) == Source::createBlob("test", "", "testfile", 21, 42));
-    wassert(actual(o) == Source::createBlob("test", "/tmp", "testfile", 21, 42));
-    wassert(actual(o) != Source::createBlob("test", "", "testfile", 22, 43));
+    wassert(actual(o) == Source::createBlobUnlocked("test", "", "testfile", 21, 42));
+    wassert(actual(o) == Source::createBlobUnlocked("test", "/tmp", "testfile", 21, 42));
+    wassert(actual(o) != Source::createBlobUnlocked("test", "", "testfile", 22, 43));
     wassert(actual(o) != Source::createURL("test", "testfile"));
     wassert(actual(o) != Source::createInline("test", 43));
 
@@ -61,7 +61,7 @@ add_method("blob_details", [] {
 
 // Check Blob on big files
 add_method("blob_bigfiles", [] {
-    unique_ptr<Source> o = Source::createBlob("test", "", "testfile", 0x8000FFFFffffFFFFLLU, 42);
+    unique_ptr<Source> o = Source::createBlobUnlocked("test", "", "testfile", 0x8000FFFFffffFFFFLLU, 42);
     wassert(actual(o).is_source_blob("test", "", "testfile", 0x8000FFFFffffFFFFLLU, 42u));
 
     // Test encoding/decoding
@@ -70,19 +70,19 @@ add_method("blob_bigfiles", [] {
 
 // Check Blob and pathnames handling
 add_method("blob_pathnames", [] {
-    unique_ptr<source::Blob> o = source::Blob::create("test", "", "testfile", 21, 42);
+    unique_ptr<source::Blob> o = source::Blob::create_unlocked("test", "", "testfile", 21, 42);
     wassert(actual(o->absolutePathname()) == "testfile");
 
-    o = source::Blob::create("test", "/tmp", "testfile", 21, 42);
+    o = source::Blob::create_unlocked("test", "/tmp", "testfile", 21, 42);
     wassert(actual(o->absolutePathname()) == "/tmp/testfile");
 
-    o = source::Blob::create("test", "/tmp", "/antani/testfile", 21, 42);
+    o = source::Blob::create_unlocked("test", "/tmp", "/antani/testfile", 21, 42);
     wassert(actual(o->absolutePathname()) == "/antani/testfile");
 });
 
 // Check Blob and pathnames handling in serialization
 add_method("blob_pathnames_encode", [] {
-    unique_ptr<Source> o = Source::createBlob("test", "/tmp", "testfile", 21, 42);
+    unique_ptr<Source> o = Source::createBlobUnlocked("test", "/tmp", "testfile", 21, 42);
 
     // Encode to binary, decode, we lose the root
     vector<uint8_t> enc = o->encodeBinary();
@@ -118,7 +118,7 @@ add_method("url_details", [] {
 
     wassert(actual(o) == Source::createURL("test", "http://foobar"));
     wassert(actual(o) != Source::createURL("test", "http://foobar/a"));
-    wassert(actual(o) != Source::createBlob("test", "", "http://foobar", 1, 2));
+    wassert(actual(o) != Source::createBlobUnlocked("test", "", "http://foobar", 1, 2));
     wassert(actual(o) != Source::createInline("test", 1));
 
     // Test encoding/decoding
@@ -132,7 +132,7 @@ add_method("inline_details", [] {
 
     wassert(actual(o) == Source::createInline("test", 12345));
     wassert(actual(o) != Source::createInline("test", 12344));
-    wassert(actual(o) != Source::createBlob("test", "", "", 0, 12344));
+    wassert(actual(o) != Source::createBlobUnlocked("test", "", "", 0, 12344));
     wassert(actual(o) != Source::createURL("test", ""));
 
     // Test encoding/decoding

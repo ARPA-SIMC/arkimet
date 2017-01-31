@@ -417,9 +417,13 @@ Pending Segment::repack(
     string tmprelname = relname + ".repack";
     string tmpabsname = absname + ".repack";
 
+    // Make sure mds are not holding a read lock on the file to repack
+    for (auto& md: mds) md->sourceBlob().unlock();
+
     // Get a validator for this file
     const scan::Validator& validator = scan::Validator::by_filename(absname);
 
+    // Reacquire the lock here for writing
     Rename* rename;
     Pending p(rename = new Rename(tmpabsname, absname, test_flags & TEST_MISCHIEF_LOCK_NOWAIT));
 
@@ -433,14 +437,14 @@ Pending Segment::repack(
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         // Read the data
-        const auto& buf = (*i)->getData(rename->src, false);
+        auto buf = (*i)->sourceBlob().readData(rename->src, false);
         // Validate it
         if (!skip_validation)
             validator.validate_buf(buf.data(), buf.size());
         // Append it to the new file
         off_t w_off = writer->append(buf);
         // Update the source information in the metadata
-        (*i)->set_source(Source::createBlob((*i)->source().format, rootdir, relname, w_off, buf.size()));
+        (*i)->set_source(Source::createBlobUnlocked((*i)->source().format, rootdir, relname, w_off, buf.size()));
         // Drop the cached data, to prevent ending up with the whole segment
         // sitting in memory
         (*i)->drop_cached_data();

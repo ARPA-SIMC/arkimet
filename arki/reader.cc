@@ -33,10 +33,13 @@ public:
 #endif
             )
     {
+        // Lock one byte at the beginning of the file, to prevent a repack but
+        // allow appends: there are no functions in arkimet that would rewrite
+        // a part of a file: either append, or replace.
         lock.l_type = F_RDLCK;
         lock.l_whence = SEEK_SET;
         lock.l_start = 0;
-        lock.l_len = 0;
+        lock.l_len = 1;
         lock.ofd_setlkw(fd);
     }
 
@@ -279,6 +282,12 @@ void Registry::cleanup()
         } else
             ++i;
     }
+}
+
+Registry& Registry::get()
+{
+    static Registry singleton;
+    return singleton;
 }
 
 }

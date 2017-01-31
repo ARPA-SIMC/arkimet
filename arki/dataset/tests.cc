@@ -297,7 +297,7 @@ void DatasetTest::import(const std::string& testfile)
         for (auto& md: data)
         {
             Writer::AcquireResult res = writer->acquire(*md);
-            ensure_equals(res, Writer::ACQ_OK);
+            wassert(actual(res) == Writer::ACQ_OK);
         }
     }
 

@@ -430,22 +430,21 @@ add_method("pack_vm2", [](Fixture& f) {
     utils::Lock::TestNowait lock_nowait;
     f.clean_and_import("inbound/test.vm2");
 
-    // Read everything
-    metadata::Collection mdc_imported = f.query(Matcher());
-
-    // Take note of all the data
+    // Take note of all the data and delete every second item
     vector<vector<uint8_t>> orig_data;
-    orig_data.reserve(mdc_imported.size());
-    for (unsigned i = 0; i < mdc_imported.size(); ++i)
-        orig_data.push_back(mdc_imported[i].getData());
-
-    // Delete every second item
+    metadata::Collection mdc_imported = f.query(Matcher());
     {
+        orig_data.reserve(mdc_imported.size());
+        for (unsigned i = 0; i < mdc_imported.size(); ++i)
+            orig_data.push_back(mdc_imported[i].getData());
+
         auto writer = f.makeOndisk2Writer();
         for (unsigned i = 0; i < mdc_imported.size(); ++i)
             if (i % 2 == 0)
                 writer->remove(mdc_imported[i]);
     }
+    for (auto& md: mdc_imported)
+        md->unset_source();
 
     // Ensure the dataset has items to pack
     {

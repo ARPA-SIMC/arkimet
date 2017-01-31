@@ -50,6 +50,11 @@ public:
      * Remove expired entries from the cache
      */
     void cleanup();
+
+    /**
+     * Get the global singleton registry
+     */
+    static Registry& get();
 };
 
 }

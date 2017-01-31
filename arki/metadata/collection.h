@@ -147,6 +147,9 @@ public:
      * elements had no reftime information.
      */
     bool expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
+
+    /// Call drop_cached_data on all metadata in the collection
+    void drop_cached_data();
 };
 
 }

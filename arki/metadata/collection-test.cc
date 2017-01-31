@@ -57,7 +57,7 @@ add_method("compression", [] {
     for (auto& i: c)
     {
         i->drop_cached_data();
-        i->drop_cached_reader();
+        i->sourceBlob().unlock();
     }
     Metadata::flushDataReaders();
 
@@ -79,7 +79,7 @@ add_method("compression", [] {
     for (auto& i: c)
     {
         i->drop_cached_data();
-        i->drop_cached_reader();
+        i->sourceBlob().unlock();
     }
     Metadata::flushDataReaders();
 
@@ -100,7 +100,7 @@ add_method("compression", [] {
     for (auto& i: c)
     {
         i->drop_cached_data();
-        i->drop_cached_reader();
+        i->sourceBlob().unlock();
     }
     Metadata::flushDataReaders();
 
