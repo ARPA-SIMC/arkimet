@@ -9,6 +9,7 @@
 #include "arki/dataset.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
+#include "arki/types/source/blob.h"
 #include "arki/types/value.h"
 #include "arki/summary.h"
 #include "arki/summary/stats.h"
@@ -541,7 +542,7 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     if (tmpfile.get() != 0)
     {
         metadata::ReadContext rc(tmpfile->name(), config().path);
-        if (!Metadata::read_file(rc, dest))
+        if (!Metadata::read_file(rc, [&](std::unique_ptr<Metadata> md) { md->sourceBlob().lock(); return dest(move(md)); }))
             return false;
     }
 
