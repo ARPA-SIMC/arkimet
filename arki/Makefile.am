@@ -543,7 +543,7 @@ tests_arki_test_SOURCES += \
 		dataset/tests.cc \
 		dataset/reporter-test.cc \
 		dataset/time-test.cc \
-		dataset/segment-tut.cc \
+		dataset/segment-test.cc \
 		dataset/segment/tests.cc \
 		dataset/segment/fd-tut.cc \
 		dataset/segment/concat-tut.cc \
