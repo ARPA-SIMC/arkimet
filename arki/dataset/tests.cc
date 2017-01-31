@@ -361,6 +361,15 @@ void DatasetTest::import_all_packed(const testdata::Fixture& fixture)
     }
 }
 
+bool DatasetTest::has_smallfiles()
+{
+    if (auto ds = dynamic_cast<const dataset::ondisk2::Config*>(dataset_config().get()))
+        return ds->smallfiles;
+    if (auto ds = dynamic_cast<const dataset::iseg::Config*>(dataset_config().get()))
+        return ds->smallfiles;
+    return false;
+}
+
 }
 
 MaintenanceCollector::MaintenanceCollector()

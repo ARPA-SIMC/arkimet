@@ -206,6 +206,8 @@ public:
 
     void import_all(const testdata::Fixture& fixture);
     void import_all_packed(const testdata::Fixture& fixture);
+
+    bool has_smallfiles();
 };
 
 }

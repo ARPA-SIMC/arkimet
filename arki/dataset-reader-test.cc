@@ -10,7 +10,6 @@
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <sys/fcntl.h>
 
 using namespace std;
 using namespace arki;
@@ -311,10 +310,16 @@ this->add_method("read_missing_segment", [](Fixture& f) {
         return true;
     });
 
-    wassert(actual(count_ok) > 0u);
-    wassert(actual(count_ok) < 3u);
-    wassert(actual(count_err) > 0u);
-    wassert(actual(count_err) < 3u);
+    if (f.has_smallfiles())
+    {
+        wassert(actual(count_ok) == 3u);
+        wassert(actual(count_err) == 0u);
+    } else {
+        wassert(actual(count_ok) > 0u);
+        wassert(actual(count_ok) < 3u);
+        //wassert(actual(count_err) > 0u);
+        //wassert(actual(count_err) < 3u);
+    }
 });
 
 }
