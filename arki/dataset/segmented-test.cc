@@ -253,6 +253,8 @@ add_method("query_lots", [](Fixture& f) {
     // Test querying with lots of data, to trigger on disk metadata buffering
     using namespace arki::types;
 
+    f.reset_test("step=daily\nformat=vm2\nunique=product,area,reftime\n");
+
     f.clean();
     {
         auto writer = f.config().create_writer();
