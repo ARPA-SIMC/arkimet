@@ -537,6 +537,13 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, u
     string tmprelname = relname + ".repack";
     string tmpabsname = absname + ".repack";
 
+    // Make sure mds are not holding a read lock on the file to repack
+    for (auto& md: mds) md->sourceBlob().unlock();
+
+    // Reacquire the lock here for writing
+    Rename* rename;
+    Pending p(rename = new Rename(tmpabsname, absname));
+
     // Create a writer for the temp dir
     unique_ptr<dir::Segment> writer(make_segment(format, tmprelname, tmpabsname));
 
@@ -552,13 +559,13 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, u
         off_t pos = writer->link(str::joinpath(source.absolutePathname(), SequenceFile::data_fname(source.offset, source.format)));
 
         // Update the source information in the metadata
-        (*i)->set_source(Source::createBlob(source.format, rootdir, relname, pos, source.size));
+        (*i)->set_source(Source::createBlobUnlocked(source.format, rootdir, relname, pos, source.size));
     }
 
     // Close the temp writer
     writer.release();
 
-    return new Rename(tmpabsname, absname);
+    return p;
 }
 
 unique_ptr<dir::Segment> Segment::make_segment(const std::string& format, const std::string& relname, const std::string& absname)
