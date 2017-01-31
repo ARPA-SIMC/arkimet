@@ -565,7 +565,7 @@ tests_arki_test_SOURCES += \
 		dataset/file-tut.cc \
 		dataset/archive-test.cc \
 		dataset/simple-test.cc \
-		dataset/simple/datafile-tut.cc \
+		dataset/simple/datafile-test.cc \
 		dataset/simple/reader-test.cc \
 		dataset/simple/writer-test.cc \
 		dataset/iseg-test.cc \
