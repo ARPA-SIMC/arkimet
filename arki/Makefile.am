@@ -160,6 +160,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/h5.h \
 		utils.h \
 		utils/intern.h \
+		utils/lock.h \
 		utils/pcounter.h \
 		utils/process.h \
 		utils/regexp.h \
@@ -222,6 +223,7 @@ libarkimet_la_SOURCES += \
 		utils/gzip.cc \
 		utils/files.cc \
 		utils/intern.cc \
+		utils/lock.cc \
 		utils/pcounter.cc \
 		utils/process.cc \
 		utils/raii.cc \
@@ -303,6 +305,7 @@ tests_arki_test_SOURCES += \
 		utils/yaml-test.cc \
 		utils/files-tut.cc \
 		utils/intern-tut.cc \
+		utils/lock-test.cc \
 		utils/pcounter-tut.cc \
 		utils/process-tut.cc \
 		utils/raii-tut.cc \

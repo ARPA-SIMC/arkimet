@@ -8,6 +8,7 @@
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/lock.h"
 #include "arki/utils.h"
 #include "arki/dataset/reporter.h"
 #include "arki/nag.h"
@@ -17,7 +18,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <cstring>
 
 using namespace std;
 using namespace arki::types;
@@ -162,13 +162,12 @@ void Segment::close()
 
 off_t Segment::append_lock()
 {
-    struct flock lock;
-    memset(&lock, 0, sizeof(lock));
+    Lock lock;
     lock.l_type = F_WRLCK;
     lock.l_whence = SEEK_END;
     lock.l_start = 0;
     lock.l_len = 0;
-    fd.ofd_setlkw(lock);
+    lock.ofd_setlkw(fd);
 
     // Now that we are locked, get the write position in the data file
     return fd.lseek(0, SEEK_END);
@@ -176,13 +175,12 @@ off_t Segment::append_lock()
 
 void Segment::append_unlock(off_t wrpos)
 {
-    struct flock lock;
-    memset(&lock, 0, sizeof(lock));
+    Lock lock;
     lock.l_type = F_UNLCK;
     lock.l_whence = SEEK_SET;
     lock.l_start = wrpos;
     lock.l_len = 0;
-    fd.ofd_setlk(lock);
+    lock.ofd_setlk(fd);
 }
 
 void Segment::fdtruncate(off_t pos)
@@ -364,19 +362,18 @@ Pending Segment::repack(
          */
         void repack_lock(bool lock_nowait)
         {
-            struct flock lock;
-            memset(&lock, 0, sizeof(lock));
+            Lock lock;
             lock.l_type = F_WRLCK;
             lock.l_whence = SEEK_SET;
             lock.l_start = 0;
             lock.l_len = 0;
             if (lock_nowait)
             {
-                if (!src.ofd_setlk(lock))
+                if (!lock.ofd_setlk(src))
                     throw std::runtime_error("segment to repack is locked");
             }
             else
-                src.ofd_setlkw(lock);
+                lock.ofd_setlkw(src);
         }
 
         /**
@@ -384,13 +381,12 @@ Pending Segment::repack(
          */
         void repack_unlock()
         {
-            struct flock lock;
-            memset(&lock, 0, sizeof(lock));
+            Lock lock;
             lock.l_type = F_UNLCK;
             lock.l_whence = SEEK_SET;
             lock.l_start = 0;
             lock.l_len = 0;
-            src.ofd_setlk(lock);
+            lock.ofd_setlk(src);
         }
 
         virtual void commit()

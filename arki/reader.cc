@@ -6,13 +6,13 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/gzip.h"
+#include "arki/utils/lock.h"
 #include "arki/nag.h"
 #include "arki/iotrace.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <cstring>
 
 using namespace std;
 using namespace arki::utils;
@@ -24,7 +24,7 @@ struct FileReader : public Reader
 {
 public:
     sys::File fd;
-    struct flock lock;
+    utils::Lock lock;
 
     FileReader(const std::string& fname)
         : fd(fname, O_RDONLY
@@ -33,12 +33,11 @@ public:
 #endif
             )
     {
-        memset(&lock, 0, sizeof(lock));
         lock.l_type = F_RDLCK;
         lock.l_whence = SEEK_SET;
         lock.l_start = 0;
         lock.l_len = 0;
-        fd.ofd_setlkw(lock);
+        lock.ofd_setlkw(fd);
     }
 
     ~FileReader()
@@ -46,7 +45,7 @@ public:
         // TODO: consider a non-throwing setlk implementation to avoid throwing
         // in destructors
         lock.l_type = F_UNLCK;
-        fd.ofd_setlk(lock);
+        lock.ofd_setlk(fd);
     }
 
     bool is(const std::string& fname)
