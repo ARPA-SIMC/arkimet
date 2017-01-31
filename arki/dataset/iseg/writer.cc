@@ -281,7 +281,10 @@ std::string Checker::type() const { return "iseg"; }
 void Checker::list_segments(std::function<void(const std::string& relpath)> dest)
 {
     vector<string> seg_relpaths;
-    config().step().list_segments(config().path, config().format, Matcher(), [&](std::string&& s) { seg_relpaths.emplace_back(move(s)); });
+    config().step().list_segments(config().path, config().format + ".index", Matcher(), [&](std::string&& s) {
+        s.resize(s.size() - 6);
+        seg_relpaths.emplace_back(move(s));
+    });
     std::sort(seg_relpaths.begin(), seg_relpaths.end());
     for (const auto& relpath: seg_relpaths)
         dest(relpath);
@@ -290,7 +293,7 @@ void Checker::list_segments(std::function<void(const std::string& relpath)> dest
 void Checker::removeAll(dataset::Reporter& reporter, bool writable)
 {
     acquire_lock();
-    config().step().list_segments(config().path, config().format, Matcher(), [&](std::string&& relpath) {
+    list_segments([&](const std::string& relpath) {
         if (writable)
         {
             size_t freed = removeSegment(relpath, true);
@@ -307,10 +310,9 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
     segmented::State segments_state;
 
     list_segments([&](const std::string& relpath) {
-        string idx_abspath = str::joinpath(config().path, relpath) + ".index";
-        if (!sys::exists(idx_abspath))
+        if (!sys::exists(str::joinpath(config().path, relpath)) && ! sys::exists(str::joinpath(config().path, relpath + ".gz")))
         {
-            segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_NEW)));
+            segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_DELETED)));
             return;
         }
 
@@ -362,12 +364,11 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
         segments_state.insert(make_pair(relpath, segmented::SegmentState(state, *md_begin, *md_until)));
     });
 
-    // Look for .index files without segments next to them
-    config().step().list_segments(config().path, config().format + ".index", Matcher(), [&](std::string&& relpath) {
-        relpath.resize(relpath.size() - 6);
+    // Look for data files without indices next to them
+    config().step().list_segments(config().path, config().format, Matcher(), [&](std::string&& relpath) {
         if (segments_state.find(relpath) != segments_state.end()) return;
-        reporter.segment_info(name(), relpath, "segment found in index but not on disk");
-        segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_DELETED)));
+        reporter.segment_info(name(), relpath, "segment found on disk but not in index");
+        segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_NEW)));
     });
 
     //

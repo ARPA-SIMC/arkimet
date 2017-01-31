@@ -4,7 +4,6 @@
 #include "arki/dataset/step.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include "arki/utils/lock.h"
 #include "arki/summary.h"
 #include <algorithm>
 
@@ -37,7 +36,10 @@ bool Reader::is_dataset(const std::string& dir)
 bool Reader::list_segments(const Matcher& matcher, std::function<bool(const std::string& relpath)> dest)
 {
     vector<string> seg_relpaths;
-    config().step().list_segments(config().path, config().format, matcher, [&](std::string&& s) { seg_relpaths.emplace_back(move(s)); });
+    config().step().list_segments(config().path, config().format + ".index", matcher, [&](std::string&& s) {
+        s.resize(s.size() - 6);
+        seg_relpaths.emplace_back(move(s));
+    });
     std::sort(seg_relpaths.begin(), seg_relpaths.end());
     for (const auto& relpath: seg_relpaths)
         if (!dest(relpath))
@@ -51,16 +53,6 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 
     return list_segments(q.matcher, [&](const std::string& relpath) {
         RIndex idx(m_config, relpath);
-
-        // Lock the segment for reading
-        File src(str::joinpath(config().path, relpath), O_RDONLY);
-        utils::Lock lock;
-        lock.l_type = F_RDLCK;
-        lock.l_whence = SEEK_SET;
-        lock.l_start = 0;
-        lock.l_len = 0;
-        lock.ofd_setlkw(src);
-
         return idx.query_data(q, dest);
     });
 }
