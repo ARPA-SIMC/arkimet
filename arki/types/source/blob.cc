@@ -168,7 +168,7 @@ void Blob::unlock()
     reader.reset();
 }
 
-vector<uint8_t> Blob::readData(NamedFileDescriptor& fd, bool rlock) const
+vector<uint8_t> Blob::read_data(NamedFileDescriptor& fd, bool rlock) const
 {
     if (rlock)
         throw std::runtime_error("cannot retrieve data: read locking in this method is not yet implemented");
@@ -177,6 +177,12 @@ vector<uint8_t> Blob::readData(NamedFileDescriptor& fd, bool rlock) const
     if (fd.pread(buf.data(), size, offset) != size)
         throw runtime_error("cannot retrieve data: only partial data has been read");
     return buf;
+}
+
+std::vector<uint8_t> Blob::read_data() const
+{
+    if (!reader) throw std::runtime_error("readData() called on an unlocked source");
+    return reader->read(*this);
 }
 
 }

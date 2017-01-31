@@ -7,6 +7,7 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/gzip.h"
 #include "arki/utils/lock.h"
+#include "arki/types/source/blob.h"
 #include "arki/nag.h"
 #include "arki/iotrace.h"
 #include <sys/types.h>
@@ -19,6 +20,26 @@ using namespace arki::utils;
 
 namespace arki {
 namespace reader {
+
+struct MissingFileReader : public Reader
+{
+protected:
+    std::string abspath;
+
+public:
+    MissingFileReader(const std::string& abspath)
+        : abspath(abspath) {}
+
+    bool is(const std::string& fname) const override { return fname == abspath; }
+
+    std::vector<uint8_t> read(const types::source::Blob& src) override
+    {
+        stringstream ss;
+        ss << "cannot read " << src.size << " bytes of " << src.format << " data from " << abspath << ":"
+           << src.offset << ": the file has disappeared";
+        throw std::runtime_error(ss.str());
+    }
+};
 
 struct FileReader : public Reader
 {
@@ -51,24 +72,30 @@ public:
         lock.ofd_setlk(fd);
     }
 
-    bool is(const std::string& fname)
+    bool is(const std::string& fname) const override
     {
         return fd.name() == fname;
     }
 
-    void read(off_t ofs, size_t size, void* buf)
+    std::vector<uint8_t> read(const types::source::Blob& src) override
     {
-        if (posix_fadvise(fd, ofs, size, POSIX_FADV_DONTNEED) != 0)
+        vector<uint8_t> buf;
+        buf.resize(src.size);
+
+        if (posix_fadvise(fd, src.offset, src.size, POSIX_FADV_DONTNEED) != 0)
             nag::debug("fadvise on %s failed: %m", fd.name().c_str());
-        ssize_t res = fd.pread(buf, size, ofs);
-        if ((size_t)res != size)
+        ssize_t res = fd.pread(buf.data(), src.size, src.offset);
+        if ((size_t)res != src.size)
         {
-            stringstream ss;
-            ss << fd.name() << ": read only " << res << "/" << size << " bytes at offset " << ofs;
-            throw std::runtime_error(ss.str());
+            stringstream msg;
+            msg << "cannot read " << src.size << " bytes of " << src.format << " data from " << fd.name() << ":"
+                << src.offset << ": only " << res << "/" << src.size << " bytes have been read";
+            throw std::runtime_error(msg.str());
         }
         acct::plain_data_read_count.incr();
-        iotrace::trace_file(fd.name(), ofs, size, "read data");
+        iotrace::trace_file(fd.name(), src.offset, src.size, "read data");
+
+        return buf;
     }
 };
 
@@ -87,30 +114,36 @@ public:
             format = fname.substr(pos + 1);
     }
 
-    bool is(const std::string& fname)
+    bool is(const std::string& fname) const override
     {
         return dirfd.name() == fname;
     }
 
-    void read(off_t ofs, size_t size, void* buf)
+    std::vector<uint8_t> read(const types::source::Blob& src) override
     {
+        vector<uint8_t> buf;
+        buf.resize(src.size);
+
         char dataname[32];
-        snprintf(dataname, 32, "%06zd.%s", (size_t)ofs, format.c_str());
+        snprintf(dataname, 32, "%06zd.%s", (size_t)src.offset, format.c_str());
         sys::File file_fd(dirfd.openat(dataname, O_RDONLY | O_CLOEXEC), str::joinpath(dirfd.name(), dataname));
 
-        if (posix_fadvise(file_fd, 0, size, POSIX_FADV_DONTNEED) != 0)
+        if (posix_fadvise(file_fd, 0, src.size, POSIX_FADV_DONTNEED) != 0)
             nag::debug("fadvise on %s failed: %m", file_fd.name().c_str());
 
-        ssize_t res = file_fd.pread(buf, size, 0);
-        if ((size_t)res != size)
+        ssize_t res = file_fd.pread(buf.data(), src.size, 0);
+        if ((size_t)res != src.size)
         {
-            stringstream ss;
-            ss << file_fd.name() << ": read only " << res << "/" << size << " bytes at start of file";
-            throw std::runtime_error(ss.str());
+            stringstream msg;
+            msg << "cannot read " << src.size << " bytes of " << src.format << " data from " << fname << ":"
+                << src.offset << ": only " << res << "/" << src.size << " bytes have been read";
+            throw std::runtime_error(msg.str());
         }
 
         acct::plain_data_read_count.incr();
-        iotrace::trace_file(dirfd.name(), ofs, size, "read data");
+        iotrace::trace_file(dirfd.name(), src.offset, src.size, "read data");
+
+        return buf;
     }
 };
 
@@ -119,35 +152,40 @@ struct ZlibFileReader : public Reader
 public:
     std::string fname;
     gzip::File fd;
-    off_t last_ofs = 0;
+    uint64_t last_ofs = 0;
 
     ZlibFileReader(const std::string& fname)
         : fname(fname), fd(fname + ".gz", "rb")
     {
     }
 
-	bool is(const std::string& fname)
-	{
-		return this->fname == fname;
-	}
-
-    void read(off_t ofs, size_t size, void* buf)
+    bool is(const std::string& fname) const override
     {
-        if (ofs != last_ofs)
-        {
-            fd.seek(ofs, SEEK_SET);
+        return this->fname == fname;
+    }
 
-            if (ofs >= last_ofs)
-                acct::gzip_forward_seek_bytes.incr(ofs - last_ofs);
+    std::vector<uint8_t> read(const types::source::Blob& src) override
+    {
+        vector<uint8_t> buf;
+        buf.resize(src.size);
+
+        if (src.offset != last_ofs)
+        {
+            fd.seek(src.offset, SEEK_SET);
+
+            if (src.offset >= last_ofs)
+                acct::gzip_forward_seek_bytes.incr(src.offset - last_ofs);
             else
-                acct::gzip_forward_seek_bytes.incr(ofs);
+                acct::gzip_forward_seek_bytes.incr(src.offset);
         }
 
-        fd.read_all_or_throw(buf, size);
-        last_ofs = ofs + size;
+        fd.read_all_or_throw(buf.data(), src.size);
+        last_ofs = src.offset + src.size;
 
         acct::gzip_data_read_count.incr();
-        iotrace::trace_file(fname, ofs, size, "read data");
+        iotrace::trace_file(fname, src.offset, src.size, "read data");
+
+        return buf;
     }
 };
 
@@ -159,7 +197,7 @@ public:
     size_t last_block = 0;
     sys::File fd;
     gzip::File gzfd;
-    off_t last_ofs = 0;
+    uint64_t last_ofs = 0;
 
     IdxZlibFileReader(const std::string& fname)
         : fname(fname), fd(fname + ".gz", O_RDONLY), gzfd(fd.name())
@@ -168,10 +206,10 @@ public:
         idx.read(fd.name() + ".idx");
     }
 
-	bool is(const std::string& fname)
-	{
-		return this->fname == fname;
-	}
+    bool is(const std::string& fname) const override
+    {
+        return this->fname == fname;
+    }
 
     void reposition(off_t ofs)
     {
@@ -198,25 +236,30 @@ public:
         acct::gzip_forward_seek_bytes.incr(ofs - idx.ofs_unc[block]);
     }
 
-	void read(off_t ofs, size_t size, void* buf)
-	{
-		if (gzfd == NULL || ofs != last_ofs)
-		{
-			if (gzfd != NULL && ofs > last_ofs && ofs < last_ofs + 4096)
-			{
-                // Just skip forward
-                gzfd.seek(ofs - last_ofs, SEEK_CUR);
-                acct::gzip_forward_seek_bytes.incr(ofs - last_ofs);
-			} else {
-				// We need to seek
-				reposition(ofs);
-			}
-		}
+    std::vector<uint8_t> read(const types::source::Blob& src) override
+    {
+        vector<uint8_t> buf;
+        buf.resize(src.size);
 
-        gzfd.read_all_or_throw(buf, size);
-        last_ofs = ofs + size;
+        if (gzfd == NULL || src.offset != last_ofs)
+        {
+            if (gzfd != NULL && src.offset > last_ofs && src.offset < last_ofs + 4096)
+            {
+                // Just skip forward
+                gzfd.seek(src.offset - last_ofs, SEEK_CUR);
+                acct::gzip_forward_seek_bytes.incr(src.offset - last_ofs);
+            } else {
+                // We need to seek
+                reposition(src.offset);
+            }
+        }
+
+        gzfd.read_all_or_throw(buf.data(), src.size);
+        last_ofs = src.offset + src.size;
         acct::gzip_data_read_count.incr();
-        iotrace::trace_file(fname, ofs, size, "read data");
+        iotrace::trace_file(fname, src.offset, src.size, "read data");
+
+        return buf;
     }
 };
 
@@ -236,11 +279,7 @@ std::shared_ptr<Reader> Registry::instantiate(const std::string& abspath)
     else if (sys::exists(abspath + ".gz"))
         return make_shared<reader::ZlibFileReader>(abspath);
     else
-    {
-        stringstream ss;
-        ss << "file " << abspath << " not found";
-        throw std::runtime_error(ss.str());
-    }
+        return make_shared<reader::MissingFileReader>(abspath);
 }
 
 std::shared_ptr<Reader> Registry::reader(const std::string& abspath)

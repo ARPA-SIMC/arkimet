@@ -4,21 +4,29 @@
 /// Generic interface to read data files
 #include <arki/libconfig.h>
 #include <string>
+#include <vector>
 #include <unordered_map>
 #include <memory>
 #include <cstddef>
 #include <sys/types.h>
 
 namespace arki {
+
+namespace types {
+namespace source {
+struct Blob;
+}
+}
+
 namespace reader {
 
 struct Reader
 {
 public:
-	virtual ~Reader() {}
+    virtual ~Reader() {}
 
-	virtual void read(off_t ofs, size_t size, void* buf) = 0;
-	virtual bool is(const std::string& fname) = 0;
+    virtual std::vector<uint8_t> read(const types::source::Blob& src) = 0;
+    virtual bool is(const std::string& fname) const = 0;
 };
 
 class Registry

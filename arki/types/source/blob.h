@@ -100,7 +100,14 @@ struct Blob : public Source
      * If rlock is true, the file descriptor will be locked for reading during
      * I/O
      */
-    std::vector<uint8_t> readData(NamedFileDescriptor& fd, bool rlock=true) const;
+    std::vector<uint8_t> read_data(NamedFileDescriptor& fd, bool rlock=true) const;
+
+    /**
+     * Get the data referred by this blob via its reader.
+     *
+     * This only works on locked blobs.
+     */
+    std::vector<uint8_t> read_data() const;
 
     static std::unique_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Blob> create_unlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);

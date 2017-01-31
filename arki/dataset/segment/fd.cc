@@ -437,7 +437,7 @@ Pending Segment::repack(
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         // Read the data
-        auto buf = (*i)->sourceBlob().readData(rename->src, false);
+        auto buf = (*i)->sourceBlob().read_data(rename->src, false);
         // Validate it
         if (!skip_validation)
             validator.validate_buf(buf.data(), buf.size());

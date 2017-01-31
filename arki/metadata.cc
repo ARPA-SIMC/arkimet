@@ -515,10 +515,7 @@ const vector<uint8_t>& Metadata::getData()
             // exception, m_data remains empty.
             source::Blob& s = sourceBlob();
             s.lock();
-            vector<uint8_t> buf;
-            buf.resize(s.size);
-            s.reader->read(s.offset, s.size, buf.data());
-            m_data = move(buf);
+            m_data = s.read_data();
             return m_data;
         }
         default:
