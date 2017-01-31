@@ -157,6 +157,8 @@ void MockFixer::end()
 
 void RealRepacker::operator()(const std::string& relpath, segment::State state)
 {
+    if (test_flags & TEST_MISCHIEF_MOVE_DATA) state = state + SEGMENT_DIRTY;
+
     if (state.has(SEGMENT_DIRTY) && !state.has(SEGMENT_DELETE_AGE))
     {
         // Repack the file
