@@ -190,6 +190,9 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 
 Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
+    if (md.source().format != config().format)
+        throw std::runtime_error("cannot acquire into dataset " + name() + ": data is in format " + md.source().format + " but the dataset only accepts " + config().format);
+
     auto age_check = check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
