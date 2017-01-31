@@ -1,10 +1,12 @@
 #include "blob.h"
-#include <arki/binary.h>
-#include <arki/utils/lua.h>
-#include <arki/utils/string.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include <arki/exceptions.h>
+#include "arki/binary.h"
+#include "arki/utils/lua.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/exceptions.h"
+#include "arki/reader.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -30,6 +32,7 @@ std::ostream& Blob::writeToOstream(std::ostream& o) const
              << format << "," << str::joinpath(basedir, filename) << ":" << offset << "+" << size
              << ")";
 }
+
 void Blob::serialiseLocal(Emitter& e, const Formatter* f) const
 {
     Source::serialiseLocal(e, f);
@@ -38,6 +41,7 @@ void Blob::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("ofs", offset);
     e.add("sz", size);
 }
+
 std::unique_ptr<Blob> Blob::decodeMapping(const emitter::memory::Mapping& val)
 {
     const arki::emitter::memory::Node& rd = val["b"];
@@ -45,13 +49,14 @@ std::unique_ptr<Blob> Blob::decodeMapping(const emitter::memory::Mapping& val)
     if (rd.is_string())
         basedir = rd.get_string();
 
-    return Blob::create(
+    return Blob::create_unlocked(
             val["f"].want_string("parsing blob source format"),
             basedir,
             val["file"].want_string("parsing blob source filename"),
             val["ofs"].want_int("parsing blob source offset"),
             val["sz"].want_int("parsing blob source size"));
 }
+
 const char* Blob::lua_type_name() const { return "arki.types.source.blob"; }
 
 #ifdef HAVE_LUA
@@ -99,26 +104,36 @@ Blob* Blob::clone() const
 
 std::unique_ptr<Blob> Blob::create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
 {
-    Blob* res = new Blob;
+    auto res = create_unlocked(format, basedir, filename, offset, size);
+    res->lock();
+    return res;
+}
+
+std::unique_ptr<Blob> Blob::create_unlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
+{
+    unique_ptr<Blob> res(new Blob);
     res->format = format;
     res->basedir = basedir;
     res->filename = filename;
     res->offset = offset;
     res->size = size;
-    return unique_ptr<Blob>(res);
+    return res;
 }
+
 
 std::unique_ptr<Blob> Blob::fileOnly() const
 {
     string pathname = absolutePathname();
-    std::unique_ptr<Blob> res = Blob::create(format, str::dirname(pathname), str::basename(filename), offset, size);
+    std::unique_ptr<Blob> res = Blob::create_unlocked(format, str::dirname(pathname), str::basename(filename), offset, size);
+    res->reader = reader;
     return res;
 }
 
 std::unique_ptr<Blob> Blob::makeAbsolute() const
 {
     string pathname = absolutePathname();
-    std::unique_ptr<Blob> res = Blob::create(format, "", pathname, offset, size);
+    std::unique_ptr<Blob> res = Blob::create_unlocked(format, "", pathname, offset, size);
+    res->reader = reader;
     return res;
 }
 
@@ -130,7 +145,8 @@ std::unique_ptr<Blob> Blob::makeRelativeTo(const std::string& path) const
     size_t cut = path.size();
     while (pathname[cut] == '/')
         ++cut;
-    std::unique_ptr<Blob> res = Blob::create(format, path, pathname.substr(cut), offset, size);
+    std::unique_ptr<Blob> res = Blob::create_unlocked(format, path, pathname.substr(cut), offset, size);
+    res->reader = reader;
     return res;
 }
 
@@ -139,6 +155,34 @@ std::string Blob::absolutePathname() const
     if (!filename.empty() && filename[0] == '/')
         return filename;
     return str::joinpath(basedir, filename);
+}
+
+void Blob::lock()
+{
+    if (reader) return;
+    reader = reader::Registry::get().reader(absolutePathname());
+}
+
+void Blob::unlock()
+{
+    reader.reset();
+}
+
+vector<uint8_t> Blob::read_data(NamedFileDescriptor& fd, bool rlock) const
+{
+    if (rlock)
+        throw std::runtime_error("cannot retrieve data: read locking in this method is not yet implemented");
+    vector<uint8_t> buf;
+    buf.resize(size);
+    if (fd.pread(buf.data(), size, offset) != size)
+        throw runtime_error("cannot retrieve data: only partial data has been read");
+    return buf;
+}
+
+std::vector<uint8_t> Blob::read_data() const
+{
+    if (!reader) throw std::runtime_error("readData() called on an unlocked source");
+    return reader->read(*this);
 }
 
 }

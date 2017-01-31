@@ -92,7 +92,7 @@ unique_ptr<Source> Source::decodeRelative(BinaryDecoder& dec, const std::string&
             string fname = dec.pop_string(fname_len, "blob source file name");
             uint64_t offset = dec.pop_varint<uint64_t>("blob source offset");
             uint64_t size = dec.pop_varint<uint64_t>("blob source size");
-            return createBlob(format, basedir, fname, offset, size);
+            return createBlobUnlocked(format, basedir, fname, offset, size);
         }
         case URL: {
             unsigned fname_len = dec.pop_varint<unsigned>("url source file name length");
@@ -132,7 +132,7 @@ unique_ptr<Source> Source::decodeString(const std::string& val)
 			if (end == string::npos)
 				throw_consistency_error("parsing Source", "source \""+inner+"\" should contain \"offset+len\" after the filename");
 
-            return createBlob(format, string(), fname,
+            return createBlobUnlocked(format, string(), fname,
                     strtoull(inner.substr(pos, end-pos).c_str(), 0, 10),
                     strtoull(inner.substr(end+1).c_str(), 0, 10));
         }
@@ -175,6 +175,11 @@ bool Source::lua_lookup(lua_State* L, const std::string& name) const
 unique_ptr<Source> Source::createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
 {
     return upcast<Source>(source::Blob::create(format, basedir, filename, offset, size));
+}
+
+unique_ptr<Source> Source::createBlobUnlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
+{
+    return upcast<Source>(source::Blob::create_unlocked(format, basedir, filename, offset, size));
 }
 
 unique_ptr<Source> Source::createInline(const std::string& format, uint64_t size)

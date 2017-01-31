@@ -337,5 +337,10 @@ bool Collection::expand_date_range(std::unique_ptr<core::Time>& begin, std::uniq
     return true;
 }
 
+void Collection::drop_cached_data()
+{
+    for (auto& md: *this) md->drop_cached_data();
+}
+
 }
 }

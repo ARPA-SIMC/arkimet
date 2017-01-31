@@ -8,6 +8,7 @@
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/lock.h"
 #include "arki/utils.h"
 #include "arki/dataset/reporter.h"
 #include "arki/nag.h"
@@ -17,7 +18,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <cstring>
 
 using namespace std;
 using namespace arki::types;
@@ -162,13 +162,12 @@ void Segment::close()
 
 off_t Segment::append_lock()
 {
-    struct flock lock;
-    memset(&lock, 0, sizeof(lock));
+    Lock lock;
     lock.l_type = F_WRLCK;
     lock.l_whence = SEEK_END;
     lock.l_start = 0;
     lock.l_len = 0;
-    fd.ofd_setlkw(lock);
+    lock.ofd_setlkw(fd);
 
     // Now that we are locked, get the write position in the data file
     return fd.lseek(0, SEEK_END);
@@ -176,13 +175,12 @@ off_t Segment::append_lock()
 
 void Segment::append_unlock(off_t wrpos)
 {
-    struct flock lock;
-    memset(&lock, 0, sizeof(lock));
+    Lock lock;
     lock.l_type = F_UNLCK;
     lock.l_whence = SEEK_SET;
     lock.l_start = wrpos;
     lock.l_len = 0;
-    fd.ofd_setlk(lock);
+    lock.ofd_setlk(fd);
 }
 
 void Segment::fdtruncate(off_t pos)
@@ -364,19 +362,18 @@ Pending Segment::repack(
          */
         void repack_lock(bool lock_nowait)
         {
-            struct flock lock;
-            memset(&lock, 0, sizeof(lock));
+            Lock lock;
             lock.l_type = F_WRLCK;
             lock.l_whence = SEEK_SET;
             lock.l_start = 0;
             lock.l_len = 0;
             if (lock_nowait)
             {
-                if (!src.ofd_setlk(lock))
+                if (!lock.ofd_setlk(src))
                     throw std::runtime_error("segment to repack is locked");
             }
             else
-                src.ofd_setlkw(lock);
+                lock.ofd_setlkw(src);
         }
 
         /**
@@ -384,13 +381,12 @@ Pending Segment::repack(
          */
         void repack_unlock()
         {
-            struct flock lock;
-            memset(&lock, 0, sizeof(lock));
+            Lock lock;
             lock.l_type = F_UNLCK;
             lock.l_whence = SEEK_SET;
             lock.l_start = 0;
             lock.l_len = 0;
-            src.ofd_setlk(lock);
+            lock.ofd_setlk(src);
         }
 
         virtual void commit()
@@ -421,9 +417,13 @@ Pending Segment::repack(
     string tmprelname = relname + ".repack";
     string tmpabsname = absname + ".repack";
 
+    // Make sure mds are not holding a read lock on the file to repack
+    for (auto& md: mds) md->sourceBlob().unlock();
+
     // Get a validator for this file
     const scan::Validator& validator = scan::Validator::by_filename(absname);
 
+    // Reacquire the lock here for writing
     Rename* rename;
     Pending p(rename = new Rename(tmpabsname, absname, test_flags & TEST_MISCHIEF_LOCK_NOWAIT));
 
@@ -437,14 +437,14 @@ Pending Segment::repack(
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         // Read the data
-        const auto& buf = (*i)->getData(rename->src, false);
+        auto buf = (*i)->sourceBlob().read_data(rename->src, false);
         // Validate it
         if (!skip_validation)
             validator.validate_buf(buf.data(), buf.size());
         // Append it to the new file
         off_t w_off = writer->append(buf);
         // Update the source information in the metadata
-        (*i)->set_source(Source::createBlob((*i)->source().format, rootdir, relname, w_off, buf.size()));
+        (*i)->set_source(Source::createBlobUnlocked((*i)->source().format, rootdir, relname, w_off, buf.size()));
         // Drop the cached data, to prevent ending up with the whole segment
         // sitting in memory
         (*i)->drop_cached_data();

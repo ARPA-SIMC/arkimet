@@ -18,6 +18,7 @@
 #include "arki/types/timerange.h"
 #include "arki/types/area.h"
 #include "arki/types/proddef.h"
+#include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <algorithm>
@@ -297,7 +298,7 @@ void DatasetTest::import(const std::string& testfile)
         for (auto& md: data)
         {
             Writer::AcquireResult res = writer->acquire(*md);
-            ensure_equals(res, Writer::ACQ_OK);
+            wassert(actual(res) == Writer::ACQ_OK);
         }
     }
 
@@ -342,6 +343,7 @@ void DatasetTest::import_all(const testdata::Fixture& fixture)
         import_results[i] = fixture.test_data[i].md;
         Writer::AcquireResult res = writer->acquire(import_results[i]);
         wassert(actual(res) == Writer::ACQ_OK);
+        import_results[i].sourceBlob().unlock();
     }
 
     utils::files::removeDontpackFlagfile(cfg.value("path"));
@@ -357,6 +359,15 @@ void DatasetTest::import_all_packed(const testdata::Fixture& fixture)
         NullReporter r;
         wassert(checker->repack(r, true));
     }
+}
+
+bool DatasetTest::has_smallfiles()
+{
+    if (auto ds = dynamic_cast<const dataset::ondisk2::Config*>(dataset_config().get()))
+        return ds->smallfiles;
+    if (auto ds = dynamic_cast<const dataset::iseg::Config*>(dataset_config().get()))
+        return ds->smallfiles;
+    return false;
 }
 
 }

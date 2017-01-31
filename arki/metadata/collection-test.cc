@@ -15,37 +15,30 @@
 #include <sstream>
 #include <iostream>
 
-namespace tut {
+namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
-using namespace arki::types;
 using namespace arki::utils;
-using namespace arki::metadata;
+using namespace arki::tests;
 
-struct arki_metadata_collection_shar {
-	Collection c;
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_metadata_collection");
 
-	arki_metadata_collection_shar()
-	{
-	}
-
-    void acquireSamples()
-    {
-        scan::scan("inbound/test.grib1", c.inserter_func());
-    }
-};
-TESTGRP(arki_metadata_collection);
+void Tests::register_tests() {
 
 // Test compression
-def_test(1)
-{
+add_method("compression", [] {
+    metadata::Collection c;
+
 #ifdef HAVE_DBALLE
     static const int repeats = 1024;
 
     // Create a test file with `repeats` BUFR entries
     std::string bufr = sys::read_file("inbound/test.bufr");
-    ensure(bufr.size() > 0);
+    wassert(actual(bufr.size()) > 0u);
     bufr = bufr.substr(0, 194);
 
     sys::File tf(sys::File::mkstemp("test"));
@@ -55,15 +48,18 @@ def_test(1)
 
     // Create metadata for the big BUFR file
     scan::scan(tf.name(), c.inserter_func(), "bufr");
-    ensure_equals(c.size(), (size_t)repeats);
+    wassert(actual(c.size()) == (size_t)repeats);
 
     // Compress the data file
     c.compressDataFile(127, "temp BUFR " + tf.name());
     // Remove the original file
     sys::unlink(tf.name());
+    for (auto& i: c)
+    {
+        i->drop_cached_data();
+        i->sourceBlob().unlock();
+    }
     Metadata::flushDataReaders();
-    for (Collection::const_iterator i = c.begin(); i != c.end(); ++i)
-        (*i)->drop_cached_data();
 
     // Ensure that all data can still be read
     utils::acct::gzip_data_read_count.reset();
@@ -72,17 +68,20 @@ def_test(1)
     for (int i = 0; i < repeats; ++i)
     {
         const auto& b = c[i].getData();
-        ensure_equals(b.size(), bufr.size());
-        ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
+        wassert(actual(b.size()) == bufr.size());
+        wassert(actual(memcmp(b.data(), bufr.data(), bufr.size())) == 0);
     }
-	// We read linearly, so there are no seeks or repositions
-	ensure_equals(utils::acct::gzip_data_read_count.val(), (size_t)repeats);
-	ensure_equals(utils::acct::gzip_forward_seek_bytes.val(), 0u);
-	ensure_equals(utils::acct::gzip_idx_reposition_count.val(), 1u);
+    // We read linearly, so there are no seeks or repositions
+    wassert(actual(utils::acct::gzip_data_read_count.val()) == (size_t)repeats);
+    wassert(actual(utils::acct::gzip_forward_seek_bytes.val()) == 0u);
+    wassert(actual(utils::acct::gzip_idx_reposition_count.val()) == 1u);
 
+    for (auto& i: c)
+    {
+        i->drop_cached_data();
+        i->sourceBlob().unlock();
+    }
     Metadata::flushDataReaders();
-    for (Collection::const_iterator i = c.begin(); i != c.end(); ++i)
-        (*i)->drop_cached_data();
 
     // Try to read backwards to avoid sequential reads
     utils::acct::gzip_data_read_count.reset();
@@ -94,13 +93,16 @@ def_test(1)
         ensure_equals(b.size(), bufr.size());
         ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
     }
-	ensure_equals(utils::acct::gzip_data_read_count.val(), (size_t)repeats);
-	ensure_equals(utils::acct::gzip_forward_seek_bytes.val(), 12446264u);
-	ensure_equals(utils::acct::gzip_idx_reposition_count.val(), 9u);
+    wassert(actual(utils::acct::gzip_data_read_count.val()) == (size_t)repeats);
+    wassert(actual(utils::acct::gzip_forward_seek_bytes.val()) == 12446264u);
+    wassert(actual(utils::acct::gzip_idx_reposition_count.val()) == 9u);
 
+    for (auto& i: c)
+    {
+        i->drop_cached_data();
+        i->sourceBlob().unlock();
+    }
     Metadata::flushDataReaders();
-    for (Collection::const_iterator i = c.begin(); i != c.end(); ++i)
-        (*i)->drop_cached_data();
 
     // Read each other one
     utils::acct::gzip_data_read_count.reset();
@@ -112,34 +114,32 @@ def_test(1)
         ensure_equals(b.size(), bufr.size());
         ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
     }
-	ensure_equals(utils::acct::gzip_data_read_count.val(), (size_t)repeats / 2);
-	ensure_equals(utils::acct::gzip_forward_seek_bytes.val(), 194u * 511u);
-	ensure_equals(utils::acct::gzip_idx_reposition_count.val(), 1u);
+    wassert(actual(utils::acct::gzip_data_read_count.val()) == (size_t)repeats / 2);
+    wassert(actual(utils::acct::gzip_forward_seek_bytes.val()) == 194u * 511u);
+    wassert(actual(utils::acct::gzip_idx_reposition_count.val()) == 1u);
 #endif
-}
+});
 
 // Test compression when the data don't compress
-def_test(2)
-{
+add_method("uncompressible", [] {
+    metadata::Collection c;
 #ifdef HAVE_DBALLE
     // Create a collector with only one small metadata inside
-    c.clear();
     scan::scan("inbound/test.bufr", c.inserter_func());
-    ensure_equals(c.size(), 3u);
+    wassert(actual(c.size()) == 3u);
     c.pop_back();
     c.pop_back();
-    ensure_equals(c.size(), 1u);
+    wassert(actual(c.size()) == 1u);
 
     c.writeAtomically("test.md");
 
     metadata::Collection c1;
     c1.read_from_file("test.md");
-    ensure_equals(c.size(), 1u);
-    ensure(c[0] ==  c1[0]);
+    wassert(actual(c.size()) == 1u);
+    ensure(c[0] == c1[0]);
 #endif
+});
+
 }
 
-
 }
-
-// vim:set ts=4 sw=4:

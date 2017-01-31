@@ -10,7 +10,6 @@
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <sys/fcntl.h>
 
 using namespace std;
 using namespace arki;
@@ -291,6 +290,36 @@ this->add_method("interrupted_read", [](Fixture& f) {
     });
 
     wassert(actual(count) == 1u);
+});
+
+this->add_method("read_missing_segment", [](Fixture& f) {
+    // Delete a segment, leaving it in the index
+    f.segments().remove(f.import_results[0].sourceBlob().filename);
+
+    unsigned count_ok = 0;
+    unsigned count_err = 0;
+    auto reader = f.dataset_config()->create_reader();
+    reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+        try {
+            md->getData();
+            ++count_ok;
+        } catch (std::runtime_error& e) {
+            wassert(actual(e.what()).contains("the file has disappeared"));
+            ++count_err;
+        }
+        return true;
+    });
+
+    if (f.has_smallfiles())
+    {
+        wassert(actual(count_ok) == 3u);
+        wassert(actual(count_err) == 0u);
+    } else {
+        wassert(actual(count_ok) > 0u);
+        wassert(actual(count_ok) < 3u);
+        //wassert(actual(count_err) > 0u);
+        //wassert(actual(count_err) < 3u);
+    }
 });
 
 }

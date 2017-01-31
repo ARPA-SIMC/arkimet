@@ -17,17 +17,17 @@
 #include <sys/fcntl.h>
 #include <unistd.h>
 
-namespace tut {
+namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
-using namespace arki::dataset::index;
-using namespace arki::types;
 using namespace arki::utils;
+using namespace arki::types;
+using namespace arki::dataset::index;
+using namespace arki::tests;
 
 // Create a dataset index gived its configuration
 template<typename INDEX>
-static inline unique_ptr<WContents> createIndex(const std::string& text_cfg)
+inline unique_ptr<WContents> createIndex(const std::string& text_cfg)
 {
     ConfigFile cfg;
     cfg.parse(text_cfg);
@@ -35,169 +35,51 @@ static inline unique_ptr<WContents> createIndex(const std::string& text_cfg)
     return unique_ptr<INDEX>(new INDEX(config));
 }
 
-struct arki_dataset_index_contents_shar {
+Metadata make_md()
+{
     Metadata md;
-    Metadata md1;
-
-    arki_dataset_index_contents_shar()
+    md.set_source(types::Source::createBlob("grib", "", "inbound/test.grib1", 10, 2000));
+    md.set("origin", "GRIB1(200, 10, 100)");
+    md.set("product", "GRIB1(3, 4, 5)");
+    md.set("level", "GRIB1(1, 2)");
+    md.set("timerange", "GRIB1(4, 5s, 6s)");
+    md.set("reftime", "2006-05-04T03:02:01Z");
+    md.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
+    md.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
+    md.add_note("this is a test");
     {
-        iotrace::init();
-
-        md.set_source(Source::createBlob("grib", "", "antani", 10, 2000));
-        md.set("origin", "GRIB1(200, 10, 100)");
-        md.set("product", "GRIB1(3, 4, 5)");
-        md.set("level", "GRIB1(1, 2)");
-        md.set("timerange", "GRIB1(4, 5s, 6s)");
-        md.set("reftime", "2006-05-04T03:02:01Z");
-        md.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
-        md.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
-        md.add_note("this is a test");
-        {
-            File out("test-md.metadata", O_WRONLY | O_CREAT | O_TRUNC, 0666);
-            md.write(out);
-            out.close();
-        }
-
-        md1.set_source(Source::createBlob("grib", "", "blinda", 20, 40000));
-        md1.set("origin", "GRIB1(201, 11, 3)");
-        md1.set("product", "GRIB1(102, 103, 104)");
-        md1.set("level", "GRIB1(1, 3)");
-        md1.set("timerange", "GRIB1(4, 6s, 6s)");
-        md1.set("reftime", "2003-04-05T06:07:08Z");
-        md1.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
-        md1.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
-        {
-            // Index one without notes
-            File out("test-md1.metadata", O_WRONLY | O_CREAT | O_TRUNC, 0666);
-            md1.write(out);
-            out.close();
-        }
+        File out("test-md.metadata", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        md.write(out);
+        out.close();
     }
-};
-TESTGRP(arki_dataset_index_contents);
+    return md;
+}
+
+Metadata make_md1()
+{
+    Metadata md1;
+    md1.set_source(types::Source::createBlob("grib", "", "inbound/test-sorted.grib1", 20, 40000));
+    md1.set("origin", "GRIB1(201, 11, 3)");
+    md1.set("product", "GRIB1(102, 103, 104)");
+    md1.set("level", "GRIB1(1, 3)");
+    md1.set("timerange", "GRIB1(4, 6s, 6s)");
+    md1.set("reftime", "2003-04-05T06:07:08Z");
+    md1.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
+    md1.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
+    {
+        // Index one without notes
+        File out("test-md1.metadata", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        md1.write(out);
+        out.close();
+    }
+    return md1;
+}
 
 void query_index(WContents& idx, const dataset::DataQuery& q, metadata::Collection& dest)
 {
     idx.query_data(q, dest.inserter_func());
 }
 
-// Trying indexing a few metadata
-def_test(1)
-{
-    unique_ptr<WContents> test = createIndex<WContents>(
-        "type = ondisk2\n"
-        "path = .\n"
-        "step = daily\n"
-        "indexfile = :memory:\n"
-        "index = origin, product, level\n"
-        "unique = origin, product, level, timerange, area, proddef, reftime\n"
-    );
-    ensure(test.get() != 0);
-    Pending p;
-
-    test->open();
-    p = test->beginTransaction();
-    
-    // Index a metadata
-    int id = test->id(md);
-    ensure_equals(id, -1);
-    test->index(md, "test-md", 0, &id);
-    ensure_equals(id, 1);
-    ensure_equals(test->id(md), 1);
-
-    // Index a second one
-    id = test->id(md1);
-    ensure_equals(id, -1);
-    test->index(md1, "test-md1", 0, &id);
-    ensure_equals(id, 2);
-    ensure_equals(test->id(md1), 2);
-
-    // Query various kinds of metadata
-    metadata::Collection mdc;
-    query_index(*test, Matcher::parse("origin:GRIB1,200"), mdc);
-    ensure_equals(mdc.size(), 1u);
-    ensure_equals(mdc[0].notes().size(), 1u);
-    ensure_equals(mdc[0].notes()[0].content, "this is a test");
-
-    mdc.clear();
-    query_index(*test, Matcher::parse("product:GRIB1,3"), mdc);
-    ensure_equals(mdc.size(), 1u);
-
-    // TODO: level, timerange, area, proddef, reftime
-    p.commit();
-}
-
-// See if remove works
-def_test(2)
-{
-    unique_ptr<WContents> test = createIndex<WContents>(
-        "type = ondisk2\n"
-        "path = .\n"
-        "step = daily\n"
-        "indexfile = :memory:\n"
-        "unique = origin, product, level, timerange, area, proddef, reftime\n"
-        "index = origin, product, level, timerange, area, proddef, reftime\n"
-    );
-    ensure(test.get() != 0);
-    Pending p;
-
-    test->open();
-    p = test->beginTransaction();
-    
-    // Index a metadata
-    test->index(md, "test-md", 0);
-    //int id = test->id(md);
-
-    // Index it again and ensure that it fails
-    try {
-        test->index(md, "test-md", 0);
-        ensure(false);
-    } catch (utils::sqlite::DuplicateInsert& e) {
-    }
-
-    // Index a second one
-    test->index(md1, "test-md1", 0);
-    int id1 = test->id(md1);
-
-    // Ensure that we have two items
-    metadata::Collection mdc;
-    query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
-    ensure_equals(mdc.size(), 2u);
-    mdc.clear();
-
-    // Remove a nonexisting item and see that it fails
-    try {
-        test->remove("test-md1", 1);
-        ensure(false);
-    } catch (std::runtime_error) {
-    }
-
-    // Remove the first item
-    test->remove("test-md", 0);
-    ensure((bool)p);
-    p.commit();
-
-    // There should be only one result now
-    query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
-    ensure_equals(mdc.size(), 1u);
-
-    // It should be the second item we inserted
-    ensure_equals(test->id(mdc[0]), id1);
-    mdc.clear();
-
-    // Replace it with a different one
-    test->replace(md1, "test-md", 0);
-
-    // See that it changed
-    query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
-    ensure_equals(mdc.size(), 1u);
-    const source::Blob& blob = mdc[0].sourceBlob();
-    ensure_equals(blob.filename, "test-md");
-
-    p.commit();
-}
-
-namespace {
 struct ReadHang : public wibble::sys::ChildProcess
 {
     ConfigFile cfg;
@@ -240,11 +122,141 @@ struct ReadHang : public wibble::sys::ChildProcess
         return buf[0];
     }
 };
-}
+
+
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_dataset_index_contents");
+
+void Tests::register_tests() {
+
+// Trying indexing a few metadata
+add_method("index", [] {
+    auto md = make_md();
+    auto md1 = make_md1();
+
+    unique_ptr<WContents> test = createIndex<WContents>(
+        "type = ondisk2\n"
+        "path = .\n"
+        "step = daily\n"
+        "indexfile = :memory:\n"
+        "index = origin, product, level\n"
+        "unique = origin, product, level, timerange, area, proddef, reftime\n"
+    );
+    ensure(test.get() != 0);
+    Pending p;
+
+    test->open();
+    p = test->beginTransaction();
+
+    // Index a metadata
+    int id = test->id(md);
+    wassert(actual(id) == -1);
+    wassert(test->index(md, "inbound/test.grib1", 0, &id));
+    wassert(actual(id) == 1);
+    wassert(actual(test->id(md)) == 1);
+
+    // Index a second one
+    id = test->id(md1);
+    wassert(actual(id) == -1);
+    wassert(test->index(md1, "inbound/test-sorted.grib1", 0, &id));
+    wassert(actual(id) == 2);
+    wassert(actual(test->id(md1)) == 2);
+
+    // Query various kinds of metadata
+    metadata::Collection mdc;
+    wassert(query_index(*test, Matcher::parse("origin:GRIB1,200"), mdc));
+    wassert(actual(mdc.size()) == 1u);
+    wassert(actual(mdc[0].notes().size()) == 1u);
+    wassert(actual(mdc[0].notes()[0].content) == "this is a test");
+
+    mdc.clear();
+    wassert(query_index(*test, Matcher::parse("product:GRIB1,3"), mdc));
+    wassert(actual(mdc.size()) == 1u);
+
+    // TODO: level, timerange, area, proddef, reftime
+    p.commit();
+});
+
+// See if remove works
+add_method("remove", [] {
+    auto md = make_md();
+    auto md1 = make_md1();
+
+    unique_ptr<WContents> test = createIndex<WContents>(
+        "type = ondisk2\n"
+        "path = .\n"
+        "step = daily\n"
+        "indexfile = :memory:\n"
+        "unique = origin, product, level, timerange, area, proddef, reftime\n"
+        "index = origin, product, level, timerange, area, proddef, reftime\n"
+    );
+    ensure(test.get() != 0);
+    Pending p;
+
+    test->open();
+    p = test->beginTransaction();
+
+    // Index a metadata
+    test->index(md, "inbound/test.grib1", 0);
+    //int id = test->id(md);
+
+    // Index it again and ensure that it fails
+    try {
+        test->index(md, "inbound/test.grib1", 0);
+        ensure(false);
+    } catch (utils::sqlite::DuplicateInsert& e) {
+    }
+
+    // Index a second one
+    test->index(md1, "inbound/test-sorted.grib1", 0);
+    int id1 = test->id(md1);
+
+    // Ensure that we have two items
+    metadata::Collection mdc;
+    query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
+    ensure_equals(mdc.size(), 2u);
+    mdc.clear();
+
+    // Remove a nonexisting item and see that it fails
+    try {
+        test->remove("inbound/test-sorted.grib1", 1);
+        ensure(false);
+    } catch (std::runtime_error) {
+    }
+
+    // Remove the first item
+    wassert(test->remove("inbound/test.grib1", 0));
+    ensure((bool)p);
+    p.commit();
+
+    // There should be only one result now
+    query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
+    ensure_equals(mdc.size(), 1u);
+
+    // It should be the second item we inserted
+    ensure_equals(test->id(mdc[0]), id1);
+    mdc.clear();
+
+    // Replace it with a different one
+    test->replace(md1, "inbound/test.grib1", 0);
+
+    // See that it changed
+    query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
+    ensure_equals(mdc.size(), 1u);
+    const source::Blob& blob = mdc[0].sourceBlob();
+    ensure_equals(blob.filename, "inbound/test.grib1");
+
+    p.commit();
+});
 
 // Test concurrent read and update
-def_test(3)
-{
+add_method("concurrent", [] {
+    auto md = make_md();
+    auto md1 = make_md1();
+
     string cfg = 
         "type = ondisk2\n"
         "path = .\n"
@@ -262,19 +274,19 @@ def_test(3)
         test1->open();
 
         Pending p = test1->beginTransaction();
-        test1->index(md, "test-md", 0);
-        test1->index(md1, "test-md1", 0);
+        wassert(test1->index(md, "inbound/test.grib1", 0));
+        wassert(test1->index(md1, "inbound/test-sorted.grib1", 0));
         p.commit();
     }
 
     // Query the index and hang
     ReadHang readHang(cfg);
     readHang.start();
-    ensure_equals(readHang.waitUntilHung(), 'H');
+    wassert(actual(readHang.waitUntilHung()) == 'H');
 
     // Now try to index another element
     Metadata md3;
-    md3.set_source(Source::createBlob("grib", "", "antani3", 10, 2000));
+    md3.set_source(Source::createBlob("grib", "", "inbound/test.bufr", 10, 2000));
     md3.set("origin", "GRIB1(202, 12, 102)");
     md3.set("product", "GRIB1(3, 4, 5)");
     md3.set("level", "GRIB1(1, 2)");
@@ -287,17 +299,19 @@ def_test(3)
         unique_ptr<WContents> test1 = createIndex<WContents>(cfg);
         test1->open();
         Pending p = test1->beginTransaction();
-        test1->index(md3, "test-md1", 0);
+        test1->index(md3, "inbound/test.bufr", 0);
         p.commit();
     }
 
     readHang.kill(9);
     readHang.wait();
-}
+});
 
 // Test getting the metadata corresponding to a file
-def_test(4)
-{
+add_method("query_file", [] {
+    auto md = make_md();
+    auto md1 = make_md1();
+
     // Remove index if it exists
     unlink("file1");
 
@@ -318,21 +332,21 @@ def_test(4)
 
     test->open();
     p = test->beginTransaction();
-    
+
     // Index two metadata in one file
-    test->index(md, "test-md", 0);
-    test->index(md1, "test-md", 10);
+    test->index(md, "inbound/padded.grib1", 0);
+    test->index(md1, "inbound/padded.grib1", 10);
 
     // Index three other metadata in a separate file
-    test->index(src[0], "test-md1", 0);
-    test->index(src[1], "test-md1", 10);
-    test->index(src[2], "test-md1", 20);
+    test->index(src[0], "inbound/test.grib1", 0);
+    test->index(src[1], "inbound/test.grib1", 10);
+    test->index(src[2], "inbound/test.grib1", 20);
 
     p.commit();
 
     // Get the metadata corresponding to one file
     metadata::Collection mdc;
-    test->scan_file("test-md", mdc.inserter_func());
+    test->scan_file("inbound/padded.grib1", mdc.inserter_func());
     ensure_equals(mdc.size(), 2u);
 
     // Check that the metadata came out fine
@@ -343,11 +357,13 @@ def_test(4)
     mdc[1].unset(TYPE_ASSIGNEDDATASET);
     mdc[1].set_source(unique_ptr<Source>(md1.source().clone()));
     ensure(mdc[1] == md1);
-}
+});
 
 // Try a summary query that used to be badly generated
-def_test(5)
-{
+add_method("reproduce_old_issue1", [] {
+    auto md = make_md();
+    auto md1 = make_md1();
+
     // Remove index if it exists
     unlink("file1");
 
@@ -369,7 +385,7 @@ def_test(5)
     test->index(md, "test-md", 0);
     test->index(md1, "test-md1", 0);
     Metadata md2;
-    md2.set_source(Source::createBlob("grib", "", "antani3", 10, 2000));
+    md2.set_source(Source::createBlob("grib", "", "inbound/test.bufr", 10, 2000));
     md2.set("origin", "GRIB1(202, 12, 102)");
     md2.set("product", "GRIB1(3, 4, 5)");
     md2.set("level", "GRIB1(1, 2)");
@@ -400,15 +416,16 @@ def_test(5)
     summary.clear();
     test->query_summary(Matcher::parse("reftime:>=2004-12-10,<=2005-02-15"), summary);
     ensure_equals(summary.count(), 1u);
-
-}
+});
 
 // Trying indexing a few metadata in a large file
-def_test(6)
-{
+add_method("largefile", [] {
+    auto md = make_md();
+    auto md1 = make_md1();
+
     // Pretend the data is in a very big file
-    md.set_source(Source::createBlob("grib", "", "antani", 0x100000000LLU, 2000));
-    md1.set_source(Source::createBlob("grib", "", "blinda", 0xFFFFffffFFFF0000LLU, 0xFFFF));
+    md.set_source(Source::createBlob("grib", "", "inbound/test.grib1", 0x100000000LLU, 2000));
+    md1.set_source(Source::createBlob("grib", "", "inbound/test-sorted.grib1", 0xFFFFffffFFFF0000LLU, 0xFFFF));
 
     // Remove index if it exists
     unlink("file1");
@@ -428,8 +445,8 @@ def_test(6)
     p = test->beginTransaction();
 
     // Index the two metadata
-    test->index(md, "test-md", md.sourceBlob().offset);
-    test->index(md1, "test-md1", md1.sourceBlob().offset);
+    test->index(md, "inbound/test.grib1", md.sourceBlob().offset);
+    test->index(md1, "inbound/test-sorted.grib1", md1.sourceBlob().offset);
 
     // Query various kinds of metadata
     metadata::Collection mdc;
@@ -445,11 +462,13 @@ def_test(6)
 
     // TODO: level, timerange, area, proddef, reftime
     p.commit();
-}
+});
 
 // Test smallfiles support
-def_test(7)
-{
+add_method("smallfiles", [] {
+    auto md = make_md();
+    auto md1 = make_md1();
+
     metadata::Collection src;
     scan::scan("inbound/test.vm2", src.inserter_func());
 
@@ -538,6 +557,8 @@ def_test(7)
         wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
         wassert(actual(collector.events.size()) == 0u);
     }
+});
+
 }
 
 }

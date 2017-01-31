@@ -32,9 +32,6 @@ namespace arki {
 
 namespace metadata {
 
-thread_local arki::reader::DataReader dataReader;
-
-
 ReadContext::ReadContext() {}
 
 ReadContext::ReadContext(const std::string& pathname)
@@ -131,7 +128,15 @@ const types::source::Blob* Metadata::has_source_blob() const
 const source::Blob& Metadata::sourceBlob() const
 {
     if (!m_source) throw_consistency_error("metadata has no source");
-    const source::Blob* res = dynamic_cast<source::Blob*>(m_source);
+    const source::Blob* res = dynamic_cast<const source::Blob*>(m_source);
+    if (!res) throw_consistency_error("metadata source is not a Blob source");
+    return *res;
+}
+
+source::Blob& Metadata::sourceBlob()
+{
+    if (!m_source) throw_consistency_error("metadata has no source");
+    source::Blob* res = dynamic_cast<source::Blob*>(m_source);
     if (!res) throw_consistency_error("metadata source is not a Blob source");
     return *res;
 }
@@ -508,55 +513,13 @@ const vector<uint8_t>& Metadata::getData()
         {
             // Do not directly use m_data so that if dataReader.read throws an
             // exception, m_data remains empty.
-            const source::Blob& s = sourceBlob();
-            vector<uint8_t> buf;
-            buf.resize(s.size);
-            metadata::dataReader.read(s.absolutePathname(), s.offset, s.size, buf.data());
-            m_data = move(buf);
+            source::Blob& s = sourceBlob();
+            s.lock();
+            m_data = s.read_data();
             return m_data;
         }
         default:
             throw_consistency_error("retrieving data", "unsupported source style");
-    }
-}
-
-const vector<uint8_t>& Metadata::getData(NamedFileDescriptor& fd, bool rlock)
-{
-    // First thing, try and return it from cache
-    if (!m_data.empty()) return m_data;
-
-    // If we don't have it in cache, try reconstructing it from the Value metadata
-    if (const Value* value = get<types::Value>())
-        m_data = arki::scan::reconstruct(m_source->format, *this, value->buffer);
-    if (!m_data.empty()) return m_data;
-
-    // If we don't have it in cache and we don't have a source, we cannot know
-    // how to load it: give up
-    if (!m_source) throw runtime_error("cannot retrieve data: data source is not defined");
-
-    // Load it according to source
-    switch (m_source->style())
-    {
-        case Source::INLINE:
-            throw runtime_error("cannot retrieve data: data is not found on INLINE metadata");
-        case Source::URL:
-            throw runtime_error("cannot retrieve data: data is not accessible for URL metadata");
-        case Source::BLOB:
-        {
-            if (rlock)
-                throw std::runtime_error("cannot retrieve data: read locking in this method is not yet implemented");
-            // Do not directly use m_data so that if dataReader.read throws an
-            // exception, m_data remains empty.
-            const source::Blob& s = sourceBlob();
-            vector<uint8_t> buf;
-            buf.resize(s.size);
-            if (fd.pread(buf.data(), s.size, s.offset) != s.size)
-                throw runtime_error("cannot retrieve data: only partial data has been read");
-            m_data = move(buf);
-            return m_data;
-        }
-        default:
-            throw runtime_error("cannot retrieve data: unsupported source style");
     }
 }
 
@@ -617,7 +580,7 @@ size_t Metadata::data_size() const
 
 void Metadata::flushDataReaders()
 {
-    metadata::dataReader.flush();
+    reader::Registry().get().cleanup();
 }
 
 bool Metadata::read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& file, metadata_dest_func dest)

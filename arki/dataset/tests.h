@@ -206,6 +206,8 @@ public:
 
     void import_all(const testdata::Fixture& fixture);
     void import_all_packed(const testdata::Fixture& fixture);
+
+    bool has_smallfiles();
 };
 
 }
@@ -292,8 +294,7 @@ struct GRIBData : Fixture
 {
     GRIBData()
     {
-        metadata::Collection mdc;
-        scan::scan("inbound/test.grib1", mdc.inserter_func());
+        metadata::Collection mdc("inbound/test.grib1");
         format = "grib";
         max_selective_aggregation = "monthly";
         max_selective_aggregation_singleton_index = 2;
@@ -309,8 +310,7 @@ struct BUFRData : Fixture
     BUFRData()
     {
 #ifdef HAVE_DBALLE
-        metadata::Collection mdc;
-        scan::scan("inbound/test.bufr", mdc.inserter_func());
+        metadata::Collection mdc("inbound/test.bufr");
         format = "bufr";
         max_selective_aggregation = "yearly";
         max_selective_aggregation_singleton_index = 0;
@@ -326,8 +326,7 @@ struct VM2Data : Fixture
 {
     VM2Data()
     {
-        metadata::Collection mdc;
-        scan::scan("inbound/test.vm2", mdc.inserter_func());
+        metadata::Collection mdc("inbound/test.vm2");
         format = "vm2";
         max_selective_aggregation = "yearly";
         max_selective_aggregation_singleton_index = 2;

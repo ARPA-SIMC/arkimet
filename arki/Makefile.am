@@ -160,6 +160,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/h5.h \
 		utils.h \
 		utils/intern.h \
+		utils/lock.h \
 		utils/pcounter.h \
 		utils/process.h \
 		utils/regexp.h \
@@ -222,6 +223,7 @@ libarkimet_la_SOURCES += \
 		utils/gzip.cc \
 		utils/files.cc \
 		utils/intern.cc \
+		utils/lock.cc \
 		utils/pcounter.cc \
 		utils/process.cc \
 		utils/raii.cc \
@@ -303,6 +305,7 @@ tests_arki_test_SOURCES += \
 		utils/yaml-test.cc \
 		utils/files-tut.cc \
 		utils/intern-tut.cc \
+		utils/lock-test.cc \
 		utils/pcounter-tut.cc \
 		utils/process-tut.cc \
 		utils/raii-tut.cc \
@@ -407,9 +410,9 @@ tests_arki_test_SOURCES += \
 		validator-test.cc \
 		bbox-test.cc \
 		metadata-test.cc \
-		metadata/collection-tut.cc \
+		metadata/collection-test.cc \
 		metadata/clusterer-tut.cc \
-		metadata/stream-tut.cc \
+		metadata/stream-test.cc \
 		metadata/test-generator-tut.cc \
 		reader-test.cc \
 		summary-test.cc \
@@ -554,7 +557,7 @@ tests_arki_test_SOURCES += \
 		dataset/index/manifest-test.cc \
 		dataset/index/aggregate-tut.cc \
 		dataset/index/summarycache-tut.cc \
-		dataset/index/contents-tut.cc \
+		dataset/index/contents-test.cc \
 		dataset/step-test.cc \
 		dataset/local-test.cc \
 		dataset/segmented-test.cc \
@@ -562,7 +565,7 @@ tests_arki_test_SOURCES += \
 		dataset/file-tut.cc \
 		dataset/archive-test.cc \
 		dataset/simple-test.cc \
-		dataset/simple/datafile-tut.cc \
+		dataset/simple/datafile-test.cc \
 		dataset/simple/reader-test.cc \
 		dataset/simple/writer-test.cc \
 		dataset/iseg-test.cc \
