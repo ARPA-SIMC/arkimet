@@ -18,6 +18,7 @@
 #include "arki/types/timerange.h"
 #include "arki/types/area.h"
 #include "arki/types/proddef.h"
+#include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <algorithm>
@@ -342,6 +343,7 @@ void DatasetTest::import_all(const testdata::Fixture& fixture)
         import_results[i] = fixture.test_data[i].md;
         Writer::AcquireResult res = writer->acquire(import_results[i]);
         wassert(actual(res) == Writer::ACQ_OK);
+        import_results[i].sourceBlob().unlock();
     }
 
     utils::files::removeDontpackFlagfile(cfg.value("path"));
