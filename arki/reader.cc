@@ -105,13 +105,30 @@ public:
     std::string fname;
     std::string format;
     sys::Path dirfd;
+    sys::File repack_lock;
+    Lock lock;
 
     DirReader(const std::string& fname)
-        : dirfd(fname, O_DIRECTORY)
+        : dirfd(fname, O_DIRECTORY), repack_lock(dirfd.openat(".repack-lock", O_RDONLY | O_CREAT, 0777), str::joinpath(fname, ".repack-lock"))
     {
         size_t pos;
         if ((pos = fname.rfind('.')) != std::string::npos)
             format = fname.substr(pos + 1);
+
+        // Lock the directory to prevent a repack but allow appends: there are
+        // no functions in arkimet that would rewrite a part of a file: either
+        // append, or replace.
+        lock.l_type = F_RDLCK;
+        lock.l_whence = SEEK_SET;
+        lock.l_start = 0;
+        lock.l_len = 0;
+        lock.ofd_setlkw(repack_lock);
+    }
+
+    ~DirReader()
+    {
+        lock.l_type = F_UNLCK;
+        lock.ofd_setlk(repack_lock);
     }
 
     bool is(const std::string& fname) const override

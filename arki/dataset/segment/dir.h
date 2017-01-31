@@ -17,8 +17,7 @@ namespace dir {
 struct SequenceFile
 {
     std::string dirname;
-    std::string pathname;
-    int fd;
+    arki::File fd;
 
     SequenceFile(const std::string& pathname);
     ~SequenceFile();

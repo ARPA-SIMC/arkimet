@@ -9,6 +9,7 @@
 #include "arki/utils/sys.h"
 #include "arki/scan/any.h"
 #include "arki/utils/string.h"
+#include "arki/utils/lock.h"
 #include "arki/dataset/reporter.h"
 #include <cerrno>
 #include <cstring>
@@ -33,25 +34,23 @@ namespace {
 
 struct FdLock
 {
-    const std::string& pathname;
-    int fd;
-    struct flock lock;
+    sys::NamedFileDescriptor& fd;
+    Lock lock;
 
-    FdLock(const std::string& pathname, int fd) : pathname(pathname), fd(fd)
+    FdLock(sys::NamedFileDescriptor& fd) : fd(fd)
     {
         lock.l_type = F_WRLCK;
         lock.l_whence = SEEK_SET;
         lock.l_start = 0;
         lock.l_len = 0;
         // Use SETLKW, so that if it is already locked, we just wait
-        if (fcntl(fd, F_SETLKW, &lock) == -1)
-            throw_file_error(pathname, "cannot lock the file for writing");
+        lock.ofd_setlkw(fd);
     }
 
     ~FdLock()
     {
         lock.l_type = F_UNLCK;
-        fcntl(fd, F_SETLK, &lock);
+        lock.ofd_setlk(fd);
     }
 };
 
@@ -102,69 +101,58 @@ struct Append : public Transaction
 }
 
 SequenceFile::SequenceFile(const std::string& dirname)
-    : dirname(dirname), pathname(str::joinpath(dirname, ".sequence")), fd(-1)
+    : dirname(dirname), fd(str::joinpath(dirname, ".sequence"))
 {
 }
 
 SequenceFile::~SequenceFile()
 {
-    close();
 }
 
 void SequenceFile::open()
 {
-    fd = ::open(pathname.c_str(), O_RDWR | O_CREAT | O_CLOEXEC | O_NOATIME | O_NOFOLLOW, 0666);
-    if (fd == -1)
-        throw_file_error(pathname, "cannot open sequence file");
+    fd.open(O_RDWR | O_CREAT | O_CLOEXEC | O_NOATIME | O_NOFOLLOW, 0666);
 }
 
 void SequenceFile::close()
 {
-    if (fd != -1)
-        ::close(fd);
-    fd = -1;
+    fd.close();
 }
 
 void SequenceFile::test_add_padding(unsigned size)
 {
-    FdLock lock(pathname, fd);
+    FdLock lock(fd);
     uint64_t cur;
 
     // Read the value in the sequence file
-    ssize_t count = pread(fd, &cur, sizeof(cur), 0);
-    if (count < 0)
-        throw_file_error(pathname, "cannot read sequence file");
-
+    ssize_t count = fd.pread(&cur, sizeof(cur), 0);
     if ((size_t)count < sizeof(cur))
         cur = size;
     else
         cur += size;
 
     // Write it out
-    count = pwrite(fd, &cur, sizeof(cur), 0);
-    if (count < 0)
-        throw_file_error(pathname, "cannot write sequence file");
+    count = fd.pwrite(&cur, sizeof(cur), 0);
+    if (count != sizeof(cur))
+        fd.throw_runtime_error("cannot write the whole sequence file");
 }
 
 std::pair<std::string, size_t> SequenceFile::next(const std::string& format)
 {
-    FdLock lock(pathname, fd);
+    FdLock lock(fd);
     uint64_t cur;
 
     // Read the value in the sequence file
-    ssize_t count = pread(fd, &cur, sizeof(cur), 0);
-    if (count < 0)
-        throw_file_error(pathname, "cannot read sequence file");
-
+    ssize_t count = fd.pread(&cur, sizeof(cur), 0);
     if ((size_t)count < sizeof(cur))
         cur = 0;
     else
         ++cur;
 
     // Write it out
-    count = pwrite(fd, &cur, sizeof(cur), 0);
-    if (count < 0)
-        throw_file_error(pathname, "cannot write sequence file");
+    count = fd.pwrite(&cur, sizeof(cur), 0);
+    if (count != sizeof(cur))
+        fd.throw_runtime_error("cannot write the whole sequence file");
 
     return make_pair(str::joinpath(dirname, data_fname(cur, format)), (size_t)cur);
 }
@@ -445,6 +433,8 @@ size_t Segment::remove()
         size += sys::size(pathname);
         sys::unlink(pathname);
     });
+    sys::unlink_ifexists(str::joinpath(absname, ".sequence"));
+    sys::unlink_ifexists(str::joinpath(absname, ".repack-lock"));
     // Also remove the directory if it is empty
     rmdir(absname.c_str());
     return size;
@@ -477,10 +467,17 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, u
         std::string absname;
         std::string tmppos;
         bool fired;
+        sys::File repack_lock;
+        Lock lock;
 
         Rename(const std::string& tmpabsname, const std::string& absname)
-            : tmpabsname(tmpabsname), absname(absname), tmppos(absname + ".pre-repack"), fired(false)
+            : tmpabsname(tmpabsname), absname(absname), tmppos(absname + ".pre-repack"), fired(false), repack_lock(str::joinpath(absname, ".repack-lock"), O_RDWR | O_CREAT, 0777)
         {
+            lock.l_type = F_WRLCK;
+            lock.l_whence = SEEK_SET;
+            lock.l_start = 0;
+            lock.l_len = 0;
+            lock.ofd_setlkw(repack_lock);
         }
 
         virtual ~Rename()
@@ -494,7 +491,7 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, u
 
             // It is impossible to make this atomic, so we just try to make it as quick as possible
 
-            // Move the old directory inside the emp dir, to free the old directory name
+            // Move the old directory inside the temp dir, to free the old directory name
             if (rename(absname.c_str(), tmppos.c_str()))
                 throw_system_error("cannot rename " + absname + " to " + tmppos);
 
@@ -506,6 +503,10 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, u
 
             // Remove the old data
             sys::rmtree(tmppos);
+
+            // Release the lock
+            lock.l_type = F_UNLCK;
+            lock.ofd_setlk(repack_lock);
 
             fired = true;
         }
@@ -522,6 +523,10 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, u
             }
 
             rename(tmppos.c_str(), absname.c_str());
+
+            // Release the lock
+            lock.l_type = F_UNLCK;
+            lock.ofd_setlk(repack_lock);
 
             fired = true;
         }

@@ -23,11 +23,12 @@ bool Lock::ofd_setlkw(sys::NamedFileDescriptor& fd, bool retry_on_signal)
         if (!fd.ofd_getlk(l))
         {
             std::stringstream msg;
+            msg << "a ";
             if (l.l_type == F_RDLCK)
                 msg << "read ";
             else
                 msg << "write ";
-            msg << "lock already held on " << fd.name() << " from ";
+            msg << "lock is already held on " << fd.name() << " from ";
             switch (l.l_whence)
             {
                 case SEEK_SET: msg << "set:"; break;

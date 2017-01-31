@@ -218,9 +218,9 @@ this->add_method("repack_during_read", [](Fixture& f) {
             auto checker = f.dataset_config()->create_checker();
             dataset::NullReporter rep;
             try {
-                checker->repack(rep, true, dataset::TEST_MISCHIEF_MOVE_DATA | dataset::TEST_MISCHIEF_LOCK_NOWAIT);
+                checker->repack(rep, true, dataset::TEST_MISCHIEF_MOVE_DATA);
             } catch (std::exception& e) {
-                wassert(actual(e.what()).contains(" is locked"));
+                wassert(actual(e.what()).contains("a read lock is already held"));
             }
         }
 
