@@ -12,7 +12,6 @@
 #include "arki/dataset/file.h"
 #include "arki/dataset/http.h"
 #include "arki/dataset/index/base.h"
-#include "arki/dataset/segment.h"
 #include "arki/dispatcher.h"
 #include "arki/targetfile.h"
 #include "arki/formatter.h"
@@ -640,18 +639,14 @@ bool MetadataDispatch::dispatch(unique_ptr<Metadata>&& md)
 
 void MetadataDispatch::do_copyok(Metadata& md)
 {
-    using arki::dataset::segment::OstreamWriter;
-    const OstreamWriter* writer = OstreamWriter::get(md.source().format);
     if (copyok && copyok->is_open())
-        writer->stream(md, *copyok);
+        md.stream_data(*copyok);
 }
 
 void MetadataDispatch::do_copyko(Metadata& md)
 {
-    using arki::dataset::segment::OstreamWriter;
-    const OstreamWriter* writer = OstreamWriter::get(md.source().format);
     if (copyko && copyko->is_open())
-        writer->stream(md, *copyko);
+        md.stream_data(*copyko);
 }
 
 void MetadataDispatch::flush()

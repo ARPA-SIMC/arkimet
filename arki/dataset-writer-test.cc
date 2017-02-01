@@ -124,7 +124,7 @@ add_method("import_largefile", [](Fixture& f) {
     sys::File out("/dev/null", O_WRONLY);
     dataset::ByteQuery bq;
     bq.setData(Matcher());
-    reader->query_bytes(bq, out);
+    wassert(reader->query_bytes(bq, out));
 });
 
 }

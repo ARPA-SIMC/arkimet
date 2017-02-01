@@ -243,7 +243,7 @@ public:
             // TODO: add a stream method to sys::FileDescriptor that does the
             // right thing depending on what's available in the system, and
             // potentially also handles retries
-            off_t offset = src.offset;
+            off_t offset = 0;
             ssize_t res = sendfile(out, file_fd, &offset, src.size);
             if (res < 0)
             {

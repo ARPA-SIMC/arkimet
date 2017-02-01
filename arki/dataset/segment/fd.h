@@ -1,5 +1,5 @@
-#ifndef ARKI_DATASET_DATA_FD_H
-#define ARKI_DATASET_DATA_FD_H
+#ifndef ARKI_DATASET_SEGMENT_FD_H
+#define ARKI_DATASET_SEGMENT_FD_H
 
 /// Base class for unix fd based read/write functions
 
@@ -40,7 +40,7 @@ public:
      */
     void append_unlock(off_t wrpos);
 
-    virtual void write(const std::vector<uint8_t>& buf);
+    virtual void write(off_t wrpos, const std::vector<uint8_t>& buf);
     void fdtruncate(off_t pos);
     State check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
 
@@ -69,6 +69,5 @@ public:
 }
 }
 }
-
 #endif
 

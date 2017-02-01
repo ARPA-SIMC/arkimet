@@ -15,6 +15,18 @@ using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
+
+Segment::Segment(const std::string& relname, const std::string& absname)
+    : relname(relname), absname(absname), payload(0)
+{
+}
+
+Segment::~Segment()
+{
+    if (payload) delete payload;
+}
+
+
 namespace segment {
 
 std::string State::to_string() const
@@ -31,57 +43,9 @@ std::string State::to_string() const
     return str::join(",", res.begin(), res.end());
 }
 
-}
-
-Segment::Segment(const std::string& relname, const std::string& absname)
-    : relname(relname), absname(absname), payload(0)
-{
-}
-
-Segment::~Segment()
-{
-    if (payload) delete payload;
-}
-
-namespace segment {
-
-OstreamWriter::~OstreamWriter()
-{
-}
-
-const OstreamWriter* OstreamWriter::get(const std::string& format)
-{
-    static concat::OstreamWriter* ow_concat = 0;
-    static lines::OstreamWriter* ow_lines = 0;
-
-    if (format == "grib" || format == "grib1" || format == "grib2")
-    {
-        if (!ow_concat)
-            ow_concat = new concat::OstreamWriter;
-        return ow_concat;
-    } else if (format == "bufr") {
-        if (!ow_concat)
-            ow_concat = new concat::OstreamWriter;
-        return ow_concat;
-    } else if (format == "odimh5" || format == "h5" || format == "odim") {
-        if (!ow_concat)
-            ow_concat = new concat::OstreamWriter;
-        return ow_concat;
-    } else if (format == "vm2") {
-        if (!ow_lines)
-            ow_lines = new lines::OstreamWriter;
-        return ow_lines;
-    } else {
-        throw_consistency_error(
-                "getting ostream writer for " + format,
-                "format not supported");
-    }
-}
-
-
 namespace {
 
-struct BaseSegmentManager : public SegmentManager
+struct BaseSegmentManager : public segment::SegmentManager
 {
     std::string root;
     bool mockdata;

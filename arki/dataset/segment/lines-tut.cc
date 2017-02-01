@@ -120,16 +120,6 @@ def_test(2)
     // process gigabytes of zeros
 }
 
-// Test stream writer
-def_test(3)
-{
-    File out("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
-    const OstreamWriter* w = OstreamWriter::get("vm2");
-    w->stream(mdc[0], out);
-    out.close();
-    wassert(actual(sys::size("tmpfile")) == datasize(mdc[0]) + 1);
-}
-
 // Test raw append
 def_test(4)
 {

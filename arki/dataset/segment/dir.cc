@@ -588,19 +588,6 @@ unique_ptr<dir::Segment> HoleSegment::make_segment(const std::string& format, co
     return res;
 }
 
-OstreamWriter::OstreamWriter()
-{
-    throw std::runtime_error("dir::OstreamWriter not implemented");
-}
-
-OstreamWriter::~OstreamWriter()
-{
-}
-
-size_t OstreamWriter::stream(Metadata& md, NamedFileDescriptor& out) const
-{
-    throw std::runtime_error("dir::OstreamWriter::stream not implemented");
-}
 
 HoleSegment::HoleSegment(const std::string& format, const std::string& relname, const std::string& absname)
     : Segment(format, relname, absname)

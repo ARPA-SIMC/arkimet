@@ -32,18 +32,21 @@ void Segment::test_add_padding(unsigned size)
         fd.write("", 1);
 }
 
-void HoleSegment::write(const std::vector<uint8_t>& buf)
+void HoleSegment::write(off_t wrpos, const std::vector<uint8_t>& buf)
 {
     // Get the current file size
-    off_t pos = fd.lseek(0, SEEK_END);
+    off_t size = fd.lseek(0, SEEK_END);
+
+    if (wrpos + buf.size() <= (size_t)size)
+        return;
 
     // Enlarge its apparent size to include the size of buf
-    int res = ftruncate(fd, pos + buf.size());
+    int res = ftruncate(fd, wrpos + buf.size());
     if (res < 0)
     {
-        stringstream ss;
-        ss << "cannot add " << buf.size() << " bytes to the apparent file size of " << absname;
-        throw std::system_error(errno, std::system_category(), ss.str());
+        stringstream msg;
+        msg << absname << ": cannot set apparent segment size to " << (wrpos + buf.size()) << " bytes";
+        throw std::system_error(errno, std::system_category(), msg.str());
     }
 }
 
@@ -73,25 +76,6 @@ Pending HoleSegment::repack(const std::string& rootdir, metadata::Collection& md
 {
     close();
     return fd::Segment::repack(rootdir, relname, mds, make_repack_hole_segment, true, test_flags);
-}
-
-OstreamWriter::OstreamWriter()
-{
-    sigemptyset(&blocked);
-    sigaddset(&blocked, SIGINT);
-    sigaddset(&blocked, SIGTERM);
-}
-
-OstreamWriter::~OstreamWriter()
-{
-}
-
-size_t OstreamWriter::stream(Metadata& md, NamedFileDescriptor& out) const
-{
-    const std::vector<uint8_t>& buf = md.getData();
-    wibble::sys::sig::ProcMask pm(blocked);
-    out.write_all_or_throw(buf);
-    return buf.size();
 }
 
 }
