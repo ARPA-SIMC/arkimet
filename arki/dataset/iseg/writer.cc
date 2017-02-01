@@ -19,6 +19,7 @@
 #include "arki/utils/string.h"
 #include "arki/utils/compress.h"
 #include "arki/binary.h"
+#include <system_error>
 #include <algorithm>
 #include <ctime>
 #include <cstring>
