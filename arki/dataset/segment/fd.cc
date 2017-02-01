@@ -8,6 +8,7 @@
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/lock.h"
 #include "arki/utils.h"
 #include "arki/dataset/reporter.h"
 #include "arki/nag.h"
@@ -27,6 +28,54 @@ namespace dataset {
 namespace segment {
 namespace fd {
 
+namespace {
+
+struct Append : public Transaction
+{
+    Segment& w;
+    Metadata& md;
+    bool fired = false;
+    const std::vector<uint8_t>& buf;
+    off_t pos;
+
+    Append(Segment& w, Metadata& md)
+        : w(w), md(md), buf(md.getData()), pos(w.append_lock())
+    {
+    }
+
+    virtual ~Append()
+    {
+        if (!fired) rollback();
+    }
+
+    void commit() override
+    {
+        if (fired) return;
+
+        // Append the data
+        w.write(buf);
+        w.append_unlock(pos);
+
+        // Set the source information that we are writing in the metadata
+        md.set_source(Source::createBlob(md.source().format, "", w.absname, pos, buf.size()));
+
+        fired = true;
+    }
+
+    void rollback() override
+    {
+        if (fired) return;
+
+        // If we had a problem, attempt to truncate the file to the original size
+        w.fdtruncate(pos);
+        w.append_unlock(pos);
+        fired = true;
+    }
+};
+
+}
+
+
 Segment::Segment(const std::string& relname, const std::string& absname)
     : dataset::Segment(relname, absname), fd(absname)
 {
@@ -37,12 +86,64 @@ Segment::~Segment()
     close();
 }
 
+Pending Segment::append(Metadata& md, off_t* ofs)
+{
+    open();
+
+    Append* res = new Append(*this, md);
+    *ofs = res->pos;
+    return res;
+}
+
+off_t Segment::append(Metadata& md)
+{
+    open();
+
+    // Get the data blob to append
+    const std::vector<uint8_t>& buf = md.getData();
+
+    // Lock and get the write position in the data file
+    off_t pos = append_lock();
+
+    try {
+        // Append the data
+        write(buf);
+    } catch (...) {
+        // If we had a problem, attempt to truncate the file to the original size
+        fdtruncate(pos);
+        append_unlock(pos);
+        throw;
+    }
+
+    append_unlock(pos);
+
+    // Set the source information that we are writing in the metadata
+    // md.set_source(Source::createBlob(md.source().format, "", absname, pos, buf.size()));
+    return pos;
+}
+
+off_t Segment::append(const std::vector<uint8_t>& buf)
+{
+    open();
+
+    off_t pos = append_lock();
+    try {
+        write(buf);
+    } catch (...) {
+        fdtruncate(pos);
+        append_unlock(pos);
+        throw;
+    }
+    append_unlock(pos);
+    return pos;
+}
+
 void Segment::open()
 {
     if (fd != -1) return;
 
     // Open the data file
-    fd.open(O_WRONLY | O_CREAT | O_APPEND, 0666);
+    fd.open(O_WRONLY | O_CREAT, 0666);
 }
 
 void Segment::truncate_and_open()
@@ -59,32 +160,27 @@ void Segment::close()
     fd.close();
 }
 
-void Segment::lock()
+off_t Segment::append_lock()
 {
-    struct flock lock;
+    Lock lock;
     lock.l_type = F_WRLCK;
-    lock.l_whence = SEEK_SET;
+    lock.l_whence = SEEK_END;
     lock.l_start = 0;
     lock.l_len = 0;
-    // Use SETLKW, so that if it is already locked, we just wait
-    if (fcntl(fd, F_SETLKW, &lock) == -1)
-        throw_file_error(absname, "cannot lock file for writing");
+    lock.ofd_setlkw(fd);
+
+    // Now that we are locked, get the write position in the data file
+    return fd.lseek(0, SEEK_END);
 }
 
-void Segment::unlock()
+void Segment::append_unlock(off_t wrpos)
 {
-    struct flock lock;
+    Lock lock;
     lock.l_type = F_UNLCK;
     lock.l_whence = SEEK_SET;
-    lock.l_start = 0;
+    lock.l_start = wrpos;
     lock.l_len = 0;
-    fcntl(fd, F_SETLK, &lock);
-}
-
-off_t Segment::wrpos()
-{
-    // Get the write position in the data file
-    return fd.lseek(0, SEEK_END);
+    lock.ofd_setlk(fd);
 }
 
 void Segment::fdtruncate(off_t pos)
@@ -240,17 +336,20 @@ Pending Segment::repack(
         const std::string& relname,
         metadata::Collection& mds,
         Segment* make_repack_segment(const std::string&, const std::string&),
-        bool skip_validation)
+        bool skip_validation,
+        unsigned test_flags)
 {
     struct Rename : public Transaction
     {
+        sys::File src;
         std::string tmpabsname;
         std::string absname;
-        bool fired;
+        bool fired = false;
 
         Rename(const std::string& tmpabsname, const std::string& absname)
-            : tmpabsname(tmpabsname), absname(absname), fired(false)
+            : src(absname, O_RDWR), tmpabsname(tmpabsname), absname(absname)
         {
+            repack_lock();
         }
 
         virtual ~Rename()
@@ -258,12 +357,44 @@ Pending Segment::repack(
             if (!fired) rollback();
         }
 
+        /**
+         * Lock the whole segment for repacking
+         */
+        void repack_lock()
+        {
+            Lock lock;
+            lock.l_type = F_WRLCK;
+            lock.l_whence = SEEK_SET;
+            lock.l_start = 0;
+            lock.l_len = 0;
+            lock.ofd_setlkw(src);
+        }
+
+        /**
+         * Unlock the segment after repacking
+         */
+        void repack_unlock()
+        {
+            Lock lock;
+            lock.l_type = F_UNLCK;
+            lock.l_whence = SEEK_SET;
+            lock.l_start = 0;
+            lock.l_len = 0;
+            lock.ofd_setlk(src);
+        }
+
         virtual void commit()
         {
             if (fired) return;
             // Rename the data file to its final name
-            if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
-                throw_system_error("cannot rename " + tmpabsname + " to " + absname);
+            try {
+                if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
+                    throw_system_error("cannot rename " + tmpabsname + " to " + absname);
+            } catch (...) {
+                repack_unlock();
+                throw;
+            }
+            repack_unlock();
             fired = true;
         }
 
@@ -271,6 +402,7 @@ Pending Segment::repack(
         {
             if (fired) return;
             unlink(tmpabsname.c_str());
+            repack_unlock();
             fired = true;
         }
     };
@@ -279,24 +411,34 @@ Pending Segment::repack(
     string tmprelname = relname + ".repack";
     string tmpabsname = absname + ".repack";
 
+    // Make sure mds are not holding a read lock on the file to repack
+    for (auto& md: mds) md->sourceBlob().unlock();
+
     // Get a validator for this file
     const scan::Validator& validator = scan::Validator::by_filename(absname);
 
+    // Reacquire the lock here for writing
+    Rename* rename;
+    Pending p(rename = new Rename(tmpabsname, absname));
+
     // Create a writer for the temp file
     unique_ptr<Segment> writer(make_repack_segment(tmprelname, tmpabsname));
+
+    if (test_flags & TEST_MISCHIEF_MOVE_DATA)
+        writer->test_add_padding(1);
 
     // Fill the temp file with all the data in the right order
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         // Read the data
-        const auto& buf = (*i)->getData();
+        auto buf = (*i)->sourceBlob().read_data(rename->src, false);
         // Validate it
         if (!skip_validation)
             validator.validate_buf(buf.data(), buf.size());
         // Append it to the new file
         off_t w_off = writer->append(buf);
         // Update the source information in the metadata
-        (*i)->set_source(Source::createBlob((*i)->source().format, rootdir, relname, w_off, buf.size()));
+        (*i)->set_source(Source::createBlobUnlocked((*i)->source().format, rootdir, relname, w_off, buf.size()));
         // Drop the cached data, to prevent ending up with the whole segment
         // sitting in memory
         (*i)->drop_cached_data();
@@ -305,7 +447,7 @@ Pending Segment::repack(
     // Close the temp file
     writer.release();
 
-    return new Rename(tmpabsname, absname);
+    return p;
 }
 
 }

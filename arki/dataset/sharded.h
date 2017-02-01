@@ -37,7 +37,7 @@ struct Config : public Base
 
     // Iterate all shards matching a matcher, in ascending time order,
     // generating their config
-    virtual void query_shards(const Matcher& matcher, std::function<void(const std::string& shard_relpath, std::shared_ptr<const dataset::Config>)>) const;
+    virtual bool query_shards(const Matcher& matcher, std::function<bool(const std::string& shard_relpath, std::shared_ptr<const dataset::Config>)>) const;
 
     bool relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const override;
 
@@ -58,7 +58,7 @@ public:
 
     const Config& config() const override { return *m_config; }
 
-    void query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
     void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) override;
 };
@@ -107,7 +107,7 @@ public:
     void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
     void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
     void rescanSegment(const std::string& relpath) override;
-    size_t repackSegment(const std::string& relpath) override;
+    size_t repackSegment(const std::string& relpath, unsigned test_flags=0) override;
     size_t removeSegment(const std::string& relpath, bool withData=false) override;
     void releaseSegment(const std::string& relpath, const std::string& destpath) override;
     size_t vacuum() override;

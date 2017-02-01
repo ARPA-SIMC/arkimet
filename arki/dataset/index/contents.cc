@@ -9,6 +9,7 @@
 #include "arki/dataset.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
+#include "arki/types/source/blob.h"
 #include "arki/types/value.h"
 #include "arki/summary.h"
 #include "arki/summary/stats.h"
@@ -132,9 +133,6 @@ void Contents::initQueries()
         if (not other_members.empty())
             m_others = new Aggregate(m_db, "mdother", other_members);
     }
-
-    if (m_uniques) m_uniques->initQueries();
-    if (m_others) m_others->initQueries();
 
     string query = "SELECT id FROM md WHERE reftime=?";
     if (m_uniques) query += " AND uniq=?";
@@ -480,7 +478,7 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 
     try {
         if (!addJoinsAndConstraints(q.matcher, query))
-            return false;
+            return true;
     } catch (NotFound) {
         // If one of the subqueries did not find any match, we can directly
         // return true here, as we are not going to get any result
@@ -544,19 +542,15 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     if (tmpfile.get() != 0)
     {
         metadata::ReadContext rc(tmpfile->name(), config().path);
-        Metadata::read_file(rc, dest);
+        if (!Metadata::read_file(rc, [&](std::unique_ptr<Metadata> md) { md->sourceBlob().lock(); return dest(move(md)); }))
+            return false;
     }
 
     // Sort and output the rest
     if (q.sorter) mdbuf.sort(*q.sorter);
 
     // pass it to consumer
-    mdbuf.move_to(dest);
-
-//fprintf(stderr, "POSTQ %zd\n", mdbuf.size());
-//system(str::fmtf("ps u %d >&2", getpid()).c_str());
-
-    return true;
+    return mdbuf.move_to(dest);
 }
 
 void Contents::rebuildSummaryCache()
@@ -1038,7 +1032,7 @@ Pending WContents::beginTransaction()
 
 Pending WContents::beginExclusiveTransaction()
 {
-    return Pending(new SqliteTransaction(m_db, true));
+    return Pending(new SqliteTransaction(m_db, "EXCLUSIVE"));
 }
 
 void WContents::index(const Metadata& md, const std::string& file, uint64_t ofs, int* id)

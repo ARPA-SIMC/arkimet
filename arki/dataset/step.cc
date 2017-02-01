@@ -4,6 +4,7 @@
 #include "arki/utils/pcounter.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/regexp.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
@@ -17,8 +18,397 @@ using arki::core::Time;
 namespace arki {
 namespace dataset {
 
+namespace step {
+
+Dirs::Dirs(const std::string& root, const std::string& format)
+    : root(root), format(format) {}
+
+struct BaseDirs : public Dirs
+{
+    virtual bool parse(const char* name, int& value) const = 0;
+    virtual std::unique_ptr<types::reftime::Period> to_period(int value) const = 0;
+    virtual std::unique_ptr<Files> make_files(const std::string& name, int value) const = 0;
+
+    using Dirs::Dirs;
+
+    void list(const Matcher& m, std::function<void(std::unique_ptr<Files>)> dest) const override
+    {
+        sys::Path dir(root);
+        for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+        {
+            if (f->d_name[0] == '.') continue;
+            if (!f.isdir()) continue;
+            int value;
+            if (!parse(f->d_name, value)) continue;
+
+            // Its period must match the matcher in q
+            if (!m.empty())
+            {
+                auto rt = to_period(value);
+                if (!m(*rt)) continue;
+            }
+
+            dest(move(make_files(f->d_name, value)));
+        }
+    }
+
+    void extremes(std::unique_ptr<types::reftime::Period>& first, std::unique_ptr<types::reftime::Period>& last) const override
+    {
+        sys::Path dir(root);
+
+        std::vector<std::pair<int, std::string>> subdirs;
+        for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+        {
+            if (f->d_name[0] == '.') continue;
+            if (!f.isdir()) continue;
+            int value;
+            if (!parse(f->d_name, value)) continue;
+            subdirs.push_back(make_pair(value, f->d_name));
+        }
+
+        if (subdirs.empty())
+        {
+            first.release();
+            last.release();
+            return;
+        }
+
+        std::sort(subdirs.begin(), subdirs.end());
+
+        for (const auto& sd: subdirs)
+        {
+            auto files = make_files(sd.second, sd.first);
+            first = files->first();
+            if (first) break;
+        }
+
+        for (auto i = subdirs.crbegin(); i != subdirs.crend(); ++i)
+        {
+            auto files = make_files(i->second, i->first);
+            last = files->last();
+            if (first) break;
+        }
+    }
+};
+
+
+Files::Files(const Dirs& dirs, const std::string& relpath, int value)
+    : dirs(dirs), relpath(relpath), value(value) {}
+
+
+struct BaseFiles : public Files
+{
+    using Files::Files;
+
+    virtual std::unique_ptr<utils::Regexp> make_regexp() const = 0;
+    virtual std::unique_ptr<types::reftime::Period> to_period(const utils::Regexp& re) const = 0;
+
+    void list(const Matcher& m, std::function<void(std::string&& relpath)> dest) const override
+    {
+        auto re = make_regexp();
+        sys::Path dir(str::joinpath(dirs.root, this->relpath));
+        for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+        {
+            if (f->d_name[0] == '.') continue;
+            if (!re->match(f->d_name)) continue;
+            if (dirs.format != f->d_name + re->match_end(0)) continue;
+
+            // Its period must match the matcher in q
+            if (!m.empty())
+            {
+                auto rt = to_period(*re);
+                if (!m(*rt)) continue;
+            }
+
+            dest(str::joinpath(relpath, f->d_name));
+        }
+    }
+
+    std::unique_ptr<types::reftime::Period> first() const override
+    {
+        string res_name;
+        std::unique_ptr<types::reftime::Period> res;
+
+        auto re = make_regexp();
+        sys::Path dir(str::joinpath(dirs.root, this->relpath));
+        for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+        {
+            if (f->d_name[0] == '.') continue;
+            if (!re->match(f->d_name)) continue;
+            if (dirs.format != f->d_name + re->match_end(0)) continue;
+            if (res_name.empty() || res_name > f->d_name)
+            {
+                res_name = f->d_name;
+                res = to_period(*re);
+            }
+        }
+        return res;
+    }
+
+    std::unique_ptr<types::reftime::Period> last() const override
+    {
+        string res_name;
+        std::unique_ptr<types::reftime::Period> res;
+
+        auto re = make_regexp();
+        sys::Path dir(str::joinpath(dirs.root, this->relpath));
+        for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
+        {
+            if (f->d_name[0] == '.') continue;
+            if (!re->match(f->d_name)) continue;
+            if (dirs.format != f->d_name + re->match_end(0)) continue;
+            if (res_name.empty() || res_name < f->d_name)
+            {
+                res_name = f->d_name;
+                res = to_period(*re);
+            }
+        }
+        return res;
+    }
+};
+
+
+struct SingleFiles : public Files
+{
+    using Files::Files;
+
+    void list(const Matcher& m, std::function<void(std::string&& relpath)> dest) const override
+    {
+        string relpath = "all";
+        relpath += ".";
+        relpath += dirs.format;
+        if (!sys::exists(str::joinpath(dirs.root, relpath))) return;
+        dest(move(relpath));
+    }
+
+    std::unique_ptr<types::reftime::Period> first() const override
+    {
+        return unique_ptr<types::reftime::Period>(new reftime::Period(
+            core::Time::create_lowerbound(1000),
+            core::Time::create_upperbound(99999)));
+    }
+
+    std::unique_ptr<types::reftime::Period> last() const override
+    {
+        return unique_ptr<types::reftime::Period>(new reftime::Period(
+            core::Time::create_lowerbound(1000),
+            core::Time::create_upperbound(99999)));
+    }
+};
+
+
+struct SingleDirs : public Dirs
+{
+    using Dirs::Dirs;
+
+    void list(const Matcher& m, std::function<void(std::unique_ptr<Files>)> dest) const override
+    {
+        if (!sys::exists(str::joinpath(root, "all") + "." + format)) return;
+        dest(std::unique_ptr<Files>(new SingleFiles(*this, "", 0)));
+    }
+
+    void extremes(std::unique_ptr<types::reftime::Period>& first, std::unique_ptr<types::reftime::Period>& last) const override
+    {
+        if (!sys::exists(str::joinpath(root, "all") + "." + format))
+        {
+            first.release();
+            last.release();
+            return;
+        }
+
+        first.reset(new reftime::Period(
+            core::Time::create_lowerbound(1000),
+            core::Time::create_upperbound(99999)));
+        last.reset(new reftime::Period(
+            core::Time::create_lowerbound(1000),
+            core::Time::create_upperbound(99999)));
+    }
+};
+
+
+template<typename FILES>
+struct CenturyDirs : public BaseDirs
+{
+    using BaseDirs::BaseDirs;
+
+    bool parse(const char* name, int& value) const override
+    {
+        char* endptr;
+        value = strtoul(name, &endptr, 10);
+        if (endptr - name != 2) return false;
+        if (*endptr) return false;
+        return true;
+    }
+
+    virtual std::unique_ptr<types::reftime::Period> to_period(int value) const
+    {
+        return unique_ptr<types::reftime::Period>(new reftime::Period(
+            core::Time::create_lowerbound(value * 100),
+            core::Time::create_upperbound(value * 100 + 99)));
+    }
+
+    virtual std::unique_ptr<Files> make_files(const std::string& name, int value) const
+    {
+        return std::unique_ptr<Files>(new FILES(*this, name, value));
+    }
+};
+
+template<typename FILES>
+struct YearDirs : public BaseDirs
+{
+    using BaseDirs::BaseDirs;
+
+    bool parse(const char* name, int& value) const override
+    {
+        char* endptr;
+        value = strtoul(name, &endptr, 10);
+        if (endptr - name != 4) return false;
+        if (*endptr) return false;
+        return true;
+    }
+
+    virtual std::unique_ptr<types::reftime::Period> to_period(int value) const
+    {
+        return unique_ptr<types::reftime::Period>(new reftime::Period(
+            core::Time::create_lowerbound(value),
+            core::Time::create_upperbound(value)));
+    }
+
+    virtual std::unique_ptr<Files> make_files(const std::string& name, int value) const
+    {
+        return std::unique_ptr<Files>(new FILES(*this, name, value));
+    }
+};
+
+struct YearFiles : public BaseFiles
+{
+    using BaseFiles::BaseFiles;
+
+    std::unique_ptr<Regexp> make_regexp() const override
+    {
+        return unique_ptr<Regexp>(new ERegexp("^([[:digit:]]{4})\\.", 2));
+    }
+
+    std::unique_ptr<types::reftime::Period> to_period(const Regexp& re) const
+    {
+        unsigned year = std::stoul(re[1]);
+        return unique_ptr<types::reftime::Period>(new reftime::Period(
+                core::Time::create_lowerbound(year),
+                core::Time::create_upperbound(year)));
+    }
+};
+
+struct MonthFiles : public BaseFiles
+{
+    using BaseFiles::BaseFiles;
+
+    std::unique_ptr<Regexp> make_regexp() const override
+    {
+        return unique_ptr<Regexp>(new ERegexp("^([[:digit:]]{2})\\.", 2));
+    }
+
+    std::unique_ptr<types::reftime::Period> to_period(const Regexp& re) const
+    {
+        unsigned month = std::stoul(re[1]);
+        return unique_ptr<types::reftime::Period>(new reftime::Period(
+                core::Time::create_lowerbound(value, month),
+                core::Time::create_upperbound(value, month)));
+    }
+};
+
+struct MonthDayFiles : public BaseFiles
+{
+    using BaseFiles::BaseFiles;
+
+    std::unique_ptr<Regexp> make_regexp() const override
+    {
+        return unique_ptr<Regexp>(new ERegexp("^([[:digit:]]{2})-([[:digit:]]{2})\\.", 3));
+    }
+
+    std::unique_ptr<types::reftime::Period> to_period(const Regexp& re) const
+    {
+        unsigned month = std::stoul(re[1]);
+        unsigned day = std::stoul(re[2]);
+        return unique_ptr<types::reftime::Period>(new reftime::Period(
+                core::Time::create_lowerbound(value, month, day),
+                core::Time::create_upperbound(value, month, day)));
+    }
+};
+
+
+}
+
+
+struct StepQuery
+{
+    const std::string& root;
+    const std::string& format;
+
+    StepQuery(const std::string& root, const std::string& format)
+        : root(root), format(format) {}
+
+    virtual void list_segments(const Matcher& m, std::function<void(std::string&&)> dest) const = 0;
+    virtual void time_extremes(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& until) const = 0;
+};
+
+
+struct PathQuery
+{
+    const std::string& root;
+    const std::string& format;
+    const matcher::OR* m = nullptr;
+
+    PathQuery(const std::string& root, const std::string& format, const Matcher& m)
+        : root(root), format(format)
+    {
+        if (!m.empty())
+        {
+            auto rt_matcher = m->get(TYPE_REFTIME);
+            if (rt_matcher)
+                this->m = rt_matcher.get();
+        }
+    }
+};
+
+struct StepParser
+{
+    // Depth at which segments are found
+    const unsigned max_depth;
+    unsigned depth = 0;
+
+    StepParser(unsigned max_depth) : max_depth(max_depth) {}
+
+    // Timespan of what has been parsed so far
+    virtual void timespan(Time& start_time, Time& end_time) = 0;
+
+    virtual bool parse_component(const PathQuery& q, unsigned depth, const char* name) = 0;
+};
+
+
 struct BaseStep : public Step
 {
+    std::unique_ptr<step::Dirs> explore(const std::string& root, const std::string& format) const override
+    {
+        throw std::runtime_error("Step::explore not available for " + root);
+    }
+
+    void time_extremes(const std::string& root, const std::string& format, std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& until) const override
+    {
+        auto dirs(explore(root, format));
+        std::unique_ptr<types::reftime::Period> first;
+        std::unique_ptr<types::reftime::Period> last;
+        dirs->extremes(first, last);
+
+        if (!first)
+        {
+            begin.release();
+            until.release();
+        } else {
+            begin.reset(new Time(first->begin));
+            until.reset(new Time(last->end));
+        }
+    }
+
     bool pathMatches(const std::string& path, const matcher::OR& m) const override
     {
         Time min;
@@ -28,11 +418,53 @@ struct BaseStep : public Step
         auto rt = Reftime::createPeriod(min, max);
         return m.matchItem(*rt);
     }
+
+    void list_segments(const std::string& root, const std::string& format, const Matcher& m, std::function<void(std::string&&)> dest) const override
+    {
+        auto dirs(explore(root, format));
+        dirs->list(m, [&](std::unique_ptr<step::Files> files) {
+            files->list(m, dest);
+        });
+    }
 };
+
+struct SubStep : public BaseStep
+{
+    int year;
+    SubStep(int year) : year(year) {}
+};
+
+struct Single : public BaseStep
+{
+    static const char* name() { return "single"; }
+
+    std::unique_ptr<step::Dirs> explore(const std::string& root, const std::string& format) const override
+    {
+        return std::unique_ptr<step::Dirs>(new step::SingleDirs(root, format));
+    }
+
+    bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
+    {
+        start_time.set_lowerbound(1000);
+        end_time.set_upperbound(99999);
+        return true;
+    }
+
+    std::string operator()(const core::Time& time) const override
+    {
+        return "all";
+    }
+};
+
 
 struct Yearly : public BaseStep
 {
     static const char* name() { return "yearly"; }
+
+    std::unique_ptr<step::Dirs> explore(const std::string& root, const std::string& format) const override
+    {
+        return std::unique_ptr<step::Dirs>(new step::CenturyDirs<step::YearFiles>(root, format));
+    }
 
     bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
     {
@@ -59,6 +491,11 @@ struct Monthly : public BaseStep
 {
     static const char* name() { return "monthly"; }
 
+    std::unique_ptr<step::Dirs> explore(const std::string& root, const std::string& format) const override
+    {
+        return std::unique_ptr<step::Dirs>(new step::YearDirs<step::MonthFiles>(root, format));
+    }
+
     bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
     {
         int ye, mo;
@@ -79,11 +516,9 @@ struct Monthly : public BaseStep
     }
 };
 
-struct SubMonthly : public BaseStep
+struct SubMonthly : public SubStep
 {
-    int year;
-
-    SubMonthly(int year) : year(year) {}
+    using SubStep::SubStep;
 
     static const char* name() { return "monthly"; }
 
@@ -175,11 +610,9 @@ struct Weekly : public BaseStep
     }
 };
 
-struct SubWeekly : public BaseStep
+struct SubWeekly : public SubStep
 {
-    int year;
-
-    SubWeekly(int year) : year(year) {}
+    using SubStep::SubStep;
 
     static const char* name() { return "weekly"; }
 
@@ -216,6 +649,11 @@ struct Daily : public BaseStep
 {
     static const char* name() { return "daily"; }
 
+    std::unique_ptr<step::Dirs> explore(const std::string& root, const std::string& format) const override
+    {
+        return std::unique_ptr<step::Dirs>(new step::YearDirs<step::MonthDayFiles>(root, format));
+    }
+
     bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
     {
         int ye, mo, da;
@@ -235,11 +673,9 @@ struct Daily : public BaseStep
     }
 };
 
-struct SubDaily : public BaseStep
+struct SubDaily : public SubStep
 {
-    int year;
-
-    SubDaily(int year) : year(year) {}
+    using SubStep::SubStep;
 
     static const char* name() { return "daily"; }
 
@@ -274,6 +710,8 @@ std::shared_ptr<Step> Step::create(const std::string& type)
         return shared_ptr<Step>(new Monthly);
     else if (type == Yearly::name())
         return shared_ptr<Step>(new Yearly);
+    else if (type == Single::name())
+        return shared_ptr<Step>(new Single);
     else
         throw std::runtime_error("step '" + type + "' is not supported.  Valid values are daily, weekly, biweekly, monthly, and yearly.");
 }
@@ -310,6 +748,8 @@ struct BaseShardStep : public ShardStep
             return shared_ptr<Step>(new SubMonthly(year));
         else if (type == Yearly::name())
             return shared_ptr<Step>(new Yearly());
+        else if (type == Single::name())
+            return shared_ptr<Step>(new Single());
         else
             throw std::runtime_error("step '" + type + "' is not supported.  Valid values are daily, weekly, and monthly.");
     }
@@ -327,6 +767,25 @@ struct BaseShardStep : public ShardStep
         }
         std::sort(res.begin(), res.end());
         return res;
+    }
+};
+
+struct ShardSingle : public BaseShardStep
+{
+    using BaseShardStep::BaseShardStep;
+
+    static const char* name() { return "single"; }
+
+    std::string shard_path(const core::Time& time) const override
+    {
+        return "all";
+    }
+
+    std::pair<core::Time, core::Time> shard_span(const std::string& shard_path) const override
+    {
+        if (shard_path != "all")
+            return make_pair(core::Time(0, 0, 0), core::Time(0, 0, 0));
+        return make_pair(core::Time::create_lowerbound(1000), core::Time::create_upperbound(99999));
     }
 };
 

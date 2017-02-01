@@ -125,12 +125,14 @@ struct ArchivesRoot
         }
     }
 
-    void iter(std::function<void(Archive&)> f)
+    bool iter(std::function<bool(Archive&)> f)
     {
         for (auto& i: archives)
-            f(*i.second);
+            if (!f(*i.second))
+                return false;
         if (last)
-            f(*last);
+            return f(*last);
+        return true;
     }
 
     // Look up an archive, returns 0 if not found
@@ -279,10 +281,10 @@ ArchivesReader::~ArchivesReader()
 
 std::string ArchivesReader::type() const { return "archives"; }
 
-void ArchivesReader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool ArchivesReader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    archives->iter([&](Reader& r) {
-        r.query_data(q, dest);
+    return archives->iter([&](Reader& r) {
+        return r.query_data(q, dest);
     });
 }
 
@@ -290,6 +292,7 @@ void ArchivesReader::query_bytes(const dataset::ByteQuery& q, NamedFileDescripto
 {
     archives->iter([&](Reader& r) {
         r.query_bytes(q, out);
+        return true;
     });
 }
 
@@ -305,6 +308,7 @@ void ArchivesReader::summary_for_all(Summary& out)
         Matcher m;
         archives->iter([&](Reader& a) {
             a.query_summary(m, out);
+            return true;
         });
     }
 }
@@ -334,6 +338,7 @@ void ArchivesReader::query_summary(const Matcher& matcher, Summary& summary)
         a.expand_date_range(arc_begin, arc_end);
         if (Time::range_overlaps(matcher_begin.get(), matcher_end.get(), arc_begin.get(), arc_end.get()))
             a.query_summary(matcher, summary);
+        return true;
     });
 }
 
@@ -356,13 +361,15 @@ void ArchivesChecker::removeAll(Reporter& reporter, bool writable)
 {
     archives->iter([&](Checker& a) {
         a.removeAll(reporter, writable);
+        return true;
     });
 }
 
-void ArchivesChecker::repack(dataset::Reporter& reporter, bool writable)
+void ArchivesChecker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
     archives->iter([&](Checker& a) {
-        a.repack(reporter, writable);
+        a.repack(reporter, writable, test_flags);
+        return true;
     });
 }
 
@@ -370,6 +377,7 @@ void ArchivesChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
     archives->iter([&](Checker& a) {
         a.check(reporter, fix, quick);
+        return true;
     });
 }
 
@@ -377,6 +385,7 @@ void ArchivesChecker::check_issue51(dataset::Reporter& reporter, bool fix)
 {
     archives->iter([&](Checker& a) {
         a.check_issue51(reporter, fix);
+        return true;
     });
 }
 

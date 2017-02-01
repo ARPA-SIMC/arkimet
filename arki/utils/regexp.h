@@ -33,17 +33,27 @@ public:
     Regexp(const std::string& expr, int match_count = 0, int flags = 0);
     ~Regexp() throw ();
 
-    bool match(const std::string& str, int flags = 0);
+    bool match(const char* str, int flags=0);
+    bool match(const std::string& str, int flags=0);
 
     /* Indexing is from 1 for capture matches, like perl's $0,
        $1... 0 is whole-regexp match, not a capture. TODO
        the range is miscalculated (an off-by-one, wrt. the
        counterintuitive match counting). */
-    std::string operator[](int idx);
+    std::string operator[](int idx) const;
 
-    size_t matchStart(int idx);
-    size_t matchEnd(int idx);
-    size_t matchLength(int idx);
+    std::string first_match() const;
+    std::string last_match() const;
+
+    size_t match_start(int idx);
+    size_t match_end(int idx);
+    size_t match_length(int idx);
+
+private:
+    Regexp(const Regexp&);
+    Regexp(const Regexp&&);
+    Regexp& operator=(const Regexp&);
+    Regexp& operator=(const Regexp&&);
 };
 
 class ERegexp : public Regexp

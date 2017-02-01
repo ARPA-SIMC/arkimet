@@ -10,7 +10,6 @@
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <sys/fcntl.h>
 
 using namespace std;
 using namespace arki;
@@ -59,21 +58,25 @@ TestsReader<testdata::GRIBData> test_reader_grib_ondisk2_sharded("arki_dataset_r
 TestsReader<testdata::GRIBData> test_reader_grib_simple_plain("arki_dataset_reader_grib_simple_plain", "type=simple\nindex_type=plain\n");
 TestsReader<testdata::GRIBData> test_reader_grib_simple_plain_sharded("arki_dataset_reader_grib_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsReader<testdata::GRIBData> test_reader_grib_simple_sqlite("arki_dataset_reader_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsReader<testdata::GRIBData> test_reader_grib_iseg("arki_dataset_reader_grib_iseg", "type=iseg\nformat=grib\n");
 TestsReader<testdata::BUFRData> test_reader_bufr_ondisk2("arki_dataset_reader_bufr_ondisk2", "type=ondisk2\n");
 TestsReader<testdata::BUFRData> test_reader_bufr_ondisk2_sharded("arki_dataset_reader_bufr_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
 TestsReader<testdata::BUFRData> test_reader_bufr_simple_plain("arki_dataset_reader_bufr_simple_plain", "type=simple\nindex_type=plain\n");
 TestsReader<testdata::BUFRData> test_reader_bufr_simple_plain_sharded("arki_dataset_reader_bufr_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsReader<testdata::BUFRData> test_reader_bufr_simple_sqlite("arki_dataset_reader_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsReader<testdata::BUFRData> test_reader_bufr_iseg("arki_dataset_reader_bufr_iseg", "type=iseg\nformat=bufr\n");
 TestsReader<testdata::VM2Data> test_reader_vm2_ondisk2("arki_dataset_reader_vm2_ondisk2", "type=ondisk2\n");
 TestsReader<testdata::VM2Data> test_reader_vm2_ondisk2_sharded("arki_dataset_reader_vm2_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
 TestsReader<testdata::VM2Data> test_reader_vm2_simple_plain("arki_dataset_reader_vm2_simple_plain", "type=simple\nindex_type=plain\n");
 TestsReader<testdata::VM2Data> test_reader_vm2_simple_plain_sharded("arki_dataset_reader_vm2_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsReader<testdata::VM2Data> test_reader_vm2_simple_sqlite("arki_dataset_reader_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsReader<testdata::VM2Data> test_reader_vm2_iseg("arki_dataset_reader_vm2_iseg", "type=iseg\nformat=vm2\n");
 TestsReader<testdata::ODIMData> test_reader_odim_ondisk2("arki_dataset_reader_odim_ondisk2", "type=ondisk2\n");
 TestsReader<testdata::ODIMData> test_reader_odim_ondisk2_sharded("arki_dataset_reader_odim_ondisk2", "type=ondisk2\nshard=yearly\n");
 TestsReader<testdata::ODIMData> test_reader_odim_simple_plain("arki_dataset_reader_odim_simple_plain", "type=simple\nindex_type=plain\n");
 TestsReader<testdata::ODIMData> test_reader_odim_simple_plain_sharded("arki_dataset_reader_odilym_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsReader<testdata::ODIMData> test_reader_odim_simple_sqlite("arki_dataset_reader_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsReader<testdata::ODIMData> test_reader_odim_iseg("arki_dataset_reader_odim_iseg", "type=iseg\nformat=odimh5\n");
 
 template<class Data>
 void TestsReader<Data>::register_tests() {
@@ -175,42 +178,40 @@ this->add_method("querybytes", [](Fixture& f) {
 
 this->add_method("query_data", [](Fixture& f) {
     // Test querying with data only
-    f.clean_and_import();
     auto reader(f.config().create_reader());
 
     sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
-    bq.setData(Matcher::parse("origin:GRIB1,200"));
+    bq.setData(f.td.test_data[1].matcher);
     reader->query_bytes(bq, out);
 
     string res = sys::read_file(out.name());
-    ensure_equals(res.substr(0, 4), "GRIB");
+    wassert(actual(res.substr(0, 8)) == f.td.test_data[1].data().substr(0, 8));
 });
 
 this->add_method("query_inline", [](Fixture& f) {
     // Test querying with inline data
     using namespace arki::types;
 
-    f.clean_and_import();
     auto reader(f.config().create_reader());
 
-    metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,200"));
-    ensure_equals(mdc.size(), 1u);
+    metadata::Collection mdc(*reader, f.td.test_data[0].matcher);
+    wassert(actual(mdc.size()) == 1u);
 
     // Check that the source record that comes out is ok
     //wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
 
     // Check that data is accessible
     const auto& buf = mdc[0].getData();
-    ensure_equals(buf.size(), 7218u);
+    wassert(actual(buf.size()) == f.td.test_data[0].md.sourceBlob().size);
 
     mdc.clear();
-    mdc.add(*reader, Matcher::parse("origin:GRIB1,80"));
-    ensure_equals(mdc.size(), 1u);
+    mdc.add(*reader, f.td.test_data[1].matcher);
+    wassert(actual(mdc.size()) == 1u);
 
     mdc.clear();
-    mdc.add(*reader, Matcher::parse("origin:GRIB1,98"));
-    ensure_equals(mdc.size(), 1u);
+    mdc.add(*reader, f.td.test_data[2].matcher);
+    wassert(actual(mdc.size()) == 1u);
 });
 
 this->add_method("querybytes_integrity", [](Fixture& f) {
@@ -274,6 +275,51 @@ this->add_method("locked", [](Fixture& f) {
     bq.setData(Matcher());
     sys::File out("/dev/null", O_WRONLY);
     rds->query_bytes(bq, out);
+});
+
+this->add_method("interrupted_read", [](Fixture& f) {
+    auto orig_data = f.td.earliest_element().md.getData();
+
+    unsigned count = 0;
+    auto reader = f.dataset_config()->create_reader();
+    reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+        auto data = md->getData();
+        wassert(actual(data == orig_data).istrue());
+        ++count;
+        return false;
+    });
+
+    wassert(actual(count) == 1u);
+});
+
+this->add_method("read_missing_segment", [](Fixture& f) {
+    // Delete a segment, leaving it in the index
+    f.segments().remove(f.import_results[0].sourceBlob().filename);
+
+    unsigned count_ok = 0;
+    unsigned count_err = 0;
+    auto reader = f.dataset_config()->create_reader();
+    reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+        try {
+            md->getData();
+            ++count_ok;
+        } catch (std::runtime_error& e) {
+            wassert(actual(e.what()).contains("the file has disappeared"));
+            ++count_err;
+        }
+        return true;
+    });
+
+    if (f.has_smallfiles())
+    {
+        wassert(actual(count_ok) == 3u);
+        wassert(actual(count_err) == 0u);
+    } else {
+        wassert(actual(count_ok) > 0u);
+        wassert(actual(count_ok) < 3u);
+        //wassert(actual(count_err) > 0u);
+        //wassert(actual(count_err) < 3u);
+    }
 });
 
 }

@@ -13,6 +13,7 @@
 #include <cmath>
 #include <iomanip>
 #include <sys/types.h>
+#include <fcntl.h>
 #include <regex.h>
 
 using namespace std;
@@ -380,6 +381,16 @@ void ActualFile::not_exists() const
 {
     if (!sys::exists(_actual)) return;
     throw TestFailed("file " + _actual + " exists and it should not");
+}
+
+void ActualFile::startswith(const std::string& data) const
+{
+    sys::File in(_actual, O_RDONLY);
+    string buf(data.size(), 0);
+    in.read_all_or_throw((void*)buf.data(), buf.size());
+    *((char*)buf.data() + buf.size()) = 0;
+    if (buf != data)
+        throw TestFailed("file " + _actual + " starts with '" + str::encode_cstring(buf) + "' instead of '" + str::encode_cstring(data) + "'");
 }
 
 #if 0

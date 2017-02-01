@@ -81,10 +81,12 @@ LocalReader::~LocalReader()
 {
 }
 
-void LocalReader::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest)
+bool LocalReader::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest)
 {
     if (hasArchive())
-        archive().query_data(q, dest);
+        if (!archive().query_data(q, dest))
+            return false;
+    return true;
 }
 
 void LocalReader::query_summary(const Matcher& matcher, Summary& summary)
@@ -244,10 +246,10 @@ void LocalChecker::release_lock()
     lock->release();
 }
 
-void LocalChecker::repack(dataset::Reporter& reporter, bool writable)
+void LocalChecker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
     if (hasArchive())
-        archive().repack(reporter, writable);
+        archive().repack(reporter, writable, test_flags);
 }
 
 void LocalChecker::check(dataset::Reporter& reporter, bool fix, bool quick)

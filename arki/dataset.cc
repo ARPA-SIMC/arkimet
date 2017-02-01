@@ -3,6 +3,7 @@
 #include <arki/configfile.h>
 #include <arki/dataset/file.h>
 #include <arki/dataset/ondisk2.h>
+#include <arki/dataset/iseg.h>
 #include <arki/dataset/simple/reader.h>
 #include <arki/dataset/outbound.h>
 #include <arki/dataset/empty.h>
@@ -56,6 +57,8 @@ std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
 // TODO
     string type = str::lower(cfg.value("type"));
 
+    if (type == "iseg")
+        return dataset::iseg::Config::create(cfg);
     if (type == "ondisk2")
         return dataset::ondisk2::Config::create(cfg);
     if (type == "simple" || type == "error" || type == "duplicates")

@@ -52,6 +52,12 @@ struct Reader;
 struct Writer;
 struct Checker;
 }
+
+namespace iseg {
+struct Reader;
+struct Writer;
+struct Checker;
+}
 }
 
 namespace testdata {
@@ -181,6 +187,9 @@ public:
     std::unique_ptr<dataset::simple::Reader> makeSimpleReader();
     std::unique_ptr<dataset::simple::Writer> makeSimpleWriter();
     std::unique_ptr<dataset::simple::Checker> makeSimpleChecker();
+    std::unique_ptr<dataset::iseg::Reader> makeIsegReader();
+    std::unique_ptr<dataset::iseg::Writer> makeIsegWriter();
+    std::unique_ptr<dataset::iseg::Checker> makeIsegChecker();
 
     // Clean the dataset directory
     void clean();
@@ -197,6 +206,8 @@ public:
 
     void import_all(const testdata::Fixture& fixture);
     void import_all_packed(const testdata::Fixture& fixture);
+
+    bool has_smallfiles();
 };
 
 }
@@ -250,6 +261,12 @@ struct Element
         this->time = rt->time;
         this->matcher = Matcher::parse(matcher);
     }
+
+    std::string data()
+    {
+        auto res = md.getData();
+        return std::string(res.begin(), res.end());
+    }
 };
 
 struct Fixture
@@ -268,14 +285,16 @@ struct Fixture
     // dataset, but not all of it
     unsigned selective_days_since() const;
     void finalise_init();
+
+    // Return the element with the earliest reftime
+    Element& earliest_element();
 };
 
 struct GRIBData : Fixture
 {
     GRIBData()
     {
-        metadata::Collection mdc;
-        scan::scan("inbound/test.grib1", mdc.inserter_func());
+        metadata::Collection mdc("inbound/test.grib1");
         format = "grib";
         max_selective_aggregation = "monthly";
         max_selective_aggregation_singleton_index = 2;
@@ -291,8 +310,7 @@ struct BUFRData : Fixture
     BUFRData()
     {
 #ifdef HAVE_DBALLE
-        metadata::Collection mdc;
-        scan::scan("inbound/test.bufr", mdc.inserter_func());
+        metadata::Collection mdc("inbound/test.bufr");
         format = "bufr";
         max_selective_aggregation = "yearly";
         max_selective_aggregation_singleton_index = 0;
@@ -308,8 +326,7 @@ struct VM2Data : Fixture
 {
     VM2Data()
     {
-        metadata::Collection mdc;
-        scan::scan("inbound/test.vm2", mdc.inserter_func());
+        metadata::Collection mdc("inbound/test.vm2");
         format = "vm2";
         max_selective_aggregation = "yearly";
         max_selective_aggregation_singleton_index = 2;
@@ -473,6 +490,7 @@ inline arki::tests::ActualSegmentedChecker actual(arki::dataset::segmented::Chec
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::segmented::Checker& actual) { return arki::tests::ActualSegmentedChecker(&actual); }
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::simple::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::segmented::Checker*)&actual); }
 inline arki::tests::ActualSegmentedChecker actual(arki::dataset::ondisk2::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::segmented::Checker*)&actual); }
+inline arki::tests::ActualSegmentedChecker actual(arki::dataset::iseg::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::segmented::Checker*)&actual); }
 inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::ArchivesChecker& actual) { return arki::tests::ActualChecker<dataset::Checker>((dataset::Checker*)&actual); }
 
 }

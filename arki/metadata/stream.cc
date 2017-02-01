@@ -47,7 +47,9 @@ bool Stream::checkMetadata()
         state = DATA;
         return true;
     } else {
-        consumer(move(md));
+        if (!canceled)
+            if (!consumer(move(md)))
+                canceled = true;
         return true;
     }
 }
@@ -62,7 +64,9 @@ bool Stream::checkData()
     dataToGet = 0;
     state = METADATA;
     md->set_source_inline(md->source().format, move(buf));
-    consumer(move(md));
+    if (!canceled)
+        if (!consumer(move(md)))
+            canceled = true;
     return true;
 }
 

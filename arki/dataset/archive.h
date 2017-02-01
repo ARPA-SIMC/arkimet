@@ -84,7 +84,7 @@ public:
     const ArchivesConfig& config() const override { return *m_config; }
 
     void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
-    void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
 };
@@ -107,7 +107,7 @@ public:
     void releaseSegment(const std::string& relpath, const std::string& destpath);
 
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
-    void repack(dataset::Reporter& reporter, bool writable=false) override;
+    void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
     void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
 };

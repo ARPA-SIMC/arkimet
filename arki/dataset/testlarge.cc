@@ -30,7 +30,7 @@ std::unique_ptr<dataset::Checker> Config::create_checker() const { return std::u
 Reader::Reader(std::shared_ptr<const dataset::Config> config) : m_config(config) {}
 Reader::~Reader() {}
 
-void Reader::generate(const core::Time& begin, const core::Time& until, std::function<bool(std::unique_ptr<Metadata>)> out) const
+bool Reader::generate(const core::Time& begin, const core::Time& until, std::function<bool(std::unique_ptr<Metadata>)> out) const
 {
     core::Time cur = begin;
     cur.ho = 0;
@@ -46,25 +46,27 @@ void Reader::generate(const core::Time& begin, const core::Time& until, std::fun
         md->set_source_inline("GRIB", move(data));
 
         if (!out(move(md)))
-            break;
+            return false;
 
         cur.ho += 6;
         cur.normalise();
     }
+
+    return true;
 }
 
-void Reader::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> out)
+bool Reader::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> out)
 {
     std::unique_ptr<core::Time> begin;
     std::unique_ptr<core::Time> until;
     if (!q.matcher.restrict_date_range(begin, until))
-        return;
+        return true;
     if (!begin || *begin < core::Time(2000, 1, 1))
         begin.reset(new core::Time(2000, 1, 1));
     if (!until || *until > core::Time(2017, 1, 1))
         until.reset(new core::Time(2017, 1, 1));
     // TODO: implement support for q.sort
-    generate(*begin, *until, [&](std::unique_ptr<Metadata> md) {
+    return generate(*begin, *until, [&](std::unique_ptr<Metadata> md) {
         if (!q.matcher(*md)) return true;
         return out(move(md));
     });

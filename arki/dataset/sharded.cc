@@ -43,21 +43,23 @@ void Config<Base>::all_shards(std::function<void(const std::string&, std::shared
 }
 
 template<typename Base>
-void Config<Base>::query_shards(const Matcher& matcher, std::function<void(const std::string&, std::shared_ptr<const dataset::Config>)> f) const
+bool Config<Base>::query_shards(const Matcher& matcher, std::function<bool(const std::string&, std::shared_ptr<const dataset::Config>)> f) const
 {
     auto shards = shard_step->list_shards(this->path);
     unique_ptr<core::Time> begin;
     unique_ptr<core::Time> end;
     if (!matcher.restrict_date_range(begin, end))
         // The matcher matches an impossible reftime span: return right away
-        return;
+        return true;
     for (const auto& t: shards)
     {
         if (begin && *begin > t.second) continue;
         if (end && *end < t.first) continue;
         auto shard = create_shard(t.first);
-        f(shard.first, shard.second);
+        if (!f(shard.first, shard.second))
+            return false;
     }
+    return true;
 }
 
 template<typename Base>
@@ -100,11 +102,12 @@ template<typename Config>
 Reader<Config>::~Reader() {}
 
 template<typename Config>
-void Reader<Config>::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader<Config>::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    LocalReader::query_data(q, dest);
-    config().query_shards(q.matcher, [&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
-        cfg->create_reader()->query_data(q, dest);
+    if (!LocalReader::query_data(q, dest))
+        return false;
+    return config().query_shards(q.matcher, [&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
+        return cfg->create_reader()->query_data(q, dest);
     });
 }
 
@@ -114,6 +117,7 @@ void Reader<Config>::query_summary(const Matcher& matcher, Summary& summary)
     LocalReader::query_summary(matcher, summary);
     config().query_shards(matcher, [&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
         cfg->create_reader()->query_summary(matcher, summary);
+        return true;
     });
 }
 
@@ -122,6 +126,7 @@ void Reader<Config>::expand_date_range(std::unique_ptr<core::Time>& begin, std::
 {
     config().all_shards([&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
         cfg->create_reader()->expand_date_range(begin, end);
+        return true;
     });
 }
 
@@ -361,11 +366,11 @@ void Checker<Config>::rescanSegment(const std::string& relpath)
 }
 
 template<typename Config>
-size_t Checker<Config>::repackSegment(const std::string& relpath)
+size_t Checker<Config>::repackSegment(const std::string& relpath, unsigned test_flags)
 {
     size_t pos = relpath.find('/');
     if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
-    return shard(relpath.substr(0, pos)).repackSegment(relpath.substr(pos + 1));
+    return shard(relpath.substr(0, pos)).repackSegment(relpath.substr(pos + 1), test_flags);
 }
 
 template<typename Config>

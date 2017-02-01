@@ -11,7 +11,7 @@
 #include "emitter/memory.h"
 #include "iotrace.h"
 #include "scan/any.h"
-#include "utils/datareader.h"
+#include "reader.h"
 #include "utils/string.h"
 #include "utils/yaml.h"
 #include <unistd.h>
@@ -31,9 +31,6 @@ using namespace arki::utils;
 namespace arki {
 
 namespace metadata {
-
-thread_local arki::utils::DataReader dataReader;
-
 
 ReadContext::ReadContext() {}
 
@@ -131,7 +128,15 @@ const types::source::Blob* Metadata::has_source_blob() const
 const source::Blob& Metadata::sourceBlob() const
 {
     if (!m_source) throw_consistency_error("metadata has no source");
-    const source::Blob* res = dynamic_cast<source::Blob*>(m_source);
+    const source::Blob* res = dynamic_cast<const source::Blob*>(m_source);
+    if (!res) throw_consistency_error("metadata source is not a Blob source");
+    return *res;
+}
+
+source::Blob& Metadata::sourceBlob()
+{
+    if (!m_source) throw_consistency_error("metadata has no source");
+    source::Blob* res = dynamic_cast<source::Blob*>(m_source);
     if (!res) throw_consistency_error("metadata source is not a Blob source");
     return *res;
 }
@@ -508,11 +513,9 @@ const vector<uint8_t>& Metadata::getData()
         {
             // Do not directly use m_data so that if dataReader.read throws an
             // exception, m_data remains empty.
-            const source::Blob& s = sourceBlob();
-            vector<uint8_t> buf;
-            buf.resize(s.size);
-            metadata::dataReader.read(s.absolutePathname(), s.offset, s.size, buf.data());
-            m_data = move(buf);
+            source::Blob& s = sourceBlob();
+            s.lock();
+            m_data = s.read_data();
             return m_data;
         }
         default:
@@ -577,10 +580,10 @@ size_t Metadata::data_size() const
 
 void Metadata::flushDataReaders()
 {
-    metadata::dataReader.flush();
+    reader::Registry().get().cleanup();
 }
 
-void Metadata::read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& file, metadata_dest_func dest)
+bool Metadata::read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& file, metadata_dest_func dest)
 {
     BinaryDecoder dec(buf);
     bool canceled = false;
@@ -611,23 +614,26 @@ void Metadata::read_buffer(const std::vector<uint8_t>& buf, const metadata::Read
             canceled = !dest(move(md));
         }
     }
+
+    return !canceled;
 }
 
-void Metadata::read_file(const std::string& fname, metadata_dest_func dest)
+bool Metadata::read_file(const std::string& fname, metadata_dest_func dest)
 {
     metadata::ReadContext context(fname);
-    read_file(context, dest);
+    return read_file(context, dest);
 }
 
-void Metadata::read_file(const metadata::ReadContext& file, metadata_dest_func dest)
+bool Metadata::read_file(const metadata::ReadContext& file, metadata_dest_func dest)
 {
     // Read all the metadata
     sys::File in(file.pathname, O_RDONLY);
-    read_file(in, file, dest);
+    bool res = read_file(in, file, dest);
     in.close();
+    return res;
 }
 
-void Metadata::read_file(int in, const metadata::ReadContext& file, metadata_dest_func dest)
+bool Metadata::read_file(int in, const metadata::ReadContext& file, metadata_dest_func dest)
 {
     bool canceled = false;
     vector<uint8_t> buf;
@@ -659,14 +665,15 @@ void Metadata::read_file(int in, const metadata::ReadContext& file, metadata_des
             canceled = !dest(move(md));
         }
     }
+    return !canceled;
 }
 
-void Metadata::read_file(NamedFileDescriptor& fd, metadata_dest_func mdc)
+bool Metadata::read_file(NamedFileDescriptor& fd, metadata_dest_func mdc)
 {
-    read_file(fd, fd.name(), mdc);
+    return read_file(fd, fd.name(), mdc);
 }
 
-void Metadata::read_group(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest)
+bool Metadata::read_group(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest)
 {
     // Handle metadata group
     if (version != 0)
@@ -695,6 +702,8 @@ void Metadata::read_group(BinaryDecoder& dec, unsigned version, const metadata::
         md->read_inner(inner, iver, file);
         canceled = !dest(move(md));
     }
+
+    return !canceled;
 }
 
 #ifdef HAVE_LUA

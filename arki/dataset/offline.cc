@@ -26,9 +26,10 @@ OfflineReader::OfflineReader(std::shared_ptr<const OfflineConfig> config)
 
 std::string OfflineReader::type() const { return "offline"; }
 
-void OfflineReader::query_data(const dataset::DataQuery& q, metadata_dest_func)
+bool OfflineReader::query_data(const dataset::DataQuery& q, metadata_dest_func)
 {
     // TODO: if the matcher would match the summary, output some kind of note about it
+    return true;
 }
 void OfflineReader::query_summary(const Matcher& matcher, Summary& summary)
 {

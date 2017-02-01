@@ -42,8 +42,9 @@ struct Agent
     dataset::Reporter& reporter;
     segmented::Checker& w;
     bool lineStart;
+    unsigned test_flags;
 
-    Agent(dataset::Reporter& reporter, segmented::Checker& w);
+    Agent(dataset::Reporter& reporter, segmented::Checker& w, unsigned test_flags=0);
     Agent(const Agent&) = delete;
     Agent& operator=(const Agent&) = delete;
 

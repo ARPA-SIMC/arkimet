@@ -11,42 +11,47 @@ namespace arki {
 namespace dataset {
 namespace index {
 
-void Aggregate::initQueries()
+void Aggregate::init_select() const
 {
-	string query = "SELECT id FROM " + m_table_name + " WHERE " ;
+    string query = "SELECT id FROM " + m_table_name + " WHERE " ;
     for (Attrs::const_iterator i = m_attrs.begin();
             i != m_attrs.end(); ++i)
     {
-		if (i != m_attrs.begin())
-			query += " AND ";
-		query += (*i)->name + "=?";
-	}
-	q_select.compile(query);
+        if (i != m_attrs.begin())
+            query += " AND ";
+        query += (*i)->name + "=?";
+    }
+    q_select.compile(query);
+}
 
-    query.clear();
+void Aggregate::init_select_by_id() const
+{
+    string query;
     for (Attrs::const_iterator i = m_attrs.begin();
             i != m_attrs.end(); ++i)
     {
-		if (!query.empty()) query += ", ";
-		query += (*i)->name;
-	}
+        if (!query.empty()) query += ", ";
+        query += (*i)->name;
+    }
+    q_select_by_id.compile("SELECT " + query + " FROM " + m_table_name + " WHERE id=?");
+}
 
-	q_select_by_id.compile("SELECT " + query + " FROM " + m_table_name + " WHERE id=?");
-
-	string names;
-	string placeholders;
+void Aggregate::init_insert() const
+{
+    string names;
+    string placeholders;
     for (Attrs::const_iterator i = m_attrs.begin();
             i != m_attrs.end(); ++i)
     {
-		if (not names.empty())
-		{
-			names += ", ";
-			placeholders += ", ";
-		}
-		names += (*i)->name;
-		placeholders += "?";
-	}
-	q_insert.compile("INSERT INTO " + m_table_name + " (" + names + ") VALUES (" + placeholders + ")");
+        if (not names.empty())
+        {
+            names += ", ";
+            placeholders += ", ";
+        }
+        names += (*i)->name;
+        placeholders += "?";
+    }
+    q_insert.compile("INSERT INTO " + m_table_name + " (" + names + ") VALUES (" + placeholders + ")");
 }
 
 std::set<types::Code> Aggregate::members() const
@@ -60,8 +65,9 @@ std::set<types::Code> Aggregate::members() const
 
 int Aggregate::get(const Metadata& md) const
 {
-	q_select.reset();
-	int idx = 0;
+    if (!q_select.compiled()) init_select();
+    q_select.reset();
+    int idx = 0;
     for (Attrs::const_iterator i = m_attrs.begin();
             i != m_attrs.end(); ++i)
 	{
@@ -90,9 +96,10 @@ int Aggregate::get(const Metadata& md) const
 
 void Aggregate::read(int id, Metadata& md) const
 {
-	std::map< int, std::vector<int> >::iterator i = m_cache.find(id);
-	if (i == m_cache.end())
-	{
+    std::map< int, std::vector<int> >::iterator i = m_cache.find(id);
+    if (i == m_cache.end())
+    {
+        if (!q_select_by_id.compiled()) init_select_by_id();
 		vector<int> vals;
 		q_select_by_id.reset();
 		q_select_by_id.bind(1, id);
@@ -160,6 +167,8 @@ std::string Aggregate::make_subquery(const Matcher& m) const
 
 int Aggregate::obtain(const Metadata& md)
 {
+    if (!q_select.compiled()) init_select();
+
 	// First check if we have it
 	vector<int> ids = m_attrs.obtainIDs(md);
 	q_select.reset();
@@ -177,6 +186,8 @@ int Aggregate::obtain(const Metadata& md)
 
 	if (id != -1)
 		return id;
+
+    if (!q_insert.compiled()) init_insert();
 
 	// If we do not have it, create it
 	q_insert.reset();

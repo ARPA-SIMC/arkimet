@@ -149,7 +149,7 @@ public:
     const Config& config() const override { return *m_config; }
     std::string type() const override;
 
-    void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
     void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out) override;
 

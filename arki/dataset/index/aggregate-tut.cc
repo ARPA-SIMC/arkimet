@@ -32,7 +32,6 @@ def_test(1)
 	members.insert(TYPE_LEVEL);
 	Aggregate u(db, "test", members);
 	u.initDB(members);
-	u.initQueries();
 
     Metadata md;
     unique_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));

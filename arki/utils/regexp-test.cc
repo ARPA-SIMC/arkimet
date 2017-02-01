@@ -42,12 +42,12 @@ add_method("capture", [] {
     wassert(actual(re[0]) == "fobar");
     wassert(actual(re[1]) == "o");
     wassert(actual(re[2]) == "");
-    wassert(actual(re.matchStart(0)) == 0u);
-    wassert(actual(re.matchEnd(0)) == 5u);
-    wassert(actual(re.matchLength(0)) == 5u);
-    wassert(actual(re.matchStart(1)) == 1u);
-    wassert(actual(re.matchEnd(1)) == 2u);
-    wassert(actual(re.matchLength(1)) == 1u);
+    wassert(actual(re.match_start(0)) == 0u);
+    wassert(actual(re.match_end(0)) == 5u);
+    wassert(actual(re.match_length(0)) == 5u);
+    wassert(actual(re.match_start(1)) == 1u);
+    wassert(actual(re.match_end(1)) == 2u);
+    wassert(actual(re.match_length(1)) == 1u);
 
     wassert(re.match("foobar42"));
     wassert(actual(re[0]) == "foobar42");

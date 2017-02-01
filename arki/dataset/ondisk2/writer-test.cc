@@ -12,6 +12,7 @@
 #include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/lock.h"
 #include "arki/summary.h"
 #include "arki/libconfig.h"
 #include <sstream>
@@ -426,32 +427,32 @@ add_method("data_in_right_segment_rescan", [](Fixture& f) {
 
 // Test packing a dataset with VM2 data
 add_method("pack_vm2", [](Fixture& f) {
+    utils::Lock::TestNowait lock_nowait;
     f.clean_and_import("inbound/test.vm2");
 
-    // Read everything
-    metadata::Collection mdc_imported = f.query(Matcher());
-
-    // Take note of all the data
+    // Take note of all the data and delete every second item
     vector<vector<uint8_t>> orig_data;
-    orig_data.reserve(mdc_imported.size());
-    for (unsigned i = 0; i < mdc_imported.size(); ++i)
-        orig_data.push_back(mdc_imported[i].getData());
-
-    // Delete every second item
+    metadata::Collection mdc_imported = f.query(Matcher());
     {
+        orig_data.reserve(mdc_imported.size());
+        for (unsigned i = 0; i < mdc_imported.size(); ++i)
+            orig_data.push_back(mdc_imported[i].getData());
+
         auto writer = f.makeOndisk2Writer();
         for (unsigned i = 0; i < mdc_imported.size(); ++i)
             if (i % 2 == 0)
                 writer->remove(mdc_imported[i]);
     }
+    for (auto& md: mdc_imported)
+        md->unset_source();
 
-    // Ensure the archive has items to pack
+    // Ensure the dataset has items to pack
     {
         arki::tests::MaintenanceResults expected(false, 2);
         expected.by_type[DatasetTest::COUNTED_DIRTY] = 2;
         wassert(actual(*f.makeOndisk2Checker()).maintenance(expected));
 
-        ensure(!sys::exists("testds/.archive"));
+        wassert(actual_file("testds/.archive").not_exists());
     }
 
     // Perform packing and check that things are still ok afterwards
@@ -498,7 +499,7 @@ add_method("issue57", [](Fixture& f) {
 
     // Query back the data
     metadata::Collection queried(*f.makeOndisk2Reader(), Matcher());
-    wassert(actual(queried.size()) == 1);
+    wassert(actual(queried.size()) == 1u);
 
     // Delete the data
     {
@@ -508,7 +509,7 @@ add_method("issue57", [](Fixture& f) {
 
     // Query back the data
     metadata::Collection after_delete(*f.makeOndisk2Reader(), Matcher());
-    wassert(actual(after_delete.size()) == 0);
+    wassert(actual(after_delete.size()) == 0u);
 });
 
 }

@@ -50,6 +50,7 @@ class Tests : public FixtureTestCase<Fixture>
 Tests test_ondisk2("arki_dataset_segmented_ondisk2", "type=ondisk2\n");
 Tests test_simple_plain("arki_dataset_segmented_simple_plain", "type=simple\nindex_type=plain\n");
 Tests test_simple_sqlite("arki_dataset_segmented_simple_sqlite", "type=simple\nindex_type=sqlite");
+Tests test_iseg("arki_dataset_segmented_iseg", "type=iseg\nformat=grib");
 
 void Tests::register_tests() {
 
@@ -71,7 +72,7 @@ add_method("compressed", [](Fixture& f) {
     {
         auto reader(f.config().create_reader());
         unsigned count = count_results(*reader, Matcher());
-        ensure_equals(count, 3u);
+        wassert(actual(count) == 3u);
     }
 
     // Check if files to archive are detected
@@ -251,6 +252,8 @@ add_method("empty_dirs", [](Fixture& f) {
 add_method("query_lots", [](Fixture& f) {
     // Test querying with lots of data, to trigger on disk metadata buffering
     using namespace arki::types;
+
+    f.reset_test("step=daily\nformat=vm2\nunique=product,area,reftime\n");
 
     f.clean();
     {

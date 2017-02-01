@@ -348,6 +348,7 @@ struct ActualFile : public Actual<std::string>
 
     void exists() const;
     void not_exists() const;
+    void startswith(const std::string& data) const;
 };
 
 inline ActualFile actual_file(const std::string& pathname) { return ActualFile(pathname); }

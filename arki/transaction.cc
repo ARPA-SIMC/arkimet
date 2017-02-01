@@ -34,8 +34,9 @@ Transaction::~Transaction() {}
 Pending::Pending(Transaction* trans) : trans(trans)
 {
 }
-Pending::Pending(const Pending& p) : trans(p.trans)
+Pending::Pending(Pending&& p) : trans(p.trans)
 {
+    p.trans = nullptr;
 }
 Pending::~Pending()
 {
@@ -45,7 +46,7 @@ Pending::~Pending()
         delete trans;
     }
 }
-Pending& Pending::operator=(const Pending& p)
+Pending& Pending::operator=(Pending&& p)
 {
     // Prevent damage on assignment to self
     if (&p == this) return *this;
@@ -59,9 +60,7 @@ Pending& Pending::operator=(const Pending& p)
     }
 
     trans = p.trans;
-
-    // Force the source pointer to 0 (unique_ptr style)
-    const_cast<Pending*>(&p)->trans = 0;
+    p.trans = nullptr;
 
     return *this;
 }

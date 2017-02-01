@@ -6,6 +6,8 @@
 #include "arki/dataset/ondisk2/writer.h"
 #include "arki/dataset/simple/reader.h"
 #include "arki/dataset/simple/writer.h"
+#include "arki/dataset/iseg/reader.h"
+#include "arki/dataset/iseg/writer.h"
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dispatcher.h"
@@ -16,6 +18,7 @@
 #include "arki/types/timerange.h"
 #include "arki/types/area.h"
 #include "arki/types/proddef.h"
+#include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <algorithm>
@@ -254,6 +257,33 @@ std::unique_ptr<dataset::simple::Checker> DatasetTest::makeSimpleChecker()
     return unique_ptr<dataset::simple::Checker>(r);
 }
 
+std::unique_ptr<dataset::iseg::Reader> DatasetTest::makeIsegReader()
+{
+    auto ds = config().create_reader();
+    dataset::iseg::Reader* r = dynamic_cast<dataset::iseg::Reader*>(ds.get());
+    if (!r) throw std::runtime_error("makeIsegReader called while testing a non-iseg dataset");
+    ds.release();
+    return unique_ptr<dataset::iseg::Reader>(r);
+}
+
+std::unique_ptr<dataset::iseg::Writer> DatasetTest::makeIsegWriter()
+{
+    auto ds = config().create_writer();
+    dataset::iseg::Writer* r = dynamic_cast<dataset::iseg::Writer*>(ds.get());
+    if (!r) throw std::runtime_error("makeIsegWriter called while testing a non-iseg dataset");
+    ds.release();
+    return unique_ptr<dataset::iseg::Writer>(r);
+}
+
+std::unique_ptr<dataset::iseg::Checker> DatasetTest::makeIsegChecker()
+{
+    auto ds = config().create_checker();
+    dataset::iseg::Checker* r = dynamic_cast<dataset::iseg::Checker*>(ds.get());
+    if (!r) throw std::runtime_error("makeIsegChecker called while testing a non-iseg dataset");
+    ds.release();
+    return unique_ptr<dataset::iseg::Checker>(r);
+}
+
 void DatasetTest::clean()
 {
     if (sys::exists(ds_root)) sys::rmtree(ds_root);
@@ -268,7 +298,7 @@ void DatasetTest::import(const std::string& testfile)
         for (auto& md: data)
         {
             Writer::AcquireResult res = writer->acquire(*md);
-            ensure_equals(res, Writer::ACQ_OK);
+            wassert(actual(res) == Writer::ACQ_OK);
         }
     }
 
@@ -298,7 +328,7 @@ void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount)
     metadata::Collection mdc(*reader, Matcher());
     wassert(actual(mdc.size()) == resultcount);
 
-    if (filecount > 0)
+    if (filecount > 0 && reader->type() != "iseg")
         wassert(actual_file(str::joinpath(reader->path(), idxfname())).exists());
     tc.clear();
 }
@@ -313,6 +343,7 @@ void DatasetTest::import_all(const testdata::Fixture& fixture)
         import_results[i] = fixture.test_data[i].md;
         Writer::AcquireResult res = writer->acquire(import_results[i]);
         wassert(actual(res) == Writer::ACQ_OK);
+        import_results[i].sourceBlob().unlock();
     }
 
     utils::files::removeDontpackFlagfile(cfg.value("path"));
@@ -330,6 +361,14 @@ void DatasetTest::import_all_packed(const testdata::Fixture& fixture)
     }
 }
 
+bool DatasetTest::has_smallfiles()
+{
+    if (auto ds = dynamic_cast<const dataset::ondisk2::Config*>(dataset_config().get()))
+        return ds->smallfiles;
+    if (auto ds = dynamic_cast<const dataset::iseg::Config*>(dataset_config().get()))
+        return ds->smallfiles;
+    return false;
+}
 
 }
 
@@ -937,6 +976,17 @@ void Fixture::finalise_init()
 unsigned Fixture::selective_days_since() const
 {
     return tests::days_since(selective_cutoff.ye, selective_cutoff.mo, selective_cutoff.da);
+}
+
+Element& Fixture::earliest_element()
+{
+    Element* res = nullptr;
+
+    for (auto& e: test_data)
+        if (!res || *e.md.get(TYPE_REFTIME) < *res->md.get(TYPE_REFTIME))
+            res = &e;
+
+    return *res;
 }
 
 Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour)

@@ -66,6 +66,10 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/simple/datafile.h \
 		dataset/simple/reader.h \
 		dataset/simple/writer.h \
+		dataset/iseg.h \
+		dataset/iseg/index.h \
+		dataset/iseg/reader.h \
+		dataset/iseg/writer.h \
 		dataset/step.h \
 		dataset/test-scenario.h \
 		dataset/tests.h \
@@ -102,6 +106,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		metadata/stream.h \
 		metadata/tests.h \
 		metadata/test-generator.h \
+		reader.h \
 		nag.h \
 		postprocess.h \
 		querymacro.h \
@@ -149,13 +154,13 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/accounting.h \
 		utils/gzip.h \
 		utils/compress.h \
-		utils/datareader.h \
 		utils/files.h \
 		utils/geosdef.h \
 		utils/geosfwd.h \
 		utils/h5.h \
 		utils.h \
 		utils/intern.h \
+		utils/lock.h \
 		utils/pcounter.h \
 		utils/process.h \
 		utils/regexp.h \
@@ -218,6 +223,7 @@ libarkimet_la_SOURCES += \
 		utils/gzip.cc \
 		utils/files.cc \
 		utils/intern.cc \
+		utils/lock.cc \
 		utils/pcounter.cc \
 		utils/process.cc \
 		utils/raii.cc \
@@ -299,6 +305,7 @@ tests_arki_test_SOURCES += \
 		utils/yaml-test.cc \
 		utils/files-tut.cc \
 		utils/intern-tut.cc \
+		utils/lock-test.cc \
 		utils/pcounter-tut.cc \
 		utils/process-tut.cc \
 		utils/raii-tut.cc \
@@ -371,7 +378,6 @@ endif
 if DEVEL_DO_METADATA
 libarkimet_la_SOURCES += \
 		utils/h5.cc \
-		utils/datareader.cc \
 		utils/compress.cc \
 		utils/sqlite.cc \
 		metadata.cc \
@@ -380,6 +386,7 @@ libarkimet_la_SOURCES += \
 		metadata/clusterer.cc \
 		metadata/consumer.cc \
 		metadata/test-generator.cc \
+		reader.cc \
 		summary/stats.cc \
 		summary/intern.cc \
 		summary/table.cc \
@@ -396,7 +403,6 @@ libarkimet_la_SOURCES += \
 tests_arki_test_SOURCES += \
 		metadata/tests.cc \
 		matcher/tests.cc \
-		utils/datareader-tut.cc \
 		utils/compress-tut.cc \
 		utils/sqlite-tut.cc \
 		sort-test.cc \
@@ -404,10 +410,11 @@ tests_arki_test_SOURCES += \
 		validator-test.cc \
 		bbox-test.cc \
 		metadata-test.cc \
-		metadata/collection-tut.cc \
+		metadata/collection-test.cc \
 		metadata/clusterer-tut.cc \
-		metadata/stream-tut.cc \
+		metadata/stream-test.cc \
 		metadata/test-generator-tut.cc \
+		reader-test.cc \
 		summary-test.cc \
 		summary/intern-tut.cc \
 		summary/table-tut.cc \
@@ -510,6 +517,10 @@ libarkimet_la_SOURCES += \
 		dataset/simple/datafile.cc \
 		dataset/simple/reader.cc \
 		dataset/simple/writer.cc \
+		dataset/iseg.cc \
+		dataset/iseg/index.cc \
+		dataset/iseg/reader.cc \
+		dataset/iseg/writer.cc \
 		dataset/ondisk2.cc \
 		dataset/ondisk2/reader.cc \
 		dataset/ondisk2/writer.cc \
@@ -532,7 +543,7 @@ tests_arki_test_SOURCES += \
 		dataset/tests.cc \
 		dataset/reporter-test.cc \
 		dataset/time-test.cc \
-		dataset/segment-tut.cc \
+		dataset/segment-test.cc \
 		dataset/segment/tests.cc \
 		dataset/segment/fd-tut.cc \
 		dataset/segment/concat-tut.cc \
@@ -546,7 +557,7 @@ tests_arki_test_SOURCES += \
 		dataset/index/manifest-test.cc \
 		dataset/index/aggregate-tut.cc \
 		dataset/index/summarycache-tut.cc \
-		dataset/index/contents-tut.cc \
+		dataset/index/contents-test.cc \
 		dataset/step-test.cc \
 		dataset/local-test.cc \
 		dataset/segmented-test.cc \
@@ -554,9 +565,13 @@ tests_arki_test_SOURCES += \
 		dataset/file-tut.cc \
 		dataset/archive-test.cc \
 		dataset/simple-test.cc \
-		dataset/simple/datafile-tut.cc \
+		dataset/simple/datafile-test.cc \
 		dataset/simple/reader-test.cc \
 		dataset/simple/writer-test.cc \
+		dataset/iseg-test.cc \
+		dataset/iseg/index-test.cc \
+		dataset/iseg/reader-test.cc \
+		dataset/iseg/writer-test.cc \
 		dataset/ondisk2-test.cc \
 		dataset/ondisk2/reader-test.cc \
 		dataset/ondisk2/writer-test.cc \
@@ -574,6 +589,7 @@ tests_arki_test_SOURCES += \
 		dataset-reader-test.cc \
 		dataset-writer-test.cc \
 		dataset-checker-test.cc \
+		dataset-concurrency-test.cc \
 		metadatagrid-test.cc \
 		postprocess-tut.cc \
 		querymacro-tut.cc \

@@ -17,8 +17,7 @@ namespace dir {
 struct SequenceFile
 {
     std::string dirname;
-    std::string pathname;
-    int fd;
+    arki::File fd;
 
     SequenceFile(const std::string& pathname);
     ~SequenceFile();
@@ -51,6 +50,8 @@ struct SequenceFile
      */
     File open_next(const std::string& format, std::string& absname, size_t& pos);
 
+    void test_add_padding(unsigned size);
+
     static std::string data_fname(size_t pos, const std::string& format);
 };
 
@@ -66,6 +67,8 @@ protected:
      * in any case. Return the size of the data that has been written.
      */
     virtual size_t write_file(Metadata& md, File& fd);
+
+    void test_add_padding(unsigned size) override;
 
 public:
     Segment(const std::string& format, const std::string& relname, const std::string& absname);
@@ -92,7 +95,7 @@ public:
     State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
     void truncate(size_t offset) override;
-    Pending repack(const std::string& rootdir, metadata::Collection& mds) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
     void validate(Metadata& md, const scan::Validator& v) override;
 
     /// Call f for each nnnnnn.format file in the directory segment, passing the file name

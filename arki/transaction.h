@@ -49,14 +49,16 @@ public:
  */
 struct Pending
 {
-	Transaction* trans;
+    Transaction* trans = nullptr;
 
-	Pending() : trans(0) {}
-	Pending(const Pending& p);
-	Pending(Transaction* trans);
-	~Pending();
+    Pending() {}
+    Pending(const Pending& p) = delete;
+    Pending(Pending&& p);
+    Pending(Transaction* trans);
+    ~Pending();
 
-	Pending& operator=(const Pending& p);
+    Pending& operator=(const Pending& p) = delete;
+    Pending& operator=(Pending&& p);
 
 	/// true if there is an operation to commit, else false
 	operator bool() const { return trans != 0; }

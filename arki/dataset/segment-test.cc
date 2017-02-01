@@ -7,20 +7,13 @@
 #include "segmented.h"
 #include "segment/lines.h"
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::dataset;
 using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::tests;
-
-struct arki_dataset_data_shar {
-};
-
-TESTGRP(arki_dataset_data);
-
-namespace {
 
 class TestItem
 {
@@ -30,46 +23,6 @@ public:
     TestItem(const std::string& relname) : relname(relname) {}
 };
 
-}
-
-// Test the item cache
-def_test(1)
-{
-    segment::impl::Cache<TestItem, 3> cache;
-
-    // Empty cache does not return things
-    wassert(actual(cache.get("foo") == 0).istrue());
-
-    // Add returns the item we added
-    TestItem* foo = new TestItem("foo");
-    wassert(actual(cache.add(unique_ptr<TestItem>(foo)) == foo).istrue());
-
-    // Get returns foo
-    wassert(actual(cache.get("foo") == foo).istrue());
-
-    // Add two more items
-    TestItem* bar = new TestItem("bar");
-    wassert(actual(cache.add(unique_ptr<TestItem>(bar)) == bar).istrue());
-    TestItem* baz = new TestItem("baz");
-    wassert(actual(cache.add(unique_ptr<TestItem>(baz)) == baz).istrue());
-
-    // With max_size=3, the cache should hold them all
-    wassert(actual(cache.get("foo") == foo).istrue());
-    wassert(actual(cache.get("bar") == bar).istrue());
-    wassert(actual(cache.get("baz") == baz).istrue());
-
-    // Add an extra item: the last recently used was foo, which gets popped
-    TestItem* gnu = new TestItem("gnu");
-    wassert(actual(cache.add(unique_ptr<TestItem>(gnu)) == gnu).istrue());
-
-    // Foo is not in cache anymore, bar baz and gnu are
-    wassert(actual(cache.get("foo") == 0).istrue());
-    wassert(actual(cache.get("bar") == bar).istrue());
-    wassert(actual(cache.get("baz") == baz).istrue());
-    wassert(actual(cache.get("gnu") == gnu).istrue());
-}
-
-namespace {
 struct TestSegments
 {
     ConfigFile cfg;
@@ -120,21 +73,64 @@ struct TestSegments
         }
 
         // Repack it
-        segment_manager->repack("test.grib", mds);
+        wassert(segment_manager->repack("test.grib", mds));
     }
 };
-}
 
-def_test(2)
+class Tests : public TestCase
 {
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_dataset_segment");
+
+void Tests::register_tests() {
+
+// Test the item cache
+add_method("item_cache", [] {
+    segment::impl::Cache<TestItem, 3> cache;
+
+    // Empty cache does not return things
+    wassert(actual(cache.get("foo") == 0).istrue());
+
+    // Add returns the item we added
+    TestItem* foo = new TestItem("foo");
+    wassert(actual(cache.add(unique_ptr<TestItem>(foo)) == foo).istrue());
+
+    // Get returns foo
+    wassert(actual(cache.get("foo") == foo).istrue());
+
+    // Add two more items
+    TestItem* bar = new TestItem("bar");
+    wassert(actual(cache.add(unique_ptr<TestItem>(bar)) == bar).istrue());
+    TestItem* baz = new TestItem("baz");
+    wassert(actual(cache.add(unique_ptr<TestItem>(baz)) == baz).istrue());
+
+    // With max_size=3, the cache should hold them all
+    wassert(actual(cache.get("foo") == foo).istrue());
+    wassert(actual(cache.get("bar") == bar).istrue());
+    wassert(actual(cache.get("baz") == baz).istrue());
+
+    // Add an extra item: the last recently used was foo, which gets popped
+    TestItem* gnu = new TestItem("gnu");
+    wassert(actual(cache.add(unique_ptr<TestItem>(gnu)) == gnu).istrue());
+
+    // Foo is not in cache anymore, bar baz and gnu are
+    wassert(actual(cache.get("foo") == 0).istrue());
+    wassert(actual(cache.get("bar") == bar).istrue());
+    wassert(actual(cache.get("baz") == baz).istrue());
+    wassert(actual(cache.get("gnu") == gnu).istrue());
+});
+
+add_method("file", [] {
     TestSegments ts;
     wassert(ts.test_repack());
-}
+});
 
-def_test(3)
-{
+add_method("dir", [] {
     TestSegments ts("dir");
     wassert(ts.test_repack());
+});
+
 }
 
 }

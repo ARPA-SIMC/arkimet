@@ -34,13 +34,13 @@ public:
 class File : public Reader
 {
 protected:
-    virtual void scan(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
+    virtual bool scan(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
 
 public:
     std::string type() const override { return "file"; }
     const FileConfig& config() const override = 0;
 
-    void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
 
     static void readConfig(const std::string& path, ConfigFile& cfg);
@@ -66,7 +66,7 @@ public:
 
     virtual ~ArkimetFile();
 
-    void scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
+    bool scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
 };
 
 class YamlFile : public FdFile
@@ -81,7 +81,7 @@ public:
     YamlFile(std::shared_ptr<FileConfig> config);
     virtual ~YamlFile();
 
-    void scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
+    bool scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
 };
 
 class RawFile : public File
@@ -96,7 +96,7 @@ public:
 
     const FileConfig& config() const override { return *m_config; }
 
-    void scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
+    bool scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
 };
 
 }

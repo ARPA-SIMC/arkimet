@@ -60,9 +60,9 @@ std::unique_ptr<Reader> FileConfig::create_reader() const
     throw runtime_error(pathname + ": unknown file format \"" + format + "\"");
 }
 
-void File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    scan(q, dest);
+    return scan(q, dest);
 }
 
 void File::query_summary(const Matcher& matcher, Summary& summary)
@@ -191,11 +191,14 @@ static shared_ptr<sort::Stream> wrap_with_query(const dataset::DataQuery& q, met
 
 ArkimetFile::~ArkimetFile() {}
 
-void ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
+bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     auto sorter = wrap_with_query(q, dest);
-    Metadata::read_file(*fd, dest);
-    if (sorter) sorter->flush();
+    if (!Metadata::read_file(*fd, dest))
+        return false;
+    if (sorter)
+        return sorter->flush();
+    return true;
 }
 
 
@@ -204,7 +207,7 @@ YamlFile::YamlFile(std::shared_ptr<FileConfig> config)
 
 YamlFile::~YamlFile() { delete reader; }
 
-void YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
+bool YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     auto sorter = wrap_with_query(q, dest);
 
@@ -215,10 +218,13 @@ void YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
             break;
         if (!q.matcher(*md))
             continue;
-        if (!dest(move(md))) break;
+        if (!dest(move(md)))
+            return false;
     }
 
-    if (sorter) sorter->flush();
+    if (sorter) return sorter->flush();
+
+    return true;
 }
 
 
@@ -229,11 +235,13 @@ RawFile::RawFile(std::shared_ptr<const FileConfig> config)
 
 RawFile::~RawFile() {}
 
-void RawFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
+bool RawFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     auto sorter = wrap_with_query(q, dest);
-    scan::scan(config().pathname, dest, config().format);
-    if (sorter) sorter->flush();
+    if (!scan::scan(config().pathname, dest, config().format))
+        return false;
+    if (sorter) return sorter->flush();
+    return true;
 }
 
 }

@@ -22,12 +22,24 @@ public:
     Segment(const std::string& relname, const std::string& absname);
     ~Segment();
 
+    off_t append(Metadata& md) override;
+    off_t append(const std::vector<uint8_t>& buf) override;
+    Pending append(Metadata& md, off_t* ofs) override;
+
     void open();
     void truncate_and_open();
     void close();
-    void lock();
-    void unlock();
-    off_t wrpos();
+
+    /**
+     * Lock the segment for append and return the append position
+     */
+    off_t append_lock();
+
+    /**
+     * Unlock the segment for the append that started at the given position
+     */
+    void append_unlock(off_t wrpos);
+
     virtual void write(const std::vector<uint8_t>& buf);
     void fdtruncate(off_t pos);
     State check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
@@ -49,7 +61,8 @@ public:
             const std::string& relname,
             metadata::Collection& mds,
             fd::Segment* make_repack_segment(const std::string&, const std::string&),
-            bool skip_validation=false);
+            bool skip_validation=false,
+            unsigned test_flags=0);
 };
 
 }

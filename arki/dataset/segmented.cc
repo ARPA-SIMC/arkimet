@@ -2,6 +2,7 @@
 #include "step.h"
 #include "ondisk2/writer.h"
 #include "simple/writer.h"
+#include "iseg/writer.h"
 #include "maintenance.h"
 #include "archive.h"
 #include "reporter.h"
@@ -122,6 +123,8 @@ LocalWriter::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Meta
     if (type.empty())
         type = "local";
 
+    if (type == "iseg")
+        return dataset::iseg::Writer::testAcquire(cfg, md, out);
     if (type == "ondisk2" || type == "test")
         return dataset::ondisk2::Writer::testAcquire(cfg, md, out);
     if (type == "simple" || type == "error" || type == "duplicates")
@@ -269,7 +272,7 @@ void Checker::removeAll(dataset::Reporter& reporter, bool writable)
     // TODO:    archive().removeAll(reporter, writable);
 }
 
-void Checker::repack(dataset::Reporter& reporter, bool writable)
+void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
     const string& root = config().path;
 
@@ -283,9 +286,9 @@ void Checker::repack(dataset::Reporter& reporter, bool writable)
     if (writable)
         // No safeguard against a deleted index: we catch that in the
         // constructor and create the don't pack flagfile
-        repacker.reset(new maintenance::RealRepacker(reporter, *this));
+        repacker.reset(new maintenance::RealRepacker(reporter, *this, test_flags));
     else
-        repacker.reset(new maintenance::MockRepacker(reporter, *this));
+        repacker.reset(new maintenance::MockRepacker(reporter, *this, test_flags));
 
     try {
         State state = scan(reporter);

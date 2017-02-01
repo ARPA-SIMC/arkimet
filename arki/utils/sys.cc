@@ -342,6 +342,46 @@ MMap FileDescriptor::mmap(size_t length, int prot, int flags, off_t offset)
     return MMap(res, length);
 }
 
+bool FileDescriptor::ofd_setlk(struct flock& lk)
+{
+#ifdef F_OFD_SETLK
+    if (fcntl(fd, F_OFD_SETLK, &lk) != -1)
+#else
+    if (fcntl(fd, F_SETLK, &lk) != -1)
+#endif
+        return true;
+    if (errno != EAGAIN)
+        throw_error("cannot acquire lock");
+    return false;
+}
+
+bool FileDescriptor::ofd_setlkw(struct flock& lk, bool retry_on_signal)
+{
+    while (true)
+    {
+#ifdef F_OFD_SETLK
+        if (fcntl(fd, F_OFD_SETLKW, &lk) != -1)
+#else
+        if (fcntl(fd, F_SETLKW, &lk) != -1)
+#endif
+            return true;
+        if (errno != EAGAIN)
+            throw_error("cannot acquire lock");
+        if (!retry_on_signal)
+            return false;
+    }
+}
+
+bool FileDescriptor::ofd_getlk(struct flock& lk)
+{
+#ifdef F_OFD_SETLK
+    if (fcntl(fd, F_OFD_GETLK, &lk) == -1)
+#else
+    if (fcntl(fd, F_GETLK, &lk) == -1)
+#endif
+        throw_error("cannot test lock");
+    return lk.l_type == F_UNLCK;
+}
 
 /*
  * NamedFileDescriptor

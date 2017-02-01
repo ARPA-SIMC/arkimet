@@ -103,6 +103,18 @@ public:
     /// Create a Time object with the current time
     static Time create_now();
 
+    /**
+     * Create with the datetime one gets by replacing all -1 values with their
+     * lowest possible value
+     */
+    static Time create_lowerbound(int ye, int mo=-1, int da=-1, int ho=-1, int mi=-1, int se=-1);
+
+    /**
+     * Create with the datetime one gets by replacing all -1 values with their
+     * highest possible value
+     */
+    static Time create_upperbound(int ye, int mo=-1, int da=-1, int ho=-1, int mi=-1, int se=-1);
+
     /// Set all components to 0
     void unset();
 

@@ -33,7 +33,7 @@ public:
     /// Add a dataset to the group of datasets to merge
     void addDataset(Reader& ds);
 
-    void query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
     void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out) override;
 };

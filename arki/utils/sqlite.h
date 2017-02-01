@@ -82,16 +82,19 @@ public:
 class Query
 {
 protected:
-	// This is just a copy of what is in the main index
-	SQLiteDB& m_db;
-	// Precompiled statement
-	sqlite3_stmt* m_stm;
-	// Name of the query, to use in error messages
-	std::string name;
+    // This is just a copy of what is in the main index
+    SQLiteDB& m_db;
+    // Precompiled statement
+    sqlite3_stmt* m_stm = nullptr;
+    // Name of the query, to use in error messages
+    std::string name;
 
 public:
-	Query(const std::string& name, SQLiteDB& db) : m_db(db), m_stm(0), name(name) {}
-	~Query();
+    Query(const std::string& name, SQLiteDB& db) : m_db(db), name(name) {}
+    ~Query();
+
+    /// Check if the query has already been compiled
+    bool compiled() const { return m_stm != nullptr; }
 
 	/// Compile the query
 	void compile(const std::string& query);
@@ -211,7 +214,7 @@ public:
 class PrecompiledQuery : public Query
 {
 public:
-	PrecompiledQuery(const std::string& name, SQLiteDB& db) : Query(name, db) {}
+    using Query::Query;
 };
 
 /**
@@ -246,10 +249,7 @@ struct Committer
 	OneShotQuery commit;
 	OneShotQuery rollback;
 
-	Committer(SQLiteDB& db, bool exclusive = false)
-		: begin(db, "begin", exclusive ? "BEGIN EXCLUSIVE" : "BEGIN"),
-	          commit(db, "commit", "COMMIT"),
-		  rollback(db, "rollback", "ROLLBACK") {}
+    Committer(SQLiteDB& db, const char* type=nullptr);
 
 	void initQueries()
 	{
@@ -269,15 +269,15 @@ struct SqliteTransaction : public Transaction
 	Committer committer;
 	bool fired;
 
-	SqliteTransaction(SQLiteDB& db, bool exclusive = false)
-	       	: _ref(0), committer(db, exclusive), fired(false)
-	{
-		committer.begin();
-	}
-	~SqliteTransaction()
-	{
-		if (!fired) committer.rollback();
-	}
+    SqliteTransaction(SQLiteDB& db, const char* type=nullptr)
+        : _ref(0), committer(db, type), fired(false)
+    {
+        committer.begin();
+    }
+    ~SqliteTransaction()
+    {
+        if (!fired) committer.rollback();
+    }
 
 	void commit();
 	void rollback();

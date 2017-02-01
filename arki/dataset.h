@@ -206,9 +206,12 @@ public:
 
     /**
      * Query the dataset using the given matcher, and sending the results to
-     * the given function
+     * the given function.
+     *
+     * Returns true if dest always returned true, false if iteration stopped
+     * because dest returned false.
      */
-    virtual void query_data(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
+    virtual bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
 
     /**
      * Add to summary the summary of the data that would be extracted with the
@@ -359,8 +362,11 @@ struct Checker : public dataset::Base
      *
      * If writable is false, the process is simulated but no changes are
      * saved.
+     *
+     * test_flags are used to select alternate and usually undesirable repack
+     * behaviours during tests, and should always be 0 outside tests.
      */
-    virtual void repack(dataset::Reporter& reporter, bool writable=false) = 0;
+    virtual void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) = 0;
 
     /**
      * Check the dataset for errors, logging status to the given file.

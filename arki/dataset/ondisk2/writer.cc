@@ -71,13 +71,14 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 
     Pending p_idx = idx->beginTransaction();
     Pending p_df = w->append(md, &ofs);
-    auto source = types::source::Blob::create(md.source().format, config().path, w->relname, ofs, md.data_size());
+    auto source = types::source::Blob::create_unlocked(md.source().format, config().path, w->relname, ofs, md.data_size());
 
     try {
         int id;
         idx->index(md, w->relname, ofs, &id);
         p_df.commit();
         p_idx.commit();
+        source->lock();
         md.set_source(move(source));
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
@@ -97,7 +98,7 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 
     Pending p_idx = idx->beginTransaction();
     Pending p_df = w->append(md, &ofs);
-    auto source = types::source::Blob::create(md.source().format, config().path, w->relname, ofs, md.data_size());
+    auto source = types::source::Blob::create_unlocked(md.source().format, config().path, w->relname, ofs, md.data_size());
 
     try {
         int id;
@@ -107,6 +108,7 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
         //createPackFlagfile(df->pathname);
         p_df.commit();
         p_idx.commit();
+        source->lock();
         md.set_source(move(source));
         return ACQ_OK;
     } catch (std::exception& e) {
@@ -124,13 +126,14 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 
     Pending p_idx = idx->beginTransaction();
     Pending p_df = w->append(md, &ofs);
-    auto source = types::source::Blob::create(md.source().format, config().path, w->relname, ofs, md.data_size());
+    auto source = types::source::Blob::create_unlocked(md.source().format, config().path, w->relname, ofs, md.data_size());
 
     try {
         int id;
         idx->index(md, w->relname, ofs, &id);
         p_df.commit();
         p_idx.commit();
+        source->lock();
         md.set_source(move(source));
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
@@ -177,6 +180,7 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
         //createPackFlagfile(df->pathname);
         p_df.commit();
         p_idx.commit();
+        source->lock();
         md.set_source(move(source));
         return ACQ_OK;
     } catch (std::exception& e) {
@@ -237,6 +241,8 @@ void Writer::remove(Metadata& md)
     // reset source and dataset in the metadata
     md.unset_source();
     md.unset(TYPE_ASSIGNEDDATASET);
+
+    release_lock();
 }
 
 void Writer::flush()
@@ -278,7 +284,7 @@ Checker::Checker(std::shared_ptr<const ondisk2::Config> config)
 std::string Checker::type() const { return "ondisk2"; }
 
 void Checker::removeAll(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::removeAll(reporter, writable); release_lock(); }
-void Checker::repack(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::repack(reporter, writable); release_lock(); }
+void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags) { acquire_lock(); IndexedChecker::repack(reporter, writable, test_flags); release_lock(); }
 
 void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
@@ -396,7 +402,7 @@ void Checker::rescanSegment(const std::string& relpath)
 }
 
 
-size_t Checker::repackSegment(const std::string& relpath)
+size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
 {
     // Lock away writes and reads
     Pending p = idx->beginExclusiveTransaction();
@@ -407,7 +413,7 @@ size_t Checker::repackSegment(const std::string& relpath)
 
     metadata::Collection mds;
     idx->scan_file(relpath, mds.inserter_func(), "reftime, offset");
-    Pending p_repack = segment_manager().repack(relpath, mds);
+    Pending p_repack = segment_manager().repack(relpath, mds, test_flags);
 
     // Reindex mds
     idx->reset(relpath);

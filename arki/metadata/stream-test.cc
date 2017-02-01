@@ -21,47 +21,38 @@ static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 }
 }
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
-using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::tests;
-using arki::core::Time;
 
-struct arki_metadata_stream_shar {
-	Metadata md;
-	ValueBag testValues;
+void fill(Metadata& md)
+{
+    using namespace arki::types;
 
-	arki_metadata_stream_shar()
-	{
-		testValues.set("foo", Value::createInteger(5));
-		testValues.set("bar", Value::createInteger(5000));
-		testValues.set("baz", Value::createInteger(-200));
-		testValues.set("moo", Value::createInteger(0x5ffffff));
-		testValues.set("antani", Value::createInteger(-1));
-		testValues.set("blinda", Value::createInteger(0));
-		testValues.set("supercazzola", Value::createInteger(-1234567));
-		testValues.set("pippo", Value::createString("pippo"));
-		testValues.set("pluto", Value::createString("12"));
-		testValues.set("cippo", Value::createString(""));
-	}
+    ValueBag testValues;
+    testValues.set("foo", Value::createInteger(5));
+    testValues.set("bar", Value::createInteger(5000));
+    testValues.set("baz", Value::createInteger(-200));
+    testValues.set("moo", Value::createInteger(0x5ffffff));
+    testValues.set("antani", Value::createInteger(-1));
+    testValues.set("blinda", Value::createInteger(0));
+    testValues.set("supercazzola", Value::createInteger(-1234567));
+    testValues.set("pippo", Value::createString("pippo"));
+    testValues.set("pluto", Value::createString("12"));
+    testValues.set("cippo", Value::createString(""));
 
-	void fill(Metadata& md)
-	{
-        md.set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
-		md.set(origin::GRIB1::create(1, 2, 3));
-		md.set(product::GRIB1::create(1, 2, 3));
-		md.set(level::GRIB1::create(114, 12, 34));
-		md.set(timerange::GRIB1::create(1, 1, 2, 3));
-		md.set(area::GRIB::create(testValues));
-		md.set(proddef::GRIB::create(testValues));
-		md.add_note("test note");
-		md.set(AssignedDataset::create("dsname", "dsid"));
-	}
-};
-TESTGRP(arki_metadata_stream);
-
+    md.set(Reftime::createPosition(core::Time(2006, 5, 4, 3, 2, 1)));
+    md.set(origin::GRIB1::create(1, 2, 3));
+    md.set(product::GRIB1::create(1, 2, 3));
+    md.set(level::GRIB1::create(114, 12, 34));
+    md.set(timerange::GRIB1::create(1, 1, 2, 3));
+    md.set(area::GRIB::create(testValues));
+    md.set(proddef::GRIB::create(testValues));
+    md.add_note("test note");
+    md.set(AssignedDataset::create("dsname", "dsid"));
+}
 
 inline bool cmpmd(Metadata& md1, Metadata& md2)
 {
@@ -69,14 +60,14 @@ inline bool cmpmd(Metadata& md1, Metadata& md2)
     {
         cerr << "----- The two metadata differ.  First one:" << endl;
         md1.writeYaml(cerr);
-        if (md1.source().style() == Source::INLINE)
+        if (md1.source().style() == types::Source::INLINE)
         {
             const auto& buf = md1.getData();
             cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
         }
         cerr << "----- Second one:" << endl;
         md2.writeYaml(cerr);
-        if (md2.source().style() == Source::INLINE)
+        if (md2.source().style() == types::Source::INLINE)
         {
             const auto& buf = md2.getData();
             cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
@@ -86,17 +77,25 @@ inline bool cmpmd(Metadata& md1, Metadata& md2)
     return true;
 }
 
-// Test metadata stream
-def_test(1)
+
+class Tests : public TestCase
 {
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_metadata_stream");
+
+void Tests::register_tests() {
+
+// Test compression
+add_method("stream", [] {
     // Create test metadata
     Metadata md1;
-    md1.set_source(Source::createBlob("grib", "", "fname", 1, 2));
-    this->fill(md1);
+    md1.set_source(types::Source::createURL("grib", "http://www.example.org"));
+    fill(md1);
 
-	Metadata md2;
-	md2 = md1;
-	md2.set(origin::BUFR::create(1, 2));
+    Metadata md2;
+    md2 = md1;
+    md2.set(types::origin::BUFR::create(1, 2));
 
     const char* teststr = "this is a test";
     md1.set_source_inline("test", vector<uint8_t>(teststr, teststr + 14));
@@ -157,15 +156,14 @@ def_test(1)
 	ensure_equals(results.size(), 2u);
 	ensure(cmpmd(md1, results[0]));
 	ensure(cmpmd(md2, results[1]));
-}
+});
 
 // Send data split in less chunks than we have metadata
-def_test(2)
-{
+add_method("split", [] {
     // Create test metadata
     Metadata md;
-    md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
-    this->fill(md);
+    md.set_source(types::Source::createURL("grib", "http://www.example.org"));
+    fill(md);
 
     // Encode it in a buffer 3 times
     std::string str = tempfile_to_string([&](sys::NamedFileDescriptor& out) {
@@ -193,6 +191,8 @@ def_test(2)
     ensure(cmpmd(md, results[0]));
     ensure(cmpmd(md, results[1]));
     ensure(cmpmd(md, results[2]));
+});
+
 }
 
 }

@@ -9,15 +9,86 @@
 
 namespace arki {
 
+namespace utils {
+struct Regexp;
+}
+
 namespace core {
 class Time;
 }
 
+namespace types {
+class Reftime;
+namespace reftime {
+class Period;
+}
+}
+
+class Matcher;
 namespace matcher {
 class OR;
 }
 
 namespace dataset {
+
+namespace step {
+
+struct Files;
+
+/**
+ * Encapsulate a directory containing segment directories, and allow querying
+ * them by date
+ */
+class Dirs
+{
+public:
+    const std::string& root;
+    const std::string& format;
+
+    Dirs(const std::string& root, const std::string& format);
+
+    /**
+     * Generate all the matching file-containing directories under this one.
+     */
+    virtual void list(const Matcher& m, std::function<void(std::unique_ptr<Files>)> dest) const = 0;
+
+    /**
+     * Return the Reftime periods of the first and last segment under this
+     * directory.
+     */
+    virtual void extremes(std::unique_ptr<types::reftime::Period>& first, std::unique_ptr<types::reftime::Period>& last) const = 0;
+};
+
+/**
+ * Encapsulate a directory containing segments, and allow querying them by date
+ */
+class Files
+{
+protected:
+    const Dirs& dirs;
+    std::string relpath;
+    int value;
+
+public:
+    Files(const Dirs& dirs, const std::string& relpath, int value);
+
+    /**
+     * List all matching segments in this directory, with paths relative to dirs.root
+     */
+    virtual void list(const Matcher& m, std::function<void(std::string&& relpath)> dest) const = 0;
+
+    /**
+     * Return the first segment in this directory, with path relative to dirs.root
+     */
+    virtual std::unique_ptr<types::reftime::Period> first() const = 0;
+
+    /**
+     * Return the last segment in this directory, with path relative to dirs.root
+     */
+    virtual std::unique_ptr<types::reftime::Period> last() const = 0;
+};
+
+}
 
 /**
  * Generator for filenames the dataset in which to store a metadata
@@ -26,6 +97,11 @@ struct Step
 {
     virtual ~Step() {}
     virtual std::string operator()(const core::Time& time) const = 0;
+
+    /**
+     * Instantiate a step::Dirs to query segments for the given directory and format
+     */
+    virtual std::unique_ptr<step::Dirs> explore(const std::string& root, const std::string& format) const = 0;
 
     /**
      * Get the timespan of a file by just looking at its path.
@@ -42,6 +118,19 @@ struct Step
      * Currently it can only look at the reftime part of the matcher.
      */
     virtual bool pathMatches(const std::string& path, const matcher::OR& m) const = 0;
+
+    /**
+     * List existing paths whose segments could intersect the reftime part of
+     * the given matcher
+     */
+    virtual void list_segments(const std::string& root, const std::string& format, const Matcher& m, std::function<void(std::string&&)> dest) const = 0;
+
+    /**
+     * Get the time span between the theoretical beginning of the first
+     * available segment, and the theoretical end of the last available
+     * segment.
+     */
+    virtual void time_extremes(const std::string& root, const std::string& format, std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& until) const = 0;
 
     /**
      * Create a Step according to the given step type name.

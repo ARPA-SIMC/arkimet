@@ -26,13 +26,12 @@ IndexedReader::~IndexedReader()
     delete m_idx;
 }
 
-void IndexedReader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool IndexedReader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    LocalReader::query_data(q, dest);
-    if (!m_idx) return;
-    // FIXME: this is cargo culted from the old ondisk2 reader: what is the use case for this?
-    if (!m_idx->query_data(q, dest))
-        throw std::runtime_error("cannot query " + config().path + ": index could not be used");
+    if (!LocalReader::query_data(q, dest))
+        return false;
+    if (!m_idx) return true;
+    return m_idx->query_data(q, dest);
 }
 
 void IndexedReader::query_summary(const Matcher& matcher, Summary& summary)
