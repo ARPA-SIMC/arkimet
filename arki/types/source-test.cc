@@ -5,11 +5,13 @@
 #include "arki/emitter/memory.h"
 #include "arki/binary.h"
 #include "arki/wibble/sys/process.h"
+#include "arki/utils/sys.h"
 
 namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
+using namespace arki::utils;
 using namespace arki::types;
 
 class Tests : public TypeTestCase<types::Source>
@@ -111,6 +113,20 @@ add_method("blob_pathnames_encode", [] {
     }
 });
 
+add_method("blob_stream", [] {
+    unique_ptr<source::Blob> o = source::Blob::create("test", "inbound", "test.grib1", 7218, 34960);
+    sys::unlink_ifexists("test.grib");
+    File out("test.grib", O_WRONLY | O_CREAT | O_TRUNC);
+    wassert(actual(o->stream_data(out)) == 34960u);
+    out.close();
+
+    std::string data = sys::read_file("test.grib");
+    wassert(actual(data.size()) == 34960u);
+    wassert(actual(data.substr(0, 4)) == "GRIB");
+    wassert(actual(data.substr(data.size() - 4)) == "7777");
+
+    sys::unlink_ifexists("test.grib");
+});
 // Check URL
 add_method("url_details", [] {
     unique_ptr<Source> o = Source::createURL("test", "http://foobar");

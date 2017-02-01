@@ -19,6 +19,7 @@
 #include <cerrno>
 #include <stdexcept>
 #include <fcntl.h>
+#include <sys/uio.h>
 
 #ifdef HAVE_LUA
 #include "utils/lua.h"
@@ -517,6 +518,58 @@ const vector<uint8_t>& Metadata::getData()
             s.lock();
             m_data = s.read_data();
             return m_data;
+        }
+        default:
+            throw_consistency_error("retrieving data", "unsupported source style");
+    }
+}
+
+static size_t stream_buf(const std::string& format, const vector<uint8_t>& buf, NamedFileDescriptor& out)
+{
+    if (format == "vm2")
+    {
+        struct iovec todo[2] = {
+            { (void*)buf.data(), buf.size() },
+            { (void*)"\n", 1 },
+        };
+        ssize_t res = ::writev(out, todo, 2);
+        if (res < 0 || (unsigned)res != buf.size() + 1)
+            throw_system_error("cannot write " + to_string(buf.size() + 1) + " bytes to " + out.name());
+        return buf.size() + 1;
+    } else {
+        out.write_all_or_throw(buf);
+        return buf.size();
+    }
+}
+
+size_t Metadata::stream_data(NamedFileDescriptor& out)
+{
+    // First thing, try and return it from cache
+    if (!m_data.empty()) return stream_buf(source().format, m_data, out);
+
+    // If we don't have it in cache, try reconstructing it from the Value metadata
+    if (const Value* value = get<types::Value>())
+        m_data = arki::scan::reconstruct(m_source->format, *this, value->buffer);
+    if (!m_data.empty()) return stream_buf(source().format, m_data, out);
+
+    // If we don't have it in cache and we don't have a source, we cannot know
+    // how to load it: give up
+    if (!m_source) throw_consistency_error("retrieving data", "data source is not defined");
+
+    // Load it according to source
+    switch (m_source->style())
+    {
+        case Source::INLINE:
+            throw runtime_error("cannot retrieve data: data is not found on INLINE metadata");
+        case Source::URL:
+            throw runtime_error("cannot retrieve data: data is not accessible for URL metadata");
+        case Source::BLOB:
+        {
+            // Do not directly use m_data so that if dataReader.read throws an
+            // exception, m_data remains empty.
+            source::Blob& s = sourceBlob();
+            s.lock();
+            return s.stream_data(out);
         }
         default:
             throw_consistency_error("retrieving data", "unsupported source style");

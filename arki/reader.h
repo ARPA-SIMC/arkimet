@@ -3,6 +3,7 @@
 
 /// Generic interface to read data files
 #include <arki/libconfig.h>
+#include <arki/file.h>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -26,6 +27,7 @@ public:
     virtual ~Reader() {}
 
     virtual std::vector<uint8_t> read(const types::source::Blob& src) = 0;
+    virtual size_t stream(const types::source::Blob& src, NamedFileDescriptor& out) = 0;
     virtual bool is(const std::string& fname) const = 0;
 };
 

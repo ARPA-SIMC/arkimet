@@ -185,6 +185,12 @@ std::vector<uint8_t> Blob::read_data() const
     return reader->read(*this);
 }
 
+size_t Blob::stream_data(NamedFileDescriptor& out) const
+{
+    if (!reader) throw std::runtime_error("readData() called on an unlocked source");
+    return reader->stream(*this, out);
+}
+
 }
 }
 }

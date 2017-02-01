@@ -10,8 +10,11 @@
 #include "arki/types/source/blob.h"
 #include "arki/nag.h"
 #include "arki/iotrace.h"
+#include "arki/exceptions.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/uio.h>
+#include <sys/sendfile.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -36,6 +39,14 @@ public:
     {
         stringstream ss;
         ss << "cannot read " << src.size << " bytes of " << src.format << " data from " << abspath << ":"
+           << src.offset << ": the file has disappeared";
+        throw std::runtime_error(ss.str());
+    }
+
+    size_t stream(const types::source::Blob& src, NamedFileDescriptor& out) override
+    {
+        stringstream ss;
+        ss << "cannot stream " << src.size << " bytes of " << src.format << " data from " << abspath << ":"
            << src.offset << ": the file has disappeared";
         throw std::runtime_error(ss.str());
     }
@@ -97,6 +108,48 @@ public:
 
         return buf;
     }
+
+    size_t stream(const types::source::Blob& src, NamedFileDescriptor& out) override
+    {
+        if (src.format == "vm2")
+        {
+            vector<uint8_t> buf = read(src);
+
+            struct iovec todo[2] = {
+                { (void*)buf.data(), buf.size() },
+                { (void*)"\n", 1 },
+            };
+            ssize_t res = ::writev(out, todo, 2);
+            if (res < 0 || (unsigned)res != buf.size() + 1)
+                throw_system_error("cannot write " + to_string(buf.size() + 1) + " bytes to " + out.name());
+            return buf.size() + 1;
+        } else {
+            // TODO: add a stream method to sys::FileDescriptor that does the
+            // right thing depending on what's available in the system, and
+            // potentially also handles retries. Retry can trivially be done
+            // because offset is updated, and size can just be decreased by the
+            // return value
+            off_t offset = src.offset;
+            ssize_t res = sendfile(out, fd, &offset, src.size);
+            if (res < 0)
+            {
+                stringstream msg;
+                msg << "cannot stream " << src.size << " bytes of " << src.format << " data from " << fd.name() << ":"
+                    << src.offset;
+                throw_system_error(msg.str());
+            } else if ((size_t)res != src.size) {
+                // TODO: retry instead
+                stringstream msg;
+                msg << "cannot read " << src.size << " bytes of " << src.format << " data from " << fd.name() << ":"
+                    << src.offset << ": only " << res << "/" << src.size << " bytes have been read";
+                throw std::runtime_error(msg.str());
+            }
+
+            acct::plain_data_read_count.incr();
+            iotrace::trace_file(fd.name(), src.offset, src.size, "streamed data");
+            return res;
+        }
+    }
 };
 
 struct DirReader : public Reader
@@ -136,17 +189,24 @@ public:
         return dirfd.name() == fname;
     }
 
-    std::vector<uint8_t> read(const types::source::Blob& src) override
+    sys::File open_src(const types::source::Blob& src)
     {
-        vector<uint8_t> buf;
-        buf.resize(src.size);
-
         char dataname[32];
         snprintf(dataname, 32, "%06zd.%s", (size_t)src.offset, format.c_str());
         sys::File file_fd(dirfd.openat(dataname, O_RDONLY | O_CLOEXEC), str::joinpath(dirfd.name(), dataname));
 
         if (posix_fadvise(file_fd, 0, src.size, POSIX_FADV_DONTNEED) != 0)
             nag::debug("fadvise on %s failed: %m", file_fd.name().c_str());
+
+        return file_fd;
+    }
+
+    std::vector<uint8_t> read(const types::source::Blob& src) override
+    {
+        vector<uint8_t> buf;
+        buf.resize(src.size);
+
+        sys::File file_fd = open_src(src);
 
         ssize_t res = file_fd.pread(buf.data(), src.size, 0);
         if ((size_t)res != src.size)
@@ -161,6 +221,48 @@ public:
         iotrace::trace_file(dirfd.name(), src.offset, src.size, "read data");
 
         return buf;
+    }
+
+    size_t stream(const types::source::Blob& src, NamedFileDescriptor& out) override
+    {
+        if (src.format == "vm2")
+        {
+            vector<uint8_t> buf = read(src);
+
+            struct iovec todo[2] = {
+                { (void*)buf.data(), buf.size() },
+                { (void*)"\n", 1 },
+            };
+            ssize_t res = ::writev(out, todo, 2);
+            if (res < 0 || (unsigned)res != buf.size() + 1)
+                throw_system_error("cannot write " + to_string(buf.size() + 1) + " bytes to " + out.name());
+            return buf.size() + 1;
+        } else {
+            sys::File file_fd = open_src(src);
+
+            // TODO: add a stream method to sys::FileDescriptor that does the
+            // right thing depending on what's available in the system, and
+            // potentially also handles retries
+            off_t offset = src.offset;
+            ssize_t res = sendfile(out, file_fd, &offset, src.size);
+            if (res < 0)
+            {
+                stringstream msg;
+                msg << "cannot stream " << src.size << " bytes of " << src.format << " data from " << file_fd.name() << ":"
+                    << src.offset;
+                throw_system_error(msg.str());
+            } else if ((size_t)res != src.size) {
+                // TODO: retry instead
+                stringstream msg;
+                msg << "cannot read " << src.size << " bytes of " << src.format << " data from " << file_fd.name() << ":"
+                    << src.offset << ": only " << res << "/" << src.size << " bytes have been read";
+                throw std::runtime_error(msg.str());
+            }
+
+            acct::plain_data_read_count.incr();
+            iotrace::trace_file(dirfd.name(), src.offset, src.size, "streamed data");
+            return res;
+        }
     }
 };
 
@@ -203,6 +305,25 @@ public:
         iotrace::trace_file(fname, src.offset, src.size, "read data");
 
         return buf;
+    }
+
+    size_t stream(const types::source::Blob& src, NamedFileDescriptor& out) override
+    {
+        vector<uint8_t> buf = read(src);
+        if (src.format == "vm2")
+        {
+            struct iovec todo[2] = {
+                { (void*)buf.data(), buf.size() },
+                { (void*)"\n", 1 },
+            };
+            ssize_t res = ::writev(out, todo, 2);
+            if (res < 0 || (unsigned)res != buf.size() + 1)
+                throw_system_error("cannot write " + to_string(buf.size() + 1) + " bytes to " + out.name());
+            return buf.size() + 1;
+        } else {
+            out.write_all_or_throw(buf);
+            return buf.size();
+        }
     }
 };
 
@@ -277,6 +398,25 @@ public:
         iotrace::trace_file(fname, src.offset, src.size, "read data");
 
         return buf;
+    }
+
+    size_t stream(const types::source::Blob& src, NamedFileDescriptor& out) override
+    {
+        vector<uint8_t> buf = read(src);
+        if (src.format == "vm2")
+        {
+            struct iovec todo[2] = {
+                { (void*)buf.data(), buf.size() },
+                { (void*)"\n", 1 },
+            };
+            ssize_t res = ::writev(out, todo, 2);
+            if (res < 0 || (unsigned)res != buf.size() + 1)
+                throw_system_error("cannot write " + to_string(buf.size() + 1) + " bytes to " + out.name());
+            return buf.size() + 1;
+        } else {
+            out.write_all_or_throw(buf);
+            return buf.size();
+        }
     }
 };
 
