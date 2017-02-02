@@ -230,6 +230,38 @@ this->add_method("repack_during_read", [](Fixture& f) {
     });
 });
 
+this->add_method("import_during_read", [](Fixture& f) {
+    f.reset_test("step=single");
+
+    // Import one
+    {
+        auto writer = f.dataset_config()->create_writer();
+        wassert(actual(writer->acquire(f.td.test_data[0].md)) == dataset::Writer::ACQ_OK);
+    }
+
+    // Query it and import during query
+    auto reader = f.dataset_config()->create_reader();
+    unsigned count = 0;
+    reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+        {
+            // Make sure we only get one query result, that is, we don't read
+            // the thing we import during the query
+            wassert(actual(count) == 0);
+
+            auto writer = f.dataset_config()->create_writer();
+            wassert(actual(writer->acquire(f.td.test_data[1].md)) == dataset::Writer::ACQ_OK);
+            wassert(actual(writer->acquire(f.td.test_data[2].md)) == dataset::Writer::ACQ_OK);
+        }
+        ++count;
+        return true;
+    });
+    wassert(actual(count) == 1);
+
+    // Querying again returns all imported data
+    count = 0;
+    reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { ++count; return true; });
+});
+
 }
 }
 
