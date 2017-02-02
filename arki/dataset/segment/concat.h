@@ -1,5 +1,5 @@
-#ifndef ARKI_DATASET_DATA_CONCAT_H
-#define ARKI_DATASET_DATA_CONCAT_H
+#ifndef ARKI_DATASET_SEGMENT_CONCAT_H
+#define ARKI_DATASET_SEGMENT_CONCAT_H
 
 #include <arki/libconfig.h>
 #include <arki/dataset/segment/fd.h>
@@ -28,27 +28,14 @@ public:
     HoleSegment(const std::string& relname, const std::string& absname)
         : Segment(relname, absname) {}
 
-    void write(const std::vector<uint8_t>& buf) override;
+    void write(off_t wrpos, const std::vector<uint8_t>& buf) override;
 
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
 };
 
-class OstreamWriter : public segment::OstreamWriter
-{
-protected:
-    sigset_t blocked;
-
-public:
-    OstreamWriter();
-    virtual ~OstreamWriter();
-
-    size_t stream(Metadata& md, NamedFileDescriptor& out) const override;
-};
-
 }
 }
 }
 }
-
 #endif
 

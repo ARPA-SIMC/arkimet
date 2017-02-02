@@ -124,22 +124,8 @@ protected:
     std::unique_ptr<dir::Segment> make_segment(const std::string& format, const std::string& relname, const std::string& absname) override;
 };
 
-class OstreamWriter : public segment::OstreamWriter
-{
-protected:
-    sigset_t blocked;
-
-public:
-    OstreamWriter();
-    virtual ~OstreamWriter();
-
-    size_t stream(Metadata& md, NamedFileDescriptor& out) const override;
-};
-
-
 }
 }
 }
 }
-
 #endif

@@ -322,6 +322,33 @@ add_method("lua", [](Fixture& f) {
 #endif
 });
 
+add_method("stream", [](Fixture& f) {
+    metadata::Collection grib("inbound/test.grib1");
+    metadata::Collection bufr("inbound/test.bufr");
+    metadata::Collection vm2("inbound/test.vm2");
+    metadata::Collection odim("inbound/odimh5/XSEC_v21.h5");
+
+    File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
+    wassert(actual(grib[0].stream_data(fd)) == grib[0].sourceBlob().size);
+    fd.close();
+    wassert(actual(sys::size("tmpfile")) == grib[0].sourceBlob().size);
+
+    fd.open(O_WRONLY | O_CREAT | O_TRUNC);
+    wassert(actual(bufr[0].stream_data(fd)) == bufr[0].sourceBlob().size);
+    fd.close();
+    wassert(actual(sys::size("tmpfile")) == bufr[0].sourceBlob().size);
+
+    fd.open(O_WRONLY | O_CREAT | O_TRUNC);
+    wassert(actual(vm2[0].stream_data(fd)) == vm2[0].sourceBlob().size + 1);
+    fd.close();
+    wassert(actual(sys::size("tmpfile")) == vm2[0].sourceBlob().size + 1);
+
+    fd.open(O_WRONLY | O_CREAT | O_TRUNC);
+    wassert(actual(odim[0].stream_data(fd)) == odim[0].sourceBlob().size);
+    fd.close();
+    wassert(actual(sys::size("tmpfile")) == odim[0].sourceBlob().size);
+});
+
 }
 
 }

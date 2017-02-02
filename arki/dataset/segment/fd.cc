@@ -53,7 +53,7 @@ struct Append : public Transaction
         if (fired) return;
 
         // Append the data
-        w.write(buf);
+        w.write(pos, buf);
         w.append_unlock(pos);
 
         // Set the source information that we are writing in the metadata
@@ -107,7 +107,7 @@ off_t Segment::append(Metadata& md)
 
     try {
         // Append the data
-        write(buf);
+        write(pos, buf);
     } catch (...) {
         // If we had a problem, attempt to truncate the file to the original size
         fdtruncate(pos);
@@ -128,7 +128,7 @@ off_t Segment::append(const std::vector<uint8_t>& buf)
 
     off_t pos = append_lock();
     try {
-        write(buf);
+        write(pos, buf);
     } catch (...) {
         fdtruncate(pos);
         append_unlock(pos);
@@ -191,12 +191,13 @@ void Segment::fdtruncate(off_t pos)
         nag::warning("truncating %s to previous size %zd (rollback of append operation): %m", absname.c_str(), pos);
 }
 
-void Segment::write(const std::vector<uint8_t>& buf)
+void Segment::write(off_t wrpos, const std::vector<uint8_t>& buf)
 {
     // Prevent caching (ignore function result)
     //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
 
     // Append the data
+    fd.lseek(wrpos);
     fd.write_all_or_throw(buf.data(), buf.size());
 
     if (fdatasync(fd) < 0)

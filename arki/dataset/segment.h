@@ -1,5 +1,5 @@
-#ifndef ARKI_DATASET_DATA_H
-#define ARKI_DATASET_DATA_H
+#ifndef ARKI_DATASET_SEGMENT_H
+#define ARKI_DATASET_SEGMENT_H
 
 /// Dataset segment read/write functions
 
@@ -320,27 +320,6 @@ public:
     virtual void validate(Metadata& md, const scan::Validator& v) = 0;
 };
 
-namespace segment {
-
-/**
- * Interface for writing metadata and data to output streams.
- */
-class OstreamWriter
-{
-public:
-    virtual ~OstreamWriter();
-
-    virtual size_t stream(Metadata& md, NamedFileDescriptor& out) const = 0;
-
-    /**
-     * Returns a pointer to a static instance of the appropriate OstreamWriter
-     * for the given format
-     */
-    static const OstreamWriter* get(const std::string& format);
-};
-
 }
 }
-}
-
 #endif

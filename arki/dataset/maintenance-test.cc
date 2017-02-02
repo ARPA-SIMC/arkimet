@@ -114,7 +114,7 @@ class Tests : public FixtureTestCase<Fixture>
             // Change timestamp and rescan the file
             {
                 struct utimbuf oldts = { 199926000, 199926000 };
-                ensure(utime("testds/2007/07-08.grib", &oldts) == 0);
+                wassert(actual(utime("testds/2007/07-08.grib", &oldts)) == 0);
 
                 auto writer(f.makeSegmentedChecker());
                 writer->rescanSegment("2007/07-08.grib");
@@ -126,7 +126,7 @@ class Tests : public FixtureTestCase<Fixture>
             // Repack the file
             {
                 auto writer(f.makeSegmentedChecker());
-                ensure_equals(writer->repackSegment("2007/07-08.grib"), 0u);
+                wassert(actual(writer->repackSegment("2007/07-08.grib")) == 0u);
             }
 
             // Ensure that the archive is still clean

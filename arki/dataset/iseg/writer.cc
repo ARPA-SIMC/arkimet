@@ -655,7 +655,7 @@ size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
         idx.index(**i, source.offset);
     }
 
-    size_t size_pre = sys::size(pathname);
+    size_t size_pre = sys::isdir(pathname) ? 0 : sys::size(pathname);
 
     // Remove the .metadata file if present, because we are shuffling the
     // data file and it will not be valid anymore
@@ -677,7 +677,7 @@ size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
     // Commit the changes in the database
     p.commit();
 
-    size_t size_post = sys::size(pathname);
+    size_t size_post = sys::isdir(pathname) ? 0 : sys::size(pathname);
 
     return size_pre - size_post;
 }

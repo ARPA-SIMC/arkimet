@@ -4,7 +4,6 @@
 #include "arki/utils/raii.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include "arki/dataset/segment.h"
 #include "arki/wibble/sys/exec.h"
 #include <unistd.h>
 #include <sys/types.h>
@@ -114,7 +113,7 @@ void Xargs::add_to_batch(Metadata& md, const std::vector<uint8_t>& buf)
 {
     metadata::Clusterer::add_to_batch(md, buf);
     NamedFileDescriptor out(tempfile.fd, tempfile.pathname);
-    arki::dataset::segment::OstreamWriter::get(md.source().format)->stream(md, out);
+    md.stream_data(out);
 }
 
 void Xargs::flush_batch()

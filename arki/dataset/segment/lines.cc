@@ -33,7 +33,7 @@ void Segment::test_add_padding(unsigned size)
         fd.write("\n", 1);
 }
 
-void Segment::write(const std::vector<uint8_t>& buf)
+void Segment::write(off_t wrpos, const std::vector<uint8_t>& buf)
 {
     struct iovec todo[2] = {
         { (void*)buf.data(), buf.size() },
@@ -42,6 +42,8 @@ void Segment::write(const std::vector<uint8_t>& buf)
 
     // Prevent caching (ignore function result)
     //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
+
+    fd.lseek(wrpos);
 
     // Append the data
     ssize_t res = ::writev(fd, todo, 2);
@@ -72,30 +74,6 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, u
 {
     close();
     return fd::Segment::repack(rootdir, relname, mds, make_repack_segment, false, test_flags);
-}
-
-OstreamWriter::OstreamWriter()
-{
-    sigemptyset(&blocked);
-    sigaddset(&blocked, SIGINT);
-    sigaddset(&blocked, SIGTERM);
-}
-
-OstreamWriter::~OstreamWriter()
-{
-}
-
-size_t OstreamWriter::stream(Metadata& md, NamedFileDescriptor& out) const
-{
-    const std::vector<uint8_t>& buf = md.getData();
-    struct iovec todo[2] = {
-        { (void*)buf.data(), buf.size() },
-        { (void*)"\n", 1 },
-    };
-    ssize_t res = ::writev(out, todo, 2);
-    if (res < 0 || (unsigned)res != buf.size() + 1)
-        throw_system_error("cannot write " + to_string(buf.size() + 1) + " bytes to " + out.name());
-    return buf.size() + 1;
 }
 
 }

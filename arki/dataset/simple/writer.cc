@@ -215,11 +215,11 @@ size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
     sys::unlink_ifexists(pathname + ".metadata");
     sys::unlink_ifexists(pathname + ".summary");
 
-    size_t size_pre = sys::size(pathname);
+    size_t size_pre = sys::isdir(pathname) ? 0 : sys::size(pathname);
 
     p_repack.commit();
 
-    size_t size_post = sys::size(pathname);
+    size_t size_post = sys::isdir(pathname) ? 0 : sys::size(pathname);
 
     // Write out the new metadata
     mdc.writeAtomically(pathname + ".metadata");

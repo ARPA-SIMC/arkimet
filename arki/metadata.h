@@ -207,6 +207,13 @@ public:
     /// Get the raw data described by this metadata
     const std::vector<uint8_t>& getData();
 
+    /**
+     * Stream the data referred by this metadata to the given file descriptor.
+     *
+     * Return the number of bytes written
+     */
+    size_t stream_data(NamedFileDescriptor& out);
+
     /// Return True if getData can be called without causing I/O
     bool has_cached_data() const;
 

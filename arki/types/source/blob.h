@@ -109,6 +109,15 @@ struct Blob : public Source
      */
     std::vector<uint8_t> read_data() const;
 
+    /**
+     * Copy the data referred by this blob to the given file descriptor.
+     *
+     * This only works on locked blobs.
+     *
+     * Returns the number of bytes written to out.
+     */
+    size_t stream_data(NamedFileDescriptor& out) const;
+
     static std::unique_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Blob> create_unlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Blob> decodeMapping(const emitter::memory::Mapping& val);
