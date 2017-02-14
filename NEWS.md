@@ -1,3 +1,12 @@
+# New in version 1.1
+
+ * New dataset format with no dataset-wide index, and one .sqlite index per segment.
+   The configuration required is:
+   `type = iseg`
+   `format = grib|bufr|vm2|odimh5`
+   (in order to be able to enumerate the segments of the right kind, they need to 
+   be told explicitly what data format they are going to store)
+
 # New in version 1.0
 
  *  Removed dependency on libwibble
