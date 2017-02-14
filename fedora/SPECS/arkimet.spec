@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.0
-Release: 18
+Version: 1.1
+Release: 1
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -56,7 +56,14 @@ sh autogen.sh
 %build
 %configure
 make
+
+# unit tests arki_dataset_concurrent_* fail on f20 because of the fallback on
+# per-process locks instead of per-file-descriptor locks.
+# See issue https://github.com/ARPA-SIMC/arkimet/issues/60
+%if 0%{?fedora} >= 24
 make check
+%endif
+
 
 %install
 [ "%{buildroot}" != / ] && rm -rf %{buildroot}
@@ -124,6 +131,9 @@ else
 fi
 
 %changelog
+* Tue Feb 14 2017 Daniele Branchini <dbranchini@arpae.it> - 1.1-1%{dist}
+- New dataset format: one index per segment (#60)
+
 * Tue Jan 3 2017 Daniele Branchini <dbranchini@arpae.it> - 1.0-18%{dist}
 - fixed #63, #64, #66, #68, #70
 
