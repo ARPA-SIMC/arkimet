@@ -445,9 +445,6 @@ Pending Segment::repack(
         (*i)->drop_cached_data();
     }
 
-    // Close the temp file
-    writer.release();
-
     return p;
 }
 
