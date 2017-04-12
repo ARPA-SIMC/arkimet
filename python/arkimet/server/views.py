@@ -98,7 +98,6 @@ class ArkiView:
         If response headers have already been sent, then there is nothing we
         can do, and just log the exception.
         """
-        logging.exception("Exception caught after headers have been sent")
         if not self.headers_sent:
             ex = sys.exc_info()[1]
             self.handler.send_response(500)
@@ -108,6 +107,8 @@ class ArkiView:
             self.handler.flush_headers()
             self.handler.wfile.write(str(ex).encode("utf-8"))
             self.handler.wfile.write(b"\n")
+        else:
+            logging.exception("Exception caught after headers have been sent")
 
     def log_end(self):
         self.info["ts_end"] = time.time()
