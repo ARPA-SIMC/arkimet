@@ -490,6 +490,7 @@ class ArkiDatasetIndex(ArkiView):
 
     def stream(self):
         name = self.kwargs["name"]
+        cfg = self.get_dataset_config()
 
 #        // Query the summary
 #        Summary sum;
@@ -502,7 +503,7 @@ class ArkiDatasetIndex(ArkiView):
                 page.h1("Dataset " + name)
                 page.p("Configuration:")
                 with page.tag("pre"):
-                    for k, v in sorted(self.handler.server.remote_cfg[name].items()):
+                    for k, v in sorted(cfg.items()):
                         print("{k} = {v}".format(k=html.escape(k), v=html.escape(v)), file=page.out)
                 with page.ul():
                     with page.li(): page.a("/dataset/" + name + "/summary", "Download summary")
