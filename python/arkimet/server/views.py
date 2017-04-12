@@ -99,6 +99,7 @@ class ArkiView:
         can do, and just log the exception.
         """
         if not self.headers_sent:
+            logging.exception("Exception caught before headers have been sent")
             ex = sys.exc_info()[1]
             self.handler.send_response(500)
             self.handler.send_header("Content-Type", "text/plain")
