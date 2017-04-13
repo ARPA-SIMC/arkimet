@@ -9,7 +9,7 @@ from urllib.parse import quote
 from contextlib import contextmanager
 import logging
 import arkimet as arki
-from werkzeug.exceptions import HTTPException, NotFound
+from werkzeug.exceptions import NotFound
 
 
 class ArkiView:
@@ -101,7 +101,9 @@ class ArkiView:
         if not self.headers_sent:
             logging.exception("Exception caught before headers have been sent")
             ex = sys.exc_info()[1]
-            self.handler.send_response(500)
+            # If the exception has code attribute, use for the status code
+            code = getattr(ex, "code", 500)
+            self.handler.send_response(code)
             self.handler.send_header("Content-Type", "text/plain")
             self.handler.send_header("Arkimet-Exception", str(ex))
             self.handler.end_headers()
@@ -123,8 +125,6 @@ class ArkiView:
             self.stream()
             if not self.headers_sent:
                 self.send_headers()
-        except HTTPException as e:
-            raise e
         except Exception:
             self.handle_exception()
         self.log_end()
@@ -277,8 +277,6 @@ class TempdirMixin:
                 self.stream()
                 if not self.headers_sent:
                     self.send_headers()
-        except HTTPException as e:
-            raise e
         except Exception:
             self.handle_exception()
         finally:
