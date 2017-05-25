@@ -1,0 +1,30 @@
+{% block intro %}
+TODO: intro
+{% endblock %}
+
+## Check and repack
+
+### During check
+
+{% block check %}
+ - all data known by the index for this segment must be present on disk{% endblock %}
+
+### Optional thorough check
+
+{% block check_thorough %}
+ - run format-specific consistency checks on the content of each file{% endblock %}
+
+### During fix
+
+{% block fix %}
+ - data files present on disk but not in the index are rescanned and added to
+   the index
+ - data files present in the index but not on disk are removed from the index{% endblock %}
+
+### During repack
+
+{% block repack %}
+ - data files present on disk but not in the index are deleted from the disk
+ - files older than `delete age` are removed
+ - files older than `archive age` are moved to `last/`
+ - data files present in the index but not on disk are removed from the index{% endblock %}

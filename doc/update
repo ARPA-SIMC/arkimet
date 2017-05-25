@@ -1,0 +1,66 @@
+#!/usr/bin/python3
+
+import os
+import sys
+import argparse
+import logging
+
+log = logging.getLogger("main")
+
+class Renderer:
+    def __init__(self, docdir):
+        # Jinja2 template engine
+        from jinja2 import Environment, FileSystemLoader
+        self.jinja2 = Environment(
+            loader=FileSystemLoader([
+                docdir,
+            ]),
+            autoescape=False,
+            trim_blocks=True,
+        )
+
+    def render(self, fname):
+        with open(fname, "rt") as fd:
+            template = self.jinja2.from_string(fd.read())
+        rendered = template.render()
+        dst = fname[:-3]
+        with open(dst, "wt") as fd:
+            fd.write(rendered)
+        log.info("rendered %s to %s", fname, dst)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="render arkimet documentation templates")
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="verbose output")
+    parser.add_argument(
+        "--debug", action="store_true", help="debug output")
+    parser.add_argument(
+        "src", nargs="?", help="file to render (default: all files in doc directory)")
+
+    args = parser.parse_args()
+
+    log_format = "%(asctime)-15s %(levelname)s %(message)s"
+    level = logging.WARN
+    if args.debug:
+        level = logging.DEBUG
+    elif args.verbose:
+        level = logging.INFO
+    logging.basicConfig(level=level, stream=sys.stderr, format=log_format)
+
+    build_dir = os.path.dirname(__file__)
+    log.debug("build dir: %s", build_dir)
+
+    renderer = Renderer(build_dir)
+
+    if args.src:
+        renderer.render(args.src)
+    else:
+        for root, dirs, files in os.walk("."):
+            for f in files:
+                if not f.endswith(".md.j2"): continue
+                renderer.render(os.path.join(root, f))
+
+
+if __name__ == "__main__":
+    main()
