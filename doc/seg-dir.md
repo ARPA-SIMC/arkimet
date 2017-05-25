@@ -43,4 +43,6 @@ directory extension represents the format of the data it contains.
  - files older than `archive age` are moved to `last/`
  - data files present in the index but not on disk are removed from the index
  - data files are renumbered starting from 0, sequentially without gaps, in the
-   order given by the index, or by reference time if there is no index.
+   order given by the index, or by reference time if there is no index. This is
+   done to avoid sequence numbers growing indefinitely for datasets with
+   frequent appends and removes.

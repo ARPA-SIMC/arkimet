@@ -35,5 +35,7 @@ directory extension represents the format of the data it contains.
 {% block repack %}
 {{super()}}
  - data files are renumbered starting from 0, sequentially without gaps, in the
-   order given by the index, or by reference time if there is no index.
+   order given by the index, or by reference time if there is no index. This is
+   done to avoid sequence numbers growing indefinitely for datasets with
+   frequent appends and removes.
 {% endblock %}

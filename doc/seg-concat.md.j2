@@ -1,3 +1,5 @@
+{% extends "seg-base.j2" %}
+{% block intro %}
 # concat segments
 
 This kind of segment stores all data in a single file, simply concatenated one
@@ -14,4 +16,21 @@ extension represents the format of the data it contains.
 For VM2 data, which is a line-based format, the segment supports padding data
 with a newline. The newline is not considered part of the data, and it still
 gets written, skipped on read, and not considered as a gap during checks.
+{% endblock %}
 
+
+{% block check %}
+ - no pair of `(offset, size)` data spans from the index can overlap
+ - file size must be exactly the same as `offset+size` for the data in the
+   index with the highest offset for this segment
+ - all the data in the index must cover the whole file, without holes
+{{super()}}
+{% endblock %}
+
+{% block repack %}
+{{super()}}
+ - if the order in the data file does not match the order required from the
+   index, data files are rewritten rearranging the data, and the offsets in the
+   index are updated accordingly. This is done to guarantee linear disk access
+   when data are queried in the default sorting order.
+{% endblock %}
