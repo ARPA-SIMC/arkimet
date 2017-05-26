@@ -5,3 +5,4 @@ and indexing features to match various ways in which data is stored and
 queried.
 
  * [simple](ds-simple.md)
+ * [archive](ds-archive.md)

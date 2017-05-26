@@ -53,7 +53,7 @@ CLEANFILES += arkiguide.it.html
 endif
 
 EXTRA_DIST = update \
-			 datasets.md \
+			 datasets.md ds-archive.md \
 			 ds-indexed.j2 ds-simple.md.j2 \
 			 segments.md \
 			 seg-base.j2 seg-concat.md.j2 seg-dir.md.j2
