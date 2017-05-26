@@ -1,0 +1,30 @@
+{% block intro %}
+TODO: intro
+{% endblock %}
+
+## Check and repack
+
+Check and repack operations can be [segment](segments.md)-specific or
+dataset-specific. This section only describes dataset-specific ones. Since
+segment operations change according to the segment type, for the
+segment-specific documentation, see the [segments](segments.md) documentation.
+
+### During check
+
+{% block check %}
+ - `.metadata` file must not be empty
+ - metadata in the `.metadata` file must contain reference time elements
+ - the span of reference times in each segment must fit inside the interval
+   implied by the segment file name (FIXME: should this be disabled for
+   archives, to deal with datasets that had a change of step in their lifetime?)
+ - the segment name must represent an interval matching the dataset step
+   (FIXME: should this be disabled for archives, to deal with datasets that had
+   a change of step in their lifetime?){% endblock %}
+
+### During fix
+
+{% block fix %}{% endblock %}
+
+### During repack
+
+{% block repack %}{% endblock %}

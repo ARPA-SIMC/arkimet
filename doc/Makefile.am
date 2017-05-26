@@ -54,11 +54,11 @@ endif
 
 EXTRA_DIST = update \
 			 datasets.md \
-			 ds-simple.md \
+			 ds-indexed.j2 ds-simple.md.j2 \
 			 segments.md \
 			 seg-base.j2 seg-concat.md.j2 seg-dir.md.j2
 
-BUILT_SOURCES = seg-concat.md seg-dir.md 
+BUILT_SOURCES = ds-simple.md seg-concat.md seg-dir.md
 
 %.md: %.md.j2
 	$(srcdir)/update $<
