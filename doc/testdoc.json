@@ -14580,7 +14580,7 @@
   "method": "scan_missingdata"
  },
  {
-  "doc": "\n        - the segment must be a file\n    ",
+  "doc": "- the segment must be a file",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_isfile"
  },
@@ -14590,7 +14590,7 @@
   "method": "clean"
  },
  {
-  "doc": "\n        - the segment must be a file\n    ",
+  "doc": "- the segment must be a file",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_isfile"
  },
@@ -14600,7 +14600,7 @@
   "method": "clean"
  },
  {
-  "doc": "\n        - the segment must be a directory\n    ",
+  "doc": "- the segment must be a directory",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_isdir"
  },
@@ -14610,7 +14610,7 @@
   "method": "clean"
  },
  {
-  "doc": "\n        - the segment must be a directory\n    ",
+  "doc": "- the segment must be a directory",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_isdir"
  },

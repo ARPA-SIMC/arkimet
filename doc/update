@@ -5,6 +5,7 @@ import sys
 import subprocess
 import json
 import argparse
+from inspect import cleandoc
 import logging
 
 log = logging.getLogger("main")
@@ -45,6 +46,9 @@ class Renderer:
         testcase = os.path.join(self.srcdir, "../arki/tests/arki-test")
         stdout = subprocess.check_output([testcase, "--doc"], universal_newlines=True)
         new_data = json.loads(stdout)
+
+        for d in new_data:
+            d["doc"] = cleandoc(d["doc"])
 
         if old_data == new_data:
             return
