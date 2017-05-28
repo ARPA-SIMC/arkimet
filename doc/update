@@ -4,6 +4,7 @@ import os
 import sys
 import subprocess
 import json
+import re
 import argparse
 from inspect import cleandoc
 import logging
@@ -14,6 +15,13 @@ class Renderer:
     def __init__(self, srcdir, dstdir):
         self.srcdir = srcdir
         self.dstdir = dstdir
+        self.testdoc_file = os.path.join(self.srcdir, "testdoc.json")
+
+        try:
+            with open(self.testdoc_file, "rt") as fd:
+                self.testdoc_data = json.load(fd)
+        except FileNotFoundError:
+            self.testdoc_data = []
 
         # Jinja2 template engine
         from jinja2 import Environment, FileSystemLoader
@@ -25,6 +33,18 @@ class Renderer:
             autoescape=False,
             trim_blocks=True,
         )
+        self.jinja2.globals["testdoc"] = self.testdoc
+
+    def testdoc(self, pattern):
+        import fnmatch
+        regex = re.compile(fnmatch.translate(pattern))
+        res = []
+        for d in self.testdoc_data:
+            if not d["doc"]: continue
+            s = d["group"] + "." + d["method"]
+            if not regex.match(s): continue
+            res.append(d["doc"])
+        return "\n".join(res)
 
     def render(self, fname):
         with open(fname, "rt") as fd:
@@ -35,26 +55,19 @@ class Renderer:
             fd.write(rendered)
         log.info("rendered %s to %s", fname, dst)
 
-    def update_testdoc(self, testdoc):
-        testdoc = os.path.join(self.srcdir, "testdoc.json")
-        try:
-            with open(testdoc, "rt") as fd:
-                old_data = json.load(fd)
-        except FileNotFoundError:
-            old_data = None
-
-        testcase = os.path.join(self.srcdir, "../arki/tests/arki-test")
-        stdout = subprocess.check_output([testcase, "--doc"], universal_newlines=True)
+    def update_testdoc(self, testcmd):
+        stdout = subprocess.check_output([testcmd, "--doc"], universal_newlines=True)
         new_data = json.loads(stdout)
 
         for d in new_data:
             d["doc"] = cleandoc(d["doc"])
 
-        if old_data == new_data:
+        if self.testdoc_data == new_data:
             return
 
-        with open(testdoc, "wt") as fd:
-            json.dump(new_data, fd, sort_keys=True, indent=1)
+        self.testdoc_data = new_data
+        with open(self.testdoc_file, "wt") as fd:
+            json.dump(self.testdoc_data, fd, sort_keys=True, indent=1)
 
 
 def main():

@@ -27,16 +27,13 @@ segments during a query without needing to scan through all the `.metadata`
 file contents, and to support summary queries by merging existing summaries
 instead of recomputing them for all data queried.
 
-
-## Check and repack
-
-Check and repack operations can be [segment](segments.md)-specific or
-dataset-specific. This section only describes dataset-specific ones. Since
-segment operations change according to the segment type, for the
-segment-specific documentation, see the [segments](segments.md) documentation.
+## Check and repack on concat segments
 
 ### During check
 
+- the segment must exist
+- all data known by the index for this segment must be present on disk
+- the segment must be a file
  - `.metadata` file must not be empty
  - metadata in the `.metadata` file must contain reference time elements
  - the span of reference times in each segment must fit inside the interval
@@ -45,19 +42,50 @@ segment-specific documentation, see the [segments](segments.md) documentation.
  - the segment name must represent an interval matching the dataset step
    (FIXME: should this be disabled for archives, to deal with datasets that had
    a change of step in their lifetime?)
+
 ### During fix
+- if the `.metadata` file does not exist or is older than the segment, the
+  segment data are rescanned to regenerate the `.metadata` file.
+- if the `.summary` file does not exist or is older than the `.metadata` file,
+  it is regenerated with the contents of the `.metadata` file.
+- if the `.metadata` file is newer than the `MANIFEST` file, its information
+  is updated inside the `MANIFEST` file.
 
-
- - if the `.metadata` file does not exist or is older than the segment, the
-   segment data are rescanned to regenerate the `.metadata` file.
- - if the `.summary` file does not exist or is older than the `.metadata` file,
-   it is regenerated with the contents of the `.metadata` file.
- - if the `.metadata` file is newer than the `MANIFEST` file, its information
-   is updated inside the `MANIFEST` file.
 
 ### During repack
 
+- if the segment contents are changed during segment repack, the
+  `.metadata` file is rewritten to match the new contents. The `.summary` and
+  `MANIFEST` files are updated accordingly.
 
- - if the segment contents are changed during segment repack, the
-   `.metadata` file is rewritten to match the new contents. The `.summary` and
-   `MANIFEST` files are updated accordingly.
+
+## Check and repack on dir segments
+
+### During check
+
+- the segment must exist
+- all data known by the index for this segment must be present on disk
+- the segment must be a directory
+ - `.metadata` file must not be empty
+ - metadata in the `.metadata` file must contain reference time elements
+ - the span of reference times in each segment must fit inside the interval
+   implied by the segment file name (FIXME: should this be disabled for
+   archives, to deal with datasets that had a change of step in their lifetime?)
+ - the segment name must represent an interval matching the dataset step
+   (FIXME: should this be disabled for archives, to deal with datasets that had
+   a change of step in their lifetime?)
+
+### During fix
+- if the `.metadata` file does not exist or is older than the segment, the
+  segment data are rescanned to regenerate the `.metadata` file.
+- if the `.summary` file does not exist or is older than the `.metadata` file,
+  it is regenerated with the contents of the `.metadata` file.
+- if the `.metadata` file is newer than the `MANIFEST` file, its information
+  is updated inside the `MANIFEST` file.
+
+
+### During repack
+
+- if the segment contents are changed during segment repack, the
+  `.metadata` file is rewritten to match the new contents. The `.summary` and
+  `MANIFEST` files are updated accordingly.

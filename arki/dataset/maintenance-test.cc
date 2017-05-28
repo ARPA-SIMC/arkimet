@@ -82,6 +82,8 @@ struct SegmentConcatTests : public SegmentTests
 
 void SegmentConcatTests::register_tests(MaintenanceTest& tc)
 {
+    SegmentTests::register_tests(tc);
+
     tc.add_method("check_isfile", R"(
         - the segment must be a file
     )", [](Fixture& f) {
@@ -114,6 +116,8 @@ struct SegmentDirTests : public SegmentTests
 
 void SegmentDirTests::register_tests(MaintenanceTest& tc)
 {
+    SegmentTests::register_tests(tc);
+
     tc.add_method("check_isdir", R"(
         - the segment must be a directory
     )", [](Fixture& f) {

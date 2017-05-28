@@ -14580,6 +14580,16 @@
   "method": "scan_missingdata"
  },
  {
+  "doc": "- the segment must exist",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "check_exists"
+ },
+ {
+  "doc": "- all data known by the index for this segment must be present on disk",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "check_dataexists"
+ },
+ {
   "doc": "- the segment must be a file",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_isfile"
@@ -14590,6 +14600,16 @@
   "method": "clean"
  },
  {
+  "doc": "- the segment must exist",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "check_exists"
+ },
+ {
+  "doc": "- all data known by the index for this segment must be present on disk",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "check_dataexists"
+ },
+ {
   "doc": "- the segment must be a file",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_isfile"
@@ -14598,6 +14618,16 @@
   "doc": "",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "clean"
+ },
+ {
+  "doc": "- the segment must exist",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "check_exists"
+ },
+ {
+  "doc": "- all data known by the index for this segment must be present on disk",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "check_dataexists"
  },
  {
   "doc": "- the segment must be a directory",
@@ -14608,6 +14638,16 @@
   "doc": "",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "clean"
+ },
+ {
+  "doc": "- the segment must exist",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "check_exists"
+ },
+ {
+  "doc": "- all data known by the index for this segment must be present on disk",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "check_dataexists"
  },
  {
   "doc": "- the segment must be a directory",

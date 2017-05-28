@@ -64,5 +64,5 @@ EXTRA_DIST = update \
 testdoc.json:
 	$(srcdir)/update --dstdir $(srcdir) --testdoc $(top_builddir)/arki/tests/arki-test
 
-%.md: %.md.j2
+%.md: %.md.j2 testdoc.json
 	$(srcdir)/update $<
