@@ -3,7 +3,7 @@
  * @brief Utility functions for the unit tests
  *
  * Copyright (C) 2006--2007  Peter Rockai (mornfall) <me@mornfall.net>
- * Copyright (C) 2003--2015  Enrico Zini <enrico@debian.org>
+ * Copyright (C) 2003--2017  Enrico Zini <enrico@debian.org>
  */
 
 #include "tests.h"
@@ -455,16 +455,33 @@ void TestRegistry::register_test_case(TestCase& test_case)
     entries.emplace_back(&test_case);
 }
 
+void TestRegistry::iterate_test_methods(std::function<void(const TestCase&, const TestMethod&)> f)
+{
+    for (auto& e: entries)
+    {
+        e->register_tests_once();
+        for (const auto& m: e->methods)
+            f(*e, m);
+    }
+}
+
 std::vector<TestCaseResult> TestRegistry::run_tests(TestController& controller)
 {
     std::vector<TestCaseResult> res;
     for (auto& e: entries)
     {
-        e->register_tests();
+        e->register_tests_once();
         // TODO: filter on e.name
         res.emplace_back(std::move(e->run_tests(controller)));
     }
     return res;
+}
+
+void TestCase::register_tests_once()
+{
+    if (tests_registered) return;
+    tests_registered = true;
+    register_tests();
 }
 
 TestCaseResult TestCase::run_tests(TestController& controller)
@@ -518,6 +535,14 @@ TestMethodResult TestCase::run_test(TestController& controller, TestMethod& meth
     }
 
     bool run = true;
+    if (!method.test_function)
+    {
+        // Skip methods with empty test functions
+        res.skipped = true;
+        controller.test_method_end(method, res);
+        return res;
+    }
+
     try {
         method_setup(res);
     } catch (TestSkipped) {
