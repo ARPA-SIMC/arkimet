@@ -20,6 +20,18 @@ struct Fixture : public arki::tests::DatasetTest {
     }
 };
 
+struct MaintenanceTest;
+
+struct SegmentTests
+{
+    virtual ~SegmentTests();
+
+    /// Truncate segment 2007/07-07.grib
+    virtual void truncate_segment() = 0;
+    virtual void register_tests(MaintenanceTest& tc);
+};
+
+
 struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
 {
     enum SegmentType {
@@ -28,17 +40,19 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
     };
 
     SegmentType segment_type;
+    SegmentTests* segment_tests = nullptr;
 
     template<typename... Args>
     MaintenanceTest(const std::string& name, SegmentType segment_type, Args... args)
         : FixtureTestCase(name, std::forward<Args>(args)...), segment_type(segment_type)
     {
+        init_segment_tests();
     }
+    ~MaintenanceTest();
+
+    void init_segment_tests();
 
     void register_tests() override;
-    void register_segment_tests();
-    void register_segment_concat_tests();
-    void register_segment_dir_tests();
 };
 
 }

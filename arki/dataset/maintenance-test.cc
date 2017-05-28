@@ -27,9 +27,11 @@ namespace arki {
 namespace dataset {
 namespace maintenance_test {
 
-void MaintenanceTest::register_segment_tests()
+SegmentTests::~SegmentTests() {}
+
+void SegmentTests::register_tests(MaintenanceTest& tc)
 {
-    this->add_method("check_exists", R"(
+    tc.add_method("check_exists", R"(
         - the segment must exist
     )", [](Fixture& f) {
         sys::rmtree("testds/2007/07-07.grib");
@@ -40,8 +42,17 @@ void MaintenanceTest::register_segment_tests()
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DELETED));
     });
 
-    // During check
-    // all data known by the index for this segment must be present on disk
+    tc.add_method("check_dataexists", R"(
+        - all data known by the index for this segment must be present on disk
+    )", [this](Fixture& f) {
+        truncate_segment();
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
+
 
     // Optional thorough check
     // run format-specific consistency checks on the content of each file
@@ -57,9 +68,21 @@ void MaintenanceTest::register_segment_tests()
     // files older than archive age are moved to last/
 }
 
-void MaintenanceTest::register_segment_concat_tests()
+namespace {
+
+struct SegmentConcatTests : public SegmentTests
 {
-    this->add_method("check_isfile", R"(
+    void truncate_segment() override
+    {
+        sys::File f("testds/2007/07-07.grib");
+        f.ftruncate(7218);
+    }
+    void register_tests(MaintenanceTest& tc) override;
+};
+
+void SegmentConcatTests::register_tests(MaintenanceTest& tc)
+{
+    tc.add_method("check_isfile", R"(
         - the segment must be a file
     )", [](Fixture& f) {
         sys::unlink("testds/2007/07-07.grib");
@@ -79,9 +102,19 @@ void MaintenanceTest::register_segment_concat_tests()
     // if the order in the data file does not match the order required from the index, data files are rewritten rearranging the data, and the offsets in the index are updated accordingly. This is done to guarantee linear disk access when data are queried in the default sorting order.
 }
 
-void MaintenanceTest::register_segment_dir_tests()
+
+struct SegmentDirTests : public SegmentTests
 {
-    this->add_method("check_isdir", R"(
+    void truncate_segment() override
+    {
+        sys::unlink("testds/2007/07-07.grib/000001.grib");
+    }
+    void register_tests(MaintenanceTest& tc) override;
+};
+
+void SegmentDirTests::register_tests(MaintenanceTest& tc)
+{
+    tc.add_method("check_isdir", R"(
         - the segment must be a directory
     )", [](Fixture& f) {
         sys::rmtree("testds/2007/07-07.grib");
@@ -104,13 +137,25 @@ void MaintenanceTest::register_segment_dir_tests()
     // data files are renumbered starting from 0, sequentially without gaps, in the order given by the index, or by reference time if there is no index. This is done to avoid sequence numbers growing indefinitely for datasets with frequent appends and removes.
 }
 
-void MaintenanceTest::register_tests()
+}
+
+MaintenanceTest::~MaintenanceTest()
+{
+    delete segment_tests;
+}
+
+void MaintenanceTest::init_segment_tests()
 {
     switch (segment_type)
     {
-        case SEGMENT_CONCAT: register_segment_concat_tests(); break;
-        case SEGMENT_DIR:    register_segment_dir_tests();  break;
+        case SEGMENT_CONCAT: segment_tests = new SegmentConcatTests; break;
+        case SEGMENT_DIR:    segment_tests = new SegmentDirTests;  break;
     }
+}
+
+void MaintenanceTest::register_tests()
+{
+    segment_tests->register_tests(*this);
 
     add_method("clean", [](Fixture& f) {
         wassert(actual(f.makeSegmentedChecker().get()).check_clean());
