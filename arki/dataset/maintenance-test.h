@@ -16,7 +16,7 @@ struct Fixture : public arki::tests::DatasetTest {
             unique=reftime, origin, product, level, timerange, area
             step=daily
         )");
-        import();
+        import("inbound/mainttest.grib");
     }
 };
 
