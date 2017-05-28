@@ -2,9 +2,11 @@
 #include <arki/types-init.h>
 #include <arki/iotrace.h>
 #include <arki/utils/lock.h>
+#include <arki/emitter/json.h>
 #include <signal.h>
 #include <cstring>
 #include <cstdlib>
+#include <iostream>
 #include <arki/nag.h>
 
 using namespace std;
@@ -39,6 +41,22 @@ struct ArkiRunner
             controller.blacklist = blacklist;
         }
         return false;
+    }
+
+    void doc()
+    {
+        using namespace arki::utils::tests;
+        auto& tests = TestRegistry::get();
+        arki::emitter::JSON out(cout);
+        out.start_list();
+        tests.iterate_test_methods([&](const TestCase& tc, const TestMethod& tm) {
+            out.start_mapping();
+            out.add("group", tc.name);
+            out.add("method", tm.name);
+            out.add("doc", tm.doc);
+            out.end_mapping();
+        });
+        out.end_list();
     }
 
     void run()
@@ -99,7 +117,7 @@ struct ArkiRunner
     }
 };
 
-int main(int argc,const char* argv[])
+int main(int argc, const char* argv[])
 {
     arki::nag::init(false, false, true);
     arki::types::init_default_types();
@@ -113,6 +131,12 @@ int main(int argc,const char* argv[])
     ArkiRunner arki_runner;
     if (arki_runner.setup())
         return 0;
+
+    if (argc > 1 && strcmp(argv[1], "--doc") == 0)
+    {
+        arki_runner.doc();
+        return 0;
+    }
 
     arki_runner.run();
 
