@@ -2,18 +2,24 @@
 
 import os
 import sys
+import subprocess
+import json
 import argparse
 import logging
 
 log = logging.getLogger("main")
 
 class Renderer:
-    def __init__(self, docdir):
+    def __init__(self, srcdir, dstdir):
+        self.srcdir = srcdir
+        self.dstdir = dstdir
+
         # Jinja2 template engine
         from jinja2 import Environment, FileSystemLoader
         self.jinja2 = Environment(
             loader=FileSystemLoader([
-                docdir,
+                self.srcdir,
+                self.dstdir,
             ]),
             autoescape=False,
             trim_blocks=True,
@@ -28,6 +34,24 @@ class Renderer:
             fd.write(rendered)
         log.info("rendered %s to %s", fname, dst)
 
+    def update_testdoc(self, testdoc):
+        testdoc = os.path.join(self.srcdir, "testdoc.json")
+        try:
+            with open(testdoc, "rt") as fd:
+                old_data = json.load(fd)
+        except FileNotFoundError:
+            old_data = None
+
+        testcase = os.path.join(self.srcdir, "../arki/tests/arki-test")
+        stdout = subprocess.check_output([testcase, "--doc"], universal_newlines=True)
+        new_data = json.loads(stdout)
+
+        if old_data == new_data:
+            return
+
+        with open(testdoc, "wt") as fd:
+            json.dump(new_data, fd, sort_keys=True, indent=1)
+
 
 def main():
     parser = argparse.ArgumentParser(description="render arkimet documentation templates")
@@ -35,6 +59,12 @@ def main():
         "--verbose", "-v", action="store_true", help="verbose output")
     parser.add_argument(
         "--debug", action="store_true", help="debug output")
+    parser.add_argument(
+        "--srcdir", action="store", help="source directory (default, same as update script)")
+    parser.add_argument(
+        "--dstdir", action="store", help="destination directory (default, same as update script)")
+    parser.add_argument(
+        "--testdoc", action="store", help="update testdoc.json file")
     parser.add_argument(
         "src", nargs="?", help="file to render (default: all files in doc directory)")
 
@@ -48,12 +78,19 @@ def main():
         level = logging.INFO
     logging.basicConfig(level=level, stream=sys.stderr, format=log_format)
 
-    build_dir = os.path.dirname(__file__)
-    log.debug("build dir: %s", build_dir)
+    scriptdir = os.path.dirname(__file__)
 
-    renderer = Renderer(build_dir)
+    srcdir = args.srcdir or scriptdir
+    dstdir = args.dstdir or scriptdir
 
-    if args.src:
+    log.debug("source dir: %s", srcdir)
+    log.debug("destination dir: %s", dstdir)
+
+    renderer = Renderer(srcdir, dstdir)
+
+    if args.testdoc:
+        renderer.update_testdoc(args.testdoc)
+    elif args.src:
         renderer.render(args.src)
     else:
         for root, dirs, files in os.walk("."):
