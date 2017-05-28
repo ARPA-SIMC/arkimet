@@ -8,6 +8,9 @@ and simple structure.
 The only query optimization it supports is when querying by a restricted
 date-time range.
 
+Because of the lack of a detailed index, `simple` dataset cannot efficiently
+detect duplicate data on import, therefore that feature is not implemented.
+
 ## Dataset layout
 
 At the root of the dataset there is a `MANIFEST` file that lists the segments
