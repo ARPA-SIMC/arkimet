@@ -1,4 +1,5 @@
 #include "arki/dataset/tests.h"
+#include "arki/dataset/maintenance-test.h"
 #include "arki/exceptions.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/segmented.h"
@@ -20,6 +21,38 @@ using namespace arki::types;
 using namespace arki::dataset;
 using namespace arki::utils;
 using arki::core::Time;
+
+namespace arki {
+namespace dataset {
+namespace maintenance_test {
+
+void MaintenanceTest::register_segment_file_tests()
+{
+}
+
+void MaintenanceTest::register_segment_dir_tests()
+{
+}
+
+void MaintenanceTest::register_tests()
+{
+    switch (segment_type)
+    {
+        case SEGMENT_FILE: register_segment_file_tests(); break;
+        case SEGMENT_DIR:  register_segment_dir_tests();  break;
+    }
+
+    add_method("clean", [](Fixture& f) {
+        wassert(actual(f.makeSegmentedChecker().get()).check_clean());
+        wassert(actual(f.makeSegmentedChecker().get()).maintenance_clean(3));
+        wassert(actual(f.makeSegmentedChecker().get()).repack_clean());
+        wassert(actual(f.makeSegmentedChecker().get()).maintenance_clean(3));
+    });
+}
+
+}
+}
+}
 
 namespace {
 
