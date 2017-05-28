@@ -746,25 +746,13 @@ struct TestCase
     }
 
     /**
-     * Register a new test method
+     * Register a new test method, including documentation
      */
     template<typename ...Args>
-    TestMethod& add_method(const std::string& name, std::function<void()> test_function, Args&&... args)
+    TestMethod& add_method(const std::string& name, const std::string& doc, std::function<void()> test_function)
     {
-        methods.emplace_back(name, test_function, std::forward<Args>(args)...);
-        return methods.back();
-    }
-
-    /**
-     * Register a new test metheod, with arguments.
-     *
-     * Any extra arguments to the function will be passed to the test method.
-     */
-    template<typename FUNC, typename ...Args>
-    TestMethod& add_method(const std::string& name, FUNC test_function, Args&&... args)
-    {
-        auto f = std::bind(test_function, args...);
-        methods.emplace_back(name, f);
+        methods.emplace_back(name, test_function);
+        methods.back().doc = doc;
         return methods.back();
     }
 };
@@ -840,17 +828,23 @@ public:
     }
 
     /**
-     * Add a method that takes a reference to the fixture as argument.
-     *
-     * Any extra arguments to the function will be passed to the test method
-     * after the fixture.
+     * Register a new test method that takes a reference to the fixture as
+     * argument.
      */
-    template<typename FUNC>
-    void add_method(const std::string& name, FUNC test_function)
+    template<typename ...Args>
+    TestMethod& add_method(const std::string& name, std::function<void(FIXTURE&)> test_function)
     {
-        methods.emplace_back(name, [=]() {
-            test_function(*fixture);
-        });
+        return TestCase::add_method(name, [=]() { test_function(*fixture); });
+    }
+
+    /**
+     * Register a new test method that takes a reference to the fixture as
+     * argument, including documentation
+     */
+    template<typename ...Args>
+    TestMethod& add_method(const std::string& name, const std::string& doc, std::function<void(FIXTURE&)> test_function)
+    {
+        return TestCase::add_method(name, doc, [=]() { test_function(*fixture); });
     }
 };
 

@@ -24,6 +24,14 @@ namespace arki {
 namespace dataset {
 namespace segmented {
 
+const SegmentState& State::get(const std::string& seg) const
+{
+    auto res = find(seg);
+    if (res == end())
+        throw std::runtime_error("segment " + seg + " not found in state");
+    return res->second;
+}
+
 void State::dump(FILE* out) const
 {
     for (const auto& i: *this)

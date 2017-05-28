@@ -10,6 +10,7 @@
 #include <arki/nag.h>
 #include <string>
 #include <vector>
+#include <iosfwd>
 #include <sys/types.h>
 #include <memory>
 
@@ -83,9 +84,17 @@ struct State
 
     }
 
+    bool operator==(const State& fs) const
+    {
+        return value == fs.value;
+    }
+
     /// Return a text description of this file state
     std::string to_string() const;
 };
+
+/// Print to ostream
+std::ostream& operator<<(std::ostream&, const State&);
 
 /**
  * Visitor interface for scanning information about the segments in the database

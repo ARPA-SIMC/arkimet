@@ -15,9 +15,9 @@ class Tests : public MaintenanceTest
     }
 };
 
-Tests test_simple_plain("arki_dataset_simple_maintenance_plain", MaintenanceTest::SEGMENT_FILE, "type=simple\nindex_type=plain\n");
-Tests test_simple_sqlite("arki_dataset_simple_maintenance_sqlite", MaintenanceTest::SEGMENT_FILE, "type=simple\nindex_type=sqlite");
-Tests test_simple_plain_dir("arki_dataset_simple_maintenance_plain_dirs", MaintenanceTest::SEGMENT_FILE, "type=simple\nindex_type=plain\nsegments=dir\n");
-Tests test_simple_sqlite_dir("arki_dataset_simple_maintenance_sqlite_dirs", MaintenanceTest::SEGMENT_FILE, "type=simple\nindex_type=sqlite\nsegments=dir\n");
+Tests test_simple_plain("arki_dataset_simple_maintenance_plain", MaintenanceTest::SEGMENT_CONCAT, "type=simple\nindex_type=plain\n");
+Tests test_simple_sqlite("arki_dataset_simple_maintenance_sqlite", MaintenanceTest::SEGMENT_CONCAT, "type=simple\nindex_type=sqlite");
+Tests test_simple_plain_dir("arki_dataset_simple_maintenance_plain_dirs", MaintenanceTest::SEGMENT_DIR, "type=simple\nindex_type=plain\nsegments=dir\n");
+Tests test_simple_sqlite_dir("arki_dataset_simple_maintenance_sqlite_dirs", MaintenanceTest::SEGMENT_DIR, "type=simple\nindex_type=sqlite\nsegments=dir\n");
 
 }

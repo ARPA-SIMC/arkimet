@@ -126,6 +126,8 @@ struct State : public std::map<std::string, SegmentState>
 {
     using std::map<std::string, SegmentState>::map;
 
+    const SegmentState& get(const std::string& seg) const;
+
     void dump(FILE* out) const;
 };
 

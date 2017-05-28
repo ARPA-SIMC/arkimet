@@ -43,6 +43,11 @@ std::string State::to_string() const
     return str::join(",", res.begin(), res.end());
 }
 
+std::ostream& operator<<(std::ostream& o, const State& s)
+{
+    return o << s.to_string();
+}
+
 namespace {
 
 struct BaseSegmentManager : public segment::SegmentManager

@@ -3,6 +3,7 @@
 #include "arki/exceptions.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/segmented.h"
+#include "arki/dataset/reporter.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
@@ -26,20 +27,89 @@ namespace arki {
 namespace dataset {
 namespace maintenance_test {
 
-void MaintenanceTest::register_segment_file_tests()
+void MaintenanceTest::register_segment_tests()
 {
+    this->add_method("check_exists", R"(
+        - the segment must exist
+    )", [](Fixture& f) {
+        sys::rmtree("testds/2007/07-07.grib");
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DELETED));
+    });
+
+    // During check
+    // all data known by the index for this segment must be present on disk
+
+    // Optional thorough check
+    // run format-specific consistency checks on the content of each file
+
+    // During fix
+    // data files present on disk but not in the index are rescanned and added to the index
+    // data files present in the index but not on disk are removed from the index
+
+    // During repack
+    // data files present on disk but not in the index are deleted from the disk
+    // data files present in the index but not on disk are removed from the index
+    // files older than delete age are removed
+    // files older than archive age are moved to last/
+}
+
+void MaintenanceTest::register_segment_concat_tests()
+{
+    this->add_method("check_isfile", R"(
+        - the segment must be a file
+    )", [](Fixture& f) {
+        sys::unlink("testds/2007/07-07.grib");
+        sys::makedirs("testds/2007/07-07.grib");
+
+        arki::dataset::NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DELETED));
+    });
+
+    // no pair of (offset, size) data spans from the index can overlap
+    // file size must be exactly the same as offset+size for the data in the index with the highest offset for this segment
+    // all the data in the index must cover the whole file, without holes
+
+    // During repack
+    // if the order in the data file does not match the order required from the index, data files are rewritten rearranging the data, and the offsets in the index are updated accordingly. This is done to guarantee linear disk access when data are queried in the default sorting order.
 }
 
 void MaintenanceTest::register_segment_dir_tests()
 {
+    this->add_method("check_isdir", R"(
+        - the segment must be a directory
+    )", [](Fixture& f) {
+        sys::rmtree("testds/2007/07-07.grib");
+        sys::write_file("testds/2007/07-07.grib", "");
+
+        arki::dataset::NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
+
+    // During check
+    // the file sequence numbers must start from 0 and there must be no gaps
+    // sequence files on disk must match the order of data in the index
+
+    // Optional thorough check
+    // ensure each file contains one and only one datum, in case dir segments are used to store data that can be concatenated
+
+    // During repack
+    // data files are renumbered starting from 0, sequentially without gaps, in the order given by the index, or by reference time if there is no index. This is done to avoid sequence numbers growing indefinitely for datasets with frequent appends and removes.
 }
 
 void MaintenanceTest::register_tests()
 {
     switch (segment_type)
     {
-        case SEGMENT_FILE: register_segment_file_tests(); break;
-        case SEGMENT_DIR:  register_segment_dir_tests();  break;
+        case SEGMENT_CONCAT: register_segment_concat_tests(); break;
+        case SEGMENT_DIR:    register_segment_dir_tests();  break;
     }
 
     add_method("clean", [](Fixture& f) {

@@ -23,7 +23,7 @@ struct Fixture : public arki::tests::DatasetTest {
 struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
 {
     enum SegmentType {
-        SEGMENT_FILE,
+        SEGMENT_CONCAT,
         SEGMENT_DIR,
     };
 
@@ -36,7 +36,8 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
     }
 
     void register_tests() override;
-    void register_segment_file_tests();
+    void register_segment_tests();
+    void register_segment_concat_tests();
     void register_segment_dir_tests();
 };
 
