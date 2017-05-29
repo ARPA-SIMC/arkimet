@@ -122,6 +122,8 @@ void Request::perform()
         checked("selecting GET method", curl_easy_setopt(curl, CURLOPT_HTTPGET, 1));
     else
         throw std::runtime_error("requested unsupported HTTP method '" + method + "'");
+    checked("setting HTTP authentication method", curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_ANY));
+    checked("setting netrc usage", curl_easy_setopt(curl, CURLOPT_NETRC, CURL_NETRC_OPTIONAL));
     checked("setting header function", curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, &Request::headerfunc));
     checked("setting header function data", curl_easy_setopt(curl, CURLOPT_WRITEHEADER, this));
     checked("setting write function", curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &Request::writefunc));
