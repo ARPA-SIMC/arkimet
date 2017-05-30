@@ -31,27 +31,27 @@ instead of recomputing them for all data queried.
 
 ### During check
 
-- the segment must exist
-- all data known by the index for this segment must be present on disk
-- no pair of (offset, size) data spans from the index can overlap
-- data must start at the beginning of the segment
-- there must be no gaps between data in the segment
-- data must end at the end of the segment
+- the segment must exist [deleted]
+- all data known by the index for this segment must be present on disk [unaligned]
+- no pair of (offset, size) data spans from the index can overlap [unaligned]
+- data must start at the beginning of the segment [dirty]
+- there must be no gaps between data in the segment [dirty]
+- data must end at the end of the segment [dirty]
 - the segment must be a file
-- `.metadata` file must not be empty
-- `.metadata` file must not be older than the data
-- `.summary` file must not be older than the `.metadata` file
-- metadata in the `.metadata` file must contain reference time elements
+- `.metadata` file must not be empty [unaligned]
+- `.metadata` file must not be older than the data [unaligned]
+- `.summary` file must not be older than the `.metadata` file [unaligned]
+- metadata in the `.metadata` file must contain reference time elements [corrupted]
 - the span of reference times in each segment must fit inside the interval
   implied by the segment file name (FIXME: should this be disabled for
-  archives, to deal with datasets that had a change of step in their lifetime?)
+  archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
 - the segment name must represent an interval matching the dataset step
   (FIXME: should this be disabled for archives, to deal with datasets that had
-  a change of step in their lifetime?)
+  a change of step in their lifetime?) [corrupted]
 
 ### During --accurate check
 
-- format-specific consistency checks on the content of each file must pass
+- format-specific consistency checks on the content of each file must pass [unaligned]
 
 ### During fix
 
@@ -74,28 +74,28 @@ instead of recomputing them for all data queried.
 
 ### During check
 
-- the segment must exist
-- all data known by the index for this segment must be present on disk
-- no pair of (offset, size) data spans from the index can overlap
-- data must start at the beginning of the segment
-- there must be no gaps between data in the segment
-- data must end at the end of the segment
-- the segment must be a directory
-- the size of each data file must match the data size exactly
-- `.metadata` file must not be empty
-- `.metadata` file must not be older than the data
-- `.summary` file must not be older than the `.metadata` file
-- metadata in the `.metadata` file must contain reference time elements
+- the segment must exist [deleted]
+- all data known by the index for this segment must be present on disk [unaligned]
+- no pair of (offset, size) data spans from the index can overlap [unaligned]
+- data must start at the beginning of the segment [dirty]
+- there must be no gaps between data in the segment [dirty]
+- data must end at the end of the segment [dirty]
+- the segment must be a directory [unaligned]
+- the size of each data file must match the data size exactly [corrupted]
+- `.metadata` file must not be empty [unaligned]
+- `.metadata` file must not be older than the data [unaligned]
+- `.summary` file must not be older than the `.metadata` file [unaligned]
+- metadata in the `.metadata` file must contain reference time elements [corrupted]
 - the span of reference times in each segment must fit inside the interval
   implied by the segment file name (FIXME: should this be disabled for
-  archives, to deal with datasets that had a change of step in their lifetime?)
+  archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
 - the segment name must represent an interval matching the dataset step
   (FIXME: should this be disabled for archives, to deal with datasets that had
-  a change of step in their lifetime?)
+  a change of step in their lifetime?) [corrupted]
 
 ### During --accurate check
 
-- format-specific consistency checks on the content of each file must pass
+- format-specific consistency checks on the content of each file must pass [unaligned]
 
 ### During fix
 

@@ -65,7 +65,7 @@ void Tests::register_tests()
     MaintenanceTest::register_tests();
 
     add_method("check_empty_metadata", R"(
-    - `.metadata` file must not be empty
+    - `.metadata` file must not be empty [unaligned]
     )", [](Fixture& f) {
         sys::File mdf("testds/2007/07-07.grib.metadata", O_RDWR);
         mdf.ftruncate(0);
@@ -77,7 +77,7 @@ void Tests::register_tests()
     });
 
     add_method("check_metadata_timestamp", R"(
-    - `.metadata` file must not be older than the data
+    - `.metadata` file must not be older than the data [unaligned]
     )", [&](Fixture& f) {
         touch("testds/2007/07-07.grib.metadata", 1496167200);
 
@@ -88,7 +88,7 @@ void Tests::register_tests()
     });
 
     add_method("check_metadata_timestamp", R"(
-    - `.summary` file must not be older than the `.metadata` file
+    - `.summary` file must not be older than the `.metadata` file [unaligned]
     )", [&](Fixture& f) {
         touch("testds/2007/07-07.grib.summary", 1496167200);
 
@@ -99,7 +99,7 @@ void Tests::register_tests()
     });
 
     add_method("check_metadata_must_contain_reftimes", R"(
-    - metadata in the `.metadata` file must contain reference time elements
+    - metadata in the `.metadata` file must contain reference time elements [corrupted]
     )", [&](Fixture& f) {
         metadata::Collection mds;
         mds.read_from_file("testds/2007/07-07.grib.metadata");
@@ -117,7 +117,7 @@ void Tests::register_tests()
     add_method("check_metadata_reftimes_must_fit_segment", R"(
     - the span of reference times in each segment must fit inside the interval
       implied by the segment file name (FIXME: should this be disabled for
-      archives, to deal with datasets that had a change of step in their lifetime?)
+      archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
     )", [&](Fixture& f) {
         metadata::Collection mds;
         mds.read_from_file("testds/2007/07-07.grib.metadata");
@@ -134,7 +134,7 @@ void Tests::register_tests()
     add_method("check_segment_name_must_fit_step", R"(
     - the segment name must represent an interval matching the dataset step
       (FIXME: should this be disabled for archives, to deal with datasets that had
-      a change of step in their lifetime?)
+      a change of step in their lifetime?) [corrupted]
     )", [&](Fixture& f) {
         {
             auto w = f.makeSimpleWriter();

@@ -14580,37 +14580,37 @@
   "method": "scan_missingdata"
  },
  {
-  "doc": "- the segment must exist",
+  "doc": "- the segment must exist [deleted]",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk",
+  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_data_overlap"
  },
  {
-  "doc": "- data must start at the beginning of the segment",
+  "doc": "- data must start at the beginning of the segment [dirty]",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_hole_start"
  },
  {
-  "doc": "- there must be no gaps between data in the segment",
+  "doc": "- there must be no gaps between data in the segment [dirty]",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_hole_middle"
  },
  {
-  "doc": "- data must end at the end of the segment",
+  "doc": "- data must end at the end of the segment [dirty]",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_hole_end"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass",
+  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "tcheck_corrupted_data"
  },
@@ -14625,67 +14625,67 @@
   "method": "clean"
  },
  {
-  "doc": "- `.metadata` file must not be empty",
+  "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_empty_metadata"
  },
  {
-  "doc": "- `.metadata` file must not be older than the data",
+  "doc": "- `.metadata` file must not be older than the data [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_metadata_timestamp"
  },
  {
-  "doc": "- `.summary` file must not be older than the `.metadata` file",
+  "doc": "- `.summary` file must not be older than the `.metadata` file [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_metadata_timestamp"
  },
  {
-  "doc": "- metadata in the `.metadata` file must contain reference time elements",
+  "doc": "- metadata in the `.metadata` file must contain reference time elements [corrupted]",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- the span of reference times in each segment must fit inside the interval\n  implied by the segment file name (FIXME: should this be disabled for\n  archives, to deal with datasets that had a change of step in their lifetime?)",
+  "doc": "- the span of reference times in each segment must fit inside the interval\n  implied by the segment file name (FIXME: should this be disabled for\n  archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_metadata_reftimes_must_fit_segment"
  },
  {
-  "doc": "- the segment name must represent an interval matching the dataset step\n  (FIXME: should this be disabled for archives, to deal with datasets that had\n  a change of step in their lifetime?)",
+  "doc": "- the segment name must represent an interval matching the dataset step\n  (FIXME: should this be disabled for archives, to deal with datasets that had\n  a change of step in their lifetime?) [corrupted]",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_segment_name_must_fit_step"
  },
  {
-  "doc": "- the segment must exist",
+  "doc": "- the segment must exist [deleted]",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk",
+  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_data_overlap"
  },
  {
-  "doc": "- data must start at the beginning of the segment",
+  "doc": "- data must start at the beginning of the segment [dirty]",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_hole_start"
  },
  {
-  "doc": "- there must be no gaps between data in the segment",
+  "doc": "- there must be no gaps between data in the segment [dirty]",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_hole_middle"
  },
  {
-  "doc": "- data must end at the end of the segment",
+  "doc": "- data must end at the end of the segment [dirty]",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_hole_end"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass",
+  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "tcheck_corrupted_data"
  },
@@ -14700,77 +14700,77 @@
   "method": "clean"
  },
  {
-  "doc": "- `.metadata` file must not be empty",
+  "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_empty_metadata"
  },
  {
-  "doc": "- `.metadata` file must not be older than the data",
+  "doc": "- `.metadata` file must not be older than the data [unaligned]",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_metadata_timestamp"
  },
  {
-  "doc": "- `.summary` file must not be older than the `.metadata` file",
+  "doc": "- `.summary` file must not be older than the `.metadata` file [unaligned]",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_metadata_timestamp"
  },
  {
-  "doc": "- metadata in the `.metadata` file must contain reference time elements",
+  "doc": "- metadata in the `.metadata` file must contain reference time elements [corrupted]",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- the span of reference times in each segment must fit inside the interval\n  implied by the segment file name (FIXME: should this be disabled for\n  archives, to deal with datasets that had a change of step in their lifetime?)",
+  "doc": "- the span of reference times in each segment must fit inside the interval\n  implied by the segment file name (FIXME: should this be disabled for\n  archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_metadata_reftimes_must_fit_segment"
  },
  {
-  "doc": "- the segment name must represent an interval matching the dataset step\n  (FIXME: should this be disabled for archives, to deal with datasets that had\n  a change of step in their lifetime?)",
+  "doc": "- the segment name must represent an interval matching the dataset step\n  (FIXME: should this be disabled for archives, to deal with datasets that had\n  a change of step in their lifetime?) [corrupted]",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_segment_name_must_fit_step"
  },
  {
-  "doc": "- the segment must exist",
+  "doc": "- the segment must exist [deleted]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk",
+  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_data_overlap"
  },
  {
-  "doc": "- data must start at the beginning of the segment",
+  "doc": "- data must start at the beginning of the segment [dirty]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_hole_start"
  },
  {
-  "doc": "- there must be no gaps between data in the segment",
+  "doc": "- there must be no gaps between data in the segment [dirty]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_hole_middle"
  },
  {
-  "doc": "- data must end at the end of the segment",
+  "doc": "- data must end at the end of the segment [dirty]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_hole_end"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass",
+  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "tcheck_corrupted_data"
  },
  {
-  "doc": "- the segment must be a directory",
+  "doc": "- the segment must be a directory [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_isdir"
  },
  {
-  "doc": "- the size of each data file must match the data size exactly",
+  "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_datasize"
  },
@@ -14780,77 +14780,77 @@
   "method": "clean"
  },
  {
-  "doc": "- `.metadata` file must not be empty",
+  "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_empty_metadata"
  },
  {
-  "doc": "- `.metadata` file must not be older than the data",
+  "doc": "- `.metadata` file must not be older than the data [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_metadata_timestamp"
  },
  {
-  "doc": "- `.summary` file must not be older than the `.metadata` file",
+  "doc": "- `.summary` file must not be older than the `.metadata` file [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_metadata_timestamp"
  },
  {
-  "doc": "- metadata in the `.metadata` file must contain reference time elements",
+  "doc": "- metadata in the `.metadata` file must contain reference time elements [corrupted]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- the span of reference times in each segment must fit inside the interval\n  implied by the segment file name (FIXME: should this be disabled for\n  archives, to deal with datasets that had a change of step in their lifetime?)",
+  "doc": "- the span of reference times in each segment must fit inside the interval\n  implied by the segment file name (FIXME: should this be disabled for\n  archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_metadata_reftimes_must_fit_segment"
  },
  {
-  "doc": "- the segment name must represent an interval matching the dataset step\n  (FIXME: should this be disabled for archives, to deal with datasets that had\n  a change of step in their lifetime?)",
+  "doc": "- the segment name must represent an interval matching the dataset step\n  (FIXME: should this be disabled for archives, to deal with datasets that had\n  a change of step in their lifetime?) [corrupted]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_segment_name_must_fit_step"
  },
  {
-  "doc": "- the segment must exist",
+  "doc": "- the segment must exist [deleted]",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk",
+  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_data_overlap"
  },
  {
-  "doc": "- data must start at the beginning of the segment",
+  "doc": "- data must start at the beginning of the segment [dirty]",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_hole_start"
  },
  {
-  "doc": "- there must be no gaps between data in the segment",
+  "doc": "- there must be no gaps between data in the segment [dirty]",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_hole_middle"
  },
  {
-  "doc": "- data must end at the end of the segment",
+  "doc": "- data must end at the end of the segment [dirty]",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_hole_end"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass",
+  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "tcheck_corrupted_data"
  },
  {
-  "doc": "- the segment must be a directory",
+  "doc": "- the segment must be a directory [unaligned]",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_isdir"
  },
  {
-  "doc": "- the size of each data file must match the data size exactly",
+  "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_datasize"
  },
@@ -14860,32 +14860,32 @@
   "method": "clean"
  },
  {
-  "doc": "- `.metadata` file must not be empty",
+  "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_empty_metadata"
  },
  {
-  "doc": "- `.metadata` file must not be older than the data",
+  "doc": "- `.metadata` file must not be older than the data [unaligned]",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_metadata_timestamp"
  },
  {
-  "doc": "- `.summary` file must not be older than the `.metadata` file",
+  "doc": "- `.summary` file must not be older than the `.metadata` file [unaligned]",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_metadata_timestamp"
  },
  {
-  "doc": "- metadata in the `.metadata` file must contain reference time elements",
+  "doc": "- metadata in the `.metadata` file must contain reference time elements [corrupted]",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- the span of reference times in each segment must fit inside the interval\n  implied by the segment file name (FIXME: should this be disabled for\n  archives, to deal with datasets that had a change of step in their lifetime?)",
+  "doc": "- the span of reference times in each segment must fit inside the interval\n  implied by the segment file name (FIXME: should this be disabled for\n  archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_metadata_reftimes_must_fit_segment"
  },
  {
-  "doc": "- the segment name must represent an interval matching the dataset step\n  (FIXME: should this be disabled for archives, to deal with datasets that had\n  a change of step in their lifetime?)",
+  "doc": "- the segment name must represent an interval matching the dataset step\n  (FIXME: should this be disabled for archives, to deal with datasets that had\n  a change of step in their lifetime?) [corrupted]",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_segment_name_must_fit_step"
  },

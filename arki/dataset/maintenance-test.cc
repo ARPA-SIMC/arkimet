@@ -33,7 +33,7 @@ SegmentTests::~SegmentTests() {}
 void SegmentTests::register_tests(MaintenanceTest& tc)
 {
     tc.add_method("check_exists", R"(
-        - the segment must exist
+        - the segment must exist [deleted]
     )", [&](Fixture& f) {
         tc.rm_r("testds/2007/07-07.grib");
 
@@ -44,7 +44,7 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
     });
 
     tc.add_method("check_dataexists", R"(
-        - all data known by the index for this segment must be present on disk
+        - all data known by the index for this segment must be present on disk [unaligned]
     )", [&](Fixture& f) {
         truncate_segment();
 
@@ -55,7 +55,7 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
     });
 
     tc.add_method("check_data_overlap", R"(
-        - no pair of (offset, size) data spans from the index can overlap
+        - no pair of (offset, size) data spans from the index can overlap [unaligned]
     )", [&](Fixture& f) {
         tc.make_overlap();
 
@@ -66,7 +66,7 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
     });
 
     tc.add_method("check_hole_start", R"(
-        - data must start at the beginning of the segment
+        - data must start at the beginning of the segment [dirty]
     )", [&](Fixture& f) {
         tc.make_hole_start();
 
@@ -77,7 +77,7 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
     });
 
     tc.add_method("check_hole_middle", R"(
-        - there must be no gaps between data in the segment
+        - there must be no gaps between data in the segment [dirty]
     )", [&](Fixture& f) {
         tc.make_hole_middle();
 
@@ -88,7 +88,7 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
     });
 
     tc.add_method("check_hole_end", R"(
-        - data must end at the end of the segment
+        - data must end at the end of the segment [dirty]
     )", [&](Fixture& f) {
         tc.make_hole_end();
 
@@ -100,7 +100,7 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
 
     // Optional thorough check
     tc.add_method("tcheck_corrupted_data", R"(
-        - format-specific consistency checks on the content of each file must pass
+        - format-specific consistency checks on the content of each file must pass [unaligned]
     )", [&](Fixture& f) {
         corrupt_first();
 
@@ -235,7 +235,7 @@ void SegmentDirTests::register_tests(MaintenanceTest& tc)
     SegmentTests::register_tests(tc);
 
     tc.add_method("check_isdir", R"(
-        - the segment must be a directory
+        - the segment must be a directory [unaligned]
     )", [](Fixture& f) {
         sys::rmtree("testds/2007/07-07.grib");
         sys::write_file("testds/2007/07-07.grib", "");
@@ -247,7 +247,7 @@ void SegmentDirTests::register_tests(MaintenanceTest& tc)
     });
 
     tc.add_method("check_datasize", R"(
-        - the size of each data file must match the data size exactly
+        - the size of each data file must match the data size exactly [corrupted]
     )", [](Fixture& f) {
         {
             sys::File df("testds/2007/07-07.grib/000000.grib", O_RDWR);
