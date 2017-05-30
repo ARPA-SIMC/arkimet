@@ -57,6 +57,14 @@ class Tests : public MaintenanceTest
         segment_tests->make_hole_end();
     }
 
+    void swap_data() override
+    {
+        metadata::Collection mds;
+        mds.read_from_file("testds/2007/07-07.grib.metadata");
+        std::swap(mds[0], mds[1]);
+        mds.writeAtomically("testds/2007/07-07.grib.metadata");
+    }
+
     void register_tests() override;
 };
 

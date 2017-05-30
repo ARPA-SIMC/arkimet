@@ -14625,6 +14625,11 @@
   "method": "clean"
  },
  {
+  "doc": "- data on disk must match the order of data used by queries [dirty]",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "check_isordered"
+ },
+ {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_empty_metadata"
@@ -14700,6 +14705,11 @@
   "method": "clean"
  },
  {
+  "doc": "- data on disk must match the order of data used by queries [dirty]",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "check_isordered"
+ },
+ {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_empty_metadata"
@@ -14780,6 +14790,11 @@
   "method": "clean"
  },
  {
+  "doc": "- data on disk must match the order of data used by queries [dirty]",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "check_isordered"
+ },
+ {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_empty_metadata"
@@ -14858,6 +14873,11 @@
   "doc": "",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "clean"
+ },
+ {
+  "doc": "- data on disk must match the order of data used by queries [dirty]",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "check_isordered"
  },
  {
   "doc": "- `.metadata` file must not be empty [unaligned]",

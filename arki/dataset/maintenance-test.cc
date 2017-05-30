@@ -170,6 +170,17 @@ struct SegmentConcatTests : public SegmentTests
         df.lseek(0);
         df.write_all_or_throw("T", 1);
     }
+    void swap_data() override
+    {
+        sys::File df("testds/2007/07-07.grib", O_RDWR);
+        char first[34960];
+        char second[34960];
+        df.read_all_or_throw(first, 34960);
+        df.read_all_or_throw(second, 34960);
+        df.lseek(0);
+        df.write_all_or_throw(second, 34960);
+        df.write_all_or_throw(first, 34960);
+    }
     void register_tests(MaintenanceTest& tc) override;
 };
 
@@ -202,20 +213,16 @@ struct SegmentDirTests : public SegmentTests
     }
     void make_overlap() override
     {
-        if (::rename("testds/2007/07-07.grib/000001.grib", "testds/2007/07-07.grib/000000.grib") != 0)
-            throw_system_error("cannot rename 000001.grib to 000000.grib in testds/2007/07-07.grib/");
+        MaintenanceTest::rename("testds/2007/07-07.grib/000001.grib", "testds/2007/07-07.grib/000000.grib");
     }
     void make_hole_start() override
     {
-        if (::rename("testds/2007/07-07.grib/000001.grib", "testds/2007/07-07.grib/000002.grib") != 0)
-            throw_system_error("cannot rename 000001.grib to 000002.grib in testds/2007/07-07.grib/");
-        if (::rename("testds/2007/07-07.grib/000000.grib", "testds/2007/07-07.grib/000001.grib") != 0)
-            throw_system_error("cannot rename 000000.grib to 000001.grib in testds/2007/07-07.grib/");
+        MaintenanceTest::rename("testds/2007/07-07.grib/000001.grib", "testds/2007/07-07.grib/000002.grib");
+        MaintenanceTest::rename("testds/2007/07-07.grib/000000.grib", "testds/2007/07-07.grib/000001.grib");
     }
     void make_hole_middle() override
     {
-        if (::rename("testds/2007/07-07.grib/000001.grib", "testds/2007/07-07.grib/000002.grib") != 0)
-            throw_system_error("cannot rename 000001.grib to 000002.grib in testds/2007/07-07.grib/");
+        MaintenanceTest::rename("testds/2007/07-07.grib/000001.grib", "testds/2007/07-07.grib/000002.grib");
     }
     void make_hole_end() override
     {
@@ -226,6 +233,12 @@ struct SegmentDirTests : public SegmentTests
         sys::File df("testds/2007/07-07.grib/000000.grib", O_RDWR);
         df.lseek(0);
         df.write_all_or_throw("T", 1);
+    }
+    void swap_data() override
+    {
+        MaintenanceTest::rename("testds/2007/07-07.grib/000000.grib", "testds/2007/07-07.grib/tmp.grib");
+        MaintenanceTest::rename("testds/2007/07-07.grib/000001.grib", "testds/2007/07-07.grib/000000.grib");
+        MaintenanceTest::rename("testds/2007/07-07.grib/tmp.grib", "testds/2007/07-07.grib/000001.grib");
     }
     void register_tests(MaintenanceTest& tc) override;
 };
@@ -312,8 +325,16 @@ void MaintenanceTest::register_tests()
         wassert(actual(f.makeSegmentedChecker().get()).maintenance_clean(3));
     });
 
-    // During check
-    // TODO: offsets on disk must match the order of data in the index
+    add_method("check_isordered", R"(
+        - data on disk must match the order of data used by queries [dirty]
+    )", [&](Fixture& f) {
+        swap_data();
+
+        arki::dataset::NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DIRTY));
+    });
 }
 
 }

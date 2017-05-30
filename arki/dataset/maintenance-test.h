@@ -57,6 +57,11 @@ struct SegmentTests
      */
     virtual void corrupt_first() = 0;
 
+    /**
+     * Swap the two data in 2007/07-07.grib
+     */
+    virtual void swap_data() = 0;
+
     virtual void register_tests(MaintenanceTest& tc);
 };
 
@@ -104,16 +109,21 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
      */
     virtual void make_hole_end() = 0;
 
-    /// Rename a file or directory
-    void rename(const std::string& old_pathname, const std::string& new_pathname);
-
-    /// Remove a file or a directory
-    void rm_r(const std::string& pathname);
-
-    /// Set the mtime and atime of a file
-    void touch(const std::string& pathname, time_t ts);
+    /**
+     * Swap the two data in 2007/07-07.grib
+     */
+    virtual void swap_data() = 0;
 
     void register_tests() override;
+
+    /// Rename a file or directory
+    static void rename(const std::string& old_pathname, const std::string& new_pathname);
+
+    /// Remove a file or a directory
+    static void rm_r(const std::string& pathname);
+
+    /// Set the mtime and atime of a file
+    static void touch(const std::string& pathname, time_t ts);
 };
 
 }
