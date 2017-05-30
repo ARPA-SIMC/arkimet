@@ -128,7 +128,7 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
 
     // Fix
     tc.add_method("fix_new", R"(
-        - [new] segments are reindexed
+        - [new] segments are imported in-place
     )", [&](Fixture& f) {
         tc.deindex();
 
@@ -142,7 +142,7 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
     });
 
     tc.add_method("fix_unaligned", R"(
-        - [unaligned] segments are reindexed
+        - [unaligned] segments are reimported in-place
     )", [&](Fixture& f) {
         tc.require_rescan();
 
