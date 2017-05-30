@@ -65,6 +65,19 @@ class Tests : public MaintenanceTest
         mds.writeAtomically("testds/2007/07-07.grib.metadata");
     }
 
+    void deindex() override
+    {
+        auto w = fixture->makeSimpleWriter();
+        w->test_get_index().test_remove("2007/07-07.grib");
+        sys::unlink("testds/2007/07-07.grib.metadata");
+        sys::unlink("testds/2007/07-07.grib.summary");
+    }
+
+    void require_rescan() override
+    {
+        touch("testds/2007/07-07.grib.metadata", 1496167200);
+    }
+
     void register_tests() override;
 };
 
@@ -95,10 +108,27 @@ void Tests::register_tests()
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
     });
 
-    add_method("check_metadata_timestamp", R"(
+    add_method("check_summary_timestamp", R"(
     - `.summary` file must not be older than the `.metadata` file [unaligned]
     )", [&](Fixture& f) {
         touch("testds/2007/07-07.grib.summary", 1496167200);
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
+
+    add_method("check_manifest_timestamp", R"(
+    - `MANIFEST` file must not be older than the `.metadata` file [unaligned]
+    )", [&](Fixture& f) {
+        time_t manifest_ts;
+        if (sys::exists("testds/MANIFEST"))
+            manifest_ts = sys::timestamp("testds/MANIFEST");
+        else
+            manifest_ts = sys::timestamp("testds/index.sqlite");
+
+        touch("testds/2007/07-07.grib.metadata", manifest_ts + 1);
 
         NullReporter nr;
         auto state = f.makeSegmentedChecker()->scan(nr);

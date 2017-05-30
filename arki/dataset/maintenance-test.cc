@@ -32,6 +32,8 @@ SegmentTests::~SegmentTests() {}
 
 void SegmentTests::register_tests(MaintenanceTest& tc)
 {
+    // Check
+
     tc.add_method("check_exists", R"(
         - the segment must exist [deleted]
     )", [&](Fixture& f) {
@@ -62,6 +64,7 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
         NullReporter nr;
         auto state = f.makeSegmentedChecker()->scan(nr);
         wassert(actual(state.size()) == 3u);
+        // TODO: should it be CORRUPTED?
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
     });
 
@@ -98,6 +101,17 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DIRTY));
     });
 
+    tc.add_method("check_new", R"(
+        - find data files now known by the index [new]
+    )", [&](Fixture& f) {
+        tc.deindex();
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_NEW));
+    });
+
     // Optional thorough check
     tc.add_method("tcheck_corrupted_data", R"(
         - format-specific consistency checks on the content of each file must pass [unaligned]
@@ -112,11 +126,53 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
     });
 
 
-    // During fix
+    // Fix
+    tc.add_method("fix_new", R"(
+        - [new] segments are reindexed
+    )", [&](Fixture& f) {
+        tc.deindex();
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "2 files ok");
+        e.rescanned.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(writer.get()).check(e, true));
+
+        wassert(actual(writer.get()).maintenance_clean(3));
+    });
+
+    tc.add_method("fix_unaligned", R"(
+        - [unaligned] segments are reindexed
+    )", [&](Fixture& f) {
+        tc.require_rescan();
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "2 files ok");
+        e.rescanned.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(writer.get()).check(e, true));
+
+        wassert(actual(writer.get()).maintenance_clean(3));
+    });
+
+    tc.add_method("fix_deleted", R"(
+        - [deleted] segments are removed from the index
+    )", [&](Fixture& f) {
+        tc.rm_r("testds/2007/07-07.grib");
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "2 files ok");
+        e.deindexed.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(writer.get()).check(e, true));
+
+        wassert(actual(writer.get()).maintenance_clean(2));
+    });
+
     // TODO: data files present on disk but not in the index are rescanned and added to the index
     // TODO: data files present in the index but not on disk are removed from the index
 
-    // During repack
+    // Repack
     // TODO: data files present on disk but not in the index are deleted from the disk
     // TODO: data files present in the index but not on disk are removed from the index
     // TODO: files older than delete age are removed
@@ -188,6 +244,7 @@ void SegmentConcatTests::register_tests(MaintenanceTest& tc)
 {
     SegmentTests::register_tests(tc);
 
+    // Check
     tc.add_method("check_isfile", R"(
         - the segment must be a file
     )", [](Fixture& f) {

@@ -31,21 +31,15 @@ instead of recomputing them for all data queried.
 
 ### During check
 
-{{testdoc("arki_dataset_simple_maintenance_plain.check*")}}
+{{testdoc("arki_dataset_simple_maintenance_plain.check_*")}}
 
 ### During --accurate check
 
-{{testdoc("arki_dataset_simple_maintenance_plain.tcheck*")}}
+{{testdoc("arki_dataset_simple_maintenance_plain.tcheck_*")}}
 
 ### During fix
 
-- if the `.metadata` file does not exist or is older than the segment, the
-  segment data are rescanned to regenerate the `.metadata` file.
-- if the `.summary` file does not exist or is older than the `.metadata` file,
-  it is regenerated with the contents of the `.metadata` file.
-- if the `.metadata` file is newer than the `MANIFEST` file, its information
-  is updated inside the `MANIFEST` file.
-
+{{testdoc("arki_dataset_simple_maintenance_plain.fix_*")}}
 
 ### During repack
 

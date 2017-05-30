@@ -258,6 +258,12 @@ void Manifest::rescanSegment(const std::string& dir, const std::string& relpath)
     acquire(relpath, mtime, sum);
 }
 
+void Manifest::test_remove(const std::string& relname)
+{
+    remove(relname);
+}
+
+
 namespace manifest {
 static bool mft_force_sqlite = false;
 
@@ -483,7 +489,7 @@ public:
         dirty = true;
     }
 
-    virtual void remove(const std::string& relname)
+    void remove(const std::string& relname) override
     {
         reread();
         vector<Info>::iterator i;

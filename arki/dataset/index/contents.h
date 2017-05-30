@@ -221,6 +221,7 @@ public:
     void open();
 
     void test_rename(const std::string& relname, const std::string& new_relname) override;
+    void test_remove(const std::string& relname) override;
 };
 
 class WContents : public Contents
@@ -302,6 +303,7 @@ public:
     void flush();
 
     void test_rename(const std::string& relname, const std::string& new_relname) override;
+    void test_remove(const std::string& relname) override;
 };
 
 }

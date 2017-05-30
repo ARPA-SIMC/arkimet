@@ -114,6 +114,12 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
      */
     virtual void swap_data() = 0;
 
+    /// Remove 2007/07-07.grib from index
+    virtual void deindex() = 0;
+
+    /// Make it so that 2007/07-07.grib requires a rescan
+    virtual void require_rescan() = 0;
+
     void register_tests() override;
 
     /// Rename a file or directory

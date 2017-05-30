@@ -61,6 +61,8 @@ public:
 
     static bool get_force_sqlite();
     static void set_force_sqlite(bool val);
+
+    void test_remove(const std::string& relname) override;
 };
 
 }

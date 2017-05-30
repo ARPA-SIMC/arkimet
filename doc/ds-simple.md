@@ -37,11 +37,13 @@ instead of recomputing them for all data queried.
 - data must start at the beginning of the segment [dirty]
 - there must be no gaps between data in the segment [dirty]
 - data must end at the end of the segment [dirty]
+- find data files now known by the index [new]
 - the segment must be a file
 - data on disk must match the order of data used by queries [dirty]
 - `.metadata` file must not be empty [unaligned]
 - `.metadata` file must not be older than the data [unaligned]
 - `.summary` file must not be older than the `.metadata` file [unaligned]
+- `MANIFEST` file must not be older than the `.metadata` file [unaligned]
 - metadata in the `.metadata` file must contain reference time elements [corrupted]
 - the span of reference times in each segment must fit inside the interval
   implied by the segment file name (FIXME: should this be disabled for
@@ -56,13 +58,9 @@ instead of recomputing them for all data queried.
 
 ### During fix
 
-- if the `.metadata` file does not exist or is older than the segment, the
-  segment data are rescanned to regenerate the `.metadata` file.
-- if the `.summary` file does not exist or is older than the `.metadata` file,
-  it is regenerated with the contents of the `.metadata` file.
-- if the `.metadata` file is newer than the `MANIFEST` file, its information
-  is updated inside the `MANIFEST` file.
-
+- [new] segments are reindexed
+- [unaligned] segments are reindexed
+- [deleted] segments are removed from the index
 
 ### During repack
 
@@ -81,12 +79,14 @@ instead of recomputing them for all data queried.
 - data must start at the beginning of the segment [dirty]
 - there must be no gaps between data in the segment [dirty]
 - data must end at the end of the segment [dirty]
+- find data files now known by the index [new]
 - the segment must be a directory [unaligned]
 - the size of each data file must match the data size exactly [corrupted]
 - data on disk must match the order of data used by queries [dirty]
 - `.metadata` file must not be empty [unaligned]
 - `.metadata` file must not be older than the data [unaligned]
 - `.summary` file must not be older than the `.metadata` file [unaligned]
+- `MANIFEST` file must not be older than the `.metadata` file [unaligned]
 - metadata in the `.metadata` file must contain reference time elements [corrupted]
 - the span of reference times in each segment must fit inside the interval
   implied by the segment file name (FIXME: should this be disabled for

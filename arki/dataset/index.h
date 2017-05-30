@@ -60,6 +60,15 @@ struct Index
      * The version on disk is not touched.
      */
     virtual void test_rename(const std::string& relname, const std::string& new_relname) = 0;
+
+    /**
+     * Remove a segment from the index.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     *
+     * The version on disk is not touched.
+     */
+    virtual void test_remove(const std::string& relname) = 0;
 };
 
 }

@@ -882,6 +882,11 @@ void RContents::test_rename(const std::string& relname, const std::string& new_r
     throw std::runtime_error("renaming segments is only allowed on WIndex");
 }
 
+void RContents::test_remove(const std::string& relname)
+{
+    throw std::runtime_error("removing segments is only allowed on WIndex");
+}
+
 WContents::WContents(std::shared_ptr<const ondisk2::Config> config)
     : Contents(config), m_insert(m_db), m_delete("delete", m_db), m_replace("replace", m_db)
 {
@@ -1169,6 +1174,11 @@ void WContents::test_rename(const std::string& relname, const std::string& new_r
     query.bind(2, relname);
     while (query.step())
         ;
+}
+
+void WContents::test_remove(const std::string& relname)
+{
+    reset(relname);
 }
 
 }
