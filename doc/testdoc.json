@@ -14615,6 +14615,11 @@
   "method": "check_metadata_timestamp"
  },
  {
+  "doc": "- metadata in the `.metadata` file must contain reference time elements",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "check_metadata_must_contain_reftimes"
+ },
+ {
   "doc": "- the segment must exist",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_exists"
@@ -14650,6 +14655,11 @@
   "method": "check_metadata_timestamp"
  },
  {
+  "doc": "- metadata in the `.metadata` file must contain reference time elements",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "check_metadata_must_contain_reftimes"
+ },
+ {
   "doc": "- the segment must exist",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_exists"
@@ -14685,6 +14695,11 @@
   "method": "check_metadata_timestamp"
  },
  {
+  "doc": "- metadata in the `.metadata` file must contain reference time elements",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "check_metadata_must_contain_reftimes"
+ },
+ {
   "doc": "- the segment must exist",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_exists"
@@ -14718,6 +14733,11 @@
   "doc": "- `.summary` file must not be older than the `.metadata` file",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_metadata_timestamp"
+ },
+ {
+  "doc": "- metadata in the `.metadata` file must contain reference time elements",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "check_metadata_must_contain_reftimes"
  },
  {
   "doc": "",

@@ -37,7 +37,7 @@ instead of recomputing them for all data queried.
 - `.metadata` file must not be empty
 - `.metadata` file must not be older than the data
 - `.summary` file must not be older than the `.metadata` file
- - metadata in the `.metadata` file must contain reference time elements
+- metadata in the `.metadata` file must contain reference time elements
  - the span of reference times in each segment must fit inside the interval
    implied by the segment file name (FIXME: should this be disabled for
    archives, to deal with datasets that had a change of step in their lifetime?)
@@ -71,7 +71,7 @@ instead of recomputing them for all data queried.
 - `.metadata` file must not be empty
 - `.metadata` file must not be older than the data
 - `.summary` file must not be older than the `.metadata` file
- - metadata in the `.metadata` file must contain reference time elements
+- metadata in the `.metadata` file must contain reference time elements
  - the span of reference times in each segment must fit inside the interval
    implied by the segment file name (FIXME: should this be disabled for
    archives, to deal with datasets that had a change of step in their lifetime?)

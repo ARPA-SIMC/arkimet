@@ -2,8 +2,10 @@
 #include "arki/dataset/maintenance-test.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/simple.h"
+#include "arki/metadata/collection.h"
 #include "arki/utils/sys.h"
 
+using namespace arki;
 using namespace arki::tests;
 using namespace arki::utils;
 using namespace arki::dataset;
@@ -56,6 +58,22 @@ void Tests::register_tests()
         wassert(actual(state.size()) == 3u);
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
     });
+
+    add_method("check_metadata_must_contain_reftimes", R"(
+    - metadata in the `.metadata` file must contain reference time elements
+    )", [&](Fixture& f) {
+        metadata::Collection mds("testds/2007/07-07.grib.metadata");
+        for (auto* md: mds)
+            md->unset(TYPE_REFTIME);
+        mds.writeAtomically("testds/2007/07-07.grib.metadata");
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
+
+
 }
 
 Tests test_simple_plain("arki_dataset_simple_maintenance_plain", MaintenanceTest::SEGMENT_CONCAT, "type=simple\nindex_type=plain\n");
