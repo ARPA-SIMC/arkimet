@@ -49,6 +49,10 @@ instead of recomputing them for all data queried.
   (FIXME: should this be disabled for archives, to deal with datasets that had
   a change of step in their lifetime?)
 
+### During --accurate check
+
+- format-specific consistency checks on the content of each file must pass
+
 ### During fix
 
 - if the `.metadata` file does not exist or is older than the segment, the
@@ -87,6 +91,10 @@ instead of recomputing them for all data queried.
 - the segment name must represent an interval matching the dataset step
   (FIXME: should this be disabled for archives, to deal with datasets that had
   a change of step in their lifetime?)
+
+### During --accurate check
+
+- format-specific consistency checks on the content of each file must pass
 
 ### During fix
 

@@ -14610,6 +14610,11 @@
   "method": "check_hole_end"
  },
  {
+  "doc": "- format-specific consistency checks on the content of each file must pass",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "tcheck_corrupted_data"
+ },
+ {
   "doc": "- the segment must be a file",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_isfile"
@@ -14680,6 +14685,11 @@
   "method": "check_hole_end"
  },
  {
+  "doc": "- format-specific consistency checks on the content of each file must pass",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "tcheck_corrupted_data"
+ },
+ {
   "doc": "- the segment must be a file",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_isfile"
@@ -14748,6 +14758,11 @@
   "doc": "- data must end at the end of the segment",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_hole_end"
+ },
+ {
+  "doc": "- format-specific consistency checks on the content of each file must pass",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "tcheck_corrupted_data"
  },
  {
   "doc": "- the segment must be a directory",
@@ -14818,6 +14833,11 @@
   "doc": "- data must end at the end of the segment",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_hole_end"
+ },
+ {
+  "doc": "- format-specific consistency checks on the content of each file must pass",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "tcheck_corrupted_data"
  },
  {
   "doc": "- the segment must be a directory",

@@ -99,17 +99,28 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
     });
 
     // Optional thorough check
-    // run format-specific consistency checks on the content of each file
+    tc.add_method("tcheck_corrupted_data", R"(
+        - format-specific consistency checks on the content of each file must pass
+    )", [&](Fixture& f) {
+        corrupt_first();
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr, false);
+        wassert(actual(state.size()) == 3u);
+        // TODO: should it be CORRUPTED?
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
+
 
     // During fix
-    // data files present on disk but not in the index are rescanned and added to the index
-    // data files present in the index but not on disk are removed from the index
+    // TODO: data files present on disk but not in the index are rescanned and added to the index
+    // TODO: data files present in the index but not on disk are removed from the index
 
     // During repack
-    // data files present on disk but not in the index are deleted from the disk
-    // data files present in the index but not on disk are removed from the index
-    // files older than delete age are removed
-    // files older than archive age are moved to last/
+    // TODO: data files present on disk but not in the index are deleted from the disk
+    // TODO: data files present in the index but not on disk are removed from the index
+    // TODO: files older than delete age are removed
+    // TODO: files older than archive age are moved to last/
 }
 
 namespace {
@@ -153,6 +164,12 @@ struct SegmentConcatTests : public SegmentTests
         File f("testds/2007/07-07.grib", O_RDWR);
         f.ftruncate(34960 * 2 + 1);
     }
+    void corrupt_first() override
+    {
+        sys::File df("testds/2007/07-07.grib", O_RDWR);
+        df.lseek(0);
+        df.write_all_or_throw("T", 1);
+    }
     void register_tests(MaintenanceTest& tc) override;
 };
 
@@ -173,7 +190,7 @@ void SegmentConcatTests::register_tests(MaintenanceTest& tc)
     });
 
     // During repack
-    // if the order in the data file does not match the order required from the index, data files are rewritten rearranging the data, and the offsets in the index are updated accordingly. This is done to guarantee linear disk access when data are queried in the default sorting order.
+    // TODO: if the order in the data file does not match the order required from the index, data files are rewritten rearranging the data, and the offsets in the index are updated accordingly. This is done to guarantee linear disk access when data are queried in the default sorting order.
 }
 
 
@@ -204,6 +221,12 @@ struct SegmentDirTests : public SegmentTests
     {
         sys::write_file("testds/2007/07-07.grib/000002.grib", "");
     }
+    void corrupt_first() override
+    {
+        sys::File df("testds/2007/07-07.grib/000000.grib", O_RDWR);
+        df.lseek(0);
+        df.write_all_or_throw("T", 1);
+    }
     void register_tests(MaintenanceTest& tc) override;
 };
 
@@ -223,14 +246,11 @@ void SegmentDirTests::register_tests(MaintenanceTest& tc)
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
     });
 
-    // During check
-    // sequence files on disk must match the order of data in the index
-
     // Optional thorough check
-    // ensure each file contains one and only one datum, in case dir segments are used to store data that can be concatenated
+    // TODO: ensure each file contains one and only one datum, in case dir segments are used to store data that can be concatenated
 
     // During repack
-    // data files are renumbered starting from 0, sequentially without gaps, in the order given by the index, or by reference time if there is no index. This is done to avoid sequence numbers growing indefinitely for datasets with frequent appends and removes.
+    // TODO: data files are renumbered starting from 0, sequentially without gaps, in the order given by the index, or by reference time if there is no index. This is done to avoid sequence numbers growing indefinitely for datasets with frequent appends and removes.
 }
 
 }
@@ -280,6 +300,9 @@ void MaintenanceTest::register_tests()
         wassert(actual(f.makeSegmentedChecker().get()).repack_clean());
         wassert(actual(f.makeSegmentedChecker().get()).maintenance_clean(3));
     });
+
+    // During check
+    // TODO: offsets on disk must match the order of data in the index
 }
 
 }

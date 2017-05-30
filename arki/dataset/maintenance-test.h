@@ -52,6 +52,11 @@ struct SegmentTests
      */
     virtual void make_hole_end() = 0;
 
+    /**
+     * Corrupt the first data in 2007/07-07.grib
+     */
+    virtual void corrupt_first() = 0;
+
     virtual void register_tests(MaintenanceTest& tc);
 };
 
