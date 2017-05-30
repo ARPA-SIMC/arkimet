@@ -34,7 +34,9 @@ instead of recomputing them for all data queried.
 - the segment must exist
 - all data known by the index for this segment must be present on disk
 - the segment must be a file
- - `.metadata` file must not be empty
+- `.metadata` file must not be empty
+- `.metadata` file must not be older than the data
+- `.summary` file must not be older than the `.metadata` file
  - metadata in the `.metadata` file must contain reference time elements
  - the span of reference times in each segment must fit inside the interval
    implied by the segment file name (FIXME: should this be disabled for
@@ -66,7 +68,9 @@ instead of recomputing them for all data queried.
 - the segment must exist
 - all data known by the index for this segment must be present on disk
 - the segment must be a directory
- - `.metadata` file must not be empty
+- `.metadata` file must not be empty
+- `.metadata` file must not be older than the data
+- `.summary` file must not be older than the `.metadata` file
  - metadata in the `.metadata` file must contain reference time elements
  - the span of reference times in each segment must fit inside the interval
    implied by the segment file name (FIXME: should this be disabled for

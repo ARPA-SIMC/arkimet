@@ -33,8 +33,8 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
 {
     tc.add_method("check_exists", R"(
         - the segment must exist
-    )", [](Fixture& f) {
-        sys::rmtree("testds/2007/07-07.grib");
+    )", [&](Fixture& f) {
+        tc.rm_r("testds/2007/07-07.grib");
 
         NullReporter nr;
         auto state = f.makeSegmentedChecker()->scan(nr);
@@ -44,7 +44,7 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
 
     tc.add_method("check_dataexists", R"(
         - all data known by the index for this segment must be present on disk
-    )", [this](Fixture& f) {
+    )", [&](Fixture& f) {
         truncate_segment();
 
         NullReporter nr;
@@ -74,7 +74,7 @@ struct SegmentConcatTests : public SegmentTests
 {
     void truncate_segment() override
     {
-        sys::File f("testds/2007/07-07.grib");
+        sys::File f("testds/2007/07-07.grib", O_RDWR);
         f.ftruncate(7218);
     }
     void register_tests(MaintenanceTest& tc) override;
@@ -155,6 +155,21 @@ void MaintenanceTest::init_segment_tests()
         case SEGMENT_CONCAT: segment_tests = new SegmentConcatTests; break;
         case SEGMENT_DIR:    segment_tests = new SegmentDirTests;  break;
     }
+}
+
+void MaintenanceTest::rm_r(const std::string& pathname)
+{
+    if (sys::isdir(pathname))
+        sys::rmtree("testds/2007/07-07.grib");
+    else
+        sys::unlink("testds/2007/07-07.grib");
+}
+
+void MaintenanceTest::touch(const std::string& pathname, time_t ts)
+{
+    struct utimbuf t = { ts, ts };
+    if (::utime(pathname.c_str(), &t) != 0)
+        throw_system_error("cannot set mtime/atime of " + pathname);
 }
 
 void MaintenanceTest::register_tests()

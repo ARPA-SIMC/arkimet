@@ -14600,6 +14600,21 @@
   "method": "clean"
  },
  {
+  "doc": "- `.metadata` file must not be empty",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "check_empty_metadata"
+ },
+ {
+  "doc": "- `.metadata` file must not be older than the data",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "check_metadata_timestamp"
+ },
+ {
+  "doc": "- `.summary` file must not be older than the `.metadata` file",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "check_metadata_timestamp"
+ },
+ {
   "doc": "- the segment must exist",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_exists"
@@ -14620,6 +14635,21 @@
   "method": "clean"
  },
  {
+  "doc": "- `.metadata` file must not be empty",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "check_empty_metadata"
+ },
+ {
+  "doc": "- `.metadata` file must not be older than the data",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "check_metadata_timestamp"
+ },
+ {
+  "doc": "- `.summary` file must not be older than the `.metadata` file",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "check_metadata_timestamp"
+ },
+ {
   "doc": "- the segment must exist",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_exists"
@@ -14640,6 +14670,21 @@
   "method": "clean"
  },
  {
+  "doc": "- `.metadata` file must not be empty",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "check_empty_metadata"
+ },
+ {
+  "doc": "- `.metadata` file must not be older than the data",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "check_metadata_timestamp"
+ },
+ {
+  "doc": "- `.summary` file must not be older than the `.metadata` file",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "check_metadata_timestamp"
+ },
+ {
   "doc": "- the segment must exist",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_exists"
@@ -14658,6 +14703,21 @@
   "doc": "",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "clean"
+ },
+ {
+  "doc": "- `.metadata` file must not be empty",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "check_empty_metadata"
+ },
+ {
+  "doc": "- `.metadata` file must not be older than the data",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "check_metadata_timestamp"
+ },
+ {
+  "doc": "- `.summary` file must not be older than the `.metadata` file",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "check_metadata_timestamp"
  },
  {
   "doc": "",

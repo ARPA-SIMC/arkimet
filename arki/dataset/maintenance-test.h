@@ -52,6 +52,12 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
 
     void init_segment_tests();
 
+    /// Remove a file or a directory
+    void rm_r(const std::string& pathname);
+
+    /// Set the mtime and atime of a file
+    void touch(const std::string& pathname, time_t ts);
+
     void register_tests() override;
 };
 
