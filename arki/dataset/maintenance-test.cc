@@ -54,6 +54,49 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
     });
 
+    tc.add_method("check_data_overlap", R"(
+        - no pair of (offset, size) data spans from the index can overlap
+    )", [&](Fixture& f) {
+        tc.make_overlap();
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
+
+    tc.add_method("check_hole_start", R"(
+        - data must start at the beginning of the segment
+    )", [&](Fixture& f) {
+        tc.make_hole_start();
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DIRTY));
+    });
+
+    tc.add_method("check_hole_middle", R"(
+        - there must be no gaps between data in the segment
+    )", [&](Fixture& f) {
+        tc.make_hole_middle();
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DIRTY));
+    });
+
+    tc.add_method("check_hole_end", R"(
+        - data must end at the end of the segment
+    )", [&](Fixture& f) {
+        tc.make_hole_end();
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DIRTY));
+    });
 
     // Optional thorough check
     // run format-specific consistency checks on the content of each file
@@ -76,7 +119,39 @@ struct SegmentConcatTests : public SegmentTests
     void truncate_segment() override
     {
         sys::File f("testds/2007/07-07.grib", O_RDWR);
-        f.ftruncate(7218);
+        f.ftruncate(34960);
+    }
+    void make_overlap() override
+    {
+        File f("testds/2007/07-07.grib", O_RDWR);
+        char buf[34960];
+        f.lseek(34960, SEEK_SET);
+        f.read_all_or_throw(buf, 34960);
+        f.lseek(34959, SEEK_SET);
+        f.write_all_or_throw(buf, 34960);
+    }
+    void make_hole_start() override
+    {
+        File f("testds/2007/07-07.grib", O_RDWR);
+        char buf[34960 * 2];
+        f.lseek(0, SEEK_SET);
+        f.read_all_or_throw(buf, 34960 * 2);
+        f.lseek(1, SEEK_SET);
+        f.write_all_or_throw(buf, 34960 * 2);
+    }
+    void make_hole_middle() override
+    {
+        File f("testds/2007/07-07.grib", O_RDWR);
+        char buf[34960];
+        f.lseek(34960, SEEK_SET);
+        f.read_all_or_throw(buf, 34960);
+        f.lseek(34961, SEEK_SET);
+        f.write_all_or_throw(buf, 34960);
+    }
+    void make_hole_end() override
+    {
+        File f("testds/2007/07-07.grib", O_RDWR);
+        f.ftruncate(34960 * 2 + 1);
     }
     void register_tests(MaintenanceTest& tc) override;
 };
@@ -97,10 +172,6 @@ void SegmentConcatTests::register_tests(MaintenanceTest& tc)
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DELETED));
     });
 
-    // no pair of (offset, size) data spans from the index can overlap
-    // file size must be exactly the same as offset+size for the data in the index with the highest offset for this segment
-    // all the data in the index must cover the whole file, without holes
-
     // During repack
     // if the order in the data file does not match the order required from the index, data files are rewritten rearranging the data, and the offsets in the index are updated accordingly. This is done to guarantee linear disk access when data are queried in the default sorting order.
 }
@@ -111,6 +182,27 @@ struct SegmentDirTests : public SegmentTests
     void truncate_segment() override
     {
         sys::unlink("testds/2007/07-07.grib/000001.grib");
+    }
+    void make_overlap() override
+    {
+        if (::rename("testds/2007/07-07.grib/000001.grib", "testds/2007/07-07.grib/000000.grib") != 0)
+            throw_system_error("cannot rename 000001.grib to 000000.grib in testds/2007/07-07.grib/");
+    }
+    void make_hole_start() override
+    {
+        if (::rename("testds/2007/07-07.grib/000001.grib", "testds/2007/07-07.grib/000002.grib") != 0)
+            throw_system_error("cannot rename 000001.grib to 000002.grib in testds/2007/07-07.grib/");
+        if (::rename("testds/2007/07-07.grib/000000.grib", "testds/2007/07-07.grib/000001.grib") != 0)
+            throw_system_error("cannot rename 000000.grib to 000001.grib in testds/2007/07-07.grib/");
+    }
+    void make_hole_middle() override
+    {
+        if (::rename("testds/2007/07-07.grib/000001.grib", "testds/2007/07-07.grib/000002.grib") != 0)
+            throw_system_error("cannot rename 000001.grib to 000002.grib in testds/2007/07-07.grib/");
+    }
+    void make_hole_end() override
+    {
+        sys::write_file("testds/2007/07-07.grib/000002.grib", "");
     }
     void register_tests(MaintenanceTest& tc) override;
 };
@@ -132,7 +224,6 @@ void SegmentDirTests::register_tests(MaintenanceTest& tc)
     });
 
     // During check
-    // the file sequence numbers must start from 0 and there must be no gaps
     // sequence files on disk must match the order of data in the index
 
     // Optional thorough check

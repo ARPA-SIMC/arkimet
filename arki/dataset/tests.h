@@ -121,7 +121,7 @@ public:
     // Dataset root directory
     std::string ds_root;
     dataset::segment::SegmentManager* segment_manager = nullptr;
-    Metadata import_results[3];
+    std::vector<Metadata> import_results;
 
     /**
      * @param cfg_tail

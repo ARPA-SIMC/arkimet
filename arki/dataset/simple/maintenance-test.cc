@@ -5,6 +5,7 @@
 #include "arki/dataset/simple/writer.h"
 #include "arki/dataset/index.h"
 #include "arki/metadata/collection.h"
+#include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
 
 using namespace arki;
@@ -19,6 +20,42 @@ using namespace arki::dataset::maintenance_test;
 class Tests : public MaintenanceTest
 {
     using MaintenanceTest::MaintenanceTest;
+
+    void make_overlap() override
+    {
+        segment_tests->make_overlap();
+
+        metadata::Collection mds;
+        mds.read_from_file("testds/2007/07-07.grib.metadata");
+        mds[1].sourceBlob().offset -= 1;
+        mds.writeAtomically("testds/2007/07-07.grib.metadata");
+    }
+
+    void make_hole_start() override
+    {
+        segment_tests->make_hole_start();
+
+        metadata::Collection mds;
+        mds.read_from_file("testds/2007/07-07.grib.metadata");
+        mds[0].sourceBlob().offset += 1;
+        mds[1].sourceBlob().offset += 1;
+        mds.writeAtomically("testds/2007/07-07.grib.metadata");
+    }
+
+    void make_hole_middle() override
+    {
+        segment_tests->make_hole_middle();
+
+        metadata::Collection mds;
+        mds.read_from_file("testds/2007/07-07.grib.metadata");
+        mds[1].sourceBlob().offset += 1;
+        mds.writeAtomically("testds/2007/07-07.grib.metadata");
+    }
+
+    void make_hole_end() override
+    {
+        segment_tests->make_hole_end();
+    }
 
     void register_tests() override;
 };

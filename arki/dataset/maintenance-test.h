@@ -28,6 +28,30 @@ struct SegmentTests
 
     /// Truncate segment 2007/07-07.grib
     virtual void truncate_segment() = 0;
+
+    /**
+     * Make the second element of 2007/07-07.grib overlap the first.
+     */
+    virtual void make_overlap() = 0;
+
+    /**
+     * Move the all data of 2007/07-07.grib away from the beginning, leaving a
+     * hole at the start of the fime.
+     */
+    virtual void make_hole_start() = 0;
+
+    /**
+     * Move the second element of 2007/07-07.grib away from the first, leaving
+     * a hole.
+     */
+    virtual void make_hole_middle() = 0;
+
+    /**
+     * Add some padding at the end of 2007/07-07.grib, leaving a hole at the
+     * end.
+     */
+    virtual void make_hole_end() = 0;
+
     virtual void register_tests(MaintenanceTest& tc);
 };
 
@@ -48,9 +72,32 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
     {
         init_segment_tests();
     }
-    ~MaintenanceTest();
+    virtual ~MaintenanceTest();
 
     void init_segment_tests();
+
+    /**
+     * Make the second element of 2007/07-07.grib overlap the first.
+     */
+    virtual void make_overlap() = 0;
+
+    /**
+     * Move all elements of 2007/07-07.grib forward, leaving a hole at the
+     * start.
+     */
+    virtual void make_hole_start() = 0;
+
+    /**
+     * Move the second element of 2007/07-07.grib away from the first, leaving
+     * a hole.
+     */
+    virtual void make_hole_middle() = 0;
+
+    /**
+     * Append some padding to 2007/07-07.grib away from the first, leaving
+     * a hole.
+     */
+    virtual void make_hole_end() = 0;
 
     /// Rename a file or directory
     void rename(const std::string& old_pathname, const std::string& new_pathname);

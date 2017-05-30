@@ -14590,6 +14590,26 @@
   "method": "check_dataexists"
  },
  {
+  "doc": "- no pair of (offset, size) data spans from the index can overlap",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "check_data_overlap"
+ },
+ {
+  "doc": "- data must start at the beginning of the segment",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "check_hole_start"
+ },
+ {
+  "doc": "- there must be no gaps between data in the segment",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "check_hole_middle"
+ },
+ {
+  "doc": "- data must end at the end of the segment",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "check_hole_end"
+ },
+ {
   "doc": "- the segment must be a file",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "check_isfile"
@@ -14640,6 +14660,26 @@
   "method": "check_dataexists"
  },
  {
+  "doc": "- no pair of (offset, size) data spans from the index can overlap",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "check_data_overlap"
+ },
+ {
+  "doc": "- data must start at the beginning of the segment",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "check_hole_start"
+ },
+ {
+  "doc": "- there must be no gaps between data in the segment",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "check_hole_middle"
+ },
+ {
+  "doc": "- data must end at the end of the segment",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "check_hole_end"
+ },
+ {
   "doc": "- the segment must be a file",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_isfile"
@@ -14688,6 +14728,26 @@
   "doc": "- all data known by the index for this segment must be present on disk",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_dataexists"
+ },
+ {
+  "doc": "- no pair of (offset, size) data spans from the index can overlap",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "check_data_overlap"
+ },
+ {
+  "doc": "- data must start at the beginning of the segment",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "check_hole_start"
+ },
+ {
+  "doc": "- there must be no gaps between data in the segment",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "check_hole_middle"
+ },
+ {
+  "doc": "- data must end at the end of the segment",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "check_hole_end"
  },
  {
   "doc": "- the segment must be a directory",
@@ -14738,6 +14798,26 @@
   "doc": "- all data known by the index for this segment must be present on disk",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_dataexists"
+ },
+ {
+  "doc": "- no pair of (offset, size) data spans from the index can overlap",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "check_data_overlap"
+ },
+ {
+  "doc": "- data must start at the beginning of the segment",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "check_hole_start"
+ },
+ {
+  "doc": "- there must be no gaps between data in the segment",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "check_hole_middle"
+ },
+ {
+  "doc": "- data must end at the end of the segment",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "check_hole_end"
  },
  {
   "doc": "- the segment must be a directory",

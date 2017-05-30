@@ -33,6 +33,10 @@ instead of recomputing them for all data queried.
 
 - the segment must exist
 - all data known by the index for this segment must be present on disk
+- no pair of (offset, size) data spans from the index can overlap
+- data must start at the beginning of the segment
+- there must be no gaps between data in the segment
+- data must end at the end of the segment
 - the segment must be a file
 - `.metadata` file must not be empty
 - `.metadata` file must not be older than the data
@@ -46,6 +50,7 @@ instead of recomputing them for all data queried.
   a change of step in their lifetime?)
 
 ### During fix
+
 - if the `.metadata` file does not exist or is older than the segment, the
   segment data are rescanned to regenerate the `.metadata` file.
 - if the `.summary` file does not exist or is older than the `.metadata` file,
@@ -67,6 +72,10 @@ instead of recomputing them for all data queried.
 
 - the segment must exist
 - all data known by the index for this segment must be present on disk
+- no pair of (offset, size) data spans from the index can overlap
+- data must start at the beginning of the segment
+- there must be no gaps between data in the segment
+- data must end at the end of the segment
 - the segment must be a directory
 - `.metadata` file must not be empty
 - `.metadata` file must not be older than the data
@@ -80,6 +89,7 @@ instead of recomputing them for all data queried.
   a change of step in their lifetime?)
 
 ### During fix
+
 - if the `.metadata` file does not exist or is older than the segment, the
   segment data are rescanned to regenerate the `.metadata` file.
 - if the `.summary` file does not exist or is older than the `.metadata` file,

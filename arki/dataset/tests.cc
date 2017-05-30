@@ -288,6 +288,7 @@ void DatasetTest::clean()
 {
     if (sys::exists(ds_root)) sys::rmtree(ds_root);
     sys::mkdir_ifmissing(ds_root);
+    import_results.clear();
 }
 
 void DatasetTest::import(const std::string& testfile)
@@ -297,8 +298,10 @@ void DatasetTest::import(const std::string& testfile)
         metadata::Collection data(testfile);
         for (auto& md: data)
         {
-            Writer::AcquireResult res = writer->acquire(*md);
+            import_results.push_back(*md);
+            Writer::AcquireResult res = writer->acquire(import_results.back());
             wassert(actual(res) == Writer::ACQ_OK);
+            import_results.back().sourceBlob().unlock();
         }
     }
 
@@ -340,10 +343,10 @@ void DatasetTest::import_all(const testdata::Fixture& fixture)
     auto writer = config().create_writer();
     for (int i = 0; i < 3; ++i)
     {
-        import_results[i] = fixture.test_data[i].md;
-        Writer::AcquireResult res = writer->acquire(import_results[i]);
+        import_results.push_back(fixture.test_data[i].md);
+        Writer::AcquireResult res = writer->acquire(import_results.back());
         wassert(actual(res) == Writer::ACQ_OK);
-        import_results[i].sourceBlob().unlock();
+        import_results.back().sourceBlob().unlock();
     }
 
     utils::files::removeDontpackFlagfile(cfg.value("path"));
