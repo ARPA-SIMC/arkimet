@@ -246,8 +246,19 @@ void SegmentDirTests::register_tests(MaintenanceTest& tc)
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
     });
 
-    // Optional thorough check
-    // TODO: ensure each file contains one and only one datum, in case dir segments are used to store data that can be concatenated
+    tc.add_method("check_datasize", R"(
+        - the size of each data file must match the data size exactly
+    )", [](Fixture& f) {
+        {
+            sys::File df("testds/2007/07-07.grib/000000.grib", O_RDWR);
+            df.ftruncate(34961);
+        }
+
+        arki::dataset::NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr, false);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
+    });
 
     // During repack
     // TODO: data files are renumbered starting from 0, sequentially without gaps, in the order given by the index, or by reference time if there is no index. This is done to avoid sequence numbers growing indefinitely for datasets with frequent appends and removes.

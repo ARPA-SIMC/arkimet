@@ -81,6 +81,7 @@ instead of recomputing them for all data queried.
 - there must be no gaps between data in the segment
 - data must end at the end of the segment
 - the segment must be a directory
+- the size of each data file must match the data size exactly
 - `.metadata` file must not be empty
 - `.metadata` file must not be older than the data
 - `.summary` file must not be older than the `.metadata` file

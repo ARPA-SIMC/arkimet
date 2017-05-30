@@ -14770,6 +14770,11 @@
   "method": "check_isdir"
  },
  {
+  "doc": "- the size of each data file must match the data size exactly",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "check_datasize"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "clean"
@@ -14843,6 +14848,11 @@
   "doc": "- the segment must be a directory",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_isdir"
+ },
+ {
+  "doc": "- the size of each data file must match the data size exactly",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "check_datasize"
  },
  {
   "doc": "",
