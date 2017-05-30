@@ -2,6 +2,8 @@
 #include "arki/dataset/maintenance-test.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/simple.h"
+#include "arki/dataset/simple/writer.h"
+#include "arki/dataset/index.h"
 #include "arki/metadata/collection.h"
 #include "arki/utils/sys.h"
 
@@ -62,7 +64,9 @@ void Tests::register_tests()
     add_method("check_metadata_must_contain_reftimes", R"(
     - metadata in the `.metadata` file must contain reference time elements
     )", [&](Fixture& f) {
-        metadata::Collection mds("testds/2007/07-07.grib.metadata");
+        metadata::Collection mds;
+        mds.read_from_file("testds/2007/07-07.grib.metadata");
+        wassert(actual(mds.size()) == 2u);
         for (auto* md: mds)
             md->unset(TYPE_REFTIME);
         mds.writeAtomically("testds/2007/07-07.grib.metadata");
@@ -70,10 +74,45 @@ void Tests::register_tests()
         NullReporter nr;
         auto state = f.makeSegmentedChecker()->scan(nr);
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
     });
 
+    add_method("check_metadata_reftimes_must_fit_segment", R"(
+    - the span of reference times in each segment must fit inside the interval
+      implied by the segment file name (FIXME: should this be disabled for
+      archives, to deal with datasets that had a change of step in their lifetime?)
+    )", [&](Fixture& f) {
+        metadata::Collection mds;
+        mds.read_from_file("testds/2007/07-07.grib.metadata");
+        wassert(actual(mds.size()) == 2u);
+        mds[0].set("reftime", "2007-07-06 00:00:00");
+        mds.writeAtomically("testds/2007/07-07.grib.metadata");
 
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
+    });
+
+    add_method("check_segment_name_must_fit_step", R"(
+    - the segment name must represent an interval matching the dataset step
+      (FIXME: should this be disabled for archives, to deal with datasets that had
+      a change of step in their lifetime?)
+    )", [&](Fixture& f) {
+        {
+            auto w = f.makeSimpleWriter();
+            auto& i = w->test_get_index();
+            i.test_rename("2007/07-07.grib", "2007/07.grib");
+        }
+        this->rename("testds/2007/07-07.grib", "testds/2007/07.grib");
+        this->rename("testds/2007/07-07.grib.metadata", "testds/2007/07.grib.metadata");
+        this->rename("testds/2007/07-07.grib.summary", "testds/2007/07.grib.summary");
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07.grib").state) == segment::State(SEGMENT_CORRUPTED));
+    });
 }
 
 Tests test_simple_plain("arki_dataset_simple_maintenance_plain", MaintenanceTest::SEGMENT_CONCAT, "type=simple\nindex_type=plain\n");

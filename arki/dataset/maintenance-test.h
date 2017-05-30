@@ -52,6 +52,9 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
 
     void init_segment_tests();
 
+    /// Rename a file or directory
+    void rename(const std::string& old_pathname, const std::string& new_pathname);
+
     /// Remove a file or a directory
     void rm_r(const std::string& pathname);
 

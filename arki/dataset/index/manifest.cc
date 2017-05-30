@@ -561,6 +561,16 @@ public:
         }
     }
 
+    void test_rename(const std::string& relname, const std::string& new_relname) override
+    {
+        for (auto& i: info)
+            if (i.file == relname)
+            {
+                i.file = new_relname;
+                dirty = true;
+            }
+    }
+
     static bool exists(const std::string& dir)
     {
         string pathname(str::joinpath(dir, "MANIFEST"));
@@ -838,6 +848,16 @@ public:
 
             scan_file(m_path, i.first, state, v);
         }
+    }
+
+    void test_rename(const std::string& relname, const std::string& new_relname) override
+    {
+        Query q("test_rename", m_db);
+        q.compile("UPDATE files SET file=? WHERE file=?");
+        q.bind(1, new_relname);
+        q.bind(2, relname);
+        while (q.step())
+            ;
     }
 
     static bool exists(const std::string& dir)

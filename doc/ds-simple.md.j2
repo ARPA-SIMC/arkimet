@@ -32,12 +32,6 @@ instead of recomputing them for all data queried.
 ### During check
 
 {{testdoc("arki_dataset_simple_maintenance_plain.check*")}}
- - the span of reference times in each segment must fit inside the interval
-   implied by the segment file name (FIXME: should this be disabled for
-   archives, to deal with datasets that had a change of step in their lifetime?)
- - the segment name must represent an interval matching the dataset step
-   (FIXME: should this be disabled for archives, to deal with datasets that had
-   a change of step in their lifetime?)
 
 ### During fix
 - if the `.metadata` file does not exist or is older than the segment, the
@@ -60,12 +54,6 @@ instead of recomputing them for all data queried.
 ### During check
 
 {{testdoc("arki_dataset_simple_maintenance_plain_dirs.check*")}}
- - the span of reference times in each segment must fit inside the interval
-   implied by the segment file name (FIXME: should this be disabled for
-   archives, to deal with datasets that had a change of step in their lifetime?)
- - the segment name must represent an interval matching the dataset step
-   (FIXME: should this be disabled for archives, to deal with datasets that had
-   a change of step in their lifetime?)
 
 ### During fix
 - if the `.metadata` file does not exist or is older than the segment, the

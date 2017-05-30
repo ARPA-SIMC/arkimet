@@ -14620,6 +14620,16 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
+  "doc": "- the span of reference times in each segment must fit inside the interval\n  implied by the segment file name (FIXME: should this be disabled for\n  archives, to deal with datasets that had a change of step in their lifetime?)",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "check_metadata_reftimes_must_fit_segment"
+ },
+ {
+  "doc": "- the segment name must represent an interval matching the dataset step\n  (FIXME: should this be disabled for archives, to deal with datasets that had\n  a change of step in their lifetime?)",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "check_segment_name_must_fit_step"
+ },
+ {
   "doc": "- the segment must exist",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "check_exists"
@@ -14660,6 +14670,16 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
+  "doc": "- the span of reference times in each segment must fit inside the interval\n  implied by the segment file name (FIXME: should this be disabled for\n  archives, to deal with datasets that had a change of step in their lifetime?)",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "check_metadata_reftimes_must_fit_segment"
+ },
+ {
+  "doc": "- the segment name must represent an interval matching the dataset step\n  (FIXME: should this be disabled for archives, to deal with datasets that had\n  a change of step in their lifetime?)",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "check_segment_name_must_fit_step"
+ },
+ {
   "doc": "- the segment must exist",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "check_exists"
@@ -14700,6 +14720,16 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
+  "doc": "- the span of reference times in each segment must fit inside the interval\n  implied by the segment file name (FIXME: should this be disabled for\n  archives, to deal with datasets that had a change of step in their lifetime?)",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "check_metadata_reftimes_must_fit_segment"
+ },
+ {
+  "doc": "- the segment name must represent an interval matching the dataset step\n  (FIXME: should this be disabled for archives, to deal with datasets that had\n  a change of step in their lifetime?)",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "check_segment_name_must_fit_step"
+ },
+ {
   "doc": "- the segment must exist",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_exists"
@@ -14738,6 +14768,16 @@
   "doc": "- metadata in the `.metadata` file must contain reference time elements",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "check_metadata_must_contain_reftimes"
+ },
+ {
+  "doc": "- the span of reference times in each segment must fit inside the interval\n  implied by the segment file name (FIXME: should this be disabled for\n  archives, to deal with datasets that had a change of step in their lifetime?)",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "check_metadata_reftimes_must_fit_segment"
+ },
+ {
+  "doc": "- the segment name must represent an interval matching the dataset step\n  (FIXME: should this be disabled for archives, to deal with datasets that had\n  a change of step in their lifetime?)",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "check_segment_name_must_fit_step"
  },
  {
   "doc": "",

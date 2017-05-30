@@ -51,6 +51,15 @@ struct Index
      * Metadata in the collection are sorted by (reftime, offset).
      */
     virtual void scan_files(segment::contents_func v) = 0;
+
+    /**
+     * Rename a segment in the index.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     *
+     * The version on disk is not touched.
+     */
+    virtual void test_rename(const std::string& relname, const std::string& new_relname) = 0;
 };
 
 }

@@ -46,6 +46,20 @@ public:
     ~IndexedWriter();
 
     const IndexedConfig& config() const override = 0;
+
+    /**
+     * Make the index accessible.
+     *
+     * Only to be used in unit tests
+     */
+    Index& test_get_index() { return *m_idx; }
+
+    /**
+     * Make the index accessible.
+     *
+     * Only to be used in unit tests
+     */
+    const Index& test_get_index() const { return *m_idx; }
 };
 
 class IndexedChecker : public segmented::Checker

@@ -10,6 +10,7 @@
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
 #include <cstdlib>
+#include <cstdio>
 #include <sys/types.h>
 #include <utime.h>
 #include <unistd.h>
@@ -155,6 +156,12 @@ void MaintenanceTest::init_segment_tests()
         case SEGMENT_CONCAT: segment_tests = new SegmentConcatTests; break;
         case SEGMENT_DIR:    segment_tests = new SegmentDirTests;  break;
     }
+}
+
+void MaintenanceTest::rename(const std::string& old_pathname, const std::string& new_pathname)
+{
+    if (::rename(old_pathname.c_str(), new_pathname.c_str()) != 0)
+        throw_system_error("cannot rename " + old_pathname + " to " + new_pathname);
 }
 
 void MaintenanceTest::rm_r(const std::string& pathname)

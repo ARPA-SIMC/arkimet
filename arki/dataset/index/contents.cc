@@ -877,6 +877,11 @@ void RContents::initQueries()
     Contents::initQueries();
 }
 
+void RContents::test_rename(const std::string& relname, const std::string& new_relname)
+{
+    throw std::runtime_error("renaming segments is only allowed on WIndex");
+}
+
 WContents::WContents(std::shared_ptr<const ondisk2::Config> config)
     : Contents(config), m_insert(m_db), m_delete("delete", m_db), m_replace("replace", m_db)
 {
@@ -1154,6 +1159,16 @@ void WContents::flush()
     // Not needed for index data consistency, but we need it to ensure file
     // timestamps are consistent at this point.
     m_db.checkpoint();
+}
+
+void WContents::test_rename(const std::string& relname, const std::string& new_relname)
+{
+    Query query("test_rename", m_db);
+    query.compile("UPDATE md SET file=? WHERE fille=?");
+    query.bind(1, new_relname);
+    query.bind(2, relname);
+    while (query.step())
+        ;
 }
 
 }

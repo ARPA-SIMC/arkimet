@@ -38,12 +38,12 @@ instead of recomputing them for all data queried.
 - `.metadata` file must not be older than the data
 - `.summary` file must not be older than the `.metadata` file
 - metadata in the `.metadata` file must contain reference time elements
- - the span of reference times in each segment must fit inside the interval
-   implied by the segment file name (FIXME: should this be disabled for
-   archives, to deal with datasets that had a change of step in their lifetime?)
- - the segment name must represent an interval matching the dataset step
-   (FIXME: should this be disabled for archives, to deal with datasets that had
-   a change of step in their lifetime?)
+- the span of reference times in each segment must fit inside the interval
+  implied by the segment file name (FIXME: should this be disabled for
+  archives, to deal with datasets that had a change of step in their lifetime?)
+- the segment name must represent an interval matching the dataset step
+  (FIXME: should this be disabled for archives, to deal with datasets that had
+  a change of step in their lifetime?)
 
 ### During fix
 - if the `.metadata` file does not exist or is older than the segment, the
@@ -72,12 +72,12 @@ instead of recomputing them for all data queried.
 - `.metadata` file must not be older than the data
 - `.summary` file must not be older than the `.metadata` file
 - metadata in the `.metadata` file must contain reference time elements
- - the span of reference times in each segment must fit inside the interval
-   implied by the segment file name (FIXME: should this be disabled for
-   archives, to deal with datasets that had a change of step in their lifetime?)
- - the segment name must represent an interval matching the dataset step
-   (FIXME: should this be disabled for archives, to deal with datasets that had
-   a change of step in their lifetime?)
+- the span of reference times in each segment must fit inside the interval
+  implied by the segment file name (FIXME: should this be disabled for
+  archives, to deal with datasets that had a change of step in their lifetime?)
+- the segment name must represent an interval matching the dataset step
+  (FIXME: should this be disabled for archives, to deal with datasets that had
+  a change of step in their lifetime?)
 
 ### During fix
 - if the `.metadata` file does not exist or is older than the segment, the

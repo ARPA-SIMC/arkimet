@@ -217,8 +217,10 @@ public:
     RContents(std::shared_ptr<const ondisk2::Config> config);
     ~RContents();
 
-	/// Initialise access to the index
-	void open();
+    /// Initialise access to the index
+    void open();
+
+    void test_rename(const std::string& relname, const std::string& new_relname) override;
 };
 
 class WContents : public Contents
@@ -298,6 +300,8 @@ public:
 
     /// Flush the journal contents to the main database
     void flush();
+
+    void test_rename(const std::string& relname, const std::string& new_relname) override;
 };
 
 }
