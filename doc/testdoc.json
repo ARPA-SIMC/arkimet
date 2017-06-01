@@ -14620,19 +14620,44 @@
   "method": "tcheck_corrupted_data"
  },
  {
-  "doc": "- [new] segments are reindexed",
+  "doc": "- [new] segments are imported in-place",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "fix_new"
  },
  {
-  "doc": "- [unaligned] segments are reindexed",
+  "doc": "- [unaligned] segments are reimported in-place",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "fix_unaligned"
+ },
+ {
+  "doc": "- [dirty] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "fix_dirty"
  },
  {
   "doc": "- [deleted] segments are removed from the index",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "fix_deleted"
+ },
+ {
+  "doc": "- [new] segments are deleted",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "repack_new"
+ },
+ {
+  "doc": "- [unaligned] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "repack_unaligned"
+ },
+ {
+  "doc": "- [dirty] segments are rewritten to be without holes and have data in the right order.\n  In concat segments, this is done to guarantee linear disk access when\n  data are queried in the default sorting order. In dir segments, this\n  is done to avoid sequence numbers growing indefinitely for datasets\n  with frequent appends and removes.",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "repack_dirty"
+ },
+ {
+  "doc": "- [deleted] segments are removed from the index",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "repack_deleted"
  },
  {
   "doc": "- the segment must be a file",
@@ -14725,19 +14750,44 @@
   "method": "tcheck_corrupted_data"
  },
  {
-  "doc": "- [new] segments are reindexed",
+  "doc": "- [new] segments are imported in-place",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "fix_new"
  },
  {
-  "doc": "- [unaligned] segments are reindexed",
+  "doc": "- [unaligned] segments are reimported in-place",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "fix_unaligned"
+ },
+ {
+  "doc": "- [dirty] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "fix_dirty"
  },
  {
   "doc": "- [deleted] segments are removed from the index",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "fix_deleted"
+ },
+ {
+  "doc": "- [new] segments are deleted",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "repack_new"
+ },
+ {
+  "doc": "- [unaligned] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "repack_unaligned"
+ },
+ {
+  "doc": "- [dirty] segments are rewritten to be without holes and have data in the right order.\n  In concat segments, this is done to guarantee linear disk access when\n  data are queried in the default sorting order. In dir segments, this\n  is done to avoid sequence numbers growing indefinitely for datasets\n  with frequent appends and removes.",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "repack_dirty"
+ },
+ {
+  "doc": "- [deleted] segments are removed from the index",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "repack_deleted"
  },
  {
   "doc": "- the segment must be a file",
@@ -14830,19 +14880,44 @@
   "method": "tcheck_corrupted_data"
  },
  {
-  "doc": "- [new] segments are reindexed",
+  "doc": "- [new] segments are imported in-place",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "fix_new"
  },
  {
-  "doc": "- [unaligned] segments are reindexed",
+  "doc": "- [unaligned] segments are reimported in-place",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "fix_unaligned"
+ },
+ {
+  "doc": "- [dirty] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "fix_dirty"
  },
  {
   "doc": "- [deleted] segments are removed from the index",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "fix_deleted"
+ },
+ {
+  "doc": "- [new] segments are deleted",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "repack_new"
+ },
+ {
+  "doc": "- [unaligned] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "repack_unaligned"
+ },
+ {
+  "doc": "- [dirty] segments are rewritten to be without holes and have data in the right order.\n  In concat segments, this is done to guarantee linear disk access when\n  data are queried in the default sorting order. In dir segments, this\n  is done to avoid sequence numbers growing indefinitely for datasets\n  with frequent appends and removes.",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "repack_dirty"
+ },
+ {
+  "doc": "- [deleted] segments are removed from the index",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "repack_deleted"
  },
  {
   "doc": "- the segment must be a directory [unaligned]",
@@ -14940,19 +15015,44 @@
   "method": "tcheck_corrupted_data"
  },
  {
-  "doc": "- [new] segments are reindexed",
+  "doc": "- [new] segments are imported in-place",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "fix_new"
  },
  {
-  "doc": "- [unaligned] segments are reindexed",
+  "doc": "- [unaligned] segments are reimported in-place",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "fix_unaligned"
+ },
+ {
+  "doc": "- [dirty] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "fix_dirty"
  },
  {
   "doc": "- [deleted] segments are removed from the index",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "fix_deleted"
+ },
+ {
+  "doc": "- [new] segments are deleted",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "repack_new"
+ },
+ {
+  "doc": "- [unaligned] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "repack_unaligned"
+ },
+ {
+  "doc": "- [dirty] segments are rewritten to be without holes and have data in the right order.\n  In concat segments, this is done to guarantee linear disk access when\n  data are queried in the default sorting order. In dir segments, this\n  is done to avoid sequence numbers growing indefinitely for datasets\n  with frequent appends and removes.",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "repack_dirty"
+ },
+ {
+  "doc": "- [deleted] segments are removed from the index",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "repack_deleted"
  },
  {
   "doc": "- the segment must be a directory [unaligned]",

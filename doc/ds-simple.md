@@ -58,15 +58,21 @@ instead of recomputing them for all data queried.
 
 ### During fix
 
-- [new] segments are reindexed
-- [unaligned] segments are reindexed
+- [new] segments are imported in-place
+- [unaligned] segments are reimported in-place
+- [dirty] segments are not touched
 - [deleted] segments are removed from the index
 
 ### During repack
 
-- if the segment contents are changed during segment repack, the
-  `.metadata` file is rewritten to match the new contents. The `.summary` and
-  `MANIFEST` files are updated accordingly.
+- [new] segments are deleted
+- [unaligned] segments are not touched
+- [dirty] segments are rewritten to be without holes and have data in the right order.
+  In concat segments, this is done to guarantee linear disk access when
+  data are queried in the default sorting order. In dir segments, this
+  is done to avoid sequence numbers growing indefinitely for datasets
+  with frequent appends and removes.
+- [deleted] segments are removed from the index
 
 
 ## Check and repack on dir segments
@@ -101,16 +107,18 @@ instead of recomputing them for all data queried.
 
 ### During fix
 
-- if the `.metadata` file does not exist or is older than the segment, the
-  segment data are rescanned to regenerate the `.metadata` file.
-- if the `.summary` file does not exist or is older than the `.metadata` file,
-  it is regenerated with the contents of the `.metadata` file.
-- if the `.metadata` file is newer than the `MANIFEST` file, its information
-  is updated inside the `MANIFEST` file.
-
+- [new] segments are imported in-place
+- [unaligned] segments are reimported in-place
+- [dirty] segments are not touched
+- [deleted] segments are removed from the index
 
 ### During repack
 
-- if the segment contents are changed during segment repack, the
-  `.metadata` file is rewritten to match the new contents. The `.summary` and
-  `MANIFEST` files are updated accordingly.
+- [new] segments are deleted
+- [unaligned] segments are not touched
+- [dirty] segments are rewritten to be without holes and have data in the right order.
+  In concat segments, this is done to guarantee linear disk access when
+  data are queried in the default sorting order. In dir segments, this
+  is done to avoid sequence numbers growing indefinitely for datasets
+  with frequent appends and removes.
+- [deleted] segments are removed from the index

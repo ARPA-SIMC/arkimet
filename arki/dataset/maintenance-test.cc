@@ -155,6 +155,22 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
         wassert(actual(writer.get()).maintenance_clean(3));
     });
 
+    tc.add_method("fix_dirty", R"(
+        - [dirty] segments are not touched
+    )", [&](Fixture& f) {
+        tc.make_hole_end();
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "2 files ok");
+        wassert(actual(writer.get()).check(e, true));
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DIRTY));
+    });
+
     tc.add_method("fix_deleted", R"(
         - [deleted] segments are removed from the index
     )", [&](Fixture& f) {
@@ -169,14 +185,103 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
         wassert(actual(writer.get()).maintenance_clean(2));
     });
 
-    // TODO: data files present on disk but not in the index are rescanned and added to the index
-    // TODO: data files present in the index but not on disk are removed from the index
-
     // Repack
-    // TODO: data files present on disk but not in the index are deleted from the disk
-    // TODO: data files present in the index but not on disk are removed from the index
+    tc.add_method("repack_new", R"(
+        - [new] segments are deleted
+    )", [&](Fixture& f) {
+        tc.deindex();
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "repack", "2 files ok");
+        e.deleted.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(writer.get()).repack(e, true));
+
+        wassert(actual(writer.get()).maintenance_clean(2));
+    });
+
+    tc.add_method("repack_unaligned", R"(
+        - [unaligned] segments are not touched
+    )", [&](Fixture& f) {
+        tc.require_rescan();
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "repack", "2 files ok");
+        wassert(actual(writer.get()).repack(e, true));
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
+
+    tc.add_method("repack_dirty", R"(
+        - [dirty] segments are rewritten to be without holes and have data in the right order.
+          In concat segments, this is done to guarantee linear disk access when
+          data are queried in the default sorting order. In dir segments, this
+          is done to avoid sequence numbers growing indefinitely for datasets
+          with frequent appends and removes.
+    )", [&](Fixture& f) {
+        tc.make_hole_middle();
+        // swap_data(); // FIXME: swap_data currently isn't detected as dirty on simple datasets
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "repack", "2 files ok");
+        e.repacked.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(writer.get()).repack(e, true));
+
+        wassert(actual(writer.get()).maintenance_clean(3));
+    });
+
+    tc.add_method("repack_deleted", R"(
+        - [deleted] segments are removed from the index
+    )", [&](Fixture& f) {
+        tc.rm_r("testds/2007/07-07.grib");
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "repack", "2 files ok");
+        e.deindexed.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(writer.get()).repack(e, true));
+
+        wassert(actual(writer.get()).maintenance_clean(2));
+    });
     // TODO: files older than delete age are removed
     // TODO: files older than archive age are moved to last/
+#if 0
+void RealRepacker::operator()(const std::string& relpath, segment::State state)
+{
+    if (state.has(SEGMENT_DIRTY) && !state.has(SEGMENT_DELETE_AGE))
+    {
+        // Repack the file
+        size_t saved = w.repackSegment(relpath, test_flags);
+        reporter.segment_repack(w.name(), relpath, "repacked (" + std::to_string(saved) + " freed)");
+        ++m_count_packed;
+        m_count_freed += saved;
+    }
+    if (state.has(SEGMENT_ARCHIVE_AGE))
+    {
+        // Create the target directory in the archive
+        w.archiveSegment(relpath);
+        reporter.segment_archive(w.name(), relpath, "archived");
+        ++m_count_archived;
+        m_touched_archive = true;
+        m_redo_summary = true;
+    }
+    if (state.has(SEGMENT_DELETE_AGE))
+    {
+        // Delete obsolete files
+        size_t size = w.removeSegment(relpath, true);
+        reporter.segment_delete(w.name(), relpath, "deleted (" + std::to_string(size) + " freed)");
+        ++m_count_deleted;
+        ++m_count_deindexed;
+        m_count_freed += size;
+        m_redo_summary = true;
+    }
+}
+#endif
 }
 
 namespace {
@@ -256,9 +361,6 @@ void SegmentConcatTests::register_tests(MaintenanceTest& tc)
         wassert(actual(state.size()) == 3u);
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DELETED));
     });
-
-    // During repack
-    // TODO: if the order in the data file does not match the order required from the index, data files are rewritten rearranging the data, and the offsets in the index are updated accordingly. This is done to guarantee linear disk access when data are queried in the default sorting order.
 }
 
 
@@ -329,9 +431,6 @@ void SegmentDirTests::register_tests(MaintenanceTest& tc)
         wassert(actual(state.size()) == 3u);
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
     });
-
-    // During repack
-    // TODO: data files are renumbered starting from 0, sequentially without gaps, in the order given by the index, or by reference time if there is no index. This is done to avoid sequence numbers growing indefinitely for datasets with frequent appends and removes.
 }
 
 }

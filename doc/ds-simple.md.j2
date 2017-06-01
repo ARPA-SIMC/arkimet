@@ -43,9 +43,7 @@ instead of recomputing them for all data queried.
 
 ### During repack
 
-- if the segment contents are changed during segment repack, the
-  `.metadata` file is rewritten to match the new contents. The `.summary` and
-  `MANIFEST` files are updated accordingly.
+{{testdoc("arki_dataset_simple_maintenance_plain.repack*")}}
 
 
 ## Check and repack on dir segments
@@ -56,20 +54,12 @@ instead of recomputing them for all data queried.
 
 ### During --accurate check
 
-{{testdoc("arki_dataset_simple_maintenance_plain.tcheck*")}}
+{{testdoc("arki_dataset_simple_maintenance_plain_dirs.tcheck*")}}
 
 ### During fix
 
-- if the `.metadata` file does not exist or is older than the segment, the
-  segment data are rescanned to regenerate the `.metadata` file.
-- if the `.summary` file does not exist or is older than the `.metadata` file,
-  it is regenerated with the contents of the `.metadata` file.
-- if the `.metadata` file is newer than the `MANIFEST` file, its information
-  is updated inside the `MANIFEST` file.
-
+{{testdoc("arki_dataset_simple_maintenance_plain_dirs.fix*")}}
 
 ### During repack
 
-- if the segment contents are changed during segment repack, the
-  `.metadata` file is rewritten to match the new contents. The `.summary` and
-  `MANIFEST` files are updated accordingly.
+{{testdoc("arki_dataset_simple_maintenance_plain_dirs.repack*")}}
