@@ -1,31 +1,23 @@
-# simple datasets
+# ondisk2 datasets
 
-This dataset contains [segments](segments.md) with minimal indexing.
+This dataset contains [segments](segments.md) with a global index of each datum
+in the dataset.
 
-It is useful for long-term storage of data, due to the small metadata overhead
-and simple structure.
+It can enforce detection of duplicates, enforcing uniqueness on the set of
+metadata selected with the `unique` configuration keyword.
 
-The only query optimization it supports is when querying by a restricted
-date-time range.
-
-Because of the lack of a detailed index, `simple` dataset cannot efficiently
-detect duplicate data on import, therefore that feature is not implemented.
+It can optimize queries that use metadata selected with the `index`
+configuration keyword.
 
 ## Dataset layout
 
-At the root of the dataset there is a `MANIFEST` file that lists the segments
-known to the dataset, together with their reference time spans. The MANIFEST
-file can be encoded in plain text or in a `.sqlite` database.
+At the root of the dataset there is an `index.sqlite` file that maps each datum
+to its segment, offset and metadata.
 
-For each segment there is an associated `.metadata` file that contains metadata
-for all data in the segment. This makes it possible to select data according to
-a query, without needing to rescan it every time.
+The `.sqlite` file contains additional indices for the metadata listed in the
+`unique` configuration value, to do quick duplicate detection, and extra
+indices for the metadata listed in the `index` configuration value.
 
-For each segment there is also an associated `.summary` file, that contains a
-summary of the data within the segment. This is intended to quickly filter out
-segments during a query without needing to scan through all the `.metadata`
-file contents, and to support summary queries by merging existing summaries
-instead of recomputing them for all data queried.
 
 ## Check and repack on concat segments
 
@@ -42,17 +34,6 @@ instead of recomputing them for all data queried.
 - find segments that can only contain data older than `delete age` days [delete_age]
 - the segment must be a file
 - data on disk must match the order of data used by queries [dirty]
-- `.metadata` file must not be empty [unaligned]
-- `.metadata` file must not be older than the data [unaligned]
-- `.summary` file must not be older than the `.metadata` file [unaligned]
-- `MANIFEST` file must not be older than the `.metadata` file [unaligned]
-- metadata in the `.metadata` file must contain reference time elements [corrupted]
-- the span of reference times in each segment must fit inside the interval
-  implied by the segment file name (FIXME: should this be disabled for
-  archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
-- the segment name must represent an interval matching the dataset step
-  (FIXME: should this be disabled for archives, to deal with datasets that had
-  a change of step in their lifetime?) [corrupted]
 
 ### During --accurate check
 
@@ -97,17 +78,6 @@ instead of recomputing them for all data queried.
 - the segment must be a directory [unaligned]
 - the size of each data file must match the data size exactly [corrupted]
 - data on disk must match the order of data used by queries [dirty]
-- `.metadata` file must not be empty [unaligned]
-- `.metadata` file must not be older than the data [unaligned]
-- `.summary` file must not be older than the `.metadata` file [unaligned]
-- `MANIFEST` file must not be older than the `.metadata` file [unaligned]
-- metadata in the `.metadata` file must contain reference time elements [corrupted]
-- the span of reference times in each segment must fit inside the interval
-  implied by the segment file name (FIXME: should this be disabled for
-  archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
-- the segment name must represent an interval matching the dataset step
-  (FIXME: should this be disabled for archives, to deal with datasets that had
-  a change of step in their lifetime?) [corrupted]
 
 ### During --accurate check
 

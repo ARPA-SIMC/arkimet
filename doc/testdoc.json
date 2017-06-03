@@ -14615,6 +14615,16 @@
   "method": "check_new"
  },
  {
+  "doc": "- find segments that can only contain data older than `archive age` days [archive_age]",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "check_archive_age"
+ },
+ {
+  "doc": "- find segments that can only contain data older than `delete age` days [delete_age]",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "check_delete_age"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "tcheck_corrupted_data"
@@ -14640,6 +14650,16 @@
   "method": "fix_deleted"
  },
  {
+  "doc": "- [archive age] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "fix_archive_age"
+ },
+ {
+  "doc": "- [delete age] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "fix_delete_age"
+ },
+ {
   "doc": "- [new] segments are deleted",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "repack_new"
@@ -14658,6 +14678,16 @@
   "doc": "- [deleted] segments are removed from the index",
   "group": "arki_dataset_simple_maintenance_plain",
   "method": "repack_deleted"
+ },
+ {
+  "doc": "- [archive age] segments are repacked if needed, then moved to .archive/last",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "repack_archive_age"
+ },
+ {
+  "doc": "- [delete age] segments are deleted",
+  "group": "arki_dataset_simple_maintenance_plain",
+  "method": "repack_delete_age"
  },
  {
   "doc": "- the segment must be a file",
@@ -14745,6 +14775,16 @@
   "method": "check_new"
  },
  {
+  "doc": "- find segments that can only contain data older than `archive age` days [archive_age]",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "check_archive_age"
+ },
+ {
+  "doc": "- find segments that can only contain data older than `delete age` days [delete_age]",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "check_delete_age"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "tcheck_corrupted_data"
@@ -14770,6 +14810,16 @@
   "method": "fix_deleted"
  },
  {
+  "doc": "- [archive age] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "fix_archive_age"
+ },
+ {
+  "doc": "- [delete age] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "fix_delete_age"
+ },
+ {
   "doc": "- [new] segments are deleted",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "repack_new"
@@ -14788,6 +14838,16 @@
   "doc": "- [deleted] segments are removed from the index",
   "group": "arki_dataset_simple_maintenance_sqlite",
   "method": "repack_deleted"
+ },
+ {
+  "doc": "- [archive age] segments are repacked if needed, then moved to .archive/last",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "repack_archive_age"
+ },
+ {
+  "doc": "- [delete age] segments are deleted",
+  "group": "arki_dataset_simple_maintenance_sqlite",
+  "method": "repack_delete_age"
  },
  {
   "doc": "- the segment must be a file",
@@ -14875,6 +14935,16 @@
   "method": "check_new"
  },
  {
+  "doc": "- find segments that can only contain data older than `archive age` days [archive_age]",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "check_archive_age"
+ },
+ {
+  "doc": "- find segments that can only contain data older than `delete age` days [delete_age]",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "check_delete_age"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "tcheck_corrupted_data"
@@ -14900,6 +14970,16 @@
   "method": "fix_deleted"
  },
  {
+  "doc": "- [archive age] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "fix_archive_age"
+ },
+ {
+  "doc": "- [delete age] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "fix_delete_age"
+ },
+ {
   "doc": "- [new] segments are deleted",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "repack_new"
@@ -14918,6 +14998,16 @@
   "doc": "- [deleted] segments are removed from the index",
   "group": "arki_dataset_simple_maintenance_plain_dirs",
   "method": "repack_deleted"
+ },
+ {
+  "doc": "- [archive age] segments are repacked if needed, then moved to .archive/last",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "repack_archive_age"
+ },
+ {
+  "doc": "- [delete age] segments are deleted",
+  "group": "arki_dataset_simple_maintenance_plain_dirs",
+  "method": "repack_delete_age"
  },
  {
   "doc": "- the segment must be a directory [unaligned]",
@@ -15010,6 +15100,16 @@
   "method": "check_new"
  },
  {
+  "doc": "- find segments that can only contain data older than `archive age` days [archive_age]",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "check_archive_age"
+ },
+ {
+  "doc": "- find segments that can only contain data older than `delete age` days [delete_age]",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "check_delete_age"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "tcheck_corrupted_data"
@@ -15035,6 +15135,16 @@
   "method": "fix_deleted"
  },
  {
+  "doc": "- [archive age] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "fix_archive_age"
+ },
+ {
+  "doc": "- [delete age] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "fix_delete_age"
+ },
+ {
   "doc": "- [new] segments are deleted",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "repack_new"
@@ -15053,6 +15163,16 @@
   "doc": "- [deleted] segments are removed from the index",
   "group": "arki_dataset_simple_maintenance_sqlite_dirs",
   "method": "repack_deleted"
+ },
+ {
+  "doc": "- [archive age] segments are repacked if needed, then moved to .archive/last",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "repack_archive_age"
+ },
+ {
+  "doc": "- [delete age] segments are deleted",
+  "group": "arki_dataset_simple_maintenance_sqlite_dirs",
+  "method": "repack_delete_age"
  },
  {
   "doc": "- the segment must be a directory [unaligned]",
@@ -15423,6 +15543,261 @@
   "doc": "",
   "group": "arki_dataset_ondisk2_checker_odim_dir",
   "method": "delete_index_and_check"
+ },
+ {
+  "doc": "- the segment must exist [deleted]",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "check_exists"
+ },
+ {
+  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "check_dataexists"
+ },
+ {
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "check_data_overlap"
+ },
+ {
+  "doc": "- data must start at the beginning of the segment [dirty]",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "check_hole_start"
+ },
+ {
+  "doc": "- there must be no gaps between data in the segment [dirty]",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "check_hole_middle"
+ },
+ {
+  "doc": "- data must end at the end of the segment [dirty]",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "check_hole_end"
+ },
+ {
+  "doc": "- find data files now known by the index [new]",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "check_new"
+ },
+ {
+  "doc": "- find segments that can only contain data older than `archive age` days [archive_age]",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "check_archive_age"
+ },
+ {
+  "doc": "- find segments that can only contain data older than `delete age` days [delete_age]",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "check_delete_age"
+ },
+ {
+  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "tcheck_corrupted_data"
+ },
+ {
+  "doc": "- [new] segments are imported in-place",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "fix_new"
+ },
+ {
+  "doc": "- [unaligned] segments are reimported in-place",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "fix_unaligned"
+ },
+ {
+  "doc": "- [dirty] segments are not touched",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "fix_dirty"
+ },
+ {
+  "doc": "- [deleted] segments are removed from the index",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "fix_deleted"
+ },
+ {
+  "doc": "- [archive age] segments are not touched",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "fix_archive_age"
+ },
+ {
+  "doc": "- [delete age] segments are not touched",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "fix_delete_age"
+ },
+ {
+  "doc": "- [new] segments are deleted",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "repack_new"
+ },
+ {
+  "doc": "- [unaligned] segments are not touched",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "repack_unaligned"
+ },
+ {
+  "doc": "- [dirty] segments are rewritten to be without holes and have data in the right order.\n  In concat segments, this is done to guarantee linear disk access when\n  data are queried in the default sorting order. In dir segments, this\n  is done to avoid sequence numbers growing indefinitely for datasets\n  with frequent appends and removes.",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "repack_dirty"
+ },
+ {
+  "doc": "- [deleted] segments are removed from the index",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "repack_deleted"
+ },
+ {
+  "doc": "- [archive age] segments are repacked if needed, then moved to .archive/last",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "repack_archive_age"
+ },
+ {
+  "doc": "- [delete age] segments are deleted",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "repack_delete_age"
+ },
+ {
+  "doc": "- the segment must be a file",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "check_isfile"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "clean"
+ },
+ {
+  "doc": "- data on disk must match the order of data used by queries [dirty]",
+  "group": "arki_dataset_ondisk2_maintenance",
+  "method": "check_isordered"
+ },
+ {
+  "doc": "- the segment must exist [deleted]",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "check_exists"
+ },
+ {
+  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "check_dataexists"
+ },
+ {
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "check_data_overlap"
+ },
+ {
+  "doc": "- data must start at the beginning of the segment [dirty]",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "check_hole_start"
+ },
+ {
+  "doc": "- there must be no gaps between data in the segment [dirty]",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "check_hole_middle"
+ },
+ {
+  "doc": "- data must end at the end of the segment [dirty]",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "check_hole_end"
+ },
+ {
+  "doc": "- find data files now known by the index [new]",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "check_new"
+ },
+ {
+  "doc": "- find segments that can only contain data older than `archive age` days [archive_age]",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "check_archive_age"
+ },
+ {
+  "doc": "- find segments that can only contain data older than `delete age` days [delete_age]",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "check_delete_age"
+ },
+ {
+  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "tcheck_corrupted_data"
+ },
+ {
+  "doc": "- [new] segments are imported in-place",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "fix_new"
+ },
+ {
+  "doc": "- [unaligned] segments are reimported in-place",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "fix_unaligned"
+ },
+ {
+  "doc": "- [dirty] segments are not touched",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "fix_dirty"
+ },
+ {
+  "doc": "- [deleted] segments are removed from the index",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "fix_deleted"
+ },
+ {
+  "doc": "- [archive age] segments are not touched",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "fix_archive_age"
+ },
+ {
+  "doc": "- [delete age] segments are not touched",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "fix_delete_age"
+ },
+ {
+  "doc": "- [new] segments are deleted",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "repack_new"
+ },
+ {
+  "doc": "- [unaligned] segments are not touched",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "repack_unaligned"
+ },
+ {
+  "doc": "- [dirty] segments are rewritten to be without holes and have data in the right order.\n  In concat segments, this is done to guarantee linear disk access when\n  data are queried in the default sorting order. In dir segments, this\n  is done to avoid sequence numbers growing indefinitely for datasets\n  with frequent appends and removes.",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "repack_dirty"
+ },
+ {
+  "doc": "- [deleted] segments are removed from the index",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "repack_deleted"
+ },
+ {
+  "doc": "- [archive age] segments are repacked if needed, then moved to .archive/last",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "repack_archive_age"
+ },
+ {
+  "doc": "- [delete age] segments are deleted",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "repack_delete_age"
+ },
+ {
+  "doc": "- the segment must be a directory [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "check_isdir"
+ },
+ {
+  "doc": "- the size of each data file must match the data size exactly [corrupted]",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "check_datasize"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "clean"
+ },
+ {
+  "doc": "- data on disk must match the order of data used by queries [dirty]",
+  "group": "arki_dataset_ondisk2_maintenance_dirs",
+  "method": "check_isordered"
  },
  {
   "doc": "",

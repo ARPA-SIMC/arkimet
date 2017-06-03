@@ -48,6 +48,10 @@ public:
     void truncate(size_t offset) override;
     void validate(Metadata& md, const scan::Validator& v) override;
 
+    void test_make_overlap(metadata::Collection& mds, unsigned data_idx) override;
+    void test_make_hole(metadata::Collection& mds, unsigned data_idx) override;
+    void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
+
     /**
      * If skip_validation is true, repack will skip validating the data that is
      * being read.

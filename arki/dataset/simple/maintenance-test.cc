@@ -21,56 +21,12 @@ class Tests : public MaintenanceTest
 {
     using MaintenanceTest::MaintenanceTest;
 
-    void make_overlap() override
-    {
-        segment_tests->make_overlap();
-
-        metadata::Collection mds;
-        mds.read_from_file("testds/2007/07-07.grib.metadata");
-        mds[1].sourceBlob().offset -= 1;
-        mds.writeAtomically("testds/2007/07-07.grib.metadata");
-    }
-
-    void make_hole_start() override
-    {
-        segment_tests->make_hole_start();
-
-        metadata::Collection mds;
-        mds.read_from_file("testds/2007/07-07.grib.metadata");
-        mds[0].sourceBlob().offset += 1;
-        mds[1].sourceBlob().offset += 1;
-        mds.writeAtomically("testds/2007/07-07.grib.metadata");
-    }
-
-    void make_hole_middle() override
-    {
-        segment_tests->make_hole_middle();
-
-        metadata::Collection mds;
-        mds.read_from_file("testds/2007/07-07.grib.metadata");
-        mds[1].sourceBlob().offset += 1;
-        mds.writeAtomically("testds/2007/07-07.grib.metadata");
-    }
-
-    void make_hole_end() override
-    {
-        segment_tests->make_hole_end();
-    }
-
     void swap_data() override
     {
         metadata::Collection mds;
         mds.read_from_file("testds/2007/07-07.grib.metadata");
         std::swap(mds[0], mds[1]);
         mds.writeAtomically("testds/2007/07-07.grib.metadata");
-    }
-
-    void deindex() override
-    {
-        auto w = fixture->makeSimpleWriter();
-        w->test_get_index().test_remove("2007/07-07.grib");
-        sys::unlink("testds/2007/07-07.grib.metadata");
-        sys::unlink("testds/2007/07-07.grib.summary");
     }
 
     void require_rescan() override

@@ -271,6 +271,33 @@ void IndexedChecker::check_issue51(dataset::Reporter& reporter, bool fix)
     return segmented::Checker::check_issue51(reporter, fix);
 }
 
+void IndexedChecker::test_make_overlap(const std::string& relpath, unsigned data_idx)
+{
+    metadata::Collection mds;
+    m_idx->query_segment(relpath, mds.inserter_func());
+    segment_manager().get_segment(relpath)->test_make_overlap(mds, data_idx);
+    m_idx->test_make_overlap(relpath, data_idx);
+}
+
+void IndexedChecker::test_make_hole(const std::string& relpath, unsigned data_idx)
+{
+    metadata::Collection mds;
+    m_idx->query_segment(relpath, mds.inserter_func());
+    segment_manager().get_segment(relpath)->test_make_hole(mds, data_idx);
+    m_idx->test_make_hole(relpath, data_idx);
+}
+
+void IndexedChecker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
+{
+    metadata::Collection mds;
+    m_idx->query_segment(relpath, mds.inserter_func());
+    segment_manager().get_segment(relpath)->test_corrupt(mds, data_idx);
+}
+
+void IndexedChecker::test_deindex(const std::string& relpath)
+{
+    m_idx->test_deindex(relpath);
+}
 
 }
 }

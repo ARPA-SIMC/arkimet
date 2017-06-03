@@ -510,9 +510,9 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
     release_lock();
 }
 
-void Checker::indexSegment(const std::string& relname, metadata::Collection&& mds)
+void Checker::indexSegment(const std::string& relpath, metadata::Collection&& mds)
 {
-    string pathname = str::joinpath(config().path, relname);
+    string pathname = str::joinpath(config().path, relpath);
     time_t mtime = scan::timestamp(pathname);
     if (mtime == 0)
         throw std::runtime_error("cannot acquire " + pathname + ": file does not exist");
@@ -530,7 +530,7 @@ void Checker::indexSegment(const std::string& relname, metadata::Collection&& md
     sum.writeAtomically(pathname + ".summary");
 
     // Add to manifest
-    //m_mft->acquire(relname, mtime, sum);
+    //m_mft->acquire(relpath, mtime, sum);
     //m_mft->flush();
 }
 
@@ -705,6 +705,25 @@ size_t Checker::vacuum()
     return 0;
 }
 
+void Checker::test_make_overlap(const std::string& relpath, unsigned data_idx)
+{
+    throw std::runtime_error("test_make_overlap not yet implemented for iseg");
+}
+
+void Checker::test_make_hole(const std::string& relpath, unsigned data_idx)
+{
+    throw std::runtime_error("test_make_hole not yet implemented for iseg");
+}
+
+void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
+{
+    throw std::runtime_error("test_corrupt_data not yet implemented for iseg");
+}
+
+void Checker::test_deindex(const std::string& relpath)
+{
+    throw std::runtime_error("test_corrupt_data not yet implemented for iseg");
+}
 
 }
 }

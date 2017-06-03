@@ -1,0 +1,58 @@
+# ondisk2 datasets
+
+This dataset contains [segments](segments.md) with a global index of each datum
+in the dataset.
+
+It can enforce detection of duplicates, enforcing uniqueness on the set of
+metadata selected with the `unique` configuration keyword.
+
+It can optimize queries that use metadata selected with the `index`
+configuration keyword.
+
+## Dataset layout
+
+At the root of the dataset there is an `index.sqlite` file that maps each datum
+to its segment, offset and metadata.
+
+The `.sqlite` file contains additional indices for the metadata listed in the
+`unique` configuration value, to do quick duplicate detection, and extra
+indices for the metadata listed in the `index` configuration value.
+
+
+## Check and repack on concat segments
+
+### During check
+
+{{testdoc("arki_dataset_ondisk2_maintenance.check_*")}}
+
+### During --accurate check
+
+{{testdoc("arki_dataset_ondisk2_maintenance.tcheck_*")}}
+
+### During fix
+
+{{testdoc("arki_dataset_ondisk2_maintenance.fix_*")}}
+
+### During repack
+
+{{testdoc("arki_dataset_ondisk2_maintenance.repack*")}}
+
+
+## Check and repack on dir segments
+
+### During check
+
+{{testdoc("arki_dataset_ondisk2_maintenance_dirs.check*")}}
+
+### During --accurate check
+
+{{testdoc("arki_dataset_ondisk2_maintenance_dirs.tcheck*")}}
+
+### During fix
+
+{{testdoc("arki_dataset_ondisk2_maintenance_dirs.fix*")}}
+
+### During repack
+
+{{testdoc("arki_dataset_ondisk2_maintenance_dirs.repack*")}}
+

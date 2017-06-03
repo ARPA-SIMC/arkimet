@@ -399,6 +399,37 @@ size_t Checker<Config>::vacuum()
     return res;
 }
 
+template<typename Config>
+void Checker<Config>::test_make_overlap(const std::string& relpath, unsigned data_idx)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).test_make_overlap(relpath.substr(pos + 1), data_idx);
+}
+
+template<typename Config>
+void Checker<Config>::test_make_hole(const std::string& relpath, unsigned data_idx)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).test_make_hole(relpath.substr(pos + 1), data_idx);
+}
+
+template<typename Config>
+void Checker<Config>::test_corrupt_data(const std::string& relpath, unsigned data_idx)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).test_corrupt_data(relpath.substr(pos + 1), data_idx);
+}
+
+template<typename Config>
+void Checker<Config>::test_deindex(const std::string& relpath)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).test_corrupt_data(relpath.substr(pos + 1));
+}
 
 template class Config<dataset::IndexedConfig>;
 template class Reader<simple::Config>;

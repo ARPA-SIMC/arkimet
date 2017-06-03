@@ -30,34 +30,6 @@ struct SegmentTests
     virtual void truncate_segment() = 0;
 
     /**
-     * Make the second element of 2007/07-07.grib overlap the first.
-     */
-    virtual void make_overlap() = 0;
-
-    /**
-     * Move the all data of 2007/07-07.grib away from the beginning, leaving a
-     * hole at the start of the fime.
-     */
-    virtual void make_hole_start() = 0;
-
-    /**
-     * Move the second element of 2007/07-07.grib away from the first, leaving
-     * a hole.
-     */
-    virtual void make_hole_middle() = 0;
-
-    /**
-     * Add some padding at the end of 2007/07-07.grib, leaving a hole at the
-     * end.
-     */
-    virtual void make_hole_end() = 0;
-
-    /**
-     * Corrupt the first data in 2007/07-07.grib
-     */
-    virtual void corrupt_first() = 0;
-
-    /**
      * Swap the two data in 2007/07-07.grib
      */
     virtual void swap_data() = 0;
@@ -87,27 +59,27 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
     void init_segment_tests();
 
     /**
-     * Make the second element of 2007/07-07.grib overlap the first.
-     */
-    virtual void make_overlap() = 0;
-
-    /**
      * Move all elements of 2007/07-07.grib forward, leaving a hole at the
      * start.
      */
-    virtual void make_hole_start() = 0;
+    void make_hole_start();
 
     /**
      * Move the second element of 2007/07-07.grib away from the first, leaving
      * a hole.
      */
-    virtual void make_hole_middle() = 0;
+    void make_hole_middle();
 
     /**
      * Append some padding to 2007/07-07.grib away from the first, leaving
      * a hole.
      */
-    virtual void make_hole_end() = 0;
+    void make_hole_end();
+
+    /**
+     * Corrupt the first data in 2007/07-07.grib
+     */
+    void corrupt_first();
 
     /**
      * Swap the two data in 2007/07-07.grib
@@ -115,7 +87,7 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
     virtual void swap_data() = 0;
 
     /// Remove 2007/07-07.grib from index
-    virtual void deindex() = 0;
+    void deindex();
 
     /// Make it so that 2007/07-07.grib requires a rescan
     virtual void require_rescan() = 0;

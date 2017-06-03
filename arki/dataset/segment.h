@@ -327,6 +327,30 @@ public:
     virtual Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) = 0;
 
     virtual void validate(Metadata& md, const scan::Validator& v) = 0;
+
+    /**
+     * Move the all the data in the segment starting from the one in position
+     * `data_idx` backwards by 1.
+     *
+     * `mds` represents the state of the segment before the move, and is
+     * updated to reflect the new state of the segment.
+     */
+    virtual void test_make_overlap(metadata::Collection& mds, unsigned data_idx) = 0;
+
+    /**
+     * Move the all the data in the segment starting from the one in position
+     * `data_idx` forwards by 1.
+     *
+     * `mds` represents the state of the segment before the move, and is
+     * updated to reflect the new state of the segment.
+     */
+    virtual void test_make_hole(metadata::Collection& mds, unsigned data_idx) = 0;
+
+    /**
+     * Corrupt the data at position `data_idx`, by replacing its first byte
+     * with the value 0.
+     */
+    virtual void test_corrupt(const metadata::Collection& mds, unsigned data_idx) = 0;
 };
 
 }

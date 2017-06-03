@@ -62,7 +62,7 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
     tc.add_method("check_data_overlap", R"(
         - no pair of (offset, size) data spans from the index can overlap [unaligned]
     )", [&](Fixture& f) {
-        tc.make_overlap();
+        f.makeSegmentedChecker()->test_make_overlap("2007/07-07.grib", 1);
 
         NullReporter nr;
         auto state = f.makeSegmentedChecker()->scan(nr);
@@ -166,7 +166,7 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
     tc.add_method("tcheck_corrupted_data", R"(
         - format-specific consistency checks on the content of each file must pass [unaligned]
     )", [&](Fixture& f) {
-        corrupt_first();
+        tc.corrupt_first();
 
         NullReporter nr;
         auto state = f.makeSegmentedChecker()->scan(nr, false);
@@ -381,38 +381,6 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
             wassert(actual(writer.get()).maintenance_clean(2));
         }
     });
-#if 0
-void RealRepacker::operator()(const std::string& relpath, segment::State state)
-{
-    if (state.has(SEGMENT_DIRTY) && !state.has(SEGMENT_DELETE_AGE))
-    {
-        // Repack the file
-        size_t saved = w.repackSegment(relpath, test_flags);
-        reporter.segment_repack(w.name(), relpath, "repacked (" + std::to_string(saved) + " freed)");
-        ++m_count_packed;
-        m_count_freed += saved;
-    }
-    if (state.has(SEGMENT_ARCHIVE_AGE))
-    {
-        // Create the target directory in the archive
-        w.archiveSegment(relpath);
-        reporter.segment_archive(w.name(), relpath, "archived");
-        ++m_count_archived;
-        m_touched_archive = true;
-        m_redo_summary = true;
-    }
-    if (state.has(SEGMENT_DELETE_AGE))
-    {
-        // Delete obsolete files
-        size_t size = w.removeSegment(relpath, true);
-        reporter.segment_delete(w.name(), relpath, "deleted (" + std::to_string(size) + " freed)");
-        ++m_count_deleted;
-        ++m_count_deindexed;
-        m_count_freed += size;
-        m_redo_summary = true;
-    }
-}
-#endif
 }
 
 namespace {
@@ -423,44 +391,6 @@ struct SegmentConcatTests : public SegmentTests
     {
         sys::File f("testds/2007/07-07.grib", O_RDWR);
         f.ftruncate(34960);
-    }
-    void make_overlap() override
-    {
-        File f("testds/2007/07-07.grib", O_RDWR);
-        char buf[34960];
-        f.lseek(34960, SEEK_SET);
-        f.read_all_or_throw(buf, 34960);
-        f.lseek(34959, SEEK_SET);
-        f.write_all_or_throw(buf, 34960);
-    }
-    void make_hole_start() override
-    {
-        File f("testds/2007/07-07.grib", O_RDWR);
-        char buf[34960 * 2];
-        f.lseek(0, SEEK_SET);
-        f.read_all_or_throw(buf, 34960 * 2);
-        f.lseek(1, SEEK_SET);
-        f.write_all_or_throw(buf, 34960 * 2);
-    }
-    void make_hole_middle() override
-    {
-        File f("testds/2007/07-07.grib", O_RDWR);
-        char buf[34960];
-        f.lseek(34960, SEEK_SET);
-        f.read_all_or_throw(buf, 34960);
-        f.lseek(34961, SEEK_SET);
-        f.write_all_or_throw(buf, 34960);
-    }
-    void make_hole_end() override
-    {
-        File f("testds/2007/07-07.grib", O_RDWR);
-        f.ftruncate(34960 * 2 + 1);
-    }
-    void corrupt_first() override
-    {
-        sys::File df("testds/2007/07-07.grib", O_RDWR);
-        df.lseek(0);
-        df.write_all_or_throw("T", 1);
     }
     void swap_data() override
     {
@@ -500,29 +430,6 @@ struct SegmentDirTests : public SegmentTests
     void truncate_segment() override
     {
         sys::unlink("testds/2007/07-07.grib/000001.grib");
-    }
-    void make_overlap() override
-    {
-        MaintenanceTest::rename("testds/2007/07-07.grib/000001.grib", "testds/2007/07-07.grib/000000.grib");
-    }
-    void make_hole_start() override
-    {
-        MaintenanceTest::rename("testds/2007/07-07.grib/000001.grib", "testds/2007/07-07.grib/000002.grib");
-        MaintenanceTest::rename("testds/2007/07-07.grib/000000.grib", "testds/2007/07-07.grib/000001.grib");
-    }
-    void make_hole_middle() override
-    {
-        MaintenanceTest::rename("testds/2007/07-07.grib/000001.grib", "testds/2007/07-07.grib/000002.grib");
-    }
-    void make_hole_end() override
-    {
-        sys::write_file("testds/2007/07-07.grib/000002.grib", "");
-    }
-    void corrupt_first() override
-    {
-        sys::File df("testds/2007/07-07.grib/000000.grib", O_RDWR);
-        df.lseek(0);
-        df.write_all_or_throw("T", 1);
     }
     void swap_data() override
     {
@@ -578,6 +485,31 @@ void MaintenanceTest::init_segment_tests()
         case SEGMENT_CONCAT: segment_tests = new SegmentConcatTests; break;
         case SEGMENT_DIR:    segment_tests = new SegmentDirTests;  break;
     }
+}
+
+void MaintenanceTest::make_hole_start()
+{
+    fixture->makeSegmentedChecker()->test_make_hole("2007/07-07.grib", 0);
+}
+
+void MaintenanceTest::make_hole_middle()
+{
+    fixture->makeSegmentedChecker()->test_make_hole("2007/07-07.grib", 1);
+}
+
+void MaintenanceTest::make_hole_end()
+{
+    fixture->makeSegmentedChecker()->test_make_hole("2007/07-07.grib", 2);
+}
+
+void MaintenanceTest::corrupt_first()
+{
+    fixture->makeSegmentedChecker()->test_corrupt_data("2007/07-07.grib", 0);
+}
+
+void MaintenanceTest::deindex()
+{
+    fixture->makeSegmentedChecker()->test_deindex("2007/07-07.grib");
 }
 
 void MaintenanceTest::rename(const std::string& old_pathname, const std::string& new_pathname)

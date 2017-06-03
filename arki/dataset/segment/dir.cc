@@ -157,7 +157,7 @@ std::pair<std::string, size_t> SequenceFile::next(const std::string& format)
     return make_pair(str::joinpath(dirname, data_fname(cur, format)), (size_t)cur);
 }
 
-File SequenceFile::open_next(const std::string& format, std::string& absname, size_t& pos)
+File SequenceFile::open_next(const std::string& format, size_t& pos)
 {
     while (true)
     {
@@ -166,7 +166,6 @@ File SequenceFile::open_next(const std::string& format, std::string& absname, si
         File fd(dest.first);
         if (fd.open_ifexists(O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666))
         {
-            absname = dest.first;
             pos = dest.second;
             return fd;
         }
@@ -233,9 +232,8 @@ off_t Segment::append(Metadata& md)
 {
     open();
 
-    string dest;
     size_t pos;
-    File fd = seqfile.open_next(format, dest, pos);
+    File fd = seqfile.open_next(format, pos);
     /*size_t size =*/ write_file(md, fd);
     fd.close();
 
@@ -253,9 +251,8 @@ Pending Segment::append(Metadata& md, off_t* ofs)
 {
     open();
 
-    string dest;
     size_t pos;
-    File fd = seqfile.open_next(format, dest, pos);
+    File fd = seqfile.open_next(format, pos);
     size_t size = write_file(md, fd);
     fd.close();
     *ofs = pos;
@@ -566,6 +563,48 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, u
     writer.release();
 
     return p;
+}
+
+void Segment::test_make_overlap(metadata::Collection& mds, unsigned data_idx)
+{
+    for (unsigned i = data_idx; i < mds.size(); ++i)
+    {
+        unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+        sys::rename(
+                str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
+                str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset - 1, source->format)));
+        source->offset -= 1;
+        mds[i].set_source(move(source));
+    }
+}
+
+void Segment::test_make_hole(metadata::Collection& mds, unsigned data_idx)
+{
+    if (data_idx >= mds.size())
+    {
+        open();
+        size_t pos;
+        File fd = seqfile.open_next(mds[0].sourceBlob().format, pos);
+        fd.close();
+    } else {
+        for (int i = mds.size() - 1; i >= (int)data_idx; --i)
+        {
+            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+            sys::rename(
+                    str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
+                    str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset + 1, source->format)));
+            source->offset += 1;
+            mds[i].set_source(move(source));
+        }
+    }
+}
+
+void Segment::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+{
+    open();
+    const auto& s = mds[data_idx].sourceBlob();
+    File fd(str::joinpath(s.absolutePathname(), SequenceFile::data_fname(s.offset, s.format)), O_WRONLY);
+    fd.write_all_or_throw("\0", 1);
 }
 
 unique_ptr<dir::Segment> Segment::make_segment(const std::string& format, const std::string& relname, const std::string& absname)

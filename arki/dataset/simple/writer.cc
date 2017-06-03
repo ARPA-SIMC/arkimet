@@ -256,6 +256,13 @@ size_t Checker::vacuum()
     return m_mft->vacuum();
 }
 
+void Checker::test_deindex(const std::string& relpath)
+{
+    IndexedChecker::test_deindex(relpath);
+    string pathname = str::joinpath(config().path, relpath);
+    sys::unlink_ifexists(pathname + ".metadata");
+    sys::unlink_ifexists(pathname + ".summary");
+}
 
 std::string ShardingChecker::type() const { return "simple"; }
 

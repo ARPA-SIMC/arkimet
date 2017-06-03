@@ -153,6 +153,7 @@ public:
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     bool query_summary(const Matcher& m, Summary& summary) override;
+    void query_segment(const std::string& relname, metadata_dest_func) const override;
 
 	/**
 	 * Query this index, returning a summary
@@ -221,7 +222,9 @@ public:
     void open();
 
     void test_rename(const std::string& relname, const std::string& new_relname) override;
-    void test_remove(const std::string& relname) override;
+    void test_deindex(const std::string& relname) override;
+    void test_make_overlap(const std::string& relname, unsigned data_idx) override;
+    void test_make_hole(const std::string& relname, unsigned data_idx) override;
 };
 
 class WContents : public Contents
@@ -303,7 +306,9 @@ public:
     void flush();
 
     void test_rename(const std::string& relname, const std::string& new_relname) override;
-    void test_remove(const std::string& relname) override;
+    void test_deindex(const std::string& relname) override;
+    void test_make_overlap(const std::string& relname, unsigned data_idx) override;
+    void test_make_hole(const std::string& relname, unsigned data_idx) override;
 };
 
 }

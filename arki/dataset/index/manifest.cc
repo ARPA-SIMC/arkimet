@@ -198,6 +198,18 @@ bool Manifest::query_summary(const Matcher& matcher, Summary& summary)
     return true;
 }
 
+void Manifest::query_segment(const std::string& relname, metadata_dest_func dest) const
+{
+    string absdir = sys::abspath(m_path);
+    string prepend_fname = str::dirname(relname);
+    Metadata::read_file(str::joinpath(m_path, relname) + ".metadata", [&](unique_ptr<Metadata> md) {
+        // Tweak Blob sources replacing the file name with relname
+        if (const source::Blob* s = md->has_source_blob())
+            md->set_source(Source::createBlob(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
+        return dest(move(md));
+    });
+}
+
 void Manifest::invalidate_summary()
 {
     sys::unlink_ifexists(str::joinpath(m_path, "summary"));
@@ -258,9 +270,29 @@ void Manifest::rescanSegment(const std::string& dir, const std::string& relpath)
     acquire(relpath, mtime, sum);
 }
 
-void Manifest::test_remove(const std::string& relname)
+void Manifest::test_deindex(const std::string& relpath)
 {
-    remove(relname);
+    remove(relpath);
+}
+
+void Manifest::test_make_overlap(const std::string& relpath, unsigned data_idx)
+{
+    string pathname = str::joinpath(m_path, relpath) + ".metadata";
+    metadata::Collection mds;
+    mds.read_from_file(pathname);
+    for (unsigned i = data_idx; i < mds.size(); ++i)
+        mds[i].sourceBlob().offset -= 1;
+    mds.writeAtomically(pathname);
+}
+
+void Manifest::test_make_hole(const std::string& relpath, unsigned data_idx)
+{
+    string pathname = str::joinpath(m_path, relpath) + ".metadata";
+    metadata::Collection mds;
+    mds.read_from_file(pathname);
+    for (unsigned i = data_idx; i < mds.size(); ++i)
+        mds[i].sourceBlob().offset += 1;
+    mds.writeAtomically(pathname);
 }
 
 
@@ -567,12 +599,12 @@ public:
         }
     }
 
-    void test_rename(const std::string& relname, const std::string& new_relname) override
+    void test_rename(const std::string& relpath, const std::string& new_relpath) override
     {
         for (auto& i: info)
-            if (i.file == relname)
+            if (i.file == relpath)
             {
-                i.file = new_relname;
+                i.file = new_relpath;
                 dirty = true;
             }
     }
@@ -797,11 +829,11 @@ public:
         m_insert.step();
     }
 
-    virtual void remove(const std::string& relname)
+    virtual void remove(const std::string& relpath)
     {
         Query q("del_file", m_db);
         q.compile("DELETE FROM files WHERE file=?");
-        q.bind(1, relname);
+        q.bind(1, relpath);
         while (q.step())
             ;
     }
@@ -856,12 +888,12 @@ public:
         }
     }
 
-    void test_rename(const std::string& relname, const std::string& new_relname) override
+    void test_rename(const std::string& relpath, const std::string& new_relpath) override
     {
         Query q("test_rename", m_db);
         q.compile("UPDATE files SET file=? WHERE file=?");
-        q.bind(1, new_relname);
-        q.bind(2, relname);
+        q.bind(1, new_relpath);
+        q.bind(2, relpath);
         while (q.step())
             ;
     }

@@ -214,6 +214,39 @@ public:
      * @returns The number of bytes freed on disk with this operation
      */
     virtual size_t vacuum() = 0;
+
+    /**
+     * All data in the segment except the `data_idx`-one are shifted backwards
+     * by one, so that one in position `data_idx-1` overlaps with the one in
+     * position `data_idx`.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_make_overlap(const std::string& relpath, unsigned data_idx=1) = 0;
+
+    /**
+     * All data in the segment starting from the one at position `data_idx` are
+     * shifted forwards by one offset position, so that a gap is formed before
+     * the element at position `data_idx`.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_make_hole(const std::string& relpath, unsigned data_idx=0) = 0;
+
+    /**
+     * Corrupt the data in the given segment at position `data_idx`, by
+     * replacing its first byte with the value 0.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_corrupt_data(const std::string& relpath, unsigned data_idx=0) = 0;
+
+    /**
+     * Remove the segment from the index.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_deindex(const std::string& relpath) = 0;
 };
 
 }

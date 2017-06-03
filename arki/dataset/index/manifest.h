@@ -37,8 +37,8 @@ public:
 
     /// Invalidate global summary
     void invalidate_summary();
-    /// Invalidate summary for file \a relname and global summary
-    void invalidate_summary(const std::string& relname);
+    /// Invalidate summary for file \a relpath and global summary
+    void invalidate_summary(const std::string& relpath);
 
     /**
      * Expand the given begin and end ranges to include the datetime extremes
@@ -51,6 +51,7 @@ public:
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     bool query_summary(const Matcher& matcher, Summary& summary) override;
+    void query_segment(const std::string& relpath, metadata_dest_func) const override;
     void list_segments(std::function<void(const std::string&)> dest) override = 0;
     void scan_files(segment::contents_func v) override = 0;
 
@@ -62,7 +63,9 @@ public:
     static bool get_force_sqlite();
     static void set_force_sqlite(bool val);
 
-    void test_remove(const std::string& relname) override;
+    void test_deindex(const std::string& relpath) override;
+    void test_make_overlap(const std::string& relpath, unsigned data_idx) override;
+    void test_make_hole(const std::string& relpath, unsigned data_idx) override;
 };
 
 }

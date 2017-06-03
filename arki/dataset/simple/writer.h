@@ -81,6 +81,7 @@ public:
     void releaseSegment(const std::string& relpath, const std::string& destpath) override;
     size_t removeSegment(const std::string& relpath, bool withData=false) override;
     size_t vacuum() override;
+    void test_deindex(const std::string& relpath) override;
 };
 
 class ShardingChecker : public sharded::Checker<simple::Config>

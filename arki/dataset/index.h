@@ -53,6 +53,11 @@ struct Index
     virtual void scan_files(segment::contents_func v) = 0;
 
     /**
+     * Get the metadata for a segment.
+     */
+    virtual void query_segment(const std::string& relname, metadata_dest_func) const = 0;
+
+    /**
      * Rename a segment in the index.
      *
      * This is used to simulate anomalies in the dataset during tests.
@@ -68,7 +73,21 @@ struct Index
      *
      * The version on disk is not touched.
      */
-    virtual void test_remove(const std::string& relname) = 0;
+    virtual void test_deindex(const std::string& relname) = 0;
+
+    /**
+     * Update the index so that the offset of all data in the segment starting
+     * from the one at position `data_idx` are shifted backwards by one, so
+     * that the ones at `data_idx - 1` and at `data_idx` overlap.
+     */
+    virtual void test_make_overlap(const std::string& relname, unsigned data_idx) = 0;
+
+    /**
+     * Update the index so that the offset of all data in the segment starting
+     * from the one at position `data_idx` are shifted forwards by one, so that
+     * a hole is created between the ones at `data_idx - 1` and at `data_idx`
+     */
+    virtual void test_make_hole(const std::string& relname, unsigned data_idx) = 0;
 };
 
 }
