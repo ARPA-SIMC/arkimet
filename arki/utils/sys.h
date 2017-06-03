@@ -553,6 +553,14 @@ void rmdir(const std::string& pathname);
 /// Delete the directory \a pathname and all its contents.
 void rmtree(const std::string& pathname);
 
+/**
+ * Rename src_pathname into dst_pathname.
+ *
+ * This is just a wrapper to the rename(2) system call: source and destination
+ * must be on the same file system.
+ */
+void rename(const std::string& src_pathname, const std::string& dst_pathname);
+
 #if 0
 /// Nicely wrap access to directories
 class Directory
