@@ -720,6 +720,11 @@ void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
     throw std::runtime_error("test_corrupt_data not yet implemented for iseg");
 }
 
+void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
+{
+    throw std::runtime_error("test_truncate_data not yet implemented for iseg");
+}
+
 void Checker::test_deindex(const std::string& relpath)
 {
     throw std::runtime_error("test_corrupt_data not yet implemented for iseg");

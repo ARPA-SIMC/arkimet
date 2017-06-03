@@ -424,6 +424,14 @@ void Checker<Config>::test_corrupt_data(const std::string& relpath, unsigned dat
 }
 
 template<typename Config>
+void Checker<Config>::test_truncate_data(const std::string& relpath, unsigned data_idx)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).test_truncate_data(relpath.substr(pos + 1), data_idx);
+}
+
+template<typename Config>
 void Checker<Config>::test_deindex(const std::string& relpath)
 {
     size_t pos = relpath.find('/');

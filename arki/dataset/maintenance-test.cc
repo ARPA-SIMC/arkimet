@@ -51,7 +51,7 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
     tc.add_method("check_dataexists", R"(
         - all data known by the index for this segment must be present on disk [unaligned]
     )", [&](Fixture& f) {
-        truncate_segment();
+        tc.truncate_segment();
 
         NullReporter nr;
         auto state = f.makeSegmentedChecker()->scan(nr);
@@ -387,11 +387,6 @@ namespace {
 
 struct SegmentConcatTests : public SegmentTests
 {
-    void truncate_segment() override
-    {
-        sys::File f("testds/2007/07-07.grib", O_RDWR);
-        f.ftruncate(34960);
-    }
     void swap_data() override
     {
         sys::File df("testds/2007/07-07.grib", O_RDWR);
@@ -427,10 +422,6 @@ void SegmentConcatTests::register_tests(MaintenanceTest& tc)
 
 struct SegmentDirTests : public SegmentTests
 {
-    void truncate_segment() override
-    {
-        sys::unlink("testds/2007/07-07.grib/000001.grib");
-    }
     void swap_data() override
     {
         MaintenanceTest::rename("testds/2007/07-07.grib/000000.grib", "testds/2007/07-07.grib/tmp.grib");
@@ -505,6 +496,11 @@ void MaintenanceTest::make_hole_end()
 void MaintenanceTest::corrupt_first()
 {
     fixture->makeSegmentedChecker()->test_corrupt_data("2007/07-07.grib", 0);
+}
+
+void MaintenanceTest::truncate_segment()
+{
+    fixture->makeSegmentedChecker()->test_truncate_data("2007/07-07.grib", 1);
 }
 
 void MaintenanceTest::deindex()

@@ -6,6 +6,8 @@
 #include "arki/exceptions.h"
 #include "arki/scan/any.h"
 #include "arki/metadata/collection.h"
+#include "arki/metadata.h"
+#include "arki/types/source/blob.h"
 #include "arki/utils.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -24,6 +26,12 @@ Segment::Segment(const std::string& relname, const std::string& absname)
 Segment::~Segment()
 {
     if (payload) delete payload;
+}
+
+void Segment::test_truncate(const metadata::Collection& mds, unsigned data_idx)
+{
+    const auto& s = mds[data_idx].sourceBlob();
+    truncate(s.offset);
 }
 
 

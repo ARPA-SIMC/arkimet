@@ -294,6 +294,13 @@ void IndexedChecker::test_corrupt_data(const std::string& relpath, unsigned data
     segment_manager().get_segment(relpath)->test_corrupt(mds, data_idx);
 }
 
+void IndexedChecker::test_truncate_data(const std::string& relpath, unsigned data_idx)
+{
+    metadata::Collection mds;
+    m_idx->query_segment(relpath, mds.inserter_func());
+    segment_manager().get_segment(relpath)->test_truncate(mds, data_idx);
+}
+
 void IndexedChecker::test_deindex(const std::string& relpath)
 {
     m_idx->test_deindex(relpath);

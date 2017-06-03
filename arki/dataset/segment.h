@@ -351,6 +351,11 @@ public:
      * with the value 0.
      */
     virtual void test_corrupt(const metadata::Collection& mds, unsigned data_idx) = 0;
+
+    /**
+     * Truncate the data at position `data_idx`
+     */
+    virtual void test_truncate(const metadata::Collection& mds, unsigned data_idx);
 };
 
 }
