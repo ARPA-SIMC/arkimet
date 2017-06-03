@@ -4,6 +4,7 @@
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/segmented.h"
 #include "arki/dataset/reporter.h"
+#include "arki/dataset/time.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
@@ -23,6 +24,8 @@ using namespace arki::types;
 using namespace arki::dataset;
 using namespace arki::utils;
 using arki::core::Time;
+
+static const time_t t20070707 = 1183766400;
 
 namespace arki {
 namespace dataset {
@@ -111,6 +114,53 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
         wassert(actual(state.size()) == 3u);
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_NEW));
     });
+
+    tc.add_method("check_archive_age", R"(
+        - find segments that can only contain data older than `archive age` days [archive_age]
+    )", [&](Fixture& f) {
+        f.cfg.setValue("archive age", "1");
+        f.test_reread_config();
+
+        {
+            auto o = SessionTime::local_override(t20070707 + 2 * 86400 - 1);
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_OK));
+        }
+
+        {
+            auto o = SessionTime::local_override(t20070707 + 2 * 86400);
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_ARCHIVE_AGE));
+        }
+    });
+
+    tc.add_method("check_delete_age", R"(
+        - find segments that can only contain data older than `delete age` days [delete_age]
+    )", [&](Fixture& f) {
+        f.cfg.setValue("delete age", "1");
+        f.test_reread_config();
+
+        {
+            auto o = SessionTime::local_override(t20070707 + 2 * 86400 - 1);
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_OK));
+        }
+
+        {
+            auto o = SessionTime::local_override(t20070707 + 2 * 86400);
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DELETE_AGE));
+        }
+    });
+
 
     // Optional thorough check
     tc.add_method("tcheck_corrupted_data", R"(
@@ -248,8 +298,47 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
 
         wassert(actual(writer.get()).maintenance_clean(2));
     });
-    // TODO: files older than delete age are removed
-    // TODO: files older than archive age are moved to last/
+
+    tc.add_method("repack_archive_age", R"(
+        - [archive age] segments are repacked if needed, then moved to .archive/last
+    )", [&](Fixture& f) {
+        tc.make_hole_middle();
+        f.cfg.setValue("archive age", "1");
+        f.test_reread_config();
+
+        {
+            auto o = SessionTime::local_override(t20070707 + 2 * 86400);
+
+            auto writer(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "2 files ok");
+            e.repacked.emplace_back("testds", "2007/07-07.grib");
+            e.archived.emplace_back("testds", "2007/07-07.grib");
+            wassert(actual(writer.get()).repack(e, true));
+
+            wassert(actual(writer.get()).maintenance_clean(2));
+        }
+    });
+
+    tc.add_method("repack_archive_age", R"(
+        - [delete age] segments are deleted
+    )", [&](Fixture& f) {
+        tc.make_hole_middle();
+        f.cfg.setValue("delete age", "1");
+        f.test_reread_config();
+
+        {
+            auto o = SessionTime::local_override(t20070707 + 2 * 86400);
+
+            auto writer(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "2 files ok");
+            e.deleted.emplace_back("testds", "2007/07-07.grib");
+            wassert(actual(writer.get()).repack(e, true));
+
+            wassert(actual(writer.get()).maintenance_clean(2));
+        }
+    });
 #if 0
 void RealRepacker::operator()(const std::string& relpath, segment::State state)
 {
