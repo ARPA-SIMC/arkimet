@@ -235,6 +235,48 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
         wassert(actual(writer.get()).maintenance_clean(2));
     });
 
+    tc.add_method("fix_archive_age", R"(
+        - [archive age] segments are not touched
+    )", [&](Fixture& f) {
+        f.cfg.setValue("archive age", "1");
+        f.test_reread_config();
+
+        {
+            auto o = SessionTime::local_override(t20070707 + 2 * 86400);
+
+            auto writer(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "check", "2 files ok");
+            wassert(actual(writer.get()).check(e, true));
+
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_ARCHIVE_AGE));
+        }
+    });
+
+    tc.add_method("fix_delete_age", R"(
+        - [delete age] segments are not touched
+    )", [&](Fixture& f) {
+        f.cfg.setValue("delete age", "1");
+        f.test_reread_config();
+
+        {
+            auto o = SessionTime::local_override(t20070707 + 2 * 86400);
+
+            auto writer(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "check", "2 files ok");
+            wassert(actual(writer.get()).check(e, true));
+
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DELETE_AGE));
+        }
+    });
+
     // Repack
     tc.add_method("repack_new", R"(
         - [new] segments are deleted
@@ -320,7 +362,7 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
         }
     });
 
-    tc.add_method("repack_archive_age", R"(
+    tc.add_method("repack_delete_age", R"(
         - [delete age] segments are deleted
     )", [&](Fixture& f) {
         tc.make_hole_middle();
