@@ -295,13 +295,17 @@ State Segment::check(dataset::Reporter& reporter, const std::string& ds, const m
         return SEGMENT_UNALIGNED;
 
     // List the dir elements we know about
-    set<size_t> expected;
+    map<size_t, size_t> expected;
     sys::Path dir(absname);
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
         if (!i.isreg()) continue;
         if (!str::endswith(i->d_name, format)) continue;
-        expected.insert((size_t)strtoul(i->d_name, 0, 10));
+        struct stat st;
+        i.path->fstatat(i->d_name, st);
+        expected.insert(make_pair(
+                    (size_t)strtoul(i->d_name, 0, 10),
+                    st.st_size));
     }
 
     // Check the list of elements we expect for sort order, gaps, and match
@@ -325,23 +329,32 @@ State Segment::check(dataset::Reporter& reporter, const std::string& ds, const m
         if (source.offset != next_sequence_expected)
             out_of_order = true;
 
-        set<size_t>::const_iterator ei = expected.find(source.offset);
+        auto ei = expected.find(source.offset);
         if (ei == expected.end())
         {
             stringstream ss;
             ss << "expected file " << source.offset << " not found in the file system";
             reporter.segment_info(ds, relname, ss.str());
             return SEGMENT_UNALIGNED;
-        } else
+        } else {
+            if (source.size != ei->second)
+            {
+                stringstream ss;
+                ss << "expected file " << source.offset << " has size " << ei->second << " instead of expected " << source.size;
+                reporter.segment_info(ds, relname, ss.str());
+                return SEGMENT_CORRUPTED;
+            }
             expected.erase(ei);
+        }
 
         ++next_sequence_expected;
     }
 
     State res = SEGMENT_OK;
 
-    for (const auto& idx: expected)
+    for (const auto& ei: expected)
     {
+        auto idx = ei.first;
         if (validator)
         {
             string fname = str::joinpath(absname, seqfile.data_fname(idx, format));
