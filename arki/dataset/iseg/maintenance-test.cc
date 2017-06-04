@@ -21,7 +21,7 @@ class Tests : public MaintenanceTest
 
     void require_rescan() override
     {
-        throw std::runtime_error("require_rescan not yet implemented for iseg");
+        touch("testds/2007/07-07.grib.index", 1496167200);
     }
 
     void register_tests() override;
