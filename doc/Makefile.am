@@ -52,7 +52,7 @@ CLEANFILES += arkiguide.it.html
 
 endif
 
-BUILT_SOURCES = ds-simple.md ds-ondisk2.md seg-concat.md seg-dir.md testdoc.json
+BUILT_SOURCES = ds-simple.md ds-ondisk2.md seg-concat.md seg-dir.md
 
 EXTRA_DIST = update \
 			 datasets.md ds-archive.md \
@@ -60,8 +60,5 @@ EXTRA_DIST = update \
 			 segments.md seg-concat.md seg-dir.md \
 			 $(BUILT_SOURCES)
 
-testdoc.json:
-	$(srcdir)/update --dstdir $(srcdir) --testdoc $(top_builddir)/arki/tests/arki-test
-
-%.md: %.md.j2 testdoc.json
-	$(srcdir)/update $<
+%.md: %.md.j2 $(top_builddir)/arki/tests/arki-test
+	$(srcdir)/update --srcdir=$(srcdir) --dstdir=$(builddir) --testsuite=$(top_builddir)/arki/tests/arki-test $<

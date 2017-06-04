@@ -12,16 +12,12 @@ import logging
 log = logging.getLogger("main")
 
 class Renderer:
-    def __init__(self, srcdir, dstdir):
+    def __init__(self, srcdir, dstdir, testsuite):
         self.srcdir = srcdir
         self.dstdir = dstdir
-        self.testdoc_file = os.path.join(self.srcdir, "testdoc.json")
-
-        try:
-            with open(self.testdoc_file, "rt") as fd:
-                self.testdoc_data = json.load(fd)
-        except FileNotFoundError:
-            self.testdoc_data = []
+        self.testsuite = testsuite
+        self.testdoc_data = []
+        self.read_testsuite()
 
         # Jinja2 template engine
         from jinja2 import Environment, FileSystemLoader
@@ -34,6 +30,17 @@ class Renderer:
             trim_blocks=True,
         )
         self.jinja2.globals["testdoc"] = self.testdoc
+
+    def read_testsuite(self):
+        if not self.testsuite: return
+
+        stdout = subprocess.check_output([self.testsuite, "--doc"], universal_newlines=True)
+        new_data = json.loads(stdout)
+
+        for d in new_data:
+            d["doc"] = cleandoc(d["doc"])
+
+        self.testdoc_data = new_data
 
     def testdoc(self, pattern):
         import fnmatch
@@ -55,20 +62,6 @@ class Renderer:
             fd.write(rendered)
         log.info("rendered %s to %s", fname, dst)
 
-    def update_testdoc(self, testcmd):
-        stdout = subprocess.check_output([testcmd, "--doc"], universal_newlines=True)
-        new_data = json.loads(stdout)
-
-        for d in new_data:
-            d["doc"] = cleandoc(d["doc"])
-
-        if self.testdoc_data == new_data:
-            return
-
-        self.testdoc_data = new_data
-        with open(self.testdoc_file, "wt") as fd:
-            json.dump(self.testdoc_data, fd, sort_keys=True, indent=1)
-
 
 def main():
     parser = argparse.ArgumentParser(description="render arkimet documentation templates")
@@ -81,7 +74,7 @@ def main():
     parser.add_argument(
         "--dstdir", action="store", help="destination directory (default, same as update script)")
     parser.add_argument(
-        "--testdoc", action="store", help="update testdoc.json file")
+        "--testsuite", action="store", help="pathname to the executable wobble testsuite to load documentation from")
     parser.add_argument(
         "src", nargs="?", help="file to render (default: all files in doc directory)")
 
@@ -103,11 +96,9 @@ def main():
     log.debug("source dir: %s", srcdir)
     log.debug("destination dir: %s", dstdir)
 
-    renderer = Renderer(srcdir, dstdir)
+    renderer = Renderer(srcdir, dstdir, args.testsuite)
 
-    if args.testdoc:
-        renderer.update_testdoc(args.testdoc)
-    elif args.src:
+    if args.src:
         renderer.render(args.src)
     else:
         for root, dirs, files in os.walk("."):
