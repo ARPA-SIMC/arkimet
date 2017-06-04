@@ -37,7 +37,7 @@ instead of recomputing them for all data queried.
 - data must start at the beginning of the segment [dirty]
 - there must be no gaps between data in the segment [dirty]
 - data must end at the end of the segment [dirty]
-- find data files now known by the index [new]
+- find data files not known by the index [new]
 - find segments that can only contain data older than `archive age` days [archive_age]
 - find segments that can only contain data older than `delete age` days [delete_age]
 - the span of reference times in each segment must fit inside the interval
@@ -91,7 +91,7 @@ instead of recomputing them for all data queried.
 - data must start at the beginning of the segment [dirty]
 - there must be no gaps between data in the segment [dirty]
 - data must end at the end of the segment [dirty]
-- find data files now known by the index [new]
+- find data files not known by the index [new]
 - find segments that can only contain data older than `archive age` days [archive_age]
 - find segments that can only contain data older than `delete age` days [delete_age]
 - the span of reference times in each segment must fit inside the interval

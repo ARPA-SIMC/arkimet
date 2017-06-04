@@ -105,7 +105,7 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
     });
 
     tc.add_method("check_new", R"(
-        - find data files now known by the index [new]
+        - find data files not known by the index [new]
     )", [&](Fixture& f) {
         tc.deindex();
 
