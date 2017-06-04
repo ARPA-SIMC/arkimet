@@ -1223,14 +1223,21 @@ void WContents::test_make_hole(const std::string& relname, unsigned data_idx)
 {
     // Get the minimum offset to move
     uint64_t offset = 0;
+    bool has_min_offset = false;
     {
         Query query("test_make_hole_get_ofs", m_db);
         query.compile("SELECT offset FROM md WHERE file=? ORDER BY offset LIMIT ?, 1");
         query.bind(1, relname);
         query.bind(2, data_idx);
         while (query.step())
+        {
             offset = query.fetch<uint64_t>(0);
+            has_min_offset = true;
+        }
     }
+
+    if (!has_min_offset)
+        return;
 
     // Move all offsets >= of the first one back by 1
     Query query("test_make_hole", m_db);
