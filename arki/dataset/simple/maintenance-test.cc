@@ -21,14 +21,6 @@ class Tests : public MaintenanceTest
 {
     using MaintenanceTest::MaintenanceTest;
 
-    void swap_data() override
-    {
-        metadata::Collection mds;
-        mds.read_from_file("testds/2007/07-07.grib.metadata");
-        std::swap(mds[0], mds[1]);
-        mds.writeAtomically("testds/2007/07-07.grib.metadata");
-    }
-
     void require_rescan() override
     {
         touch("testds/2007/07-07.grib.metadata", 1496167200);

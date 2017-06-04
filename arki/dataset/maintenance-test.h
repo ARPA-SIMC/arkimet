@@ -26,11 +26,6 @@ struct SegmentTests
 {
     virtual ~SegmentTests();
 
-    /**
-     * Swap the two data in 2007/07-07.grib
-     */
-    virtual void swap_data() = 0;
-
     virtual void register_tests(MaintenanceTest& tc);
 };
 
@@ -81,10 +76,8 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
     /// Truncate segment 2007/07-07.grib
     void truncate_segment();
 
-    /**
-     * Swap the two data in 2007/07-07.grib
-     */
-    virtual void swap_data() = 0;
+    /// Swap the two data in 2007/07-07.grib
+    void swap_data();
 
     /// Remove 2007/07-07.grib from index
     void deindex();

@@ -21,11 +21,6 @@ class Tests : public MaintenanceTest
 {
     using MaintenanceTest::MaintenanceTest;
 
-    void swap_data() override
-    {
-        throw std::runtime_error("swap_data not yet implemented for ondisk2");
-    }
-
     void require_rescan() override
     {
         throw std::runtime_error("require_rescan not yet implemented for ondisk2");

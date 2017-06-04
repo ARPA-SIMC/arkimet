@@ -387,17 +387,6 @@ namespace {
 
 struct SegmentConcatTests : public SegmentTests
 {
-    void swap_data() override
-    {
-        sys::File df("testds/2007/07-07.grib", O_RDWR);
-        char first[34960];
-        char second[34960];
-        df.read_all_or_throw(first, 34960);
-        df.read_all_or_throw(second, 34960);
-        df.lseek(0);
-        df.write_all_or_throw(second, 34960);
-        df.write_all_or_throw(first, 34960);
-    }
     void register_tests(MaintenanceTest& tc) override;
 };
 
@@ -422,12 +411,6 @@ void SegmentConcatTests::register_tests(MaintenanceTest& tc)
 
 struct SegmentDirTests : public SegmentTests
 {
-    void swap_data() override
-    {
-        MaintenanceTest::rename("testds/2007/07-07.grib/000000.grib", "testds/2007/07-07.grib/tmp.grib");
-        MaintenanceTest::rename("testds/2007/07-07.grib/000001.grib", "testds/2007/07-07.grib/000000.grib");
-        MaintenanceTest::rename("testds/2007/07-07.grib/tmp.grib", "testds/2007/07-07.grib/000001.grib");
-    }
     void register_tests(MaintenanceTest& tc) override;
 };
 
@@ -501,6 +484,11 @@ void MaintenanceTest::corrupt_first()
 void MaintenanceTest::truncate_segment()
 {
     fixture->makeSegmentedChecker()->test_truncate_data("2007/07-07.grib", 1);
+}
+
+void MaintenanceTest::swap_data()
+{
+    fixture->makeSegmentedChecker()->test_swap_data("2007/07-07.grib", 0, 1);
 }
 
 void MaintenanceTest::deindex()
