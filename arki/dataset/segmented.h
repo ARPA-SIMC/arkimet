@@ -181,6 +181,16 @@ public:
     virtual size_t repackSegment(const std::string& relpath, unsigned test_flags=0) = 0;
 
     /**
+     * Rewrite the segment so that the data has the same order as `mds`.
+     *
+     * In the resulting file, there are no holes between data.
+     *
+     * @returns The size difference between the initial segment size and the
+     * final segment size.
+     */
+    virtual size_t reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags=0) = 0;
+
+    /**
      * Remove the file from the dataset
      *
      * @returns The number of bytes freed on disk with this operation
@@ -247,6 +257,14 @@ public:
      * This is used to simulate anomalies in the dataset during tests.
      */
     virtual void test_truncate_data(const std::string& relpath, unsigned data_idx=0) = 0;
+
+    /**
+     * Swap the data in the segment at position `d1_idx` with the one at
+     * position `d2_idx`.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx) = 0;
 
     /**
      * Remove the segment from the index.

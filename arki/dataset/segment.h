@@ -324,6 +324,12 @@ public:
     virtual segment::State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
     virtual void truncate(size_t offset) = 0;
+
+    /**
+     * Rewrite this segment so that the data are in the same order as in `mds`.
+     *
+     * `rootdir` is the directory to use as root for the Blob sources in `mds`.
+     */
     virtual Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) = 0;
 
     virtual void validate(Metadata& md, const scan::Validator& v) = 0;

@@ -645,6 +645,26 @@ size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
 
     metadata::Collection mds;
     idx.scan(mds.inserter_func(), "reftime, offset");
+
+    return reorder_segment_backend(idx, p, relpath, mds, test_flags);
+}
+
+size_t Checker::reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags)
+{
+    WIndex idx(m_config, relpath);
+
+    // Lock away writes and reads
+    Pending p = idx.begin_exclusive_transaction();
+
+    return reorder_segment_backend(idx, p, relpath, mds, test_flags);
+}
+
+size_t Checker::reorder_segment_backend(WIndex& idx, Pending& p, const std::string& relpath, metadata::Collection& mds, unsigned test_flags)
+{
+    // Make a copy of the file with the right data in it, sorted by
+    // reftime, and update the offsets in the index
+    string pathname = str::joinpath(config().path, relpath);
+
     Pending p_repack = segment_manager().repack(relpath, mds, test_flags);
 
     // Reindex mds
@@ -723,6 +743,15 @@ void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
 void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
 {
     throw std::runtime_error("test_truncate_data not yet implemented for iseg");
+}
+
+void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
+{
+    metadata::Collection mds;
+    WIndex idx(m_config, relpath);
+    idx.scan(mds.inserter_func(), "offset");
+    std::swap(mds[d1_idx], mds[d2_idx]);
+    reorder_segment(relpath, mds);
 }
 
 void Checker::test_deindex(const std::string& relpath)

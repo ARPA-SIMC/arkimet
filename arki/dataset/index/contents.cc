@@ -295,14 +295,14 @@ void Contents::scan_files(segment::contents_func v)
         v(last_file, SEGMENT_OK, mdc);
 }
 
-void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& orderBy) const
+void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& order_by) const
 {
     string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
     if (m_uniques) query += ", m.uniq";
     if (m_others) query += ", m.other";
     if (config().smallfiles) query += ", m.data";
     query += " FROM md AS m";
-    query += " WHERE m.file=? ORDER BY " + orderBy;
+    query += " WHERE m.file=? ORDER BY " + order_by;
 
     Query mdq("scan_file_md", m_db);
     mdq.compile(query);

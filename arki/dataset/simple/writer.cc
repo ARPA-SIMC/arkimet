@@ -196,17 +196,24 @@ size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
     string pathname = str::joinpath(config().path, relpath);
 
     // Read the metadata
-    metadata::Collection mdc;
-    scan::scan(pathname, mdc.inserter_func());
+    metadata::Collection mds;
+    scan::scan(pathname, mds.inserter_func());
 
     // Sort by reference time
-    mdc.sort();
+    mds.sort();
+
+    return reorder_segment(relpath, mds, test_flags);
+}
+
+size_t Checker::reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags)
+{
+    string pathname = str::joinpath(config().path, relpath);
 
     // Write out the data with the new order
-    Pending p_repack = segment_manager().repack(relpath, mdc, test_flags);
+    Pending p_repack = segment_manager().repack(relpath, mds, test_flags);
 
     // Strip paths from mds sources
-    mdc.strip_source_paths();
+    mds.strip_source_paths();
 
     // Prevent reading the still open old file using the new offsets
     Metadata::flushDataReaders();
@@ -222,12 +229,12 @@ size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
     size_t size_post = sys::isdir(pathname) ? 0 : sys::size(pathname);
 
     // Write out the new metadata
-    mdc.writeAtomically(pathname + ".metadata");
+    mds.writeAtomically(pathname + ".metadata");
 
     // Regenerate the summary. It is unchanged, really, but its timestamp
     // has become obsolete by now
     Summary sum;
-    mdc.add_to_summary(sum);
+    mds.add_to_summary(sum);
     sum.writeAtomically(pathname + ".summary");
 
     // Reindex with the new file information

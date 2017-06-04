@@ -374,6 +374,14 @@ size_t Checker<Config>::repackSegment(const std::string& relpath, unsigned test_
 }
 
 template<typename Config>
+size_t Checker<Config>::reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).reorder_segment(relpath.substr(pos + 1), mds, test_flags);
+}
+
+template<typename Config>
 size_t Checker<Config>::removeSegment(const std::string& relpath, bool withData)
 {
     size_t pos = relpath.find('/');
@@ -438,6 +446,15 @@ void Checker<Config>::test_deindex(const std::string& relpath)
     if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
     return shard(relpath.substr(0, pos)).test_corrupt_data(relpath.substr(pos + 1));
 }
+
+template<typename Config>
+void Checker<Config>::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).test_swap_data(relpath.substr(pos + 1), d1_idx, d2_idx);
+}
+
 
 template class Config<dataset::IndexedConfig>;
 template class Reader<simple::Config>;

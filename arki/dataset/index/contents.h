@@ -147,7 +147,7 @@ public:
     /**
      * Send the metadata of all data items inside a file to the given consumer
      */
-    void scan_file(const std::string& relname, metadata_dest_func consumer, const std::string& orderBy = "offset") const;
+    void scan_file(const std::string& relname, metadata_dest_func consumer, const std::string& order_by="offset") const;
 
     bool segment_timespan(const std::string& relname, core::Time& start_time, core::Time& end_time) const override;
 

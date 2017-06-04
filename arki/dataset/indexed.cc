@@ -301,6 +301,15 @@ void IndexedChecker::test_truncate_data(const std::string& relpath, unsigned dat
     segment_manager().get_segment(relpath)->test_truncate(mds, data_idx);
 }
 
+void IndexedChecker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
+{
+    metadata::Collection mds;
+    m_idx->query_segment(relpath, mds.inserter_func());
+    std::swap(mds[d1_idx], mds[d2_idx]);
+
+    reorder_segment(relpath, mds);
+}
+
 void IndexedChecker::test_deindex(const std::string& relpath)
 {
     m_idx->test_deindex(relpath);
