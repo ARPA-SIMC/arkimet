@@ -248,20 +248,66 @@ unique_ptr<types::Type> Query::fetchType(int column)
 
 bool Query::step()
 {
-	int rc = sqlite3_step(m_stm);
-	switch (rc)
-	{
-		case SQLITE_DONE:
-			return false;
-		case SQLITE_ROW:
-			return true;
-		default:
-			sqlite3_reset(m_stm);
-			m_db.throwException("executing " + name + " query");
-	}
-	// Not reached, but makes gcc happy
-	return false;
+    int rc = sqlite3_step(m_stm);
+    switch (rc)
+    {
+        case SQLITE_DONE:
+            return false;
+        case SQLITE_ROW:
+            return true;
+        default:
+            sqlite3_reset(m_stm);
+            m_db.throwException("cannot execute " + name + " query");
+    }
+    // Not reached, but makes gcc happy
+    return false;
 }
+
+void Query::execute()
+{
+    while (true)
+    {
+        switch (sqlite3_step(m_stm))
+        {
+            case SQLITE_ROW:
+            case SQLITE_DONE:
+                reset();
+                return;
+            case SQLITE_BUSY:
+            case SQLITE_MISUSE:
+            default:
+                sqlite3_reset(m_stm);
+                m_db.throwException("cannot execute " + name + " query");
+        }
+    }
+}
+
+void Query::execute(std::function<void()> on_row)
+{
+    while (true)
+    {
+        switch (sqlite3_step(m_stm))
+        {
+            case SQLITE_ROW:
+                try {
+                    on_row();
+                } catch (...) {
+                    sqlite3_reset(m_stm);
+                    throw;
+                }
+                break;
+            case SQLITE_DONE:
+                reset();
+                return;
+            case SQLITE_BUSY:
+            case SQLITE_MISUSE:
+            default:
+                sqlite3_reset(m_stm);
+                m_db.throwException("cannot execute " + name + " query");
+        }
+    }
+}
+
 
 void OneShotQuery::initQueries()
 {

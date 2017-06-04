@@ -206,6 +206,46 @@ public:
 		return sqlite3_column_bytes(m_stm, column);
 	}
     std::unique_ptr<types::Type> fetchType(int column);
+
+    /// Run the query, ignoring all results
+    void execute();
+
+    /**
+     * Run the query, calling on_row for every row in the result.
+     *
+     * At the end of the function, the statement is reset, even in case an
+     * exception is thrown.
+     */
+    void execute(std::function<void()> on_row);
+
+    /**
+     * Bind all the arguments in a single invocation.
+     *
+     * Note that the parameter positions are used as bind column numbers, so
+     * calling this function twice will re-bind columns instead of adding new
+     * ones.
+     */
+    template<typename... Args> void bind_all(const Args& ...args)
+    {
+        bindn<sizeof...(args)>(args...);
+    }
+
+    /// bind_all and execute
+    template<typename... Args> void run(const Args& ...args)
+    {
+        bindn<sizeof...(args)>(args...);
+        execute();
+    }
+
+private:
+    // Implementation of variadic bind: terminating condition
+    template<size_t total> void bindn() {}
+    // Implementation of variadic bind: recursive iteration over the parameter pack
+    template<size_t total, typename ...Args, typename T> void bindn(const T& first, const Args& ...args)
+    {
+        bind(total - sizeof...(args), first);
+        bindn<total>(args...);
+    }
 };
 
 /**
