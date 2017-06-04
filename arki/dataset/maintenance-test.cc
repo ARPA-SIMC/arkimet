@@ -161,6 +161,21 @@ void SegmentTests::register_tests(MaintenanceTest& tc)
         }
     });
 
+    tc.add_method("check_metadata_reftimes_must_fit_segment", R"(
+    - the span of reference times in each segment must fit inside the interval
+      implied by the segment file name (FIXME: should this be disabled for
+      archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
+    )", [&](Fixture& f) {
+        Metadata md = f.import_results[0];
+        md.set("reftime", "2007-07-06 00:00:00");
+        tc.checker()->test_change_metadata("2007/07-07.grib", md, 0);
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
+    });
+
     tc.add_method("check_segment_name_must_fit_step", R"(
     - the segment name must represent an interval matching the dataset step
       (FIXME: should this be disabled for archives, to deal with datasets that had

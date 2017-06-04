@@ -281,6 +281,16 @@ void Checker::test_rename(const std::string& relpath, const std::string& new_rel
     sys::rename(abspath + ".summary", new_abspath + ".summary");
 }
 
+void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
+{
+    string md_pathname = str::joinpath(config().path, relpath) + ".metadata";
+    metadata::Collection mds;
+    mds.read_from_file(md_pathname);
+    md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
+    mds[data_idx] = md;
+    mds.writeAtomically(md_pathname);
+}
+
 std::string ShardingChecker::type() const { return "simple"; }
 
 }

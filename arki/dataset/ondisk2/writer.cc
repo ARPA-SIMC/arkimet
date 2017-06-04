@@ -404,10 +404,6 @@ void Checker::rescanSegment(const std::string& relpath)
 
 size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
 {
-    // Make a copy of the file with the right data in it, sorted by
-    // reftime, and update the offsets in the index
-    string pathname = str::joinpath(config().path, relpath);
-
     metadata::Collection mds;
     idx->scan_file(relpath, mds.inserter_func(), "reftime, offset");
 
@@ -519,6 +515,24 @@ size_t Checker::vacuum()
     }
 
     return size_pre > size_post ? size_pre - size_post : 0;
+}
+
+void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
+{
+    metadata::Collection mds;
+    idx->scan_file(relpath, mds.inserter_func(), "reftime, offset");
+    md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
+    mds[data_idx] = md;
+
+    // Reindex mds
+    idx->reset(relpath);
+    for (auto& m: mds)
+    {
+        const source::Blob& source = m->sourceBlob();
+        idx->index(*m, source.filename, source.offset);
+    }
+
+    md = mds[data_idx];
 }
 
 Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)

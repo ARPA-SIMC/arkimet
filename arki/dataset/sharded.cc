@@ -468,6 +468,14 @@ void Checker<Config>::test_rename(const std::string& relpath, const std::string&
     return shard(relpath.substr(0, pos)).test_rename(relpath.substr(pos + 1), new_relpath.substr(pos + 1));
 }
 
+template<typename Config>
+void Checker<Config>::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).test_change_metadata(relpath.substr(pos + 1), md, data_idx);
+}
+
 
 template class Config<dataset::IndexedConfig>;
 template class Reader<simple::Config>;

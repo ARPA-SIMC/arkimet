@@ -274,6 +274,16 @@ public:
     virtual void test_rename(const std::string& relpath, const std::string& new_relpath) = 0;
 
     /**
+     * Replace the metadata for the data in the segment at position `data_idx`.
+     *
+     * The source of the metadata will be preserved. md will be updated to
+     * point to the final metadata.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx=0) = 0;
+
+    /**
      * Remove the segment from the index.
      *
      * This is used to simulate anomalies in the dataset during tests.

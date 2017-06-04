@@ -99,23 +99,6 @@ void Tests::register_tests()
         wassert(actual(state.size()) == 3u);
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
     });
-
-    add_method("check_metadata_reftimes_must_fit_segment", R"(
-    - the span of reference times in each segment must fit inside the interval
-      implied by the segment file name (FIXME: should this be disabled for
-      archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
-    )", [&](Fixture& f) {
-        metadata::Collection mds;
-        mds.read_from_file("testds/2007/07-07.grib.metadata");
-        wassert(actual(mds.size()) == 2u);
-        mds[0].set("reftime", "2007-07-06 00:00:00");
-        mds.writeAtomically("testds/2007/07-07.grib.metadata");
-
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
-    });
 }
 
 Tests test_simple_plain("arki_dataset_simple_maintenance_plain", MaintenanceTest::SEGMENT_CONCAT, "type=simple\nindex_type=plain\n");

@@ -84,6 +84,7 @@ public:
     size_t vacuum() override;
     void test_deindex(const std::string& relpath) override;
     void test_rename(const std::string& relpath, const std::string& new_relpath) override;
+    void test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx) override;
 };
 
 class ShardingChecker : public sharded::Checker<simple::Config>

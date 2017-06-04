@@ -759,6 +759,11 @@ void Checker::test_rename(const std::string& relpath, const std::string& new_rel
     throw std::runtime_error("test_rename not yet implemented for iseg");
 }
 
+void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
+{
+    throw std::runtime_error("test_change_metadata not yet implemented for iseg");
+}
+
 void Checker::test_deindex(const std::string& relpath)
 {
     throw std::runtime_error("test_corrupt_data not yet implemented for iseg");

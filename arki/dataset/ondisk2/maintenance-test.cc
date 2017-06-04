@@ -32,25 +32,6 @@ class Tests : public MaintenanceTest
 void Tests::register_tests()
 {
     MaintenanceTest::register_tests();
-
-#if 0
-    add_method("check_metadata_reftimes_must_fit_segment", R"(
-    - the span of reference times in each segment must fit inside the interval
-      implied by the segment file name (FIXME: should this be disabled for
-      archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
-    )", [&](Fixture& f) {
-        metadata::Collection mds;
-        mds.read_from_file("testds/2007/07-07.grib.metadata");
-        wassert(actual(mds.size()) == 2u);
-        mds[0].set("reftime", "2007-07-06 00:00:00");
-        mds.writeAtomically("testds/2007/07-07.grib.metadata");
-
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
-    });
-#endif
 }
 
 Tests test_ondisk2_plain("arki_dataset_ondisk2_maintenance", MaintenanceTest::SEGMENT_CONCAT, "type=ondisk2\n");

@@ -87,6 +87,7 @@ public:
     size_t removeSegment(const std::string& relpath, bool withData=false) override;
     void releaseSegment(const std::string& relpath, const std::string& destpath) override;
     size_t vacuum() override;
+    void test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx) override;
 
     friend class writer::RealRepacker;
     friend class writer::RealFixer;
