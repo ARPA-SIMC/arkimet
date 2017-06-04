@@ -271,6 +271,16 @@ void Checker::test_deindex(const std::string& relpath)
     sys::unlink_ifexists(pathname + ".summary");
 }
 
+void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)
+{
+    IndexedChecker::test_rename(relpath, new_relpath);
+    string abspath = str::joinpath(config().path, relpath);
+    string new_abspath = str::joinpath(config().path, new_relpath);
+
+    sys::rename(abspath + ".metadata", new_abspath + ".metadata");
+    sys::rename(abspath + ".summary", new_abspath + ".summary");
+}
+
 std::string ShardingChecker::type() const { return "simple"; }
 
 }

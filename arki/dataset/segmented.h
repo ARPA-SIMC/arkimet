@@ -267,6 +267,13 @@ public:
     virtual void test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx) = 0;
 
     /**
+     * Rename the segment, leaving its contents unchanged.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_rename(const std::string& relpath, const std::string& new_relpath) = 0;
+
+    /**
      * Remove the segment from the index.
      *
      * This is used to simulate anomalies in the dataset during tests.

@@ -84,6 +84,7 @@ public:
     void test_corrupt_data(const std::string& relpath, unsigned data_idx=0) override;
     void test_truncate_data(const std::string& relpath, unsigned data_idx=0) override;
     void test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx) override;
+    void test_rename(const std::string& relpath, const std::string& new_relpath) override;
     void test_deindex(const std::string& relpath) override;
 };
 

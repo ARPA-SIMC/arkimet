@@ -455,6 +455,19 @@ void Checker<Config>::test_swap_data(const std::string& relpath, unsigned d1_idx
     return shard(relpath.substr(0, pos)).test_swap_data(relpath.substr(pos + 1), d1_idx, d2_idx);
 }
 
+template<typename Config>
+void Checker<Config>::test_rename(const std::string& relpath, const std::string& new_relpath)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    size_t new_pos = relpath.find('/');
+    if (new_pos == string::npos) throw std::runtime_error("path " + new_relpath + " does not contain a /");
+    if (relpath.substr(0, pos) != new_relpath.substr(0, pos))
+        throw std::runtime_error("path " + relpath + " and " + new_relpath + " point to different shards");
+
+    return shard(relpath.substr(0, pos)).test_rename(relpath.substr(pos + 1), new_relpath.substr(pos + 1));
+}
+
 
 template class Config<dataset::IndexedConfig>;
 template class Reader<simple::Config>;

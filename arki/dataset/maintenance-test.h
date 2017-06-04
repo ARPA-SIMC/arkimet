@@ -48,6 +48,8 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
     }
     virtual ~MaintenanceTest();
 
+    std::unique_ptr<dataset::segmented::Checker> checker() { return fixture->makeSegmentedChecker(); }
+
     void init_segment_tests();
 
     /**

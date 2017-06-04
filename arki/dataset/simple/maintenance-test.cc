@@ -116,26 +116,6 @@ void Tests::register_tests()
         wassert(actual(state.size()) == 3u);
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
     });
-
-    add_method("check_segment_name_must_fit_step", R"(
-    - the segment name must represent an interval matching the dataset step
-      (FIXME: should this be disabled for archives, to deal with datasets that had
-      a change of step in their lifetime?) [corrupted]
-    )", [&](Fixture& f) {
-        {
-            auto w = f.makeSimpleWriter();
-            auto& i = w->test_get_index();
-            i.test_rename("2007/07-07.grib", "2007/07.grib");
-        }
-        this->rename("testds/2007/07-07.grib", "testds/2007/07.grib");
-        this->rename("testds/2007/07-07.grib.metadata", "testds/2007/07.grib.metadata");
-        this->rename("testds/2007/07-07.grib.summary", "testds/2007/07.grib.summary");
-
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07.grib").state) == segment::State(SEGMENT_CORRUPTED));
-    });
 }
 
 Tests test_simple_plain("arki_dataset_simple_maintenance_plain", MaintenanceTest::SEGMENT_CONCAT, "type=simple\nindex_type=plain\n");

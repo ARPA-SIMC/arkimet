@@ -754,6 +754,11 @@ void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsign
     reorder_segment(relpath, mds);
 }
 
+void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)
+{
+    throw std::runtime_error("test_rename not yet implemented for iseg");
+}
+
 void Checker::test_deindex(const std::string& relpath)
 {
     throw std::runtime_error("test_corrupt_data not yet implemented for iseg");

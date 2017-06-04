@@ -310,6 +310,12 @@ void IndexedChecker::test_swap_data(const std::string& relpath, unsigned d1_idx,
     reorder_segment(relpath, mds);
 }
 
+void IndexedChecker::test_rename(const std::string& relpath, const std::string& new_relpath)
+{
+    m_idx->test_rename(relpath, new_relpath);
+    sys::rename(str::joinpath(config().path, relpath), str::joinpath(config().path, new_relpath));
+}
+
 void IndexedChecker::test_deindex(const std::string& relpath)
 {
     m_idx->test_deindex(relpath);

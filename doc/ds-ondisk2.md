@@ -32,6 +32,9 @@ indices for the metadata listed in the `index` configuration value.
 - find data files now known by the index [new]
 - find segments that can only contain data older than `archive age` days [archive_age]
 - find segments that can only contain data older than `delete age` days [delete_age]
+- the segment name must represent an interval matching the dataset step
+  (FIXME: should this be disabled for archives, to deal with datasets that had
+  a change of step in their lifetime?) [corrupted]
 - the segment must be a file
 - data on disk must match the order of data used by queries [dirty]
 
@@ -75,6 +78,9 @@ indices for the metadata listed in the `index` configuration value.
 - find data files now known by the index [new]
 - find segments that can only contain data older than `archive age` days [archive_age]
 - find segments that can only contain data older than `delete age` days [delete_age]
+- the segment name must represent an interval matching the dataset step
+  (FIXME: should this be disabled for archives, to deal with datasets that had
+  a change of step in their lifetime?) [corrupted]
 - the segment must be a directory [unaligned]
 - the size of each data file must match the data size exactly [corrupted]
 - data on disk must match the order of data used by queries [dirty]
