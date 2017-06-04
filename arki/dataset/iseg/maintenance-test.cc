@@ -25,6 +25,8 @@ class Tests : public MaintenanceTest
     }
 
     void register_tests() override;
+
+    bool can_detect_overlap() const override { return segment_type != SEGMENT_DIR; }
 };
 
 void Tests::register_tests()

@@ -27,6 +27,8 @@ class Tests : public MaintenanceTest
     }
 
     void register_tests() override;
+
+    bool can_detect_overlap() const override { return true; }
 };
 
 void Tests::register_tests()

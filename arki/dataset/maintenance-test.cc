@@ -204,17 +204,18 @@ void MaintenanceTest::register_tests()
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
     });
 
-    add_method("check_data_overlap", R"(
-        - no pair of (offset, size) data spans from the index can overlap [unaligned]
-    )", [&](Fixture& f) {
-        f.makeSegmentedChecker()->test_make_overlap("2007/07-07.grib", 1);
+    if (can_detect_overlap())
+        add_method("check_data_overlap", R"(
+            - no pair of (offset, size) data spans from the index can overlap [unaligned]
+        )", [&](Fixture& f) {
+            f.makeSegmentedChecker()->test_make_overlap("2007/07-07.grib", 1);
 
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
-        wassert(actual(state.size()) == 3u);
-        // TODO: should it be CORRUPTED?
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
-    });
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            // TODO: should it be CORRUPTED?
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        });
 
     add_method("check_hole_start", R"(
         - data must start at the beginning of the segment [dirty]

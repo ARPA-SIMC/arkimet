@@ -25,6 +25,12 @@ class Tests : public MaintenanceTest
     }
 
     void register_tests() override;
+
+    /**
+     * ondisk2 datasets can store overlaps even on dir segments, because the
+     * index sadly lacks a unique constraint on (file, offset)
+     */
+    bool can_detect_overlap() const override { return true; }
 };
 
 void Tests::register_tests()

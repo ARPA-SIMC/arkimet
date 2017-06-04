@@ -36,6 +36,11 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
     }
     virtual ~MaintenanceTest();
 
+    /**
+     * Return true if this dataset can represent and detect overlapping data.
+     */
+    virtual bool can_detect_overlap() const = 0;
+
     std::unique_ptr<dataset::segmented::Checker> checker() { return fixture->makeSegmentedChecker(); }
 
     /**
