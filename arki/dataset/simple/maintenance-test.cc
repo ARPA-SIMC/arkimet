@@ -32,6 +32,7 @@ class Tests : public MaintenanceTest
 void Tests::register_tests()
 {
     MaintenanceTest::register_tests();
+    register_tests_unaligned();
 
     add_method("check_empty_metadata", R"(
     - `.metadata` file must not be empty [unaligned]

@@ -20,16 +20,6 @@ struct Fixture : public arki::tests::DatasetTest {
     }
 };
 
-struct MaintenanceTest;
-
-struct SegmentTests
-{
-    virtual ~SegmentTests();
-
-    virtual void register_tests(MaintenanceTest& tc);
-};
-
-
 struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
 {
     enum SegmentType {
@@ -38,19 +28,15 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
     };
 
     SegmentType segment_type;
-    SegmentTests* segment_tests = nullptr;
 
     template<typename... Args>
     MaintenanceTest(const std::string& name, SegmentType segment_type, Args... args)
         : FixtureTestCase(name, std::forward<Args>(args)...), segment_type(segment_type)
     {
-        init_segment_tests();
     }
     virtual ~MaintenanceTest();
 
     std::unique_ptr<dataset::segmented::Checker> checker() { return fixture->makeSegmentedChecker(); }
-
-    void init_segment_tests();
 
     /**
      * Move all elements of 2007/07-07.grib forward, leaving a hole at the
@@ -89,8 +75,14 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
 
     void register_tests() override;
 
-    /// Rename a file or directory
-    static void rename(const std::string& old_pathname, const std::string& new_pathname);
+    virtual void register_tests_concat();
+    virtual void register_tests_dir();
+
+    /**
+     * Extra tests for datasets that can detect changes in data files
+     * potentially not reflected in indices
+     */
+    virtual void register_tests_unaligned();
 
     /// Remove a file or a directory
     static void rm_r(const std::string& pathname);

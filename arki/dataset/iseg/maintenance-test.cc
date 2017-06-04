@@ -30,6 +30,7 @@ class Tests : public MaintenanceTest
 void Tests::register_tests()
 {
     MaintenanceTest::register_tests();
+    register_tests_unaligned();
 }
 
 Tests test_iseg_plain("arki_dataset_iseg_maintenance", MaintenanceTest::SEGMENT_CONCAT, "type=iseg\nformat=grib\n");

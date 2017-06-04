@@ -21,7 +21,7 @@ class Tests : public MaintenanceTest
 
     void require_rescan() override
     {
-        throw std::runtime_error("require_rescan not yet implemented for ondisk2");
+        throw std::runtime_error("require_rescan not available for ondisk2");
     }
 
     void register_tests() override;
