@@ -184,6 +184,11 @@ public:
      */
     bool query_summary_from_db(const Matcher& m, Summary& summary) const;
 
+    /**
+     * Get the metadata for this segment
+     */
+    void query_segment(metadata_dest_func) const;
+
 #if 0
 	/**
 	 * Query summary information from DB using the given WHERE body
@@ -284,6 +289,20 @@ public:
 
     /// Tidy up the database and reclaim deleted space
     void vacuum();
+
+    /**
+     * Update the index so that the offset of all data in the segment starting
+     * from the one at position `data_idx` are shifted backwards by one, so
+     * that the ones at `data_idx - 1` and at `data_idx` overlap.
+     */
+    void test_make_overlap(unsigned data_idx);
+
+    /**
+     * Update the index so that the offset of all data in the segment starting
+     * from the one at position `data_idx` are shifted forwards by one, so that
+     * a hole is created between the ones at `data_idx - 1` and at `data_idx`
+     */
+    void test_make_hole(unsigned data_idx);
 };
 
 }

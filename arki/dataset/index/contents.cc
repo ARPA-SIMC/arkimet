@@ -1224,7 +1224,7 @@ void WContents::test_make_hole(const std::string& relname, unsigned data_idx)
     // Get the minimum offset to move
     uint64_t offset = 0;
     {
-        Query query("test_make_overlap_get_ofs", m_db);
+        Query query("test_make_hole_get_ofs", m_db);
         query.compile("SELECT offset FROM md WHERE file=? ORDER BY offset LIMIT ?, 1");
         query.bind(1, relname);
         query.bind(2, data_idx);
@@ -1233,7 +1233,7 @@ void WContents::test_make_hole(const std::string& relname, unsigned data_idx)
     }
 
     // Move all offsets >= of the first one back by 1
-    Query query("test_make_overlap", m_db);
+    Query query("test_make_hole", m_db);
     query.compile("UPDATE md SET offset=offset+1 WHERE file=? AND offset >= ?");
     query.bind(1, relname);
     query.bind(2, offset);

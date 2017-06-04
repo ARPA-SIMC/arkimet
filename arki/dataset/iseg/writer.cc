@@ -727,22 +727,36 @@ size_t Checker::vacuum()
 
 void Checker::test_make_overlap(const std::string& relpath, unsigned data_idx)
 {
-    throw std::runtime_error("test_make_overlap not yet implemented for iseg");
+    WIndex idx(m_config, relpath);
+    metadata::Collection mds;
+    idx.query_segment(mds.inserter_func());
+    segment_manager().get_segment(relpath)->test_make_overlap(mds, data_idx);
+    idx.test_make_overlap(data_idx);
 }
 
 void Checker::test_make_hole(const std::string& relpath, unsigned data_idx)
 {
-    throw std::runtime_error("test_make_hole not yet implemented for iseg");
+    WIndex idx(m_config, relpath);
+    metadata::Collection mds;
+    idx.query_segment(mds.inserter_func());
+    segment_manager().get_segment(relpath)->test_make_hole(mds, data_idx);
+    idx.test_make_hole(data_idx);
 }
 
 void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
 {
-    throw std::runtime_error("test_corrupt_data not yet implemented for iseg");
+    WIndex idx(m_config, relpath);
+    metadata::Collection mds;
+    idx.query_segment(mds.inserter_func());
+    segment_manager().get_segment(relpath)->test_corrupt(mds, data_idx);
 }
 
 void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
 {
-    throw std::runtime_error("test_truncate_data not yet implemented for iseg");
+    WIndex idx(m_config, relpath);
+    metadata::Collection mds;
+    idx.query_segment(mds.inserter_func());
+    segment_manager().get_segment(relpath)->test_truncate(mds, data_idx);
 }
 
 void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
@@ -756,17 +770,34 @@ void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsign
 
 void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)
 {
-    throw std::runtime_error("test_rename not yet implemented for iseg");
+    string abspath = str::joinpath(config().path, relpath);
+    string new_abspath = str::joinpath(config().path, new_relpath);
+    sys::rename(abspath, new_abspath);
+    sys::rename(abspath + ".index", new_abspath + ".index");
 }
 
 void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
 {
-    throw std::runtime_error("test_change_metadata not yet implemented for iseg");
+    WIndex idx(m_config, relpath);
+    metadata::Collection mds;
+    idx.query_segment(mds.inserter_func());
+    md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
+    mds[data_idx] = md;
+
+    // Reindex mds
+    idx.reset();
+    for (auto& m: mds)
+    {
+        const source::Blob& source = m->sourceBlob();
+        idx.index(*m, source.offset);
+    }
+
+    md = mds[data_idx];
 }
 
 void Checker::test_deindex(const std::string& relpath)
 {
-    throw std::runtime_error("test_corrupt_data not yet implemented for iseg");
+    sys::unlink_ifexists(str::joinpath(config().path, relpath + ".index"));
 }
 
 }

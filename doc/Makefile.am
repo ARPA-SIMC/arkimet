@@ -52,11 +52,11 @@ CLEANFILES += arkiguide.it.html
 
 endif
 
-BUILT_SOURCES = ds-simple.md ds-ondisk2.md seg-concat.md seg-dir.md
+BUILT_SOURCES = ds-simple.md ds-ondisk2.md ds-iseg.md seg-concat.md seg-dir.md
 
 EXTRA_DIST = update \
 			 datasets.md ds-archive.md \
-			 ds-simple.md.j2 ds-ondisk2.md.j2 \
+			 ds-simple.md.j2 ds-ondisk2.md.j2 ds-iseg.md.j2 \
 			 segments.md seg-concat.md seg-dir.md \
 			 $(BUILT_SOURCES)
 

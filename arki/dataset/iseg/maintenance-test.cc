@@ -21,7 +21,7 @@ class Tests : public MaintenanceTest
 
     void require_rescan() override
     {
-        throw std::runtime_error("require_rescan not yet implemented for ondisk2");
+        throw std::runtime_error("require_rescan not yet implemented for iseg");
     }
 
     void register_tests() override;
@@ -32,8 +32,9 @@ void Tests::register_tests()
     MaintenanceTest::register_tests();
 }
 
-Tests test_ondisk2_plain("arki_dataset_ondisk2_maintenance", MaintenanceTest::SEGMENT_CONCAT, "type=ondisk2\n");
-Tests test_ondisk2_plain_dir("arki_dataset_ondisk2_maintenance_dirs", MaintenanceTest::SEGMENT_DIR, "type=ondisk2\nsegments=dir\n");
+Tests test_iseg_plain("arki_dataset_iseg_maintenance", MaintenanceTest::SEGMENT_CONCAT, "type=iseg\nformat=grib\n");
+Tests test_iseg_plain_dir("arki_dataset_iseg_maintenance_dirs", MaintenanceTest::SEGMENT_DIR, "type=iseg\nformat=grib\nsegments=dir\n");
 
 }
+
 

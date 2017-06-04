@@ -295,6 +295,10 @@ void Index::scan(metadata_dest_func dest, const std::string& order_by) const
     }
 }
 
+void Index::query_segment(metadata_dest_func dest) const
+{
+    scan(dest);
+}
 
 static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begin, unique_ptr<Time>& end)
 {
@@ -951,6 +955,46 @@ void WIndex::vacuum()
     m_db.exec("VACUUM");
     m_db.exec("ANALYZE");
     //m_db.exec("PRAGMA journal_mode = PERSIST");
+}
+
+void WIndex::test_make_overlap(unsigned data_idx)
+{
+    // Get the minimum offset to move
+    uint64_t offset = 0;
+    {
+        Query query("test_make_overlap_get_ofs", m_db);
+        query.compile("SELECT offset FROM md ORDER BY offset LIMIT ?, 1");
+        query.bind(1, data_idx);
+        while (query.step())
+            offset = query.fetch<uint64_t>(0);
+    }
+
+    // Move all offsets >= of the first one back by 1
+    Query query("test_make_overlap", m_db);
+    query.compile("UPDATE md SET offset=offset-1 WHERE offset >= ?");
+    query.bind(1, offset);
+    while (query.step())
+        ;
+}
+
+void WIndex::test_make_hole(unsigned data_idx)
+{
+    // Get the minimum offset to move
+    uint64_t offset = 0;
+    {
+        Query query("test_make_hole_get_ofs", m_db);
+        query.compile("SELECT offset FROM md ORDER BY offset LIMIT ?, 1");
+        query.bind(1, data_idx);
+        while (query.step())
+            offset = query.fetch<uint64_t>(0);
+    }
+
+    // Move all offsets >= of the first one back by 1
+    Query query("test_make_hole", m_db);
+    query.compile("UPDATE md SET offset=offset+1 WHERE offset >= ?");
+    query.bind(1, offset);
+    while (query.step())
+        ;
 }
 
 }

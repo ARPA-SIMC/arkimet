@@ -520,7 +520,7 @@ size_t Checker::vacuum()
 void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
 {
     metadata::Collection mds;
-    idx->scan_file(relpath, mds.inserter_func(), "reftime, offset");
+    idx->query_segment(relpath, mds.inserter_func());
     md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
     mds[data_idx] = md;
 

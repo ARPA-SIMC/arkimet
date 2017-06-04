@@ -6,4 +6,5 @@ queried.
 
  * [simple](ds-simple.md)
  * [ondisk2](ds-ondisk2.md)
+ * [iseg](ds-iseg.md)
  * [archive](ds-archive.md)

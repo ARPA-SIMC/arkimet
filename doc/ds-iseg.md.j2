@@ -1,0 +1,62 @@
+# iseg datasets
+
+This dataset contains [segments](segments.md) with an index next to each
+segment, with a `.index` extension, containing a SQLite database.
+
+It can enforce detection of duplicates, enforcing uniqueness on the set of
+metadata selected with the `unique` configuration keyword.
+
+Duplicate detection relies on the invariant that segment naming produces
+segments that do not overlap, so a datum can only be found in a well defined
+segment, and duplicate detection can be performed on a per-segment basis.
+
+It can optimize queries that use metadata selected with the `index`
+configuration keyword.
+
+## Dataset layout
+
+The `.index` files contain the metadata for all data in the segment.
+
+The `.index` file contains additional indices for the metadata listed in the
+`unique` configuration value, to do quick duplicate detection, and extra
+indices for the metadata listed in the `index` configuration value.
+
+
+## Check and repack on concat segments
+
+### During check
+
+{{testdoc("arki_dataset_iseg_maintenance.check_*")}}
+
+### During --accurate check
+
+{{testdoc("arki_dataset_iseg_maintenance.tcheck_*")}}
+
+### During fix
+
+{{testdoc("arki_dataset_iseg_maintenance.fix_*")}}
+
+### During repack
+
+{{testdoc("arki_dataset_iseg_maintenance.repack*")}}
+
+
+## Check and repack on dir segments
+
+### During check
+
+{{testdoc("arki_dataset_iseg_maintenance_dirs.check*")}}
+
+### During --accurate check
+
+{{testdoc("arki_dataset_iseg_maintenance_dirs.tcheck*")}}
+
+### During fix
+
+{{testdoc("arki_dataset_iseg_maintenance_dirs.fix*")}}
+
+### During repack
+
+{{testdoc("arki_dataset_iseg_maintenance_dirs.repack*")}}
+
+

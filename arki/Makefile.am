@@ -574,6 +574,7 @@ tests_arki_test_SOURCES += \
 		dataset/iseg/index-test.cc \
 		dataset/iseg/reader-test.cc \
 		dataset/iseg/writer-test.cc \
+		dataset/iseg/maintenance-test.cc \
 		dataset/ondisk2-test.cc \
 		dataset/ondisk2/reader-test.cc \
 		dataset/ondisk2/writer-test.cc \
