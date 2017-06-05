@@ -27,6 +27,13 @@ segments during a query without needing to scan through all the `.metadata`
 file contents, and to support summary queries by merging existing summaries
 instead of recomputing them for all data queried.
 
+## General check and repack notes
+
+Since the dataset is intended for long-term archival, repack will never delete
+a data segment. All data segments found without a `.metadata` file or next to
+an empty `.metadata` file will always be rescanned.
+
+
 ## Check and repack on concat segments
 
 ### During check
@@ -38,7 +45,6 @@ instead of recomputing them for all data queried.
 - data must start at the beginning of the segment [dirty]
 - there must be no gaps between data in the segment [dirty]
 - data must end at the end of the segment [dirty]
-- find data files not known by the index [new]
 - find segments that can only contain data older than `archive age` days [archive_age]
 - find segments that can only contain data older than `delete age` days [delete_age]
 - the span of reference times in each segment must fit inside the interval
@@ -48,8 +54,9 @@ instead of recomputing them for all data queried.
   (FIXME: should this be disabled for archives, to deal with datasets that had
   a change of step in their lifetime?) [corrupted]
 - data on disk must match the order of data used by queries [dirty]
+- find data files not known by the index [unaligned]
 - the segment must not be newer than the index [unaligned]
-- `.metadata` file must not be empty [unaligned]
+- `.metadata` file must not be empty [new]
 - `.metadata` file must not be older than the data [unaligned]
 - `.summary` file must not be older than the `.metadata` file [unaligned]
 - `MANIFEST` file must not be older than the `.metadata` file [unaligned]
@@ -61,16 +68,14 @@ instead of recomputing them for all data queried.
 
 ### During fix
 
-- [new] segments are imported in-place
+- [unaligned] segments are imported in-place
 - [dirty] segments are not touched
 - [deleted] segments are removed from the index
 - [archive age] segments are not touched
 - [delete age] segments are not touched
-- [unaligned] segments are reimported in-place
 
 ### During repack
 
-- [new] segments are deleted
 - [dirty] segments are rewritten to be without holes and have data in the right order.
   In concat segments, this is done to guarantee linear disk access when
   data are queried in the default sorting order. In dir segments, this
@@ -94,7 +99,6 @@ instead of recomputing them for all data queried.
 - data must start at the beginning of the segment [dirty]
 - there must be no gaps between data in the segment [dirty]
 - data must end at the end of the segment [dirty]
-- find data files not known by the index [new]
 - find segments that can only contain data older than `archive age` days [archive_age]
 - find segments that can only contain data older than `delete age` days [delete_age]
 - the span of reference times in each segment must fit inside the interval
@@ -104,8 +108,9 @@ instead of recomputing them for all data queried.
   (FIXME: should this be disabled for archives, to deal with datasets that had
   a change of step in their lifetime?) [corrupted]
 - data on disk must match the order of data used by queries [dirty]
+- find data files not known by the index [unaligned]
 - the segment must not be newer than the index [unaligned]
-- `.metadata` file must not be empty [unaligned]
+- `.metadata` file must not be empty [new]
 - `.metadata` file must not be older than the data [unaligned]
 - `.summary` file must not be older than the `.metadata` file [unaligned]
 - `MANIFEST` file must not be older than the `.metadata` file [unaligned]
@@ -117,16 +122,14 @@ instead of recomputing them for all data queried.
 
 ### During fix
 
-- [new] segments are imported in-place
+- [unaligned] segments are imported in-place
 - [dirty] segments are not touched
 - [deleted] segments are removed from the index
 - [archive age] segments are not touched
 - [delete age] segments are not touched
-- [unaligned] segments are reimported in-place
 
 ### During repack
 
-- [new] segments are deleted
 - [dirty] segments are rewritten to be without holes and have data in the right order.
   In concat segments, this is done to guarantee linear disk access when
   data are queried in the default sorting order. In dir segments, this

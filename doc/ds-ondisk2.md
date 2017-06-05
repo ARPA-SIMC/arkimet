@@ -18,6 +18,10 @@ The `.sqlite` file contains additional indices for the metadata listed in the
 `unique` configuration value, to do quick duplicate detection, and extra
 indices for the metadata listed in the `index` configuration value.
 
+## General check and repack notes
+
+The index is not able to distinguish between segments that have been fully
+deleted, and segments that have never been indexed.
 
 ## Check and repack on concat segments
 
@@ -32,7 +36,6 @@ indices for the metadata listed in the `index` configuration value.
 - data must start at the beginning of the segment [dirty]
 - there must be no gaps between data in the segment [dirty]
 - data must end at the end of the segment [dirty]
-- find data files not known by the index [new]
 - find segments that can only contain data older than `archive age` days [archive_age]
 - find segments that can only contain data older than `delete age` days [delete_age]
 - the span of reference times in each segment must fit inside the interval
@@ -42,6 +45,11 @@ indices for the metadata listed in the `index` configuration value.
   (FIXME: should this be disabled for archives, to deal with datasets that had
   a change of step in their lifetime?) [corrupted]
 - data on disk must match the order of data used by queries [dirty]
+- data files not known by the index are considered data files whose
+  entire content has been removed [deleted]
+- if the index has been deleted and the dataset has not been checked,
+  segments not known by the index are marked for reindexing instead of
+  deletion [unaligned]
 
 ### During --accurate check
 
@@ -49,7 +57,7 @@ indices for the metadata listed in the `index` configuration value.
 
 ### During fix
 
-- [new] segments are imported in-place
+- [unaligned] segments are imported in-place
 - [dirty] segments are not touched
 - [deleted] segments are removed from the index
 - [archive age] segments are not touched
@@ -57,7 +65,6 @@ indices for the metadata listed in the `index` configuration value.
 
 ### During repack
 
-- [new] segments are deleted
 - [dirty] segments are rewritten to be without holes and have data in the right order.
   In concat segments, this is done to guarantee linear disk access when
   data are queried in the default sorting order. In dir segments, this
@@ -66,6 +73,9 @@ indices for the metadata listed in the `index` configuration value.
 - [deleted] segments are removed from the index
 - [archive age] segments are repacked if needed, then moved to .archive/last
 - [delete age] segments are deleted
+- [unaligned] when `needs-check-do-not-pack` is present in the dataset
+  root directory, running a repack fails asking to run a check first,
+  to prevent deleting data that should be reindexed instead
 
 
 ## Check and repack on dir segments
@@ -82,7 +92,6 @@ indices for the metadata listed in the `index` configuration value.
 - data must start at the beginning of the segment [dirty]
 - there must be no gaps between data in the segment [dirty]
 - data must end at the end of the segment [dirty]
-- find data files not known by the index [new]
 - find segments that can only contain data older than `archive age` days [archive_age]
 - find segments that can only contain data older than `delete age` days [delete_age]
 - the span of reference times in each segment must fit inside the interval
@@ -92,6 +101,11 @@ indices for the metadata listed in the `index` configuration value.
   (FIXME: should this be disabled for archives, to deal with datasets that had
   a change of step in their lifetime?) [corrupted]
 - data on disk must match the order of data used by queries [dirty]
+- data files not known by the index are considered data files whose
+  entire content has been removed [deleted]
+- if the index has been deleted and the dataset has not been checked,
+  segments not known by the index are marked for reindexing instead of
+  deletion [unaligned]
 
 ### During --accurate check
 
@@ -99,7 +113,7 @@ indices for the metadata listed in the `index` configuration value.
 
 ### During fix
 
-- [new] segments are imported in-place
+- [unaligned] segments are imported in-place
 - [dirty] segments are not touched
 - [deleted] segments are removed from the index
 - [archive age] segments are not touched
@@ -107,7 +121,6 @@ indices for the metadata listed in the `index` configuration value.
 
 ### During repack
 
-- [new] segments are deleted
 - [dirty] segments are rewritten to be without holes and have data in the right order.
   In concat segments, this is done to guarantee linear disk access when
   data are queried in the default sorting order. In dir segments, this
@@ -116,3 +129,6 @@ indices for the metadata listed in the `index` configuration value.
 - [deleted] segments are removed from the index
 - [archive age] segments are repacked if needed, then moved to .archive/last
 - [delete age] segments are deleted
+- [unaligned] when `needs-check-do-not-pack` is present in the dataset
+  root directory, running a repack fails asking to run a check first,
+  to prevent deleting data that should be reindexed instead

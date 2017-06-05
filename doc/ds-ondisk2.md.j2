@@ -18,6 +18,10 @@ The `.sqlite` file contains additional indices for the metadata listed in the
 `unique` configuration value, to do quick duplicate detection, and extra
 indices for the metadata listed in the `index` configuration value.
 
+## General check and repack notes
+
+The index is not able to distinguish between segments that have been fully
+deleted, and segments that have never been indexed.
 
 ## Check and repack on concat segments
 
