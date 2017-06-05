@@ -190,6 +190,24 @@ void Checker::rescanSegment(const std::string& relpath)
     m_mft->rescanSegment(config().path, relpath);
 }
 
+namespace {
+
+struct RepackSort : public sort::Compare
+{
+    int compare(const Metadata& a, const Metadata& b) const override
+    {
+        const types::Type* rta = a.get(TYPE_REFTIME);
+        const types::Type* rtb = b.get(TYPE_REFTIME);
+        if (!rta) throw std::runtime_error("dataset contains metadata without reftime");
+        if (!rtb) throw std::runtime_error("dataset contains metadata without reftime");
+        if (int res = rta->compare(*rtb)) return res;
+        return a.sourceBlob().offset - b.sourceBlob().offset;
+    }
+
+    std::string toString() const override { return "reftime,offset"; }
+};
+
+}
 
 size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
 {
@@ -199,8 +217,9 @@ size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
     metadata::Collection mds;
     scan::scan(pathname, mds.inserter_func());
 
-    // Sort by reference time
-    mds.sort();
+    // Sort by reference time and offset
+    RepackSort cmp;
+    mds.sort(cmp);
 
     return reorder_segment(relpath, mds, test_flags);
 }
