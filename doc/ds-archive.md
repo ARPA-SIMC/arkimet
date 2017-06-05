@@ -24,3 +24,16 @@ Segments that get archived are moved from the online dataset to the
 subdirectory of `.archives`. arkimet will only ever move segments to
 `.archives/last` and the rest can be maintained with procedures external to
 arkimet with no interference.
+
+## Online archives
+
+Online archives are the default type of archive that is created automatically
+as `.archives/last` during maintenance. They are instances of
+[simple](ds-simple.md) datasets, and all the simple dataset documentation
+applies to them.
+
+## Offline archives
+
+Offline archives are archives whose data has been moved to external media. The
+only thing that is left is a .summary file that describes the data that would
+be there.
