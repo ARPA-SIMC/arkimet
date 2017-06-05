@@ -204,6 +204,24 @@ void MaintenanceTest::register_tests()
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DELETED));
     });
 
+    if (can_delete_data())
+        add_method("check_all_removed", R"(
+            - segments that only contain data that has been removed are
+              identified as not present in the index [new]
+        )", [&](Fixture& f) {
+            {
+                metadata::Collection mds(*f.config().create_reader(), Matcher());
+                auto writer = f.config().create_writer();
+                for (auto& md: mds)
+                    writer->remove(*md);
+            }
+
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_NEW));
+        });
+
     add_method("check_dataexists", R"(
         - all data known by the index for this segment must be present on disk [unaligned]
     )", [&](Fixture& f) {

@@ -31,6 +31,7 @@ instead of recomputing them for all data queried.
 
 ### During check
 
+- the segment must be a file
 - the segment must exist [deleted]
 - all data known by the index for this segment must be present on disk [unaligned]
 - no pair of (offset, size) data spans from the index can overlap [unaligned]
@@ -46,8 +47,8 @@ instead of recomputing them for all data queried.
 - the segment name must represent an interval matching the dataset step
   (FIXME: should this be disabled for archives, to deal with datasets that had
   a change of step in their lifetime?) [corrupted]
-- the segment must be a file
 - data on disk must match the order of data used by queries [dirty]
+- the segment must not be newer than the index [unaligned]
 - `.metadata` file must not be empty [unaligned]
 - `.metadata` file must not be older than the data [unaligned]
 - `.summary` file must not be older than the `.metadata` file [unaligned]
@@ -61,16 +62,15 @@ instead of recomputing them for all data queried.
 ### During fix
 
 - [new] segments are imported in-place
-- [unaligned] segments are reimported in-place
 - [dirty] segments are not touched
 - [deleted] segments are removed from the index
 - [archive age] segments are not touched
 - [delete age] segments are not touched
+- [unaligned] segments are reimported in-place
 
 ### During repack
 
 - [new] segments are deleted
-- [unaligned] segments are not touched
 - [dirty] segments are rewritten to be without holes and have data in the right order.
   In concat segments, this is done to guarantee linear disk access when
   data are queried in the default sorting order. In dir segments, this
@@ -79,12 +79,15 @@ instead of recomputing them for all data queried.
 - [deleted] segments are removed from the index
 - [archive age] segments are repacked if needed, then moved to .archive/last
 - [delete age] segments are deleted
+- [unaligned] segments are not touched
 
 
 ## Check and repack on dir segments
 
 ### During check
 
+- the segment must be a directory [unaligned]
+- the size of each data file must match the data size exactly [corrupted]
 - the segment must exist [deleted]
 - all data known by the index for this segment must be present on disk [unaligned]
 - no pair of (offset, size) data spans from the index can overlap [unaligned]
@@ -100,9 +103,8 @@ instead of recomputing them for all data queried.
 - the segment name must represent an interval matching the dataset step
   (FIXME: should this be disabled for archives, to deal with datasets that had
   a change of step in their lifetime?) [corrupted]
-- the segment must be a directory [unaligned]
-- the size of each data file must match the data size exactly [corrupted]
 - data on disk must match the order of data used by queries [dirty]
+- the segment must not be newer than the index [unaligned]
 - `.metadata` file must not be empty [unaligned]
 - `.metadata` file must not be older than the data [unaligned]
 - `.summary` file must not be older than the `.metadata` file [unaligned]
@@ -116,16 +118,15 @@ instead of recomputing them for all data queried.
 ### During fix
 
 - [new] segments are imported in-place
-- [unaligned] segments are reimported in-place
 - [dirty] segments are not touched
 - [deleted] segments are removed from the index
 - [archive age] segments are not touched
 - [delete age] segments are not touched
+- [unaligned] segments are reimported in-place
 
 ### During repack
 
 - [new] segments are deleted
-- [unaligned] segments are not touched
 - [dirty] segments are rewritten to be without holes and have data in the right order.
   In concat segments, this is done to guarantee linear disk access when
   data are queried in the default sorting order. In dir segments, this
@@ -134,3 +135,4 @@ instead of recomputing them for all data queried.
 - [deleted] segments are removed from the index
 - [archive age] segments are repacked if needed, then moved to .archive/last
 - [delete age] segments are deleted
+- [unaligned] segments are not touched

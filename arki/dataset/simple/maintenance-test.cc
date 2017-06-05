@@ -30,6 +30,7 @@ class Tests : public MaintenanceTest
 
     bool can_detect_overlap() const override { return true; }
     bool can_detect_segments_out_of_step() const override { return true; }
+    bool can_delete_data() const override { return false; }
 };
 
 void Tests::register_tests()
@@ -38,7 +39,7 @@ void Tests::register_tests()
     register_tests_unaligned();
 
     add_method("check_empty_metadata", R"(
-    - `.metadata` file must not be empty [unaligned]
+    - `.metadata` file must not be empty [new]
     )", [](Fixture& f) {
         sys::File mdf("testds/2007/07-07.grib.metadata", O_RDWR);
         mdf.ftruncate(0);
@@ -46,7 +47,7 @@ void Tests::register_tests()
         NullReporter nr;
         auto state = f.makeSegmentedChecker()->scan(nr);
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_NEW));
     });
 
     add_method("check_metadata_timestamp", R"(

@@ -345,7 +345,7 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
             reporter.segment_info(name(), relpath, "index knows of this segment but contains no data for it");
             md_begin.reset(new core::Time(0, 0, 0));
             md_until.reset(new core::Time(0, 0, 0));
-            state = SEGMENT_UNALIGNED;
+            state = SEGMENT_NEW;
         } else {
             if (!mds.expand_date_range(md_begin, md_until))
             {

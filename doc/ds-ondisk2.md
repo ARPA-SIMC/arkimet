@@ -23,7 +23,10 @@ indices for the metadata listed in the `index` configuration value.
 
 ### During check
 
+- the segment must be a file
 - the segment must exist [deleted]
+- segments that only contain data that has been removed are
+  identified as not present in the index [new]
 - all data known by the index for this segment must be present on disk [unaligned]
 - no pair of (offset, size) data spans from the index can overlap [unaligned]
 - data must start at the beginning of the segment [dirty]
@@ -38,7 +41,6 @@ indices for the metadata listed in the `index` configuration value.
 - the segment name must represent an interval matching the dataset step
   (FIXME: should this be disabled for archives, to deal with datasets that had
   a change of step in their lifetime?) [corrupted]
-- the segment must be a file
 - data on disk must match the order of data used by queries [dirty]
 
 ### During --accurate check
@@ -48,7 +50,6 @@ indices for the metadata listed in the `index` configuration value.
 ### During fix
 
 - [new] segments are imported in-place
-- [unaligned] segments are reimported in-place
 - [dirty] segments are not touched
 - [deleted] segments are removed from the index
 - [archive age] segments are not touched
@@ -57,7 +58,6 @@ indices for the metadata listed in the `index` configuration value.
 ### During repack
 
 - [new] segments are deleted
-- [unaligned] segments are not touched
 - [dirty] segments are rewritten to be without holes and have data in the right order.
   In concat segments, this is done to guarantee linear disk access when
   data are queried in the default sorting order. In dir segments, this
@@ -72,7 +72,11 @@ indices for the metadata listed in the `index` configuration value.
 
 ### During check
 
+- the segment must be a directory [unaligned]
+- the size of each data file must match the data size exactly [corrupted]
 - the segment must exist [deleted]
+- segments that only contain data that has been removed are
+  identified as not present in the index [new]
 - all data known by the index for this segment must be present on disk [unaligned]
 - no pair of (offset, size) data spans from the index can overlap [unaligned]
 - data must start at the beginning of the segment [dirty]
@@ -87,8 +91,6 @@ indices for the metadata listed in the `index` configuration value.
 - the segment name must represent an interval matching the dataset step
   (FIXME: should this be disabled for archives, to deal with datasets that had
   a change of step in their lifetime?) [corrupted]
-- the segment must be a directory [unaligned]
-- the size of each data file must match the data size exactly [corrupted]
 - data on disk must match the order of data used by queries [dirty]
 
 ### During --accurate check
@@ -98,7 +100,6 @@ indices for the metadata listed in the `index` configuration value.
 ### During fix
 
 - [new] segments are imported in-place
-- [unaligned] segments are reimported in-place
 - [dirty] segments are not touched
 - [deleted] segments are removed from the index
 - [archive age] segments are not touched
@@ -107,7 +108,6 @@ indices for the metadata listed in the `index` configuration value.
 ### During repack
 
 - [new] segments are deleted
-- [unaligned] segments are not touched
 - [dirty] segments are rewritten to be without holes and have data in the right order.
   In concat segments, this is done to guarantee linear disk access when
   data are queried in the default sorting order. In dir segments, this

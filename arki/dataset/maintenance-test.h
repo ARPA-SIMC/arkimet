@@ -47,6 +47,11 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
      */
     virtual bool can_detect_segments_out_of_step() const = 0;
 
+    /**
+     * Return true if this dataset can delete data.
+     */
+    virtual bool can_delete_data() const = 0;
+
     std::unique_ptr<dataset::segmented::Checker> checker() { return fixture->makeSegmentedChecker(); }
 
     /**
