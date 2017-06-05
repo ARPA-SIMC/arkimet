@@ -133,6 +133,17 @@ void MaintenanceTest::register_tests_dir()
 
 void MaintenanceTest::register_tests_unaligned()
 {
+    add_method("check_unaligned", R"(
+        - the segment must not be newer than the index [unaligned]
+    )", [&](Fixture& f) {
+        require_rescan();
+
+        arki::dataset::NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
+
     add_method("fix_unaligned", R"(
         - [unaligned] segments are reimported in-place
     )", [&](Fixture& f) {

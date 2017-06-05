@@ -317,6 +317,21 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
             return;
         }
 
+#if 0
+        /**
+         * Although iseg could detect if the data of a segment is newer than its
+         * index, the timestamp of the index is updated by various kinds of sqlite
+         * operations, making the test rather useless, because it's likely that the
+         * index timestamp would get updated before the mismatch is detected.
+         */
+        string abspath = str::joinpath(config().path, relpath);
+        if (sys::timestamp(abspath) > sys::timestamp(abspath + ".index"))
+        {
+            segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_UNALIGNED)));
+            return;
+        }
+#endif
+
         WIndex idx(m_config, relpath);
         metadata::Collection mds;
         idx.scan(mds.inserter_func(), "reftime, offset");

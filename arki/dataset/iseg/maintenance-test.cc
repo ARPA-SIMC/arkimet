@@ -33,7 +33,14 @@ class Tests : public MaintenanceTest
 void Tests::register_tests()
 {
     MaintenanceTest::register_tests();
-    register_tests_unaligned();
+
+    /**
+     * Although iseg could detect if the data of a segment is newer than its
+     * index, the timestamp of the index is updated by various kinds of sqlite
+     * operations, making the test rather useless, because it's likely that the
+     * index timestamp would get updated before the mismatch is detected.
+     */
+    // register_tests_unaligned();
 }
 
 Tests test_iseg_plain("arki_dataset_iseg_maintenance", MaintenanceTest::SEGMENT_CONCAT, "type=iseg\nformat=grib\n");
