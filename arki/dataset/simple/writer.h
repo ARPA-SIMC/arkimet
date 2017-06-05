@@ -71,6 +71,7 @@ public:
 
     std::string type() const override;
 
+    segmented::State scan(dataset::Reporter& reporter, bool quick=true) override;
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
     void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
@@ -82,7 +83,7 @@ public:
     void releaseSegment(const std::string& relpath, const std::string& destpath) override;
     size_t removeSegment(const std::string& relpath, bool withData=false) override;
     size_t vacuum() override;
-    void test_deindex(const std::string& relpath) override;
+    void test_remove_index(const std::string& relpath) override;
     void test_rename(const std::string& relpath, const std::string& new_relpath) override;
     void test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx) override;
 };

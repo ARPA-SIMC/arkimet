@@ -11,6 +11,7 @@
 #include <arki/dataset.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/dataset/segment.h>
+#include <arki/dataset/segmented.h>
 #include <arki/sort.h>
 #include <arki/scan/any.h>
 #include <arki/utils/string.h>
@@ -97,9 +98,9 @@ public:
         COUNTED_ARCHIVE_AGE,
         COUNTED_DELETE_AGE,
         COUNTED_DIRTY,
-        COUNTED_NEW,
-        COUNTED_UNALIGNED,
         COUNTED_DELETED,
+        COUNTED_UNALIGNED,
+        COUNTED_MISSING,
         COUNTED_CORRUPTED,
         COUNTED_MAX,
     };
@@ -177,6 +178,9 @@ public:
      * the test dataset
      */
     unsigned count_dataset_files(const testdata::Fixture& f) const;
+
+    /// Scan the dataset and return its state
+    dataset::segmented::State scan_state();
 
     std::unique_ptr<dataset::segmented::Reader> makeSegmentedReader();
     std::unique_ptr<dataset::segmented::Writer> makeSegmentedWriter();

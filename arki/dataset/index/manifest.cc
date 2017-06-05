@@ -78,13 +78,12 @@ void scan_file(const std::string& root, const std::string& relname, segment::Sta
         });
     }
     else if (scan::exists(absname))
-        // If scan_file is called, the index know about the file, so instead of
-        // saying SEGMENT_NEW because we have data without metadata, we say
-        // SEGMENT_UNALIGNED because the metadata needs to be regenerated
-        // anyway
+        // If scan_file is called, the index knows about the file, so instead
+        // of saying SEGMENT_DELETED because we have data without metadata, we
+        // say SEGMENT_UNALIGNED because the metadata needs to be regenerated
         state += SEGMENT_UNALIGNED;
     else
-        state += SEGMENT_DELETED;
+        state += SEGMENT_MISSING;
 
     HFSorter cmp;
     contents.sort(cmp); // Sort by reftime and by offset

@@ -313,7 +313,7 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
     list_segments([&](const std::string& relpath) {
         if (!segment_manager().is_segment(config().format, relpath))
         {
-            segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_DELETED)));
+            segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_MISSING)));
             return;
         }
 
@@ -345,7 +345,7 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
             reporter.segment_info(name(), relpath, "index knows of this segment but contains no data for it");
             md_begin.reset(new core::Time(0, 0, 0));
             md_until.reset(new core::Time(0, 0, 0));
-            state = SEGMENT_NEW;
+            state = SEGMENT_DELETED;
         } else {
             if (!mds.expand_date_range(md_begin, md_until))
             {
@@ -383,39 +383,11 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
     // Look for data files without indices next to them
     config().step().list_segments(config().path, config().format, Matcher(), [&](std::string&& relpath) {
         if (segments_state.find(relpath) != segments_state.end()) return;
-        reporter.segment_info(name(), relpath, "segment found on disk but not in index");
-        segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_NEW)));
+        reporter.segment_info(name(), relpath, "segment found on disk with no associated index data");
+        segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_UNALIGNED)));
     });
 
-    //
-    // Check if segments are old enough to be deleted or archived
-    //
-
-    core::Time archive_threshold(0, 0, 0);
-    core::Time delete_threshold(0, 0, 0);
-    const auto& st = SessionTime::get();
-
-    if (config().archive_age != -1)
-        archive_threshold = st.age_threshold(config().archive_age);
-    if (config().delete_age != -1)
-        delete_threshold = st.age_threshold(config().delete_age);
-
-    for (auto& i: segments_state)
-    {
-        if (delete_threshold.ye != 0 && delete_threshold >= i.second.until)
-        {
-            reporter.segment_info(name(), i.first, "segment old enough to be deleted");
-            i.second.state = i.second.state + SEGMENT_DELETE_AGE;
-            continue;
-        }
-
-        if (archive_threshold.ye != 0 && archive_threshold >= i.second.until)
-        {
-            reporter.segment_info(name(), i.first, "segment old enough to be archived");
-            i.second.state = i.second.state + SEGMENT_ARCHIVE_AGE;
-            continue;
-        }
-    }
+    segments_state.check_age(config(), reporter);
 
     return segments_state;
 }
@@ -814,7 +786,7 @@ void Checker::test_change_metadata(const std::string& relpath, Metadata& md, uns
     md = mds[data_idx];
 }
 
-void Checker::test_deindex(const std::string& relpath)
+void Checker::test_remove_index(const std::string& relpath)
 {
     sys::unlink_ifexists(str::joinpath(config().path, relpath + ".index"));
 }

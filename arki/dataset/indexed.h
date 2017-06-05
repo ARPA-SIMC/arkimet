@@ -73,7 +73,6 @@ public:
 
     const IndexedConfig& config() const override = 0;
 
-    segmented::State scan(dataset::Reporter& reporter, bool quick=true) override;
     void removeAll(Reporter& reporter, bool writable) override;
     void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
 
@@ -83,7 +82,6 @@ public:
     void test_truncate_data(const std::string& relpath, unsigned data_idx=0) override;
     void test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx) override;
     void test_rename(const std::string& relpath, const std::string& new_relpath) override;
-    void test_deindex(const std::string& relpath) override;
 };
 
 }

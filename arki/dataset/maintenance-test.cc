@@ -65,9 +65,9 @@ void MaintenanceTest::swap_data()
     fixture->makeSegmentedChecker()->test_swap_data("2007/07-07.grib", 0, 1);
 }
 
-void MaintenanceTest::deindex()
+void MaintenanceTest::remove_index()
 {
-    fixture->makeSegmentedChecker()->test_deindex("2007/07-07.grib");
+    fixture->makeSegmentedChecker()->test_remove_index("2007/07-07.grib");
 }
 
 void MaintenanceTest::rm_r(const std::string& pathname)
@@ -97,7 +97,7 @@ void MaintenanceTest::register_tests_concat()
         arki::dataset::NullReporter nr;
         auto state = f.makeSegmentedChecker()->scan(nr);
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DELETED));
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_MISSING));
     });
 }
 
@@ -131,50 +131,6 @@ void MaintenanceTest::register_tests_dir()
     });
 }
 
-void MaintenanceTest::register_tests_unaligned()
-{
-    add_method("check_unaligned", R"(
-        - the segment must not be newer than the index [unaligned]
-    )", [&](Fixture& f) {
-        require_rescan();
-
-        arki::dataset::NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
-    });
-
-    add_method("fix_unaligned", R"(
-        - [unaligned] segments are reimported in-place
-    )", [&](Fixture& f) {
-        require_rescan();
-
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "check", "2 files ok");
-        e.rescanned.emplace_back("testds", "2007/07-07.grib");
-        wassert(actual(writer.get()).check(e, true));
-
-        wassert(actual(writer.get()).maintenance_clean(3));
-    });
-
-    add_method("repack_unaligned", R"(
-        - [unaligned] segments are not touched
-    )", [&](Fixture& f) {
-        require_rescan();
-
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "repack", "2 files ok");
-        wassert(actual(writer.get()).repack(e, true));
-
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
-    });
-}
-
 void MaintenanceTest::register_tests()
 {
     switch (segment_type)
@@ -201,7 +157,7 @@ void MaintenanceTest::register_tests()
         NullReporter nr;
         auto state = f.makeSegmentedChecker()->scan(nr);
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DELETED));
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_MISSING));
     });
 
     if (can_delete_data())
@@ -219,7 +175,8 @@ void MaintenanceTest::register_tests()
             NullReporter nr;
             auto state = f.makeSegmentedChecker()->scan(nr);
             wassert(actual(state.size()) == 3u);
-            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_NEW));
+            // TODO: NEW -> EMPTY?
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DELETED));
         });
 
     add_method("check_dataexists", R"(
@@ -277,17 +234,6 @@ void MaintenanceTest::register_tests()
         auto state = f.makeSegmentedChecker()->scan(nr);
         wassert(actual(state.size()) == 3u);
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DIRTY));
-    });
-
-    add_method("check_new", R"(
-        - find data files not known by the index [new]
-    )", [&](Fixture& f) {
-        deindex();
-
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_NEW));
     });
 
     add_method("check_archive_age", R"(
@@ -392,10 +338,10 @@ void MaintenanceTest::register_tests()
 
 
     // Fix
-    add_method("fix_new", R"(
-        - [new] segments are imported in-place
+    add_method("fix_unaligned", R"(
+        - [unaligned] segments are imported in-place
     )", [&](Fixture& f) {
-        deindex();
+        make_unaligned();
 
         auto writer(f.makeSegmentedChecker());
         ReporterExpected e;
@@ -479,20 +425,6 @@ void MaintenanceTest::register_tests()
     });
 
     // Repack
-    add_method("repack_new", R"(
-        - [new] segments are deleted
-    )", [&](Fixture& f) {
-        deindex();
-
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "repack", "2 files ok");
-        e.deleted.emplace_back("testds", "2007/07-07.grib");
-        wassert(actual(writer.get()).repack(e, true));
-
-        wassert(actual(writer.get()).maintenance_clean(2));
-    });
-
     add_method("repack_dirty", R"(
         - [dirty] segments are rewritten to be without holes and have data in the right order.
           In concat segments, this is done to guarantee linear disk access when

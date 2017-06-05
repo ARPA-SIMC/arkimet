@@ -27,6 +27,13 @@ segments during a query without needing to scan through all the `.metadata`
 file contents, and to support summary queries by merging existing summaries
 instead of recomputing them for all data queried.
 
+## General check and repack notes
+
+Since the dataset is intended for long-term archival, repack will never delete
+a data segment. All data segments found without a `.metadata` file or next to
+an empty `.metadata` file will always be rescanned.
+
+
 ## Check and repack on concat segments
 
 ### During check

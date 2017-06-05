@@ -128,6 +128,12 @@ struct State : public std::map<std::string, SegmentState>
 
     const SegmentState& get(const std::string& seg) const;
 
+    /// Count how many segments have this state
+    unsigned count(segment::State state) const;
+
+    /// Check if segments are old enough to be deleted or archived
+    void check_age(const Config& cfg, dataset::Reporter& reporter);
+
     void dump(FILE* out) const;
 };
 
@@ -284,11 +290,12 @@ public:
     virtual void test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx=0) = 0;
 
     /**
-     * Remove the segment from the index.
+     * Remove index data for the given segment making it as if it was never
+     * imported.
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_deindex(const std::string& relpath) = 0;
+    virtual void test_remove_index(const std::string& relpath) = 0;
 };
 
 }

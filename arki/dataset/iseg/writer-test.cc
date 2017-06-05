@@ -113,7 +113,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     auto checker = f.makeOndisk2Checker();
     {
         MaintenanceResults expected(false, 1);
-        expected.by_type[DatasetTest::COUNTED_NEW] = 1;
+        expected.by_type[DatasetTest::COUNTED_DELETED] = 1;
         wassert(actual(*checker).maintenance(expected));
     }
 
@@ -193,7 +193,7 @@ add_method("scan_reindex", [](Fixture& f) {
     auto checker = f.makeOndisk2Checker();
     MaintenanceResults expected(false, 3);
     expected.by_type[DatasetTest::COUNTED_OK] = 2;
-    expected.by_type[DatasetTest::COUNTED_NEW] = 1;
+    expected.by_type[DatasetTest::COUNTED_DELETED] = 1;
     wassert(actual(*checker).maintenance(expected));
 
     // Perform full maintenance and check that things are still ok afterwards
@@ -246,7 +246,7 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
     {
         auto checker = f.makeOndisk2Checker();
         MaintenanceResults expected(false, 3);
-        expected.by_type[DatasetTest::COUNTED_NEW] = 3;
+        expected.by_type[DatasetTest::COUNTED_DELETED] = 3;
         wassert(actual(*checker).maintenance(expected));
 
         // Perform full maintenance and check that things are still ok afterwards
@@ -397,7 +397,7 @@ add_method("data_in_right_segment_reindex", [](Fixture& f) {
     // Run maintenance check
     {
         arki::tests::MaintenanceResults expected(false, 3);
-        expected.by_type[DatasetTest::COUNTED_NEW] = 3;
+        expected.by_type[DatasetTest::COUNTED_DELETED] = 3;
         wassert(actual(*f.makeOndisk2Checker()).maintenance(expected));
     }
 
@@ -444,7 +444,7 @@ add_method("data_in_right_segment_rescan", [](Fixture& f) {
     {
         arki::tests::MaintenanceResults expected(false, 4);
         expected.by_type[DatasetTest::COUNTED_OK] = 3;
-        expected.by_type[DatasetTest::COUNTED_NEW] = 1;
+        expected.by_type[DatasetTest::COUNTED_DELETED] = 1;
         wassert(actual(*f.makeOndisk2Checker()).maintenance(expected));
     }
 
@@ -570,7 +570,7 @@ add_method("scan_nonindexed", [](Fixture& f) {
     {
         auto checker = f.makeIsegChecker();
         MaintenanceResults expected(false, 1);
-        expected.by_type[DatasetTest::COUNTED_NEW] = 1;
+        expected.by_type[DatasetTest::COUNTED_DELETED] = 1;
         wassert(actual(*checker).maintenance(expected));
         ensure(files::hasDontpackFlagfile("testds"));
     }
@@ -901,7 +901,7 @@ add_method("scan_missingdata", [](Fixture& f) {
         auto checker = f.makeIsegChecker();
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
-        expected.by_type[DatasetTest::COUNTED_DELETED] = 1;
+        expected.by_type[DatasetTest::COUNTED_MISSING] = 1;
         wassert(actual(*checker).maintenance(expected));
     }
 

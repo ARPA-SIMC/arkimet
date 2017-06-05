@@ -21,7 +21,7 @@ class Tests : public MaintenanceTest
 {
     using MaintenanceTest::MaintenanceTest;
 
-    void require_rescan() override
+    void make_unaligned() override
     {
         touch("testds/2007/07-07.grib.metadata", 1496167200);
     }
@@ -36,7 +36,28 @@ class Tests : public MaintenanceTest
 void Tests::register_tests()
 {
     MaintenanceTest::register_tests();
-    register_tests_unaligned();
+
+    add_method("check_new", R"(
+        - find data files not known by the index [unaligned]
+    )", [&](Fixture& f) {
+        remove_index();
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
+
+    add_method("check_unaligned", R"(
+        - the segment must not be newer than the index [unaligned]
+    )", [&](Fixture& f) {
+        make_unaligned();
+
+        arki::dataset::NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
 
     add_method("check_empty_metadata", R"(
     - `.metadata` file must not be empty [new]
@@ -47,7 +68,7 @@ void Tests::register_tests()
         NullReporter nr;
         auto state = f.makeSegmentedChecker()->scan(nr);
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_NEW));
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
     });
 
     add_method("check_metadata_timestamp", R"(
@@ -103,6 +124,22 @@ void Tests::register_tests()
         auto state = f.makeSegmentedChecker()->scan(nr);
         wassert(actual(state.size()) == 3u);
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
+    });
+
+    add_method("repack_unaligned", R"(
+        - [unaligned] segments are not touched
+    )", [&](Fixture& f) {
+        make_unaligned();
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "repack", "2 files ok");
+        wassert(actual(writer.get()).repack(e, true));
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
     });
 }
 

@@ -3,25 +3,6 @@
 #include "reader.h"
 #include "arki/dataset/reporter.h"
 #include "arki/types/source/blob.h"
-#if 0
-#include "arki/metadata.h"
-#include "arki/metadata/collection.h"
-#include "arki/configfile.h"
-#include "arki/scan/grib.h"
-#include "arki/scan/bufr.h"
-#include "arki/scan/any.h"
-#include "arki/utils.h"
-#include "arki/utils/files.h"
-#include "arki/utils/sys.h"
-#include "arki/summary.h"
-#include "arki/libconfig.h"
-#include <sstream>
-#include <iostream>
-#include <algorithm>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#endif
 
 using namespace std;
 using namespace arki;
@@ -77,10 +58,13 @@ struct Fixture : public DatasetTest {
         }
     }
 
-    void import_and_delete_one_file(const testdata::Fixture& fixture, std::string& removed_fname)
+    /// Return the relpath of the segment that has been deleted
+    std::string import_and_delete_one_file(const testdata::Fixture& fixture)
     {
         cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
         wassert(import_all(fixture));
+
+        string res = destfile(fixture.test_data[0]);
 
         // Remove all the elements in one file
         {
@@ -91,14 +75,14 @@ struct Fixture : public DatasetTest {
             writer->flush();
         }
 
-        removed_fname = destfile(fixture.test_data[0]);
-
         {
             arki::tests::MaintenanceResults expected(false, count_dataset_files(fixture));
             expected.by_type[COUNTED_OK] = count_dataset_files(fixture) - 1;
-            expected.by_type[COUNTED_NEW] = 1;
+            expected.by_type[COUNTED_DELETED] = 1;
             wassert(actual(*makeOndisk2Checker()).maintenance(expected));
         }
+
+        return res;
     }
 };
 
@@ -155,8 +139,7 @@ add_method("hole_file_and_repack", [](Fixture& f) {
 // Test maintenance scan, on dataset with one file to delete, performing repack
 add_method("delete_file_and_repack", [](Fixture& f) {
     TestData fixture;
-    string removed_fname;
-    wassert(f.import_and_delete_one_file(fixture, removed_fname));
+    string removed_fname = wcallchecked(f.import_and_delete_one_file(fixture));
 
     {
         // Test packing has something to report
@@ -214,26 +197,20 @@ add_method("hole_file_and_check", [](Fixture& f) {
 // Test maintenance scan, on dataset with one file to delete, performing check
 add_method("delete_file_and_check", [](Fixture& f) {
     TestData fixture;
-    string removed_fname;
-    wassert(f.import_and_delete_one_file(fixture, removed_fname));
+    string deleted_relpath = wcallchecked(f.import_and_delete_one_file(fixture));
 
-    {
-        // Test packing has something to report
-        auto checker = f.makeOndisk2Checker();
-        ReporterExpected e;
-        e.rescanned.emplace_back("testds", removed_fname);
-        wassert(actual(*checker).check(e, false));
-    }
+    auto state = f.scan_state();
+    wassert(actual(state.get(deleted_relpath).state) == segment::State(SEGMENT_DELETED));
 
-    // Perform packing and check that things are still ok afterwards
+    // Perform check, nothing happens
     {
         auto checker = f.makeOndisk2Checker();
         ReporterExpected e;
-        e.rescanned.emplace_back("testds", removed_fname);
         wassert(actual(*checker).check(e, true));
-
-        wassert(actual(*checker).maintenance_clean(f.count_dataset_files(fixture)));
     }
+
+    state = f.scan_state();
+    wassert(actual(state.get(deleted_relpath).state) == segment::State(SEGMENT_DELETED));
 
     // Ensure that we have the summary cache
     wassert(actual_file("testds/.summaries/all.summary").exists());
@@ -256,7 +233,7 @@ add_method("delete_index_and_check", [](Fixture& f) {
     // All files are found as files to be indexed
     {
         arki::tests::MaintenanceResults expected(false, f.count_dataset_files(fixture));
-        expected.by_type[DatasetTest::COUNTED_NEW] = f.count_dataset_files(fixture);
+        expected.by_type[DatasetTest::COUNTED_UNALIGNED] = f.count_dataset_files(fixture);
         wassert(actual(*f.makeOndisk2Checker()).maintenance(expected));
     }
 

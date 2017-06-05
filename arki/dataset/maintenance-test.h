@@ -83,22 +83,21 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
     /// Swap the two data in 2007/07-07.grib
     void swap_data();
 
-    /// Remove 2007/07-07.grib from index
-    void deindex();
+    /**
+     * Remove index data for 2007/07-07.grib, making it as if it was never
+     * imported
+     */
+    void remove_index();
 
-    /// Make it so that 2007/07-07.grib requires a rescan
-    virtual void require_rescan() = 0;
+    /**
+     * Make the segment 2007/07-07.grib show up as unaligned
+     */
+    virtual void make_unaligned() = 0;
 
     void register_tests() override;
 
     virtual void register_tests_concat();
     virtual void register_tests_dir();
-
-    /**
-     * Extra tests for datasets that can detect changes in data files
-     * potentially not reflected in indices
-     */
-    virtual void register_tests_unaligned();
 
     /// Remove a file or a directory
     static void rm_r(const std::string& pathname);

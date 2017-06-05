@@ -176,6 +176,12 @@ std::string manifest_idx_fname()
     return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
+segmented::State DatasetTest::scan_state()
+{
+    NullReporter nr;
+    return makeSegmentedChecker()->scan(nr);
+}
+
 std::unique_ptr<dataset::segmented::Reader> DatasetTest::makeSegmentedReader()
 {
     auto ds = config().create_reader();
@@ -403,9 +409,9 @@ void MaintenanceCollector::operator()(const std::string& file, dataset::segment:
     if (state.has(SEGMENT_ARCHIVE_AGE)) ++counts[tests::DatasetTest::COUNTED_ARCHIVE_AGE];
     if (state.has(SEGMENT_DELETE_AGE))  ++counts[tests::DatasetTest::COUNTED_DELETE_AGE];
     if (state.has(SEGMENT_DIRTY))       ++counts[tests::DatasetTest::COUNTED_DIRTY];
-    if (state.has(SEGMENT_NEW))         ++counts[tests::DatasetTest::COUNTED_NEW];
-    if (state.has(SEGMENT_UNALIGNED))   ++counts[tests::DatasetTest::COUNTED_UNALIGNED];
     if (state.has(SEGMENT_DELETED))     ++counts[tests::DatasetTest::COUNTED_DELETED];
+    if (state.has(SEGMENT_UNALIGNED))   ++counts[tests::DatasetTest::COUNTED_UNALIGNED];
+    if (state.has(SEGMENT_MISSING))     ++counts[tests::DatasetTest::COUNTED_MISSING];
     if (state.has(SEGMENT_CORRUPTED))   ++counts[tests::DatasetTest::COUNTED_CORRUPTED];
 }
 
@@ -921,7 +927,6 @@ void ActualChecker<Dataset>::repack(const ReporterExpected& expected, bool write
 {
     CollectReporter reporter;
     wassert(this->_actual->repack(reporter, write));
-    // reporter.dump(stderr);
     wassert(reporter.check(expected));
 }
 

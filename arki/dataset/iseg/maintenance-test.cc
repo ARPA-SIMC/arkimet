@@ -19,9 +19,9 @@ class Tests : public MaintenanceTest
 {
     using MaintenanceTest::MaintenanceTest;
 
-    void require_rescan() override
+    void make_unaligned() override
     {
-        touch("testds/2007/07-07.grib.index", 1496167200);
+        sys::unlink("testds/2007/07-07.grib.index");
     }
 
     void register_tests() override;
@@ -35,13 +35,43 @@ void Tests::register_tests()
 {
     MaintenanceTest::register_tests();
 
-    /**
-     * Although iseg could detect if the data of a segment is newer than its
-     * index, the timestamp of the index is updated by various kinds of sqlite
-     * operations, making the test rather useless, because it's likely that the
-     * index timestamp would get updated before the mismatch is detected.
-     */
-    // register_tests_unaligned();
+    add_method("check_new", R"(
+        - find data files not known by the index [unaligned]
+    )", [&](Fixture& f) {
+        remove_index();
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
+
+    add_method("check_unaligned", R"(
+        - segments found in the dataset without a `.index` file are marked for rescanning [unaligned]
+    )", [&](Fixture& f) {
+        make_unaligned();
+
+        arki::dataset::NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
+
+    add_method("repack_unaligned", R"(
+        - [unaligned] segments are not touched
+    )", [&](Fixture& f) {
+        make_unaligned();
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "repack", "2 files ok");
+        wassert(actual(writer.get()).repack(e, true));
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
 }
 
 Tests test_iseg_plain("arki_dataset_iseg_maintenance", MaintenanceTest::SEGMENT_CONCAT, "type=iseg\nformat=grib\n");

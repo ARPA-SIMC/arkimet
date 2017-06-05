@@ -440,11 +440,11 @@ void Checker<Config>::test_truncate_data(const std::string& relpath, unsigned da
 }
 
 template<typename Config>
-void Checker<Config>::test_deindex(const std::string& relpath)
+void Checker<Config>::test_remove_index(const std::string& relpath)
 {
     size_t pos = relpath.find('/');
     if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
-    return shard(relpath.substr(0, pos)).test_corrupt_data(relpath.substr(pos + 1));
+    return shard(relpath.substr(0, pos)).test_remove_index(relpath.substr(pos + 1));
 }
 
 template<typename Config>

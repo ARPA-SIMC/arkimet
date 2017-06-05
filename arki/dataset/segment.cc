@@ -43,8 +43,8 @@ std::string State::to_string() const
     if (value == SEGMENT_OK)         res.push_back("OK");
     if (value & SEGMENT_DIRTY)       res.push_back("DIRTY");
     if (value & SEGMENT_UNALIGNED)   res.push_back("UNALIGNED");
+    if (value & SEGMENT_MISSING)     res.push_back("MISSING");
     if (value & SEGMENT_DELETED)     res.push_back("DELETED");
-    if (value & SEGMENT_NEW)         res.push_back("NEW");
     if (value & SEGMENT_CORRUPTED)   res.push_back("CORRUPTED");
     if (value & SEGMENT_ARCHIVE_AGE) res.push_back("ARCHIVE_AGE");
     if (value & SEGMENT_DELETE_AGE)  res.push_back("DELETE_AGE");

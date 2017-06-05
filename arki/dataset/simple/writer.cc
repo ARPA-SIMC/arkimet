@@ -3,12 +3,15 @@
 #include "arki/dataset/simple/datafile.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/segment.h"
+#include "arki/dataset/reporter.h"
+#include "arki/dataset/step.h"
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
 #include "arki/matcher.h"
 #include "arki/metadata/collection.h"
 #include "arki/utils/files.h"
+#include "arki/scan/dir.h"
 #include "arki/scan/any.h"
 #include "arki/postprocess.h"
 #include "arki/sort.h"
@@ -26,6 +29,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
+using arki::core::Time;
 
 namespace arki {
 namespace dataset {
@@ -156,6 +160,89 @@ void Checker::removeAll(dataset::Reporter& reporter, bool writable) { acquire_lo
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags) { acquire_lock(); IndexedChecker::repack(reporter, writable, test_flags); release_lock(); }
 void Checker::check(dataset::Reporter& reporter, bool fix, bool quick) { acquire_lock(); IndexedChecker::check(reporter, fix, quick); release_lock(); }
 
+segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
+{
+    segmented::State segments_state;
+
+    //
+    // Populate segments_state with the contents of the index
+    //
+
+    m_idx->scan_files([&](const std::string& relpath, segment::State state, const metadata::Collection& mds) {
+        // Compute the span of reftimes inside the segment
+        unique_ptr<Time> md_begin;
+        unique_ptr<Time> md_until;
+        if (mds.empty())
+        {
+            reporter.segment_info(name(), relpath, "index knows of this segment but contains no data for it");
+            md_begin.reset(new Time(0, 0, 0));
+            md_until.reset(new Time(0, 0, 0));
+            state = SEGMENT_UNALIGNED;
+        } else {
+            if (!mds.expand_date_range(md_begin, md_until))
+            {
+                reporter.segment_info(name(), relpath, "index data for this segment has no reference time information");
+                state = SEGMENT_CORRUPTED;
+                md_begin.reset(new Time(0, 0, 0));
+                md_until.reset(new Time(0, 0, 0));
+            } else {
+                // Ensure that the reftime span fits inside the segment step
+                Time seg_begin;
+                Time seg_until;
+                if (config().step().path_timespan(relpath, seg_begin, seg_until))
+                {
+                    if (*md_begin < seg_begin || *md_until > seg_until)
+                    {
+                        reporter.segment_info(name(), relpath, "segment contents do not fit inside the step of this dataset");
+                        state = SEGMENT_CORRUPTED;
+                    }
+                    // Expand segment timespan to the full possible segment timespan
+                    *md_begin = seg_begin;
+                    *md_until = seg_until;
+                } else {
+                    reporter.segment_info(name(), relpath, "segment name does not fit the step of this dataset");
+                    state = SEGMENT_CORRUPTED;
+                }
+            }
+        }
+
+        if (state.is_ok())
+            state = segment_manager().check(reporter, name(), relpath, mds, quick);
+
+        segments_state.insert(make_pair(relpath, segmented::SegmentState(state, *md_begin, *md_until)));
+    });
+
+
+    //
+    // Add information from the state of files on disk
+    //
+
+    std::set<std::string> disk(scan::dir(config().path, true));
+
+    // files: a, b, c,    e, f, g
+    // index:       c, d, e, f, g
+
+    for (auto& i: segments_state)
+    {
+        if (disk.erase(i.first) == 0)
+        {
+            // The file did not exist on disk
+            reporter.segment_info(name(), i.first, "segment found in index but not on disk");
+            i.second.state = i.second.state - SEGMENT_UNALIGNED + SEGMENT_MISSING;
+        }
+    }
+    for (const auto& relpath : disk)
+    {
+        reporter.segment_info(name(), relpath, "segment found on disk with no associated index data");
+        segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_UNALIGNED)));
+    }
+
+    segments_state.check_age(config(), reporter);
+
+    return segments_state;
+}
+
+
 void Checker::indexSegment(const std::string& relname, metadata::Collection&& mds)
 {
     string pathname = str::joinpath(config().path, relname);
@@ -282,9 +369,9 @@ size_t Checker::vacuum()
     return m_mft->vacuum();
 }
 
-void Checker::test_deindex(const std::string& relpath)
+void Checker::test_remove_index(const std::string& relpath)
 {
-    IndexedChecker::test_deindex(relpath);
+    m_idx->test_deindex(relpath);
     string pathname = str::joinpath(config().path, relpath);
     sys::unlink_ifexists(pathname + ".metadata");
     sys::unlink_ifexists(pathname + ".summary");
