@@ -311,7 +311,7 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
     segmented::State segments_state;
 
     list_segments([&](const std::string& relpath) {
-        if (!sys::exists(str::joinpath(config().path, relpath)) && ! sys::exists(str::joinpath(config().path, relpath + ".gz")))
+        if (!segment_manager().is_segment(config().format, relpath))
         {
             segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_DELETED)));
             return;

@@ -60,37 +60,9 @@ namespace {
 
 struct BaseSegmentManager : public segment::SegmentManager
 {
-    std::string root;
     bool mockdata;
 
-    BaseSegmentManager(const std::string& root, bool mockdata=false) : root(root), mockdata(mockdata) {}
-
-    Segment* get_segment(const std::string& relname) override
-    {
-        return get_segment(utils::get_format(relname), relname);
-    }
-
-    Segment* get_segment(const std::string& format, const std::string& relname) override
-    {
-        // Try to reuse an existing instance
-        Segment* res = segments.get(relname);
-        if (res) return res;
-
-        // Ensure that the directory for 'relname' exists
-        string absname = str::joinpath(root, relname);
-        size_t pos = absname.rfind('/');
-        if (pos != string::npos)
-            sys::makedirs(absname.substr(0, pos));
-
-        // Refuse to write to compressed files
-        if (scan::isCompressed(absname))
-            throw_consistency_error("accessing data file " + relname,
-                    "cannot update compressed data files: please manually uncompress it first");
-
-        // Else we need to create an appropriate one
-        unique_ptr<Segment> new_writer(create_for_format(format, relname, absname));
-        return segments.add(move(new_writer));
-    }
+    BaseSegmentManager(const std::string& root, bool mockdata=false) : SegmentManager(root), mockdata(mockdata) {}
 
     // Instantiate the right Segment implementation for a segment that already
     // exists. Returns 0 if the segment does not exist.
@@ -133,8 +105,6 @@ struct BaseSegmentManager : public segment::SegmentManager
         return res;
     }
 
-    virtual unique_ptr<Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
-
     Pending repack(const std::string& relname, metadata::Collection& mds, unsigned test_flags=0)
     {
         string format = utils::get_format(relname);
@@ -165,6 +135,35 @@ struct BaseSegmentManager : public segment::SegmentManager
         string absname = str::joinpath(root, relname);
         unique_ptr<Segment> maint(create_for_format(format, relname, absname));
         return maint->truncate(offset);
+    }
+
+    bool _is_segment(const std::string& format, const std::string& relname) override
+    {
+        string absname = str::joinpath(root, relname);
+
+        if (sys::isdir(absname))
+            // If it's a directory, it must be a dir segment
+            return sys::exists(str::joinpath(absname, ".sequence"));
+
+        // If it's not a directory, it must exist in thee file system,
+        // compressed or not
+        if (!sys::exists(absname) && !sys::exists(absname + ".gz"))
+            return false;
+
+        if (format == "grib" || format == "grib1" || format == "grib2")
+        {
+            return true;
+        } else if (format == "bufr") {
+            return true;
+        } else if (format == "odimh5" || format == "h5" || format == "odim") {
+            // HDF5 files cannot be appended, and they cannot be a segment of
+            // their own
+            return false;
+        } else if (format == "vm2") {
+            return true;
+        } else {
+            return false;
+        }
     }
 };
 
@@ -235,6 +234,12 @@ struct HoleDirSegmentManager : public BaseSegmentManager
 
 }
 
+
+SegmentManager::SegmentManager(const std::string& root)
+    : root(root)
+{
+}
+
 SegmentManager::~SegmentManager()
 {
 }
@@ -247,6 +252,43 @@ void SegmentManager::flush_writers()
 void SegmentManager::foreach_cached(std::function<void(Segment&)> func)
 {
     segments.foreach_cached(func);
+}
+
+Segment* SegmentManager::get_segment(const std::string& relname)
+{
+    return get_segment(utils::get_format(relname), relname);
+}
+
+Segment* SegmentManager::get_segment(const std::string& format, const std::string& relname)
+{
+    // Try to reuse an existing instance
+    Segment* res = segments.get(relname);
+    if (res) return res;
+
+    // Ensure that the directory for 'relname' exists
+    string absname = str::joinpath(root, relname);
+    size_t pos = absname.rfind('/');
+    if (pos != string::npos)
+        sys::makedirs(absname.substr(0, pos));
+
+    // Refuse to write to compressed files
+    if (scan::isCompressed(absname))
+        throw_consistency_error("accessing data file " + relname,
+                "cannot update compressed data files: please manually uncompress it first");
+
+    // Else we need to create an appropriate one
+    unique_ptr<Segment> new_writer(create_for_format(format, relname, absname));
+    return segments.add(move(new_writer));
+}
+
+bool SegmentManager::is_segment(const std::string& relname)
+{
+    return _is_segment(utils::get_format(relname), relname);
+}
+
+bool SegmentManager::is_segment(const std::string& format, const std::string& relname)
+{
+    return _is_segment(format, relname);
 }
 
 std::unique_ptr<SegmentManager> SegmentManager::get(const std::string& root, bool force_dir, bool mock_data)

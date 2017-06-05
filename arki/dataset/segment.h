@@ -210,17 +210,32 @@ class SegmentManager
 {
 protected:
     impl::Cache<Segment> segments;
+    std::string root;
+
+    virtual std::unique_ptr<Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
+    virtual bool _is_segment(const std::string& format, const std::string& relname) = 0;
 
 public:
+    SegmentManager(const std::string& root);
     virtual ~SegmentManager();
 
+    /**
+     * Empty the cache of segments, flushing and closing all files currently
+     * open
+     */
     void flush_writers();
 
     /// Run a function on each cached segment
     void foreach_cached(std::function<void(Segment&)>);
 
-    virtual Segment* get_segment(const std::string& relname) = 0;
-    virtual Segment* get_segment(const std::string& format, const std::string& relname) = 0;
+    Segment* get_segment(const std::string& relname);
+    Segment* get_segment(const std::string& format, const std::string& relname);
+
+    /// Check if the given relname points to a segment
+    bool is_segment(const std::string& relname);
+
+    /// Check if the given relname points to a segment
+    bool is_segment(const std::string& format, const std::string& relname);
 
     /**
      * Repack the file relname, so that it contains only the data in mds, in
