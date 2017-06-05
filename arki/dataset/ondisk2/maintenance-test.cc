@@ -31,6 +31,7 @@ class Tests : public MaintenanceTest
      * index sadly lacks a unique constraint on (file, offset)
      */
     bool can_detect_overlap() const override { return true; }
+    bool can_detect_segments_out_of_step() const override { return true; }
 };
 
 void Tests::register_tests()

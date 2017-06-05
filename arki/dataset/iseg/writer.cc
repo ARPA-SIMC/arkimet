@@ -705,8 +705,12 @@ size_t Checker::reorder_segment_backend(WIndex& idx, Pending& p, const std::stri
 size_t Checker::removeSegment(const std::string& relpath, bool withData)
 {
     string idx_abspath = str::joinpath(config().path, relpath + ".index");
-    size_t res = sys::size(idx_abspath);
-    sys::unlink_ifexists(idx_abspath);
+    size_t res = 0;
+    if (sys::exists(idx_abspath))
+    {
+        res = sys::size(idx_abspath);
+        sys::unlink(idx_abspath);
+    }
     return res + segmented::Checker::removeSegment(relpath, withData);
 }
 

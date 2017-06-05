@@ -41,6 +41,12 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
      */
     virtual bool can_detect_overlap() const = 0;
 
+    /**
+     * Return true if this dataset can deal with segments whose name does not
+     * fit the segment step.
+     */
+    virtual bool can_detect_segments_out_of_step() const = 0;
+
     std::unique_ptr<dataset::segmented::Checker> checker() { return fixture->makeSegmentedChecker(); }
 
     /**

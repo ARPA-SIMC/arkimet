@@ -322,18 +322,19 @@ void MaintenanceTest::register_tests()
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
     });
 
-    add_method("check_segment_name_must_fit_step", R"(
-    - the segment name must represent an interval matching the dataset step
-      (FIXME: should this be disabled for archives, to deal with datasets that had
-      a change of step in their lifetime?) [corrupted]
-    )", [&](Fixture& f) {
-        checker()->test_rename("2007/07-07.grib", "2007/07.grib");
+    if (can_detect_segments_out_of_step())
+        add_method("check_segment_name_must_fit_step", R"(
+        - the segment name must represent an interval matching the dataset step
+          (FIXME: should this be disabled for archives, to deal with datasets that had
+          a change of step in their lifetime?) [corrupted]
+        )", [&](Fixture& f) {
+            checker()->test_rename("2007/07-07.grib", "2007/07.grib");
 
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07.grib").state) == segment::State(SEGMENT_CORRUPTED));
-    });
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get("2007/07.grib").state) == segment::State(SEGMENT_CORRUPTED));
+        });
 
     add_method("check_isordered", R"(
         - data on disk must match the order of data used by queries [dirty]
