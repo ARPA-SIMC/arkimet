@@ -382,6 +382,16 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
         segments_state.insert(make_pair(relpath, segmented::SegmentState(untrusted_index ? SEGMENT_UNALIGNED : SEGMENT_DELETED)));
     }
 
+    // Scenario: the index has been deleted, and some data has been imported
+    // and appended to an existing segment. That segment would show in the
+    // index as DIRTY, because it has a gap of data not indexed.
+    // Since the needs-check-do-not-pack file is present, however, mark that
+    // file for rescanning instead of repacking.
+    if (untrusted_index)
+        for (auto& i: segments_state)
+            if (i.second.state.has(SEGMENT_DIRTY))
+                i.second.state = i.second.state - SEGMENT_DIRTY + SEGMENT_UNALIGNED;
+
     segments_state.check_age(config(), reporter);
 
     return segments_state;

@@ -78,6 +78,35 @@ void Tests::register_tests()
         wassert(actual_file("testds/needs-check-do-not-pack").exists());
     });
 
+    add_method("check_missing_index_rescan_partial_files", R"(
+        - while `needs-check-do-not-pack` is present, files with gaps are
+          marked for rescanning instead of repacking. This prevents a scenario
+          in which, after the index has been deleted, and some data has been
+          imported that got appended to an existing segment, that segment would
+          be considered as needing repack instead of rescan. [unaligned]
+    )", [&](Fixture& f) {
+        // Remove the index and make it as if the second datum in
+        // 2007/07-07.grib has never been imported
+        sys::unlink("testds/index.sqlite");
+        if (sys::isdir("testds/2007/07-07.grib"))
+            sys::unlink("testds/2007/07-07.grib/000001.grib");
+        else {
+            sys::File df("testds/2007/07-07.grib", O_RDWR);
+            df.ftruncate(34960);
+        }
+
+        // Import the second datum of 2007/07-07.grib again
+        {
+            auto w = f.makeSegmentedWriter();
+            wassert(actual(w->acquire(f.import_results[3])) == dataset::Writer::ACQ_OK);
+        }
+
+        // Make sure that the segment is seen as unaligned instead of dirty
+        auto state = f.scan_state();
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
+
     add_method("check_unaligned", R"(
         - if a `needs-check-do-not-pack` file is present, segments not known by
           the index are marked for reindexing instead of deletion [unaligned]
