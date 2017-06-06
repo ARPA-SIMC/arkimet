@@ -178,6 +178,7 @@ std::string manifest_idx_fname()
 
 segmented::State DatasetTest::scan_state()
 {
+    // OstreamReporter nr(cerr);
     NullReporter nr;
     auto checker = makeSegmentedChecker();
     return checker->scan(nr);

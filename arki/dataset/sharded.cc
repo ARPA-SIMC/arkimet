@@ -408,19 +408,19 @@ size_t Checker<Config>::vacuum(dataset::Reporter& reporter)
 }
 
 template<typename Config>
-void Checker<Config>::test_make_overlap(const std::string& relpath, unsigned data_idx)
+void Checker<Config>::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
 {
     size_t pos = relpath.find('/');
     if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
-    return shard(relpath.substr(0, pos)).test_make_overlap(relpath.substr(pos + 1), data_idx);
+    return shard(relpath.substr(0, pos)).test_make_overlap(relpath.substr(pos + 1), overlap_size, data_idx);
 }
 
 template<typename Config>
-void Checker<Config>::test_make_hole(const std::string& relpath, unsigned data_idx)
+void Checker<Config>::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
 {
     size_t pos = relpath.find('/');
     if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
-    return shard(relpath.substr(0, pos)).test_make_hole(relpath.substr(pos + 1), data_idx);
+    return shard(relpath.substr(0, pos)).test_make_hole(relpath.substr(pos + 1), hole_size, data_idx);
 }
 
 template<typename Config>

@@ -223,8 +223,8 @@ public:
 
     void test_rename(const std::string& relname, const std::string& new_relname) override;
     void test_deindex(const std::string& relname) override;
-    void test_make_overlap(const std::string& relname, unsigned data_idx) override;
-    void test_make_hole(const std::string& relname, unsigned data_idx) override;
+    void test_make_overlap(const std::string& relname, unsigned overlap_size, unsigned data_idx) override;
+    void test_make_hole(const std::string& relname, unsigned hole_size, unsigned data_idx) override;
 };
 
 class WContents : public Contents
@@ -307,8 +307,8 @@ public:
 
     void test_rename(const std::string& relname, const std::string& new_relname) override;
     void test_deindex(const std::string& relname) override;
-    void test_make_overlap(const std::string& relname, unsigned data_idx) override;
-    void test_make_hole(const std::string& relname, unsigned data_idx) override;
+    void test_make_overlap(const std::string& relname, unsigned overlap_size, unsigned data_idx) override;
+    void test_make_hole(const std::string& relname, unsigned hole_size, unsigned data_idx) override;
 };
 
 }

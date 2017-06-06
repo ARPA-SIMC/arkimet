@@ -113,8 +113,8 @@ public:
     void releaseSegment(const std::string& relpath, const std::string& destpath) override;
     size_t vacuum(dataset::Reporter& reporter) override;
 
-    void test_make_overlap(const std::string& relpath, unsigned data_idx=1) override;
-    void test_make_hole(const std::string& relpath, unsigned data_idx=0) override;
+    void test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx=1) override;
+    void test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx=0) override;
     void test_corrupt_data(const std::string& relpath, unsigned data_idx=0) override;
     void test_truncate_data(const std::string& relpath, unsigned data_idx=0) override;
     void test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx) override;

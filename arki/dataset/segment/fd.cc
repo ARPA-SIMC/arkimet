@@ -334,7 +334,7 @@ void Segment::truncate(size_t offset)
     }
 }
 
-void Segment::test_make_overlap(metadata::Collection& mds, unsigned data_idx)
+void Segment::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
 {
     close();
     File fd(this->fd.name(), O_RDWR);
@@ -343,38 +343,38 @@ void Segment::test_make_overlap(metadata::Collection& mds, unsigned data_idx)
     std::vector<uint8_t> buf(end - start_ofs);
     fd.lseek(start_ofs);
     fd.read_all_or_throw(buf.data(), buf.size());
-    fd.lseek(start_ofs - 1);
+    fd.lseek(start_ofs - overlap_size);
     fd.write_all_or_throw(buf.data(), buf.size());
-    fd.ftruncate(end - 1);
+    fd.ftruncate(end - overlap_size);
 
     for (unsigned i = data_idx; i < mds.size(); ++i)
     {
         unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
-        source->offset -= 1;
+        source->offset -= overlap_size;
         mds[i].set_source(move(source));
     }
 }
 
-void Segment::test_make_hole(metadata::Collection& mds, unsigned data_idx)
+void Segment::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
     close();
     File fd(this->fd.name(), O_RDWR);
     off_t end = fd.lseek(0, SEEK_END);
     if (data_idx >= mds.size())
     {
-        fd.ftruncate(end + 1);
+        fd.ftruncate(end + hole_size);
     } else {
         off_t start_ofs = mds[data_idx].sourceBlob().offset;
         std::vector<uint8_t> buf(end - start_ofs);
         fd.lseek(start_ofs);
         fd.read_all_or_throw(buf.data(), buf.size());
-        fd.lseek(start_ofs + 1);
+        fd.lseek(start_ofs + hole_size);
         fd.write_all_or_throw(buf.data(), buf.size());
 
         for (unsigned i = data_idx; i < mds.size(); ++i)
         {
             unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
-            source->offset += 1;
+            source->offset += hole_size;
             mds[i].set_source(move(source));
         }
     }

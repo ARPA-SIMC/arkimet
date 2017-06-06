@@ -351,21 +351,21 @@ public:
 
     /**
      * Move the all the data in the segment starting from the one in position
-     * `data_idx` backwards by 1.
+     * `data_idx` backwards by `overlap_size.
      *
      * `mds` represents the state of the segment before the move, and is
      * updated to reflect the new state of the segment.
      */
-    virtual void test_make_overlap(metadata::Collection& mds, unsigned data_idx) = 0;
+    virtual void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) = 0;
 
     /**
      * Move the all the data in the segment starting from the one in position
-     * `data_idx` forwards by 1.
+     * `data_idx` forwards by `hole_size`.
      *
      * `mds` represents the state of the segment before the move, and is
      * updated to reflect the new state of the segment.
      */
-    virtual void test_make_hole(metadata::Collection& mds, unsigned data_idx) = 0;
+    virtual void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) = 0;
 
     /**
      * Corrupt the data at position `data_idx`, by replacing its first byte

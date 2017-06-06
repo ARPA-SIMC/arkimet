@@ -77,17 +77,19 @@ struct Index
 
     /**
      * Update the index so that the offset of all data in the segment starting
-     * from the one at position `data_idx` are shifted backwards by one, so
-     * that the ones at `data_idx - 1` and at `data_idx` overlap.
+     * from the one at position `data_idx` are shifted backwards by
+     * `overlap_size`, so that the ones at `data_idx - 1` and at `data_idx`
+     * overlap.
      */
-    virtual void test_make_overlap(const std::string& relname, unsigned data_idx) = 0;
+    virtual void test_make_overlap(const std::string& relname, unsigned overlap_size, unsigned data_idx) = 0;
 
     /**
      * Update the index so that the offset of all data in the segment starting
-     * from the one at position `data_idx` are shifted forwards by one, so that
-     * a hole is created between the ones at `data_idx - 1` and at `data_idx`
+     * from the one at position `data_idx` are shifted forwards by `hole_size`,
+     * so that a hole is created between the ones at `data_idx - 1` and at
+     * `data_idx`
      */
-    virtual void test_make_hole(const std::string& relname, unsigned data_idx) = 0;
+    virtual void test_make_hole(const std::string& relname, unsigned hole_size, unsigned data_idx) = 0;
 };
 
 }

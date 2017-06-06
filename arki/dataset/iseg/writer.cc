@@ -717,22 +717,22 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
     return 0;
 }
 
-void Checker::test_make_overlap(const std::string& relpath, unsigned data_idx)
+void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
 {
     WIndex idx(m_config, relpath);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    segment_manager().get_segment(relpath)->test_make_overlap(mds, data_idx);
-    idx.test_make_overlap(data_idx);
+    segment_manager().get_segment(relpath)->test_make_overlap(mds, overlap_size, data_idx);
+    idx.test_make_overlap(overlap_size, data_idx);
 }
 
-void Checker::test_make_hole(const std::string& relpath, unsigned data_idx)
+void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
 {
     WIndex idx(m_config, relpath);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    segment_manager().get_segment(relpath)->test_make_hole(mds, data_idx);
-    idx.test_make_hole(data_idx);
+    segment_manager().get_segment(relpath)->test_make_hole(mds, hole_size, data_idx);
+    idx.test_make_hole(hole_size, data_idx);
 }
 
 void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)

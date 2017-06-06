@@ -76,8 +76,8 @@ public:
     void removeAll(Reporter& reporter, bool writable) override;
     void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
 
-    void test_make_overlap(const std::string& relpath, unsigned data_idx=1) override;
-    void test_make_hole(const std::string& relpath, unsigned data_idx=0) override;
+    void test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx=1) override;
+    void test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx=0) override;
     void test_corrupt_data(const std::string& relpath, unsigned data_idx=0) override;
     void test_truncate_data(const std::string& relpath, unsigned data_idx=0) override;
     void test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx) override;

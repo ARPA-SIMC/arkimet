@@ -957,7 +957,7 @@ void WIndex::vacuum()
     //m_db.exec("PRAGMA journal_mode = PERSIST");
 }
 
-void WIndex::test_make_overlap(unsigned data_idx)
+void WIndex::test_make_overlap(unsigned overlap_size, unsigned data_idx)
 {
     // Get the minimum offset to move
     uint64_t offset = 0;
@@ -971,12 +971,11 @@ void WIndex::test_make_overlap(unsigned data_idx)
 
     // Move all offsets >= of the first one back by 1
     Query query("test_make_overlap", m_db);
-    query.compile("UPDATE md SET offset=offset-1 WHERE offset >= ?");
-    query.bind(1, offset);
-    query.execute();
+    query.compile("UPDATE md SET offset=offset-? WHERE offset >= ?");
+    query.run(overlap_size, offset);
 }
 
-void WIndex::test_make_hole(unsigned data_idx)
+void WIndex::test_make_hole(unsigned hole_size, unsigned data_idx)
 {
     // Get the minimum offset to move
     uint64_t offset = 0;
@@ -996,7 +995,7 @@ void WIndex::test_make_hole(unsigned data_idx)
         return;
 
     Query query("test_make_hole", m_db);
-    query.compile("UPDATE md SET offset = offset + 1 WHERE offset = ?");
+    query.compile("UPDATE md SET offset = offset + ? WHERE offset = ?");
 
     Query sel("select_ids", m_db);
     sel.compile("SELECT offset FROM md WHERE offset >= ? ORDER BY offset DESC");
@@ -1004,7 +1003,7 @@ void WIndex::test_make_hole(unsigned data_idx)
 
     // Move all offsets >= of the first one back by 1
     sel.execute([&]{
-        query.run(sel.fetch<uint64_t>(0));
+        query.run(hole_size, sel.fetch<uint64_t>(0));
     });
 }
 

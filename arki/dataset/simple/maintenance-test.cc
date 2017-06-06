@@ -133,5 +133,9 @@ Tests test_simple_bufr_plain("arki_dataset_simple_maintenance_bufr_plain", Maint
 Tests test_simple_bufr_sqlite("arki_dataset_simple_maintenance_bufr_sqlite", MaintenanceTest::SEGMENT_CONCAT, "bufr", "type=simple\nindex_type=sqlite");
 Tests test_simple_bufr_plain_dir("arki_dataset_simple_maintenance_bufr_plain_dirs", MaintenanceTest::SEGMENT_DIR, "bufr", "type=simple\nindex_type=plain\nsegments=dir\n");
 Tests test_simple_bufr_sqlite_dir("arki_dataset_simple_maintenance_bufr_sqlite_dirs", MaintenanceTest::SEGMENT_DIR, "bufr", "type=simple\nindex_type=sqlite\nsegments=dir\n");
+Tests test_simple_vm2_plain("arki_dataset_simple_maintenance_vm2_plain", MaintenanceTest::SEGMENT_CONCAT, "vm2", "type=simple\nindex_type=plain\n");
+Tests test_simple_vm2_sqlite("arki_dataset_simple_maintenance_vm2_sqlite", MaintenanceTest::SEGMENT_CONCAT, "vm2", "type=simple\nindex_type=sqlite");
+Tests test_simple_vm2_plain_dir("arki_dataset_simple_maintenance_vm2_plain_dirs", MaintenanceTest::SEGMENT_DIR, "vm2", "type=simple\nindex_type=plain\nsegments=dir\n");
+Tests test_simple_vm2_sqlite_dir("arki_dataset_simple_maintenance_vm2_sqlite_dirs", MaintenanceTest::SEGMENT_DIR, "vm2", "type=simple\nindex_type=sqlite\nsegments=dir\n");
 
 }

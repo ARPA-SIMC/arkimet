@@ -48,6 +48,13 @@ Fixture::Fixture(const std::string& format, const std::string& cfg_instance)
         test_relpath_wrongstep = "2007/07.bufr";
         test_datum_size = 172;
     }
+    else if (format == "vm2")
+    {
+        import_files = { "inbound/mainttest.vm2" };
+        test_relpath = "2007/07-07.vm2";
+        test_relpath_wrongstep = "2007/07.vm2";
+        test_datum_size = 34;
+    }
 }
 
 void Fixture::state_is(unsigned segment_count, unsigned test_relpath_state)
@@ -75,17 +82,17 @@ MaintenanceTest::~MaintenanceTest()
 
 void MaintenanceTest::make_hole_start()
 {
-    fixture->makeSegmentedChecker()->test_make_hole(fixture->test_relpath, 0);
+    fixture->makeSegmentedChecker()->test_make_hole(fixture->test_relpath, 10, 0);
 }
 
 void MaintenanceTest::make_hole_middle()
 {
-    fixture->makeSegmentedChecker()->test_make_hole(fixture->test_relpath, 1);
+    fixture->makeSegmentedChecker()->test_make_hole(fixture->test_relpath, 10, 1);
 }
 
 void MaintenanceTest::make_hole_end()
 {
-    fixture->makeSegmentedChecker()->test_make_hole(fixture->test_relpath, 2);
+    fixture->makeSegmentedChecker()->test_make_hole(fixture->test_relpath, 10, 2);
 }
 
 void MaintenanceTest::corrupt_first()
@@ -216,7 +223,10 @@ void MaintenanceTest::register_tests()
         add_method("check_data_overlap", R"(
             - no pair of (offset, size) data spans from the index can overlap [unaligned]
         )", [&](Fixture& f) {
-            f.makeSegmentedChecker()->test_make_overlap(f.test_relpath, 1);
+            if (segment_type == SEGMENT_DIR)
+                f.makeSegmentedChecker()->test_make_overlap(f.test_relpath, 1, 1);
+            else
+                f.makeSegmentedChecker()->test_make_overlap(f.test_relpath, f.test_datum_size / 2, 1);
 
             // TODO: should it be CORRUPTED?
             wassert(f.state_is(3, SEGMENT_UNALIGNED));

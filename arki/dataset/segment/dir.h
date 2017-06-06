@@ -101,8 +101,8 @@ public:
     /// Call f for each nnnnnn.format file in the directory segment, passing the file name
     void foreach_datafile(std::function<void(const char*)> f);
 
-    void test_make_overlap(metadata::Collection& mds, unsigned data_idx) override;
-    void test_make_hole(metadata::Collection& mds, unsigned data_idx) override;
+    void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
+    void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
     void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
 
 protected:
