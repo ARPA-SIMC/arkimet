@@ -77,7 +77,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     auto checker = f.makeOndisk2Checker();
     {
         MaintenanceResults expected(false, 1);
-        expected.by_type[DatasetTest::COUNTED_NEW] = 1;
+        expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 1;
         wassert(actual(*checker).maintenance(expected));
     }
 
@@ -157,7 +157,7 @@ add_method("scan_reindex", [](Fixture& f) {
     auto checker = f.makeOndisk2Checker();
     MaintenanceResults expected(false, 3);
     expected.by_type[DatasetTest::COUNTED_OK] = 2;
-    expected.by_type[DatasetTest::COUNTED_NEW] = 1;
+    expected.by_type[DatasetTest::COUNTED_DELETED] = 1;
     wassert(actual(*checker).maintenance(expected));
 
     // Perform full maintenance and check that things are still ok afterwards
@@ -210,7 +210,7 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
     {
         auto checker = f.makeOndisk2Checker();
         MaintenanceResults expected(false, 3);
-        expected.by_type[DatasetTest::COUNTED_NEW] = 3;
+        expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 3;
         wassert(actual(*checker).maintenance(expected));
 
         // Perform full maintenance and check that things are still ok afterwards
@@ -361,7 +361,7 @@ add_method("data_in_right_segment_reindex", [](Fixture& f) {
     // Run maintenance check
     {
         arki::tests::MaintenanceResults expected(false, 3);
-        expected.by_type[DatasetTest::COUNTED_NEW] = 3;
+        expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 3;
         wassert(actual(*f.makeOndisk2Checker()).maintenance(expected));
     }
 
@@ -381,6 +381,8 @@ add_method("data_in_right_segment_reindex", [](Fixture& f) {
 add_method("data_in_right_segment_rescan", [](Fixture& f) {
     f.import();
     metadata::Collection mdc("inbound/test.grib1");
+
+    files::createDontpackFlagfile("testds");
 
     // Append one of the GRIBs to the wrong file
     const auto& buf1 = mdc[1].getData();
@@ -405,12 +407,10 @@ add_method("data_in_right_segment_rescan", [](Fixture& f) {
     }
 
     // Run maintenance check
-    {
-        arki::tests::MaintenanceResults expected(false, 4);
-        expected.by_type[DatasetTest::COUNTED_OK] = 3;
-        expected.by_type[DatasetTest::COUNTED_NEW] = 1;
-        wassert(actual(*f.makeOndisk2Checker()).maintenance(expected));
-    }
+    auto state = f.scan_state();
+    wassert(actual(state.size()) == 4u);
+    wassert(actual(state.count(SEGMENT_OK)) == 3u);
+    wassert(actual(state.get("2007/06-06.grib").state) == segment::State(SEGMENT_UNALIGNED));
 
     {
         // Perform full maintenance and check that things are still ok afterwards

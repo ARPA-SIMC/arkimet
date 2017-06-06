@@ -157,7 +157,7 @@ std::pair<std::string, size_t> SequenceFile::next(const std::string& format)
     return make_pair(str::joinpath(dirname, data_fname(cur, format)), (size_t)cur);
 }
 
-File SequenceFile::open_next(const std::string& format, std::string& absname, size_t& pos)
+File SequenceFile::open_next(const std::string& format, size_t& pos)
 {
     while (true)
     {
@@ -166,7 +166,6 @@ File SequenceFile::open_next(const std::string& format, std::string& absname, si
         File fd(dest.first);
         if (fd.open_ifexists(O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666))
         {
-            absname = dest.first;
             pos = dest.second;
             return fd;
         }
@@ -233,9 +232,8 @@ off_t Segment::append(Metadata& md)
 {
     open();
 
-    string dest;
     size_t pos;
-    File fd = seqfile.open_next(format, dest, pos);
+    File fd = seqfile.open_next(format, pos);
     /*size_t size =*/ write_file(md, fd);
     fd.close();
 
@@ -253,9 +251,8 @@ Pending Segment::append(Metadata& md, off_t* ofs)
 {
     open();
 
-    string dest;
     size_t pos;
-    File fd = seqfile.open_next(format, dest, pos);
+    File fd = seqfile.open_next(format, pos);
     size_t size = write_file(md, fd);
     fd.close();
     *ofs = pos;
@@ -298,13 +295,17 @@ State Segment::check(dataset::Reporter& reporter, const std::string& ds, const m
         return SEGMENT_UNALIGNED;
 
     // List the dir elements we know about
-    set<size_t> expected;
+    map<size_t, size_t> expected;
     sys::Path dir(absname);
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
         if (!i.isreg()) continue;
         if (!str::endswith(i->d_name, format)) continue;
-        expected.insert((size_t)strtoul(i->d_name, 0, 10));
+        struct stat st;
+        i.path->fstatat(i->d_name, st);
+        expected.insert(make_pair(
+                    (size_t)strtoul(i->d_name, 0, 10),
+                    st.st_size));
     }
 
     // Check the list of elements we expect for sort order, gaps, and match
@@ -328,23 +329,32 @@ State Segment::check(dataset::Reporter& reporter, const std::string& ds, const m
         if (source.offset != next_sequence_expected)
             out_of_order = true;
 
-        set<size_t>::const_iterator ei = expected.find(source.offset);
+        auto ei = expected.find(source.offset);
         if (ei == expected.end())
         {
             stringstream ss;
             ss << "expected file " << source.offset << " not found in the file system";
             reporter.segment_info(ds, relname, ss.str());
             return SEGMENT_UNALIGNED;
-        } else
+        } else {
+            if (source.size != ei->second)
+            {
+                stringstream ss;
+                ss << "expected file " << source.offset << " has size " << ei->second << " instead of expected " << source.size;
+                reporter.segment_info(ds, relname, ss.str());
+                return SEGMENT_CORRUPTED;
+            }
             expected.erase(ei);
+        }
 
         ++next_sequence_expected;
     }
 
     State res = SEGMENT_OK;
 
-    for (const auto& idx: expected)
+    for (const auto& ei: expected)
     {
+        auto idx = ei.first;
         if (validator)
         {
             string fname = str::joinpath(absname, seqfile.data_fname(idx, format));
@@ -566,6 +576,48 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, u
     writer.release();
 
     return p;
+}
+
+void Segment::test_make_overlap(metadata::Collection& mds, unsigned data_idx)
+{
+    for (unsigned i = data_idx; i < mds.size(); ++i)
+    {
+        unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+        sys::rename(
+                str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
+                str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset - 1, source->format)));
+        source->offset -= 1;
+        mds[i].set_source(move(source));
+    }
+}
+
+void Segment::test_make_hole(metadata::Collection& mds, unsigned data_idx)
+{
+    if (data_idx >= mds.size())
+    {
+        open();
+        size_t pos;
+        File fd = seqfile.open_next(mds[0].sourceBlob().format, pos);
+        fd.close();
+    } else {
+        for (int i = mds.size() - 1; i >= (int)data_idx; --i)
+        {
+            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+            sys::rename(
+                    str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
+                    str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset + 1, source->format)));
+            source->offset += 1;
+            mds[i].set_source(move(source));
+        }
+    }
+}
+
+void Segment::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+{
+    open();
+    const auto& s = mds[data_idx].sourceBlob();
+    File fd(str::joinpath(s.absolutePathname(), SequenceFile::data_fname(s.offset, s.format)), O_WRONLY);
+    fd.write_all_or_throw("\0", 1);
 }
 
 unique_ptr<dir::Segment> Segment::make_segment(const std::string& format, const std::string& relname, const std::string& absname)

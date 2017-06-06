@@ -46,6 +46,20 @@ public:
     ~IndexedWriter();
 
     const IndexedConfig& config() const override = 0;
+
+    /**
+     * Make the index accessible.
+     *
+     * Only to be used in unit tests
+     */
+    Index& test_get_index() { return *m_idx; }
+
+    /**
+     * Make the index accessible.
+     *
+     * Only to be used in unit tests
+     */
+    const Index& test_get_index() const { return *m_idx; }
 };
 
 class IndexedChecker : public segmented::Checker
@@ -59,9 +73,15 @@ public:
 
     const IndexedConfig& config() const override = 0;
 
-    segmented::State scan(dataset::Reporter& reporter, bool quick=true) override;
     void removeAll(Reporter& reporter, bool writable) override;
     void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
+
+    void test_make_overlap(const std::string& relpath, unsigned data_idx=1) override;
+    void test_make_hole(const std::string& relpath, unsigned data_idx=0) override;
+    void test_corrupt_data(const std::string& relpath, unsigned data_idx=0) override;
+    void test_truncate_data(const std::string& relpath, unsigned data_idx=0) override;
+    void test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx) override;
+    void test_rename(const std::string& relpath, const std::string& new_relpath) override;
 };
 
 }

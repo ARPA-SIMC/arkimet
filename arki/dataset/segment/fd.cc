@@ -16,8 +16,10 @@
 #include <system_error>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <cstring>
 
 using namespace std;
 using namespace arki::types;
@@ -330,6 +332,61 @@ void Segment::truncate(size_t offset)
         ss << "cannot truncate " << absname << " at " << offset;
         throw std::system_error(errno, std::system_category(), ss.str());
     }
+}
+
+void Segment::test_make_overlap(metadata::Collection& mds, unsigned data_idx)
+{
+    close();
+    File fd(this->fd.name(), O_RDWR);
+    off_t start_ofs = mds[data_idx].sourceBlob().offset;
+    off_t end = fd.lseek(0, SEEK_END);
+    std::vector<uint8_t> buf(end - start_ofs);
+    fd.lseek(start_ofs);
+    fd.read_all_or_throw(buf.data(), buf.size());
+    fd.lseek(start_ofs - 1);
+    fd.write_all_or_throw(buf.data(), buf.size());
+    fd.ftruncate(end - 1);
+
+    for (unsigned i = data_idx; i < mds.size(); ++i)
+    {
+        unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+        source->offset -= 1;
+        mds[i].set_source(move(source));
+    }
+}
+
+void Segment::test_make_hole(metadata::Collection& mds, unsigned data_idx)
+{
+    close();
+    File fd(this->fd.name(), O_RDWR);
+    off_t end = fd.lseek(0, SEEK_END);
+    if (data_idx >= mds.size())
+    {
+        fd.ftruncate(end + 1);
+    } else {
+        off_t start_ofs = mds[data_idx].sourceBlob().offset;
+        std::vector<uint8_t> buf(end - start_ofs);
+        fd.lseek(start_ofs);
+        fd.read_all_or_throw(buf.data(), buf.size());
+        fd.lseek(start_ofs + 1);
+        fd.write_all_or_throw(buf.data(), buf.size());
+
+        for (unsigned i = data_idx; i < mds.size(); ++i)
+        {
+            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+            source->offset += 1;
+            mds[i].set_source(move(source));
+        }
+    }
+}
+
+void Segment::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+{
+    close();
+    const auto& s = mds[data_idx].sourceBlob();
+    File fd(this->fd.name(), O_RDWR);
+    fd.lseek(s.offset);
+    fd.write_all_or_throw("\0", 1);
 }
 
 Pending Segment::repack(

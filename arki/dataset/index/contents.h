@@ -147,12 +147,13 @@ public:
     /**
      * Send the metadata of all data items inside a file to the given consumer
      */
-    void scan_file(const std::string& relname, metadata_dest_func consumer, const std::string& orderBy = "offset") const;
+    void scan_file(const std::string& relname, metadata_dest_func consumer, const std::string& order_by="offset") const;
 
     bool segment_timespan(const std::string& relname, core::Time& start_time, core::Time& end_time) const override;
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     bool query_summary(const Matcher& m, Summary& summary) override;
+    void query_segment(const std::string& relname, metadata_dest_func) const override;
 
 	/**
 	 * Query this index, returning a summary
@@ -217,8 +218,13 @@ public:
     RContents(std::shared_ptr<const ondisk2::Config> config);
     ~RContents();
 
-	/// Initialise access to the index
-	void open();
+    /// Initialise access to the index
+    void open();
+
+    void test_rename(const std::string& relname, const std::string& new_relname) override;
+    void test_deindex(const std::string& relname) override;
+    void test_make_overlap(const std::string& relname, unsigned data_idx) override;
+    void test_make_hole(const std::string& relname, unsigned data_idx) override;
 };
 
 class WContents : public Contents
@@ -298,6 +304,11 @@ public:
 
     /// Flush the journal contents to the main database
     void flush();
+
+    void test_rename(const std::string& relname, const std::string& new_relname) override;
+    void test_deindex(const std::string& relname) override;
+    void test_make_overlap(const std::string& relname, unsigned data_idx) override;
+    void test_make_hole(const std::string& relname, unsigned data_idx) override;
 };
 
 }

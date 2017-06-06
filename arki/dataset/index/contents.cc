@@ -295,14 +295,14 @@ void Contents::scan_files(segment::contents_func v)
         v(last_file, SEGMENT_OK, mdc);
 }
 
-void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& orderBy) const
+void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& order_by) const
 {
     string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
     if (m_uniques) query += ", m.uniq";
     if (m_others) query += ", m.other";
     if (config().smallfiles) query += ", m.data";
     query += " FROM md AS m";
-    query += " WHERE m.file=? ORDER BY " + orderBy;
+    query += " WHERE m.file=? ORDER BY " + order_by;
 
     Query mdq("scan_file_md", m_db);
     mdq.compile(query);
@@ -315,6 +315,11 @@ void Contents::scan_file(const std::string& relname, metadata_dest_func dest, co
         build_md(mdq, *md);
         dest(move(md));
     }
+}
+
+void Contents::query_segment(const std::string& relname, metadata_dest_func dest) const
+{
+    scan_file(relname, dest);
 }
 
 bool Contents::segment_timespan(const std::string& relname, Time& start_time, Time& end_time) const
@@ -877,6 +882,27 @@ void RContents::initQueries()
     Contents::initQueries();
 }
 
+void RContents::test_rename(const std::string& relname, const std::string& new_relname)
+{
+    throw std::runtime_error("test_rename is only allowed on WIndex");
+}
+
+void RContents::test_deindex(const std::string& relname)
+{
+    throw std::runtime_error("test_deindex is only allowed on WIndex");
+}
+
+void RContents::test_make_overlap(const std::string& relname, unsigned data_idx)
+{
+    throw std::runtime_error("test_make_overlap is only allowed on WIndex");
+}
+
+void RContents::test_make_hole(const std::string& relname, unsigned data_idx)
+{
+    throw std::runtime_error("test_make_hole is only allowed on WIndex");
+}
+
+
 WContents::WContents(std::shared_ptr<const ondisk2::Config> config)
     : Contents(config), m_insert(m_db), m_delete("delete", m_db), m_replace("replace", m_db)
 {
@@ -1154,6 +1180,72 @@ void WContents::flush()
     // Not needed for index data consistency, but we need it to ensure file
     // timestamps are consistent at this point.
     m_db.checkpoint();
+}
+
+void WContents::test_rename(const std::string& relname, const std::string& new_relname)
+{
+    Query query("test_rename", m_db);
+    query.compile("UPDATE md SET file=? WHERE file=?");
+    query.bind(1, new_relname);
+    query.bind(2, relname);
+    while (query.step())
+        ;
+}
+
+void WContents::test_deindex(const std::string& relname)
+{
+    reset(relname);
+}
+
+void WContents::test_make_overlap(const std::string& relname, unsigned data_idx)
+{
+    // Get the minimum offset to move
+    uint64_t offset = 0;
+    {
+        Query query("test_make_overlap_get_ofs", m_db);
+        query.compile("SELECT offset FROM md WHERE file=? ORDER BY offset LIMIT ?, 1");
+        query.bind(1, relname);
+        query.bind(2, data_idx);
+        while (query.step())
+            offset = query.fetch<uint64_t>(0);
+    }
+
+    // Move all offsets >= of the first one back by 1
+    Query query("test_make_overlap", m_db);
+    query.compile("UPDATE md SET offset=offset-1 WHERE file=? AND offset >= ?");
+    query.bind(1, relname);
+    query.bind(2, offset);
+    while (query.step())
+        ;
+}
+
+void WContents::test_make_hole(const std::string& relname, unsigned data_idx)
+{
+    // Get the minimum offset to move
+    uint64_t offset = 0;
+    bool has_min_offset = false;
+    {
+        Query query("test_make_hole_get_ofs", m_db);
+        query.compile("SELECT offset FROM md WHERE file=? ORDER BY offset LIMIT ?, 1");
+        query.bind(1, relname);
+        query.bind(2, data_idx);
+        while (query.step())
+        {
+            offset = query.fetch<uint64_t>(0);
+            has_min_offset = true;
+        }
+    }
+
+    if (!has_min_offset)
+        return;
+
+    // Move all offsets >= of the first one back by 1
+    Query query("test_make_hole", m_db);
+    query.compile("UPDATE md SET offset=offset+1 WHERE file=? AND offset >= ?");
+    query.bind(1, relname);
+    query.bind(2, offset);
+    while (query.step())
+        ;
 }
 
 }

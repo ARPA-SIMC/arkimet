@@ -62,7 +62,7 @@ Agent::Agent(dataset::Reporter& reporter, segmented::Checker& w, unsigned test_f
 
 void FailsafeRepacker::operator()(const std::string& file, segment::State state)
 {
-    if (state.has(SEGMENT_NEW)) ++m_count_deleted;
+    if (state.has(SEGMENT_DELETED)) ++m_count_deleted;
 }
 
 void FailsafeRepacker::end()
@@ -91,12 +91,12 @@ void MockRepacker::operator()(const std::string& relpath, segment::State state)
         ++m_count_deleted;
         ++m_count_deindexed;
     }
-    if (state.has(SEGMENT_NEW))
+    if (state.has(SEGMENT_DELETED))
     {
         reporter.segment_delete(w.name(), relpath, "should be deleted");
         ++m_count_deleted;
     }
-    if (state.has(SEGMENT_DELETED))
+    if (state.has(SEGMENT_MISSING))
     {
         reporter.segment_deindex(w.name(), relpath, "should be removed from the index");
         ++m_count_deindexed;
@@ -130,12 +130,12 @@ void MockFixer::operator()(const std::string& relpath, segment::State state)
         reporter.segment_repack(w.name(), relpath, "should be packed");
         ++m_count_packed;
     }
-    if (state.has(SEGMENT_NEW) || state.has(SEGMENT_UNALIGNED))
+    if (state.has(SEGMENT_UNALIGNED))
     {
         reporter.segment_rescan(w.name(), relpath, "should be rescanned");
         ++m_count_rescanned;
     }
-    if (state.has(SEGMENT_DELETED))
+    if (state.has(SEGMENT_MISSING))
     {
         reporter.segment_deindex(w.name(), relpath, "should be removed from the index");
         ++m_count_deindexed;
@@ -186,7 +186,7 @@ void RealRepacker::operator()(const std::string& relpath, segment::State state)
         m_count_freed += size;
         m_redo_summary = true;
     }
-    if (state.has(SEGMENT_NEW))
+    if (state.has(SEGMENT_DELETED))
     {
         // Delete all files not indexed
         size_t size = w.removeSegment(relpath, true);
@@ -194,7 +194,7 @@ void RealRepacker::operator()(const std::string& relpath, segment::State state)
         ++m_count_deleted;
         m_count_freed += size;
     }
-    if (state.has(SEGMENT_DELETED))
+    if (state.has(SEGMENT_MISSING))
     {
         // Remove from index those files that have been deleted
         w.removeSegment(relpath, false);
@@ -240,14 +240,14 @@ void RealFixer::operator()(const std::string& relpath, segment::State state)
             break;
     }
     */
-    if (state.has(SEGMENT_NEW) || state.has(SEGMENT_UNALIGNED))
+    if (state.has(SEGMENT_UNALIGNED))
     {
         w.rescanSegment(relpath);
         reporter.segment_rescan(w.name(), relpath, "rescanned");
         ++m_count_rescanned;
         m_redo_summary = true;
     }
-    if (state.has(SEGMENT_DELETED))
+    if (state.has(SEGMENT_MISSING))
     {
         // Remove from index those files that have been deleted
         w.removeSegment(relpath, false);

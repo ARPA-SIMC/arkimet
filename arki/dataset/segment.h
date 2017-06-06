@@ -10,6 +10,7 @@
 #include <arki/nag.h>
 #include <string>
 #include <vector>
+#include <iosfwd>
 #include <sys/types.h>
 #include <memory>
 
@@ -32,8 +33,8 @@ class Segment;
 static const unsigned SEGMENT_OK          = 0;
 static const unsigned SEGMENT_DIRTY       = 1 << 0; /// Segment contains data deleted or out of order
 static const unsigned SEGMENT_UNALIGNED   = 1 << 1; /// Segment contents are inconsistent with the index
-static const unsigned SEGMENT_DELETED     = 1 << 2; /// Segment is known to some index, but does not exist on disk
-static const unsigned SEGMENT_NEW         = 1 << 3; /// Segment exists on disk but is not known to any index
+static const unsigned SEGMENT_MISSING     = 1 << 2; /// Segment is known to the index, but does not exist on disk
+static const unsigned SEGMENT_DELETED     = 1 << 3; /// Segment contents have been entirely deleted
 static const unsigned SEGMENT_CORRUPTED   = 1 << 4; /// File is broken in a way that needs manual intervention
 static const unsigned SEGMENT_ARCHIVE_AGE = 1 << 5; /// File is old enough to be archived
 static const unsigned SEGMENT_DELETE_AGE  = 1 << 6; /// File is old enough to be deleted
@@ -83,9 +84,17 @@ struct State
 
     }
 
+    bool operator==(const State& fs) const
+    {
+        return value == fs.value;
+    }
+
     /// Return a text description of this file state
     std::string to_string() const;
 };
+
+/// Print to ostream
+std::ostream& operator<<(std::ostream&, const State&);
 
 /**
  * Visitor interface for scanning information about the segments in the database
@@ -201,17 +210,32 @@ class SegmentManager
 {
 protected:
     impl::Cache<Segment> segments;
+    std::string root;
+
+    virtual std::unique_ptr<Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
+    virtual bool _is_segment(const std::string& format, const std::string& relname) = 0;
 
 public:
+    SegmentManager(const std::string& root);
     virtual ~SegmentManager();
 
+    /**
+     * Empty the cache of segments, flushing and closing all files currently
+     * open
+     */
     void flush_writers();
 
     /// Run a function on each cached segment
     void foreach_cached(std::function<void(Segment&)>);
 
-    virtual Segment* get_segment(const std::string& relname) = 0;
-    virtual Segment* get_segment(const std::string& format, const std::string& relname) = 0;
+    Segment* get_segment(const std::string& relname);
+    Segment* get_segment(const std::string& format, const std::string& relname);
+
+    /// Check if the given relname points to a segment
+    bool is_segment(const std::string& relname);
+
+    /// Check if the given relname points to a segment
+    bool is_segment(const std::string& format, const std::string& relname);
 
     /**
      * Repack the file relname, so that it contains only the data in mds, in
@@ -315,9 +339,44 @@ public:
     virtual segment::State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
     virtual void truncate(size_t offset) = 0;
+
+    /**
+     * Rewrite this segment so that the data are in the same order as in `mds`.
+     *
+     * `rootdir` is the directory to use as root for the Blob sources in `mds`.
+     */
     virtual Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) = 0;
 
     virtual void validate(Metadata& md, const scan::Validator& v) = 0;
+
+    /**
+     * Move the all the data in the segment starting from the one in position
+     * `data_idx` backwards by 1.
+     *
+     * `mds` represents the state of the segment before the move, and is
+     * updated to reflect the new state of the segment.
+     */
+    virtual void test_make_overlap(metadata::Collection& mds, unsigned data_idx) = 0;
+
+    /**
+     * Move the all the data in the segment starting from the one in position
+     * `data_idx` forwards by 1.
+     *
+     * `mds` represents the state of the segment before the move, and is
+     * updated to reflect the new state of the segment.
+     */
+    virtual void test_make_hole(metadata::Collection& mds, unsigned data_idx) = 0;
+
+    /**
+     * Corrupt the data at position `data_idx`, by replacing its first byte
+     * with the value 0.
+     */
+    virtual void test_corrupt(const metadata::Collection& mds, unsigned data_idx) = 0;
+
+    /**
+     * Truncate the data at position `data_idx`
+     */
+    virtual void test_truncate(const metadata::Collection& mds, unsigned data_idx);
 };
 
 }

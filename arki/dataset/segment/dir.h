@@ -48,7 +48,7 @@ struct SequenceFile
      * Returns the open file descriptor, and the corresponding 'offset', that
      * is, the file sequence number itself.
      */
-    File open_next(const std::string& format, std::string& absname, size_t& pos);
+    File open_next(const std::string& format, size_t& pos);
 
     void test_add_padding(unsigned size);
 
@@ -100,6 +100,10 @@ public:
 
     /// Call f for each nnnnnn.format file in the directory segment, passing the file name
     void foreach_datafile(std::function<void(const char*)> f);
+
+    void test_make_overlap(metadata::Collection& mds, unsigned data_idx) override;
+    void test_make_hole(metadata::Collection& mds, unsigned data_idx) override;
+    void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
 
 protected:
     virtual std::unique_ptr<dir::Segment> make_segment(const std::string& format, const std::string& relname, const std::string& absname);

@@ -374,6 +374,14 @@ size_t Checker<Config>::repackSegment(const std::string& relpath, unsigned test_
 }
 
 template<typename Config>
+size_t Checker<Config>::reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).reorder_segment(relpath.substr(pos + 1), mds, test_flags);
+}
+
+template<typename Config>
 size_t Checker<Config>::removeSegment(const std::string& relpath, bool withData)
 {
     size_t pos = relpath.find('/');
@@ -397,6 +405,75 @@ size_t Checker<Config>::vacuum()
         res += shard(shard_relpath, cfg).vacuum();
     });
     return res;
+}
+
+template<typename Config>
+void Checker<Config>::test_make_overlap(const std::string& relpath, unsigned data_idx)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).test_make_overlap(relpath.substr(pos + 1), data_idx);
+}
+
+template<typename Config>
+void Checker<Config>::test_make_hole(const std::string& relpath, unsigned data_idx)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).test_make_hole(relpath.substr(pos + 1), data_idx);
+}
+
+template<typename Config>
+void Checker<Config>::test_corrupt_data(const std::string& relpath, unsigned data_idx)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).test_corrupt_data(relpath.substr(pos + 1), data_idx);
+}
+
+template<typename Config>
+void Checker<Config>::test_truncate_data(const std::string& relpath, unsigned data_idx)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).test_truncate_data(relpath.substr(pos + 1), data_idx);
+}
+
+template<typename Config>
+void Checker<Config>::test_remove_index(const std::string& relpath)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).test_remove_index(relpath.substr(pos + 1));
+}
+
+template<typename Config>
+void Checker<Config>::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).test_swap_data(relpath.substr(pos + 1), d1_idx, d2_idx);
+}
+
+template<typename Config>
+void Checker<Config>::test_rename(const std::string& relpath, const std::string& new_relpath)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    size_t new_pos = relpath.find('/');
+    if (new_pos == string::npos) throw std::runtime_error("path " + new_relpath + " does not contain a /");
+    if (relpath.substr(0, pos) != new_relpath.substr(0, pos))
+        throw std::runtime_error("path " + relpath + " and " + new_relpath + " point to different shards");
+
+    return shard(relpath.substr(0, pos)).test_rename(relpath.substr(pos + 1), new_relpath.substr(pos + 1));
+}
+
+template<typename Config>
+void Checker<Config>::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
+{
+    size_t pos = relpath.find('/');
+    if (pos == string::npos) throw std::runtime_error("path " + relpath + " does not contain a /");
+    return shard(relpath.substr(0, pos)).test_change_metadata(relpath.substr(pos + 1), md, data_idx);
 }
 
 

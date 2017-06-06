@@ -176,6 +176,12 @@ std::string manifest_idx_fname()
     return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
+segmented::State DatasetTest::scan_state()
+{
+    NullReporter nr;
+    return makeSegmentedChecker()->scan(nr);
+}
+
 std::unique_ptr<dataset::segmented::Reader> DatasetTest::makeSegmentedReader()
 {
     auto ds = config().create_reader();
@@ -288,6 +294,7 @@ void DatasetTest::clean()
 {
     if (sys::exists(ds_root)) sys::rmtree(ds_root);
     sys::mkdir_ifmissing(ds_root);
+    import_results.clear();
 }
 
 void DatasetTest::import(const std::string& testfile)
@@ -297,8 +304,10 @@ void DatasetTest::import(const std::string& testfile)
         metadata::Collection data(testfile);
         for (auto& md: data)
         {
-            Writer::AcquireResult res = writer->acquire(*md);
+            import_results.push_back(*md);
+            Writer::AcquireResult res = writer->acquire(import_results.back());
             wassert(actual(res) == Writer::ACQ_OK);
+            import_results.back().sourceBlob().unlock();
         }
     }
 
@@ -340,10 +349,10 @@ void DatasetTest::import_all(const testdata::Fixture& fixture)
     auto writer = config().create_writer();
     for (int i = 0; i < 3; ++i)
     {
-        import_results[i] = fixture.test_data[i].md;
-        Writer::AcquireResult res = writer->acquire(import_results[i]);
+        import_results.push_back(fixture.test_data[i].md);
+        Writer::AcquireResult res = writer->acquire(import_results.back());
         wassert(actual(res) == Writer::ACQ_OK);
-        import_results[i].sourceBlob().unlock();
+        import_results.back().sourceBlob().unlock();
     }
 
     utils::files::removeDontpackFlagfile(cfg.value("path"));
@@ -400,9 +409,9 @@ void MaintenanceCollector::operator()(const std::string& file, dataset::segment:
     if (state.has(SEGMENT_ARCHIVE_AGE)) ++counts[tests::DatasetTest::COUNTED_ARCHIVE_AGE];
     if (state.has(SEGMENT_DELETE_AGE))  ++counts[tests::DatasetTest::COUNTED_DELETE_AGE];
     if (state.has(SEGMENT_DIRTY))       ++counts[tests::DatasetTest::COUNTED_DIRTY];
-    if (state.has(SEGMENT_NEW))         ++counts[tests::DatasetTest::COUNTED_NEW];
-    if (state.has(SEGMENT_UNALIGNED))   ++counts[tests::DatasetTest::COUNTED_UNALIGNED];
     if (state.has(SEGMENT_DELETED))     ++counts[tests::DatasetTest::COUNTED_DELETED];
+    if (state.has(SEGMENT_UNALIGNED))   ++counts[tests::DatasetTest::COUNTED_UNALIGNED];
+    if (state.has(SEGMENT_MISSING))     ++counts[tests::DatasetTest::COUNTED_MISSING];
     if (state.has(SEGMENT_CORRUPTED))   ++counts[tests::DatasetTest::COUNTED_CORRUPTED];
 }
 

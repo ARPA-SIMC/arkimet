@@ -73,6 +73,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/step.h \
 		dataset/test-scenario.h \
 		dataset/tests.h \
+		dataset/maintenance-test.h \
 		datasets.h \
 		dispatcher.h \
 		emitter.h \
@@ -568,15 +569,18 @@ tests_arki_test_SOURCES += \
 		dataset/simple/datafile-test.cc \
 		dataset/simple/reader-test.cc \
 		dataset/simple/writer-test.cc \
+		dataset/simple/maintenance-test.cc \
 		dataset/iseg-test.cc \
 		dataset/iseg/index-test.cc \
 		dataset/iseg/reader-test.cc \
 		dataset/iseg/writer-test.cc \
+		dataset/iseg/maintenance-test.cc \
 		dataset/ondisk2-test.cc \
 		dataset/ondisk2/reader-test.cc \
 		dataset/ondisk2/writer-test.cc \
 		dataset/ondisk2/checker-test.cc \
 		dataset/ondisk2/test-utils.cc \
+		dataset/ondisk2/maintenance-test.cc \
 		dataset/sharded-test.cc \
 		dataset/outbound-tut.cc \
 		dataset/offline-test.cc \

@@ -6,7 +6,7 @@
  * @brief Utility functions for the unit tests
  *
  * Copyright (C) 2006--2007  Peter Rockai (mornfall) <me@mornfall.net>
- * Copyright (C) 2003--2013  Enrico Zini <enrico@debian.org>
+ * Copyright (C) 2003--2017  Enrico Zini <enrico@debian.org>
  */
 
 #include <string>
@@ -603,6 +603,14 @@ struct TestRegistry
     void register_test_case(TestCase& test_case);
 
     /**
+     * Iterate on all test methods known by this registry.
+     *
+     * This method does not change the tests, but it cannot be const because it
+     * calls register_tests_once on each TestCase.
+     */
+    void iterate_test_methods(std::function<void(const TestCase&, const TestMethod&)>);
+
+    /**
      * Run all the registered tests using the given controller
      */
     std::vector<TestCaseResult> run_tests(TestController& controller);
@@ -619,8 +627,18 @@ struct TestMethod
     /// Name of the test method
     std::string name;
 
-    /// Main body of the test method
+    /// Documentation attached to this test method
+    std::string doc;
+
+    /**
+     * Main body of the test method.
+     *
+     * If nullptr, the test will be skipped.
+     */
     std::function<void()> test_function;
+
+    TestMethod(const std::string& name)
+        : name(name) {}
 
     TestMethod(const std::string& name, std::function<void()> test_function)
         : name(name), test_function(test_function) {}
@@ -639,12 +657,21 @@ struct TestCase
     /// All registered test methods
     std::vector<TestMethod> methods;
 
+    /// Set to true the first time register_tests_once is run
+    bool tests_registered = false;
+
+
     TestCase(const std::string& name)
         : name(name)
     {
         TestRegistry::get().register_test_case(*this);
     }
     virtual ~TestCase() {}
+
+    /**
+     * Idempotent wrapper for register_tests()
+     */
+    void register_tests_once();
 
     /**
      * This will be called before running the test case, to populate it with
@@ -699,33 +726,34 @@ struct TestCase
     virtual TestMethodResult run_test(TestController& controller, TestMethod& method);
 
     /**
+     * Register a new test method, with the actual test function to be added
+     * later
+     */
+    TestMethod& add_method(const std::string& name)
+    {
+        methods.emplace_back(name);
+        return methods.back();
+    }
+
+    /**
      * Register a new test method
      */
     template<typename ...Args>
-    void add_method(const std::string& name, std::function<void()> test_function)
+    TestMethod& add_method(const std::string& name, std::function<void()> test_function)
     {
         methods.emplace_back(name, test_function);
+        return methods.back();
     }
 
     /**
-     * Register a new test method
+     * Register a new test method, including documentation
      */
     template<typename ...Args>
-    void add_method(const std::string& name, std::function<void()> test_function, Args&&... args)
+    TestMethod& add_method(const std::string& name, const std::string& doc, std::function<void()> test_function)
     {
-        methods.emplace_back(name, test_function, std::forward<Args>(args)...);
-    }
-
-    /**
-     * Register a new test metheod, with arguments.
-     *
-     * Any extra arguments to the function will be passed to the test method.
-     */
-    template<typename FUNC, typename ...Args>
-    void add_method(const std::string& name, FUNC test_function, Args&&... args)
-    {
-        auto f = std::bind(test_function, args...);
-        methods.emplace_back(name, f);
+        methods.emplace_back(name, test_function);
+        methods.back().doc = doc;
+        return methods.back();
     }
 };
 
@@ -800,17 +828,23 @@ public:
     }
 
     /**
-     * Add a method that takes a reference to the fixture as argument.
-     *
-     * Any extra arguments to the function will be passed to the test method
-     * after the fixture.
+     * Register a new test method that takes a reference to the fixture as
+     * argument.
      */
-    template<typename FUNC>
-    void add_method(const std::string& name, FUNC test_function)
+    template<typename ...Args>
+    TestMethod& add_method(const std::string& name, std::function<void(FIXTURE&)> test_function)
     {
-        methods.emplace_back(name, [=]() {
-            test_function(*fixture);
-        });
+        return TestCase::add_method(name, [=]() { test_function(*fixture); });
+    }
+
+    /**
+     * Register a new test method that takes a reference to the fixture as
+     * argument, including documentation
+     */
+    template<typename ...Args>
+    TestMethod& add_method(const std::string& name, const std::string& doc, std::function<void(FIXTURE&)> test_function)
+    {
+        return TestCase::add_method(name, doc, [=]() { test_function(*fixture); });
     }
 };
 

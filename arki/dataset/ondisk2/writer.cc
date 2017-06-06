@@ -5,6 +5,7 @@
 #include "arki/dataset/archive.h"
 #include "arki/dataset/segment.h"
 #include "arki/dataset/reporter.h"
+#include "arki/dataset/step.h"
 #include "arki/types/source/blob.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
@@ -31,6 +32,7 @@
 using namespace std;
 using namespace arki::utils;
 using namespace arki::types;
+using arki::core::Time;
 
 namespace arki {
 namespace dataset {
@@ -301,6 +303,100 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
     release_lock();
 }
 
+segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
+{
+    segmented::State segments_state;
+
+    bool untrusted_index = files::hasDontpackFlagfile(config().path);
+
+    //
+    // Populate segments_state with the contents of the index
+    //
+
+    m_idx->scan_files([&](const std::string& relpath, segment::State state, const metadata::Collection& mds) {
+        // Compute the span of reftimes inside the segment
+        unique_ptr<Time> md_begin;
+        unique_ptr<Time> md_until;
+        if (mds.empty())
+        {
+            reporter.segment_info(name(), relpath, "index knows of this segment but contains no data for it");
+            md_begin.reset(new Time(0, 0, 0));
+            md_until.reset(new Time(0, 0, 0));
+            state = untrusted_index ? SEGMENT_UNALIGNED : SEGMENT_DELETED;
+        } else {
+            if (!mds.expand_date_range(md_begin, md_until))
+            {
+                reporter.segment_info(name(), relpath, "index data for this segment has no reference time information");
+                state = SEGMENT_CORRUPTED;
+                md_begin.reset(new Time(0, 0, 0));
+                md_until.reset(new Time(0, 0, 0));
+            } else {
+                // Ensure that the reftime span fits inside the segment step
+                Time seg_begin;
+                Time seg_until;
+                if (config().step().path_timespan(relpath, seg_begin, seg_until))
+                {
+                    if (*md_begin < seg_begin || *md_until > seg_until)
+                    {
+                        reporter.segment_info(name(), relpath, "segment contents do not fit inside the step of this dataset");
+                        state = SEGMENT_CORRUPTED;
+                    }
+                    // Expand segment timespan to the full possible segment timespan
+                    *md_begin = seg_begin;
+                    *md_until = seg_until;
+                } else {
+                    reporter.segment_info(name(), relpath, "segment name does not fit the step of this dataset");
+                    state = SEGMENT_CORRUPTED;
+                }
+            }
+        }
+
+        if (state.is_ok())
+            state = segment_manager().check(reporter, name(), relpath, mds, quick);
+
+        segments_state.insert(make_pair(relpath, segmented::SegmentState(state, *md_begin, *md_until)));
+    });
+
+
+    //
+    // Add information from the state of files on disk
+    //
+
+    std::set<std::string> disk(scan::dir(config().path, true));
+
+    // files: a, b, c,    e, f, g
+    // index:       c, d, e, f, g
+
+    for (auto& i: segments_state)
+    {
+        if (disk.erase(i.first) == 0)
+        {
+            // The file did not exist on disk
+            reporter.segment_info(name(), i.first, "segment found in index but not on disk");
+            i.second.state = i.second.state - SEGMENT_UNALIGNED + SEGMENT_MISSING;
+        }
+    }
+    for (const auto& relpath : disk)
+    {
+        reporter.segment_info(name(), relpath, "segment found on disk with no associated index data");
+        segments_state.insert(make_pair(relpath, segmented::SegmentState(untrusted_index ? SEGMENT_UNALIGNED : SEGMENT_DELETED)));
+    }
+
+    // Scenario: the index has been deleted, and some data has been imported
+    // and appended to an existing segment. That segment would show in the
+    // index as DIRTY, because it has a gap of data not indexed.
+    // Since the needs-check-do-not-pack file is present, however, mark that
+    // file for rescanning instead of repacking.
+    if (untrusted_index)
+        for (auto& i: segments_state)
+            if (i.second.state.has(SEGMENT_DIRTY))
+                i.second.state = i.second.state - SEGMENT_DIRTY + SEGMENT_UNALIGNED;
+
+    segments_state.check_age(config(), reporter);
+
+    return segments_state;
+}
+
 
 namespace {
 
@@ -404,6 +500,14 @@ void Checker::rescanSegment(const std::string& relpath)
 
 size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
 {
+    metadata::Collection mds;
+    idx->scan_file(relpath, mds.inserter_func(), "reftime, offset");
+
+    return reorder_segment(relpath, mds, test_flags);
+}
+
+size_t Checker::reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags)
+{
     // Lock away writes and reads
     Pending p = idx->beginExclusiveTransaction();
 
@@ -411,8 +515,6 @@ size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
     // reftime, and update the offsets in the index
     string pathname = str::joinpath(config().path, relpath);
 
-    metadata::Collection mds;
-    idx->scan_file(relpath, mds.inserter_func(), "reftime, offset");
     Pending p_repack = segment_manager().repack(relpath, mds, test_flags);
 
     // Reindex mds
@@ -510,6 +612,30 @@ size_t Checker::vacuum()
 
     return size_pre > size_post ? size_pre - size_post : 0;
 }
+
+void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
+{
+    metadata::Collection mds;
+    idx->query_segment(relpath, mds.inserter_func());
+    md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
+    mds[data_idx] = md;
+
+    // Reindex mds
+    idx->reset(relpath);
+    for (auto& m: mds)
+    {
+        const source::Blob& source = m->sourceBlob();
+        idx->index(*m, source.filename, source.offset);
+    }
+
+    md = mds[data_idx];
+}
+
+void Checker::test_remove_index(const std::string& relpath)
+{
+    m_idx->test_deindex(relpath);
+}
+
 
 Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {

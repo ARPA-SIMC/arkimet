@@ -126,6 +126,14 @@ struct State : public std::map<std::string, SegmentState>
 {
     using std::map<std::string, SegmentState>::map;
 
+    const SegmentState& get(const std::string& seg) const;
+
+    /// Count how many segments have this state
+    unsigned count(segment::State state) const;
+
+    /// Check if segments are old enough to be deleted or archived
+    void check_age(const Config& cfg, dataset::Reporter& reporter);
+
     void dump(FILE* out) const;
 };
 
@@ -179,6 +187,16 @@ public:
     virtual size_t repackSegment(const std::string& relpath, unsigned test_flags=0) = 0;
 
     /**
+     * Rewrite the segment so that the data has the same order as `mds`.
+     *
+     * In the resulting file, there are no holes between data.
+     *
+     * @returns The size difference between the initial segment size and the
+     * final segment size.
+     */
+    virtual size_t reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags=0) = 0;
+
+    /**
      * Remove the file from the dataset
      *
      * @returns The number of bytes freed on disk with this operation
@@ -212,6 +230,72 @@ public:
      * @returns The number of bytes freed on disk with this operation
      */
     virtual size_t vacuum() = 0;
+
+    /**
+     * All data in the segment except the `data_idx`-one are shifted backwards
+     * by one, so that one in position `data_idx-1` overlaps with the one in
+     * position `data_idx`.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_make_overlap(const std::string& relpath, unsigned data_idx=1) = 0;
+
+    /**
+     * All data in the segment starting from the one at position `data_idx` are
+     * shifted forwards by one offset position, so that a gap is formed before
+     * the element at position `data_idx`.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_make_hole(const std::string& relpath, unsigned data_idx=0) = 0;
+
+    /**
+     * Corrupt the data in the given segment at position `data_idx`, by
+     * replacing its first byte with the value 0.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_corrupt_data(const std::string& relpath, unsigned data_idx=0) = 0;
+
+    /**
+     * Truncate the segment at position `data_idx`.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_truncate_data(const std::string& relpath, unsigned data_idx=0) = 0;
+
+    /**
+     * Swap the data in the segment at position `d1_idx` with the one at
+     * position `d2_idx`.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx) = 0;
+
+    /**
+     * Rename the segment, leaving its contents unchanged.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_rename(const std::string& relpath, const std::string& new_relpath) = 0;
+
+    /**
+     * Replace the metadata for the data in the segment at position `data_idx`.
+     *
+     * The source of the metadata will be preserved. md will be updated to
+     * point to the final metadata.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx=0) = 0;
+
+    /**
+     * Remove index data for the given segment making it as if it was never
+     * imported.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_remove_index(const std::string& relpath) = 0;
 };
 
 }

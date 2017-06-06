@@ -1,13 +1,17 @@
 #include "arki/dataset/tests.h"
+#include "arki/dataset/maintenance-test.h"
 #include "arki/exceptions.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/segmented.h"
+#include "arki/dataset/reporter.h"
+#include "arki/dataset/time.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
 #include <cstdlib>
+#include <cstdio>
 #include <sys/types.h>
 #include <utime.h>
 #include <unistd.h>
@@ -20,6 +24,550 @@ using namespace arki::types;
 using namespace arki::dataset;
 using namespace arki::utils;
 using arki::core::Time;
+
+static const time_t t20070707 = 1183766400;
+
+namespace arki {
+namespace dataset {
+namespace maintenance_test {
+
+MaintenanceTest::~MaintenanceTest()
+{
+}
+
+void MaintenanceTest::make_hole_start()
+{
+    fixture->makeSegmentedChecker()->test_make_hole("2007/07-07.grib", 0);
+}
+
+void MaintenanceTest::make_hole_middle()
+{
+    fixture->makeSegmentedChecker()->test_make_hole("2007/07-07.grib", 1);
+}
+
+void MaintenanceTest::make_hole_end()
+{
+    fixture->makeSegmentedChecker()->test_make_hole("2007/07-07.grib", 2);
+}
+
+void MaintenanceTest::corrupt_first()
+{
+    fixture->makeSegmentedChecker()->test_corrupt_data("2007/07-07.grib", 0);
+}
+
+void MaintenanceTest::truncate_segment()
+{
+    fixture->makeSegmentedChecker()->test_truncate_data("2007/07-07.grib", 1);
+}
+
+void MaintenanceTest::swap_data()
+{
+    fixture->makeSegmentedChecker()->test_swap_data("2007/07-07.grib", 0, 1);
+}
+
+void MaintenanceTest::remove_index()
+{
+    fixture->makeSegmentedChecker()->test_remove_index("2007/07-07.grib");
+}
+
+void MaintenanceTest::rm_r(const std::string& pathname)
+{
+    if (sys::isdir(pathname))
+        sys::rmtree("testds/2007/07-07.grib");
+    else
+        sys::unlink("testds/2007/07-07.grib");
+}
+
+void MaintenanceTest::touch(const std::string& pathname, time_t ts)
+{
+    struct utimbuf t = { ts, ts };
+    if (::utime(pathname.c_str(), &t) != 0)
+        throw_system_error("cannot set mtime/atime of " + pathname);
+}
+
+void MaintenanceTest::register_tests_concat()
+{
+    // Check
+    add_method("check_isfile", R"(
+        - the segment must be a file
+    )", [](Fixture& f) {
+        sys::unlink("testds/2007/07-07.grib");
+        sys::makedirs("testds/2007/07-07.grib");
+
+        arki::dataset::NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_MISSING));
+    });
+}
+
+void MaintenanceTest::register_tests_dir()
+{
+    // Check
+    add_method("check_isdir", R"(
+        - the segment must be a directory [unaligned]
+    )", [](Fixture& f) {
+        sys::rmtree("testds/2007/07-07.grib");
+        sys::write_file("testds/2007/07-07.grib", "");
+
+        arki::dataset::NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
+
+    add_method("check_datasize", R"(
+        - the size of each data file must match the data size exactly [corrupted]
+    )", [](Fixture& f) {
+        {
+            sys::File df("testds/2007/07-07.grib/000000.grib", O_RDWR);
+            df.ftruncate(34961);
+        }
+
+        arki::dataset::NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr, false);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
+    });
+}
+
+void MaintenanceTest::register_tests()
+{
+    switch (segment_type)
+    {
+        case SEGMENT_CONCAT: register_tests_concat(); break;
+        case SEGMENT_DIR:    register_tests_dir();    break;
+        default: throw std::runtime_error("unsupported segment type");
+    }
+
+    add_method("clean", [](Fixture& f) {
+        wassert(actual(f.makeSegmentedChecker().get()).check_clean());
+        wassert(actual(f.makeSegmentedChecker().get()).maintenance_clean(3));
+        wassert(actual(f.makeSegmentedChecker().get()).repack_clean());
+        wassert(actual(f.makeSegmentedChecker().get()).maintenance_clean(3));
+    });
+
+    // Check
+
+    add_method("check_exists", R"(
+        - the segment must exist [missing]
+    )", [&](Fixture& f) {
+        rm_r("testds/2007/07-07.grib");
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_MISSING));
+    });
+
+    if (can_delete_data())
+        add_method("check_all_removed", R"(
+            - segments that only contain data that has been removed are
+              identified as fully deleted [deleted]
+        )", [&](Fixture& f) {
+            {
+                metadata::Collection mds(*f.config().create_reader(), Matcher());
+                auto writer = f.config().create_writer();
+                for (auto& md: mds)
+                    writer->remove(*md);
+            }
+
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DELETED));
+        });
+
+    add_method("check_dataexists", R"(
+        - all data known by the index for this segment must be present on disk [unaligned]
+    )", [&](Fixture& f) {
+        truncate_segment();
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
+
+    if (can_detect_overlap())
+        add_method("check_data_overlap", R"(
+            - no pair of (offset, size) data spans from the index can overlap [unaligned]
+        )", [&](Fixture& f) {
+            f.makeSegmentedChecker()->test_make_overlap("2007/07-07.grib", 1);
+
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            // TODO: should it be CORRUPTED?
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        });
+
+    add_method("check_hole_start", R"(
+        - data must start at the beginning of the segment [dirty]
+    )", [&](Fixture& f) {
+        make_hole_start();
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DIRTY));
+    });
+
+    add_method("check_hole_middle", R"(
+        - there must be no gaps between data in the segment [dirty]
+    )", [&](Fixture& f) {
+        make_hole_middle();
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DIRTY));
+    });
+
+    add_method("check_hole_end", R"(
+        - data must end at the end of the segment [dirty]
+    )", [&](Fixture& f) {
+        make_hole_end();
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DIRTY));
+    });
+
+    add_method("check_archive_age", R"(
+        - find segments that can only contain data older than `archive age` days [archive_age]
+    )", [&](Fixture& f) {
+        f.cfg.setValue("archive age", "1");
+        f.test_reread_config();
+
+        {
+            auto o = SessionTime::local_override(t20070707 + 2 * 86400 - 1);
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_OK));
+        }
+
+        {
+            auto o = SessionTime::local_override(t20070707 + 2 * 86400);
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_ARCHIVE_AGE));
+        }
+    });
+
+    add_method("check_delete_age", R"(
+        - find segments that can only contain data older than `delete age` days [delete_age]
+    )", [&](Fixture& f) {
+        f.cfg.setValue("delete age", "1");
+        f.test_reread_config();
+
+        {
+            auto o = SessionTime::local_override(t20070707 + 2 * 86400 - 1);
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_OK));
+        }
+
+        {
+            auto o = SessionTime::local_override(t20070707 + 2 * 86400);
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DELETE_AGE));
+        }
+    });
+
+    add_method("check_metadata_reftimes_must_fit_segment", R"(
+    - the span of reference times in each segment must fit inside the interval
+      implied by the segment file name (FIXME: should this be disabled for
+      archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
+    )", [&](Fixture& f) {
+        Metadata md = f.import_results[0];
+        md.set("reftime", "2007-07-06 00:00:00");
+        checker()->test_change_metadata("2007/07-07.grib", md, 0);
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
+    });
+
+    if (can_detect_segments_out_of_step())
+        add_method("check_segment_name_must_fit_step", R"(
+        - the segment name must represent an interval matching the dataset step
+          (FIXME: should this be disabled for archives, to deal with datasets that had
+          a change of step in their lifetime?) [corrupted]
+        )", [&](Fixture& f) {
+            checker()->test_rename("2007/07-07.grib", "2007/07.grib");
+
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get("2007/07.grib").state) == segment::State(SEGMENT_CORRUPTED));
+        });
+
+    add_method("check_isordered", R"(
+        - data on disk must match the order of data used by queries [dirty]
+    )", [&](Fixture& f) {
+        swap_data();
+
+        arki::dataset::NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DIRTY));
+    });
+
+
+    // Optional thorough check
+    add_method("tcheck_corrupted_data", R"(
+        - format-specific consistency checks on the content of each file must pass [unaligned]
+    )", [&](Fixture& f) {
+        corrupt_first();
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr, false);
+        wassert(actual(state.size()) == 3u);
+        // TODO: should it be CORRUPTED?
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    });
+
+
+    // Fix
+    add_method("fix_dirty", R"(
+        - [dirty] segments are not touched
+    )", [&](Fixture& f) {
+        make_hole_end();
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "2 files ok");
+        wassert(actual(writer.get()).check(e, true));
+
+        NullReporter nr;
+        auto state = f.makeSegmentedChecker()->scan(nr);
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DIRTY));
+    });
+
+    add_method("fix_unaligned", R"(
+        - [unaligned] segments are imported in-place
+    )", [&](Fixture& f) {
+        make_unaligned();
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "2 files ok");
+        e.rescanned.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(writer.get()).check(e, true));
+
+        wassert(actual(writer.get()).maintenance_clean(3));
+    });
+
+    add_method("fix_missing", R"(
+        - [missing] segments are removed from the index
+    )", [&](Fixture& f) {
+        rm_r("testds/2007/07-07.grib");
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "2 files ok");
+        e.deindexed.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(writer.get()).check(e, true));
+
+        wassert(actual(writer.get()).maintenance_clean(2));
+    });
+
+    add_method("fix_deleted", R"(
+        - [deleted] segments are removed from the index
+    )", [&](Fixture& f) {
+        rm_r("testds/2007/07-07.grib");
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "2 files ok");
+        e.deindexed.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(writer.get()).check(e, true));
+
+        wassert(actual(writer.get()).maintenance_clean(2));
+    });
+
+    add_method("fix_corrupted", R"(
+        - [corrupted] segments can only be fixed by manual intervention. They
+          are reported and left untouched
+    )", [&](Fixture& f) {
+        Metadata md = f.import_results[0];
+        md.set("reftime", "2007-07-06 00:00:00");
+        checker()->test_change_metadata("2007/07-07.grib", md, 0);
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "2 files ok");
+        wassert(actual(writer.get()).check(e, true));
+
+        auto state = f.scan_state();
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
+    });
+
+    add_method("fix_archive_age", R"(
+        - [archive age] segments are not touched
+    )", [&](Fixture& f) {
+        f.cfg.setValue("archive age", "1");
+        f.test_reread_config();
+
+        {
+            auto o = SessionTime::local_override(t20070707 + 2 * 86400);
+
+            auto writer(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "check", "2 files ok");
+            wassert(actual(writer.get()).check(e, true));
+
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_ARCHIVE_AGE));
+        }
+    });
+
+    add_method("fix_delete_age", R"(
+        - [delete age] segments are not touched
+    )", [&](Fixture& f) {
+        f.cfg.setValue("delete age", "1");
+        f.test_reread_config();
+
+        {
+            auto o = SessionTime::local_override(t20070707 + 2 * 86400);
+
+            auto writer(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "check", "2 files ok");
+            wassert(actual(writer.get()).check(e, true));
+
+            NullReporter nr;
+            auto state = f.makeSegmentedChecker()->scan(nr);
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DELETE_AGE));
+        }
+    });
+
+    // Repack
+    add_method("repack_dirty", R"(
+        - [dirty] segments are rewritten to be without holes and have data in the right order.
+          In concat segments, this is done to guarantee linear disk access when
+          data are queried in the default sorting order. In dir segments, this
+          is done to avoid sequence numbers growing indefinitely for datasets
+          with frequent appends and removes.
+    )", [&](Fixture& f) {
+        make_hole_middle();
+        // swap_data(); // FIXME: swap_data currently isn't detected as dirty on simple datasets
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "repack", "2 files ok");
+        e.repacked.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(writer.get()).repack(e, true));
+
+        wassert(actual(writer.get()).maintenance_clean(3));
+    });
+
+    // repack_unaligned is implemented in dataset-specific tests
+
+    add_method("repack_missing", R"(
+        - [missing] segments are removed from the index
+    )", [&](Fixture& f) {
+        rm_r("testds/2007/07-07.grib");
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "repack", "2 files ok");
+        e.deindexed.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(writer.get()).repack(e, true));
+
+        wassert(actual(writer.get()).maintenance_clean(2));
+    });
+
+    add_method("repack_deleted", R"(
+        - [deleted] segments are removed from the index
+    )", [&](Fixture& f) {
+        rm_r("testds/2007/07-07.grib");
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "repack", "2 files ok");
+        e.deindexed.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(writer.get()).repack(e, true));
+
+        wassert(actual(writer.get()).maintenance_clean(2));
+    });
+
+    add_method("repack_corrupted", R"(
+        - [corrupted] segments are not untouched
+    )", [&](Fixture& f) {
+        Metadata md = f.import_results[0];
+        md.set("reftime", "2007-07-06 00:00:00");
+        checker()->test_change_metadata("2007/07-07.grib", md, 0);
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "repack", "2 files ok");
+        wassert(actual(writer.get()).repack(e, true));
+
+        auto state = f.scan_state();
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
+    });
+
+
+    add_method("repack_archive_age", R"(
+        - [archive age] segments are repacked if needed, then moved to .archive/last
+    )", [&](Fixture& f) {
+        make_hole_middle();
+        f.cfg.setValue("archive age", "1");
+        f.test_reread_config();
+
+        {
+            auto o = SessionTime::local_override(t20070707 + 2 * 86400);
+
+            auto writer(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "2 files ok");
+            e.repacked.emplace_back("testds", "2007/07-07.grib");
+            e.archived.emplace_back("testds", "2007/07-07.grib");
+            wassert(actual(writer.get()).repack(e, true));
+
+            wassert(actual(writer.get()).maintenance_clean(2));
+        }
+    });
+
+    add_method("repack_delete_age", R"(
+        - [delete age] segments are deleted
+    )", [&](Fixture& f) {
+        make_hole_middle();
+        f.cfg.setValue("delete age", "1");
+        f.test_reread_config();
+
+        {
+            auto o = SessionTime::local_override(t20070707 + 2 * 86400);
+
+            auto writer(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "2 files ok");
+            e.deleted.emplace_back("testds", "2007/07-07.grib");
+            wassert(actual(writer.get()).repack(e, true));
+
+            wassert(actual(writer.get()).maintenance_clean(2));
+        }
+    });
+}
+
+}
+}
+}
 
 namespace {
 

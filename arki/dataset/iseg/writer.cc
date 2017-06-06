@@ -311,11 +311,26 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
     segmented::State segments_state;
 
     list_segments([&](const std::string& relpath) {
-        if (!sys::exists(str::joinpath(config().path, relpath)) && ! sys::exists(str::joinpath(config().path, relpath + ".gz")))
+        if (!segment_manager().is_segment(config().format, relpath))
         {
-            segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_DELETED)));
+            segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_MISSING)));
             return;
         }
+
+#if 0
+        /**
+         * Although iseg could detect if the data of a segment is newer than its
+         * index, the timestamp of the index is updated by various kinds of sqlite
+         * operations, making the test rather useless, because it's likely that the
+         * index timestamp would get updated before the mismatch is detected.
+         */
+        string abspath = str::joinpath(config().path, relpath);
+        if (sys::timestamp(abspath) > sys::timestamp(abspath + ".index"))
+        {
+            segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_UNALIGNED)));
+            return;
+        }
+#endif
 
         WIndex idx(m_config, relpath);
         metadata::Collection mds;
@@ -330,7 +345,7 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
             reporter.segment_info(name(), relpath, "index knows of this segment but contains no data for it");
             md_begin.reset(new core::Time(0, 0, 0));
             md_until.reset(new core::Time(0, 0, 0));
-            state = SEGMENT_UNALIGNED;
+            state = SEGMENT_DELETED;
         } else {
             if (!mds.expand_date_range(md_begin, md_until))
             {
@@ -368,39 +383,11 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
     // Look for data files without indices next to them
     config().step().list_segments(config().path, config().format, Matcher(), [&](std::string&& relpath) {
         if (segments_state.find(relpath) != segments_state.end()) return;
-        reporter.segment_info(name(), relpath, "segment found on disk but not in index");
-        segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_NEW)));
+        reporter.segment_info(name(), relpath, "segment found on disk with no associated index data");
+        segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_UNALIGNED)));
     });
 
-    //
-    // Check if segments are old enough to be deleted or archived
-    //
-
-    core::Time archive_threshold(0, 0, 0);
-    core::Time delete_threshold(0, 0, 0);
-    const auto& st = SessionTime::get();
-
-    if (config().archive_age != -1)
-        archive_threshold = st.age_threshold(config().archive_age);
-    if (config().delete_age != -1)
-        delete_threshold = st.age_threshold(config().delete_age);
-
-    for (auto& i: segments_state)
-    {
-        if (delete_threshold.ye != 0 && delete_threshold >= i.second.until)
-        {
-            reporter.segment_info(name(), i.first, "segment old enough to be deleted");
-            i.second.state = i.second.state + SEGMENT_DELETE_AGE;
-            continue;
-        }
-
-        if (archive_threshold.ye != 0 && archive_threshold >= i.second.until)
-        {
-            reporter.segment_info(name(), i.first, "segment old enough to be archived");
-            i.second.state = i.second.state + SEGMENT_ARCHIVE_AGE;
-            continue;
-        }
-    }
+    segments_state.check_age(config(), reporter);
 
     return segments_state;
 }
@@ -510,9 +497,9 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
     release_lock();
 }
 
-void Checker::indexSegment(const std::string& relname, metadata::Collection&& mds)
+void Checker::indexSegment(const std::string& relpath, metadata::Collection&& mds)
 {
-    string pathname = str::joinpath(config().path, relname);
+    string pathname = str::joinpath(config().path, relpath);
     time_t mtime = scan::timestamp(pathname);
     if (mtime == 0)
         throw std::runtime_error("cannot acquire " + pathname + ": file does not exist");
@@ -530,7 +517,7 @@ void Checker::indexSegment(const std::string& relname, metadata::Collection&& md
     sum.writeAtomically(pathname + ".summary");
 
     // Add to manifest
-    //m_mft->acquire(relname, mtime, sum);
+    //m_mft->acquire(relpath, mtime, sum);
     //m_mft->flush();
 }
 
@@ -645,6 +632,26 @@ size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
 
     metadata::Collection mds;
     idx.scan(mds.inserter_func(), "reftime, offset");
+
+    return reorder_segment_backend(idx, p, relpath, mds, test_flags);
+}
+
+size_t Checker::reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags)
+{
+    WIndex idx(m_config, relpath);
+
+    // Lock away writes and reads
+    Pending p = idx.begin_exclusive_transaction();
+
+    return reorder_segment_backend(idx, p, relpath, mds, test_flags);
+}
+
+size_t Checker::reorder_segment_backend(WIndex& idx, Pending& p, const std::string& relpath, metadata::Collection& mds, unsigned test_flags)
+{
+    // Make a copy of the file with the right data in it, sorted by
+    // reftime, and update the offsets in the index
+    string pathname = str::joinpath(config().path, relpath);
+
     Pending p_repack = segment_manager().repack(relpath, mds, test_flags);
 
     // Reindex mds
@@ -685,8 +692,12 @@ size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
 size_t Checker::removeSegment(const std::string& relpath, bool withData)
 {
     string idx_abspath = str::joinpath(config().path, relpath + ".index");
-    size_t res = sys::size(idx_abspath);
-    sys::unlink_ifexists(idx_abspath);
+    size_t res = 0;
+    if (sys::exists(idx_abspath))
+    {
+        res = sys::size(idx_abspath);
+        sys::unlink(idx_abspath);
+    }
     return res + segmented::Checker::removeSegment(relpath, withData);
 }
 
@@ -705,6 +716,80 @@ size_t Checker::vacuum()
     return 0;
 }
 
+void Checker::test_make_overlap(const std::string& relpath, unsigned data_idx)
+{
+    WIndex idx(m_config, relpath);
+    metadata::Collection mds;
+    idx.query_segment(mds.inserter_func());
+    segment_manager().get_segment(relpath)->test_make_overlap(mds, data_idx);
+    idx.test_make_overlap(data_idx);
+}
+
+void Checker::test_make_hole(const std::string& relpath, unsigned data_idx)
+{
+    WIndex idx(m_config, relpath);
+    metadata::Collection mds;
+    idx.query_segment(mds.inserter_func());
+    segment_manager().get_segment(relpath)->test_make_hole(mds, data_idx);
+    idx.test_make_hole(data_idx);
+}
+
+void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
+{
+    WIndex idx(m_config, relpath);
+    metadata::Collection mds;
+    idx.query_segment(mds.inserter_func());
+    segment_manager().get_segment(relpath)->test_corrupt(mds, data_idx);
+}
+
+void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
+{
+    WIndex idx(m_config, relpath);
+    metadata::Collection mds;
+    idx.query_segment(mds.inserter_func());
+    segment_manager().get_segment(relpath)->test_truncate(mds, data_idx);
+}
+
+void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
+{
+    metadata::Collection mds;
+    WIndex idx(m_config, relpath);
+    idx.scan(mds.inserter_func(), "offset");
+    std::swap(mds[d1_idx], mds[d2_idx]);
+    reorder_segment(relpath, mds);
+}
+
+void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)
+{
+    string abspath = str::joinpath(config().path, relpath);
+    string new_abspath = str::joinpath(config().path, new_relpath);
+    sys::rename(abspath, new_abspath);
+    sys::rename(abspath + ".index", new_abspath + ".index");
+}
+
+void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
+{
+    WIndex idx(m_config, relpath);
+    metadata::Collection mds;
+    idx.query_segment(mds.inserter_func());
+    md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
+    mds[data_idx] = md;
+
+    // Reindex mds
+    idx.reset();
+    for (auto& m: mds)
+    {
+        const source::Blob& source = m->sourceBlob();
+        idx.index(*m, source.offset);
+    }
+
+    md = mds[data_idx];
+}
+
+void Checker::test_remove_index(const std::string& relpath)
+{
+    sys::unlink_ifexists(str::joinpath(config().path, relpath + ".index"));
+}
 
 }
 }

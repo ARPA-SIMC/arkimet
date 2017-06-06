@@ -33,7 +33,7 @@ arki-%.1: src/arki-% doc/mhooks-%
 #	( cd tools && ./`basename $<` help manpage ) > $@
 
 EXTRA_DIST = \
-	     README \
+	     README.md \
 	     README.Cineca \
 	     NEWS.md \
 	     update-tags \

@@ -156,7 +156,7 @@ add_method("scan_nonindexed", [](Fixture& f) {
     {
         auto checker = f.makeSimpleChecker();
         MaintenanceResults expected(false, 1);
-        expected.by_type[DatasetTest::COUNTED_NEW] = 1;
+        expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 1;
         wassert(actual(*checker).maintenance(expected));
         ensure(files::hasDontpackFlagfile("testds"));
     }
@@ -178,23 +178,6 @@ add_method("scan_nonindexed", [](Fixture& f) {
 
     // Everything should be fine now
     wassert(f.ensure_localds_clean(1, 2));
-
-    // Remove the file from the index
-    {
-        auto checker = f.makeSimpleChecker();
-        checker->removeSegment("2007/07.grib", false);
-    }
-
-    // Repack should delete the files not in index
-    {
-        auto checker = f.makeSimpleChecker();
-        ReporterExpected e;
-        e.deleted.emplace_back("testds", "2007/07.grib", "42178 freed");
-        wassert(actual(*checker).repack(e, true));
-    }
-
-    // Query is still ok, but empty
-    wassert(f.ensure_localds_clean(0, 0));
 });
 
 // Test maintenance scan with missing metadata and summary
@@ -487,7 +470,7 @@ add_method("scan_missingdata", [](Fixture& f) {
         auto checker = f.makeSimpleChecker();
         MaintenanceResults expected(false, 3);
         expected.by_type[DatasetTest::COUNTED_OK] = 2;
-        expected.by_type[DatasetTest::COUNTED_DELETED] = 1;
+        expected.by_type[DatasetTest::COUNTED_MISSING] = 1;
         wassert(actual(*checker).maintenance(expected));
     }
 
