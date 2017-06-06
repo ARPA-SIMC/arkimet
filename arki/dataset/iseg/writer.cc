@@ -707,8 +707,9 @@ void Checker::releaseSegment(const std::string& relpath, const std::string& dest
     segmented::Checker::releaseSegment(relpath, destpath);
 }
 
-size_t Checker::vacuum()
+size_t Checker::vacuum(dataset::Reporter& reporter)
 {
+    reporter.operation_progress(name(), "repack", "running VACUUM ANALIZE on all segment indices");
     list_segments([&](const std::string& relpath) {
         WIndex idx(m_config, relpath);
         idx.vacuum();

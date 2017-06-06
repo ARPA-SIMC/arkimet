@@ -364,8 +364,9 @@ void Checker::releaseSegment(const std::string& relpath, const std::string& dest
     IndexedChecker::releaseSegment(relpath, destpath);
 }
 
-size_t Checker::vacuum()
+size_t Checker::vacuum(dataset::Reporter& reporter)
 {
+    reporter.operation_progress(name(), "repack", "running VACUUM ANALYZE on the dataset index, if applicable");
     return m_mft->vacuum();
 }
 

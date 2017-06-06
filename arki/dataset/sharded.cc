@@ -398,11 +398,11 @@ void Checker<Config>::releaseSegment(const std::string& relpath, const std::stri
 }
 
 template<typename Config>
-size_t Checker<Config>::vacuum()
+size_t Checker<Config>::vacuum(dataset::Reporter& reporter)
 {
     size_t res = 0;
     config().all_shards([&](const std::string& shard_relpath, std::shared_ptr<const dataset::Config> cfg) {
-        res += shard(shard_relpath, cfg).vacuum();
+        res += shard(shard_relpath, cfg).vacuum(reporter);
     });
     return res;
 }

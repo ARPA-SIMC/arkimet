@@ -591,8 +591,9 @@ void Checker::releaseSegment(const std::string& relpath, const std::string& dest
     IndexedChecker::releaseSegment(relpath, destpath);
 }
 
-size_t Checker::vacuum()
+size_t Checker::vacuum(dataset::Reporter& reporter)
 {
+    reporter.operation_progress(name(), "repack", "running VACUUM ANALIZE on the dataset index");
     size_t size_pre = 0, size_post = 0;
     if (sys::size(idx->pathname(), 0) > 0)
     {
@@ -606,6 +607,7 @@ size_t Checker::vacuum()
     // Rebuild the cached summaries, if needed
     if (!sys::exists(str::joinpath(config().path, ".summaries/all.summary")))
     {
+        reporter.operation_progress(name(), "repack", "rebuilding the summary cache");
         Summary s;
         idx->summaryForAll(s);
     }

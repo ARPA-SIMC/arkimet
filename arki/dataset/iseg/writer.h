@@ -77,7 +77,7 @@ public:
     size_t reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags=0) override;
     void releaseSegment(const std::string& relpath, const std::string& destpath) override;
     size_t removeSegment(const std::string& relpath, bool withData=false) override;
-    size_t vacuum() override;
+    size_t vacuum(dataset::Reporter& reporter) override;
 
     void test_make_overlap(const std::string& relpath, unsigned data_idx=1) override;
     void test_make_hole(const std::string& relpath, unsigned data_idx=0) override;

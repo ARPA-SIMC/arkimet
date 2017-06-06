@@ -229,7 +229,7 @@ public:
      *
      * @returns The number of bytes freed on disk with this operation
      */
-    virtual size_t vacuum() = 0;
+    virtual size_t vacuum(dataset::Reporter& reporter) = 0;
 
     /**
      * All data in the segment except the `data_idx`-one are shifted backwards
