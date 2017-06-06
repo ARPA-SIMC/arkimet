@@ -60,7 +60,7 @@ void Tests::register_tests()
     });
 
     add_method("check_empty_metadata", R"(
-    - `.metadata` file must not be empty [new]
+    - `.metadata` file must not be empty [unaligned]
     )", [](Fixture& f) {
         sys::File mdf("testds/2007/07-07.grib.metadata", O_RDWR);
         mdf.ftruncate(0);

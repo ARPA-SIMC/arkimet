@@ -927,6 +927,7 @@ void ActualChecker<Dataset>::repack(const ReporterExpected& expected, bool write
 {
     CollectReporter reporter;
     wassert(this->_actual->repack(reporter, write));
+    // reporter.dump(stderr);
     wassert(reporter.check(expected));
 }
 

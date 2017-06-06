@@ -150,7 +150,7 @@ void MaintenanceTest::register_tests()
     // Check
 
     add_method("check_exists", R"(
-        - the segment must exist [deleted]
+        - the segment must exist [missing]
     )", [&](Fixture& f) {
         rm_r("testds/2007/07-07.grib");
 
@@ -163,7 +163,7 @@ void MaintenanceTest::register_tests()
     if (can_delete_data())
         add_method("check_all_removed", R"(
             - segments that only contain data that has been removed are
-              identified as not present in the index [new]
+              identified as fully deleted [deleted]
         )", [&](Fixture& f) {
             {
                 metadata::Collection mds(*f.config().create_reader(), Matcher());
@@ -175,7 +175,6 @@ void MaintenanceTest::register_tests()
             NullReporter nr;
             auto state = f.makeSegmentedChecker()->scan(nr);
             wassert(actual(state.size()) == 3u);
-            // TODO: NEW -> EMPTY?
             wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DELETED));
         });
 
@@ -338,20 +337,6 @@ void MaintenanceTest::register_tests()
 
 
     // Fix
-    add_method("fix_unaligned", R"(
-        - [unaligned] segments are imported in-place
-    )", [&](Fixture& f) {
-        make_unaligned();
-
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "check", "2 files ok");
-        e.rescanned.emplace_back("testds", "2007/07-07.grib");
-        wassert(actual(writer.get()).check(e, true));
-
-        wassert(actual(writer.get()).maintenance_clean(3));
-    });
-
     add_method("fix_dirty", R"(
         - [dirty] segments are not touched
     )", [&](Fixture& f) {
@@ -368,6 +353,34 @@ void MaintenanceTest::register_tests()
         wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DIRTY));
     });
 
+    add_method("fix_unaligned", R"(
+        - [unaligned] segments are imported in-place
+    )", [&](Fixture& f) {
+        make_unaligned();
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "2 files ok");
+        e.rescanned.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(writer.get()).check(e, true));
+
+        wassert(actual(writer.get()).maintenance_clean(3));
+    });
+
+    add_method("fix_missing", R"(
+        - [missing] segments are removed from the index
+    )", [&](Fixture& f) {
+        rm_r("testds/2007/07-07.grib");
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "2 files ok");
+        e.deindexed.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(writer.get()).check(e, true));
+
+        wassert(actual(writer.get()).maintenance_clean(2));
+    });
+
     add_method("fix_deleted", R"(
         - [deleted] segments are removed from the index
     )", [&](Fixture& f) {
@@ -380,6 +393,24 @@ void MaintenanceTest::register_tests()
         wassert(actual(writer.get()).check(e, true));
 
         wassert(actual(writer.get()).maintenance_clean(2));
+    });
+
+    add_method("fix_corrupted", R"(
+        - [corrupted] segments can only be fixed by manual intervention. They
+          are reported and left untouched
+    )", [&](Fixture& f) {
+        Metadata md = f.import_results[0];
+        md.set("reftime", "2007-07-06 00:00:00");
+        checker()->test_change_metadata("2007/07-07.grib", md, 0);
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "2 files ok");
+        wassert(actual(writer.get()).check(e, true));
+
+        auto state = f.scan_state();
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
     });
 
     add_method("fix_archive_age", R"(
@@ -444,6 +475,22 @@ void MaintenanceTest::register_tests()
         wassert(actual(writer.get()).maintenance_clean(3));
     });
 
+    // repack_unaligned is implemented in dataset-specific tests
+
+    add_method("repack_missing", R"(
+        - [missing] segments are removed from the index
+    )", [&](Fixture& f) {
+        rm_r("testds/2007/07-07.grib");
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "repack", "2 files ok");
+        e.deindexed.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(writer.get()).repack(e, true));
+
+        wassert(actual(writer.get()).maintenance_clean(2));
+    });
+
     add_method("repack_deleted", R"(
         - [deleted] segments are removed from the index
     )", [&](Fixture& f) {
@@ -457,6 +504,24 @@ void MaintenanceTest::register_tests()
 
         wassert(actual(writer.get()).maintenance_clean(2));
     });
+
+    add_method("repack_corrupted", R"(
+        - [corrupted] segments are not untouched
+    )", [&](Fixture& f) {
+        Metadata md = f.import_results[0];
+        md.set("reftime", "2007-07-06 00:00:00");
+        checker()->test_change_metadata("2007/07-07.grib", md, 0);
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "repack", "2 files ok");
+        wassert(actual(writer.get()).repack(e, true));
+
+        auto state = f.scan_state();
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
+    });
+
 
     add_method("repack_archive_age", R"(
         - [archive age] segments are repacked if needed, then moved to .archive/last
