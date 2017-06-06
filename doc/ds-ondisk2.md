@@ -23,6 +23,19 @@ indices for the metadata listed in the `index` configuration value.
 The index is not able to distinguish between segments that have been fully
 deleted, and segments that have never been indexed.
 
+To prevent a scenario where deletion of the index followed by a repack would
+consider all segments in the dataset as containing deleted data, and therefore
+delete them all from disk, when arkimet notices that `index.sqlite` is missing,
+it creates a `needs-check-do-not-pack` file at the root of the dataset.
+
+When `needs-check-do-not-pack` is present, data files not known by the index
+are marked for rescanning ([unaligned]) instead of for deletion ([deleted]).
+
+The `needs-check-do-not-pack` file is removed by a successful `check`
+operation. `repack` refuses to run if `needs-check-do-not-pack` is present.
+This is intended to ensure that no repack is run until the index is rebuilt
+with a full check and rescan of all the data in the dataset.
+
 ## Check and repack on concat segments
 
 ### During check
@@ -47,9 +60,11 @@ deleted, and segments that have never been indexed.
 - data on disk must match the order of data used by queries [dirty]
 - data files not known by the index are considered data files whose
   entire content has been removed [deleted]
-- if the index has been deleted and the dataset has not been checked,
-  segments not known by the index are marked for reindexing instead of
-  deletion [unaligned]
+- if the index has been deleted, accessing the dataset recreates it
+  empty, and creates a `needs-check-do-not-pack` file in the root of
+  the dataset.
+- if a `needs-check-do-not-pack` file is present, segments not known by
+  the index are marked for reindexing instead of deletion [unaligned]
 
 ### During --accurate check
 
@@ -103,9 +118,11 @@ deleted, and segments that have never been indexed.
 - data on disk must match the order of data used by queries [dirty]
 - data files not known by the index are considered data files whose
   entire content has been removed [deleted]
-- if the index has been deleted and the dataset has not been checked,
-  segments not known by the index are marked for reindexing instead of
-  deletion [unaligned]
+- if the index has been deleted, accessing the dataset recreates it
+  empty, and creates a `needs-check-do-not-pack` file in the root of
+  the dataset.
+- if a `needs-check-do-not-pack` file is present, segments not known by
+  the index are marked for reindexing instead of deletion [unaligned]
 
 ### During --accurate check
 
