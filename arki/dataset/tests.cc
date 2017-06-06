@@ -179,7 +179,8 @@ std::string manifest_idx_fname()
 segmented::State DatasetTest::scan_state()
 {
     NullReporter nr;
-    return makeSegmentedChecker()->scan(nr);
+    auto checker = makeSegmentedChecker();
+    return checker->scan(nr);
 }
 
 std::unique_ptr<dataset::segmented::Reader> DatasetTest::makeSegmentedReader()

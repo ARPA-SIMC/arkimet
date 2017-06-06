@@ -21,7 +21,7 @@ class Tests : public MaintenanceTest
 
     void make_unaligned() override
     {
-        sys::unlink("testds/2007/07-07.grib.index");
+        sys::unlink("testds/" + fixture->test_relpath + ".index");
     }
 
     void register_tests() override;
@@ -43,7 +43,7 @@ void Tests::register_tests()
         NullReporter nr;
         auto state = f.makeSegmentedChecker()->scan(nr);
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_UNALIGNED));
     });
 
     add_method("check_unaligned", R"(
@@ -54,7 +54,7 @@ void Tests::register_tests()
         arki::dataset::NullReporter nr;
         auto state = f.makeSegmentedChecker()->scan(nr);
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_UNALIGNED));
     });
 
     add_method("repack_unaligned", R"(
@@ -70,12 +70,14 @@ void Tests::register_tests()
         NullReporter nr;
         auto state = f.makeSegmentedChecker()->scan(nr);
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_UNALIGNED));
     });
 }
 
-Tests test_iseg_plain("arki_dataset_iseg_maintenance", MaintenanceTest::SEGMENT_CONCAT, "type=iseg\nformat=grib\n");
-Tests test_iseg_plain_dir("arki_dataset_iseg_maintenance_dirs", MaintenanceTest::SEGMENT_DIR, "type=iseg\nformat=grib\nsegments=dir\n");
+Tests test_iseg_plain_grib("arki_dataset_iseg_maintenance_grib", MaintenanceTest::SEGMENT_CONCAT, "grib", "type=iseg\nformat=grib\n");
+Tests test_iseg_plain_grib_dir("arki_dataset_iseg_maintenance_grib_dirs", MaintenanceTest::SEGMENT_DIR, "grib", "type=iseg\nformat=grib\nsegments=dir\n");
+Tests test_iseg_plain_bufr("arki_dataset_iseg_maintenance_bufr", MaintenanceTest::SEGMENT_CONCAT, "bufr", "type=iseg\nformat=bufr\n");
+Tests test_iseg_plain_bufr_dir("arki_dataset_iseg_maintenance_bufr_dirs", MaintenanceTest::SEGMENT_DIR, "bufr", "type=iseg\nformat=bufr\nsegments=dir\n");
 
 }
 
