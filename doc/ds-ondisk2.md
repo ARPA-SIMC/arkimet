@@ -63,6 +63,11 @@ with a full check and rescan of all the data in the dataset.
 - if the index has been deleted, accessing the dataset recreates it
   empty, and creates a `needs-check-do-not-pack` file in the root of
   the dataset.
+- while `needs-check-do-not-pack` is present, files with gaps are
+  marked for rescanning instead of repacking. This prevents a scenario
+  in which, after the index has been deleted, and some data has been
+  imported that got appended to an existing segment, that segment would
+  be considered as needing repack instead of rescan. [unaligned]
 - if a `needs-check-do-not-pack` file is present, segments not known by
   the index are marked for reindexing instead of deletion [unaligned]
 
@@ -121,6 +126,11 @@ with a full check and rescan of all the data in the dataset.
 - if the index has been deleted, accessing the dataset recreates it
   empty, and creates a `needs-check-do-not-pack` file in the root of
   the dataset.
+- while `needs-check-do-not-pack` is present, files with gaps are
+  marked for rescanning instead of repacking. This prevents a scenario
+  in which, after the index has been deleted, and some data has been
+  imported that got appended to an existing segment, that segment would
+  be considered as needing repack instead of rescan. [unaligned]
 - if a `needs-check-do-not-pack` file is present, segments not known by
   the index are marked for reindexing instead of deletion [unaligned]
 
