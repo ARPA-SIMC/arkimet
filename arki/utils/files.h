@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <memory>
+#include <set>
 
 #define FLAGFILE_REBUILD ".needs-rebuild"
 #define FLAGFILE_PACK ".needs-pack"
@@ -113,6 +114,28 @@ struct PreserveFileTimes
     PreserveFileTimes(const std::string& fname);
     ~PreserveFileTimes() noexcept(false);
 };
+
+/**
+ * Recursively visit a directory and all its subdirectories, depth-first.
+ *
+ * It uses an inode cache to prevent recursion loops.
+ */
+struct PathWalk
+{
+    typedef std::function<bool(const std::string& relpath, sys::Path::iterator& entry, struct stat& st)> Consumer;
+    std::string root;
+    Consumer consumer;
+    std::set<ino_t> seen;
+
+    PathWalk(const std::string& root, Consumer consumer=nullptr);
+
+    /// Start the visit
+    void walk();
+
+protected:
+    void walk(const std::string& relpath, sys::Path& path);
+};
+
 
 }
 }

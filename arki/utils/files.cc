@@ -166,6 +166,48 @@ PreserveFileTimes::~PreserveFileTimes() noexcept(false)
         throw std::system_error(errno, std::system_category(), "cannot set file times");
 }
 
+
+PathWalk::PathWalk(const std::string& root, Consumer consumer)
+    : root(root), consumer(consumer)
+{
+}
+
+void PathWalk::walk()
+{
+    sys::Path dir(root);
+    struct stat st;
+    dir.fstatat(".", st);
+    seen.insert(st.st_ino);
+    walk("", dir);
+}
+
+void PathWalk::walk(const std::string& relpath, sys::Path& path)
+{
+    for (auto i = path.begin(); i != path.end(); ++i)
+    {
+        struct stat st;
+        path.fstatat(i->d_name, st);
+
+        // Prevent infinite loops
+        if (seen.find(st.st_ino) != seen.end())
+            continue;
+        seen.insert(st.st_ino);
+
+        // Pass the entry to the consumer, and skip it if the consumer does
+        // not want it
+        if (!consumer(relpath, i, st))
+            continue;
+
+        if (S_ISDIR(st.st_mode))
+        {
+            // Recurse
+            string subpath = str::joinpath(relpath, i->d_name);
+            sys::Path subdir(path, i->d_name);
+            walk(subpath, subdir);
+        }
+    }
+}
+
 }
 }
 }

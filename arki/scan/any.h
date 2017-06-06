@@ -61,7 +61,7 @@ bool scan(const std::string& basedir, const std::string& relname, metadata_dest_
  * The current implementation only looks at the file extension. Future
  * implementations may also have a quick look at the file contents.
  */
-bool canScan(const std::string& file);
+bool can_scan(const std::string& file);
 
 /**
  * Return true if the file exists, either uncompressed or compressed

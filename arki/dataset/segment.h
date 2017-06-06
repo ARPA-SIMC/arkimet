@@ -264,6 +264,12 @@ public:
      */
     virtual void truncate(const std::string& relname, size_t offset) = 0;
 
+    /**
+     * Scan a dataset for data files, returning a set of pathnames relative to
+     * root.
+     */
+    virtual void scan_dir(std::function<void(const std::string& relname)> dest) = 0;
+
     /// Create a SegmentManager
     static std::unique_ptr<SegmentManager> get(const std::string& root, bool force_dir=false, bool mock_data=false);
 };

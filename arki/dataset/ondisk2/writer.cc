@@ -11,7 +11,6 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
-#include "arki/scan/dir.h"
 #include "arki/scan/any.h"
 #include "arki/utils.h"
 #include "arki/utils/files.h"
@@ -362,7 +361,8 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
     // Add information from the state of files on disk
     //
 
-    std::set<std::string> disk(scan::dir(config().path, true));
+    std::set<std::string> disk;
+    segment_manager().scan_dir([&](const std::string& relpath) { disk.insert(relpath);; });
 
     // files: a, b, c,    e, f, g
     // index:       c, d, e, f, g

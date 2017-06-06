@@ -10,7 +10,6 @@
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
 #include "arki/matcher.h"
-#include "arki/scan/dir.h"
 #include "arki/utils/sqlite.h"
 #include "arki/utils/files.h"
 #include "arki/utils/compress.h"

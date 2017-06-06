@@ -223,14 +223,14 @@ bool scan(const std::string& file, metadata_dest_func dest, const std::string& f
     return scan(basedir, relname, dest, format);
 }
 
-bool canScan(const std::string& file)
+bool can_scan(const std::string& file)
 {
-	// Get the file extension
-	size_t pos = file.rfind('.');
-	if (pos == string::npos)
-		// No extension, we do not know what it is
-		return false;
-	string ext = str::lower(file.substr(pos+1));
+    // Get the file extension
+    size_t pos = file.rfind('.');
+    if (pos == string::npos)
+        // No extension, we do not know what it is
+        return false;
+    string ext = str::lower(file.substr(pos+1));
 
 	// Check for known extensions
 #ifdef HAVE_GRIBAPI

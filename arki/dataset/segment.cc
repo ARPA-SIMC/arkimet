@@ -9,6 +9,7 @@
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils.h"
+#include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 
@@ -206,7 +207,49 @@ struct AutoSegmentManager : public BaseSegmentManager
         }
         return res;
     }
+
+    void scan_dir(std::function<void(const std::string& relname)> dest) override
+    {
+        // Trim trailing '/'
+        string m_root = root;
+        while (m_root.size() > 1 and m_root[m_root.size()-1] == '/')
+            m_root.resize(m_root.size() - 1);
+
+        files::PathWalk walker(m_root);
+        walker.consumer = [&](const std::string& relpath, sys::Path::iterator& entry, struct stat& st) {
+            // Skip '.', '..' and hidden files
+            if (entry->d_name[0] == '.')
+                return false;
+
+            string name = entry->d_name;
+
+            // Skip compressed data index files
+            if (str::endswith(name, ".gz.idx"))
+                return false;
+
+            if (S_ISDIR(st.st_mode))
+            {
+                sys::Path sub(entry.open_path());
+                struct stat seq_st;
+                if (!sub.fstatat_ifexists(".sequence", seq_st))
+                    // Normal subdirectory, recurse into it
+                    return true;
+            }
+
+            // Directory or file segment
+            if (str::endswith(name, ".gz"))
+                name = name.substr(0, name.size() - 3);
+
+            // Good file
+            if (scan::can_scan(name))
+                dest(str::joinpath(relpath, name));
+            return false;
+        };
+
+        walker.walk();
+    }
 };
+
 
 /// Segment manager that always picks directory segments
 struct ForceDirSegmentManager : public BaseSegmentManager
@@ -219,6 +262,48 @@ struct ForceDirSegmentManager : public BaseSegmentManager
         if (res.get()) return res;
         return unique_ptr<Segment>(new dir::Segment(format, relname, absname));
     }
+
+    void scan_dir(std::function<void(const std::string& relname)> dest) override
+    {
+        // Trim trailing '/'
+        string m_root = root;
+        while (m_root.size() > 1 and m_root[m_root.size()-1] == '/')
+            m_root.resize(m_root.size() - 1);
+
+        files::PathWalk walker(m_root);
+        walker.consumer = [&](const std::string& relpath, sys::Path::iterator& entry, struct stat& st) {
+            // Skip '.', '..' and hidden files
+            if (entry->d_name[0] == '.')
+                return false;
+
+            string name = entry->d_name;
+
+            // Skip compressed data index files
+            if (str::endswith(name, ".gz.idx"))
+                return false;
+
+            if (!S_ISDIR(st.st_mode))
+                return false;
+
+            sys::Path sub(entry.open_path());
+            struct stat seq_st;
+            if (!sub.fstatat_ifexists(".sequence", seq_st))
+                // Normal subdirectory, recurse into it
+                return true;
+
+            // Directory segment
+            if (str::endswith(name, ".gz"))
+                name = name.substr(0, name.size() - 3);
+
+            // Good file
+            if (scan::can_scan(name))
+                dest(str::joinpath(relpath, name));
+
+            return false;
+        };
+
+        walker.walk();
+    }
 };
 
 /// Segment manager that always uses hole file segments
@@ -229,6 +314,48 @@ struct HoleDirSegmentManager : public BaseSegmentManager
     unique_ptr<Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname)
     {
         return unique_ptr<Segment>(new dir::HoleSegment(format, relname, absname));
+    }
+
+    void scan_dir(std::function<void(const std::string& relname)> dest) override
+    {
+        // Trim trailing '/'
+        string m_root = root;
+        while (m_root.size() > 1 and m_root[m_root.size()-1] == '/')
+            m_root.resize(m_root.size() - 1);
+
+        files::PathWalk walker(m_root);
+        walker.consumer = [&](const std::string& relpath, sys::Path::iterator& entry, struct stat& st) {
+            // Skip '.', '..' and hidden files
+            if (entry->d_name[0] == '.')
+                return false;
+
+            string name = entry->d_name;
+
+            // Skip compressed data index files
+            if (str::endswith(name, ".gz.idx"))
+                return false;
+
+            if (!S_ISDIR(st.st_mode))
+                return false;
+
+            sys::Path sub(entry.open_path());
+            struct stat seq_st;
+            if (!sub.fstatat_ifexists(".sequence", seq_st))
+                // Normal subdirectory, recurse into it
+                return true;
+
+            // Directory segment
+            if (str::endswith(name, ".gz"))
+                name = name.substr(0, name.size() - 3);
+
+            // Good file
+            if (scan::can_scan(name))
+                dest(str::joinpath(relpath, name));
+
+            return false;
+        };
+
+        walker.walk();
     }
 };
 
