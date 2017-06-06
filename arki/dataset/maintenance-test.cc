@@ -55,6 +55,18 @@ Fixture::Fixture(const std::string& format, const std::string& cfg_instance)
         test_relpath_wrongstep = "2007/07.vm2";
         test_datum_size = 34;
     }
+    else if (format == "odimh5")
+    {
+        import_files = {
+            "inbound/mainttest.h5/00.h5",
+            "inbound/mainttest.h5/01.h5",
+            "inbound/mainttest.h5/02.h5",
+            "inbound/mainttest.h5/03.h5",
+        };
+        test_relpath = "2007/07-07.odimh5";
+        test_relpath_wrongstep = "2007/07.odimh5";
+        test_datum_size = 49049;
+    }
 }
 
 void Fixture::state_is(unsigned segment_count, unsigned test_relpath_state)

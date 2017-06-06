@@ -137,5 +137,7 @@ Tests test_simple_vm2_plain("arki_dataset_simple_maintenance_vm2_plain", Mainten
 Tests test_simple_vm2_sqlite("arki_dataset_simple_maintenance_vm2_sqlite", MaintenanceTest::SEGMENT_CONCAT, "vm2", "type=simple\nindex_type=sqlite");
 Tests test_simple_vm2_plain_dir("arki_dataset_simple_maintenance_vm2_plain_dirs", MaintenanceTest::SEGMENT_DIR, "vm2", "type=simple\nindex_type=plain\nsegments=dir\n");
 Tests test_simple_vm2_sqlite_dir("arki_dataset_simple_maintenance_vm2_sqlite_dirs", MaintenanceTest::SEGMENT_DIR, "vm2", "type=simple\nindex_type=sqlite\nsegments=dir\n");
+Tests test_simple_odimh5_plain_dir("arki_dataset_simple_maintenance_odimh5_plain", MaintenanceTest::SEGMENT_DIR, "odimh5", "type=simple\nindex_type=plain\n");
+Tests test_simple_odimh5_sqlite_dir("arki_dataset_simple_maintenance_odimh5_sqlite", MaintenanceTest::SEGMENT_DIR, "odimh5", "type=simple\nindex_type=sqlite\n");
 
 }

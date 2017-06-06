@@ -80,6 +80,7 @@ Tests test_iseg_plain_bufr("arki_dataset_iseg_maintenance_bufr", MaintenanceTest
 Tests test_iseg_plain_bufr_dir("arki_dataset_iseg_maintenance_bufr_dirs", MaintenanceTest::SEGMENT_DIR, "bufr", "type=iseg\nformat=bufr\nsegments=dir\n");
 Tests test_iseg_plain_vm2("arki_dataset_iseg_maintenance_vm2", MaintenanceTest::SEGMENT_CONCAT, "vm2", "type=iseg\nformat=vm2\n");
 Tests test_iseg_plain_vm2_dir("arki_dataset_iseg_maintenance_vm2_dirs", MaintenanceTest::SEGMENT_DIR, "vm2", "type=iseg\nformat=vm2\nsegments=dir\n");
+Tests test_iseg_plain_odimh5_dir("arki_dataset_iseg_maintenance_odimh5", MaintenanceTest::SEGMENT_DIR, "odimh5", "type=iseg\nformat=odimh5\n");
 
 }
 
