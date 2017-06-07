@@ -101,7 +101,7 @@ install -bD -m0644 %{SOURCE2} %{buildroot}%{_sysconfdir}/sysconfig/%{name}
 %{python3_sitearch}/*.la
 %{python3_sitearch}/*.so*
 %doc %{_mandir}/man1/*
-%doc README TODO
+%doc README.md
 %doc %{_docdir}/arkimet/*
 
 %files -n arkimet-devel
