@@ -202,6 +202,28 @@ void MaintenanceTest::register_tests_concat()
 
         wassert(actual(writer.get()).maintenance_clean(3));
     });
+
+    add_method("repack_timestamps", [&](Fixture& f) {
+        // Set the segment to a past timestamp and rescan it, making it as if
+        // it were imported a long time ago
+        {
+            touch("testds/" + f.test_relpath, 199926000);
+
+            f.makeSegmentedChecker()->rescanSegment(f.test_relpath);
+        }
+
+        // Ensure that the archive is still clean
+        wassert(f.all_clean(3));
+
+        // Do a repack, it should change the timestamp
+        {
+            auto writer(f.makeSegmentedChecker());
+            wassert(actual(writer->repackSegment(f.test_relpath)) == 0u);
+        }
+
+        // Ensure that the archive is still clean
+        wassert(f.all_clean(3));
+    });
 }
 
 void MaintenanceTest::register_tests_dir()
@@ -641,34 +663,6 @@ class Tests : public FixtureTestCase<Fixture>
 
     void register_tests() override
     {
-        add_method("repack_timestamps", [](Fixture& f) {
-            // Ensure that if repacking changes the data file timestamp, it reindexes it properly
-            f.clean_and_import();
-
-            // Ensure the archive appears clean
-            wassert(actual(f.makeSegmentedChecker().get()).maintenance_clean(3));
-
-            // Change timestamp and rescan the file
-            {
-                struct utimbuf oldts = { 199926000, 199926000 };
-                wassert(actual(utime("testds/2007/07-08.grib", &oldts)) == 0);
-
-                auto writer(f.makeSegmentedChecker());
-                writer->rescanSegment("2007/07-08.grib");
-            }
-
-            // Ensure that the archive is still clean
-            wassert(actual(f.makeSegmentedChecker().get()).maintenance_clean(3));
-
-            // Repack the file
-            {
-                auto writer(f.makeSegmentedChecker());
-                wassert(actual(writer->repackSegment("2007/07-08.grib")) == 0u);
-            }
-
-            // Ensure that the archive is still clean
-            wassert(actual(f.makeSegmentedChecker().get()).maintenance_clean(3));
-        });
         add_method("repack_delete", [](Fixture& f) {
             // Test accuracy of maintenance scan, on a dataset with one file to both repack and delete
             f.cfg.setValue("step", "yearly");

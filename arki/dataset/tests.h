@@ -208,6 +208,9 @@ public:
 
     void ensure_localds_clean(size_t filecount, size_t resultcount);
 
+    /// Test the state of all segments in the local dataset is clean
+    void all_clean(size_t segment_count);
+
     void import_all(const testdata::Fixture& fixture);
     void import_all_packed(const testdata::Fixture& fixture);
 

@@ -344,6 +344,13 @@ void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount)
     tc.clear();
 }
 
+void DatasetTest::all_clean(size_t segment_count)
+{
+    auto state = scan_state();
+    wassert(actual(state.size()) == segment_count);
+    wassert(actual(state.count(SEGMENT_OK)) == segment_count);
+}
+
 void DatasetTest::import_all(const testdata::Fixture& fixture)
 {
     clean();
