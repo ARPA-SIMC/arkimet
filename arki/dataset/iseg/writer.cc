@@ -707,8 +707,9 @@ void Checker::releaseSegment(const std::string& relpath, const std::string& dest
     segmented::Checker::releaseSegment(relpath, destpath);
 }
 
-size_t Checker::vacuum()
+size_t Checker::vacuum(dataset::Reporter& reporter)
 {
+    reporter.operation_progress(name(), "repack", "running VACUUM ANALIZE on all segment indices");
     list_segments([&](const std::string& relpath) {
         WIndex idx(m_config, relpath);
         idx.vacuum();
@@ -716,22 +717,22 @@ size_t Checker::vacuum()
     return 0;
 }
 
-void Checker::test_make_overlap(const std::string& relpath, unsigned data_idx)
+void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
 {
     WIndex idx(m_config, relpath);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    segment_manager().get_segment(relpath)->test_make_overlap(mds, data_idx);
-    idx.test_make_overlap(data_idx);
+    segment_manager().get_segment(relpath)->test_make_overlap(mds, overlap_size, data_idx);
+    idx.test_make_overlap(overlap_size, data_idx);
 }
 
-void Checker::test_make_hole(const std::string& relpath, unsigned data_idx)
+void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
 {
     WIndex idx(m_config, relpath);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    segment_manager().get_segment(relpath)->test_make_hole(mds, data_idx);
-    idx.test_make_hole(data_idx);
+    segment_manager().get_segment(relpath)->test_make_hole(mds, hole_size, data_idx);
+    idx.test_make_hole(hole_size, data_idx);
 }
 
 void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)

@@ -188,6 +188,14 @@ Segment::~Segment()
 {
 }
 
+bool Segment::can_store(const std::string& format)
+{
+    return format == "grib" || format == "grib1" || format == "grib2"
+        || format == "bufr"
+        || format == "odimh5" || format == "h5" || format == "odim"
+        || format == "vm2";
+}
+
 void Segment::open()
 {
     if (seqfile.fd != -1) return;
@@ -578,35 +586,38 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, u
     return p;
 }
 
-void Segment::test_make_overlap(metadata::Collection& mds, unsigned data_idx)
+void Segment::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
 {
     for (unsigned i = data_idx; i < mds.size(); ++i)
     {
         unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
         sys::rename(
                 str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
-                str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset - 1, source->format)));
-        source->offset -= 1;
+                str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset - overlap_size, source->format)));
+        source->offset -= overlap_size;
         mds[i].set_source(move(source));
     }
 }
 
-void Segment::test_make_hole(metadata::Collection& mds, unsigned data_idx)
+void Segment::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
     if (data_idx >= mds.size())
     {
         open();
         size_t pos;
-        File fd = seqfile.open_next(mds[0].sourceBlob().format, pos);
-        fd.close();
+        for (unsigned i = 0; i < hole_size; ++i)
+        {
+            File fd = seqfile.open_next(mds[0].sourceBlob().format, pos);
+            fd.close();
+        }
     } else {
         for (int i = mds.size() - 1; i >= (int)data_idx; --i)
         {
             unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
             sys::rename(
                     str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
-                    str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset + 1, source->format)));
-            source->offset += 1;
+                    str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset + hole_size, source->format)));
+            source->offset += hole_size;
             mds[i].set_source(move(source));
         }
     }

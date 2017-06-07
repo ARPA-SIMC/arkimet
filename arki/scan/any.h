@@ -56,14 +56,6 @@ bool scan(const std::string& file, metadata_dest_func dest, const std::string& f
 bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest, const std::string& format);
 
 /**
- * Return true if the file looks like a file with data that can be scanned.
- *
- * The current implementation only looks at the file extension. Future
- * implementations may also have a quick look at the file contents.
- */
-bool canScan(const std::string& file);
-
-/**
  * Return true if the file exists, either uncompressed or compressed
  */
 bool exists(const std::string& file);

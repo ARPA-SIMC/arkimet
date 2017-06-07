@@ -1,11 +1,12 @@
-#include <arki/dataset/tests.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/utils/sys.h>
-#include <arki/utils/string.h>
+#include "arki/dataset/tests.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 #include "segment.h"
 #include "segmented.h"
 #include "segment/lines.h"
+#include <algorithm>
 
 namespace {
 using namespace std;
@@ -130,6 +131,124 @@ add_method("dir", [] {
     TestSegments ts("dir");
     wassert(ts.test_repack());
 });
+
+
+// Test scan_dir on an empty directory
+add_method("scan_dir_empty", [] {
+    system("rm -rf dirscanner");
+    mkdir("dirscanner", 0777);
+
+    {
+        auto sm = segment::SegmentManager::get("dirscanner", false);
+        std::vector<std::string> res;
+        sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
+        wassert(actual(res.size()) == 0u);
+    }
+
+    {
+        auto sm = segment::SegmentManager::get("dirscanner", true);
+        std::vector<std::string> res;
+        sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
+        wassert(actual(res.size()) == 0u);
+    }
+});
+
+// Test scan_dir on a populated directory
+add_method("scan_dir_dir1", [] {
+    system("rm -rf dirscanner");
+    mkdir("dirscanner", 0777);
+    sys::write_file("dirscanner/index.sqlite", "");
+    mkdir("dirscanner/2007", 0777);
+    mkdir("dirscanner/2008", 0777);
+    sys::write_file("dirscanner/2008/a.grib", "");
+    sys::write_file("dirscanner/2008/b.grib", "");
+    mkdir("dirscanner/2008/temp", 0777);
+    mkdir("dirscanner/2009", 0777);
+    sys::write_file("dirscanner/2009/a.grib", "");
+    sys::write_file("dirscanner/2009/b.grib", "");
+    mkdir("dirscanner/2009/temp", 0777);
+    mkdir("dirscanner/.archive", 0777);
+    sys::write_file("dirscanner/.archive/z.grib", "");
+
+    {
+        auto sm = segment::SegmentManager::get("dirscanner", false);
+        std::vector<std::string> res;
+        sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
+        wassert(actual(res.size()) == 4u);
+        std::sort(res.begin(), res.end());
+
+        wassert(actual(res[0]) == "2008/a.grib");
+        wassert(actual(res[1]) == "2008/b.grib");
+        wassert(actual(res[2]) == "2009/a.grib");
+        wassert(actual(res[3]) == "2009/b.grib");
+    }
+
+    {
+        auto sm = segment::SegmentManager::get("dirscanner", true);
+        std::vector<std::string> res;
+        sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
+        wassert(actual(res.size()) == 0u);
+    }
+});
+
+// Test file names interspersed with directory names
+add_method("scan_dir_dir2", [] {
+    system("rm -rf dirscanner");
+    mkdir("dirscanner", 0777);
+    sys::write_file("dirscanner/index.sqlite", "");
+    mkdir("dirscanner/2008", 0777);
+    sys::write_file("dirscanner/2008/a.grib", "");
+    sys::write_file("dirscanner/2008/b.grib", "");
+    mkdir("dirscanner/2008/a", 0777);
+    sys::write_file("dirscanner/2008/a/a.grib", "");
+    mkdir("dirscanner/2009", 0777);
+    sys::write_file("dirscanner/2009/a.grib", "");
+    sys::write_file("dirscanner/2009/b.grib", "");
+
+    {
+        auto sm = segment::SegmentManager::get("dirscanner", false);
+        std::vector<std::string> res;
+        sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
+        wassert(actual(res.size()) == 5u);
+        std::sort(res.begin(), res.end());
+
+        wassert(actual(res[0]) == "2008/a.grib");
+        wassert(actual(res[1]) == "2008/a/a.grib");
+        wassert(actual(res[2]) == "2008/b.grib");
+        wassert(actual(res[3]) == "2009/a.grib");
+        wassert(actual(res[4]) == "2009/b.grib");
+    }
+
+    {
+        auto sm = segment::SegmentManager::get("dirscanner", true);
+        std::vector<std::string> res;
+        sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
+        wassert(actual(res.size()) == 0u);
+    }
+});
+
+// odimh5 files are not considered segments
+add_method("scan_dir_dir2", [] {
+    system("rm -rf dirscanner");
+    mkdir("dirscanner", 0777);
+    mkdir("dirscanner/2008", 0777);
+    sys::write_file("dirscanner/2008/01.odimh5", "");
+
+    {
+        auto sm = segment::SegmentManager::get("dirscanner", false);
+        std::vector<std::string> res;
+        sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
+        wassert(actual(res.size()) == 0u);
+    }
+
+    {
+        auto sm = segment::SegmentManager::get("dirscanner", true);
+        std::vector<std::string> res;
+        sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
+        wassert(actual(res.size()) == 0u);
+    }
+});
+
 
 }
 

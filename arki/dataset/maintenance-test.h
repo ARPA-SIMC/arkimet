@@ -7,17 +7,26 @@ namespace arki {
 namespace dataset {
 namespace maintenance_test {
 
-struct Fixture : public arki::tests::DatasetTest {
-    using DatasetTest::DatasetTest;
 
-    void test_setup()
-    {
-        DatasetTest::test_setup(R"(
-            unique=reftime, origin, product, level, timerange, area
-            step=daily
-        )");
-        import("inbound/mainttest.grib");
-    }
+struct Fixture : public arki::tests::DatasetTest
+{
+    std::string format;
+    std::vector<std::string> import_files;
+    /// relpath of the segment with two data elements in it
+    std::string test_relpath;
+    std::string test_relpath_wrongstep;
+    /// Size of the first datum in test_relepath
+    unsigned test_datum_size;
+
+    Fixture(const std::string& format, const std::string& cfg_instance=std::string());
+
+    /**
+     * Compute the dataset state and assert that it contains `segment_count`
+     * segments, and that the segment test_relpath has the given state.
+     */
+    void state_is(unsigned segment_count, unsigned test_relpath_state);
+
+    void test_setup();
 };
 
 struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
@@ -88,6 +97,14 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
      * imported
      */
     void remove_index();
+
+    /**
+     * Make the test segment 6Gb long (using filesystem holes), with valid
+     * imported data at the beginning and at the end.
+     *
+     * Only works on concat segments
+     */
+    void make_hugefile();
 
     /**
      * Make the segment 2007/07-07.grib show up as unaligned

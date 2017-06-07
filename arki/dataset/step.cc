@@ -499,7 +499,7 @@ struct Monthly : public BaseStep
     bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
     {
         int ye, mo;
-        if (sscanf(path.c_str(), "%04d/%02d", &ye, &mo) == 0)
+        if (sscanf(path.c_str(), "%04d/%02d", &ye, &mo) != 2)
             return false;
 
         start_time.set_lowerbound(ye, mo);
@@ -525,7 +525,7 @@ struct SubMonthly : public SubStep
     bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
     {
         int mo;
-        if (sscanf(path.c_str(), "%02d", &mo) == 0)
+        if (sscanf(path.c_str(), "%02d", &mo) != 1)
             return false;
 
         start_time.set_lowerbound(year, mo);
@@ -549,7 +549,7 @@ struct Biweekly : public BaseStep
     bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
     {
         int ye, mo = -1, biweek = -1;
-        if (sscanf(path.c_str(), "%04d/%02d-%d", &ye, &mo, &biweek) == 0)
+        if (sscanf(path.c_str(), "%04d/%02d-%d", &ye, &mo, &biweek) != 2)
             return false;
 
         int min_da = -1;
@@ -584,7 +584,7 @@ struct Weekly : public BaseStep
     bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
     {
         int ye, mo = -1, week = -1;
-        if (sscanf(path.c_str(), "%04d/%02d-%d", &ye, &mo, &week) == 0)
+        if (sscanf(path.c_str(), "%04d/%02d-%d", &ye, &mo, &week) != 2)
             return false;
         int min_da = -1;
         int max_da = -1;
@@ -619,7 +619,7 @@ struct SubWeekly : public SubStep
     bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
     {
         int mo = -1, week = -1;
-        if (sscanf(path.c_str(), "%02d-%d", &mo, &week) == 0)
+        if (sscanf(path.c_str(), "%02d-%d", &mo, &week) != 2)
             return false;
         int min_da = -1;
         int max_da = -1;
@@ -657,7 +657,7 @@ struct Daily : public BaseStep
     bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
     {
         int ye, mo, da;
-        if (sscanf(path.c_str(), "%04d/%02d-%02d", &ye, &mo, &da) == 0)
+        if (sscanf(path.c_str(), "%04d/%02d-%02d", &ye, &mo, &da) != 3)
             return false;
         start_time.set_lowerbound(ye, mo, da);
         end_time.set_upperbound(ye, mo, da);
@@ -682,7 +682,7 @@ struct SubDaily : public SubStep
     bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
     {
         int mo, da;
-        if (sscanf(path.c_str(), "%02d/%02d", &mo, &da) == 0)
+        if (sscanf(path.c_str(), "%02d/%02d", &mo, &da) != 2)
             return false;
         start_time.set_lowerbound(year, mo, da);
         end_time.set_upperbound(year, mo, da);

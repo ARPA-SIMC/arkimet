@@ -39,7 +39,7 @@ an empty `.metadata` file will always be rescanned.
 ### During check
 
 - the segment must be a file
-- the segment must exist [deleted]
+- the segment must exist [missing]
 - all data known by the index for this segment must be present on disk [unaligned]
 - no pair of (offset, size) data spans from the index can overlap [unaligned]
 - data must start at the beginning of the segment [dirty]
@@ -56,7 +56,7 @@ an empty `.metadata` file will always be rescanned.
 - data on disk must match the order of data used by queries [dirty]
 - find data files not known by the index [unaligned]
 - the segment must not be newer than the index [unaligned]
-- `.metadata` file must not be empty [new]
+- `.metadata` file must not be empty [unaligned]
 - `.metadata` file must not be older than the data [unaligned]
 - `.summary` file must not be older than the `.metadata` file [unaligned]
 - `MANIFEST` file must not be older than the `.metadata` file [unaligned]
@@ -68,9 +68,12 @@ an empty `.metadata` file will always be rescanned.
 
 ### During fix
 
-- [unaligned] segments are imported in-place
 - [dirty] segments are not touched
+- [unaligned] segments are imported in-place
+- [missing] segments are removed from the index
 - [deleted] segments are removed from the index
+- [corrupted] segments can only be fixed by manual intervention. They
+  are reported and left untouched
 - [archive age] segments are not touched
 - [delete age] segments are not touched
 
@@ -81,7 +84,9 @@ an empty `.metadata` file will always be rescanned.
   data are queried in the default sorting order. In dir segments, this
   is done to avoid sequence numbers growing indefinitely for datasets
   with frequent appends and removes.
+- [missing] segments are removed from the index
 - [deleted] segments are removed from the index
+- [corrupted] segments are not untouched
 - [archive age] segments are repacked if needed, then moved to .archive/last
 - [delete age] segments are deleted
 - [unaligned] segments are not touched
@@ -93,7 +98,7 @@ an empty `.metadata` file will always be rescanned.
 
 - the segment must be a directory [unaligned]
 - the size of each data file must match the data size exactly [corrupted]
-- the segment must exist [deleted]
+- the segment must exist [missing]
 - all data known by the index for this segment must be present on disk [unaligned]
 - no pair of (offset, size) data spans from the index can overlap [unaligned]
 - data must start at the beginning of the segment [dirty]
@@ -110,7 +115,7 @@ an empty `.metadata` file will always be rescanned.
 - data on disk must match the order of data used by queries [dirty]
 - find data files not known by the index [unaligned]
 - the segment must not be newer than the index [unaligned]
-- `.metadata` file must not be empty [new]
+- `.metadata` file must not be empty [unaligned]
 - `.metadata` file must not be older than the data [unaligned]
 - `.summary` file must not be older than the `.metadata` file [unaligned]
 - `MANIFEST` file must not be older than the `.metadata` file [unaligned]
@@ -122,9 +127,12 @@ an empty `.metadata` file will always be rescanned.
 
 ### During fix
 
-- [unaligned] segments are imported in-place
 - [dirty] segments are not touched
+- [unaligned] segments are imported in-place
+- [missing] segments are removed from the index
 - [deleted] segments are removed from the index
+- [corrupted] segments can only be fixed by manual intervention. They
+  are reported and left untouched
 - [archive age] segments are not touched
 - [delete age] segments are not touched
 
@@ -135,7 +143,9 @@ an empty `.metadata` file will always be rescanned.
   data are queried in the default sorting order. In dir segments, this
   is done to avoid sequence numbers growing indefinitely for datasets
   with frequent appends and removes.
+- [missing] segments are removed from the index
 - [deleted] segments are removed from the index
+- [corrupted] segments are not untouched
 - [archive age] segments are repacked if needed, then moved to .archive/last
 - [delete age] segments are deleted
 - [unaligned] segments are not touched

@@ -367,6 +367,9 @@ struct Path : public ManagedNamedFileDescriptor
 
         /// @return true if we refer to a Unix domain socket.
         bool issock() const;
+
+        /// Return a Path object for this entry
+        Path open_path(int flags=0) const;
     };
 
     using ManagedNamedFileDescriptor::ManagedNamedFileDescriptor;
@@ -400,8 +403,14 @@ struct Path : public ManagedNamedFileDescriptor
 
     void fstatat(const char* pathname, struct stat& st);
 
+    /// fstatat, but in case of ENOENT returns false instead of throwing
+    bool fstatat_ifexists(const char* pathname, struct stat& st);
+
     /// fstatat with the AT_SYMLINK_NOFOLLOW flag set
     void lstatat(const char* pathname, struct stat& st);
+
+    /// lstatat, but in case of ENOENT returns false instead of throwing
+    bool lstatat_ifexists(const char* pathname, struct stat& st);
 
     void unlinkat(const char* pathname);
 

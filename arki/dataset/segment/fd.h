@@ -48,8 +48,8 @@ public:
     void truncate(size_t offset) override;
     void validate(Metadata& md, const scan::Validator& v) override;
 
-    void test_make_overlap(metadata::Collection& mds, unsigned data_idx) override;
-    void test_make_hole(metadata::Collection& mds, unsigned data_idx) override;
+    void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
+    void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
     void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
 
     /**
@@ -67,6 +67,8 @@ public:
             fd::Segment* make_repack_segment(const std::string&, const std::string&),
             bool skip_validation=false,
             unsigned test_flags=0);
+
+    static bool can_store(const std::string& format);
 };
 
 }

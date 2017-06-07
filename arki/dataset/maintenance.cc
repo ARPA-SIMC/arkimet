@@ -208,7 +208,7 @@ void RealRepacker::operator()(const std::string& relpath, segment::State state)
 void RealRepacker::end()
 {
     // Finally, tidy up the database
-    size_t size_vacuum = w.vacuum();
+    size_t size_vacuum = w.vacuum(reporter);
 
     vector<string> reports;
     reports.emplace_back(nfiles(m_count_ok) + " ok");
@@ -260,17 +260,12 @@ void RealFixer::operator()(const std::string& relpath, segment::State state)
 
 void RealFixer::end()
 {
-    // Finally, tidy up the database
-    /*size_t size_vacuum =*/ w.vacuum();
-
     vector<string> reports;
     reports.emplace_back(nfiles(m_count_ok) + " ok");
     if (m_count_packed) reports.emplace_back(nfiles(m_count_packed) + " packed");
     if (m_count_rescanned) reports.emplace_back(nfiles(m_count_rescanned) + " rescanned");
     if (m_count_deindexed) reports.emplace_back(nfiles(m_count_deindexed) + " removed from index");
     reporter.operation_report(w.name(), "check", str::join(", ", reports));
-    //if (size_vacuum)
-    //  logAdd() << size_vacuum << " bytes reclaimed cleaning the index";
 }
 
 }

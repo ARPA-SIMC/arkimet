@@ -69,20 +69,15 @@ add_method("compressed", [](Fixture& f) {
     sys::unlink_ifexists("testds/2007/10-09.grib");
 
     // Test that querying returns all items
-    {
-        auto reader(f.config().create_reader());
-        unsigned count = count_results(*reader, Matcher());
-        wassert(actual(count) == 3u);
-    }
+    wassert(f.query_results({1, 0, 2}));
 
     // Check if files to archive are detected
     {
-        auto writer(f.makeSegmentedChecker());
-
-        MaintenanceResults expected(false, 3);
-        expected.by_type[DatasetTest::COUNTED_OK] = 1;
-        expected.by_type[DatasetTest::COUNTED_ARCHIVE_AGE] = 2;
-        wassert(actual(writer.get()).maintenance(expected));
+        auto state = f.scan_state();
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_ARCHIVE_AGE));
+        wassert(actual(state.get("2007/07-08.grib").state) == segment::State(SEGMENT_ARCHIVE_AGE));
+        wassert(actual(state.get("2007/10-09.grib").state) == segment::State(SEGMENT_OK));
     }
 
     // Perform packing and check that things are still ok afterwards
@@ -137,10 +132,7 @@ add_method("compressed", [](Fixture& f) {
     }
 
     // Test that querying returns all items
-    {
-        auto reader = f.config().create_reader();
-        ensure_equals(count_results(*reader, Matcher()), 3u);
-    }
+    wassert(f.query_results({1, 0, 2}));
 });
 
 add_method("query_archived", [](Fixture& f) {

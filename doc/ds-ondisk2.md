@@ -41,9 +41,9 @@ with a full check and rescan of all the data in the dataset.
 ### During check
 
 - the segment must be a file
-- the segment must exist [deleted]
+- the segment must exist [missing]
 - segments that only contain data that has been removed are
-  identified as not present in the index [new]
+  identified as fully deleted [deleted]
 - all data known by the index for this segment must be present on disk [unaligned]
 - no pair of (offset, size) data spans from the index can overlap [unaligned]
 - data must start at the beginning of the segment [dirty]
@@ -77,9 +77,12 @@ with a full check and rescan of all the data in the dataset.
 
 ### During fix
 
-- [unaligned] segments are imported in-place
 - [dirty] segments are not touched
+- [unaligned] segments are imported in-place
+- [missing] segments are removed from the index
 - [deleted] segments are removed from the index
+- [corrupted] segments can only be fixed by manual intervention. They
+  are reported and left untouched
 - [archive age] segments are not touched
 - [delete age] segments are not touched
 
@@ -90,7 +93,9 @@ with a full check and rescan of all the data in the dataset.
   data are queried in the default sorting order. In dir segments, this
   is done to avoid sequence numbers growing indefinitely for datasets
   with frequent appends and removes.
+- [missing] segments are removed from the index
 - [deleted] segments are removed from the index
+- [corrupted] segments are not untouched
 - [archive age] segments are repacked if needed, then moved to .archive/last
 - [delete age] segments are deleted
 - [unaligned] when `needs-check-do-not-pack` is present in the dataset
@@ -104,9 +109,9 @@ with a full check and rescan of all the data in the dataset.
 
 - the segment must be a directory [unaligned]
 - the size of each data file must match the data size exactly [corrupted]
-- the segment must exist [deleted]
+- the segment must exist [missing]
 - segments that only contain data that has been removed are
-  identified as not present in the index [new]
+  identified as fully deleted [deleted]
 - all data known by the index for this segment must be present on disk [unaligned]
 - no pair of (offset, size) data spans from the index can overlap [unaligned]
 - data must start at the beginning of the segment [dirty]
@@ -140,9 +145,12 @@ with a full check and rescan of all the data in the dataset.
 
 ### During fix
 
-- [unaligned] segments are imported in-place
 - [dirty] segments are not touched
+- [unaligned] segments are imported in-place
+- [missing] segments are removed from the index
 - [deleted] segments are removed from the index
+- [corrupted] segments can only be fixed by manual intervention. They
+  are reported and left untouched
 - [archive age] segments are not touched
 - [delete age] segments are not touched
 
@@ -153,7 +161,9 @@ with a full check and rescan of all the data in the dataset.
   data are queried in the default sorting order. In dir segments, this
   is done to avoid sequence numbers growing indefinitely for datasets
   with frequent appends and removes.
+- [missing] segments are removed from the index
 - [deleted] segments are removed from the index
+- [corrupted] segments are not untouched
 - [archive age] segments are repacked if needed, then moved to .archive/last
 - [delete age] segments are deleted
 - [unaligned] when `needs-check-do-not-pack` is present in the dataset

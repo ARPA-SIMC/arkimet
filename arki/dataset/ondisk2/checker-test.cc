@@ -187,11 +187,6 @@ add_method("hole_file_and_check", [](Fixture& f) {
         expected.by_type[DatasetTest::COUNTED_DIRTY] = 1;
         wassert(actual(*f.makeOndisk2Checker()).maintenance(expected));
     }
-
-    // Ensure that we have the summary cache
-    wassert(actual_file("testds/.summaries/all.summary").exists());
-    //ensure(sys::fs::exists("testds/.summaries/2007-07.summary"));
-    //ensure(sys::fs::exists("testds/.summaries/2007-10.summary"));
 });
 
 // Test maintenance scan, on dataset with one file to delete, performing check
@@ -211,11 +206,6 @@ add_method("delete_file_and_check", [](Fixture& f) {
 
     state = f.scan_state();
     wassert(actual(state.get(deleted_relpath).state) == segment::State(SEGMENT_DELETED));
-
-    // Ensure that we have the summary cache
-    wassert(actual_file("testds/.summaries/all.summary").exists());
-    //ensure(sys::fs::exists("testds/.summaries/2007-07.summary"));
-    //ensure(sys::fs::exists("testds/.summaries/2007-10.summary"));
 });
 
 // Test accuracy of maintenance scan, after deleting the index

@@ -9,6 +9,7 @@
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils.h"
+#include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 
@@ -66,19 +67,30 @@ struct BaseSegmentManager : public segment::SegmentManager
 
     // Instantiate the right Segment implementation for a segment that already
     // exists. Returns 0 if the segment does not exist.
-    unique_ptr<Segment> create_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname)
+    unique_ptr<Segment> create_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname, bool nullptr_on_error=false)
     {
         std::unique_ptr<struct stat> st = sys::stat(absname);
         unique_ptr<Segment> res;
+        if (!st.get())
+            st = sys::stat(absname + ".gz");
         if (!st.get())
             return res;
 
         if (S_ISDIR(st->st_mode))
         {
-            if (mockdata)
-                res.reset(new dir::HoleSegment(format, relname, absname));
-            else
-                res.reset(new dir::Segment(format, relname, absname));
+            if (dir::Segment::can_store(format))
+            {
+                if (mockdata)
+                    res.reset(new dir::HoleSegment(format, relname, absname));
+                else
+                    res.reset(new dir::Segment(format, relname, absname));
+            } else {
+                if (nullptr_on_error)
+                    return res;
+                throw_consistency_error(
+                        "getting segment for " + format + " file " + relname,
+                        "format not supported");
+            }
         } else {
             if (format == "grib" || format == "grib1" || format == "grib2")
             {
@@ -97,6 +109,8 @@ struct BaseSegmentManager : public segment::SegmentManager
                 else
                     res.reset(new lines::Segment(relname, absname));
             } else {
+                if (nullptr_on_error)
+                    return res;
                 throw_consistency_error(
                         "getting segment for " + format + " file " + relname,
                         "format not supported");
@@ -109,7 +123,7 @@ struct BaseSegmentManager : public segment::SegmentManager
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
-        unique_ptr<Segment> maint(create_for_format(format, relname, absname));
+        auto maint = create_for_format(format, relname, absname);
         return maint->repack(root, mds, test_flags);
     }
 
@@ -117,7 +131,9 @@ struct BaseSegmentManager : public segment::SegmentManager
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
-        unique_ptr<Segment> maint(create_for_format(format, relname, absname));
+        auto maint = create_for_existing_segment(format, relname, absname, true);
+        if (!maint)
+            return SEGMENT_MISSING;
         return maint->check(reporter, ds, mds, quick);
     }
 
@@ -206,6 +222,58 @@ struct AutoSegmentManager : public BaseSegmentManager
         }
         return res;
     }
+
+    void scan_dir(std::function<void(const std::string& relname)> dest) override
+    {
+        // Trim trailing '/'
+        string m_root = root;
+        while (m_root.size() > 1 and m_root[m_root.size()-1] == '/')
+            m_root.resize(m_root.size() - 1);
+
+        files::PathWalk walker(m_root);
+        walker.consumer = [&](const std::string& relpath, sys::Path::iterator& entry, struct stat& st) {
+            // Skip '.', '..' and hidden files
+            if (entry->d_name[0] == '.')
+                return false;
+
+            string name = entry->d_name;
+
+            // Skip compressed data index files
+            if (str::endswith(name, ".gz.idx"))
+                return false;
+
+            bool is_dir = S_ISDIR(st.st_mode);
+            if (is_dir)
+            {
+                sys::Path sub(entry.open_path());
+                struct stat seq_st;
+                if (sub.fstatat_ifexists(".sequence", seq_st))
+                {
+                    // Directory segment
+                    string format = utils::get_format(name);
+                    if (dir::Segment::can_store(format))
+                        dest(str::joinpath(relpath, name));
+                    return false;
+                }
+                else
+                    // Normal subdirectory, recurse into it
+                    return true;
+            } else {
+                // Concat segment
+                if (str::endswith(name, ".gz"))
+                    name = name.substr(0, name.size() - 3);
+
+                // Check whether the file format (from the extension) could be
+                // stored in this kind of segment
+                string format = utils::get_format(name);
+                if (fd::Segment::can_store(format))
+                    dest(str::joinpath(relpath, name));
+                return false;
+            }
+        };
+
+        walker.walk();
+    }
 };
 
 /// Segment manager that always picks directory segments
@@ -213,20 +281,74 @@ struct ForceDirSegmentManager : public BaseSegmentManager
 {
     ForceDirSegmentManager(const std::string& root) : BaseSegmentManager(root) {}
 
-    unique_ptr<Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname)
+    unique_ptr<Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname) override
     {
         unique_ptr<Segment> res(create_for_existing_segment(format, relname, absname));
         if (res.get()) return res;
         return unique_ptr<Segment>(new dir::Segment(format, relname, absname));
     }
+
+    void scan_dir(std::function<void(const std::string& relname)> dest) override
+    {
+        // Trim trailing '/'
+        string m_root = root;
+        while (m_root.size() > 1 and m_root[m_root.size()-1] == '/')
+            m_root.resize(m_root.size() - 1);
+
+        files::PathWalk walker(m_root);
+        walker.consumer = [&](const std::string& relpath, sys::Path::iterator& entry, struct stat& st) {
+            // Skip '.', '..' and hidden files
+            if (entry->d_name[0] == '.')
+                return false;
+
+            string name = entry->d_name;
+
+            // Skip compressed data index files
+            if (str::endswith(name, ".gz.idx"))
+                return false;
+
+            if (!S_ISDIR(st.st_mode))
+                return false;
+
+            sys::Path sub(entry.open_path());
+            struct stat seq_st;
+            if (!sub.fstatat_ifexists(".sequence", seq_st))
+                // Normal subdirectory, recurse into it
+                return true;
+
+            // Directory segment
+            if (str::endswith(name, ".gz"))
+                name = name.substr(0, name.size() - 3);
+
+            // Check whether the file format (from the extension) could be
+            // stored in this kind of segment
+            string format = utils::get_format(name);
+            if (dir::Segment::can_store(format))
+                dest(str::joinpath(relpath, name));
+            return false;
+        };
+
+        walker.walk();
+    }
+
+    bool _is_segment(const std::string& format, const std::string& relname) override
+    {
+        string absname = str::joinpath(root, relname);
+
+        if (sys::isdir(absname))
+            // If it's a directory, it must be a dir segment
+            return sys::exists(str::joinpath(absname, ".sequence"));
+
+        return false;
+    }
 };
 
 /// Segment manager that always uses hole file segments
-struct HoleDirSegmentManager : public BaseSegmentManager
+struct HoleDirSegmentManager : public ForceDirSegmentManager
 {
-    HoleDirSegmentManager(const std::string& root) : BaseSegmentManager(root) {}
+    HoleDirSegmentManager(const std::string& root) : ForceDirSegmentManager(root) {}
 
-    unique_ptr<Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname)
+    unique_ptr<Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname) override
     {
         return unique_ptr<Segment>(new dir::HoleSegment(format, relname, absname));
     }

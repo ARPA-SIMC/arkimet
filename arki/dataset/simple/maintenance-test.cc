@@ -23,7 +23,7 @@ class Tests : public MaintenanceTest
 
     void make_unaligned() override
     {
-        touch("testds/2007/07-07.grib.metadata", 1496167200);
+        touch("testds/" + fixture->test_relpath + ".metadata", 1496167200);
     }
 
     void register_tests() override;
@@ -45,7 +45,7 @@ void Tests::register_tests()
         NullReporter nr;
         auto state = f.makeSegmentedChecker()->scan(nr);
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_UNALIGNED));
     });
 
     add_method("check_unaligned", R"(
@@ -56,41 +56,32 @@ void Tests::register_tests()
         arki::dataset::NullReporter nr;
         auto state = f.makeSegmentedChecker()->scan(nr);
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_UNALIGNED));
     });
 
     add_method("check_empty_metadata", R"(
     - `.metadata` file must not be empty [unaligned]
     )", [](Fixture& f) {
-        sys::File mdf("testds/2007/07-07.grib.metadata", O_RDWR);
+        sys::File mdf("testds/" + f.test_relpath + ".metadata", O_RDWR);
         mdf.ftruncate(0);
 
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, SEGMENT_UNALIGNED));
     });
 
     add_method("check_metadata_timestamp", R"(
     - `.metadata` file must not be older than the data [unaligned]
     )", [&](Fixture& f) {
-        touch("testds/2007/07-07.grib.metadata", 1496167200);
+        touch("testds/" + f.test_relpath + ".metadata", 1496167200);
 
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, SEGMENT_UNALIGNED));
     });
 
     add_method("check_summary_timestamp", R"(
     - `.summary` file must not be older than the `.metadata` file [unaligned]
     )", [&](Fixture& f) {
-        touch("testds/2007/07-07.grib.summary", 1496167200);
+        touch("testds/" + f.test_relpath + ".summary", 1496167200);
 
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, SEGMENT_UNALIGNED));
     });
 
     add_method("check_manifest_timestamp", R"(
@@ -102,28 +93,22 @@ void Tests::register_tests()
         else
             manifest_ts = sys::timestamp("testds/index.sqlite");
 
-        touch("testds/2007/07-07.grib.metadata", manifest_ts + 1);
+        touch("testds/" + f.test_relpath + ".metadata", manifest_ts + 1);
 
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, SEGMENT_UNALIGNED));
     });
 
     add_method("check_metadata_must_contain_reftimes", R"(
     - metadata in the `.metadata` file must contain reference time elements [corrupted]
     )", [&](Fixture& f) {
         metadata::Collection mds;
-        mds.read_from_file("testds/2007/07-07.grib.metadata");
+        mds.read_from_file("testds/" + f.test_relpath + ".metadata");
         wassert(actual(mds.size()) == 2u);
         for (auto* md: mds)
             md->unset(TYPE_REFTIME);
-        mds.writeAtomically("testds/2007/07-07.grib.metadata");
+        mds.writeAtomically("testds/" + f.test_relpath + ".metadata");
 
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_CORRUPTED));
+        wassert(f.state_is(3, SEGMENT_CORRUPTED));
     });
 
     add_method("repack_unaligned", R"(
@@ -136,16 +121,23 @@ void Tests::register_tests()
         e.report.emplace_back("testds", "repack", "2 files ok");
         wassert(actual(writer.get()).repack(e, true));
 
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, SEGMENT_UNALIGNED));
     });
 }
 
-Tests test_simple_plain("arki_dataset_simple_maintenance_plain", MaintenanceTest::SEGMENT_CONCAT, "type=simple\nindex_type=plain\n");
-Tests test_simple_sqlite("arki_dataset_simple_maintenance_sqlite", MaintenanceTest::SEGMENT_CONCAT, "type=simple\nindex_type=sqlite");
-Tests test_simple_plain_dir("arki_dataset_simple_maintenance_plain_dirs", MaintenanceTest::SEGMENT_DIR, "type=simple\nindex_type=plain\nsegments=dir\n");
-Tests test_simple_sqlite_dir("arki_dataset_simple_maintenance_sqlite_dirs", MaintenanceTest::SEGMENT_DIR, "type=simple\nindex_type=sqlite\nsegments=dir\n");
+Tests test_simple_grib_plain("arki_dataset_simple_maintenance_grib_plain", MaintenanceTest::SEGMENT_CONCAT, "grib", "type=simple\nindex_type=plain\n");
+Tests test_simple_grib_sqlite("arki_dataset_simple_maintenance_grib_sqlite", MaintenanceTest::SEGMENT_CONCAT, "grib", "type=simple\nindex_type=sqlite");
+Tests test_simple_grib_plain_dir("arki_dataset_simple_maintenance_grib_plain_dirs", MaintenanceTest::SEGMENT_DIR, "grib", "type=simple\nindex_type=plain\nsegments=dir\n");
+Tests test_simple_grib_sqlite_dir("arki_dataset_simple_maintenance_grib_sqlite_dirs", MaintenanceTest::SEGMENT_DIR, "grib", "type=simple\nindex_type=sqlite\nsegments=dir\n");
+Tests test_simple_bufr_plain("arki_dataset_simple_maintenance_bufr_plain", MaintenanceTest::SEGMENT_CONCAT, "bufr", "type=simple\nindex_type=plain\n");
+Tests test_simple_bufr_sqlite("arki_dataset_simple_maintenance_bufr_sqlite", MaintenanceTest::SEGMENT_CONCAT, "bufr", "type=simple\nindex_type=sqlite");
+Tests test_simple_bufr_plain_dir("arki_dataset_simple_maintenance_bufr_plain_dirs", MaintenanceTest::SEGMENT_DIR, "bufr", "type=simple\nindex_type=plain\nsegments=dir\n");
+Tests test_simple_bufr_sqlite_dir("arki_dataset_simple_maintenance_bufr_sqlite_dirs", MaintenanceTest::SEGMENT_DIR, "bufr", "type=simple\nindex_type=sqlite\nsegments=dir\n");
+Tests test_simple_vm2_plain("arki_dataset_simple_maintenance_vm2_plain", MaintenanceTest::SEGMENT_CONCAT, "vm2", "type=simple\nindex_type=plain\n");
+Tests test_simple_vm2_sqlite("arki_dataset_simple_maintenance_vm2_sqlite", MaintenanceTest::SEGMENT_CONCAT, "vm2", "type=simple\nindex_type=sqlite");
+Tests test_simple_vm2_plain_dir("arki_dataset_simple_maintenance_vm2_plain_dirs", MaintenanceTest::SEGMENT_DIR, "vm2", "type=simple\nindex_type=plain\nsegments=dir\n");
+Tests test_simple_vm2_sqlite_dir("arki_dataset_simple_maintenance_vm2_sqlite_dirs", MaintenanceTest::SEGMENT_DIR, "vm2", "type=simple\nindex_type=sqlite\nsegments=dir\n");
+Tests test_simple_odimh5_plain_dir("arki_dataset_simple_maintenance_odimh5_plain", MaintenanceTest::SEGMENT_DIR, "odimh5", "type=simple\nindex_type=plain\n");
+Tests test_simple_odimh5_sqlite_dir("arki_dataset_simple_maintenance_odimh5_sqlite", MaintenanceTest::SEGMENT_DIR, "odimh5", "type=simple\nindex_type=sqlite\n");
 
 }

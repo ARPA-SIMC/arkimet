@@ -503,10 +503,32 @@ void Path::fstatat(const char* pathname, struct stat& st)
         throw_error("cannot fstatat");
 }
 
+bool Path::fstatat_ifexists(const char* pathname, struct stat& st)
+{
+    if (::fstatat(fd, pathname, &st, 0) == -1)
+    {
+        if (errno == ENOENT)
+            return false;
+        throw_error("cannot fstatat");
+    }
+    return true;
+}
+
 void Path::lstatat(const char* pathname, struct stat& st)
 {
     if (::fstatat(fd, pathname, &st, AT_SYMLINK_NOFOLLOW) == -1)
         throw_error("cannot fstatat");
+}
+
+bool Path::lstatat_ifexists(const char* pathname, struct stat& st)
+{
+    if (::fstatat(fd, pathname, &st, AT_SYMLINK_NOFOLLOW) == -1)
+    {
+        if (errno == ENOENT)
+            return false;
+        throw_error("cannot fstatat");
+    }
+    return true;
 }
 
 void Path::unlinkat(const char* pathname)
@@ -659,6 +681,11 @@ bool Path::iterator::issock() const
     struct stat st;
     path->fstatat(cur_entry->d_name, st);
     return S_ISSOCK(st.st_mode);
+}
+
+Path Path::iterator::open_path(int flags) const
+{
+    return Path(*path, cur_entry->d_name);
 }
 
 

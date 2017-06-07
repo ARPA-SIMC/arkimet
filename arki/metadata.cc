@@ -228,6 +228,11 @@ int Metadata::compare(const Metadata& m) const
     return Type::nullable_compare(m_source, m.m_source);
 }
 
+int Metadata::compare_items(const Metadata& m) const
+{
+    return ItemSet::compare(m);
+}
+
 bool Metadata::read(int in, const metadata::ReadContext& filename, bool readInline)
 {
     vector<uint8_t> buf;

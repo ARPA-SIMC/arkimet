@@ -178,8 +178,10 @@ std::string manifest_idx_fname()
 
 segmented::State DatasetTest::scan_state()
 {
+    // OstreamReporter nr(cerr);
     NullReporter nr;
-    return makeSegmentedChecker()->scan(nr);
+    auto checker = makeSegmentedChecker();
+    return checker->scan(nr);
 }
 
 std::unique_ptr<dataset::segmented::Reader> DatasetTest::makeSegmentedReader()
@@ -377,6 +379,29 @@ bool DatasetTest::has_smallfiles()
     if (auto ds = dynamic_cast<const dataset::iseg::Config*>(dataset_config().get()))
         return ds->smallfiles;
     return false;
+}
+
+void DatasetTest::query_results(const std::vector<unsigned>& expected)
+{
+    query_results(Matcher(), expected);
+}
+
+void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<unsigned>& expected)
+{
+    vector<int> found;
+    config().create_reader()->query_data(q, [&](unique_ptr<Metadata>&& md) {
+        unsigned idx;
+        for (idx = 0; idx < import_results.size(); ++idx)
+            if (import_results[idx].compare_items(*md) == 0)
+                break;
+        if (idx == import_results.size())
+            found.push_back(-1);
+        else
+            found.push_back(idx);
+        return true;
+    });
+
+    wassert(actual(str::join(", ", found)) == str::join(", ", expected));
 }
 
 }

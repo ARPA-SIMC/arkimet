@@ -22,7 +22,7 @@ class Tests : public MaintenanceTest
 
     void make_unaligned() override
     {
-        fixture->makeSegmentedChecker()->test_remove_index("2007/07-07.grib");
+        fixture->makeSegmentedChecker()->test_remove_index(fixture->test_relpath);
         files::createDontpackFlagfile("testds");
     }
 
@@ -47,10 +47,7 @@ void Tests::register_tests()
     )", [&](Fixture& f) {
         remove_index();
 
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_DELETED));
+        wassert(f.state_is(3, SEGMENT_DELETED));
     });
 
     add_method("check_missing_index", R"(
@@ -88,11 +85,11 @@ void Tests::register_tests()
         // Remove the index and make it as if the second datum in
         // 2007/07-07.grib has never been imported
         sys::unlink("testds/index.sqlite");
-        if (sys::isdir("testds/2007/07-07.grib"))
-            sys::unlink("testds/2007/07-07.grib/000001.grib");
+        if (sys::isdir("testds/" + f.test_relpath))
+            sys::unlink("testds/" + f.test_relpath + "/000001." + f.format);
         else {
-            sys::File df("testds/2007/07-07.grib", O_RDWR);
-            df.ftruncate(34960);
+            sys::File df("testds/" + f.test_relpath, O_RDWR);
+            df.ftruncate(f.test_datum_size);
         }
 
         // Import the second datum of 2007/07-07.grib again
@@ -102,9 +99,7 @@ void Tests::register_tests()
         }
 
         // Make sure that the segment is seen as unaligned instead of dirty
-        auto state = f.scan_state();
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, SEGMENT_UNALIGNED));
     });
 
     add_method("check_unaligned", R"(
@@ -113,10 +108,7 @@ void Tests::register_tests()
     )", [&](Fixture& f) {
         make_unaligned();
 
-        arki::dataset::NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, SEGMENT_UNALIGNED));
     });
 
     add_method("repack_unaligned", R"(
@@ -136,14 +128,17 @@ void Tests::register_tests()
             wassert(actual(e.what()).contains("dataset needs checking first"));
         }
 
-        auto state = f.scan_state();
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, SEGMENT_UNALIGNED));
     });
 }
 
-Tests test_ondisk2_plain("arki_dataset_ondisk2_maintenance", MaintenanceTest::SEGMENT_CONCAT, "type=ondisk2\n");
-Tests test_ondisk2_plain_dir("arki_dataset_ondisk2_maintenance_dirs", MaintenanceTest::SEGMENT_DIR, "type=ondisk2\nsegments=dir\n");
+Tests test_ondisk2_plain_grib("arki_dataset_ondisk2_maintenance_grib", MaintenanceTest::SEGMENT_CONCAT, "grib", "type=ondisk2\n");
+Tests test_ondisk2_plain_grib_dir("arki_dataset_ondisk2_maintenance_grib_dirs", MaintenanceTest::SEGMENT_DIR, "grib", "type=ondisk2\nsegments=dir\n");
+Tests test_ondisk2_plain_bufr("arki_dataset_ondisk2_maintenance_bufr", MaintenanceTest::SEGMENT_CONCAT, "bufr", "type=ondisk2\n");
+Tests test_ondisk2_plain_bufr_dir("arki_dataset_ondisk2_maintenance_bufr_dirs", MaintenanceTest::SEGMENT_DIR, "bufr", "type=ondisk2\nsegments=dir\n");
+Tests test_ondisk2_plain_vm2("arki_dataset_ondisk2_maintenance_vm2", MaintenanceTest::SEGMENT_CONCAT, "vm2", "type=ondisk2\n");
+Tests test_ondisk2_plain_vm2_dir("arki_dataset_ondisk2_maintenance_vm2_dirs", MaintenanceTest::SEGMENT_DIR, "vm2", "type=ondisk2\nsegments=dir\n");
+Tests test_ondisk2_plain_odimh5_dir("arki_dataset_ondisk2_maintenance_odimh5", MaintenanceTest::SEGMENT_DIR, "odimh5", "type=ondisk2\n");
 
 }
 

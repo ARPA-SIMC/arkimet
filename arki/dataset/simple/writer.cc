@@ -11,7 +11,6 @@
 #include "arki/matcher.h"
 #include "arki/metadata/collection.h"
 #include "arki/utils/files.h"
-#include "arki/scan/dir.h"
 #include "arki/scan/any.h"
 #include "arki/postprocess.h"
 #include "arki/sort.h"
@@ -217,7 +216,8 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
     // Add information from the state of files on disk
     //
 
-    std::set<std::string> disk(scan::dir(config().path, true));
+    std::set<std::string> disk;
+    segment_manager().scan_dir([&](const std::string& relpath) { disk.insert(relpath);; });
 
     // files: a, b, c,    e, f, g
     // index:       c, d, e, f, g
@@ -364,8 +364,9 @@ void Checker::releaseSegment(const std::string& relpath, const std::string& dest
     IndexedChecker::releaseSegment(relpath, destpath);
 }
 
-size_t Checker::vacuum()
+size_t Checker::vacuum(dataset::Reporter& reporter)
 {
+    reporter.operation_progress(name(), "repack", "running VACUUM ANALYZE on the dataset index, if applicable");
     return m_mft->vacuum();
 }
 

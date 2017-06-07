@@ -64,8 +64,8 @@ public:
     static void set_force_sqlite(bool val);
 
     void test_deindex(const std::string& relpath) override;
-    void test_make_overlap(const std::string& relpath, unsigned data_idx) override;
-    void test_make_hole(const std::string& relpath, unsigned data_idx) override;
+    void test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx) override;
+    void test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx) override;
 };
 
 }

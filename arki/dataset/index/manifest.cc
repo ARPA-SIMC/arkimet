@@ -10,7 +10,6 @@
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
 #include "arki/matcher.h"
-#include "arki/scan/dir.h"
 #include "arki/utils/sqlite.h"
 #include "arki/utils/files.h"
 #include "arki/utils/compress.h"
@@ -274,23 +273,23 @@ void Manifest::test_deindex(const std::string& relpath)
     remove(relpath);
 }
 
-void Manifest::test_make_overlap(const std::string& relpath, unsigned data_idx)
+void Manifest::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
 {
     string pathname = str::joinpath(m_path, relpath) + ".metadata";
     metadata::Collection mds;
     mds.read_from_file(pathname);
     for (unsigned i = data_idx; i < mds.size(); ++i)
-        mds[i].sourceBlob().offset -= 1;
+        mds[i].sourceBlob().offset -= overlap_size;
     mds.writeAtomically(pathname);
 }
 
-void Manifest::test_make_hole(const std::string& relpath, unsigned data_idx)
+void Manifest::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
 {
     string pathname = str::joinpath(m_path, relpath) + ".metadata";
     metadata::Collection mds;
     mds.read_from_file(pathname);
     for (unsigned i = data_idx; i < mds.size(); ++i)
-        mds[i].sourceBlob().offset += 1;
+        mds[i].sourceBlob().offset += hole_size;
     mds.writeAtomically(pathname);
 }
 
