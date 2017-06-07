@@ -223,39 +223,6 @@ bool scan(const std::string& file, metadata_dest_func dest, const std::string& f
     return scan(basedir, relname, dest, format);
 }
 
-bool can_scan(const std::string& file)
-{
-    // Get the file extension
-    size_t pos = file.rfind('.');
-    if (pos == string::npos)
-        // No extension, we do not know what it is
-        return false;
-    string ext = str::lower(file.substr(pos+1));
-
-	// Check for known extensions
-#ifdef HAVE_GRIBAPI
-	if (ext == "grib" || ext == "grib1" || ext == "grib2")
-		return true;
-#endif
-#ifdef HAVE_DBALLE
-	if (ext == "bufr")
-		return true;
-#endif
-#ifdef HAVE_HDF5
-	if ((ext == "h5") || (ext == "odimh5") || (ext == "odim"))
-		return true;
-#endif
-#ifdef HAVE_VM2
-    if (ext == "vm2")
-        return true;
-#endif
-#ifdef HAVE_NETCDF
-    if (ext == "nc")
-        return true;
-#endif
-	return false;
-}
-
 bool exists(const std::string& file)
 {
     if (sys::exists(file)) return true;

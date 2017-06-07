@@ -164,7 +164,7 @@ void MaintenanceTest::register_tests_dir()
         sys::rmtree("testds/" + f.test_relpath);
         sys::write_file("testds/" + f.test_relpath, "");
 
-        wassert(f.state_is(3, SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, SEGMENT_MISSING));
     });
 
     add_method("check_datasize", R"(

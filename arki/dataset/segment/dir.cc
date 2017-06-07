@@ -188,6 +188,14 @@ Segment::~Segment()
 {
 }
 
+bool Segment::can_store(const std::string& format)
+{
+    return format == "grib" || format == "grib1" || format == "grib2"
+        || format == "bufr"
+        || format == "odimh5" || format == "h5" || format == "odim"
+        || format == "vm2";
+}
+
 void Segment::open()
 {
     if (seqfile.fd != -1) return;

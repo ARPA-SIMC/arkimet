@@ -105,6 +105,8 @@ public:
     void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
     void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
 
+    static bool can_store(const std::string& format);
+
 protected:
     virtual std::unique_ptr<dir::Segment> make_segment(const std::string& format, const std::string& relname, const std::string& absname);
 };

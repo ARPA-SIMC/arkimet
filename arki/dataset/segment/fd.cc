@@ -88,6 +88,12 @@ Segment::~Segment()
     close();
 }
 
+bool Segment::can_store(const std::string& format)
+{
+    return format == "grib" || format == "grib1" || format == "grib2"
+        || format == "bufr" || format == "vm2";
+}
+
 Pending Segment::append(Metadata& md, off_t* ofs)
 {
     open();
