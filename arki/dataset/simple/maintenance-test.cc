@@ -98,6 +98,35 @@ void Tests::register_tests()
         wassert(f.state_is(3, SEGMENT_UNALIGNED));
     });
 
+    add_method("check_missing_index", R"(
+        - if the index has been deleted, accessing the dataset recreates it
+          empty, and a check will rebuild it. Until it gets rebuilt, segments
+          not present in the index would not be considered when querying the
+          dataset
+    )", [&](Fixture& f) {
+        wassert(f.query_results({1, 3, 0, 2}));
+
+        sys::unlink_ifexists("testds/index.sqlite");
+        sys::unlink_ifexists("testds/MANIFEST");
+
+        wassert(f.query_results({}));
+
+        wassert(f.state_is(3, SEGMENT_UNALIGNED));
+    });
+
+    add_method("check_missing_index_spurious_files", R"(
+    )", [&](Fixture& f) {
+        wassert(f.query_results({1, 3, 0, 2}));
+
+        sys::unlink_ifexists("testds/index.sqlite");
+        sys::unlink_ifexists("testds/MANIFEST");
+        sys::write_file("testds/2007/11-11." + f.format + ".tmp", f.format + " GARBAGE 7777");
+
+        wassert(f.query_results({}));
+
+        wassert(f.state_is(3, SEGMENT_UNALIGNED));
+    });
+
     add_method("check_metadata_must_contain_reftimes", R"(
     - metadata in the `.metadata` file must contain reference time elements [corrupted]
     )", [&](Fixture& f) {

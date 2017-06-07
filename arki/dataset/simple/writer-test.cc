@@ -512,25 +512,6 @@ add_method("scan_missingdata", [](Fixture& f) {
     ensure(sys::exists("testds/" + f.idxfname()));
 });
 
-#if 0
-// Test handling of empty archive dirs (such as last with everything moved away)
-def_test(7)
-{
-    // Import a file in a secondary archive
-    {
-        system("mkdir testds/.archive/foo");
-        Archive arc("testds/.archive/foo");
-        arc.openRW();
-        system("cp inbound/test.grib testds/.archive/foo/");
-        arc.acquire("test.grib");
-    }
-
-    // Everything should be fine now
-    Archives arc("testds/.archive");
-    ensure_dataset_clean(arc, 3, 3);
-}
-#endif
-
 }
 
 }

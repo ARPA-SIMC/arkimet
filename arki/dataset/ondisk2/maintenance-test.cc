@@ -73,6 +73,20 @@ void Tests::register_tests()
         f.makeSegmentedChecker();
         wassert(actual_file("testds/index.sqlite").exists());
         wassert(actual_file("testds/needs-check-do-not-pack").exists());
+
+        wassert(f.state_is(3, SEGMENT_UNALIGNED));
+    });
+
+    add_method("check_missing_index_spurious_files", R"(
+    )", [&](Fixture& f) {
+        wassert(f.query_results({1, 3, 0, 2}));
+
+        sys::unlink_ifexists("testds/index.sqlite");
+        sys::write_file("testds/2007/11-11." + f.format + ".tmp", f.format + " GARBAGE 7777");
+
+        wassert(f.query_results({}));
+
+        wassert(f.state_is(3, SEGMENT_UNALIGNED));
     });
 
     add_method("check_missing_index_rescan_partial_files", R"(
