@@ -637,115 +637,68 @@ void MaintenanceTest::register_tests()
             wassert(actual(writer.get()).maintenance_clean(2));
         }
     });
+
+    add_method("repack_delete", R"(
+        - [delete age] [dirty] a segment that needs to be both repacked and
+          deleted, gets deleted without repacking
+    )", [&](Fixture& f) {
+        make_hole_middle();
+        f.cfg.setValue("delete age", "1");
+        f.test_reread_config();
+
+        auto o = SessionTime::local_override(t20070707 + 2 * 86400);
+
+        // State knows of a segment both to repack and to delete
+        {
+            auto state = f.scan_state();
+            wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_DIRTY | SEGMENT_DELETE_AGE));
+            wassert(actual(state.count(SEGMENT_OK)) == 2u);
+            wassert(actual(state.size()) == 3u);
+        }
+
+        // Perform packing and check that things are still ok afterwards
+        {
+            auto writer(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "2 files ok");
+            e.deleted.emplace_back("testds", f.test_relpath);
+            wassert(actual(writer.get()).repack(e, true));
+        }
+        wassert(f.all_clean(2));
+        wassert(f.query_results({0, 2}));
+    });
+
+    add_method("repack_archive", R"(
+        - [archive age] [dirty] a segment that needs to be both repacked and
+          archived, gets repacked before archiving
+    )", [&](Fixture& f) {
+        make_hole_middle();
+        f.cfg.setValue("archive age", "1");
+        f.test_reread_config();
+
+        auto o = SessionTime::local_override(t20070707 + 2 * 86400);
+
+        // State knows of a segment both to repack and to delete
+        {
+            auto state = f.scan_state();
+            wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_DIRTY | SEGMENT_ARCHIVE_AGE));
+            wassert(actual(state.count(SEGMENT_OK)) == 2u);
+            wassert(actual(state.size()) == 3u);
+        }
+
+        // Perform packing and check that things are still ok afterwards
+        {
+            auto writer(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.repacked.emplace_back("testds", f.test_relpath);
+            e.archived.emplace_back("testds", f.test_relpath);
+            wassert(actual(writer.get()).repack(e, true));
+        }
+        wassert(f.all_clean(2));
+        wassert(f.query_results({1, 3, 0, 2}));
+    });
 }
 
 }
 }
-}
-
-namespace {
-
-struct Fixture : public DatasetTest {
-    using DatasetTest::DatasetTest;
-
-    void test_setup()
-    {
-        DatasetTest::test_setup(R"(
-            unique=reftime, origin, product, level, timerange, area
-            step=daily
-        )");
-    }
-};
-
-class Tests : public FixtureTestCase<Fixture>
-{
-    using FixtureTestCase::FixtureTestCase;
-
-    void register_tests() override
-    {
-        add_method("repack_delete", [](Fixture& f) {
-            // Test accuracy of maintenance scan, on a dataset with one file to both repack and delete
-            f.cfg.setValue("step", "yearly");
-
-            testdata::GRIBData data;
-            f.import_all(data);
-            f.test_reread_config();
-
-            // Data are from 07, 08, 10 2007
-            Time treshold(2008, 1, 1);
-            Time now = Time::create_now();
-            long long int duration = Time::duration(treshold, now);
-            f.cfg.setValue("delete age", duration/(3600*24));
-
-            {
-                auto writer(f.makeSegmentedChecker());
-                arki::tests::MaintenanceResults expected(false, 1);
-                // A repack is still needed because the data is not sorted by reftime
-                expected.by_type[DatasetTest::COUNTED_DIRTY] = 1;
-                // And the same file is also old enough to be deleted
-                expected.by_type[DatasetTest::COUNTED_DELETE_AGE] = 1;
-                wassert(actual(writer.get()).maintenance(expected));
-            }
-
-            // Perform packing and check that things are still ok afterwards
-            {
-                auto writer(f.makeSegmentedChecker());
-                ReporterExpected e;
-                e.deleted.emplace_back("testds", "20/2007.grib");
-                wassert(actual(writer.get()).repack(e, true));
-            }
-            wassert(actual(f.makeSegmentedChecker().get()).maintenance_clean(0));
-
-            // Perform full maintenance and check that things are still ok afterwards
-            {
-                auto checker(f.makeSegmentedChecker());
-                wassert(actual(checker.get()).check_clean(true, true));
-            }
-        });
-        add_method("scan_repack_archive", [](Fixture& f) {
-            // Test accuracy of maintenance scan, on a dataset with one file to both repack and archive
-            f.cfg.setValue("step", "yearly");
-
-            testdata::GRIBData data;
-            f.import_all(data);
-            f.test_reread_config();
-
-            // Data are from 07, 08, 10 2007
-            Time treshold(2008, 1, 1);
-            Time now = Time::create_now();
-            long long int duration = Time::duration(treshold, now);
-            f.cfg.setValue("archive age", duration/(3600*24));
-
-            {
-                auto writer(f.makeSegmentedChecker());
-                MaintenanceResults expected(false, 1);
-                // A repack is still needed because the data is not sorted by reftime
-                expected.by_type[DatasetTest::COUNTED_DIRTY] = 1;
-                // And the same file is also old enough to be deleted
-                expected.by_type[DatasetTest::COUNTED_ARCHIVE_AGE] = 1;
-                wassert(actual(writer.get()).maintenance(expected));
-            }
-
-            // Perform packing and check that things are still ok afterwards
-            {
-                auto writer(f.makeSegmentedChecker());
-
-                ReporterExpected e;
-                e.repacked.emplace_back("testds", "20/2007.grib");
-                e.archived.emplace_back("testds", "20/2007.grib");
-                wassert(actual(writer.get()).repack(e, true));
-            }
-        });
-    }
-};
-
-Tests test_ondisk2("arki_dataset_maintenance_ondisk2", "type=ondisk2\n");
-Tests test_simple_plain("arki_dataset_maintenance_simple_plain", "type=simple\nindex_type=plain\n");
-Tests test_simple_sqlite("arki_dataset_maintenance_simple_sqlite", "type=simple\nindex_type=sqlite");
-Tests test_ondisk2_dir("arki_dataset_maintenance_ondisk2_dirs", "type=ondisk2\nsegments=dir\n");
-Tests test_simple_plain_dir("arki_dataset_maintenance_simple_plain_dirs", "type=simple\nindex_type=plain\nsegments=dir\n");
-Tests test_simple_sqlite_dir("arki_dataset_maintenance_simple_sqlite_dirs", "type=simple\nindex_type=sqlite\nsegments=dir\n");
-Tests test_iseg("arki_dataset_maintenance_iseg", "type=iseg\nformat=grib\n");
-Tests test_iseg_dir("arki_dataset_maintenance_iseg_dir", "type=iseg\nformat=grib\nsegments=dir\n");
-
 }
