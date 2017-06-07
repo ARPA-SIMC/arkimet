@@ -116,11 +116,13 @@ public:
 	 */
 	bool operator!=(const Metadata& m) const { return !operator==(m); }
 
-	int compare(const Metadata& m) const;
-	bool operator<(const Metadata& o) const { return compare(o) < 0; }
-	bool operator<=(const Metadata& o) const { return compare(o) <= 0; }
-	bool operator>(const Metadata& o) const { return compare(o) > 0; }
-	bool operator>=(const Metadata& o) const { return compare(o) >= 0; }
+    /// Compare the items, excluding source and notes
+    int compare_items(const Metadata& m) const;
+    int compare(const Metadata& m) const;
+    bool operator<(const Metadata& o) const { return compare(o) < 0; }
+    bool operator<=(const Metadata& o) const { return compare(o) <= 0; }
+    bool operator>(const Metadata& o) const { return compare(o) > 0; }
+    bool operator>=(const Metadata& o) const { return compare(o) >= 0; }
 
     /// Clear all the contents of this Metadata
     void clear();

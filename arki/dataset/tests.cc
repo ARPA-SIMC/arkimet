@@ -392,7 +392,7 @@ void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<u
     config().create_reader()->query_data(q, [&](unique_ptr<Metadata>&& md) {
         unsigned idx;
         for (idx = 0; idx < import_results.size(); ++idx)
-            if (import_results[idx] == *md)
+            if (import_results[idx].compare_items(*md) == 0)
                 break;
         if (idx == import_results.size())
             found.push_back(-1);
