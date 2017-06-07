@@ -261,9 +261,12 @@ void MaintenanceTest::register_tests()
 
     add_method("clean", [](Fixture& f) {
         wassert(actual(f.makeSegmentedChecker().get()).check_clean());
-        wassert(actual(f.makeSegmentedChecker().get()).maintenance_clean(3));
+        wassert(f.all_clean(3));
         wassert(actual(f.makeSegmentedChecker().get()).repack_clean());
-        wassert(actual(f.makeSegmentedChecker().get()).maintenance_clean(3));
+        wassert(f.all_clean(3));
+
+        // Check that maintenance does not accidentally create an archive
+        wassert(actual_file("testds/.archive").not_exists());
     });
 
     // Check
@@ -616,6 +619,14 @@ void MaintenanceTest::register_tests()
 
             wassert(actual(writer.get()).maintenance_clean(2));
         }
+
+        // Check that the files have been moved to the archive
+        wassert(actual_file("testds/" + f.test_relpath).not_exists());
+        wassert(actual_file("testds/.archive/last/" + f.test_relpath).exists());
+        wassert(actual_file("testds/.archive/last/" + f.test_relpath + ".metadata").exists());
+        wassert(actual_file("testds/.archive/last/" + f.test_relpath + ".summary").exists());
+
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 
     add_method("repack_delete_age", R"(
@@ -636,6 +647,8 @@ void MaintenanceTest::register_tests()
 
             wassert(actual(writer.get()).maintenance_clean(2));
         }
+
+        wassert(f.query_results({0, 2}));
     });
 
     add_method("repack_delete", R"(
