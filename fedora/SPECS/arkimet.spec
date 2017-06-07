@@ -59,7 +59,7 @@ make
 
 # unit tests arki_dataset_concurrent_* fail on f20 because of the fallback on
 # per-process locks instead of per-file-descriptor locks.
-# See issue https://github.com/ARPA-SIMC/arkimet/issues/60
+# See issue https://github.com/ARPAE-SIMC/arkimet/issues/60
 %if 0%{?fedora} >= 24
 make check
 %endif

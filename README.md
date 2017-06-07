@@ -120,7 +120,7 @@ The file formats that can be scanned are:
    supported via grib_api and LUA scripts
  * WMO BUFR (edition 3 and edition 4), via DB-All.e
  * HDF5, currently only used for ODIM radar data
- * VM2 ascii line-based format used by ARPA-SIMC
+ * VM2 ascii line-based format used by ARPAE-SIMC
 
 The software architecture is mostly format-agnostic, and is built to support
 implementing more data formats easily.

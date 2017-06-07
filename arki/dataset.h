@@ -380,7 +380,7 @@ struct Checker : public dataset::Base
      * Check consistency of the last byte of GRIB and BUFR data in the archive,
      * optionally fixing it.
      *
-     * See https://github.com/ARPA-SIMC/arkimet/issues/51 for details.
+     * See https://github.com/ARPAE-SIMC/arkimet/issues/51 for details.
      */
     virtual void check_issue51(dataset::Reporter& reporter, bool fix=false);
 

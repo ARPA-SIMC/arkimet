@@ -4,7 +4,7 @@
 /*
  * validator - Arkimet validators
  *
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012  ARPAE-SIMC <simc-urp@arpae.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

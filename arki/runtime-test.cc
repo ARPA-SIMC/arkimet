@@ -30,7 +30,7 @@ struct CollectProcessor : public runtime::DatasetProcessor
 void Tests::register_tests() {
 
 add_method("files", [] {
-    // Reproduce https://github.com/ARPA-SIMC/arkimet/issues/19
+    // Reproduce https://github.com/ARPAE-SIMC/arkimet/issues/19
 
     utils::sys::write_file("import.lst", "grib:inbound/test.grib1\n");
     utils::sys::write_file("config", "[error]\ntype=discard\n");

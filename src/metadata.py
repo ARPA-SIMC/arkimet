@@ -1,6 +1,6 @@
 # metadata.py - Handle xgribarch metadata
 #
-# Copyright (C) 2007  ARPA-SIM <urpsim@smr.arpa.emr.it>
+# Copyright (C) 2007  ARPAE-SIMC <simc-urp@arpae.it>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

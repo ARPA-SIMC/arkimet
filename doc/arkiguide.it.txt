@@ -881,4 +881,4 @@ include::matcher/timerange.txt[]
 ----
 
 == Copyright ==
-Copyright (C) 2013 ARPA-SIMC <urpsim@smr.arpa.emr.it>
+Copyright (C) 2013-2017 ARPAE-SIMC <simc-urp@arpae.it>
