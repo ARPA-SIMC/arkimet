@@ -98,6 +98,10 @@ with a full check and rescan of all the data in the dataset.
 - [corrupted] segments are not untouched
 - [archive age] segments are repacked if needed, then moved to .archive/last
 - [delete age] segments are deleted
+- [delete age] [dirty] a segment that needs to be both repacked and
+  deleted, gets deleted without repacking
+- [archive age] [dirty] a segment that needs to be both repacked and
+  archived, gets repacked before archiving
 - [unaligned] when `needs-check-do-not-pack` is present in the dataset
   root directory, running a repack fails asking to run a check first,
   to prevent deleting data that should be reindexed instead
@@ -166,6 +170,10 @@ with a full check and rescan of all the data in the dataset.
 - [corrupted] segments are not untouched
 - [archive age] segments are repacked if needed, then moved to .archive/last
 - [delete age] segments are deleted
+- [delete age] [dirty] a segment that needs to be both repacked and
+  deleted, gets deleted without repacking
+- [archive age] [dirty] a segment that needs to be both repacked and
+  archived, gets repacked before archiving
 - [unaligned] when `needs-check-do-not-pack` is present in the dataset
   root directory, running a repack fails asking to run a check first,
   to prevent deleting data that should be reindexed instead
