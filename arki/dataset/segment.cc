@@ -277,7 +277,7 @@ struct ForceDirSegmentManager : public BaseSegmentManager
 {
     ForceDirSegmentManager(const std::string& root) : BaseSegmentManager(root) {}
 
-    unique_ptr<Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname)
+    unique_ptr<Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname) override
     {
         unique_ptr<Segment> res(create_for_existing_segment(format, relname, absname));
         if (res.get()) return res;
@@ -326,59 +326,27 @@ struct ForceDirSegmentManager : public BaseSegmentManager
 
         walker.walk();
     }
+
+    bool _is_segment(const std::string& format, const std::string& relname) override
+    {
+        string absname = str::joinpath(root, relname);
+
+        if (sys::isdir(absname))
+            // If it's a directory, it must be a dir segment
+            return sys::exists(str::joinpath(absname, ".sequence"));
+
+        return false;
+    }
 };
 
 /// Segment manager that always uses hole file segments
-struct HoleDirSegmentManager : public BaseSegmentManager
+struct HoleDirSegmentManager : public ForceDirSegmentManager
 {
-    HoleDirSegmentManager(const std::string& root) : BaseSegmentManager(root) {}
+    HoleDirSegmentManager(const std::string& root) : ForceDirSegmentManager(root) {}
 
-    unique_ptr<Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname)
+    unique_ptr<Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname) override
     {
         return unique_ptr<Segment>(new dir::HoleSegment(format, relname, absname));
-    }
-
-    void scan_dir(std::function<void(const std::string& relname)> dest) override
-    {
-        // Trim trailing '/'
-        string m_root = root;
-        while (m_root.size() > 1 and m_root[m_root.size()-1] == '/')
-            m_root.resize(m_root.size() - 1);
-
-        files::PathWalk walker(m_root);
-        walker.consumer = [&](const std::string& relpath, sys::Path::iterator& entry, struct stat& st) {
-            // Skip '.', '..' and hidden files
-            if (entry->d_name[0] == '.')
-                return false;
-
-            string name = entry->d_name;
-
-            // Skip compressed data index files
-            if (str::endswith(name, ".gz.idx"))
-                return false;
-
-            if (!S_ISDIR(st.st_mode))
-                return false;
-
-            sys::Path sub(entry.open_path());
-            struct stat seq_st;
-            if (!sub.fstatat_ifexists(".sequence", seq_st))
-                // Normal subdirectory, recurse into it
-                return true;
-
-            // Directory segment
-            if (str::endswith(name, ".gz"))
-                name = name.substr(0, name.size() - 3);
-
-            // Check whether the file format (from the extension) could be
-            // stored in this kind of segment
-            string format = utils::get_format(name);
-            if (dir::Segment::can_store(format))
-                dest(str::joinpath(relpath, name));
-            return false;
-        };
-
-        walker.walk();
     }
 };
 
