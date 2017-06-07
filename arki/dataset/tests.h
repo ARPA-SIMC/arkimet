@@ -212,6 +212,16 @@ public:
     void import_all_packed(const testdata::Fixture& fixture);
 
     bool has_smallfiles();
+
+    /// Equivalent to calling query_results with an empty query
+    void query_results(const std::vector<unsigned>& expected);
+
+    /**
+     * Run the query on the test dataset, and make sure that the results are
+     * the metadata elements in import_results corresponding to the given
+     * sequence of indices
+     */
+    void query_results(const dataset::DataQuery& q, const std::vector<unsigned>& expected);
 };
 
 }

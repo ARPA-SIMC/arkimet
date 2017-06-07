@@ -381,6 +381,29 @@ bool DatasetTest::has_smallfiles()
     return false;
 }
 
+void DatasetTest::query_results(const std::vector<unsigned>& expected)
+{
+    query_results(Matcher(), expected);
+}
+
+void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<unsigned>& expected)
+{
+    vector<int> found;
+    config().create_reader()->query_data(q, [&](unique_ptr<Metadata>&& md) {
+        unsigned idx;
+        for (idx = 0; idx < import_results.size(); ++idx)
+            if (import_results[idx] == *md)
+                break;
+        if (idx == import_results.size())
+            found.push_back(-1);
+        else
+            found.push_back(idx);
+        return true;
+    });
+
+    wassert(actual(str::join(", ", found)) == str::join(", ", expected));
+}
+
 }
 
 MaintenanceCollector::MaintenanceCollector()

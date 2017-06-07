@@ -72,6 +72,8 @@ struct BaseSegmentManager : public segment::SegmentManager
         std::unique_ptr<struct stat> st = sys::stat(absname);
         unique_ptr<Segment> res;
         if (!st.get())
+            st = sys::stat(absname + ".gz");
+        if (!st.get())
             return res;
 
         if (S_ISDIR(st->st_mode))
@@ -245,27 +247,29 @@ struct AutoSegmentManager : public BaseSegmentManager
             {
                 sys::Path sub(entry.open_path());
                 struct stat seq_st;
-                if (!sub.fstatat_ifexists(".sequence", seq_st))
+                if (sub.fstatat_ifexists(".sequence", seq_st))
+                {
+                    // Directory segment
+                    string format = utils::get_format(name);
+                    if (dir::Segment::can_store(format))
+                        dest(str::joinpath(relpath, name));
+                    return false;
+                }
+                else
                     // Normal subdirectory, recurse into it
                     return true;
-            }
-
-            // Directory or file segment
-            if (str::endswith(name, ".gz"))
-                name = name.substr(0, name.size() - 3);
-
-            // Check whether the file format (from the extension) could be
-            // stored in this kind of segment
-            string format = utils::get_format(name);
-            if (is_dir)
-            {
-                if (dir::Segment::can_store(format))
-                    dest(str::joinpath(relpath, name));
             } else {
+                // Concat segment
+                if (str::endswith(name, ".gz"))
+                    name = name.substr(0, name.size() - 3);
+
+                // Check whether the file format (from the extension) could be
+                // stored in this kind of segment
+                string format = utils::get_format(name);
                 if (fd::Segment::can_store(format))
                     dest(str::joinpath(relpath, name));
+                return false;
             }
-            return false;
         };
 
         walker.walk();
