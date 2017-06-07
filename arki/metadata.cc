@@ -230,7 +230,38 @@ int Metadata::compare(const Metadata& m) const
 
 int Metadata::compare_items(const Metadata& m) const
 {
-    return ItemSet::compare(m);
+    // Compare skipping VALUE items
+    const_iterator a = begin();
+    const_iterator b = m.begin();
+    if (a != end() && a->first == TYPE_VALUE) ++a;
+    if (b != m.end() && b->first == TYPE_VALUE) ++b;
+    auto incr_a = [&] {
+        ++a;
+        if (a != end() && a->first == TYPE_VALUE) ++a;
+    };
+    auto incr_b = [&] {
+        ++b;
+        if (b != m.end() && b->first == TYPE_VALUE) ++b;
+    };
+
+    for ( ; a != end() && b != m.end(); incr_a(), incr_b())
+    {
+        if (a->first == TYPE_VALUE) ++a;
+        if (b->first == TYPE_VALUE) ++b;
+        if (a->first < b->first)
+            return -1;
+        if (a->first > b->first)
+            return 1;
+        if (int res = a->second->compare(*b->second)) return res;
+    }
+    if (a != end() && a->first == TYPE_VALUE) ++a;
+    if (b != m.end() && b->first == TYPE_VALUE) ++b;
+
+    if (a == end() && b == m.end())
+        return 0;
+    if (a == end())
+        return -1;
+    return 1;
 }
 
 bool Metadata::read(int in, const metadata::ReadContext& filename, bool readInline)
