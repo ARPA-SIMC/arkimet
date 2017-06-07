@@ -142,6 +142,25 @@ void MaintenanceTest::touch(const std::string& pathname, time_t ts)
         throw_system_error("cannot set mtime/atime of " + pathname);
 }
 
+void MaintenanceTest::make_hugefile()
+{
+    // Pretend that the test segment is 6G already
+    sys::File fd("testds/" + fixture->test_relpath, O_RDWR);
+    fd.ftruncate(6000000000LLU);
+
+    // Import a new datum, that will get appended to it
+    {
+        Metadata md = fixture->import_results[0];
+        md.set("reftime", "2007-07-07 06:00:00");
+        md.makeInline();
+
+        auto writer(fixture->makeSegmentedWriter());
+        wassert(actual(writer->acquire(md)) == dataset::Writer::ACQ_OK);
+
+        wassert(actual(md.sourceBlob().offset) == 6000000000LLU);
+    }
+}
+
 void MaintenanceTest::register_tests_concat()
 {
     // Check
@@ -152,6 +171,36 @@ void MaintenanceTest::register_tests_concat()
         sys::makedirs("testds/" + fixture->test_relpath);
 
         wassert(f.state_is(3, SEGMENT_MISSING));
+    });
+
+    add_method("check_hugefile", [&](Fixture& f) {
+        make_hugefile();
+        wassert(f.state_is(3, SEGMENT_DIRTY));
+    });
+
+    add_method("fix_hugefile", [&](Fixture& f) {
+        make_hugefile();
+        wassert(f.state_is(3, SEGMENT_DIRTY));
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "2 files ok");
+        wassert(actual(writer.get()).check(e, true));
+
+        wassert(f.state_is(3, SEGMENT_DIRTY));
+    });
+
+    add_method("repack_hugefile", [&](Fixture& f) {
+        make_hugefile();
+        wassert(f.state_is(3, SEGMENT_DIRTY));
+
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "repack", "2 files ok");
+        e.repacked.emplace_back("testds", f.test_relpath);
+        wassert(actual(writer.get()).repack(e, true));
+
+        wassert(actual(writer.get()).maintenance_clean(3));
     });
 }
 
@@ -592,69 +641,6 @@ class Tests : public FixtureTestCase<Fixture>
 
     void register_tests() override
     {
-        add_method("scan_hugefile", [](Fixture& f) {
-            // Test accuracy of maintenance scan, on a dataset with a data file larger than 2**31
-            if (f.cfg.value("type") == "simple") return; // TODO: we need to avoid the SLOOOOW rescan done by simple on the data file
-            f.clean();
-
-            // Simulate 2007/07-07.grib to be 6G already
-            system("mkdir -p testds/2007");
-            system("touch testds/2007/07-07.grib");
-            // Truncate the last grib out of a file
-            if (truncate("testds/2007/07-07.grib", 6000000000LLU) < 0)
-                throw_system_error("truncating testds/2007/07-07.grib");
-
-            f.import();
-
-            {
-                auto writer(f.config().create_checker());
-                ReporterExpected e;
-                e.report.emplace_back("testds", "check", "2 files ok");
-                e.repacked.emplace_back("testds", "2007/07-07.grib");
-                wassert(actual(writer.get()).check(e, false));
-            }
-
-#if 0
-            stringstream s;
-
-        // Rescanning a 6G+ file with grib_api is SLOW!
-
-            // Perform full maintenance and check that things are still ok afterwards
-            writer.check(s, true, false);
-            ensure_equals(s.str(),
-                "testdir: rescanned 2007/07.grib\n"
-                "testdir: 1 file rescanned, 7736 bytes reclaimed cleaning the index.\n");
-            c.clear();
-            writer.maintenance(c);
-            ensure_equals(c.count(COUNTED_OK), 1u);
-            ensure_equals(c.count(COUNTED_DIRTY), 1u);
-            ensure_equals(c.remaining(), "");
-            ensure(not c.isClean());
-
-            // Perform packing and check that things are still ok afterwards
-            s.str(std::string());
-            writer.repack(s, true);
-            ensure_equals(s.str(), 
-                "testdir: packed 2007/07.grib (34960 saved)\n"
-                "testdir: 1 file packed, 2576 bytes reclaimed on the index, 37536 total bytes freed.\n");
-            c.clear();
-
-            // Maintenance and pack are ok now
-            writer.maintenance(c, false);
-            ensure_equals(c.count(COUNTED_OK), 2u);
-            ensure_equals(c.remaining(), "");
-            ensure(c.isClean());
-                s.str(std::string());
-                writer.repack(s, true);
-                ensure_equals(s.str(), string()); // Nothing should have happened
-                c.clear();
-
-            // Ensure that we have the summary cache
-            ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
-            ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
-            ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
-#endif
-        });
         add_method("repack_timestamps", [](Fixture& f) {
             // Ensure that if repacking changes the data file timestamp, it reindexes it properly
             f.clean_and_import();

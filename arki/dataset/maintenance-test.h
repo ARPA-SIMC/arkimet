@@ -99,6 +99,14 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
     void remove_index();
 
     /**
+     * Make the test segment 6Gb long (using filesystem holes), with valid
+     * imported data at the beginning and at the end.
+     *
+     * Only works on concat segments
+     */
+    void make_hugefile();
+
+    /**
      * Make the segment 2007/07-07.grib show up as unaligned
      */
     virtual void make_unaligned() = 0;
