@@ -54,11 +54,11 @@ class Renderer:
         return "\n".join(res)
 
     def render(self, fname):
-        with open(fname, "rt") as fd:
+        with open(fname, "rt", encoding="utf-8") as fd:
             template = self.jinja2.from_string(fd.read())
         rendered = template.render()
         dst = fname[:-3]
-        with open(dst, "wt") as fd:
+        with open(dst, "wt", encoding="utf-8") as fd:
             fd.write(rendered)
         log.info("rendered %s to %s", fname, dst)
 
