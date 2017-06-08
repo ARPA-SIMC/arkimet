@@ -60,9 +60,6 @@ void Tests::register_tests() {
 
 // Test acquiring data
 add_method("acquire", [](Fixture& f) {
-    // Clean the dataset
-    f.clean();
-
     metadata::Collection mdc("inbound/test.grib1");
     Metadata& md = mdc[0];
 
@@ -80,7 +77,7 @@ add_method("acquire", [](Fixture& f) {
 
     wassert(actual_type(md.source()).is_source_blob("grib", sys::abspath("./testds"), "2007/07-08.grib", 0, 7218));
 
-    // Import again works fine
+    // Import again finds the duplicate
     res = writer->acquire(md);
     wassert(actual(res) == Writer::ACQ_ERROR_DUPLICATE);
 
@@ -94,7 +91,10 @@ add_method("acquire", [](Fixture& f) {
     wassert(actual(sys::timestamp("testds/2007/07-08.grib")) <= sys::timestamp("testds/2007/07-08.grib.index"));
     ensure(!files::hasDontpackFlagfile("testds"));
 
-    wassert(f.ensure_localds_clean(1, 1));
+    f.import_results.push_back(md);
+
+    wassert(f.query_results({0}));
+    wassert(f.all_clean(1));
 });
 
 }
