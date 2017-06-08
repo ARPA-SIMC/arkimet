@@ -127,6 +127,21 @@ void MaintenanceTest::remove_index()
     fixture->makeSegmentedChecker()->test_remove_index(fixture->test_relpath);
 }
 
+void MaintenanceTest::delete_one_in_segment()
+{
+    metadata::Collection mds(*fixture->config().create_reader(), Matcher());
+    auto writer = fixture->config().create_writer();
+    writer->remove(mds[0]);
+}
+
+void MaintenanceTest::delete_all_in_segment()
+{
+    metadata::Collection mds(*fixture->config().create_reader(), Matcher());
+    auto writer = fixture->config().create_writer();
+    writer->remove(mds[0]);
+    writer->remove(mds[1]);
+}
+
 void MaintenanceTest::rm_r(const std::string& pathname)
 {
     if (sys::isdir(pathname))
@@ -283,19 +298,86 @@ void MaintenanceTest::register_tests()
     });
 
     if (can_delete_data())
+    {
+        add_method("check_one_removed", R"(
+            - segments that contain some data that has been removed are
+              identified as to be repacked [dirty]
+        )", [&](Fixture& f) {
+            delete_one_in_segment();
+            wassert(f.state_is(3, SEGMENT_DIRTY));
+            wassert(f.query_results({3, 0, 2}));
+        });
+
         add_method("check_all_removed", R"(
             - segments that only contain data that has been removed are
               identified as fully deleted [deleted]
         )", [&](Fixture& f) {
-            {
-                metadata::Collection mds(*f.config().create_reader(), Matcher());
-                auto writer = f.config().create_writer();
-                for (auto& md: mds)
-                    writer->remove(*md);
-            }
-
+            delete_all_in_segment();
             wassert(f.state_is(3, SEGMENT_DELETED));
+            wassert(f.query_results({0, 2}));
         });
+
+        add_method("fix_one_removed", [&](Fixture& f) {
+            delete_one_in_segment();
+
+            auto writer(f.makeSegmentedChecker());
+            ReporterExpected e;
+            wassert(actual(writer.get()).check(e, true));
+
+            auto state = f.scan_state();
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_DIRTY));
+
+            wassert(f.query_results({3, 0, 2}));
+        });
+
+        add_method("fix_deleted", R"(
+            - [deleted] segments are left untouched
+        )", [&](Fixture& f) {
+            delete_all_in_segment();
+
+            auto writer(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "check", "2 files ok");
+            wassert(actual(writer.get()).check(e, true));
+
+            auto state = f.scan_state();
+            wassert(actual(state.size()) == 3u);
+            wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_DELETED));
+
+            wassert(f.query_results({0, 2}));
+        });
+
+        add_method("repack_deleted", R"(
+            - [deleted] segments are removed from disk
+        )", [&](Fixture& f) {
+            delete_all_in_segment();
+
+            auto writer(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "2 files ok");
+            e.deleted.emplace_back("testds", f.test_relpath);
+            wassert(actual(writer.get()).repack(e, true));
+
+            wassert(actual(writer.get()).maintenance_clean(2));
+
+            wassert(f.query_results({0, 2}));
+        });
+
+        add_method("repack_one_removed", [&](Fixture& f) {
+            delete_one_in_segment();
+
+            auto writer(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "2 files ok");
+            e.repacked.emplace_back("testds", f.test_relpath);
+            wassert(actual(writer.get()).repack(e, true));
+
+            wassert(actual(writer.get()).maintenance_clean(3));
+
+            wassert(f.query_results({3, 0, 2}));
+        });
+    }
 
     add_method("check_dataexists", R"(
         - all data known by the index for this segment must be present on disk [unaligned]
@@ -466,20 +548,6 @@ void MaintenanceTest::register_tests()
         wassert(actual(writer.get()).maintenance_clean(2));
     });
 
-    add_method("fix_deleted", R"(
-        - [deleted] segments are removed from the index
-    )", [&](Fixture& f) {
-        rm_r("testds/" + f.test_relpath);
-
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "check", "2 files ok");
-        e.deindexed.emplace_back("testds", f.test_relpath);
-        wassert(actual(writer.get()).check(e, true));
-
-        wassert(actual(writer.get()).maintenance_clean(2));
-    });
-
     add_method("fix_corrupted", R"(
         - [corrupted] segments can only be fixed by manual intervention. They
           are reported and left untouched
@@ -552,6 +620,7 @@ void MaintenanceTest::register_tests()
         wassert(actual(writer.get()).repack(e, true));
 
         wassert(actual(writer.get()).maintenance_clean(3));
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 
     // repack_unaligned is implemented in dataset-specific tests
@@ -570,22 +639,8 @@ void MaintenanceTest::register_tests()
         wassert(actual(writer.get()).maintenance_clean(2));
     });
 
-    add_method("repack_deleted", R"(
-        - [deleted] segments are removed from the index
-    )", [&](Fixture& f) {
-        rm_r("testds/" + f.test_relpath);
-
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "repack", "2 files ok");
-        e.deindexed.emplace_back("testds", f.test_relpath);
-        wassert(actual(writer.get()).repack(e, true));
-
-        wassert(actual(writer.get()).maintenance_clean(2));
-    });
-
     add_method("repack_corrupted", R"(
-        - [corrupted] segments are not untouched
+        - [corrupted] segments are not touched
     )", [&](Fixture& f) {
         Metadata md = f.import_results[0];
         md.set("reftime", "2007-07-06 00:00:00");
