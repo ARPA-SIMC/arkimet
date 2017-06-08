@@ -79,18 +79,6 @@ TestsChecker<testdata::BUFRData> test_checker_bufr_simple_plain("arki_dataset_ch
 TestsChecker<testdata::BUFRData> test_checker_bufr_simple_plain_sharded("arki_dataset_checker_bufr_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsChecker<testdata::BUFRData> test_checker_bufr_simple_sqlite("arki_dataset_checker_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsChecker<testdata::BUFRData> test_checker_bufr_iseg("arki_dataset_checker_bufr_iseg", "type=iseg\nformat=bufr\n");
-TestsChecker<testdata::VM2Data> test_checker_vm2_ondisk2("arki_dataset_checker_vm2_ondisk2", "type=ondisk2\n");
-TestsChecker<testdata::VM2Data> test_checker_vm2_ondisk2_sharded("arki_dataset_checker_vm2_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
-TestsChecker<testdata::VM2Data> test_checker_vm2_simple_plain("arki_dataset_checker_vm2_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<testdata::VM2Data> test_checker_vm2_simple_plain_sharded("arki_dataset_checker_vm2_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
-TestsChecker<testdata::VM2Data> test_checker_vm2_simple_sqlite("arki_dataset_checker_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
-TestsChecker<testdata::VM2Data> test_checker_vm2_iseg("arki_dataset_checker_vm2_iseg", "type=iseg\nformat=vm2\n");
-TestsChecker<testdata::ODIMData> test_checker_odim_ondisk2("arki_dataset_checker_odim_ondisk2", "type=ondisk2\n");
-TestsChecker<testdata::ODIMData> test_checker_odim_ondisk2_sharded("arki_dataset_checker_odim_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
-TestsChecker<testdata::ODIMData> test_checker_odim_simple_plain("arki_dataset_checker_odim_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<testdata::ODIMData> test_checker_odim_simple_plain_sharded("arki_dataset_checker_odim_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
-TestsChecker<testdata::ODIMData> test_checker_odim_simple_sqlite("arki_dataset_checker_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
-TestsChecker<testdata::ODIMData> test_checker_odim_iseg("arki_dataset_checker_odim_iseg", "type=iseg\nformat=odimh5\n");
 
 template<class Data>
 void TestsChecker<Data>::register_tests() {
