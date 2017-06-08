@@ -2,7 +2,7 @@
 
 This dataset contains [segments](segments.md) with minimal indexing.
 
-It is useful for long-term storage of data, due to the small metadata overhead
+It is useful for long-term storage of data, due to the small metadata overhead
 and simple structure.
 
 The only query optimization it supports is when querying by a restricted
