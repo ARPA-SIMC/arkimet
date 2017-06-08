@@ -1,4 +1,10 @@
-doc_DATA =
+md_docs = datasets.md ds-archive.md segments.md seg-concat.md seg-dir.md
+
+generated_md_docs = ds-simple.md ds-ondisk2.md ds-iseg.md
+
+doc_DATA = \
+             $(generated_md_docs) \
+             $(md_docs)
 
 dist_doc_DATA = \
 		DATASET \
@@ -52,13 +58,12 @@ CLEANFILES += arkiguide.it.html
 
 endif
 
-BUILT_SOURCES = ds-simple.md ds-ondisk2.md ds-iseg.md seg-concat.md seg-dir.md
+BUILT_SOURCES = $(generated_md_docs)
 
 EXTRA_DIST = update \
-			 datasets.md ds-archive.md \
-			 ds-simple.md.j2 ds-ondisk2.md.j2 ds-iseg.md.j2 \
-			 segments.md seg-concat.md seg-dir.md \
-			 $(BUILT_SOURCES)
+             $(generated_md_docs) \
+             $(md_docs) \
+             ds-simple.md.j2 ds-ondisk2.md.j2 ds-iseg.md.j2
 
 %.md: %.md.j2 $(top_builddir)/arki/tests/arki-test
 	$(srcdir)/update --srcdir=$(srcdir) --dstdir=$(builddir) --testsuite=$(top_builddir)/arki/tests/arki-test $<
