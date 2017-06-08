@@ -186,11 +186,13 @@ void MaintenanceTest::register_tests_concat()
         sys::makedirs("testds/" + fixture->test_relpath);
 
         wassert(f.state_is(3, SEGMENT_MISSING));
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 
     add_method("check_hugefile", [&](Fixture& f) {
         make_hugefile();
         wassert(f.state_is(3, SEGMENT_DIRTY));
+        wassert(f.query_results({1, -1, 3, 0, 2}));
     });
 
     add_method("fix_hugefile", [&](Fixture& f) {
@@ -203,6 +205,7 @@ void MaintenanceTest::register_tests_concat()
         wassert(actual(writer.get()).check(e, true));
 
         wassert(f.state_is(3, SEGMENT_DIRTY));
+        wassert(f.query_results({1, -1, 3, 0, 2}));
     });
 
     add_method("repack_hugefile", [&](Fixture& f) {
@@ -215,7 +218,8 @@ void MaintenanceTest::register_tests_concat()
         e.repacked.emplace_back("testds", f.test_relpath);
         wassert(actual(writer.get()).repack(e, true));
 
-        wassert(actual(writer.get()).maintenance_clean(3));
+        wassert(f.all_clean(3));
+        wassert(f.query_results({1, -1, 3, 0, 2}));
     });
 
     add_method("repack_timestamps", [&](Fixture& f) {
@@ -238,6 +242,7 @@ void MaintenanceTest::register_tests_concat()
 
         // Ensure that the archive is still clean
         wassert(f.all_clean(3));
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 }
 
@@ -251,6 +256,7 @@ void MaintenanceTest::register_tests_dir()
         sys::write_file("testds/" + f.test_relpath, "");
 
         wassert(f.state_is(3, SEGMENT_MISSING));
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 
     add_method("check_datasize", R"(
@@ -262,6 +268,7 @@ void MaintenanceTest::register_tests_dir()
         }
 
         wassert(f.state_is(3, SEGMENT_CORRUPTED));
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 }
 
@@ -282,6 +289,7 @@ void MaintenanceTest::register_tests()
 
         // Check that maintenance does not accidentally create an archive
         wassert(actual_file("testds/.archive").not_exists());
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 
     // Check
@@ -295,6 +303,7 @@ void MaintenanceTest::register_tests()
         auto state = f.makeSegmentedChecker()->scan(nr);
         wassert(actual(state.size()) == 3u);
         wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_MISSING));
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 
     if (can_delete_data())
@@ -385,6 +394,7 @@ void MaintenanceTest::register_tests()
         truncate_segment();
 
         wassert(f.state_is(3, SEGMENT_UNALIGNED));
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 
     if (can_detect_overlap())
@@ -398,6 +408,7 @@ void MaintenanceTest::register_tests()
 
             // TODO: should it be CORRUPTED?
             wassert(f.state_is(3, SEGMENT_UNALIGNED));
+            wassert(f.query_results({1, 3, 0, 2}));
         });
 
     add_method("check_hole_start", R"(
@@ -406,6 +417,7 @@ void MaintenanceTest::register_tests()
         make_hole_start();
 
         wassert(f.state_is(3, SEGMENT_DIRTY));
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 
     add_method("check_hole_middle", R"(
@@ -414,6 +426,7 @@ void MaintenanceTest::register_tests()
         make_hole_middle();
 
         wassert(f.state_is(3, SEGMENT_DIRTY));
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 
     add_method("check_hole_end", R"(
@@ -422,6 +435,7 @@ void MaintenanceTest::register_tests()
         make_hole_end();
 
         wassert(f.state_is(3, SEGMENT_DIRTY));
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 
     add_method("check_archive_age", R"(
@@ -433,11 +447,13 @@ void MaintenanceTest::register_tests()
         {
             auto o = SessionTime::local_override(t20070707 + 2 * 86400 - 1);
             wassert(f.state_is(3, SEGMENT_OK));
+            wassert(f.query_results({1, 3, 0, 2}));
         }
 
         {
             auto o = SessionTime::local_override(t20070707 + 2 * 86400);
             wassert(f.state_is(3, SEGMENT_ARCHIVE_AGE));
+            wassert(f.query_results({1, 3, 0, 2}));
         }
     });
 
@@ -450,11 +466,13 @@ void MaintenanceTest::register_tests()
         {
             auto o = SessionTime::local_override(t20070707 + 2 * 86400 - 1);
             wassert(f.state_is(3, SEGMENT_OK));
+            wassert(f.query_results({1, 3, 0, 2}));
         }
 
         {
             auto o = SessionTime::local_override(t20070707 + 2 * 86400);
             wassert(f.state_is(3, SEGMENT_DELETE_AGE));
+            wassert(f.query_results({1, 3, 0, 2}));
         }
     });
 
@@ -468,6 +486,7 @@ void MaintenanceTest::register_tests()
         checker()->test_change_metadata(f.test_relpath, md, 0);
 
         wassert(f.state_is(3, SEGMENT_CORRUPTED));
+        wassert(f.query_results({-1, 3, 0, 2}));
     });
 
     if (can_detect_segments_out_of_step())
@@ -481,6 +500,8 @@ void MaintenanceTest::register_tests()
             auto state = f.scan_state();
             wassert(actual(state.size()) == 3u);
             wassert(actual(state.get(f.test_relpath_wrongstep).state) == SEGMENT_CORRUPTED);
+
+            wassert(f.query_results({1, 3, 0, 2}));
         });
 
     add_method("check_isordered", R"(
@@ -489,6 +510,7 @@ void MaintenanceTest::register_tests()
         swap_data();
 
         wassert(f.state_is(3, SEGMENT_DIRTY));
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 
 
@@ -503,6 +525,7 @@ void MaintenanceTest::register_tests()
         wassert(actual(state.size()) == 3u);
         // TODO: should it be CORRUPTED?
         wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 
 
@@ -518,6 +541,7 @@ void MaintenanceTest::register_tests()
         wassert(actual(writer.get()).check(e, true));
 
         wassert(f.state_is(3, SEGMENT_DIRTY));
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 
     add_method("fix_unaligned", R"(
@@ -532,6 +556,7 @@ void MaintenanceTest::register_tests()
         wassert(actual(writer.get()).check(e, true));
 
         wassert(actual(writer.get()).maintenance_clean(3));
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 
     add_method("fix_missing", R"(
@@ -546,6 +571,7 @@ void MaintenanceTest::register_tests()
         wassert(actual(writer.get()).check(e, true));
 
         wassert(actual(writer.get()).maintenance_clean(2));
+        wassert(f.query_results({0, 2}));
     });
 
     add_method("fix_corrupted", R"(
@@ -564,6 +590,7 @@ void MaintenanceTest::register_tests()
         auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
         wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_CORRUPTED));
+        wassert(f.query_results({-1, 3, 0, 2}));
     });
 
     add_method("fix_archive_age", R"(
@@ -582,6 +609,7 @@ void MaintenanceTest::register_tests()
 
             wassert(f.state_is(3, SEGMENT_ARCHIVE_AGE));
         }
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 
     add_method("fix_delete_age", R"(
@@ -600,6 +628,7 @@ void MaintenanceTest::register_tests()
 
             wassert(f.state_is(3, SEGMENT_DELETE_AGE));
         }
+        wassert(f.query_results({1, 3, 0, 2}));
     });
 
     // Repack
@@ -637,6 +666,7 @@ void MaintenanceTest::register_tests()
         wassert(actual(writer.get()).repack(e, true));
 
         wassert(actual(writer.get()).maintenance_clean(2));
+        wassert(f.query_results({0, 2}));
     });
 
     add_method("repack_corrupted", R"(
@@ -652,6 +682,7 @@ void MaintenanceTest::register_tests()
         wassert(actual(writer.get()).repack(e, true));
 
         wassert(f.state_is(3, SEGMENT_CORRUPTED));
+        wassert(f.query_results({-1, 3, 0, 2}));
     });
 
 

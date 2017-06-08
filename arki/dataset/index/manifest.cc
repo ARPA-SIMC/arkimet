@@ -148,11 +148,11 @@ bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
         prepend_fname = str::dirname(*i);
-        string fullpath = str::joinpath(absdir, *i);
-        if (!scan::exists(fullpath)) continue;
+        string fullpath = str::joinpath(absdir, *i) + ".metadata";
+        if (!sys::exists(fullpath)) continue;
         // This generates filenames relative to the metadata
         // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
-        scan::scan(absdir, *i, fixed_dest);
+        Metadata::read_file(fullpath, fixed_dest);
         if (!sorter.flush())
             return false;
     }
@@ -717,7 +717,7 @@ public:
         if (!begin.get() && !end.get())
         {
             // No restrictions on reftime: get all files
-            query = "SELECT file FROM files ORDER BY file";
+            query = "SELECT file FROM files ORDER BY start_time";
         } else {
             query = "SELECT file FROM files";
 
@@ -731,11 +731,11 @@ public:
                     query += " WHERE start_time <= '" + end->to_sql() + "'";
             }
 
-            query += " ORDER BY file";
+            query += " ORDER BY start_time";
         }
 
         // cerr << "Query: " << query << endl;
-        
+
         Query q("sel_archive", m_db);
         q.compile(query);
         while (q.step())
@@ -839,7 +839,7 @@ public:
     void list_segments(std::function<void(const std::string&)> dest) override
     {
         Query q("sel_archive", m_db);
-        q.compile("SELECT DISTINCT file FROM files ORDER BY file");
+        q.compile("SELECT DISTINCT file FROM files ORDER BY start_time");
 
         while (q.step())
             dest(q.fetchString(0));
@@ -851,7 +851,7 @@ public:
         vector< pair<string, time_t> > files;
         {
             Query q("sel_archive", m_db);
-            q.compile("SELECT file, mtime FROM files ORDER BY file");
+            q.compile("SELECT file, mtime FROM files ORDER BY start_time");
 
             while (q.step())
                 files.push_back(make_pair(q.fetchString(0), q.fetch<time_t>(1)));

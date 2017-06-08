@@ -134,51 +134,6 @@ add_method("maintenance_nonindexed", [](Fixture& f) {
     }
 });
 
-// Test maintenance scan on missing metadata
-add_method("maintenance_missing_metadata", [](Fixture& f) {
-    {
-        ArchivesChecker checker(f.config);
-        system("cp inbound/test-sorted.grib1 testds/.archive/last/");
-        wassert(checker.indexSegment("last/test-sorted.grib1", metadata::Collection(f.orig)));
-        sys::unlink("testds/.archive/last/test-sorted.grib1.metadata");
-        sys::unlink("testds/.archive/last/test-sorted.grib1.summary");
-    }
-
-    // All data can be queried anyway
-    {
-        ArchivesReader reader(f.config);
-        metadata::Collection mdc(reader, Matcher());
-        wassert(actual(mdc.size()) == 3u);
-
-        // Maintenance should show one file to rescan
-        ArchivesChecker checker(f.config);
-        ReporterExpected e;
-        e.rescanned.emplace_back("archives.last", "test-sorted.grib1");
-        wassert(actual(checker).check(e, false, true));
-    }
-
-    // Rescan
-    {
-        // Checker should reindex
-        ArchivesChecker checker(f.config);
-        ReporterExpected e;
-        e.rescanned.emplace_back("archives.last", "test-sorted.grib1");
-        wassert(actual(checker).check(e, true, true));
-
-        wassert(actual(checker).check_clean(false, true));
-
-        // Repack should do nothing
-        wassert(actual(checker).repack_clean(true));
-    }
-
-    // Query now still has all data
-    {
-        ArchivesReader reader(f.config);
-        metadata::Collection mdc(reader, Matcher());
-        wassert(actual(mdc.size()) == 3u);
-    }
-});
-
 // Test handling of empty archive dirs (such as last with everything moved away)
 add_method("reader_empty_last", [](Fixture& f) {
     // Create a secondary archive
