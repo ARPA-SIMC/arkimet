@@ -575,7 +575,6 @@ tests_arki_test_SOURCES += \
 		dataset/ondisk2-test.cc \
 		dataset/ondisk2/reader-test.cc \
 		dataset/ondisk2/writer-test.cc \
-		dataset/ondisk2/checker-test.cc \
 		dataset/ondisk2/test-utils.cc \
 		dataset/ondisk2/maintenance-test.cc \
 		dataset/sharded-test.cc \

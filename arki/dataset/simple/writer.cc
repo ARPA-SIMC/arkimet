@@ -353,6 +353,9 @@ size_t Checker::reorder_segment(const std::string& relpath, metadata::Collection
 size_t Checker::removeSegment(const std::string& relpath, bool withData)
 {
     m_mft->remove(relpath);
+    string pathname = str::joinpath(config().path, relpath);
+    sys::unlink_ifexists(pathname + ".metadata");
+    sys::unlink_ifexists(pathname + ".summary");
     return segmented::Checker::removeSegment(relpath, withData);
 }
 

@@ -89,6 +89,10 @@ an empty `.metadata` file will always be rescanned.
 - [corrupted] segments are not untouched
 - [archive age] segments are repacked if needed, then moved to .archive/last
 - [delete age] segments are deleted
+- [delete age] [dirty] a segment that needs to be both repacked and
+  deleted, gets deleted without repacking
+- [archive age] [dirty] a segment that needs to be both repacked and
+  archived, gets repacked before archiving
 - [unaligned] segments are not touched
 
 
@@ -148,4 +152,8 @@ an empty `.metadata` file will always be rescanned.
 - [corrupted] segments are not untouched
 - [archive age] segments are repacked if needed, then moved to .archive/last
 - [delete age] segments are deleted
+- [delete age] [dirty] a segment that needs to be both repacked and
+  deleted, gets deleted without repacking
+- [archive age] [dirty] a segment that needs to be both repacked and
+  archived, gets repacked before archiving
 - [unaligned] segments are not touched

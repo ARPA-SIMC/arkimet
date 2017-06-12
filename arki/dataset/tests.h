@@ -201,6 +201,9 @@ public:
     // Import a file
     void import(const std::string& testfile="inbound/test.grib1");
 
+    // Import a datum
+    void import(Metadata& md, dataset::Writer::AcquireResult expected_result=dataset::Writer::ACQ_OK);
+
     // Recreate the dataset importing data into it
     void clean_and_import(const std::string& testfile="inbound/test.grib1");
 
@@ -208,20 +211,21 @@ public:
 
     void ensure_localds_clean(size_t filecount, size_t resultcount);
 
+    /// Test the state of all segments in the local dataset is clean
+    void all_clean(size_t segment_count);
+
     void import_all(const testdata::Fixture& fixture);
     void import_all_packed(const testdata::Fixture& fixture);
 
-    bool has_smallfiles();
-
     /// Equivalent to calling query_results with an empty query
-    void query_results(const std::vector<unsigned>& expected);
+    void query_results(const std::vector<int>& expected);
 
     /**
      * Run the query on the test dataset, and make sure that the results are
      * the metadata elements in import_results corresponding to the given
      * sequence of indices
      */
-    void query_results(const dataset::DataQuery& q, const std::vector<unsigned>& expected);
+    void query_results(const dataset::DataQuery& q, const std::vector<int>& expected);
 };
 
 }

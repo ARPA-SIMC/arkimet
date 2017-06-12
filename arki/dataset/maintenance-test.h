@@ -111,6 +111,12 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
      */
     virtual void make_unaligned() = 0;
 
+    /// Delete the first element in the test segment
+    void delete_one_in_segment();
+
+    /// Delete all data in the test segment
+    void delete_all_in_segment();
+
     void register_tests() override;
 
     virtual void register_tests_concat();

@@ -316,6 +316,14 @@ void DatasetTest::import(const std::string& testfile)
     utils::files::removeDontpackFlagfile(ds_root);
 }
 
+void DatasetTest::import(Metadata& md, dataset::Writer::AcquireResult expected_result)
+{
+    import_results.push_back(md);
+    std::unique_ptr<Writer> writer(config().create_writer());
+    Writer::AcquireResult res = writer->acquire(import_results.back());
+    wassert(actual(res) == expected_result);
+}
+
 void DatasetTest::clean_and_import(const std::string& testfile)
 {
     clean();
@@ -342,6 +350,13 @@ void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount)
     if (filecount > 0 && reader->type() != "iseg")
         wassert(actual_file(str::joinpath(reader->path(), idxfname())).exists());
     tc.clear();
+}
+
+void DatasetTest::all_clean(size_t segment_count)
+{
+    auto state = scan_state();
+    wassert(actual(state.size()) == segment_count);
+    wassert(actual(state.count(SEGMENT_OK)) == segment_count);
 }
 
 void DatasetTest::import_all(const testdata::Fixture& fixture)
@@ -372,21 +387,12 @@ void DatasetTest::import_all_packed(const testdata::Fixture& fixture)
     }
 }
 
-bool DatasetTest::has_smallfiles()
-{
-    if (auto ds = dynamic_cast<const dataset::ondisk2::Config*>(dataset_config().get()))
-        return ds->smallfiles;
-    if (auto ds = dynamic_cast<const dataset::iseg::Config*>(dataset_config().get()))
-        return ds->smallfiles;
-    return false;
-}
-
-void DatasetTest::query_results(const std::vector<unsigned>& expected)
+void DatasetTest::query_results(const std::vector<int>& expected)
 {
     query_results(Matcher(), expected);
 }
 
-void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<unsigned>& expected)
+void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<int>& expected)
 {
     vector<int> found;
     config().create_reader()->query_data(q, [&](unique_ptr<Metadata>&& md) {
