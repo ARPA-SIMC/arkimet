@@ -31,16 +31,45 @@ class Renderer:
         )
         self.jinja2.globals["testdoc"] = self.testdoc
 
+    def read_testsuite_from_executable(self, src=None):
+        if src is None:
+            src = self.testsuite
+
+        stdout = subprocess.check_output([src, "--doc"], universal_newlines=True)
+        new_data = json.loads(stdout)
+        for d in new_data:
+            d["doc"] = cleandoc(d["doc"])
+        return new_data
+
+    def read_testsuite_from_cache(self, src=None):
+        if src is None:
+            src = self.testsuite
+
+        with open(src, "rt") as fd:
+            new_data = json.load(fd)
+        return new_data
+
     def read_testsuite(self):
         if not self.testsuite: return
 
-        stdout = subprocess.check_output([self.testsuite, "--doc"], universal_newlines=True)
-        new_data = json.loads(stdout)
+        if os.access(self.testsuite, os.X_OK):
+            self.testdoc_data = self.read_testsuite_from_executable()
+        else:
+            self.testdoc_data = self.read_testsuite_from_cache()
 
-        for d in new_data:
-            d["doc"] = cleandoc(d["doc"])
+    def cache_testsuite(self, dest):
+        if os.path.exists(dest):
+            old_cache = self.read_testsuite_from_cache(dest)
+        else:
+            old_cache = None
 
-        self.testdoc_data = new_data
+        if self.testdoc_data == old_cache:
+            return
+
+        with open(dest, "wt") as fd:
+            json.dump(self.testdoc_data, fd, sort_keys=True, indent=1)
+
+        self.testdoc_data = old_cache
 
     def testdoc(self, pattern):
         import fnmatch
@@ -76,6 +105,8 @@ def main():
     parser.add_argument(
         "--testsuite", action="store", help="pathname to the executable wobble testsuite to load documentation from")
     parser.add_argument(
+        "--cache-testsuite", action="store", help="do not render documentation: load test suite data and write it to the given file")
+    parser.add_argument(
         "src", nargs="?", help="file to render (default: all files in doc directory)")
 
     args = parser.parse_args()
@@ -98,7 +129,9 @@ def main():
 
     renderer = Renderer(srcdir, dstdir, args.testsuite)
 
-    if args.src:
+    if args.cache_testsuite:
+        renderer.cache_testsuite(args.cache_testsuite)
+    elif args.src:
         renderer.render(args.src)
     else:
         for root, dirs, files in os.walk("."):
