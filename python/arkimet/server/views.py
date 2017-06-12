@@ -101,7 +101,9 @@ class ArkiView:
         if not self.headers_sent:
             logging.exception("Exception caught before headers have been sent")
             ex = sys.exc_info()[1]
-            self.handler.send_response(500)
+            # If the exception has code attribute, use for the status code
+            code = getattr(ex, "code", 500)
+            self.handler.send_response(code)
             self.handler.send_header("Content-Type", "text/plain")
             self.handler.send_header("Arkimet-Exception", str(ex))
             self.handler.end_headers()
@@ -486,6 +488,7 @@ class ArkiDatasetIndex(ArkiView):
 
     def stream(self):
         name = self.kwargs["name"]
+        cfg = self.get_dataset_config()
 
 #        // Query the summary
 #        Summary sum;
@@ -498,7 +501,7 @@ class ArkiDatasetIndex(ArkiView):
                 page.h1("Dataset " + name)
                 page.p("Configuration:")
                 with page.tag("pre"):
-                    for k, v in sorted(self.handler.server.remote_cfg[name].items()):
+                    for k, v in sorted(cfg.items()):
                         print("{k} = {v}".format(k=html.escape(k), v=html.escape(v)), file=page.out)
                 with page.ul():
                     with page.li(): page.a("/dataset/" + name + "/summary", "Download summary")
