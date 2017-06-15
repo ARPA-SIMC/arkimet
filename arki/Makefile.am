@@ -629,6 +629,7 @@ endif
 # Tests
 TESTS_ENVIRONMENT = $(top_srcdir)/arki/runtest
 check_PROGRAMS = tests/arki-test
+check_DATA = tests/testdata.json
 
 check-local:
 	for test in $(check_PROGRAMS); do \
@@ -637,7 +638,11 @@ check-local:
 
 tests_arki_test_LDADD += libarkimet.la libarkimet-test.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
 
+tests/testdata.json: tests/arki-test
+	$(top_srcdir)/doc/update --testsuite=$< --cache-testsuite=$@
+
 EXTRA_DIST = runtest buildbison buildflex \
 	     matcher/reftime/reftime-lex.ll \
 	     matcher/reftime/reftime-parse.yy \
-	     $(reftime_parser_built_sources)
+	     $(reftime_parser_built_sources) \
+	     tests/testdata.json

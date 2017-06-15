@@ -60,6 +60,11 @@ an empty `.metadata` file will always be rescanned.
 - `.metadata` file must not be older than the data [unaligned]
 - `.summary` file must not be older than the `.metadata` file [unaligned]
 - `MANIFEST` file must not be older than the `.metadata` file [unaligned]
+- if the index has been deleted, accessing the dataset recreates it
+  empty, and a check will rebuild it. Until it gets rebuilt, segments
+  not present in the index would not be considered when querying the
+  dataset
+    
 - metadata in the `.metadata` file must contain reference time elements [corrupted]
 
 ### During --accurate check
@@ -71,7 +76,6 @@ an empty `.metadata` file will always be rescanned.
 - [dirty] segments are not touched
 - [unaligned] segments are imported in-place
 - [missing] segments are removed from the index
-- [deleted] segments are removed from the index
 - [corrupted] segments can only be fixed by manual intervention. They
   are reported and left untouched
 - [archive age] segments are not touched
@@ -85,8 +89,7 @@ an empty `.metadata` file will always be rescanned.
   is done to avoid sequence numbers growing indefinitely for datasets
   with frequent appends and removes.
 - [missing] segments are removed from the index
-- [deleted] segments are removed from the index
-- [corrupted] segments are not untouched
+- [corrupted] segments are not touched
 - [archive age] segments are repacked if needed, then moved to .archive/last
 - [delete age] segments are deleted
 - [delete age] [dirty] a segment that needs to be both repacked and
@@ -123,6 +126,11 @@ an empty `.metadata` file will always be rescanned.
 - `.metadata` file must not be older than the data [unaligned]
 - `.summary` file must not be older than the `.metadata` file [unaligned]
 - `MANIFEST` file must not be older than the `.metadata` file [unaligned]
+- if the index has been deleted, accessing the dataset recreates it
+  empty, and a check will rebuild it. Until it gets rebuilt, segments
+  not present in the index would not be considered when querying the
+  dataset
+    
 - metadata in the `.metadata` file must contain reference time elements [corrupted]
 
 ### During --accurate check
@@ -134,7 +142,6 @@ an empty `.metadata` file will always be rescanned.
 - [dirty] segments are not touched
 - [unaligned] segments are imported in-place
 - [missing] segments are removed from the index
-- [deleted] segments are removed from the index
 - [corrupted] segments can only be fixed by manual intervention. They
   are reported and left untouched
 - [archive age] segments are not touched
@@ -148,8 +155,7 @@ an empty `.metadata` file will always be rescanned.
   is done to avoid sequence numbers growing indefinitely for datasets
   with frequent appends and removes.
 - [missing] segments are removed from the index
-- [deleted] segments are removed from the index
-- [corrupted] segments are not untouched
+- [corrupted] segments are not touched
 - [archive age] segments are repacked if needed, then moved to .archive/last
 - [delete age] segments are deleted
 - [delete age] [dirty] a segment that needs to be both repacked and

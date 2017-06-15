@@ -35,6 +35,8 @@ indices for the metadata listed in the `index` configuration value.
 
 - the segment must be a file
 - the segment must exist [missing]
+- segments that contain some data that has been removed are
+  identified as to be repacked [dirty]
 - segments that only contain data that has been removed are
   identified as fully deleted [deleted]
 - all data known by the index for this segment must be present on disk [unaligned]
@@ -57,10 +59,10 @@ indices for the metadata listed in the `index` configuration value.
 
 ### During fix
 
+- [deleted] segments are left untouched
 - [dirty] segments are not touched
 - [unaligned] segments are imported in-place
 - [missing] segments are removed from the index
-- [deleted] segments are removed from the index
 - [corrupted] segments can only be fixed by manual intervention. They
   are reported and left untouched
 - [archive age] segments are not touched
@@ -68,14 +70,14 @@ indices for the metadata listed in the `index` configuration value.
 
 ### During repack
 
+- [deleted] segments are removed from disk
 - [dirty] segments are rewritten to be without holes and have data in the right order.
   In concat segments, this is done to guarantee linear disk access when
   data are queried in the default sorting order. In dir segments, this
   is done to avoid sequence numbers growing indefinitely for datasets
   with frequent appends and removes.
 - [missing] segments are removed from the index
-- [deleted] segments are removed from the index
-- [corrupted] segments are not untouched
+- [corrupted] segments are not touched
 - [archive age] segments are repacked if needed, then moved to .archive/last
 - [delete age] segments are deleted
 - [delete age] [dirty] a segment that needs to be both repacked and
@@ -92,6 +94,8 @@ indices for the metadata listed in the `index` configuration value.
 - the segment must be a directory [unaligned]
 - the size of each data file must match the data size exactly [corrupted]
 - the segment must exist [missing]
+- segments that contain some data that has been removed are
+  identified as to be repacked [dirty]
 - segments that only contain data that has been removed are
   identified as fully deleted [deleted]
 - all data known by the index for this segment must be present on disk [unaligned]
@@ -113,10 +117,10 @@ indices for the metadata listed in the `index` configuration value.
 
 ### During fix
 
+- [deleted] segments are left untouched
 - [dirty] segments are not touched
 - [unaligned] segments are imported in-place
 - [missing] segments are removed from the index
-- [deleted] segments are removed from the index
 - [corrupted] segments can only be fixed by manual intervention. They
   are reported and left untouched
 - [archive age] segments are not touched
@@ -124,14 +128,14 @@ indices for the metadata listed in the `index` configuration value.
 
 ### During repack
 
+- [deleted] segments are removed from disk
 - [dirty] segments are rewritten to be without holes and have data in the right order.
   In concat segments, this is done to guarantee linear disk access when
   data are queried in the default sorting order. In dir segments, this
   is done to avoid sequence numbers growing indefinitely for datasets
   with frequent appends and removes.
 - [missing] segments are removed from the index
-- [deleted] segments are removed from the index
-- [corrupted] segments are not untouched
+- [corrupted] segments are not touched
 - [archive age] segments are repacked if needed, then moved to .archive/last
 - [delete age] segments are deleted
 - [delete age] [dirty] a segment that needs to be both repacked and
