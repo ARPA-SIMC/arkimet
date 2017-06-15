@@ -1,6 +1,6 @@
 = ArkiGuida =
 Emanuele Di Giacomo <edigiacomo@arpae.it>
-v0.8, 2017-01-16
+v0.9, 2017-06-14
 :lang: it
 
 == Introduzione ==
@@ -78,6 +78,10 @@ nome dipende dallo `step` usato e dal formato del dato (`grib1`, `grib2`,
 `odimh5`, ...). I file importati sono *concatenati* all'interno dell'archivio,
 tranne nel caso di `step=singlefile` (da usarsi nel caso in cui il formato non
 supporti il concatenamento, come `ODIMH5`).
+
+Per un elenco completo di tutti i campi disponibili nel `config` vedi la
+sezione <<config,Elenco variabili utilizzabili nel file config>>
+
 
 .Esempi di organizzazione di dataset
 ====
@@ -805,6 +809,37 @@ metadato::
   Attributo di un dato, come ad esempio l'istante di riferimento, l'area
   interessata, il prodotto, etc. I metadati descrivono un dato e quindi
   sono decisivi sia in fase di archiviazione che in fase di query.
+
+[[config]]
+== Elenco variabili utilizzabili nel file config ==
+
+- `type`: tipo di dataset (`iseg`, `ondisk2`, `simple`, `error`, `duplicates`,
+  `remote`, `outbound`, `discard`, `file`, `testlarge`)
+- `path`: path del dataset
+- `format`: formato del dataset (e.g. `grib`)
+- `smallfiles`: `yes` o `no`, serve per salvare nell'indice il contenuto del
+  file indicizzato
+- `index`: elenco separato da virgola dei metadati usati come indice
+- `unique`: elenco separato da virgola dei metadati che rendono univoco un file
+- `qmacro`: in uso nel dataset di tipo `remote`
+- `archive age`: numero di giorni oltre i quali un dato deve essere spostato in
+  `.archive`
+- `delete age`: numero di giorni oltre i quali un dato deve essere eliminato
+- `indexfile`: file indice (default: `index.sqlite`)
+- `replace`: nel caso in cui un dato venga reimportato, se `yes` allora viene
+  sovrascritto altrimenti (`no`) viene spostato nel dataset `duplicates`. Se `USN`
+  boh (*TODO* da approfondire)
+- `step`: step dei segmenti (`daily`, `monthly`, etc)
+- `segments`: può assumere il valore `dir` (*TODO* da approfondire)
+- `mockdata`: può assumere il valore `true` (*TODO* da approfondire)
+- `shard`: tipo di shard (`weekly`, `monthly`, `yearly`)
+- `index_type`:  `plain` o `sqlite` per i dataset di tipo `simple`, `error` e
+  `duplicates` (è opzionale)
+- `restrict`: da usarsi con l'opzione `--restrict`, permette di autorizzare solo
+  alcuni utenti all'accesso del dataset
+- `__`: (doppio underscore) prefisso per inserire campi custom (che arkimet non
+  interpreta)
+
 
 == Appendice: documentazione sui matcher ==
 
