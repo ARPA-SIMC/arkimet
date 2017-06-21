@@ -65,6 +65,11 @@ public:
      * Get the global singleton registry
      */
     static Registry& get();
+
+    /**
+     * Return a const reference to the cache, for inspection in tests
+     */
+    const std::unordered_map<std::string, std::weak_ptr<Reader>>& test_inspect_cache() const { return cache; }
 };
 
 }
