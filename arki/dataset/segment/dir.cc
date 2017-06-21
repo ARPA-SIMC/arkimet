@@ -581,7 +581,7 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, u
     }
 
     // Close the temp writer
-    writer.release();
+    writer.reset();
 
     return p;
 }
