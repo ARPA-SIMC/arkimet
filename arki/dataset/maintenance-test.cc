@@ -805,9 +805,9 @@ void MaintenanceTest::register_tests()
 
         auto& registry = reader::Registry::get();
         registry.cleanup();
-        wassert(actual(registry.test_inspect_cache().size()) == 0u);
+        unsigned orig = registry.test_inspect_cache().size();
         checker->repackSegment(f.test_relpath);
-        wassert(actual(registry.test_inspect_cache().size()) == 0u);
+        wassert(actual(registry.test_inspect_cache().size()) == orig);
     });
 }
 
