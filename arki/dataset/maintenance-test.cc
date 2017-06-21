@@ -807,7 +807,6 @@ void MaintenanceTest::register_tests()
         registry.cleanup();
         wassert(actual(registry.test_inspect_cache().size()) == 0u);
         checker->repackSegment(f.test_relpath);
-        registry.cleanup();
         wassert(actual(registry.test_inspect_cache().size()) == 0u);
     });
 }
