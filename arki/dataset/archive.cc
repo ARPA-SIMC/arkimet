@@ -107,7 +107,9 @@ struct ArchivesRoot
                 // Add directory with a manifest inside
                 string pathname = str::joinpath(archive_root, i->d_name);
                 if (include_invalid || archive::is_archive(pathname))
+                {
                     names.insert(i->d_name);
+                }
             }
         }
 
@@ -342,6 +344,11 @@ void ArchivesReader::query_summary(const Matcher& matcher, Summary& summary)
     });
 }
 
+unsigned ArchivesReader::test_count_archives() const
+{
+    return archives->archives.size();
+}
+
 
 
 ArchivesChecker::ArchivesChecker(std::shared_ptr<const ArchivesConfig> config)
@@ -437,6 +444,11 @@ void ArchivesChecker::releaseSegment(const std::string& relpath, const std::stri
     else
         throw std::runtime_error(this->name() + ": cannot acquire " + relpath + ": archive " + name + " does not exist in " + archives->archive_root);
     archives->invalidate_summary_cache();
+}
+
+unsigned ArchivesChecker::test_count_archives() const
+{
+    return archives->archives.size();
 }
 
 }

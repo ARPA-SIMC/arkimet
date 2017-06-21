@@ -93,10 +93,7 @@ add_method("acquire_last", [](Fixture& f) {
 
 // Test maintenance scan on non-indexed files
 add_method("maintenance_nonindexed", [](Fixture& f) {
-    {
-#warning TODO: this is a hack to create the datasets before maintenance is called. Replace with a Checker::create() function
-        ArchivesChecker checker(f.config);
-    }
+    sys::makedirs("testds/.archive/last");
     system("cp inbound/test-sorted.grib1 testds/.archive/last/");
 
     // Query now has empty results
@@ -164,6 +161,33 @@ add_method("reader_empty_last", [](Fixture& f) {
         ArchivesReader reader(f.config);
         metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
         wassert(actual(mdc.size()) == 3u);
+    }
+});
+
+// Make sure that subdirectories in archives whose index has disappeared are
+// still seen as archives (#91)
+add_method("reader_no_manifest", [](Fixture& f) {
+    // Create a dataset without the manifest
+    sys::makedirs("testds/.archive/last");
+    sys::makedirs("testds/.archive/2007");
+    system("cp inbound/test-sorted.grib1 testds/.archive/2007/07.grib");
+
+    // Run check
+    {
+        ArchivesChecker checker(f.config);
+        wassert(actual(checker.test_count_archives()) == 1u);
+        ReporterExpected e;
+        e.rescanned.emplace_back("archives.2007", "07.grib");
+        wassert(actual(checker).check(e, true, true));
+    }
+
+    // Query has all data
+    {
+        ArchivesReader reader(f.config);
+        metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
+        wassert(actual(mdc.size()) == 3u);
+
+        wassert(actual(reader.test_count_archives()) == 1u);
     }
 });
 

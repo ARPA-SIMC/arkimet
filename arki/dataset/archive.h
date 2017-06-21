@@ -87,6 +87,9 @@ public:
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
+
+    /// Return the number of archives found, used for testing
+    unsigned test_count_archives() const;
 };
 
 class ArchivesChecker : public Checker
@@ -110,6 +113,9 @@ public:
     void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
     void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
+
+    /// Return the number of archives found, used for testing
+    unsigned test_count_archives() const;
 };
 
 }

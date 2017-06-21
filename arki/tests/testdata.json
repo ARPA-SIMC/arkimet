@@ -14371,6 +14371,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_archive",
+  "method": "reader_no_manifest"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_simple_datafile",
   "method": "append"
  },
