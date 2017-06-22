@@ -43,3 +43,8 @@ it next to its `.summmary` file. If both the `.summary` file and the archive
 directory are present, arkimet will ignore the `.summary` file when reading,
 and will ignore the archive directory when checking. This has the effect of
 making an archive read-only when the `$archivename.summary` file is present.
+
+To run a check/fix/repack operation on an offline archive, bring it online,
+remove the `$archivename.summary` file, run the check/fix/repack operation, and
+copy `$archivename/summary` to `$archivename.summary` to mark it read-only
+again.
