@@ -16,6 +16,7 @@ man_MANS = \
 	arki-mergeconf.1 \
 	arki-scan.1 \
 	arki-server.1 \
+	arki-testtar.1 \
 	arki-xargs.1
 
 if DBALLE
@@ -25,6 +26,8 @@ endif
 arki-server.1: src/arki-server
 	COLUMNS=200 $(srcdir)/run-local help2man --name='Arkimet server for remote dataset access' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
 
+arki-testtar.1: src/arki-testtar
+	COLUMNS=200 $(srcdir)/run-local help2man --name='Arkimet server for remote dataset access' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
 
 arki-%.1: src/arki-% doc/mhooks-%
 	$(srcdir)/run-local $< --manpage="$(word 2,$^)" > $@ || rm -f $@

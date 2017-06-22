@@ -1,7 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 
 bin_PROGRAMS = arki-check arki-query arki-dump arki-gzip arki-mergeconf arki-scan arki-xargs
-dist_bin_SCRIPTS = arki-server
+dist_bin_SCRIPTS = arki-server arki-testtar
 noinst_PROGRAMS = arki-test
 
 dist_noinst_HEADERS = bench/benchmark.h
