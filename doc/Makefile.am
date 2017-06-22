@@ -66,4 +66,4 @@ EXTRA_DIST = update \
              ds-simple.md.j2 ds-ondisk2.md.j2 ds-iseg.md.j2
 
 %.md: %.md.j2 $(top_srcdir)/arki/tests/testdata.json
-	$(srcdir)/update --srcdir=$(srcdir) --dstdir=$(builddir) --testsuite=$(top_srcdir/arki/tests/testdata.json $<
+	$(srcdir)/update --srcdir=$(srcdir) --dstdir=$(builddir) --testsuite=$(top_srcdir)/arki/tests/testdata.json $<
