@@ -1,6 +1,6 @@
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.2
+Version: 1.3
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -131,6 +131,11 @@ else
 fi
 
 %changelog
+* Thu Jun 22 2017 Daniele Branchini <dbranchini@arpae.it> - 1.3-1%{dist}
+- Fixed issues in arki-check (#91)
+- Use exception.code in response (if possible)
+- Test code cleanup
+    
 * Wed Jun 7 2017 Daniele Branchini <dbranchini@arpae.it> - 1.2-1%{dist}
 - Added documentation for dataset formats and check/fix/repack procedures (#88)
 - Added verbose reporting to vacuum operations, and some test refactoring (#89)
@@ -229,45 +234,6 @@ fi
 
 * Mon Nov 26 2012 Daniele Branchini <dbranchini@arpa.emr.it> - 0.73-2677%{dist}
 - Rebuild to reflect upstream changes (adding meteo-vm2)
-
-* Thu Apr 19 2012 Daniele Branchini <dbranchini@arkitest> - 0.71-2505%{dist}
-- Rebuild to reflect upstream changes
-
-* Thu Feb 23 2012 Daniele Branchini <dbranchini@arkitest> - 0.69-2497%{dist}
-- Rebuild to reflect upstream changes
-
-* Mon Sep 19 2011 Daniele Branchini <dbranchini@linus> - 0.64-2451%{dist}
-- Rebuild to reflect upstream changes
-
-* Fri Aug 12 2011 Daniele Branchini <dbranchini@linus> - 0.63-2431%{dist}
-- Effettivo supporto per i 32bit
-
-* Wed Jul 13 2011 Daniele Branchini <dbranchini@linus> - 0.62-2402%{dist}
-- corretto initscript
-
-* Mon Jul 11 2011 Daniele Branchini <dbranchini@linus> - 0.62-2401%{dist}
-- Aggiunto initscript
-
-* Thu Oct 14 2010 Daniele Branchini <dbranchini@pigna> - 0.46-2163%{dist}
-- Added radarlib support
-
-* Mon Jul 12 2010 Daniele Branchini <dbranchini@linus> - 0.44-2067%{dist}
-- Corretta dipendenza da libarkimet0 (obsoleto)
-
-* Thu Jul  8 2010 Daniele Branchini <dbranchini@carenza.metarpa> - 0.44-2066%{dist}
-- Rebuild to reflect upstream changes, removed libarkimet0
-
-* Thu Sep 17 2009 root <root@localhost.localdomain> - 0.27-1418
-- Rebuild to reflect upstream changes.
-
-* Tue Sep  8 2009 root <root@localhost.localdomain> - 0.26.1-1409
-- added some documentation files
-
-* Mon Sep  7 2009 Daniele Branchini <dbranchini@carenza.metarpa> - 0.26.1-1
-- Rebuild to reflect upstream changes.
-
-* Wed Aug 26 2009 Daniele Branchini <dbranchini@carenza.metarpa> - 0.25-1
-- Rebuild to reflect upstream changes.
 
 * Tue Jul  1 2008 root <enrico@enricozini.org> - 0.4-1
 - Initial build.
