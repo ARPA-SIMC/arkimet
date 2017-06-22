@@ -48,9 +48,10 @@ struct RepackSort : public sort::Compare
     {
         const types::Type* rta = a.get(TYPE_REFTIME);
         const types::Type* rtb = b.get(TYPE_REFTIME);
-        if (!rta) throw std::runtime_error("dataset contains metadata without reftime");
-        if (!rtb) throw std::runtime_error("dataset contains metadata without reftime");
-        if (int res = rta->compare(*rtb)) return res;
+        if (rta && !rtb) return 1;
+        if (!rta && rtb) return -1;
+        if (rta && rtb)
+            if (int res = rta->compare(*rtb)) return res;
         if (a.sourceBlob().offset > b.sourceBlob().offset) return 1;
         if (b.sourceBlob().offset > a.sourceBlob().offset) return -1;
         return 0;
@@ -234,8 +235,7 @@ void Manifest::rescanSegment(const std::string& dir, const std::string& relpath)
         tu.reset(new utils::compress::TempUnzip(pathname));
 
     // Read the timestamp
-    time_t mtime = sys::timestamp(pathname);
-    // TODO: this makes no sense for dir segments
+    time_t mtime = scan::timestamp(pathname);
 
     // Invalidate summary
     invalidate_summary(pathname);
@@ -552,7 +552,6 @@ public:
         {
             string pathname = str::joinpath(m_path, i.file);
 
-            // TODO: this makes no sense for dir segments
             time_t ts_data = scan::timestamp(pathname);
             time_t ts_md = sys::timestamp(pathname + ".metadata", 0);
             time_t ts_sum = sys::timestamp(pathname + ".summary", 0);
@@ -868,7 +867,6 @@ public:
         {
             string pathname = str::joinpath(m_path, i.first);
 
-            // TODO: this makes no sense for dir segments
             time_t ts_data = scan::timestamp(pathname);
             time_t ts_md = sys::timestamp(pathname + ".metadata", 0);
             time_t ts_sum = sys::timestamp(pathname + ".summary", 0);
