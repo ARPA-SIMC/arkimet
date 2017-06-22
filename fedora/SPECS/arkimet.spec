@@ -132,7 +132,7 @@ fi
 
 %changelog
 * Thu Jun 22 2017 Daniele Branchini <dbranchini@arpae.it> - 1.3-1%{dist}
-- Fixed issues in arki-check (#91)
+- Fixed issues in arki-check (#90, #91)
 - Use exception.code in response (if possible)
 - Test code cleanup
     
