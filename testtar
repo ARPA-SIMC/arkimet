@@ -5,13 +5,17 @@ import os
 import stat
 import sys
 import tarfile
+import shutil
 import logging
 import argparse
 
 log = logging.getLogger()
+re_data = re.compile(r"(?:\.grib|\.grib1|\.grib2|\.vm2|\.odimh5|\.bufr|.repack)$")
 
 def do_archive(src, rootpath=None):
-    re_data = re.compile(r"(?:\.grib|\.grib1|\.grib2|\.vm2|\.odimh5|\.bufr|.repack)$")
+    if rootpath is not None:
+        src = os.path.join(rootpath, src)
+
     with tarfile.open(mode="w:gz", format=tarfile.PAX_FORMAT, fileobj=sys.stdout.buffer) as out:
         for root, dirnames, fnames, rootfd in os.fwalk(src):
             if rootpath is not None:
@@ -38,7 +42,27 @@ def do_extract(src, rootpath=None):
         while True:
             info = tf.next()
             if info is None: break
-            print(info.name, info.pax_headers.get("hole", None))
+            dest = info.name
+            if rootpath is not None:
+                dest = os.path.join(rootpath, dest)
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+
+            hole = info.pax_headers.get("hole", None)
+            if hole is not None:
+                log.info("h %s", dest)
+                fd = os.open(dest, os.O_WRONLY | os.O_EXCL | os.O_CREAT)
+                os.ftruncate(fd, int(hole))
+                os.close(fd)
+            else:
+                log.info("a %s", dest)
+                srcfd = tf.extractfile(info)
+                if srcfd is None: continue
+                with open(dest, "wb") as dstfd:
+                    shutil.copyfileobj(srcfd, dstfd)
+                    os.fchmod(dstfd.fileno(), info.mode)
+                os.utime(dest, times=(info.mtime, info.mtime))
+
+
 
 
 def main():
