@@ -278,7 +278,6 @@ State Segment::check_fd(dataset::Reporter& reporter, const std::string& ds, cons
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         const source::Blob& source = (*i)->sourceBlob();
-
         if (source.offset < (size_t)end_of_last_data_checked || source.offset > (size_t)end_of_last_data_checked + max_gap)
             has_hole = true;
 

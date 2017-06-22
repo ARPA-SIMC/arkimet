@@ -93,6 +93,9 @@ indices for the metadata listed in the `index` configuration value.
 
 - the segment must be a directory [unaligned]
 - the size of each data file must match the data size exactly [corrupted]
+- the modification time of a directory segment can vary unpredictably,
+  so it is ignored. The modification time of the sequence file is used
+  instead.
 - the segment must exist [missing]
 - segments that contain some data that has been removed are
   identified as to be repacked [dirty]

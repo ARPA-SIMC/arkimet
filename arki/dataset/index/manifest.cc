@@ -41,17 +41,22 @@ namespace dataset {
 namespace index {
 
 namespace {
-struct HFSorter : public sort::Compare
+
+struct RepackSort : public sort::Compare
 {
-    virtual int compare(const Metadata& a, const Metadata& b) const {
-        int res = Type::nullable_compare(a.get(TYPE_REFTIME), b.get(TYPE_REFTIME));
-        if (res == 0)
-            return a.source().compare(b.source());
-        return res;
+    int compare(const Metadata& a, const Metadata& b) const override
+    {
+        const types::Type* rta = a.get(TYPE_REFTIME);
+        const types::Type* rtb = b.get(TYPE_REFTIME);
+        if (!rta) throw std::runtime_error("dataset contains metadata without reftime");
+        if (!rtb) throw std::runtime_error("dataset contains metadata without reftime");
+        if (int res = rta->compare(*rtb)) return res;
+        if (a.sourceBlob().offset > b.sourceBlob().offset) return 1;
+        if (b.sourceBlob().offset > a.sourceBlob().offset) return -1;
+        return 0;
     }
-    virtual std::string toString() const {
-        return "HFSorter";
-    }
+
+    std::string toString() const override { return "reftime,offset"; }
 };
 
 void scan_file(const std::string& root, const std::string& relname, segment::State state, segment::contents_func dest)
@@ -84,7 +89,7 @@ void scan_file(const std::string& root, const std::string& relname, segment::Sta
     else
         state += SEGMENT_MISSING;
 
-    HFSorter cmp;
+    RepackSort cmp;
     contents.sort(cmp); // Sort by reftime and by offset
 
     // Pass on the file state to the visitor
