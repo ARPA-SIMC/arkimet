@@ -105,6 +105,9 @@ an empty `.metadata` file will always be rescanned.
 
 - the segment must be a directory [unaligned]
 - the size of each data file must match the data size exactly [corrupted]
+- the modification time of a directory segment can vary unpredictably,
+  so it is ignored. The modification time of the sequence file is used
+  instead.
 - the segment must exist [missing]
 - all data known by the index for this segment must be present on disk [unaligned]
 - no pair of (offset, size) data spans from the index can overlap [unaligned]

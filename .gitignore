@@ -49,6 +49,9 @@ Makefile
 /arki-bufr-prepare.1
 /arki-gzip.1
 /arki-server.1
+/arki-config.1
+/arki-inbound.1
+/arki-testtar.1
 /src/arki-check
 /src/arki-dump
 /src/arki-mergeconf
