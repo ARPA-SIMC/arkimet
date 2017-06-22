@@ -59,8 +59,9 @@ def do_extract(src, rootpath=None):
                 if srcfd is None: continue
                 with open(dest, "wb") as dstfd:
                     shutil.copyfileobj(srcfd, dstfd)
-                    os.fchmod(dstfd.fileno(), info.mode)
-                os.utime(dest, times=(info.mtime, info.mtime))
+
+            os.chmod(dest, info.mode)
+            os.utime(dest, times=(info.mtime, info.mtime))
 
 
 
