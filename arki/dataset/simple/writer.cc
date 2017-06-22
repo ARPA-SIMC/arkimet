@@ -275,6 +275,7 @@ void Checker::rescanSegment(const std::string& relpath)
     sys::unlink_ifexists(pathname + ".summary");
 
     m_mft->rescanSegment(config().path, relpath);
+    m_mft->flush();
 }
 
 namespace {
