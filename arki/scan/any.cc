@@ -237,9 +237,20 @@ bool isCompressed(const std::string& file)
 
 time_t timestamp(const std::string& file)
 {
-    time_t res = sys::timestamp(file, 0);
-    if (res != 0) return res;
-    return sys::timestamp(file + ".gz", 0);
+    auto st = sys::stat(file);
+    if (!st)
+    {
+        // File does not exist, it might have a compressed version
+        st = sys::stat(file + ".gz");
+        if (!st) return 0;
+        return st->st_mtime;
+    }
+
+    if (!S_ISDIR(st->st_mode))
+        return st->st_mtime;
+
+    // Directory segment, check the timestamp of the sequence file instead
+    return sys::timestamp(str::joinpath(file, ".sequence"), 0);
 }
 
 void compress(const std::string& file, size_t groupsize)

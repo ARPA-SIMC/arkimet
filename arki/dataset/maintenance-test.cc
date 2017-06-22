@@ -271,6 +271,16 @@ void MaintenanceTest::register_tests_dir()
         wassert(f.state_is(3, SEGMENT_CORRUPTED));
         wassert(f.query_results({1, 3, 0, 2}));
     });
+
+    add_method("check_ignore_dir_timestamp", R"(
+       - the modification time of a directory segment can vary unpredictably,
+         so it is ignored. The modification time of the sequence file is used
+         instead.
+    )", [&](Fixture& f) {
+        touch("testds/" + f.test_relpath, time(NULL) + 86400);
+        wassert(f.all_clean(3));
+        wassert(f.query_results({1, 3, 0, 2}));
+    });
 }
 
 void MaintenanceTest::register_tests()

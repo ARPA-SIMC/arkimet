@@ -14840,6 +14840,11 @@
   "method": "check_datasize"
  },
  {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
+  "method": "check_ignore_dir_timestamp"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
   "method": "clean"
@@ -15033,6 +15038,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -15650,6 +15660,11 @@
   "method": "check_datasize"
  },
  {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
+  "method": "check_ignore_dir_timestamp"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
   "method": "clean"
@@ -15843,6 +15858,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -16458,6 +16478,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -16653,6 +16678,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -16848,6 +16878,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_simple_maintenance_odimh5_plain",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -17043,6 +17078,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -17455,6 +17495,11 @@
   "method": "check_datasize"
  },
  {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_iseg_maintenance_grib_dirs",
+  "method": "check_ignore_dir_timestamp"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_iseg_maintenance_grib_dirs",
   "method": "clean"
@@ -17835,6 +17880,11 @@
   "method": "check_datasize"
  },
  {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_iseg_maintenance_bufr_dirs",
+  "method": "check_ignore_dir_timestamp"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_iseg_maintenance_bufr_dirs",
   "method": "clean"
@@ -18215,6 +18265,11 @@
   "method": "check_datasize"
  },
  {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_iseg_maintenance_vm2_dirs",
+  "method": "check_ignore_dir_timestamp"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_iseg_maintenance_vm2_dirs",
   "method": "clean"
@@ -18393,6 +18448,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_iseg_maintenance_odimh5",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_iseg_maintenance_odimh5",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -18895,6 +18955,11 @@
   "method": "check_datasize"
  },
  {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
+  "method": "check_ignore_dir_timestamp"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
   "method": "clean"
@@ -19320,6 +19385,11 @@
   "method": "check_datasize"
  },
  {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
+  "method": "check_ignore_dir_timestamp"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
   "method": "clean"
@@ -19745,6 +19815,11 @@
   "method": "check_datasize"
  },
  {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
+  "method": "check_ignore_dir_timestamp"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
   "method": "clean"
@@ -19948,6 +20023,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_odimh5",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_ondisk2_maintenance_odimh5",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
