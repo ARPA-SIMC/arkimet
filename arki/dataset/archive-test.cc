@@ -1,5 +1,6 @@
 #include "tests.h"
 #include "archive.h"
+#include "reporter.h"
 #include "simple/writer.h"
 #include "test-scenario.h"
 #include "arki/configfile.h"
@@ -166,7 +167,7 @@ add_method("reader_empty_last", [](Fixture& f) {
 
 // Make sure that subdirectories in archives whose index has disappeared are
 // still seen as archives (#91)
-add_method("reader_no_manifest", [](Fixture& f) {
+add_method("enumerate_no_manifest", [](Fixture& f) {
     // Create a dataset without the manifest
     sys::makedirs("testds/.archive/last");
     sys::makedirs("testds/.archive/2007");
@@ -182,6 +183,24 @@ add_method("reader_no_manifest", [](Fixture& f) {
     }
 
     // Query has all data
+    {
+        ArchivesReader reader(f.config);
+        metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
+        wassert(actual(mdc.size()) == 3u);
+
+        wassert(actual(reader.test_count_archives()) == 1u);
+    }
+
+    // Create a .summary file outside the archive, to mark it as offline/readonly
+    sys::write_file("testds/.archive/2007.summary", "");
+
+    // Check doesn't find it anymore
+    {
+        ArchivesChecker checker(f.config);
+        wassert(actual(checker.test_count_archives()) == 0u);
+    }
+
+    // Query still has all data
     {
         ArchivesReader reader(f.config);
         metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));

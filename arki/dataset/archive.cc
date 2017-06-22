@@ -237,20 +237,10 @@ struct ArchivesCheckerRoot: public ArchivesRoot<Checker>
         string pathname = str::joinpath(archive_root, name);
         unique_ptr<Checker> res;
         if (sys::exists(pathname + ".summary"))
-        {
-            if (index::Manifest::exists(pathname))
-            {
-                std::shared_ptr<const simple::Config> config(new simple::Config(make_config(pathname)));
-                res.reset(new simple::Checker(config));
-            } else {
-                std::shared_ptr<dataset::Config> config(new dataset::Config(make_config(pathname)));
-                config->name = "pathname";
-                res.reset(new empty::Checker(config));
-            }
-        } else {
-            std::shared_ptr<const simple::Config> config(new simple::Config(make_config(pathname)));
-            res.reset(new simple::Checker(config));
-        }
+            return res;
+
+        std::shared_ptr<const simple::Config> config(new simple::Config(make_config(pathname)));
+        res.reset(new simple::Checker(config));
         res->set_parent(parent);
         return res;
     }

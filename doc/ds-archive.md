@@ -35,5 +35,11 @@ applies to them.
 ## Offline archives
 
 Offline archives are archives whose data has been moved to external media. The
-only thing that is left is a .summary file that describes the data that would
+only thing that is left is a `.summary` file that describes the data that would
 be there.
+
+It is possible to bring an offline archive online by copying/linking/mounting
+it next to its `.summmary` file. If both the `.summary` file and the archive
+directory are present, arkimet will ignore the `.summary` file when reading,
+and will ignore the archive directory when checking. This has the effect of
+making an archive read-only when the `$archivename.summary` file is present.
