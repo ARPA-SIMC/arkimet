@@ -565,12 +565,12 @@ bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
     if (!dir_copyok.empty())
         copyok.reset(new arki::File(str::joinpath(dir_copyok, str::basename(name)), O_WRONLY | O_APPEND | O_CREAT));
     else
-        copyok.release();
+        copyok.reset();
 
     if (!dir_copyko.empty())
         copyko.reset(new arki::File(str::joinpath(dir_copyko, str::basename(name)), O_WRONLY | O_APPEND | O_CREAT));
     else
-        copyko.release();
+        copyko.reset();
 
     try {
         ds.query_data(Matcher(), [&](unique_ptr<Metadata> md) { return this->dispatch(move(md)); });

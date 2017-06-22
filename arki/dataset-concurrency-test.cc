@@ -246,7 +246,7 @@ this->add_method("import_during_read", [](Fixture& f) {
         {
             // Make sure we only get one query result, that is, we don't read
             // the thing we import during the query
-            wassert(actual(count) == 0);
+            wassert(actual(count) == 0u);
 
             auto writer = f.dataset_config()->create_writer();
             wassert(actual(writer->acquire(f.td.test_data[1].md)) == dataset::Writer::ACQ_OK);

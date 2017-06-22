@@ -5,6 +5,7 @@
 #include "arki/dataset/segmented.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/time.h"
+#include "arki/reader.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
@@ -268,6 +269,16 @@ void MaintenanceTest::register_tests_dir()
         }
 
         wassert(f.state_is(3, SEGMENT_CORRUPTED));
+        wassert(f.query_results({1, 3, 0, 2}));
+    });
+
+    add_method("check_ignore_dir_timestamp", R"(
+       - the modification time of a directory segment can vary unpredictably,
+         so it is ignored. The modification time of the sequence file is used
+         instead.
+    )", [&](Fixture& f) {
+        touch("testds/" + f.test_relpath, time(NULL) + 86400);
+        wassert(f.all_clean(3));
         wassert(f.query_results({1, 3, 0, 2}));
     });
 }
@@ -795,6 +806,18 @@ void MaintenanceTest::register_tests()
         }
         wassert(f.all_clean(2));
         wassert(f.query_results({1, 3, 0, 2}));
+    });
+
+    add_method("leaks_repack", [&](Fixture& f) {
+        // Repack a segment and check that it doesn't cause a file to stay open
+        // in the reader registry
+        auto checker = f.makeSegmentedChecker();
+
+        auto& registry = reader::Registry::get();
+        registry.cleanup();
+        unsigned orig = registry.test_inspect_cache().size();
+        checker->repackSegment(f.test_relpath);
+        wassert(actual(registry.test_inspect_cache().size()) == orig);
     });
 }
 

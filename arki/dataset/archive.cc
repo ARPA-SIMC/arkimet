@@ -107,7 +107,9 @@ struct ArchivesRoot
                 // Add directory with a manifest inside
                 string pathname = str::joinpath(archive_root, i->d_name);
                 if (include_invalid || archive::is_archive(pathname))
+                {
                     names.insert(i->d_name);
+                }
             }
         }
 
@@ -235,20 +237,10 @@ struct ArchivesCheckerRoot: public ArchivesRoot<Checker>
         string pathname = str::joinpath(archive_root, name);
         unique_ptr<Checker> res;
         if (sys::exists(pathname + ".summary"))
-        {
-            if (index::Manifest::exists(pathname))
-            {
-                std::shared_ptr<const simple::Config> config(new simple::Config(make_config(pathname)));
-                res.reset(new simple::Checker(config));
-            } else {
-                std::shared_ptr<dataset::Config> config(new dataset::Config(make_config(pathname)));
-                config->name = "pathname";
-                res.reset(new empty::Checker(config));
-            }
-        } else {
-            std::shared_ptr<const simple::Config> config(new simple::Config(make_config(pathname)));
-            res.reset(new simple::Checker(config));
-        }
+            return res;
+
+        std::shared_ptr<const simple::Config> config(new simple::Config(make_config(pathname)));
+        res.reset(new simple::Checker(config));
         res->set_parent(parent);
         return res;
     }
@@ -340,6 +332,11 @@ void ArchivesReader::query_summary(const Matcher& matcher, Summary& summary)
             a.query_summary(matcher, summary);
         return true;
     });
+}
+
+unsigned ArchivesReader::test_count_archives() const
+{
+    return archives->archives.size();
 }
 
 
@@ -437,6 +434,11 @@ void ArchivesChecker::releaseSegment(const std::string& relpath, const std::stri
     else
         throw std::runtime_error(this->name() + ": cannot acquire " + relpath + ": archive " + name + " does not exist in " + archives->archive_root);
     archives->invalidate_summary_cache();
+}
+
+unsigned ArchivesChecker::test_count_archives() const
+{
+    return archives->archives.size();
 }
 
 }

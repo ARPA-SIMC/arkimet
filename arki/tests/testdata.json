@@ -14371,6 +14371,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_archive",
+  "method": "enumerate_no_manifest"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_simple_datafile",
   "method": "append"
  },
@@ -14560,6 +14565,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_simple_maintenance_grib_plain",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_grib_plain",
   "method": "check_new"
@@ -14765,6 +14775,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_simple_maintenance_grib_sqlite",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite",
   "method": "check_new"
@@ -14823,6 +14838,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -14955,6 +14975,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
   "method": "check_new"
@@ -15013,6 +15038,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -15143,6 +15173,11 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
   "method": "repack_archive"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
+  "method": "leaks_repack"
  },
  {
   "doc": "- find data files not known by the index [unaligned]",
@@ -15350,6 +15385,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_simple_maintenance_bufr_plain",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_bufr_plain",
   "method": "check_new"
@@ -15555,6 +15595,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_simple_maintenance_bufr_sqlite",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite",
   "method": "check_new"
@@ -15613,6 +15658,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -15745,6 +15795,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
   "method": "check_new"
@@ -15803,6 +15858,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -15933,6 +15993,11 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
   "method": "repack_archive"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
+  "method": "leaks_repack"
  },
  {
   "doc": "- find data files not known by the index [unaligned]",
@@ -16140,6 +16205,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_simple_maintenance_vm2_plain",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_vm2_plain",
   "method": "check_new"
@@ -16345,6 +16415,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_simple_maintenance_vm2_sqlite",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite",
   "method": "check_new"
@@ -16403,6 +16478,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -16535,6 +16615,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
   "method": "check_new"
@@ -16593,6 +16678,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -16725,6 +16815,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
   "method": "check_new"
@@ -16783,6 +16878,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_simple_maintenance_odimh5_plain",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -16915,6 +17015,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_odimh5_plain",
   "method": "check_new"
@@ -16973,6 +17078,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -17103,6 +17213,11 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
   "method": "repack_archive"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
+  "method": "leaks_repack"
  },
  {
   "doc": "- find data files not known by the index [unaligned]",
@@ -17350,6 +17465,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_iseg_maintenance_grib",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_iseg_maintenance_grib",
   "method": "check_new"
@@ -17373,6 +17493,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_iseg_maintenance_grib_dirs",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_iseg_maintenance_grib_dirs",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -17523,6 +17648,11 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_iseg_maintenance_grib_dirs",
   "method": "repack_archive"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_iseg_maintenance_grib_dirs",
+  "method": "leaks_repack"
  },
  {
   "doc": "- find data files not known by the index [unaligned]",
@@ -17720,6 +17850,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_iseg_maintenance_bufr",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_iseg_maintenance_bufr",
   "method": "check_new"
@@ -17743,6 +17878,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_iseg_maintenance_bufr_dirs",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_iseg_maintenance_bufr_dirs",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -17893,6 +18033,11 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_iseg_maintenance_bufr_dirs",
   "method": "repack_archive"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_iseg_maintenance_bufr_dirs",
+  "method": "leaks_repack"
  },
  {
   "doc": "- find data files not known by the index [unaligned]",
@@ -18090,6 +18235,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_iseg_maintenance_vm2",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_iseg_maintenance_vm2",
   "method": "check_new"
@@ -18113,6 +18263,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_iseg_maintenance_vm2_dirs",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_iseg_maintenance_vm2_dirs",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -18265,6 +18420,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_iseg_maintenance_vm2_dirs",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_iseg_maintenance_vm2_dirs",
   "method": "check_new"
@@ -18288,6 +18448,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_iseg_maintenance_odimh5",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_iseg_maintenance_odimh5",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -18438,6 +18603,11 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_iseg_maintenance_odimh5",
   "method": "repack_archive"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_iseg_maintenance_odimh5",
+  "method": "leaks_repack"
  },
  {
   "doc": "- find data files not known by the index [unaligned]",
@@ -18740,6 +18910,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_maintenance_grib",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
   "group": "arki_dataset_ondisk2_maintenance_grib",
   "method": "check_new"
@@ -18778,6 +18953,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -18938,6 +19118,11 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
   "method": "repack_archive"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
+  "method": "leaks_repack"
  },
  {
   "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
@@ -19155,6 +19340,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_maintenance_bufr",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
   "group": "arki_dataset_ondisk2_maintenance_bufr",
   "method": "check_new"
@@ -19193,6 +19383,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -19353,6 +19548,11 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
   "method": "repack_archive"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
+  "method": "leaks_repack"
  },
  {
   "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
@@ -19570,6 +19770,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_maintenance_vm2",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
   "group": "arki_dataset_ondisk2_maintenance_vm2",
   "method": "check_new"
@@ -19608,6 +19813,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -19770,6 +19980,11 @@
   "method": "repack_archive"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
+  "method": "leaks_repack"
+ },
+ {
   "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
   "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
   "method": "check_new"
@@ -19808,6 +20023,11 @@
   "doc": "- the size of each data file must match the data size exactly [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_odimh5",
   "method": "check_datasize"
+ },
+ {
+  "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
+  "group": "arki_dataset_ondisk2_maintenance_odimh5",
+  "method": "check_ignore_dir_timestamp"
  },
  {
   "doc": "",
@@ -19968,6 +20188,11 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_ondisk2_maintenance_odimh5",
   "method": "repack_archive"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_maintenance_odimh5",
+  "method": "leaks_repack"
  },
  {
   "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",

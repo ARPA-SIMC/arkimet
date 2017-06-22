@@ -176,6 +176,7 @@ OdimH5::OdimH5()
 OdimH5::~OdimH5()
 {
     if (h5file >= 0) H5Fclose(h5file);
+    delete L;
 }
 
 void OdimH5::open(const std::string& filename)

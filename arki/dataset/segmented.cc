@@ -343,6 +343,7 @@ void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_f
             (*repacker)(i.first, i.second.state);
         repacker->end();
     } catch (...) {
+        // FIXME: this only makes sense for ondisk2
         files::createDontpackFlagfile(root);
         throw;
     }

@@ -68,8 +68,8 @@ struct BaseDirs : public Dirs
 
         if (subdirs.empty())
         {
-            first.release();
-            last.release();
+            first.reset();
+            last.reset();
             return;
         }
 
@@ -211,8 +211,8 @@ struct SingleDirs : public Dirs
     {
         if (!sys::exists(str::joinpath(root, "all") + "." + format))
         {
-            first.release();
-            last.release();
+            first.reset();
+            last.reset();
             return;
         }
 
@@ -401,8 +401,8 @@ struct BaseStep : public Step
 
         if (!first)
         {
-            begin.release();
-            until.release();
+            begin.reset();
+            until.reset();
         } else {
             begin.reset(new Time(first->begin));
             until.reset(new Time(last->end));
