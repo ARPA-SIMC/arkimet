@@ -1,13 +1,14 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.3
-Release: 1
+Release: 2
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
 Source0: https://github.com/arpa-simc/%{name}/archive/v%{version}-%{release}.tar.gz#/%{name}-%{version}-%{release}.tar.gz
 Source1: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.service
 Source2: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.sysconfig
+Source3: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}-logrotate.conf
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 %if 0%{?rhel} == 7
 %define python3_vers python34
@@ -71,7 +72,7 @@ make check
 
 install -D -m0644 %{SOURCE1} %{buildroot}%{_unitdir}/%{name}.service
 install -bD -m0644 %{SOURCE2} %{buildroot}%{_sysconfdir}/sysconfig/%{name}
-
+install -D -m 0644 -p %{SOURCE3} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
 
 %clean
 [ "%{buildroot}" != / ] && rm -rf %{buildroot}
@@ -94,6 +95,7 @@ install -bD -m0644 %{SOURCE2} %{buildroot}%{_sysconfdir}/sysconfig/%{name}
 %{_libdir}/libarkimet.so.*
 %{_unitdir}/%{name}.service
 %config(noreplace) %{_sysconfdir}/sysconfig/arkimet
+%config(noreplace) %{_sysconfdir}/logrotate.d/arkimet
 %dir %{python3_sitelib}/arkimet
 %{python3_sitelib}/arkimet/*
 %dir %{python3_sitearch}
@@ -131,6 +133,9 @@ else
 fi
 
 %changelog
+* Mon Jun 26 2017 Daniele Branchini <dbranchini@arpae.it> - 1.3-2%{dist}
+- Added logrotate conf (#98)
+
 * Thu Jun 22 2017 Daniele Branchini <dbranchini@arpae.it> - 1.3-1%{dist}
 - Fixed issues in arki-check (#90, #91)
 - Use exception.code in response (if possible)
