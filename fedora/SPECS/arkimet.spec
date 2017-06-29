@@ -115,20 +115,22 @@ install -D -m 0644 -p %{SOURCE3} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
 %{_includedir}/arki/*
 
 %pre
+if [ "$1" = "1"]; then
+    # it's an initial installation, not an upgrade
+    getent passwd USERNAME >/dev/null || \
+        %{warn:"Warning: arkimet user not present in this system, running an arki-server will need additional configuration"}
+fi
 
 %post
 /sbin/ldconfig
-
 
 %preun
 
 %postun
 /sbin/ldconfig
 /usr/bin/systemctl daemon-reload
-if [ "$1" = "0" ]; then
-    # non e' un upgrade, e' una disinstallazione definitiva
-    :
-else
+if [ "$1" = "1" ]; then
+    # it's an upgrade, not a uninstall
     /usr/bin/systemctl try-restart %{name}
 fi
 
