@@ -420,7 +420,7 @@ void ArchivesChecker::indexSegment(const std::string& relname, metadata::Collect
 
 void ArchivesChecker::releaseSegment(const std::string& relpath, const std::string& destpath)
 {
-    string path = relpath;
+    string path = utils::str::normpath(relpath);
     string name = poppath(path);
     if (name != "last") throw std::runtime_error(this->name() + ": cannot release segment " + relpath + ": segment is not in last/ archive");
 
