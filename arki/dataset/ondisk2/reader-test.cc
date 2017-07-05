@@ -40,7 +40,7 @@ add_method("summaries", []() {
     ConfigFile cfg = scen.clone("testds");
     // Empty the summary cache
     //sys::rmtree("testds/.summaries");
-    system("rm testds/.summaries/*");
+    system("rm -f testds/.summaries/*");
 
     auto config = dataset::Config::create(cfg);
     auto reader = config->create_reader();
