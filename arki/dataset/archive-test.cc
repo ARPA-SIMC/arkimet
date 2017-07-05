@@ -2,7 +2,6 @@
 #include "archive.h"
 #include "reporter.h"
 #include "simple/writer.h"
-#include "test-scenario.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
