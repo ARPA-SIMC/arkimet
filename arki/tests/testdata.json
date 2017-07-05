@@ -20556,16 +20556,6 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_test_scenario",
-  "method": "archived"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_test_scenario",
-  "method": "manyarchivestates"
- },
- {
-  "doc": "",
   "group": "arki_dataset_instantiate_simple",
   "method": "instantiate"
  },
