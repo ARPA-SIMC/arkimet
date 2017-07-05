@@ -225,13 +225,4 @@ def_test(4)
 #endif
 }
 
-// Test reading NetCDF files
-// TODO: waiting for NetCDF support
-// def_test(5)
-// {
-//     metadata::Collection mdc;
-//     wassert(actual(scan::scan("inbound/example_1.nc", mdc.inserter_func())).istrue());
-//     wassert(actual(mdc.size()) == 1u);
-// }
-
 }

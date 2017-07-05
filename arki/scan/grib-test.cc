@@ -19,21 +19,25 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <config.h>
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
 
-struct arki_scan_grib_shar {
-};
-TESTGRP(arki_scan_grib);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_scan_grib");
+
+void Tests::register_tests() {
 
 // Scan a well-known grib file, with no padding between messages
-def_test(1)
-{
+add_method("compact", [] {
     Metadata md;
     scan::Grib scanner;
     vector<uint8_t> buf;
@@ -115,14 +119,13 @@ def_test(1)
     wassert(actual(md).contains("reftime", "2007-10-09T00:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(0)"));
 
-	// No more gribs
-	ensure(not scanner.next(md));
-}
+    // No more gribs
+    ensure(not scanner.next(md));
+});
 
 
 // Scan a well-known grib file, with extra padding data between messages
-def_test(2)
-{
+add_method("padded", [] {
     Metadata md;
     scan::Grib scanner;
     vector<uint8_t> buf;
@@ -195,13 +198,11 @@ def_test(2)
     wassert(actual(md).contains("reftime", "2007-10-09T00:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(0)"));
 
-	// No more gribs
-	ensure(not scanner.next(md));
-}
+    // No more gribs
+    ensure(not scanner.next(md));
+});
 
-// Scan a well-known grib file, with no padding between GRIBs
-def_test(3)
-{
+add_method("lua_results", [] {
     Metadata md;
     scan::Grib scanner("", R"(
 arki.year = 2008
@@ -234,11 +235,10 @@ arki.bbox = { { 45.00, 11.00 }, { 46.00, 11.00 }, { 46.00, 12.00 }, { 47.00, 13.
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
-}
+});
 
 // Test validation
-def_test(4)
-{
+add_method("validation", [] {
     Metadata md;
     vector<uint8_t> buf;
 
@@ -268,11 +268,10 @@ def_test(4)
     wassert(v.validate_buf(buf.data(), buf.size()));
     ensure_throws(v.validate_buf((const char*)buf.data()+1, buf.size()-1));
     ensure_throws(v.validate_buf(buf.data(), buf.size()-1));
-}
+});
 
 // Test scanning layers instead of levels
-def_test(5)
-{
+add_method("layers", [] {
     Metadata md;
     scan::Grib scanner;
     vector<uint8_t> buf;
@@ -301,13 +300,12 @@ def_test(5)
     wassert(actual(md).contains("reftime", "2009-09-02T00:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(0)"));
 
-	// No more gribs
-	ensure(not scanner.next(md));
-}
+    // No more gribs
+    ensure(not scanner.next(md));
+});
 
 // Scan a know item for which grib_api changed behaviour
-def_test(6)
-{
+add_method("proselvo", [] {
     Metadata md;
     scan::Grib scanner;
     vector<uint8_t> buf;
@@ -336,13 +334,12 @@ def_test(6)
     wassert(actual(md).contains("reftime", "2010-08-11T12:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(12:00)"));
 
-	// No more gribs
-	ensure(not scanner.next(md));
-}
+    // No more gribs
+    ensure(not scanner.next(md));
+});
 
 // Scan a know item for which grib_api changed behaviour
-def_test(7)
-{
+add_method("cleps", [] {
     Metadata md;
     scan::Grib scanner;
     vector<uint8_t> buf;
@@ -372,11 +369,11 @@ def_test(7)
 
     // No more gribs
     wassert(actual(scanner.next(md)).isfalse());
-}
+});
 
+#ifdef ARPAE_TESTS
 // Scan a GRIB2 with experimental UTM areas
-def_test(8)
-{
+add_method("utm_areas", [] {
     Metadata md;
     scan::Grib scanner;
     scanner.open("inbound/calmety_20110215.grib2");
@@ -393,11 +390,12 @@ def_test(8)
 
     // No more gribs
     ensure(not scanner.next(md));
-}
+});
+#endif
 
+#ifdef ARPAE_TESTS
 // Check scanning of some Timedef cases
-def_test(9)
-{
+add_method("ninfa", [] {
     {
         Metadata md;
         scan::Grib scanner;
@@ -414,11 +412,12 @@ def_test(9)
 
         wassert(actual(md).contains("timerange", "Timedef(3h,254,0s)"));
     }
-}
+});
+#endif
 
+#ifdef ARPAE_TESTS
 // Check scanning COSMO nudging timeranges
-def_test(10)
-{
+add_method("cosmo_nudging", [] {
     ARKI_UTILS_TEST_INFO(info);
 
     {
@@ -541,30 +540,19 @@ def_test(10)
     md.read("inbound/cosmo/fcproc_3.grib2");
     wassert(actual(md.md).contains("timerange", "Timedef(48h,1,24h)"));
     wassert(actual(md.md).contains("proddef", "GRIB(tod=1)"));
-}
-
-// Check scanning a GRIB2 with a bug in level scanning code
-def_test(11)
-{
-    // FIXME: It is unsure what is the correct expected behaviour here, across
-    // different versions of grib_api
-#if 0
-    metadata::Collection mdc;
-    scan::scan("inbound/wronglevel.grib2", mdc.inserter_func());
-    ensure_equals(mdc.size(), 1u);
-    ensure_equals(mdc[0].get<Level>(), Level::decodeString("GRIB2S(101,-,-)"));
+});
 #endif
-}
 
 // Check opening very long GRIB files for scanning
-def_test(12)
-{
-	scan::Grib scanner;
-	int fd = open("bigfile.grib1", O_WRONLY | O_CREAT, 0644);
-	ensure(fd != -1);
-	ensure(ftruncate(fd, 0xFFFFFFFF) != -1);
-	close(fd);
-	scanner.open("bigfile.grib1");
+add_method("bigfile", [] {
+    scan::Grib scanner;
+    int fd = open("bigfile.grib1", O_WRONLY | O_CREAT, 0644);
+    ensure(fd != -1);
+    ensure(ftruncate(fd, 0xFFFFFFFF) != -1);
+    close(fd);
+    scanner.open("bigfile.grib1");
+});
+
 }
 
 }

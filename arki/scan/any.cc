@@ -23,9 +23,6 @@
 #ifdef HAVE_VM2
 #include <arki/scan/vm2.h>
 #endif
-#ifdef HAVE_NETCDF
-#include <arki/scan/nc.h>
-#endif
 
 using namespace std;
 using namespace arki::utils;
@@ -94,19 +91,6 @@ static bool scan_file(
 #ifdef HAVE_VM2
     if (format == "vm2") {
         scan::Vm2 scanner;
-        scanner.open(pathname, basedir, relname);
-        while (true)
-        {
-            unique_ptr<Metadata> md(new Metadata);
-            if (!scanner.next(*md)) break;
-            if (!dest(move(md))) break;
-        }
-        return true;
-    }
-#endif
-#ifdef HAVE_NETCDF
-    if (format == "nc") {
-        scan::NetCDF scanner;
         scanner.open(pathname, basedir, relname);
         while (true)
         {
@@ -308,10 +292,6 @@ const Validator& Validator::by_filename(const std::string& filename)
 #ifdef HAVE_VM2
    if (ext == "vm2")
        return vm2::validator();
-#endif
-#ifdef HAVE_NETCDF
-   if (ext == "nc")
-       return netcdf::validator();
 #endif
     throw runtime_error("cannot find a validator for " + filename + ": no validator available");
 }

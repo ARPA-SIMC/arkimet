@@ -70,7 +70,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/iseg/reader.h \
 		dataset/iseg/writer.h \
 		dataset/step.h \
-		dataset/test-scenario.h \
 		dataset/tests.h \
 		dataset/maintenance-test.h \
 		datasets.h \
@@ -439,7 +438,7 @@ tests_arki_test_SOURCES += \
 if GRIBAPI
 nobase_dist_arkiinclude_HEADERS += scan/grib.h
 libarkimet_la_SOURCES += scan/grib.cc
-tests_arki_test_SOURCES += scan/grib-tut.cc
+tests_arki_test_SOURCES += scan/grib-test.cc
 AM_CPPFLAGS += $(GRIBAPI_CFLAGS) $(LUA_CFLAGS)
 libarkimet_la_LDFLAGS += $(GRIBAPI_LIBS) $(LUA_LIBS)
 endif
@@ -463,14 +462,6 @@ libarkimet_la_SOURCES += scan/odimh5.cc
 libarkimet_la_LDFLAGS += $(HDF5_LIBS)
 tests_arki_test_SOURCES += utils/h5-tut.cc scan/odimh5-tut.cc
 tests_arki_test_LDADD += $(HDF5_LIBS)
-endif
-
-if NETCDF
-AM_CPPFLAGS += $(NETCDF_CFLAGS)
-nobase_dist_arkiinclude_HEADERS += scan/nc.h
-libarkimet_la_SOURCES += scan/nc.cc
-libarkimet_la_LDFLAGS += $(NETCDF_LIBS)
-tests_arki_test_SOURCES += scan/nc-tut.cc
 endif
 
 if VM2
@@ -527,7 +518,6 @@ libarkimet_la_SOURCES += \
 		dataset/testlarge.cc \
 		dataset/merged.cc \
 		dataset/gridquery.cc \
-		dataset/test-scenario.cc \
 		datasets.cc \
 		metadatagrid.cc \
 		dispatcher.cc \
@@ -581,7 +571,6 @@ tests_arki_test_SOURCES += \
 		dataset/testlarge-test.cc \
 		dataset/merged-tut.cc \
 		dataset/gridquery-tut.cc \
-		dataset/test-scenario-test.cc \
 		dataset-test.cc \
 		dataset-reader-test.cc \
 		dataset-writer-test.cc \

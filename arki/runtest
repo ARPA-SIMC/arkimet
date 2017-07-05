@@ -115,9 +115,10 @@ then
     fi
 else
     echo "Running $CMD $ARGS"
-    RES=0
-    if ! $CMD $ARGS
+    if $CMD $ARGS
     then
+        RES=0
+    else
         RES=$?
         echo "Failed with result $RES"
     fi

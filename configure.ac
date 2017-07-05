@@ -56,6 +56,11 @@ AC_ARG_ENABLE([python],
     [],
     [enable_python="yes"])
 
+AC_ARG_ENABLE([arpae-tests],
+    [AS_HELP_STRING(
+        [--enable-arpae-tests],
+        [Enable Arpae tests])])
+
 if test x$enable_gcov = xyes
 then
 	AM_DISABLE_SHARED
@@ -239,16 +244,6 @@ fi
 
 AM_CONDITIONAL([HDF5], [test x"$have_hdf5" = x"yes"])
 
-dnl NetCDF3 (which does not use pkg-config, or not reliably)
-AC_CHECK_NETCDF([have_netcdf=yes],[have_netcdf=no])
-if test "x$have_netcdf" == "xyes"; then
-    AC_DEFINE([HAVE_NETCDF], 1, [NetCDF functions are available])
-    AC_DEFINE([MSAT_HAVE_NETCDF], 1, [NetCDF functions are available])
-    AC_SUBST(NETCDF_CFLAGS)
-    AC_SUBST(NETCDF_LIBS)
-fi
-AM_CONDITIONAL([NETCDF], [test x"$have_netcdf" = x"yes"])
-
 dnl Check for Curl
 LIBCURL_CHECK_CONFIG([], [], [have_curl=yes], [have_curl=no])
 AM_CONDITIONAL([CURL], [test x"$have_curl" = x"yes"])
@@ -335,6 +330,13 @@ fi
 AM_CONDITIONAL([DO_PYTHON], [test "$enable_python" != "no"])
 
 
+dnl Enable tests that require ARPAE-specific grib_api/eccodes definition patches
+if test "x$enable_arpae_tests" = xyes
+then
+    AC_DEFINE([ARPAE_TESTS], 1, [enable ARPAE-specific unit tests])
+fi
+
+
 dnl Enable compile-time options for I/O profiling, if requested
 if test $enable_iotrace = yes
 then
@@ -419,7 +421,6 @@ AS_HELP_STRING([BUFR via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB 1 via Meteosatlib:], [$have_libgrib])
 AS_HELP_STRING([GRIB 1+2 via grib_api:], [$have_gribapi])
 AS_HELP_STRING([ODIMH5 via hdf5:], [$have_hdf5])
-AS_HELP_STRING([NETCDF support:], [$have_netcdf])
 AS_HELP_STRING([VM2 support:], [$have_vm2])
 AS_HELP_STRING([CURL support:], [$have_curl])
 AS_HELP_STRING([Lua support:], [$have_lua])
@@ -429,6 +430,7 @@ AS_HELP_STRING([LZO compression:], [$LZO_VERSION])
 AS_HELP_STRING([Zlib compression:], [$have_zlib])
 AS_HELP_STRING([SQLite version:], [$SQLITE3_VERSION])
 AS_HELP_STRING([Python:], [$enable_python])
+AS_HELP_STRING([ARPAE specific tests:], [$enable_arpae_tests])
 AS_HELP_STRING([I/O profiling:], [$enable_iotrace])
 AS_HELP_STRING([Code coverage:], [$enable_gcov])
 dnl AS_HELP_STRING([BUFR support via DB-All.e:], [$have_dballe])

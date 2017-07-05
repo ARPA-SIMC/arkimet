@@ -45,9 +45,25 @@ class TestDatasetReader(unittest.TestCase):
             queried = fd.read()
         self.assertEquals(len(queried), 612)
 
-        self.fail("sort still untested")
+        def query_reftimes(matcher=None, sort=None):
+            res = []
+            def on_metadata(md):
+                info = md.to_python()["i"]
+                for i in info:
+                    if i["t"] != "reftime": continue
+                    res.append(i["ti"][1:3])
+                    break
+            ds.query_data(matcher=matcher, sort=sort, on_metadata=on_metadata)
+            return res
 
-        self.fail("no way yet to test with_data")
+        res = query_reftimes()
+        self.assertEquals(res, [[7, 8], [7, 7], [10, 9]])
+        res = query_reftimes(sort="reftime")
+        self.assertEquals(res, [[7, 7], [7, 8], [10, 9]])
+        res = query_reftimes(sort="-reftime")
+        self.assertEquals(res, [[10, 9], [7, 8], [7, 7]])
+
+        # self.fail("no way yet to test with_data")
 
     def test_query_summary(self):
         ds = arki.DatasetReader({
