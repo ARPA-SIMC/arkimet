@@ -70,7 +70,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/iseg/reader.h \
 		dataset/iseg/writer.h \
 		dataset/step.h \
-		dataset/test-scenario.h \
 		dataset/tests.h \
 		dataset/maintenance-test.h \
 		datasets.h \
@@ -519,7 +518,6 @@ libarkimet_la_SOURCES += \
 		dataset/testlarge.cc \
 		dataset/merged.cc \
 		dataset/gridquery.cc \
-		dataset/test-scenario.cc \
 		datasets.cc \
 		metadatagrid.cc \
 		dispatcher.cc \
@@ -573,7 +571,6 @@ tests_arki_test_SOURCES += \
 		dataset/testlarge-test.cc \
 		dataset/merged-tut.cc \
 		dataset/gridquery-tut.cc \
-		dataset/test-scenario-test.cc \
 		dataset-test.cc \
 		dataset-reader-test.cc \
 		dataset-writer-test.cc \

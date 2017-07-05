@@ -1,7 +1,6 @@
 #include "config.h"
 #include <arki/dataset/tests.h>
 #include <arki/dataset/ondisk2.h>
-#include <arki/dataset/test-scenario.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
@@ -22,9 +21,23 @@ using namespace arki::tests;
 
 namespace {
 
-class Tests : public TestCase
+struct Fixture : public DatasetTest {
+    using DatasetTest::DatasetTest;
+
+    void test_setup()
+    {
+        DatasetTest::test_setup(R"(
+            type = ondisk2
+            step = daily
+        )");
+
+        clean_and_import();
+    }
+};
+
+class Tests : public FixtureTestCase<Fixture>
 {
-    using TestCase::TestCase;
+    using FixtureTestCase::FixtureTestCase;
 
     void register_tests() override;
 } test("arki_dataset_ondisk2_reader");
@@ -35,15 +48,12 @@ void Tests::register_tests() {
 
 // Test that summary files are not created for all the extent of the query, but
 // only for data present in the dataset
-add_method("summaries", []() {
-    const auto& scen = dataset::test::Scenario::get("ondisk2-testgrib1");
-    ConfigFile cfg = scen.clone("testds");
+add_method("summaries", [](Fixture& f) {
     // Empty the summary cache
     //sys::rmtree("testds/.summaries");
     system("rm -f testds/.summaries/*");
 
-    auto config = dataset::Config::create(cfg);
-    auto reader = config->create_reader();
+    auto reader = f.makeSegmentedReader();
 
     Summary s;
     reader->query_summary(Matcher::parse("reftime:=2007"), s);
