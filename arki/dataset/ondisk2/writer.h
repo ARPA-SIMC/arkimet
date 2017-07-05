@@ -54,15 +54,6 @@ public:
 };
 
 
-class ShardingWriter : public sharded::Writer<ondisk2::Config>
-{
-    using sharded::Writer<ondisk2::Config>::Writer;
-
-    const ondisk2::Config& config() const override { return *m_config; }
-    std::string type() const override;
-};
-
-
 class Checker : public IndexedChecker
 {
 protected:
@@ -93,14 +84,6 @@ public:
 
     friend class writer::RealRepacker;
     friend class writer::RealFixer;
-};
-
-class ShardingChecker : public sharded::Checker<ondisk2::Config>
-{
-    using sharded::Checker<ondisk2::Config>::Checker;
-
-    const ondisk2::Config& config() const override { return *m_config; }
-    std::string type() const override;
 };
 
 }

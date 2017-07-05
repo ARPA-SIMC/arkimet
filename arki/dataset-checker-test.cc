@@ -68,15 +68,11 @@ class TestsChecker : public FixtureTestCase<FixtureChecker<Data>>
 };
 
 TestsChecker<testdata::GRIBData> test_checker_grib_ondisk2("arki_dataset_checker_grib_ondisk2", "type=ondisk2\n");
-TestsChecker<testdata::GRIBData> test_checker_grib_ondisk2_sharded("arki_dataset_checker_grib_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
 TestsChecker<testdata::GRIBData> test_checker_grib_simple_plain("arki_dataset_checker_grib_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<testdata::GRIBData> test_checker_grib_simple_plain_sharded("arki_dataset_checker_grib_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsChecker<testdata::GRIBData> test_checker_grib_simple_sqlite("arki_dataset_checker_grib_simple_sqlite", "type=simple\nindex_type=sqlite\n");
 TestsChecker<testdata::GRIBData> test_checker_grib_iseg("arki_dataset_checker_grib_iseg", "type=iseg\nformat=grib\n");
 TestsChecker<testdata::BUFRData> test_checker_bufr_ondisk2("arki_dataset_checker_bufr_ondisk2", "type=ondisk2\n");
-TestsChecker<testdata::BUFRData> test_checker_bufr_ondisk2_sharded("arki_dataset_checker_bufr_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
 TestsChecker<testdata::BUFRData> test_checker_bufr_simple_plain("arki_dataset_checker_bufr_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<testdata::BUFRData> test_checker_bufr_simple_plain_sharded("arki_dataset_checker_bufr_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 TestsChecker<testdata::BUFRData> test_checker_bufr_simple_sqlite("arki_dataset_checker_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsChecker<testdata::BUFRData> test_checker_bufr_iseg("arki_dataset_checker_bufr_iseg", "type=iseg\nformat=bufr\n");
 
@@ -105,10 +101,7 @@ this->add_method("check_issue51", [](Fixture& f) {
     for (const auto& md: mds)
     {
         const auto& blob = md->sourceBlob();
-        if (f.cfg.value("shard").empty())
-            destfiles.insert(blob.filename);
-        else
-            destfiles.insert(str::joinpath(str::basename(blob.basedir), blob.filename));
+        destfiles.insert(blob.filename);
         File f(blob.absolutePathname(), O_RDWR);
         f.lseek(blob.offset + blob.size - 1);
         f.write_all_or_throw("\x0d", 1);

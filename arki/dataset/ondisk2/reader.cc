@@ -28,8 +28,6 @@ Reader::~Reader()
 
 std::string Reader::type() const { return "ondisk2"; }
 
-std::string ShardingReader::type() const { return "ondisk2"; }
-
 }
 }
 }

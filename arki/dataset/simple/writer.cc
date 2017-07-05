@@ -124,9 +124,6 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
 }
 
 
-std::string ShardingWriter::type() const { return "simple"; }
-
-
 Checker::Checker(std::shared_ptr<const simple::Config> config)
     : m_config(config), m_mft(0)
 {
@@ -404,8 +401,6 @@ void Checker::test_change_metadata(const std::string& relpath, Metadata& md, uns
     mds[data_idx] = md;
     mds.writeAtomically(md_pathname);
 }
-
-std::string ShardingChecker::type() const { return "simple"; }
 
 }
 }

@@ -51,9 +51,6 @@ std::unique_ptr<Checker> Config::create_checker() const { throw std::runtime_err
 
 std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
 {
-// TODO    if (!cfg.value("shard").empty())
-// TODO        return new dataset::sharded::Reader(cfg);
-// TODO
     string type = str::lower(cfg.value("type"));
 
     if (type == "iseg")

@@ -61,7 +61,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/ondisk2/writer.h \
 		dataset/outbound.h \
 		dataset/offline.h \
-		dataset/sharded.h \
 		dataset/simple.h \
 		dataset/simple/datafile.h \
 		dataset/simple/reader.h \
@@ -522,7 +521,6 @@ libarkimet_la_SOURCES += \
 		dataset/ondisk2.cc \
 		dataset/ondisk2/reader.cc \
 		dataset/ondisk2/writer.cc \
-		dataset/sharded.cc \
 		dataset/outbound.cc \
 		dataset/offline.cc \
 		dataset/empty.cc \
@@ -577,7 +575,6 @@ tests_arki_test_SOURCES += \
 		dataset/ondisk2/writer-test.cc \
 		dataset/ondisk2/test-utils.cc \
 		dataset/ondisk2/maintenance-test.cc \
-		dataset/sharded-test.cc \
 		dataset/outbound-tut.cc \
 		dataset/offline-test.cc \
 		dataset/empty-test.cc \

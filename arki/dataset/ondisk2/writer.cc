@@ -259,8 +259,6 @@ Pending Writer::test_writelock()
 }
 
 
-std::string ShardingWriter::type() const { return "ondisk2"; }
-
 
 Checker::Checker(std::shared_ptr<const ondisk2::Config> config)
     : m_config(config), idx(new index::WContents(config))
@@ -688,8 +686,6 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
         return ACQ_ERROR_DUPLICATE;
     return ACQ_OK;
 }
-
-std::string ShardingChecker::type() const { return "ondisk2"; }
 
 }
 }

@@ -32,14 +32,6 @@ public:
     static bool is_dataset(const std::string& dir);
 };
 
-class ShardingReader : public sharded::Reader<simple::Config>
-{
-    using sharded::Reader<simple::Config>::Reader;
-
-    const simple::Config& config() const override { return *m_config; }
-    std::string type() const override;
-};
-
 }
 }
 }

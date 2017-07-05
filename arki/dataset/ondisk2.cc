@@ -12,7 +12,7 @@ namespace dataset {
 namespace ondisk2 {
 
 Config::Config(const ConfigFile& cfg)
-    : sharded::Config<dataset::IndexedConfig>(cfg),
+    : dataset::IndexedConfig(cfg),
       smallfiles(ConfigFile::boolValue(cfg.value("smallfiles"))),
       summary_cache_pathname(str::joinpath(path, ".summaries")),
       indexfile(cfg.value("indexfile")),
@@ -31,19 +31,6 @@ Config::Config(const ConfigFile& cfg)
         index = "origin, product, level, timerange, area, proddef, run";
 }
 
-std::pair<std::string, std::shared_ptr<const dataset::Config>> Config::create_shard(const core::Time& time) const
-{
-    std::string shard_path = shard_step->shard_path(time);
-    std::unique_ptr<Config> cfg(new Config(*this));
-    cfg->to_shard(shard_path, shard_step->substep(time));
-    cfg->summary_cache_pathname = str::joinpath(cfg->path, ".summaries");
-    if (cfg->indexfile != ":memory:")
-        cfg->index_pathname = str::joinpath(cfg->path, cfg->indexfile);
-    else
-        cfg->index_pathname = cfg->indexfile;
-    return make_pair(shard_path, std::shared_ptr<const dataset::Config>(cfg.release()));
-}
-
 std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
 {
     return std::shared_ptr<const Config>(new Config(cfg));
@@ -52,28 +39,19 @@ std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
 std::unique_ptr<dataset::Reader> Config::create_reader() const
 {
     auto cfg = dynamic_pointer_cast<const ondisk2::Config>(shared_from_this());
-    if (sharded)
-        return std::unique_ptr<dataset::Reader>(new ondisk2::ShardingReader(cfg));
-    else
-        return std::unique_ptr<dataset::Reader>(new ondisk2::Reader(cfg));
+    return std::unique_ptr<dataset::Reader>(new ondisk2::Reader(cfg));
 }
 
 std::unique_ptr<dataset::Writer> Config::create_writer() const
 {
     auto cfg = dynamic_pointer_cast<const ondisk2::Config>(shared_from_this());
-    if (sharded)
-        return std::unique_ptr<dataset::Writer>(new ondisk2::ShardingWriter(cfg));
-    else
-        return std::unique_ptr<dataset::Writer>(new ondisk2::Writer(cfg));
+    return std::unique_ptr<dataset::Writer>(new ondisk2::Writer(cfg));
 }
 
 std::unique_ptr<dataset::Checker> Config::create_checker() const
 {
     auto cfg = dynamic_pointer_cast<const ondisk2::Config>(shared_from_this());
-    if (sharded)
-        return std::unique_ptr<dataset::Checker>(new ondisk2::ShardingChecker(cfg));
-    else
-        return std::unique_ptr<dataset::Checker>(new ondisk2::Checker(cfg));
+    return std::unique_ptr<dataset::Checker>(new ondisk2::Checker(cfg));
 }
 
 }

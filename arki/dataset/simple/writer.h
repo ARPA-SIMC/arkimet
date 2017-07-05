@@ -46,14 +46,6 @@ public:
     static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
-class ShardingWriter : public sharded::Writer<simple::Config>
-{
-    using sharded::Writer<simple::Config>::Writer;
-
-    const simple::Config& config() const override { return *m_config; }
-    std::string type() const override;
-};
-
 class Checker : public IndexedChecker
 {
 protected:
@@ -86,14 +78,6 @@ public:
     void test_remove_index(const std::string& relpath) override;
     void test_rename(const std::string& relpath, const std::string& new_relpath) override;
     void test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx) override;
-};
-
-class ShardingChecker : public sharded::Checker<simple::Config>
-{
-    using sharded::Checker<simple::Config>::Checker;
-
-    const simple::Config& config() const override { return *m_config; }
-    std::string type() const override;
 };
 
 }

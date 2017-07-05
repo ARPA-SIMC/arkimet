@@ -123,27 +123,19 @@ class Tests : public FixtureTestCase<FixtureWriter<Data>>
 };
 
 Tests<testdata::GRIBData> test_concurrent_grib_ondisk2("arki_dataset_concurrent_grib_ondisk2", "type=ondisk2\n");
-Tests<testdata::GRIBData> test_concurrent_grib_ondisk2_sharded("arki_dataset_concurrent_grib_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
 Tests<testdata::GRIBData> test_concurrent_grib_simple_plain("arki_dataset_concurrent_grib_simple_plain", "type=simple\nindex_type=plain\n");
-Tests<testdata::GRIBData> test_concurrent_grib_simple_plain_sharded("arki_dataset_concurrent_grib_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 Tests<testdata::GRIBData> test_concurrent_grib_simple_sqlite("arki_dataset_concurrent_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
 Tests<testdata::GRIBData> test_concurrent_grib_iseg("arki_dataset_concurrent_grib_iseg", "type=iseg\nformat=grib\n");
 Tests<testdata::BUFRData> test_concurrent_bufr_ondisk2("arki_dataset_concurrent_bufr_ondisk2", "type=ondisk2\n");
-Tests<testdata::BUFRData> test_concurrent_bufr_ondisk2_sharded("arki_dataset_concurrent_bufr_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
 Tests<testdata::BUFRData> test_concurrent_bufr_simple_plain("arki_dataset_concurrent_bufr_simple_plain", "type=simple\nindex_type=plain\n");
-Tests<testdata::BUFRData> test_concurrent_bufr_simple_plain_sharded("arki_dataset_concurrent_bufr_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 Tests<testdata::BUFRData> test_concurrent_bufr_simple_sqlite("arki_dataset_concurrent_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
 Tests<testdata::BUFRData> test_concurrent_bufr_iseg("arki_dataset_concurrent_bufr_iseg", "type=iseg\nformat=bufr\n");
 Tests<testdata::VM2Data> test_concurrent_vm2_ondisk2("arki_dataset_concurrent_vm2_ondisk2", "type=ondisk2\n");
-Tests<testdata::VM2Data> test_concurrent_vm2_ondisk2_sharded("arki_dataset_concurrent_vm2_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
 Tests<testdata::VM2Data> test_concurrent_vm2_simple_plain("arki_dataset_concurrent_vm2_simple_plain", "type=simple\nindex_type=plain\n");
-Tests<testdata::VM2Data> test_concurrent_vm2_simple_plain_sharded("arki_dataset_concurrent_vm2_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 Tests<testdata::VM2Data> test_concurrent_vm2_simple_sqlite("arki_dataset_concurrent_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
 Tests<testdata::VM2Data> test_concurrent_vm2_iseg("arki_dataset_concurrent_vm2_iseg", "type=iseg\nformat=vm2\n");
 Tests<testdata::ODIMData> test_concurrent_odim_ondisk2("arki_dataset_concurrent_odim_ondisk2", "type=ondisk2\n");
-Tests<testdata::ODIMData> test_concurrent_odim_ondisk2_sharded("arki_dataset_concurrent_odim_ondisk2_sharded", "type=ondisk2\nshard=yearly\n");
 Tests<testdata::ODIMData> test_concurrent_odim_simple_plain("arki_dataset_concurrent_odim_simple_plain", "type=simple\nindex_type=plain\n");
-Tests<testdata::ODIMData> test_concurrent_odim_simple_plain_sharded("arki_dataset_concurrent_odim_simple_plain_sharded", "type=simple\nindex_type=plain\nshard=yearly\n");
 Tests<testdata::ODIMData> test_concurrent_odim_simple_sqlite("arki_dataset_concurrent_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
 Tests<testdata::ODIMData> test_concurrent_odim_iseg("arki_dataset_concurrent_odim_iseg", "type=iseg\nformat=odimh5\n");
 
