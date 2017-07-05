@@ -55,7 +55,7 @@ Requires: libdballe-devel, grib_api-devel, libwreport-devel, %{python3_vers}-dev
 sh autogen.sh
 
 %build
-%configure
+%configure --enable-arpae-tests
 make
 
 # unit tests arki_dataset_concurrent_* fail on f20 because of the fallback on
