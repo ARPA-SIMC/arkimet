@@ -23,7 +23,7 @@ Arkimet is a set of tools to archive, dispatch and distribute data files.
 ### Metadata
 
  * The extraction of metadata is flexible and customisable, and for generic
-   formats like GRIB or NetCDF it can be scripted using the simple and well
+   formats like GRIB or HDF5 it can be scripted using the simple and well
    known LUA scripting language
  * Metadata is stored in a compact binary representation to save space, but can
    be converted to standard formats when required
@@ -96,8 +96,6 @@ The file formats that can be scanned are:
  * WMO GRIB (edition 1 and edition 2), any template can be supported via
    grib_api and LUA scripts
  * WMO BUFR (edition 3 and edition 4), via DB-All.e
- * NetCDF (to be implemented soon), any data layout can be suppoted via LUA
-   scripts
  * More can easily be added via plugins
 
 The match expressions currently available are:

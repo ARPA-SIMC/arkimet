@@ -244,16 +244,6 @@ fi
 
 AM_CONDITIONAL([HDF5], [test x"$have_hdf5" = x"yes"])
 
-dnl NetCDF3 (which does not use pkg-config, or not reliably)
-AC_CHECK_NETCDF([have_netcdf=yes],[have_netcdf=no])
-if test "x$have_netcdf" == "xyes"; then
-    AC_DEFINE([HAVE_NETCDF], 1, [NetCDF functions are available])
-    AC_DEFINE([MSAT_HAVE_NETCDF], 1, [NetCDF functions are available])
-    AC_SUBST(NETCDF_CFLAGS)
-    AC_SUBST(NETCDF_LIBS)
-fi
-AM_CONDITIONAL([NETCDF], [test x"$have_netcdf" = x"yes"])
-
 dnl Check for Curl
 LIBCURL_CHECK_CONFIG([], [], [have_curl=yes], [have_curl=no])
 AM_CONDITIONAL([CURL], [test x"$have_curl" = x"yes"])
@@ -431,7 +421,6 @@ AS_HELP_STRING([BUFR via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB 1 via Meteosatlib:], [$have_libgrib])
 AS_HELP_STRING([GRIB 1+2 via grib_api:], [$have_gribapi])
 AS_HELP_STRING([ODIMH5 via hdf5:], [$have_hdf5])
-AS_HELP_STRING([NETCDF support:], [$have_netcdf])
 AS_HELP_STRING([VM2 support:], [$have_vm2])
 AS_HELP_STRING([CURL support:], [$have_curl])
 AS_HELP_STRING([Lua support:], [$have_lua])

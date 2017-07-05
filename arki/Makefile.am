@@ -465,14 +465,6 @@ tests_arki_test_SOURCES += utils/h5-tut.cc scan/odimh5-tut.cc
 tests_arki_test_LDADD += $(HDF5_LIBS)
 endif
 
-if NETCDF
-AM_CPPFLAGS += $(NETCDF_CFLAGS)
-nobase_dist_arkiinclude_HEADERS += scan/nc.h
-libarkimet_la_SOURCES += scan/nc.cc
-libarkimet_la_LDFLAGS += $(NETCDF_LIBS)
-tests_arki_test_SOURCES += scan/nc-tut.cc
-endif
-
 if VM2
 libarkimet_la_SOURCES += scan/vm2.cc
 tests_arki_test_SOURCES += scan/vm2-test.cc
