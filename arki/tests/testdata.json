@@ -9787,252 +9787,42 @@
  {
   "doc": "",
   "group": "arki_scan_grib",
-  "method": "50"
+  "method": "compact"
  },
  {
   "doc": "",
   "group": "arki_scan_grib",
-  "method": "49"
+  "method": "padded"
  },
  {
   "doc": "",
   "group": "arki_scan_grib",
-  "method": "48"
+  "method": "lua_results"
  },
  {
   "doc": "",
   "group": "arki_scan_grib",
-  "method": "47"
+  "method": "validation"
  },
  {
   "doc": "",
   "group": "arki_scan_grib",
-  "method": "46"
+  "method": "layers"
  },
  {
   "doc": "",
   "group": "arki_scan_grib",
-  "method": "45"
+  "method": "proselvo"
  },
  {
   "doc": "",
   "group": "arki_scan_grib",
-  "method": "44"
+  "method": "cleps"
  },
  {
   "doc": "",
   "group": "arki_scan_grib",
-  "method": "43"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "42"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "41"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "40"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "39"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "38"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "37"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "36"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "35"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "34"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "33"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "32"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "31"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "30"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "29"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "28"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "27"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "26"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "25"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "24"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "23"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "22"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "21"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "20"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "19"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "18"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "17"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "16"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "15"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "14"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "13"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "12"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "11"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "10"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "9"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "8"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "7"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "6"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "5"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "4"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "3"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "2"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "1"
+  "method": "bigfile"
  },
  {
   "doc": "",

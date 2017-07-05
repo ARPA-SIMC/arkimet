@@ -32,6 +32,7 @@ def test_venti():
         run(cmd("git", "clean", "-fx"))
         run(cmd("autoreconf", "-if"))
         run(cmd("./configure",
+                "--enable-arpae-tests",
                 "--build=x86_64-redhat-linux-gnu",
                 "--host=x86_64-redhat-linux-gnu",
                 "--program-prefix=",
@@ -72,6 +73,7 @@ def test_ventiquattro():
         run(cmd("git", "clean", "-fx"))
         run(cmd("autoreconf", "-if"))
         run(cmd("./configure",
+                "--enable-arpae-tests",
                 "--build=x86_64-redhat-linux-gnu",
                 "--host=x86_64-redhat-linux-gnu",
                 "--program-prefix=",

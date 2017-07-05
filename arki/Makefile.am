@@ -439,7 +439,7 @@ tests_arki_test_SOURCES += \
 if GRIBAPI
 nobase_dist_arkiinclude_HEADERS += scan/grib.h
 libarkimet_la_SOURCES += scan/grib.cc
-tests_arki_test_SOURCES += scan/grib-tut.cc
+tests_arki_test_SOURCES += scan/grib-test.cc
 AM_CPPFLAGS += $(GRIBAPI_CFLAGS) $(LUA_CFLAGS)
 libarkimet_la_LDFLAGS += $(GRIBAPI_LIBS) $(LUA_LIBS)
 endif

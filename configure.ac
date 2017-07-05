@@ -56,6 +56,11 @@ AC_ARG_ENABLE([python],
     [],
     [enable_python="yes"])
 
+AC_ARG_ENABLE([arpae-tests],
+    [AS_HELP_STRING(
+        [--enable-arpae-tests],
+        [Enable Arpae tests])])
+
 if test x$enable_gcov = xyes
 then
 	AM_DISABLE_SHARED
@@ -335,6 +340,13 @@ fi
 AM_CONDITIONAL([DO_PYTHON], [test "$enable_python" != "no"])
 
 
+dnl Enable tests that require ARPAE-specific grib_api/eccodes definition patches
+if test "x$enable_arpae_tests" = xyes
+then
+    AC_DEFINE([ARPAE_TESTS], 1, [enable ARPAE-specific unit tests])
+fi
+
+
 dnl Enable compile-time options for I/O profiling, if requested
 if test $enable_iotrace = yes
 then
@@ -429,6 +441,7 @@ AS_HELP_STRING([LZO compression:], [$LZO_VERSION])
 AS_HELP_STRING([Zlib compression:], [$have_zlib])
 AS_HELP_STRING([SQLite version:], [$SQLITE3_VERSION])
 AS_HELP_STRING([Python:], [$enable_python])
+AS_HELP_STRING([ARPAE specific tests:], [$enable_arpae_tests])
 AS_HELP_STRING([I/O profiling:], [$enable_iotrace])
 AS_HELP_STRING([Code coverage:], [$enable_gcov])
 dnl AS_HELP_STRING([BUFR support via DB-All.e:], [$have_dballe])
