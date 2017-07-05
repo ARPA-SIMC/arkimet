@@ -53,7 +53,7 @@ void Writer::storeBlob(Metadata& md, const std::string& reldest)
 
 Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
-    auto age_check = check_acquire_age(md);
+    auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
     const core::Time& time = md.get<types::reftime::Position>()->time;
@@ -87,6 +87,11 @@ void Writer::removeAll(std::ostream& log, bool writable)
 
 Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
+    std::shared_ptr<const outbound::Config> config(new outbound::Config(cfg));
+    Metadata tmp_md(md);
+    auto age_check = config->check_acquire_age(tmp_md);
+    if (age_check.first) return age_check.second;
+
     const core::Time& time = md.get<types::reftime::Position>()->time;
     auto tf = Step::create(cfg.value("step"));
     string dest = cfg.value("path") + "/" + (*tf)(time) + "." + md.source().format;

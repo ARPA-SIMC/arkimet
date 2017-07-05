@@ -24,8 +24,6 @@ class LocalConfig : public Config
 protected:
     mutable std::shared_ptr<ArchivesConfig> m_archives_config;
 
-    void to_shard(const std::string& shard_path);
-
 public:
     /// Root path of the dataset
     std::string path;
@@ -37,6 +35,15 @@ public:
     int delete_age = -1;
 
     LocalConfig(const ConfigFile& cfg);
+
+    /**
+     * Check if the data to be acquired is older than acquire or delete age.
+     *
+     * If it is, return true and the import result value.
+     *
+     * If it is not, returns false and AcquireResult should be ignored.
+     */
+    std::pair<bool, Writer::AcquireResult> check_acquire_age(Metadata& md) const;
 
     std::shared_ptr<ArchivesConfig> archives_config() const;
 };
@@ -100,15 +107,6 @@ protected:
     LocalLock* lock = nullptr;
     void acquire_lock();
     void release_lock();
-
-    /**
-     * Check if the data to be acquired is older than acquire or delete age.
-     *
-     * If it is, return true and the import result value.
-     *
-     * If it is not, returns false and AcquireResult should be ignored.
-     */
-    std::pair<bool, AcquireResult> check_acquire_age(Metadata& md) const;
 
 public:
     using Writer::Writer;

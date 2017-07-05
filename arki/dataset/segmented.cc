@@ -104,12 +104,6 @@ Config::~Config()
 {
 }
 
-void Config::to_shard(const std::string& shard_path, std::shared_ptr<Step> step)
-{
-    LocalConfig::to_shard(shard_path);
-    m_step = step;
-}
-
 bool Config::relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const
 {
     return step().path_timespan(path, start_time, end_time);

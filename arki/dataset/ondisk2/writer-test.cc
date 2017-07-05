@@ -512,6 +512,22 @@ add_method("issue57", [](Fixture& f) {
     wassert(actual(after_delete.size()) == 0u);
 });
 
+add_method("testacquire", [](Fixture& f) {
+    {
+        // Create the dataset
+        auto writer = f.makeOndisk2Writer();
+    }
+    metadata::Collection mdc("inbound/test.grib1");
+    stringstream ss;
+    wassert(actual(ondisk2::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_OK);
+
+    f.cfg.setValue("archive age", "1");
+    wassert(actual(ondisk2::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_ERROR);
+
+    f.cfg.setValue("delete age", "1");
+    wassert(actual(ondisk2::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_OK);
+});
+
 }
 
 }

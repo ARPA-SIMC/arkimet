@@ -194,7 +194,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     if (md.source().format != config().format)
         throw std::runtime_error("cannot acquire into dataset " + name() + ": data is in format " + md.source().format + " but the dataset only accepts " + config().format);
 
-    auto age_check = check_acquire_age(md);
+    auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
     acquire_lock();
@@ -260,6 +260,11 @@ void Writer::flush()
 
 Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
+    std::shared_ptr<const iseg::Config> config(new iseg::Config(cfg));
+    Metadata tmp_md(md);
+    auto age_check = config->check_acquire_age(tmp_md);
+    if (age_check.first) return age_check.second;
+
     // Acquire on iseg datasets always succeeds except in case of envrionment
     // issues like I/O errors and full disks
     return ACQ_OK;

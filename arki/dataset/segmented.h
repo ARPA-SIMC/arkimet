@@ -19,8 +19,6 @@ protected:
 
     Config(const Config& cfg) = default;
 
-    void to_shard(const std::string& shard_path, std::shared_ptr<Step> step);
-
 public:
     /// Name of the dataset::Step used to dispatch data into segments
     std::string step_name;

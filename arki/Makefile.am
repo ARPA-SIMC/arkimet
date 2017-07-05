@@ -565,7 +565,7 @@ tests_arki_test_SOURCES += \
 		dataset/ondisk2/writer-test.cc \
 		dataset/ondisk2/test-utils.cc \
 		dataset/ondisk2/maintenance-test.cc \
-		dataset/outbound-tut.cc \
+		dataset/outbound-test.cc \
 		dataset/offline-test.cc \
 		dataset/empty-test.cc \
 		dataset/testlarge-test.cc \

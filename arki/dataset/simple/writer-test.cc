@@ -322,6 +322,18 @@ add_method("scan_compressed", [](Fixture& f) {
     ensure(sys::exists("testds/" + f.idxfname()));
 });
 
+add_method("testacquire", [](Fixture& f) {
+    metadata::Collection mdc("inbound/test.grib1");
+    stringstream ss;
+    wassert(actual(simple::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_OK);
+
+    f.cfg.setValue("archive age", "1");
+    wassert(actual(simple::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_ERROR);
+
+    f.cfg.setValue("delete age", "1");
+    wassert(actual(simple::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_OK);
+});
+
 }
 
 }

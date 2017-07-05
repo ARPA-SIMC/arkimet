@@ -171,5 +171,8 @@ this->add_method("import_before_delete_age", [](Fixture& f) {
     wassert(actual(mdc.size()) == 0u);
 });
 
+this->add_method("test_acquire", [](Fixture& f) {
+});
+
 }
 }

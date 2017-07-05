@@ -13970,6 +13970,11 @@
   "method": "scan_compressed"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_simple_writer",
+  "method": "testacquire"
+ },
+ {
   "doc": "- the segment must be a file",
   "group": "arki_dataset_simple_maintenance_grib_plain",
   "method": "check_isfile"
@@ -16845,6 +16850,11 @@
   "method": "acquire"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_iseg_writer",
+  "method": "testacquire"
+ },
+ {
   "doc": "- the segment must be a file",
   "group": "arki_dataset_iseg_maintenance_grib",
   "method": "check_isfile"
@@ -18285,6 +18295,11 @@
   "method": "issue57"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_writer",
+  "method": "testacquire"
+ },
+ {
   "doc": "- the segment must be a file",
   "group": "arki_dataset_ondisk2_maintenance_grib",
   "method": "check_isfile"
@@ -19787,252 +19802,12 @@
  {
   "doc": "",
   "group": "arki_dataset_outbound",
-  "method": "50"
+  "method": "import"
  },
  {
   "doc": "",
   "group": "arki_dataset_outbound",
-  "method": "49"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "48"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "47"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "46"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "45"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "44"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "43"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "42"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "41"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "40"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "39"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "38"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "37"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "36"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "35"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "34"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "33"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "32"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "31"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "30"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "29"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "28"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "27"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "26"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "25"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "24"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "23"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "22"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "21"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "20"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "19"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "18"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "17"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "16"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "15"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "14"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "13"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "12"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "11"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "10"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "9"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "8"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "7"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "6"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "5"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "4"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "3"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "2"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_outbound",
-  "method": "1"
+  "method": "testacquire"
  },
  {
   "doc": "",
@@ -21426,6 +21201,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_writer_grib_ondisk2",
+  "method": "test_acquire"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_writer_grib_simple_plain",
   "method": "import"
  },
@@ -21438,6 +21218,11 @@
   "doc": "",
   "group": "arki_dataset_writer_grib_simple_plain",
   "method": "import_before_delete_age"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_plain",
+  "method": "test_acquire"
  },
  {
   "doc": "",
@@ -21456,6 +21241,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_writer_grib_simple_sqlite",
+  "method": "test_acquire"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_writer_grib_iseg",
   "method": "import"
  },
@@ -21468,6 +21258,11 @@
   "doc": "",
   "group": "arki_dataset_writer_grib_iseg",
   "method": "import_before_delete_age"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_iseg",
+  "method": "test_acquire"
  },
  {
   "doc": "",
@@ -21486,6 +21281,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_writer_bufr_ondisk2",
+  "method": "test_acquire"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_writer_bufr_simple_plain",
   "method": "import"
  },
@@ -21498,6 +21298,11 @@
   "doc": "",
   "group": "arki_dataset_writer_bufr_simple_plain",
   "method": "import_before_delete_age"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_plain",
+  "method": "test_acquire"
  },
  {
   "doc": "",
@@ -21516,6 +21321,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_sqlite",
+  "method": "test_acquire"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_writer_bufr_iseg",
   "method": "import"
  },
@@ -21528,6 +21338,11 @@
   "doc": "",
   "group": "arki_dataset_writer_bufr_iseg",
   "method": "import_before_delete_age"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_iseg",
+  "method": "test_acquire"
  },
  {
   "doc": "",
@@ -21546,6 +21361,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_writer_vm2_ondisk2",
+  "method": "test_acquire"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_writer_vm2_simple_plain",
   "method": "import"
  },
@@ -21558,6 +21378,11 @@
   "doc": "",
   "group": "arki_dataset_writer_vm2_simple_plain",
   "method": "import_before_delete_age"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_plain",
+  "method": "test_acquire"
  },
  {
   "doc": "",
@@ -21576,6 +21401,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_sqlite",
+  "method": "test_acquire"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_writer_vm2_iseg",
   "method": "import"
  },
@@ -21588,6 +21418,11 @@
   "doc": "",
   "group": "arki_dataset_writer_vm2_iseg",
   "method": "import_before_delete_age"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_iseg",
+  "method": "test_acquire"
  },
  {
   "doc": "",
@@ -21606,6 +21441,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_writer_odim_ondisk2",
+  "method": "test_acquire"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_writer_odim_simple_plain",
   "method": "import"
  },
@@ -21618,6 +21458,11 @@
   "doc": "",
   "group": "arki_dataset_writer_odim_simple_plain",
   "method": "import_before_delete_age"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_plain",
+  "method": "test_acquire"
  },
  {
   "doc": "",
@@ -21636,6 +21481,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_writer_odim_simple_sqlite",
+  "method": "test_acquire"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_writer_odim_iseg",
   "method": "import"
  },
@@ -21648,6 +21498,11 @@
   "doc": "",
   "group": "arki_dataset_writer_odim_iseg",
   "method": "import_before_delete_age"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_iseg",
+  "method": "test_acquire"
  },
  {
   "doc": "",

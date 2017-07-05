@@ -72,7 +72,7 @@ Segment* Writer::file(const Metadata& md, const std::string& format)
 
 Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
-    auto age_check = check_acquire_age(md);
+    auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
     acquire_lock();
@@ -118,6 +118,11 @@ Pending Writer::test_writelock()
 
 Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
+    std::shared_ptr<const simple::Config> config(new simple::Config(cfg));
+    Metadata tmp_md(md);
+    auto age_check = config->check_acquire_age(tmp_md);
+    if (age_check.first) return age_check.second;
+
     // Acquire on simple datasets always succeeds except in case of envrionment
     // issues like I/O errors and full disks
     return ACQ_OK;

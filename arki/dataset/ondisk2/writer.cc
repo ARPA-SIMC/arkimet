@@ -193,7 +193,7 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 
 Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
-    auto age_check = check_acquire_age(md);
+    auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
     acquire_lock();
@@ -650,11 +650,14 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
     else
         throw std::runtime_error("Replace strategy '" + repl + "' is not recognised in dataset configuration");
 
-    // TODO: refuse if md is before "archive age"
+    // Refuse if md is before "archive age"
+    std::shared_ptr<const ondisk2::Config> config(new ondisk2::Config(cfg));
+    Metadata tmp_md(md);
+    auto age_check = config->check_acquire_age(tmp_md);
+    if (age_check.first) return age_check.second;
 
     if (replace == REPLACE_ALWAYS) return ACQ_OK;
 
-    std::shared_ptr<const ondisk2::Config> config(new ondisk2::Config(cfg));
     index::RContents idx(config);
     idx.open();
 
