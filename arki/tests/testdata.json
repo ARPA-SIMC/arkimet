@@ -13996,6 +13996,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_segmented_ondisk2",
+  "method": "unarchive_segment_lastonly"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_segmented_simple_plain",
   "method": "compressed"
  },
@@ -14031,6 +14036,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_segmented_simple_plain",
+  "method": "unarchive_segment_lastonly"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_segmented_simple_sqlite",
   "method": "compressed"
  },
@@ -14066,6 +14076,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_segmented_simple_sqlite",
+  "method": "unarchive_segment_lastonly"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_segmented_iseg",
   "method": "compressed"
  },
@@ -14098,6 +14113,11 @@
   "doc": "",
   "group": "arki_dataset_segmented_iseg",
   "method": "unarchive_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segmented_iseg",
+  "method": "unarchive_segment_lastonly"
  },
  {
   "doc": "",

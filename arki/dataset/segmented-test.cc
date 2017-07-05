@@ -449,6 +449,62 @@ add_method("unarchive_segment", [](Fixture& f) {
     ensure(sys::exists("testds/2007/10-09.grib"));
 });
 
+add_method("unarchive_segment_lastonly", [](Fixture& f) {
+    // Import a file with a known reftime
+    // Reftime: 2007-07-08T13:00:00Z
+    // Reftime: 2007-07-07T00:00:00Z
+    // Reftime: 2007-10-09T00:00:00Z
+    f.clean_and_import();
+    f.test_reread_config();
+
+    // TZ=UTC date --date="2007-07-09 00:00:00" +%s
+    time_t now = 1183939200;
+    f.cfg.setValue("archive age", "1");
+
+    // Archive one segment
+    {
+        auto o = dataset::SessionTime::local_override(now);
+        ReporterExpected e;
+        e.archived.emplace_back("testds", "2007/07-07.grib");
+        wassert(actual(f.makeSegmentedChecker().get()).repack(e, true));
+    }
+
+    // Check that segments are where we expect them
+    sys::rename("testds/.archive/last/2007", "testds/.archive/testds-2007");
+    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib"));
+    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib.metadata"));
+    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib.summary"));
+    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib"));
+    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib.metadata"));
+    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib.summary"));
+    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib"));
+    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib.metadata"));
+    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib.summary"));
+    ensure(!sys::exists("testds/2007/07-07.grib"));
+    ensure(sys::exists("testds/2007/07-08.grib"));
+    ensure(sys::exists("testds/2007/10-09.grib"));
+
+    try {
+        f.makeSegmentedChecker()->unarchive_segment("../test-ds/2007/07-07.grib");
+        wassert(throw std::runtime_error("unarchive_segment should have thrown at this point"));
+    } catch (std::exception& e) {
+        wassert(actual(e.what()).contains("segment is not in last/ archive"));
+    }
+
+    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib"));
+    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib.metadata"));
+    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib.summary"));
+    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib"));
+    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib.metadata"));
+    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib.summary"));
+    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib"));
+    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib.metadata"));
+    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib.summary"));
+    ensure(!sys::exists("testds/2007/07-07.grib"));
+    ensure(sys::exists("testds/2007/07-08.grib"));
+    ensure(sys::exists("testds/2007/10-09.grib"));
+});
+
 
 
 }
