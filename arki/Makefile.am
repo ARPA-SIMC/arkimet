@@ -110,6 +110,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		postprocess.h \
 		querymacro.h \
 		runtime/config.h \
+		runtime/inputs.h \
 		runtime.h \
 		runtime/io.h \
 		runtime/processor.h \
@@ -284,6 +285,7 @@ libarkimet_la_SOURCES += \
 		matcher/task.cc \
 		matcher/quantity.cc \
 		runtime/config.cc \
+		runtime/inputs.cc \
 		runtime/io.cc \
 		types-init.cc
 
@@ -433,6 +435,7 @@ tests_arki_test_SOURCES += \
 		matcher/quantity-tut.cc \
 		scan/any-tut.cc \
 		runtime/io-tut.cc \
+		runtime/inputs-tut.cc \
 		runtime/config-tut.cc
 
 if GRIBAPI

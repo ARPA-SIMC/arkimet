@@ -78,23 +78,6 @@ struct Options : public StandardParserWithManpage
         restr = add<StringOption>("restrict", 0, "restrict", "names",
                 "Restrict operations to only those datasets that allow one of the given (comma separated) names");
     }
-
-    /**
-     * Parse the config files from the datasets found in the remaining
-     * commandline arguments
-     *
-     * Return true if at least one config file was found in \a opts
-     */
-    bool readDatasetConfig(ConfigFile& cfg)
-    {
-        bool found = false;
-        while (hasNext())
-        {
-            dataset::Reader::readConfig(next(), cfg);
-            found = true;
-        }
-        return found;
-    }
 };
 
 }
@@ -302,23 +285,28 @@ int main(int argc, const char* argv[])
             throw commandline::BadOption("only one of --stats, --invalidate, --repack, --remove, --remove-all, --unarchive, --state, or --issue51 can be given in one invocation");
 
         // Read the config file(s)
-        ConfigFile cfg;
-        bool foundConfig1 = runtime::parseConfigFiles(cfg, *opts.cfgfiles);
-        bool foundConfig2 = opts.readDatasetConfig(cfg);
-        if (!foundConfig1 && !foundConfig2)
+        runtime::Inputs inputs;
+        for (const auto& pathname: opts.cfgfiles->values())
+            inputs.add_config_file(pathname);
+        while (opts.hasNext())
+            inputs.add_config_file(opts.next());
+        if (inputs.empty())
             throw commandline::BadOption("you need to specify the config file");
 
-		// Remove unallowed entries
-		if (opts.restr->isSet())
-		{
-			runtime::Restrict rest(opts.restr->stringValue());
-			rest.remove_unallowed(cfg);
-		}
+        // Remove unallowed entries
+        if (opts.restr->isSet())
+        {
+            runtime::Restrict rest(opts.restr->stringValue());
+            inputs.remove_unallowed(rest);
+        }
+
+        if (inputs.empty())
+            throw std::runtime_error("No useable datasets found");
 
         if (opts.op_remove->isSet()) {
             if (opts.op_remove->stringValue().empty())
                 throw commandline::BadOption("you need to give a file name to --remove");
-            Datasets datasets(cfg);
+            Datasets datasets(inputs.as_config());
             WriterPool pool(datasets);
             // Read all metadata from the file specified in --remove
             metadata::Collection todolist;
@@ -381,13 +369,12 @@ int main(int argc, const char* argv[])
                              not opts.accurate->boolValue()));
 
             // Harvest the paths from it
-            for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
-                    i != cfg.sectionEnd(); ++i)
+            for (const ConfigFile& cfg: inputs)
             {
                 try {
-                    worker->process(*i->second);
+                    worker->process(cfg);
                 } catch (SkipDataset& e) {
-                    cerr << "Skipping dataset " << i->first << ": " << e.what() << endl;
+                    cerr << "Skipping dataset " << cfg.value("name") << ": " << e.what() << endl;
                     continue;
                 }
             }

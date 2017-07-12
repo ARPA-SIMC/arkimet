@@ -58,20 +58,17 @@ int main(int argc, const char* argv[])
             return 0;
         runtime::init();
 
-		ConfigFile cfg;
-		bool foundConfig = false;
+        runtime::Inputs inputs;
+        for (const auto& pathname: opts.cfgfiles->values())
+            inputs.add_config_file(pathname);
+        while (opts.hasNext())
+            inputs.add_config_file(opts.next());
+        if (inputs.empty())
+            throw commandline::BadOption("you need to specify the config file");
 
-		// Read the config files from the -C options
-		for (vector<string>::const_iterator i = opts.cfgfiles->values().begin();
-				i != opts.cfgfiles->values().end(); ++i)
-		{
-			runtime::parseConfigFile(cfg, *i);
-			foundConfig = true;
-		}
-
-		// Read the config files from the remaining commandline arguments
-		while (opts.hasNext())
-		{
+        // Read the config files from the remaining commandline arguments
+        while (opts.hasNext())
+        {
             string file = opts.next();
             if (!str::startswith(file, "http://") &&
                 !str::startswith(file, "https://") &&
@@ -81,25 +78,23 @@ int main(int argc, const char* argv[])
                 continue;
             }
             try {
-                dataset::Reader::readConfig(file, cfg);
-                foundConfig = true;
+                inputs.add_config_file(file);
             } catch (std::exception& e) {
                 cerr << file << " skipped: " << e.what() << endl;
             }
         }
-        if (!foundConfig)
-            throw commandline::BadOption("you need to specify at least one valid config file or dataset directory");
+        if (inputs.empty())
+            throw commandline::BadOption("no valid config files or dataset directories found");
 
         // Validate the configuration
         bool hasErrors = false;
-        for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
-                i != cfg.sectionEnd(); ++i)
+        for (const ConfigFile& cfg: inputs)
         {
             // Validate filters
             try {
-                Matcher::parse(i->second->value("filter"));
+                Matcher::parse(cfg.value("filter"));
             } catch (std::exception& e) {
-                const auto* fp = i->second->valueInfo("filter");
+                const auto* fp = cfg.valueInfo("filter");
                 if (fp)
                     cerr << fp->pathname << ":" << fp->lineno << ":";
                 cerr << e.what();
@@ -107,45 +102,47 @@ int main(int argc, const char* argv[])
                 hasErrors = true;
             }
         }
-		if (hasErrors)
-		{
-			cerr << "Some input files did not validate." << endl;
-			return 1;
-		}
+        if (hasErrors)
+        {
+            cerr << "Some input files did not validate." << endl;
+            return 1;
+        }
 
-		// Remove unallowed entries
-		if (opts.restr->isSet())
-		{
-			runtime::Restrict rest(opts.restr->stringValue());
-			rest.remove_unallowed(cfg);
-		}
+        // Remove unallowed entries
+        if (opts.restr->isSet())
+        {
+            runtime::Restrict rest(opts.restr->stringValue());
+            inputs.remove_unallowed(rest);
+        }
 
-		// If requested, compute extra information
-		if (opts.extra->boolValue())
-		{
+        if (inputs.empty())
+            throw commandline::BadOption("no useable config files or dataset directories found");
+
+        // If requested, compute extra information
+        if (opts.extra->boolValue())
+        {
 #ifdef HAVE_GEOS
-			ARKI_GEOS_GEOMETRYFACTORY gf;
+            ARKI_GEOS_GEOMETRYFACTORY gf;
 
-			for (ConfigFile::section_iterator i = cfg.sectionBegin();
-					i != cfg.sectionEnd(); ++i)
+            for (ConfigFile& cfg: inputs)
             {
                 // Instantiate the dataset
-                unique_ptr<dataset::Reader> d(dataset::Reader::create(*i->second));
+                unique_ptr<dataset::Reader> d(dataset::Reader::create(cfg));
                 // Get the summary
                 Summary sum;
                 d->query_summary(Matcher(), sum);
 
-				// Compute bounding box, and store the WKT in bounding
-				unique_ptr<ARKI_GEOS_GEOMETRY> bbox = sum.getConvexHull(gf);
-				if (bbox.get())
-					i->second->setValue("bounding", bbox->toString());
-			}
+                // Compute bounding box, and store the WKT in bounding
+                unique_ptr<ARKI_GEOS_GEOMETRY> bbox = sum.getConvexHull(gf);
+                if (bbox.get())
+                    cfg.setValue("bounding", bbox->toString());
+            }
 #endif
-		}
+        }
 
 
         // Output the merged configuration
-        string res = cfg.serialize();
+        string res = inputs.as_config().serialize();
         unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
         out->write_all_or_throw(res);
         out->close();

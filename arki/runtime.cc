@@ -295,39 +295,19 @@ void CommandLine::setupProcessing()
     }
 
 
-	// Initialise the dataset list
+    // Initialise the dataset list
 
-	if (cfgfiles)	// From -C options, looking for config files or datasets
-		for (vector<string>::const_iterator i = cfgfiles->values().begin();
-				i != cfgfiles->values().end(); ++i)
-			parseConfigFile(inputInfo, *i);
+    if (cfgfiles) // From -C options, looking for config files or datasets
+        for (const auto& pathname : cfgfiles->values())
+            inputs.add_config_file(pathname);
 
     if (files && files->isSet())    // From --files option, looking for data files or datasets
-    {
-        // Open the file
-        string file = files->stringValue();
-        unique_ptr<NamedFileDescriptor> in;
-        if (file != "-")
-            in.reset(new InputFile(file));
-        else
-            in.reset(new Stdin);
+        inputs.add_pathnames_from_file(files->stringValue());
 
-        // Read the content and scan the related files or dataset directories
-        auto reader = LineReader::from_fd(*in);
-        string line;
-        while (reader->getline(line))
-        {
-            line = str::strip(line);
-            if (line.empty())
-                continue;
-            dataset::Reader::readConfig(line, inputInfo);
-        }
-    }
+    while (hasNext()) // From command line arguments, looking for data files or datasets
+        inputs.add_pathname(next());
 
-    while (hasNext())	// From command line arguments, looking for data files or datasets
-        dataset::Reader::readConfig(next(), inputInfo);
-
-    if (inputInfo.sectionSize() == 0)
+    if (inputs.empty())
         throw commandline::BadOption("you need to specify at least one input file or dataset");
 
     if (summary && summary->isSet() && summary_short && summary_short->isSet())
@@ -337,13 +317,13 @@ void CommandLine::setupProcessing()
     if (restr && restr->isSet())
     {
         Restrict rest(restr->stringValue());
-        rest.remove_unallowed(inputInfo);
-        if (inputInfo.sectionSize() == 0)
+        inputs.remove_unallowed(rest);
+        if (inputs.empty())
             throw commandline::BadOption("no accessible datasets found for the given --restrict value");
     }
 
     // Some things cannot be done when querying multiple datasets at the same time
-    if (inputInfo.sectionSize() > 1 && !dispatcher && !(qmacro && qmacro->isSet()))
+    if (inputs.size() > 1 && !dispatcher && !(qmacro && qmacro->isSet()))
     {
         if (postprocess->boolValue())
             throw commandline::BadOption("postprocessing is not possible when querying more than one dataset at the same time");
@@ -367,10 +347,9 @@ void CommandLine::setupProcessing()
             string expanded;
             string resolved_by;
             bool first = true;
-            for (ConfigFile::const_section_iterator i = inputInfo.sectionBegin();
-                    i != inputInfo.sectionEnd(); ++i)
+            for (const auto& i: inputs)
             {
-                string server = i->second->value("server");
+                string server = i.value("server");
                 if (servers_seen.find(server) != servers_seen.end()) continue;
                 string got;
                 try {
@@ -508,12 +487,14 @@ static std::string moveFile(const dataset::Reader& ds, const std::string& target
         return string();
 }
 
-std::unique_ptr<dataset::Reader> CommandLine::openSource(ConfigFile& info)
+std::unique_ptr<dataset::Reader> CommandLine::openSource(const ConfigFile& info)
 {
-    if (movework && movework->isSet() && info.value("type") == "file")
-        info.setValue("path", moveFile(info.value("path"), movework->stringValue()));
+    ConfigFile src(info);
 
-    return unique_ptr<dataset::Reader>(dataset::Reader::create(info));
+    if (movework && movework->isSet() && src.value("type") == "file")
+        src.setValue("path", moveFile(src.value("path"), movework->stringValue()));
+
+    return unique_ptr<dataset::Reader>(dataset::Reader::create(src));
 }
 
 bool CommandLine::processSource(dataset::Reader& ds, const std::string& name)

@@ -7,6 +7,7 @@
 #include <arki/runtime/io.h>
 #include <arki/runtime/config.h>
 #include <arki/runtime/processor.h>
+#include <arki/runtime/inputs.h>
 #include <arki/metadata.h>
 #include <arki/dataset/memory.h>
 #include <arki/matcher.h>
@@ -89,7 +90,7 @@ struct CommandLine : public utils::commandline::StandardParserWithManpage
     utils::commandline::VectorOption<utils::commandline::String>* dispatch;
     utils::commandline::VectorOption<utils::commandline::String>* testdispatch;
 
-    ConfigFile inputInfo;
+    Inputs inputs;
     ConfigFile dispatchInfo;
     std::string strquery;
     Matcher query;
@@ -128,7 +129,7 @@ struct CommandLine : public utils::commandline::StandardParserWithManpage
      *
      * @return the pointer to the datasource, or 0 for no more datasets
      */
-    std::unique_ptr<dataset::Reader> openSource(ConfigFile& info);
+    std::unique_ptr<dataset::Reader> openSource(const ConfigFile& info);
 
     /**
      * Process one data source

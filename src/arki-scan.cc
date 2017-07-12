@@ -41,25 +41,21 @@ int main(int argc, const char* argv[])
         if (opts.parse(argc, argv))
             return 0;
 
-		runtime::init();
+        runtime::init();
 
-		opts.setupProcessing();
+        opts.setupProcessing();
 
         bool all_successful = true;
-        for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
-                i != opts.inputInfo.sectionEnd(); ++i)
+        for (const ConfigFile& cfg: opts.inputs)
         {
-            unique_ptr<dataset::Reader> ds = opts.openSource(*i->second);
-
-			bool success = true;
-			try {
-				success = opts.processSource(*ds, i->second->value("path"));
-			} catch (std::exception& e) {
-				// FIXME: this is a quick experiment: a better message can
-				// print some of the stats to document partial imports
-				cerr << i->second->value("path") << " failed: " << e.what() << endl;
-				success = false;
-			}
+            try {
+                success = opts.processSource(*ds, cfg.value("path"));
+            } catch (std::exception& e) {
+                // FIXME: this is a quick experiment: a better message can
+                // print some of the stats to document partial imports
+                cerr << cfg.value("path") << " failed: " << e.what() << endl;
+                success = false;
+            }
 
             opts.closeSource(move(ds), success);
 

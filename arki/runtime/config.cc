@@ -218,19 +218,6 @@ void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
     }
 }
 
-bool parseConfigFiles(ConfigFile& cfg, const commandline::VectorOption<commandline::String>& files)
-{
-       bool found = false;
-       for (vector<string>::const_iterator i = files.values().begin();
-                       i != files.values().end(); ++i)
-       {
-               parseConfigFile(cfg, *i);
-               //Reader::readConfig(*i, cfg);
-               found = true;
-       }
-       return found;
-}
-
 std::set<std::string> parseRestrict(const std::string& str)
 {
 	set<string> res;
@@ -253,37 +240,26 @@ std::set<std::string> parseRestrict(const std::string& str)
 	return res;
 }
 
-bool Restrict::is_allowed(const std::string& str)
+bool Restrict::is_allowed(const std::string& str) const
 {
-	if (wanted.empty()) return true;
-	return is_allowed(parseRestrict(str));
+    if (wanted.empty()) return true;
+    return is_allowed(parseRestrict(str));
 
 }
-bool Restrict::is_allowed(const std::set<std::string>& names)
+
+bool Restrict::is_allowed(const std::set<std::string>& names) const
 {
-	if (wanted.empty()) return true;
-	for (set<string>::const_iterator i = wanted.begin(); i != wanted.end(); ++i)
-		if (names.find(*i) != names.end())
-			return true;
-	return false;
+    if (wanted.empty()) return true;
+    for (const auto& i: wanted)
+        if (names.find(i) != names.end())
+            return true;
+    return false;
 }
-bool Restrict::is_allowed(const ConfigFile& cfg)
+
+bool Restrict::is_allowed(const ConfigFile& cfg) const
 {
-	if (wanted.empty()) return true;
-	return is_allowed(parseRestrict(cfg.value("restrict")));
-}
-void Restrict::remove_unallowed(ConfigFile& cfg)
-{
-	vector<string> to_delete;
-	for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
-			i != cfg.sectionEnd(); ++i)
-	{
-		if (not is_allowed(*i->second))
-			to_delete.push_back(i->first);
-	}
-	for (vector<string>::const_iterator i = to_delete.begin();
-			i != to_delete.end(); ++i)
-		cfg.deleteSection(*i);
+    if (wanted.empty()) return true;
+    return is_allowed(parseRestrict(cfg.value("restrict")));
 }
 
 void readMatcherAliasDatabase(commandline::StringOption* file)

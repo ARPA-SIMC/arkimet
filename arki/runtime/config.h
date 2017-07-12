@@ -112,27 +112,19 @@ struct Config
 void parseConfigFile(ConfigFile& cfg, const std::string& fileName);
 
 /**
- * Parse the config files indicated by the given commandline option.
- *
- * Return true if at least one config file was found in \a files
- */
-bool parseConfigFiles(ConfigFile& cfg, const arki::utils::commandline::VectorOption<arki::utils::commandline::String>& files);
-
-/**
  * Parse a comma separated restrict list into a set of strings
  */
 std::set<std::string> parseRestrict(const std::string& str);
 
 struct Restrict
 {
-	std::set<std::string> wanted;
+    std::set<std::string> wanted;
 
-	Restrict(const std::string& str) : wanted(parseRestrict(str)) {}
+    Restrict(const std::string& str) : wanted(parseRestrict(str)) {}
 
-	bool is_allowed(const std::string& str);
-	bool is_allowed(const std::set<std::string>& names);
-	bool is_allowed(const ConfigFile& cfg);
-	void remove_unallowed(ConfigFile& cfg);
+    bool is_allowed(const std::string& str) const;
+    bool is_allowed(const std::set<std::string>& names) const;
+    bool is_allowed(const ConfigFile& cfg) const;
 };
 
 /**
