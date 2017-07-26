@@ -6,6 +6,7 @@
 #include "arki/matcher.h"
 #include "arki/configfile.h"
 #include "arki/runtime.h"
+#include "arki/dataset/merged.h"
 #include "config.h"
 
 using namespace std;
@@ -58,9 +59,31 @@ static PyObject* arkipy_make_qmacro_dataset(arkipy_Metadata* self, PyObject *arg
     } ARKI_CATCH_RETURN_PYO
 }
 
+static PyObject* arkipy_make_merged_dataset(arkipy_Metadata* self, PyObject *args, PyObject* kw)
+{
+    static const char* kwlist[] = { "cfg", NULL };
+    PyObject* arg_cfg = Py_None;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "O", (char**)kwlist, &arg_cfg))
+        return nullptr;
+
+    ConfigFile cfg;
+    if (configfile_from_python(arg_cfg, cfg)) return nullptr;
+
+    try {
+        std::unique_ptr<dataset::Merged> ds(new dataset::Merged);
+        for (auto i = cfg.sectionBegin(); i != cfg.sectionEnd(); ++i)
+            ds->add_dataset(*i->second);
+        return (PyObject*)dataset_reader_create(move(ds));
+    } ARKI_CATCH_RETURN_PYO
+}
+
 static PyMethodDef arkimet_methods[] = {
     { "expand_query", (PyCFunction)arkipy_expand_query, METH_VARARGS, "Return the same text query with all aliases expanded" },
     { "matcher_alias_database", (PyCFunction)arkipy_matcher_alias_database, METH_NOARGS, "Return a string with the current matcher alias database" },
+    { "make_merged_dataset", (PyCFunction)arkipy_make_merged_dataset, METH_VARARGS, R"(
+        Create a merged dataset from all the datasets found in the given configuration
+        )" },
     { "make_qmacro_dataset", (PyCFunction)arkipy_make_qmacro_dataset, METH_VARARGS, R"(
         Create a qmacro dataset that aggregates the contents of multiple datasets.
 

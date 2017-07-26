@@ -162,13 +162,20 @@ Merged::Merged()
 
 Merged::~Merged()
 {
+    for (auto ds: datasets)
+        delete ds;
 }
 
 std::string Merged::type() const { return "merged"; }
 
-void Merged::addDataset(Reader& ds)
+void Merged::add_dataset(std::unique_ptr<Reader>&& ds)
 {
-    datasets.push_back(&ds);
+    datasets.emplace_back(ds.release());
+}
+
+void Merged::add_dataset(const ConfigFile& cfg)
+{
+    add_dataset(move(dataset::Reader::create(cfg)));
 }
 
 bool Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)

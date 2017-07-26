@@ -415,7 +415,20 @@ add_method("logs", [] {
     wassert(actual(sys::size("error.log")) > 0u);
 });
 
-// Test style=json binary queries
+// Test style=binary summary queries
+add_method("query_global_summary_style_binary", [] {
+    dataset::http::CurlEasy curl;
+
+    dataset::http::BufState<std::string> request(curl);
+    request.set_url("http://localhost:7117/summary?style=binary");
+    request.set_method("POST");
+    request.post_data.add_string("query", Matcher().toStringExpanded());
+    request.perform();
+
+    wassert(actual(request.buf).startswith("SU"));
+});
+
+// Test style=binary summary queries
 add_method("query_summary_style_binary", [] {
     dataset::http::CurlEasy curl;
 

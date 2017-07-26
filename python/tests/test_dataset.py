@@ -179,6 +179,26 @@ type = file
         ds.query_data(on_metadata=count_results)
         self.assertEquals(count, 1)
 
+    def test_query_data_merged(self):
+        ds = arki.make_merged_dataset(
+            """
+[test200]
+format = grib
+name = test.grib1
+path = inbound/test.grib1
+type = file
+""",
+        )
+
+        count = 0
+        def count_results(md):
+            nonlocal count
+            count += 1
+
+        # No arguments
+        ds.query_data(on_metadata=count_results)
+        self.assertEquals(count, 3)
+
     def test_query_data_memoryusage(self):
         ds = arki.DatasetReader({
             "type": "testlarge",

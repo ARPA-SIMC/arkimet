@@ -453,13 +453,13 @@ class QMacroMixin:
     def get_dataset_reader(self):
         cfg = io.StringIO()
         self.handler.server.cfg.write(cfg)
-#        if (macroname.empty())
-#            // Create a merge dataset with all we have
-#            ds.reset(new dataset::AutoMerged(req.arki_conf));
+        qmacro = self.request.values.get("qmacro", "").strip()
+        if not qmacro:
+            return arki.make_merged_dataset(cfg.getvalue())
         return arki.make_qmacro_dataset(
             "url = " + self.handler.server.url,
             cfg.getvalue(),
-            self.request.values.get("qmacro", "").strip(),
+            qmacro,
             self.request.values.get("query", "").strip()
         )
 

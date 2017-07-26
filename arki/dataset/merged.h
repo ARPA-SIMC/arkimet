@@ -21,9 +21,10 @@ class Merged : public Reader
 {
 protected:
     std::shared_ptr<const Config> m_config;
-    std::vector<Reader*> datasets;
 
 public:
+    std::vector<Reader*> datasets;
+
     Merged();
     virtual ~Merged();
 
@@ -31,7 +32,10 @@ public:
     std::string type() const override;
 
     /// Add a dataset to the group of datasets to merge
-    void addDataset(Reader& ds);
+    void add_dataset(std::unique_ptr<Reader>&& ds);
+
+    /// Add a dataset to the group of datasets to merge
+    void add_dataset(const ConfigFile& cfg);
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;

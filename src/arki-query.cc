@@ -58,21 +58,12 @@ int main(int argc, const char* argv[])
         if (opts.merged->boolValue())
         {
             dataset::Merged merger;
-            size_t dscount = opts.inputs.size();
-
-            // Create an unique_ptr array to take care of memory management
-            // It used to be just: unique_ptr<Reader> datasets[dscount];
-            // but xlC does not seem to like it
-            unique_ptr<dataset::Reader>* datasets = new unique_ptr<dataset::Reader>[dscount];
-            RAIIArrayDeleter< unique_ptr<dataset::Reader> > datasets_mman(datasets);
 
             // Instantiate the datasets and add them to the merger
-            int idx = 0;
             string names;
             for (const auto& cfg: opts.inputs)
             {
-                datasets[idx] = opts.openSource(cfg);
-                merger.addDataset(*datasets[idx]);
+                merger.add_dataset(opts.openSource(cfg));
                 if (names.empty())
                     names = cfg.value("name");
                 else
@@ -82,8 +73,12 @@ int main(int argc, const char* argv[])
             // Perform the query
             all_successful = opts.processSource(merger, names);
 
-            for (size_t i = 0; i < dscount; ++i)
-                opts.closeSource(move(datasets[i]), all_successful);
+            for (size_t i = 0; i < merger.datasets.size(); ++i)
+            {
+                unique_ptr<dataset::Reader> ds(merger.datasets[i]);
+                merger.datasets[i] = 0;
+                opts.closeSource(move(ds), all_successful);
+            }
         } else if (opts.qmacro->isSet()) {
             // Create the virtual qmacro dataset
             ConfigFile cfg;

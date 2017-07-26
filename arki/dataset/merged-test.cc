@@ -10,24 +10,23 @@
 #include <sstream>
 #include <iostream>
 
-namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
 
-struct arki_dataset_merged_shar {
+namespace {
+
+struct Fixture : public arki::utils::tests::Fixture
+{
     ConfigFile config;
-    dataset::Reader* ds1;
-    dataset::Reader* ds2;
-    dataset::Reader* ds3;
     dataset::Merged ds;
 
-	arki_dataset_merged_shar() : ds1(0), ds2(0), ds3(0)
-	{
-		// Cleanup the test datasets
-		system("rm -rf test200/*");
-		system("rm -rf test80/*");
-		system("rm -rf error/*");
+    Fixture()
+    {
+        // Cleanup the test datasets
+        system("rm -rf test200/*");
+        system("rm -rf test80/*");
+        system("rm -rf error/*");
 
         // In-memory dataset configuration
         string conf =
@@ -68,54 +67,27 @@ struct arki_dataset_merged_shar {
         ensure(!scanner.next(md));
         dispatcher.flush();
 
-        ds.addDataset(*(ds1 = dataset::Reader::create(*config.section("test200")).release()));
-        ds.addDataset(*(ds2 = dataset::Reader::create(*config.section("test80")).release()));
-        ds.addDataset(*(ds3 = dataset::Reader::create(*config.section("error")).release()));
+        ds.add_dataset(*config.section("test200"));
+        ds.add_dataset(*config.section("test80"));
+        ds.add_dataset(*config.section("error"));
     }
-
-	~arki_dataset_merged_shar()
-	{
-		if (ds1) delete ds1;
-		if (ds2) delete ds2;
-		if (ds3) delete ds3;
-	}
 };
-TESTGRP(arki_dataset_merged);
+
+class Tests : public FixtureTestCase<Fixture>
+{
+    using FixtureTestCase::FixtureTestCase;
+
+    void register_tests() override;
+} tests("arki_dataset_merged");
+
+void Tests::register_tests() {
 
 // Test querying the datasets
-def_test(1)
-{
-    metadata::Collection mdc(ds, Matcher());
-    ensure_equals(mdc.size(), 3u);
-
-#if 0
-    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
-    metadata::Collection mdc;
-
-	testds->query(Matcher::parse("origin:GRIB1,200"), false, mdc);
-	ensure_equals(mdc.size(), 1u);
-
-	// Check that the source record that comes out is ok
-	Source source = mdc[0].source;
-	ensure_equals(source.style, Source::BLOB);
-	ensure_equals(source.format, "grib1");
-	string fname;
-	size_t offset, len;
-	source.getBlob(fname, offset, len);
-	ensure_equals(fname, "test200/2007/07-08.grib1");
-	ensure_equals(offset, 0u);
-	ensure_equals(len, 7218u);
-
-	mdc.clear();
-	testds->query(Matcher::parse("origin:GRIB1,80"), false, mdc);
-	ensure_equals(mdc.size(), 0u);
-
-	mdc.clear();
-	testds->query(Matcher::parse("origin:GRIB1,98"), false, mdc);
-	ensure_equals(mdc.size(), 0u);
-#endif
-}
+add_method("query", [](Fixture& f) {
+    metadata::Collection mdc(f.ds, Matcher());
+    wassert(actual(mdc.size()) == 3u);
+});
 
 }
 
-// vim:set ts=4 sw=4:
+}

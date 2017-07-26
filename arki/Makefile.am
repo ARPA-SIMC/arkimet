@@ -572,7 +572,7 @@ tests_arki_test_SOURCES += \
 		dataset/offline-test.cc \
 		dataset/empty-test.cc \
 		dataset/testlarge-test.cc \
-		dataset/merged-tut.cc \
+		dataset/merged-test.cc \
 		dataset/gridquery-tut.cc \
 		dataset-test.cc \
 		dataset-reader-test.cc \
