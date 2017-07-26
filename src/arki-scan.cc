@@ -48,6 +48,8 @@ int main(int argc, const char* argv[])
         bool all_successful = true;
         for (const ConfigFile& cfg: opts.inputs)
         {
+            unique_ptr<dataset::Reader> ds = opts.openSource(cfg);
+            bool success = true;
             try {
                 success = opts.processSource(*ds, cfg.value("path"));
             } catch (std::exception& e) {
