@@ -435,7 +435,7 @@ tests_arki_test_SOURCES += \
 		matcher/quantity-tut.cc \
 		scan/any-tut.cc \
 		runtime/io-tut.cc \
-		runtime/inputs-tut.cc \
+		runtime/inputs-test.cc \
 		runtime/config-tut.cc
 
 if GRIBAPI
