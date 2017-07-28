@@ -1,4 +1,4 @@
-md_docs = datasets.md ds-archive.md segments.md seg-concat.md seg-dir.md
+md_docs = datasets.md ds-archive.md segments.md seg-concat.md seg-dir.md web-api.md
 
 generated_md_docs = ds-simple.md ds-ondisk2.md ds-iseg.md
 
