@@ -68,6 +68,9 @@ type = ondisk2
   `weekly`, `singlefile`, ...).
 - `type`: tipo di dataset (generalmente, `ondisk2`).
 
+Per un elenco completo di tutti i campi disponibili nel `config` vedi la
+sezione <<config,Elenco variabili utilizzabili nel file config>>
+
 L'archiviazione avviene sulla base di un elenco di dataset: Arkimet dovrà
 scegliere quello opportuno sulla base del filtro (`filter`); una volta scelto
 il dataset, il dato viene inserito al suo interno e i suoi metadati sono
@@ -79,9 +82,9 @@ nome dipende dallo `step` usato e dal formato del dato (`grib1`, `grib2`,
 tranne nel caso di `step=singlefile` (da usarsi nel caso in cui il formato non
 supporti il concatenamento, come `ODIMH5`).
 
-Per un elenco completo di tutti i campi disponibili nel `config` vedi la
-sezione <<config,Elenco variabili utilizzabili nel file config>>
-
+Nella directory del dataset può essere presente un file `lock` che viene
+utilizzato dai vari tool di arkimet per gestire le funzioni di locking del
+dataset (la presenza del file non è indice di dataset bloccato).
 
 .Esempi di organizzazione di dataset
 ====
