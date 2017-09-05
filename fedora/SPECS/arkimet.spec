@@ -115,7 +115,7 @@ install -D -m 0644 -p %{SOURCE3} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
 %{_includedir}/arki/*
 
 %pre
-if [ "$1" = "1"]; then
+if [ "$1" = "1" ]; then
     # it's an initial installation, not an upgrade
     /usr/bin/getent passwd USERNAME >/dev/null \
         || echo "Warning: arkimet user not present in this system, running an arki-server will need additional configuration"
