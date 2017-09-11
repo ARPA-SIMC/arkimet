@@ -98,6 +98,7 @@ struct ReadHang : public wibble::sys::ChildProcess
             idx.open();
             idx.query_data(Matcher::parse("origin:GRIB1"), [&](unique_ptr<Metadata> md) {
                 fputs("H\n", stdout);
+                fflush(stdout);
                 usleep(100000);
                 return true;
             });
@@ -111,14 +112,17 @@ struct ReadHang : public wibble::sys::ChildProcess
 
     void start()
     {
-        forkAndRedirect(0, &commfd);
+        forkAndRedirect(nullptr, &commfd);
     }
 
     char waitUntilHung()
     {
         char buf[2];
-        if (read(commfd, buf, 1) != 1)
-            throw_system_error("reading 1 byte from child process");
+        ssize_t res = read(commfd, buf, 1);
+        if (res == 0)
+            throw std::runtime_error("reader did not produce data");
+        if (res != 1)
+            throw_system_error("cannot read 1 byte from child process");
         return buf[0];
     }
 };
@@ -257,7 +261,7 @@ add_method("concurrent", [] {
     auto md = make_md();
     auto md1 = make_md1();
 
-    string cfg = 
+    string cfg =
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
