@@ -497,6 +497,11 @@ int Path::openat(const char* pathname, int flags, mode_t mode)
     return res;
 }
 
+bool Path::faccessat(const char* pathname, int mode, int flags)
+{
+    return ::faccessat(fd, pathname, mode, flags) == 0;
+}
+
 void Path::fstatat(const char* pathname, struct stat& st)
 {
     if (::fstatat(fd, pathname, &st, 0) == -1)

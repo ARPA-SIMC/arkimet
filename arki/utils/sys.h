@@ -401,6 +401,8 @@ struct Path : public ManagedNamedFileDescriptor
 
     int openat(const char* pathname, int flags, mode_t mode=0777);
 
+    bool faccessat(const char* pathname, int mode, int flags=0);
+
     void fstatat(const char* pathname, struct stat& st);
 
     /// fstatat, but in case of ENOENT returns false instead of throwing
