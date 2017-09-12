@@ -56,6 +56,7 @@ struct AtomicWriter
     void commit()
     {
         if (!out) return;
+        // fsync(out);
         out.close();
         if (::rename(out.name().c_str(), destfname.c_str()) < 0)
             throw_system_error("cannot rename " + out.name() + " to " + destfname);
