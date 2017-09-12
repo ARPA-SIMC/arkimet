@@ -9,6 +9,7 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <alloca.h>
 
@@ -382,6 +383,32 @@ bool FileDescriptor::ofd_getlk(struct flock& lk)
         throw_error("cannot test lock");
     return lk.l_type == F_UNLCK;
 }
+
+void FileDescriptor::futimens(const struct timespec ts[2])
+{
+    if (::futimens(fd, ts) == -1)
+        throw_error("cannot change file timestamps");
+}
+
+
+/*
+ * PreserveFileTimes
+ */
+
+PreserveFileTimes::PreserveFileTimes(FileDescriptor fd)
+    : fd(fd)
+{
+    struct stat st;
+    fd.fstat(st);
+    ts[0] = st.st_atim;
+    ts[1] = st.st_mtim;
+}
+
+PreserveFileTimes::~PreserveFileTimes()
+{
+    fd.futimens(ts);
+}
+
 
 /*
  * NamedFileDescriptor

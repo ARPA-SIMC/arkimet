@@ -178,6 +178,9 @@ public:
     void fstat(struct stat& st);
     void fchmod(mode_t mode);
 
+    void futimens(const struct timespec ts[2]);
+
+
     int dup();
 
     size_t read(void* buf, size_t count);
@@ -260,6 +263,22 @@ public:
 
     operator int() const { return fd; }
 };
+
+
+/**
+ * RAII mechanism to save restore file times at the end of some file operations
+ */
+class PreserveFileTimes
+{
+protected:
+    FileDescriptor fd;
+    struct timespec ts[2];
+
+public:
+    PreserveFileTimes(FileDescriptor fd);
+    ~PreserveFileTimes();
+};
+
 
 
 /**
