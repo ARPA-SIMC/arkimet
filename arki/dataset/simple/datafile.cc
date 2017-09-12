@@ -68,7 +68,7 @@ void MdBuf::flush()
     if (flushed) return;
     mds.writeAtomically(pathname + ".metadata");
     sum.writeAtomically(pathname + ".summary");
-    fsync(dir);
+    //fsync(dir);
 }
 
 }

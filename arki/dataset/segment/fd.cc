@@ -164,8 +164,6 @@ void Segment::truncate_and_open()
 
 void Segment::close()
 {
-    //if (fdatasync(fd) != 0) throw_file_error(dst, "cannot flush data to file");
-    // fsync(fd);
     fd.close();
 }
 

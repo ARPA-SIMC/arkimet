@@ -116,7 +116,6 @@ void SequenceFile::open()
 
 void SequenceFile::close()
 {
-    //fdatasync(fd);
     fd.close();
 }
 
