@@ -86,7 +86,10 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
         auto source = types::source::Blob::create(md.source().format, config().path, writer->relname, offset, md.data_size());
         md.set_source(move(source));
         mdbuf->add(md);
-        m_mft->acquire(writer->relname, sys::timestamp(mdbuf->pathname, 0), mdbuf->sum);
+        time_t ts = sys::timestamp(mdbuf->pathname, 0);
+        if (ts == 0)
+            fprintf(stderr, "WARNING: %s timestamp is 0\n", mdbuf->pathname.c_str());
+        m_mft->acquire(writer->relname, ts, mdbuf->sum);
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency

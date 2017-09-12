@@ -5,6 +5,7 @@
 #include <arki/summary.h>
 #include <arki/dataset/segment.h>
 #include <arki/metadata/collection.h>
+#include <arki/utils/sys.h>
 
 namespace arki {
 class Metadata;
@@ -17,9 +18,9 @@ namespace datafile {
 /// Accumulate metadata and summaries while writing
 struct MdBuf : public Segment::Payload
 {
-    std::string pathname;
-    std::string dirname;
+    utils::sys::Path dir;
     std::string basename;
+    std::string pathname;
     bool flushed;
     metadata::Collection mds;
     Summary sum;

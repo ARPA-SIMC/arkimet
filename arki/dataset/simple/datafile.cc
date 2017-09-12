@@ -24,22 +24,23 @@ namespace simple {
 namespace datafile {
 
 MdBuf::MdBuf(const std::string& pathname)
-    : pathname(pathname), dirname(str::dirname(pathname)), basename(str::basename(pathname)), flushed(true)
+    : dir(str::dirname(pathname)), basename(str::basename(pathname)), pathname(pathname), flushed(true)
 {
-    if (sys::exists(pathname))
-    {
-        // Read the metadata
-        scan::scan(pathname, mds.inserter_func());
+    struct stat st_data;
+    if (!dir.fstatat_ifexists(basename.c_str(), st_data))
+        return;
 
-        // Read the summary
-        if (!mds.empty())
-        {
-            string sumfname = pathname + ".summary";
-            if (sys::timestamp(pathname, 0) <= sys::timestamp(sumfname, 0))
-                sum.readFile(sumfname);
-            else
-                mds.add_to_summary(sum);
-        }
+    // Read the metadata
+    scan::scan(pathname, mds.inserter_func());
+
+    // Read the summary
+    if (!mds.empty())
+    {
+        //struct stat st_summary;
+        //if (dir.fstatat_ifexists((basename + ".summary").c_str(), st_summary) && st_summary.st_mtime >= st_data.st_mtime)
+        //    sum.readFile(pathname + ".summary");
+        //else
+            mds.add_to_summary(sum);
     }
 }
 
@@ -56,7 +57,7 @@ void MdBuf::add(const Metadata& md)
 
     // Replace the pathname with its basename
     unique_ptr<Metadata> copy(md.clone());
-    copy->set_source(Source::createBlob(os.format, dirname, basename, os.offset, os.size));
+    copy->set_source(Source::createBlob(os.format, dir.name(), basename, os.offset, os.size));
     sum.add(*copy);
     mds.acquire(move(copy));
     flushed = false;
@@ -67,6 +68,7 @@ void MdBuf::flush()
     if (flushed) return;
     mds.writeAtomically(pathname + ".metadata");
     sum.writeAtomically(pathname + ".summary");
+    fsync(dir);
 }
 
 }
