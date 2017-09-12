@@ -344,6 +344,7 @@ void Segment::test_make_overlap(metadata::Collection& mds, unsigned overlap_size
 {
     close();
     File fd(this->fd.name(), O_RDWR);
+    sys::PreserveFileTimes pt(fd);
     off_t start_ofs = mds[data_idx].sourceBlob().offset;
     off_t end = fd.lseek(0, SEEK_END);
     std::vector<uint8_t> buf(end - start_ofs);
@@ -365,6 +366,7 @@ void Segment::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsi
 {
     close();
     File fd(this->fd.name(), O_RDWR);
+    sys::PreserveFileTimes pt(fd);
     off_t end = fd.lseek(0, SEEK_END);
     if (data_idx >= mds.size())
     {
@@ -391,6 +393,7 @@ void Segment::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
     close();
     const auto& s = mds[data_idx].sourceBlob();
     File fd(this->fd.name(), O_RDWR);
+    sys::PreserveFileTimes pt(fd);
     fd.lseek(s.offset);
     fd.write_all_or_throw("\0", 1);
 }
