@@ -161,8 +161,11 @@ void MaintenanceTest::touch(const std::string& pathname, time_t ts)
 void MaintenanceTest::make_hugefile()
 {
     // Pretend that the test segment is 6G already
-    sys::File fd("testds/" + fixture->test_relpath, O_RDWR);
-    fd.ftruncate(6000000000LLU);
+    {
+        sys::File fd("testds/" + fixture->test_relpath, O_RDWR);
+        sys::PreserveFileTimes pt(fd);
+        fd.ftruncate(6000000000LLU);
+    }
 
     // Import a new datum, that will get appended to it
     {
