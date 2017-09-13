@@ -70,10 +70,9 @@ struct AtomicWriter
 };
 
 
-static void compressAndWrite(const std::vector<uint8_t>& buf, int outfd, const std::string& fname)
+static void compressAndWrite(const std::vector<uint8_t>& buf, NamedFileDescriptor& out)
 {
     auto obuf = compress::lzo(buf.data(), buf.size());
-    sys::NamedFileDescriptor out(outfd, fname);
     if (obuf.size() + 8 < buf.size())
     {
         // Write a metadata group
@@ -170,7 +169,7 @@ void Collection::acquire(unique_ptr<Metadata>&& md)
     vals.push_back(md.release());
 }
 
-void Collection::write_to(int out, const std::string& fname) const
+void Collection::write_to(NamedFileDescriptor& out) const
 {
     static const size_t blocksize = 256;
 
@@ -180,13 +179,13 @@ void Collection::write_to(int out, const std::string& fname) const
     {
         if (i > 0 && (i % blocksize) == 0)
         {
-            compressAndWrite(buf, out, fname);
+            compressAndWrite(buf, out);
             buf.clear();
         }
         vals[i]->encodeBinary(enc);
     }
     if (!buf.empty())
-        compressAndWrite(buf, out, fname);
+        compressAndWrite(buf, out);
 }
 
 void Collection::read_from_file(const metadata::ReadContext& rc)
@@ -199,17 +198,22 @@ void Collection::read_from_file(const std::string& pathname)
     Metadata::read_file(pathname, inserter_func());
 }
 
+void Collection::read_from_file(NamedFileDescriptor& fd)
+{
+    Metadata::read_file(fd, inserter_func());
+}
+
 void Collection::writeAtomically(const std::string& fname) const
 {
     AtomicWriter writer(fname);
-    write_to(writer.out, writer.out.name());
+    write_to(writer.out);
     writer.commit();
 }
 
 void Collection::appendTo(const std::string& fname) const
 {
     sys::File out(fname, O_APPEND | O_CREAT, 0666);
-    write_to(out, fname);
+    write_to(out);
     out.close();
 }
 

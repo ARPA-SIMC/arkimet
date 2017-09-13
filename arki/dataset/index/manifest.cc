@@ -282,21 +282,29 @@ void Manifest::test_deindex(const std::string& relpath)
 void Manifest::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
 {
     string pathname = str::joinpath(m_path, relpath) + ".metadata";
+    sys::File fd(pathname, O_RDWR);
+    sys::PreserveFileTimes pf(fd);
     metadata::Collection mds;
-    mds.read_from_file(pathname);
+    mds.read_from_file(fd);
     for (unsigned i = data_idx; i < mds.size(); ++i)
         mds[i].sourceBlob().offset -= overlap_size;
-    mds.writeAtomically(pathname);
+    fd.lseek(0);
+    mds.write_to(fd);
+    fd.ftruncate(fd.lseek(0, SEEK_CUR));
 }
 
 void Manifest::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
 {
     string pathname = str::joinpath(m_path, relpath) + ".metadata";
+    sys::File fd(pathname, O_RDWR);
+    sys::PreserveFileTimes pf(fd);
     metadata::Collection mds;
-    mds.read_from_file(pathname);
+    mds.read_from_file(fd);
     for (unsigned i = data_idx; i < mds.size(); ++i)
         mds[i].sourceBlob().offset += hole_size;
-    mds.writeAtomically(pathname);
+    fd.lseek(0);
+    mds.write_to(fd);
+    fd.ftruncate(fd.lseek(0, SEEK_CUR));
 }
 
 

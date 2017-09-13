@@ -4,6 +4,7 @@
 /// In-memory collection of metadata
 
 #include <arki/defs.h>
+#include <arki/file.h>
 #include <vector>
 #include <string>
 
@@ -94,13 +95,16 @@ public:
     /**
      * Write all metadata to the given output file
      */
-    void write_to(int out, const std::string& fname) const;
+    void write_to(NamedFileDescriptor& out) const;
 
     /// Read metadata from \a pathname and append them to this collection
     void read_from_file(const metadata::ReadContext& rc);
 
     /// Read metadata from \a pathname and append them to this collection
     void read_from_file(const std::string& pathname);
+
+    /// Read metadata from a file descriptor and append them to this collection
+    void read_from_file(NamedFileDescriptor& fd);
 
     /// Add all metadata to a summary
     void add_to_summary(Summary& out) const;

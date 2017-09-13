@@ -525,7 +525,7 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
                     if (q.sorter) mdbuf.sort(*q.sorter);
                     if (tmpfile.get() == 0)
                         tmpfile.reset(new runtime::Tempfile);
-                    mdbuf.write_to(*tmpfile, tmpfile->name());
+                    mdbuf.write_to(*tmpfile);
                     mdbuf.clear();
                 }
                 last_fname = srcname;
