@@ -604,12 +604,16 @@ void Segment::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsi
     if (data_idx >= mds.size())
     {
         open();
-        size_t pos;
-        for (unsigned i = 0; i < hole_size; ++i)
         {
-            File fd = seqfile.open_next(mds[0].sourceBlob().format, pos);
-            fd.close();
+            sys::PreserveFileTimes pf(seqfile.fd);
+            size_t pos;
+            for (unsigned i = 0; i < hole_size; ++i)
+            {
+                File fd = seqfile.open_next(mds[0].sourceBlob().format, pos);
+                fd.close();
+            }
         }
+        close();
     } else {
         for (int i = mds.size() - 1; i >= (int)data_idx; --i)
         {
@@ -620,6 +624,7 @@ void Segment::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsi
             source->offset += hole_size;
             mds[i].set_source(move(source));
         }
+        // TODO: update seqfile to be mds.size() + hole_size
     }
 }
 
