@@ -180,6 +180,8 @@ public:
 
     void futimens(const struct timespec ts[2]);
 
+    void fsync();
+    void fdatasync();
 
     int dup();
 

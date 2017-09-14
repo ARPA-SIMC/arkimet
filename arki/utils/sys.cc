@@ -390,6 +390,18 @@ void FileDescriptor::futimens(const struct timespec ts[2])
         throw_error("cannot change file timestamps");
 }
 
+void FileDescriptor::fsync()
+{
+    if (::fsync(fd) == -1)
+        throw_error("fsync failed");
+}
+
+void FileDescriptor::fdatasync()
+{
+    if (::fdatasync(fd) == -1)
+        throw_error("fdatasync failed");
+}
+
 
 /*
  * PreserveFileTimes
