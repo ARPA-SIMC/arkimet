@@ -161,7 +161,13 @@ Checker::~Checker()
 std::string Checker::type() const { return "simple"; }
 
 void Checker::removeAll(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::removeAll(reporter, writable); release_lock(); }
-void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags) { acquire_lock(); IndexedChecker::repack(reporter, writable, test_flags); release_lock(); }
+void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
+{
+    acquire_lock();
+    IndexedChecker::repack(reporter, writable, test_flags);
+    m_mft->flush();
+    release_lock();
+}
 void Checker::check(dataset::Reporter& reporter, bool fix, bool quick) { acquire_lock(); IndexedChecker::check(reporter, fix, quick); release_lock(); }
 
 segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
