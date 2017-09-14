@@ -355,8 +355,14 @@ void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount)
 void DatasetTest::all_clean(size_t segment_count)
 {
     auto state = scan_state();
-    wassert(actual(state.size()) == segment_count);
-    wassert(actual(state.count(SEGMENT_OK)) == segment_count);
+    try {
+        wassert(actual(state.size()) == segment_count);
+        wassert(actual(state.count(SEGMENT_OK)) == segment_count);
+    } catch (...) {
+        fprintf(stderr, "Dump of unexpected state:\n");
+        state.dump(stderr);
+        throw;
+    }
 }
 
 void DatasetTest::import_all(const testdata::Fixture& fixture)
