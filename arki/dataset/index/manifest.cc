@@ -595,6 +595,7 @@ public:
             for (vector<Info>::const_iterator i = info.begin();
                     i != info.end(); ++i)
                 i->write(out);
+            out.fdatasync();
             out.close();
 
             if (::rename(pathname.c_str(), str::joinpath(m_path, "MANIFEST").c_str()) < 0)
