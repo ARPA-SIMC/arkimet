@@ -528,10 +528,7 @@ public:
         else if (*lb != item)
             info.insert(lb, item);
         else
-        {
-            fprintf(stderr, "REPLACE oldts %ld newts %ld\n", lb->mtime, item.mtime);
             *lb = item;
-        }
 
         dirty = true;
     }
@@ -597,10 +594,7 @@ public:
             File out(pathname, O_WRONLY | O_CREAT | O_TRUNC);
             for (vector<Info>::const_iterator i = info.begin();
                     i != info.end(); ++i)
-            {
-                fprintf(stderr, "FLUSH %s %s %ld\n", pathname.c_str(), i->file.c_str(), i->mtime);
                 i->write(out);
-            }
             out.fdatasync();
             out.close();
 

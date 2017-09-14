@@ -88,7 +88,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
         mdbuf->add(md);
         time_t ts = scan::timestamp(mdbuf->pathname);
         if (ts == 0)
-            fprintf(stderr, "WARNING: %s timestamp is 0\n", mdbuf->pathname.c_str());
+            nag::warning("simple dataset acquire: %s timestamp is 0", mdbuf->pathname.c_str());
         m_mft->acquire(writer->relname, ts, mdbuf->sum);
         return ACQ_OK;
     } catch (std::exception& e) {
@@ -360,7 +360,6 @@ size_t Checker::reorder_segment(const std::string& relpath, metadata::Collection
 
     // Reindex with the new file information
     time_t mtime = sys::timestamp(pathname);
-    fprintf(stderr, "REINDEX MTIME %ld\n", mtime);
     m_mft->acquire(relpath, mtime, sum);
 
     return size_pre - size_post;

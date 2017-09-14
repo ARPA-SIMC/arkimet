@@ -213,7 +213,6 @@ void MaintenanceTest::register_tests_concat()
     });
 
     add_method("repack_hugefile", [&](Fixture& f) {
-        nag::TestCollect tc(true, true);
         make_hugefile();
         wassert(f.state_is(3, SEGMENT_DIRTY));
 
@@ -225,7 +224,6 @@ void MaintenanceTest::register_tests_concat()
 
         wassert(f.all_clean(3));
         wassert(f.query_results({1, -1, 3, 0, 2}));
-        tc.clear();
     });
 
     add_method("repack_timestamps", [&](Fixture& f) {
