@@ -354,6 +354,7 @@ size_t Checker::reorder_segment(const std::string& relpath, metadata::Collection
 
     // Reindex with the new file information
     time_t mtime = sys::timestamp(pathname);
+    fprintf(stderr, "REINDEX MTIME %ld\n", mtime);
     m_mft->acquire(relpath, mtime, sum);
 
     return size_pre - size_post;
