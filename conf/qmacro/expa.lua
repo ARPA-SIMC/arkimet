@@ -2,7 +2,8 @@
 linepat = "^ds:(.-)%.%s+d:(.-)%.%s+t:(.-)%.%s+s:(.-)%.%s+l:(.-)%.%s+v:(.-)%.%s*$"
 
 dataset_aliases = {
-	LMSMR = { "lmsmr4x52", "lmsmr4x55", "lmsmr4x53" }
+    LMSMR = { "lmsmr4x52", "lmsmr4x55", "lmsmr4x53" },
+    cosmo_5M_ita_any = { "cosmo_5M_ita" }
 }
 
 Set = {}
