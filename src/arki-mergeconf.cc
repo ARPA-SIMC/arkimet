@@ -61,30 +61,11 @@ int main(int argc, const char* argv[])
         runtime::Inputs inputs;
         for (const auto& pathname: opts.cfgfiles->values())
             inputs.add_config_file(pathname);
+        // Read the config files from the remaining commandline arguments
         while (opts.hasNext())
             inputs.add_pathname(opts.next());
         if (inputs.empty())
             throw commandline::BadOption("you need to specify at least one config file or dataset");
-
-        // Read the config files from the remaining commandline arguments
-        while (opts.hasNext())
-        {
-            string file = opts.next();
-            if (!str::startswith(file, "http://") &&
-                !str::startswith(file, "https://") &&
-                !sys::access(str::joinpath(file, "config"), F_OK))
-            {
-                cerr << file << " skipped: it does not look like a dataset" << endl;
-                continue;
-            }
-            try {
-                inputs.add_config_file(file);
-            } catch (std::exception& e) {
-                cerr << file << " skipped: " << e.what() << endl;
-            }
-        }
-        if (inputs.empty())
-            throw commandline::BadOption("no valid config files or dataset directories found");
 
         // Validate the configuration
         bool hasErrors = false;
