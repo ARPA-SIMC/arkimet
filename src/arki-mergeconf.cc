@@ -62,7 +62,7 @@ int main(int argc, const char* argv[])
         for (const auto& pathname: opts.cfgfiles->values())
             inputs.add_config_file(pathname);
         while (opts.hasNext())
-            inputs.add_config_file(opts.next());
+            inputs.add_pathname(opts.next());
         if (inputs.empty())
             throw commandline::BadOption("you need to specify the config file");
 
