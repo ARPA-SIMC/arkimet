@@ -64,7 +64,7 @@ int main(int argc, const char* argv[])
         while (opts.hasNext())
             inputs.add_pathname(opts.next());
         if (inputs.empty())
-            throw commandline::BadOption("you need to specify the config file");
+            throw commandline::BadOption("you need to specify at least one config file or dataset");
 
         // Read the config files from the remaining commandline arguments
         while (opts.hasNext())
