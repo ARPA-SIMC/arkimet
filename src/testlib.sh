@@ -3,6 +3,7 @@
 ## Clean up the test environment at exit unless asked otherwise
 cleanup() {
     test -z "$PAUSE" || sh
+    test -s arki-server.pid && kill $(cat arki-server.pid) && wait
     test -z "$PRESERVE" && cd "$ORIGDIR" && rm -rf "$TESTDIR"
 }
 
@@ -65,6 +66,13 @@ setup() {
     mkdir test80
     mkdir test98
     mkdir error
+}
+
+runserver()
+{
+    arki-server -p 7117 --url=http://localhost:7117 --quiet --accesslog=access.log --errorlog=error.log conf &
+    sleep 10
+    echo $! > arki-server.pid
 }
 
 ## Call at end of the test script
@@ -171,3 +179,6 @@ testequals() {
         return 1
     fi
 }
+
+SERVER_URL="http://localhost:7117"
+SERVER_OPTS="-p 7117 --url=$SERVER_URL --quiet --accesslog=access.log --errorlog=error.log"
