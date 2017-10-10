@@ -1,7 +1,6 @@
 #!/bin/sh -e
 
 BINDIR=`dirname $0`
-SERVER_OPTS="-p 7117 --url=http://localhost:7117 --quiet --accesslog=access.log --errorlog=error.log"
 
 . $BINDIR/testlib.sh
 
