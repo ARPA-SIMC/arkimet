@@ -216,15 +216,13 @@ index = reftime, area, product
 
     ConfigFile config;
     config.parse(conf_text);
-    metadata::Collection source("inbound/issue103.vm2");
-    wassert(actual(source.size()) == limits.rlim_max + 1);
 
     RealDispatcher dispatcher(config);
-    for (unsigned i = 0; i < source.size(); ++i)
-    {
-        wassert(actual(dispatcher.dispatch(source[i])) == Dispatcher::DISP_OK);
-        wassert(actual(dsname(source[i])) == "vm2");
-    }
+    scan::scan("inbound/issue103.vm2", [&](unique_ptr<Metadata> md) {
+        wassert(actual(dispatcher.dispatch(*md)) == Dispatcher::DISP_OK);
+        wassert(actual(dsname(*md)) == "vm2");
+        return true;
+    });
 });
 
 }

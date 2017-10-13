@@ -20,7 +20,7 @@ namespace arki {
 namespace dataset {
 
 Segment::Segment(const std::string& relname, const std::string& absname)
-    : relname(relname), absname(absname), payload(0)
+    : relname(relname), absname(absname), payload(nullptr)
 {
 }
 
