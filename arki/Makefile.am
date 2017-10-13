@@ -583,7 +583,7 @@ tests_arki_test_SOURCES += \
 		postprocess-tut.cc \
 		querymacro-tut.cc \
 		datasets-test.cc \
-		dispatcher-tut.cc \
+		dispatcher-test.cc \
 		runtime/processor-test.cc \
 		runtime-test.cc
 
