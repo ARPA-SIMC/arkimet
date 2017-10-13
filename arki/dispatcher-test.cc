@@ -1,3 +1,4 @@
+#include "arki/exceptions.h"
 #include "arki/tests/tests.h"
 #include "arki/dispatcher.h"
 #include "arki/dataset.h"
@@ -12,6 +13,8 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/validator.h"
+#include <sys/resource.h>
+#include <time.h>
 
 namespace {
 using namespace std;
@@ -168,6 +171,60 @@ add_method("missing_reftime", [] {
     wassert(actual(dispatcher.dispatch(source[5])) == Dispatcher::DISP_ERROR);
     wassert(actual(dsname(source[5])) == "error");
     dispatcher.flush();
+});
+
+// Test dispatching to more datasets than the number of open files allowed
+add_method("issue103", [] {
+    sys::rmtree_ifexists("error");
+    sys::rmtree_ifexists("vm2");
+    const char* conf_text = R"(
+[error]
+step = daily
+type = error
+path = error
+[vm2]
+filter = area:VM2,
+replace = yes
+step = daily
+type = iseg
+format = vm2
+path = vm2
+smallfiles = yes
+unique = reftime, area, product
+index = reftime, area, product
+)";
+
+    struct rlimit limits;
+    if (getrlimit(RLIMIT_NOFILE, &limits) == -1)
+        throw_system_error("getrlimit failed");
+
+    File sample("inbound/issue103.vm2", O_CREAT | O_WRONLY);
+    time_t base = 1507917600;
+    for (unsigned i = 0; i < limits.rlim_max + 1; ++i)
+    {
+        time_t step = base + i * 86400;
+        struct tm t;
+        if (gmtime_r(&step, &t) == nullptr)
+            throw_system_error("gmtime_r failed");
+        char buf[128];
+        size_t bufsize = strftime(buf, 128, "%Y%m%d%H%M,1,158,23,,,\n", &t);
+        if (bufsize == 0)
+            throw_system_error("strftime failed");
+        sample.write_all_or_throw(buf, bufsize);
+    }
+    sample.close();
+
+    ConfigFile config;
+    config.parse(conf_text);
+    metadata::Collection source("inbound/issue103.vm2");
+    wassert(actual(source.size()) == limits.rlim_max + 1);
+
+    RealDispatcher dispatcher(config);
+    for (unsigned i = 0; i < source.size(); ++i)
+    {
+        wassert(actual(dispatcher.dispatch(source[i])) == Dispatcher::DISP_OK);
+        wassert(actual(dsname(source[i])) == "vm2");
+    }
 });
 
 }

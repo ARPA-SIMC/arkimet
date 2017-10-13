@@ -22196,6 +22196,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dispatcher",
+  "method": "issue103"
+ },
+ {
+  "doc": "",
   "group": "arki_processor",
   "method": "metadata_binary"
  },
