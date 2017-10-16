@@ -2,6 +2,7 @@
 #include "segmented.h"
 #include "indexed.h"
 #include "maintenance.h"
+#include "arki/exceptions.h"
 #include "arki/dataset/time.h"
 #include "arki/types/source/blob.h"
 #include "arki/metadata.h"
@@ -18,6 +19,8 @@
 #include <fcntl.h>
 #include <sstream>
 #include <iostream>
+#include <sys/resource.h>
+#include <time.h>
 
 namespace {
 using namespace std;
@@ -394,6 +397,9 @@ add_method("delete_age", [](Fixture& f) {
         ReporterExpected e;
         e.deleted.emplace_back("testds", "20/2007.grib");
         wassert(actual(f.makeSegmentedChecker().get()).repack(e, false));
+
+        // Query
+
     }
 });
 
@@ -505,7 +511,81 @@ add_method("unarchive_segment_lastonly", [](Fixture& f) {
     ensure(sys::exists("testds/2007/10-09.grib"));
 });
 
+}
 
+
+struct Issue103Fixture : public DatasetTest
+{
+    using DatasetTest::DatasetTest;
+
+    void test_setup()
+    {
+        DatasetTest::test_setup(R"(
+            step = daily
+            unique = product, area, reftime
+        )");
+    }
+};
+
+class Tests103 : public FixtureTestCase<Issue103Fixture>
+{
+    using FixtureTestCase::FixtureTestCase;
+
+    void register_tests() override;
+};
+
+Tests103 test103_ondisk2("arki_dataset_segmented_issue103_ondisk2", "type=ondisk2\n");
+Tests103 test103_ondisk2_dir("arki_dataset_segmented_issue103_ondisk2", "type=ondisk2\nsegments=dir\n");
+Tests103 test103_simple_plain("arki_dataset_segmented_issue103_simple_plain", "type=simple\nindex_type=plain\n");
+Tests103 test103_simple_plain_dir("arki_dataset_segmented_issue103_simple_plain", "type=simple\nindex_type=plain\nsegments=dir\n");
+Tests103 test103_simple_sqlite("arki_dataset_segmented_issue103_simple_sqlite", "type=simple\nindex_type=sqlite\n");
+Tests103 test103_simple_sqlite_dir("arki_dataset_segmented_issue103_simple_sqlite", "type=simple\nindex_type=sqlite\nsegments=dir\n");
+Tests103 test103_iseg("arki_dataset_segmented_issue103_iseg", "type=iseg\nformat=vm2\n");
+Tests103 test103_iseg_dir("arki_dataset_segmented_issue103_iseg", "type=iseg\nformat=vm2\nsegments=dir\n");
+
+void Tests103::register_tests() {
+
+// Test datasets with more segments than the number of open files allowed
+add_method("issue103", [](Fixture& f) {
+    struct rlimit limits;
+    if (getrlimit(RLIMIT_NOFILE, &limits) == -1)
+        throw_system_error("getrlimit failed");
+
+    File sample("inbound/issue103.vm2", O_CREAT | O_WRONLY);
+    time_t base = 1507917600;
+    for (unsigned i = 0; i < limits.rlim_max + 1; ++i)
+    {
+        time_t step = base + i * 86400;
+        struct tm t;
+        if (gmtime_r(&step, &t) == nullptr)
+            throw_system_error("gmtime_r failed");
+        char buf[128];
+        size_t bufsize = strftime(buf, 128, "%Y%m%d%H%M,1,158,23,,,\n", &t);
+        if (bufsize == 0)
+            throw_system_error("strftime failed");
+        sample.write_all_or_throw(buf, bufsize);
+    }
+    sample.close();
+
+    // Dispatch
+    {
+        auto writer = f.makeSegmentedWriter();
+        scan::scan("inbound/issue103.vm2", [&](unique_ptr<Metadata> md) {
+            wassert(actual(writer->acquire(*md)) == dataset::Writer::ACQ_OK);
+            return true;
+        });
+    }
+
+    // Check
+    wassert(actual(f.makeSegmentedChecker().get()).check_clean(true));
+
+    // Query
+    auto reader = f.config().create_reader();
+    metadata::Collection mdc;
+    wassert(mdc.add(*reader, Matcher::parse("")));
+    wassert(actual(mdc.size()) == limits.rlim_max + 1);
+});
 
 }
+
 }
