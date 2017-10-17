@@ -70,9 +70,15 @@ setup() {
 
 runserver()
 {
-    arki-server -p 7117 --url=http://localhost:7117 --quiet --accesslog=access.log --errorlog=error.log conf &
-    sleep 10
+    local count=0
+    arki-server -p 7117 --url=$SERVER_URL --quiet --accesslog=access.log --errorlog=error.log conf &
     echo $! > arki-server.pid
+    while true
+    do
+        kill -s 0 $(cat arki-server.pid) || exit 1
+        curl $SERVER_URL &>/dev/null && break
+        sleep 0.2
+    done
 }
 
 ## Call at end of the test script
