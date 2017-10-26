@@ -11,6 +11,8 @@
 struct lua_State;
 
 namespace arki {
+struct Reader;
+
 namespace types {
 
 struct Source;
@@ -61,6 +63,7 @@ struct Source : public types::StyledType<Source>
     // Register this type with the type system
     static void init();
 
+    static std::unique_ptr<Source> createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<Reader> reader);
     static std::unique_ptr<Source> createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Source> createBlobUnlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Source> createInline(const std::string& format, uint64_t size);

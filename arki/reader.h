@@ -1,13 +1,10 @@
 #ifndef ARKI_READER_H
 #define ARKI_READER_H
 
-/// Generic interface to read data files
-#include <arki/libconfig.h>
 #include <arki/file.h>
 #include <string>
-#include <vector>
-#include <unordered_map>
 #include <memory>
+#include <vector>
 #include <cstddef>
 #include <sys/types.h>
 
@@ -19,8 +16,7 @@ struct Blob;
 }
 }
 
-namespace reader {
-
+/// Generic interface to read data files
 struct Reader
 {
 public:
@@ -28,50 +24,23 @@ public:
 
     virtual std::vector<uint8_t> read(const types::source::Blob& src) = 0;
     virtual size_t stream(const types::source::Blob& src, NamedFileDescriptor& out) = 0;
-    virtual bool is(const std::string& fname) const = 0;
+
+    static std::shared_ptr<Reader> for_missing(const std::string& abspath);
+    static std::shared_ptr<Reader> for_file(const std::string& abspath);
+    static std::shared_ptr<Reader> for_dir(const std::string& abspath);
+    static std::shared_ptr<Reader> for_auto(const std::string& abspath);
+
+    /**
+     * Empty the reader caches, used after a segment gets repacked, to prevent
+     * reading an old segment using new offsets
+     */
+    static void reset();
+
+    /**
+     * Count the number of cached readers
+     */
+    static unsigned test_count_cached();
 };
 
-class Registry
-{
-protected:
-    std::unordered_map<std::string, std::weak_ptr<Reader>> cache;
-
-    std::shared_ptr<Reader> instantiate(const std::string& abspath);
-
-public:
-    /**
-     * Returns a reader for the file with the given absolute path
-     */
-    std::shared_ptr<Reader> reader(const std::string& abspath);
-
-    /**
-     * Remove from the cache the reader for the given file, if it exists.
-     *
-     * Calls to reader(abspath) after invalidation will instantiate a new
-     * reader, even if some reader for this file is still used by some existing
-     * metadata.
-     *
-     * This is useful to make sure that after a repack, new metadata will refer
-     * to the new file.
-     */
-    void invalidate(const std::string& abspath);
-
-    /**
-     * Remove expired entries from the cache
-     */
-    void cleanup();
-
-    /**
-     * Get the global singleton registry
-     */
-    static Registry& get();
-
-    /**
-     * Return a const reference to the cache, for inspection in tests
-     */
-    const std::unordered_map<std::string, std::weak_ptr<Reader>>& test_inspect_cache() const { return cache; }
-};
-
-}
 }
 #endif

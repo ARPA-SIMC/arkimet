@@ -1,4 +1,5 @@
 #include "reader.h"
+#include "reader/registry.h"
 #include "arki/utils.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/compress.h"
@@ -32,8 +33,6 @@ protected:
 public:
     MissingFileReader(const std::string& abspath)
         : abspath(abspath) {}
-
-    bool is(const std::string& fname) const override { return fname == abspath; }
 
     std::vector<uint8_t> read(const types::source::Blob& src) override
     {
@@ -83,10 +82,6 @@ public:
         lock.ofd_setlk(fd);
     }
 
-    bool is(const std::string& fname) const override
-    {
-        return fd.name() == fname;
-    }
 
     std::vector<uint8_t> read(const types::source::Blob& src) override
     {
@@ -184,11 +179,6 @@ public:
         lock.ofd_setlk(repack_lock);
     }
 
-    bool is(const std::string& fname) const override
-    {
-        return dirfd.name() == fname;
-    }
-
     sys::File open_src(const types::source::Blob& src)
     {
         char dataname[32];
@@ -278,11 +268,6 @@ public:
     {
     }
 
-    bool is(const std::string& fname) const override
-    {
-        return this->fname == fname;
-    }
-
     std::vector<uint8_t> read(const types::source::Blob& src) override
     {
         vector<uint8_t> buf;
@@ -342,11 +327,6 @@ public:
     {
         // Read index
         idx.read(fd.name() + ".idx");
-    }
-
-    bool is(const std::string& fname) const override
-    {
-        return this->fname == fname;
     }
 
     void reposition(off_t ofs)
@@ -420,71 +400,73 @@ public:
     }
 };
 
-std::shared_ptr<Reader> Registry::instantiate(const std::string& abspath)
+}
+
+
+namespace {
+
+reader::Registry<reader::FileReader> registry_file;
+reader::Registry<reader::DirReader> registry_dir;
+reader::Registry<reader::ZlibFileReader> registry_zlib;
+reader::Registry<reader::IdxZlibFileReader> registry_idxzlib;
+
+}
+
+
+void Reader::reset()
+{
+    registry_file.clear();
+    registry_dir.clear();
+    registry_zlib.clear();
+    registry_idxzlib.clear();
+}
+
+std::shared_ptr<Reader> Reader::for_missing(const std::string& abspath)
+{
+    return make_shared<reader::MissingFileReader>(abspath);
+}
+
+std::shared_ptr<Reader> Reader::for_file(const std::string& abspath)
+{
+    return registry_file.reader(abspath);
+}
+
+std::shared_ptr<Reader> Reader::for_dir(const std::string& abspath)
+{
+    return registry_dir.reader(abspath);
+}
+
+std::shared_ptr<Reader> Reader::for_auto(const std::string& abspath)
 {
     // Open the new file
     std::unique_ptr<struct stat> st = sys::stat(abspath);
     if (st.get())
     {
         if (S_ISDIR(st->st_mode))
-            return make_shared<reader::DirReader>(abspath);
+            return for_dir(abspath);
         else
-            return make_shared<reader::FileReader>(abspath);
+            return for_file(abspath);
     }
     else if (sys::exists(abspath + ".gz.idx"))
-        return make_shared<reader::IdxZlibFileReader>(abspath);
+        return registry_idxzlib.reader(abspath);
     else if (sys::exists(abspath + ".gz"))
-        return make_shared<reader::ZlibFileReader>(abspath);
+        return registry_zlib.reader(abspath);
     else
-        return make_shared<reader::MissingFileReader>(abspath);
+        return for_missing(abspath);
 }
 
-std::shared_ptr<Reader> Registry::reader(const std::string& abspath)
+unsigned Reader::test_count_cached()
 {
-    auto res = cache.find(abspath);
-    if (res == cache.end())
-    {
-        auto reader = instantiate(abspath);
-        cache.insert(make_pair(abspath, reader));
-        return reader;
-    }
-
-    if (res->second.expired())
-    {
-        auto reader = instantiate(abspath);
-        res->second = reader;
-        return reader;
-    }
-
-    return res->second.lock();
+    registry_file.cleanup();
+    registry_dir.cleanup();
+    registry_zlib.cleanup();
+    registry_idxzlib.cleanup();
+    unsigned size = 0;
+    size += registry_file.test_inspect_cache().size();
+    size += registry_dir.test_inspect_cache().size();
+    size += registry_zlib.test_inspect_cache().size();
+    size += registry_idxzlib.test_inspect_cache().size();
+    return size;
 }
 
-void Registry::invalidate(const std::string& abspath)
-{
-    cache.erase(abspath);
-}
-
-void Registry::cleanup()
-{
-    auto i = cache.begin();
-    while (i != cache.end())
-    {
-        if (i->second.expired())
-        {
-            auto next = i;
-            ++next;
-            cache.erase(i);
-            i = next;
-        } else
-            ++i;
-    }
-}
-
-Registry& Registry::get()
-{
-    static Registry singleton;
-    return singleton;
-}
-
-}
 }

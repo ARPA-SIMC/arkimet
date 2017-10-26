@@ -551,7 +551,8 @@ const vector<uint8_t>& Metadata::getData()
             // Do not directly use m_data so that if dataReader.read throws an
             // exception, m_data remains empty.
             source::Blob& s = sourceBlob();
-            s.lock();
+            if (!s.reader)
+                throw runtime_error("cannot retrieve data: BLOB source has no reader associated");
             m_data = s.read_data();
             return m_data;
         }
@@ -604,7 +605,8 @@ size_t Metadata::stream_data(NamedFileDescriptor& out)
             // Do not directly use m_data so that if dataReader.read throws an
             // exception, m_data remains empty.
             source::Blob& s = sourceBlob();
-            s.lock();
+            if (!s.reader)
+                throw runtime_error("cannot retrieve data: BLOB source has no reader associated");
             return s.stream_data(out);
         }
         default:
@@ -669,7 +671,7 @@ size_t Metadata::data_size() const
 
 void Metadata::flushDataReaders()
 {
-    reader::Registry().get().cleanup();
+    Reader::reset();
 }
 
 bool Metadata::read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& file, metadata_dest_func dest)

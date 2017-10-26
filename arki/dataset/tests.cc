@@ -41,7 +41,7 @@ using arki::core::Time;
 namespace arki {
 namespace tests {
 
-unsigned count_results(Reader& ds, const dataset::DataQuery& dq)
+unsigned count_results(dataset::Reader& ds, const dataset::DataQuery& dq)
 {
     unsigned count = 0;
     ds.query_data(dq, [&](unique_ptr<Metadata>) { ++count; return true; });

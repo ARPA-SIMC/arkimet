@@ -67,8 +67,6 @@ add_method("uncompressed_idx", [] {
 
 // Don't segfault on nonexisting files
 add_method("missing", [] {
-    reader::Registry readers;
-
     vector<uint8_t> buf(7218);
     sys::unlink_ifexists("test.grib1");
     auto src = types::source::Blob::create("grib", "", "test,grib1", 0, 7218);

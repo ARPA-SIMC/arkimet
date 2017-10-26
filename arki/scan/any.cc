@@ -240,7 +240,10 @@ time_t timestamp(const std::string& file)
 void compress(const std::string& file, size_t groupsize)
 {
     utils::compress::DataCompressor compressor(file, groupsize);
-    scan(file, [&](unique_ptr<Metadata> md) { return compressor.eat(move(md)); });
+    scan(file, [&](unique_ptr<Metadata> md) {
+        md->sourceBlob().lock();
+        return compressor.eat(move(md));
+    });
     compressor.flush();
 
     // Set the same timestamp as the uncompressed file
@@ -251,7 +254,7 @@ void compress(const std::string& file, size_t groupsize)
     utime((file + ".gz").c_str(), &times);
     utime((file + ".gz.idx").c_str(), &times);
 
-	// TODO: delete uncompressed version
+    // TODO: delete uncompressed version
 }
 
 void Validator::throw_check_error(utils::sys::NamedFileDescriptor& fd, off_t offset, const std::string& msg) const

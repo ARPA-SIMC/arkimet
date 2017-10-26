@@ -25,6 +25,7 @@ void Scanner::close()
     filename.clear();
     basedir.clear();
     relname.clear();
+    reader.reset();
 }
 
 void Scanner::test_open(const std::string& filename)

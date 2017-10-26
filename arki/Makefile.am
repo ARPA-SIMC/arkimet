@@ -107,6 +107,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		metadata/tests.h \
 		metadata/test-generator.h \
 		reader.h \
+		reader/registry.h \
 		nag.h \
 		postprocess.h \
 		querymacro.h \
@@ -389,6 +390,7 @@ libarkimet_la_SOURCES += \
 		metadata/consumer.cc \
 		metadata/test-generator.cc \
 		reader.cc \
+		reader/registry.cc \
 		summary/stats.cc \
 		summary/intern.cc \
 		summary/table.cc \
@@ -417,6 +419,7 @@ tests_arki_test_SOURCES += \
 		metadata/stream-test.cc \
 		metadata/test-generator-tut.cc \
 		reader-test.cc \
+		reader/registry-test.cc \
 		summary-test.cc \
 		summary/intern-tut.cc \
 		summary/table-tut.cc \

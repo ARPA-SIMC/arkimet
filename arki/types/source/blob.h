@@ -5,10 +5,7 @@
 #include <arki/file.h>
 
 namespace arki {
-
-namespace reader {
 struct Reader;
-}
 
 namespace types {
 namespace source {
@@ -42,7 +39,7 @@ struct Blob : public Source
      * The reader will keep a read lock on the file, to prevent it from being
      * modified while it can still potentially be read
      */
-    std::shared_ptr<reader::Reader> reader;
+    std::shared_ptr<Reader> reader;
 
 
     Style style() const override;
@@ -89,6 +86,11 @@ struct Blob : public Source
     void lock();
 
     /**
+     * Make sure this blob has a reader that keeps a read lock on the source file
+     */
+    void lock(std::shared_ptr<Reader> reader);
+
+    /**
      * Make sure this blob is not holding a read lock on the source file
      */
     void unlock();
@@ -118,6 +120,7 @@ struct Blob : public Source
      */
     size_t stream_data(NamedFileDescriptor& out) const;
 
+    static std::unique_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<Reader> reader);
     static std::unique_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Blob> create_unlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Blob> decodeMapping(const emitter::memory::Mapping& val);

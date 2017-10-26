@@ -1,6 +1,7 @@
 #include "odimh5.h"
 #include "arki/libconfig.h"
 #include "arki/metadata.h"
+#include "arki/reader.h"
 #include "arki/types/origin.h"
 #include "arki/types/reftime.h"
 #include "arki/types/task.h"
@@ -183,6 +184,7 @@ void OdimH5::open(const std::string& filename, const std::string& basedir, const
 {
     using namespace arki::utils::h5;
     Scanner::open(filename, basedir, relname);
+    reader = Reader::for_file(filename);
 
     // Open H5 file
     read = false;
@@ -244,7 +246,7 @@ void OdimH5::setSource(Metadata& md)
     note << "Scanned from " << relname << ":0+" << buf.size();
     md.add_note(note.str());
 
-    md.set_source(Source::createBlob("odimh5", basedir, relname, 0, buf.size()));
+    md.set_source(Source::createBlob("odimh5", basedir, relname, 0, buf.size(), reader));
     md.set_cached_data(move(buf));
 }
 

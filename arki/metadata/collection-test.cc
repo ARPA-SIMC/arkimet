@@ -67,6 +67,7 @@ add_method("compression", [] {
     utils::acct::gzip_idx_reposition_count.reset();
     for (int i = 0; i < repeats; ++i)
     {
+        c[i].sourceBlob().lock();
         const auto& b = c[i].getData();
         wassert(actual(b.size()) == bufr.size());
         wassert(actual(memcmp(b.data(), bufr.data(), bufr.size())) == 0);
@@ -89,6 +90,7 @@ add_method("compression", [] {
     utils::acct::gzip_idx_reposition_count.reset();
     for (int i = repeats-1; i >= 0; --i)
     {
+        c[i].sourceBlob().lock();
         const auto& b = c[i].getData();
         ensure_equals(b.size(), bufr.size());
         ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
@@ -110,6 +112,7 @@ add_method("compression", [] {
     utils::acct::gzip_idx_reposition_count.reset();
     for (int i = 0; i < repeats; i += 2)
     {
+        c[i].sourceBlob().lock();
         const auto& b = c[i].getData();
         ensure_equals(b.size(), bufr.size());
         ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);

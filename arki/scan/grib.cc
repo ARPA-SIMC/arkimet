@@ -2,6 +2,7 @@
 #include "grib.h"
 #include <grib_api.h>
 #include "arki/metadata.h"
+#include "arki/reader.h"
 #include "arki/exceptions.h"
 #include "arki/runtime/config.h"
 #include "arki/utils/string.h"
@@ -485,6 +486,7 @@ void Grib::open(const std::string& filename, const std::string& basedir, const s
     Scanner::open(filename, basedir, relname);
     if (!(in = fopen(filename.c_str(), "rb")))
         throw_file_error(filename, "cannot open file for reading");
+    reader = Reader::for_file(filename);
 }
 
 void Grib::close()
@@ -564,7 +566,7 @@ void Grib::setSource(Metadata& md)
     }
     else
     {
-        md.set_source(Source::createBlob("grib", basedir, relname, offset, size));
+        md.set_source(Source::createBlob("grib", basedir, relname, offset, size, reader));
         md.set_cached_data(vector<uint8_t>(vbuf, vbuf + size));
     }
     stringstream note;

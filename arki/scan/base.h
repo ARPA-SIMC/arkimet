@@ -5,6 +5,8 @@
 #include <memory>
 
 namespace arki {
+struct Reader;
+
 namespace scan {
 
 struct Scanner
@@ -12,6 +14,7 @@ struct Scanner
     std::string filename;
     std::string basedir;
     std::string relname;
+    std::shared_ptr<Reader> reader;
 
     virtual ~Scanner();
 

@@ -6,6 +6,7 @@
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/time.h"
 #include "arki/reader.h"
+#include "arki/reader/registry.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
@@ -816,11 +817,9 @@ void MaintenanceTest::register_tests()
         // in the reader registry
         auto checker = f.makeSegmentedChecker();
 
-        auto& registry = reader::Registry::get();
-        registry.cleanup();
-        unsigned orig = registry.test_inspect_cache().size();
+        unsigned orig = arki::Reader::test_count_cached();
         checker->repackSegment(f.test_relpath);
-        wassert(actual(registry.test_inspect_cache().size()) == orig);
+        wassert(actual(arki::Reader::test_count_cached()) == orig);
     });
 }
 
