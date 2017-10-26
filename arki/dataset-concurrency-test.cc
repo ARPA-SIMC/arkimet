@@ -247,11 +247,12 @@ this->add_method("import_during_read", [](Fixture& f) {
         ++count;
         return true;
     });
-    wassert(actual(count) == 1);
+    wassert(actual(count) == 1u);
 
     // Querying again returns all imported data
     count = 0;
     reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { ++count; return true; });
+    wassert(actual(count) == 1u);
 });
 
 }
