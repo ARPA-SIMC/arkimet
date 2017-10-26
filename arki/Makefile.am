@@ -114,6 +114,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime.h \
 		runtime/io.h \
 		runtime/processor.h \
+		scan/base.h \
 		scan/any.h \
 		sort.h \
 		summary.h \
@@ -397,6 +398,7 @@ libarkimet_la_SOURCES += \
 		formatter.cc \
 		validator.cc \
 		postprocess.cc \
+		scan/base.cc \
 		scan/any.cc
 
 tests_arki_test_SOURCES += \

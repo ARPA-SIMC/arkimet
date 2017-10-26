@@ -3,6 +3,7 @@
 
 /// scan/grib - Scan a GRIB (version 1 or 2) file for metadata
 
+#include <arki/scan/base.h>
 #include <string>
 #include <vector>
 
@@ -23,18 +24,15 @@ const Validator& validator();
 class Grib;
 struct GribLua;
 
-class Grib
+class Grib : public Scanner
 {
 protected:
-	std::string filename;
-	std::string basedir;
-	std::string relname;
-	FILE* in;
-	grib_context* context;
-	grib_handle* gh;
-	GribLua* L;
-	std::vector<int> grib1_funcs;
-	std::vector<int> grib2_funcs;
+    FILE* in;
+    grib_context* context;
+    grib_handle* gh;
+    GribLua* L;
+    std::vector<int> grib1_funcs;
+    std::vector<int> grib2_funcs;
 
 	/**
 	 * Set the source information in the metadata
@@ -65,20 +63,15 @@ public:
 	Grib(const std::string& grib1code = std::string(), const std::string& grib2code = std::string());
 	virtual ~Grib();
 
-	/**
-	 * Access a file with GRIB data
-	 */
-	void open(const std::string& filename);
-
     /// Alternate version with explicit basedir/relname separation
-    void open(const std::string& filename, const std::string& basedir, const std::string& relname);
+    void open(const std::string& filename, const std::string& basedir, const std::string& relname) override;
 
-	/**
-	 * Close the input file.
-	 *
-	 * This is optional: the file will be closed by the destructor if needed.
-	 */
-	void close();
+    /**
+     * Close the input file.
+     *
+     * This is optional: the file will be closed by the destructor if needed.
+     */
+    void close() override;
 
 	/**
 	 * Scan the next GRIB in the file.
@@ -92,7 +85,7 @@ public:
 	friend class GribLua;
 };
 
-
+#if 0
 class MultiGrib : public Grib
 {
 protected:
@@ -109,8 +102,9 @@ protected:
     void setSource(Metadata& md) override;
 
 public:
-	MultiGrib(const std::string& tmpfilename, std::ostream& tmpfile);
+    MultiGrib(const std::string& tmpfilename, std::ostream& tmpfile);
 };
+#endif
 
 }
 }

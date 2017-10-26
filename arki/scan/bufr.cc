@@ -1,27 +1,27 @@
 #include "config.h"
-#include <arki/scan/bufr.h>
-#include <arki/utils/files.h>
+#include "bufr.h"
+#include "arki/utils/files.h"
 #include <dballe/file.h>
 #include <dballe/message.h>
 #include <dballe/msg/codec.h>
 #include <dballe/core/csv.h>
 #include <wreport/bulletin.h>
 #include <wreport/options.h>
-#include <arki/metadata.h>
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/types/reftime.h>
-#include <arki/types/run.h>
-#include <arki/types/timerange.h>
-#include <arki/scan/any.h>
-#include <arki/utils/sys.h>
+#include "arki/metadata.h"
+#include "arki/types/origin.h"
+#include "arki/types/product.h"
+#include "arki/types/reftime.h"
+#include "arki/types/run.h"
+#include "arki/types/timerange.h"
+#include "arki/scan/any.h"
+#include "arki/utils/sys.h"
 #include <sstream>
 #include <cstring>
 #include <stdint.h>
 #include <arpa/inet.h>
 
 #ifdef HAVE_LUA
-#include <arki/scan/bufrlua.h>
+#include "arki/scan/bufrlua.h"
 #endif
 
 using namespace std;
@@ -96,20 +96,9 @@ Bufr::~Bufr()
 #endif
 }
 
-void Bufr::open(const std::string& filename)
-{
-    string basedir, relname;
-    utils::files::resolve_path(filename, basedir, relname);
-    open(sys::abspath(filename), basedir, relname);
-}
-
 void Bufr::open(const std::string& filename, const std::string& basedir, const std::string& relname)
 {
-    // Close the previous file if needed
-    close();
-    this->filename = filename;
-    this->basedir = basedir;
-    this->relname = relname;
+    Scanner::open(filename, basedir, relname);
     if (filename == "-")
         file = dballe::File::create(dballe::File::BUFR, stdin, false, "standard input").release();
     else
@@ -118,9 +107,7 @@ void Bufr::open(const std::string& filename, const std::string& basedir, const s
 
 void Bufr::close()
 {
-    filename.clear();
-    basedir.clear();
-    relname.clear();
+    Scanner::close();
     if (file)
     {
         delete file;

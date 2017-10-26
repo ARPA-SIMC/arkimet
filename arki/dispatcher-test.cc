@@ -78,7 +78,7 @@ add_method("simple", [] {
     Metadata md;
     scan::Grib scanner;
     RealDispatcher dispatcher(config);
-    scanner.open("inbound/test.grib1");
+    scanner.test_open("inbound/test.grib1");
     ensure(scanner.next(md));
     wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_OK);
     wassert(actual(dsname(md)) == "test200");
@@ -134,7 +134,7 @@ add_method("validation", [] {
     RealDispatcher dispatcher(config);
     validators::FailAlways fail_always;
     dispatcher.add_validator(fail_always);
-    scanner.open("inbound/test.grib1");
+    scanner.test_open("inbound/test.grib1");
     ensure(scanner.next(md));
     wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_ERROR);
     wassert(actual(dsname(md)) == "error");

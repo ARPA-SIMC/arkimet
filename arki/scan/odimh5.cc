@@ -179,22 +179,10 @@ OdimH5::~OdimH5()
     delete L;
 }
 
-void OdimH5::open(const std::string& filename)
-{
-    std::string basedir, relname;
-    utils::files::resolve_path(filename, basedir, relname);
-    open(sys::abspath(filename), basedir, relname);
-}
-
 void OdimH5::open(const std::string& filename, const std::string& basedir, const std::string& relname)
 {
     using namespace arki::utils::h5;
-
-    // Close the previous file if needed
-    close();
-    this->filename = filename;
-    this->basedir = basedir;
-    this->relname = relname;
+    Scanner::open(filename, basedir, relname);
 
     // Open H5 file
     read = false;
@@ -212,9 +200,7 @@ void OdimH5::open(const std::string& filename, const std::string& basedir, const
 
 void OdimH5::close()
 {
-    filename.clear();
-    basedir.clear();
-    relname.clear();
+    Scanner::close();
     read = false;
     if (h5file >= 0)
     {

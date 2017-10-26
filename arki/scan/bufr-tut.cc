@@ -37,7 +37,7 @@ def_test(1)
     scan::Bufr scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/test.bufr");
+    scanner.test_open("inbound/test.bufr");
 
 	// See how we scan the first BUFR
 	ensure(scanner.next(md));
@@ -120,7 +120,7 @@ def_test(2)
     scan::Bufr scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/padded.bufr");
+    scanner.test_open("inbound/padded.bufr");
 
 	// See how we scan the first BUFR
 	ensure(scanner.next(md));
@@ -234,7 +234,7 @@ def_test(4)
     scan::Bufr scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/C23000.bufr");
+    scanner.test_open("inbound/C23000.bufr");
 
 	// See how we scan the first BUFR
 	ensure(scanner.next(md));
@@ -273,7 +273,7 @@ def_test(5)
     scan::Bufr scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/pollution.bufr");
+    scanner.test_open("inbound/pollution.bufr");
 
 	// See how we scan the first BUFR
 	ensure(scanner.next(md));
@@ -308,7 +308,7 @@ def_test(6)
     Metadata md;
     scan::Bufr scanner;
 
-    scanner.open("inbound/zerodate.bufr");
+    scanner.test_open("inbound/zerodate.bufr");
 
     // Missing datetime info should lead to missing Reftime
     wassert(actual(scanner.next(md)).istrue());
@@ -320,7 +320,7 @@ def_test(7)
 {
     Metadata md;
     scan::Bufr scanner;
-    scanner.open("inbound/ship.bufr");
+    scanner.test_open("inbound/ship.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("area", "GRIB(x=-11, y=37, type=mob)"));
     wassert(actual(md).contains("proddef", "GRIB(id=DHDE)"));
@@ -331,7 +331,7 @@ def_test(8)
 {
     Metadata md;
     scan::Bufr scanner;
-    scanner.open("inbound/amdar.bufr");
+    scanner.test_open("inbound/amdar.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("area", "GRIB(x=21, y=64, type=mob)"));
     wassert(actual(md).contains("proddef", "GRIB(id=EU4444)"));
@@ -342,7 +342,7 @@ def_test(9)
 {
     Metadata md;
     scan::Bufr scanner;
-    scanner.open("inbound/airep.bufr");
+    scanner.test_open("inbound/airep.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("area", "GRIB(x=-54, y=51, type=mob)"));
     wassert(actual(md).contains("proddef", "GRIB(id=ACA872)"));
@@ -353,7 +353,7 @@ def_test(10)
 {
     Metadata md;
     scan::Bufr scanner;
-    scanner.open("inbound/acars.bufr");
+    scanner.test_open("inbound/acars.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("area", "GRIB(x=-88, y=39, type=mob)"));
     wassert(actual(md).contains("proddef", "GRIB(id=JBNYR3RA)"));
@@ -364,7 +364,7 @@ def_test(11)
 {
     Metadata md;
     scan::Bufr scanner;
-    scanner.open("inbound/synop-gts.bufr");
+    scanner.test_open("inbound/synop-gts.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("area", "GRIB(lat=4586878, lon=717080)"));
     wassert(actual(md).contains("proddef", "GRIB(blo=6, sta=717)"));
@@ -375,7 +375,7 @@ def_test(12)
 {
     Metadata md;
     scan::Bufr scanner;
-    scanner.open("inbound/synop-gts-different-date-in-header.bufr");
+    scanner.test_open("inbound/synop-gts-different-date-in-header.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("area", "GRIB(lat=4586878, lon=717080)"));
     wassert(actual(md).contains("proddef", "GRIB(blo=6, sta=717)"));
@@ -386,7 +386,7 @@ def_test(13)
 {
     Metadata md;
     scan::Bufr scanner;
-    scanner.open("inbound/interpreted-range.bufr");
+    scanner.test_open("inbound/interpreted-range.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("Area", "GRIB(type=mob, x=10, y=53)"));
     wassert(actual(md).contains("Proddef", "GRIB(id=DBBC)"));
@@ -398,13 +398,13 @@ def_test(14)
     // BUFR has datetime 2009-02-13 12:00:00, timerange instant
     Metadata md;
     scan::Bufr scanner;
-    scanner.open("inbound/tempforecast.bufr");
+    scanner.test_open("inbound/tempforecast.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("reftime", "2009-02-13 12:00:00"));
 
     // BUFR has datetime 2013-04-06 00:00:00 (validity time, in this case), timerange 254,259200,0 (+72h)
     // and should be archived with its emission time
-    scanner.open("inbound/tempforecast1.bufr");
+    scanner.test_open("inbound/tempforecast1.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("reftime", "2013-04-03 00:00:00"));
 }
@@ -414,7 +414,7 @@ def_test(15)
 {
     Metadata md;
     scan::Bufr scanner;
-    scanner.open("inbound/wrongdate.bufr");
+    scanner.test_open("inbound/wrongdate.bufr");
 
     wassert(actual(scanner.next(md)).istrue());
     wassert(actual(md.get<Reftime>()).isfalse());

@@ -45,10 +45,10 @@ struct arki_querymacro_shar {
             "path = testds\n";
         dispatch_cfg.parse(conf, "(memory)");
 
-		// Import all data from test.grib1
-		Metadata md;
-		scan::Grib scanner;
-		scanner.open("inbound/test.grib1");
+        // Import all data from test.grib1
+        Metadata md;
+        scan::Grib scanner;
+        scanner.test_open("inbound/test.grib1");
 
         auto config = dataset::ondisk2::Config::create(*dispatch_cfg.section("testds"));
         dataset::ondisk2::Writer testds(config);

@@ -26,7 +26,7 @@ def_test(1)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/PVOL_v20.h5");
+    scanner.test_open("inbound/odimh5/PVOL_v20.h5");
 
 	ensure(scanner.next(md));
 
@@ -64,8 +64,8 @@ def_test(2)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/COMP_CAPPI_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/COMP_CAPPI_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_CAPPI_v20.h5", 0, 49113));
@@ -100,8 +100,8 @@ def_test(3)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/COMP_ETOP_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/COMP_ETOP_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_ETOP_v20.h5", 0, 49113));
@@ -136,8 +136,8 @@ def_test(4)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/COMP_LBM_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/COMP_LBM_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_LBM_v20.h5", 0, 49057));
@@ -172,8 +172,8 @@ def_test(5)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/COMP_MAX_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/COMP_MAX_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_MAX_v20.h5", 0, 49049));
@@ -208,8 +208,8 @@ def_test(6)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/COMP_PCAPPI_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/COMP_PCAPPI_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_PCAPPI_v20.h5", 0, 49113));
@@ -244,8 +244,8 @@ def_test(7)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/COMP_PPI_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/COMP_PPI_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_PPI_v20.h5", 0, 49113));
@@ -280,8 +280,8 @@ def_test(8)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/COMP_RR_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/COMP_RR_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_RR_v20.h5", 0, 49049));
@@ -317,8 +317,8 @@ def_test(9)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/COMP_VIL_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/COMP_VIL_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_VIL_v20.h5", 0, 49097));
@@ -354,8 +354,8 @@ def_test(10)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/IMAGE_CAPPI_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/IMAGE_CAPPI_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_CAPPI_v20.h5", 0, 49113));
@@ -391,8 +391,8 @@ def_test(11)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/IMAGE_ETOP_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/IMAGE_ETOP_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_ETOP_v20.h5", 0, 49113));
@@ -427,8 +427,8 @@ def_test(12)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/IMAGE_HVMI_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/IMAGE_HVMI_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_HVMI_v20.h5", 0, 68777));
@@ -463,8 +463,8 @@ def_test(13)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/IMAGE_MAX_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/IMAGE_MAX_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_MAX_v20.h5", 0, 49049));
@@ -499,8 +499,8 @@ def_test(14)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/IMAGE_PCAPPI_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/IMAGE_PCAPPI_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_PCAPPI_v20.h5", 0, 49113));
@@ -535,8 +535,8 @@ def_test(15)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/IMAGE_PPI_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/IMAGE_PPI_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_PPI_v20.h5", 0, 49113));
@@ -571,8 +571,8 @@ def_test(16)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/IMAGE_RR_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/IMAGE_RR_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_RR_v20.h5", 0, 49049));
@@ -608,8 +608,8 @@ def_test(17)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/IMAGE_VIL_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/IMAGE_VIL_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_VIL_v20.h5", 0, 49097));
@@ -644,8 +644,8 @@ def_test(18)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/IMAGE_ZLR-BB_v20.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/IMAGE_ZLR-BB_v20.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_ZLR-BB_v20.h5", 0, 62161));
@@ -680,8 +680,8 @@ def_test(19)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/XSEC_v21.h5");
-	ensure(scanner.next(md));
+    scanner.test_open("inbound/odimh5/XSEC_v21.h5");
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/XSEC_v21.h5", 0, 19717));
@@ -718,8 +718,8 @@ def_test(20)
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/odimh5/empty.h5");
-	ensure(not scanner.next(md));
+    scanner.test_open("inbound/odimh5/empty.h5");
+    ensure(not scanner.next(md));
 }
 
 }

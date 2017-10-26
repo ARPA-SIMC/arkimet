@@ -44,11 +44,11 @@ add_method("append", [] {
 
     system(("cp inbound/test.grib1 " + fname).c_str());
 
-	scan::Grib scanner;
+    scan::Grib scanner;
 
-	Metadata md;
-	size_t totsize = 0;
-	scanner.open("inbound/test.grib1");
+    Metadata md;
+    size_t totsize = 0;
+    scanner.test_open("inbound/test.grib1");
 
     {
         datafile::MdBuf mdbuf("./" + fname);
@@ -67,7 +67,7 @@ add_method("append", [] {
         ensure(!sys::exists(mdfname));
         ensure(!sys::exists(sumfname));
 
-		totsize += size;
+        totsize += size;
 
         // Get another metadata
         ensure(scanner.next(md));

@@ -323,7 +323,7 @@ add_method("regression_0", [](Fixture& f) {
 
     Metadata md;
     scan::Bufr scanner;
-    scanner.open("inbound/conflicting-temp-same-usn.bufr");
+    scanner.test_open("inbound/conflicting-temp-same-usn.bufr");
     size_t count = 0;
     for ( ; scanner.next(md); ++count)
         wassert(actual(writer->acquire(md)) == Writer::ACQ_OK);

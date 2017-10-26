@@ -79,20 +79,10 @@ Vm2::~Vm2()
     close();
 }
 
-void Vm2::open(const std::string& filename)
-{
-    string basedir, relname;
-    utils::files::resolve_path(filename, basedir, relname);
-    open(sys::abspath(filename), basedir, relname);
-}
-
 void Vm2::open(const std::string& filename, const std::string& basedir, const std::string& relname)
 {
-    // Close the previous file if needed
-    close();
-    this->filename = sys::abspath(filename);
-    this->basedir = basedir;
-    this->relname = relname;
+    Scanner::open(filename, basedir, relname);
+
     if (relname == "-") {
         this->in = &std::cin;
     } else {
@@ -105,7 +95,8 @@ void Vm2::open(const std::string& filename, const std::string& basedir, const st
 
 void Vm2::close()
 {
-	if (in && relname != "-")
+    Scanner::close();
+    if (in && relname != "-")
         delete in;
     if (parser) delete parser;
     in = 0;
