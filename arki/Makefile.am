@@ -541,11 +541,11 @@ tests_arki_test_SOURCES += \
 		dataset/time-test.cc \
 		dataset/segment-test.cc \
 		dataset/segment/tests.cc \
-		dataset/segment/fd-tut.cc \
-		dataset/segment/concat-tut.cc \
-		dataset/segment/lines-tut.cc \
+		dataset/segment/fd-test.cc \
+		dataset/segment/concat-test.cc \
+		dataset/segment/lines-test.cc \
 		dataset/segment/seqfile-test.cc \
-		dataset/segment/dir-tut.cc \
+		dataset/segment/dir-test.cc \
 		dataset/maintenance-test.cc \
 		dataset/memory-tut.cc \
 		dataset/index-test.cc \

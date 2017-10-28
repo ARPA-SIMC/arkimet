@@ -25,7 +25,7 @@ protected:
     index::SummaryCache scache;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
-    Segment* file(const Metadata& md, const std::string& format);
+    std::shared_ptr<segment::Writer> file(const Metadata& md, const std::string& format);
 
     AcquireResult acquire_replace_never(Metadata& md);
     AcquireResult acquire_replace_always(Metadata& md);

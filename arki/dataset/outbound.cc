@@ -47,7 +47,7 @@ std::string Writer::type() const { return "outbound"; }
 void Writer::storeBlob(Metadata& md, const std::string& reldest)
 {
     // Write using segment::Writer
-    Segment* w = file(md, md.source().format);
+    auto w = file(md, md.source().format);
     w->append(md);
 }
 

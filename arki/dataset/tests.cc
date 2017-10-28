@@ -121,7 +121,7 @@ std::shared_ptr<const dataset::ondisk2::Config> DatasetTest::ondisk2_config()
     return dynamic_pointer_cast<const dataset::ondisk2::Config>(m_config);
 }
 
-dataset::segment::SegmentManager& DatasetTest::segments()
+dataset::segment::Manager& DatasetTest::segments()
 {
     if (!segment_manager)
     {
@@ -598,7 +598,7 @@ void corrupt_datafile(const std::string& absname)
         throw std::runtime_error("cannot corrupt " + to_corrupt + ": wrote less than 4 bytes");
 }
 
-void test_append_transaction_ok(dataset::Segment* dw, Metadata& md, int append_amount_adjust)
+void test_append_transaction_ok(dataset::segment::Writer* dw, Metadata& md, int append_amount_adjust)
 {
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());
@@ -622,7 +622,7 @@ void test_append_transaction_ok(dataset::Segment* dw, Metadata& md, int append_a
     wassert(actual_type(md.source()).is_source_blob("grib", "", dw->absname, orig_fsize, data_size));
 }
 
-void test_append_transaction_rollback(dataset::Segment* dw, Metadata& md)
+void test_append_transaction_rollback(dataset::segment::Writer* dw, Metadata& md)
 {
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());

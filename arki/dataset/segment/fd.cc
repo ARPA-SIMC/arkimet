@@ -30,18 +30,26 @@ namespace dataset {
 namespace segment {
 namespace fd {
 
+void File::fdtruncate(off_t pos)
+{
+    if (::ftruncate(*this, pos) == -1)
+        nag::warning("truncating %s to previous size %zd (rollback of append operation): %m", name().c_str(), pos);
+}
+
+
 namespace {
 
 struct Append : public Transaction
 {
-    Segment& w;
+    fd::Writer& w;
+    File& fd;
     Metadata& md;
     bool fired = false;
     const std::vector<uint8_t>& buf;
     off_t pos;
 
-    Append(Segment& w, Metadata& md)
-        : w(w), md(md), buf(md.getData()), pos(w.append_lock())
+    Append(fd::Writer& w, Metadata& md)
+        : w(w), fd(*w.fd), md(md), buf(md.getData()), pos(fd.lseek(0, SEEK_END))
     {
     }
 
@@ -55,11 +63,10 @@ struct Append : public Transaction
         if (fired) return;
 
         // Append the data
-        w.write(pos, buf);
-        w.append_unlock(pos);
+        fd.write_data(pos, buf);
 
         // Set the source information that we are writing in the metadata
-        md.set_source(Source::createBlob(md.source().format, "", w.absname, pos, buf.size()));
+        md.set_source(Source::createBlobUnlocked(md.source().format, "", w.absname, pos, buf.size()));
 
         fired = true;
     }
@@ -69,8 +76,7 @@ struct Append : public Transaction
         if (fired) return;
 
         // If we had a problem, attempt to truncate the file to the original size
-        w.fdtruncate(pos);
-        w.append_unlock(pos);
+        fd.fdtruncate(pos);
         fired = true;
     }
 };
@@ -78,147 +84,134 @@ struct Append : public Transaction
 }
 
 
-Segment::Segment(const std::string& relname, const std::string& absname)
-    : dataset::Segment(relname, absname), fd(absname)
+Writer::Writer(const std::string& relname, std::unique_ptr<File> fd)
+    : segment::Writer(relname, fd->name()), fd(fd.release())
 {
 }
 
-Segment::~Segment()
+Writer::~Writer()
 {
-    close();
+    delete fd;
 }
 
-bool Segment::can_store(const std::string& format)
+Pending Writer::append(Metadata& md, off_t* ofs)
 {
-    return format == "grib" || format == "grib1" || format == "grib2"
-        || format == "bufr" || format == "vm2";
-}
-
-Pending Segment::append(Metadata& md, off_t* ofs)
-{
-    open();
-
     Append* res = new Append(*this, md);
     *ofs = res->pos;
     return res;
 }
 
-off_t Segment::append(Metadata& md)
+off_t Writer::append(Metadata& md)
 {
-    open();
-
     // Get the data blob to append
     const std::vector<uint8_t>& buf = md.getData();
 
     // Lock and get the write position in the data file
-    off_t pos = append_lock();
+    off_t pos = fd->lseek(0, SEEK_END);
 
     try {
         // Append the data
-        write(pos, buf);
+        fd->write_data(pos, buf);
     } catch (...) {
         // If we had a problem, attempt to truncate the file to the original size
-        fdtruncate(pos);
-        append_unlock(pos);
+        fd->fdtruncate(pos);
         throw;
     }
-
-    append_unlock(pos);
 
     // Set the source information that we are writing in the metadata
     // md.set_source(Source::createBlob(md.source().format, "", absname, pos, buf.size()));
     return pos;
 }
 
-off_t Segment::append(const std::vector<uint8_t>& buf)
+off_t Writer::append(const std::vector<uint8_t>& buf)
 {
-    open();
-
-    off_t pos = append_lock();
+    off_t pos = fd->lseek(0, SEEK_END);
     try {
-        write(pos, buf);
+        fd->write_data(pos, buf);
     } catch (...) {
-        fdtruncate(pos);
-        append_unlock(pos);
+        fd->fdtruncate(pos);
         throw;
     }
-    append_unlock(pos);
     return pos;
 }
 
-void Segment::open()
+void Writer::truncate(size_t offset)
 {
-    if (fd != -1) return;
+    if (!sys::exists(absname))
+        utils::createFlagfile(absname);
 
-    // Open the data file
-    fd.open(O_WRONLY | O_CREAT, 0666);
-}
-
-void Segment::truncate_and_open()
-{
-    if (fd != -1) return;
-
-    // Open the data file
-    fd.open(O_WRONLY | O_CREAT | O_TRUNC, 0666);
-}
-
-void Segment::close()
-{
-    fd.close();
-}
-
-off_t Segment::append_lock()
-{
-    Lock lock;
-    lock.l_type = F_WRLCK;
-    lock.l_whence = SEEK_END;
-    lock.l_start = 0;
-    lock.l_len = 0;
-    lock.ofd_setlkw(fd);
-
-    // Now that we are locked, get the write position in the data file
-    return fd.lseek(0, SEEK_END);
-}
-
-void Segment::append_unlock(off_t wrpos)
-{
-    Lock lock;
-    lock.l_type = F_UNLCK;
-    lock.l_whence = SEEK_SET;
-    lock.l_start = wrpos;
-    lock.l_len = 0;
-    lock.ofd_setlk(fd);
-}
-
-void Segment::fdtruncate(off_t pos)
-{
-    open();
-
-    if (ftruncate(fd, pos) == -1)
-        nag::warning("truncating %s to previous size %zd (rollback of append operation): %m", absname.c_str(), pos);
-}
-
-void Segment::write(off_t wrpos, const std::vector<uint8_t>& buf)
-{
-    // Prevent caching (ignore function result)
-    //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
-
-    // Append the data
-    fd.lseek(wrpos);
-    fd.write_all_or_throw(buf.data(), buf.size());
-
-    if (fdatasync(fd) < 0)
+    utils::files::PreserveFileTimes pft(absname);
+    if (::truncate(absname.c_str(), offset) < 0)
     {
         stringstream ss;
-        ss << "cannot flush write to " << absname;
+        ss << "cannot truncate " << absname << " at " << offset;
         throw std::system_error(errno, std::system_category(), ss.str());
     }
 }
 
-State Segment::check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap, bool quick)
+void Writer::test_add_padding(unsigned size)
 {
-    close();
+    fd->test_add_padding(size);
+}
 
+void Writer::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
+{
+    arki::File fd(absname, O_RDWR);
+    sys::PreserveFileTimes pt(fd);
+    off_t start_ofs = mds[data_idx].sourceBlob().offset;
+    off_t end = fd.lseek(0, SEEK_END);
+    std::vector<uint8_t> buf(end - start_ofs);
+    fd.lseek(start_ofs);
+    fd.read_all_or_throw(buf.data(), buf.size());
+    fd.lseek(start_ofs - overlap_size);
+    fd.write_all_or_throw(buf.data(), buf.size());
+    fd.ftruncate(end - overlap_size);
+
+    for (unsigned i = data_idx; i < mds.size(); ++i)
+    {
+        unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+        source->offset -= overlap_size;
+        mds[i].set_source(move(source));
+    }
+}
+
+void Writer::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
+{
+    arki::File fd(absname, O_RDWR);
+    sys::PreserveFileTimes pt(fd);
+    off_t end = fd.lseek(0, SEEK_END);
+    if (data_idx >= mds.size())
+    {
+        fd.ftruncate(end + hole_size);
+    } else {
+        off_t start_ofs = mds[data_idx].sourceBlob().offset;
+        std::vector<uint8_t> buf(end - start_ofs);
+        fd.lseek(start_ofs);
+        fd.read_all_or_throw(buf.data(), buf.size());
+        fd.lseek(start_ofs + hole_size);
+        fd.write_all_or_throw(buf.data(), buf.size());
+
+        for (unsigned i = data_idx; i < mds.size(); ++i)
+        {
+            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+            source->offset += hole_size;
+            mds[i].set_source(move(source));
+        }
+    }
+}
+
+void Writer::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+{
+    const auto& s = mds[data_idx].sourceBlob();
+    arki::File fd(absname, O_RDWR);
+    sys::PreserveFileTimes pt(fd);
+    fd.lseek(s.offset);
+    fd.write_all_or_throw("\0", 1);
+}
+
+
+State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap, bool quick)
+{
     // Check the data if requested
     if (!quick)
     {
@@ -293,7 +286,7 @@ State Segment::check_fd(dataset::Reporter& reporter, const std::string& ds, cons
     }
 }
 
-void Segment::validate(Metadata& md, const scan::Validator& v)
+void Checker::validate(Metadata& md, const scan::Validator& v)
 {
     if (const types::source::Blob* blob = md.has_source_blob()) {
         if (blob->filename != relname)
@@ -313,94 +306,16 @@ void Segment::validate(Metadata& md, const scan::Validator& v)
     v.validate_buf(buf.data(), buf.size());
 }
 
-size_t Segment::remove()
+size_t Checker::remove()
 {
-    close();
-
     size_t size = sys::size(absname);
     sys::unlink(absname.c_str());
     return size;
 }
 
-void Segment::truncate(size_t offset)
-{
-    close();
-
-    if (!sys::exists(absname))
-        utils::createFlagfile(absname);
-
-    utils::files::PreserveFileTimes pft(absname);
-    if (::truncate(absname.c_str(), offset) < 0)
-    {
-        stringstream ss;
-        ss << "cannot truncate " << absname << " at " << offset;
-        throw std::system_error(errno, std::system_category(), ss.str());
-    }
-}
-
-void Segment::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
-{
-    close();
-    File fd(this->fd.name(), O_RDWR);
-    sys::PreserveFileTimes pt(fd);
-    off_t start_ofs = mds[data_idx].sourceBlob().offset;
-    off_t end = fd.lseek(0, SEEK_END);
-    std::vector<uint8_t> buf(end - start_ofs);
-    fd.lseek(start_ofs);
-    fd.read_all_or_throw(buf.data(), buf.size());
-    fd.lseek(start_ofs - overlap_size);
-    fd.write_all_or_throw(buf.data(), buf.size());
-    fd.ftruncate(end - overlap_size);
-
-    for (unsigned i = data_idx; i < mds.size(); ++i)
-    {
-        unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
-        source->offset -= overlap_size;
-        mds[i].set_source(move(source));
-    }
-}
-
-void Segment::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
-{
-    close();
-    File fd(this->fd.name(), O_RDWR);
-    sys::PreserveFileTimes pt(fd);
-    off_t end = fd.lseek(0, SEEK_END);
-    if (data_idx >= mds.size())
-    {
-        fd.ftruncate(end + hole_size);
-    } else {
-        off_t start_ofs = mds[data_idx].sourceBlob().offset;
-        std::vector<uint8_t> buf(end - start_ofs);
-        fd.lseek(start_ofs);
-        fd.read_all_or_throw(buf.data(), buf.size());
-        fd.lseek(start_ofs + hole_size);
-        fd.write_all_or_throw(buf.data(), buf.size());
-
-        for (unsigned i = data_idx; i < mds.size(); ++i)
-        {
-            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
-            source->offset += hole_size;
-            mds[i].set_source(move(source));
-        }
-    }
-}
-
-void Segment::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
-{
-    close();
-    const auto& s = mds[data_idx].sourceBlob();
-    File fd(this->fd.name(), O_RDWR);
-    sys::PreserveFileTimes pt(fd);
-    fd.lseek(s.offset);
-    fd.write_all_or_throw("\0", 1);
-}
-
-Pending Segment::repack(
+Pending Checker::repack_impl(
         const std::string& rootdir,
-        const std::string& relname,
         metadata::Collection& mds,
-        Segment* make_repack_segment(const std::string&, const std::string&),
         bool skip_validation,
         unsigned test_flags)
 {
@@ -472,7 +387,6 @@ Pending Segment::repack(
         }
     };
 
-    string absname = str::joinpath(rootdir, relname);
     string tmprelname = relname + ".repack";
     string tmpabsname = absname + ".repack";
 
@@ -487,7 +401,7 @@ Pending Segment::repack(
     Pending p(rename = new Rename(tmpabsname, absname));
 
     // Create a writer for the temp file
-    unique_ptr<Segment> writer(make_repack_segment(tmprelname, tmpabsname));
+    auto writer(make_tmp_segment(tmprelname, tmpabsname));
 
     if (test_flags & TEST_MISCHIEF_MOVE_DATA)
         writer->test_add_padding(1);
@@ -510,6 +424,13 @@ Pending Segment::repack(
     }
 
     return p;
+}
+
+
+bool can_store(const std::string& format)
+{
+    return format == "grib" || format == "grib1" || format == "grib2"
+        || format == "bufr" || format == "vm2";
 }
 
 }

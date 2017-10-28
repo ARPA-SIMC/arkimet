@@ -27,7 +27,7 @@ protected:
     index::Manifest* m_mft;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
-    Segment* file(const Metadata& md, const std::string& format);
+    std::shared_ptr<segment::Writer> file(const Metadata& md, const std::string& format);
 
 public:
     Writer(std::shared_ptr<const simple::Config> config);

@@ -1,74 +1,66 @@
-#include "config.h"
 #include "dir.h"
 #include "arki/dataset/segment/tests.h"
 #include "arki/metadata/tests.h"
 #include "arki/metadata/collection.h"
+#include "arki/types/source/blob.h"
 #include "arki/scan/any.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
+#include <fcntl.h>
 #include <sstream>
 
 namespace std {
 static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 {
-        m.writeYaml(o);
-            return o;
+    m.writeYaml(o);
+    return o;
 }
 }
 
 namespace {
+using namespace std;
+using namespace arki;
+using namespace arki::tests;
+using namespace arki::utils;
+using namespace arki::dataset;
 
-inline size_t datasize(const arki::Metadata& md)
+const char* relname = "testfile.grib";
+
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_dataset_segment_dir");
+
+inline size_t datasize(const Metadata& md)
 {
     return md.data_size();
 }
 
+/**
+ * Create a writer
+ * return the data::Writer so that we manage the writer lifetime, but also
+ * the underlying implementation so we can test it.
+ */
+std::shared_ptr<segment::dir::Writer> make_w()
+{
+    string absname = sys::abspath(relname);
+    return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer("grib", relname, absname));
 }
 
-namespace tut {
-using namespace std;
-using namespace arki;
-using namespace arki::dataset::segment;
-using namespace arki::utils;
-using namespace arki::tests;
-using namespace arki::tests;
-
-struct arki_segment_dir_shar {
-    string fname;
-    metadata::Collection mdc;
-
-    arki_segment_dir_shar()
-        : fname("testfile.grib")
-    {
-        system(("rm -rf " + fname).c_str());
-        // Keep some valid metadata handy
-        ensure(scan::scan("inbound/test.grib1", mdc.inserter_func()));
-    }
-
-    /**
-     * Create a writer
-     * return the data::Writer so that we manage the writer lifetime, but also
-     * the underlying implementation so we can test it.
-     */
-    unique_ptr<dir::Segment> make_w(const std::string& relname)
-    {
-        string absname = sys::abspath(relname);
-        return unique_ptr<dir::Segment>(new dir::Segment("grib", relname, absname));
-    }
-};
-
-TESTGRP(arki_segment_dir);
+void Tests::register_tests() {
 
 // Try to append some data
-def_test(1)
-{
-    wassert(actual_file(fname).not_exists());
+add_method("append", [] {
+    sys::rmtree_ifexists(relname);
+    metadata::Collection mdc("inbound/test.grib1");
+    wassert(actual_file(relname).not_exists());
     {
-        unique_ptr<dir::Segment> w(make_w(fname));
+        auto w(make_w());
 
         // It should exist but be empty
         //wassert(actual(fname).fileexists());
-        //wassert(actual(sys::fs::size(fname)) == 0u);
+        //wassert(actual(sys::size(fname)) == 0u);
 
         // Try a successful transaction
         {
@@ -91,6 +83,7 @@ def_test(1)
             // After commit, metadata is updated
             wassert(actual_type(md.source()).is_source_blob("grib", "", w->absname, 0, data_size));
         }
+
 
         // Then fail one
         {
@@ -143,39 +136,48 @@ def_test(1)
     metadata::Collection mdc1;
 
     // Scan the file we created
-    wassert(actual(scan::scan(fname, mdc1.inserter_func())).istrue());
+    wassert(actual(scan::scan(relname, mdc1.inserter_func())).istrue());
 
     // Check that it only contains the 1st and 3rd data
     wassert(actual(mdc1.size()) == 2u);
     wassert(actual(mdc1[0]).is_similar(mdc[0]));
     wassert(actual(mdc1[1]).is_similar(mdc[2]));
-}
+});
 
 // Common segment tests
 
-def_test(2)
-{
+add_method("check", [] {
     struct Test : public SegmentCheckTest
     {
-        dataset::Segment* make_segment() override
+        std::shared_ptr<segment::Writer> make_writer() override
         {
-            return new dir::Segment(format, relname, absname);
+            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, relname, absname));
+        }
+        std::shared_ptr<segment::Checker> make_checker() override
+        {
+            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, relname, absname));
         }
     } test;
 
     wassert(test.run());
-}
-def_test(3)
-{
+});
+
+add_method("remove", [] {
     struct Test : public SegmentRemoveTest
     {
-        dataset::Segment* make_segment() override
+        std::shared_ptr<segment::Writer> make_writer() override
         {
-            return new dir::Segment(format, relname, absname);
+            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, relname, absname));
+        }
+        std::shared_ptr<segment::Checker> make_checker() override
+        {
+            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, relname, absname));
         }
     } test;
 
     wassert(test.run());
+});
+
 }
 
 }

@@ -11,15 +11,19 @@ namespace dataset {
 namespace segment {
 namespace lines {
 
-class Segment : public fd::Segment
+class Writer : public fd::Writer
+{
+public:
+    Writer(const std::string& relname, const std::string& absname, int mode=0);
+};
+
+class Checker : public fd::Checker
 {
 protected:
-    void test_add_padding(unsigned size) override;
+    std::unique_ptr<fd::Writer> make_tmp_segment(const std::string& relname, const std::string& absname) override;
 
 public:
-    Segment(const std::string& relname, const std::string& absname);
-
-    void write(off_t wrpos, const std::vector<uint8_t>& buf) override;
+    using fd::Checker::Checker;
 
     State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;

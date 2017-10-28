@@ -26,15 +26,18 @@ struct SegmentTest
     virtual ~SegmentTest();
 
     /// Instantiate the segment to use for testing
-    virtual dataset::Segment* make_segment() = 0;
+    virtual std::shared_ptr<dataset::segment::Writer> make_writer() = 0;
+    virtual std::shared_ptr<dataset::segment::Checker> make_checker() = 0;
 
     virtual void run() = 0;
 
     /// Create a segment with no data on disk
-    std::unique_ptr<dataset::Segment> make_empty_segment();
+    std::shared_ptr<dataset::segment::Writer> make_empty_writer();
+    std::shared_ptr<dataset::segment::Checker> make_empty_checker();
 
     /// Create a segment importing all mdc into it
-    std::unique_ptr<dataset::Segment> make_full_segment();
+    std::shared_ptr<dataset::segment::Writer> make_full_writer();
+    std::shared_ptr<dataset::segment::Checker> make_full_checker();
 
     void append_all();
 };

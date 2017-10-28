@@ -53,9 +53,9 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "iseg"; }
 
-Segment* Writer::file(const Metadata& md, const std::string& format)
+std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
 {
-    Segment* writer = segmented::Writer::file(md, format);
+    auto writer = segmented::Writer::file(md, format);
     if (!writer->payload)
         writer->payload = new WIndex(m_config, writer->relname);
     return writer;
@@ -63,7 +63,7 @@ Segment* Writer::file(const Metadata& md, const std::string& format)
 
 Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
-    Segment* writer = file(md, md.source().format);
+    auto writer = file(md, md.source().format);
     WIndex* idx = static_cast<WIndex*>(writer->payload);
     Pending p_idx = idx->begin_transaction();
 
@@ -92,7 +92,7 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 
 Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 {
-    Segment* writer = file(md, md.source().format);
+    auto writer = file(md, md.source().format);
     WIndex* idx = static_cast<WIndex*>(writer->payload);
     Pending p_idx = idx->begin_transaction();
 
@@ -118,7 +118,7 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 
 Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
-    Segment* writer = file(md, md.source().format);
+    auto writer = file(md, md.source().format);
     WIndex* idx = static_cast<WIndex*>(writer->payload);
     Pending p_idx = idx->begin_transaction();
 
@@ -217,7 +217,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 
 void Writer::remove(Metadata& md)
 {
-    Segment* writer = file(md, md.source().format);
+    auto writer = file(md, md.source().format);
     WIndex* idx = static_cast<WIndex*>(writer->payload);
 
     const types::source::Blob* source = md.has_source_blob();
@@ -246,7 +246,7 @@ void Writer::remove(Metadata& md)
 void Writer::flush()
 {
     segmented::Writer::flush();
-    segment_manager().foreach_cached([](Segment& s) {
+    segment_manager().foreach_cached_writer([](segment::Writer& s) {
         WIndex* idx = static_cast<WIndex*>(s.payload);
         idx->flush();
     });
@@ -727,7 +727,7 @@ void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_siz
     WIndex idx(m_config, relpath);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    segment_manager().get_segment(relpath)->test_make_overlap(mds, overlap_size, data_idx);
+    segment_manager().get_writer(relpath)->test_make_overlap(mds, overlap_size, data_idx);
     idx.test_make_overlap(overlap_size, data_idx);
 }
 
@@ -736,7 +736,7 @@ void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, uns
     WIndex idx(m_config, relpath);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    segment_manager().get_segment(relpath)->test_make_hole(mds, hole_size, data_idx);
+    segment_manager().get_writer(relpath)->test_make_hole(mds, hole_size, data_idx);
     idx.test_make_hole(hole_size, data_idx);
 }
 
@@ -745,7 +745,7 @@ void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
     WIndex idx(m_config, relpath);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    segment_manager().get_segment(relpath)->test_corrupt(mds, data_idx);
+    segment_manager().get_writer(relpath)->test_corrupt(mds, data_idx);
 }
 
 void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
@@ -753,7 +753,7 @@ void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
     WIndex idx(m_config, relpath);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    segment_manager().get_segment(relpath)->test_truncate(mds, data_idx);
+    segment_manager().get_writer(relpath)->test_truncate(mds, data_idx);
 }
 
 void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)

@@ -30,93 +30,28 @@ namespace dataset {
 namespace segment {
 namespace dir {
 
-namespace {
-
-struct Append : public Transaction
+Writer::Writer(const std::string& format, const std::string& relname, const std::string& absname)
+    : segment::Writer(relname, absname), seqfile(absname), format(format)
 {
-    const dir::Segment& segment;
-    bool fired;
-    Metadata& md;
-    size_t pos;
-    size_t size;
-
-    Append(const dir::Segment& segment, Metadata& md, size_t pos, size_t size)
-        : segment(segment), fired(false), md(md), pos(pos), size(size)
-    {
-    }
-
-    virtual ~Append()
-    {
-        if (!fired) rollback();
-    }
-
-    virtual void commit()
-    {
-        if (fired) return;
-
-        // Set the source information that we are writing in the metadata
-        md.set_source(Source::createBlob(md.source().format, "", segment.absname, pos, size));
-
-        fired = true;
-    }
-
-    virtual void rollback()
-    {
-        if (fired) return;
-
-        // If we had a problem, remove the file that we have created. The
-        // sequence will have skipped one number, but we do not need to
-        // guarantee consecutive numbers, so it is just a cosmetic issue. This
-        // case should be rare enough that even the cosmetic issue should
-        // rarely be noticeable.
-        string target_name = str::joinpath(segment.absname, SequenceFile::data_fname(pos, segment.format));
-        unlink(target_name.c_str());
-
-        fired = true;
-    }
-};
-
-}
-
-Segment::Segment(const std::string& format, const std::string& relname, const std::string& absname)
-    : dataset::Segment(relname, absname), format(format), seqfile(absname)
-{
-}
-
-Segment::~Segment()
-{
-}
-
-bool Segment::can_store(const std::string& format)
-{
-    return format == "grib" || format == "grib1" || format == "grib2"
-        || format == "bufr"
-        || format == "odimh5" || format == "h5" || format == "odim"
-        || format == "vm2";
-}
-
-void Segment::open()
-{
-    if (seqfile.fd != -1) return;
-
     // Ensure that the directory 'absname' exists
     sys::makedirs(absname);
 
     seqfile.open();
 }
 
-void Segment::close()
+off_t Writer::append(Metadata& md)
 {
-    seqfile.close();
+    size_t pos;
+    File fd = seqfile.open_next(format, pos);
+    /*size_t size =*/ write_file(md, fd);
+    fd.close();
+
+    // Set the source information that we are writing in the metadata
+    // md.set_source(Source::createBlob(md.source().format, "", absname, pos, size));
+    return pos;
 }
 
-void Segment::test_add_padding(unsigned size)
-{
-    open();
-    seqfile.test_add_padding(size);
-}
-
-size_t Segment::write_file(Metadata& md, File& fd)
+size_t Writer::write_file(Metadata& md, File& fd)
 {
     try {
         const std::vector<uint8_t>& buf = md.getData();
@@ -135,29 +70,70 @@ size_t Segment::write_file(Metadata& md, File& fd)
     }
 }
 
-off_t Segment::append(Metadata& md)
+size_t HoleWriter::write_file(Metadata& md, File& fd)
 {
-    open();
+    try {
+        if (ftruncate(fd, md.data_size()) == -1)
+            fd.throw_error("cannot set file size");
 
+        return md.data_size();
+    } catch (...) {
+        unlink(absname.c_str());
+        throw;
+    }
+}
+
+
+namespace {
+
+struct Append : public Transaction
+{
+    const dir::Writer& writer;
+    bool fired;
+    Metadata& md;
     size_t pos;
-    File fd = seqfile.open_next(format, pos);
-    /*size_t size =*/ write_file(md, fd);
-    fd.close();
+    size_t size;
 
-    // Set the source information that we are writing in the metadata
-    // md.set_source(Source::createBlob(md.source().format, "", absname, pos, size));
-    return pos;
+    Append(const dir::Writer& writer, Metadata& md, size_t pos, size_t size)
+        : writer(writer), fired(false), md(md), pos(pos), size(size)
+    {
+    }
+
+    virtual ~Append()
+    {
+        if (!fired) rollback();
+    }
+
+    virtual void commit()
+    {
+        if (fired) return;
+
+        // Set the source information that we are writing in the metadata
+        md.set_source(Source::createBlob(md.source().format, "", writer.absname, pos, size));
+
+        fired = true;
+    }
+
+    virtual void rollback()
+    {
+        if (fired) return;
+
+        // If we had a problem, remove the file that we have created. The
+        // sequence will have skipped one number, but we do not need to
+        // guarantee consecutive numbers, so it is just a cosmetic issue. This
+        // case should be rare enough that even the cosmetic issue should
+        // rarely be noticeable.
+        string target_name = str::joinpath(writer.absname, SequenceFile::data_fname(pos, writer.format));
+        unlink(target_name.c_str());
+
+        fired = true;
+    }
+};
+
 }
 
-off_t Segment::append(const std::vector<uint8_t>& buf)
+Pending Writer::append(Metadata& md, off_t* ofs)
 {
-    throw std::runtime_error("dir::Segment::append not implemented");
-}
-
-Pending Segment::append(Metadata& md, off_t* ofs)
-{
-    open();
-
     size_t pos;
     File fd = seqfile.open_next(format, pos);
     size_t size = write_file(md, fd);
@@ -166,10 +142,34 @@ Pending Segment::append(Metadata& md, off_t* ofs)
     return new Append(*this, md, pos, size);
 }
 
-off_t Segment::link(const std::string& srcabsname)
+void Writer::foreach_datafile(std::function<void(const char*)> f)
 {
-    open();
+    sys::Path dir(absname);
+    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
+    {
+        if (!i.isreg()) continue;
+        if (strcmp(i->d_name, ".sequence") != 0 && !str::endswith(i->d_name, format)) continue;
+        f(i->d_name);
+    }
+}
 
+void Writer::truncate(size_t offset)
+{
+    utils::files::PreserveFileTimes pft(absname);
+
+    // Truncate dir segment
+    string format = utils::require_format(absname);
+    foreach_datafile([&](const char* name) {
+        if (strtoul(name, 0, 10) >= offset)
+        {
+            //cerr << "UNLINK " << absname << " -- " << *i << endl;
+            sys::unlink(str::joinpath(absname, name));
+        }
+    });
+}
+
+off_t Writer::link(const std::string& srcabsname)
+{
     size_t pos;
     while (true)
     {
@@ -185,10 +185,64 @@ off_t Segment::link(const std::string& srcabsname)
     return pos;
 }
 
-State Segment::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
+void Writer::test_add_padding(unsigned size)
 {
-    close();
+    seqfile.test_add_padding(size);
+}
 
+void Writer::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
+{
+    for (unsigned i = data_idx; i < mds.size(); ++i)
+    {
+        unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+        sys::rename(
+                str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
+                str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset - overlap_size, source->format)));
+        source->offset -= overlap_size;
+        mds[i].set_source(move(source));
+    }
+}
+
+void Writer::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
+{
+    if (data_idx >= mds.size())
+    {
+        sys::PreserveFileTimes pf(seqfile.fd);
+        size_t pos;
+        for (unsigned i = 0; i < hole_size; ++i)
+        {
+            File fd = seqfile.open_next(mds[0].sourceBlob().format, pos);
+            fd.close();
+        }
+    } else {
+        for (int i = mds.size() - 1; i >= (int)data_idx; --i)
+        {
+            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+            sys::rename(
+                    str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
+                    str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset + hole_size, source->format)));
+            source->offset += hole_size;
+            mds[i].set_source(move(source));
+        }
+        // TODO: update seqfile to be mds.size() + hole_size
+    }
+}
+
+void Writer::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+{
+    const auto& s = mds[data_idx].sourceBlob();
+    File fd(str::joinpath(s.absolutePathname(), SequenceFile::data_fname(s.offset, s.format)), O_WRONLY);
+    fd.write_all_or_throw("\0", 1);
+}
+
+
+Checker::Checker(const std::string& format, const std::string& relname, const std::string& absname)
+    : segment::Checker(relname, absname), format(format)
+{
+}
+
+State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
+{
     size_t next_sequence_expected(0);
     const scan::Validator* validator(0);
     bool out_of_order(false);
@@ -264,7 +318,7 @@ State Segment::check(dataset::Reporter& reporter, const std::string& ds, const m
         auto idx = ei.first;
         if (validator)
         {
-            string fname = str::joinpath(absname, seqfile.data_fname(idx, format));
+            string fname = str::joinpath(absname, SequenceFile::data_fname(idx, format));
             metadata::Collection mds;
             try {
                 scan::scan(fname, [&](unique_ptr<Metadata> md) {
@@ -312,13 +366,13 @@ State Segment::check(dataset::Reporter& reporter, const std::string& ds, const m
     }
 }
 
-void Segment::validate(Metadata& md, const scan::Validator& v)
+void Checker::validate(Metadata& md, const scan::Validator& v)
 {
     if (const types::source::Blob* blob = md.has_source_blob()) {
         if (blob->filename != relname)
             throw std::runtime_error("metadata to validate does not appear to be from this segment");
 
-        string fname = str::joinpath(absname, seqfile.data_fname(blob->offset, blob->format));
+        string fname = str::joinpath(absname, SequenceFile::data_fname(blob->offset, blob->format));
         sys::File fd(fname, O_RDONLY);
         v.validate_file(fd, 0, blob->size);
         return;
@@ -327,7 +381,7 @@ void Segment::validate(Metadata& md, const scan::Validator& v)
     v.validate_buf(buf.data(), buf.size());
 }
 
-void Segment::foreach_datafile(std::function<void(const char*)> f)
+void Checker::foreach_datafile(std::function<void(const char*)> f)
 {
     sys::Path dir(absname);
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
@@ -338,10 +392,8 @@ void Segment::foreach_datafile(std::function<void(const char*)> f)
     }
 }
 
-size_t Segment::remove()
+size_t Checker::remove()
 {
-    close();
-
     std::string format = utils::require_format(absname);
 
     size_t size = 0;
@@ -357,27 +409,8 @@ size_t Segment::remove()
     return size;
 }
 
-void Segment::truncate(size_t offset)
+Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
-    close();
-
-    utils::files::PreserveFileTimes pft(absname);
-
-    // Truncate dir segment
-    string format = utils::require_format(absname);
-    foreach_datafile([&](const char* name) {
-        if (strtoul(name, 0, 10) >= offset)
-        {
-            //cerr << "UNLINK " << absname << " -- " << *i << endl;
-            sys::unlink(str::joinpath(absname, name));
-        }
-    });
-}
-
-Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
-{
-    close();
-
     struct Rename : public Transaction
     {
         std::string tmpabsname;
@@ -449,8 +482,6 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, u
         }
     };
 
-    string format = utils::require_format(relname);
-    string absname = str::joinpath(rootdir, relname);
     string tmprelname = relname + ".repack";
     string tmpabsname = absname + ".repack";
 
@@ -462,7 +493,7 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, u
     Pending p(rename = new Rename(tmpabsname, absname));
 
     // Create a writer for the temp dir
-    unique_ptr<dir::Segment> writer(make_segment(format, tmprelname, tmpabsname));
+    auto writer(make_tmp_segment(format, tmprelname, tmpabsname));
 
     if (test_flags & TEST_MISCHIEF_MOVE_DATA)
         writer->test_add_padding(1);
@@ -485,94 +516,40 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, u
     return p;
 }
 
-void Segment::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
-{
-    for (unsigned i = data_idx; i < mds.size(); ++i)
-    {
-        unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
-        sys::rename(
-                str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
-                str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset - overlap_size, source->format)));
-        source->offset -= overlap_size;
-        mds[i].set_source(move(source));
-    }
-}
-
-void Segment::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
-{
-    if (data_idx >= mds.size())
-    {
-        open();
-        {
-            sys::PreserveFileTimes pf(seqfile.fd);
-            size_t pos;
-            for (unsigned i = 0; i < hole_size; ++i)
-            {
-                File fd = seqfile.open_next(mds[0].sourceBlob().format, pos);
-                fd.close();
-            }
-        }
-        close();
-    } else {
-        for (int i = mds.size() - 1; i >= (int)data_idx; --i)
-        {
-            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
-            sys::rename(
-                    str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
-                    str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset + hole_size, source->format)));
-            source->offset += hole_size;
-            mds[i].set_source(move(source));
-        }
-        // TODO: update seqfile to be mds.size() + hole_size
-    }
-}
-
-void Segment::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
-{
-    open();
-    const auto& s = mds[data_idx].sourceBlob();
-    File fd(str::joinpath(s.absolutePathname(), SequenceFile::data_fname(s.offset, s.format)), O_WRONLY);
-    fd.write_all_or_throw("\0", 1);
-}
-
-unique_ptr<dir::Segment> Segment::make_segment(const std::string& format, const std::string& relname, const std::string& absname)
+unique_ptr<dir::Writer> Checker::make_tmp_segment(const std::string& format, const std::string& relname, const std::string& absname)
 {
     if (sys::exists(absname)) sys::rmtree(absname);
-    unique_ptr<dir::Segment> res(new dir::Segment(format, relname, absname));
+    unique_ptr<dir::Writer> res(new dir::Writer(format, relname, absname));
     return res;
 }
 
-State HoleSegment::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
+State HoleChecker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
 {
     // Force quick, since the file contents are fake
-    return Segment::check(reporter, ds, mds, true);
+    return Checker::check(reporter, ds, mds, true);
 }
 
-unique_ptr<dir::Segment> HoleSegment::make_segment(const std::string& format, const std::string& relname, const std::string& absname)
+unique_ptr<dir::Writer> HoleChecker::make_tmp_segment(const std::string& format, const std::string& relname, const std::string& absname)
 {
     if (sys::exists(absname)) sys::rmtree(absname);
-    unique_ptr<dir::Segment> res(new dir::HoleSegment(format, relname, absname));
+    unique_ptr<dir::Writer> res(new dir::HoleWriter(format, relname, absname));
     return res;
 }
 
 
-HoleSegment::HoleSegment(const std::string& format, const std::string& relname, const std::string& absname)
-    : Segment(format, relname, absname)
+HoleChecker::HoleChecker(const std::string& format, const std::string& relname, const std::string& absname)
+    : Checker(format, relname, absname)
 {
 }
 
-size_t HoleSegment::write_file(Metadata& md, File& fd)
+bool can_store(const std::string& format)
 {
-    try {
-        if (ftruncate(fd, md.data_size()) == -1)
-            fd.throw_error("cannot set file size");
-
-        return md.data_size();
-    } catch (...) {
-        unlink(absname.c_str());
-        throw;
-    }
+    return format == "grib" || format == "grib1" || format == "grib2"
+        || format == "bufr"
+        || format == "odimh5" || format == "h5" || format == "odim"
+        || format == "vm2";
 }
+
 
 }
 }

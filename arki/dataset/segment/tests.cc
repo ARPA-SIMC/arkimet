@@ -26,18 +26,25 @@ SegmentTest::~SegmentTest()
 {
 }
 
-unique_ptr<Segment> SegmentTest::make_empty_segment()
+std::shared_ptr<segment::Writer> SegmentTest::make_empty_writer()
 {
     // Clear potentially existing segments
     system(("rm -rf " + absname).c_str());
 
-    unique_ptr<Segment> res(make_segment());
-    return res;
+    return make_writer();
 }
 
-unique_ptr<Segment> SegmentTest::make_full_segment()
+std::shared_ptr<segment::Checker> SegmentTest::make_empty_checker()
 {
-    unique_ptr<Segment> res(make_empty_segment());
+    // Clear potentially existing segments
+    system(("rm -rf " + absname).c_str());
+
+    return make_checker();
+}
+
+std::shared_ptr<segment::Writer> SegmentTest::make_full_writer()
+{
+    auto res(make_empty_writer());
     for (unsigned i = 0; i < mdc.size(); ++i)
     {
         off_t ofs = res->append(mdc[i]);
@@ -46,9 +53,15 @@ unique_ptr<Segment> SegmentTest::make_full_segment()
     return res;
 }
 
+std::shared_ptr<segment::Checker> SegmentTest::make_full_checker()
+{
+    make_full_writer();
+    return make_checker();
+}
+
 void SegmentCheckTest::run()
 {
-    unique_ptr<Segment> segment(make_full_segment());
+    auto segment(make_full_checker());
     dataset::segment::State state;
 
     dataset::NullReporter rep;
@@ -127,7 +140,7 @@ void SegmentCheckTest::run()
 
 void SegmentRemoveTest::run()
 {
-    unique_ptr<Segment> segment(make_full_segment());
+    auto segment(make_full_checker());
 
     wassert(actual(sys::exists(absname)).istrue());
 

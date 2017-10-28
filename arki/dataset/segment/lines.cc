@@ -21,19 +21,17 @@ namespace dataset {
 namespace segment {
 namespace lines {
 
-Segment::Segment(const std::string& relname, const std::string& absname)
-    : fd::Segment(relname, absname)
-{
-}
+namespace {
 
-void Segment::test_add_padding(unsigned size)
+struct File : public fd::File
 {
-    open();
-    for (unsigned i = 0; i < size; ++i)
-        fd.write("\n", 1);
-}
+    using fd::File::File;
 
-void Segment::write(off_t wrpos, const std::vector<uint8_t>& buf)
+    void write_data(off_t wrpos, const std::vector<uint8_t>& buf) override;
+    void test_add_padding(size_t size) override;
+};
+
+void File::write_data(off_t wrpos, const std::vector<uint8_t>& buf)
 {
     struct iovec todo[2] = {
         { (void*)buf.data(), buf.size() },
@@ -43,37 +41,49 @@ void Segment::write(off_t wrpos, const std::vector<uint8_t>& buf)
     // Prevent caching (ignore function result)
     //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
 
-    fd.lseek(wrpos);
+    lseek(wrpos);
 
     // Append the data
-    ssize_t res = ::writev(fd, todo, 2);
+    ssize_t res = ::writev(*this, todo, 2);
     if (res < 0 || (unsigned)res != buf.size() + 1)
     {
         stringstream ss;
-        ss << "cannot write " << (buf.size() + 1) << " bytes to " << absname;
+        ss << "cannot write " << (buf.size() + 1) << " bytes to " << name();
         throw std::system_error(errno, std::system_category(), ss.str());
     }
 
-    if (fdatasync(fd) < 0)
-        throw_file_error(absname, "cannot flush write");
+    fdatasync();
 }
 
-State Segment::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
+void File::test_add_padding(size_t size)
+{
+    for (unsigned i = 0; i < size; ++i)
+        write("\n", 1);
+}
+
+}
+
+
+
+Writer::Writer(const std::string& relname, const std::string& absname, int mode)
+    : fd::Writer(relname, unique_ptr<fd::File>(new File(absname, O_WRONLY | O_CREAT | mode, 0666)))
+{
+}
+
+
+State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
 {
     return check_fd(reporter, ds, mds, 2, quick);
 }
 
-static fd::Segment* make_repack_segment(const std::string& relname, const std::string& absname)
+unique_ptr<fd::Writer> Checker::make_tmp_segment(const std::string& relname, const std::string& absname)
 {
-    unique_ptr<lines::Segment> res(new lines::Segment(relname, absname));
-    res->truncate_and_open();
-    return res.release();
+    return unique_ptr<fd::Writer>(new lines::Writer(relname, absname, O_TRUNC));
 }
 
-Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
-    close();
-    return fd::Segment::repack(rootdir, relname, mds, make_repack_segment, false, test_flags);
+    return fd::Checker::repack_impl(rootdir, mds, false, test_flags);
 }
 
 }

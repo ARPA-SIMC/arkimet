@@ -5,52 +5,66 @@
 
 #include <arki/libconfig.h>
 #include <arki/dataset/segment.h>
-#include <arki/utils/sys.h>
+#include <arki/file.h>
 #include <string>
 
 namespace arki {
+struct Reader;
+
 namespace dataset {
 namespace segment {
 namespace fd {
 
-class Segment : public dataset::Segment
+/**
+ * Customize in subclasses to add format-specific I/O
+ */
+struct File : public arki::File
 {
-protected:
-    utils::sys::File fd;
+    using arki::File::File;
 
-public:
-    Segment(const std::string& relname, const std::string& absname);
-    ~Segment();
+    void fdtruncate(off_t pos);
+    virtual void write_data(off_t wrpos, const std::vector<uint8_t>& buf) = 0;
+    virtual void test_add_padding(size_t size) = 0;
+};
+
+
+struct Writer : public dataset::segment::Writer
+{
+    File* fd = nullptr;
+
+    Writer(const std::string& relname, std::unique_ptr<File> fd);
+    ~Writer();
 
     off_t append(Metadata& md) override;
-    off_t append(const std::vector<uint8_t>& buf) override;
     Pending append(Metadata& md, off_t* ofs) override;
 
-    void open();
-    void truncate_and_open();
-    void close();
-
     /**
-     * Lock the segment for append and return the append position
+     * Append raw data to the file, wrapping it with the right envelope if
+     * needed.
+     *
+     * All exceptions are propagated upwards without special handling. If this
+     * operation fails, the file should be considered invalid.
+     *
+     * This function is intended to be used by low-level maintenance operations,
+     * like a file repack.
+     *
+     * @return the offset at which the buffer is written
      */
-    off_t append_lock();
+    off_t append(const std::vector<uint8_t>& buf);
 
-    /**
-     * Unlock the segment for the append that started at the given position
-     */
-    void append_unlock(off_t wrpos);
-
-    virtual void write(off_t wrpos, const std::vector<uint8_t>& buf);
-    void fdtruncate(off_t pos);
-    State check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
-
-    size_t remove() override;
     void truncate(size_t offset) override;
-    void validate(Metadata& md, const scan::Validator& v) override;
 
+    void test_add_padding(unsigned size) override;
     void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
     void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
     void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
+};
+
+
+class Checker : public dataset::segment::Checker
+{
+protected:
+    void validate(Metadata& md, const scan::Validator& v) override;
 
     /**
      * If skip_validation is true, repack will skip validating the data that is
@@ -60,16 +74,23 @@ public:
      * inside. The files are made of filesystem holes, so the data that is read
      * from them is always zeroes.
      */
-    static Pending repack(
+    Pending repack_impl(
             const std::string& rootdir,
-            const std::string& relname,
             metadata::Collection& mds,
-            fd::Segment* make_repack_segment(const std::string&, const std::string&),
             bool skip_validation=false,
             unsigned test_flags=0);
 
-    static bool can_store(const std::string& format);
+    virtual std::unique_ptr<fd::Writer> make_tmp_segment(const std::string& relname, const std::string& absname) = 0;
+
+public:
+    using dataset::segment::Checker::Checker;
+
+    size_t remove() override;
+
+    State check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
 };
+
+bool can_store(const std::string& format);
 
 }
 }

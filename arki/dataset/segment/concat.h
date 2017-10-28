@@ -10,25 +10,35 @@ namespace dataset {
 namespace segment {
 namespace concat {
 
-class Segment : public fd::Segment
+class Writer : public fd::Writer
 {
-protected:
-    void test_add_padding(unsigned size) override;
-
 public:
-    Segment(const std::string& relname, const std::string& absname);
+    Writer(const std::string& relname, const std::string& absname, int mode=0);
+};
+
+class Checker : public fd::Checker
+{
+public:
+    using fd::Checker::Checker;
 
     State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
+    std::unique_ptr<fd::Writer> make_tmp_segment(const std::string& relname, const std::string& absname) override;
 };
 
-class HoleSegment : public concat::Segment
+class HoleWriter : public fd::Writer
 {
 public:
-    HoleSegment(const std::string& relname, const std::string& absname)
-        : Segment(relname, absname) {}
+    HoleWriter(const std::string& relname, const std::string& absname, int mode=0);
+};
 
-    void write(off_t wrpos, const std::vector<uint8_t>& buf) override;
+class HoleChecker : public Checker
+{
+protected:
+    std::unique_ptr<fd::Writer> make_tmp_segment(const std::string& relname, const std::string& absname) override;
+
+public:
+    using Checker::Checker;
 
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
 };

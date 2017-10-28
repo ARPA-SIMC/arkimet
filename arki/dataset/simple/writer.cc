@@ -62,9 +62,9 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "simple"; }
 
-Segment* Writer::file(const Metadata& md, const std::string& format)
+std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
 {
-    Segment* writer = segmented::Writer::file(md, format);
+    auto writer = segmented::Writer::file(md, format);
     if (!writer->payload)
         writer->payload = new datafile::MdBuf(writer->absname);
     return writer;
@@ -77,7 +77,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 
     acquire_lock();
     // TODO: refuse if md is before "archive age"
-    Segment* writer = file(md, md.source().format);
+    auto writer = file(md, md.source().format);
     datafile::MdBuf* mdbuf = static_cast<datafile::MdBuf*>(writer->payload);
 
     // Try appending

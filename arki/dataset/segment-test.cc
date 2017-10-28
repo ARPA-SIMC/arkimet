@@ -1,4 +1,5 @@
 #include "arki/dataset/tests.h"
+#include "arki/dataset/reporter.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/utils/sys.h"
@@ -28,24 +29,26 @@ struct TestSegments
 {
     ConfigFile cfg;
     std::string pathname;
+    std::string abspath;
     //const testdata::Fixture& td;
 
     /**
      * cfg_segments can be:
      *  - dir: directory segments
-     *  - (nothing): AutoSegmentManager
+     *  - (nothing): AutoManager
      */
     TestSegments(const std::string& cfg_segments=std::string())
-         : pathname("testsegment")
+         : pathname("testsegment.grib"), abspath("testds/testsegment.grib")
     {
-        if (sys::isdir(pathname))
-            sys::rmtree(pathname);
+        if (sys::isdir("testds"))
+            sys::rmtree("testds");
         else
-            sys::unlink_ifexists(pathname);
+            sys::unlink_ifexists("testds");
+        sys::mkdir_ifmissing("testds");
 
         cfg.setValue("name", "test");
         cfg.setValue("step", "daily");
-        cfg.setValue("path", pathname);
+        cfg.setValue("path", "testds");
         if (!cfg_segments.empty())
             cfg.setValue("segments", cfg_segments);
     }
@@ -59,7 +62,7 @@ struct TestSegments
 
         // Import 2 gigabytes of data in a single segment
         metadata::Collection mds;
-        Segment* w = segment_manager->get_segment("test.grib");
+        auto w = segment_manager->get_writer("test.grib");
         for (unsigned i = 0; i < 2048; ++i)
         {
             unique_ptr<Metadata> md(new Metadata(testdata::make_large_mock("grib", 1024*1024, i / (30 * 24), (i/24) % 30, i % 24)));
@@ -75,6 +78,33 @@ struct TestSegments
 
         // Repack it
         wassert(segment_manager->repack("test.grib", mds));
+    }
+
+    void test_check_empty()
+    {
+        auto config = dataset::segmented::Config::create(cfg);
+        auto segment_manager = config->create_segment_manager();
+        dataset::NullReporter reporter;
+        metadata::Collection mds;
+        auto state = segment_manager->check(reporter, "test", pathname, mds);
+        wassert(actual_file(abspath).not_exists());
+        wassert(actual(state) == SEGMENT_MISSING);
+        wassert(actual(mds.size()) == 0u);
+    }
+
+    void test_check_empty_when_compressed_exists()
+    {
+        auto config = dataset::segmented::Config::create(cfg);
+        auto segment_manager = config->create_segment_manager();
+        sys::write_file(abspath, "");
+        scan::compress(abspath);
+        sys::unlink(abspath);
+        dataset::NullReporter reporter;
+        metadata::Collection mds;
+        auto state = segment_manager->check(reporter, "test", pathname, mds);
+        wassert(actual_file(abspath).not_exists());
+        wassert(actual(state) == SEGMENT_OK);
+        wassert(actual(mds.size()) == 0u);
     }
 };
 
@@ -94,17 +124,17 @@ add_method("item_cache", [] {
     wassert(actual(cache.get("foo") == 0).istrue());
 
     // Add returns the item we added
-    TestItem* foo = new TestItem("foo");
-    wassert(actual(cache.add(unique_ptr<TestItem>(foo)) == foo).istrue());
+    std::shared_ptr<TestItem> foo(new TestItem("foo"));
+    wassert(actual(cache.add(foo) == foo).istrue());
 
     // Get returns foo
     wassert(actual(cache.get("foo") == foo).istrue());
 
     // Add two more items
-    TestItem* bar = new TestItem("bar");
-    wassert(actual(cache.add(unique_ptr<TestItem>(bar)) == bar).istrue());
-    TestItem* baz = new TestItem("baz");
-    wassert(actual(cache.add(unique_ptr<TestItem>(baz)) == baz).istrue());
+    std::shared_ptr<TestItem> bar(new TestItem("bar"));
+    wassert(actual(cache.add(bar) == bar).istrue());
+    std::shared_ptr<TestItem> baz(new TestItem("baz"));
+    wassert(actual(cache.add(baz) == baz).istrue());
 
     // With max_size=3, the cache should hold them all
     wassert(actual(cache.get("foo") == foo).istrue());
@@ -112,8 +142,8 @@ add_method("item_cache", [] {
     wassert(actual(cache.get("baz") == baz).istrue());
 
     // Add an extra item: the last recently used was foo, which gets popped
-    TestItem* gnu = new TestItem("gnu");
-    wassert(actual(cache.add(unique_ptr<TestItem>(gnu)) == gnu).istrue());
+    std::shared_ptr<TestItem> gnu(new TestItem("gnu"));
+    wassert(actual(cache.add(gnu) == gnu).istrue());
 
     // Foo is not in cache anymore, bar baz and gnu are
     wassert(actual(cache.get("foo") == 0).istrue());
@@ -122,14 +152,25 @@ add_method("item_cache", [] {
     wassert(actual(cache.get("gnu") == gnu).istrue());
 });
 
-add_method("file", [] {
+add_method("file_repack", [] {
     TestSegments ts;
     wassert(ts.test_repack());
 });
 
-add_method("dir", [] {
+add_method("file_check_empty", [] {
+    TestSegments ts;
+    wassert(ts.test_check_empty());
+    wassert(ts.test_check_empty_when_compressed_exists());
+});
+
+add_method("dir_repack", [] {
     TestSegments ts("dir");
     wassert(ts.test_repack());
+});
+
+add_method("dir_check_empty", [] {
+    TestSegments ts("dir");
+    wassert(ts.test_check_empty());
 });
 
 
@@ -139,14 +180,14 @@ add_method("scan_dir_empty", [] {
     mkdir("dirscanner", 0777);
 
     {
-        auto sm = segment::SegmentManager::get("dirscanner", false);
+        auto sm = segment::Manager::get("dirscanner", false);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 0u);
     }
 
     {
-        auto sm = segment::SegmentManager::get("dirscanner", true);
+        auto sm = segment::Manager::get("dirscanner", true);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 0u);
@@ -171,7 +212,7 @@ add_method("scan_dir_dir1", [] {
     sys::write_file("dirscanner/.archive/z.grib", "");
 
     {
-        auto sm = segment::SegmentManager::get("dirscanner", false);
+        auto sm = segment::Manager::get("dirscanner", false);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 4u);
@@ -184,7 +225,7 @@ add_method("scan_dir_dir1", [] {
     }
 
     {
-        auto sm = segment::SegmentManager::get("dirscanner", true);
+        auto sm = segment::Manager::get("dirscanner", true);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 0u);
@@ -206,7 +247,7 @@ add_method("scan_dir_dir2", [] {
     sys::write_file("dirscanner/2009/b.grib", "");
 
     {
-        auto sm = segment::SegmentManager::get("dirscanner", false);
+        auto sm = segment::Manager::get("dirscanner", false);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 5u);
@@ -220,7 +261,7 @@ add_method("scan_dir_dir2", [] {
     }
 
     {
-        auto sm = segment::SegmentManager::get("dirscanner", true);
+        auto sm = segment::Manager::get("dirscanner", true);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 0u);
@@ -235,14 +276,14 @@ add_method("scan_dir_dir2", [] {
     sys::write_file("dirscanner/2008/01.odimh5", "");
 
     {
-        auto sm = segment::SegmentManager::get("dirscanner", false);
+        auto sm = segment::Manager::get("dirscanner", false);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 0u);
     }
 
     {
-        auto sm = segment::SegmentManager::get("dirscanner", true);
+        auto sm = segment::Manager::get("dirscanner", true);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 0u);
