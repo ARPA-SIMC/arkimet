@@ -131,7 +131,7 @@ static bool scan_dir(const std::string& pathname, const std::string& basedir, co
         pos = strtoul(i->c_str(), 0, 10);
         if (!scan_file(str::joinpath(pathname, *i), basedir, relname, format, [&](unique_ptr<Metadata> md) {
                    const source::Blob& i = md->sourceBlob();
-                   md->set_source(Source::createBlob(i.format, i.basedir, relname, pos, i.size));
+                   md->set_source(Source::createBlob(i.format, i.basedir, relname, pos, i.size, i.reader));
                    return dest(move(md));
                 }))
             return false;
@@ -254,7 +254,7 @@ void compress(const std::string& file, size_t groupsize)
     utime((file + ".gz").c_str(), &times);
     utime((file + ".gz.idx").c_str(), &times);
 
-    // TODO: delete uncompressed version
+	// TODO: delete uncompressed version
 }
 
 void Validator::throw_check_error(utils::sys::NamedFileDescriptor& fd, off_t offset, const std::string& msg) const

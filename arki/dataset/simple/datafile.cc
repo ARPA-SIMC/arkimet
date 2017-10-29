@@ -57,7 +57,7 @@ void MdBuf::add(const Metadata& md)
 
     // Replace the pathname with its basename
     unique_ptr<Metadata> copy(md.clone());
-    copy->set_source(Source::createBlob(os.format, dir.name(), basename, os.offset, os.size));
+    copy->set_source(Source::createBlobUnlocked(os.format, dir.name(), basename, os.offset, os.size));
     sum.add(*copy);
     mds.acquire(move(copy));
     flushed = false;

@@ -1,6 +1,7 @@
 #include "manifest.h"
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
+#include "arki/reader.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -63,6 +64,7 @@ struct RepackSort : public sort::Compare
 void scan_file(const std::string& root, const std::string& relname, segment::State state, segment::contents_func dest)
 {
     string absname = str::joinpath(root, relname);
+    auto reader = arki::Reader::for_auto(absname);
 
 #if 0
     // If the segment file is compressed, create a temporary uncompressed copy
@@ -77,7 +79,7 @@ void scan_file(const std::string& root, const std::string& relname, segment::Sta
         Metadata::read_file(metadata::ReadContext(absname + ".metadata", root), [&](unique_ptr<Metadata> md) {
             // Tweak Blob sources replacing the file name with relname
             if (const source::Blob* s = md->has_source_blob())
-                md->set_source(Source::createBlob(s->format, root, relname, s->offset, s->size));
+                md->set_source(Source::createBlob(s->format, root, relname, s->offset, s->size, reader));
             contents.acquire(move(md));
             return true;
         });
@@ -141,24 +143,24 @@ bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     string absdir = sys::abspath(m_path);
     string prepend_fname;
 
-    metadata_dest_func fixed_dest = [&](unique_ptr<Metadata> md) {
-        // Filter using the matcher in the query
-        if (!q.matcher(*md)) return true;
-
-        // Tweak Blob sources replacing basedir and prepending a directory to the file name
-        if (const source::Blob* s = md->has_source_blob())
-            md->set_source(Source::createBlob(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
-        return sorter.add(move(md));
-    };
-
     for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
         prepend_fname = str::dirname(*i);
-        string fullpath = str::joinpath(absdir, *i) + ".metadata";
+        string absname = str::joinpath(absdir, *i);
+        string fullpath = absname + ".metadata";
         if (!sys::exists(fullpath)) continue;
+        auto reader = arki::Reader::for_auto(absname);
         // This generates filenames relative to the metadata
         // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
-        Metadata::read_file(fullpath, fixed_dest);
+        Metadata::read_file(fullpath, [&](unique_ptr<Metadata> md) {
+            // Filter using the matcher in the query
+            if (!q.matcher(*md)) return true;
+
+            // Tweak Blob sources replacing basedir and prepending a directory to the file name
+            if (const source::Blob* s = md->has_source_blob())
+                md->set_source(Source::createBlob(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size, reader));
+            return sorter.add(move(md));
+        });
         if (!sorter.flush())
             return false;
     }
@@ -206,10 +208,12 @@ void Manifest::query_segment(const std::string& relname, metadata_dest_func dest
 {
     string absdir = sys::abspath(m_path);
     string prepend_fname = str::dirname(relname);
-    Metadata::read_file(str::joinpath(m_path, relname) + ".metadata", [&](unique_ptr<Metadata> md) {
+    string absname = str::joinpath(m_path, relname);
+    auto reader = arki::Reader::for_auto(absname);;
+    Metadata::read_file(absname + ".metadata", [&](unique_ptr<Metadata> md) {
         // Tweak Blob sources replacing the file name with relname
         if (const source::Blob* s = md->has_source_blob())
-            md->set_source(Source::createBlob(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
+            md->set_source(Source::createBlob(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size, reader));
         return dest(move(md));
     });
 }

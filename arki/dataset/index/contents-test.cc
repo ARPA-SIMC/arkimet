@@ -38,7 +38,7 @@ inline unique_ptr<WContents> createIndex(const std::string& text_cfg)
 Metadata make_md()
 {
     Metadata md;
-    md.set_source(types::Source::createBlob("grib", "", "inbound/test.grib1", 10, 2000));
+    md.set_source(types::Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 10, 2000));
     md.set("origin", "GRIB1(200, 10, 100)");
     md.set("product", "GRIB1(3, 4, 5)");
     md.set("level", "GRIB1(1, 2)");
@@ -58,7 +58,7 @@ Metadata make_md()
 Metadata make_md1()
 {
     Metadata md1;
-    md1.set_source(types::Source::createBlob("grib", "", "inbound/test-sorted.grib1", 20, 40000));
+    md1.set_source(types::Source::createBlobUnlocked("grib", "", "inbound/test-sorted.grib1", 20, 40000));
     md1.set("origin", "GRIB1(201, 11, 3)");
     md1.set("product", "GRIB1(102, 103, 104)");
     md1.set("level", "GRIB1(1, 3)");
@@ -290,7 +290,7 @@ add_method("concurrent", [] {
 
     // Now try to index another element
     Metadata md3;
-    md3.set_source(Source::createBlob("grib", "", "inbound/test.bufr", 10, 2000));
+    md3.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.bufr", 10, 2000));
     md3.set("origin", "GRIB1(202, 12, 102)");
     md3.set("product", "GRIB1(3, 4, 5)");
     md3.set("level", "GRIB1(1, 2)");
@@ -389,7 +389,7 @@ add_method("reproduce_old_issue1", [] {
     test->index(md, "test-md", 0);
     test->index(md1, "test-md1", 0);
     Metadata md2;
-    md2.set_source(Source::createBlob("grib", "", "inbound/test.bufr", 10, 2000));
+    md2.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.bufr", 10, 2000));
     md2.set("origin", "GRIB1(202, 12, 102)");
     md2.set("product", "GRIB1(3, 4, 5)");
     md2.set("level", "GRIB1(1, 2)");
@@ -428,8 +428,8 @@ add_method("largefile", [] {
     auto md1 = make_md1();
 
     // Pretend the data is in a very big file
-    md.set_source(Source::createBlob("grib", "", "inbound/test.grib1", 0x100000000LLU, 2000));
-    md1.set_source(Source::createBlob("grib", "", "inbound/test-sorted.grib1", 0xFFFFffffFFFF0000LLU, 0xFFFF));
+    md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 0x100000000LLU, 2000));
+    md1.set_source(Source::createBlobUnlocked("grib", "", "inbound/test-sorted.grib1", 0xFFFFffffFFFF0000LLU, 0xFFFF));
 
     // Remove index if it exists
     unlink("file1");

@@ -4,6 +4,7 @@
 #include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
+#include "arki/reader.h"
 #include "arki/matcher.h"
 #include "arki/matcher/reftime.h"
 #include "arki/dataset.h"
@@ -234,7 +235,9 @@ bool Contents::get_current(const Metadata& md, Metadata& current) const
     while (m_get_current.step())
     {
         current.clear();
-        build_md(m_get_current, current);
+        string abspath = str::joinpath(config().path, m_get_current.fetchString(2));
+        auto reader = arki::Reader::for_auto(abspath);
+        build_md(m_get_current, current, reader);
         found = true;
     }
     return found;
@@ -270,6 +273,7 @@ void Contents::scan_files(segment::contents_func v)
     Query mdq("scan_files_md", m_db);
     mdq.compile(query);
 
+    std::shared_ptr<arki::Reader> reader;
     string last_file;
     metadata::Collection mdc;
     while (mdq.step())
@@ -283,11 +287,13 @@ void Contents::scan_files(segment::contents_func v)
                 mdc.clear();
             }
             last_file = file;
+            string abspath = str::joinpath(config().path, file);
+            reader = arki::Reader::for_auto(abspath);
         }
 
         // Rebuild the Metadata
         unique_ptr<Metadata> md(new Metadata);
-        build_md(mdq, *md);
+        build_md(mdq, *md, reader);
         mdc.acquire(move(md));
     }
 
@@ -308,11 +314,14 @@ void Contents::scan_file(const std::string& relname, metadata_dest_func dest, co
     mdq.compile(query);
     mdq.bind(1, relname);
 
+    string abspath = str::joinpath(config().path, relname);
+    auto reader = arki::Reader::for_auto(abspath);
+
     while (mdq.step())
     {
         // Rebuild the Metadata
         unique_ptr<Metadata> md(new Metadata);
-        build_md(mdq, *md);
+        build_md(mdq, *md, reader);
         dest(move(md));
     }
 }
@@ -436,12 +445,12 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
     return true;
 }
 
-void Contents::build_md(Query& q, Metadata& md) const
+void Contents::build_md(Query& q, Metadata& md, std::shared_ptr<arki::Reader> reader) const
 {
     // Rebuild the Metadata
     md.set_source(Source::createBlob(
             q.fetchString(1), config().path, q.fetchString(2),
-            q.fetch<uint64_t>(3), q.fetch<uint64_t>(4)));
+            q.fetch<uint64_t>(3), q.fetch<uint64_t>(4), reader));
     // md.notes = mdq.fetchItems<types::Note>(5);
     const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(5);
     int notes_l = q.fetchBytes(5);
@@ -533,7 +542,13 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 
             // Rebuild the Metadata
             unique_ptr<Metadata> md(new Metadata);
-            build_md(mdq, *md);
+            // FIXME: this does full locking and reader lookup for each
+            // metadata, potentially twice if it ends up on disk and back again.
+            // Also, if it ends on disk then the file gets unlocked in the
+            // period between storing it on disk and reloading it again
+            std::string abspath = str::joinpath(config().path, srcname);
+            auto reader = arki::Reader::for_auto(abspath);
+            build_md(mdq, *md, reader);
             // Buffer the results in memory, to release the database lock as soon as possible
             mdbuf.acquire(move(md));
         }
@@ -547,7 +562,13 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     if (tmpfile.get() != 0)
     {
         metadata::ReadContext rc(tmpfile->name(), config().path);
-        if (!Metadata::read_file(rc, [&](std::unique_ptr<Metadata> md) { md->sourceBlob().lock(); return dest(move(md)); }))
+        if (!Metadata::read_file(rc, [&](std::unique_ptr<Metadata> md) {
+                    // FIXME: this does full locking and reader lookup for each
+                    // metadata, potentially twice if it ends up on disk and back again.
+                    std::string abspath = md->sourceBlob().absolutePathname();
+                    auto reader = arki::Reader::for_auto(abspath);
+                    md->sourceBlob().lock(reader); return dest(move(md));
+                }))
             return false;
     }
 
