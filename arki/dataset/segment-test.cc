@@ -2,6 +2,7 @@
 #include "arki/dataset/reporter.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
+#include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "segment.h"
@@ -67,11 +68,8 @@ struct TestSegments
         {
             unique_ptr<Metadata> md(new Metadata(testdata::make_large_mock("grib", 1024*1024, i / (30 * 24), (i/24) % 30, i % 24)));
             unique_ptr<types::Source> old_source(md->source().clone());
-            off_t ofs = w->append(*md);
-            //wassert(actual(md->source().style()) == Source::BLOB);
-            // Source does not get modified
-            wassert(actual_type(md->source()) == *old_source);
-            md->set_source(types::Source::createBlob(md->source().format, cfg.value("path"), w->relname, ofs, md->data_size()));
+            const types::source::Blob* new_source;
+            w->append(*md, &new_source).commit();
             md->drop_cached_data();
             mds.acquire(move(md));
         }

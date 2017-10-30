@@ -4,8 +4,6 @@
 #include <arki/utils/sys.h>
 #include <arki/metadata.h>
 #include <arki/types/source/blob.h>
-#include <arki/scan/grib.h>
-#include <arki/wibble/sys/process.h>
 #include <sstream>
 #include <iostream>
 #include <sys/stat.h>
@@ -38,71 +36,51 @@ add_method("append", [] {
     string mdfname = "testfile.grib.metadata";
     string sumfname = "testfile.grib.summary";
 
-    system(("rm -rf " + fname).c_str());
+    sys::unlink_ifexists(fname);
     ino_t inomd;
     ino_t inosum;
 
     system(("cp inbound/test.grib1 " + fname).c_str());
 
-    scan::Grib scanner;
-
-    Metadata md;
-    size_t totsize = 0;
-    scanner.test_open("inbound/test.grib1");
+    metadata::Collection mds("inbound/test.grib1");
 
     {
         datafile::MdBuf mdbuf("./" + fname);
 
-        // Get a metadata
-        ensure(scanner.next(md));
-        size_t size = datasize(md);
-
-        // Append the data
-        wassert(mdbuf.add(md));
-
-        // The new data is there
-        wassert(actual_type(md.source()).is_source_blob("grib", wibble::sys::process::getcwd(), "inbound/test.grib1", 0, size));
+        // Append the data, source is unchanged
+        auto source = types::source::Blob::create_unlocked("grib", "", "test.grib1", 0, datasize(mds[0]));
+        wassert(mdbuf.add(mds[0], *source));
+        wassert(actual_type(mds[0].source()).is_source_blob("grib", sys::getcwd(), "inbound/test.grib1", 0, datasize(mds[0])));
 
         // Metadata and summaries don't get touched
-        ensure(!sys::exists(mdfname));
-        ensure(!sys::exists(sumfname));
+        wassert(actual_file(mdfname).not_exists());
+        wassert(actual_file(sumfname).not_exists());
 
-        totsize += size;
-
-        // Get another metadata
-        ensure(scanner.next(md));
-        size = datasize(md);
-
-        mdbuf.add(md);
-
-        // The new data is there
-        wassert(actual_type(md.source()).is_source_blob("grib", wibble::sys::process::getcwd(), "inbound/test.grib1", totsize, size));
+        // Append another metadata
+        source = types::source::Blob::create_unlocked("grib", "", "test.grib1", source->offset + source->size, datasize(mds[1]));
+        wassert(mdbuf.add(mds[1], *source));
+        wassert(actual_type(mds[1].source()).is_source_blob("grib", sys::getcwd(), "inbound/test.grib1", source->offset, datasize(mds[1])));
 
         // Metadata and summaries don't get touched
-        ensure(!sys::exists(mdfname));
-        ensure(!sys::exists(sumfname));
+        wassert(actual_file(mdfname).not_exists());
+        wassert(actual_file(sumfname).not_exists());
 
-        totsize += size;
+        wassert(mdbuf.flush());
 
-        mdbuf.flush();
         // Metadata and summaries are now there
-        ensure(sys::exists(mdfname));
-        ensure(sys::exists(sumfname));
+        wassert(actual_file(mdfname).exists());
+        wassert(actual_file(sumfname).exists());
         inomd = sys::inode(mdfname);
         inosum = sys::inode(sumfname);
 
-		// Get another metadata
-		ensure(scanner.next(md));
-		size = datasize(md);
-
-		mdbuf.add(md);
-
-        // The new data is there
-        wassert(actual_type(md.source()).is_source_blob("grib", wibble::sys::process::getcwd(), "inbound/test.grib1", totsize, size));
+        // Append another metadata
+        source = types::source::Blob::create_unlocked("grib", sys::getcwd(), "inbound/test.grib1", source->offset + source->size, datasize(mds[2]));
+        wassert(mdbuf.add(mds[2], *source));
+        wassert(actual_type(mds[2].source()).is_source_blob("grib", sys::getcwd(), "inbound/test.grib1", source->offset, datasize(mds[2])));
 
         // Metadata and summaries don't get touched
-        ensure_equals(sys::inode(mdfname), inomd);
-        ensure_equals(sys::inode(sumfname), inosum);
+        wassert(actual(sys::inode(mdfname)) == inomd);
+        wassert(actual(sys::inode(sumfname)) == inosum);
     }
 
     // After Datafile is destroyed, metadata and summaries are flushed

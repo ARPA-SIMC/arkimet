@@ -22,6 +22,12 @@ namespace metadata {
 class Collection;
 }
 
+namespace types {
+namespace source {
+class Blob;
+}
+}
+
 namespace scan {
 class Validator;
 }
@@ -199,6 +205,7 @@ public:
 class Segment
 {
 public:
+    std::string root;
     std::string relname;
     std::string absname;
 
@@ -209,7 +216,7 @@ public:
     };
     Payload* payload = nullptr;
 
-    Segment(const std::string& relname, const std::string& absname);
+    Segment(const std::string& root, const std::string& relname, const std::string& absname);
     virtual ~Segment();
 };
 
@@ -221,21 +228,16 @@ struct Writer : public Segment
     using Segment::Segment;
 
     /**
-     * Append the data, updating md's source information.
-     *
-     * In case of write errors (for example, disk full) it tries to truncate
-     * the file as it was before, before raising an exception.
-     */
-    virtual off_t append(Metadata& md) = 0;
-
-    /**
      * Append the data, in a transaction, updating md's source information.
      *
      * At the beginning of the transaction, the file is locked and the write
      * offset is read. Committing the transaction actually writes the data to
      * the file.
+     *
+     * Returns a reference to the blob source that will be set into \a md on
+     * commit
      */
-    virtual Pending append(Metadata& md, off_t* ofs) = 0;
+    virtual Pending append(Metadata& md, const types::source::Blob** new_source=0) = 0;
 
     /**
      * Truncate the segment at the given offset

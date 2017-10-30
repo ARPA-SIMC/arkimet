@@ -49,15 +49,13 @@ MdBuf::~MdBuf()
     flush();
 }
 
-void MdBuf::add(const Metadata& md)
+void MdBuf::add(const Metadata& md, const types::source::Blob& source)
 {
     using namespace arki::types;
 
-    const source::Blob& os = md.sourceBlob();
-
     // Replace the pathname with its basename
     unique_ptr<Metadata> copy(md.clone());
-    copy->set_source(Source::createBlobUnlocked(os.format, dir.name(), basename, os.offset, os.size));
+    copy->set_source(Source::createBlobUnlocked(source.format, dir.name(), basename, source.offset, source.size));
     sum.add(*copy);
     mds.acquire(move(copy));
     flushed = false;

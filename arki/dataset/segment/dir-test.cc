@@ -45,7 +45,7 @@ inline size_t datasize(const Metadata& md)
 std::shared_ptr<segment::dir::Writer> make_w()
 {
     string absname = sys::abspath(relname);
-    return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer("grib", relname, absname));
+    return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer("grib", sys::getcwd(), relname, absname));
 }
 
 void Tests::register_tests() {
@@ -71,9 +71,9 @@ add_method("append", [] {
             size_t data_size = md.data_size();
 
             // Start the append transaction, the file is written
-            off_t ofs;
-            Pending p = w->append(md, &ofs);
-            wassert(actual((size_t)ofs) == 0u);
+            const types::source::Blob* new_source;
+            Pending p = w->append(md, &new_source);
+            wassert(actual((size_t)new_source->offset) == 0u);
             wassert(actual(sys::size(str::joinpath(w->absname, "000000.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
@@ -81,7 +81,7 @@ add_method("append", [] {
             p.commit();
 
             // After commit, metadata is updated
-            wassert(actual_type(md.source()).is_source_blob("grib", "", w->absname, 0, data_size));
+            wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), w->relname, 0, data_size));
         }
 
 
@@ -94,9 +94,9 @@ add_method("append", [] {
             size_t data_size = md.data_size();
 
             // Start the append transaction, the file is written
-            off_t ofs;
-            Pending p = w->append(md, &ofs);
-            wassert(actual((size_t)ofs) == 1u);
+            const types::source::Blob* new_source;
+            Pending p = w->append(md, &new_source);
+            wassert(actual((size_t)new_source->offset) == 1u);
             wassert(actual(sys::size(str::joinpath(w->absname, "000001.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
@@ -118,9 +118,9 @@ add_method("append", [] {
 
             // Start the append transaction, the file is written
             // Rolling back a transaction does leave a gap in the sequence
-            off_t ofs;
-            Pending p = w->append(md, &ofs);
-            wassert(actual((size_t)ofs) == 2u);
+            const types::source::Blob* new_source;
+            Pending p = w->append(md, &new_source);
+            wassert(actual((size_t)new_source->offset) == 2u);
             wassert(actual(sys::size(str::joinpath(w->absname, "000002.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
@@ -128,7 +128,7 @@ add_method("append", [] {
             p.commit();
 
             // After commit, metadata is updated
-            wassert(actual_type(md.source()).is_source_blob("grib", "", w->absname, 2, data_size));
+            wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), w->relname, 2, data_size));
         }
     }
 
@@ -151,11 +151,11 @@ add_method("check", [] {
     {
         std::shared_ptr<segment::Writer> make_writer() override
         {
-            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, relname, absname));
+            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relname, absname));
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, relname, absname));
+            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relname, absname));
         }
     } test;
 
@@ -167,11 +167,11 @@ add_method("remove", [] {
     {
         std::shared_ptr<segment::Writer> make_writer() override
         {
-            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, relname, absname));
+            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relname, absname));
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, relname, absname));
+            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relname, absname));
         }
     } test;
 

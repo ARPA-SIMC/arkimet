@@ -60,14 +60,14 @@ struct Pending
     Pending& operator=(const Pending& p) = delete;
     Pending& operator=(Pending&& p);
 
-	/// true if there is an operation to commit, else false
-	operator bool() const { return trans != 0; }
+    /// true if there is an operation to commit, else false
+    bool pending() const { return trans != 0; }
 
-	/// Commit the pending operation
-	void commit();
+    /// Commit the pending operation
+    void commit();
 
-	/// Rollback the pending operation
-	void rollback();
+    /// Rollback the pending operation
+    void rollback();
 };
 
 }

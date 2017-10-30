@@ -233,7 +233,7 @@ add_method("remove", [] {
 
     // Remove the first item
     wassert(test->remove("inbound/test.grib1", 0));
-    ensure((bool)p);
+    wassert(actual(p.pending()).istrue());
     p.commit();
 
     // There should be only one result now

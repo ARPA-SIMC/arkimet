@@ -67,18 +67,15 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
     WIndex* idx = static_cast<WIndex*>(writer->payload);
     Pending p_idx = idx->begin_transaction();
 
-    off_t ofs;
-    Pending p_df = writer->append(md, &ofs);
-    auto source = types::source::Blob::create_unlocked(md.source().format, config().path, writer->relname, ofs, md.data_size());
+    const types::source::Blob* new_source;
+    Pending p_df = writer->append(md, &new_source);
 
     try {
-        idx->index(md, ofs);
+        idx->index(md, new_source->offset);
         // Invalidate the summary cache for this month
         scache.invalidate(md);
         p_df.commit();
         p_idx.commit();
-        source->lock();
-        md.set_source(move(source));
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
         md.add_note("Failed to store in dataset '" + name() + "' because the dataset already has the data: " + di.what());
@@ -96,18 +93,15 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
     WIndex* idx = static_cast<WIndex*>(writer->payload);
     Pending p_idx = idx->begin_transaction();
 
-    off_t ofs;
-    Pending p_df = writer->append(md, &ofs);
-    auto source = types::source::Blob::create_unlocked(md.source().format, config().path, writer->relname, ofs, md.data_size());
+    const types::source::Blob* new_source;
+    Pending p_df = writer->append(md, &new_source);
 
     try {
-        idx->replace(md, ofs);
+        idx->replace(md, new_source->offset);
         // Invalidate the summary cache for this month
         scache.invalidate(md);
         p_df.commit();
         p_idx.commit();
-        source->lock();
-        md.set_source(move(source));
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
@@ -122,19 +116,16 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
     WIndex* idx = static_cast<WIndex*>(writer->payload);
     Pending p_idx = idx->begin_transaction();
 
-    off_t ofs;
-    Pending p_df = writer->append(md, &ofs);
-    auto source = types::source::Blob::create_unlocked(md.source().format, config().path, writer->relname, ofs, md.data_size());
+    const types::source::Blob* new_source;
+    Pending p_df = writer->append(md, &new_source);
 
     try {
         // Try to acquire without replacing
-        idx->index(md, ofs);
+        idx->index(md, new_source->offset);
         // Invalidate the summary cache for this month
         scache.invalidate(md);
         p_df.commit();
         p_idx.commit();
-        source->lock();
-        md.set_source(move(source));
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
         // It already exists, so we keep p_df uncommitted and check Update Sequence Numbers

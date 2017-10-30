@@ -32,11 +32,10 @@ struct Writer : public dataset::segment::Writer
 {
     File* fd = nullptr;
 
-    Writer(const std::string& relname, std::unique_ptr<File> fd);
+    Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd);
     ~Writer();
 
-    off_t append(Metadata& md) override;
-    Pending append(Metadata& md, off_t* ofs) override;
+    Pending append(Metadata& md, const types::source::Blob** new_source=0) override;
 
     /**
      * Append raw data to the file, wrapping it with the right envelope if

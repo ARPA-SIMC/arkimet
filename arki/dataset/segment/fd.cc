@@ -47,10 +47,12 @@ struct Append : public Transaction
     bool fired = false;
     const std::vector<uint8_t>& buf;
     off_t pos;
+    std::unique_ptr<types::source::Blob> new_source;
 
     Append(fd::Writer& w, Metadata& md)
         : w(w), fd(*w.fd), md(md), buf(md.getData()), pos(fd.lseek(0, SEEK_END))
     {
+        new_source = source::Blob::create_unlocked(md.source().format, w.root, w.relname, pos, buf.size());
     }
 
     virtual ~Append()
@@ -66,7 +68,7 @@ struct Append : public Transaction
         fd.write_data(pos, buf);
 
         // Set the source information that we are writing in the metadata
-        md.set_source(Source::createBlobUnlocked(md.source().format, "", w.absname, pos, buf.size()));
+        md.set_source(move(new_source));
 
         fired = true;
     }
@@ -84,8 +86,8 @@ struct Append : public Transaction
 }
 
 
-Writer::Writer(const std::string& relname, std::unique_ptr<File> fd)
-    : segment::Writer(relname, fd->name()), fd(fd.release())
+Writer::Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd)
+    : segment::Writer(root, relname, fd->name()), fd(fd.release())
 {
 }
 
@@ -94,33 +96,11 @@ Writer::~Writer()
     delete fd;
 }
 
-Pending Writer::append(Metadata& md, off_t* ofs)
+Pending Writer::append(Metadata& md, const types::source::Blob** new_source)
 {
     Append* res = new Append(*this, md);
-    *ofs = res->pos;
+    if (new_source) *new_source = res->new_source.get();
     return res;
-}
-
-off_t Writer::append(Metadata& md)
-{
-    // Get the data blob to append
-    const std::vector<uint8_t>& buf = md.getData();
-
-    // Lock and get the write position in the data file
-    off_t pos = fd->lseek(0, SEEK_END);
-
-    try {
-        // Append the data
-        fd->write_data(pos, buf);
-    } catch (...) {
-        // If we had a problem, attempt to truncate the file to the original size
-        fd->fdtruncate(pos);
-        throw;
-    }
-
-    // Set the source information that we are writing in the metadata
-    // md.set_source(Source::createBlob(md.source().format, "", absname, pos, buf.size()));
-    return pos;
 }
 
 off_t Writer::append(const std::vector<uint8_t>& buf)

@@ -21,11 +21,9 @@ struct Writer : public dataset::segment::Writer
     SequenceFile seqfile;
     std::string format;
 
-    Writer(const std::string& format, const std::string& relname, const std::string& absname);
+    Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname);
 
-    off_t append(Metadata& md) override;
-
-    Pending append(Metadata& md, off_t* ofs) override;
+    Pending append(Metadata& md, const types::source::Blob** new_source=0) override;
 
     virtual size_t write_file(Metadata& md, File& fd);
 
@@ -67,7 +65,7 @@ public:
     void validate(Metadata& md, const scan::Validator& v) override;
 
 public:
-    Checker(const std::string& format, const std::string& relname, const std::string& absname);
+    Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname);
 
     State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
@@ -89,7 +87,7 @@ protected:
 class HoleChecker : public Checker
 {
 public:
-    HoleChecker(const std::string& format, const std::string& relname, const std::string& absname);
+    using Checker::Checker;
 
     State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
 

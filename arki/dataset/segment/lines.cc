@@ -65,8 +65,8 @@ void File::test_add_padding(size_t size)
 
 
 
-Writer::Writer(const std::string& relname, const std::string& absname, int mode)
-    : fd::Writer(relname, unique_ptr<fd::File>(new File(absname, O_WRONLY | O_CREAT | mode, 0666)))
+Writer::Writer(const std::string& root, const std::string& relname, const std::string& absname, int mode)
+    : fd::Writer(root, relname, unique_ptr<fd::File>(new File(absname, O_WRONLY | O_CREAT | mode, 0666)))
 {
 }
 
@@ -78,7 +78,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
 
 unique_ptr<fd::Writer> Checker::make_tmp_segment(const std::string& relname, const std::string& absname)
 {
-    return unique_ptr<fd::Writer>(new lines::Writer(relname, absname, O_TRUNC));
+    return unique_ptr<fd::Writer>(new lines::Writer(root, relname, absname, O_TRUNC));
 }
 
 Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)

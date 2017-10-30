@@ -18,6 +18,7 @@ namespace tests {
 struct SegmentTest
 {
     std::string format;
+    std::string root;
     std::string relname;
     std::string absname;
     metadata::Collection mdc;

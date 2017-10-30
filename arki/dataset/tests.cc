@@ -606,9 +606,12 @@ void test_append_transaction_ok(dataset::segment::Writer* dw, Metadata& md, int 
     size_t orig_fsize = sys::size(dw->absname, 0);
 
     // Start the append transaction, nothing happens until commit
-    off_t ofs;
-    Pending p = dw->append(md, &ofs);
-    wassert(actual((size_t)ofs) == orig_fsize);
+    const types::source::Blob* new_source;
+    Pending p = dw->append(md, &new_source);
+    wassert(actual((size_t)new_source->offset) == orig_fsize);
+    wassert(actual((size_t)new_source->size) == data_size);
+    wassert(actual(new_source->basedir) == sys::getcwd());
+    wassert(actual(new_source->filename) == dw->relname);
     wassert(actual(sys::size(dw->absname)) == orig_fsize);
     wassert(actual_type(md.source()) == *orig_source);
 
@@ -619,7 +622,7 @@ void test_append_transaction_ok(dataset::segment::Writer* dw, Metadata& md, int 
     wassert(actual(sys::size(dw->absname)) == orig_fsize + data_size + append_amount_adjust);
 
     // And metadata is updated
-    wassert(actual_type(md.source()).is_source_blob("grib", "", dw->absname, orig_fsize, data_size));
+    wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), dw->relname, orig_fsize, data_size));
 }
 
 void test_append_transaction_rollback(dataset::segment::Writer* dw, Metadata& md)
@@ -629,9 +632,9 @@ void test_append_transaction_rollback(dataset::segment::Writer* dw, Metadata& md
     size_t orig_fsize = sys::size(dw->absname, 0);
 
     // Start the append transaction, nothing happens until commit
-    off_t ofs;
-    Pending p = dw->append(md, &ofs);
-    wassert(actual((size_t)ofs) == orig_fsize);
+    const types::source::Blob* new_source;
+    Pending p = dw->append(md, &new_source);
+    wassert(actual((size_t)new_source->offset) == orig_fsize);
     wassert(actual(sys::size(dw->absname, 0)) == orig_fsize);
     wassert(actual_type(md.source()) == *orig_source);
 

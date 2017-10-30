@@ -16,7 +16,7 @@ namespace arki {
 namespace tests {
 
 SegmentTest::SegmentTest()
-    : format("grib"), relname("testfile.grib"), absname(sys::abspath(relname))
+    : format("grib"), root("."), relname("testfile.grib"), absname(sys::abspath(relname))
 {
     // Scan the test data
     scan::scan("inbound/test.grib1", mdc.inserter_func());
@@ -46,10 +46,7 @@ std::shared_ptr<segment::Writer> SegmentTest::make_full_writer()
 {
     auto res(make_empty_writer());
     for (unsigned i = 0; i < mdc.size(); ++i)
-    {
-        off_t ofs = res->append(mdc[i]);
-        mdc[i].set_source(types::Source::createBlob("grib", sys::abspath("."), relname, ofs, mdc[i].data_size()));
-    }
+        res->append(mdc[i]).commit();
     return res;
 }
 

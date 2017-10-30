@@ -30,25 +30,13 @@ namespace dataset {
 namespace segment {
 namespace dir {
 
-Writer::Writer(const std::string& format, const std::string& relname, const std::string& absname)
-    : segment::Writer(relname, absname), seqfile(absname), format(format)
+Writer::Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname)
+    : segment::Writer(root, relname, absname), seqfile(absname), format(format)
 {
     // Ensure that the directory 'absname' exists
     sys::makedirs(absname);
 
     seqfile.open();
-}
-
-off_t Writer::append(Metadata& md)
-{
-    size_t pos;
-    File fd = seqfile.open_next(format, pos);
-    /*size_t size =*/ write_file(md, fd);
-    fd.close();
-
-    // Set the source information that we are writing in the metadata
-    // md.set_source(Source::createBlob(md.source().format, "", absname, pos, size));
-    return pos;
 }
 
 size_t Writer::write_file(Metadata& md, File& fd)
@@ -93,10 +81,12 @@ struct Append : public Transaction
     Metadata& md;
     size_t pos;
     size_t size;
+    std::unique_ptr<types::source::Blob> new_source;
 
     Append(const dir::Writer& writer, Metadata& md, size_t pos, size_t size)
         : writer(writer), fired(false), md(md), pos(pos), size(size)
     {
+        new_source = source::Blob::create_unlocked(md.source().format, writer.root, writer.relname, pos, size);
     }
 
     virtual ~Append()
@@ -109,7 +99,7 @@ struct Append : public Transaction
         if (fired) return;
 
         // Set the source information that we are writing in the metadata
-        md.set_source(Source::createBlob(md.source().format, "", writer.absname, pos, size));
+        md.set_source(move(new_source));
 
         fired = true;
     }
@@ -132,14 +122,15 @@ struct Append : public Transaction
 
 }
 
-Pending Writer::append(Metadata& md, off_t* ofs)
+Pending Writer::append(Metadata& md, const types::source::Blob** new_source)
 {
     size_t pos;
     File fd = seqfile.open_next(format, pos);
     size_t size = write_file(md, fd);
     fd.close();
-    *ofs = pos;
-    return new Append(*this, md, pos, size);
+    auto res = new Append(*this, md, pos, size);
+    if (new_source) *new_source = res->new_source.get();
+    return res;
 }
 
 void Writer::foreach_datafile(std::function<void(const char*)> f)
@@ -148,7 +139,8 @@ void Writer::foreach_datafile(std::function<void(const char*)> f)
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
         if (!i.isreg()) continue;
-        if (strcmp(i->d_name, ".sequence") != 0 && !str::endswith(i->d_name, format)) continue;
+        if (strcmp(i->d_name, ".sequence") == 0) continue;
+        if (!str::endswith(i->d_name, format)) continue;
         f(i->d_name);
     }
 }
@@ -161,10 +153,7 @@ void Writer::truncate(size_t offset)
     string format = utils::require_format(absname);
     foreach_datafile([&](const char* name) {
         if (strtoul(name, 0, 10) >= offset)
-        {
-            //cerr << "UNLINK " << absname << " -- " << *i << endl;
             sys::unlink(str::joinpath(absname, name));
-        }
     });
 }
 
@@ -236,8 +225,8 @@ void Writer::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 }
 
 
-Checker::Checker(const std::string& format, const std::string& relname, const std::string& absname)
-    : segment::Checker(relname, absname), format(format)
+Checker::Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname)
+    : segment::Checker(root, relname, absname), format(format)
 {
 }
 
@@ -387,7 +376,8 @@ void Checker::foreach_datafile(std::function<void(const char*)> f)
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
         if (!i.isreg()) continue;
-        if (strcmp(i->d_name, ".sequence") != 0 && !str::endswith(i->d_name, format)) continue;
+        if (strcmp(i->d_name, ".sequence") == 0) continue;
+        if (!str::endswith(i->d_name, format)) continue;
         f(i->d_name);
     }
 }
@@ -519,7 +509,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 unique_ptr<dir::Writer> Checker::make_tmp_segment(const std::string& format, const std::string& relname, const std::string& absname)
 {
     if (sys::exists(absname)) sys::rmtree(absname);
-    unique_ptr<dir::Writer> res(new dir::Writer(format, relname, absname));
+    unique_ptr<dir::Writer> res(new dir::Writer(format, root, relname, absname));
     return res;
 }
 
@@ -532,15 +522,10 @@ State HoleChecker::check(dataset::Reporter& reporter, const std::string& ds, con
 unique_ptr<dir::Writer> HoleChecker::make_tmp_segment(const std::string& format, const std::string& relname, const std::string& absname)
 {
     if (sys::exists(absname)) sys::rmtree(absname);
-    unique_ptr<dir::Writer> res(new dir::HoleWriter(format, relname, absname));
+    unique_ptr<dir::Writer> res(new dir::HoleWriter(format, root, relname, absname));
     return res;
 }
 
-
-HoleChecker::HoleChecker(const std::string& format, const std::string& relname, const std::string& absname)
-    : Checker(format, relname, absname)
-{
-}
 
 bool can_store(const std::string& format)
 {
