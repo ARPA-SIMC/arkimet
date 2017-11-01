@@ -18,30 +18,22 @@ namespace arki {
 namespace utils {
 namespace commandline {
 
-struct Options : public arki::runtime::CommandLine
+struct Options : public runtime::CommandLine
 {
-	Options() : runtime::CommandLine("arki-query", 1)
-	{
-		usage = "[options] [expression] [configfile or directory...]";
-		description =
-		    "Query the datasets in the given config file for data matching the"
-			" given expression, and output the matching metadata.";
-
-		addQueryOptions();
-	}
+    Options() : runtime::CommandLine("arki-query", 1)
+    {
+        usage = "[options] [expression] [configfile or directory...]";
+        description =
+            "Query the datasets in the given config file for data matching the"
+            " given expression, and output the matching metadata.";
+        add_query_options();
+    }
 };
 
 }
 }
 }
 
-template<typename T>
-struct RAIIArrayDeleter
-{
-	T*& a;
-	RAIIArrayDeleter(T*& a) : a(a) {}
-	~RAIIArrayDeleter() { if (a) delete[] a; }
-};
 
 int main(int argc, const char* argv[])
 {
