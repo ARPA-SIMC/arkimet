@@ -36,7 +36,7 @@ add_method("files", [] {
     utils::sys::write_file("config", "[error]\ntype=discard\n");
 
     runtime::CommandLine opts("arki-scan");
-    opts.addScanOptions();
+    opts.add_scan_options();
 
     const char* argv[] = { "arki-scan", "--dispatch=config", "--dump", "--status", "--summary", "--files=import.lst", nullptr };
     int argc = sizeof(argv) / sizeof(argv[0]) - 1;
