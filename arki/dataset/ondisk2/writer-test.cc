@@ -432,7 +432,7 @@ add_method("pack_vm2", [](Fixture& f) {
 
     // Take note of all the data and delete every second item
     vector<vector<uint8_t>> orig_data;
-    metadata::Collection mdc_imported = f.query(Matcher());
+    metadata::Collection mdc_imported = f.query(dataset::DataQuery("", true));
     {
         orig_data.reserve(mdc_imported.size());
         for (unsigned i = 0; i < mdc_imported.size(); ++i)
@@ -478,7 +478,7 @@ add_method("pack_vm2", [](Fixture& f) {
     }
 
     // Ensure that the data hasn't been corrupted
-    metadata::Collection mdc_packed = f.query(Matcher());
+    metadata::Collection mdc_packed = f.query(dataset::DataQuery("", true));
     wassert(actual(mdc_packed[0]).is_similar(mdc_imported[1]));
     wassert(actual(mdc_packed[1]).is_similar(mdc_imported[3]));
     wassert(actual(mdc_packed[0].getData()) == orig_data[1]);

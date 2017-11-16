@@ -157,7 +157,7 @@ add_method("query_archived", [](Fixture& f) {
     wassert(actual(mdc.size()) == 3u);
 
     mdc.clear();
-    mdc.add(*reader, Matcher::parse("origin:GRIB1,200"));
+    mdc.add(*reader, dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true));
     wassert(actual(mdc.size()) == 1u);
 
     // Check that the source record that comes out is ok

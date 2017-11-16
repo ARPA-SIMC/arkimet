@@ -92,7 +92,7 @@ this->add_method("querydata", [](Fixture& f) {
         using namespace arki::types;
 
         // Check that what we imported can be queried
-        metadata::Collection mdc(*ds, f.td.test_data[i].matcher);
+        metadata::Collection mdc(*ds, dataset::DataQuery(f.td.test_data[i].matcher, true));
         wassert(actual(mdc.size()) == 1u);
 
         // Check that the result matches what was imported
@@ -187,7 +187,7 @@ this->add_method("query_inline", [](Fixture& f) {
 
     auto reader(f.config().create_reader());
 
-    metadata::Collection mdc(*reader, f.td.test_data[0].matcher);
+    metadata::Collection mdc(*reader, dataset::DataQuery(f.td.test_data[0].matcher, true));
     wassert(actual(mdc.size()) == 1u);
 
     // Check that the source record that comes out is ok
@@ -236,7 +236,7 @@ this->add_method("postprocess", [](Fixture& f) {
 
     // Do a simple export first, to get the exact metadata that would come
     // out
-    metadata::Collection mdc(*ds, f.td.test_data[0].matcher);
+    metadata::Collection mdc(*ds, dataset::DataQuery(f.td.test_data[0].matcher, true));
     wassert(actual(mdc.size()) == 1u);
 
     // Then do a postprocessed query_bytes
@@ -274,7 +274,7 @@ this->add_method("interrupted_read", [](Fixture& f) {
 
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+    reader->query_data(dataset::DataQuery("", true), [&](unique_ptr<Metadata> md) {
         auto data = md->getData();
         wassert(actual(data == orig_data).istrue());
         ++count;
@@ -291,7 +291,7 @@ this->add_method("read_missing_segment", [](Fixture& f) {
     unsigned count_ok = 0;
     unsigned count_err = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+    reader->query_data(dataset::DataQuery("", true), [&](unique_ptr<Metadata> md) {
         try {
             md->getData();
             ++count_ok;

@@ -205,7 +205,7 @@ this->add_method("repack_during_read", [](Fixture& f) {
     f.import_all(f.td);
 
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+    reader->query_data(dataset::DataQuery("", true), [&](unique_ptr<Metadata> md) {
         {
             auto checker = f.dataset_config()->create_checker();
             dataset::NullReporter rep;

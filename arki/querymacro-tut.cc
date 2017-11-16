@@ -214,7 +214,7 @@ def_test(7)
             "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
             );
 
-    metadata::Collection mdc(qm, Matcher());
+    metadata::Collection mdc(qm, dataset::DataQuery("", true));
     ensure_equals(mdc.size(), 2u);
     // Ensure that data is reachable
     wassert(actual(mdc[0].getData().size()) == mdc[0].data_size());

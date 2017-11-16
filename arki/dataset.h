@@ -85,6 +85,7 @@ struct DataQuery
     std::shared_ptr<sort::Compare> sorter;
 
     DataQuery();
+    DataQuery(const std::string& matcher, bool with_data=false);
     DataQuery(const Matcher& matcher, bool with_data=false);
     ~DataQuery();
 
@@ -109,12 +110,14 @@ struct ByteQuery : public DataQuery
 
     void setData(const Matcher& m)
     {
+        with_data = true;
         type = BQ_DATA;
         matcher = m;
     }
 
     void setPostprocess(const Matcher& m, const std::string& procname)
     {
+        with_data = true;
         type = BQ_POSTPROCESS;
         matcher = m;
         param = procname;
@@ -122,6 +125,7 @@ struct ByteQuery : public DataQuery
 
     void setRepMetadata(const Matcher& m, const std::string& repname)
     {
+        with_data = false;
         type = BQ_REP_METADATA;
         matcher = m;
         param = repname;
@@ -129,6 +133,7 @@ struct ByteQuery : public DataQuery
 
     void setRepSummary(const Matcher& m, const std::string& repname)
     {
+        with_data = false;
         type = BQ_REP_SUMMARY;
         matcher = m;
         param = repname;
