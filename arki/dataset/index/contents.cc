@@ -505,78 +505,51 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 
     metadata::Collection mdbuf;
     string last_fname;
-    unique_ptr<runtime::Tempfile> tmpfile;
+    std::shared_ptr<arki::Reader> reader;
 
-    // Limited scope for mdq, so we finalize the query before starting to
-    // emit results
+    // This keeps the index locked for a potentially long time, if dest is slow
+    // in processing data. Use iseg datasets if this is a problem.
+    Query mdq("mdq", m_db);
+    mdq.compile(query);
+
+    while (mdq.step())
     {
-        Query mdq("mdq", m_db);
-        mdq.compile(query);
-
-        // TODO: see if it's worth sorting mdbuf by file and offset
-
-//fprintf(stderr, "PRE\n");
-//system(str::fmtf("ps u %d >&2", getpid()).c_str());
-        while (mdq.step())
+        // At file boundary, sort and write out what we have so
+        // far, so we don't keep it all in memory
+        string srcname = mdq.fetchString(2);
+        if (srcname != last_fname)
         {
-            // At file boundary, sort and write out what we have so
-            // far, so we don't keep it all in memory
-            string srcname = mdq.fetchString(2);
-            if (srcname != last_fname)
+            if (q.with_data)
             {
-                // Note: since we chunk at file boundary, and since files
-                // cluster data by reftime, we guarantee that sorting is
-                // consistent as long as data is required to be sorted by
-                // reftime first.
-                if (mdbuf.size() > 8192)
-                {
-                    // If we pile up too many metadata, write them out
-                    if (q.sorter) mdbuf.sort(*q.sorter);
-                    if (tmpfile.get() == 0)
-                        tmpfile.reset(new runtime::Tempfile);
-                    mdbuf.write_to(*tmpfile);
-                    mdbuf.clear();
-                }
-                last_fname = srcname;
+                std::string abspath = str::joinpath(config().path, srcname);
+                reader = arki::Reader::for_auto(abspath);
             }
 
-            // Rebuild the Metadata
-            unique_ptr<Metadata> md(new Metadata);
-            // FIXME: this does full locking and reader lookup for each
-            // metadata, potentially twice if it ends up on disk and back again.
-            // Also, if it ends on disk then the file gets unlocked in the
-            // period between storing it on disk and reloading it again
-            std::string abspath = str::joinpath(config().path, srcname);
-            auto reader = arki::Reader::for_auto(abspath);
-            build_md(mdq, *md, reader);
-            // Buffer the results in memory, to release the database lock as soon as possible
-            mdbuf.acquire(move(md));
-        }
-//fprintf(stderr, "POST %zd\n", mdbuf.size());
-//system(str::fmtf("ps u %d >&2", getpid()).c_str());
-    }
-//if (tmpfile.get()) system(str::fmtf("ls -la --si %s >&2", tmpfile->name().c_str()).c_str());
+            if (!mdbuf.empty())
+            {
+                if (q.sorter) mdbuf.sort(*q.sorter);
+                if (!mdbuf.move_to(dest))
+                    return false;
+            }
 
-    // If we had buffered some sorted metadata to a temporary file, replay them
-    // now
-    if (tmpfile.get() != 0)
+            last_fname = srcname;
+        }
+
+        // Rebuild the Metadata
+        unique_ptr<Metadata> md(new Metadata);
+        build_md(mdq, *md, reader);
+        // Buffer the results in memory, to release the database lock as soon as possible
+        mdbuf.acquire(move(md));
+    }
+
+    if (!mdbuf.empty())
     {
-        metadata::ReadContext rc(tmpfile->name(), config().path);
-        if (!Metadata::read_file(rc, [&](std::unique_ptr<Metadata> md) {
-                    // FIXME: this does full locking and reader lookup for each
-                    // metadata, potentially twice if it ends up on disk and back again.
-                    std::string abspath = md->sourceBlob().absolutePathname();
-                    auto reader = arki::Reader::for_auto(abspath);
-                    md->sourceBlob().lock(reader); return dest(move(md));
-                }))
+        if (q.sorter) mdbuf.sort(*q.sorter);
+        if (!mdbuf.move_to(dest))
             return false;
     }
 
-    // Sort and output the rest
-    if (q.sorter) mdbuf.sort(*q.sorter);
-
-    // pass it to consumer
-    return mdbuf.move_to(dest);
+    return true;
 }
 
 void Contents::rebuildSummaryCache()

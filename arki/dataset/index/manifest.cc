@@ -149,7 +149,9 @@ bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         string absname = str::joinpath(absdir, *i);
         string fullpath = absname + ".metadata";
         if (!sys::exists(fullpath)) continue;
-        auto reader = arki::Reader::for_auto(absname);
+        std::shared_ptr<arki::Reader> reader;
+        if (q.with_data)
+            reader = arki::Reader::for_auto(absname);
         // This generates filenames relative to the metadata
         // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
         Metadata::read_file(fullpath, [&](unique_ptr<Metadata> md) {
@@ -158,7 +160,12 @@ bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 
             // Tweak Blob sources replacing basedir and prepending a directory to the file name
             if (const source::Blob* s = md->has_source_blob())
-                md->set_source(Source::createBlob(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size, reader));
+            {
+                if (q.with_data)
+                    md->set_source(Source::createBlob(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size, reader));
+                else
+                    md->set_source(Source::createBlobUnlocked(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
+            }
             return sorter.add(move(md));
         });
         if (!sorter.flush())

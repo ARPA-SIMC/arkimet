@@ -396,9 +396,14 @@ void Index::add_joins_and_constraints(const Matcher& m, std::string& query) cons
 void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::Reader> reader) const
 {
     // Rebuild the Metadata
-    md.set_source(Source::createBlob(
-            config().format, config().path, data_relpath,
-            q.fetch<uint64_t>(0), q.fetch<uint64_t>(1), reader));
+    if (reader)
+        md.set_source(Source::createBlob(
+                config().format, config().path, data_relpath,
+                q.fetch<uint64_t>(0), q.fetch<uint64_t>(1), reader));
+    else
+        md.set_source(Source::createBlobUnlocked(
+                config().format, config().path, data_relpath,
+                q.fetch<uint64_t>(0), q.fetch<uint64_t>(1)));
     // md.notes = mdq.fetchItems<types::Note>(5);
     const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(2);
     int notes_l = q.fetchBytes(2);
@@ -451,7 +456,9 @@ bool Index::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     nag::verbose("Running query %s", query.c_str());
 
     metadata::Collection mdbuf;
-    auto reader = arki::Reader::for_auto(data_pathname);
+    std::shared_ptr<arki::Reader> reader;
+    if (q.with_data)
+        reader = arki::Reader::for_auto(data_pathname);
 
     // Limited scope for mdq, so we finalize the query before starting to
     // emit results
