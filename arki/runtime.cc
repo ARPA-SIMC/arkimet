@@ -225,9 +225,9 @@ bool CommandLine::parse(int argc, const char* argv[])
 
     nag::init(verbose->isSet(), debug->isSet());
 
-    if (postprocess->isSet() && targetfile->isSet())
+    if (postprocess && targetfile && postprocess->isSet() && targetfile->isSet())
         throw commandline::BadOption("--postprocess conflicts with --targetfile");
-    if (postproc_data && postproc_data->isSet() && !postprocess->isSet())
+    if (postproc_data && postprocess && postproc_data->isSet() && !postprocess->isSet())
         throw commandline::BadOption("--upload only makes sense with --postprocess");
 
     // Initialize the processor maker
@@ -236,9 +236,9 @@ bool CommandLine::parse(int argc, const char* argv[])
     pmaker.yaml = yaml->boolValue();
     pmaker.json = json->boolValue();
     pmaker.annotate = annotate->boolValue();
-    pmaker.data_only = dataOnly->boolValue();
-    pmaker.data_inline = dataInline->boolValue();
-    pmaker.postprocess = postprocess->stringValue();
+    pmaker.data_only = dataOnly ? dataOnly->boolValue() : false;
+    pmaker.data_inline = dataInline ? dataInline->boolValue() : false;
+    if (postprocess) pmaker.postprocess = postprocess->stringValue();
     pmaker.report = report->stringValue();
     pmaker.summary_restrict = summary_restrict->stringValue();
     pmaker.sort = sort->stringValue();
