@@ -12751,7 +12751,7 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_segmented_issue103_ondisk2",
+  "group": "arki_dataset_segmented_issue103_ondisk2_dir",
   "method": "issue103"
  },
  {
@@ -12761,7 +12761,7 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_segmented_issue103_simple_plain",
+  "group": "arki_dataset_segmented_issue103_simple_plain_dir",
   "method": "issue103"
  },
  {
@@ -12771,7 +12771,7 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_segmented_issue103_simple_sqlite",
+  "group": "arki_dataset_segmented_issue103_simple_sqlite_dir",
   "method": "issue103"
  },
  {
@@ -12781,7 +12781,7 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_segmented_issue103_iseg",
+  "group": "arki_dataset_segmented_issue103_iseg_dir",
   "method": "issue103"
  },
  {

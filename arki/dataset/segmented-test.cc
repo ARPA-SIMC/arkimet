@@ -535,13 +535,13 @@ class Tests103 : public FixtureTestCase<Issue103Fixture>
 };
 
 Tests103 test103_ondisk2("arki_dataset_segmented_issue103_ondisk2", "type=ondisk2\n");
-Tests103 test103_ondisk2_dir("arki_dataset_segmented_issue103_ondisk2", "type=ondisk2\nsegments=dir\n");
+Tests103 test103_ondisk2_dir("arki_dataset_segmented_issue103_ondisk2_dir", "type=ondisk2\nsegments=dir\n");
 Tests103 test103_simple_plain("arki_dataset_segmented_issue103_simple_plain", "type=simple\nindex_type=plain\n");
-Tests103 test103_simple_plain_dir("arki_dataset_segmented_issue103_simple_plain", "type=simple\nindex_type=plain\nsegments=dir\n");
+Tests103 test103_simple_plain_dir("arki_dataset_segmented_issue103_simple_plain_dir", "type=simple\nindex_type=plain\nsegments=dir\n");
 Tests103 test103_simple_sqlite("arki_dataset_segmented_issue103_simple_sqlite", "type=simple\nindex_type=sqlite\n");
-Tests103 test103_simple_sqlite_dir("arki_dataset_segmented_issue103_simple_sqlite", "type=simple\nindex_type=sqlite\nsegments=dir\n");
+Tests103 test103_simple_sqlite_dir("arki_dataset_segmented_issue103_simple_sqlite_dir", "type=simple\nindex_type=sqlite\nsegments=dir\n");
 Tests103 test103_iseg("arki_dataset_segmented_issue103_iseg", "type=iseg\nformat=vm2\n");
-Tests103 test103_iseg_dir("arki_dataset_segmented_issue103_iseg", "type=iseg\nformat=vm2\nsegments=dir\n");
+Tests103 test103_iseg_dir("arki_dataset_segmented_issue103_iseg_dir", "type=iseg\nformat=vm2\nsegments=dir\n");
 
 void Tests103::register_tests() {
 
@@ -579,11 +579,30 @@ add_method("issue103", [](Fixture& f) {
     // Check
     wassert(actual(f.makeSegmentedChecker().get()).check_clean(true));
 
-    // Query
+    // Query without data
     auto reader = f.config().create_reader();
     metadata::Collection mdc;
     wassert(mdc.add(*reader, Matcher::parse("")));
     wassert(actual(mdc.size()) == limits.rlim_max + 1);
+    wassert(actual(mdc[0].sourceBlob().reader).isfalse());
+
+    // Query with data, without storing all the results on a collection
+    dataset::DataQuery dq(Matcher::parse(""), true);
+    unsigned count = 0;
+    wassert(reader->query_data(dq, [&](unique_ptr<Metadata> md) {
+        wassert(actual(md->sourceBlob().reader).istrue());
+        ++count; return true;
+    }));
+    wassert(actual(count) == limits.rlim_max + 1);
+
+    // Query with data, sorting, without storing all the results on a collection
+    dq.sorter = sort::Compare::parse("level");
+    count = 0;
+    wassert(reader->query_data(dq, [&](unique_ptr<Metadata> md) {
+        wassert(actual(md->sourceBlob().reader).istrue());
+        ++count; return true;
+    }));
+    wassert(actual(count) == limits.rlim_max + 1);
 });
 
 }
