@@ -20,14 +20,14 @@ namespace commandline {
 
 struct Options : public runtime::CommandLine
 {
-	Options() : runtime::CommandLine("arki-scan")
-	{
-		usage = "[options] [input...]";
-		description =
-			"Read one or more files or datasets and process their data "
-			"or import them in a dataset.";
-		addScanOptions();
-	}
+    Options() : runtime::CommandLine("arki-scan")
+    {
+        usage = "[options] [input...]";
+        description =
+            "Read one or more files or datasets and process their data "
+            "or import them in a dataset.";
+        add_scan_options();
+    }
 };
 
 }

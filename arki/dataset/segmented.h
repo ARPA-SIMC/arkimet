@@ -47,7 +47,7 @@ public:
 
     const Step& step() const { return *m_step; }
 
-    std::unique_ptr<segment::SegmentManager> create_segment_manager() const;
+    std::unique_ptr<segment::Manager> create_segment_manager() const;
 
     static std::shared_ptr<const Config> create(const ConfigFile& cfg);
 };
@@ -58,14 +58,14 @@ public:
 class Reader : public LocalReader
 {
 private:
-    segment::SegmentManager* m_segment_manager = nullptr;
+    segment::Manager* m_segment_manager = nullptr;
 
 public:
     using LocalReader::LocalReader;
     ~Reader();
 
     const Config& config() const override = 0;
-    segment::SegmentManager& segment_manager();
+    segment::Manager& segment_manager();
 };
 
 /**
@@ -74,21 +74,21 @@ public:
 class Writer : public LocalWriter
 {
 private:
-    segment::SegmentManager* m_segment_manager = nullptr;
+    segment::Manager* m_segment_manager = nullptr;
 
 protected:
     /**
      * Return an instance of the Segment for the file where the given metadata
      * should be written
      */
-    Segment* file(const Metadata& md, const std::string& format);
+    std::shared_ptr<segment::Writer> file(const Metadata& md, const std::string& format);
 
 public:
     using LocalWriter::LocalWriter;
     ~Writer();
 
     const Config& config() const override = 0;
-    segment::SegmentManager& segment_manager();
+    segment::Manager& segment_manager();
 
     virtual void flush();
 
@@ -142,14 +142,14 @@ struct State : public std::map<std::string, SegmentState>
 class Checker : public LocalChecker
 {
 private:
-    segment::SegmentManager* m_segment_manager = nullptr;
+    segment::Manager* m_segment_manager = nullptr;
 
 public:
     using LocalChecker::LocalChecker;
     ~Checker();
 
     const Config& config() const override = 0;
-    segment::SegmentManager& segment_manager();
+    segment::Manager& segment_manager();
 
     void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;

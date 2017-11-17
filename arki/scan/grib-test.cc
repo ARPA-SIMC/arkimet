@@ -42,10 +42,10 @@ add_method("compact", [] {
     scan::Grib scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/test.grib1");
+    scanner.test_open("inbound/test.grib1");
 
-	// See how we scan the first BUFR
-	ensure(scanner.next(md));
+    // See how we scan the first BUFR
+    wassert(actual(scanner.next(md)).istrue());
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
@@ -130,10 +130,10 @@ add_method("padded", [] {
     scan::Grib scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/padded.grib1");
+    scanner.test_open("inbound/padded.grib1");
 
-	// See how we scan the first BUFR
-	ensure(scanner.next(md));
+    // See how we scan the first BUFR
+    wassert(actual(scanner.next(md)).istrue());
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/padded.grib1", 100, 7218));
@@ -228,10 +228,10 @@ arki.bbox = { { 45.00, 11.00 }, { 46.00, 11.00 }, { 46.00, 12.00 }, { 47.00, 13.
 )");
     vector<uint8_t> buf;
 
-    scanner.open("inbound/test.grib1");
+    scanner.test_open("inbound/test.grib1");
 
     // See how we scan the first BUFR
-    ensure(scanner.next(md));
+    wassert(actual(scanner.next(md)).istrue());
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
@@ -276,10 +276,10 @@ add_method("layers", [] {
     scan::Grib scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/layer.grib1");
+    scanner.test_open("inbound/layer.grib1");
 
-	// See how we scan the first BUFR
-	ensure(scanner.next(md));
+    // See how we scan the first BUFR
+    wassert(actual(scanner.next(md)).istrue());
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/layer.grib1", 0, 30682));
@@ -310,10 +310,10 @@ add_method("proselvo", [] {
     scan::Grib scanner;
     vector<uint8_t> buf;
 
-	scanner.open("inbound/proselvo.grib1");
+    scanner.test_open("inbound/proselvo.grib1");
 
-	// See how we scan the first BUFR
-	ensure(scanner.next(md));
+    // See how we scan the first BUFR
+    wassert(actual(scanner.next(md)).istrue());
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/proselvo.grib1", 0, 298));
@@ -344,7 +344,7 @@ add_method("cleps", [] {
     scan::Grib scanner;
     vector<uint8_t> buf;
 
-    wassert(scanner.open("inbound/cleps_pf16_HighPriority.grib2"));
+    wassert(scanner.test_open("inbound/cleps_pf16_HighPriority.grib2"));
 
     // See how we scan the first BUFR
     wassert(actual(scanner.next(md)).istrue());
@@ -550,7 +550,7 @@ add_method("bigfile", [] {
     ensure(fd != -1);
     ensure(ftruncate(fd, 0xFFFFFFFF) != -1);
     close(fd);
-    scanner.open("bigfile.grib1");
+    wassert(scanner.test_open("bigfile.grib1"));
 });
 
 }

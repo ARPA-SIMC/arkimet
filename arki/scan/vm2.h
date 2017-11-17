@@ -3,6 +3,7 @@
 
 /// Scan a VM2 file for metadata
 
+#include <arki/scan/base.h>
 #include <string>
 #include <vector>
 #include <unistd.h>
@@ -23,13 +24,10 @@ namespace vm2 {
 const Validator& validator();
 }
 
-class Vm2
+class Vm2 : public Scanner
 {
 protected:
     std::istream* in;
-    std::string filename;
-    std::string basedir;
-    std::string relname;
     unsigned lineno;
 
     meteo::vm2::Parser* parser;
@@ -38,20 +36,15 @@ public:
 	Vm2();
 	virtual ~Vm2();
 
-	/**
-	 * Access a file with VM2 data
-	 */
-	void open(const std::string& filename);
-
     /// Alternate version with explicit basedir/relname separation
-    void open(const std::string& filename, const std::string& basedir, const std::string& relname);
+    void open(const std::string& filename, const std::string& basedir, const std::string& relname) override;
 
-	/**
-	 * Close the input file.
-	 *
-	 * This is optional: the file will be closed by the destructor if needed.
-	 */
-	void close();
+    /**
+     * Close the input file.
+     *
+     * This is optional: the file will be closed by the destructor if needed.
+     */
+    void close() override;
 
 	/**
 	 * Scan the next VM2 in the file.

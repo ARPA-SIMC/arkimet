@@ -3,6 +3,7 @@
 #include "arki/core/time.h"
 #include "arki/types/source/blob.h"
 #include "arki/metadata.h"
+#include "arki/reader.h"
 #include "arki/runtime/config.h"
 #include "arki/utils/files.h"
 #include "arki/nag.h"
@@ -79,20 +80,11 @@ Vm2::~Vm2()
     close();
 }
 
-void Vm2::open(const std::string& filename)
-{
-    string basedir, relname;
-    utils::files::resolve_path(filename, basedir, relname);
-    open(sys::abspath(filename), basedir, relname);
-}
-
 void Vm2::open(const std::string& filename, const std::string& basedir, const std::string& relname)
 {
-    // Close the previous file if needed
-    close();
-    this->filename = sys::abspath(filename);
-    this->basedir = basedir;
-    this->relname = relname;
+    Scanner::open(filename, basedir, relname);
+    reader = Reader::for_file(filename);
+
     if (relname == "-") {
         this->in = &std::cin;
     } else {
@@ -105,7 +97,8 @@ void Vm2::open(const std::string& filename, const std::string& basedir, const st
 
 void Vm2::close()
 {
-	if (in && relname != "-")
+    Scanner::close();
+    if (in && relname != "-")
         delete in;
     if (parser) delete parser;
     in = 0;
@@ -134,7 +127,7 @@ bool Vm2::next(Metadata& md)
     size_t size = line.size();
 
     md.clear();
-    unique_ptr<source::Blob> source(source::Blob::create("vm2", basedir, relname, offset, size));
+    unique_ptr<source::Blob> source(source::Blob::create("vm2", basedir, relname, offset, size, reader));
     md.set_cached_data(vector<uint8_t>(line.begin(), line.end()));
     md.set_source(upcast<Source>(move(source)));
     md.add_note("Scanned from " + relname);

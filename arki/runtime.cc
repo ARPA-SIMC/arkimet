@@ -92,8 +92,7 @@ std::unique_ptr<dataset::Reader> make_qmacro_dataset(const ConfigFile& ds_cfg, c
 }
 
 CommandLine::CommandLine(const std::string& name, int mansection)
-    : StandardParserWithManpage(name, PACKAGE_VERSION, mansection, PACKAGE_BUGREPORT),
-      output(0), processor(0), dispatcher(0)
+    : StandardParserWithManpage(name, PACKAGE_VERSION, mansection, PACKAGE_BUGREPORT)
 {
     using namespace arki::utils::commandline;
 
@@ -105,29 +104,15 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 
     // Used only if requested
     inputOpts = createGroup("Options controlling input data");
-    cfgfiles = 0; exprfile = 0; qmacro = 0;
-    files = 0; moveok = moveko = movework = 0;
-    copyok = copyko = 0;
-    restr = 0;
-    ignore_duplicates = 0;
-    validate = 0;
 
-	outputOpts = createGroup("Options controlling output style");
-	merged = 0; postproc_data = 0;
-	yaml = outputOpts->add<BoolOption>("yaml", 0, "yaml", "",
-			"dump the metadata as human-readable Yaml records");
-	yaml->longNames.push_back("dump");
-	json = outputOpts->add<BoolOption>("json", 0, "json", "",
-			"dump the metadata in JSON format");
-	annotate = outputOpts->add<BoolOption>("annotate", 0, "annotate", "",
-			"annotate the human-readable Yaml output with field descriptions");
-	dataInline = outputOpts->add<BoolOption>("inline", 0, "inline", "",
-			"output the binary metadata together with the data (pipe through "
-			" arki-dump or arki-grep to estract the data afterwards)");
-	dataOnly = outputOpts->add<BoolOption>("data", 0, "data", "",
-			"output only the data");
-	postprocess = outputOpts->add<StringOption>("postproc", 'p', "postproc", "command",
-			"output only the data, postprocessed with the given filter");
+    outputOpts = createGroup("Options controlling output style");
+    yaml = outputOpts->add<BoolOption>("yaml", 0, "yaml", "",
+            "dump the metadata as human-readable Yaml records");
+    yaml->longNames.push_back("dump");
+    json = outputOpts->add<BoolOption>("json", 0, "json", "",
+            "dump the metadata in JSON format");
+    annotate = outputOpts->add<BoolOption>("annotate", 0, "annotate", "",
+            "annotate the human-readable Yaml output with field descriptions");
 #ifdef HAVE_LUA
 	report = outputOpts->add<StringOption>("report", 0, "report", "name",
 			"produce the given report with the command output");
@@ -152,16 +137,6 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 			" by origin first, then by reverse timerange, then by reftime."
 			" Default: do not sort");
 
-	dispatchOpts = createGroup("Options controlling dispatching data to datasets");
-	dispatch = dispatchOpts->add< VectorOption<String> >("dispatch", 0, "dispatch", "conffile",
-			"dispatch the data to the datasets described in the "
-			"given configuration file (or a dataset path can also "
-			"be given), then output the metadata of the data that "
-			"has been dispatched (can be specified multiple times)");
-	testdispatch = dispatchOpts->add< VectorOption<String> >("testdispatch", 0, "testdispatch", "conffile",
-			"simulate dispatching the files right after scanning, using the given configuration file "
-			"or dataset directory (can be specified multiple times)");
-
 	postproc_data = inputOpts->add< VectorOption<ExistingFile> >("postproc-data", 0, "postproc-data", "file",
 		"when querying a remote server with postprocessing, upload a file"
 		" to be used by the postprocessor (can be given more than once)");
@@ -174,64 +149,85 @@ CommandLine::~CommandLine()
 	if (output) delete output;
 }
 
-void CommandLine::addScanOptions()
+void CommandLine::add_scan_options()
 {
     using namespace arki::utils::commandline;
 
-	files = inputOpts->add<StringOption>("files", 0, "files", "file",
-			"read the list of files to scan from the given file instead of the command line");
-	moveok = inputOpts->add<StringOption>("moveok", 0, "moveok", "directory",
-			"move input files imported successfully to the given directory");
-	moveko = inputOpts->add<StringOption>("moveko", 0, "moveko", "directory",
-			"move input files with problems to the given directory");
-	movework = inputOpts->add<StringOption>("movework", 0, "movework", "directory",
-			"move input files here before opening them. This is useful to "
-			"catch the cases where arki-scan crashes without having a "
-			"chance to handle errors.");
+    files = inputOpts->add<StringOption>("files", 0, "files", "file",
+            "read the list of files to scan from the given file instead of the command line");
+    moveok = inputOpts->add<StringOption>("moveok", 0, "moveok", "directory",
+            "move input files imported successfully to the given directory");
+    moveko = inputOpts->add<StringOption>("moveko", 0, "moveko", "directory",
+            "move input files with problems to the given directory");
+    movework = inputOpts->add<StringOption>("movework", 0, "movework", "directory",
+            "move input files here before opening them. This is useful to "
+            "catch the cases where arki-scan crashes without having a "
+            "chance to handle errors.");
     copyok = inputOpts->add<StringOption>("copyok", 0, "copyok", "directory",
             "copy the data from input files that was imported successfully to the given directory");
     copyko = inputOpts->add<StringOption>("copyko", 0, "copyko", "directory",
             "copy the data from input files that had problems to the given directory");
-	ignore_duplicates = dispatchOpts->add<BoolOption>("ignore-duplicates", 0, "ignore-duplicates", "",
-			"do not consider the run unsuccessful in case of duplicates");
+
+    dispatchOpts = createGroup("Options controlling dispatching data to datasets");
+    ignore_duplicates = dispatchOpts->add<BoolOption>("ignore-duplicates", 0, "ignore-duplicates", "",
+            "do not consider the run unsuccessful in case of duplicates");
     validate = dispatchOpts->add<StringOption>("validate", 0, "validate", "checks",
             "run the given checks on the input data before dispatching"
             " (comma-separated list; use 'list' to get a list)");
+    dispatch = dispatchOpts->add< VectorOption<String> >("dispatch", 0, "dispatch", "conffile",
+            "dispatch the data to the datasets described in the "
+            "given configuration file (or a dataset path can also "
+            "be given), then output the metadata of the data that "
+            "has been dispatched (can be specified multiple times)");
+    testdispatch = dispatchOpts->add< VectorOption<String> >("testdispatch", 0, "testdispatch", "conffile",
+            "simulate dispatching the files right after scanning, using the given configuration file "
+            "or dataset directory (can be specified multiple times)");
+
 }
 
-void CommandLine::addQueryOptions()
+void CommandLine::add_query_options()
 {
     using namespace arki::utils::commandline;
 
-	cfgfiles = inputOpts->add< VectorOption<String> >("config", 'C', "config", "file",
-		"read configuration about input sources from the given file (can be given more than once)");
-	exprfile = inputOpts->add<StringOption>("file", 'f', "file", "file",
-		"read the expression from the given file");
-	merged = outputOpts->add<BoolOption>("merged", 0, "merged", "",
-		"if multiple datasets are given, merge their data and output it in"
-		" reference time order.  Note: sorting does not work when using"
-		" --postprocess, --data or --report");
-	qmacro = add<StringOption>("qmacro", 0, "qmacro", "name",
-		"run the given query macro instead of a plain query");
-	restr = add<StringOption>("restrict", 0, "restrict", "names",
-			"restrict operations to only those datasets that allow one of the given (comma separated) names");
+    cfgfiles = inputOpts->add< VectorOption<String> >("config", 'C', "config", "file",
+            "read configuration about input sources from the given file (can be given more than once)");
+    exprfile = inputOpts->add<StringOption>("file", 'f', "file", "file",
+            "read the expression from the given file");
+
+    dataInline = outputOpts->add<BoolOption>("inline", 0, "inline", "",
+            "output the binary metadata together with the data (pipe through "
+            " arki-dump or arki-grep to estract the data afterwards)");
+    dataOnly = outputOpts->add<BoolOption>("data", 0, "data", "",
+            "output only the data");
+    postprocess = outputOpts->add<StringOption>("postproc", 'p', "postproc", "command",
+            "output only the data, postprocessed with the given filter");
+    merged = outputOpts->add<BoolOption>("merged", 0, "merged", "",
+            "if multiple datasets are given, merge their data and output it in"
+            " reference time order.  Note: sorting does not work when using"
+            " --postprocess, --data or --report");
+
+    qmacro = add<StringOption>("qmacro", 0, "qmacro", "name",
+            "run the given query macro instead of a plain query");
+    restr = add<StringOption>("restrict", 0, "restrict", "names",
+            "restrict operations to only those datasets that allow one of the given (comma separated) names");
 }
 
 bool CommandLine::parse(int argc, const char* argv[])
 {
-	add(infoOpts);
-	add(inputOpts);
-	add(outputOpts);
-	add(dispatchOpts);
+    add(infoOpts);
+    add(inputOpts);
+    add(outputOpts);
+    if (dispatchOpts)
+        add(dispatchOpts);
 
-	if (StandardParserWithManpage::parse(argc, argv))
-		return true;
+    if (StandardParserWithManpage::parse(argc, argv))
+        return true;
 
-	nag::init(verbose->isSet(), debug->isSet());
+    nag::init(verbose->isSet(), debug->isSet());
 
-    if (postprocess->isSet() && targetfile->isSet())
+    if (postprocess && targetfile && postprocess->isSet() && targetfile->isSet())
         throw commandline::BadOption("--postprocess conflicts with --targetfile");
-    if (postproc_data && postproc_data->isSet() && !postprocess->isSet())
+    if (postproc_data && postprocess && postproc_data->isSet() && !postprocess->isSet())
         throw commandline::BadOption("--upload only makes sense with --postprocess");
 
     // Initialize the processor maker
@@ -240,9 +236,9 @@ bool CommandLine::parse(int argc, const char* argv[])
     pmaker.yaml = yaml->boolValue();
     pmaker.json = json->boolValue();
     pmaker.annotate = annotate->boolValue();
-    pmaker.data_only = dataOnly->boolValue();
-    pmaker.data_inline = dataInline->boolValue();
-    pmaker.postprocess = postprocess->stringValue();
+    pmaker.data_only = dataOnly ? dataOnly->boolValue() : false;
+    pmaker.data_inline = dataInline ? dataInline->boolValue() : false;
+    if (postprocess) pmaker.postprocess = postprocess->stringValue();
     pmaker.report = report->stringValue();
     pmaker.summary_restrict = summary_restrict->stringValue();
     pmaker.sort = sort->stringValue();
@@ -407,24 +403,24 @@ void CommandLine::setupProcessing()
     }
 
     // Create the dispatcher if needed
-    if (dispatch->isSet() || testdispatch->isSet())
+    bool op_dispatch = dispatch && dispatch->isSet();
+    bool op_testdispatch = testdispatch && testdispatch->isSet();
+    if (op_dispatch || op_testdispatch)
     {
-        if (dispatch->isSet() && testdispatch->isSet())
+        if (op_dispatch && op_testdispatch)
             throw commandline::BadOption("you cannot use --dispatch together with --testdispatch");
         runtime::readMatcherAliasDatabase();
 
-		if (testdispatch->isSet()) {
-			for (vector<string>::const_iterator i = testdispatch->values().begin();
-					i != testdispatch->values().end(); ++i)
-				parseConfigFile(dispatchInfo, *i);
-			dispatcher = new MetadataDispatch(dispatchInfo, *processor, true);
-		} else {
-			for (vector<string>::const_iterator i = dispatch->values().begin();
-					i != dispatch->values().end(); ++i)
-				parseConfigFile(dispatchInfo, *i);
-			dispatcher = new MetadataDispatch(dispatchInfo, *processor);
-		}
-	}
+        if (op_testdispatch) {
+            for (const auto& i: testdispatch->values())
+                parseConfigFile(dispatchInfo, i);
+            dispatcher = new MetadataDispatch(dispatchInfo, *processor, true);
+        } else {
+            for (const auto& i: dispatch->values())
+                parseConfigFile(dispatchInfo, i);
+            dispatcher = new MetadataDispatch(dispatchInfo, *processor);
+        }
+    }
 	if (dispatcher)
 	{
 		dispatcher->reportStatus = status->boolValue();

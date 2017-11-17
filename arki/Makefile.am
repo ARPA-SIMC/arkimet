@@ -35,6 +35,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/segment/fd.h \
 		dataset/segment/concat.h \
 		dataset/segment/lines.h \
+		dataset/segment/seqfile.h \
 		dataset/segment/dir.h \
 		dataset/segment/tests.h \
 		dataset/empty.h \
@@ -106,6 +107,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		metadata/tests.h \
 		metadata/test-generator.h \
 		reader.h \
+		reader/registry.h \
 		nag.h \
 		postprocess.h \
 		querymacro.h \
@@ -114,6 +116,8 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime.h \
 		runtime/io.h \
 		runtime/processor.h \
+		runtime/arki-query.h \
+		scan/base.h \
 		scan/any.h \
 		sort.h \
 		summary.h \
@@ -387,6 +391,7 @@ libarkimet_la_SOURCES += \
 		metadata/consumer.cc \
 		metadata/test-generator.cc \
 		reader.cc \
+		reader/registry.cc \
 		summary/stats.cc \
 		summary/intern.cc \
 		summary/table.cc \
@@ -397,6 +402,7 @@ libarkimet_la_SOURCES += \
 		formatter.cc \
 		validator.cc \
 		postprocess.cc \
+		scan/base.cc \
 		scan/any.cc
 
 tests_arki_test_SOURCES += \
@@ -414,6 +420,7 @@ tests_arki_test_SOURCES += \
 		metadata/stream-test.cc \
 		metadata/test-generator-tut.cc \
 		reader-test.cc \
+		reader/registry-test.cc \
 		summary-test.cc \
 		summary/intern-tut.cc \
 		summary/table-tut.cc \
@@ -488,6 +495,7 @@ libarkimet_la_SOURCES += \
 		dataset/segment/fd.cc \
 		dataset/segment/concat.cc \
 		dataset/segment/lines.cc \
+		dataset/segment/seqfile.cc \
 		dataset/segment/dir.cc \
 		dataset/maintenance.cc \
 		dataset/memory.cc \
@@ -524,7 +532,8 @@ libarkimet_la_SOURCES += \
 		datasets.cc \
 		metadatagrid.cc \
 		dispatcher.cc \
-		querymacro.cc
+		querymacro.cc \
+		runtime/arki-query.cc
 
 tests_arki_test_SOURCES += \
 		targetfile-tut.cc \
@@ -534,10 +543,11 @@ tests_arki_test_SOURCES += \
 		dataset/time-test.cc \
 		dataset/segment-test.cc \
 		dataset/segment/tests.cc \
-		dataset/segment/fd-tut.cc \
-		dataset/segment/concat-tut.cc \
-		dataset/segment/lines-tut.cc \
-		dataset/segment/dir-tut.cc \
+		dataset/segment/fd-test.cc \
+		dataset/segment/concat-test.cc \
+		dataset/segment/lines-test.cc \
+		dataset/segment/seqfile-test.cc \
+		dataset/segment/dir-test.cc \
 		dataset/maintenance-test.cc \
 		dataset/memory-tut.cc \
 		dataset/index-test.cc \
@@ -583,8 +593,9 @@ tests_arki_test_SOURCES += \
 		postprocess-tut.cc \
 		querymacro-tut.cc \
 		datasets-test.cc \
-		dispatcher-tut.cc \
+		dispatcher-test.cc \
 		runtime/processor-test.cc \
+		runtime/arki-query-test.cc \
 		runtime-test.cc
 
 if CURL

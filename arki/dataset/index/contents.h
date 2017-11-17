@@ -89,7 +89,7 @@ protected:
      * The rows should be:
      * m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime[, uniq][, other]
      */
-    void build_md(utils::sqlite::Query& q, Metadata& md) const;
+    void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::Reader> reader) const;
 
     Contents(std::shared_ptr<const ondisk2::Config> config);
 

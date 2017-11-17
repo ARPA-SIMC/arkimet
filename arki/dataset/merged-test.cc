@@ -57,7 +57,7 @@ struct Fixture : public arki::utils::tests::Fixture
         Metadata md;
         scan::Grib scanner;
         RealDispatcher dispatcher(config);
-        scanner.open("inbound/test.grib1");
+        scanner.test_open("inbound/test.grib1");
         ensure(scanner.next(md));
         wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_OK);
         ensure(scanner.next(md));

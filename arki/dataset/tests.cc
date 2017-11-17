@@ -41,7 +41,7 @@ using arki::core::Time;
 namespace arki {
 namespace tests {
 
-unsigned count_results(Reader& ds, const dataset::DataQuery& dq)
+unsigned count_results(dataset::Reader& ds, const dataset::DataQuery& dq)
 {
     unsigned count = 0;
     ds.query_data(dq, [&](unique_ptr<Metadata>) { ++count; return true; });
@@ -121,7 +121,7 @@ std::shared_ptr<const dataset::ondisk2::Config> DatasetTest::ondisk2_config()
     return dynamic_pointer_cast<const dataset::ondisk2::Config>(m_config);
 }
 
-dataset::segment::SegmentManager& DatasetTest::segments()
+dataset::segment::Manager& DatasetTest::segments()
 {
     if (!segment_manager)
     {
@@ -296,6 +296,7 @@ void DatasetTest::clean()
 {
     if (sys::exists(ds_root)) sys::rmtree(ds_root);
     sys::mkdir_ifmissing(ds_root);
+    sys::write_file(str::joinpath(ds_root, "config"), cfg.serialize());
     import_results.clear();
 }
 
@@ -598,7 +599,7 @@ void corrupt_datafile(const std::string& absname)
         throw std::runtime_error("cannot corrupt " + to_corrupt + ": wrote less than 4 bytes");
 }
 
-void test_append_transaction_ok(dataset::Segment* dw, Metadata& md, int append_amount_adjust)
+void test_append_transaction_ok(dataset::segment::Writer* dw, Metadata& md, int append_amount_adjust)
 {
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());
@@ -606,9 +607,12 @@ void test_append_transaction_ok(dataset::Segment* dw, Metadata& md, int append_a
     size_t orig_fsize = sys::size(dw->absname, 0);
 
     // Start the append transaction, nothing happens until commit
-    off_t ofs;
-    Pending p = dw->append(md, &ofs);
-    wassert(actual((size_t)ofs) == orig_fsize);
+    const types::source::Blob* new_source;
+    Pending p = dw->append(md, &new_source);
+    wassert(actual((size_t)new_source->offset) == orig_fsize);
+    wassert(actual((size_t)new_source->size) == data_size);
+    wassert(actual(new_source->basedir) == sys::getcwd());
+    wassert(actual(new_source->filename) == dw->relname);
     wassert(actual(sys::size(dw->absname)) == orig_fsize);
     wassert(actual_type(md.source()) == *orig_source);
 
@@ -619,19 +623,19 @@ void test_append_transaction_ok(dataset::Segment* dw, Metadata& md, int append_a
     wassert(actual(sys::size(dw->absname)) == orig_fsize + data_size + append_amount_adjust);
 
     // And metadata is updated
-    wassert(actual_type(md.source()).is_source_blob("grib", "", dw->absname, orig_fsize, data_size));
+    wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), dw->relname, orig_fsize, data_size));
 }
 
-void test_append_transaction_rollback(dataset::Segment* dw, Metadata& md)
+void test_append_transaction_rollback(dataset::segment::Writer* dw, Metadata& md)
 {
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());
     size_t orig_fsize = sys::size(dw->absname, 0);
 
     // Start the append transaction, nothing happens until commit
-    off_t ofs;
-    Pending p = dw->append(md, &ofs);
-    wassert(actual((size_t)ofs) == orig_fsize);
+    const types::source::Blob* new_source;
+    Pending p = dw->append(md, &new_source);
+    wassert(actual((size_t)new_source->offset) == orig_fsize);
     wassert(actual(sys::size(dw->absname, 0)) == orig_fsize);
     wassert(actual_type(md.source()) == *orig_source);
 

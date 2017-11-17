@@ -264,15 +264,15 @@ add_method("summarise_grib", [](Fixture& f) {
     Summary s1;
     Metadata md;
 
-	scan::Grib scanner;
-	scanner.open("inbound/test.grib1");
-	ensure(scanner.next(md));
-	s1.add(md);
-	ensure(scanner.next(md));
-	//s1.add(md);
-	ensure(scanner.next(md));
-	//s1.add(md);
-	ensure(!scanner.next(md));
+    scan::Grib scanner;
+    scanner.test_open("inbound/test.grib1");
+    wassert(actual(scanner.next(md)).istrue());
+    s1.add(md);
+    wassert(actual(scanner.next(md)).istrue());
+    //s1.add(md);
+    wassert(actual(scanner.next(md)).istrue());
+    //s1.add(md);
+    wassert(actual(scanner.next(md)).isfalse());
 
     // Serialisation to binary
     vector<uint8_t> encoded = s1.encode();

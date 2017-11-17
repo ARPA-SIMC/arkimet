@@ -62,9 +62,9 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "simple"; }
 
-Segment* Writer::file(const Metadata& md, const std::string& format)
+std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
 {
-    Segment* writer = segmented::Writer::file(md, format);
+    auto writer = segmented::Writer::file(md, format);
     if (!writer->payload)
         writer->payload = new datafile::MdBuf(writer->absname);
     return writer;
@@ -77,21 +77,22 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 
     acquire_lock();
     // TODO: refuse if md is before "archive age"
-    Segment* writer = file(md, md.source().format);
+    auto writer = file(md, md.source().format);
     datafile::MdBuf* mdbuf = static_cast<datafile::MdBuf*>(writer->payload);
 
     // Try appending
     try {
-        off_t offset = writer->append(md);
-        auto source = types::source::Blob::create(md.source().format, config().path, writer->relname, offset, md.data_size());
-        md.set_source(move(source));
-        mdbuf->add(md);
+        const types::source::Blob* new_source;
+        auto p = writer->append(md, &new_source);
+        mdbuf->add(md, *new_source);
+        p.commit();
         time_t ts = scan::timestamp(mdbuf->pathname);
         if (ts == 0)
             nag::warning("simple dataset acquire: %s timestamp is 0", mdbuf->pathname.c_str());
         m_mft->acquire(writer->relname, ts, mdbuf->sum);
         return ACQ_OK;
     } catch (std::exception& e) {
+        fprintf(stderr, "ERROR %s\n", e.what());
         // sqlite will take care of transaction consistency
         md.add_note("Failed to store in dataset '" + config().name + "': " + e.what());
         return ACQ_ERROR;

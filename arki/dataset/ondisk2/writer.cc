@@ -67,20 +67,17 @@ std::string Writer::type() const { return "ondisk2"; }
 
 Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
-    Segment* w = file(md, md.source().format);
-    off_t ofs;
+    auto w = file(md, md.source().format);
+    const types::source::Blob* new_source;
 
     Pending p_idx = idx->beginTransaction();
-    Pending p_df = w->append(md, &ofs);
-    auto source = types::source::Blob::create_unlocked(md.source().format, config().path, w->relname, ofs, md.data_size());
+    Pending p_df = w->append(md, &new_source);
 
     try {
         int id;
-        idx->index(md, w->relname, ofs, &id);
+        idx->index(md, w->relname, new_source->offset, &id);
         p_df.commit();
         p_idx.commit();
-        source->lock();
-        md.set_source(move(source));
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
         md.add_note("Failed to store in dataset '" + name() + "' because the dataset already has the data: " + di.what());
@@ -94,23 +91,20 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 
 Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 {
-    Segment* w = file(md, md.source().format);
-    off_t ofs;
+    auto w = file(md, md.source().format);
+    const types::source::Blob* new_source;
 
     Pending p_idx = idx->beginTransaction();
-    Pending p_df = w->append(md, &ofs);
-    auto source = types::source::Blob::create_unlocked(md.source().format, config().path, w->relname, ofs, md.data_size());
+    Pending p_df = w->append(md, &new_source);
 
     try {
         int id;
-        idx->replace(md, w->relname, ofs, &id);
+        idx->replace(md, w->relname, new_source->offset, &id);
         // In a replace, we necessarily replace inside the same file,
         // as it depends on the metadata reftime
         //createPackFlagfile(df->pathname);
         p_df.commit();
         p_idx.commit();
-        source->lock();
-        md.set_source(move(source));
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
@@ -122,20 +116,17 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     // Try to acquire without replacing
-    Segment* w = file(md, md.source().format);
-    off_t ofs;
+    auto w = file(md, md.source().format);
+    const types::source::Blob* new_source;
 
     Pending p_idx = idx->beginTransaction();
-    Pending p_df = w->append(md, &ofs);
-    auto source = types::source::Blob::create_unlocked(md.source().format, config().path, w->relname, ofs, md.data_size());
+    Pending p_df = w->append(md, &new_source);
 
     try {
         int id;
-        idx->index(md, w->relname, ofs, &id);
+        idx->index(md, w->relname, new_source->offset, &id);
         p_df.commit();
         p_idx.commit();
-        source->lock();
-        md.set_source(move(source));
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
         // It already exists, so we keep p_df uncommitted and check Update Sequence Numbers
@@ -175,14 +166,12 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
     // Replace, reusing the pending datafile transaction from earlier
     try {
         int id;
-        idx->replace(md, w->relname, ofs, &id);
+        idx->replace(md, w->relname, new_source->offset, &id);
         // In a replace, we necessarily replace inside the same file,
         // as it depends on the metadata reftime
         //createPackFlagfile(df->pathname);
         p_df.commit();
         p_idx.commit();
-        source->lock();
-        md.set_source(move(source));
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency

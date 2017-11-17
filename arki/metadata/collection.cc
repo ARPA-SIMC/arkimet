@@ -254,7 +254,10 @@ void Collection::compressDataFile(size_t groupsize, const std::string& source)
 
     utils::compress::DataCompressor compressor(datafile, groupsize);
     for (const_iterator i = vals.begin(); i != vals.end(); ++i)
+    {
+        (*i)->sourceBlob().lock();
         compressor.add((*i)->getData());
+    }
     compressor.flush();
 
     // Set the same timestamp as the uncompressed file

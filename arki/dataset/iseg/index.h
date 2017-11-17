@@ -104,7 +104,7 @@ protected:
      * The rows should be:
      * m.offset, m.size, m.notes, m.reftime[, uniq][, other]
      */
-    void build_md(utils::sqlite::Query& q, Metadata& md) const;
+    void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::Reader> reader) const;
 
     Index(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath);
 

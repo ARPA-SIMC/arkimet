@@ -177,6 +177,11 @@ unique_ptr<Source> Source::createBlob(const std::string& format, const std::stri
     return upcast<Source>(source::Blob::create(format, basedir, filename, offset, size));
 }
 
+unique_ptr<Source> Source::createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<Reader> reader)
+{
+    return upcast<Source>(source::Blob::create(format, basedir, filename, offset, size, reader));
+}
+
 unique_ptr<Source> Source::createBlobUnlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
 {
     return upcast<Source>(source::Blob::create_unlocked(format, basedir, filename, offset, size));
@@ -200,4 +205,3 @@ void Source::init()
 }
 }
 #include <arki/types.tcc>
-// vim:set ts=4 sw=4:

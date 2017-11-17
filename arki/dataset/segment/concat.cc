@@ -20,62 +20,98 @@ namespace dataset {
 namespace segment {
 namespace concat {
 
-Segment::Segment(const std::string& relname, const std::string& absname)
-    : fd::Segment(relname, absname)
+namespace {
+
+struct File : public fd::File
 {
+    using fd::File::File;
+
+    void write_data(off_t wrpos, const std::vector<uint8_t>& buf) override;
+    void test_add_padding(size_t size) override;
+};
+
+
+struct HoleFile : public fd::File
+{
+    using fd::File::File;
+
+    void write_data(off_t wrpos, const std::vector<uint8_t>& buf) override;
+    void test_add_padding(size_t size) override;
+};
+
+
+
+void File::write_data(off_t wrpos, const std::vector<uint8_t>& buf)
+{
+    // Prevent caching (ignore function result)
+    //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
+
+    // Append the data
+    lseek(wrpos);
+    write_all_or_throw(buf.data(), buf.size());
+
+    fdatasync();
 }
 
-void Segment::test_add_padding(unsigned size)
+void File::test_add_padding(size_t size)
 {
-    open();
     for (unsigned i = 0; i < size; ++i)
-        fd.write("", 1);
+        write("", 1);
 }
 
-void HoleSegment::write(off_t wrpos, const std::vector<uint8_t>& buf)
+void HoleFile::write_data(off_t wrpos, const std::vector<uint8_t>& buf)
 {
     // Get the current file size
-    off_t size = fd.lseek(0, SEEK_END);
+    off_t size = lseek(0, SEEK_END);
 
     if (wrpos + buf.size() <= (size_t)size)
         return;
 
     // Enlarge its apparent size to include the size of buf
-    int res = ftruncate(fd, wrpos + buf.size());
-    if (res < 0)
-    {
-        stringstream msg;
-        msg << absname << ": cannot set apparent segment size to " << (wrpos + buf.size()) << " bytes";
-        throw std::system_error(errno, std::system_category(), msg.str());
-    }
+    ftruncate(wrpos + buf.size());
 }
 
-State Segment::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
+void HoleFile::test_add_padding(size_t size)
+{
+    throw std::runtime_error("HoleFile::test_add_padding not implemented");
+}
+
+}
+
+
+Writer::Writer(const std::string& root, const std::string& relname, const std::string& absname, int mode)
+    : fd::Writer(root, relname, unique_ptr<fd::File>(new File(absname, O_WRONLY | O_CREAT | mode, 0666)))
+{
+}
+
+HoleWriter::HoleWriter(const std::string& root, const std::string& relname, const std::string& absname, int mode)
+    : fd::Writer(root, relname, unique_ptr<fd::File>(new HoleFile(absname, O_WRONLY | O_CREAT | mode, 0666)))
+{
+}
+
+State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
 {
     return check_fd(reporter, ds, mds, 0, quick);
 }
 
-static fd::Segment* make_repack_segment(const std::string& relname, const std::string& absname)
+unique_ptr<fd::Writer> Checker::make_tmp_segment(const std::string& relname, const std::string& absname)
 {
-    unique_ptr<concat::Segment> res(new concat::Segment(relname, absname));
-    res->truncate_and_open();
-    return res.release();
-}
-Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
-{
-    return fd::Segment::repack(rootdir, relname, mds, make_repack_segment, false, test_flags);
+    return unique_ptr<fd::Writer>(new concat::Writer(root, relname, absname, O_TRUNC));
 }
 
-static fd::Segment* make_repack_hole_segment(const std::string& relname, const std::string& absname)
+Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
-    unique_ptr<concat::Segment> res(new concat::HoleSegment(relname, absname));
-    res->truncate_and_open();
-    return res.release();
+    return fd::Checker::repack_impl(rootdir, mds, false, test_flags);
 }
-Pending HoleSegment::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+
+unique_ptr<fd::Writer> HoleChecker::make_tmp_segment(const std::string& relname, const std::string& absname)
 {
-    close();
-    return fd::Segment::repack(rootdir, relname, mds, make_repack_hole_segment, true, test_flags);
+    return unique_ptr<fd::Writer>(new concat::HoleWriter(root, relname, absname, O_TRUNC));
+}
+
+Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+{
+    return fd::Checker::repack_impl(rootdir, mds, true, test_flags);
 }
 
 }

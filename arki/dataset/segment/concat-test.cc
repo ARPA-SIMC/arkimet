@@ -17,56 +17,46 @@ static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 }
 }
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
-using namespace arki::dataset::segment;
+using namespace arki::tests;
 using namespace arki::utils;
-using namespace arki::types;
-using namespace arki::tests;
-using namespace arki::tests;
+using namespace arki::dataset;
 
-struct arki_segment_concat_shar {
-    string fname;
-    metadata::Collection mdc;
+const char* relname = "testfile.grib";
 
-    arki_segment_concat_shar()
-        : fname("testfile.grib")
-    {
-        system(("rm -f " + fname).c_str());
-        // Keep some valid metadata handy
-        ensure(scan::scan("inbound/test.grib1", mdc.inserter_func()));
-    }
-
-    /**
-     * Create a writer
-     * return the data::Writer so that we manage the writer lifetime, but also
-     * the underlying implementation so we can test it.
-     */
-    unique_ptr<concat::Segment> make_w(const std::string& relname)
-    {
-        string absname = sys::abspath(relname);
-        return unique_ptr<concat::Segment>(new concat::Segment(relname, absname));
-    }
-};
-
-TESTGRP(arki_segment_concat);
-
-namespace {
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_dataset_segment_concat");
 
 inline size_t datasize(const Metadata& md)
 {
     return md.data_size();
 }
 
+/**
+ * Create a writer
+ * return the data::Writer so that we manage the writer lifetime, but also
+ * the underlying implementation so we can test it.
+ */
+std::shared_ptr<segment::concat::Writer> make_w()
+{
+    string absname = sys::abspath(relname);
+    return std::shared_ptr<segment::concat::Writer>(new segment::concat::Writer(sys::getcwd(), relname, absname));
 }
 
+void Tests::register_tests() {
+
 // Try to append some data
-def_test(1)
-{
-    wassert(actual_file(fname).not_exists());
+add_method("append", [] {
+    sys::unlink_ifexists(relname);
+    metadata::Collection mdc("inbound/test.grib1");
+    wassert(actual_file(relname).not_exists());
     {
-        unique_ptr<concat::Segment> w(make_w(fname));
+        auto w(make_w());
 
         // It should exist but be empty
         //wassert(actual(fname).fileexists());
@@ -86,24 +76,27 @@ def_test(1)
     metadata::Collection mdc1;
 
     // Scan the file we created
-    wassert(actual(scan::scan(fname, mdc1.inserter_func())).istrue());
+    wassert(actual(scan::scan(relname, mdc1.inserter_func())).istrue());
 
     // Check that it only contains the 1st and 3rd data
     wassert(actual(mdc1.size()) == 2u);
     wassert(actual(mdc1[0]).is_similar(mdc[0]));
     wassert(actual(mdc1[1]).is_similar(mdc[2]));
-}
+});
 
 // Test with large files
-def_test(2)
-{
+add_method("large", [] {
+    sys::unlink_ifexists(relname);
+    metadata::Collection mdc("inbound/test.grib1");
     {
-        unique_ptr<concat::Segment> dw(make_w(fname));
-
         // Make a file that looks HUGE, so that appending will make its size
         // not fit in a 32bit off_t
-        dw->truncate(0x7FFFFFFF);
-        wassert(actual(sys::size(fname)) == 0x7FFFFFFFu);
+        make_w()->truncate(0x7FFFFFFF);
+        wassert(actual(sys::size(relname)) == 0x7FFFFFFFu);
+    }
+
+    {
+        auto dw(make_w());
 
         // Try a successful transaction
         wassert(test_append_transaction_ok(dw.get(), mdc[0]));
@@ -115,51 +108,46 @@ def_test(2)
         wassert(test_append_transaction_ok(dw.get(), mdc[2]));
     }
 
-    wassert(actual(sys::size(fname)) == 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]));
+    wassert(actual(sys::size(relname)) == 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]));
 
     // Won't attempt rescanning, as the grib reading library will have to
     // process gigabytes of zeros
-}
-
-// Test raw append
-def_test(4)
-{
-    wassert(actual_file(fname).not_exists());
-    {
-        unique_ptr<concat::Segment> dw(make_w(fname));
-        vector<uint8_t> buf = { 'c', 'i', 'a', 'o' };
-        wassert(actual(dw->append(buf)) == 0);
-        wassert(actual(dw->append(buf)) == 4);
-    }
-
-    wassert(actual(utils::files::read_file(fname)) == "ciaociao");
-}
+});
 
 // Common segment tests
 
-def_test(5)
-{
+add_method("check", [] {
     struct Test : public SegmentCheckTest
     {
-        concat::Segment* make_segment() override
+        std::shared_ptr<segment::Writer> make_writer() override
         {
-            return new concat::Segment(relname, absname);
+            return std::shared_ptr<segment::Writer>(new segment::concat::Writer(root, relname, absname));
+        }
+        std::shared_ptr<segment::Checker> make_checker() override
+        {
+            return std::shared_ptr<segment::Checker>(new segment::concat::Checker(root, relname, absname));
         }
     } test;
 
     wassert(test.run());
-}
-def_test(6)
-{
+});
+
+add_method("remove", [] {
     struct Test : public SegmentRemoveTest
     {
-        concat::Segment* make_segment() override
+        std::shared_ptr<segment::Writer> make_writer() override
         {
-            return new concat::Segment(relname, absname);
+            return std::shared_ptr<segment::Writer>(new segment::concat::Writer(root, relname, absname));
+        }
+        std::shared_ptr<segment::Checker> make_checker() override
+        {
+            return std::shared_ptr<segment::Checker>(new segment::concat::Checker(root, relname, absname));
         }
     } test;
 
     wassert(test.run());
+});
+
 }
 
 }

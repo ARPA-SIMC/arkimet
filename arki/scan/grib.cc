@@ -2,6 +2,7 @@
 #include "grib.h"
 #include <grib_api.h>
 #include "arki/metadata.h"
+#include "arki/reader.h"
 #include "arki/exceptions.h"
 #include "arki/runtime/config.h"
 #include "arki/utils/string.h"
@@ -480,41 +481,22 @@ Grib::~Grib()
     if (L) delete L;
 }
 
-MultiGrib::MultiGrib(const std::string& tmpfilename, std::ostream& tmpfile)
-    : tmpfilename(tmpfilename),
-      tmpfile(tmpfile)
-{
-	// Turn on multigrib support: we can handle them
-	grib_multi_support_on(context);
-}
-
-
-void Grib::open(const std::string& filename)
-{
-    string basedir, relname;
-    utils::files::resolve_path(filename, basedir, relname);
-    open(sys::abspath(filename), basedir, relname);
-}
-
 void Grib::open(const std::string& filename, const std::string& basedir, const std::string& relname)
 {
-    // Close the previous file if needed
-    close();
-    this->filename = filename;
-    this->basedir = basedir;
-    this->relname = relname;
+    Scanner::open(filename, basedir, relname);
     if (!(in = fopen(filename.c_str(), "rb")))
         throw_file_error(filename, "cannot open file for reading");
+    reader = Reader::for_file(filename);
 }
 
 void Grib::close()
 {
-	filename.clear();
-	if (in)
-	{
-		fclose(in);
-		in = 0;
-	}
+    Scanner::close();
+    if (in)
+    {
+        fclose(in);
+        in = 0;
+    }
 }
 
 bool Grib::next(Metadata& md)
@@ -584,42 +566,12 @@ void Grib::setSource(Metadata& md)
     }
     else
     {
-        md.set_source(Source::createBlob("grib", basedir, relname, offset, size));
+        md.set_source(Source::createBlob("grib", basedir, relname, offset, size, reader));
         md.set_cached_data(vector<uint8_t>(vbuf, vbuf + size));
     }
     stringstream note;
     note << "Scanned from " << relname << ":" << offset << "+" << size;
     md.add_note(note.str());
-}
-
-void MultiGrib::setSource(Metadata& md)
-{
-	long edition;
-	check_grib_error(grib_get_long(gh, "editionNumber", &edition), "reading edition number");
-
-	// Get the encoded GRIB buffer from the GRIB handle
-	const void* vbuf;
-	size_t size;
-	check_grib_error(grib_get_message(gh, &vbuf, &size), "accessing the encoded GRIB data");
-	const char* buf = static_cast<const char*>(vbuf);
-
-    // Get the write position in the file
-    streampos offset = tmpfile.tellp();
-    if (tmpfile.fail())
-        throw_file_error(tmpfilename, "cannot read the current position");
-
-    // Write the data
-    tmpfile.write(buf, size);
-    if (tmpfile.fail())
-    {
-        stringstream ss;
-        ss << "cannot write " << size << " bytes to file " << tmpfilename;
-        throw std::system_error(errno, std::system_category(), ss.str());
-    }
-
-    tmpfile.flush();
-
-    md.set_source(Source::createBlob("grib", "", tmpfilename, offset, size));
 }
 
 bool Grib::scanLua(std::vector<int> ids, Metadata& md)
@@ -647,6 +599,47 @@ void Grib::scanGrib2(Metadata& md)
 	scanLua(grib2_funcs, md);
 }
 
+
+#if 0
+MultiGrib::MultiGrib(const std::string& tmpfilename, std::ostream& tmpfile)
+    : tmpfilename(tmpfilename),
+    tmpfile(tmpfile)
+{
+    // Turn on multigrib support: we can handle them
+    grib_multi_support_on(context);
+}
+
+
+void MultiGrib::setSource(Metadata& md)
+{
+    long edition;
+    check_grib_error(grib_get_long(gh, "editionNumber", &edition), "reading edition number");
+
+    // Get the encoded GRIB buffer from the GRIB handle
+    const void* vbuf;
+    size_t size;
+    check_grib_error(grib_get_message(gh, &vbuf, &size), "accessing the encoded GRIB data");
+    const char* buf = static_cast<const char*>(vbuf);
+
+    // Get the write position in the file
+    streampos offset = tmpfile.tellp();
+    if (tmpfile.fail())
+        throw_file_error(tmpfilename, "cannot read the current position");
+
+    // Write the data
+    tmpfile.write(buf, size);
+    if (tmpfile.fail())
+    {
+        stringstream ss;
+        ss << "cannot write " << size << " bytes to file " << tmpfilename;
+        throw std::system_error(errno, std::system_category(), ss.str());
+    }
+
+    tmpfile.flush();
+
+    md.set_source(Source::createBlob("grib", "", tmpfilename, offset, size));
+}
+#endif
+
 }
 }
-// vim:set ts=4 sw=4:

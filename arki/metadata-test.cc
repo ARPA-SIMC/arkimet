@@ -93,7 +93,7 @@ void Tests::register_tests() {
 // Test sources
 add_method("sources", [](Fixture& f) {
     Metadata md;
-    md.set_source(Source::createBlob("grib", "", "inbound/test.grib1", 1, 2));
+    md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
     wassert(actual(md.source().style()) == Source::BLOB);
     wassert(actual(md.source().format) == "grib");
 
@@ -120,7 +120,7 @@ add_method("binary", [](Fixture& f) {
     std::string dir = sys::abspath(".");
 
     Metadata md;
-    md.set_source(Source::createBlob("grib", "", "inbound/test.grib1", 1, 2));
+    md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
     f.fill(md);
 
     vector<uint8_t> encoded = md.encodeBinary();
@@ -169,7 +169,7 @@ add_method("binary", [](Fixture& f) {
 // Test Yaml encoding and decoding
 add_method("yaml", [](Fixture& f) {
     Metadata md;
-    md.set_source(Source::createBlob("grib", "", "inbound/test.grib1", 1, 2));
+    md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
     f.fill(md);
 
     stringstream output;
@@ -179,7 +179,7 @@ add_method("yaml", [](Fixture& f) {
     auto reader = LineReader::from_chars(s.data(), s.size());
     md1.readYaml(*reader, "(test memory buffer)");
 
-    wassert(actual(Source::createBlob("grib", "", "inbound/test.grib1", 1, 2)) == md1.source());
+    wassert(actual(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2)) == md1.source());
     wassert(actual(md1.source().format) == "grib");
     wassert(f.ensure_md_matches_prefill(md1));
 
@@ -199,7 +199,7 @@ add_method("yaml", [](Fixture& f) {
 // Test JSON encoding and decoding
 add_method("json", [](Fixture& f) {
     Metadata md;
-    md.set_source(Source::createBlob("grib", "", "inbound/test.grib1", 1, 2));
+    md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
     f.fill(md);
 
     // Serialise to JSON;
@@ -215,7 +215,7 @@ add_method("json", [](Fixture& f) {
     Metadata md1;
     md1.read(parsed.root().want_mapping("parsing metadata"));
 
-    wassert(actual(Source::createBlob("grib", "", "inbound/test.grib1", 1, 2)) == md1.source());
+    wassert(actual(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2)) == md1.source());
     wassert(actual(md1.source().format) == "grib");
     wassert(f.ensure_md_matches_prefill(md1));
 
@@ -265,7 +265,7 @@ add_method("binary_fd", [](Fixture& f) {
     Metadata md;
     const char* tmpfile = "testmd.tmp";
     f.fill(md);
-    md.set_source(Source::createBlob("grib", "", "inbound/test.grib1", 1, 2));
+    md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
 
     // Encode
     sys::File out(tmpfile, O_WRONLY | O_CREAT, 0666);
@@ -292,7 +292,7 @@ add_method("decode_issue_24", [](Fixture& f) {
 add_method("lua", [](Fixture& f) {
     Metadata md;
 #ifdef HAVE_LUA
-    md.set_source(Source::createBlob("grib", "", "inbound/test.grib1", 1, 2));
+    md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
     f.fill(md);
 
     arki::tests::Lua test(

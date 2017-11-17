@@ -1,82 +1,84 @@
-#include <arki/tests/tests.h>
-#include <arki/dispatcher.h>
-#include <arki/dataset.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/matcher.h>
-#include <arki/types/source/blob.h>
-#include <arki/scan/grib.h>
-#include <arki/scan/any.h>
-#include <arki/utils/accounting.h>
-#include <arki/utils/string.h>
-#include <arki/validator.h>
+#include "arki/tests/tests.h"
+#include "arki/dispatcher.h"
+#include "arki/dataset.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/matcher.h"
+#include "arki/types/source/blob.h"
+#include "arki/scan/grib.h"
+#include "arki/scan/any.h"
+#include "arki/utils/accounting.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include "arki/validator.h"
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
-using namespace arki::types;
 using namespace arki::tests;
 using namespace arki::utils;
 
-struct arki_dispatcher_shar {
-    ConfigFile config;
-
-    arki_dispatcher_shar()
-    {
-        // Cleanup the test datasets
-        system("rm -rf test200/*");
-        system("rm -rf test80/*");
-        system("rm -rf error/*");
-
-        // In-memory dataset configuration
-        string conf =
-            "[test200]\n"
-            "type = ondisk2\n"
-            "step = daily\n"
-            "filter = origin: GRIB1,200\n"
-            "index = origin, reftime\n"
-            "name = test200\n"
-            "path = test200\n"
-            "\n"
-            "[test80]\n"
-            "type = ondisk2\n"
-            "step = daily\n"
-            "filter = origin: GRIB1,80\n"
-            "index = origin, reftime\n"
-            "name = test80\n"
-            "path = test80\n"
-            "\n"
-            "[error]\n"
-            "type = error\n"
-            "step = daily\n"
-            "name = error\n"
-            "path = error\n";
-        config.parse(conf);
-    }
-};
-TESTGRP(arki_dispatcher);
-
-namespace {
 inline std::string dsname(const Metadata& md)
 {
     if (!md.has_source_blob()) return "(md source is not a blob source)";
     return str::basename(md.sourceBlob().basedir);
 }
 
+static const char* config1 = R"(
+[test200]
+type = ondisk2
+step = daily
+filter = origin: GRIB1,200
+index = origin, reftime
+name = test200
+path = test200
+
+[test80]
+type = ondisk2
+step = daily
+filter = origin: GRIB1,80
+index = origin, reftime
+name = test80
+path = test80
+
+[error]
+type = error
+step = daily
+name = error
+path = error
+)";
+
+static ConfigFile setup1()
+{
+    sys::rmtree_ifexists("test200");
+    sys::rmtree_ifexists("test80");
+    sys::rmtree_ifexists("testerror");
+    ConfigFile cfg;
+    cfg.parse(config1);
+    return cfg;
 }
 
-// Test simple dispatching
-def_test(1)
+class Tests : public TestCase
 {
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_dispatcher");
+
+void Tests::register_tests() {
+
+// Test simple dispatching
+add_method("simple", [] {
     using namespace arki::utils::acct;
+
+    ConfigFile config = setup1();
 
     plain_data_read_count.reset();
 
     Metadata md;
     scan::Grib scanner;
     RealDispatcher dispatcher(config);
-    scanner.open("inbound/test.grib1");
+    scanner.test_open("inbound/test.grib1");
     ensure(scanner.next(md));
     wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_OK);
     wassert(actual(dsname(md)) == "test200");
@@ -91,13 +93,14 @@ def_test(1)
     dispatcher.flush();
 
     ensure_equals(plain_data_read_count.val(), 0u);
-}
+});
 
 // Test a case where dispatch is known to fail
-def_test(2)
-{
+add_method("regression01", [] {
 #ifdef HAVE_DBALLE
     // In-memory dataset configuration
+    sys::rmtree_ifexists("lami_temp");
+    sys::rmtree_ifexists("error");
     string conf =
         "[lami_temp]\n"
         "filter = origin:BUFR,200; product:BUFR:t=temp\n"
@@ -107,6 +110,7 @@ def_test(2)
         "[error]\n"
         "type = discard\n"
         "name = error\n";
+    ConfigFile config;
     config.parse(conf);
 
     metadata::Collection source("inbound/tempforecast.bufr");
@@ -120,17 +124,17 @@ def_test(2)
     wassert(actual(source[0].sourceBlob()) == source[0].sourceBlob());
     dispatcher.flush();
 #endif
-}
+});
 
 // Test dispatch to error datasets after validation errors
-def_test(3)
-{
+add_method("validation", [] {
+    ConfigFile config = setup1();
     Metadata md;
     scan::Grib scanner;
     RealDispatcher dispatcher(config);
     validators::FailAlways fail_always;
     dispatcher.add_validator(fail_always);
-    scanner.open("inbound/test.grib1");
+    scanner.test_open("inbound/test.grib1");
     ensure(scanner.next(md));
     wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_ERROR);
     wassert(actual(dsname(md)) == "error");
@@ -142,11 +146,11 @@ def_test(3)
     wassert(actual(dsname(md)) == "error");
     ensure(!scanner.next(md));
     dispatcher.flush();
-}
+});
 
 // Test dispatching files with no reftime, they should end up in the error dataset
-def_test(4)
-{
+add_method("missing_reftime", [] {
+    ConfigFile config = setup1();
     metadata::Collection source("inbound/wrongdate.bufr");
     wassert(actual(source.size()) == 6u);
 
@@ -164,6 +168,8 @@ def_test(4)
     wassert(actual(dispatcher.dispatch(source[5])) == Dispatcher::DISP_ERROR);
     wassert(actual(dsname(source[5])) == "error");
     dispatcher.flush();
+});
+
 }
 
 }

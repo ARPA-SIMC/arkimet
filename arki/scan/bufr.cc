@@ -1,27 +1,28 @@
 #include "config.h"
-#include <arki/scan/bufr.h>
-#include <arki/utils/files.h>
+#include "bufr.h"
+#include "arki/utils/files.h"
 #include <dballe/file.h>
 #include <dballe/message.h>
 #include <dballe/msg/codec.h>
 #include <dballe/core/csv.h>
 #include <wreport/bulletin.h>
 #include <wreport/options.h>
-#include <arki/metadata.h>
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/types/reftime.h>
-#include <arki/types/run.h>
-#include <arki/types/timerange.h>
-#include <arki/scan/any.h>
-#include <arki/utils/sys.h>
+#include "arki/metadata.h"
+#include "arki/reader.h"
+#include "arki/types/origin.h"
+#include "arki/types/product.h"
+#include "arki/types/reftime.h"
+#include "arki/types/run.h"
+#include "arki/types/timerange.h"
+#include "arki/scan/any.h"
+#include "arki/utils/sys.h"
 #include <sstream>
 #include <cstring>
 #include <stdint.h>
 #include <arpa/inet.h>
 
 #ifdef HAVE_LUA
-#include <arki/scan/bufrlua.h>
+#include "arki/scan/bufrlua.h"
 #endif
 
 using namespace std;
@@ -96,20 +97,10 @@ Bufr::~Bufr()
 #endif
 }
 
-void Bufr::open(const std::string& filename)
-{
-    string basedir, relname;
-    utils::files::resolve_path(filename, basedir, relname);
-    open(sys::abspath(filename), basedir, relname);
-}
-
 void Bufr::open(const std::string& filename, const std::string& basedir, const std::string& relname)
 {
-    // Close the previous file if needed
-    close();
-    this->filename = filename;
-    this->basedir = basedir;
-    this->relname = relname;
+    Scanner::open(filename, basedir, relname);
+    reader = Reader::for_file(filename);
     if (filename == "-")
         file = dballe::File::create(dballe::File::BUFR, stdin, false, "standard input").release();
     else
@@ -118,9 +109,7 @@ void Bufr::open(const std::string& filename, const std::string& basedir, const s
 
 void Bufr::close()
 {
-    filename.clear();
-    basedir.clear();
-    relname.clear();
+    Scanner::close();
     if (file)
     {
         delete file;
@@ -259,7 +248,7 @@ bool Bufr::do_scan(Metadata& md)
     if (false)
         md.set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
     else {
-        unique_ptr<Source> source = Source::createBlob("bufr", basedir, relname, rmsg.offset, rmsg.data.size());
+        unique_ptr<Source> source = Source::createBlob("bufr", basedir, relname, rmsg.offset, rmsg.data.size(), reader);
         md.set_source(move(source));
         md.set_cached_data(vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
     }

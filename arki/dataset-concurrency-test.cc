@@ -205,7 +205,7 @@ this->add_method("repack_during_read", [](Fixture& f) {
     f.import_all(f.td);
 
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+    reader->query_data(dataset::DataQuery("", true), [&](unique_ptr<Metadata> md) {
         {
             auto checker = f.dataset_config()->create_checker();
             dataset::NullReporter rep;
@@ -247,11 +247,12 @@ this->add_method("import_during_read", [](Fixture& f) {
         ++count;
         return true;
     });
-    wassert(actual(count) == 1);
+    wassert(actual(count) == 1u);
 
     // Querying again returns all imported data
     count = 0;
     reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { ++count; return true; });
+    wassert(actual(count) == 3u);
 });
 
 }

@@ -109,9 +109,9 @@ bool Config::relpath_timespan(const std::string& path, core::Time& start_time, c
     return step().path_timespan(path, start_time, end_time);
 }
 
-std::unique_ptr<segment::SegmentManager> Config::create_segment_manager() const
+std::unique_ptr<segment::Manager> Config::create_segment_manager() const
 {
-    return segment::SegmentManager::get(path, force_dir_segments, mock_data);
+    return segment::Manager::get(path, force_dir_segments, mock_data);
 }
 
 std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
@@ -125,7 +125,7 @@ Reader::~Reader()
     delete m_segment_manager;
 }
 
-segment::SegmentManager& Reader::segment_manager()
+segment::Manager& Reader::segment_manager()
 {
     if (!m_segment_manager)
         m_segment_manager = config().create_segment_manager().release();
@@ -138,18 +138,18 @@ Writer::~Writer()
     delete m_segment_manager;
 }
 
-segment::SegmentManager& Writer::segment_manager()
+segment::Manager& Writer::segment_manager()
 {
     if (!m_segment_manager)
         m_segment_manager = config().create_segment_manager().release();
     return *m_segment_manager;
 }
 
-Segment* Writer::file(const Metadata& md, const std::string& format)
+std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
 {
     const core::Time& time = md.get<types::reftime::Position>()->time;
     string relname = config().step()(time) + "." + md.source().format;
-    return segment_manager().get_segment(format, relname);
+    return segment_manager().get_writer(format, relname);
 }
 
 void Writer::flush()
@@ -180,7 +180,7 @@ Checker::~Checker()
     delete m_segment_manager;
 }
 
-segment::SegmentManager& Checker::segment_manager()
+segment::Manager& Checker::segment_manager()
 {
     if (!m_segment_manager)
         m_segment_manager = config().create_segment_manager().release();

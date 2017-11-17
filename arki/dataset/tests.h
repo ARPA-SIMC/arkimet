@@ -121,7 +121,7 @@ public:
     std::string ds_name;
     // Dataset root directory
     std::string ds_root;
-    dataset::segment::SegmentManager* segment_manager = nullptr;
+    dataset::segment::Manager* segment_manager = nullptr;
     std::vector<Metadata> import_results;
 
     /**
@@ -150,7 +150,7 @@ public:
     std::shared_ptr<const dataset::LocalConfig> local_config();
     std::shared_ptr<const dataset::ondisk2::Config> ondisk2_config();
 
-    dataset::segment::SegmentManager& segments();
+    dataset::segment::Manager& segments();
 
     // Return the file name of the index of the current dataset
     std::string idxfname(const ConfigFile* wcfg = 0) const;
@@ -495,8 +495,8 @@ struct ActualSegmentedChecker : public ActualChecker<dataset::segmented::Checker
 /// element with zeros
 void corrupt_datafile(const std::string& absname);
 
-void test_append_transaction_ok(dataset::Segment* dw, Metadata& md, int append_amount_adjust=0);
-void test_append_transaction_rollback(dataset::Segment* dw, Metadata& md);
+void test_append_transaction_ok(dataset::segment::Writer* dw, Metadata& md, int append_amount_adjust=0);
+void test_append_transaction_rollback(dataset::segment::Writer* dw, Metadata& md);
 
 inline arki::tests::ActualChecker<dataset::LocalChecker> actual(arki::dataset::LocalChecker* actual)
 {

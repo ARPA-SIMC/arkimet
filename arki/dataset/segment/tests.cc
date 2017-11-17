@@ -16,7 +16,7 @@ namespace arki {
 namespace tests {
 
 SegmentTest::SegmentTest()
-    : format("grib"), relname("testfile.grib"), absname(sys::abspath(relname))
+    : format("grib"), root("."), relname("testfile.grib"), absname(sys::abspath(relname))
 {
     // Scan the test data
     scan::scan("inbound/test.grib1", mdc.inserter_func());
@@ -26,29 +26,39 @@ SegmentTest::~SegmentTest()
 {
 }
 
-unique_ptr<Segment> SegmentTest::make_empty_segment()
+std::shared_ptr<segment::Writer> SegmentTest::make_empty_writer()
 {
     // Clear potentially existing segments
     system(("rm -rf " + absname).c_str());
 
-    unique_ptr<Segment> res(make_segment());
+    return make_writer();
+}
+
+std::shared_ptr<segment::Checker> SegmentTest::make_empty_checker()
+{
+    // Clear potentially existing segments
+    system(("rm -rf " + absname).c_str());
+
+    return make_checker();
+}
+
+std::shared_ptr<segment::Writer> SegmentTest::make_full_writer()
+{
+    auto res(make_empty_writer());
+    for (unsigned i = 0; i < mdc.size(); ++i)
+        res->append(mdc[i]).commit();
     return res;
 }
 
-unique_ptr<Segment> SegmentTest::make_full_segment()
+std::shared_ptr<segment::Checker> SegmentTest::make_full_checker()
 {
-    unique_ptr<Segment> res(make_empty_segment());
-    for (unsigned i = 0; i < mdc.size(); ++i)
-    {
-        off_t ofs = res->append(mdc[i]);
-        mdc[i].set_source(types::Source::createBlob("grib", sys::abspath("."), relname, ofs, mdc[i].data_size()));
-    }
-    return res;
+    make_full_writer();
+    return make_checker();
 }
 
 void SegmentCheckTest::run()
 {
-    unique_ptr<Segment> segment(make_full_segment());
+    auto segment(make_full_checker());
     dataset::segment::State state;
 
     dataset::NullReporter rep;
@@ -127,7 +137,7 @@ void SegmentCheckTest::run()
 
 void SegmentRemoveTest::run()
 {
-    unique_ptr<Segment> segment(make_full_segment());
+    auto segment(make_full_checker());
 
     wassert(actual(sys::exists(absname)).istrue());
 

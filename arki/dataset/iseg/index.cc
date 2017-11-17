@@ -2,6 +2,7 @@
 #include "index.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/configfile.h"
+#include "arki/reader.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
@@ -286,11 +287,13 @@ void Index::scan(metadata_dest_func dest, const std::string& order_by) const
     Query mdq("scan_file_md", m_db);
     mdq.compile(query);
 
+    auto reader = arki::Reader::for_auto(data_pathname);
+
     while (mdq.step())
     {
         // Rebuild the Metadata
         unique_ptr<Metadata> md(new Metadata);
-        build_md(mdq, *md);
+        build_md(mdq, *md, reader);
         dest(move(md));
     }
 }
@@ -390,12 +393,17 @@ void Index::add_joins_and_constraints(const Matcher& m, std::string& query) cons
         query += " WHERE " + str::join(" AND ", constraints.begin(), constraints.end());
 }
 
-void Index::build_md(Query& q, Metadata& md) const
+void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::Reader> reader) const
 {
     // Rebuild the Metadata
-    md.set_source(Source::createBlob(
-            config().format, config().path, data_relpath,
-            q.fetch<uint64_t>(0), q.fetch<uint64_t>(1)));
+    if (reader)
+        md.set_source(Source::createBlob(
+                config().format, config().path, data_relpath,
+                q.fetch<uint64_t>(0), q.fetch<uint64_t>(1), reader));
+    else
+        md.set_source(Source::createBlobUnlocked(
+                config().format, config().path, data_relpath,
+                q.fetch<uint64_t>(0), q.fetch<uint64_t>(1)));
     // md.notes = mdq.fetchItems<types::Note>(5);
     const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(2);
     int notes_l = q.fetchBytes(2);
@@ -448,7 +456,9 @@ bool Index::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     nag::verbose("Running query %s", query.c_str());
 
     metadata::Collection mdbuf;
-    string last_fname;
+    std::shared_ptr<arki::Reader> reader;
+    if (q.with_data)
+        reader = arki::Reader::for_auto(data_pathname);
 
     // Limited scope for mdq, so we finalize the query before starting to
     // emit results
@@ -464,7 +474,7 @@ bool Index::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         {
             // Rebuild the Metadata
             unique_ptr<Metadata> md(new Metadata);
-            build_md(mdq, *md);
+            build_md(mdq, *md, reader);
             // Buffer the results in memory, to release the database lock as soon as possible
             mdbuf.acquire(move(md));
         }

@@ -134,7 +134,7 @@ function QueryChunk:setupgq(gq)
 	end
 end
 
-function QueryChunk:checkData(cons)
+function QueryChunk:checkData(cons, orig_q)
 	for idx, dsname in ipairs(self:datasets()) do
 		if verbose then io.stderr:write("Trying query on ", dsname, "\n") end
 
@@ -158,7 +158,7 @@ function QueryChunk:checkData(cons)
 			-- Query dataset storing results
 			self.mds = {}
 
-			ds:queryData({matcher=query}, function(md)
+			ds:queryData({matcher=query, with_data=orig_q.with_data}, function(md)
 				if gq:checkandmark(md) then
 					table.insert(self.mds, md:copy())
 				end
@@ -239,7 +239,7 @@ end
 
 function queryData(q, cons)
 	for _, info in pairs(chunks) do
-		info:checkData(cons)
+		info:checkData(cons, q)
 	end
 	for _, info in pairs(chunks) do
 		info:outputData(cons)

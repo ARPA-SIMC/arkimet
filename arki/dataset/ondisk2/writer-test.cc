@@ -69,10 +69,10 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     testdata::GRIBData data;
     sys::makedirs("testds/2007/07");
     // TODO: use segments also in the other tests, and instantiate a new test suite for different segment types
-    Segment* s = f.segments().get_segment("2007/07.grib");
-    s->append(data.test_data[1].md);
-    s->append(data.test_data[1].md);
-    s->append(data.test_data[0].md);
+    auto s = f.segments().get_writer("2007/07.grib");
+    s->append(data.test_data[1].md).commit();
+    s->append(data.test_data[1].md).commit();
+    s->append(data.test_data[0].md).commit();
 
     auto checker = f.makeOndisk2Checker();
     {
@@ -323,7 +323,7 @@ add_method("regression_0", [](Fixture& f) {
 
     Metadata md;
     scan::Bufr scanner;
-    scanner.open("inbound/conflicting-temp-same-usn.bufr");
+    scanner.test_open("inbound/conflicting-temp-same-usn.bufr");
     size_t count = 0;
     for ( ; scanner.next(md); ++count)
         wassert(actual(writer->acquire(md)) == Writer::ACQ_OK);
@@ -432,7 +432,7 @@ add_method("pack_vm2", [](Fixture& f) {
 
     // Take note of all the data and delete every second item
     vector<vector<uint8_t>> orig_data;
-    metadata::Collection mdc_imported = f.query(Matcher());
+    metadata::Collection mdc_imported = f.query(dataset::DataQuery("", true));
     {
         orig_data.reserve(mdc_imported.size());
         for (unsigned i = 0; i < mdc_imported.size(); ++i)
@@ -478,7 +478,7 @@ add_method("pack_vm2", [](Fixture& f) {
     }
 
     // Ensure that the data hasn't been corrupted
-    metadata::Collection mdc_packed = f.query(Matcher());
+    metadata::Collection mdc_packed = f.query(dataset::DataQuery("", true));
     wassert(actual(mdc_packed[0]).is_similar(mdc_imported[1]));
     wassert(actual(mdc_packed[1]).is_similar(mdc_imported[3]));
     wassert(actual(mdc_packed[0].getData()) == orig_data[1]);

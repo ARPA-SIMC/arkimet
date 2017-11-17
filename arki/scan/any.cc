@@ -131,7 +131,7 @@ static bool scan_dir(const std::string& pathname, const std::string& basedir, co
         pos = strtoul(i->c_str(), 0, 10);
         if (!scan_file(str::joinpath(pathname, *i), basedir, relname, format, [&](unique_ptr<Metadata> md) {
                    const source::Blob& i = md->sourceBlob();
-                   md->set_source(Source::createBlob(i.format, i.basedir, relname, pos, i.size));
+                   md->set_source(Source::createBlob(i.format, i.basedir, relname, pos, i.size, i.reader));
                    return dest(move(md));
                 }))
             return false;
@@ -240,7 +240,10 @@ time_t timestamp(const std::string& file)
 void compress(const std::string& file, size_t groupsize)
 {
     utils::compress::DataCompressor compressor(file, groupsize);
-    scan(file, [&](unique_ptr<Metadata> md) { return compressor.eat(move(md)); });
+    scan(file, [&](unique_ptr<Metadata> md) {
+        md->sourceBlob().lock();
+        return compressor.eat(move(md));
+    });
     compressor.flush();
 
     // Set the same timestamp as the uncompressed file

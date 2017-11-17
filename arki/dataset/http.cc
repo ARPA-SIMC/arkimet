@@ -293,8 +293,6 @@ void Reader::set_post_query(Request& request, const dataset::DataQuery& q)
     set_post_query(request, q.matcher.toStringExpanded());
     if (q.sorter)
         request.post_data.add_string("sort", q.sorter->toString());
-    if (q.with_data)
-        request.post_data.add_string("style", "inline");
 }
 
 bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
@@ -305,6 +303,8 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     request.set_url(str::joinpath(config().baseurl, "query"));
     request.set_method("POST");
     set_post_query(request, q);
+    if (q.with_data)
+        request.post_data.add_string("style", "inline");
     request.perform();
 
     return !request.mdc.consumer_canceled();

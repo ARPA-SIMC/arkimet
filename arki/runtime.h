@@ -52,61 +52,61 @@ struct HandledByCommandLineParser
 
 struct CommandLine : public utils::commandline::StandardParserWithManpage
 {
-    utils::commandline::OptionGroup* infoOpts;
-    utils::commandline::OptionGroup* inputOpts;
-    utils::commandline::OptionGroup* outputOpts;
-    utils::commandline::OptionGroup* dispatchOpts;
+    utils::commandline::OptionGroup* infoOpts = nullptr;
+    utils::commandline::OptionGroup* inputOpts = nullptr;
+    utils::commandline::OptionGroup* outputOpts = nullptr;
+    utils::commandline::OptionGroup* dispatchOpts = nullptr;
 
-    utils::commandline::BoolOption* verbose;
-    utils::commandline::BoolOption* debug;
-    utils::commandline::BoolOption* status;
-    utils::commandline::BoolOption* yaml;
-    utils::commandline::BoolOption* json;
-    utils::commandline::BoolOption* annotate;
-    utils::commandline::BoolOption* dataInline;
-    utils::commandline::BoolOption* dataOnly;
-    utils::commandline::BoolOption* summary;
-    utils::commandline::BoolOption* summary_short;
-    utils::commandline::BoolOption* merged;
-    utils::commandline::BoolOption* ignore_duplicates;
-    utils::commandline::StringOption* restr;
-    utils::commandline::StringOption* exprfile;
-    utils::commandline::StringOption* qmacro;
-    utils::commandline::StringOption* outfile;
-    utils::commandline::StringOption* targetfile;
-    utils::commandline::StringOption* postprocess;
-    utils::commandline::StringOption* report;
-    utils::commandline::StringOption* sort;
-    utils::commandline::StringOption* files;
-    utils::commandline::StringOption* moveok;
-    utils::commandline::StringOption* moveko;
-    utils::commandline::StringOption* movework;
-    utils::commandline::StringOption* copyok;
-    utils::commandline::StringOption* copyko;
-    utils::commandline::StringOption* summary_restrict;
-    utils::commandline::StringOption* validate;
-    utils::commandline::VectorOption<utils::commandline::ExistingFile>* postproc_data;
-    utils::commandline::VectorOption<utils::commandline::String>* cfgfiles;
-    utils::commandline::VectorOption<utils::commandline::String>* dispatch;
-    utils::commandline::VectorOption<utils::commandline::String>* testdispatch;
+    utils::commandline::BoolOption* verbose = nullptr;
+    utils::commandline::BoolOption* debug = nullptr;
+    utils::commandline::BoolOption* status = nullptr;
+    utils::commandline::BoolOption* yaml = nullptr;
+    utils::commandline::BoolOption* json = nullptr;
+    utils::commandline::BoolOption* annotate = nullptr;
+    utils::commandline::BoolOption* dataInline = nullptr;
+    utils::commandline::BoolOption* dataOnly = nullptr;
+    utils::commandline::BoolOption* summary = nullptr;
+    utils::commandline::BoolOption* summary_short = nullptr;
+    utils::commandline::BoolOption* merged = nullptr;
+    utils::commandline::BoolOption* ignore_duplicates = nullptr;
+    utils::commandline::StringOption* restr = nullptr;
+    utils::commandline::StringOption* exprfile = nullptr;
+    utils::commandline::StringOption* qmacro = nullptr;
+    utils::commandline::StringOption* outfile = nullptr;
+    utils::commandline::StringOption* targetfile = nullptr;
+    utils::commandline::StringOption* postprocess = nullptr;
+    utils::commandline::StringOption* report = nullptr;
+    utils::commandline::StringOption* sort = nullptr;
+    utils::commandline::StringOption* files = nullptr;
+    utils::commandline::StringOption* moveok = nullptr;
+    utils::commandline::StringOption* moveko = nullptr;
+    utils::commandline::StringOption* movework = nullptr;
+    utils::commandline::StringOption* copyok = nullptr;
+    utils::commandline::StringOption* copyko = nullptr;
+    utils::commandline::StringOption* summary_restrict = nullptr;
+    utils::commandline::StringOption* validate = nullptr;
+    utils::commandline::VectorOption<utils::commandline::ExistingFile>* postproc_data = nullptr;
+    utils::commandline::VectorOption<utils::commandline::String>* cfgfiles = nullptr;
+    utils::commandline::VectorOption<utils::commandline::String>* dispatch = nullptr;
+    utils::commandline::VectorOption<utils::commandline::String>* testdispatch = nullptr;
 
     Inputs inputs;
     ConfigFile dispatchInfo;
     std::string strquery;
     Matcher query;
-    utils::sys::NamedFileDescriptor* output;
-    DatasetProcessor* processor;
-    MetadataDispatch* dispatcher;
+    utils::sys::NamedFileDescriptor* output = nullptr;
+    DatasetProcessor* processor = nullptr;
+    MetadataDispatch* dispatcher = nullptr;
     ProcessorMaker pmaker;
 
-	CommandLine(const std::string& name, int mansection = 1);
-	~CommandLine();
+    CommandLine(const std::string& name, int mansection = 1);
+    ~CommandLine();
 
-	/// Add scan-type options (--files, --moveok, --movework, --moveko)
-	void addScanOptions();
+    /// Add scan-type options (--files, --moveok, --movework, --moveko)
+    void add_scan_options();
 
-	/// Add query-type options (--merged, --file, --cfgfiles)
-	void addQueryOptions();
+    /// Add query-type options (--merged, --file, --cfgfiles)
+    void add_query_options();
 
 	/**
 	 * Parse the command line

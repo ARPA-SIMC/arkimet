@@ -28,7 +28,7 @@ struct MdBuf : public Segment::Payload
     MdBuf(const std::string& pathname);
     ~MdBuf();
 
-    void add(const Metadata& md);
+    void add(const Metadata& md, const types::source::Blob& source);
     void flush();
 };
 

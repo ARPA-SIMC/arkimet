@@ -121,7 +121,6 @@ add_method("postprocess", [] {
 
     ensure(dynamic_cast<dataset::http::Reader*>(testds.get()) != 0);
 
-    // Contrarily to ondisk, HTTP can use a stringstream
     sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
     bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "say ciao");

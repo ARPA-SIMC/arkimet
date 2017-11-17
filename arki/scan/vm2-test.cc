@@ -26,7 +26,7 @@ add_method("scan", []() {
     scan::Vm2 scanner;
     vector<uint8_t> buf;
 
-    scanner.open("inbound/test.vm2");
+    scanner.test_open("inbound/test.vm2");
     // See how we scan the first vm2
     ensure(scanner.next(md));
 
@@ -53,7 +53,7 @@ add_method("scan_seconds", []() {
     scan::Vm2 scanner;
     vector<uint8_t> buf;
 
-    scanner.open("inbound/test.vm2");
+    scanner.test_open("inbound/test.vm2");
     // Skip the first vm2
     wassert(actual(scanner.next(md)));
 

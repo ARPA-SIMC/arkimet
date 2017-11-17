@@ -22,6 +22,12 @@ namespace metadata {
 class Collection;
 }
 
+namespace types {
+namespace source {
+class Blob;
+}
+}
+
 namespace scan {
 class Validator;
 }
@@ -42,6 +48,8 @@ static const unsigned SEGMENT_DELETE_AGE  = 1 << 6; /// File is old enough to be
 static const unsigned TEST_MISCHIEF_MOVE_DATA = 1; /// During repack, move all data to a different location than it was before
 
 namespace segment {
+class Writer;
+
 
 /**
  * State of a file in a dataset, as one or more of the FILE_* flags
@@ -113,13 +121,13 @@ template<typename T, unsigned max_size=3>
 class Cache
 {
 protected:
-    T* items[max_size];
+    std::shared_ptr<T> items[max_size];
 
     /// Move an existing element to the front of the list
     void move_to_front(unsigned pos)
     {
         // Save a pointer to the item
-        T* item = items[pos];
+        std::shared_ptr<T> item = items[pos];
         // Shift all previous items forward
         for (unsigned i = pos; i > 0; --i)
             items[i] = items[i - 1];
@@ -128,26 +136,14 @@ protected:
     }
 
 public:
-    Cache()
-    {
-        for (unsigned i = 0; i < max_size; ++i)
-            items[i] = 0;
-    }
-
     ~Cache()
     {
-        for (unsigned i = 0; i < max_size && items[i]; ++i)
-            delete items[i];
     }
 
     void clear()
     {
-        for (int i = max_size - 1; i >= 0; --i)
-        {
-            if (!items[i]) continue;
-            delete items[i];
-            items[i] = 0;
-        }
+        for (unsigned i = 0; i < max_size; ++i)
+            items[i].reset();
     }
 
     /**
@@ -156,7 +152,7 @@ public:
      * @returns 0 if not found, else a pointer to the element, whose memory is
      *          still managed by the cache
      */
-    T* get(const std::string& relname)
+    std::shared_ptr<T> get(const std::string& relname)
     {
         for (unsigned i = 0; i < max_size && items[i]; ++i)
             if (items[i]->relname == relname)
@@ -167,7 +163,7 @@ public:
                 return items[0];
             }
         // Not found
-        return 0;
+        return std::shared_ptr<T>();
     }
 
     /**
@@ -176,27 +172,16 @@ public:
      * @returns the element itself, just for the convenience of being able to
      * type "return cache.add(Value::create());"
      */
-    T* add(std::unique_ptr<T> val)
+    std::shared_ptr<T> add(std::shared_ptr<T> val)
     {
-        // Delete the last element if the cache is full
-        if (items[max_size - 1])
-        {
-            try {
-                delete items[max_size - 1];
-            } catch (std::exception& e) {
-                // Prevent an error in the destructor of an unrelated file to
-                // confuse what we are doing here
-                nag::warning("Cannot close the least recently used segment: %s", e.what());
-            }
-        }
         // Shift all other elements forward
         for (unsigned i = max_size - 1; i > 0; --i)
             items[i] = items[i - 1];
         // Set the first element to val
-        return items[0] = val.release();
+        return items[0] = val;
     }
 
-    void foreach_cached(std::function<void(Segment&)> func)
+    void foreach_cached(std::function<void(T&)> func)
     {
         for (unsigned i = 0; i < max_size && items[i]; ++i)
             func(*items[i]);
@@ -205,19 +190,133 @@ public:
 
 }
 
-/// Manage instantiating the right readers/writers for a dataset
-class SegmentManager
+}
+
+/**
+ * Interface for managing a dataset segment.
+ *
+ * A dataset segment is a group of data elements stored on disk. It can be a
+ * file with all data elements appended one after the other, for formats like
+ * BUFR or GRIB that support it; it can be a text file with one data item per
+ * line, for line based formats like VM2, or it can be a tar file or a
+ * directory with each data item in a different file, for formats like HDF5
+ * that cannot be trivially concatenated in the same file.
+ */
+class Segment
+{
+public:
+    std::string root;
+    std::string relname;
+    std::string absname;
+
+    // TODO: document and move to the right subclass if it's not needed all the time
+    struct Payload
+    {
+        virtual ~Payload() {}
+    };
+    Payload* payload = nullptr;
+
+    Segment(const std::string& root, const std::string& relname, const std::string& absname);
+    virtual ~Segment();
+};
+
+
+namespace segment {
+
+struct Writer : public Segment
+{
+    using Segment::Segment;
+
+    /**
+     * Append the data, in a transaction, updating md's source information.
+     *
+     * At the beginning of the transaction, the file is locked and the write
+     * offset is read. Committing the transaction actually writes the data to
+     * the file.
+     *
+     * Returns a reference to the blob source that will be set into \a md on
+     * commit
+     */
+    virtual Pending append(Metadata& md, const types::source::Blob** new_source=0) = 0;
+
+    /**
+     * Truncate the segment at the given offset
+     */
+    virtual void truncate(size_t offset) = 0;
+
+    /**
+     * Add padding data inside the segment.
+     *
+     * This is only used in unit tests.
+     */
+    virtual void test_add_padding(unsigned size) = 0;
+
+    /**
+     * Move all the data in the segment starting from the one in position
+     * `data_idx` backwards by `overlap_size.
+     *
+     * `mds` represents the state of the segment before the move, and is
+     * updated to reflect the new state of the segment.
+     */
+    virtual void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) = 0;
+
+    /**
+     * Move all the data in the segment starting from the one in position
+     * `data_idx` forwards by `hole_size`.
+     *
+     * `mds` represents the state of the segment before the move, and is
+     * updated to reflect the new state of the segment.
+     */
+    virtual void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) = 0;
+
+    /**
+     * Corrupt the data at position `data_idx`, by replacing its first byte
+     * with the value 0.
+     */
+    virtual void test_corrupt(const metadata::Collection& mds, unsigned data_idx) = 0;
+
+    /**
+     * Truncate the data at position `data_idx`
+     */
+    virtual void test_truncate(const metadata::Collection& mds, unsigned data_idx);
+};
+
+
+class Checker : public Segment
 {
 protected:
-    impl::Cache<Segment> segments;
+    virtual void validate(Metadata& md, const scan::Validator& v) = 0;
+
+public:
+    using Segment::Segment;
+
+    virtual segment::State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) = 0;
+    virtual size_t remove() = 0;
+
+    /**
+     * Rewrite this segment so that the data are in the same order as in `mds`.
+     *
+     * `rootdir` is the directory to use as root for the Blob sources in `mds`.
+     */
+    virtual Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) = 0;
+};
+
+
+/// Manage instantiating the right readers/writers for a dataset
+class Manager
+{
+protected:
+    impl::Cache<Writer> writers;
+    impl::Cache<Checker> checkers;
     std::string root;
 
-    virtual std::unique_ptr<Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
+    virtual std::shared_ptr<Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
+    virtual std::shared_ptr<Checker> create_checker_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
     virtual bool _is_segment(const std::string& format, const std::string& relname) = 0;
 
 public:
-    SegmentManager(const std::string& root);
-    virtual ~SegmentManager();
+    Manager(const std::string& root);
+    virtual ~Manager();
 
     /**
      * Empty the cache of segments, flushing and closing all files currently
@@ -225,11 +324,16 @@ public:
      */
     void flush_writers();
 
-    /// Run a function on each cached segment
-    void foreach_cached(std::function<void(Segment&)>);
+    /// Run a function on each cached writer
+    void foreach_cached_writer(std::function<void(Writer&)>);
+    /// Run a function on each cached checker
+    void foreach_cached_checker(std::function<void(Checker&)>);
 
-    Segment* get_segment(const std::string& relname);
-    Segment* get_segment(const std::string& format, const std::string& relname);
+    std::shared_ptr<Writer> get_writer(const std::string& relname);
+    std::shared_ptr<Writer> get_writer(const std::string& format, const std::string& relname);
+
+    std::shared_ptr<Checker> get_checker(const std::string& relname);
+    std::shared_ptr<Checker> get_checker(const std::string& format, const std::string& relname);
 
     /// Check if the given relname points to a segment
     bool is_segment(const std::string& relname);
@@ -270,120 +374,11 @@ public:
      */
     virtual void scan_dir(std::function<void(const std::string& relname)> dest) = 0;
 
-    /// Create a SegmentManager
-    static std::unique_ptr<SegmentManager> get(const std::string& root, bool force_dir=false, bool mock_data=false);
+    /// Create a Manager
+    static std::unique_ptr<Manager> get(const std::string& root, bool force_dir=false, bool mock_data=false);
 };
 
 }
-
-/**
- * Interface for managing a dataset segment.
- *
- * A dataset segment is a group of data elements stored on disk. It can be a
- * file with all data elements appended one after the other, for formats like
- * BUFR or GRIB that support it; it can be a text file with one data item per
- * line, for line based formats like VM2, or it can be a tar file or a
- * directory with each data item in a different file, for formats like HDF5
- * that cannot be trivially concatenated in the same file.
- */
-class Segment
-{
-protected:
-    /**
-     * Add padding data inside the segment.
-     *
-     * This is only used in unit tests.
-     */
-    virtual void test_add_padding(unsigned size) = 0;
-
-public:
-    std::string relname;
-    std::string absname;
-
-    // TODO: document
-    struct Payload
-    {
-        virtual ~Payload() {}
-    };
-    Payload* payload;
-
-    Segment(const std::string& relname, const std::string& absname);
-    virtual ~Segment();
-
-
-    /**
-     * Append the data, updating md's source information.
-     *
-     * In case of write errors (for example, disk full) it tries to truncate
-     * the file as it was before, before raising an exception.
-     */
-    virtual off_t append(Metadata& md) = 0;
-
-    /**
-     * Append raw data to the file, wrapping it with the right envelope if
-     * needed.
-     *
-     * All exceptions are propagated upwards without special handling. If this
-     * operation fails, the file should be considered invalid.
-     *
-     * This function is intended to be used by low-level maintenance operations,
-     * like a file repack.
-     *
-     * @return the offset at which the buffer is written
-     */
-    virtual off_t append(const std::vector<uint8_t>& buf) = 0;
-
-    /**
-     * Append the data, in a transaction, updating md's source information.
-     *
-     * At the beginning of the transaction, the file is locked and the write
-     * offset is read. Committing the transaction actually writes the data to
-     * the file.
-     */
-    virtual Pending append(Metadata& md, off_t* ofs) = 0;
-
-    virtual segment::State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) = 0;
-    virtual size_t remove() = 0;
-    virtual void truncate(size_t offset) = 0;
-
-    /**
-     * Rewrite this segment so that the data are in the same order as in `mds`.
-     *
-     * `rootdir` is the directory to use as root for the Blob sources in `mds`.
-     */
-    virtual Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) = 0;
-
-    virtual void validate(Metadata& md, const scan::Validator& v) = 0;
-
-    /**
-     * Move the all the data in the segment starting from the one in position
-     * `data_idx` backwards by `overlap_size.
-     *
-     * `mds` represents the state of the segment before the move, and is
-     * updated to reflect the new state of the segment.
-     */
-    virtual void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) = 0;
-
-    /**
-     * Move the all the data in the segment starting from the one in position
-     * `data_idx` forwards by `hole_size`.
-     *
-     * `mds` represents the state of the segment before the move, and is
-     * updated to reflect the new state of the segment.
-     */
-    virtual void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) = 0;
-
-    /**
-     * Corrupt the data at position `data_idx`, by replacing its first byte
-     * with the value 0.
-     */
-    virtual void test_corrupt(const metadata::Collection& mds, unsigned data_idx) = 0;
-
-    /**
-     * Truncate the data at position `data_idx`
-     */
-    virtual void test_truncate(const metadata::Collection& mds, unsigned data_idx);
-};
 
 }
 }
