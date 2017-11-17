@@ -403,24 +403,24 @@ void CommandLine::setupProcessing()
     }
 
     // Create the dispatcher if needed
-    if (dispatch->isSet() || testdispatch->isSet())
+    bool op_dispatch = dispatch && dispatch->isSet();
+    bool op_testdispatch = testdispatch && testdispatch->isSet();
+    if (op_dispatch || op_testdispatch)
     {
-        if (dispatch->isSet() && testdispatch->isSet())
+        if (op_dispatch && op_testdispatch)
             throw commandline::BadOption("you cannot use --dispatch together with --testdispatch");
         runtime::readMatcherAliasDatabase();
 
-		if (testdispatch->isSet()) {
-			for (vector<string>::const_iterator i = testdispatch->values().begin();
-					i != testdispatch->values().end(); ++i)
-				parseConfigFile(dispatchInfo, *i);
-			dispatcher = new MetadataDispatch(dispatchInfo, *processor, true);
-		} else {
-			for (vector<string>::const_iterator i = dispatch->values().begin();
-					i != dispatch->values().end(); ++i)
-				parseConfigFile(dispatchInfo, *i);
-			dispatcher = new MetadataDispatch(dispatchInfo, *processor);
-		}
-	}
+        if (op_testdispatch) {
+            for (const auto& i: testdispatch->values())
+                parseConfigFile(dispatchInfo, i);
+            dispatcher = new MetadataDispatch(dispatchInfo, *processor, true);
+        } else {
+            for (const auto& i: dispatch->values())
+                parseConfigFile(dispatchInfo, i);
+            dispatcher = new MetadataDispatch(dispatchInfo, *processor);
+        }
+    }
 	if (dispatcher)
 	{
 		dispatcher->reportStatus = status->boolValue();
