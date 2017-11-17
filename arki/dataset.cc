@@ -166,6 +166,11 @@ void DataQuery::lua_from_table(lua_State* L, int idx)
     matcher = Matcher::lua_check(L, -1);
     lua_pop(L, 1);
 
+    lua_pushstring(L, "with_data");
+    lua_gettable(L, 2);
+    with_data = lua_toboolean(L, -1);
+    lua_pop(L, 1);
+
     lua_pushstring(L, "sorter");
     lua_gettable(L, 2);
     const char* str_sorter = lua_tostring(L, -1);
@@ -186,6 +191,11 @@ void DataQuery::lua_push_table(lua_State* L, int idx) const
     lua_pushstring(L, "matcher");
     str = matcher.toString();
     lua_pushstring(L, str.c_str());
+    lua_settable(L, idx);
+
+    // table["with_data"] = this->with_data
+    lua_pushstring(L, "with_data");
+    lua_pushboolean(L, with_data);
     lua_settable(L, idx);
 
     // table["sorter"] = this->sorter

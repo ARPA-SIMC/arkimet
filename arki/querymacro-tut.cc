@@ -215,7 +215,7 @@ def_test(7)
             );
 
     metadata::Collection mdc(qm, dataset::DataQuery("", true));
-    ensure_equals(mdc.size(), 2u);
+    wassert(actual(mdc.size()) == 2u);
     // Ensure that data is reachable
     wassert(actual(mdc[0].getData().size()) == mdc[0].data_size());
     wassert(actual(mdc[1].getData().size()) == mdc[1].data_size());
