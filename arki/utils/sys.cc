@@ -801,6 +801,9 @@ std::string read_file(const std::string& file)
     struct stat st;
     in.fstat(st);
 
+    if (st.st_size == 0)
+        return std::string();
+
     // mmap the input file
     MMap src = in.mmap(st.st_size, PROT_READ, MAP_SHARED);
 
@@ -814,7 +817,7 @@ void write_file(const std::string& file, const std::string& data, mode_t mode)
 
 void write_file(const std::string& file, const void* data, size_t size, mode_t mode)
 {
-    File out(file, O_WRONLY | O_CREAT, mode);
+    File out(file, O_WRONLY | O_CREAT | O_TRUNC, mode);
     out.write_all_or_retry(data, size);
     out.close();
 }
