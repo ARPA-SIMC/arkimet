@@ -164,21 +164,14 @@ LocalLock::~LocalLock()
 void LocalLock::acquire()
 {
     if (locked) return;
-    if ((int)lockfile == -1) lockfile.open(O_RDWR | O_CREAT, 0777);
+    if (!lockfile.is_open()) lockfile.open(O_RDWR | O_CREAT, 0777);
     ds_lock.l_type = F_WRLCK;
     ds_lock.l_whence = SEEK_SET;
     ds_lock.l_start = 0;
     ds_lock.l_len = 0;
     ds_lock.l_pid = 0;
     // Use SETLKW, so that if it is already locked, we just wait
-#ifdef F_OFD_SETLKW
-    if (fcntl(lockfile, F_OFD_SETLKW, &ds_lock) == -1)
-#else
-// This stops compilation with -Werror, I still have not found a way to just output diagnostics
-//#warning "old style locks make concurrency tests unreliable in the test suite"
-    if (fcntl(lockfile, F_SETLKW, &ds_lock) == -1)
-#endif
-        throw_file_error(lockfile.name(), "cannot lock the file for writing");
+    ds_lock.ofd_setlkw(lockfile);
     locked = true;
 }
 
@@ -186,13 +179,7 @@ void LocalLock::release()
 {
     if (!locked) return;
     ds_lock.l_type = F_UNLCK;
-#ifdef F_OFD_SETLK
-    fcntl(lockfile, F_OFD_SETLK, &ds_lock);
-#else
-// This stops compilation with -Werror, I still have not found a way to just output diagnostics
-//#warning "old style locks make concurrency tests unreliable in the test suite"
-    fcntl(lockfile, F_SETLK, &ds_lock);
-#endif
+    ds_lock.ofd_setlk(lockfile);
     locked = false;
 }
 

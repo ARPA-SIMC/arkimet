@@ -15980,6 +15980,11 @@
   "method": "testacquire"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_iseg_writer",
+  "method": "check_write"
+ },
+ {
   "doc": "- the segment must be a file",
   "group": "arki_dataset_iseg_maintenance_grib",
   "method": "check_isfile"

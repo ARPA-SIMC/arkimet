@@ -4,9 +4,9 @@
 /// dataset/local - Base class for local datasets
 
 #include <arki/dataset.h>
-#include <string>
 #include <arki/file.h>
-#include <fcntl.h>
+#include <arki/utils/lock.h>
+#include <string>
 
 namespace arki {
 class ConfigFile;
@@ -90,9 +90,9 @@ public:
 
 struct LocalLock
 {
-    struct flock ds_lock;
-    bool locked = false;
     arki::File lockfile;
+    arki::utils::Lock ds_lock;
+    bool locked = false;
 
     LocalLock(const std::string& pathname);
     ~LocalLock();
