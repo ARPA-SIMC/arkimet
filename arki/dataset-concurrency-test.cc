@@ -42,6 +42,37 @@ struct FixtureWriter : public DatasetTest
     }
 };
 
+
+class TestSubprocess : public wibble::sys::ChildProcess
+{
+protected:
+    int commfd;
+
+public:
+    void start()
+    {
+        forkAndRedirect(0, &commfd);
+    }
+
+    void notify_ready()
+    {
+        putchar('H');
+        fflush(stdout);
+    }
+
+    char wait_until_ready()
+    {
+        char buf[2];
+        ssize_t res = read(commfd, buf, 1);
+        if (res < 0)
+            throw_system_error("reading 1 byte from child process");
+        if (res == 0)
+            throw runtime_error("child process closed stdout without producing any output");
+        return buf[0];
+    }
+};
+
+
 template<class Fixture>
 struct ConcurrentImporter : public wibble::sys::ChildProcess
 {
@@ -70,17 +101,15 @@ struct ConcurrentImporter : public wibble::sys::ChildProcess
     }
 };
 
-struct ReadHang : public wibble::sys::ChildProcess
+struct ReadHang : public TestSubprocess
 {
     std::shared_ptr<const dataset::Config> config;
-    int commfd;
 
     ReadHang(std::shared_ptr<const dataset::Config> config) : config(config) {}
 
     bool eat(unique_ptr<Metadata>&& md)
     {
-        // Notify start of reading
-        cout << "H" << endl;
+        notify_ready();
         // Get stuck while reading
         while (true)
             usleep(100000);
@@ -99,34 +128,24 @@ struct ReadHang : public wibble::sys::ChildProcess
         }
         return 0;
     }
-
-    void start()
-    {
-        forkAndRedirect(0, &commfd);
-    }
-
-    char waitUntilHung()
-    {
-        char buf[2];
-        if (read(commfd, buf, 1) != 1)
-            throw_system_error("reading 1 byte from child process");
-        return buf[0];
-    }
 };
 
 struct HungReporter : public dataset::NullReporter
 {
+    TestSubprocess& sp;
+
+    HungReporter(TestSubprocess& sp) : sp(sp) {}
+
     void segment_info(const std::string& ds, const std::string& relpath, const std::string& message) override
     {
-        putchar('H');
-        fflush(stdout);
+        sp.notify_ready();
         while (true)
             sleep(3600);
     }
 };
 
 template<class Fixture>
-struct CheckForever : public wibble::sys::ChildProcess
+struct CheckForever : public TestSubprocess
 {
     Fixture& fixture;
     int commfd;
@@ -136,25 +155,9 @@ struct CheckForever : public wibble::sys::ChildProcess
     int main() override
     {
         auto ds(fixture.config().create_checker());
-        HungReporter reporter;
+        HungReporter reporter(*this);
         ds->check(reporter, false, false);
         return 0;
-    }
-
-    void start()
-    {
-        forkAndRedirect(0, &commfd);
-    }
-
-    char wait_until_hung()
-    {
-        char buf[2];
-        ssize_t res = read(commfd, buf, 1);
-        if (res < 0)
-            throw_system_error("reading 1 byte from child process");
-        if (res == 0)
-            throw runtime_error("child process closed stdout without producing any output");
-        return buf[0];
     }
 };
 
@@ -227,7 +230,7 @@ this->add_method("import_with_hung_reader", [](Fixture& f) {
     // Query the index and hang
     ReadHang readHang(f.dataset_config());
     readHang.start();
-    wassert(actual(readHang.waitUntilHung()) == 'H');
+    wassert(actual(readHang.wait_until_ready()) == 'H');
 
     // Import another grib in the dataset
     {
@@ -318,7 +321,7 @@ this->add_method("write_during_check", [](Fixture& f) {
 
     CheckForever<Fixture> cf(f);
     cf.start();
-    cf.wait_until_hung();
+    cf.wait_until_ready();
 
     {
         auto writer = f.config().create_writer();
