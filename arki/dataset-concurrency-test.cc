@@ -114,6 +114,51 @@ struct ReadHang : public wibble::sys::ChildProcess
     }
 };
 
+struct HungReporter : public dataset::NullReporter
+{
+    void segment_info(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        putchar('H');
+        fflush(stdout);
+        while (true)
+            sleep(3600);
+    }
+};
+
+template<class Fixture>
+struct CheckForever : public wibble::sys::ChildProcess
+{
+    Fixture& fixture;
+    int commfd;
+
+    CheckForever(Fixture& fixture) : fixture(fixture) {}
+
+    int main() override
+    {
+        auto ds(fixture.config().create_checker());
+        HungReporter reporter;
+        ds->check(reporter, false, false);
+        return 0;
+    }
+
+    void start()
+    {
+        forkAndRedirect(0, &commfd);
+    }
+
+    char wait_until_hung()
+    {
+        char buf[2];
+        ssize_t res = read(commfd, buf, 1);
+        if (res < 0)
+            throw_system_error("reading 1 byte from child process");
+        if (res == 0)
+            throw runtime_error("child process closed stdout without producing any output");
+        return buf[0];
+    }
+};
+
+
 template<class Data>
 class Tests : public FixtureTestCase<FixtureWriter<Data>>
 {
@@ -254,6 +299,44 @@ this->add_method("import_during_read", [](Fixture& f) {
     reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 3u);
 });
+
+// Test parallel check and write
+this->add_method("write_during_check", [](Fixture& f) {
+    utils::Lock::TestNowait lock_nowait;
+    metadata::Collection mdc("inbound/test.grib1");
+
+    {
+        auto writer = f.config().create_writer();
+        wassert(actual(writer->acquire(mdc[0])) == dataset::Writer::ACQ_OK);
+        writer->flush();
+
+        // Create an error to trigger a call to the reporter that then hangs
+        // the checker
+        sys::File seg("testds/2007/07-08.grib", O_WRONLY);
+        seg.write(" ", 1);
+    }
+
+    CheckForever<Fixture> cf(f);
+    cf.start();
+    cf.wait_until_hung();
+
+    {
+        auto writer = f.config().create_writer();
+        wassert(actual(writer->acquire(mdc[1])) == dataset::Writer::ACQ_OK);
+
+        // Importing on the segment being checked hangs
+        try {
+            writer->acquire(mdc[0]);
+            wassert(actual(0) == 1);
+        } catch (std::runtime_error& e) {
+            wassert(actual(e.what()).contains("a write lock is already held"));
+        }
+    }
+
+    cf.kill(9);
+    cf.wait();
+});
+
 
 }
 }

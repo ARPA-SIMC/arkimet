@@ -58,51 +58,6 @@ class Tests : public FixtureTestCase<Fixture>
     void register_tests() override;
 } test("arki_dataset_iseg_writer");
 
-
-struct HungReporter : public dataset::NullReporter
-{
-    void segment_info(const std::string& ds, const std::string& relpath, const std::string& message) override
-    {
-        putchar('H');
-        fflush(stdout);
-        while (true)
-            sleep(3600);
-    }
-};
-
-struct CheckForever : public wibble::sys::ChildProcess
-{
-    Fixture& fixture;
-    int commfd;
-
-    CheckForever(Fixture& fixture) : fixture(fixture) {}
-
-    int main() override
-    {
-        auto ds(fixture.config().create_checker());
-        HungReporter reporter;
-        ds->check(reporter, false, false);
-        return 0;
-    }
-
-    void start()
-    {
-        forkAndRedirect(0, &commfd);
-    }
-
-    char wait_until_hung()
-    {
-        char buf[2];
-        ssize_t res = read(commfd, buf, 1);
-        if (res < 0)
-            throw_system_error("reading 1 byte from child process");
-        if (res == 0)
-            throw runtime_error("child process closed stdout without producing any output");
-        return buf[0];
-    }
-};
-
-
 void Tests::register_tests() {
 
 // Add here only iseg-specific tests that are not convered by tests in dataset-writer-test.cc
@@ -157,36 +112,6 @@ add_method("testacquire", [](Fixture& f) {
     f.cfg.setValue("delete age", "1");
     wassert(actual(iseg::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_OK);
 });
-
-// Test parallel check and write
-add_method("check_write", [](Fixture& f) {
-    utils::Lock::TestNowait lock_nowait;
-    metadata::Collection mdc("inbound/test.grib1");
-
-    {
-        auto writer = f.config().create_writer();
-        wassert(actual(writer->acquire(mdc[0])) == dataset::Writer::ACQ_OK);
-        writer->flush();
-
-        // Create an error to trigger a call to the reporter that then hangs
-        // the checker
-        sys::File seg("testds/2007/07-08.grib", O_WRONLY);
-        seg.write(" ", 1);
-    }
-
-    CheckForever cf(f);
-    cf.start();
-    cf.wait_until_hung();
-
-    {
-        auto writer = f.config().create_writer();
-        wassert(actual(writer->acquire(mdc[1])) == dataset::Writer::ACQ_OK);
-    }
-
-    cf.kill(9);
-    cf.wait();
-});
-
 
 }
 

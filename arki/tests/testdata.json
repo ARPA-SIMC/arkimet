@@ -15980,11 +15980,6 @@
   "method": "testacquire"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_iseg_writer",
-  "method": "check_write"
- },
- {
   "doc": "- the segment must be a file",
   "group": "arki_dataset_iseg_maintenance_grib",
   "method": "check_isfile"
@@ -20491,6 +20486,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_grib_ondisk2",
+  "method": "write_during_check"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_grib_simple_plain",
   "method": "concurrent_import"
  },
@@ -20508,6 +20508,11 @@
   "doc": "",
   "group": "arki_dataset_concurrent_grib_simple_plain",
   "method": "import_during_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_plain",
+  "method": "write_during_check"
  },
  {
   "doc": "",
@@ -20531,6 +20536,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_sqlite",
+  "method": "write_during_check"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_grib_iseg",
   "method": "concurrent_import"
  },
@@ -20548,6 +20558,11 @@
   "doc": "",
   "group": "arki_dataset_concurrent_grib_iseg",
   "method": "import_during_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_iseg",
+  "method": "write_during_check"
  },
  {
   "doc": "",
@@ -20571,6 +20586,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_bufr_ondisk2",
+  "method": "write_during_check"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_bufr_simple_plain",
   "method": "concurrent_import"
  },
@@ -20588,6 +20608,11 @@
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_simple_plain",
   "method": "import_during_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_plain",
+  "method": "write_during_check"
  },
  {
   "doc": "",
@@ -20611,6 +20636,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_sqlite",
+  "method": "write_during_check"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_bufr_iseg",
   "method": "concurrent_import"
  },
@@ -20628,6 +20658,11 @@
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_iseg",
   "method": "import_during_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_iseg",
+  "method": "write_during_check"
  },
  {
   "doc": "",
@@ -20651,6 +20686,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_vm2_ondisk2",
+  "method": "write_during_check"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_vm2_simple_plain",
   "method": "concurrent_import"
  },
@@ -20668,6 +20708,11 @@
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_simple_plain",
   "method": "import_during_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_plain",
+  "method": "write_during_check"
  },
  {
   "doc": "",
@@ -20691,6 +20736,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_sqlite",
+  "method": "write_during_check"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_vm2_iseg",
   "method": "concurrent_import"
  },
@@ -20708,6 +20758,11 @@
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_iseg",
   "method": "import_during_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_iseg",
+  "method": "write_during_check"
  },
  {
   "doc": "",
@@ -20731,6 +20786,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_odim_ondisk2",
+  "method": "write_during_check"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_odim_simple_plain",
   "method": "concurrent_import"
  },
@@ -20751,6 +20811,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_plain",
+  "method": "write_during_check"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_odim_simple_sqlite",
   "method": "concurrent_import"
  },
@@ -20771,6 +20836,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_sqlite",
+  "method": "write_during_check"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_odim_iseg",
   "method": "concurrent_import"
  },
@@ -20788,6 +20858,11 @@
   "doc": "",
   "group": "arki_dataset_concurrent_odim_iseg",
   "method": "import_during_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_iseg",
+  "method": "write_during_check"
  },
  {
   "doc": "",
