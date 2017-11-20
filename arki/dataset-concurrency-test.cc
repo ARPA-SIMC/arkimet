@@ -192,32 +192,25 @@ void Tests<Data>::register_tests() {
 
 typedef FixtureWriter<Data> Fixture;
 
-this->add_method("concurrent_import", [](Fixture& f) {
-    ConcurrentImporter<Fixture> i0(f, 0, 3);
-    ConcurrentImporter<Fixture> i1(f, 1, 3);
-    ConcurrentImporter<Fixture> i2(f, 2, 3);
+this->add_method("read_read", [](Fixture& f) {
+    f.import_all(f.td);
 
-    i0.fork();
-    i1.fork();
-    i2.fork();
+    // Query the index and hang
+    ReadHang readHang(f.dataset_config());
+    readHang.start();
+    wassert(actual(readHang.wait_until_ready()) == 'H');
 
-    i0.wait();
-    i1.wait();
-    i2.wait();
+    // Query in parallel with the other read
+    metadata::Collection mdc(*f.config().create_reader(), Matcher());
 
-    auto reader = f.config().create_reader();
-    metadata::Collection mdc(*reader, Matcher());
-    wassert(actual(mdc.size()) == 60u);
+    readHang.kill(9);
+    readHang.wait();
 
-    for (int i = 0; i < 60; ++i)
-    {
-        auto rt = mdc[i].get<types::reftime::Position>();
-        wassert(actual(rt->time.se) == i);
-    }
+    wassert(actual(mdc.size()) == 3u);
 });
 
 // Test acquiring with a reader who's stuck on output
-this->add_method("import_with_hung_reader", [](Fixture& f) {
+this->add_method("read_write", [](Fixture& f) {
     f.clean();
 
     // Import one grib in the dataset
@@ -246,31 +239,7 @@ this->add_method("import_with_hung_reader", [](Fixture& f) {
     wassert(actual(mdc1.size()) == 2u);
 });
 
-this->add_method("repack_during_read", [](Fixture& f) {
-    auto orig_data = f.td.earliest_element().md.getData();
-
-    f.reset_test("step=single");
-    f.import_all(f.td);
-
-    auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery("", true), [&](unique_ptr<Metadata> md) {
-        {
-            auto checker = f.dataset_config()->create_checker();
-            dataset::NullReporter rep;
-            try {
-                checker->repack(rep, true, dataset::TEST_MISCHIEF_MOVE_DATA);
-            } catch (std::exception& e) {
-                wassert(actual(e.what()).contains("a read lock is already held"));
-            }
-        }
-
-        auto data = md->getData();
-        wassert(actual(data == orig_data).istrue());
-        return false;
-    });
-});
-
-this->add_method("import_during_read", [](Fixture& f) {
+this->add_method("read_write1", [](Fixture& f) {
     f.reset_test("step=single");
 
     // Import one
@@ -303,8 +272,56 @@ this->add_method("import_during_read", [](Fixture& f) {
     wassert(actual(count) == 3u);
 });
 
+this->add_method("write_write", [](Fixture& f) {
+    ConcurrentImporter<Fixture> i0(f, 0, 3);
+    ConcurrentImporter<Fixture> i1(f, 1, 3);
+    ConcurrentImporter<Fixture> i2(f, 2, 3);
+
+    i0.fork();
+    i1.fork();
+    i2.fork();
+
+    i0.wait();
+    i1.wait();
+    i2.wait();
+
+    auto reader = f.config().create_reader();
+    metadata::Collection mdc(*reader, Matcher());
+    wassert(actual(mdc.size()) == 60u);
+
+    for (int i = 0; i < 60; ++i)
+    {
+        auto rt = mdc[i].get<types::reftime::Position>();
+        wassert(actual(rt->time.se) == i);
+    }
+});
+
+this->add_method("read_repack", [](Fixture& f) {
+    auto orig_data = f.td.earliest_element().md.getData();
+
+    f.reset_test("step=single");
+    f.import_all(f.td);
+
+    auto reader = f.dataset_config()->create_reader();
+    reader->query_data(dataset::DataQuery("", true), [&](unique_ptr<Metadata> md) {
+        {
+            auto checker = f.dataset_config()->create_checker();
+            dataset::NullReporter rep;
+            try {
+                checker->repack(rep, true, dataset::TEST_MISCHIEF_MOVE_DATA);
+            } catch (std::exception& e) {
+                wassert(actual(e.what()).contains("a read lock is already held"));
+            }
+        }
+
+        auto data = md->getData();
+        wassert(actual(data == orig_data).istrue());
+        return false;
+    });
+});
+
 // Test parallel check and write
-this->add_method("write_during_check", [](Fixture& f) {
+this->add_method("write_check", [](Fixture& f) {
     utils::Lock::TestNowait lock_nowait;
     metadata::Collection mdc("inbound/test.grib1");
 
