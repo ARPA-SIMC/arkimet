@@ -323,17 +323,15 @@ this->add_method("read_repack", [](Fixture& f) {
 // Test parallel check and write
 this->add_method("write_check", [](Fixture& f) {
     utils::Lock::TestNowait lock_nowait;
-    metadata::Collection mdc("inbound/test.grib1");
 
     {
         auto writer = f.config().create_writer();
-        wassert(actual(writer->acquire(mdc[0])) == dataset::Writer::ACQ_OK);
+        wassert(actual(writer->acquire(f.td.test_data[0].md)) == dataset::Writer::ACQ_OK);
         writer->flush();
 
         // Create an error to trigger a call to the reporter that then hangs
-        // the checker
-        sys::File seg("testds/2007/07-08.grib", O_WRONLY);
-        seg.write(" ", 1);
+        // the checke
+        f.makeSegmentedChecker()->test_corrupt_data(f.td.test_data[0].md.sourceBlob().filename, 0);
     }
 
     CheckForever<Fixture> cf(f);
@@ -342,11 +340,11 @@ this->add_method("write_check", [](Fixture& f) {
 
     {
         auto writer = f.config().create_writer();
-        wassert(actual(writer->acquire(mdc[1])) == dataset::Writer::ACQ_OK);
+        wassert(actual(writer->acquire(f.td.test_data[1].md)) == dataset::Writer::ACQ_OK);
 
         // Importing on the segment being checked hangs
         try {
-            writer->acquire(mdc[0]);
+            writer->acquire(f.td.test_data[0].md);
             wassert(actual(0) == 1);
         } catch (std::runtime_error& e) {
             wassert(actual(e.what()).contains("a write lock is already held"));
