@@ -28,9 +28,6 @@ public:
     /// Root path of the dataset
     std::string path;
 
-    /// Pathname of the dataset's lock file
-    std::string lockfile_pathname;
-
     int archive_age = -1;
     int delete_age = -1;
 
@@ -94,7 +91,7 @@ struct LocalLock
     arki::utils::Lock ds_lock;
     bool locked = false;
 
-    LocalLock(const std::string& pathname);
+    LocalLock(const LocalConfig& config);
     ~LocalLock();
 
     void acquire();
@@ -103,11 +100,6 @@ struct LocalLock
 
 class LocalWriter : public Writer
 {
-protected:
-    LocalLock* lock = nullptr;
-    void acquire_lock();
-    void release_lock();
-
 public:
     using Writer::Writer;
     ~LocalWriter();
@@ -132,11 +124,6 @@ public:
 
 struct LocalChecker : public LocalBase<Checker, ArchivesChecker>
 {
-protected:
-    LocalLock* lock = nullptr;
-    void acquire_lock();
-    void release_lock();
-
 public:
     using LocalBase::LocalBase;
     ~LocalChecker();

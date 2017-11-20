@@ -49,9 +49,22 @@ Writer::Writer(std::shared_ptr<const iseg::Config> config)
 Writer::~Writer()
 {
     flush();
+    delete lock;
 }
 
 std::string Writer::type() const { return "iseg"; }
+
+void Writer::acquire_lock()
+{
+    if (!lock) lock = new LocalLock(config());
+    lock->acquire();
+}
+
+void Writer::release_lock()
+{
+    if (!lock) lock = new LocalLock(config());
+    lock->release();
+}
 
 std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
 {
@@ -271,9 +284,22 @@ Checker::Checker(std::shared_ptr<const iseg::Config> config)
 
 Checker::~Checker()
 {
+    delete lock;
 }
 
 std::string Checker::type() const { return "iseg"; }
+
+void Checker::acquire_lock()
+{
+    if (!lock) lock = new LocalLock(config());
+    lock->acquire();
+}
+
+void Checker::release_lock()
+{
+    if (!lock) lock = new LocalLock(config());
+    lock->release();
+}
 
 void Checker::list_segments(std::function<void(const std::string& relpath)> dest)
 {

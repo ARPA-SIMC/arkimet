@@ -58,9 +58,22 @@ Writer::Writer(std::shared_ptr<const simple::Config> config)
 Writer::~Writer()
 {
     flush();
+    delete lock;
 }
 
 std::string Writer::type() const { return "simple"; }
+
+void Writer::acquire_lock()
+{
+    if (!lock) lock = new LocalLock(config());
+    lock->acquire();
+}
+
+void Writer::release_lock()
+{
+    if (!lock) lock = new LocalLock(config());
+    lock->release();
+}
 
 std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
 {
@@ -157,9 +170,22 @@ Checker::Checker(std::shared_ptr<const simple::Config> config)
 Checker::~Checker()
 {
     m_mft->flush();
+    delete lock;
 }
 
 std::string Checker::type() const { return "simple"; }
+
+void Checker::acquire_lock()
+{
+    if (!lock) lock = new LocalLock(config());
+    lock->acquire();
+}
+
+void Checker::release_lock()
+{
+    if (!lock) lock = new LocalLock(config());
+    lock->release();
+}
 
 void Checker::removeAll(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::removeAll(reporter, writable); release_lock(); }
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)

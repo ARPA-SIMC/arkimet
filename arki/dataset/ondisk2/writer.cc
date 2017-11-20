@@ -61,9 +61,22 @@ Writer::Writer(std::shared_ptr<const ondisk2::Config> config)
 Writer::~Writer()
 {
     flush();
+    delete lock;
 }
 
 std::string Writer::type() const { return "ondisk2"; }
+
+void Writer::acquire_lock()
+{
+    if (!lock) lock = new LocalLock(config());
+    lock->acquire();
+}
+
+void Writer::release_lock()
+{
+    if (!lock) lock = new LocalLock(config());
+    lock->release();
+}
 
 Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
@@ -269,7 +282,24 @@ Checker::Checker(std::shared_ptr<const ondisk2::Config> config)
     release_lock();
 }
 
+Checker::~Checker()
+{
+    delete lock;
+}
+
 std::string Checker::type() const { return "ondisk2"; }
+
+void Checker::acquire_lock()
+{
+    if (!lock) lock = new LocalLock(config());
+    lock->acquire();
+}
+
+void Checker::release_lock()
+{
+    if (!lock) lock = new LocalLock(config());
+    lock->release();
+}
 
 void Checker::removeAll(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::removeAll(reporter, writable); release_lock(); }
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags) { acquire_lock(); IndexedChecker::repack(reporter, writable, test_flags); release_lock(); }

@@ -27,6 +27,9 @@ class Writer : public IndexedWriter
 protected:
     std::shared_ptr<const ondisk2::Config> m_config;
     index::WContents* idx;
+    LocalLock* lock = nullptr;
+    void acquire_lock();
+    void release_lock();
 
     AcquireResult acquire_replace_never(Metadata& md);
     AcquireResult acquire_replace_always(Metadata& md);
@@ -59,9 +62,13 @@ class Checker : public IndexedChecker
 protected:
     std::shared_ptr<const ondisk2::Config> m_config;
     index::WContents* idx;
+    LocalLock* lock = nullptr;
+    void acquire_lock();
+    void release_lock();
 
 public:
     Checker(std::shared_ptr<const ondisk2::Config> config);
+    ~Checker();
 
     const ondisk2::Config& config() const override { return *m_config; }
 

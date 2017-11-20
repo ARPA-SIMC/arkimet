@@ -24,7 +24,7 @@ namespace arki {
 namespace dataset {
 
 LocalConfig::LocalConfig(const ConfigFile& cfg)
-    : Config(cfg), path(sys::abspath(cfg.value("path"))), lockfile_pathname(str::joinpath(path, "lock"))
+    : Config(cfg), path(sys::abspath(cfg.value("path")))
 {
     string tmp = cfg.value("archive age");
     if (!tmp.empty())
@@ -152,13 +152,14 @@ void LocalReader::readConfig(const std::string& path, ConfigFile& cfg)
     }
 }
 
-LocalLock::LocalLock(const std::string& pathname)
-    : lockfile(pathname)
+LocalLock::LocalLock(const LocalConfig& config)
+    : lockfile(str::joinpath(config.path, "lock"))
 {
 }
 
 LocalLock::~LocalLock()
 {
+    release();
 }
 
 void LocalLock::acquire()
@@ -186,19 +187,6 @@ void LocalLock::release()
 
 LocalWriter::~LocalWriter()
 {
-    delete lock;
-}
-
-void LocalWriter::acquire_lock()
-{
-    if (!lock) lock = new LocalLock(config().lockfile_pathname);
-    lock->acquire();
-}
-
-void LocalWriter::release_lock()
-{
-    if (!lock) lock = new LocalLock(config().lockfile_pathname);
-    lock->release();
 }
 
 LocalWriter::AcquireResult LocalWriter::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
@@ -209,19 +197,6 @@ LocalWriter::AcquireResult LocalWriter::testAcquire(const ConfigFile& cfg, const
 
 LocalChecker::~LocalChecker()
 {
-    delete lock;
-}
-
-void LocalChecker::acquire_lock()
-{
-    if (!lock) lock = new LocalLock(config().lockfile_pathname);
-    lock->acquire();
-}
-
-void LocalChecker::release_lock()
-{
-    if (!lock) lock = new LocalLock(config().lockfile_pathname);
-    lock->release();
 }
 
 void LocalChecker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)

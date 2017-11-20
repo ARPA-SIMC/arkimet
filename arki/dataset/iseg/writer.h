@@ -23,6 +23,9 @@ class Writer : public segmented::Writer
 protected:
     std::shared_ptr<const iseg::Config> m_config;
     index::SummaryCache scache;
+    LocalLock* lock = nullptr;
+    void acquire_lock();
+    void release_lock();
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
     std::shared_ptr<segment::Writer> file(const Metadata& md, const std::string& format);
@@ -53,6 +56,9 @@ class Checker : public segmented::Checker
 {
 protected:
     std::shared_ptr<const iseg::Config> m_config;
+    LocalLock* lock = nullptr;
+    void acquire_lock();
+    void release_lock();
 
     void list_segments(std::function<void(const std::string& relpath)> dest);
     size_t reorder_segment_backend(WIndex& idx, Pending& p, const std::string& relpath, metadata::Collection& mds, unsigned test_flags);
