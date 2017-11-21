@@ -319,6 +319,57 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
     release_lock();
 }
 
+segmented::SegmentState Checker::scan_segment(const std::string& relpath, dataset::Reporter& reporter, bool quick)
+{
+    metadata::Collection mds;
+    idx->scan_file(relpath, mds.inserter_func(), "m.file, m.reftime, m.offset");
+
+    segment::State state = SEGMENT_OK;
+    bool untrusted_index = files::hasDontpackFlagfile(config().path);
+
+    // Compute the span of reftimes inside the segment
+    unique_ptr<Time> md_begin;
+    unique_ptr<Time> md_until;
+    if (mds.empty())
+    {
+        reporter.segment_info(name(), relpath, "index knows of this segment but contains no data for it");
+        md_begin.reset(new Time(0, 0, 0));
+        md_until.reset(new Time(0, 0, 0));
+        state = untrusted_index ? SEGMENT_UNALIGNED : SEGMENT_DELETED;
+    } else {
+        if (!mds.expand_date_range(md_begin, md_until))
+        {
+            reporter.segment_info(name(), relpath, "index data for this segment has no reference time information");
+            state = SEGMENT_CORRUPTED;
+            md_begin.reset(new Time(0, 0, 0));
+            md_until.reset(new Time(0, 0, 0));
+        } else {
+            // Ensure that the reftime span fits inside the segment step
+            Time seg_begin;
+            Time seg_until;
+            if (config().step().path_timespan(relpath, seg_begin, seg_until))
+            {
+                if (*md_begin < seg_begin || *md_until > seg_until)
+                {
+                    reporter.segment_info(name(), relpath, "segment contents do not fit inside the step of this dataset");
+                    state = SEGMENT_CORRUPTED;
+                }
+                // Expand segment timespan to the full possible segment timespan
+                *md_begin = seg_begin;
+                *md_until = seg_until;
+            } else {
+                reporter.segment_info(name(), relpath, "segment name does not fit the step of this dataset");
+                state = SEGMENT_CORRUPTED;
+            }
+        }
+    }
+
+    if (state.is_ok())
+        state = segment_manager().check(reporter, name(), relpath, mds, quick);
+
+    return segmented::SegmentState(state, *md_begin, *md_until);
+}
+
 segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
 {
     segmented::State segments_state;
@@ -329,50 +380,9 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
     // Populate segments_state with the contents of the index
     //
 
-    m_idx->scan_files([&](const std::string& relpath, segment::State state, const metadata::Collection& mds) {
-        // Compute the span of reftimes inside the segment
-        unique_ptr<Time> md_begin;
-        unique_ptr<Time> md_until;
-        if (mds.empty())
-        {
-            reporter.segment_info(name(), relpath, "index knows of this segment but contains no data for it");
-            md_begin.reset(new Time(0, 0, 0));
-            md_until.reset(new Time(0, 0, 0));
-            state = untrusted_index ? SEGMENT_UNALIGNED : SEGMENT_DELETED;
-        } else {
-            if (!mds.expand_date_range(md_begin, md_until))
-            {
-                reporter.segment_info(name(), relpath, "index data for this segment has no reference time information");
-                state = SEGMENT_CORRUPTED;
-                md_begin.reset(new Time(0, 0, 0));
-                md_until.reset(new Time(0, 0, 0));
-            } else {
-                // Ensure that the reftime span fits inside the segment step
-                Time seg_begin;
-                Time seg_until;
-                if (config().step().path_timespan(relpath, seg_begin, seg_until))
-                {
-                    if (*md_begin < seg_begin || *md_until > seg_until)
-                    {
-                        reporter.segment_info(name(), relpath, "segment contents do not fit inside the step of this dataset");
-                        state = SEGMENT_CORRUPTED;
-                    }
-                    // Expand segment timespan to the full possible segment timespan
-                    *md_begin = seg_begin;
-                    *md_until = seg_until;
-                } else {
-                    reporter.segment_info(name(), relpath, "segment name does not fit the step of this dataset");
-                    state = SEGMENT_CORRUPTED;
-                }
-            }
-        }
-
-        if (state.is_ok())
-            state = segment_manager().check(reporter, name(), relpath, mds, quick);
-
-        segments_state.insert(make_pair(relpath, segmented::SegmentState(state, *md_begin, *md_until)));
+    m_idx->list_segments([&](const std::string& relpath) {
+        segments_state.insert(make_pair(relpath, scan_segment(relpath, reporter, quick)));
     });
-
 
     //
     // Add information from the state of files on disk

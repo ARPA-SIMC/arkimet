@@ -130,9 +130,6 @@ add_method("create", [] {
     m->list_segments([&](const std::string&) { ++count; });
     wassert(actual(count) == 0u);
 
-    m->scan_files([&](const std::string&, segment::State, const metadata::Collection&) { ++count; });
-    wassert(actual(count) == 0u);
-
     m->vacuum();
 });
 
@@ -203,26 +200,13 @@ add_method("modify_while_scanning", [] {
         wassert(actual(count) == 3u);
     }
 
-    // Enumerate with scan_files while adding files
-    {
-        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
-        m->openRW();
-        size_t count = 0;
-        m->scan_files([&](const std::string&, segment::State, const metadata::Collection&) {
-            ++count;
-            m->acquire("50.grib1", mtime, s);
-        });
-        // The enumeration should return only the files previously known
-        wassert(actual(count) == 4u);
-    }
-
     // Check again, we should have all that we added so far
     {
         std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
         m->openRW();
         size_t count = 0;
         m->list_segments([&](const std::string&) { ++count; });
-        wassert(actual(count) == 5u);
+        wassert(actual(count) == 4u);
     }
 });
 

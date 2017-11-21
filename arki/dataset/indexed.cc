@@ -75,7 +75,9 @@ void IndexedChecker::check_issue51(dataset::Reporter& reporter, bool fix)
     std::map<string, metadata::Collection> broken_mds;
 
     // Iterate all segments
-    m_idx->scan_files([&](const std::string& relpath, segment::State state, const metadata::Collection& mds) {
+    m_idx->list_segments([&](const std::string& relpath) {
+        metadata::Collection mds;
+        m_idx->query_segment(relpath, mds.inserter_func());
         if (mds.empty()) return;
         File datafile(str::joinpath(config().path, relpath), O_RDONLY);
         // Iterate all metadata in the segment

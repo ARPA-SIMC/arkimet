@@ -261,46 +261,6 @@ void Contents::list_segments(std::function<void(const std::string&)> dest)
         dest(sq.fetchString(0));
 }
 
-void Contents::scan_files(segment::contents_func v)
-{
-    string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
-    if (m_uniques) query += ", m.uniq";
-    if (m_others) query += ", m.other";
-    if (config().smallfiles) query += ", m.data";
-    query += " FROM md AS m";
-    query += " ORDER BY m.file, m.reftime, m.offset";
-
-    Query mdq("scan_files_md", m_db);
-    mdq.compile(query);
-
-    std::shared_ptr<arki::Reader> reader;
-    string last_file;
-    metadata::Collection mdc;
-    while (mdq.step())
-    {
-        string file = mdq.fetchString(2);
-        if (file != last_file)
-        {
-            if (!last_file.empty())
-            {
-                v(last_file, SEGMENT_OK, mdc);
-                mdc.clear();
-            }
-            last_file = file;
-            string abspath = str::joinpath(config().path, file);
-            reader = arki::Reader::for_auto(abspath);
-        }
-
-        // Rebuild the Metadata
-        unique_ptr<Metadata> md(new Metadata);
-        build_md(mdq, *md, reader);
-        mdc.acquire(move(md));
-    }
-
-    if (!last_file.empty())
-        v(last_file, SEGMENT_OK, mdc);
-}
-
 void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& order_by) const
 {
     string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";

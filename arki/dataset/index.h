@@ -44,15 +44,6 @@ struct Index
     virtual void list_segments(std::function<void(const std::string&)> dest) = 0;
 
     /**
-     * Generate all segment info found in the index.
-     *
-     * Segments are sorted alphabetically by relative paths.
-     *
-     * Metadata in the collection are sorted by (reftime, offset).
-     */
-    virtual void scan_files(segment::contents_func v) = 0;
-
-    /**
      * Get the metadata for a segment.
      */
     virtual void query_segment(const std::string& relname, metadata_dest_func) const = 0;

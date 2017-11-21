@@ -155,6 +155,11 @@ public:
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
 
     /**
+     * Scan a segment and compute its state
+     */
+    virtual segmented::SegmentState scan_segment(const std::string& relpath, dataset::Reporter& reporter, bool quick=true) = 0;
+
+    /**
      * Scan the dataset, computing the state of each unarchived segment that is
      * either on disk or known by the index.
      */
