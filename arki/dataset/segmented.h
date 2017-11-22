@@ -168,7 +168,13 @@ public:
      * Scan the dataset, computing the state of each unarchived segment that is
      * either on disk or known by the index.
      */
-    virtual State scan(dataset::Reporter& reporter, bool quick=true) = 0;
+    State scan(dataset::Reporter& reporter, bool quick=true);
+
+    /**
+     * Scan the dataset, computing the state of each unarchived segment that is
+     * either on disk or known by the index.
+     */
+    virtual void scan(dataset::Reporter& reporter, bool quick, std::function<void(const std::string& relpath, const SegmentState& state)> dest) = 0;
 
     /// Remove all data from the dataset
     void removeAll(dataset::Reporter& reporter, bool writable) override;

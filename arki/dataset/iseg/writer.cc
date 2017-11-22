@@ -398,22 +398,20 @@ segmented::SegmentState Checker::scan_segment(const std::string& relpath, datase
     return res;
 }
 
-segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
+void Checker::scan(dataset::Reporter& reporter, bool quick, std::function<void(const std::string& relpath, const segmented::SegmentState& state)> dest)
 {
-    segmented::State segments_state;
-
+    std::set<std::string> seen;
     list_segments([&](const std::string& relpath) {
-        segments_state.insert(make_pair(relpath, scan_segment(relpath, reporter, quick)));
+        seen.insert(relpath);
+        dest(relpath, scan_segment(relpath, reporter, quick));
     });
 
     // Look for data files without indices next to them
     config().step().list_segments(config().path, config().format, Matcher(), [&](std::string&& relpath) {
-        if (segments_state.find(relpath) != segments_state.end()) return;
+        if (seen.find(relpath) != seen.end()) return;
         reporter.segment_info(name(), relpath, "segment found on disk with no associated index data");
-        segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_UNALIGNED)));
+        dest(relpath, segmented::SegmentState(SEGMENT_UNALIGNED));
     });
-
-    return segments_state;
 }
 
 void Checker::check_issue51(dataset::Reporter& reporter, bool fix)

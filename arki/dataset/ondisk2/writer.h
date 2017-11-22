@@ -75,7 +75,7 @@ public:
     std::string type() const override;
 
     segmented::SegmentState scan_segment(const std::string& relpath, dataset::Reporter& reporter, bool quick=true) override;
-    segmented::State scan(dataset::Reporter& reporter, bool quick=true) override;
+    void scan(dataset::Reporter& reporter, bool quick, std::function<void(const std::string& relpath, const segmented::SegmentState& state)> dest) override;
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
     void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;

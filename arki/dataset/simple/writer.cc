@@ -332,23 +332,21 @@ segmented::SegmentState Checker::scan_segment(const std::string& relpath, datase
     return res;
 }
 
-segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
+void Checker::scan(dataset::Reporter& reporter, bool quick, std::function<void(const std::string& relpath, const segmented::SegmentState& state)> dest)
 {
-    segmented::State segments_state;
-
     // Populate segments_state with the contents of the index
+    std::set<std::string> seen;
     m_idx->list_segments([&](const std::string& relpath) {
-        segments_state.insert(make_pair(relpath, scan_segment(relpath, reporter, quick)));
+        seen.insert(relpath);
+        dest(relpath, scan_segment(relpath, reporter, quick));
     });
 
     // Add information from the state of files on disk
     segment_manager().scan_dir([&](const std::string& relpath) {
-        if (segments_state.has(relpath)) return;
+        if (seen.find(relpath) != seen.end()) return;
         reporter.segment_info(name(), relpath, "segment found on disk with no associated index data");
-        segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_UNALIGNED)));
+        dest(relpath, segmented::SegmentState(SEGMENT_UNALIGNED));
     });
-
-    return segments_state;
 }
 
 

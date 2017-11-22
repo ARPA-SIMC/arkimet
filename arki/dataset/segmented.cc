@@ -344,6 +344,17 @@ void Checker::removeAll(dataset::Reporter& reporter, bool writable)
     // TODO:    archive().removeAll(reporter, writable);
 }
 
+segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
+{
+    segmented::State segments_state;
+
+    scan(reporter, quick, [&](const std::string& relpath, const SegmentState& state) {
+        segments_state.insert(make_pair(relpath, state));
+    });
+
+    return segments_state;
+}
+
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
     const string& root = config().path;
