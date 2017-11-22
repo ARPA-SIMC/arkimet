@@ -369,6 +369,11 @@ public:
     virtual void truncate(const std::string& relname, size_t offset) = 0;
 
     /**
+     * Given the relative path of a segment, return true if it exists on disk
+     */
+    virtual bool exists(const std::string& relpath) const = 0;
+
+    /**
      * Scan a dataset for data files, returning a set of pathnames relative to
      * root.
      */

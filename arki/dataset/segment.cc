@@ -311,6 +311,25 @@ struct AutoManager : public BaseManager
         return res;
     }
 
+    bool exists(const std::string& relpath) const override
+    {
+        string abspath = str::joinpath(root, relpath);
+        auto st = sys::stat(abspath);
+        if (!st)
+        {
+            st = sys::stat(abspath + ".gz");
+            return st && S_ISREG(st->st_mode);
+        }
+
+        if (S_ISDIR(st->st_mode))
+        {
+            st = sys::stat(str::joinpath(abspath, ".sequence"));
+            return st && S_ISREG(st->st_mode);
+        }
+
+        return S_ISREG(st->st_mode);
+    }
+
     void scan_dir(std::function<void(const std::string& relname)> dest) override
     {
         // Trim trailing '/'
@@ -383,6 +402,17 @@ struct ForceDirManager : public BaseManager
         return std::shared_ptr<segment::Checker>(new dir::Checker(format, root, relname, absname));
     }
 
+    bool exists(const std::string& relpath) const override
+    {
+        string abspath = str::joinpath(root, relpath);
+        auto st = sys::stat(abspath);
+        if (!st || !S_ISDIR(st->st_mode))
+            return false;
+
+        st = sys::stat(str::joinpath(abspath, ".sequence"));
+        return st && S_ISREG(st->st_mode);
+    }
+
     void scan_dir(std::function<void(const std::string& relname)> dest) override
     {
         // Trim trailing '/'
@@ -410,10 +440,6 @@ struct ForceDirManager : public BaseManager
             if (!sub.fstatat_ifexists(".sequence", seq_st))
                 // Normal subdirectory, recurse into it
                 return true;
-
-            // Directory segment
-            if (str::endswith(name, ".gz"))
-                name = name.substr(0, name.size() - 3);
 
             // Check whether the file format (from the extension) could be
             // stored in this kind of segment
