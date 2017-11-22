@@ -374,6 +374,14 @@ segmented::SegmentState Checker::scan_segment(const std::string& relpath, datase
     if (state.is_ok())
         state = segment_manager().check(reporter, name(), relpath, mds, quick);
 
+    // Scenario: the index has been deleted, and some data has been imported
+    // and appended to an existing segment, recreating an empty index.
+    // That segment would show in the index as DIRTY, because it has a gap of
+    // data not indexed. Since the needs-check-do-not-pack file is present,
+    // however, mark that file for rescanning instead of repacking.
+    if (untrusted_index && state.has(SEGMENT_DIRTY))
+        state = state - SEGMENT_DIRTY + SEGMENT_UNALIGNED;
+
     auto res = segmented::SegmentState(state, *md_begin, *md_until);
     res.check_age(relpath, config(), reporter);
     return res;
@@ -381,9 +389,8 @@ segmented::SegmentState Checker::scan_segment(const std::string& relpath, datase
 
 segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
 {
-    segmented::State segments_state;
-
     bool untrusted_index = files::hasDontpackFlagfile(config().path);
+    segmented::State segments_state;
 
     // Populate segments_state with the contents of the index
     m_idx->list_segments([&](const std::string& relpath) {
@@ -396,17 +403,6 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
         reporter.segment_info(name(), relpath, "segment found on disk with no associated index data");
         segments_state.insert(make_pair(relpath, segmented::SegmentState(untrusted_index ? SEGMENT_UNALIGNED : SEGMENT_DELETED)));
     });
-
-    // TODO: move to scan_segment
-    // Scenario: the index has been deleted, and some data has been imported
-    // and appended to an existing segment. That segment would show in the
-    // index as DIRTY, because it has a gap of data not indexed.
-    // Since the needs-check-do-not-pack file is present, however, mark that
-    // file for rescanning instead of repacking.
-    if (untrusted_index)
-        for (auto& i: segments_state)
-            if (i.second.state.has(SEGMENT_DIRTY))
-                i.second.state = i.second.state - SEGMENT_DIRTY + SEGMENT_UNALIGNED;
 
     return segments_state;
 }
