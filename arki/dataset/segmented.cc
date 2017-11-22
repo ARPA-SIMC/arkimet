@@ -345,9 +345,9 @@ void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_f
         repacker.reset(new maintenance::MockRepacker(reporter, *this, test_flags));
 
     try {
-        State state = scan(reporter);
-        for (const auto& i: state)
-            (*repacker)(i.first, i.second.state);
+        scan(reporter, true, [&](const std::string& relpath, const SegmentState& state) {
+            (*repacker)(relpath, state.state);
+        });
         repacker->end();
     } catch (...) {
         // FIXME: this only makes sense for ondisk2
