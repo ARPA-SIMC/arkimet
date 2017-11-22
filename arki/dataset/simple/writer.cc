@@ -336,10 +336,10 @@ void Checker::scan(dataset::Reporter& reporter, bool quick, std::function<void(c
 {
     // Populate segments_state with the contents of the index
     std::set<std::string> seen;
-    m_idx->list_segments([&](const std::string& relpath) {
-        seen.insert(relpath);
+    m_idx->list_segments([&](const std::string& relpath) { seen.insert(relpath); });
+
+    for (const auto& relpath : seen)
         dest(relpath, scan_segment(relpath, reporter, quick));
-    });
 
     // Add information from the state of files on disk
     segment_manager().scan_dir([&](const std::string& relpath) {

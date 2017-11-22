@@ -401,10 +401,10 @@ segmented::SegmentState Checker::scan_segment(const std::string& relpath, datase
 void Checker::scan(dataset::Reporter& reporter, bool quick, std::function<void(const std::string& relpath, const segmented::SegmentState& state)> dest)
 {
     std::set<std::string> seen;
-    list_segments([&](const std::string& relpath) {
-        seen.insert(relpath);
+    list_segments([&](const std::string& relpath) { seen.insert(relpath); });
+
+    for (const auto& relpath : seen)
         dest(relpath, scan_segment(relpath, reporter, quick));
-    });
 
     // Look for data files without indices next to them
     config().step().list_segments(config().path, config().format, Matcher(), [&](std::string&& relpath) {

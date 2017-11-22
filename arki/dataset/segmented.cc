@@ -351,6 +351,9 @@ void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_f
         repacker->end();
     } catch (...) {
         // FIXME: this only makes sense for ondisk2
+        // FIXME: also for iseg. Add the marker at the segment level instead of
+        // the dataset level, so that the try/catch can be around the single
+        // segment, and cleared on a segment by segment basis
         files::createDontpackFlagfile(root);
         throw;
     }
@@ -366,11 +369,14 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
     {
         maintenance::RealFixer fixer(reporter, *this);
         try {
-            State state = scan(reporter, quick);
-            for (const auto& i: state)
-                fixer(i.first, i.second.state);
+            scan(reporter, quick, [&](const std::string& relpath, const SegmentState& state) {
+                fixer(relpath, state.state);
+            });
             fixer.end();
         } catch (...) {
+            // FIXME: Add the marker at the segment level instead of
+            // the dataset level, so that the try/catch can be around the single
+            // segment, and cleared on a segment by segment basis
             files::createDontpackFlagfile(root);
             throw;
         }
@@ -378,9 +384,9 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
         files::removeDontpackFlagfile(root);
     } else {
         maintenance::MockFixer fixer(reporter, *this);
-        State state = scan(reporter, quick);
-        for (const auto& i: state)
-            fixer(i.first, i.second.state);
+        scan(reporter, quick, [&](const std::string& relpath, const SegmentState& state) {
+            fixer(relpath, state.state);
+        });
         fixer.end();
     }
 
