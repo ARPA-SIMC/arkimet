@@ -320,7 +320,9 @@ segmented::SegmentState Checker::scan_segment(const std::string& relpath, datase
     if (state.is_ok())
         state = segment_manager().check(reporter, name(), relpath, contents, quick);
 
-    return segmented::SegmentState(state, *md_begin, *md_until);
+    auto res = segmented::SegmentState(state, *md_begin, *md_until);
+    res.check_age(relpath, config(), reporter);
+    return res;
 }
 
 segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
@@ -353,8 +355,6 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
         reporter.segment_info(name(), relpath, "segment found on disk with no associated index data");
         segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_UNALIGNED)));
     }
-
-    segments_state.check_age(config(), reporter);
 
     return segments_state;
 }
