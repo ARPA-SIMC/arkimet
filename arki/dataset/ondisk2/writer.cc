@@ -364,6 +364,13 @@ segmented::SegmentState Checker::scan_segment(const std::string& relpath, datase
         }
     }
 
+    if (!segment_manager().exists(relpath))
+    {
+        // The segment does not exist on disk
+        reporter.segment_info(name(), relpath, "segment found in index but not on disk");
+        state = state - SEGMENT_UNALIGNED + SEGMENT_MISSING;
+    }
+
     if (state.is_ok())
         state = segment_manager().check(reporter, name(), relpath, mds, quick);
 
@@ -378,39 +385,19 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
 
     bool untrusted_index = files::hasDontpackFlagfile(config().path);
 
-    //
     // Populate segments_state with the contents of the index
-    //
-
     m_idx->list_segments([&](const std::string& relpath) {
         segments_state.insert(make_pair(relpath, scan_segment(relpath, reporter, quick)));
     });
 
-    //
     // Add information from the state of files on disk
-    //
-
-    std::set<std::string> disk;
-    segment_manager().scan_dir([&](const std::string& relpath) { disk.insert(relpath);; });
-
-    // files: a, b, c,    e, f, g
-    // index:       c, d, e, f, g
-
-    for (auto& i: segments_state)
-    {
-        if (disk.erase(i.first) == 0)
-        {
-            // The file did not exist on disk
-            reporter.segment_info(name(), i.first, "segment found in index but not on disk");
-            i.second.state = i.second.state - SEGMENT_UNALIGNED + SEGMENT_MISSING;
-        }
-    }
-    for (const auto& relpath : disk)
-    {
+    segment_manager().scan_dir([&](const std::string& relpath) {
+        if (segments_state.has(relpath)) return;
         reporter.segment_info(name(), relpath, "segment found on disk with no associated index data");
         segments_state.insert(make_pair(relpath, segmented::SegmentState(untrusted_index ? SEGMENT_UNALIGNED : SEGMENT_DELETED)));
-    }
+    });
 
+    // TODO: move to scan_segment
     // Scenario: the index has been deleted, and some data has been imported
     // and appended to an existing segment. That segment would show in the
     // index as DIRTY, because it has a gap of data not indexed.
