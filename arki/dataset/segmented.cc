@@ -73,35 +73,6 @@ unsigned State::count(segment::State state) const
     return res;
 }
 
-void State::check_age(const Config& cfg, dataset::Reporter& reporter)
-{
-    core::Time archive_threshold(0, 0, 0);
-    core::Time delete_threshold(0, 0, 0);
-    const auto& st = SessionTime::get();
-
-    if (cfg.archive_age != -1)
-        archive_threshold = st.age_threshold(cfg.archive_age);
-    if (cfg.delete_age != -1)
-        delete_threshold = st.age_threshold(cfg.delete_age);
-
-    for (auto& i: *this)
-    {
-        if (delete_threshold.ye != 0 && delete_threshold >= i.second.until)
-        {
-            reporter.segment_info(cfg.name, i.first, "segment old enough to be deleted");
-            i.second.state = i.second.state + SEGMENT_DELETE_AGE;
-            continue;
-        }
-
-        if (archive_threshold.ye != 0 && archive_threshold >= i.second.until)
-        {
-            reporter.segment_info(cfg.name, i.first, "segment old enough to be archived");
-            i.second.state = i.second.state + SEGMENT_ARCHIVE_AGE;
-            continue;
-        }
-    }
-}
-
 void State::dump(FILE* out) const
 {
     for (const auto& i: *this)

@@ -134,9 +134,6 @@ struct State : public std::map<std::string, SegmentState>
     /// Count how many segments have this state
     unsigned count(segment::State state) const;
 
-    /// Check if segments are old enough to be deleted or archived
-    void check_age(const Config& cfg, dataset::Reporter& reporter);
-
     void dump(FILE* out) const;
 };
 
