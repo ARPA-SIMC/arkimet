@@ -25,12 +25,43 @@ namespace arki {
 namespace dataset {
 namespace segmented {
 
+bool State::has(const std::string& relpath) const
+{
+    return find(relpath) != end();
+}
+
 const SegmentState& State::get(const std::string& seg) const
 {
     auto res = find(seg);
     if (res == end())
         throw std::runtime_error("segment " + seg + " not found in state");
     return res->second;
+}
+
+void SegmentState::check_age(const std::string& relpath, const Config& cfg, dataset::Reporter& reporter)
+{
+    core::Time archive_threshold(0, 0, 0);
+    core::Time delete_threshold(0, 0, 0);
+    const auto& st = SessionTime::get();
+
+    if (cfg.archive_age != -1)
+        archive_threshold = st.age_threshold(cfg.archive_age);
+    if (cfg.delete_age != -1)
+        delete_threshold = st.age_threshold(cfg.delete_age);
+
+    if (delete_threshold.ye != 0 && delete_threshold >= until)
+    {
+        reporter.segment_info(cfg.name, relpath, "segment old enough to be deleted");
+        state = state + SEGMENT_DELETE_AGE;
+        return;
+    }
+
+    if (archive_threshold.ye != 0 && archive_threshold >= until)
+    {
+        reporter.segment_info(cfg.name, relpath, "segment old enough to be archived");
+        state = state + SEGMENT_ARCHIVE_AGE;
+        return;
+    }
 }
 
 unsigned State::count(segment::State state) const

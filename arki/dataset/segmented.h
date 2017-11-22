@@ -114,6 +114,9 @@ struct SegmentState
         : state(state), begin(begin), until(until) {}
     SegmentState(const SegmentState&) = default;
     SegmentState(SegmentState&&) = default;
+
+    /// Check if this segment is old enough to be deleted or archived
+    void check_age(const std::string& relpath, const Config& cfg, dataset::Reporter& reporter);
 };
 
 
@@ -123,6 +126,8 @@ struct SegmentState
 struct State : public std::map<std::string, SegmentState>
 {
     using std::map<std::string, SegmentState>::map;
+
+    bool has(const std::string& relpath) const;
 
     const SegmentState& get(const std::string& seg) const;
 
