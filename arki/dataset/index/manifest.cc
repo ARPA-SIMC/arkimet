@@ -398,7 +398,6 @@ public:
     std::vector<std::string> file_list(const Matcher& matcher) override
     {
         std::vector<std::string> files;
-
         reread();
 
         string query;
@@ -407,22 +406,29 @@ public:
         if (!matcher.restrict_date_range(begin, end))
             return files;
 
+        std::vector<const Info*> res;
         if (!begin.get() && !end.get())
         {
             // No restrictions on reftime: get all files
-            for (vector<Info>::const_iterator i = info.begin();
-                    i != info.end(); ++i)
-                files.push_back(i->file);
+            for (const auto& i: info)
+                res.push_back(&i);
         } else {
             // Get files with matching reftime
-            for (vector<Info>::const_iterator i = info.begin();
-                    i != info.end(); ++i)
+            for (const auto& i: info)
             {
-                if (begin.get() && i->end_time < *begin) continue;
-                if (end.get() && i->start_time > *end) continue;
-                files.push_back(i->file);
+                if (begin.get() && i.end_time < *begin) continue;
+                if (end.get() && i.start_time > *end) continue;
+                res.push_back(&i);
             }
         }
+
+        // Re-sort to maintain the invariant that results are sorted by
+        // start_time even if we have segments with names outside the normal
+        // dataset step that do not sort properly
+        std::sort(res.begin(), res.end(), [](const Info* a, const Info* b) { return a->start_time < b->start_time; });
+
+        for (const auto* i: res)
+            files.push_back(i->file);
 
         return files;
     }
