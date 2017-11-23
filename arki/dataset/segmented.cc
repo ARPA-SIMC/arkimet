@@ -177,6 +177,11 @@ LocalWriter::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Meta
 }
 
 
+CheckerSegment::~CheckerSegment()
+{
+}
+
+
 Checker::~Checker()
 {
     delete m_segment_manager;

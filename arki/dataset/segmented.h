@@ -138,6 +138,16 @@ struct State : public std::map<std::string, SegmentState>
 };
 
 
+class CheckerSegment
+{
+public:
+    virtual ~CheckerSegment();
+
+    virtual std::string path_relative() const = 0;
+    virtual SegmentState scan(dataset::Reporter& reporter, bool quick=true) = 0;
+};
+
+
 /**
  * LocalChecker with data stored in segment files
  */
@@ -166,6 +176,11 @@ public:
      * either on disk or known by the index.
      */
     State scan(dataset::Reporter& reporter, bool quick=true);
+
+    /**
+     * List all segments known to this dataset
+     */
+    virtual void segments(std::function<void(CheckerSegment& segment)>) = 0;
 
     /**
      * Scan the dataset, computing the state of each unarchived segment that is

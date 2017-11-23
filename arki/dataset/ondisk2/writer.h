@@ -16,6 +16,7 @@ class Summary;
 
 namespace dataset {
 namespace ondisk2 {
+struct CheckerSegment;
 
 namespace writer {
 class RealRepacker;
@@ -74,6 +75,7 @@ public:
 
     std::string type() const override;
 
+    void segments(std::function<void(segmented::CheckerSegment& segment)>) override;
     segmented::SegmentState scan_segment(const std::string& relpath, dataset::Reporter& reporter, bool quick=true) override;
     void scan(dataset::Reporter& reporter, bool quick, std::function<void(const std::string& relpath, const segmented::SegmentState& state)> dest) override;
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
@@ -92,6 +94,7 @@ public:
 
     friend class writer::RealRepacker;
     friend class writer::RealFixer;
+    friend class CheckerSegment;
 };
 
 }

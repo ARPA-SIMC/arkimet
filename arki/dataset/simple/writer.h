@@ -19,6 +19,7 @@ class Manifest;
 
 namespace simple {
 class Reader;
+class CheckerSegment;
 
 class Writer : public IndexedWriter
 {
@@ -69,6 +70,7 @@ public:
 
     std::string type() const override;
 
+    void segments(std::function<void(segmented::CheckerSegment& segment)>) override;
     void scan(dataset::Reporter& reporter, bool quick, std::function<void(const std::string& relpath, const segmented::SegmentState& state)> dest) override;
     segmented::SegmentState scan_segment(const std::string& relpath, dataset::Reporter& reporter, bool quick=true) override;
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
@@ -85,6 +87,8 @@ public:
     void test_remove_index(const std::string& relpath) override;
     void test_rename(const std::string& relpath, const std::string& new_relpath) override;
     void test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx) override;
+
+    friend class CheckerSegment;
 };
 
 }

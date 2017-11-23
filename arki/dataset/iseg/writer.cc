@@ -275,6 +275,91 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
 }
 
 
+class CheckerSegment : public segmented::CheckerSegment
+{
+public:
+    Checker& checker;
+    std::string relpath;
+
+    CheckerSegment(Checker& checker, const std::string& relpath)
+        : checker(checker), relpath(relpath)
+    {
+    }
+
+    std::string path_relative() const override { return relpath; }
+
+    segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
+    {
+        if (!checker.segment_manager().is_segment(checker.config().format, relpath))
+            return segmented::SegmentState(SEGMENT_MISSING);
+
+#if 0
+        /**
+         * Although iseg could detect if the data of a segment is newer than its
+         * index, the timestamp of the index is updated by various kinds of sqlite
+         * operations, making the test rather useless, because it's likely that the
+         * index timestamp would get updated before the mismatch is detected.
+         */
+        string abspath = str::joinpath(config().path, relpath);
+        if (sys::timestamp(abspath) > sys::timestamp(abspath + ".index"))
+        {
+            segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_UNALIGNED)));
+            return;
+        }
+#endif
+
+        WIndex idx(checker.m_config, relpath);
+        metadata::Collection mds;
+        idx.scan(mds.inserter_func(), "reftime, offset");
+        segment::State state = SEGMENT_OK;
+
+        // Compute the span of reftimes inside the segment
+        unique_ptr<core::Time> md_begin;
+        unique_ptr<core::Time> md_until;
+        if (mds.empty())
+        {
+            reporter.segment_info(checker.name(), relpath, "index knows of this segment but contains no data for it");
+            md_begin.reset(new core::Time(0, 0, 0));
+            md_until.reset(new core::Time(0, 0, 0));
+            state = SEGMENT_DELETED;
+        } else {
+            if (!mds.expand_date_range(md_begin, md_until))
+            {
+                reporter.segment_info(checker.name(), relpath, "index data for this segment has no reference time information");
+                state = SEGMENT_CORRUPTED;
+                md_begin.reset(new core::Time(0, 0, 0));
+                md_until.reset(new core::Time(0, 0, 0));
+            } else {
+                // Ensure that the reftime span fits inside the segment step
+                core::Time seg_begin;
+                core::Time seg_until;
+                if (checker.config().step().path_timespan(relpath, seg_begin, seg_until))
+                {
+                    if (*md_begin < seg_begin || *md_until > seg_until)
+                    {
+                        reporter.segment_info(checker.name(), relpath, "segment contents do not fit inside the step of this dataset");
+                        state = SEGMENT_CORRUPTED;
+                    }
+                    // Expand segment timespan to the full possible segment timespan
+                    *md_begin = seg_begin;
+                    *md_until = seg_until;
+                } else {
+                    reporter.segment_info(checker.name(), relpath, "segment name does not fit the step of this dataset");
+                    state = SEGMENT_CORRUPTED;
+                }
+            }
+        }
+
+        if (state.is_ok())
+            state = checker.segment_manager().check(reporter, checker.name(), relpath, mds, quick);
+
+        auto res = segmented::SegmentState(state, *md_begin, *md_until);
+        res.check_age(relpath, checker.config(), reporter);
+        return res;
+    }
+};
+
+
 Checker::Checker(std::shared_ptr<const iseg::Config> config)
     : m_config(config)
 {
@@ -330,72 +415,16 @@ void Checker::removeAll(dataset::Reporter& reporter, bool writable)
 
 segmented::SegmentState Checker::scan_segment(const std::string& relpath, dataset::Reporter& reporter, bool quick)
 {
-    if (!segment_manager().is_segment(config().format, relpath))
-        return segmented::SegmentState(SEGMENT_MISSING);
+    CheckerSegment segment(*this, relpath);
+    return segment.scan(reporter, quick);
+}
 
-#if 0
-    /**
-     * Although iseg could detect if the data of a segment is newer than its
-     * index, the timestamp of the index is updated by various kinds of sqlite
-     * operations, making the test rather useless, because it's likely that the
-     * index timestamp would get updated before the mismatch is detected.
-     */
-    string abspath = str::joinpath(config().path, relpath);
-    if (sys::timestamp(abspath) > sys::timestamp(abspath + ".index"))
-    {
-        segments_state.insert(make_pair(relpath, segmented::SegmentState(SEGMENT_UNALIGNED)));
-        return;
-    }
-#endif
-
-    WIndex idx(m_config, relpath);
-    metadata::Collection mds;
-    idx.scan(mds.inserter_func(), "reftime, offset");
-    segment::State state = SEGMENT_OK;
-
-    // Compute the span of reftimes inside the segment
-    unique_ptr<core::Time> md_begin;
-    unique_ptr<core::Time> md_until;
-    if (mds.empty())
-    {
-        reporter.segment_info(name(), relpath, "index knows of this segment but contains no data for it");
-        md_begin.reset(new core::Time(0, 0, 0));
-        md_until.reset(new core::Time(0, 0, 0));
-        state = SEGMENT_DELETED;
-    } else {
-        if (!mds.expand_date_range(md_begin, md_until))
-        {
-            reporter.segment_info(name(), relpath, "index data for this segment has no reference time information");
-            state = SEGMENT_CORRUPTED;
-            md_begin.reset(new core::Time(0, 0, 0));
-            md_until.reset(new core::Time(0, 0, 0));
-        } else {
-            // Ensure that the reftime span fits inside the segment step
-            core::Time seg_begin;
-            core::Time seg_until;
-            if (config().step().path_timespan(relpath, seg_begin, seg_until))
-            {
-                if (*md_begin < seg_begin || *md_until > seg_until)
-                {
-                    reporter.segment_info(name(), relpath, "segment contents do not fit inside the step of this dataset");
-                    state = SEGMENT_CORRUPTED;
-                }
-                // Expand segment timespan to the full possible segment timespan
-                *md_begin = seg_begin;
-                *md_until = seg_until;
-            } else {
-                reporter.segment_info(name(), relpath, "segment name does not fit the step of this dataset");
-                state = SEGMENT_CORRUPTED;
-            }
-        }
-    }
-
-    if (state.is_ok())
-        state = segment_manager().check(reporter, name(), relpath, mds, quick);
-
-    auto res = segmented::SegmentState(state, *md_begin, *md_until);
-    res.check_age(relpath, config(), reporter);
-    return res;
+void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> dest)
+{
+    list_segments([&](const std::string& relpath) {
+        CheckerSegment segment(*this, relpath);
+        dest(segment);
+    });
 }
 
 void Checker::scan(dataset::Reporter& reporter, bool quick, std::function<void(const std::string& relpath, const segmented::SegmentState& state)> dest)
