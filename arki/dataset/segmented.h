@@ -172,8 +172,6 @@ public:
      */
     State scan(dataset::Reporter& reporter, bool quick=true);
 
-    void scan(dataset::Reporter& reporter, bool quick, std::function<void(const std::string& relpath, const segmented::SegmentState& state)> dest);
-
     /**
      * List all segments known to this dataset
      */
@@ -182,7 +180,12 @@ public:
     /**
      * List all segments present on disk but not known to this dataset
      */
-    virtual void segments_untracked(std::function<void(segmented::CheckerSegment& relpath)>) = 0;
+    virtual void segments_untracked(std::function<void(segmented::CheckerSegment& segment)>) = 0;
+
+    /**
+     * List all segments, both known to this dataset or unknown but found on disk
+     */
+    void segments_all(std::function<void(segmented::CheckerSegment& segment)>);
 
     /// Remove all data from the dataset
     void removeAll(dataset::Reporter& reporter, bool writable) override;

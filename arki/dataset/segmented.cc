@@ -320,30 +320,19 @@ void Checker::removeAll(dataset::Reporter& reporter, bool writable)
     // TODO:    archive().removeAll(reporter, writable);
 }
 
+void Checker::segments_all(std::function<void(segmented::CheckerSegment& segment)> dest)
+{
+    segments([&](CheckerSegment& segment) { dest(segment); });
+    segments_untracked([&](segmented::CheckerSegment& segment) { dest(segment); });
+}
+
 segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
 {
     segmented::State segments_state;
-
-    segments([&](CheckerSegment& segment) {
+    segments_all([&](CheckerSegment& segment) {
         segments_state.insert(make_pair(segment.path_relative(), segment.scan(reporter, quick)));
     });
-
-    segments_untracked([&](segmented::CheckerSegment& segment) {
-        segments_state.insert(make_pair(segment.path_relative(), segment.scan(reporter, quick)));
-    });
-
     return segments_state;
-}
-
-void Checker::scan(dataset::Reporter& reporter, bool quick, std::function<void(const std::string& relpath, const segmented::SegmentState& state)> dest)
-{
-    segments([&](CheckerSegment& segment) {
-        dest(segment.path_relative(), segment.scan(reporter, quick));
-    });
-
-    segments_untracked([&](segmented::CheckerSegment& segment) {
-        dest(segment.path_relative(), segment.scan(reporter, quick));
-    });
 }
 
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
@@ -365,8 +354,8 @@ void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_f
         repacker.reset(new maintenance::MockRepacker(reporter, *this, test_flags));
 
     try {
-        scan(reporter, true, [&](const std::string& relpath, const SegmentState& state) {
-            (*repacker)(relpath, state.state);
+        segments_all([&](CheckerSegment& segment) {
+            (*repacker)(segment.path_relative(), segment.scan(reporter, true).state);
         });
         repacker->end();
     } catch (...) {
@@ -389,8 +378,8 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
     {
         maintenance::RealFixer fixer(reporter, *this);
         try {
-            scan(reporter, quick, [&](const std::string& relpath, const SegmentState& state) {
-                fixer(relpath, state.state);
+            segments_all([&](CheckerSegment& segment) {
+                fixer(segment.path_relative(), segment.scan(reporter, quick).state);
             });
             fixer.end();
         } catch (...) {
@@ -404,8 +393,8 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
         files::removeDontpackFlagfile(root);
     } else {
         maintenance::MockFixer fixer(reporter, *this);
-        scan(reporter, quick, [&](const std::string& relpath, const SegmentState& state) {
-            fixer(relpath, state.state);
+        segments_all([&](CheckerSegment& segment) {
+            fixer(segment.path_relative(), segment.scan(reporter, quick).state);
         });
         fixer.end();
     }
