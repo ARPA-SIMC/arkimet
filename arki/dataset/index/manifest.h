@@ -57,6 +57,7 @@ public:
 
     void rescanSegment(const std::string& dir, const std::string& relpath);
 
+    /// Check if the given directory contains a manifest file
     static bool exists(const std::string& dir);
     static std::unique_ptr<Manifest> create(const std::string& dir, const std::string& index_type=std::string());
 

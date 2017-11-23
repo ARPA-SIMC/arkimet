@@ -503,6 +503,15 @@ public:
             dest(i.file);
     }
 
+    bool has_segment(const std::string& relpath) const override
+    {
+        // Lookup the file (FIXME: reimplement binary search so we
+        // don't need to create a temporary Info)
+        Info sample(relpath, 0, Time(0, 0, 0), Time(0, 0, 0));
+        vector<Info>::const_iterator lb = lower_bound(info.begin(), info.end(), sample);
+        return lb != info.end() && lb->file == relpath;
+    }
+
     time_t segment_mtime(const std::string& relpath) const override
     {
         // Lookup the file (FIXME: reimplement binary search so we
@@ -788,6 +797,17 @@ public:
 
         while (q.step())
             dest(q.fetchString(0));
+    }
+
+    bool has_segment(const std::string& relpath) const override
+    {
+        Query q("sel_has_segment", m_db);
+        q.compile("SELECT 1 FROM files WHERE file=?");
+        q.bind(1, relpath);
+        bool res = false;
+        while (q.step())
+            res = true;
+        return res;
     }
 
     time_t segment_mtime(const std::string& relpath) const override

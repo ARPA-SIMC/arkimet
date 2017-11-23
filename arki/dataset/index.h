@@ -43,6 +43,9 @@ struct Index
      */
     virtual void list_segments(std::function<void(const std::string&)> dest) = 0;
 
+    /// Check if a segment is known to the index
+    virtual bool has_segment(const std::string& relpath) const = 0;
+
     /**
      * Get the metadata for a segment.
      */

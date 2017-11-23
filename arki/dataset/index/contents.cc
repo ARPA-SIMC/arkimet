@@ -261,6 +261,17 @@ void Contents::list_segments(std::function<void(const std::string&)> dest)
         dest(sq.fetchString(0));
 }
 
+bool Contents::has_segment(const std::string& relpath) const
+{
+    Query q("sel_has_segment", m_db);
+    q.compile("SELECT 1 FROM md WHERE file=? LIMIT 1");
+    q.bind(1, relpath);
+    bool res = false;
+    while (q.step())
+        res = true;
+    return res;
+}
+
 void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& order_by) const
 {
     string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";

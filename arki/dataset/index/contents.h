@@ -139,6 +139,9 @@ public:
 
     void list_segments(std::function<void(const std::string&)> dest) override;
 
+    /// Check if a segment is known to the index
+    bool has_segment(const std::string& relpath) const override;
+
     /**
      * Send the metadata of all data items inside a file to the given consumer
      */
