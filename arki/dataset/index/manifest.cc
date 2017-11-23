@@ -46,8 +46,7 @@ Manifest::~Manifest() {}
 
 void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
 {
-    vector<string> files;
-    fileList(matcher, files);
+    vector<string> files = file_list(matcher);
 
     for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
@@ -65,8 +64,7 @@ void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
 
 bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    vector<string> files;
-    fileList(q.matcher, files);
+    vector<string> files = file_list(q.matcher);
 
     // TODO: does it make sense to check with the summary first?
 
@@ -397,15 +395,17 @@ public:
         rw = true;
     }
 
-    void fileList(const Matcher& matcher, std::vector<std::string>& files)
+    std::vector<std::string> file_list(const Matcher& matcher) override
     {
+        std::vector<std::string> files;
+
         reread();
 
         string query;
         unique_ptr<Time> begin;
         unique_ptr<Time> end;
         if (!matcher.restrict_date_range(begin, end))
-            return;
+            return files;
 
         if (!begin.get() && !end.get())
         {
@@ -423,6 +423,8 @@ public:
                 files.push_back(i->file);
             }
         }
+
+        return files;
     }
 
     bool segment_timespan(const std::string& relname, Time& start_time, Time& end_time) const override
@@ -559,6 +561,7 @@ public:
                 i.file = new_relpath;
                 dirty = true;
             }
+        std::sort(info.begin(), info.end());
     }
 
     static bool exists(const std::string& dir)
@@ -660,13 +663,14 @@ public:
         initQueries();
     }
 
-    void fileList(const Matcher& matcher, std::vector<std::string>& files) override
+    std::vector<std::string> file_list(const Matcher& matcher) override
     {
+        std::vector<std::string> files;
         string query;
         unique_ptr<Time> begin;
         unique_ptr<Time> end;
         if (!matcher.restrict_date_range(begin, end))
-            return;
+            return files;
 
         if (!begin.get() && !end.get())
         {
@@ -694,6 +698,7 @@ public:
         q.compile(query);
         while (q.step())
             files.push_back(q.fetchString(0));
+        return files;
     }
 
     bool segment_timespan(const std::string& relname, Time& start_time, Time& end_time) const override

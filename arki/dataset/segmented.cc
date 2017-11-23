@@ -324,11 +324,26 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
 {
     segmented::State segments_state;
 
-    scan(reporter, quick, [&](const std::string& relpath, const SegmentState& state) {
-        segments_state.insert(make_pair(relpath, state));
+    segments([&](CheckerSegment& segment) {
+        segments_state.insert(make_pair(segment.path_relative(), segment.scan(reporter, quick)));
+    });
+
+    segments_untracked([&](segmented::CheckerSegment& segment) {
+        segments_state.insert(make_pair(segment.path_relative(), segment.scan(reporter, quick)));
     });
 
     return segments_state;
+}
+
+void Checker::scan(dataset::Reporter& reporter, bool quick, std::function<void(const std::string& relpath, const segmented::SegmentState& state)> dest)
+{
+    segments([&](CheckerSegment& segment) {
+        dest(segment.path_relative(), segment.scan(reporter, quick));
+    });
+
+    segments_untracked([&](segmented::CheckerSegment& segment) {
+        dest(segment.path_relative(), segment.scan(reporter, quick));
+    });
 }
 
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)

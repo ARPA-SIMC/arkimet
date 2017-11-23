@@ -26,7 +26,9 @@ public:
 
 	virtual void openRO() = 0;
 	virtual void openRW() = 0;
-	virtual void fileList(const Matcher& matcher, std::vector<std::string>& files) = 0;
+
+    /// Return the list of segments, sorted by the start reftime of their contents
+    virtual std::vector<std::string> file_list(const Matcher& matcher) = 0;
     bool segment_timespan(const std::string& relname, core::Time& start_time, core::Time& end_time) const override = 0;
     virtual size_t vacuum() = 0;
     virtual void acquire(const std::string& relname, time_t mtime, const Summary& sum) = 0;

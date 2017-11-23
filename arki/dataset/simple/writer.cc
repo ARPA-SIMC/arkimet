@@ -184,6 +184,14 @@ public:
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
+        if (!checker.m_idx->has_segment(relpath))
+        {
+            //bool untrusted_index = files::hasDontpackFlagfile(checker.config().path);
+            reporter.segment_info(checker.name(), relpath, "segment found on disk with no associated index data");
+            //return segmented::SegmentState(untrusted_index ? SEGMENT_UNALIGNED : SEGMENT_DELETED);
+            return segmented::SegmentState(SEGMENT_UNALIGNED);
+        }
+
         string abspath = str::joinpath(checker.config().path, relpath);
 
         // TODO: replace with a method of Segment
@@ -348,37 +356,27 @@ void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_f
 }
 void Checker::check(dataset::Reporter& reporter, bool fix, bool quick) { acquire_lock(); IndexedChecker::check(reporter, fix, quick); release_lock(); }
 
-segmented::SegmentState Checker::scan_segment(const std::string& relpath, dataset::Reporter& reporter, bool quick)
-{
-    CheckerSegment segment(*this, relpath);
-    return segment.scan(reporter, quick);
-}
-
 void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    m_idx->list_segments([&](const std::string& relpath) {
+    std::vector<std::string> names;
+    m_idx->list_segments([&](const std::string& relpath) { names.push_back(relpath); });
+
+    for (const auto& relpath: names)
+    {
+        CheckerSegment segment(*this, relpath);
+        dest(segment);
+    }
+}
+
+void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& relpath)> dest)
+{
+    // Add information from the state of files on disk
+    segment_manager().scan_dir([&](const std::string& relpath) {
+        if (m_idx->has_segment(relpath)) return;
         CheckerSegment segment(*this, relpath);
         dest(segment);
     });
 }
-
-void Checker::scan(dataset::Reporter& reporter, bool quick, std::function<void(const std::string& relpath, const segmented::SegmentState& state)> dest)
-{
-    // Populate segments_state with the contents of the index
-    std::set<std::string> seen;
-    m_idx->list_segments([&](const std::string& relpath) { seen.insert(relpath); });
-
-    for (const auto& relpath : seen)
-        dest(relpath, scan_segment(relpath, reporter, quick));
-
-    // Add information from the state of files on disk
-    segment_manager().scan_dir([&](const std::string& relpath) {
-        if (seen.find(relpath) != seen.end()) return;
-        reporter.segment_info(name(), relpath, "segment found on disk with no associated index data");
-        dest(relpath, segmented::SegmentState(SEGMENT_UNALIGNED));
-    });
-}
-
 
 void Checker::indexSegment(const std::string& relname, metadata::Collection&& mds)
 {

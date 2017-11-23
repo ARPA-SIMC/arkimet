@@ -167,15 +167,12 @@ public:
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
 
     /**
-     * Scan a segment and compute its state
-     */
-    virtual segmented::SegmentState scan_segment(const std::string& relpath, dataset::Reporter& reporter, bool quick=true) = 0;
-
-    /**
      * Scan the dataset, computing the state of each unarchived segment that is
      * either on disk or known by the index.
      */
     State scan(dataset::Reporter& reporter, bool quick=true);
+
+    void scan(dataset::Reporter& reporter, bool quick, std::function<void(const std::string& relpath, const segmented::SegmentState& state)> dest);
 
     /**
      * List all segments known to this dataset
@@ -183,10 +180,9 @@ public:
     virtual void segments(std::function<void(CheckerSegment& segment)>) = 0;
 
     /**
-     * Scan the dataset, computing the state of each unarchived segment that is
-     * either on disk or known by the index.
+     * List all segments present on disk but not known to this dataset
      */
-    virtual void scan(dataset::Reporter& reporter, bool quick, std::function<void(const std::string& relpath, const SegmentState& state)> dest) = 0;
+    virtual void segments_untracked(std::function<void(segmented::CheckerSegment& relpath)>) = 0;
 
     /// Remove all data from the dataset
     void removeAll(dataset::Reporter& reporter, bool writable) override;

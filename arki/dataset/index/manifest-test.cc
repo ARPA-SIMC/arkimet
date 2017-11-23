@@ -110,9 +110,8 @@ add_method("empty", [] {
 	std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
 	m->openRO();
 
-	vector<string> files;
-	m->fileList(Matcher(), files);
-	ensure(files.empty());
+    vector<string> files = m->file_list(Matcher());
+    ensure(files.empty());
 });
 
 // Test creating a new manifest
@@ -150,17 +149,15 @@ add_method("add_remove", [] {
 	m->acquire("a.grib1", 1000010, s);
 	m->acquire("foo/b.grib1", 1000011, s);
 
-	vector<string> files;
-	m->fileList(Matcher(), files);
-	ensure_equals(files.size(), 2u);
-	ensure_equals(files[0], "a.grib1");
-	ensure_equals(files[1], "foo/b.grib1");
+    vector<string> files = m->file_list(Matcher());
+    ensure_equals(files.size(), 2u);
+    ensure_equals(files[0], "a.grib1");
+    ensure_equals(files[1], "foo/b.grib1");
 
-	m->remove("a.grib1");
-	files.clear();
-	m->fileList(Matcher(), files);
-	ensure_equals(files.size(), 1u);
-	ensure_equals(files[0], "foo/b.grib1");
+    m->remove("a.grib1");
+    files = m->file_list(Matcher());
+    ensure_equals(files.size(), 1u);
+    ensure_equals(files[0], "foo/b.grib1");
 });
 
 // TODO: Retest with sqlite

@@ -516,6 +516,10 @@ void MaintenanceTest::register_tests()
             wassert(actual(state.size()) == 3u);
             wassert(actual(state.get(f.test_relpath_wrongstep).state) == SEGMENT_CORRUPTED);
 
+            // We are breaking the invariant that segments sorted by file name
+            // are in the same sequence of segments sorted by time of file
+            // contents, but the invariant that data queried is sorted by
+            // reftime must still stand
             wassert(f.query_results({1, 3, 0, 2}));
         });
 
