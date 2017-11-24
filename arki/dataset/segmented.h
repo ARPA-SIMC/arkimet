@@ -141,6 +141,8 @@ struct State : public std::map<std::string, SegmentState>
 class CheckerSegment
 {
 public:
+    std::shared_ptr<segment::Checker> segment;
+
     virtual ~CheckerSegment();
 
     virtual std::string path_relative() const = 0;

@@ -279,11 +279,11 @@ class CheckerSegment : public segmented::CheckerSegment
 {
 public:
     Checker& checker;
-    std::shared_ptr<segment::Checker> segment;
 
     CheckerSegment(Checker& checker, const std::string& relpath)
-        : checker(checker), segment(checker.segment_manager().get_checker(checker.config().format, relpath))
+        : checker(checker)
     {
+        segment = checker.segment_manager().get_checker(checker.config().format, relpath);
     }
 
     std::string path_relative() const override { return segment->relname; }
