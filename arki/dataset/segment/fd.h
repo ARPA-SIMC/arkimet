@@ -6,6 +6,7 @@
 #include <arki/libconfig.h>
 #include <arki/dataset/segment.h>
 #include <arki/file.h>
+#include <arki/utils/lock.h>
 #include <string>
 
 namespace arki {
@@ -31,6 +32,7 @@ struct File : public arki::File
 struct Writer : public dataset::segment::Writer
 {
     File* fd = nullptr;
+    utils::Lock lock;
 
     Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd);
     ~Writer();

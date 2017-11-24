@@ -89,10 +89,21 @@ struct Append : public Transaction
 Writer::Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd)
     : segment::Writer(root, relname, fd->name()), fd(fd.release())
 {
+    // Lock everything after the end of the file, for writing, to disallow
+    // concurrent appends
+    lock.l_type = F_WRLCK;
+    lock.l_whence = SEEK_END;
+    lock.l_start = 1;
+    lock.l_len = 0;
+    lock.ofd_setlkw(*(this->fd));
 }
 
 Writer::~Writer()
 {
+    // TODO: consider a non-throwing setlk implementation to avoid throwing
+    // in destructors
+    lock.l_type = F_UNLCK;
+    lock.ofd_setlk(*fd);
     delete fd;
 }
 
