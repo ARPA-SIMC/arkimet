@@ -115,80 +115,6 @@ off_t Writer::append(const std::vector<uint8_t>& buf)
     return pos;
 }
 
-void Writer::truncate(size_t offset)
-{
-    if (!sys::exists(absname))
-        utils::createFlagfile(absname);
-
-    utils::files::PreserveFileTimes pft(absname);
-    if (::truncate(absname.c_str(), offset) < 0)
-    {
-        stringstream ss;
-        ss << "cannot truncate " << absname << " at " << offset;
-        throw std::system_error(errno, std::system_category(), ss.str());
-    }
-}
-
-void Writer::test_add_padding(unsigned size)
-{
-    fd->test_add_padding(size);
-}
-
-void Writer::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
-{
-    arki::File fd(absname, O_RDWR);
-    sys::PreserveFileTimes pt(fd);
-    off_t start_ofs = mds[data_idx].sourceBlob().offset;
-    off_t end = fd.lseek(0, SEEK_END);
-    std::vector<uint8_t> buf(end - start_ofs);
-    fd.lseek(start_ofs);
-    fd.read_all_or_throw(buf.data(), buf.size());
-    fd.lseek(start_ofs - overlap_size);
-    fd.write_all_or_throw(buf.data(), buf.size());
-    fd.ftruncate(end - overlap_size);
-
-    for (unsigned i = data_idx; i < mds.size(); ++i)
-    {
-        unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
-        source->offset -= overlap_size;
-        mds[i].set_source(move(source));
-    }
-}
-
-void Writer::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
-{
-    arki::File fd(absname, O_RDWR);
-    sys::PreserveFileTimes pt(fd);
-    off_t end = fd.lseek(0, SEEK_END);
-    if (data_idx >= mds.size())
-    {
-        fd.ftruncate(end + hole_size);
-    } else {
-        off_t start_ofs = mds[data_idx].sourceBlob().offset;
-        std::vector<uint8_t> buf(end - start_ofs);
-        fd.lseek(start_ofs);
-        fd.read_all_or_throw(buf.data(), buf.size());
-        fd.lseek(start_ofs + hole_size);
-        fd.write_all_or_throw(buf.data(), buf.size());
-
-        for (unsigned i = data_idx; i < mds.size(); ++i)
-        {
-            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
-            source->offset += hole_size;
-            mds[i].set_source(move(source));
-        }
-    }
-}
-
-void Writer::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
-{
-    const auto& s = mds[data_idx].sourceBlob();
-    arki::File fd(absname, O_RDWR);
-    sys::PreserveFileTimes pt(fd);
-    fd.lseek(s.offset);
-    fd.write_all_or_throw("\0", 1);
-}
-
 
 State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap, bool quick)
 {
@@ -384,7 +310,7 @@ Pending Checker::repack_impl(
     auto writer(make_tmp_segment(tmprelname, tmpabsname));
 
     if (test_flags & TEST_MISCHIEF_MOVE_DATA)
-        writer->test_add_padding(1);
+        writer->fd->test_add_padding(1);
 
     // Fill the temp file with all the data in the right order
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
@@ -404,6 +330,75 @@ Pending Checker::repack_impl(
     }
 
     return p;
+}
+
+void Checker::test_truncate(size_t offset)
+{
+    if (!sys::exists(absname))
+        utils::createFlagfile(absname);
+
+    utils::files::PreserveFileTimes pft(absname);
+    if (::truncate(absname.c_str(), offset) < 0)
+    {
+        stringstream ss;
+        ss << "cannot truncate " << absname << " at " << offset;
+        throw std::system_error(errno, std::system_category(), ss.str());
+    }
+}
+
+void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
+{
+    arki::File fd(absname, O_RDWR);
+    sys::PreserveFileTimes pt(fd);
+    off_t end = fd.lseek(0, SEEK_END);
+    if (data_idx >= mds.size())
+    {
+        fd.ftruncate(end + hole_size);
+    } else {
+        off_t start_ofs = mds[data_idx].sourceBlob().offset;
+        std::vector<uint8_t> buf(end - start_ofs);
+        fd.lseek(start_ofs);
+        fd.read_all_or_throw(buf.data(), buf.size());
+        fd.lseek(start_ofs + hole_size);
+        fd.write_all_or_throw(buf.data(), buf.size());
+
+        for (unsigned i = data_idx; i < mds.size(); ++i)
+        {
+            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+            source->offset += hole_size;
+            mds[i].set_source(move(source));
+        }
+    }
+}
+
+void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
+{
+    arki::File fd(absname, O_RDWR);
+    sys::PreserveFileTimes pt(fd);
+    off_t start_ofs = mds[data_idx].sourceBlob().offset;
+    off_t end = fd.lseek(0, SEEK_END);
+    std::vector<uint8_t> buf(end - start_ofs);
+    fd.lseek(start_ofs);
+    fd.read_all_or_throw(buf.data(), buf.size());
+    fd.lseek(start_ofs - overlap_size);
+    fd.write_all_or_throw(buf.data(), buf.size());
+    fd.ftruncate(end - overlap_size);
+
+    for (unsigned i = data_idx; i < mds.size(); ++i)
+    {
+        unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+        source->offset -= overlap_size;
+        mds[i].set_source(move(source));
+    }
+}
+
+void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+{
+    const auto& s = mds[data_idx].sourceBlob();
+    arki::File fd(absname, O_RDWR);
+    sys::PreserveFileTimes pt(fd);
+    fd.lseek(s.offset);
+    fd.write_all_or_throw("\0", 1);
 }
 
 

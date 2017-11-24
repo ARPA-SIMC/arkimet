@@ -162,7 +162,7 @@ void IndexedChecker::test_make_overlap(const std::string& relpath, unsigned over
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    segment_manager().get_writer(relpath)->test_make_overlap(mds, overlap_size, data_idx);
+    segment_manager().get_checker(relpath)->test_make_overlap(mds, overlap_size, data_idx);
     m_idx->test_make_overlap(relpath, overlap_size, data_idx);
 }
 
@@ -170,7 +170,7 @@ void IndexedChecker::test_make_hole(const std::string& relpath, unsigned hole_si
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    segment_manager().get_writer(relpath)->test_make_hole(mds, hole_size, data_idx);
+    segment_manager().get_checker(relpath)->test_make_hole(mds, hole_size, data_idx);
     m_idx->test_make_hole(relpath, hole_size, data_idx);
 }
 
@@ -178,14 +178,14 @@ void IndexedChecker::test_corrupt_data(const std::string& relpath, unsigned data
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    segment_manager().get_writer(relpath)->test_corrupt(mds, data_idx);
+    segment_manager().get_checker(relpath)->test_corrupt(mds, data_idx);
 }
 
 void IndexedChecker::test_truncate_data(const std::string& relpath, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    segment_manager().get_writer(relpath)->test_truncate(mds, data_idx);
+    segment_manager().get_checker(relpath)->test_truncate(mds, data_idx);
 }
 
 void IndexedChecker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)

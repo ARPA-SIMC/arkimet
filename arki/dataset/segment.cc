@@ -32,10 +32,10 @@ Segment::~Segment()
 
 namespace segment {
 
-void Writer::test_truncate(const metadata::Collection& mds, unsigned data_idx)
+void Checker::test_truncate(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
-    truncate(s.offset);
+    test_truncate(s.offset);
 }
 
 
@@ -199,12 +199,12 @@ struct BaseManager : public segment::Manager
         return maint->remove();
     }
 
-    void truncate(const std::string& relname, size_t offset)
+    void test_truncate(const std::string& relname, size_t offset)
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
-        auto maint(create_writer_for_format(format, relname, absname));
-        return maint->truncate(offset);
+        auto maint(create_checker_for_format(format, relname, absname));
+        return maint->test_truncate(offset);
     }
 
     bool _is_segment(const std::string& format, const std::string& relname) override

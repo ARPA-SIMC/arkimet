@@ -223,6 +223,30 @@ public:
 
 namespace segment {
 
+#if 0
+/**
+ * Lock on a segment.
+ *
+ * Can be:
+ *  - a read lock (lock the whole segment for reading)
+ *  - a write lock (allows read, disallows concurrent append)
+ *  - a repack lock (allows read, disallows append)
+ */
+struct Lock
+{
+    Lock(const Lock&) = delete;
+    Lock& operator=(const Lock&) = delete;
+    Lock(Lock&&) = delete;
+    Lock& operator=(Lock&&) = delete;
+    virtual ~Lock();
+
+    virtual void lock_write() = 0;
+    virtual void lock_repack() = 0;
+    virtual void unlock() = 0;
+};
+#endif
+
+
 struct Writer : public Segment
 {
     using Segment::Segment;
@@ -238,47 +262,6 @@ struct Writer : public Segment
      * commit
      */
     virtual Pending append(Metadata& md, const types::source::Blob** new_source=0) = 0;
-
-    /**
-     * Truncate the segment at the given offset
-     */
-    virtual void truncate(size_t offset) = 0;
-
-    /**
-     * Add padding data inside the segment.
-     *
-     * This is only used in unit tests.
-     */
-    virtual void test_add_padding(unsigned size) = 0;
-
-    /**
-     * Move all the data in the segment starting from the one in position
-     * `data_idx` backwards by `overlap_size.
-     *
-     * `mds` represents the state of the segment before the move, and is
-     * updated to reflect the new state of the segment.
-     */
-    virtual void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) = 0;
-
-    /**
-     * Move all the data in the segment starting from the one in position
-     * `data_idx` forwards by `hole_size`.
-     *
-     * `mds` represents the state of the segment before the move, and is
-     * updated to reflect the new state of the segment.
-     */
-    virtual void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) = 0;
-
-    /**
-     * Corrupt the data at position `data_idx`, by replacing its first byte
-     * with the value 0.
-     */
-    virtual void test_corrupt(const metadata::Collection& mds, unsigned data_idx) = 0;
-
-    /**
-     * Truncate the data at position `data_idx`
-     */
-    virtual void test_truncate(const metadata::Collection& mds, unsigned data_idx);
 };
 
 
@@ -299,6 +282,40 @@ public:
      * `rootdir` is the directory to use as root for the Blob sources in `mds`.
      */
     virtual Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) = 0;
+
+    /**
+     * Truncate the segment at the given offset
+     */
+    virtual void test_truncate(size_t offset) = 0;
+
+    /**
+     * Truncate the data at position `data_idx`
+     */
+    virtual void test_truncate(const metadata::Collection& mds, unsigned data_idx);
+
+    /**
+     * Move all the data in the segment starting from the one in position
+     * `data_idx` forwards by `hole_size`.
+     *
+     * `mds` represents the state of the segment before the move, and is
+     * updated to reflect the new state of the segment.
+     */
+    virtual void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) = 0;
+
+    /**
+     * Move all the data in the segment starting from the one in position
+     * `data_idx` backwards by `overlap_size.
+     *
+     * `mds` represents the state of the segment before the move, and is
+     * updated to reflect the new state of the segment.
+     */
+    virtual void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) = 0;
+
+    /**
+     * Corrupt the data at position `data_idx`, by replacing its first byte
+     * with the value 0.
+     */
+    virtual void test_corrupt(const metadata::Collection& mds, unsigned data_idx) = 0;
 };
 
 
@@ -366,7 +383,7 @@ public:
      *
      * This function is useful for implementing unit tests.
      */
-    virtual void truncate(const std::string& relname, size_t offset) = 0;
+    virtual void test_truncate(const std::string& relname, size_t offset) = 0;
 
     /**
      * Given the relative path of a segment, return true if it exists on disk
