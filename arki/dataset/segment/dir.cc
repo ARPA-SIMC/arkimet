@@ -168,6 +168,12 @@ Checker::Checker(const std::string& format, const std::string& root, const std::
 {
 }
 
+bool Checker::exists_on_disk()
+{
+    if (!sys::isdir(absname)) return false;
+    return sys::exists(str::joinpath(absname, ".sequence"));
+}
+
 State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
 {
     size_t next_sequence_expected(0);

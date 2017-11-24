@@ -79,6 +79,8 @@ protected:
 public:
     using dataset::segment::Checker::Checker;
 
+    bool exists_on_disk() override;
+
     size_t remove() override;
 
     State check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);

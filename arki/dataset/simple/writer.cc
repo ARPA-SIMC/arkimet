@@ -15,7 +15,6 @@
 #include "arki/postprocess.h"
 #include "arki/sort.h"
 #include "arki/nag.h"
-#include "arki/utils.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include <ctime>
@@ -185,7 +184,7 @@ public:
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
-        if (!checker.segment_manager().is_segment(utils::get_format(segment->relname), segment->relname))
+        if (!segment->exists_on_disk())
             return segmented::SegmentState(SEGMENT_MISSING);
 
         if (!checker.m_idx->has_segment(segment->relname))

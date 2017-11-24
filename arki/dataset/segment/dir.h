@@ -60,6 +60,8 @@ public:
 public:
     Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname);
 
+    bool exists_on_disk() override;
+
     State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;

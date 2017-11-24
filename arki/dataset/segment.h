@@ -277,6 +277,11 @@ public:
     virtual size_t remove() = 0;
 
     /**
+     * Check if the segment exists on disk
+     */
+    virtual bool exists_on_disk() = 0;
+
+    /**
      * Rewrite this segment so that the data are in the same order as in `mds`.
      *
      * `rootdir` is the directory to use as root for the Blob sources in `mds`.
@@ -329,7 +334,6 @@ protected:
 
     virtual std::shared_ptr<Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
     virtual std::shared_ptr<Checker> create_checker_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
-    virtual bool _is_segment(const std::string& format, const std::string& relname) = 0;
 
 public:
     Manager(const std::string& root);
@@ -351,12 +355,6 @@ public:
 
     std::shared_ptr<Checker> get_checker(const std::string& relname);
     std::shared_ptr<Checker> get_checker(const std::string& format, const std::string& relname);
-
-    /// Check if the given relname points to a segment
-    bool is_segment(const std::string& relname);
-
-    /// Check if the given relname points to a segment
-    bool is_segment(const std::string& format, const std::string& relname);
 
     /**
      * Repack the file relname, so that it contains only the data in mds, in

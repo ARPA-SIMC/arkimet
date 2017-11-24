@@ -127,6 +127,18 @@ off_t Writer::append(const std::vector<uint8_t>& buf)
 }
 
 
+bool Checker::exists_on_disk()
+{
+    if (sys::isdir(absname)) return false;
+
+    // If it's not a directory, it must exist in the file system,
+    // compressed or not
+    if (!sys::exists(absname) && !sys::exists(absname + ".gz"))
+        return false;
+
+    return true;
+}
+
 State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap, bool quick)
 {
     // Check the data if requested

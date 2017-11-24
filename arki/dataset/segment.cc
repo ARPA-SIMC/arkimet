@@ -215,35 +215,6 @@ struct BaseManager : public segment::Manager
         auto maint(create_checker_for_format(format, relname, absname));
         return maint->test_truncate(offset);
     }
-
-    bool _is_segment(const std::string& format, const std::string& relname) override
-    {
-        string absname = str::joinpath(root, relname);
-
-        if (sys::isdir(absname))
-            // If it's a directory, it must be a dir segment
-            return sys::exists(str::joinpath(absname, ".sequence"));
-
-        // If it's not a directory, it must exist in the file system,
-        // compressed or not
-        if (!sys::exists(absname) && !sys::exists(absname + ".gz"))
-            return false;
-
-        if (format == "grib" || format == "grib1" || format == "grib2")
-        {
-            return true;
-        } else if (format == "bufr") {
-            return true;
-        } else if (format == "odimh5" || format == "h5" || format == "odim") {
-            // HDF5 files cannot be appended, and they cannot be a segment of
-            // their own
-            return false;
-        } else if (format == "vm2") {
-            return true;
-        } else {
-            return false;
-        }
-    }
 };
 
 /// Segment manager that picks the right readers/writers based on file types
@@ -406,8 +377,6 @@ struct ForceDirManager : public BaseManager
 
     std::shared_ptr<Checker> create_checker_for_format(const std::string& format, const std::string& relname, const std::string& absname) override
     {
-        auto res(create_checker_for_existing_segment(format, relname, absname));
-        if (res) return res;
         return std::shared_ptr<segment::Checker>(new dir::Checker(format, root, relname, absname));
     }
 
@@ -459,17 +428,6 @@ struct ForceDirManager : public BaseManager
         };
 
         walker.walk();
-    }
-
-    bool _is_segment(const std::string& format, const std::string& relname) override
-    {
-        string absname = str::joinpath(root, relname);
-
-        if (sys::isdir(absname))
-            // If it's a directory, it must be a dir segment
-            return sys::exists(str::joinpath(absname, ".sequence"));
-
-        return false;
     }
 };
 
@@ -553,16 +511,6 @@ std::shared_ptr<Checker> Manager::get_checker(const std::string& format, const s
     string absname = str::joinpath(root, relname);
     auto new_checker(create_checker_for_format(format, relname, absname));
     return checkers.add(new_checker);
-}
-
-bool Manager::is_segment(const std::string& relname)
-{
-    return _is_segment(utils::get_format(relname), relname);
-}
-
-bool Manager::is_segment(const std::string& format, const std::string& relname)
-{
-    return _is_segment(format, relname);
 }
 
 std::unique_ptr<Manager> Manager::get(const std::string& root, bool force_dir, bool mock_data)

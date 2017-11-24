@@ -290,7 +290,7 @@ public:
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
-        if (!checker.segment_manager().is_segment(checker.config().format, segment->relname))
+        if (!segment->exists_on_disk())
             return segmented::SegmentState(SEGMENT_MISSING);
 
         if (!sys::stat(str::joinpath(checker.config().path, segment->relname + ".index")))
