@@ -31,12 +31,36 @@ namespace segment {
 namespace dir {
 
 Writer::Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname)
-    : segment::Writer(root, relname, absname), seqfile(absname), format(format)
+    : segment::Writer(root, relname, absname), seqfile(absname), write_lock_file(str::joinpath(absname, ".write-lock")), format(format)
 {
     // Ensure that the directory 'absname' exists
     sys::makedirs(absname);
 
     seqfile.open();
+
+    // Lock out other writes
+    // In theory, there is no need of locking dir segments for write, as
+    // incrementing the sequence file is concurrency-safe; however, iseg uses a
+    // sqlite database per segment, which does not support concurrent writes,
+    // so we do locking at the segment level to compensate.
+    // TODO: consider making the locking optional so that it can be done only
+    // by the iseg dataset, to prevent useless locking on simple or ondisk2
+    // datasets. However, this extra locking does no harm, so there can be
+    // redundant locking for the time being.
+    write_lock_file.open(O_WRONLY | O_CREAT, 0666);
+    lock.l_type = F_WRLCK;
+    lock.l_whence = SEEK_SET;
+    lock.l_start = 0;
+    lock.l_len = 0;
+    lock.ofd_setlkw(write_lock_file);
+}
+
+Writer::~Writer()
+{
+    // TODO: consider a non-throwing setlk implementation to avoid throwing
+    // in destructors
+    lock.l_type = F_UNLCK;
+    lock.ofd_setlk(write_lock_file);
 }
 
 size_t Writer::write_file(Metadata& md, File& fd)
@@ -341,6 +365,7 @@ size_t Checker::remove()
         sys::unlink(pathname);
     });
     sys::unlink_ifexists(str::joinpath(absname, ".sequence"));
+    sys::unlink_ifexists(str::joinpath(absname, ".write-lock"));
     sys::unlink_ifexists(str::joinpath(absname, ".repack-lock"));
     // Also remove the directory if it is empty
     rmdir(absname.c_str());

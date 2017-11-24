@@ -7,6 +7,7 @@
 #include <arki/dataset/segment.h>
 #include <arki/dataset/segment/seqfile.h>
 #include <arki/file.h>
+#include <arki/utils/lock.h>
 
 namespace arki {
 class Metadata;
@@ -19,9 +20,12 @@ namespace dir {
 struct Writer : public dataset::segment::Writer
 {
     SequenceFile seqfile;
+    File write_lock_file;
+    utils::Lock lock;
     std::string format;
 
     Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname);
+    ~Writer();
 
     Pending append(Metadata& md, const types::source::Blob** new_source=0) override;
 

@@ -85,19 +85,33 @@ struct ConcurrentImporter : public wibble::sys::ChildProcess
     {
     }
 
-    virtual int main() override
+    int main() override
     {
-        auto ds(fixture.config().create_writer());
+        arki::utils::Lock::test_set_nowait_default(false);
+        try {
+            auto ds(fixture.config().create_writer());
 
-        Metadata md = fixture.td.test_data[0].md;
+            Metadata md = fixture.td.test_data[0].md;
 
-        for (unsigned i = initial; i < 60; i += increment)
-        {
-            md.set(types::Reftime::createPosition(core::Time(2016, 6, 1, 0, 0, i)));
-            wassert(actual(ds->acquire(md)) == dataset::Writer::ACQ_OK);
+            for (unsigned i = initial; i < 60; i += increment)
+            {
+                md.set(types::Reftime::createPosition(core::Time(2016, 6, 1, 0, 0, i)));
+                //fprintf(stderr, "%d: %d\n", (int)getpid(), i);
+                auto res = ds->acquire(md);
+                if (res != dataset::Writer::ACQ_OK)
+                {
+                    fprintf(stderr, "Acquire result: %d\n", (int)res);
+                    for (const auto& note: md.notes())
+                        fprintf(stderr, "  note: %s\n", note.content.c_str());
+                    return 2;
+                }
+            }
+
+            return 0;
+        } catch (std::exception& e) {
+            fprintf(stderr, "importer:%u%u: %s\n", initial, increment, e.what());
+            return 1;
         }
-
-        return 0;
     }
 };
 
@@ -281,9 +295,9 @@ this->add_method("write_write", [](Fixture& f) {
     i1.fork();
     i2.fork();
 
-    i0.wait();
-    i1.wait();
-    i2.wait();
+    wassert(actual(i0.wait()) == 0);
+    wassert(actual(i1.wait()) == 0);
+    wassert(actual(i2.wait()) == 0);
 
     auto reader = f.config().create_reader();
     metadata::Collection mdc(*reader, Matcher());
