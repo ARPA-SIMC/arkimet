@@ -58,6 +58,11 @@ struct Writer : public dataset::segment::Writer
 class Checker : public dataset::segment::Checker
 {
 protected:
+    File* fd = nullptr;
+    utils::Lock m_lock;
+
+    virtual void open() = 0;
+
     void validate(Metadata& md, const scan::Validator& v) override;
 
     /**
@@ -78,6 +83,9 @@ protected:
 
 public:
     using dataset::segment::Checker::Checker;
+    ~Checker();
+
+    void lock() override;
 
     bool exists_on_disk() override;
 

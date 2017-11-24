@@ -194,7 +194,7 @@ void IndexedChecker::test_swap_data(const std::string& relpath, unsigned d1_idx,
     m_idx->query_segment(relpath, mds.inserter_func());
     std::swap(mds[d1_idx], mds[d2_idx]);
 
-    reorder_segment(relpath, mds);
+    segment(relpath)->reorder(mds);
 }
 
 void IndexedChecker::test_rename(const std::string& relpath, const std::string& new_relpath)

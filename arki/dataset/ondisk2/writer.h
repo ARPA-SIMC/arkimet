@@ -75,6 +75,7 @@ public:
 
     std::string type() const override;
 
+    std::unique_ptr<segmented::CheckerSegment> segment(const std::string& relpath) override;
     void segments(std::function<void(segmented::CheckerSegment& segment)>) override;
     void segments_untracked(std::function<void(segmented::CheckerSegment& segment)>) override;
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
@@ -83,8 +84,6 @@ public:
 
     void rescanSegment(const std::string& relpath) override;
     void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
-    size_t repackSegment(const std::string& relpath, unsigned test_flags=0) override;
-    size_t reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags=0) override;
     size_t removeSegment(const std::string& relpath, bool withData=false) override;
     void releaseSegment(const std::string& relpath, const std::string& destpath) override;
     size_t vacuum(dataset::Reporter& reporter) override;

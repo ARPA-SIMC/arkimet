@@ -457,17 +457,11 @@ Manager::~Manager()
 void Manager::flush_writers()
 {
     writers.clear();
-    checkers.clear();
 }
 
 void Manager::foreach_cached_writer(std::function<void(Writer&)> func)
 {
     writers.foreach_cached(func);
-}
-
-void Manager::foreach_cached_checker(std::function<void(Checker&)> func)
-{
-    checkers.foreach_cached(func);
 }
 
 std::shared_ptr<Writer> Manager::get_writer(const std::string& relname)
@@ -504,13 +498,8 @@ std::shared_ptr<Checker> Manager::get_checker(const std::string& relname)
 
 std::shared_ptr<Checker> Manager::get_checker(const std::string& format, const std::string& relname)
 {
-    // Try to reuse an existing instance
-    auto res = checkers.get(relname);
-    if (res) return res;
-
     string absname = str::joinpath(root, relname);
-    auto new_checker(create_checker_for_format(format, relname, absname));
-    return checkers.add(new_checker);
+    return create_checker_for_format(format, relname, absname);
 }
 
 std::unique_ptr<Manager> Manager::get(const std::string& root, bool force_dir, bool mock_data)

@@ -70,6 +70,11 @@ Writer::Writer(const std::string& root, const std::string& relname, const std::s
 {
 }
 
+void Checker::open()
+{
+    if (fd) return;
+    fd = new File(absname, O_RDWR, 0666);
+}
 
 State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
 {

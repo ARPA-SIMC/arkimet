@@ -89,6 +89,13 @@ HoleWriter::HoleWriter(const std::string& root, const std::string& relname, cons
 {
 }
 
+
+void Checker::open()
+{
+    if (fd) return;
+    fd = new File(absname, O_RDWR, 0666);
+}
+
 State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
 {
     return check_fd(reporter, ds, mds, 0, quick);
@@ -102,6 +109,12 @@ unique_ptr<fd::Writer> Checker::make_tmp_segment(const std::string& relname, con
 Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
     return fd::Checker::repack_impl(rootdir, mds, false, test_flags);
+}
+
+void HoleChecker::open()
+{
+    if (fd) return;
+    fd = new HoleFile(absname, O_RDWR, 0666);
 }
 
 unique_ptr<fd::Writer> HoleChecker::make_tmp_segment(const std::string& relname, const std::string& absname)

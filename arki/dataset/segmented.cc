@@ -355,7 +355,7 @@ void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_f
 
     try {
         segments_all([&](CheckerSegment& segment) {
-            (*repacker)(segment.path_relative(), segment.scan(reporter, true).state);
+            (*repacker)(segment, segment.scan(reporter, true).state);
         });
         repacker->end();
     } catch (...) {
@@ -379,7 +379,7 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
         maintenance::RealFixer fixer(reporter, *this);
         try {
             segments_all([&](CheckerSegment& segment) {
-                fixer(segment.path_relative(), segment.scan(reporter, quick).state);
+                fixer(segment, segment.scan(reporter, quick).state);
             });
             fixer.end();
         } catch (...) {
@@ -394,7 +394,7 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
     } else {
         maintenance::MockFixer fixer(reporter, *this);
         segments_all([&](CheckerSegment& segment) {
-            fixer(segment.path_relative(), segment.scan(reporter, quick).state);
+            fixer(segment, segment.scan(reporter, quick).state);
         });
         fixer.end();
     }

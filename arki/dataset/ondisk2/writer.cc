@@ -351,6 +351,55 @@ public:
         res.check_age(segment->relname, checker.config(), reporter);
         return res;
     }
+
+    size_t repack(unsigned test_flags) override
+    {
+        metadata::Collection mds;
+        checker.idx->scan_file(segment->relname, mds.inserter_func(), "reftime, offset");
+        return reorder(mds, test_flags);
+    }
+
+    size_t reorder(metadata::Collection& mds, unsigned test_flags) override
+    {
+        // Lock away writes and reads
+        Pending p = checker.idx->beginExclusiveTransaction();
+
+        Pending p_repack = segment->repack(checker.config().path, mds, test_flags);
+
+        // Reindex mds
+        checker.idx->reset(segment->relname);
+        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+        {
+            const source::Blob& source = (*i)->sourceBlob();
+            checker.idx->index(**i, source.filename, source.offset);
+        }
+
+        size_t size_pre = sys::isdir(segment->absname) ? 0 : sys::size(segment->absname);
+
+        // Remove the .metadata file if present, because we are shuffling the
+        // data file and it will not be valid anymore
+        string mdpathname = segment->absname + ".metadata";
+        if (sys::exists(mdpathname))
+            if (unlink(mdpathname.c_str()) < 0)
+            {
+                stringstream ss;
+                ss << "cannot remove obsolete metadata file " << mdpathname;
+                throw std::system_error(errno, std::system_category(), ss.str());
+            }
+
+        // Prevent reading the still open old file using the new offsets
+        Metadata::flushDataReaders();
+
+        // Commit the changes in the file system
+        p_repack.commit();
+
+        // Commit the changes in the database
+        p.commit();
+
+        size_t size_post = sys::isdir(segment->absname) ? 0 : sys::size(segment->absname);
+
+        return size_pre - size_post;
+    }
 };
 
 
@@ -409,6 +458,11 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
     }
 
     release_lock();
+}
+
+std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
+{
+    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath));
 }
 
 void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> dest)
@@ -529,60 +583,6 @@ void Checker::rescanSegment(const std::string& relpath)
     // TODO: remove relevant summary
 }
 
-
-size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
-{
-    metadata::Collection mds;
-    idx->scan_file(relpath, mds.inserter_func(), "reftime, offset");
-
-    return reorder_segment(relpath, mds, test_flags);
-}
-
-size_t Checker::reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags)
-{
-    // Lock away writes and reads
-    Pending p = idx->beginExclusiveTransaction();
-
-    // Make a copy of the file with the right data in it, sorted by
-    // reftime, and update the offsets in the index
-    string pathname = str::joinpath(config().path, relpath);
-
-    Pending p_repack = segment_manager().repack(relpath, mds, test_flags);
-
-    // Reindex mds
-    idx->reset(relpath);
-    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
-    {
-        const source::Blob& source = (*i)->sourceBlob();
-        idx->index(**i, source.filename, source.offset);
-    }
-
-    size_t size_pre = sys::isdir(pathname) ? 0 : sys::size(pathname);
-
-    // Remove the .metadata file if present, because we are shuffling the
-    // data file and it will not be valid anymore
-    string mdpathname = pathname + ".metadata";
-    if (sys::exists(mdpathname))
-        if (unlink(mdpathname.c_str()) < 0)
-        {
-            stringstream ss;
-            ss << "cannot remove obsolete metadata file " << mdpathname;
-            throw std::system_error(errno, std::system_category(), ss.str());
-        }
-
-    // Prevent reading the still open old file using the new offsets
-    Metadata::flushDataReaders();
-
-    // Commit the changes in the file system
-    p_repack.commit();
-
-    // Commit the changes in the database
-    p.commit();
-
-    size_t size_post = sys::isdir(pathname) ? 0 : sys::size(pathname);
-
-    return size_pre - size_post;
-}
 
 void Checker::indexSegment(const std::string& relpath, metadata::Collection&& contents)
 {

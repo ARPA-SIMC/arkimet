@@ -305,6 +305,56 @@ public:
         res.check_age(segment->relname, checker.config(), reporter);
         return res;
     }
+
+    size_t repack(unsigned test_flags) override
+    {
+        // Read the metadata
+        metadata::Collection mds;
+        scan::scan(segment->absname, mds.inserter_func());
+
+        // Sort by reference time and offset
+        RepackSort cmp;
+        mds.sort(cmp);
+
+        return reorder(mds, test_flags);
+    }
+
+    size_t reorder(metadata::Collection& mds, unsigned test_flags) override
+    {
+        // Write out the data with the new order
+        Pending p_repack = segment->repack(checker.config().path, mds, test_flags);
+
+        // Strip paths from mds sources
+        mds.strip_source_paths();
+
+        // Prevent reading the still open old file using the new offsets
+        Metadata::flushDataReaders();
+
+        // Remove existing cached metadata, since we scramble their order
+        sys::unlink_ifexists(segment->absname + ".metadata");
+        sys::unlink_ifexists(segment->absname + ".summary");
+
+        size_t size_pre = sys::isdir(segment->absname) ? 0 : sys::size(segment->absname);
+
+        p_repack.commit();
+
+        size_t size_post = sys::isdir(segment->absname) ? 0 : sys::size(segment->absname);
+
+        // Write out the new metadata
+        mds.writeAtomically(segment->absname + ".metadata");
+
+        // Regenerate the summary. It is unchanged, really, but its timestamp
+        // has become obsolete by now
+        Summary sum;
+        mds.add_to_summary(sum);
+        sum.writeAtomically(segment->absname + ".summary");
+
+        // Reindex with the new file information
+        time_t mtime = sys::timestamp(segment->absname);
+        checker.m_mft->acquire(segment->relname, mtime, sum);
+
+        return size_pre - size_post;
+    }
 };
 
 
@@ -358,6 +408,11 @@ void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_f
     release_lock();
 }
 void Checker::check(dataset::Reporter& reporter, bool fix, bool quick) { acquire_lock(); IndexedChecker::check(reporter, fix, quick); release_lock(); }
+
+std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
+{
+    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath));
+}
 
 void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> dest)
 {
@@ -414,60 +469,6 @@ void Checker::rescanSegment(const std::string& relpath)
 
     m_mft->rescanSegment(config().path, relpath);
     m_mft->flush();
-}
-
-size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
-{
-    string pathname = str::joinpath(config().path, relpath);
-
-    // Read the metadata
-    metadata::Collection mds;
-    scan::scan(pathname, mds.inserter_func());
-
-    // Sort by reference time and offset
-    RepackSort cmp;
-    mds.sort(cmp);
-
-    return reorder_segment(relpath, mds, test_flags);
-}
-
-size_t Checker::reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags)
-{
-    string pathname = str::joinpath(config().path, relpath);
-
-    // Write out the data with the new order
-    Pending p_repack = segment_manager().repack(relpath, mds, test_flags);
-
-    // Strip paths from mds sources
-    mds.strip_source_paths();
-
-    // Prevent reading the still open old file using the new offsets
-    Metadata::flushDataReaders();
-
-    // Remove existing cached metadata, since we scramble their order
-    sys::unlink_ifexists(pathname + ".metadata");
-    sys::unlink_ifexists(pathname + ".summary");
-
-    size_t size_pre = sys::isdir(pathname) ? 0 : sys::size(pathname);
-
-    p_repack.commit();
-
-    size_t size_post = sys::isdir(pathname) ? 0 : sys::size(pathname);
-
-    // Write out the new metadata
-    mds.writeAtomically(pathname + ".metadata");
-
-    // Regenerate the summary. It is unchanged, really, but its timestamp
-    // has become obsolete by now
-    Summary sum;
-    mds.add_to_summary(sum);
-    sum.writeAtomically(pathname + ".summary");
-
-    // Reindex with the new file information
-    time_t mtime = sys::timestamp(pathname);
-    m_mft->acquire(relpath, mtime, sum);
-
-    return size_pre - size_post;
 }
 
 size_t Checker::removeSegment(const std::string& relpath, bool withData)

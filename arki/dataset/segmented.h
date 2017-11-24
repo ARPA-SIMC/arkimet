@@ -147,6 +147,26 @@ public:
 
     virtual std::string path_relative() const = 0;
     virtual SegmentState scan(dataset::Reporter& reporter, bool quick=true) = 0;
+
+    /**
+     * Optimise the contents of a data file
+     *
+     * In the resulting file, there are no holes for deleted data and all
+     * the data is sorted by reference time
+     *
+     * @returns The number of bytes freed on disk with this operation
+     */
+    virtual size_t repack(unsigned test_flags=0) = 0;
+
+    /**
+     * Rewrite the segment so that the data has the same order as `mds`.
+     *
+     * In the resulting file, there are no holes between data.
+     *
+     * @returns The size difference between the initial segment size and the
+     * final segment size.
+     */
+    virtual size_t reorder(metadata::Collection& mds, unsigned test_flags=0) = 0;
 };
 
 
@@ -173,6 +193,9 @@ public:
      * either on disk or known by the index.
      */
     State scan(dataset::Reporter& reporter, bool quick=true);
+
+    /// Instantiate a CheckerSegment
+    virtual std::unique_ptr<CheckerSegment> segment(const std::string& relpath) = 0;
 
     /**
      * List all segments known to this dataset
@@ -202,26 +225,6 @@ public:
      * them by rescanning the file
      */
     virtual void rescanSegment(const std::string& relpath) = 0;
-
-    /**
-     * Optimise the contents of a data file
-     *
-     * In the resulting file, there are no holes for deleted data and all
-     * the data is sorted by reference time
-     *
-     * @returns The number of bytes freed on disk with this operation
-     */
-    virtual size_t repackSegment(const std::string& relpath, unsigned test_flags=0) = 0;
-
-    /**
-     * Rewrite the segment so that the data has the same order as `mds`.
-     *
-     * In the resulting file, there are no holes between data.
-     *
-     * @returns The size difference between the initial segment size and the
-     * final segment size.
-     */
-    virtual size_t reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags=0) = 0;
 
     /**
      * Remove the file from the dataset

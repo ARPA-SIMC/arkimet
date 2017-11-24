@@ -127,6 +127,31 @@ off_t Writer::append(const std::vector<uint8_t>& buf)
 }
 
 
+Checker::~Checker()
+{
+    if (fd)
+    {
+        // TODO: consider a non-throwing setlk implementation to avoid throwing
+        // in destructors
+        m_lock.l_type = F_UNLCK;
+        m_lock.ofd_setlk(*fd);
+        delete fd;
+    }
+}
+
+void Checker::lock()
+{
+    if (!sys::exists(absname)) return;
+    open();
+
+    // Lock the whole file even past its end, to disallow concurrent writes
+    m_lock.l_type = F_RDLCK;
+    m_lock.l_whence = SEEK_SET;
+    m_lock.l_start = 0;
+    m_lock.l_len = 0;
+    m_lock.ofd_setlkw(*(this->fd));
+}
+
 bool Checker::exists_on_disk()
 {
     if (sys::isdir(absname)) return false;
@@ -258,7 +283,6 @@ Pending Checker::repack_impl(
         Rename(const std::string& tmpabsname, const std::string& absname)
             : src(absname, O_RDWR), tmpabsname(tmpabsname), absname(absname)
         {
-            repack_lock();
         }
 
         virtual ~Rename()
@@ -266,44 +290,12 @@ Pending Checker::repack_impl(
             if (!fired) rollback();
         }
 
-        /**
-         * Lock the whole segment for repacking
-         */
-        void repack_lock()
-        {
-            Lock lock;
-            lock.l_type = F_WRLCK;
-            lock.l_whence = SEEK_SET;
-            lock.l_start = 0;
-            lock.l_len = 0;
-            lock.ofd_setlkw(src);
-        }
-
-        /**
-         * Unlock the segment after repacking
-         */
-        void repack_unlock()
-        {
-            Lock lock;
-            lock.l_type = F_UNLCK;
-            lock.l_whence = SEEK_SET;
-            lock.l_start = 0;
-            lock.l_len = 0;
-            lock.ofd_setlk(src);
-        }
-
         virtual void commit()
         {
             if (fired) return;
             // Rename the data file to its final name
-            try {
-                if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
-                    throw_system_error("cannot rename " + tmpabsname + " to " + absname);
-            } catch (...) {
-                repack_unlock();
-                throw;
-            }
-            repack_unlock();
+            if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
+                throw_system_error("cannot rename " + tmpabsname + " to " + absname);
             fired = true;
         }
 
@@ -311,7 +303,6 @@ Pending Checker::repack_impl(
         {
             if (fired) return;
             unlink(tmpabsname.c_str());
-            repack_unlock();
             fired = true;
         }
     };

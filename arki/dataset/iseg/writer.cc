@@ -250,10 +250,6 @@ void Writer::remove(Metadata& md)
 void Writer::flush()
 {
     segmented::Writer::flush();
-    segment_manager().foreach_cached_writer([](segment::Writer& s) {
-        WIndex* idx = static_cast<WIndex*>(s.payload);
-        idx->flush();
-    });
     release_lock();
 }
 
@@ -365,6 +361,70 @@ public:
         res.check_age(segment->relname, checker.config(), reporter);
         return res;
     }
+
+    size_t repack(unsigned test_flags=0) override
+    {
+        WIndex idx(checker.m_config, segment->relname);
+
+        // Lock away writes and reads
+        Pending p = idx.begin_exclusive_transaction();
+
+        metadata::Collection mds;
+        idx.scan(mds.inserter_func(), "reftime, offset");
+
+        return reorder_segment_backend(idx, p, mds, test_flags);
+    }
+
+    size_t reorder(metadata::Collection& mds, unsigned test_flags) override
+    {
+        WIndex idx(checker.m_config, segment->relname);
+
+        // Lock away writes and reads
+        Pending p = idx.begin_exclusive_transaction();
+
+        return reorder_segment_backend(idx, p, mds, test_flags);
+    }
+
+    size_t reorder_segment_backend(WIndex& idx, Pending& p, metadata::Collection& mds, unsigned test_flags)
+    {
+        // Make a copy of the file with the right data in it, sorted by
+        // reftime, and update the offsets in the index
+        Pending p_repack = segment->repack(checker.config().path, mds, test_flags);
+
+        // Reindex mds
+        idx.reset();
+        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+        {
+            const source::Blob& source = (*i)->sourceBlob();
+            idx.index(**i, source.offset);
+        }
+
+        size_t size_pre = sys::isdir(segment->absname) ? 0 : sys::size(segment->absname);
+
+        // Remove the .metadata file if present, because we are shuffling the
+        // data file and it will not be valid anymore
+        string mdpathname = segment->absname + ".metadata";
+        if (sys::exists(mdpathname))
+            if (unlink(mdpathname.c_str()) < 0)
+            {
+                stringstream ss;
+                ss << "cannot remove obsolete metadata file " << mdpathname;
+                throw std::system_error(errno, std::system_category(), ss.str());
+            }
+
+        // Prevent reading the still open old file using the new offsets
+        Metadata::flushDataReaders();
+
+        // Commit the changes in the file system
+        p_repack.commit();
+
+        // Commit the changes in the database
+        p.commit();
+
+        size_t size_post = sys::isdir(segment->absname) ? 0 : sys::size(segment->absname);
+
+        return size_pre - size_post;
+    }
 };
 
 
@@ -421,10 +481,16 @@ void Checker::removeAll(dataset::Reporter& reporter, bool writable)
     release_lock();
 }
 
+std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
+{
+    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath));
+}
+
 void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> dest)
 {
     list_segments([&](const std::string& relpath) {
         CheckerSegment segment(*this, relpath);
+        segment.segment->lock();
         dest(segment);
     });
 }
@@ -434,6 +500,7 @@ void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& r
     config().step().list_segments(config().path, config().format, Matcher(), [&](std::string&& relpath) {
         if (sys::stat(str::joinpath(config().path, relpath + ".index"))) return;
         CheckerSegment segment(*this, relpath);
+        segment.segment->lock();
         dest(segment);
     });
 }
@@ -664,77 +731,6 @@ void Checker::rescanSegment(const std::string& relpath)
     // TODO: remove relevant summary
 }
 
-
-size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
-{
-    WIndex idx(m_config, relpath);
-
-    // Lock away writes and reads
-    Pending p = idx.begin_exclusive_transaction();
-
-    // Make a copy of the file with the right data in it, sorted by
-    // reftime, and update the offsets in the index
-    string pathname = str::joinpath(config().path, relpath);
-
-    metadata::Collection mds;
-    idx.scan(mds.inserter_func(), "reftime, offset");
-
-    return reorder_segment_backend(idx, p, relpath, mds, test_flags);
-}
-
-size_t Checker::reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags)
-{
-    WIndex idx(m_config, relpath);
-
-    // Lock away writes and reads
-    Pending p = idx.begin_exclusive_transaction();
-
-    return reorder_segment_backend(idx, p, relpath, mds, test_flags);
-}
-
-size_t Checker::reorder_segment_backend(WIndex& idx, Pending& p, const std::string& relpath, metadata::Collection& mds, unsigned test_flags)
-{
-    // Make a copy of the file with the right data in it, sorted by
-    // reftime, and update the offsets in the index
-    string pathname = str::joinpath(config().path, relpath);
-
-    Pending p_repack = segment_manager().repack(relpath, mds, test_flags);
-
-    // Reindex mds
-    idx.reset();
-    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
-    {
-        const source::Blob& source = (*i)->sourceBlob();
-        idx.index(**i, source.offset);
-    }
-
-    size_t size_pre = sys::isdir(pathname) ? 0 : sys::size(pathname);
-
-    // Remove the .metadata file if present, because we are shuffling the
-    // data file and it will not be valid anymore
-    string mdpathname = pathname + ".metadata";
-    if (sys::exists(mdpathname))
-        if (unlink(mdpathname.c_str()) < 0)
-        {
-            stringstream ss;
-            ss << "cannot remove obsolete metadata file " << mdpathname;
-            throw std::system_error(errno, std::system_category(), ss.str());
-        }
-
-    // Prevent reading the still open old file using the new offsets
-    Metadata::flushDataReaders();
-
-    // Commit the changes in the file system
-    p_repack.commit();
-
-    // Commit the changes in the database
-    p.commit();
-
-    size_t size_post = sys::isdir(pathname) ? 0 : sys::size(pathname);
-
-    return size_pre - size_post;
-}
-
 size_t Checker::removeSegment(const std::string& relpath, bool withData)
 {
     string idx_abspath = str::joinpath(config().path, relpath + ".index");
@@ -803,7 +799,7 @@ void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsign
     WIndex idx(m_config, relpath);
     idx.scan(mds.inserter_func(), "offset");
     std::swap(mds[d1_idx], mds[d2_idx]);
-    reorder_segment(relpath, mds);
+    segment(relpath)->reorder(mds);
 }
 
 void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)

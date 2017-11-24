@@ -217,11 +217,13 @@ void MaintenanceTest::register_tests_concat()
         make_hugefile();
         wassert(f.state_is(3, SEGMENT_DIRTY));
 
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "repack", "2 files ok");
-        e.repacked.emplace_back("testds", f.test_relpath);
-        wassert(actual(writer.get()).repack(e, true));
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "2 files ok");
+            e.repacked.emplace_back("testds", f.test_relpath);
+            wassert(actual(checker.get()).repack(e, true));
+        }
 
         wassert(f.all_clean(3));
         wassert(f.query_results({1, -1, 3, 0, 2}));
@@ -241,8 +243,8 @@ void MaintenanceTest::register_tests_concat()
 
         // Do a repack, it should change the timestamp
         {
-            auto writer(f.makeSegmentedChecker());
-            wassert(actual(writer->repackSegment(f.test_relpath)) == 0u);
+            auto checker(f.makeSegmentedChecker());
+            wassert(actual(checker->segment(f.test_relpath)->repack()) == 0u);
         }
 
         // Ensure that the archive is still clean
@@ -822,7 +824,7 @@ void MaintenanceTest::register_tests()
         auto checker = f.makeSegmentedChecker();
 
         unsigned orig = arki::Reader::test_count_cached();
-        checker->repackSegment(f.test_relpath);
+        checker->segment(f.test_relpath)->repack();
         wassert(actual(arki::Reader::test_count_cached()) == orig);
     });
 }

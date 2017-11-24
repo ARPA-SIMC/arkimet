@@ -24,6 +24,7 @@ class Step;
 
 namespace segmented {
 class Checker;
+class CheckerSegment;
 }
 
 namespace maintenance {
@@ -33,7 +34,7 @@ namespace maintenance {
  */
 struct Dumper
 {
-    void operator()(const std::string& relpath, segment::State state);
+    void operator()(segmented::CheckerSegment& relpath, segment::State state);
 };
 
 /// Base class for all repackers and rebuilders
@@ -48,7 +49,7 @@ struct Agent
     Agent(const Agent&) = delete;
     Agent& operator=(const Agent&) = delete;
 
-    virtual void operator()(const std::string& relpath, segment::State state) = 0;
+    virtual void operator()(segmented::CheckerSegment& segment, segment::State state) = 0;
 
     virtual void end() {}
 };
@@ -64,7 +65,7 @@ struct FailsafeRepacker : public Agent
 
     size_t m_count_deleted = 0;
 
-    void operator()(const std::string& relpath, segment::State state);
+    void operator()(segmented::CheckerSegment& relpath, segment::State state);
     void end();
 };
 
@@ -82,7 +83,7 @@ struct MockRepacker : public Agent
     size_t m_count_deindexed = 0;
     size_t m_count_rescanned = 0;
 
-    void operator()(const std::string& relpath, segment::State state);
+    void operator()(segmented::CheckerSegment& relpath, segment::State state);
     void end();
 };
 
@@ -98,7 +99,7 @@ struct MockFixer : public Agent
     size_t m_count_rescanned = 0;
     size_t m_count_deindexed = 0;
 
-    void operator()(const std::string& relpath, segment::State state);
+    void operator()(segmented::CheckerSegment& relpath, segment::State state);
     void end();
 };
 
@@ -119,7 +120,7 @@ struct RealRepacker : public Agent
     bool m_touched_archive = false;
     bool m_redo_summary = false;
 
-    void operator()(const std::string& relpath, segment::State state);
+    void operator()(segmented::CheckerSegment& relpath, segment::State state);
     void end();
 };
 
@@ -137,7 +138,7 @@ struct RealFixer : public Agent
     bool m_touched_archive = 0;
     bool m_redo_summary = 0;
 
-    void operator()(const std::string& relpath, segment::State state);
+    void operator()(segmented::CheckerSegment& relpath, segment::State state);
     void end();
 };
 

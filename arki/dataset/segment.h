@@ -273,6 +273,8 @@ protected:
 public:
     using Segment::Segment;
 
+    virtual void lock() = 0;
+
     virtual segment::State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
 
@@ -329,7 +331,6 @@ class Manager
 {
 protected:
     impl::Cache<Writer> writers;
-    impl::Cache<Checker> checkers;
     std::string root;
 
     virtual std::shared_ptr<Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
@@ -347,8 +348,6 @@ public:
 
     /// Run a function on each cached writer
     void foreach_cached_writer(std::function<void(Writer&)>);
-    /// Run a function on each cached checker
-    void foreach_cached_checker(std::function<void(Checker&)>);
 
     std::shared_ptr<Writer> get_writer(const std::string& relname);
     std::shared_ptr<Writer> get_writer(const std::string& format, const std::string& relname);

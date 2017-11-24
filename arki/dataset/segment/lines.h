@@ -21,6 +21,7 @@ class Checker : public fd::Checker
 {
 protected:
     std::unique_ptr<fd::Writer> make_tmp_segment(const std::string& relname, const std::string& absname) override;
+    void open() override;
 
 public:
     using fd::Checker::Checker;
