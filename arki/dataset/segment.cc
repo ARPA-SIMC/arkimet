@@ -541,18 +541,7 @@ std::shared_ptr<Checker> Manager::get_checker(const std::string& format, const s
     auto res = checkers.get(relname);
     if (res) return res;
 
-    // Ensure that the directory for 'relname' exists
     string absname = str::joinpath(root, relname);
-    size_t pos = absname.rfind('/');
-    if (pos != string::npos)
-        sys::makedirs(absname.substr(0, pos));
-
-    // Refuse to write to compressed files
-    if (scan::isCompressed(absname))
-        throw_consistency_error("accessing data file " + relname,
-                "cannot update compressed data files: please manually uncompress it first");
-
-    // Else we need to create an appropriate one
     auto new_checker(create_checker_for_format(format, relname, absname));
     return checkers.add(new_checker);
 }
