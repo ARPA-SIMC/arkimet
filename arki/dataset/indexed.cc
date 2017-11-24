@@ -75,7 +75,9 @@ void IndexedChecker::check_issue51(dataset::Reporter& reporter, bool fix)
     std::map<string, metadata::Collection> broken_mds;
 
     // Iterate all segments
-    m_idx->scan_files([&](const std::string& relpath, segment::State state, const metadata::Collection& mds) {
+    m_idx->list_segments([&](const std::string& relpath) {
+        metadata::Collection mds;
+        m_idx->query_segment(relpath, mds.inserter_func());
         if (mds.empty()) return;
         File datafile(str::joinpath(config().path, relpath), O_RDONLY);
         // Iterate all metadata in the segment
@@ -160,7 +162,7 @@ void IndexedChecker::test_make_overlap(const std::string& relpath, unsigned over
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    segment_manager().get_writer(relpath)->test_make_overlap(mds, overlap_size, data_idx);
+    segment_manager().get_checker(relpath)->test_make_overlap(mds, overlap_size, data_idx);
     m_idx->test_make_overlap(relpath, overlap_size, data_idx);
 }
 
@@ -168,7 +170,7 @@ void IndexedChecker::test_make_hole(const std::string& relpath, unsigned hole_si
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    segment_manager().get_writer(relpath)->test_make_hole(mds, hole_size, data_idx);
+    segment_manager().get_checker(relpath)->test_make_hole(mds, hole_size, data_idx);
     m_idx->test_make_hole(relpath, hole_size, data_idx);
 }
 
@@ -176,14 +178,14 @@ void IndexedChecker::test_corrupt_data(const std::string& relpath, unsigned data
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    segment_manager().get_writer(relpath)->test_corrupt(mds, data_idx);
+    segment_manager().get_checker(relpath)->test_corrupt(mds, data_idx);
 }
 
 void IndexedChecker::test_truncate_data(const std::string& relpath, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    segment_manager().get_writer(relpath)->test_truncate(mds, data_idx);
+    segment_manager().get_checker(relpath)->test_truncate(mds, data_idx);
 }
 
 void IndexedChecker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
@@ -192,7 +194,7 @@ void IndexedChecker::test_swap_data(const std::string& relpath, unsigned d1_idx,
     m_idx->query_segment(relpath, mds.inserter_func());
     std::swap(mds[d1_idx], mds[d2_idx]);
 
-    reorder_segment(relpath, mds);
+    segment(relpath)->reorder(mds);
 }
 
 void IndexedChecker::test_rename(const std::string& relpath, const std::string& new_relpath)

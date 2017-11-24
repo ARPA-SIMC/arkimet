@@ -18,6 +18,9 @@ public:
 
 class Checker : public fd::Checker
 {
+protected:
+    void open() override;
+
 public:
     using fd::Checker::Checker;
 
@@ -35,6 +38,8 @@ public:
 class HoleChecker : public Checker
 {
 protected:
+    void open() override;
+
     std::unique_ptr<fd::Writer> make_tmp_segment(const std::string& relname, const std::string& absname) override;
 
 public:

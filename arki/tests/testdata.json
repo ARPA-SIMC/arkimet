@@ -20467,322 +20467,562 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_ondisk2",
-  "method": "concurrent_import"
+  "method": "read_read"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_ondisk2",
-  "method": "import_with_hung_reader"
+  "method": "read_write"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_ondisk2",
-  "method": "repack_during_read"
+  "method": "read_write1"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_ondisk2",
-  "method": "import_during_read"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_ondisk2",
+  "method": "write_write_different_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_ondisk2",
+  "method": "read_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_ondisk2",
+  "method": "write_check"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_simple_plain",
-  "method": "concurrent_import"
+  "method": "read_read"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_simple_plain",
-  "method": "import_with_hung_reader"
+  "method": "read_write"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_simple_plain",
-  "method": "repack_during_read"
+  "method": "read_write1"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_simple_plain",
-  "method": "import_during_read"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_plain",
+  "method": "write_write_different_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_plain",
+  "method": "read_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_plain",
+  "method": "write_check"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_simple_sqlite",
-  "method": "concurrent_import"
+  "method": "read_read"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_simple_sqlite",
-  "method": "import_with_hung_reader"
+  "method": "read_write"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_simple_sqlite",
-  "method": "repack_during_read"
+  "method": "read_write1"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_simple_sqlite",
-  "method": "import_during_read"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_sqlite",
+  "method": "write_write_different_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_sqlite",
+  "method": "read_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_sqlite",
+  "method": "write_check"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_iseg",
-  "method": "concurrent_import"
+  "method": "read_read"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_iseg",
-  "method": "import_with_hung_reader"
+  "method": "read_write"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_iseg",
-  "method": "repack_during_read"
+  "method": "read_write1"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_iseg",
-  "method": "import_during_read"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_iseg",
+  "method": "write_write_different_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_iseg",
+  "method": "read_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_iseg",
+  "method": "write_check"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_ondisk2",
-  "method": "concurrent_import"
+  "method": "read_read"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_ondisk2",
-  "method": "import_with_hung_reader"
+  "method": "read_write"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_ondisk2",
-  "method": "repack_during_read"
+  "method": "read_write1"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_ondisk2",
-  "method": "import_during_read"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_ondisk2",
+  "method": "write_write_different_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_ondisk2",
+  "method": "read_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_ondisk2",
+  "method": "write_check"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_simple_plain",
-  "method": "concurrent_import"
+  "method": "read_read"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_simple_plain",
-  "method": "import_with_hung_reader"
+  "method": "read_write"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_simple_plain",
-  "method": "repack_during_read"
+  "method": "read_write1"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_simple_plain",
-  "method": "import_during_read"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_plain",
+  "method": "write_write_different_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_plain",
+  "method": "read_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_plain",
+  "method": "write_check"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_simple_sqlite",
-  "method": "concurrent_import"
+  "method": "read_read"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_simple_sqlite",
-  "method": "import_with_hung_reader"
+  "method": "read_write"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_simple_sqlite",
-  "method": "repack_during_read"
+  "method": "read_write1"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_simple_sqlite",
-  "method": "import_during_read"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_sqlite",
+  "method": "write_write_different_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_sqlite",
+  "method": "read_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_sqlite",
+  "method": "write_check"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_iseg",
-  "method": "concurrent_import"
+  "method": "read_read"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_iseg",
-  "method": "import_with_hung_reader"
+  "method": "read_write"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_iseg",
-  "method": "repack_during_read"
+  "method": "read_write1"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_iseg",
-  "method": "import_during_read"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_iseg",
+  "method": "write_write_different_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_iseg",
+  "method": "read_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_iseg",
+  "method": "write_check"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_ondisk2",
-  "method": "concurrent_import"
+  "method": "read_read"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_ondisk2",
-  "method": "import_with_hung_reader"
+  "method": "read_write"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_ondisk2",
-  "method": "repack_during_read"
+  "method": "read_write1"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_ondisk2",
-  "method": "import_during_read"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_ondisk2",
+  "method": "write_write_different_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_ondisk2",
+  "method": "read_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_ondisk2",
+  "method": "write_check"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_simple_plain",
-  "method": "concurrent_import"
+  "method": "read_read"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_simple_plain",
-  "method": "import_with_hung_reader"
+  "method": "read_write"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_simple_plain",
-  "method": "repack_during_read"
+  "method": "read_write1"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_simple_plain",
-  "method": "import_during_read"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_plain",
+  "method": "write_write_different_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_plain",
+  "method": "read_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_plain",
+  "method": "write_check"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_simple_sqlite",
-  "method": "concurrent_import"
+  "method": "read_read"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_simple_sqlite",
-  "method": "import_with_hung_reader"
+  "method": "read_write"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_simple_sqlite",
-  "method": "repack_during_read"
+  "method": "read_write1"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_simple_sqlite",
-  "method": "import_during_read"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_sqlite",
+  "method": "write_write_different_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_sqlite",
+  "method": "read_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_sqlite",
+  "method": "write_check"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_iseg",
-  "method": "concurrent_import"
+  "method": "read_read"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_iseg",
-  "method": "import_with_hung_reader"
+  "method": "read_write"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_iseg",
-  "method": "repack_during_read"
+  "method": "read_write1"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_iseg",
-  "method": "import_during_read"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_iseg",
+  "method": "write_write_different_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_iseg",
+  "method": "read_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_iseg",
+  "method": "write_check"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_ondisk2",
-  "method": "concurrent_import"
+  "method": "read_read"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_ondisk2",
-  "method": "import_with_hung_reader"
+  "method": "read_write"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_ondisk2",
-  "method": "repack_during_read"
+  "method": "read_write1"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_ondisk2",
-  "method": "import_during_read"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_ondisk2",
+  "method": "write_write_different_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_ondisk2",
+  "method": "read_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_ondisk2",
+  "method": "write_check"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_simple_plain",
-  "method": "concurrent_import"
+  "method": "read_read"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_simple_plain",
-  "method": "import_with_hung_reader"
+  "method": "read_write"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_simple_plain",
-  "method": "repack_during_read"
+  "method": "read_write1"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_simple_plain",
-  "method": "import_during_read"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_plain",
+  "method": "write_write_different_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_plain",
+  "method": "read_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_plain",
+  "method": "write_check"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_simple_sqlite",
-  "method": "concurrent_import"
+  "method": "read_read"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_simple_sqlite",
-  "method": "import_with_hung_reader"
+  "method": "read_write"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_simple_sqlite",
-  "method": "repack_during_read"
+  "method": "read_write1"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_simple_sqlite",
-  "method": "import_during_read"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_sqlite",
+  "method": "write_write_different_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_sqlite",
+  "method": "read_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_sqlite",
+  "method": "write_check"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_iseg",
-  "method": "concurrent_import"
+  "method": "read_read"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_iseg",
-  "method": "import_with_hung_reader"
+  "method": "read_write"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_iseg",
-  "method": "repack_during_read"
+  "method": "read_write1"
  },
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_iseg",
-  "method": "import_during_read"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_iseg",
+  "method": "write_write_different_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_iseg",
+  "method": "read_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_iseg",
+  "method": "write_check"
  },
  {
   "doc": "",

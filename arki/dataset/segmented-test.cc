@@ -85,11 +85,11 @@ add_method("compressed", [](Fixture& f) {
 
     // Perform packing and check that things are still ok afterwards
     {
-        auto writer(f.makeSegmentedChecker());
+        auto checker(f.makeSegmentedChecker());
         ReporterExpected e;
         e.archived.emplace_back("testds", "2007/07-07.grib");
         e.archived.emplace_back("testds", "2007/07-08.grib");
-        wassert(actual(writer.get()).repack(e, true));
+        wassert(actual(checker.get()).repack(e, true));
     }
 
     // Check that the files have been moved to the archive

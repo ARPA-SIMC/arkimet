@@ -4,9 +4,9 @@
 /// dataset/local - Base class for local datasets
 
 #include <arki/dataset.h>
-#include <string>
 #include <arki/file.h>
-#include <fcntl.h>
+#include <arki/utils/lock.h>
+#include <string>
 
 namespace arki {
 class ConfigFile;
@@ -27,9 +27,6 @@ protected:
 public:
     /// Root path of the dataset
     std::string path;
-
-    /// Pathname of the dataset's lock file
-    std::string lockfile_pathname;
 
     int archive_age = -1;
     int delete_age = -1;
@@ -90,11 +87,12 @@ public:
 
 struct LocalLock
 {
-    struct flock ds_lock;
-    bool locked = false;
     arki::File lockfile;
+    arki::utils::Lock ds_lock;
+    bool locked = false;
+    bool write;
 
-    LocalLock(const std::string& pathname);
+    LocalLock(const LocalConfig& config, bool write=true);
     ~LocalLock();
 
     void acquire();
@@ -103,11 +101,6 @@ struct LocalLock
 
 class LocalWriter : public Writer
 {
-protected:
-    LocalLock* lock = nullptr;
-    void acquire_lock();
-    void release_lock();
-
 public:
     using Writer::Writer;
     ~LocalWriter();
@@ -132,11 +125,6 @@ public:
 
 struct LocalChecker : public LocalBase<Checker, ArchivesChecker>
 {
-protected:
-    LocalLock* lock = nullptr;
-    void acquire_lock();
-    void release_lock();
-
 public:
     using LocalBase::LocalBase;
     ~LocalChecker();

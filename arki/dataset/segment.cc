@@ -32,10 +32,10 @@ Segment::~Segment()
 
 namespace segment {
 
-void Writer::test_truncate(const metadata::Collection& mds, unsigned data_idx)
+void Checker::test_truncate(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
-    truncate(s.offset);
+    test_truncate(s.offset);
 }
 
 
@@ -109,6 +109,8 @@ struct BaseManager : public segment::Manager
                     throw_consistency_error("mockdata single-file line-based segments not implemented");
                 else
                     res.reset(new lines::Writer(root, relname, absname));
+            } else if (format == "odimh5" || format == "h5" || format == "odim") {
+                throw_consistency_error("segment is a file, but odimh5 data can only be stored into directory segments");
             } else {
                 if (nullptr_on_error)
                     return res;
@@ -163,6 +165,13 @@ struct BaseManager : public segment::Manager
                     throw_consistency_error("mockdata single-file line-based segments not implemented");
                 else
                     res.reset(new lines::Checker(root, relname, absname));
+            } else if (format == "odimh5" || format == "h5" || format == "odim") {
+                // If it's a file and we need a directory, still get a checker
+                // so it can deal with it
+                if (mockdata)
+                    res.reset(new dir::HoleChecker(format, root, relname, absname));
+                else
+                    res.reset(new dir::Checker(format, root, relname, absname));
             } else {
                 if (nullptr_on_error)
                     return res;
@@ -199,41 +208,12 @@ struct BaseManager : public segment::Manager
         return maint->remove();
     }
 
-    void truncate(const std::string& relname, size_t offset)
+    void test_truncate(const std::string& relname, size_t offset)
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
-        auto maint(create_writer_for_format(format, relname, absname));
-        return maint->truncate(offset);
-    }
-
-    bool _is_segment(const std::string& format, const std::string& relname) override
-    {
-        string absname = str::joinpath(root, relname);
-
-        if (sys::isdir(absname))
-            // If it's a directory, it must be a dir segment
-            return sys::exists(str::joinpath(absname, ".sequence"));
-
-        // If it's not a directory, it must exist in thee file system,
-        // compressed or not
-        if (!sys::exists(absname) && !sys::exists(absname + ".gz"))
-            return false;
-
-        if (format == "grib" || format == "grib1" || format == "grib2")
-        {
-            return true;
-        } else if (format == "bufr") {
-            return true;
-        } else if (format == "odimh5" || format == "h5" || format == "odim") {
-            // HDF5 files cannot be appended, and they cannot be a segment of
-            // their own
-            return false;
-        } else if (format == "vm2") {
-            return true;
-        } else {
-            return false;
-        }
+        auto maint(create_checker_for_format(format, relname, absname));
+        return maint->test_truncate(offset);
     }
 };
 
@@ -311,6 +291,25 @@ struct AutoManager : public BaseManager
         return res;
     }
 
+    bool exists(const std::string& relpath) const override
+    {
+        string abspath = str::joinpath(root, relpath);
+        auto st = sys::stat(abspath);
+        if (!st)
+        {
+            st = sys::stat(abspath + ".gz");
+            return st && S_ISREG(st->st_mode);
+        }
+
+        if (S_ISDIR(st->st_mode))
+        {
+            st = sys::stat(str::joinpath(abspath, ".sequence"));
+            return st && S_ISREG(st->st_mode);
+        }
+
+        return S_ISREG(st->st_mode);
+    }
+
     void scan_dir(std::function<void(const std::string& relname)> dest) override
     {
         // Trim trailing '/'
@@ -378,9 +377,18 @@ struct ForceDirManager : public BaseManager
 
     std::shared_ptr<Checker> create_checker_for_format(const std::string& format, const std::string& relname, const std::string& absname) override
     {
-        auto res(create_checker_for_existing_segment(format, relname, absname));
-        if (res) return res;
         return std::shared_ptr<segment::Checker>(new dir::Checker(format, root, relname, absname));
+    }
+
+    bool exists(const std::string& relpath) const override
+    {
+        string abspath = str::joinpath(root, relpath);
+        auto st = sys::stat(abspath);
+        if (!st || !S_ISDIR(st->st_mode))
+            return false;
+
+        st = sys::stat(str::joinpath(abspath, ".sequence"));
+        return st && S_ISREG(st->st_mode);
     }
 
     void scan_dir(std::function<void(const std::string& relname)> dest) override
@@ -411,10 +419,6 @@ struct ForceDirManager : public BaseManager
                 // Normal subdirectory, recurse into it
                 return true;
 
-            // Directory segment
-            if (str::endswith(name, ".gz"))
-                name = name.substr(0, name.size() - 3);
-
             // Check whether the file format (from the extension) could be
             // stored in this kind of segment
             string format = utils::get_format(name);
@@ -424,17 +428,6 @@ struct ForceDirManager : public BaseManager
         };
 
         walker.walk();
-    }
-
-    bool _is_segment(const std::string& format, const std::string& relname) override
-    {
-        string absname = str::joinpath(root, relname);
-
-        if (sys::isdir(absname))
-            // If it's a directory, it must be a dir segment
-            return sys::exists(str::joinpath(absname, ".sequence"));
-
-        return false;
     }
 };
 
@@ -464,17 +457,11 @@ Manager::~Manager()
 void Manager::flush_writers()
 {
     writers.clear();
-    checkers.clear();
 }
 
 void Manager::foreach_cached_writer(std::function<void(Writer&)> func)
 {
     writers.foreach_cached(func);
-}
-
-void Manager::foreach_cached_checker(std::function<void(Checker&)> func)
-{
-    checkers.foreach_cached(func);
 }
 
 std::shared_ptr<Writer> Manager::get_writer(const std::string& relname)
@@ -511,34 +498,8 @@ std::shared_ptr<Checker> Manager::get_checker(const std::string& relname)
 
 std::shared_ptr<Checker> Manager::get_checker(const std::string& format, const std::string& relname)
 {
-    // Try to reuse an existing instance
-    auto res = checkers.get(relname);
-    if (res) return res;
-
-    // Ensure that the directory for 'relname' exists
     string absname = str::joinpath(root, relname);
-    size_t pos = absname.rfind('/');
-    if (pos != string::npos)
-        sys::makedirs(absname.substr(0, pos));
-
-    // Refuse to write to compressed files
-    if (scan::isCompressed(absname))
-        throw_consistency_error("accessing data file " + relname,
-                "cannot update compressed data files: please manually uncompress it first");
-
-    // Else we need to create an appropriate one
-    auto new_checker(create_checker_for_format(format, relname, absname));
-    return checkers.add(new_checker);
-}
-
-bool Manager::is_segment(const std::string& relname)
-{
-    return _is_segment(utils::get_format(relname), relname);
-}
-
-bool Manager::is_segment(const std::string& format, const std::string& relname)
-{
-    return _is_segment(format, relname);
+    return create_checker_for_format(format, relname, absname);
 }
 
 std::unique_ptr<Manager> Manager::get(const std::string& root, bool force_dir, bool mock_data)

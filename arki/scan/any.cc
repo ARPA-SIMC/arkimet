@@ -48,9 +48,17 @@ static bool scan_file(
     if (isCompressed(pathname))
         throw std::runtime_error("cannot scan " + relname + ".gz: file needs to be manually decompressed before scanning");
 
+    auto st = sys::stat(pathname);
+    if (!st)
+        throw std::runtime_error("cannot scan " + relname + ": file does not exist");
+
 #ifdef HAVE_GRIBAPI
     if (format == "grib" || format == "grib1" || format == "grib2")
     {
+        // An empty file is valid, and we can return without instantiating read
+        // locks and parsing structures
+        if (st->st_size == 0) return true;
+
         scan::Grib scanner;
         scanner.open(pathname, basedir, relname);
         while (true)
@@ -64,6 +72,10 @@ static bool scan_file(
 #endif
 #ifdef HAVE_DBALLE
     if (format == "bufr") {
+        // An empty file is valid, and we can return without instantiating read
+        // locks and parsing structures
+        if (st->st_size == 0) return true;
+
         scan::Bufr scanner;
         scanner.open(pathname, basedir, relname);
         while (true)
@@ -90,6 +102,10 @@ static bool scan_file(
 #endif
 #ifdef HAVE_VM2
     if (format == "vm2") {
+        // An empty file is valid, and we can return without instantiating read
+        // locks and parsing structures
+        if (st->st_size == 0) return true;
+
         scan::Vm2 scanner;
         scanner.open(pathname, basedir, relname);
         while (true)

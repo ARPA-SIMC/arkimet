@@ -134,15 +134,13 @@ public:
      */
     bool get_current(const Metadata& md, Metadata& current) const;
 
-	/// Return the number of items currently indexed by this index
-	size_t count() const;
-
-    /**
-     * Scan all file info in the database, sorted by file and offset
-     */
-    void scan_files(segment::contents_func v) override;
+    /// Return the number of items currently indexed by this index
+    size_t count() const;
 
     void list_segments(std::function<void(const std::string&)> dest) override;
+
+    /// Check if a segment is known to the index
+    bool has_segment(const std::string& relpath) const override;
 
     /**
      * Send the metadata of all data items inside a file to the given consumer

@@ -24,7 +24,7 @@ namespace arki {
 namespace dataset {
 
 LocalConfig::LocalConfig(const ConfigFile& cfg)
-    : Config(cfg), path(sys::abspath(cfg.value("path"))), lockfile_pathname(str::joinpath(path, "lock"))
+    : Config(cfg), path(sys::abspath(cfg.value("path")))
 {
     string tmp = cfg.value("archive age");
     if (!tmp.empty())
@@ -152,33 +152,27 @@ void LocalReader::readConfig(const std::string& path, ConfigFile& cfg)
     }
 }
 
-LocalLock::LocalLock(const std::string& pathname)
-    : lockfile(pathname)
+LocalLock::LocalLock(const LocalConfig& config, bool write)
+    : lockfile(str::joinpath(config.path, "lock")), write(write)
 {
 }
 
 LocalLock::~LocalLock()
 {
+    release();
 }
 
 void LocalLock::acquire()
 {
     if (locked) return;
-    if ((int)lockfile == -1) lockfile.open(O_RDWR | O_CREAT, 0777);
-    ds_lock.l_type = F_WRLCK;
+    if (!lockfile.is_open()) lockfile.open(O_RDWR | O_CREAT, 0777);
+    ds_lock.l_type = write ? F_WRLCK : F_RDLCK;
     ds_lock.l_whence = SEEK_SET;
     ds_lock.l_start = 0;
     ds_lock.l_len = 0;
     ds_lock.l_pid = 0;
     // Use SETLKW, so that if it is already locked, we just wait
-#ifdef F_OFD_SETLKW
-    if (fcntl(lockfile, F_OFD_SETLKW, &ds_lock) == -1)
-#else
-// This stops compilation with -Werror, I still have not found a way to just output diagnostics
-//#warning "old style locks make concurrency tests unreliable in the test suite"
-    if (fcntl(lockfile, F_SETLKW, &ds_lock) == -1)
-#endif
-        throw_file_error(lockfile.name(), "cannot lock the file for writing");
+    ds_lock.ofd_setlkw(lockfile);
     locked = true;
 }
 
@@ -186,32 +180,13 @@ void LocalLock::release()
 {
     if (!locked) return;
     ds_lock.l_type = F_UNLCK;
-#ifdef F_OFD_SETLK
-    fcntl(lockfile, F_OFD_SETLK, &ds_lock);
-#else
-// This stops compilation with -Werror, I still have not found a way to just output diagnostics
-//#warning "old style locks make concurrency tests unreliable in the test suite"
-    fcntl(lockfile, F_SETLK, &ds_lock);
-#endif
+    ds_lock.ofd_setlk(lockfile);
     locked = false;
 }
 
 
 LocalWriter::~LocalWriter()
 {
-    delete lock;
-}
-
-void LocalWriter::acquire_lock()
-{
-    if (!lock) lock = new LocalLock(config().lockfile_pathname);
-    lock->acquire();
-}
-
-void LocalWriter::release_lock()
-{
-    if (!lock) lock = new LocalLock(config().lockfile_pathname);
-    lock->release();
 }
 
 LocalWriter::AcquireResult LocalWriter::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
@@ -222,19 +197,6 @@ LocalWriter::AcquireResult LocalWriter::testAcquire(const ConfigFile& cfg, const
 
 LocalChecker::~LocalChecker()
 {
-    delete lock;
-}
-
-void LocalChecker::acquire_lock()
-{
-    if (!lock) lock = new LocalLock(config().lockfile_pathname);
-    lock->acquire();
-}
-
-void LocalChecker::release_lock()
-{
-    if (!lock) lock = new LocalLock(config().lockfile_pathname);
-    lock->release();
 }
 
 void LocalChecker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)

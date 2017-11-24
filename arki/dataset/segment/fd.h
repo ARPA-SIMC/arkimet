@@ -6,6 +6,7 @@
 #include <arki/libconfig.h>
 #include <arki/dataset/segment.h>
 #include <arki/file.h>
+#include <arki/utils/lock.h>
 #include <string>
 
 namespace arki {
@@ -31,6 +32,7 @@ struct File : public arki::File
 struct Writer : public dataset::segment::Writer
 {
     File* fd = nullptr;
+    utils::Lock lock;
 
     Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd);
     ~Writer();
@@ -50,19 +52,17 @@ struct Writer : public dataset::segment::Writer
      * @return the offset at which the buffer is written
      */
     off_t append(const std::vector<uint8_t>& buf);
-
-    void truncate(size_t offset) override;
-
-    void test_add_padding(unsigned size) override;
-    void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
-    void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
-    void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
 };
 
 
 class Checker : public dataset::segment::Checker
 {
 protected:
+    File* fd = nullptr;
+    utils::Lock m_lock;
+
+    virtual void open() = 0;
+
     void validate(Metadata& md, const scan::Validator& v) override;
 
     /**
@@ -83,10 +83,20 @@ protected:
 
 public:
     using dataset::segment::Checker::Checker;
+    ~Checker();
+
+    void lock() override;
+
+    bool exists_on_disk() override;
 
     size_t remove() override;
 
     State check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
+
+    void test_truncate(size_t offset) override;
+    void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
+    void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
+    void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
 };
 
 bool can_store(const std::string& format);

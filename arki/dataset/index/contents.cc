@@ -261,44 +261,15 @@ void Contents::list_segments(std::function<void(const std::string&)> dest)
         dest(sq.fetchString(0));
 }
 
-void Contents::scan_files(segment::contents_func v)
+bool Contents::has_segment(const std::string& relpath) const
 {
-    string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
-    if (m_uniques) query += ", m.uniq";
-    if (m_others) query += ", m.other";
-    if (config().smallfiles) query += ", m.data";
-    query += " FROM md AS m";
-    query += " ORDER BY m.file, m.reftime, m.offset";
-
-    Query mdq("scan_files_md", m_db);
-    mdq.compile(query);
-
-    std::shared_ptr<arki::Reader> reader;
-    string last_file;
-    metadata::Collection mdc;
-    while (mdq.step())
-    {
-        string file = mdq.fetchString(2);
-        if (file != last_file)
-        {
-            if (!last_file.empty())
-            {
-                v(last_file, SEGMENT_OK, mdc);
-                mdc.clear();
-            }
-            last_file = file;
-            string abspath = str::joinpath(config().path, file);
-            reader = arki::Reader::for_auto(abspath);
-        }
-
-        // Rebuild the Metadata
-        unique_ptr<Metadata> md(new Metadata);
-        build_md(mdq, *md, reader);
-        mdc.acquire(move(md));
-    }
-
-    if (!last_file.empty())
-        v(last_file, SEGMENT_OK, mdc);
+    Query q("sel_has_segment", m_db);
+    q.compile("SELECT 1 FROM md WHERE file=? LIMIT 1");
+    q.bind(1, relpath);
+    bool res = false;
+    while (q.step())
+        res = true;
+    return res;
 }
 
 void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& order_by) const
@@ -864,7 +835,6 @@ void RContents::open()
     }
 
     m_db.open(pathname());
-    setupPragmas();
 
     initQueries();
 
@@ -918,10 +888,10 @@ bool WContents::open()
     bool need_create = !sys::access(pathname(), F_OK);
 
     m_db.open(pathname());
-    setupPragmas();
 
     if (need_create)
     {
+        setupPragmas();
         if (!m_others)
         {
             std::set<types::Code> other_members = all_other_tables();
@@ -1159,14 +1129,14 @@ void WContents::reset(const std::string& file)
 
 void WContents::vacuum()
 {
-    m_db.exec("PRAGMA journal_mode = TRUNCATE");
+    //m_db.exec("PRAGMA journal_mode = TRUNCATE");
     if (m_uniques)
         m_db.exec("delete from mduniq where id not in (select uniq from md)");
     if (m_others)
         m_db.exec("delete from mdother where id not in (select other from md)");
     m_db.exec("VACUUM");
     m_db.exec("ANALYZE");
-    m_db.exec("PRAGMA journal_mode = PERSIST");
+    //m_db.exec("PRAGMA journal_mode = PERSIST");
 }
 
 void WContents::flush()

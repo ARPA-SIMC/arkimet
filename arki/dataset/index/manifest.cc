@@ -41,73 +41,12 @@ namespace arki {
 namespace dataset {
 namespace index {
 
-namespace {
-
-struct RepackSort : public sort::Compare
-{
-    int compare(const Metadata& a, const Metadata& b) const override
-    {
-        const types::Type* rta = a.get(TYPE_REFTIME);
-        const types::Type* rtb = b.get(TYPE_REFTIME);
-        if (rta && !rtb) return 1;
-        if (!rta && rtb) return -1;
-        if (rta && rtb)
-            if (int res = rta->compare(*rtb)) return res;
-        if (a.sourceBlob().offset > b.sourceBlob().offset) return 1;
-        if (b.sourceBlob().offset > a.sourceBlob().offset) return -1;
-        return 0;
-    }
-
-    std::string toString() const override { return "reftime,offset"; }
-};
-
-void scan_file(const std::string& root, const std::string& relname, segment::State state, segment::contents_func dest)
-{
-    string absname = str::joinpath(root, relname);
-    auto reader = arki::Reader::for_auto(absname);
-
-#if 0
-    // If the segment file is compressed, create a temporary uncompressed copy
-    unique_ptr<utils::compress::TempUnzip> tu;
-    if (!quick && scan::isCompressed(absname))
-        tu.reset(new utils::compress::TempUnzip(absname));
-#endif
-    // TODO: turn this into a Segment::exists/Segment::scan
-    metadata::Collection contents;
-    if (sys::exists(absname + ".metadata"))
-    {
-        Metadata::read_file(metadata::ReadContext(absname + ".metadata", root), [&](unique_ptr<Metadata> md) {
-            // Tweak Blob sources replacing the file name with relname
-            if (const source::Blob* s = md->has_source_blob())
-                md->set_source(Source::createBlob(s->format, root, relname, s->offset, s->size, reader));
-            contents.acquire(move(md));
-            return true;
-        });
-    }
-    else if (scan::exists(absname))
-        // If scan_file is called, the index knows about the file, so instead
-        // of saying SEGMENT_DELETED because we have data without metadata, we
-        // say SEGMENT_UNALIGNED because the metadata needs to be regenerated
-        state += SEGMENT_UNALIGNED;
-    else
-        state += SEGMENT_MISSING;
-
-    RepackSort cmp;
-    contents.sort(cmp); // Sort by reftime and by offset
-
-    // Pass on the file state to the visitor
-    dest(relname, state, contents);
-}
-}
-
-
 Manifest::Manifest(const std::string& path) : m_path(path) {}
 Manifest::~Manifest() {}
 
 void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
 {
-    vector<string> files;
-    fileList(matcher, files);
+    vector<string> files = file_list(matcher);
 
     for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
@@ -125,8 +64,7 @@ void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
 
 bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    vector<string> files;
-    fileList(q.matcher, files);
+    vector<string> files = file_list(q.matcher);
 
     // TODO: does it make sense to check with the summary first?
 
@@ -457,32 +395,42 @@ public:
         rw = true;
     }
 
-    void fileList(const Matcher& matcher, std::vector<std::string>& files)
+    std::vector<std::string> file_list(const Matcher& matcher) override
     {
+        std::vector<std::string> files;
         reread();
 
         string query;
         unique_ptr<Time> begin;
         unique_ptr<Time> end;
         if (!matcher.restrict_date_range(begin, end))
-            return;
+            return files;
 
+        std::vector<const Info*> res;
         if (!begin.get() && !end.get())
         {
             // No restrictions on reftime: get all files
-            for (vector<Info>::const_iterator i = info.begin();
-                    i != info.end(); ++i)
-                files.push_back(i->file);
+            for (const auto& i: info)
+                res.push_back(&i);
         } else {
             // Get files with matching reftime
-            for (vector<Info>::const_iterator i = info.begin();
-                    i != info.end(); ++i)
+            for (const auto& i: info)
             {
-                if (begin.get() && i->end_time < *begin) continue;
-                if (end.get() && i->start_time > *end) continue;
-                files.push_back(i->file);
+                if (begin.get() && i.end_time < *begin) continue;
+                if (end.get() && i.start_time > *end) continue;
+                res.push_back(&i);
             }
         }
+
+        // Re-sort to maintain the invariant that results are sorted by
+        // start_time even if we have segments with names outside the normal
+        // dataset step that do not sort properly
+        std::sort(res.begin(), res.end(), [](const Info* a, const Info* b) { return a->start_time < b->start_time; });
+
+        for (const auto* i: res)
+            files.push_back(i->file);
+
+        return files;
     }
 
     bool segment_timespan(const std::string& relname, Time& start_time, Time& end_time) const override
@@ -563,37 +511,25 @@ public:
             dest(i.file);
     }
 
-    void scan_files(segment::contents_func v) override
+    bool has_segment(const std::string& relpath) const override
     {
-        reread();
+        // Lookup the file (FIXME: reimplement binary search so we
+        // don't need to create a temporary Info)
+        Info sample(relpath, 0, Time(0, 0, 0), Time(0, 0, 0));
+        vector<Info>::const_iterator lb = lower_bound(info.begin(), info.end(), sample);
+        return lb != info.end() && lb->file == relpath;
+    }
 
-        for (const auto& i: this->info)
-        {
-            string pathname = str::joinpath(m_path, i.file);
-
-            time_t ts_data = scan::timestamp(pathname);
-            time_t ts_md = sys::timestamp(pathname + ".metadata", 0);
-            time_t ts_sum = sys::timestamp(pathname + ".summary", 0);
-            time_t ts_idx = i.mtime;
-
-            segment::State state = SEGMENT_OK;
-            if (ts_idx != ts_data || ts_md < ts_data || ts_sum < ts_md)
-            {
-                // Check timestamp consistency
-                if (ts_idx != ts_data)
-                    nag::verbose("%s: %s has a timestamp (%d) different than the one in the index (%d)",
-                            m_path.c_str(), i.file.c_str(), ts_data, ts_idx);
-                if (ts_md < ts_data)
-                    nag::verbose("%s: %s has a timestamp (%d) newer that its metadata (%d)",
-                            m_path.c_str(), i.file.c_str(), ts_data, ts_md);
-                if (ts_md < ts_data)
-                    nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
-                            m_path.c_str(), i.file.c_str(), ts_md, ts_sum);
-                state = SEGMENT_UNALIGNED;
-            }
-
-            scan_file(m_path, i.file, state, v);
-        }
+    time_t segment_mtime(const std::string& relpath) const override
+    {
+        // Lookup the file (FIXME: reimplement binary search so we
+        // don't need to create a temporary Info)
+        Info sample(relpath, 0, Time(0, 0, 0), Time(0, 0, 0));
+        vector<Info>::const_iterator lb = lower_bound(info.begin(), info.end(), sample);
+        if (lb != info.end() && lb->file == relpath)
+            return lb->mtime;
+        else
+            return 0;
     }
 
     void flush()
@@ -631,6 +567,7 @@ public:
                 i.file = new_relpath;
                 dirty = true;
             }
+        std::sort(info.begin(), info.end());
     }
 
     static bool exists(const std::string& dir)
@@ -732,13 +669,14 @@ public:
         initQueries();
     }
 
-    void fileList(const Matcher& matcher, std::vector<std::string>& files) override
+    std::vector<std::string> file_list(const Matcher& matcher) override
     {
+        std::vector<std::string> files;
         string query;
         unique_ptr<Time> begin;
         unique_ptr<Time> end;
         if (!matcher.restrict_date_range(begin, end))
-            return;
+            return files;
 
         if (!begin.get() && !end.get())
         {
@@ -766,6 +704,7 @@ public:
         q.compile(query);
         while (q.step())
             files.push_back(q.fetchString(0));
+        return files;
     }
 
     bool segment_timespan(const std::string& relname, Time& start_time, Time& end_time) const override
@@ -871,45 +810,26 @@ public:
             dest(q.fetchString(0));
     }
 
-    void scan_files(segment::contents_func v) override
+    bool has_segment(const std::string& relpath) const override
     {
-        // Preread the file list, so it does not get modified as we scan
-        vector< pair<string, time_t> > files;
-        {
-            Query q("sel_archive", m_db);
-            q.compile("SELECT file, mtime FROM files ORDER BY start_time");
+        Query q("sel_has_segment", m_db);
+        q.compile("SELECT 1 FROM files WHERE file=?");
+        q.bind(1, relpath);
+        bool res = false;
+        while (q.step())
+            res = true;
+        return res;
+    }
 
-            while (q.step())
-                files.push_back(make_pair(q.fetchString(0), q.fetch<time_t>(1)));
-        }
-
-        for (const auto& i: files)
-        {
-            string pathname = str::joinpath(m_path, i.first);
-
-            time_t ts_data = scan::timestamp(pathname);
-            time_t ts_md = sys::timestamp(pathname + ".metadata", 0);
-            time_t ts_sum = sys::timestamp(pathname + ".summary", 0);
-            time_t ts_idx = i.second;
-
-            segment::State state = SEGMENT_OK;
-            if (ts_idx != ts_data || ts_md < ts_data || ts_sum < ts_md)
-            {
-                // Check timestamp consistency
-                if (ts_idx != ts_data)
-                    nag::verbose("%s: %s has a timestamp (%d) different than the one in the index (%d)",
-                            m_path.c_str(), i.first.c_str(), ts_data, ts_idx);
-                if (ts_md < ts_data)
-                    nag::verbose("%s: %s has a timestamp (%d) newer that its metadata (%d)",
-                            m_path.c_str(), i.first.c_str(), ts_data, ts_md);
-                if (ts_md < ts_data)
-                    nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
-                            m_path.c_str(), i.first.c_str(), ts_md, ts_sum);
-                state = SEGMENT_UNALIGNED;
-            }
-
-            scan_file(m_path, i.first, state, v);
-        }
+    time_t segment_mtime(const std::string& relpath) const override
+    {
+        Query q("sel_mtime", m_db);
+        q.compile("SELECT mtime FROM files WHERE file=?");
+        q.bind(1, relpath);
+        time_t res = 0;
+        while (q.step())
+            res = q.fetch<time_t>(0);
+        return res;
     }
 
     void test_rename(const std::string& relpath, const std::string& new_relpath) override

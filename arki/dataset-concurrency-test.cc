@@ -42,45 +42,92 @@ struct FixtureWriter : public DatasetTest
     }
 };
 
+
+class TestSubprocess : public wibble::sys::ChildProcess
+{
+protected:
+    int commfd;
+
+public:
+    void start()
+    {
+        forkAndRedirect(0, &commfd);
+    }
+
+    void notify_ready()
+    {
+        putchar('H');
+        fflush(stdout);
+    }
+
+    char wait_until_ready()
+    {
+        char buf[2];
+        ssize_t res = read(commfd, buf, 1);
+        if (res < 0)
+            throw_system_error("reading 1 byte from child process");
+        if (res == 0)
+            throw runtime_error("child process closed stdout without producing any output");
+        return buf[0];
+    }
+};
+
+
 template<class Fixture>
 struct ConcurrentImporter : public wibble::sys::ChildProcess
 {
     Fixture& fixture;
     unsigned initial;
     unsigned increment;
+    bool increment_year;
 
-    ConcurrentImporter(Fixture& fixture, unsigned initial, unsigned increment)
-        : fixture(fixture), initial(initial), increment(increment)
+    ConcurrentImporter(Fixture& fixture, unsigned initial, unsigned increment, bool increment_year=false)
+        : fixture(fixture), initial(initial), increment(increment), increment_year(increment_year)
     {
     }
 
-    virtual int main() override
+    int main() override
     {
-        auto ds(fixture.config().create_writer());
+        arki::utils::Lock::test_set_nowait_default(false);
+        try {
+            auto ds(fixture.config().create_writer());
 
-        Metadata md = fixture.td.test_data[0].md;
+            Metadata md = fixture.td.test_data[0].md;
 
-        for (unsigned i = initial; i < 60; i += increment)
-        {
-            md.set(types::Reftime::createPosition(core::Time(2016, 6, 1, 0, 0, i)));
-            wassert(actual(ds->acquire(md)) == dataset::Writer::ACQ_OK);
+            for (unsigned i = initial; i < 60; i += increment)
+            {
+                if (increment_year)
+                    md.set(types::Reftime::createPosition(core::Time(2000 + i, 6, 1, 0, 0, 0)));
+                else
+                    md.set(types::Reftime::createPosition(core::Time(2000, 6, 1, 0, 0, i)));
+                //fprintf(stderr, "%d: %d\n", (int)getpid(), i);
+                auto res = ds->acquire(md);
+                if (res != dataset::Writer::ACQ_OK)
+                {
+                    fprintf(stderr, "Acquire result: %d\n", (int)res);
+                    for (const auto& note: md.notes())
+                        fprintf(stderr, "  note: %s\n", note.content.c_str());
+                    return 2;
+                }
+            }
+
+            return 0;
+        } catch (std::exception& e) {
+            fprintf(stderr, "importer:%u%u: %s\n", initial, increment, e.what());
+            return 1;
         }
-
-        return 0;
     }
 };
 
-struct ReadHang : public wibble::sys::ChildProcess
+struct ReadHang : public TestSubprocess
 {
     std::shared_ptr<const dataset::Config> config;
-    int commfd;
 
     ReadHang(std::shared_ptr<const dataset::Config> config) : config(config) {}
 
     bool eat(unique_ptr<Metadata>&& md)
     {
-        // Notify start of reading
-        cout << "H" << endl;
+        notify_ready();
         // Get stuck while reading
         while (true)
             usleep(100000);
@@ -99,20 +146,39 @@ struct ReadHang : public wibble::sys::ChildProcess
         }
         return 0;
     }
+};
 
-    void start()
-    {
-        forkAndRedirect(0, &commfd);
-    }
+struct HungReporter : public dataset::NullReporter
+{
+    TestSubprocess& sp;
 
-    char waitUntilHung()
+    HungReporter(TestSubprocess& sp) : sp(sp) {}
+
+    void segment_info(const std::string& ds, const std::string& relpath, const std::string& message) override
     {
-        char buf[2];
-        if (read(commfd, buf, 1) != 1)
-            throw_system_error("reading 1 byte from child process");
-        return buf[0];
+        sp.notify_ready();
+        while (true)
+            sleep(3600);
     }
 };
+
+template<class Fixture>
+struct CheckForever : public TestSubprocess
+{
+    Fixture& fixture;
+    int commfd;
+
+    CheckForever(Fixture& fixture) : fixture(fixture) {}
+
+    int main() override
+    {
+        auto ds(fixture.config().create_checker());
+        HungReporter reporter(*this);
+        ds->check(reporter, false, false);
+        return 0;
+    }
+};
+
 
 template<class Data>
 class Tests : public FixtureTestCase<FixtureWriter<Data>>
@@ -144,32 +210,25 @@ void Tests<Data>::register_tests() {
 
 typedef FixtureWriter<Data> Fixture;
 
-this->add_method("concurrent_import", [](Fixture& f) {
-    ConcurrentImporter<Fixture> i0(f, 0, 3);
-    ConcurrentImporter<Fixture> i1(f, 1, 3);
-    ConcurrentImporter<Fixture> i2(f, 2, 3);
+this->add_method("read_read", [](Fixture& f) {
+    f.import_all(f.td);
 
-    i0.fork();
-    i1.fork();
-    i2.fork();
+    // Query the index and hang
+    ReadHang readHang(f.dataset_config());
+    readHang.start();
+    wassert(actual(readHang.wait_until_ready()) == 'H');
 
-    i0.wait();
-    i1.wait();
-    i2.wait();
+    // Query in parallel with the other read
+    metadata::Collection mdc(*f.config().create_reader(), Matcher());
 
-    auto reader = f.config().create_reader();
-    metadata::Collection mdc(*reader, Matcher());
-    wassert(actual(mdc.size()) == 60u);
+    readHang.kill(9);
+    readHang.wait();
 
-    for (int i = 0; i < 60; ++i)
-    {
-        auto rt = mdc[i].get<types::reftime::Position>();
-        wassert(actual(rt->time.se) == i);
-    }
+    wassert(actual(mdc.size()) == 3u);
 });
 
 // Test acquiring with a reader who's stuck on output
-this->add_method("import_with_hung_reader", [](Fixture& f) {
+this->add_method("read_write", [](Fixture& f) {
     f.clean();
 
     // Import one grib in the dataset
@@ -182,7 +241,7 @@ this->add_method("import_with_hung_reader", [](Fixture& f) {
     // Query the index and hang
     ReadHang readHang(f.dataset_config());
     readHang.start();
-    wassert(actual(readHang.waitUntilHung()) == 'H');
+    wassert(actual(readHang.wait_until_ready()) == 'H');
 
     // Import another grib in the dataset
     {
@@ -198,31 +257,7 @@ this->add_method("import_with_hung_reader", [](Fixture& f) {
     wassert(actual(mdc1.size()) == 2u);
 });
 
-this->add_method("repack_during_read", [](Fixture& f) {
-    auto orig_data = f.td.earliest_element().md.getData();
-
-    f.reset_test("step=single");
-    f.import_all(f.td);
-
-    auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery("", true), [&](unique_ptr<Metadata> md) {
-        {
-            auto checker = f.dataset_config()->create_checker();
-            dataset::NullReporter rep;
-            try {
-                checker->repack(rep, true, dataset::TEST_MISCHIEF_MOVE_DATA);
-            } catch (std::exception& e) {
-                wassert(actual(e.what()).contains("a read lock is already held"));
-            }
-        }
-
-        auto data = md->getData();
-        wassert(actual(data == orig_data).istrue());
-        return false;
-    });
-});
-
-this->add_method("import_during_read", [](Fixture& f) {
+this->add_method("read_write1", [](Fixture& f) {
     f.reset_test("step=single");
 
     // Import one
@@ -254,6 +289,128 @@ this->add_method("import_during_read", [](Fixture& f) {
     reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 3u);
 });
+
+this->add_method("write_write_same_segment", [](Fixture& f) {
+    ConcurrentImporter<Fixture> i0(f, 0, 3);
+    ConcurrentImporter<Fixture> i1(f, 1, 3);
+    ConcurrentImporter<Fixture> i2(f, 2, 3);
+
+    i0.fork();
+    i1.fork();
+    i2.fork();
+
+    wassert(actual(i0.wait()) == 0);
+    wassert(actual(i1.wait()) == 0);
+    wassert(actual(i2.wait()) == 0);
+
+    auto reader = f.config().create_reader();
+    metadata::Collection mdc(*reader, Matcher());
+    wassert(actual(mdc.size()) == 60u);
+
+    for (int i = 0; i < 60; ++i)
+    {
+        auto rt = mdc[i].get<types::reftime::Position>();
+        wassert(actual(rt->time.se) == i);
+    }
+});
+
+this->add_method("write_write_different_segments", [](Fixture& f) {
+    ConcurrentImporter<Fixture> i0(f, 0, 3, true);
+    ConcurrentImporter<Fixture> i1(f, 1, 3, true);
+    ConcurrentImporter<Fixture> i2(f, 2, 3, true);
+
+    i0.fork();
+    i1.fork();
+    i2.fork();
+
+    wassert(actual(i0.wait()) == 0);
+    wassert(actual(i1.wait()) == 0);
+    wassert(actual(i2.wait()) == 0);
+
+    auto reader = f.config().create_reader();
+    metadata::Collection mdc(*reader, Matcher());
+    wassert(actual(mdc.size()) == 60u);
+
+    for (int i = 0; i < 60; ++i)
+    {
+        auto rt = mdc[i].get<types::reftime::Position>();
+        wassert(actual(rt->time.ye) == 2000 + i);
+    }
+});
+
+this->add_method("read_repack", [](Fixture& f) {
+    auto orig_data = f.td.earliest_element().md.getData();
+
+    f.reset_test("step=single");
+    f.import_all(f.td);
+
+    auto reader = f.dataset_config()->create_reader();
+    reader->query_data(dataset::DataQuery("", true), [&](unique_ptr<Metadata> md) {
+        {
+            auto checker = f.dataset_config()->create_checker();
+            dataset::NullReporter rep;
+            try {
+                checker->repack(rep, true, dataset::TEST_MISCHIEF_MOVE_DATA);
+            } catch (std::exception& e) {
+                wassert(actual(e.what()).contains("a read lock is already held"));
+            }
+        }
+
+        auto data = md->getData();
+        wassert(actual(data == orig_data).istrue());
+        return false;
+    });
+});
+
+// Test parallel check and write
+this->add_method("write_check", [](Fixture& f) {
+    utils::Lock::TestNowait lock_nowait;
+
+    bool is_iseg;
+
+    {
+        auto writer = f.config().create_writer();
+        is_iseg = writer->type() == "iseg";
+        wassert(actual(writer->acquire(f.td.test_data[0].md)) == dataset::Writer::ACQ_OK);
+        writer->flush();
+
+        // Create an error to trigger a call to the reporter that then hangs
+        // the checke
+        f.makeSegmentedChecker()->test_corrupt_data(f.td.test_data[0].md.sourceBlob().filename, 0);
+    }
+
+    CheckForever<Fixture> cf(f);
+    cf.start();
+    cf.wait_until_ready();
+
+    if (!is_iseg)
+    {
+        try {
+            f.config().create_writer();
+            wassert(actual(0) == 1);
+        } catch (std::runtime_error& e) {
+            wassert(actual(e.what()).contains("a read lock is already held"));
+        }
+    } else {
+        auto writer = wcallchecked(f.makeSegmentedWriter());
+        wassert(actual(writer->acquire(f.td.test_data[2].md)) == dataset::Writer::ACQ_OK);
+
+        // Importing on the segment being checked should hang except on dir segments
+        if (f.td.format == "odimh5")
+            writer->acquire(f.td.test_data[0].md);
+        else
+            try {
+                writer->acquire(f.td.test_data[0].md);
+                wassert(actual(0) == 1);
+            } catch (std::runtime_error& e) {
+                wassert(actual(e.what()).contains("a read lock is already held"));
+            }
+    }
+
+    cf.kill(9);
+    cf.wait();
+});
+
 
 }
 }

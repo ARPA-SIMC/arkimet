@@ -89,10 +89,21 @@ struct Append : public Transaction
 Writer::Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd)
     : segment::Writer(root, relname, fd->name()), fd(fd.release())
 {
+    // Lock everything after the end of the file, for writing, to disallow
+    // concurrent appends
+    lock.l_type = F_WRLCK;
+    lock.l_whence = SEEK_END;
+    lock.l_start = 1;
+    lock.l_len = 0;
+    lock.ofd_setlkw(*(this->fd));
 }
 
 Writer::~Writer()
 {
+    // TODO: consider a non-throwing setlk implementation to avoid throwing
+    // in destructors
+    lock.l_type = F_UNLCK;
+    lock.ofd_setlk(*fd);
     delete fd;
 }
 
@@ -115,80 +126,43 @@ off_t Writer::append(const std::vector<uint8_t>& buf)
     return pos;
 }
 
-void Writer::truncate(size_t offset)
-{
-    if (!sys::exists(absname))
-        utils::createFlagfile(absname);
 
-    utils::files::PreserveFileTimes pft(absname);
-    if (::truncate(absname.c_str(), offset) < 0)
+Checker::~Checker()
+{
+    if (fd)
     {
-        stringstream ss;
-        ss << "cannot truncate " << absname << " at " << offset;
-        throw std::system_error(errno, std::system_category(), ss.str());
+        // TODO: consider a non-throwing setlk implementation to avoid throwing
+        // in destructors
+        m_lock.l_type = F_UNLCK;
+        m_lock.ofd_setlk(*fd);
+        delete fd;
     }
 }
 
-void Writer::test_add_padding(unsigned size)
+void Checker::lock()
 {
-    fd->test_add_padding(size);
+    if (!sys::exists(absname)) return;
+    open();
+
+    // Lock the whole file even past its end, to disallow concurrent writes
+    m_lock.l_type = F_RDLCK;
+    m_lock.l_whence = SEEK_SET;
+    m_lock.l_start = 0;
+    m_lock.l_len = 0;
+    m_lock.ofd_setlkw(*(this->fd));
 }
 
-void Writer::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
+bool Checker::exists_on_disk()
 {
-    arki::File fd(absname, O_RDWR);
-    sys::PreserveFileTimes pt(fd);
-    off_t start_ofs = mds[data_idx].sourceBlob().offset;
-    off_t end = fd.lseek(0, SEEK_END);
-    std::vector<uint8_t> buf(end - start_ofs);
-    fd.lseek(start_ofs);
-    fd.read_all_or_throw(buf.data(), buf.size());
-    fd.lseek(start_ofs - overlap_size);
-    fd.write_all_or_throw(buf.data(), buf.size());
-    fd.ftruncate(end - overlap_size);
+    if (sys::isdir(absname)) return false;
 
-    for (unsigned i = data_idx; i < mds.size(); ++i)
-    {
-        unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
-        source->offset -= overlap_size;
-        mds[i].set_source(move(source));
-    }
+    // If it's not a directory, it must exist in the file system,
+    // compressed or not
+    if (!sys::exists(absname) && !sys::exists(absname + ".gz"))
+        return false;
+
+    return true;
 }
-
-void Writer::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
-{
-    arki::File fd(absname, O_RDWR);
-    sys::PreserveFileTimes pt(fd);
-    off_t end = fd.lseek(0, SEEK_END);
-    if (data_idx >= mds.size())
-    {
-        fd.ftruncate(end + hole_size);
-    } else {
-        off_t start_ofs = mds[data_idx].sourceBlob().offset;
-        std::vector<uint8_t> buf(end - start_ofs);
-        fd.lseek(start_ofs);
-        fd.read_all_or_throw(buf.data(), buf.size());
-        fd.lseek(start_ofs + hole_size);
-        fd.write_all_or_throw(buf.data(), buf.size());
-
-        for (unsigned i = data_idx; i < mds.size(); ++i)
-        {
-            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
-            source->offset += hole_size;
-            mds[i].set_source(move(source));
-        }
-    }
-}
-
-void Writer::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
-{
-    const auto& s = mds[data_idx].sourceBlob();
-    arki::File fd(absname, O_RDWR);
-    sys::PreserveFileTimes pt(fd);
-    fd.lseek(s.offset);
-    fd.write_all_or_throw("\0", 1);
-}
-
 
 State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap, bool quick)
 {
@@ -309,7 +283,6 @@ Pending Checker::repack_impl(
         Rename(const std::string& tmpabsname, const std::string& absname)
             : src(absname, O_RDWR), tmpabsname(tmpabsname), absname(absname)
         {
-            repack_lock();
         }
 
         virtual ~Rename()
@@ -317,44 +290,12 @@ Pending Checker::repack_impl(
             if (!fired) rollback();
         }
 
-        /**
-         * Lock the whole segment for repacking
-         */
-        void repack_lock()
-        {
-            Lock lock;
-            lock.l_type = F_WRLCK;
-            lock.l_whence = SEEK_SET;
-            lock.l_start = 0;
-            lock.l_len = 0;
-            lock.ofd_setlkw(src);
-        }
-
-        /**
-         * Unlock the segment after repacking
-         */
-        void repack_unlock()
-        {
-            Lock lock;
-            lock.l_type = F_UNLCK;
-            lock.l_whence = SEEK_SET;
-            lock.l_start = 0;
-            lock.l_len = 0;
-            lock.ofd_setlk(src);
-        }
-
         virtual void commit()
         {
             if (fired) return;
             // Rename the data file to its final name
-            try {
-                if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
-                    throw_system_error("cannot rename " + tmpabsname + " to " + absname);
-            } catch (...) {
-                repack_unlock();
-                throw;
-            }
-            repack_unlock();
+            if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
+                throw_system_error("cannot rename " + tmpabsname + " to " + absname);
             fired = true;
         }
 
@@ -362,7 +303,6 @@ Pending Checker::repack_impl(
         {
             if (fired) return;
             unlink(tmpabsname.c_str());
-            repack_unlock();
             fired = true;
         }
     };
@@ -384,7 +324,7 @@ Pending Checker::repack_impl(
     auto writer(make_tmp_segment(tmprelname, tmpabsname));
 
     if (test_flags & TEST_MISCHIEF_MOVE_DATA)
-        writer->test_add_padding(1);
+        writer->fd->test_add_padding(1);
 
     // Fill the temp file with all the data in the right order
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
@@ -404,6 +344,75 @@ Pending Checker::repack_impl(
     }
 
     return p;
+}
+
+void Checker::test_truncate(size_t offset)
+{
+    if (!sys::exists(absname))
+        utils::createFlagfile(absname);
+
+    utils::files::PreserveFileTimes pft(absname);
+    if (::truncate(absname.c_str(), offset) < 0)
+    {
+        stringstream ss;
+        ss << "cannot truncate " << absname << " at " << offset;
+        throw std::system_error(errno, std::system_category(), ss.str());
+    }
+}
+
+void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
+{
+    arki::File fd(absname, O_RDWR);
+    sys::PreserveFileTimes pt(fd);
+    off_t end = fd.lseek(0, SEEK_END);
+    if (data_idx >= mds.size())
+    {
+        fd.ftruncate(end + hole_size);
+    } else {
+        off_t start_ofs = mds[data_idx].sourceBlob().offset;
+        std::vector<uint8_t> buf(end - start_ofs);
+        fd.lseek(start_ofs);
+        fd.read_all_or_throw(buf.data(), buf.size());
+        fd.lseek(start_ofs + hole_size);
+        fd.write_all_or_throw(buf.data(), buf.size());
+
+        for (unsigned i = data_idx; i < mds.size(); ++i)
+        {
+            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+            source->offset += hole_size;
+            mds[i].set_source(move(source));
+        }
+    }
+}
+
+void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
+{
+    arki::File fd(absname, O_RDWR);
+    sys::PreserveFileTimes pt(fd);
+    off_t start_ofs = mds[data_idx].sourceBlob().offset;
+    off_t end = fd.lseek(0, SEEK_END);
+    std::vector<uint8_t> buf(end - start_ofs);
+    fd.lseek(start_ofs);
+    fd.read_all_or_throw(buf.data(), buf.size());
+    fd.lseek(start_ofs - overlap_size);
+    fd.write_all_or_throw(buf.data(), buf.size());
+    fd.ftruncate(end - overlap_size);
+
+    for (unsigned i = data_idx; i < mds.size(); ++i)
+    {
+        unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+        source->offset -= overlap_size;
+        mds[i].set_source(move(source));
+    }
+}
+
+void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+{
+    const auto& s = mds[data_idx].sourceBlob();
+    arki::File fd(absname, O_RDWR);
+    sys::PreserveFileTimes pt(fd);
+    fd.lseek(s.offset);
+    fd.write_all_or_throw("\0", 1);
 }
 
 

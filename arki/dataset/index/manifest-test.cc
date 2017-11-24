@@ -110,9 +110,8 @@ add_method("empty", [] {
 	std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
 	m->openRO();
 
-	vector<string> files;
-	m->fileList(Matcher(), files);
-	ensure(files.empty());
+    vector<string> files = m->file_list(Matcher());
+    ensure(files.empty());
 });
 
 // Test creating a new manifest
@@ -128,9 +127,6 @@ add_method("create", [] {
 
     size_t count = 0;
     m->list_segments([&](const std::string&) { ++count; });
-    wassert(actual(count) == 0u);
-
-    m->scan_files([&](const std::string&, segment::State, const metadata::Collection&) { ++count; });
     wassert(actual(count) == 0u);
 
     m->vacuum();
@@ -153,17 +149,15 @@ add_method("add_remove", [] {
 	m->acquire("a.grib1", 1000010, s);
 	m->acquire("foo/b.grib1", 1000011, s);
 
-	vector<string> files;
-	m->fileList(Matcher(), files);
-	ensure_equals(files.size(), 2u);
-	ensure_equals(files[0], "a.grib1");
-	ensure_equals(files[1], "foo/b.grib1");
+    vector<string> files = m->file_list(Matcher());
+    ensure_equals(files.size(), 2u);
+    ensure_equals(files[0], "a.grib1");
+    ensure_equals(files[1], "foo/b.grib1");
 
-	m->remove("a.grib1");
-	files.clear();
-	m->fileList(Matcher(), files);
-	ensure_equals(files.size(), 1u);
-	ensure_equals(files[0], "foo/b.grib1");
+    m->remove("a.grib1");
+    files = m->file_list(Matcher());
+    ensure_equals(files.size(), 1u);
+    ensure_equals(files[0], "foo/b.grib1");
 });
 
 // TODO: Retest with sqlite
@@ -203,26 +197,13 @@ add_method("modify_while_scanning", [] {
         wassert(actual(count) == 3u);
     }
 
-    // Enumerate with scan_files while adding files
-    {
-        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
-        m->openRW();
-        size_t count = 0;
-        m->scan_files([&](const std::string&, segment::State, const metadata::Collection&) {
-            ++count;
-            m->acquire("50.grib1", mtime, s);
-        });
-        // The enumeration should return only the files previously known
-        wassert(actual(count) == 4u);
-    }
-
     // Check again, we should have all that we added so far
     {
         std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
         m->openRW();
         size_t count = 0;
         m->list_segments([&](const std::string&) { ++count; });
-        wassert(actual(count) == 5u);
+        wassert(actual(count) == 4u);
     }
 });
 

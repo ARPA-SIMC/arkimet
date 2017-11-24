@@ -16,6 +16,7 @@ class Summary;
 
 namespace dataset {
 namespace ondisk2 {
+struct CheckerSegment;
 
 namespace writer {
 class RealRepacker;
@@ -27,6 +28,9 @@ class Writer : public IndexedWriter
 protected:
     std::shared_ptr<const ondisk2::Config> m_config;
     index::WContents* idx;
+    LocalLock* lock = nullptr;
+    void acquire_lock();
+    void release_lock();
 
     AcquireResult acquire_replace_never(Metadata& md);
     AcquireResult acquire_replace_always(Metadata& md);
@@ -59,23 +63,27 @@ class Checker : public IndexedChecker
 protected:
     std::shared_ptr<const ondisk2::Config> m_config;
     index::WContents* idx;
+    LocalLock* lock = nullptr;
+    void acquire_lock();
+    void release_lock();
 
 public:
     Checker(std::shared_ptr<const ondisk2::Config> config);
+    ~Checker();
 
     const ondisk2::Config& config() const override { return *m_config; }
 
     std::string type() const override;
 
-    segmented::State scan(dataset::Reporter& reporter, bool quick=true) override;
+    std::unique_ptr<segmented::CheckerSegment> segment(const std::string& relpath) override;
+    void segments(std::function<void(segmented::CheckerSegment& segment)>) override;
+    void segments_untracked(std::function<void(segmented::CheckerSegment& segment)>) override;
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
     void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
 
     void rescanSegment(const std::string& relpath) override;
     void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
-    size_t repackSegment(const std::string& relpath, unsigned test_flags=0) override;
-    size_t reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags=0) override;
     size_t removeSegment(const std::string& relpath, bool withData=false) override;
     void releaseSegment(const std::string& relpath, const std::string& destpath) override;
     size_t vacuum(dataset::Reporter& reporter) override;
@@ -84,6 +92,7 @@ public:
 
     friend class writer::RealRepacker;
     friend class writer::RealFixer;
+    friend class CheckerSegment;
 };
 
 }

@@ -19,12 +19,16 @@ class Manifest;
 
 namespace simple {
 class Reader;
+class CheckerSegment;
 
 class Writer : public IndexedWriter
 {
 protected:
     std::shared_ptr<const simple::Config> m_config;
     index::Manifest* m_mft;
+    LocalLock* lock = nullptr;
+    void acquire_lock();
+    void release_lock();
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
     std::shared_ptr<segment::Writer> file(const Metadata& md, const std::string& format);
@@ -51,6 +55,9 @@ class Checker : public IndexedChecker
 protected:
     std::shared_ptr<const simple::Config> m_config;
     index::Manifest* m_mft;
+    LocalLock* lock = nullptr;
+    void acquire_lock();
+    void release_lock();
 
     /// Return a (shared) instance of the Segment for the given relative pathname
     Segment* file(const Metadata& md, const std::string& format);
@@ -63,21 +70,23 @@ public:
 
     std::string type() const override;
 
-    segmented::State scan(dataset::Reporter& reporter, bool quick=true) override;
+    std::unique_ptr<segmented::CheckerSegment> segment(const std::string& relpath) override;
+    void segments(std::function<void(segmented::CheckerSegment& segment)>) override;
+    void segments_untracked(std::function<void(segmented::CheckerSegment& relpath)>) override;
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
     void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
 
     void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
     void rescanSegment(const std::string& relpath) override;
-    size_t repackSegment(const std::string& relpath, unsigned test_flags=0) override;
-    size_t reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags=0) override;
     void releaseSegment(const std::string& relpath, const std::string& destpath) override;
     size_t removeSegment(const std::string& relpath, bool withData=false) override;
     size_t vacuum(dataset::Reporter& reporter) override;
     void test_remove_index(const std::string& relpath) override;
     void test_rename(const std::string& relpath, const std::string& new_relpath) override;
     void test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx) override;
+
+    friend class CheckerSegment;
 };
 
 }

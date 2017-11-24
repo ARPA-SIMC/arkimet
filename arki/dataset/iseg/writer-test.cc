@@ -1,6 +1,8 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset/iseg/writer.h"
 #include "arki/dataset/iseg/reader.h"
+#include "arki/dataset/reporter.h"
+#include "arki/exceptions.h"
 #include "arki/types/source/blob.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
@@ -9,6 +11,8 @@
 #include "arki/scan/grib.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/lock.h"
+#include "arki/wibble/sys/childprocess.h"
 
 using namespace std;
 using namespace arki::tests;

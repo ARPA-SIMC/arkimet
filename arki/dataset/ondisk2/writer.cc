@@ -61,9 +61,22 @@ Writer::Writer(std::shared_ptr<const ondisk2::Config> config)
 Writer::~Writer()
 {
     flush();
+    delete lock;
 }
 
 std::string Writer::type() const { return "ondisk2"; }
+
+void Writer::acquire_lock()
+{
+    if (!lock) lock = new LocalLock(config());
+    lock->acquire();
+}
+
+void Writer::release_lock()
+{
+    if (!lock) return;
+    lock->release();
+}
 
 Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
@@ -248,6 +261,147 @@ Pending Writer::test_writelock()
 }
 
 
+class CheckerSegment : public segmented::CheckerSegment
+{
+public:
+    Checker& checker;
+
+    CheckerSegment(Checker& checker, const std::string& relpath)
+        : checker(checker)
+    {
+        segment = checker.segment_manager().get_checker(relpath);
+    }
+
+    std::string path_relative() const override { return segment->relname; }
+
+    segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
+    {
+        if (!segment->exists_on_disk())
+            return segmented::SegmentState(SEGMENT_MISSING);
+
+        if (!checker.m_idx->has_segment(segment->relname))
+        {
+            bool untrusted_index = files::hasDontpackFlagfile(checker.config().path);
+            reporter.segment_info(checker.name(), segment->relname, "segment found on disk with no associated index data");
+            return segmented::SegmentState(untrusted_index ? SEGMENT_UNALIGNED : SEGMENT_DELETED);
+        }
+
+        metadata::Collection mds;
+        checker.idx->scan_file(segment->relname, mds.inserter_func(), "m.file, m.reftime, m.offset");
+
+        segment::State state = SEGMENT_OK;
+        bool untrusted_index = files::hasDontpackFlagfile(checker.config().path);
+
+        // Compute the span of reftimes inside the segment
+        unique_ptr<Time> md_begin;
+        unique_ptr<Time> md_until;
+        if (mds.empty())
+        {
+            reporter.segment_info(checker.name(), segment->relname, "index knows of this segment but contains no data for it");
+            md_begin.reset(new Time(0, 0, 0));
+            md_until.reset(new Time(0, 0, 0));
+            state = untrusted_index ? SEGMENT_UNALIGNED : SEGMENT_DELETED;
+        } else {
+            if (!mds.expand_date_range(md_begin, md_until))
+            {
+                reporter.segment_info(checker.name(), segment->relname, "index data for this segment has no reference time information");
+                state = SEGMENT_CORRUPTED;
+                md_begin.reset(new Time(0, 0, 0));
+                md_until.reset(new Time(0, 0, 0));
+            } else {
+                // Ensure that the reftime span fits inside the segment step
+                Time seg_begin;
+                Time seg_until;
+                if (checker.config().step().path_timespan(segment->relname, seg_begin, seg_until))
+                {
+                    if (*md_begin < seg_begin || *md_until > seg_until)
+                    {
+                        reporter.segment_info(checker.name(), segment->relname, "segment contents do not fit inside the step of this dataset");
+                        state = SEGMENT_CORRUPTED;
+                    }
+                    // Expand segment timespan to the full possible segment timespan
+                    *md_begin = seg_begin;
+                    *md_until = seg_until;
+                } else {
+                    reporter.segment_info(checker.name(), segment->relname, "segment name does not fit the step of this dataset");
+                    state = SEGMENT_CORRUPTED;
+                }
+            }
+        }
+
+        if (!checker.segment_manager().exists(segment->relname))
+        {
+            // The segment does not exist on disk
+            reporter.segment_info(checker.name(), segment->relname, "segment found in index but not on disk");
+            state = state - SEGMENT_UNALIGNED + SEGMENT_MISSING;
+        }
+
+        if (state.is_ok())
+            state = segment->check(reporter, checker.name(), mds, quick);
+
+        // Scenario: the index has been deleted, and some data has been imported
+        // and appended to an existing segment, recreating an empty index.
+        // That segment would show in the index as DIRTY, because it has a gap of
+        // data not indexed. Since the needs-check-do-not-pack file is present,
+        // however, mark that file for rescanning instead of repacking.
+        if (untrusted_index && state.has(SEGMENT_DIRTY))
+            state = state - SEGMENT_DIRTY + SEGMENT_UNALIGNED;
+
+        auto res = segmented::SegmentState(state, *md_begin, *md_until);
+        res.check_age(segment->relname, checker.config(), reporter);
+        return res;
+    }
+
+    size_t repack(unsigned test_flags) override
+    {
+        metadata::Collection mds;
+        checker.idx->scan_file(segment->relname, mds.inserter_func(), "reftime, offset");
+        return reorder(mds, test_flags);
+    }
+
+    size_t reorder(metadata::Collection& mds, unsigned test_flags) override
+    {
+        // Lock away writes and reads
+        Pending p = checker.idx->beginExclusiveTransaction();
+
+        Pending p_repack = segment->repack(checker.config().path, mds, test_flags);
+
+        // Reindex mds
+        checker.idx->reset(segment->relname);
+        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+        {
+            const source::Blob& source = (*i)->sourceBlob();
+            checker.idx->index(**i, source.filename, source.offset);
+        }
+
+        size_t size_pre = sys::isdir(segment->absname) ? 0 : sys::size(segment->absname);
+
+        // Remove the .metadata file if present, because we are shuffling the
+        // data file and it will not be valid anymore
+        string mdpathname = segment->absname + ".metadata";
+        if (sys::exists(mdpathname))
+            if (unlink(mdpathname.c_str()) < 0)
+            {
+                stringstream ss;
+                ss << "cannot remove obsolete metadata file " << mdpathname;
+                throw std::system_error(errno, std::system_category(), ss.str());
+            }
+
+        // Prevent reading the still open old file using the new offsets
+        Metadata::flushDataReaders();
+
+        // Commit the changes in the file system
+        p_repack.commit();
+
+        // Commit the changes in the database
+        p.commit();
+
+        size_t size_post = sys::isdir(segment->absname) ? 0 : sys::size(segment->absname);
+
+        return size_pre - size_post;
+    }
+};
+
 
 Checker::Checker(std::shared_ptr<const ondisk2::Config> config)
     : m_config(config), idx(new index::WContents(config))
@@ -269,7 +423,24 @@ Checker::Checker(std::shared_ptr<const ondisk2::Config> config)
     release_lock();
 }
 
+Checker::~Checker()
+{
+    delete lock;
+}
+
 std::string Checker::type() const { return "ondisk2"; }
+
+void Checker::acquire_lock()
+{
+    if (!lock) lock = new LocalLock(config(), false);
+    lock->acquire();
+}
+
+void Checker::release_lock()
+{
+    if (!lock) return;
+    lock->release();
+}
 
 void Checker::removeAll(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::removeAll(reporter, writable); release_lock(); }
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags) { acquire_lock(); IndexedChecker::repack(reporter, writable, test_flags); release_lock(); }
@@ -289,99 +460,27 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
     release_lock();
 }
 
-segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
+std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
 {
-    segmented::State segments_state;
+    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath));
+}
 
-    bool untrusted_index = files::hasDontpackFlagfile(config().path);
-
-    //
-    // Populate segments_state with the contents of the index
-    //
-
-    m_idx->scan_files([&](const std::string& relpath, segment::State state, const metadata::Collection& mds) {
-        // Compute the span of reftimes inside the segment
-        unique_ptr<Time> md_begin;
-        unique_ptr<Time> md_until;
-        if (mds.empty())
-        {
-            reporter.segment_info(name(), relpath, "index knows of this segment but contains no data for it");
-            md_begin.reset(new Time(0, 0, 0));
-            md_until.reset(new Time(0, 0, 0));
-            state = untrusted_index ? SEGMENT_UNALIGNED : SEGMENT_DELETED;
-        } else {
-            if (!mds.expand_date_range(md_begin, md_until))
-            {
-                reporter.segment_info(name(), relpath, "index data for this segment has no reference time information");
-                state = SEGMENT_CORRUPTED;
-                md_begin.reset(new Time(0, 0, 0));
-                md_until.reset(new Time(0, 0, 0));
-            } else {
-                // Ensure that the reftime span fits inside the segment step
-                Time seg_begin;
-                Time seg_until;
-                if (config().step().path_timespan(relpath, seg_begin, seg_until))
-                {
-                    if (*md_begin < seg_begin || *md_until > seg_until)
-                    {
-                        reporter.segment_info(name(), relpath, "segment contents do not fit inside the step of this dataset");
-                        state = SEGMENT_CORRUPTED;
-                    }
-                    // Expand segment timespan to the full possible segment timespan
-                    *md_begin = seg_begin;
-                    *md_until = seg_until;
-                } else {
-                    reporter.segment_info(name(), relpath, "segment name does not fit the step of this dataset");
-                    state = SEGMENT_CORRUPTED;
-                }
-            }
-        }
-
-        if (state.is_ok())
-            state = segment_manager().check(reporter, name(), relpath, mds, quick);
-
-        segments_state.insert(make_pair(relpath, segmented::SegmentState(state, *md_begin, *md_until)));
+void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> dest)
+{
+    m_idx->list_segments([&](const std::string& relpath) {
+        CheckerSegment segment(*this, relpath);
+        dest(segment);
     });
+}
 
-
-    //
+void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& relpath)> dest)
+{
     // Add information from the state of files on disk
-    //
-
-    std::set<std::string> disk;
-    segment_manager().scan_dir([&](const std::string& relpath) { disk.insert(relpath);; });
-
-    // files: a, b, c,    e, f, g
-    // index:       c, d, e, f, g
-
-    for (auto& i: segments_state)
-    {
-        if (disk.erase(i.first) == 0)
-        {
-            // The file did not exist on disk
-            reporter.segment_info(name(), i.first, "segment found in index but not on disk");
-            i.second.state = i.second.state - SEGMENT_UNALIGNED + SEGMENT_MISSING;
-        }
-    }
-    for (const auto& relpath : disk)
-    {
-        reporter.segment_info(name(), relpath, "segment found on disk with no associated index data");
-        segments_state.insert(make_pair(relpath, segmented::SegmentState(untrusted_index ? SEGMENT_UNALIGNED : SEGMENT_DELETED)));
-    }
-
-    // Scenario: the index has been deleted, and some data has been imported
-    // and appended to an existing segment. That segment would show in the
-    // index as DIRTY, because it has a gap of data not indexed.
-    // Since the needs-check-do-not-pack file is present, however, mark that
-    // file for rescanning instead of repacking.
-    if (untrusted_index)
-        for (auto& i: segments_state)
-            if (i.second.state.has(SEGMENT_DIRTY))
-                i.second.state = i.second.state - SEGMENT_DIRTY + SEGMENT_UNALIGNED;
-
-    segments_state.check_age(config(), reporter);
-
-    return segments_state;
+    segment_manager().scan_dir([&](const std::string& relpath) {
+        if (m_idx->has_segment(relpath)) return;
+        CheckerSegment segment(*this, relpath);
+        dest(segment);
+    });
 }
 
 
@@ -484,60 +583,6 @@ void Checker::rescanSegment(const std::string& relpath)
     // TODO: remove relevant summary
 }
 
-
-size_t Checker::repackSegment(const std::string& relpath, unsigned test_flags)
-{
-    metadata::Collection mds;
-    idx->scan_file(relpath, mds.inserter_func(), "reftime, offset");
-
-    return reorder_segment(relpath, mds, test_flags);
-}
-
-size_t Checker::reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags)
-{
-    // Lock away writes and reads
-    Pending p = idx->beginExclusiveTransaction();
-
-    // Make a copy of the file with the right data in it, sorted by
-    // reftime, and update the offsets in the index
-    string pathname = str::joinpath(config().path, relpath);
-
-    Pending p_repack = segment_manager().repack(relpath, mds, test_flags);
-
-    // Reindex mds
-    idx->reset(relpath);
-    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
-    {
-        const source::Blob& source = (*i)->sourceBlob();
-        idx->index(**i, source.filename, source.offset);
-    }
-
-    size_t size_pre = sys::isdir(pathname) ? 0 : sys::size(pathname);
-
-    // Remove the .metadata file if present, because we are shuffling the
-    // data file and it will not be valid anymore
-    string mdpathname = pathname + ".metadata";
-    if (sys::exists(mdpathname))
-        if (unlink(mdpathname.c_str()) < 0)
-        {
-            stringstream ss;
-            ss << "cannot remove obsolete metadata file " << mdpathname;
-            throw std::system_error(errno, std::system_category(), ss.str());
-        }
-
-    // Prevent reading the still open old file using the new offsets
-    Metadata::flushDataReaders();
-
-    // Commit the changes in the file system
-    p_repack.commit();
-
-    // Commit the changes in the database
-    p.commit();
-
-    size_t size_post = sys::isdir(pathname) ? 0 : sys::size(pathname);
-
-    return size_pre - size_post;
-}
 
 void Checker::indexSegment(const std::string& relpath, metadata::Collection&& contents)
 {

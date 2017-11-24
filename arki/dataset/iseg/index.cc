@@ -782,7 +782,6 @@ RIndex::RIndex(std::shared_ptr<const iseg::Config> config, const std::string& da
     }
 
     m_db.open(index_pathname);
-    setup_pragmas();
     init_others();
 }
 
@@ -793,10 +792,10 @@ WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& da
     bool need_create = !sys::access(index_pathname, F_OK);
 
     m_db.open(index_pathname);
-    setup_pragmas();
 
     if (need_create)
     {
+        setup_pragmas();
         if (!m_others)
         {
             std::set<types::Code> other_members = all_other_tables();

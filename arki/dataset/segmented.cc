@@ -25,6 +25,11 @@ namespace arki {
 namespace dataset {
 namespace segmented {
 
+bool State::has(const std::string& relpath) const
+{
+    return find(relpath) != end();
+}
+
 const SegmentState& State::get(const std::string& seg) const
 {
     auto res = find(seg);
@@ -33,16 +38,7 @@ const SegmentState& State::get(const std::string& seg) const
     return res->second;
 }
 
-unsigned State::count(segment::State state) const
-{
-    unsigned res = 0;
-    for (const auto& i: *this)
-        if (i.second.state == state)
-            ++res;
-    return res;
-}
-
-void State::check_age(const Config& cfg, dataset::Reporter& reporter)
+void SegmentState::check_age(const std::string& relpath, const Config& cfg, dataset::Reporter& reporter)
 {
     core::Time archive_threshold(0, 0, 0);
     core::Time delete_threshold(0, 0, 0);
@@ -53,22 +49,28 @@ void State::check_age(const Config& cfg, dataset::Reporter& reporter)
     if (cfg.delete_age != -1)
         delete_threshold = st.age_threshold(cfg.delete_age);
 
-    for (auto& i: *this)
+    if (delete_threshold.ye != 0 && delete_threshold >= until)
     {
-        if (delete_threshold.ye != 0 && delete_threshold >= i.second.until)
-        {
-            reporter.segment_info(cfg.name, i.first, "segment old enough to be deleted");
-            i.second.state = i.second.state + SEGMENT_DELETE_AGE;
-            continue;
-        }
-
-        if (archive_threshold.ye != 0 && archive_threshold >= i.second.until)
-        {
-            reporter.segment_info(cfg.name, i.first, "segment old enough to be archived");
-            i.second.state = i.second.state + SEGMENT_ARCHIVE_AGE;
-            continue;
-        }
+        reporter.segment_info(cfg.name, relpath, "segment old enough to be deleted");
+        state = state + SEGMENT_DELETE_AGE;
+        return;
     }
+
+    if (archive_threshold.ye != 0 && archive_threshold >= until)
+    {
+        reporter.segment_info(cfg.name, relpath, "segment old enough to be archived");
+        state = state + SEGMENT_ARCHIVE_AGE;
+        return;
+    }
+}
+
+unsigned State::count(segment::State state) const
+{
+    unsigned res = 0;
+    for (const auto& i: *this)
+        if (i.second.state == state)
+            ++res;
+    return res;
 }
 
 void State::dump(FILE* out) const
@@ -172,6 +174,11 @@ LocalWriter::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Meta
         return dataset::simple::Writer::testAcquire(cfg, md, out);
 
     throw std::runtime_error("cannot simulate dataset acquisition: unknown dataset type \""+type+"\"");
+}
+
+
+CheckerSegment::~CheckerSegment()
+{
 }
 
 
@@ -313,6 +320,21 @@ void Checker::removeAll(dataset::Reporter& reporter, bool writable)
     // TODO:    archive().removeAll(reporter, writable);
 }
 
+void Checker::segments_all(std::function<void(segmented::CheckerSegment& segment)> dest)
+{
+    segments([&](CheckerSegment& segment) { dest(segment); });
+    segments_untracked([&](segmented::CheckerSegment& segment) { dest(segment); });
+}
+
+segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
+{
+    segmented::State segments_state;
+    segments_all([&](CheckerSegment& segment) {
+        segments_state.insert(make_pair(segment.path_relative(), segment.scan(reporter, quick)));
+    });
+    return segments_state;
+}
+
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
     const string& root = config().path;
@@ -332,12 +354,15 @@ void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_f
         repacker.reset(new maintenance::MockRepacker(reporter, *this, test_flags));
 
     try {
-        State state = scan(reporter);
-        for (const auto& i: state)
-            (*repacker)(i.first, i.second.state);
+        segments_all([&](CheckerSegment& segment) {
+            (*repacker)(segment, segment.scan(reporter, true).state);
+        });
         repacker->end();
     } catch (...) {
         // FIXME: this only makes sense for ondisk2
+        // FIXME: also for iseg. Add the marker at the segment level instead of
+        // the dataset level, so that the try/catch can be around the single
+        // segment, and cleared on a segment by segment basis
         files::createDontpackFlagfile(root);
         throw;
     }
@@ -353,11 +378,14 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
     {
         maintenance::RealFixer fixer(reporter, *this);
         try {
-            State state = scan(reporter, quick);
-            for (const auto& i: state)
-                fixer(i.first, i.second.state);
+            segments_all([&](CheckerSegment& segment) {
+                fixer(segment, segment.scan(reporter, quick).state);
+            });
             fixer.end();
         } catch (...) {
+            // FIXME: Add the marker at the segment level instead of
+            // the dataset level, so that the try/catch can be around the single
+            // segment, and cleared on a segment by segment basis
             files::createDontpackFlagfile(root);
             throw;
         }
@@ -365,9 +393,9 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
         files::removeDontpackFlagfile(root);
     } else {
         maintenance::MockFixer fixer(reporter, *this);
-        State state = scan(reporter, quick);
-        for (const auto& i: state)
-            fixer(i.first, i.second.state);
+        segments_all([&](CheckerSegment& segment) {
+            fixer(segment, segment.scan(reporter, quick).state);
+        });
         fixer.end();
     }
 

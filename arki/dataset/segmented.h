@@ -114,6 +114,9 @@ struct SegmentState
         : state(state), begin(begin), until(until) {}
     SegmentState(const SegmentState&) = default;
     SegmentState(SegmentState&&) = default;
+
+    /// Check if this segment is old enough to be deleted or archived
+    void check_age(const std::string& relpath, const Config& cfg, dataset::Reporter& reporter);
 };
 
 
@@ -124,15 +127,46 @@ struct State : public std::map<std::string, SegmentState>
 {
     using std::map<std::string, SegmentState>::map;
 
+    bool has(const std::string& relpath) const;
+
     const SegmentState& get(const std::string& seg) const;
 
     /// Count how many segments have this state
     unsigned count(segment::State state) const;
 
-    /// Check if segments are old enough to be deleted or archived
-    void check_age(const Config& cfg, dataset::Reporter& reporter);
-
     void dump(FILE* out) const;
+};
+
+
+class CheckerSegment
+{
+public:
+    std::shared_ptr<segment::Checker> segment;
+
+    virtual ~CheckerSegment();
+
+    virtual std::string path_relative() const = 0;
+    virtual SegmentState scan(dataset::Reporter& reporter, bool quick=true) = 0;
+
+    /**
+     * Optimise the contents of a data file
+     *
+     * In the resulting file, there are no holes for deleted data and all
+     * the data is sorted by reference time
+     *
+     * @returns The number of bytes freed on disk with this operation
+     */
+    virtual size_t repack(unsigned test_flags=0) = 0;
+
+    /**
+     * Rewrite the segment so that the data has the same order as `mds`.
+     *
+     * In the resulting file, there are no holes between data.
+     *
+     * @returns The size difference between the initial segment size and the
+     * final segment size.
+     */
+    virtual size_t reorder(metadata::Collection& mds, unsigned test_flags=0) = 0;
 };
 
 
@@ -158,7 +192,25 @@ public:
      * Scan the dataset, computing the state of each unarchived segment that is
      * either on disk or known by the index.
      */
-    virtual State scan(dataset::Reporter& reporter, bool quick=true) = 0;
+    State scan(dataset::Reporter& reporter, bool quick=true);
+
+    /// Instantiate a CheckerSegment
+    virtual std::unique_ptr<CheckerSegment> segment(const std::string& relpath) = 0;
+
+    /**
+     * List all segments known to this dataset
+     */
+    virtual void segments(std::function<void(CheckerSegment& segment)>) = 0;
+
+    /**
+     * List all segments present on disk but not known to this dataset
+     */
+    virtual void segments_untracked(std::function<void(segmented::CheckerSegment& segment)>) = 0;
+
+    /**
+     * List all segments, both known to this dataset or unknown but found on disk
+     */
+    void segments_all(std::function<void(segmented::CheckerSegment& segment)>);
 
     /// Remove all data from the dataset
     void removeAll(dataset::Reporter& reporter, bool writable) override;
@@ -173,26 +225,6 @@ public:
      * them by rescanning the file
      */
     virtual void rescanSegment(const std::string& relpath) = 0;
-
-    /**
-     * Optimise the contents of a data file
-     *
-     * In the resulting file, there are no holes for deleted data and all
-     * the data is sorted by reference time
-     *
-     * @returns The number of bytes freed on disk with this operation
-     */
-    virtual size_t repackSegment(const std::string& relpath, unsigned test_flags=0) = 0;
-
-    /**
-     * Rewrite the segment so that the data has the same order as `mds`.
-     *
-     * In the resulting file, there are no holes between data.
-     *
-     * @returns The size difference between the initial segment size and the
-     * final segment size.
-     */
-    virtual size_t reorder_segment(const std::string& relpath, metadata::Collection& mds, unsigned test_flags=0) = 0;
 
     /**
      * Remove the file from the dataset

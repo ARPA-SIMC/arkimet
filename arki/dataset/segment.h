@@ -223,6 +223,30 @@ public:
 
 namespace segment {
 
+#if 0
+/**
+ * Lock on a segment.
+ *
+ * Can be:
+ *  - a read lock (lock the whole segment for reading)
+ *  - a write lock (allows read, disallows concurrent append)
+ *  - a repack lock (allows read, disallows append)
+ */
+struct Lock
+{
+    Lock(const Lock&) = delete;
+    Lock& operator=(const Lock&) = delete;
+    Lock(Lock&&) = delete;
+    Lock& operator=(Lock&&) = delete;
+    virtual ~Lock();
+
+    virtual void lock_write() = 0;
+    virtual void lock_repack() = 0;
+    virtual void unlock() = 0;
+};
+#endif
+
+
 struct Writer : public Segment
 {
     using Segment::Segment;
@@ -238,47 +262,6 @@ struct Writer : public Segment
      * commit
      */
     virtual Pending append(Metadata& md, const types::source::Blob** new_source=0) = 0;
-
-    /**
-     * Truncate the segment at the given offset
-     */
-    virtual void truncate(size_t offset) = 0;
-
-    /**
-     * Add padding data inside the segment.
-     *
-     * This is only used in unit tests.
-     */
-    virtual void test_add_padding(unsigned size) = 0;
-
-    /**
-     * Move all the data in the segment starting from the one in position
-     * `data_idx` backwards by `overlap_size.
-     *
-     * `mds` represents the state of the segment before the move, and is
-     * updated to reflect the new state of the segment.
-     */
-    virtual void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) = 0;
-
-    /**
-     * Move all the data in the segment starting from the one in position
-     * `data_idx` forwards by `hole_size`.
-     *
-     * `mds` represents the state of the segment before the move, and is
-     * updated to reflect the new state of the segment.
-     */
-    virtual void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) = 0;
-
-    /**
-     * Corrupt the data at position `data_idx`, by replacing its first byte
-     * with the value 0.
-     */
-    virtual void test_corrupt(const metadata::Collection& mds, unsigned data_idx) = 0;
-
-    /**
-     * Truncate the data at position `data_idx`
-     */
-    virtual void test_truncate(const metadata::Collection& mds, unsigned data_idx);
 };
 
 
@@ -290,8 +273,15 @@ protected:
 public:
     using Segment::Segment;
 
+    virtual void lock() = 0;
+
     virtual segment::State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
+
+    /**
+     * Check if the segment exists on disk
+     */
+    virtual bool exists_on_disk() = 0;
 
     /**
      * Rewrite this segment so that the data are in the same order as in `mds`.
@@ -299,6 +289,40 @@ public:
      * `rootdir` is the directory to use as root for the Blob sources in `mds`.
      */
     virtual Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) = 0;
+
+    /**
+     * Truncate the segment at the given offset
+     */
+    virtual void test_truncate(size_t offset) = 0;
+
+    /**
+     * Truncate the data at position `data_idx`
+     */
+    virtual void test_truncate(const metadata::Collection& mds, unsigned data_idx);
+
+    /**
+     * Move all the data in the segment starting from the one in position
+     * `data_idx` forwards by `hole_size`.
+     *
+     * `mds` represents the state of the segment before the move, and is
+     * updated to reflect the new state of the segment.
+     */
+    virtual void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) = 0;
+
+    /**
+     * Move all the data in the segment starting from the one in position
+     * `data_idx` backwards by `overlap_size.
+     *
+     * `mds` represents the state of the segment before the move, and is
+     * updated to reflect the new state of the segment.
+     */
+    virtual void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) = 0;
+
+    /**
+     * Corrupt the data at position `data_idx`, by replacing its first byte
+     * with the value 0.
+     */
+    virtual void test_corrupt(const metadata::Collection& mds, unsigned data_idx) = 0;
 };
 
 
@@ -307,12 +331,10 @@ class Manager
 {
 protected:
     impl::Cache<Writer> writers;
-    impl::Cache<Checker> checkers;
     std::string root;
 
     virtual std::shared_ptr<Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
     virtual std::shared_ptr<Checker> create_checker_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
-    virtual bool _is_segment(const std::string& format, const std::string& relname) = 0;
 
 public:
     Manager(const std::string& root);
@@ -326,20 +348,12 @@ public:
 
     /// Run a function on each cached writer
     void foreach_cached_writer(std::function<void(Writer&)>);
-    /// Run a function on each cached checker
-    void foreach_cached_checker(std::function<void(Checker&)>);
 
     std::shared_ptr<Writer> get_writer(const std::string& relname);
     std::shared_ptr<Writer> get_writer(const std::string& format, const std::string& relname);
 
     std::shared_ptr<Checker> get_checker(const std::string& relname);
     std::shared_ptr<Checker> get_checker(const std::string& format, const std::string& relname);
-
-    /// Check if the given relname points to a segment
-    bool is_segment(const std::string& relname);
-
-    /// Check if the given relname points to a segment
-    bool is_segment(const std::string& format, const std::string& relname);
 
     /**
      * Repack the file relname, so that it contains only the data in mds, in
@@ -366,7 +380,12 @@ public:
      *
      * This function is useful for implementing unit tests.
      */
-    virtual void truncate(const std::string& relname, size_t offset) = 0;
+    virtual void test_truncate(const std::string& relname, size_t offset) = 0;
+
+    /**
+     * Given the relative path of a segment, return true if it exists on disk
+     */
+    virtual bool exists(const std::string& relpath) const = 0;
 
     /**
      * Scan a dataset for data files, returning a set of pathnames relative to

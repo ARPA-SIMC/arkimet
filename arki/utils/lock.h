@@ -1,11 +1,14 @@
 #ifndef ARKI_UTILS_LOCK_H
 #define ARKI_UTILS_LOCK_H
 
-#include <arki/utils/sys.h>
 #include <fcntl.h>
 
 namespace arki {
 namespace utils {
+
+namespace sys {
+struct NamedFileDescriptor;
+}
 
 /**
  * Wrap a struct flock, calling the corresponding sys::FileDescriptor locking

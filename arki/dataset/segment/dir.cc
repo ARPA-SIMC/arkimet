@@ -31,12 +31,36 @@ namespace segment {
 namespace dir {
 
 Writer::Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname)
-    : segment::Writer(root, relname, absname), seqfile(absname), format(format)
+    : segment::Writer(root, relname, absname), seqfile(absname), write_lock_file(str::joinpath(absname, ".write-lock")), format(format)
 {
     // Ensure that the directory 'absname' exists
     sys::makedirs(absname);
 
     seqfile.open();
+
+    // Lock out other writes
+    // In theory, there is no need of locking dir segments for write, as
+    // incrementing the sequence file is concurrency-safe; however, iseg uses a
+    // sqlite database per segment, which does not support concurrent writes,
+    // so we do locking at the segment level to compensate.
+    // TODO: consider making the locking optional so that it can be done only
+    // by the iseg dataset, to prevent useless locking on simple or ondisk2
+    // datasets. However, this extra locking does no harm, so there can be
+    // redundant locking for the time being.
+    write_lock_file.open(O_WRONLY | O_CREAT, 0666);
+    lock.l_type = F_WRLCK;
+    lock.l_whence = SEEK_SET;
+    lock.l_start = 0;
+    lock.l_len = 0;
+    lock.ofd_setlkw(write_lock_file);
+}
+
+Writer::~Writer()
+{
+    // TODO: consider a non-throwing setlk implementation to avoid throwing
+    // in destructors
+    lock.l_type = F_UNLCK;
+    lock.ofd_setlk(write_lock_file);
 }
 
 size_t Writer::write_file(Metadata& md, File& fd)
@@ -145,18 +169,6 @@ void Writer::foreach_datafile(std::function<void(const char*)> f)
     }
 }
 
-void Writer::truncate(size_t offset)
-{
-    utils::files::PreserveFileTimes pft(absname);
-
-    // Truncate dir segment
-    string format = utils::require_format(absname);
-    foreach_datafile([&](const char* name) {
-        if (strtoul(name, 0, 10) >= offset)
-            sys::unlink(str::joinpath(absname, name));
-    });
-}
-
 off_t Writer::link(const std::string& srcabsname)
 {
     size_t pos;
@@ -174,60 +186,20 @@ off_t Writer::link(const std::string& srcabsname)
     return pos;
 }
 
-void Writer::test_add_padding(unsigned size)
-{
-    seqfile.test_add_padding(size);
-}
-
-void Writer::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
-{
-    for (unsigned i = data_idx; i < mds.size(); ++i)
-    {
-        unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
-        sys::rename(
-                str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
-                str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset - overlap_size, source->format)));
-        source->offset -= overlap_size;
-        mds[i].set_source(move(source));
-    }
-}
-
-void Writer::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
-{
-    if (data_idx >= mds.size())
-    {
-        sys::PreserveFileTimes pf(seqfile.fd);
-        size_t pos;
-        for (unsigned i = 0; i < hole_size; ++i)
-        {
-            File fd = seqfile.open_next(mds[0].sourceBlob().format, pos);
-            fd.close();
-        }
-    } else {
-        for (int i = mds.size() - 1; i >= (int)data_idx; --i)
-        {
-            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
-            sys::rename(
-                    str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
-                    str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset + hole_size, source->format)));
-            source->offset += hole_size;
-            mds[i].set_source(move(source));
-        }
-        // TODO: update seqfile to be mds.size() + hole_size
-    }
-}
-
-void Writer::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
-{
-    const auto& s = mds[data_idx].sourceBlob();
-    File fd(str::joinpath(s.absolutePathname(), SequenceFile::data_fname(s.offset, s.format)), O_WRONLY);
-    fd.write_all_or_throw("\0", 1);
-}
-
 
 Checker::Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname)
     : segment::Checker(root, relname, absname), format(format)
 {
+}
+
+void Checker::lock()
+{
+}
+
+bool Checker::exists_on_disk()
+{
+    if (!sys::isdir(absname)) return false;
+    return sys::exists(str::joinpath(absname, ".sequence"));
 }
 
 State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
@@ -393,6 +365,7 @@ size_t Checker::remove()
         sys::unlink(pathname);
     });
     sys::unlink_ifexists(str::joinpath(absname, ".sequence"));
+    sys::unlink_ifexists(str::joinpath(absname, ".write-lock"));
     sys::unlink_ifexists(str::joinpath(absname, ".repack-lock"));
     // Also remove the directory if it is empty
     rmdir(absname.c_str());
@@ -486,7 +459,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     auto writer(make_tmp_segment(format, tmprelname, tmpabsname));
 
     if (test_flags & TEST_MISCHIEF_MOVE_DATA)
-        writer->test_add_padding(1);
+        writer->seqfile.test_add_padding(1);
 
     // Fill the temp file with all the data in the right order
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
@@ -511,6 +484,65 @@ unique_ptr<dir::Writer> Checker::make_tmp_segment(const std::string& format, con
     if (sys::exists(absname)) sys::rmtree(absname);
     unique_ptr<dir::Writer> res(new dir::Writer(format, root, relname, absname));
     return res;
+}
+
+void Checker::test_truncate(size_t offset)
+{
+    utils::files::PreserveFileTimes pft(absname);
+
+    // Truncate dir segment
+    string format = utils::require_format(absname);
+    foreach_datafile([&](const char* name) {
+        if (strtoul(name, 0, 10) >= offset)
+            sys::unlink(str::joinpath(absname, name));
+    });
+}
+
+void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
+{
+    if (data_idx >= mds.size())
+    {
+        SequenceFile seqfile(absname);
+        seqfile.open();
+        sys::PreserveFileTimes pf(seqfile.fd);
+        size_t pos;
+        for (unsigned i = 0; i < hole_size; ++i)
+        {
+            File fd = seqfile.open_next(mds[0].sourceBlob().format, pos);
+            fd.close();
+        }
+    } else {
+        for (int i = mds.size() - 1; i >= (int)data_idx; --i)
+        {
+            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+            sys::rename(
+                    str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
+                    str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset + hole_size, source->format)));
+            source->offset += hole_size;
+            mds[i].set_source(move(source));
+        }
+        // TODO: update seqfile to be mds.size() + hole_size
+    }
+}
+
+void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
+{
+    for (unsigned i = data_idx; i < mds.size(); ++i)
+    {
+        unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+        sys::rename(
+                str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
+                str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset - overlap_size, source->format)));
+        source->offset -= overlap_size;
+        mds[i].set_source(move(source));
+    }
+}
+
+void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+{
+    const auto& s = mds[data_idx].sourceBlob();
+    File fd(str::joinpath(s.absolutePathname(), SequenceFile::data_fname(s.offset, s.format)), O_WRONLY);
+    fd.write_all_or_throw("\0", 1);
 }
 
 State HoleChecker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)

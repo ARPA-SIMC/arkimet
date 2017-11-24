@@ -47,6 +47,11 @@ std::shared_ptr<segment::concat::Writer> make_w()
     string absname = sys::abspath(relname);
     return std::shared_ptr<segment::concat::Writer>(new segment::concat::Writer(sys::getcwd(), relname, absname));
 }
+std::shared_ptr<segment::concat::Checker> make_c()
+{
+    string absname = sys::abspath(relname);
+    return std::shared_ptr<segment::concat::Checker>(new segment::concat::Checker(sys::getcwd(), relname, absname));
+}
 
 void Tests::register_tests() {
 
@@ -91,7 +96,7 @@ add_method("large", [] {
     {
         // Make a file that looks HUGE, so that appending will make its size
         // not fit in a 32bit off_t
-        make_w()->truncate(0x7FFFFFFF);
+        make_c()->test_truncate(0x7FFFFFFF);
         wassert(actual(sys::size(relname)) == 0x7FFFFFFFu);
     }
 
