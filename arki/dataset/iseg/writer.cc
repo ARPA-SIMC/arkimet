@@ -54,18 +54,6 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "iseg"; }
 
-void Writer::acquire_lock()
-{
-    if (!lock) lock = new LocalLock(config());
-    lock->acquire();
-}
-
-void Writer::release_lock()
-{
-    if (!lock) lock = new LocalLock(config());
-    lock->release();
-}
-
 std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
 {
     auto writer = segmented::Writer::file(md, format);
@@ -201,8 +189,6 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
-    acquire_lock();
-
     if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
 
     switch (replace)
@@ -246,17 +232,6 @@ void Writer::remove(Metadata& md)
 
     scache.invalidate(md);
 }
-
-void Writer::flush()
-{
-    segmented::Writer::flush();
-    release_lock();
-}
-
-//Pending Writer::test_writelock()
-//{
-//    //return m_mft->test_writelock();
-//}
 
 Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
@@ -442,18 +417,6 @@ Checker::~Checker()
 
 std::string Checker::type() const { return "iseg"; }
 
-void Checker::acquire_lock()
-{
-    if (!lock) lock = new LocalLock(config());
-    lock->acquire();
-}
-
-void Checker::release_lock()
-{
-    if (!lock) lock = new LocalLock(config());
-    lock->release();
-}
-
 void Checker::list_segments(std::function<void(const std::string& relpath)> dest)
 {
     vector<string> seg_relpaths;
@@ -468,7 +431,6 @@ void Checker::list_segments(std::function<void(const std::string& relpath)> dest
 
 void Checker::removeAll(dataset::Reporter& reporter, bool writable)
 {
-    acquire_lock();
     list_segments([&](const std::string& relpath) {
         if (writable)
         {
@@ -478,7 +440,6 @@ void Checker::removeAll(dataset::Reporter& reporter, bool writable)
             reporter.segment_delete(name(), relpath, "should be deleted");
     });
     segmented::Checker::removeAll(reporter, writable);
-    release_lock();
 }
 
 std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
@@ -593,21 +554,6 @@ void Checker::check_issue51(dataset::Reporter& reporter, bool fix)
     }
 
     return segmented::Checker::check_issue51(reporter, fix);
-}
-
-
-void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
-{
-    acquire_lock();
-    segmented::Checker::repack(reporter, writable, test_flags);
-    release_lock();
-}
-
-void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
-{
-    acquire_lock();
-    segmented::Checker::check(reporter, fix, quick);
-    release_lock();
 }
 
 void Checker::indexSegment(const std::string& relpath, metadata::Collection&& mds)

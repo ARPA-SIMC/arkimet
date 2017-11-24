@@ -45,7 +45,6 @@ public:
 
     AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
     void remove(Metadata& md);
-    void flush() override;
 
     //virtual Pending test_writelock();
 
@@ -58,8 +57,6 @@ class Checker : public segmented::Checker
 protected:
     std::shared_ptr<const iseg::Config> m_config;
     LocalLock* lock = nullptr;
-    void acquire_lock();
-    void release_lock();
 
     void list_segments(std::function<void(const std::string& relpath)> dest);
 
@@ -75,8 +72,6 @@ public:
     std::unique_ptr<segmented::CheckerSegment> segment(const std::string& relpath) override;
     void segments(std::function<void(segmented::CheckerSegment& segment)>) override;
     void segments_untracked(std::function<void(segmented::CheckerSegment& relpath)>) override;
-    void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
-    void check(dataset::Reporter& reporter, bool fix, bool quick) override;
     void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
 
     void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
