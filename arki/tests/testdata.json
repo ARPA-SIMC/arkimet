@@ -20482,7 +20482,12 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_ondisk2",
-  "method": "write_write"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_ondisk2",
+  "method": "write_write_different_segments"
  },
  {
   "doc": "",
@@ -20512,7 +20517,12 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_simple_plain",
-  "method": "write_write"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_plain",
+  "method": "write_write_different_segments"
  },
  {
   "doc": "",
@@ -20542,7 +20552,12 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_simple_sqlite",
-  "method": "write_write"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_sqlite",
+  "method": "write_write_different_segments"
  },
  {
   "doc": "",
@@ -20572,7 +20587,12 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_iseg",
-  "method": "write_write"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_iseg",
+  "method": "write_write_different_segments"
  },
  {
   "doc": "",
@@ -20602,7 +20622,12 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_ondisk2",
-  "method": "write_write"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_ondisk2",
+  "method": "write_write_different_segments"
  },
  {
   "doc": "",
@@ -20632,7 +20657,12 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_simple_plain",
-  "method": "write_write"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_plain",
+  "method": "write_write_different_segments"
  },
  {
   "doc": "",
@@ -20662,7 +20692,12 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_simple_sqlite",
-  "method": "write_write"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_sqlite",
+  "method": "write_write_different_segments"
  },
  {
   "doc": "",
@@ -20692,7 +20727,12 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_iseg",
-  "method": "write_write"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_iseg",
+  "method": "write_write_different_segments"
  },
  {
   "doc": "",
@@ -20722,7 +20762,12 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_ondisk2",
-  "method": "write_write"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_ondisk2",
+  "method": "write_write_different_segments"
  },
  {
   "doc": "",
@@ -20752,7 +20797,12 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_simple_plain",
-  "method": "write_write"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_plain",
+  "method": "write_write_different_segments"
  },
  {
   "doc": "",
@@ -20782,7 +20832,12 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_simple_sqlite",
-  "method": "write_write"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_sqlite",
+  "method": "write_write_different_segments"
  },
  {
   "doc": "",
@@ -20812,7 +20867,12 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_iseg",
-  "method": "write_write"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_iseg",
+  "method": "write_write_different_segments"
  },
  {
   "doc": "",
@@ -20842,7 +20902,12 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_ondisk2",
-  "method": "write_write"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_ondisk2",
+  "method": "write_write_different_segments"
  },
  {
   "doc": "",
@@ -20872,7 +20937,12 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_simple_plain",
-  "method": "write_write"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_plain",
+  "method": "write_write_different_segments"
  },
  {
   "doc": "",
@@ -20902,7 +20972,12 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_simple_sqlite",
-  "method": "write_write"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_sqlite",
+  "method": "write_write_different_segments"
  },
  {
   "doc": "",
@@ -20932,7 +21007,12 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_iseg",
-  "method": "write_write"
+  "method": "write_write_same_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_iseg",
+  "method": "write_write_different_segments"
  },
  {
   "doc": "",

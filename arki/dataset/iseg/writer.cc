@@ -49,7 +49,6 @@ Writer::Writer(std::shared_ptr<const iseg::Config> config)
 Writer::~Writer()
 {
     flush();
-    delete lock;
 }
 
 std::string Writer::type() const { return "iseg"; }
@@ -408,11 +407,6 @@ Checker::Checker(std::shared_ptr<const iseg::Config> config)
 {
     // Create the directory if it does not exist
     sys::makedirs(config->path);
-}
-
-Checker::~Checker()
-{
-    delete lock;
 }
 
 std::string Checker::type() const { return "iseg"; }

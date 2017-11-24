@@ -79,9 +79,10 @@ struct ConcurrentImporter : public wibble::sys::ChildProcess
     Fixture& fixture;
     unsigned initial;
     unsigned increment;
+    bool increment_year;
 
-    ConcurrentImporter(Fixture& fixture, unsigned initial, unsigned increment)
-        : fixture(fixture), initial(initial), increment(increment)
+    ConcurrentImporter(Fixture& fixture, unsigned initial, unsigned increment, bool increment_year=false)
+        : fixture(fixture), initial(initial), increment(increment), increment_year(increment_year)
     {
     }
 
@@ -95,7 +96,10 @@ struct ConcurrentImporter : public wibble::sys::ChildProcess
 
             for (unsigned i = initial; i < 60; i += increment)
             {
-                md.set(types::Reftime::createPosition(core::Time(2016, 6, 1, 0, 0, i)));
+                if (increment_year)
+                    md.set(types::Reftime::createPosition(core::Time(2000 + i, 6, 1, 0, 0, 0)));
+                else
+                    md.set(types::Reftime::createPosition(core::Time(2000, 6, 1, 0, 0, i)));
                 //fprintf(stderr, "%d: %d\n", (int)getpid(), i);
                 auto res = ds->acquire(md);
                 if (res != dataset::Writer::ACQ_OK)
@@ -286,7 +290,7 @@ this->add_method("read_write1", [](Fixture& f) {
     wassert(actual(count) == 3u);
 });
 
-this->add_method("write_write", [](Fixture& f) {
+this->add_method("write_write_same_segment", [](Fixture& f) {
     ConcurrentImporter<Fixture> i0(f, 0, 3);
     ConcurrentImporter<Fixture> i1(f, 1, 3);
     ConcurrentImporter<Fixture> i2(f, 2, 3);
@@ -307,6 +311,30 @@ this->add_method("write_write", [](Fixture& f) {
     {
         auto rt = mdc[i].get<types::reftime::Position>();
         wassert(actual(rt->time.se) == i);
+    }
+});
+
+this->add_method("write_write_different_segments", [](Fixture& f) {
+    ConcurrentImporter<Fixture> i0(f, 0, 3, true);
+    ConcurrentImporter<Fixture> i1(f, 1, 3, true);
+    ConcurrentImporter<Fixture> i2(f, 2, 3, true);
+
+    i0.fork();
+    i1.fork();
+    i2.fork();
+
+    wassert(actual(i0.wait()) == 0);
+    wassert(actual(i1.wait()) == 0);
+    wassert(actual(i2.wait()) == 0);
+
+    auto reader = f.config().create_reader();
+    metadata::Collection mdc(*reader, Matcher());
+    wassert(actual(mdc.size()) == 60u);
+
+    for (int i = 0; i < 60; ++i)
+    {
+        auto rt = mdc[i].get<types::reftime::Position>();
+        wassert(actual(rt->time.ye) == 2000 + i);
     }
 });
 

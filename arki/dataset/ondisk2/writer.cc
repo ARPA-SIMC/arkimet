@@ -74,7 +74,7 @@ void Writer::acquire_lock()
 
 void Writer::release_lock()
 {
-    if (!lock) lock = new LocalLock(config());
+    if (!lock) return;
     lock->release();
 }
 
@@ -438,7 +438,7 @@ void Checker::acquire_lock()
 
 void Checker::release_lock()
 {
-    if (!lock) lock = new LocalLock(config());
+    if (!lock) return;
     lock->release();
 }
 
