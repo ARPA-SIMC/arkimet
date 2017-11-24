@@ -109,6 +109,8 @@ struct BaseManager : public segment::Manager
                     throw_consistency_error("mockdata single-file line-based segments not implemented");
                 else
                     res.reset(new lines::Writer(root, relname, absname));
+            } else if (format == "odimh5" || format == "h5" || format == "odim") {
+                throw_consistency_error("segment is a file, but odimh5 data can only be stored into directory segments");
             } else {
                 if (nullptr_on_error)
                     return res;
@@ -163,6 +165,13 @@ struct BaseManager : public segment::Manager
                     throw_consistency_error("mockdata single-file line-based segments not implemented");
                 else
                     res.reset(new lines::Checker(root, relname, absname));
+            } else if (format == "odimh5" || format == "h5" || format == "odim") {
+                // If it's a file and we need a directory, still get a checker
+                // so it can deal with it
+                if (mockdata)
+                    res.reset(new dir::HoleChecker(format, root, relname, absname));
+                else
+                    res.reset(new dir::Checker(format, root, relname, absname));
             } else {
                 if (nullptr_on_error)
                     return res;
@@ -215,7 +224,7 @@ struct BaseManager : public segment::Manager
             // If it's a directory, it must be a dir segment
             return sys::exists(str::joinpath(absname, ".sequence"));
 
-        // If it's not a directory, it must exist in thee file system,
+        // If it's not a directory, it must exist in the file system,
         // compressed or not
         if (!sys::exists(absname) && !sys::exists(absname + ".gz"))
             return false;

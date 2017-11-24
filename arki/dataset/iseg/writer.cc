@@ -279,24 +279,24 @@ class CheckerSegment : public segmented::CheckerSegment
 {
 public:
     Checker& checker;
-    std::string relpath;
+    std::shared_ptr<segment::Checker> segment;
 
     CheckerSegment(Checker& checker, const std::string& relpath)
-        : checker(checker), relpath(relpath)
+        : checker(checker), segment(checker.segment_manager().get_checker(checker.config().format, relpath))
     {
     }
 
-    std::string path_relative() const override { return relpath; }
+    std::string path_relative() const override { return segment->relname; }
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
-        if (!checker.segment_manager().is_segment(checker.config().format, relpath))
+        if (!checker.segment_manager().is_segment(checker.config().format, segment->relname))
             return segmented::SegmentState(SEGMENT_MISSING);
 
-        if (!sys::stat(str::joinpath(checker.config().path, relpath + ".index")))
+        if (!sys::stat(str::joinpath(checker.config().path, segment->relname + ".index")))
         {
             //bool untrusted_index = files::hasDontpackFlagfile(checker.config().path);
-            reporter.segment_info(checker.name(), relpath, "segment found on disk with no associated index data");
+            reporter.segment_info(checker.name(), segment->relname, "segment found on disk with no associated index data");
             //return segmented::SegmentState(untrusted_index ? SEGMENT_UNALIGNED : SEGMENT_DELETED);
             return segmented::SegmentState(SEGMENT_UNALIGNED);
         }
@@ -316,7 +316,7 @@ public:
         }
 #endif
 
-        WIndex idx(checker.m_config, relpath);
+        WIndex idx(checker.m_config, segment->relname);
         metadata::Collection mds;
         idx.scan(mds.inserter_func(), "reftime, offset");
         segment::State state = SEGMENT_OK;
@@ -326,14 +326,14 @@ public:
         unique_ptr<core::Time> md_until;
         if (mds.empty())
         {
-            reporter.segment_info(checker.name(), relpath, "index knows of this segment but contains no data for it");
+            reporter.segment_info(checker.name(), segment->relname, "index knows of this segment but contains no data for it");
             md_begin.reset(new core::Time(0, 0, 0));
             md_until.reset(new core::Time(0, 0, 0));
             state = SEGMENT_DELETED;
         } else {
             if (!mds.expand_date_range(md_begin, md_until))
             {
-                reporter.segment_info(checker.name(), relpath, "index data for this segment has no reference time information");
+                reporter.segment_info(checker.name(), segment->relname, "index data for this segment has no reference time information");
                 state = SEGMENT_CORRUPTED;
                 md_begin.reset(new core::Time(0, 0, 0));
                 md_until.reset(new core::Time(0, 0, 0));
@@ -341,28 +341,28 @@ public:
                 // Ensure that the reftime span fits inside the segment step
                 core::Time seg_begin;
                 core::Time seg_until;
-                if (checker.config().step().path_timespan(relpath, seg_begin, seg_until))
+                if (checker.config().step().path_timespan(segment->relname, seg_begin, seg_until))
                 {
                     if (*md_begin < seg_begin || *md_until > seg_until)
                     {
-                        reporter.segment_info(checker.name(), relpath, "segment contents do not fit inside the step of this dataset");
+                        reporter.segment_info(checker.name(), segment->relname, "segment contents do not fit inside the step of this dataset");
                         state = SEGMENT_CORRUPTED;
                     }
                     // Expand segment timespan to the full possible segment timespan
                     *md_begin = seg_begin;
                     *md_until = seg_until;
                 } else {
-                    reporter.segment_info(checker.name(), relpath, "segment name does not fit the step of this dataset");
+                    reporter.segment_info(checker.name(), segment->relname, "segment name does not fit the step of this dataset");
                     state = SEGMENT_CORRUPTED;
                 }
             }
         }
 
         if (state.is_ok())
-            state = checker.segment_manager().check(reporter, checker.name(), relpath, mds, quick);
+            state = segment->check(reporter, checker.name(), mds, quick);
 
         auto res = segmented::SegmentState(state, *md_begin, *md_until);
-        res.check_age(relpath, checker.config(), reporter);
+        res.check_age(segment->relname, checker.config(), reporter);
         return res;
     }
 };
