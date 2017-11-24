@@ -432,7 +432,7 @@ std::string Checker::type() const { return "ondisk2"; }
 
 void Checker::acquire_lock()
 {
-    if (!lock) lock = new LocalLock(config());
+    if (!lock) lock = new LocalLock(config(), false);
     lock->acquire();
 }
 

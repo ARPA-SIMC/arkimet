@@ -389,7 +389,7 @@ std::string Checker::type() const { return "simple"; }
 
 void Checker::acquire_lock()
 {
-    if (!lock) lock = new LocalLock(config());
+    if (!lock) lock = new LocalLock(config(), false);
     lock->acquire();
 }
 

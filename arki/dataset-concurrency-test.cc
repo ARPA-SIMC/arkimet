@@ -366,8 +366,11 @@ this->add_method("read_repack", [](Fixture& f) {
 this->add_method("write_check", [](Fixture& f) {
     utils::Lock::TestNowait lock_nowait;
 
+    bool is_iseg;
+
     {
         auto writer = f.config().create_writer();
+        is_iseg = writer->type() == "iseg";
         wassert(actual(writer->acquire(f.td.test_data[0].md)) == dataset::Writer::ACQ_OK);
         writer->flush();
 
@@ -380,8 +383,16 @@ this->add_method("write_check", [](Fixture& f) {
     cf.start();
     cf.wait_until_ready();
 
+    if (!is_iseg)
     {
-        auto writer = f.makeSegmentedWriter();
+        try {
+            f.config().create_writer();
+            wassert(actual(0) == 1);
+        } catch (std::runtime_error& e) {
+            wassert(actual(e.what()).contains("a read lock is already held"));
+        }
+    } else {
+        auto writer = wcallchecked(f.makeSegmentedWriter());
         wassert(actual(writer->acquire(f.td.test_data[2].md)) == dataset::Writer::ACQ_OK);
 
         // Importing on the segment being checked should hang except on dir segments

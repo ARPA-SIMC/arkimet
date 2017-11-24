@@ -835,7 +835,6 @@ void RContents::open()
     }
 
     m_db.open(pathname());
-    setupPragmas();
 
     initQueries();
 
@@ -889,10 +888,10 @@ bool WContents::open()
     bool need_create = !sys::access(pathname(), F_OK);
 
     m_db.open(pathname());
-    setupPragmas();
 
     if (need_create)
     {
+        setupPragmas();
         if (!m_others)
         {
             std::set<types::Code> other_members = all_other_tables();
@@ -1130,14 +1129,14 @@ void WContents::reset(const std::string& file)
 
 void WContents::vacuum()
 {
-    m_db.exec("PRAGMA journal_mode = TRUNCATE");
+    //m_db.exec("PRAGMA journal_mode = TRUNCATE");
     if (m_uniques)
         m_db.exec("delete from mduniq where id not in (select uniq from md)");
     if (m_others)
         m_db.exec("delete from mdother where id not in (select other from md)");
     m_db.exec("VACUUM");
     m_db.exec("ANALYZE");
-    m_db.exec("PRAGMA journal_mode = PERSIST");
+    //m_db.exec("PRAGMA journal_mode = PERSIST");
 }
 
 void WContents::flush()

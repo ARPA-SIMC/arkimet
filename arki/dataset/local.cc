@@ -152,8 +152,8 @@ void LocalReader::readConfig(const std::string& path, ConfigFile& cfg)
     }
 }
 
-LocalLock::LocalLock(const LocalConfig& config)
-    : lockfile(str::joinpath(config.path, "lock"))
+LocalLock::LocalLock(const LocalConfig& config, bool write)
+    : lockfile(str::joinpath(config.path, "lock")), write(write)
 {
 }
 
@@ -166,7 +166,7 @@ void LocalLock::acquire()
 {
     if (locked) return;
     if (!lockfile.is_open()) lockfile.open(O_RDWR | O_CREAT, 0777);
-    ds_lock.l_type = F_WRLCK;
+    ds_lock.l_type = write ? F_WRLCK : F_RDLCK;
     ds_lock.l_whence = SEEK_SET;
     ds_lock.l_start = 0;
     ds_lock.l_len = 0;

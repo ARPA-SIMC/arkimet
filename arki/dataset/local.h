@@ -90,8 +90,9 @@ struct LocalLock
     arki::File lockfile;
     arki::utils::Lock ds_lock;
     bool locked = false;
+    bool write;
 
-    LocalLock(const LocalConfig& config);
+    LocalLock(const LocalConfig& config, bool write=true);
     ~LocalLock();
 
     void acquire();
