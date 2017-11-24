@@ -203,14 +203,29 @@ public:
     virtual void segments(std::function<void(CheckerSegment& segment)>) = 0;
 
     /**
+     * List all segments known to this dataset
+     */
+    virtual void segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) = 0;
+
+    /**
      * List all segments present on disk but not known to this dataset
      */
     virtual void segments_untracked(std::function<void(segmented::CheckerSegment& segment)>) = 0;
 
     /**
+     * List all segments known to this dataset
+     */
+    virtual void segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) = 0;
+
+    /**
      * List all segments, both known to this dataset or unknown but found on disk
      */
     void segments_all(std::function<void(segmented::CheckerSegment& segment)>);
+
+    /**
+     * List all segments, both known to this dataset or unknown but found on disk
+     */
+    void segments_all_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>);
 
     /// Remove all data from the dataset
     void removeAll(dataset::Reporter& reporter, bool writable) override;

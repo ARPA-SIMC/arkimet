@@ -426,8 +426,32 @@ void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> d
     }
 }
 
+void Checker::segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
+{
+    // TODO: implement filtering
+    std::vector<std::string> names;
+    m_idx->list_segments([&](const std::string& relpath) { names.push_back(relpath); });
+
+    for (const auto& relpath: names)
+    {
+        CheckerSegment segment(*this, relpath);
+        dest(segment);
+    }
+}
+
 void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& relpath)> dest)
 {
+    // Add information from the state of files on disk
+    segment_manager().scan_dir([&](const std::string& relpath) {
+        if (m_idx->has_segment(relpath)) return;
+        CheckerSegment segment(*this, relpath);
+        dest(segment);
+    });
+}
+
+void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& relpath)> dest)
+{
+    // TODO: implement filtering
     // Add information from the state of files on disk
     segment_manager().scan_dir([&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;

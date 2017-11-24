@@ -413,8 +413,13 @@ std::string Checker::type() const { return "iseg"; }
 
 void Checker::list_segments(std::function<void(const std::string& relpath)> dest)
 {
+    list_segments(Matcher(), dest);
+}
+
+void Checker::list_segments(const Matcher& matcher, std::function<void(const std::string& relpath)> dest)
+{
     vector<string> seg_relpaths;
-    config().step().list_segments(config().path, config().format + ".index", Matcher(), [&](std::string&& s) {
+    config().step().list_segments(config().path, config().format + ".index", matcher, [&](std::string&& s) {
         s.resize(s.size() - 6);
         seg_relpaths.emplace_back(move(s));
     });
@@ -443,7 +448,12 @@ std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& r
 
 void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    list_segments([&](const std::string& relpath) {
+    segments_filtered(Matcher(), dest);
+}
+
+void Checker::segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
+{
+    list_segments(matcher, [&](const std::string& relpath) {
         CheckerSegment segment(*this, relpath);
         segment.segment->lock();
         dest(segment);
@@ -452,7 +462,12 @@ void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> d
 
 void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& relpath)> dest)
 {
-    config().step().list_segments(config().path, config().format, Matcher(), [&](std::string&& relpath) {
+    segments_untracked_filtered(Matcher(), dest);
+}
+
+void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
+{
+    config().step().list_segments(config().path, config().format, matcher, [&](std::string&& relpath) {
         if (sys::stat(str::joinpath(config().path, relpath + ".index"))) return;
         CheckerSegment segment(*this, relpath);
         segment.segment->lock();

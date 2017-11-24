@@ -55,6 +55,7 @@ protected:
     std::shared_ptr<const iseg::Config> m_config;
 
     void list_segments(std::function<void(const std::string& relpath)> dest);
+    void list_segments(const Matcher& matcher, std::function<void(const std::string& relpath)> dest);
 
 public:
     Checker(std::shared_ptr<const iseg::Config> config);
@@ -66,7 +67,9 @@ public:
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
     std::unique_ptr<segmented::CheckerSegment> segment(const std::string& relpath) override;
     void segments(std::function<void(segmented::CheckerSegment& segment)>) override;
+    void segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
     void segments_untracked(std::function<void(segmented::CheckerSegment& relpath)>) override;
+    void segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
     void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
 
     void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;

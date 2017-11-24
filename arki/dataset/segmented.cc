@@ -326,6 +326,12 @@ void Checker::segments_all(std::function<void(segmented::CheckerSegment& segment
     segments_untracked([&](segmented::CheckerSegment& segment) { dest(segment); });
 }
 
+void Checker::segments_all_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
+{
+    segments_filtered(matcher, [&](CheckerSegment& segment) { dest(segment); });
+    segments_untracked_filtered(matcher, [&](segmented::CheckerSegment& segment) { dest(segment); });
+}
+
 segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
 {
     segmented::State segments_state;
