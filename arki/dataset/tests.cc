@@ -1039,6 +1039,52 @@ Element& Fixture::earliest_element()
     return *res;
 }
 
+GRIBData::GRIBData()
+{
+    metadata::Collection mdc("inbound/fixture.grib1");
+    format = "grib";
+    test_data[0].set(mdc[0], "reftime:=2007-07-08");
+    test_data[1].set(mdc[1], "reftime:=2007-07-07");
+    test_data[2].set(mdc[2], "reftime:=2007-10-09");
+    finalise_init();
+}
+
+BUFRData::BUFRData()
+{
+#ifdef HAVE_DBALLE
+    metadata::Collection mdc("inbound/fixture.bufr");
+    format = "bufr";
+    test_data[0].set(mdc[0], "reftime:=2007-07-08");
+    test_data[1].set(mdc[1], "reftime:=2007-07-07");
+    test_data[2].set(mdc[2], "reftime:=2007-10-09");
+    finalise_init();
+#endif
+}
+
+VM2Data::VM2Data()
+{
+    metadata::Collection mdc("inbound/fixture.vm2");
+    format = "vm2";
+    test_data[0].set(mdc[0], "reftime:=2007-07-08");
+    test_data[1].set(mdc[1], "reftime:=2007-07-07");
+    test_data[2].set(mdc[2], "reftime:=2007-10-09");
+    finalise_init();
+}
+
+ODIMData::ODIMData()
+{
+    metadata::Collection mdc;
+    format = "odimh5";
+    scan::scan("inbound/fixture.h5/00.h5", mdc.inserter_func());
+    scan::scan("inbound/fixture.h5/01.h5", mdc.inserter_func());
+    scan::scan("inbound/fixture.h5/02.h5", mdc.inserter_func());
+    test_data[0].set(mdc[0], "reftime:=2007-07-08");
+    test_data[1].set(mdc[1], "reftime:=2007-07-07");
+    test_data[2].set(mdc[2], "reftime:=2007-10-09");
+    finalise_init();
+}
+
+
 Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour)
 {
     Metadata md;
