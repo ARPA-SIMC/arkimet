@@ -109,6 +109,11 @@ add_method("yearly", [](Fixture& f) {
     wassert(actual(res[1]) == "20/2001.grib");
 
     res.clear();
+    step->list_segments("test_step", "grib", Matcher::parse("reftime:>=2002"), [&](std::string&& s) { res.emplace_back(move(s)); });
+    wassert(actual(res.size()) == 1u);
+    wassert(actual(res[0]) == "20/2002.grib");
+
+    res.clear();
     step->list_segments("test_step", "grib", Matcher(), [&](std::string&& s) { res.emplace_back(move(s)); });
     wassert(actual(res.size()) == 3u);
 
@@ -148,6 +153,11 @@ add_method("monthly", [](Fixture& f) {
     wassert(actual(res[1]) == "2008/06.grib");
     wassert(actual(res[2]) == "2008/07.grib");
     wassert(actual(res[3]) == "2009/11.grib");
+
+    res.clear();
+    step->list_segments("test_step", "grib", Matcher::parse("reftime:>=2009-12-01"), [&](std::string&& s) { res.emplace_back(move(s)); });
+    wassert(actual(res.size()) == 1u);
+    wassert(actual(res[0]) == "2009/12.grib");
 
     res.clear();
     step->list_segments("test_step", "grib", Matcher(), [&](std::string&& s) { res.emplace_back(move(s)); });
@@ -201,6 +211,11 @@ add_method("daily", [](Fixture& f) {
     wassert(actual(res[1]) == "2008/06-01.grib");
     wassert(actual(res[2]) == "2008/06-05.grib");
     wassert(actual(res[3]) == "2009/12-29.grib");
+
+    res.clear();
+    step->list_segments("test_step", "grib", Matcher::parse("reftime:>=2009-12-30"), [&](std::string&& s) { res.emplace_back(move(s)); });
+    wassert(actual(res.size()) == 1u);
+    wassert(actual(res[0]) == "2009/12-30.grib");
 
     res.clear();
     step->list_segments("test_step", "grib", Matcher(), [&](std::string&& s) { res.emplace_back(move(s)); });

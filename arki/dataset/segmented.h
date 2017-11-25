@@ -196,6 +196,9 @@ public:
      */
     State scan(dataset::Reporter& reporter, bool quick=true);
 
+    /// Same as scan, but limited to segments matching the given matcher
+    State scan_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool quick=true);
+
     /// Instantiate a CheckerSegment
     virtual std::unique_ptr<CheckerSegment> segment(const std::string& relpath) = 0;
 

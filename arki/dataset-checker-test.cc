@@ -14,6 +14,7 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::dataset;
 using namespace arki::utils;
 using namespace arki::tests;
 
@@ -91,11 +92,18 @@ this->add_method("preconditions", [](Fixture& f) {
 this->add_method("check_filtered", [](Fixture& f) {
     wassert(f.import_all_packed(f.td));
 
+    auto state = f.scan_state(Matcher::parse("reftime:>=2007-07-08"));
+    wassert(actual(state.get("2007/07-08." + f.td.format).state) == segment::State(SEGMENT_OK));
+    wassert(actual(state.get("2007/10-09." + f.td.format).state) == segment::State(SEGMENT_OK));
+    wassert(actual(state.count(SEGMENT_OK)) == 2u);
+    wassert(actual(state.size()) == 2u);
+
     {
         auto checker(f.makeSegmentedChecker());
+
         ReporterExpected e;
         e.report.emplace_back("testds", "check", "2 files ok");
-        wassert(actual(checker.get()).check_filtered(Matcher::parse("reftime:>2007-08"), e, true));
+        wassert(actual(checker.get()).check_filtered(Matcher::parse("reftime:>=2007-07-08"), e, true));
     }
 });
 

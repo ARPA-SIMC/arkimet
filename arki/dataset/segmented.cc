@@ -341,6 +341,15 @@ segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
     return segments_state;
 }
 
+segmented::State Checker::scan_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool quick)
+{
+    segmented::State segments_state;
+    segments_all_filtered(matcher, [&](CheckerSegment& segment) {
+        segments_state.insert(make_pair(segment.path_relative(), segment.scan(reporter, quick)));
+    });
+    return segments_state;
+}
+
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
     const string& root = config().path;

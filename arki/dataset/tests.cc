@@ -184,6 +184,14 @@ segmented::State DatasetTest::scan_state()
     return checker->scan(nr);
 }
 
+segmented::State DatasetTest::scan_state(const Matcher& matcher)
+{
+    // OstreamReporter nr(cerr);
+    NullReporter nr;
+    auto checker = makeSegmentedChecker();
+    return checker->scan_filtered(matcher, nr);
+}
+
 std::unique_ptr<dataset::segmented::Reader> DatasetTest::makeSegmentedReader()
 {
     auto ds = config().create_reader();
@@ -995,7 +1003,7 @@ void ActualChecker<Dataset>::check_filtered(const Matcher& matcher, const Report
 {
     CollectReporter reporter;
     wassert(this->_actual->check_filtered(matcher, reporter, write, quick));
-    reporter.dump(stderr);
+    //reporter.dump(stderr);
     wassert(reporter.check(expected));
 }
 

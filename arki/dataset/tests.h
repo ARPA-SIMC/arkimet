@@ -182,6 +182,9 @@ public:
     /// Scan the dataset and return its state
     dataset::segmented::State scan_state();
 
+    /// Scan the dataset and return its state
+    dataset::segmented::State scan_state(const Matcher& matcher);
+
     std::unique_ptr<dataset::segmented::Reader> makeSegmentedReader();
     std::unique_ptr<dataset::segmented::Writer> makeSegmentedWriter();
     std::unique_ptr<dataset::segmented::Checker> makeSegmentedChecker();
