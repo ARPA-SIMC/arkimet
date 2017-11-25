@@ -91,6 +91,8 @@ public:
     void removeAll(dataset::Reporter& reporter, bool writable=false) override {}
     void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override {}
     void check(dataset::Reporter& reporter, bool fix, bool quick) override {}
+    void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override {}
+    void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) override {}
 };
 
 

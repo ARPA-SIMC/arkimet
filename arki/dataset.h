@@ -381,6 +381,12 @@ struct Checker : public dataset::Base
      */
     virtual void check(dataset::Reporter& reporter, bool fix, bool quick) = 0;
 
+    /// Same as repack, but limited to at least the parts of the dataset matching the given matcher
+    virtual void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) = 0;
+
+    /// Same as check, but limited to at least the parts of the dataset matching the given matcher
+    virtual void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) = 0;
+
     /**
      * Check consistency of the last byte of GRIB and BUFR data in the archive,
      * optionally fixing it.

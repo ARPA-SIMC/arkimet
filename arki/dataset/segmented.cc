@@ -376,6 +376,41 @@ void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_f
     LocalChecker::repack(reporter, writable);
 }
 
+void Checker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
+{
+    const string& root = config().path;
+
+    if (files::hasDontpackFlagfile(root))
+    {
+        reporter.operation_aborted(name(), "repack", "dataset needs checking first");
+        return;
+    }
+
+    unique_ptr<maintenance::Agent> repacker;
+    if (writable)
+        // No safeguard against a deleted index: we catch that in the
+        // constructor and create the don't pack flagfile
+        repacker.reset(new maintenance::RealRepacker(reporter, *this, test_flags));
+    else
+        repacker.reset(new maintenance::MockRepacker(reporter, *this, test_flags));
+
+    try {
+        segments_all_filtered(matcher, [&](CheckerSegment& segment) {
+            (*repacker)(segment, segment.scan(reporter, true).state);
+        });
+        repacker->end();
+    } catch (...) {
+        // FIXME: this only makes sense for ondisk2
+        // FIXME: also for iseg. Add the marker at the segment level instead of
+        // the dataset level, so that the try/catch can be around the single
+        // segment, and cleared on a segment by segment basis
+        files::createDontpackFlagfile(root);
+        throw;
+    }
+
+    LocalChecker::repack(reporter, writable);
+}
+
 void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
     const string& root = config().path;
@@ -400,6 +435,38 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
     } else {
         maintenance::MockFixer fixer(reporter, *this);
         segments_all([&](CheckerSegment& segment) {
+            fixer(segment, segment.scan(reporter, quick).state);
+        });
+        fixer.end();
+    }
+
+    LocalChecker::check(reporter, fix, quick);
+}
+
+void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
+{
+    const string& root = config().path;
+
+    if (fix)
+    {
+        maintenance::RealFixer fixer(reporter, *this);
+        try {
+            segments_all_filtered(matcher, [&](CheckerSegment& segment) {
+                fixer(segment, segment.scan(reporter, quick).state);
+            });
+            fixer.end();
+        } catch (...) {
+            // FIXME: Add the marker at the segment level instead of
+            // the dataset level, so that the try/catch can be around the single
+            // segment, and cleared on a segment by segment basis
+            files::createDontpackFlagfile(root);
+            throw;
+        }
+
+        files::removeDontpackFlagfile(root);
+    } else {
+        maintenance::MockFixer fixer(reporter, *this);
+        segments_all_filtered(matcher, [&](CheckerSegment& segment) {
             fixer(segment, segment.scan(reporter, quick).state);
         });
         fixer.end();
