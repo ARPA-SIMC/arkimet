@@ -98,6 +98,14 @@ bool Type::operator==(const std::string& o) const
     return operator==(*other);
 }
 
+std::string Type::to_string() const
+{
+    stringstream ss;
+    writeToOstream(ss);
+    return ss.str();
+}
+
+
 void Type::encodeBinary(BinaryEncoder& enc) const
 {
     vector<uint8_t> contents;
