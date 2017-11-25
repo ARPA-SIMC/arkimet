@@ -425,8 +425,12 @@ struct ActualChecker : public arki::utils::tests::Actual<DatasetChecker*>
 
     void repack(const ReporterExpected& expected, bool write=false);
     void repack_clean(bool write=false);
+    void repack_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write=false);
+    void repack_filtered_clean(const Matcher& matcher, bool write=false);
     void check(const ReporterExpected& expected, bool write=false, bool quick=true);
     void check_clean(bool write=false, bool quick=true);
+    void check_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write=false, bool quick=true);
+    void check_filtered_clean(const Matcher& matcher, bool write=false, bool quick=true);
     void check_issue51(const ReporterExpected& expected, bool write=false);
     void check_issue51_clean(bool write=false);
 };

@@ -973,11 +973,29 @@ void ActualChecker<Dataset>::repack(const ReporterExpected& expected, bool write
 }
 
 template<typename Dataset>
+void ActualChecker<Dataset>::repack_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write)
+{
+    CollectReporter reporter;
+    wassert(this->_actual->repack_filtered(matcher, reporter, write));
+    // reporter.dump(stderr);
+    wassert(reporter.check(expected));
+}
+
+template<typename Dataset>
 void ActualChecker<Dataset>::check(const ReporterExpected& expected, bool write, bool quick)
 {
     CollectReporter reporter;
     wassert(this->_actual->check(reporter, write, quick));
     // reporter.dump(stderr);
+    wassert(reporter.check(expected));
+}
+
+template<typename Dataset>
+void ActualChecker<Dataset>::check_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write, bool quick)
+{
+    CollectReporter reporter;
+    wassert(this->_actual->check_filtered(matcher, reporter, write, quick));
+    reporter.dump(stderr);
     wassert(reporter.check(expected));
 }
 
@@ -998,10 +1016,24 @@ void ActualChecker<Dataset>::repack_clean(bool write)
 }
 
 template<typename Dataset>
+void ActualChecker<Dataset>::repack_filtered_clean(const Matcher& matcher, bool write)
+{
+    ReporterExpected e;
+    repack_filtered(matcher, e, write);
+}
+
+template<typename Dataset>
 void ActualChecker<Dataset>::check_clean(bool write, bool quick)
 {
     ReporterExpected e;
     check(e, write, quick);
+}
+
+template<typename Dataset>
+void ActualChecker<Dataset>::check_filtered_clean(const Matcher& matcher, bool write, bool quick)
+{
+    ReporterExpected e;
+    check_filtered(matcher, e, write, quick);
 }
 
 template<typename Dataset>

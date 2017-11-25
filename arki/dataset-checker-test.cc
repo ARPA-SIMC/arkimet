@@ -88,6 +88,18 @@ this->add_method("preconditions", [](Fixture& f) {
 });
 
 // Test check_issue51
+this->add_method("check_filtered", [](Fixture& f) {
+    wassert(f.import_all_packed(f.td));
+
+    {
+        auto checker(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "2 files ok");
+        wassert(actual(checker.get()).check_filtered(Matcher::parse("reftime:>2007-08"), e, true));
+    }
+});
+
+// Test check_issue51
 this->add_method("check_issue51", [](Fixture& f) {
     f.cfg.setValue("step", "yearly");
     if (f.td.format != "grib" && f.td.format != "bufr") return;
