@@ -21621,6 +21621,26 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkicheck",
+  "method": "clean"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck",
+  "method": "clean_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck",
+  "method": "archive"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck",
+  "method": "issue57"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime",
   "method": "files"
  },

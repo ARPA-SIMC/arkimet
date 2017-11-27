@@ -88,6 +88,7 @@ void DatasetTest::test_teardown()
 void DatasetTest::test_reread_config()
 {
     test_teardown();
+    config();
 }
 
 void DatasetTest::reset_test(const std::string& cfg_default)
@@ -99,7 +100,11 @@ void DatasetTest::reset_test(const std::string& cfg_default)
 const Config& DatasetTest::config()
 {
     if (!m_config)
+    {
+        sys::mkdir_ifmissing(ds_root);
+        sys::write_file(str::joinpath(ds_root, "config"), cfg.serialize());
         m_config = dataset::Config::create(cfg);
+    }
     return *m_config;
 }
 

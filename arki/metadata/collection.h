@@ -45,6 +45,7 @@ public:
     Collection(Collection&& o) = default;
     /// Construct a collection filled by the results of query_data
     Collection(dataset::Reader& ds, const dataset::DataQuery& q);
+    Collection(dataset::Reader& ds, const std::string& q);
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
     Collection(const std::string& pathname);

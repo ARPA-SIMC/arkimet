@@ -50,15 +50,21 @@ struct HandledByCommandLineParser
     ~HandledByCommandLineParser();
 };
 
-struct CommandLine : public utils::commandline::StandardParserWithManpage
+struct BaseCommandLine : public utils::commandline::StandardParserWithManpage
 {
     utils::commandline::OptionGroup* infoOpts = nullptr;
+    utils::commandline::BoolOption* verbose = nullptr;
+    utils::commandline::BoolOption* debug = nullptr;
+
+    BaseCommandLine(const std::string& name, int mansection = 1);
+};
+
+struct CommandLine : public BaseCommandLine
+{
     utils::commandline::OptionGroup* inputOpts = nullptr;
     utils::commandline::OptionGroup* outputOpts = nullptr;
     utils::commandline::OptionGroup* dispatchOpts = nullptr;
 
-    utils::commandline::BoolOption* verbose = nullptr;
-    utils::commandline::BoolOption* debug = nullptr;
     utils::commandline::BoolOption* status = nullptr;
     utils::commandline::BoolOption* yaml = nullptr;
     utils::commandline::BoolOption* json = nullptr;

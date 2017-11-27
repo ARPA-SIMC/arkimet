@@ -116,7 +116,9 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime.h \
 		runtime/io.h \
 		runtime/processor.h \
+		runtime/tests.h \
 		runtime/arki-query.h \
+		runtime/arki-check.h \
 		scan/base.h \
 		scan/any.h \
 		sort.h \
@@ -291,6 +293,7 @@ libarkimet_la_SOURCES += \
 		runtime/config.cc \
 		runtime/inputs.cc \
 		runtime/io.cc \
+		runtime/tests.cc \
 		types-init.cc
 
 libarkimet_test_la_SOURCES += \
@@ -533,7 +536,8 @@ libarkimet_la_SOURCES += \
 		metadatagrid.cc \
 		dispatcher.cc \
 		querymacro.cc \
-		runtime/arki-query.cc
+		runtime/arki-query.cc \
+		runtime/arki-check.cc
 
 tests_arki_test_SOURCES += \
 		targetfile-tut.cc \
@@ -596,6 +600,7 @@ tests_arki_test_SOURCES += \
 		dispatcher-test.cc \
 		runtime/processor-test.cc \
 		runtime/arki-query-test.cc \
+		runtime/arki-check-test.cc \
 		runtime-test.cc
 
 if CURL

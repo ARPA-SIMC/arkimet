@@ -91,14 +91,23 @@ std::unique_ptr<dataset::Reader> make_qmacro_dataset(const ConfigFile& ds_cfg, c
     return ds;
 }
 
-CommandLine::CommandLine(const std::string& name, int mansection)
+
+BaseCommandLine::BaseCommandLine(const std::string& name, int mansection)
     : StandardParserWithManpage(name, PACKAGE_VERSION, mansection, PACKAGE_BUGREPORT)
 {
     using namespace arki::utils::commandline;
 
-	infoOpts = createGroup("Options controlling verbosity");
-	debug = infoOpts->add<BoolOption>("debug", 0, "debug", "", "debug output");
-	verbose = infoOpts->add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
+    infoOpts = createGroup("Options controlling verbosity");
+    debug = infoOpts->add<BoolOption>("debug", 0, "debug", "", "debug output");
+    verbose = infoOpts->add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
+}
+
+
+CommandLine::CommandLine(const std::string& name, int mansection)
+    : BaseCommandLine(name, mansection)
+{
+    using namespace arki::utils::commandline;
+
 	status = infoOpts->add<BoolOption>("status", 0, "status", "",
 			"print to standard error a line per every file with a summary of how it was handled");
 
