@@ -376,7 +376,7 @@ add_method("cleps", [] {
 add_method("utm_areas", [] {
     Metadata md;
     scan::Grib scanner;
-    scanner.open("inbound/calmety_20110215.grib2");
+    wassert(scanner.test_open("inbound/calmety_20110215.grib2"));
     ensure(scanner.next(md));
 
     wassert(actual(md).contains("origin", "GRIB2(00200, 00000, 000, 000, 203)"));
@@ -399,7 +399,7 @@ add_method("ninfa", [] {
     {
         Metadata md;
         scan::Grib scanner;
-        scanner.open("inbound/ninfa_ana.grib2");
+        scanner.test_open("inbound/ninfa_ana.grib2");
         ensure(scanner.next(md));
 
         wassert(actual(md).contains("timerange", "Timedef(0s,254,0s)"));
@@ -407,7 +407,7 @@ add_method("ninfa", [] {
     {
         Metadata md;
         scan::Grib scanner;
-        scanner.open("inbound/ninfa_forc.grib2");
+        scanner.test_open("inbound/ninfa_forc.grib2");
         ensure(scanner.next(md));
 
         wassert(actual(md).contains("timerange", "Timedef(3h,254,0s)"));
