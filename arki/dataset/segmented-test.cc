@@ -60,9 +60,10 @@ void Tests::register_tests() {
 add_method("compressed", [](Fixture& f) {
     // Import and compress all the files
     f.clean_and_import();
-    f.test_reread_config();
+
     // Test moving into archive data that have been compressed
     f.cfg.setValue("archive age", days_since(2007, 9, 1));
+    f.test_reread_config();
 
     scan::compress("testds/2007/07-07.grib");
     scan::compress("testds/2007/07-08.grib");
@@ -142,8 +143,8 @@ add_method("query_archived", [](Fixture& f) {
     // Test querying with archived data
     using namespace arki::types;
     f.clean_and_import();
-    f.test_reread_config();
     f.cfg.setValue("archive age", days_since(2007, 9, 1));
+    f.test_reread_config();
     {
         auto writer(f.makeSegmentedChecker());
         ReporterExpected e;
@@ -340,6 +341,7 @@ add_method("query_lots", [](Fixture& f) {
 // segment)
 add_method("archive_age", [](Fixture& f) {
     f.cfg.setValue("step", "yearly");
+    f.test_reread_config();
 
     // Import a file with a known reftime
     // Reftime: 2007-07-08T13:00:00Z
@@ -348,12 +350,11 @@ add_method("archive_age", [](Fixture& f) {
     wassert(actual(res) == dataset::Writer::ACQ_OK);
     wassert(actual(f.makeSegmentedChecker().get()).check_clean(true));
 
-    f.test_reread_config();
-
     // TZ=UTC date --date="2008-01-01 00:00:00" +%s
     time_t start2008 = 1199145600;
-
     f.cfg.setValue("archive age", "1");
+    f.test_reread_config();
+
 
     {
         auto o = dataset::SessionTime::local_override(start2008);
@@ -373,6 +374,7 @@ add_method("archive_age", [](Fixture& f) {
 // segment)
 add_method("delete_age", [](Fixture& f) {
     f.cfg.setValue("step", "yearly");
+    f.test_reread_config();
 
     // Import a file with a known reftime
     // Reftime: 2007-07-08T13:00:00Z
@@ -383,9 +385,8 @@ add_method("delete_age", [](Fixture& f) {
 
     // TZ=UTC date --date="2008-01-01 00:00:00" +%s
     time_t start2008 = 1199145600;
-
-    f.test_reread_config();
     f.cfg.setValue("delete age", "1");
+    f.test_reread_config();
 
     {
         auto o = dataset::SessionTime::local_override(start2008);
@@ -409,11 +410,12 @@ add_method("unarchive_segment", [](Fixture& f) {
     // Reftime: 2007-07-07T00:00:00Z
     // Reftime: 2007-10-09T00:00:00Z
     f.clean_and_import();
-    f.test_reread_config();
 
     // TZ=UTC date --date="2007-07-09 00:00:00" +%s
     time_t now = 1183939200;
     f.cfg.setValue("archive age", "1");
+
+    f.test_reread_config();
 
     // Archive one segment
     {
@@ -461,11 +463,12 @@ add_method("unarchive_segment_lastonly", [](Fixture& f) {
     // Reftime: 2007-07-07T00:00:00Z
     // Reftime: 2007-10-09T00:00:00Z
     f.clean_and_import();
-    f.test_reread_config();
 
     // TZ=UTC date --date="2007-07-09 00:00:00" +%s
     time_t now = 1183939200;
     f.cfg.setValue("archive age", "1");
+
+    f.test_reread_config();
 
     // Archive one segment
     {
