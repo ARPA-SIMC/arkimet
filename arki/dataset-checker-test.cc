@@ -90,6 +90,8 @@ this->add_method("preconditions", [](Fixture& f) {
 
 // Test check_issue51
 this->add_method("check_filtered", [](Fixture& f) {
+    if (f.makeSegmentedChecker()->type() != "iseg")
+        throw TestSkipped();
     wassert(f.import_all_packed(f.td));
 
     auto state = f.scan_state(Matcher::parse("reftime:>=2007-07-08"));
