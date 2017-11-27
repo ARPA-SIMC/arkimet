@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.4
-Release: 3
+Version: 1.5
+Release: 1
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -135,6 +135,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Mon Nov 27 2017 Daniele Branchini <dbranchini@arpae.it> - 1.5-1%{dist}
+- fixed #103, #108, #109
+
 * Tue Oct 17 2017 Daniele Branchini <dbranchini@arpae.it> - 1.4-3%{dist}
 - fixed #104
 - added local arki-server for test suite
