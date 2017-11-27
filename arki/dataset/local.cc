@@ -205,10 +205,22 @@ void LocalChecker::repack(dataset::Reporter& reporter, bool writable, unsigned t
         archive().repack(reporter, writable, test_flags);
 }
 
+void LocalChecker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
+{
+    if (hasArchive())
+        archive().repack_filtered(matcher, reporter, writable, test_flags);
+}
+
 void LocalChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
     if (hasArchive())
         archive().check(reporter, fix, quick);
+}
+
+void LocalChecker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
+{
+    if (hasArchive())
+        archive().check_filtered(matcher, reporter, fix, quick);
 }
 
 void LocalChecker::check_issue51(dataset::Reporter& reporter, bool fix)

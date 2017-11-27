@@ -20392,12 +20392,22 @@
  {
   "doc": "",
   "group": "arki_dataset_checker_grib_ondisk2",
+  "method": "check_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_grib_ondisk2",
   "method": "check_issue51"
  },
  {
   "doc": "",
   "group": "arki_dataset_checker_grib_simple_plain",
   "method": "preconditions"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_grib_simple_plain",
+  "method": "check_filtered"
  },
  {
   "doc": "",
@@ -20408,6 +20418,11 @@
   "doc": "",
   "group": "arki_dataset_checker_grib_simple_sqlite",
   "method": "preconditions"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_grib_simple_sqlite",
+  "method": "check_filtered"
  },
  {
   "doc": "",
@@ -20418,6 +20433,11 @@
   "doc": "",
   "group": "arki_dataset_checker_grib_iseg",
   "method": "preconditions"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_grib_iseg",
+  "method": "check_filtered"
  },
  {
   "doc": "",
@@ -20428,6 +20448,11 @@
   "doc": "",
   "group": "arki_dataset_checker_bufr_ondisk2",
   "method": "preconditions"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_bufr_ondisk2",
+  "method": "check_filtered"
  },
  {
   "doc": "",
@@ -20438,6 +20463,11 @@
   "doc": "",
   "group": "arki_dataset_checker_bufr_simple_plain",
   "method": "preconditions"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_bufr_simple_plain",
+  "method": "check_filtered"
  },
  {
   "doc": "",
@@ -20448,6 +20478,11 @@
   "doc": "",
   "group": "arki_dataset_checker_bufr_simple_sqlite",
   "method": "preconditions"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_bufr_simple_sqlite",
+  "method": "check_filtered"
  },
  {
   "doc": "",
@@ -20458,6 +20493,11 @@
   "doc": "",
   "group": "arki_dataset_checker_bufr_iseg",
   "method": "preconditions"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_bufr_iseg",
+  "method": "check_filtered"
  },
  {
   "doc": "",
@@ -21578,6 +21618,26 @@
   "doc": "",
   "group": "arki_runtime_arkiquery",
   "method": "postproc"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck",
+  "method": "clean"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck",
+  "method": "clean_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck",
+  "method": "archive"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck",
+  "method": "issue57"
  },
  {
   "doc": "",

@@ -370,10 +370,26 @@ void ArchivesChecker::repack(dataset::Reporter& reporter, bool writable, unsigne
     });
 }
 
+void ArchivesChecker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
+{
+    archives->iter([&](Checker& a) {
+        a.repack_filtered(matcher, reporter, writable, test_flags);
+        return true;
+    });
+}
+
 void ArchivesChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
     archives->iter([&](Checker& a) {
         a.check(reporter, fix, quick);
+        return true;
+    });
+}
+
+void ArchivesChecker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
+{
+    archives->iter([&](Checker& a) {
+        a.check_filtered(matcher, reporter, fix, quick);
         return true;
     });
 }

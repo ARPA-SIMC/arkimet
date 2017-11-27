@@ -113,6 +113,11 @@ Collection::Collection(dataset::Reader& ds, const dataset::DataQuery& q)
     add(ds, q);
 }
 
+Collection::Collection(dataset::Reader& ds, const std::string& q)
+{
+    add(ds, dataset::DataQuery(q));
+}
+
 Collection::Collection(const std::string& pathname)
 {
     scan::scan(pathname, [&](unique_ptr<Metadata> md) { acquire(move(md)); return true; });

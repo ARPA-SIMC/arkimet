@@ -133,8 +133,10 @@ struct Type
     /// Encode to compact binary representation, with identification envelope
     std::vector<uint8_t> encodeBinary() const;
 
-	/// Write as a string to an output stream
-	virtual std::ostream& writeToOstream(std::ostream& o) const = 0;
+    /// Write as a string to an output stream
+    virtual std::ostream& writeToOstream(std::ostream& o) const = 0;
+
+    std::string to_string() const;
 
     /// Serialise using an emitter
     virtual void serialise(Emitter& e, const Formatter* f=0) const;

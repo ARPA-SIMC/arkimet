@@ -187,12 +187,17 @@ public:
 
     void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
+    void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
+    void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) override;
 
     /**
      * Scan the dataset, computing the state of each unarchived segment that is
      * either on disk or known by the index.
      */
     State scan(dataset::Reporter& reporter, bool quick=true);
+
+    /// Same as scan, but limited to segments matching the given matcher
+    State scan_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool quick=true);
 
     /// Instantiate a CheckerSegment
     virtual std::unique_ptr<CheckerSegment> segment(const std::string& relpath) = 0;
@@ -203,14 +208,29 @@ public:
     virtual void segments(std::function<void(CheckerSegment& segment)>) = 0;
 
     /**
+     * List all segments known to this dataset
+     */
+    virtual void segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) = 0;
+
+    /**
      * List all segments present on disk but not known to this dataset
      */
     virtual void segments_untracked(std::function<void(segmented::CheckerSegment& segment)>) = 0;
 
     /**
+     * List all segments known to this dataset
+     */
+    virtual void segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) = 0;
+
+    /**
      * List all segments, both known to this dataset or unknown but found on disk
      */
     void segments_all(std::function<void(segmented::CheckerSegment& segment)>);
+
+    /**
+     * List all segments, both known to this dataset or unknown but found on disk
+     */
+    void segments_all_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>);
 
     /// Remove all data from the dataset
     void removeAll(dataset::Reporter& reporter, bool writable) override;

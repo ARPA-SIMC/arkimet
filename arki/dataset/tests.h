@@ -182,6 +182,9 @@ public:
     /// Scan the dataset and return its state
     dataset::segmented::State scan_state();
 
+    /// Scan the dataset and return its state
+    dataset::segmented::State scan_state(const Matcher& matcher);
+
     std::unique_ptr<dataset::segmented::Reader> makeSegmentedReader();
     std::unique_ptr<dataset::segmented::Writer> makeSegmentedWriter();
     std::unique_ptr<dataset::segmented::Checker> makeSegmentedChecker();
@@ -290,11 +293,6 @@ struct Element
 struct Fixture
 {
     std::string format;
-    // Maximum aggregation period that still generates more than one file
-    std::string max_selective_aggregation;
-    // Index of metadata item that is in a segment by itself when the
-    // aggregation period is max_selective_aggregation
-    unsigned max_selective_aggregation_singleton_index;
     Element test_data[3];
     /// Date that falls somewhere inbetween files in the dataset
     core::Time selective_cutoff;
@@ -310,67 +308,22 @@ struct Fixture
 
 struct GRIBData : Fixture
 {
-    GRIBData()
-    {
-        metadata::Collection mdc("inbound/test.grib1");
-        format = "grib";
-        max_selective_aggregation = "monthly";
-        max_selective_aggregation_singleton_index = 2;
-        test_data[0].set(mdc[0], "reftime:=2007-07-08");
-        test_data[1].set(mdc[1], "reftime:=2007-07-07");
-        test_data[2].set(mdc[2], "reftime:=2007-10-09");
-        finalise_init();
-    }
+    GRIBData();
 };
 
 struct BUFRData : Fixture
 {
-    BUFRData()
-    {
-#ifdef HAVE_DBALLE
-        metadata::Collection mdc("inbound/test.bufr");
-        format = "bufr";
-        max_selective_aggregation = "yearly";
-        max_selective_aggregation_singleton_index = 0;
-        test_data[0].set(mdc[0], "reftime:=2005-12-01");
-        test_data[1].set(mdc[1], "reftime:=2004-11-30; proddef:GRIB:blo=60");
-        test_data[2].set(mdc[2], "reftime:=2004-11-30; proddef:GRIB:blo=6");
-        finalise_init();
-#endif
-    }
+    BUFRData();
 };
 
 struct VM2Data : Fixture
 {
-    VM2Data()
-    {
-        metadata::Collection mdc("inbound/test.vm2");
-        format = "vm2";
-        max_selective_aggregation = "yearly";
-        max_selective_aggregation_singleton_index = 2;
-        test_data[0].set(mdc[0], "reftime:=1987-10-31; product:VM2,227");
-        test_data[1].set(mdc[1], "reftime:=1987-10-31; product:VM2,228");
-        test_data[2].set(mdc[2], "reftime:=2011-01-01; product:VM2,1");
-        finalise_init();
-    }
+    VM2Data();
 };
 
 struct ODIMData : Fixture
 {
-    ODIMData()
-    {
-        metadata::Collection mdc;
-        format = "odimh5";
-        max_selective_aggregation = "yearly";
-        max_selective_aggregation_singleton_index = 1;
-        scan::scan("inbound/odimh5/COMP_CAPPI_v20.h5", mdc.inserter_func());
-        scan::scan("inbound/odimh5/PVOL_v20.h5", mdc.inserter_func());
-        scan::scan("inbound/odimh5/XSEC_v21.h5", mdc.inserter_func());
-        test_data[0].set(mdc[0], "reftime:=2013-03-18");
-        test_data[1].set(mdc[1], "reftime:=2000-01-02");
-        test_data[2].set(mdc[2], "reftime:=2013-11-04");
-        finalise_init();
-    }
+    ODIMData();
 };
 
 Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour=0);
@@ -475,8 +428,12 @@ struct ActualChecker : public arki::utils::tests::Actual<DatasetChecker*>
 
     void repack(const ReporterExpected& expected, bool write=false);
     void repack_clean(bool write=false);
+    void repack_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write=false);
+    void repack_filtered_clean(const Matcher& matcher, bool write=false);
     void check(const ReporterExpected& expected, bool write=false, bool quick=true);
     void check_clean(bool write=false, bool quick=true);
+    void check_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write=false, bool quick=true);
+    void check_filtered_clean(const Matcher& matcher, bool write=false, bool quick=true);
     void check_issue51(const ReporterExpected& expected, bool write=false);
     void check_issue51_clean(bool write=false);
 };

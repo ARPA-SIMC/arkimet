@@ -77,7 +77,9 @@ public:
 
     std::unique_ptr<segmented::CheckerSegment> segment(const std::string& relpath) override;
     void segments(std::function<void(segmented::CheckerSegment& segment)>) override;
+    void segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
     void segments_untracked(std::function<void(segmented::CheckerSegment& segment)>) override;
+    void segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
     void removeAll(dataset::Reporter& reporter, bool writable=false) override;
     void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;

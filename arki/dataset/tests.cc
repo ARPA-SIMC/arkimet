@@ -88,6 +88,7 @@ void DatasetTest::test_teardown()
 void DatasetTest::test_reread_config()
 {
     test_teardown();
+    config();
 }
 
 void DatasetTest::reset_test(const std::string& cfg_default)
@@ -99,7 +100,11 @@ void DatasetTest::reset_test(const std::string& cfg_default)
 const Config& DatasetTest::config()
 {
     if (!m_config)
+    {
+        sys::mkdir_ifmissing(ds_root);
+        sys::write_file(str::joinpath(ds_root, "config"), cfg.serialize());
         m_config = dataset::Config::create(cfg);
+    }
     return *m_config;
 }
 
@@ -182,6 +187,14 @@ segmented::State DatasetTest::scan_state()
     NullReporter nr;
     auto checker = makeSegmentedChecker();
     return checker->scan(nr);
+}
+
+segmented::State DatasetTest::scan_state(const Matcher& matcher)
+{
+    // OstreamReporter nr(cerr);
+    NullReporter nr;
+    auto checker = makeSegmentedChecker();
+    return checker->scan_filtered(matcher, nr);
 }
 
 std::unique_ptr<dataset::segmented::Reader> DatasetTest::makeSegmentedReader()
@@ -973,11 +986,29 @@ void ActualChecker<Dataset>::repack(const ReporterExpected& expected, bool write
 }
 
 template<typename Dataset>
+void ActualChecker<Dataset>::repack_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write)
+{
+    CollectReporter reporter;
+    wassert(this->_actual->repack_filtered(matcher, reporter, write));
+    // reporter.dump(stderr);
+    wassert(reporter.check(expected));
+}
+
+template<typename Dataset>
 void ActualChecker<Dataset>::check(const ReporterExpected& expected, bool write, bool quick)
 {
     CollectReporter reporter;
     wassert(this->_actual->check(reporter, write, quick));
     // reporter.dump(stderr);
+    wassert(reporter.check(expected));
+}
+
+template<typename Dataset>
+void ActualChecker<Dataset>::check_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write, bool quick)
+{
+    CollectReporter reporter;
+    wassert(this->_actual->check_filtered(matcher, reporter, write, quick));
+    //reporter.dump(stderr);
     wassert(reporter.check(expected));
 }
 
@@ -998,10 +1029,24 @@ void ActualChecker<Dataset>::repack_clean(bool write)
 }
 
 template<typename Dataset>
+void ActualChecker<Dataset>::repack_filtered_clean(const Matcher& matcher, bool write)
+{
+    ReporterExpected e;
+    repack_filtered(matcher, e, write);
+}
+
+template<typename Dataset>
 void ActualChecker<Dataset>::check_clean(bool write, bool quick)
 {
     ReporterExpected e;
     check(e, write, quick);
+}
+
+template<typename Dataset>
+void ActualChecker<Dataset>::check_filtered_clean(const Matcher& matcher, bool write, bool quick)
+{
+    ReporterExpected e;
+    check_filtered(matcher, e, write, quick);
 }
 
 template<typename Dataset>
@@ -1038,6 +1083,52 @@ Element& Fixture::earliest_element()
 
     return *res;
 }
+
+GRIBData::GRIBData()
+{
+    metadata::Collection mdc("inbound/fixture.grib1");
+    format = "grib";
+    test_data[0].set(mdc[0], "reftime:=2007-07-08");
+    test_data[1].set(mdc[1], "reftime:=2007-07-07");
+    test_data[2].set(mdc[2], "reftime:=2007-10-09");
+    finalise_init();
+}
+
+BUFRData::BUFRData()
+{
+#ifdef HAVE_DBALLE
+    metadata::Collection mdc("inbound/fixture.bufr");
+    format = "bufr";
+    test_data[0].set(mdc[0], "reftime:=2007-07-08");
+    test_data[1].set(mdc[1], "reftime:=2007-07-07");
+    test_data[2].set(mdc[2], "reftime:=2007-10-09");
+    finalise_init();
+#endif
+}
+
+VM2Data::VM2Data()
+{
+    metadata::Collection mdc("inbound/fixture.vm2");
+    format = "vm2";
+    test_data[0].set(mdc[0], "reftime:=2007-07-08");
+    test_data[1].set(mdc[1], "reftime:=2007-07-07");
+    test_data[2].set(mdc[2], "reftime:=2007-10-09");
+    finalise_init();
+}
+
+ODIMData::ODIMData()
+{
+    metadata::Collection mdc;
+    format = "odimh5";
+    scan::scan("inbound/fixture.h5/00.h5", mdc.inserter_func());
+    scan::scan("inbound/fixture.h5/01.h5", mdc.inserter_func());
+    scan::scan("inbound/fixture.h5/02.h5", mdc.inserter_func());
+    test_data[0].set(mdc[0], "reftime:=2007-07-08");
+    test_data[1].set(mdc[1], "reftime:=2007-07-07");
+    test_data[2].set(mdc[2], "reftime:=2007-10-09");
+    finalise_init();
+}
+
 
 Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour)
 {
