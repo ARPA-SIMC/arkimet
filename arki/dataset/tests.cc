@@ -661,6 +661,7 @@ void test_append_transaction_rollback(dataset::segment::Writer* dw, Metadata& md
 }
 
 /// Run maintenance and see that the results are as expected
+
 void ActualSegmentedChecker::maintenance(const MaintenanceResults& expected, bool quick)
 {
     MaintenanceCollector c;
@@ -913,21 +914,69 @@ struct CollectReporter : public dataset::Reporter
     typedef MainteanceCheckResults<ReporterExpected::OperationMatch, OperationResult> OperationResults;
     typedef MainteanceCheckResults<ReporterExpected::SegmentMatch, SegmentResult> SegmentResults;
 
+    std::stringstream report;
+    OstreamReporter recorder;
     OperationResults op_results;
     SegmentResults seg_results;
 
-    void operation_progress(const std::string& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("progress", ds, operation, message); }
-    void operation_manual_intervention(const std::string& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("manual_intervention", ds, operation, message); }
-    void operation_aborted(const std::string& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("aborted", ds, operation, message); }
-    void operation_report(const std::string& ds, const std::string& operation, const std::string& message) override { op_results.emplace_back("report", ds, operation, message); }
+    CollectReporter() : recorder(report) {}
 
-    void segment_info(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.store_extra_info(ds + ":" + relpath, message); }
-    void segment_repack(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("repacked", ds, relpath, message); }
-    void segment_archive(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("archived", ds, relpath, message); }
-    void segment_delete(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("deleted", ds, relpath, message); }
-    void segment_deindex(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("deindexed", ds, relpath, message); }
-    void segment_rescan(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("rescanned", ds, relpath, message); }
-    void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override { seg_results.emplace_back("issue51", ds, relpath, message); }
+    void operation_progress(const std::string& ds, const std::string& operation, const std::string& message) override
+    {
+        recorder.operation_progress(ds, operation, message);
+        op_results.emplace_back("progress", ds, operation, message);
+    }
+    void operation_manual_intervention(const std::string& ds, const std::string& operation, const std::string& message) override
+    {
+        recorder.operation_manual_intervention(ds, operation, message);
+        op_results.emplace_back("manual_intervention", ds, operation, message);
+    }
+    void operation_aborted(const std::string& ds, const std::string& operation, const std::string& message) override
+    {
+        recorder.operation_aborted(ds, operation, message);
+        op_results.emplace_back("aborted", ds, operation, message);
+    }
+    void operation_report(const std::string& ds, const std::string& operation, const std::string& message) override
+    {
+        recorder.operation_report(ds, operation, message);
+        op_results.emplace_back("report", ds, operation, message);
+    }
+
+    void segment_info(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        recorder.segment_info(ds, relpath, message);
+        seg_results.store_extra_info(ds + ":" + relpath, message);
+    }
+    void segment_repack(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        recorder.segment_repack(ds, relpath, message);
+        seg_results.emplace_back("repacked", ds, relpath, message);
+    }
+    void segment_archive(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        recorder.segment_archive(ds, relpath, message);
+        seg_results.emplace_back("archived", ds, relpath, message);
+    }
+    void segment_delete(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        recorder.segment_delete(ds, relpath, message);
+        seg_results.emplace_back("deleted", ds, relpath, message);
+    }
+    void segment_deindex(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        recorder.segment_deindex(ds, relpath, message);
+        seg_results.emplace_back("deindexed", ds, relpath, message);
+    }
+    void segment_rescan(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        recorder.segment_rescan(ds, relpath, message);
+        seg_results.emplace_back("rescanned", ds, relpath, message);
+    }
+    void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        recorder.segment_issue51(ds, relpath, message);
+        seg_results.emplace_back("issue51", ds, relpath, message);
+    }
 
     void check(const ReporterExpected& expected)
     {
@@ -963,6 +1012,8 @@ struct CollectReporter : public dataset::Reporter
             ss << issues.size() << " mismatches in maintenance results:" << endl;
             for (const auto& m: issues)
                 ss << "  " << m << endl;
+            ss << "Reporter output:" << endl;
+            ss << report.str();
             throw TestFailed(ss.str());
         }
     }
@@ -1054,6 +1105,24 @@ void ActualChecker<Dataset>::check_issue51_clean(bool write)
 {
     ReporterExpected e;
     check_issue51(e, write);
+}
+
+template<typename Dataset>
+void ActualChecker<Dataset>::remove_all(const ReporterExpected& expected, bool write)
+{
+    CollectReporter reporter;
+    wassert(this->_actual->remove_all(reporter, write));
+    // reporter.dump(stderr);
+    wassert(reporter.check(expected));
+}
+
+template<typename Dataset>
+void ActualChecker<Dataset>::remove_all_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write)
+{
+    CollectReporter reporter;
+    wassert(this->_actual->remove_all_filtered(matcher, reporter, write));
+    // reporter.dump(stderr);
+    wassert(reporter.check(expected));
 }
 
 }

@@ -170,7 +170,10 @@ struct RemoveAller : public WorkerOnWritable
     void operator()(dataset::Checker& w) override
     {
         dataset::OstreamReporter r(cout);
-        w.removeAll(r, fix);
+        if (filter.empty())
+            w.remove_all(r, fix);
+        else
+            w.remove_all_filtered(filter, r, fix);
     }
 
     void done() {}

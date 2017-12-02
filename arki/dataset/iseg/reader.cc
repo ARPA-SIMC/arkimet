@@ -49,7 +49,8 @@ bool Reader::list_segments(const Matcher& matcher, std::function<bool(const std:
 
 bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    segmented::Reader::query_data(q, dest);
+    if (!segmented::Reader::query_data(q, dest))
+        return false;
 
     return list_segments(q.matcher, [&](const std::string& relpath) {
         RIndex idx(m_config, relpath);

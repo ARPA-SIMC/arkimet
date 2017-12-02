@@ -88,7 +88,8 @@ public:
     const dataset::Config& config() const override { return *m_config; }
     std::string type() const override { return "empty"; }
 
-    void removeAll(dataset::Reporter& reporter, bool writable=false) override {}
+    void remove_all(dataset::Reporter& reporter, bool writable=false) override {}
+    void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) override {}
     void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override {}
     void check(dataset::Reporter& reporter, bool fix, bool quick) override {}
     void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override {}

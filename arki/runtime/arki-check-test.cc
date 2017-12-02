@@ -17,14 +17,8 @@ struct Fixture : public DatasetTest
     void test_setup()
     {
         DatasetTest::test_setup(R"(
-            type=ondisk2
             step=daily
         )");
-        /*
-        if (td.format == "vm2")
-            cfg.setValue("smallfiles", "true");
-        import_all_packed(td);
-        */
     }
 };
 
@@ -33,7 +27,12 @@ class Tests : public FixtureTestCase<Fixture>
     using FixtureTestCase<Fixture>::FixtureTestCase;
 
     void register_tests() override;
-} test("arki_runtime_arkicheck");
+};
+
+Tests test1("arki_runtime_arkicheck_ondisk2", "type=ondisk2");
+Tests test2("arki_runtime_arkicheck_simple_plain", "type=simple\nindex_type=plain");
+Tests test3("arki_runtime_arkicheck_simple_sqlite", "type=simple\nindex_type=sqlite");
+Tests test4("arki_runtime_arkicheck_iseg", "type=iseg\nformat=grib");
 
 void Tests::register_tests() {
 
@@ -71,10 +70,10 @@ add_method("clean", [](Fixture& f) {
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack", "--fix" });
         wassert(actual(res) == 0);
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
-        wassert(actual(sys::read_file(co.file_stderr.name())) == 
-                "testds: repack: running VACUUM ANALIZE on the dataset index\n"
-                "testds: repack: rebuilding the summary cache\n"
-                "testds: repack 3 files ok\n");
+        wassert(actual(sys::read_file(co.file_stderr.name())).matches(
+                "(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?\n)?"
+                "(testds: repack: rebuilding the summary cache\n)?"
+                "testds: repack 3 files ok\n"));
     }
 });
 
@@ -117,6 +116,80 @@ add_method("clean_filtered", [](Fixture& f) {
                 "testds: repack 2 files ok\n");
         wassert(actual(res) == 0);
     }
+});
+
+add_method("remove_all", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+
+    f.clean_and_import("inbound/fixture.grib1");
+
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/07-07.grib").exists());
+    wassert(actual_file("testds/2007/10-09.grib").exists());
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--remove-all" });
+        wassert(actual(res) == 0);
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
+            "testds:2007/07-07.grib: should be deleted\n"
+            "testds:2007/07-08.grib: should be deleted\n"
+            "testds:2007/10-09.grib: should be deleted\n");
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+    }
+
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/07-07.grib").exists());
+    wassert(actual_file("testds/2007/10-09.grib").exists());
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--remove-all", "-f" });
+        wassert(actual(res) == 0);
+        wassert(actual(sys::read_file(co.file_stdout.name())).matches(
+            "testds:2007/07-07.grib: deleted \\([0-9]+ freed\\)\n"
+            "testds:2007/07-08.grib: deleted \\([0-9]+ freed\\)\n"
+            "testds:2007/10-09.grib: deleted \\([0-9]+ freed\\)\n"));
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+    }
+
+    wassert(actual_file("testds/2007/07-08.grib").not_exists());
+    wassert(actual_file("testds/2007/07-07.grib").not_exists());
+    wassert(actual_file("testds/2007/10-09.grib").not_exists());
+});
+
+add_method("remove_all_filtered", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+
+    f.clean_and_import("inbound/fixture.grib1");
+
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/07-07.grib").exists());
+    wassert(actual_file("testds/2007/10-09.grib").exists());
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--remove-all", "--filter=reftime:=2007-07-08" });
+        wassert(actual(sys::read_file(co.file_stdout.name())) == "testds:2007/07-08.grib: should be deleted\n");
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(res) == 0);
+    }
+
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/07-07.grib").exists());
+    wassert(actual_file("testds/2007/10-09.grib").exists());
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--remove-all", "--filter=reftime:=2007-07-08", "-f" });
+        wassert(actual(sys::read_file(co.file_stdout.name())).matches("testds:2007/07-08.grib: deleted \\([0-9]+ freed\\)\n"));
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(res) == 0);
+    }
+
+    wassert(actual_file("testds/2007/07-08.grib").not_exists());
+    wassert(actual_file("testds/2007/07-07.grib").exists());
+    wassert(actual_file("testds/2007/10-09.grib").exists());
 });
 
 add_method("archive", [](Fixture& f) {
@@ -174,19 +247,18 @@ add_method("archive", [](Fixture& f) {
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack", "--fix" });
         wassert(actual(res) == 0);
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
-        wassert(actual(sys::read_file(co.file_stderr.name())) == 
+        wassert(actual(sys::read_file(co.file_stderr.name())).matches(
             "testds:2007/07-07.grib: segment old enough to be archived\n"
             "testds:2007/07-07.grib: archived\n"
             "testds:2007/07-08.grib: segment old enough to be archived\n"
             "testds:2007/07-08.grib: archived\n"
             "testds:2007/10-09.grib: segment old enough to be archived\n"
             "testds:2007/10-09.grib: archived\n"
-            "testds: repack: running VACUUM ANALIZE on the dataset index\n"
-            "testds: repack: rebuilding the summary cache\n"
+            "(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?\n)?"
+            "(testds: repack: rebuilding the summary cache\n)?"
             "testds: repack 0 files ok, 3 files archived\n"
             "testds.archives.last: repack: running VACUUM ANALYZE on the dataset index, if applicable\n"
-            "testds.archives.last: repack 3 files ok\n"
-
+            "testds.archives.last: repack 3 files ok\n")
         );
     }
 
@@ -216,6 +288,10 @@ add_method("archive", [](Fixture& f) {
 add_method("issue57", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
+    if (f.cfg.value("type") == "simple")
+        throw TestSkipped();
+
+    f.cfg.setValue("format", "vm2");
     f.cfg.setValue("unique", "reftime, area, product");
     f.test_reread_config();
 

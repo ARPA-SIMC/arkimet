@@ -64,7 +64,6 @@ public:
 
     std::string type() const override;
 
-    void removeAll(dataset::Reporter& reporter, bool writable=false) override;
     std::unique_ptr<segmented::CheckerSegment> segment(const std::string& relpath) override;
     void segments(std::function<void(segmented::CheckerSegment& segment)>) override;
     void segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
@@ -75,7 +74,6 @@ public:
     void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
     void rescanSegment(const std::string& relpath) override;
     void releaseSegment(const std::string& relpath, const std::string& destpath) override;
-    size_t removeSegment(const std::string& relpath, bool withData=false) override;
     size_t vacuum(dataset::Reporter& reporter) override;
 
     void test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx=1) override;

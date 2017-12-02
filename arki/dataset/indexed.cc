@@ -56,19 +56,6 @@ IndexedChecker::~IndexedChecker()
 // TODO: during checks, run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
 // and delete the index if it fails
 
-void IndexedChecker::removeAll(Reporter& reporter, bool writable)
-{
-    m_idx->list_segments([&](const std::string& relpath) {
-        if (writable)
-        {
-            size_t freed = removeSegment(relpath, true);
-            reporter.segment_delete(name(), relpath, "deleted (" + std::to_string(freed) + " freed)");
-        } else
-            reporter.segment_delete(name(), relpath, "should be deleted");
-    });
-    segmented::Checker::removeAll(reporter, writable);
-}
-
 void IndexedChecker::check_issue51(dataset::Reporter& reporter, bool fix)
 {
     // Broken metadata for each segment

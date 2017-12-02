@@ -88,10 +88,7 @@ this->add_method("preconditions", [](Fixture& f) {
     wassert(actual(f.relpaths_old.size() + f.relpaths_new.size()) == f.count_dataset_files(f.td));
 });
 
-// Test check_issue51
 this->add_method("check_filtered", [](Fixture& f) {
-    if (f.makeSegmentedChecker()->type() != "iseg")
-        throw TestSkipped();
     wassert(f.import_all_packed(f.td));
 
     auto state = f.scan_state(Matcher::parse("reftime:>=2007-07-08"));
@@ -107,6 +104,48 @@ this->add_method("check_filtered", [](Fixture& f) {
         e.report.emplace_back("testds", "check", "2 files ok");
         wassert(actual(checker.get()).check_filtered(Matcher::parse("reftime:>=2007-07-08"), e, true));
     }
+});
+
+this->add_method("remove_all", [](Fixture& f) {
+    wassert(f.import_all_packed(f.td));
+
+    {
+        auto checker(f.makeSegmentedChecker());
+
+        ReporterExpected e;
+        e.deleted.emplace_back("testds", "2007/07-07." + f.td.format);
+        e.deleted.emplace_back("testds", "2007/07-08." + f.td.format);
+        e.deleted.emplace_back("testds", "2007/10-09." + f.td.format);
+        wassert(actual(checker.get()).remove_all(e, true));
+    }
+
+    auto state = f.scan_state();
+    wassert(actual(state.size()) == 0u);
+    wassert(f.query_results({}));
+
+    wassert(actual_file("testds/2007/07-07." + f.td.format).not_exists());
+    wassert(actual_file("testds/2007/07-08." + f.td.format).not_exists());
+    wassert(actual_file("testds/2007/10-09." + f.td.format).not_exists());
+});
+
+this->add_method("remove_all_filtered", [](Fixture& f) {
+    wassert(f.import_all_packed(f.td));
+
+    {
+        auto checker(f.makeSegmentedChecker());
+
+        ReporterExpected e;
+        e.deleted.emplace_back("testds", "2007/07-08." + f.td.format);
+        wassert(actual(checker.get()).remove_all_filtered(Matcher::parse("reftime:=2007-07-08"), e, true));
+    }
+
+    auto state = f.scan_state();
+    wassert(actual(state.size()) == 2u);
+    wassert(f.query_results({1, 2}));
+
+    wassert(actual_file("testds/2007/07-07." + f.td.format).exists());
+    wassert(actual_file("testds/2007/07-08." + f.td.format).not_exists());
+    wassert(actual_file("testds/2007/10-09." + f.td.format).exists());
 });
 
 // Test check_issue51

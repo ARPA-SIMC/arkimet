@@ -400,6 +400,14 @@ public:
 
         return size_pre - size_post;
     }
+
+    size_t remove(bool with_data)
+    {
+        checker.idx->reset(segment->relname);
+        // TODO: also remove .metadata and .summary files
+        if (!with_data) return 0;
+        return segment->remove();
+    }
 };
 
 
@@ -442,14 +450,32 @@ void Checker::release_lock()
     lock->release();
 }
 
-void Checker::removeAll(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::removeAll(reporter, writable); release_lock(); }
+void Checker::remove_all(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::remove_all(reporter, writable); release_lock(); }
+void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::remove_all_filtered(matcher, reporter, writable); release_lock(); }
+
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags) { acquire_lock(); IndexedChecker::repack(reporter, writable, test_flags); release_lock(); }
+void Checker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags) { acquire_lock(); IndexedChecker::repack_filtered(matcher, reporter, writable, test_flags); release_lock(); }
 
 void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
     acquire_lock();
 
     IndexedChecker::check(reporter, fix, quick);
+
+    if (!idx->checkSummaryCache(*this, reporter) && fix)
+    {
+        reporter.operation_progress(name(), "check", "rebuilding summary cache");
+        idx->rebuildSummaryCache();
+    }
+
+    release_lock();
+}
+
+void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
+{
+    acquire_lock();
+
+    IndexedChecker::check_filtered(matcher, reporter, fix, quick);
 
     if (!idx->checkSummaryCache(*this, reporter) && fix)
     {
@@ -475,8 +501,7 @@ void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> d
 
 void Checker::segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    // TODO: implement filtering
-    m_idx->list_segments([&](const std::string& relpath) {
+    m_idx->list_segments_filtered(matcher, [&](const std::string& relpath) {
         CheckerSegment segment(*this, relpath);
         dest(segment);
     });
@@ -484,7 +509,6 @@ void Checker::segments_filtered(const Matcher& matcher, std::function<void(segme
 
 void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& relpath)> dest)
 {
-    // Add information from the state of files on disk
     segment_manager().scan_dir([&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;
         CheckerSegment segment(*this, relpath);
@@ -494,10 +518,13 @@ void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& r
 
 void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& relpath)> dest)
 {
-    // TODO: implement filtering
-    // Add information from the state of files on disk
+    if (matcher.empty()) return segments_untracked(dest);
+    auto m = matcher.get(TYPE_REFTIME);
+    if (!m) return segments_untracked(dest);
+
     segment_manager().scan_dir([&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;
+        if (!config().step().pathMatches(relpath, *m)) return;
         CheckerSegment segment(*this, relpath);
         dest(segment);
     });
@@ -621,13 +648,6 @@ void Checker::indexSegment(const std::string& relpath, metadata::Collection&& co
     sys::unlink_ifexists(str::joinpath(config().path, relpath) + ".summary");
 }
 
-size_t Checker::removeSegment(const std::string& relpath, bool withData)
-{
-    idx->reset(relpath);
-    // TODO: also remove .metadata and .summary files
-    return IndexedChecker::removeSegment(relpath, withData);
-}
-
 void Checker::releaseSegment(const std::string& relpath, const std::string& destpath)
 {
     string pathname = str::joinpath(config().path, relpath);
@@ -645,7 +665,7 @@ void Checker::releaseSegment(const std::string& relpath, const std::string& dest
 
 size_t Checker::vacuum(dataset::Reporter& reporter)
 {
-    reporter.operation_progress(name(), "repack", "running VACUUM ANALIZE on the dataset index");
+    reporter.operation_progress(name(), "repack", "running VACUUM ANALYZE on the dataset index");
     size_t size_pre = 0, size_post = 0;
     if (sys::size(idx->pathname(), 0) > 0)
     {

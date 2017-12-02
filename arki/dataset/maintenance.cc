@@ -179,7 +179,7 @@ void RealRepacker::operator()(segmented::CheckerSegment& segment, segment::State
     if (state.has(SEGMENT_DELETE_AGE))
     {
         // Delete obsolete files
-        size_t size = w.removeSegment(segment.path_relative(), true);
+        size_t size = segment.remove(true);
         reporter.segment_delete(w.name(), segment.path_relative(), "deleted (" + std::to_string(size) + " freed)");
         ++m_count_deleted;
         ++m_count_deindexed;
@@ -189,7 +189,7 @@ void RealRepacker::operator()(segmented::CheckerSegment& segment, segment::State
     if (state.has(SEGMENT_DELETED))
     {
         // Delete all files not indexed
-        size_t size = w.removeSegment(segment.path_relative(), true);
+        size_t size = segment.remove(true);
         reporter.segment_delete(w.name(), segment.path_relative(), "deleted (" + std::to_string(size) + " freed)");
         ++m_count_deleted;
         m_count_freed += size;
@@ -197,7 +197,7 @@ void RealRepacker::operator()(segmented::CheckerSegment& segment, segment::State
     if (state.has(SEGMENT_MISSING))
     {
         // Remove from index those files that have been deleted
-        w.removeSegment(segment.path_relative(), false);
+        segment.remove(false);
         reporter.segment_deindex(w.name(), segment.path_relative(), "removed from index");
         ++m_count_deindexed;
         m_redo_summary = true;
@@ -250,7 +250,7 @@ void RealFixer::operator()(segmented::CheckerSegment& segment, segment::State st
     if (state.has(SEGMENT_MISSING))
     {
         // Remove from index those files that have been deleted
-        w.removeSegment(segment.path_relative(), false);
+        segment.remove(false);
         reporter.segment_deindex(w.name(), segment.path_relative(), "removed from the index");
         ++m_count_deindexed;
         m_redo_summary = true;

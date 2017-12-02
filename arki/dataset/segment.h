@@ -371,11 +371,6 @@ public:
     virtual State check(dataset::Reporter& reporter, const std::string& ds, const std::string& relname, const metadata::Collection& mds, bool quick=true) = 0;
 
     /**
-     * Remove a file, returning its size
-     */
-    virtual size_t remove(const std::string& relname) = 0;
-
-    /**
      * Truncate a file at the given offset
      *
      * This function is useful for implementing unit tests.

@@ -94,10 +94,8 @@ LocalReader::~LocalReader()
 
 bool LocalReader::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest)
 {
-    if (hasArchive())
-        if (!archive().query_data(q, dest))
-            return false;
-    return true;
+    if (!hasArchive()) return true;
+    return archive().query_data(q, dest);
 }
 
 void LocalReader::query_summary(const Matcher& matcher, Summary& summary)

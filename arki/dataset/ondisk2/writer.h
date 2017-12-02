@@ -80,13 +80,15 @@ public:
     void segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
     void segments_untracked(std::function<void(segmented::CheckerSegment& segment)>) override;
     void segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
-    void removeAll(dataset::Reporter& reporter, bool writable=false) override;
+    void remove_all(dataset::Reporter& reporter, bool writable=false) override;
+    void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) override;
     void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
+    void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
+    void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) override;
 
     void rescanSegment(const std::string& relpath) override;
     void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
-    size_t removeSegment(const std::string& relpath, bool withData=false) override;
     void releaseSegment(const std::string& relpath, const std::string& destpath) override;
     size_t vacuum(dataset::Reporter& reporter) override;
     void test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx) override;

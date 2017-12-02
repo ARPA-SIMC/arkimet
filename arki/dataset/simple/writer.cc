@@ -355,6 +355,15 @@ public:
 
         return size_pre - size_post;
     }
+
+    size_t remove(bool with_data)
+    {
+        checker.m_mft->remove(segment->relname);
+        sys::unlink_ifexists(segment->absname + ".metadata");
+        sys::unlink_ifexists(segment->absname + ".summary");
+        if (!with_data) return 0;
+        return segment->remove();
+    }
 };
 
 
@@ -399,7 +408,8 @@ void Checker::release_lock()
     lock->release();
 }
 
-void Checker::removeAll(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::removeAll(reporter, writable); release_lock(); }
+void Checker::remove_all(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::remove_all(reporter, writable); release_lock(); }
+void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::remove_all_filtered(matcher, reporter, writable); release_lock(); }
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
     acquire_lock();
@@ -407,7 +417,15 @@ void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_f
     m_mft->flush();
     release_lock();
 }
+void Checker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
+{
+    acquire_lock();
+    IndexedChecker::repack_filtered(matcher, reporter, writable, test_flags);
+    m_mft->flush();
+    release_lock();
+}
 void Checker::check(dataset::Reporter& reporter, bool fix, bool quick) { acquire_lock(); IndexedChecker::check(reporter, fix, quick); release_lock(); }
+void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) { acquire_lock(); IndexedChecker::check_filtered(matcher, reporter, fix, quick); release_lock(); }
 
 std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
 {
@@ -430,7 +448,7 @@ void Checker::segments_filtered(const Matcher& matcher, std::function<void(segme
 {
     // TODO: implement filtering
     std::vector<std::string> names;
-    m_idx->list_segments([&](const std::string& relpath) { names.push_back(relpath); });
+    m_idx->list_segments_filtered(matcher, [&](const std::string& relpath) { names.push_back(relpath); });
 
     for (const auto& relpath: names)
     {
@@ -441,7 +459,6 @@ void Checker::segments_filtered(const Matcher& matcher, std::function<void(segme
 
 void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& relpath)> dest)
 {
-    // Add information from the state of files on disk
     segment_manager().scan_dir([&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;
         CheckerSegment segment(*this, relpath);
@@ -451,10 +468,13 @@ void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& r
 
 void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& relpath)> dest)
 {
-    // TODO: implement filtering
-    // Add information from the state of files on disk
+    if (matcher.empty()) return segments_untracked(dest);
+    auto m = matcher.get(TYPE_REFTIME);
+    if (!m) return segments_untracked(dest);
+
     segment_manager().scan_dir([&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;
+        if (!config().step().pathMatches(relpath, *m)) return;
         CheckerSegment segment(*this, relpath);
         dest(segment);
     });
@@ -493,15 +513,6 @@ void Checker::rescanSegment(const std::string& relpath)
 
     m_mft->rescanSegment(config().path, relpath);
     m_mft->flush();
-}
-
-size_t Checker::removeSegment(const std::string& relpath, bool withData)
-{
-    m_mft->remove(relpath);
-    string pathname = str::joinpath(config().path, relpath);
-    sys::unlink_ifexists(pathname + ".metadata");
-    sys::unlink_ifexists(pathname + ".summary");
-    return segmented::Checker::removeSegment(relpath, withData);
 }
 
 void Checker::releaseSegment(const std::string& relpath, const std::string& destpath)

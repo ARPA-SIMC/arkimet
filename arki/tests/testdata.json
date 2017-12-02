@@ -11486,8 +11486,63 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_index",
-  "method": "empty"
+  "group": "arki_dataset_index_tests_manifest_plain",
+  "method": "has_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_index_tests_manifest_plain",
+  "method": "segment_timespan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_index_tests_manifest_plain",
+  "method": "list_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_index_tests_manifest_plain",
+  "method": "list_segments_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_index_tests_manifest_sqlite",
+  "method": "has_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_index_tests_manifest_sqlite",
+  "method": "segment_timespan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_index_tests_manifest_sqlite",
+  "method": "list_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_index_tests_manifest_sqlite",
+  "method": "list_segments_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_index_tests_contents",
+  "method": "has_segment"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_index_tests_contents",
+  "method": "segment_timespan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_index_tests_contents",
+  "method": "list_segments"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_index_tests_contents",
+  "method": "list_segments_filtered"
  },
  {
   "doc": "",
@@ -20397,6 +20452,16 @@
  {
   "doc": "",
   "group": "arki_dataset_checker_grib_ondisk2",
+  "method": "remove_all"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_grib_ondisk2",
+  "method": "remove_all_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_grib_ondisk2",
   "method": "check_issue51"
  },
  {
@@ -20412,6 +20477,16 @@
  {
   "doc": "",
   "group": "arki_dataset_checker_grib_simple_plain",
+  "method": "remove_all"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_grib_simple_plain",
+  "method": "remove_all_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_grib_simple_plain",
   "method": "check_issue51"
  },
  {
@@ -20423,6 +20498,16 @@
   "doc": "",
   "group": "arki_dataset_checker_grib_simple_sqlite",
   "method": "check_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_grib_simple_sqlite",
+  "method": "remove_all"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_grib_simple_sqlite",
+  "method": "remove_all_filtered"
  },
  {
   "doc": "",
@@ -20438,6 +20523,16 @@
   "doc": "",
   "group": "arki_dataset_checker_grib_iseg",
   "method": "check_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_grib_iseg",
+  "method": "remove_all"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_grib_iseg",
+  "method": "remove_all_filtered"
  },
  {
   "doc": "",
@@ -20453,6 +20548,16 @@
   "doc": "",
   "group": "arki_dataset_checker_bufr_ondisk2",
   "method": "check_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_bufr_ondisk2",
+  "method": "remove_all"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_bufr_ondisk2",
+  "method": "remove_all_filtered"
  },
  {
   "doc": "",
@@ -20468,6 +20573,16 @@
   "doc": "",
   "group": "arki_dataset_checker_bufr_simple_plain",
   "method": "check_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_bufr_simple_plain",
+  "method": "remove_all"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_bufr_simple_plain",
+  "method": "remove_all_filtered"
  },
  {
   "doc": "",
@@ -20483,6 +20598,16 @@
   "doc": "",
   "group": "arki_dataset_checker_bufr_simple_sqlite",
   "method": "check_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_bufr_simple_sqlite",
+  "method": "remove_all"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_bufr_simple_sqlite",
+  "method": "remove_all_filtered"
  },
  {
   "doc": "",
@@ -20498,6 +20623,16 @@
   "doc": "",
   "group": "arki_dataset_checker_bufr_iseg",
   "method": "check_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_bufr_iseg",
+  "method": "remove_all"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_checker_bufr_iseg",
+  "method": "remove_all_filtered"
  },
  {
   "doc": "",
@@ -21621,22 +21756,122 @@
  },
  {
   "doc": "",
-  "group": "arki_runtime_arkicheck",
+  "group": "arki_runtime_arkicheck_ondisk2",
   "method": "clean"
  },
  {
   "doc": "",
-  "group": "arki_runtime_arkicheck",
+  "group": "arki_runtime_arkicheck_ondisk2",
   "method": "clean_filtered"
  },
  {
   "doc": "",
-  "group": "arki_runtime_arkicheck",
+  "group": "arki_runtime_arkicheck_ondisk2",
+  "method": "remove_all"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_ondisk2",
+  "method": "remove_all_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_ondisk2",
   "method": "archive"
  },
  {
   "doc": "",
-  "group": "arki_runtime_arkicheck",
+  "group": "arki_runtime_arkicheck_ondisk2",
+  "method": "issue57"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_plain",
+  "method": "clean"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_plain",
+  "method": "clean_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_plain",
+  "method": "remove_all"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_plain",
+  "method": "remove_all_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_plain",
+  "method": "archive"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_plain",
+  "method": "issue57"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_sqlite",
+  "method": "clean"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_sqlite",
+  "method": "clean_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_sqlite",
+  "method": "remove_all"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_sqlite",
+  "method": "remove_all_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_sqlite",
+  "method": "archive"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_sqlite",
+  "method": "issue57"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_iseg",
+  "method": "clean"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_iseg",
+  "method": "clean_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_iseg",
+  "method": "remove_all"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_iseg",
+  "method": "remove_all_filtered"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_iseg",
+  "method": "archive"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_iseg",
   "method": "issue57"
  },
  {

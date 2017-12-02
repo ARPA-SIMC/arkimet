@@ -358,11 +358,6 @@ struct Checker : public dataset::Base
     using Base::Base;
 
     /**
-     * Reset this dataset, removing all data, indices and caches
-     */
-    virtual void removeAll(dataset::Reporter& reporter, bool writable=false) = 0;
-
-    /**
      * Repack the dataset, logging status to the given file.
      *
      * If writable is false, the process is simulated but no changes are
@@ -381,11 +376,17 @@ struct Checker : public dataset::Base
      */
     virtual void check(dataset::Reporter& reporter, bool fix, bool quick) = 0;
 
-    /// Same as repack, but limited to at least the parts of the dataset matching the given matcher
+    /// Same as repack, but limited to the parts of the dataset matching the given matcher
     virtual void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) = 0;
 
-    /// Same as check, but limited to at least the parts of the dataset matching the given matcher
+    /// Same as check, but limited to the parts of the dataset matching the given matcher
     virtual void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) = 0;
+
+    /// Remove all data from the dataset
+    virtual void remove_all(dataset::Reporter& reporter, bool writable=false) = 0;
+
+    /// Remove the segments from the dataset that match the given matcher
+    virtual void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) = 0;
 
     /**
      * Check consistency of the last byte of GRIB and BUFR data in the archive,

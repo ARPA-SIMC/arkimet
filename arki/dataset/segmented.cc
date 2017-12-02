@@ -305,21 +305,6 @@ void Checker::unarchive_segment(const std::string& relpath)
     indexSegment(relpath, move(mdc));
 }
 
-size_t Checker::removeSegment(const std::string& relpath, bool withData)
-{
-    if (withData)
-        return segment_manager().remove(relpath);
-    else
-        return 0;
-}
-
-void Checker::removeAll(dataset::Reporter& reporter, bool writable)
-{
-    // TODO: decide if we're removing archives at all
-    // TODO: if (hasArchive())
-    // TODO:    archive().removeAll(reporter, writable);
-}
-
 void Checker::segments_all(std::function<void(segmented::CheckerSegment& segment)> dest)
 {
     segments([&](CheckerSegment& segment) { dest(segment); });
@@ -349,6 +334,39 @@ segmented::State Checker::scan_filtered(const Matcher& matcher, dataset::Reporte
     });
     return segments_state;
 }
+
+void Checker::remove_all(dataset::Reporter& reporter, bool writable)
+{
+    // TODO: decide if we're removing archives at all
+    // TODO: if (hasArchive())
+    // TODO:    archive().removeAll(reporter, writable);
+    segments_all([&](CheckerSegment& segment) {
+        if (writable)
+        {
+            auto freed = segment.remove(true);
+            reporter.segment_delete(name(), segment.path_relative(), "deleted (" + std::to_string(freed) + " freed)");
+        }
+        else
+            reporter.segment_delete(name(), segment.path_relative(), "should be deleted");
+    });
+}
+
+void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable)
+{
+    // TODO: decide if we're removing archives at all
+    // TODO: if (hasArchive())
+    // TODO:    archive().removeAll(reporter, writable);
+    segments_all_filtered(matcher, [&](CheckerSegment& segment) {
+        if (writable)
+        {
+            auto freed = segment.remove(true);
+            reporter.segment_delete(name(), segment.path_relative(), "deleted (" + std::to_string(freed) + " freed)");
+        }
+        else
+            reporter.segment_delete(name(), segment.path_relative(), "should be deleted");
+    });
+}
+
 
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {

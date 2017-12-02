@@ -348,7 +348,7 @@ public:
 
         auto res = reorder_segment_backend(idx, p, mds, test_flags);
 
-        //reporter.operation_progress(checker.name(), "repack", "running VACUUM ANALIZE on segment " + segment->relname);
+        //reporter.operation_progress(checker.name(), "repack", "running VACUUM ANALYZE on segment " + segment->relname);
         idx.vacuum();
 
         return res;
@@ -404,6 +404,19 @@ public:
 
         return size_pre - size_post;
     }
+
+    size_t remove(bool with_data)
+    {
+        string idx_abspath = str::joinpath(segment->absname + ".index");
+        size_t res = 0;
+        if (sys::exists(idx_abspath))
+        {
+            res = sys::size(idx_abspath);
+            sys::unlink(idx_abspath);
+        }
+        if (!with_data) return res;
+        return res + segment->remove();
+    }
 };
 
 
@@ -431,19 +444,6 @@ void Checker::list_segments(const Matcher& matcher, std::function<void(const std
     std::sort(seg_relpaths.begin(), seg_relpaths.end());
     for (const auto& relpath: seg_relpaths)
         dest(relpath);
-}
-
-void Checker::removeAll(dataset::Reporter& reporter, bool writable)
-{
-    list_segments([&](const std::string& relpath) {
-        if (writable)
-        {
-            size_t freed = removeSegment(relpath, true);
-            reporter.segment_delete(name(), relpath, "deleted (" + std::to_string(freed) + " freed)");
-        } else
-            reporter.segment_delete(name(), relpath, "should be deleted");
-    });
-    segmented::Checker::removeAll(reporter, writable);
 }
 
 std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
@@ -572,26 +572,17 @@ void Checker::check_issue51(dataset::Reporter& reporter, bool fix)
 
 void Checker::indexSegment(const std::string& relpath, metadata::Collection&& mds)
 {
-    string pathname = str::joinpath(config().path, relpath);
-    time_t mtime = scan::timestamp(pathname);
-    if (mtime == 0)
-        throw std::runtime_error("cannot acquire " + pathname + ": file does not exist");
+    WIndex idx(m_config, relpath);
 
-    // Iterate the metadata, computing the summary and making the data
-    // paths relative
-    mds.strip_source_paths();
-    Summary sum;
-    mds.add_to_summary(sum);
+    // Add to index
+    Pending p_idx = idx.begin_transaction();
+    for (auto& md: mds)
+        idx.index(*md, md->sourceBlob().offset);
+    p_idx.commit();
 
-    // Regenerate .metadata
-    mds.writeAtomically(pathname + ".metadata");
-
-    // Regenerate .summary
-    sum.writeAtomically(pathname + ".summary");
-
-    // Add to manifest
-    //m_mft->acquire(relpath, mtime, sum);
-    //m_mft->flush();
+    // Remove .metadata and .summary files
+    sys::unlink_ifexists(str::joinpath(config().path, relpath) + ".metadata");
+    sys::unlink_ifexists(str::joinpath(config().path, relpath) + ".summary");
 }
 
 namespace {
@@ -689,18 +680,6 @@ void Checker::rescanSegment(const std::string& relpath)
     // cerr << " COMMITTED" << endl;
 
     // TODO: remove relevant summary
-}
-
-size_t Checker::removeSegment(const std::string& relpath, bool withData)
-{
-    string idx_abspath = str::joinpath(config().path, relpath + ".index");
-    size_t res = 0;
-    if (sys::exists(idx_abspath))
-    {
-        res = sys::size(idx_abspath);
-        sys::unlink(idx_abspath);
-    }
-    return res + segmented::Checker::removeSegment(relpath, withData);
 }
 
 void Checker::releaseSegment(const std::string& relpath, const std::string& destpath)

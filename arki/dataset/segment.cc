@@ -200,14 +200,6 @@ struct BaseManager : public segment::Manager
         return maint->check(reporter, ds, mds, quick);
     }
 
-    size_t remove(const std::string& relname)
-    {
-        string format = utils::get_format(relname);
-        string absname = str::joinpath(root, relname);
-        auto maint(create_checker_for_format(format, relname, absname));
-        return maint->remove();
-    }
-
     void test_truncate(const std::string& relname, size_t offset)
     {
         string format = utils::get_format(relname);

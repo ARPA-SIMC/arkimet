@@ -167,6 +167,11 @@ public:
      * final segment size.
      */
     virtual size_t reorder(metadata::Collection& mds, unsigned test_flags=0) = 0;
+
+    /**
+     * Remove the segment
+     */
+    virtual size_t remove(bool with_data=false) = 0;
 };
 
 
@@ -233,7 +238,10 @@ public:
     void segments_all_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>);
 
     /// Remove all data from the dataset
-    void removeAll(dataset::Reporter& reporter, bool writable) override;
+    void remove_all(dataset::Reporter& reporter, bool writable=false) override;
+
+    /// Remove all data from the dataset
+    void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) override;
 
     /**
      * Add information about a file to the index
@@ -245,13 +253,6 @@ public:
      * them by rescanning the file
      */
     virtual void rescanSegment(const std::string& relpath) = 0;
-
-    /**
-     * Remove the file from the dataset
-     *
-     * @returns The number of bytes freed on disk with this operation
-     */
-    virtual size_t removeSegment(const std::string& relpath, bool withData=false) = 0;
 
     /**
      * Release the segment from the dataset and move it to destpath.

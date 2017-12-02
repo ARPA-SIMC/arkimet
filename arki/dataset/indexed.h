@@ -73,7 +73,6 @@ public:
 
     const IndexedConfig& config() const override = 0;
 
-    void removeAll(Reporter& reporter, bool writable) override;
     void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
 
     void test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx=1) override;

@@ -120,7 +120,7 @@ Collection::Collection(dataset::Reader& ds, const std::string& q)
 
 Collection::Collection(const std::string& pathname)
 {
-    scan::scan(pathname, [&](unique_ptr<Metadata> md) { acquire(move(md)); return true; });
+    scan_from_file(pathname);
 }
 
 Collection::~Collection()
@@ -191,6 +191,11 @@ void Collection::write_to(NamedFileDescriptor& out) const
     }
     if (!buf.empty())
         compressAndWrite(buf, out);
+}
+
+void Collection::scan_from_file(const std::string& pathname)
+{
+    scan::scan(pathname, [&](unique_ptr<Metadata> md) { acquire(move(md)); return true; });
 }
 
 void Collection::read_from_file(const metadata::ReadContext& rc)

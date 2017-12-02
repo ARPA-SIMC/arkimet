@@ -98,6 +98,10 @@ public:
      */
     void write_to(NamedFileDescriptor& out) const;
 
+    /// Construct a collection filled with the data scanned from the given file
+    /// using scan::any
+    void scan_from_file(const std::string& pathname);
+
     /// Read metadata from \a pathname and append them to this collection
     void read_from_file(const metadata::ReadContext& rc);
 

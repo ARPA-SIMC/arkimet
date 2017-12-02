@@ -354,10 +354,18 @@ ArchivesChecker::~ArchivesChecker()
 
 std::string ArchivesChecker::type() const { return "archives"; }
 
-void ArchivesChecker::removeAll(Reporter& reporter, bool writable)
+void ArchivesChecker::remove_all(Reporter& reporter, bool writable)
 {
     archives->iter([&](Checker& a) {
-        a.removeAll(reporter, writable);
+        a.remove_all(reporter, writable);
+        return true;
+    });
+}
+
+void ArchivesChecker::remove_all_filtered(const Matcher& matcher, Reporter& reporter, bool writable)
+{
+    archives->iter([&](Checker& a) {
+        a.remove_all_filtered(matcher, reporter, writable);
         return true;
     });
 }
