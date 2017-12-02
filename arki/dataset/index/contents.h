@@ -138,6 +138,7 @@ public:
     size_t count() const;
 
     void list_segments(std::function<void(const std::string&)> dest) override;
+    void list_segments_filtered(const Matcher& matcher, std::function<void(const std::string&)> dest) override;
 
     /// Check if a segment is known to the index
     bool has_segment(const std::string& relpath) const override;

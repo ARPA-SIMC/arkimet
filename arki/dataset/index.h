@@ -43,6 +43,13 @@ struct Index
      */
     virtual void list_segments(std::function<void(const std::string&)> dest) = 0;
 
+    /**
+     * List all segments known to the index, filtered by a matcher.
+     *
+     * Segments are sorted alphabetically by relative paths.
+     */
+    virtual void list_segments_filtered(const Matcher& matcher, std::function<void(const std::string&)> dest) = 0;
+
     /// Check if a segment is known to the index
     virtual bool has_segment(const std::string& relpath) const = 0;
 

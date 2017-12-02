@@ -261,6 +261,52 @@ void Contents::list_segments(std::function<void(const std::string&)> dest)
         dest(sq.fetchString(0));
 }
 
+void Contents::list_segments_filtered(const Matcher& matcher, std::function<void(const std::string&)> dest)
+{
+    if (matcher.empty())
+        return list_segments(dest);
+
+    unique_ptr<Time> begin;
+    unique_ptr<Time> end;
+    if (!matcher.restrict_date_range(begin, end))
+        // The matcher matches an impossible datetime span: convert it
+        // into an impossible clause that evaluates quickly
+        return;
+
+    if (!begin.get() && !end.get())
+        return list_segments(dest);
+
+    if (begin.get() && end.get())
+    {
+        Query sq("list_segments", m_db);
+        sq.compile("SELECT DISTINCT file, MIN(reftime) AS begin, MAX(reftime) AS end FROM md GROUP BY file HAVING begin <= ? AND end >= ? ORDER BY file");
+        string b = begin->to_sql();
+        string e = end->to_sql();
+        sq.bind(1, e);
+        sq.bind(2, b);
+        while (sq.step())
+            dest(sq.fetchString(0));
+    }
+    else if (begin.get())
+    {
+        Query sq("list_segments", m_db);
+        sq.compile("SELECT DISTINCT file, MAX(reftime) AS end FROM md GROUP BY file HAVING end >= ? ORDER BY file");
+        string b = begin->to_sql();
+        sq.bind(1, b);
+        while (sq.step())
+            dest(sq.fetchString(0));
+    }
+    else
+    {
+        Query sq("list_segments", m_db);
+        sq.compile("SELECT DISTINCT file, MIN(reftime) AS begin FROM md GROUP BY file HAVING begin <= ? ORDER BY file");
+        string e = end->to_sql();
+        sq.bind(1, e);
+        while (sq.step())
+            dest(sq.fetchString(0));
+    }
+}
+
 bool Contents::has_segment(const std::string& relpath) const
 {
     Query q("sel_has_segment", m_db);

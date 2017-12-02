@@ -511,6 +511,42 @@ public:
             dest(i.file);
     }
 
+    void list_segments_filtered(const Matcher& matcher, std::function<void(const std::string&)> dest) override
+    {
+        if (matcher.empty())
+            return list_segments(dest);
+
+        unique_ptr<Time> begin;
+        unique_ptr<Time> end;
+        if (!matcher.restrict_date_range(begin, end))
+            // The matcher matches an impossible datetime span: convert it
+            // into an impossible clause that evaluates quickly
+            return;
+
+        if (!begin.get() && !end.get())
+            return list_segments(dest);
+
+        reread();
+        if (begin.get() && end.get())
+        {
+            for (const auto& i: this->info)
+                if (i.start_time <= *end && i.end_time >= *begin)
+                    dest(i.file);
+        }
+        else if (begin.get())
+        {
+            for (const auto& i: this->info)
+                if (i.end_time >= *begin)
+                    dest(i.file);
+        }
+        else
+        {
+            for (const auto& i: this->info)
+                if (i.start_time <= *end)
+                    dest(i.file);
+        }
+    }
+
     bool has_segment(const std::string& relpath) const override
     {
         // Lookup the file (FIXME: reimplement binary search so we
@@ -808,6 +844,52 @@ public:
 
         while (q.step())
             dest(q.fetchString(0));
+    }
+
+    void list_segments_filtered(const Matcher& matcher, std::function<void(const std::string&)> dest) override
+    {
+        if (matcher.empty())
+            return list_segments(dest);
+
+        unique_ptr<Time> begin;
+        unique_ptr<Time> end;
+        if (!matcher.restrict_date_range(begin, end))
+            // The matcher matches an impossible datetime span: convert it
+            // into an impossible clause that evaluates quickly
+            return;
+
+        if (!begin.get() && !end.get())
+            return list_segments(dest);
+
+        if (begin.get() && end.get())
+        {
+            Query sq("list_segments", m_db);
+            sq.compile("SELECT DISTINCT file FROM files WHERE start_time <= ? AND end_time >= ? ORDER BY start_time");
+            string b = begin->to_sql();
+            string e = end->to_sql();
+            sq.bind(1, e);
+            sq.bind(2, b);
+            while (sq.step())
+                dest(sq.fetchString(0));
+        }
+        else if (begin.get())
+        {
+            Query sq("list_segments", m_db);
+            sq.compile("SELECT DISTINCT file FROM files WHERE end_time >= ? ORDER BY start_time");
+            string b = begin->to_sql();
+            sq.bind(1, b);
+            while (sq.step())
+                dest(sq.fetchString(0));
+        }
+        else
+        {
+            Query sq("list_segments", m_db);
+            sq.compile("SELECT DISTINCT file FROM files WHERE start_time <= ? ORDER BY start_time");
+            string e = end->to_sql();
+            sq.bind(1, e);
+            while (sq.step())
+                dest(sq.fetchString(0));
+        }
     }
 
     bool has_segment(const std::string& relpath) const override
