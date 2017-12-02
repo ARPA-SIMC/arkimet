@@ -346,7 +346,12 @@ public:
         metadata::Collection mds;
         idx.scan(mds.inserter_func(), "reftime, offset");
 
-        return reorder_segment_backend(idx, p, mds, test_flags);
+        auto res = reorder_segment_backend(idx, p, mds, test_flags);
+
+        //reporter.operation_progress(checker.name(), "repack", "running VACUUM ANALIZE on segment " + segment->relname);
+        idx.vacuum();
+
+        return res;
     }
 
     size_t reorder(metadata::Collection& mds, unsigned test_flags) override
@@ -706,11 +711,6 @@ void Checker::releaseSegment(const std::string& relpath, const std::string& dest
 
 size_t Checker::vacuum(dataset::Reporter& reporter)
 {
-    reporter.operation_progress(name(), "repack", "running VACUUM ANALIZE on all segment indices");
-    list_segments([&](const std::string& relpath) {
-        WIndex idx(m_config, relpath);
-        idx.vacuum();
-    });
     return 0;
 }
 

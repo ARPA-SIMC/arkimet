@@ -114,7 +114,6 @@ add_method("clean_filtered", [](Fixture& f) {
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack", "--fix", "--filter=reftime:>=2007-07-08" });
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
         wassert(actual(sys::read_file(co.file_stderr.name())) == 
-                "testds: repack: running VACUUM ANALIZE on all segment indices\n"
                 "testds: repack 2 files ok\n");
         wassert(actual(res) == 0);
     }
