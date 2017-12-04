@@ -1,28 +1,28 @@
-#include "config.h"
-
-#include <arki/tests/tests.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/matcher.h>
-#include <arki/dataset/file.h>
-#include <arki/metadata/collection.h>
-
+#include "arki/core/tests.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/matcher.h"
+#include "arki/dataset/file.h"
+#include "arki/metadata/collection.h"
 #include <sstream>
 #include <iostream>
 #include <memory>
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
-using namespace arki::utils;
 using namespace arki::tests;
+using arki::core::Time;
 
-struct arki_dataset_file_shar {
-};
-TESTGRP(arki_dataset_file);
-
-def_test(1)
+class Tests : public TestCase
 {
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_dataset_file");
+
+void Tests::register_tests() {
+
+add_method("grib", [] {
 	ConfigFile cfg;
 	dataset::File::readConfig("inbound/test.grib1", cfg);
 
@@ -32,10 +32,9 @@ def_test(1)
 	ensure_equals(s->value("name"), "test.grib1");
 	ensure_equals(s->value("type"), "file");
 	ensure_equals(s->value("format"), "grib");
-}
+});
 
-def_test(2)
-{
+add_method("grib_as_bufr", [] {
 	ConfigFile cfg;
 	dataset::File::readConfig("bUFr:inbound/test.grib1", cfg);
 
@@ -45,10 +44,9 @@ def_test(2)
 	ensure_equals(s->value("name"), "test.grib1");
 	ensure_equals(s->value("type"), "file");
 	ensure_equals(s->value("format"), "bufr");
-}
+});
 
-def_test(3)
-{
+add_method("grib_strangename", [] {
 	ConfigFile cfg;
 	system("cp inbound/test.grib1 strangename");
 	dataset::File::readConfig("GRIB:strangename", cfg);
@@ -64,10 +62,9 @@ def_test(3)
     unique_ptr<dataset::Reader> ds(dataset::Reader::create(*s));
     metadata::Collection mdc(*ds, Matcher());
     ensure_equals(mdc.size(), 3u);
-}
+});
 
-def_test(4)
-{
+add_method("metadata", [] {
     ConfigFile cfg;
     dataset::File::readConfig("inbound/odim1.arkimet", cfg);
 
@@ -82,6 +79,25 @@ def_test(4)
     unique_ptr<dataset::Reader> ds(dataset::Reader::create(*s));
     metadata::Collection mdc(*ds, Matcher());
     ensure_equals(mdc.size(), 1u);
+});
+
+add_method("yaml", [] {
+    ConfigFile cfg;
+    dataset::File::readConfig("inbound/issue107.yaml", cfg);
+
+    ConfigFile* s = cfg.section("issue107.yaml");
+    wassert(actual(s).istrue());
+
+    wassert(actual(s->value("name")) == "issue107.yaml");
+    wassert(actual(s->value("type")) == "file");
+    wassert(actual(s->value("format")) == "yaml");
+
+    // Scan it to be sure it can be read
+    unique_ptr<dataset::Reader> ds(dataset::Reader::create(*s));
+    metadata::Collection mdc(*ds, Matcher());
+    wassert(actual(mdc.size()) == 1u);
+});
+
 }
 
 }

@@ -349,6 +349,14 @@ add_method("stream", [](Fixture& f) {
     wassert(actual(sys::size("tmpfile")) == odim[0].sourceBlob().size);
 });
 
+add_method("issue107", [](Fixture& f) {
+    Metadata md;
+    File fd("inbound/issue107.yaml", O_RDONLY);
+    auto reader = LineReader::from_fd(fd);
+
+    wassert(actual(md.readYaml(*reader, "inbound/issue107.yaml")).istrue());
+});
+
 }
 
 }
