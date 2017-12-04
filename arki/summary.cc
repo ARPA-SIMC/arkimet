@@ -418,21 +418,22 @@ std::unique_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull(ARKI_GEOS_GEOMETRYFAC
 
 bool Summary::read(int fd, const std::string& filename)
 {
-    vector<uint8_t> buf;
-    string signature;
-    unsigned version;
-
     iotrace::trace_file(filename, 0, 0, "read summary");
 
-    if (!types::readBundle(fd, filename, buf, signature, version))
+    types::Bundle bundle;
+    NamedFileDescriptor f(fd, filename);
+    if (!bundle.read_header(f))
         return false;
 
     // Ensure first 2 bytes are SU
-    if (signature != "SU")
+    if (bundle.signature != "SU")
         throw_consistency_error("parsing file " + filename, "summary entry does not start with 'SU'");
 
-    BinaryDecoder dec(buf);
-    read_inner(dec, version, filename);
+    if (!bundle.read_data(f))
+        return false;
+
+    BinaryDecoder dec(bundle.data);
+    read_inner(dec, bundle.version, filename);
 
     return true;
 }

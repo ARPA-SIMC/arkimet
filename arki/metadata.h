@@ -168,7 +168,7 @@ public:
     void read_inner(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& filename);
 
     /// Read the inline data from the given file handle
-    void readInlineData(int in, const std::string& filename);
+    void read_inline_data(NamedFileDescriptor& fd);
 
     /// Read the inline data from the given memory buffer
     void readInlineData(BinaryDecoder& dec, const std::string& filename);

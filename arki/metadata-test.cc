@@ -349,12 +349,38 @@ add_method("stream", [](Fixture& f) {
     wassert(actual(sys::size("tmpfile")) == odim[0].sourceBlob().size);
 });
 
-add_method("issue107", [](Fixture& f) {
+add_method("issue107_binary", [](Fixture& f) {
+    unsigned count = 0;
+    try {
+        Metadata::read_file("inbound/issue107.yaml", [&](unique_ptr<Metadata> md) { ++count; return true; });
+        wassert(actual(0) == 1);
+    } catch (std::runtime_error& e) {
+        wassert(actual(e.what()).contains("metadata entry does not start with "));
+    }
+    wassert(actual(count) == 0u);
+});
+
+add_method("issue107_yaml", [](Fixture& f) {
     Metadata md;
     File fd("inbound/issue107.yaml", O_RDONLY);
     auto reader = LineReader::from_fd(fd);
 
     wassert(actual(md.readYaml(*reader, "inbound/issue107.yaml")).istrue());
+});
+
+add_method("wrongsize", [](Fixture& f) {
+    File fd("test.md", O_WRONLY | O_CREAT | O_TRUNC);
+    fd.write("MD\0\0\xff\xff\xff\xff\xfftest", 12);
+    fd.close();
+
+    unsigned count = 0;
+    try {
+        Metadata::read_file("test.md", [&](unique_ptr<Metadata> md) { ++count; return true; });
+        wassert(actual(0) == 1);
+    } catch (std::runtime_error& e) {
+        wassert(actual(e.what()).contains("metadata entry does not start with "));
+    }
+    wassert(actual(count) == 0u);
 });
 
 }

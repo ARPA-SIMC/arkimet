@@ -3,6 +3,7 @@
 
 /// arkimet metadata type system
 #include <arki/defs.h>
+#include <arki/file.h>
 #include <string>
 #include <vector>
 #include <memory>
@@ -271,14 +272,42 @@ std::unique_ptr<Type> decodeMapping(const emitter::memory::Mapping& m);
 std::unique_ptr<Type> decodeMapping(types::Code, const emitter::memory::Mapping& m);
 std::string tag(types::Code);
 
+
 /**
- * Read a data bundle from a POSIX file descriptor, returning the signature
- * string, the version number and the data in a buffer.
- *
- * @return
- *   true if a data bundle was read, false on end of file
+ * Read a data bundle from a POSIX file descriptor
  */
-bool readBundle(int fd, const std::string& filename, std::vector<uint8_t>& buf, std::string& signature, unsigned& version);
+struct Bundle
+{
+    /// Bundle signature
+    std::string signature;
+    /// Bundle version
+    unsigned version;
+    /// Data length
+    size_t length;
+    /// Bundle data
+    std::vector<uint8_t> data;
+
+    /**
+     * Read only the bundle header
+     *
+     * @return true if a bundle header was read, false on end of file
+     */
+    bool read_header(NamedFileDescriptor& fd);
+
+    /**
+     * Read the bundle data after read_header has been called
+     *
+     * @return true if all bundle data was read, false on end of file
+     */
+    bool read_data(NamedFileDescriptor& fd);
+
+    /**
+     * read_header and read_data together
+     *
+     * @return true if all was read, false on end of file
+     */
+    bool read(NamedFileDescriptor& fd);
+};
 
 }
 

@@ -317,18 +317,16 @@ unique_ptr<Type> decodeMapping(types::Code code, const emitter::memory::Mapping&
 
 std::string tag(types::Code code)
 {
-	return types::MetadataType::get(code)->tag;
+    return types::MetadataType::get(code)->tag;
 }
 
-bool readBundle(int fd, const std::string& filename, std::vector<uint8_t>& buf, std::string& signature, unsigned& version)
+bool Bundle::read_header(NamedFileDescriptor& fd)
 {
-    sys::NamedFileDescriptor f(fd, filename);
-
     // Skip all leading blank bytes
     char c;
     while (true)
     {
-        int res = f.read(&c, 1);
+        int res = fd.read(&c, 1);
         if (res == 0) return false; // EOF
         if (c) break;
     }
@@ -336,7 +334,7 @@ bool readBundle(int fd, const std::string& filename, std::vector<uint8_t>& buf, 
     // Read the rest of the first 8 bytes
     unsigned char hdr[8];
     hdr[0] = c;
-    size_t res = f.read(hdr + 1, 7);
+    size_t res = fd.read(hdr + 1, 7);
     if (res < 7) return false; // EOF
 
     BinaryDecoder dec(hdr, 8);
@@ -348,12 +346,24 @@ bool readBundle(int fd, const std::string& filename, std::vector<uint8_t>& buf, 
     version = dec.pop_uint(2, "version of metadata bundle");
 
     // Get length from next 4 bytes
-    size_t len = dec.pop_uint(4, "size of metadata bundle");
+    length = dec.pop_uint(4, "size of metadata bundle");
 
-    // Read the metadata body
-    buf.resize(len);
-    f.read_all_or_throw(buf.data(), len);
     return true;
+}
+
+bool Bundle::read_data(NamedFileDescriptor& fd)
+{
+    // TODO: use reserve, then read a bit at a time, resizing appropriately, to avoid actually using all that ram if read fails
+    // Read the metadata body
+    data.resize(length);
+    fd.read_all_or_throw(data.data(), length);
+    return true;
+}
+
+bool Bundle::read(NamedFileDescriptor& fd)
+{
+    if (!read_header(fd)) return false;
+    return read_data(fd);
 }
 
 }

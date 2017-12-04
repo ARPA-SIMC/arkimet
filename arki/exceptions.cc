@@ -16,7 +16,7 @@ void throw_file_error(const std::string& file, const std::string& what)
 
 void throw_consistency_error(const std::string& context, const std::string& error)
 {
-    throw std::runtime_error(error + "(" + context + ")");
+    throw std::runtime_error(error + " (" + context + ")");
 }
 
 void throw_consistency_error(const std::string& error)

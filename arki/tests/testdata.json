@@ -4552,7 +4552,17 @@
  {
   "doc": "",
   "group": "arki_metadata",
-  "method": "issue107"
+  "method": "issue107_binary"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata",
+  "method": "issue107_yaml"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata",
+  "method": "wrongsize"
  },
  {
   "doc": "",
