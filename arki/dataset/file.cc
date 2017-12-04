@@ -202,7 +202,7 @@ bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 }
 
 
-YamlFile::YamlFile(std::shared_ptr<FileConfig> config)
+YamlFile::YamlFile(std::shared_ptr<const FileConfig> config)
     : FdFile(config), reader(LineReader::from_fd(*fd).release()) {}
 
 YamlFile::~YamlFile() { delete reader; }

@@ -75,10 +75,8 @@ protected:
     LineReader* reader;
 
 public:
-    using FdFile::FdFile;
-
     // Initialise the dataset with the information from the configurationa in 'cfg'
-    YamlFile(std::shared_ptr<FileConfig> config);
+    YamlFile(std::shared_ptr<const FileConfig> config);
     virtual ~YamlFile();
 
     bool scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;

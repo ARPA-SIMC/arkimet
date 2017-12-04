@@ -26,24 +26,24 @@ add_method("grib", [] {
 	ConfigFile cfg;
 	dataset::File::readConfig("inbound/test.grib1", cfg);
 
-	ConfigFile* s = cfg.section("test.grib1");
-	ensure(s);
+    ConfigFile* s = cfg.section("test.grib1");
+    wassert(actual(s).istrue());
 
-	ensure_equals(s->value("name"), "test.grib1");
-	ensure_equals(s->value("type"), "file");
-	ensure_equals(s->value("format"), "grib");
+    wassert(actual(s->value("name")) == "test.grib1");
+    wassert(actual(s->value("type")) == "file");
+    wassert(actual(s->value("format")) == "grib");
 });
 
 add_method("grib_as_bufr", [] {
 	ConfigFile cfg;
 	dataset::File::readConfig("bUFr:inbound/test.grib1", cfg);
 
-	ConfigFile* s = cfg.section("test.grib1");
-	ensure(s);
+    ConfigFile* s = cfg.section("test.grib1");
+    wassert(actual(s).istrue());
 
-	ensure_equals(s->value("name"), "test.grib1");
-	ensure_equals(s->value("type"), "file");
-	ensure_equals(s->value("format"), "bufr");
+    wassert(actual(s->value("name")) == "test.grib1");
+    wassert(actual(s->value("type")) == "file");
+    wassert(actual(s->value("format")) == "bufr");
 });
 
 add_method("grib_strangename", [] {
@@ -51,12 +51,12 @@ add_method("grib_strangename", [] {
 	system("cp inbound/test.grib1 strangename");
 	dataset::File::readConfig("GRIB:strangename", cfg);
 
-	ConfigFile* s = cfg.section("strangename");
-	ensure(s);
+    ConfigFile* s = cfg.section("strangename");
+    wassert(actual(s).istrue());
 
-	ensure_equals(s->value("name"), "strangename");
-	ensure_equals(s->value("type"), "file");
-	ensure_equals(s->value("format"), "grib");
+    wassert(actual(s->value("name")) == "strangename");
+    wassert(actual(s->value("type")) == "file");
+    wassert(actual(s->value("format")) == "grib");
 
     // Scan it to be sure it can be read
     unique_ptr<dataset::Reader> ds(dataset::Reader::create(*s));
@@ -69,11 +69,11 @@ add_method("metadata", [] {
     dataset::File::readConfig("inbound/odim1.arkimet", cfg);
 
     ConfigFile* s = cfg.section("odim1.arkimet");
-    ensure(s);
+    wassert(actual(s).istrue());
 
-    ensure_equals(s->value("name"), "odim1.arkimet");
-    ensure_equals(s->value("type"), "file");
-    ensure_equals(s->value("format"), "arkimet");
+    wassert(actual(s->value("name")) == "odim1.arkimet");
+    wassert(actual(s->value("type")) == "file");
+    wassert(actual(s->value("format")) == "arkimet");
 
     // Scan it to be sure it can be read
     unique_ptr<dataset::Reader> ds(dataset::Reader::create(*s));

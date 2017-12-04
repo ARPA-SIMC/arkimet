@@ -565,7 +565,7 @@ tests_arki_test_SOURCES += \
 		dataset/local-test.cc \
 		dataset/segmented-test.cc \
 		dataset/indexed-test.cc \
-		dataset/file-tut.cc \
+		dataset/file-test.cc \
 		dataset/archive-test.cc \
 		dataset/simple-test.cc \
 		dataset/simple/datafile-test.cc \
