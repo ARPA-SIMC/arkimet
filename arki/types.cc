@@ -9,6 +9,7 @@
 #include <arki/formatter.h>
 #include <cstring>
 #include <unistd.h>
+#include <algorithm>
 
 #ifdef HAVE_LUA
 #include <arki/utils/lua.h>
@@ -353,10 +354,24 @@ bool Bundle::read_header(NamedFileDescriptor& fd)
 
 bool Bundle::read_data(NamedFileDescriptor& fd)
 {
-    // TODO: use reserve, then read a bit at a time, resizing appropriately, to avoid actually using all that ram if read fails
-    // Read the metadata body
-    data.resize(length);
-    fd.read_all_or_throw(data.data(), length);
+    // Use reserve, then read a bit at a time, resizing appropriately, to avoid
+    // allocating and using (which triggers the kernel to actually allocate
+    // memory pages) potentially a lot of ram, and then read fails right away
+    // because the length field of the file was corrupted
+    data.resize(0);
+    data.reserve(length);
+    size_t to_read = length;
+    while (to_read > 0)
+    {
+        size_t chunk_size = min(to_read, (size_t)1024 * 1024);
+        size_t pos = data.size();
+        data.resize(pos + chunk_size);
+        size_t res = fd.read(data.data() + pos, chunk_size);
+        if (res == 0)
+            return false;
+        to_read -= res;
+        data.resize(pos + res);
+    }
     return true;
 }
 

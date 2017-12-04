@@ -370,16 +370,11 @@ add_method("issue107_yaml", [](Fixture& f) {
 
 add_method("wrongsize", [](Fixture& f) {
     File fd("test.md", O_WRONLY | O_CREAT | O_TRUNC);
-    fd.write("MD\0\0\xff\xff\xff\xff\xfftest", 12);
+    fd.write("MD\0\0\x0f\xff\xff\xfftest", 12);
     fd.close();
 
     unsigned count = 0;
-    try {
-        Metadata::read_file("test.md", [&](unique_ptr<Metadata> md) { ++count; return true; });
-        wassert(actual(0) == 1);
-    } catch (std::runtime_error& e) {
-        wassert(actual(e.what()).contains("metadata entry does not start with "));
-    }
+    Metadata::read_file("test.md", [&](unique_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 0u);
 });
 
