@@ -233,27 +233,6 @@ public:
 
 }
 
-struct MaintenanceCollector
-{
-    typedef tests::DatasetTest::Counted Counted;
-
-    std::map <std::string, dataset::segment::State> fileStates;
-    size_t counts[tests::DatasetTest::COUNTED_MAX];
-    static const char* names[];
-    std::set<Counted> checked;
-
-    MaintenanceCollector();
-    MaintenanceCollector(const MaintenanceCollector&) = delete;
-    MaintenanceCollector& operator=(const MaintenanceCollector&) = delete;
-
-    void clear();
-    bool isClean() const;
-    void operator()(const std::string& file, dataset::segment::State state);
-    void dump(std::ostream& out) const;
-    size_t count(tests::DatasetTest::Counted state);
-    std::string remaining() const;
-};
-
 struct OrderCheck
 {
     std::shared_ptr<sort::Compare> order;
@@ -387,40 +366,6 @@ struct ReporterExpected
 };
 
 
-struct MaintenanceResults
-{
-    /// 0: dataset is unclean, 1: dataset is clean, -1: don't check
-    int is_clean;
-    /// Number of files seen during maintenance (-1 == don't check)
-    int files_seen;
-    /// Number of files expected for each maintenance outcome (-1 == don't check)
-    int by_type[tests::DatasetTest::COUNTED_MAX];
-
-    void reset_by_type()
-    {
-        for (unsigned i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
-            by_type[i] = -1;
-    }
-
-    MaintenanceResults()
-        : is_clean(-1), files_seen(-1)
-    {
-        reset_by_type();
-    }
-
-    MaintenanceResults(bool is_clean)
-        : is_clean(is_clean), files_seen(-1)
-    {
-        reset_by_type();
-    }
-
-    MaintenanceResults(bool is_clean, unsigned files_seen)
-        : is_clean(is_clean), files_seen(files_seen)
-    {
-        reset_by_type();
-    }
-};
-
 template<typename DatasetChecker>
 struct ActualChecker : public arki::utils::tests::Actual<DatasetChecker*>
 {
@@ -440,16 +385,6 @@ struct ActualChecker : public arki::utils::tests::Actual<DatasetChecker*>
     void remove_all_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write=false);
 };
 
-struct ActualSegmentedChecker : public ActualChecker<dataset::segmented::Checker>
-{
-    ActualSegmentedChecker(dataset::segmented::Checker* s) : ActualChecker<dataset::segmented::Checker>(s) {}
-
-    /// Run maintenance and see that the results are as expected
-    void maintenance(const MaintenanceResults& expected, bool quick=true);
-    /// Check that a check reports all ok, and that there are data_count segments in the dataset
-    void maintenance_clean(unsigned data_count, bool quick=true);
-};
-
 /// Corrupt a datafile by overwriting the first 4 bytes of its first data
 /// element with zeros
 void corrupt_datafile(const std::string& absname);
@@ -463,11 +398,11 @@ inline arki::tests::ActualChecker<dataset::LocalChecker> actual(arki::dataset::L
 }
 inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::Checker* actual) { return arki::tests::ActualChecker<dataset::Checker>(actual); }
 inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>(&actual); }
-inline arki::tests::ActualSegmentedChecker actual(arki::dataset::segmented::Checker* actual) { return arki::tests::ActualSegmentedChecker(actual); }
-inline arki::tests::ActualSegmentedChecker actual(arki::dataset::segmented::Checker& actual) { return arki::tests::ActualSegmentedChecker(&actual); }
-inline arki::tests::ActualSegmentedChecker actual(arki::dataset::simple::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::segmented::Checker*)&actual); }
-inline arki::tests::ActualSegmentedChecker actual(arki::dataset::ondisk2::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::segmented::Checker*)&actual); }
-inline arki::tests::ActualSegmentedChecker actual(arki::dataset::iseg::Checker& actual) { return arki::tests::ActualSegmentedChecker((arki::dataset::segmented::Checker*)&actual); }
+inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::segmented::Checker* actual) { return arki::tests::ActualChecker<dataset::Checker>(actual); }
+inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::segmented::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>(&actual); }
+inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::simple::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>((arki::dataset::segmented::Checker*)&actual); }
+inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::ondisk2::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>((arki::dataset::segmented::Checker*)&actual); }
+inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::iseg::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>((arki::dataset::segmented::Checker*)&actual); }
 inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::ArchivesChecker& actual) { return arki::tests::ActualChecker<dataset::Checker>((dataset::Checker*)&actual); }
 
 }

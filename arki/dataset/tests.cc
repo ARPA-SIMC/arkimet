@@ -142,6 +142,8 @@ std::string DatasetTest::idxfname(const ConfigFile* wcfg) const
     if (!wcfg) wcfg = &cfg;
     if (wcfg->value("type") == "ondisk2")
         return "index.sqlite";
+    else if (wcfg->value("index_type") == "sqlite")
+        return "index.sqlite";
     else
         return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
@@ -431,87 +433,6 @@ void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<i
 
 }
 
-MaintenanceCollector::MaintenanceCollector()
-{
-    memset(counts, 0, sizeof(counts));
-}
-
-void MaintenanceCollector::clear()
-{
-    memset(counts, 0, sizeof(counts));
-    fileStates.clear();
-    checked.clear();
-}
-
-bool MaintenanceCollector::isClean() const
-{
-    for (size_t i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
-        if (i != tests::DatasetTest::COUNTED_OK && counts[i])
-            return false;
-    return true;
-}
-
-void MaintenanceCollector::operator()(const std::string& file, dataset::segment::State state)
-{
-    using namespace arki::dataset;
-    fileStates[file] = state;
-    if (state.is_ok())                  ++counts[tests::DatasetTest::COUNTED_OK];
-    if (state.has(SEGMENT_ARCHIVE_AGE)) ++counts[tests::DatasetTest::COUNTED_ARCHIVE_AGE];
-    if (state.has(SEGMENT_DELETE_AGE))  ++counts[tests::DatasetTest::COUNTED_DELETE_AGE];
-    if (state.has(SEGMENT_DIRTY))       ++counts[tests::DatasetTest::COUNTED_DIRTY];
-    if (state.has(SEGMENT_DELETED))     ++counts[tests::DatasetTest::COUNTED_DELETED];
-    if (state.has(SEGMENT_UNALIGNED))   ++counts[tests::DatasetTest::COUNTED_UNALIGNED];
-    if (state.has(SEGMENT_MISSING))     ++counts[tests::DatasetTest::COUNTED_MISSING];
-    if (state.has(SEGMENT_CORRUPTED))   ++counts[tests::DatasetTest::COUNTED_CORRUPTED];
-}
-
-size_t MaintenanceCollector::count(tests::DatasetTest::Counted s)
-{
-    checked.insert(s);
-    return counts[s];
-}
-
-std::string MaintenanceCollector::remaining() const
-{
-    std::vector<std::string> res;
-    for (size_t i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
-    {
-        if (checked.find((Counted)i) != checked.end())
-            continue;
-        if (counts[i] == 0)
-            continue;
-        char buf[32];
-        snprintf(buf, 32, "%s: %zd", names[i], counts[i]);
-        res.push_back(buf);
-    }
-    return str::join(", ", res.begin(), res.end());
-}
-
-void MaintenanceCollector::dump(std::ostream& out) const
-{
-    using namespace std;
-    out << "Results:" << endl;
-    for (size_t i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
-        out << " " << names[i] << ": " << counts[i] << endl;
-    /*
-       for (std::map<std::string, unsigned>::const_iterator i = fileStates.begin();
-       i != fileStates.end(); ++i)
-       out << "   " << i->first << ": " << names[i->second] << endl;
-    */
-}
-
-const char* MaintenanceCollector::names[] = {
-    "ok",
-    "archive age",
-    "delete age",
-    "dirty",
-    "new",
-    "unaligned",
-    "deleted",
-    "corrupted",
-    "counted_max",
-};
-
 OrderCheck::OrderCheck(const std::string& order)
     : order(sort::Compare::parse(order)), first(true)
 {
@@ -538,41 +459,6 @@ bool OrderCheck::eat(unique_ptr<Metadata>&& md)
 }
 
 namespace tests {
-
-static ostream& operator<<(ostream& out, const MaintenanceResults& c)
-{
-    out << "clean: ";
-    switch (c.is_clean)
-    {
-        case -1: out << "-"; break;
-        case 0: out << "false"; break;
-        default: out << "true"; break;
-    }
-
-    out << ", files: ";
-    if (c.files_seen == -1)
-        out << "-";
-    else
-        out << c.files_seen;
-
-    for (unsigned i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
-        if (c.by_type[i] != -1)
-        {
-            out << ", " << MaintenanceCollector::names[i] << ": " << c.by_type[i];
-        }
-
-    return out;
-}
-
-static ostream& operator<<(ostream& out, const MaintenanceCollector& c)
-{
-    out << "clean: " << (c.isClean() ? "true" : "false");
-    out << ", files: " << c.fileStates.size();
-    for (size_t i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
-        if (c.counts[i] > 0)
-            out << ", " << MaintenanceCollector::names[i] << ": " << c.counts[i];
-    return out;
-}
 
 void corrupt_datafile(const std::string& absname)
 {
@@ -660,49 +546,6 @@ void test_append_transaction_rollback(dataset::segment::Writer* dw, Metadata& md
 }
 
 /// Run maintenance and see that the results are as expected
-
-void ActualSegmentedChecker::maintenance(const MaintenanceResults& expected, bool quick)
-{
-    MaintenanceCollector c;
-    dataset::NullReporter rep;
-    segmented::State state = wcallchecked(_actual->scan(rep, quick));
-    for (const auto& i: state)
-        c(i.first, i.second.state);
-
-    bool ok = true;
-    if (expected.files_seen != -1 && c.fileStates.size() != (unsigned)expected.files_seen)
-        ok = false;
-
-    for (unsigned i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
-        if (expected.by_type[i] != -1 &&
-            c.count((tests::DatasetTest::Counted)i) != (unsigned)expected.by_type[i])
-            ok = false;
-
-    if (c.remaining() != "")
-        ok = false;
-
-    if (expected.is_clean != -1)
-    {
-        if (expected.is_clean)
-            ok = ok && c.isClean();
-        else
-            ok = ok && !c.isClean();
-    }
-
-    if (ok) return;
-
-    std::stringstream ss;
-    ss << "maintenance gave '" << c << "' instead of the expected '" << expected << "'";
-    throw TestFailed(ss.str());
-}
-
-void ActualSegmentedChecker::maintenance_clean(unsigned data_count, bool quick)
-{
-    MaintenanceResults expected(true, data_count);
-    expected.by_type[tests::DatasetTest::COUNTED_OK] = data_count;
-    maintenance(expected, quick);
-}
-
 
 ReporterExpected::OperationMatch::OperationMatch(const std::string& dsname, const std::string& operation, const std::string& message)
     : name(dsname), operation(operation), message(message)
