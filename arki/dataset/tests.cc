@@ -424,6 +424,23 @@ void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<i
     wassert(actual(str::join(", ", found)) == str::join(", ", expected));
 }
 
+void DatasetTest::make_unaligned(const std::string& segment)
+{
+    auto checker = makeSegmentedChecker();
+    if (checker->type() == "iseg")
+    {
+        sys::unlink(str::joinpath(local_config()->path, segment + ".index"));
+    } else if (checker->type() == "ondisk2") {
+        checker->test_remove_index(segment);
+        files::createDontpackFlagfile(local_config()->path);
+    } else if (checker->type() == "simple") {
+        // Set the metadata to be older than the data
+        sys::touch(str::joinpath(local_config()->path, segment + ".metadata"), 1496167200);
+    } else {
+        throw std::runtime_error("make_unaligned called on unsupported dataset type " + checker->type());
+    }
+}
+
 }
 
 namespace tests {

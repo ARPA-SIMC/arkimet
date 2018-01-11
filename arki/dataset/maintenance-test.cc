@@ -94,6 +94,11 @@ MaintenanceTest::~MaintenanceTest()
 {
 }
 
+void MaintenanceTest::make_unaligned()
+{
+    fixture->make_unaligned(fixture->test_relpath);
+}
+
 void MaintenanceTest::make_hole_start()
 {
     fixture->makeSegmentedChecker()->test_make_hole(fixture->test_relpath, 10, 0);
@@ -150,13 +155,6 @@ void MaintenanceTest::rm_r(const std::string& pathname)
         sys::rmtree(pathname);
     else
         sys::unlink(pathname);
-}
-
-void MaintenanceTest::touch(const std::string& pathname, time_t ts)
-{
-    struct utimbuf t = { ts, ts };
-    if (::utime(pathname.c_str(), &t) != 0)
-        throw_system_error("cannot set mtime/atime of " + pathname);
 }
 
 void MaintenanceTest::make_hugefile()
@@ -233,7 +231,7 @@ void MaintenanceTest::register_tests_concat()
         // Set the segment to a past timestamp and rescan it, making it as if
         // it were imported a long time ago
         {
-            touch("testds/" + f.test_relpath, 199926000);
+            sys::touch("testds/" + f.test_relpath, 199926000);
 
             f.makeSegmentedChecker()->rescanSegment(f.test_relpath);
         }
@@ -283,7 +281,7 @@ void MaintenanceTest::register_tests_dir()
          so it is ignored. The modification time of the sequence file is used
          instead.
     )", [&](Fixture& f) {
-        touch("testds/" + f.test_relpath, time(NULL) + 86400);
+        sys::touch("testds/" + f.test_relpath, time(NULL) + 86400);
         wassert(f.all_clean(3));
         wassert(f.query_results({1, 3, 0, 2}));
     });

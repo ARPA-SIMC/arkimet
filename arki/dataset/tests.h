@@ -227,6 +227,13 @@ public:
      * sequence of indices
      */
     void query_results(const dataset::DataQuery& q, const std::vector<int>& expected);
+
+    /**
+     * Tweak the dataset so that the segment needs rescanning.
+     *
+     * This is done in a dataset-dependent way
+     */
+    void make_unaligned(const std::string& segment);
 };
 
 }

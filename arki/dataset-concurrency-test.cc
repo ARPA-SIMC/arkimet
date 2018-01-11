@@ -433,5 +433,45 @@ this->add_method("nolock_write", [](Fixture& f) {
     wassert(actual(count.ofd_getlk) == 0u);
 });
 
+this->add_method("nolock_rescan", [](Fixture& f) {
+    f.reset_test("locking=no");
+    f.import_all(f.td);
+    string test_segment = "2007/07-08." + f.td.format;
+    f.make_unaligned(test_segment);
+
+    utils::CountLocks count;
+    {
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "2 files ok");
+        e.rescanned.emplace_back("testds", test_segment);
+        wassert(actual(writer.get()).check(e, true));
+    }
+    count.measure();
+    wassert(actual(count.ofd_setlk) == 0u);
+    wassert(actual(count.ofd_setlkw) == 0u);
+    wassert(actual(count.ofd_getlk) == 0u);
+});
+
+this->add_method("nolock_repack", [](Fixture& f) {
+    f.reset_test("locking=no");
+    f.import_all(f.td);
+    string test_segment = "2007/07-08." + f.td.format;
+    f.makeSegmentedChecker()->test_make_hole(test_segment, 10, 1);
+
+    utils::CountLocks count;
+    {
+        auto checker(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "repack", "2 files ok");
+        e.repacked.emplace_back("testds", test_segment);
+        wassert(actual(checker.get()).repack(e, true));
+    }
+    count.measure();
+    wassert(actual(count.ofd_setlk) == 0u);
+    wassert(actual(count.ofd_setlkw) == 0u);
+    wassert(actual(count.ofd_getlk) == 0u);
+});
+
 }
 }
