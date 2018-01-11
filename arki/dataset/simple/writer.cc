@@ -424,8 +424,19 @@ void Checker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporte
     m_mft->flush();
     release_lock();
 }
-void Checker::check(dataset::Reporter& reporter, bool fix, bool quick) { acquire_lock(); IndexedChecker::check(reporter, fix, quick); release_lock(); }
-void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) { acquire_lock(); IndexedChecker::check_filtered(matcher, reporter, fix, quick); release_lock(); }
+void Checker::check(dataset::Reporter& reporter, bool fix, bool quick) {
+    acquire_lock();
+    IndexedChecker::check(reporter, fix, quick);
+    m_mft->flush();
+    release_lock();
+}
+void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
+{
+    acquire_lock();
+    IndexedChecker::check_filtered(matcher, reporter, fix, quick);
+    m_mft->flush();
+    release_lock();
+}
 
 std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
 {
