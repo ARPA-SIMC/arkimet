@@ -180,10 +180,10 @@ public:
     unsigned count_dataset_files(const testdata::Fixture& f) const;
 
     /// Scan the dataset and return its state
-    dataset::segmented::State scan_state();
+    dataset::segmented::State scan_state(bool quick=true);
 
     /// Scan the dataset and return its state
-    dataset::segmented::State scan_state(const Matcher& matcher);
+    dataset::segmented::State scan_state(const Matcher& matcher, bool quick=true);
 
     std::unique_ptr<dataset::segmented::Reader> makeSegmentedReader();
     std::unique_ptr<dataset::segmented::Writer> makeSegmentedWriter();
@@ -212,7 +212,7 @@ public:
 
     metadata::Collection query(const dataset::DataQuery& q);
 
-    void ensure_localds_clean(size_t filecount, size_t resultcount);
+    void ensure_localds_clean(size_t filecount, size_t resultcount, bool quick=true);
 
     /// Test the state of all segments in the local dataset is clean
     void all_clean(size_t segment_count);

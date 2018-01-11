@@ -79,9 +79,9 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
 
     auto checker = f.makeOndisk2Checker();
     {
-        MaintenanceResults expected(false, 1);
-        expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 1;
-        wassert(actual(*checker).maintenance(expected));
+        auto state = f.scan_state();
+        wassert(actual(state.get("2007/07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.size()) == 1u);
     }
 
     // Perform full maintenance and check that things are still ok afterwards
@@ -92,9 +92,9 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     }
 
     {
-        MaintenanceResults expected(false, 1);
-        expected.by_type[DatasetTest::COUNTED_DIRTY] = 1;
-        wassert(actual(*checker).maintenance(expected));
+        auto state = f.scan_state();
+        wassert(actual(state.get("2007/07.grib").state) == segment::State(SEGMENT_DIRTY));
+        wassert(actual(state.size()) == 1u);
     }
 
     wassert(actual(sys::size("testds/2007/07.grib")) == 34960*2u + 7218u);
@@ -121,7 +121,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
         wassert(actual(*checker).repack(e, true));
     }
 
-    wassert(actual(*checker).maintenance_clean(1));
+    wassert(f.ensure_localds_clean(1, 2));
 
     wassert(actual(sys::size("testds/2007/07.grib")) == 34960u + 7218u);
 
@@ -157,11 +157,10 @@ add_method("scan_reindex", [](Fixture& f) {
         index.reset("2007/07-08.grib");
     }
 
-    auto checker = f.makeOndisk2Checker();
-    MaintenanceResults expected(false, 3);
-    expected.by_type[DatasetTest::COUNTED_OK] = 2;
-    expected.by_type[DatasetTest::COUNTED_DELETED] = 1;
-    wassert(actual(*checker).maintenance(expected));
+    auto state = f.scan_state();
+    wassert(actual(state.count(SEGMENT_OK)) == 2u);
+    wassert(actual(state.get("2007/07-08.grib").state) == segment::State(SEGMENT_DELETED));
+    wassert(actual(state.size()) == 3u);
 
     // Perform full maintenance and check that things are still ok afterwards
 
@@ -173,6 +172,7 @@ add_method("scan_reindex", [](Fixture& f) {
     // impossible to determine which of the two duplicates should be thrown
     // away; therefore, we can only interrupt the maintenance and raise an
     // exception calling for manual fixing.
+    auto checker = f.makeOndisk2Checker();
     try {
         NullReporter r;
         checker->check(r, true, true);
@@ -196,14 +196,12 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
     }
 
     // The dataset should still be clean
-    {
-        wassert(actual(*f.makeOndisk2Checker()).maintenance_clean(3));
-    }
+    wassert(f.ensure_localds_clean(3, 3));
 
     // The dataset should still be clean even with an accurate scan
     {
         nag::TestCollect tc;
-        wassert(actual(*f.makeOndisk2Checker()).maintenance_clean(3, false));
+        wassert(f.ensure_localds_clean(3, 3, true));
     }
 
     // Remove the index
@@ -211,10 +209,11 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
 
     // See how maintenance scan copes
     {
+        auto state = f.scan_state();
+        wassert(actual(state.count(SEGMENT_UNALIGNED)) == 3u);
+        wassert(actual(state.size()) == 3u);
+
         auto checker = f.makeOndisk2Checker();
-        MaintenanceResults expected(false, 3);
-        expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 3;
-        wassert(actual(*checker).maintenance(expected));
 
         // Perform full maintenance and check that things are still ok afterwards
         ReporterExpected e;
@@ -222,7 +221,7 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
         e.rescanned.emplace_back("testds", "2007/07-08.grib");
         e.rescanned.emplace_back("testds", "2007/10-09.grib");
         wassert(actual(*checker).check(e, true, true));
-        wassert(actual(*checker).maintenance_clean(3));
+        wassert(f.ensure_localds_clean(3, 3));
         wassert(actual(*checker).check_clean(true, true));
         wassert(actual(*checker).repack_clean(true));
 
@@ -246,7 +245,7 @@ add_method("summary_checks", [](Fixture& f) {
     auto checker = f.makeOndisk2Checker();
 
     // Dataset is ok
-    wassert(actual(*checker).maintenance_clean(3));
+    wassert(f.ensure_localds_clean(3, 3));
 
     // Perform packing to regenerate the summary cache
     wassert(actual(*checker).repack_clean(true));
@@ -281,10 +280,7 @@ add_method("summary_checks", [](Fixture& f) {
 // Test that the summary cache is properly invalidated on import
 add_method("summary_invalidate", [](Fixture& f) {
     // Perform maintenance on empty dir, creating an empty summary cache
-    {
-        auto checker = f.makeOndisk2Checker();
-        wassert(actual(*checker).maintenance_clean(0));
-    }
+    wassert(f.ensure_localds_clean(0, 0));
 
     // Query the summary, there should be no data
     {
@@ -363,9 +359,9 @@ add_method("data_in_right_segment_reindex", [](Fixture& f) {
 
     // Run maintenance check
     {
-        arki::tests::MaintenanceResults expected(false, 3);
-        expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 3;
-        wassert(actual(*f.makeOndisk2Checker()).maintenance(expected));
+        auto state = f.scan_state();
+        wassert(actual(state.count(SEGMENT_UNALIGNED)) == 3u);
+        wassert(actual(state.size()) == 3u);
     }
 
     {
@@ -451,10 +447,11 @@ add_method("pack_vm2", [](Fixture& f) {
 
     // Ensure the dataset has items to pack
     {
-        arki::tests::MaintenanceResults expected(false, 2);
-        expected.by_type[DatasetTest::COUNTED_DIRTY] = 2;
-        wassert(actual(*f.makeOndisk2Checker()).maintenance(expected));
-
+        auto state = f.scan_state();
+        wassert(actual(state.get("1987/10-31.vm2").state) == segment::State(SEGMENT_DIRTY));
+        wassert(actual(state.get("2011/01-01.vm2").state) == segment::State(SEGMENT_DIRTY));
+        wassert(actual(state.count(SEGMENT_DIRTY)) == 2u);
+        wassert(actual(state.size()) == 2u);
         wassert(actual_file("testds/.archive").not_exists());
     }
 
@@ -471,14 +468,8 @@ add_method("pack_vm2", [](Fixture& f) {
     wassert(actual(sys::stat("testds/2011/01-01.vm2")->st_size) == 33);
 
     // Ensure the archive is now clean
-    {
-        auto writer(f.makeOndisk2Checker());
-        arki::tests::MaintenanceResults expected(true, 2);
-        expected.by_type[DatasetTest::COUNTED_OK] = 2;
-        wassert(actual(*writer).maintenance(expected));
-
-        wassert(actual_file("testds/.archive").not_exists());
-    }
+    wassert(f.ensure_localds_clean(2, 2));
+    wassert(actual_file("testds/.archive").not_exists());
 
     // Ensure that the data hasn't been corrupted
     metadata::Collection mdc_packed = f.query(dataset::DataQuery("", true));

@@ -158,11 +158,11 @@ add_method("scan_missing_summary", [](Fixture& f) {
 
     // Maintenance should show one file to rescan
     {
-        auto checker = f.makeSimpleChecker();
-        MaintenanceResults expected(false, 3);
-        expected.by_type[DatasetTest::COUNTED_OK] = 2;
-        expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 1;
-        wassert(actual(*checker).maintenance(expected));
+        auto state = f.scan_state();
+        wassert(actual(state.get("2007/07-08.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.count(SEGMENT_OK)) == 2u);
+        wassert(actual(state.count(SEGMENT_UNALIGNED)) == 1u);
+        wassert(actual(state.size()) == 3u);
     }
 
     // Fix the dataset
@@ -259,11 +259,11 @@ add_method("scan_compressed", [](Fixture& f) {
 
     // Maintenance should show one file to rescan
     {
-        auto checker = f.makeSimpleChecker();
-        MaintenanceResults expected(false, 3);
-        expected.by_type[DatasetTest::COUNTED_OK] = 2;
-        expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 1;
-        wassert(actual(*checker).maintenance(expected));
+        auto state = f.scan_state();
+        wassert(actual(state.get("2007/07-08.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.count(SEGMENT_OK)) == 2u);
+        wassert(actual(state.count(SEGMENT_UNALIGNED)) == 1u);
+        wassert(actual(state.size()) == 3u);
     }
 
     // Fix the dataset

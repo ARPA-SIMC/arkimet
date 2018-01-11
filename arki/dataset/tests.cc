@@ -181,20 +181,20 @@ std::string manifest_idx_fname()
     return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
-segmented::State DatasetTest::scan_state()
+segmented::State DatasetTest::scan_state(bool quick)
 {
     // OstreamReporter nr(cerr);
     NullReporter nr;
     auto checker = makeSegmentedChecker();
-    return checker->scan(nr);
+    return checker->scan(nr, quick);
 }
 
-segmented::State DatasetTest::scan_state(const Matcher& matcher)
+segmented::State DatasetTest::scan_state(const Matcher& matcher, bool quick)
 {
     // OstreamReporter nr(cerr);
     NullReporter nr;
     auto checker = makeSegmentedChecker();
-    return checker->scan_filtered(matcher, nr);
+    return checker->scan_filtered(matcher, nr, quick);
 }
 
 std::unique_ptr<dataset::segmented::Reader> DatasetTest::makeSegmentedReader()
@@ -349,13 +349,12 @@ metadata::Collection DatasetTest::query(const dataset::DataQuery& q)
     return metadata::Collection(*config().create_reader(), q);
 }
 
-void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount)
+void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount, bool quick)
 {
     nag::TestCollect tc;
-    {
-        auto checker = makeSegmentedChecker();
-        wassert(actual(checker.get()).maintenance_clean(filecount));
-    }
+    auto state = scan_state(quick);
+    wassert(actual(state.count(SEGMENT_OK)) == filecount);
+    wassert(actual(state.size()) == filecount);
 
     auto reader = makeSegmentedReader();
     metadata::Collection mdc(*reader, Matcher());
