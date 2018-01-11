@@ -68,8 +68,6 @@ struct Element;
 
 namespace tests {
 
-unsigned count_results(dataset::Reader& ds, const dataset::DataQuery& dq);
-
 // Return the number of days passed from the given date until today
 int days_since(int year, int month, int day);
 
@@ -233,17 +231,6 @@ public:
 
 }
 
-struct OrderCheck
-{
-    std::shared_ptr<sort::Compare> order;
-    Metadata old;
-    bool first;
-
-    OrderCheck(const std::string& order);
-    ~OrderCheck();
-    bool eat(std::unique_ptr<Metadata>&& md);
-};
-
 namespace testdata {
 
 struct Element
@@ -384,10 +371,6 @@ struct ActualChecker : public arki::utils::tests::Actual<DatasetChecker*>
     void remove_all(const ReporterExpected& expected, bool write=false);
     void remove_all_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write=false);
 };
-
-/// Corrupt a datafile by overwriting the first 4 bytes of its first data
-/// element with zeros
-void corrupt_datafile(const std::string& absname);
 
 void test_append_transaction_ok(dataset::segment::Writer* dw, Metadata& md, int append_amount_adjust=0);
 void test_append_transaction_rollback(dataset::segment::Writer* dw, Metadata& md);

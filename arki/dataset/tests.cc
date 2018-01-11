@@ -41,13 +41,6 @@ using arki::core::Time;
 namespace arki {
 namespace tests {
 
-unsigned count_results(dataset::Reader& ds, const dataset::DataQuery& dq)
-{
-    unsigned count = 0;
-    ds.query_data(dq, [&](unique_ptr<Metadata>) { ++count; return true; });
-    return count;
-}
-
 int days_since(int year, int month, int day)
 {
     // Data are from 07, 08, 10 2007
@@ -433,69 +426,7 @@ void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<i
 
 }
 
-OrderCheck::OrderCheck(const std::string& order)
-    : order(sort::Compare::parse(order)), first(true)
-{
-}
-OrderCheck::~OrderCheck()
-{
-}
-bool OrderCheck::eat(unique_ptr<Metadata>&& md)
-{
-    if (!first)
-    {
-        if (order->compare(old, *md) > 0)
-        {
-            stringstream msg;
-            old.writeYaml(msg);
-            msg << " should come after ";
-            md->writeYaml(msg);
-            throw std::runtime_error("cannot check order of a metadata stream: " + msg.str());
-        }
-    }
-    old = *md;
-    first = false;
-    return true;
-}
-
 namespace tests {
-
-void corrupt_datafile(const std::string& absname)
-{
-    files::PreserveFileTimes pft(absname);
-
-    string to_corrupt = absname;
-    if (sys::isdir(absname))
-    {
-        // Pick the first element in the dir segment for corruption
-        string format = utils::require_format(absname);
-        sys::Path dir(absname);
-        unsigned long first = ULONG_MAX;
-        string selected;
-        for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
-        {
-            if (!i.isreg()) continue;
-            if (strcmp(i->d_name, ".sequence") == 0 || !str::endswith(i->d_name, format)) continue;
-            unsigned long cur = strtoul(i->d_name, 0, 10);
-            if (cur < first)
-            {
-                first = cur;
-                selected = i->d_name;
-            }
-        }
-        if (selected.empty())
-            throw std::runtime_error("cannot corrupt " + absname + ": no files found to corrupt");
-        to_corrupt = str::joinpath(absname, selected);
-    }
-
-    // fprintf(stderr, "CORRUPT %s\n", to_corrupt.c_str());
-
-    // Corrupt the beginning of the file
-    sys::File fd(to_corrupt, O_RDWR);
-    ssize_t written = fd.pwrite("\0\0\0\0", 4, 0);
-    if (written != 4)
-        throw std::runtime_error("cannot corrupt " + to_corrupt + ": wrote less than 4 bytes");
-}
 
 void test_append_transaction_ok(dataset::segment::Writer* dw, Metadata& md, int append_amount_adjust)
 {
