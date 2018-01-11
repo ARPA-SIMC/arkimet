@@ -600,6 +600,11 @@ bool rmtree_ifexists(const std::string& pathname);
  */
 void rename(const std::string& src_pathname, const std::string& dst_pathname);
 
+/**
+ * Set mtime and atime for the file
+ */
+void touch(const std::string& pathname, time_t ts);
+
 #if 0
 /// Nicely wrap access to directories
 class Directory

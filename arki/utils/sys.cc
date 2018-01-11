@@ -11,6 +11,8 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <utime.h>
 #include <alloca.h>
 
 namespace {
@@ -885,6 +887,14 @@ bool rename_ifexists(const std::string& src, const std::string& dst)
     else
         return true;
 }
+
+void touch(const std::string& pathname, time_t ts)
+{
+    struct utimbuf t = { ts, ts };
+    if (::utime(pathname.c_str(), &t) != 0)
+        throw std::system_error(errno, std::system_category(), "cannot set mtime/atime of " + pathname);
+}
+
 
 template<typename String>
 static bool impl_mkdir_ifmissing(String pathname, mode_t mode)
