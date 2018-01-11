@@ -385,8 +385,7 @@ void MaintenanceTest::register_tests()
             e.deleted.emplace_back("testds", f.test_relpath);
             wassert(actual(writer.get()).repack(e, true));
 
-            wassert(actual(writer.get()).maintenance_clean(2));
-
+            wassert(f.ensure_localds_clean(2, 2));
             wassert(f.query_results({0, 2}));
         });
 
@@ -399,8 +398,7 @@ void MaintenanceTest::register_tests()
             e.repacked.emplace_back("testds", f.test_relpath);
             wassert(actual(writer.get()).repack(e, true));
 
-            wassert(actual(writer.get()).maintenance_clean(3));
-
+            wassert(f.ensure_localds_clean(3, 3));
             wassert(f.query_results({3, 0, 2}));
         });
     }
@@ -576,7 +574,7 @@ void MaintenanceTest::register_tests()
         e.rescanned.emplace_back("testds", f.test_relpath);
         wassert(actual(writer.get()).check(e, true));
 
-        wassert(actual(writer.get()).maintenance_clean(3));
+        wassert(f.ensure_localds_clean(3, 4));
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
@@ -591,7 +589,7 @@ void MaintenanceTest::register_tests()
         e.deindexed.emplace_back("testds", f.test_relpath);
         wassert(actual(writer.get()).check(e, true));
 
-        wassert(actual(writer.get()).maintenance_clean(2));
+        wassert(f.ensure_localds_clean(2, 2));
         wassert(f.query_results({0, 2}));
     });
 
@@ -669,7 +667,7 @@ void MaintenanceTest::register_tests()
         e.repacked.emplace_back("testds", f.test_relpath);
         wassert(actual(writer.get()).repack(e, true));
 
-        wassert(actual(writer.get()).maintenance_clean(3));
+        wassert(f.ensure_localds_clean(3, 4));
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
@@ -686,7 +684,7 @@ void MaintenanceTest::register_tests()
         e.deindexed.emplace_back("testds", f.test_relpath);
         wassert(actual(writer.get()).repack(e, true));
 
-        wassert(actual(writer.get()).maintenance_clean(2));
+        wassert(f.ensure_localds_clean(2, 2));
         wassert(f.query_results({0, 2}));
     });
 
@@ -724,7 +722,7 @@ void MaintenanceTest::register_tests()
             e.archived.emplace_back("testds", f.test_relpath);
             wassert(actual(writer.get()).repack(e, true));
 
-            wassert(actual(writer.get()).maintenance_clean(2));
+            wassert(f.ensure_localds_clean(2, 4));
         }
 
         // Check that the files have been moved to the archive
@@ -752,7 +750,7 @@ void MaintenanceTest::register_tests()
             e.deleted.emplace_back("testds", f.test_relpath);
             wassert(actual(writer.get()).repack(e, true));
 
-            wassert(actual(writer.get()).maintenance_clean(2));
+            wassert(f.ensure_localds_clean(2, 2));
         }
 
         wassert(f.query_results({0, 2}));
