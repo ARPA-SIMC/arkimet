@@ -39,33 +39,6 @@ std::string idxfname()
     return Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
-struct IndexingCollector : public MaintenanceCollector
-{
-	Manifest& m;
-	const Summary& s;
-	time_t mtime;
-
-	IndexingCollector(Manifest& m, const Summary& s, time_t mtime) : m(m), s(s), mtime(mtime) {}
-
-    virtual void operator()(const std::string& file, dataset::segment::State state)
-    {
-        MaintenanceCollector::operator()(file, state);
-        int n = atoi(file.c_str());
-
-        char fname[32];
-        if (n > 10)
-        {
-            snprintf(fname, 32, "%02d.grib1", n - 10);
-            m.acquire(fname, mtime, s);
-        }
-        if (n < 50)
-        {
-            snprintf(fname, 32, "%02d.grib1", n + 10);
-            m.acquire(fname, mtime, s);
-        }
-    }
-};
-
 void Tests::register_tests() {
 
 add_method("exists", [] {
