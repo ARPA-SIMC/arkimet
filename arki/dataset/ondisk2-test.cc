@@ -314,5 +314,10 @@ add_method("acquire_replace_usn", [](Fixture& f) {
     }
 });
 
+add_method("locking", [](Fixture& f) {
+    
+    f.import();
+});
+
 }
 }

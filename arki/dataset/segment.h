@@ -223,30 +223,6 @@ public:
 
 namespace segment {
 
-#if 0
-/**
- * Lock on a segment.
- *
- * Can be:
- *  - a read lock (lock the whole segment for reading)
- *  - a write lock (allows read, disallows concurrent append)
- *  - a repack lock (allows read, disallows append)
- */
-struct Lock
-{
-    Lock(const Lock&) = delete;
-    Lock& operator=(const Lock&) = delete;
-    Lock(Lock&&) = delete;
-    Lock& operator=(Lock&&) = delete;
-    virtual ~Lock();
-
-    virtual void lock_write() = 0;
-    virtual void lock_repack() = 0;
-    virtual void unlock() = 0;
-};
-#endif
-
-
 struct Writer : public Segment
 {
     using Segment::Segment;

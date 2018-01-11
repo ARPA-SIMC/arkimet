@@ -43,6 +43,48 @@ struct Lock : public ::flock
     static void test_set_nowait_default(bool value);
 };
 
+
+/**
+ * Count how many times utils::Lock::ofd_* functions are called during the
+ * lifetime of this object
+ */
+struct CountLocks
+{
+    unsigned initial_ofd_setlk;
+    unsigned initial_ofd_setlkw;
+    unsigned initial_ofd_getlk;
+    unsigned ofd_setlk = 0;
+    unsigned ofd_setlkw = 0;
+    unsigned ofd_getlk = 0;
+
+    CountLocks();
+
+    /// Set ofd_* to the number of calls since instantiation
+    void measure();
+};
+
+struct Locker
+{
+    virtual ~Locker();
+    virtual bool setlk(sys::NamedFileDescriptor& fd, Lock&) = 0;
+    virtual bool setlkw(sys::NamedFileDescriptor& fd, Lock&) = 0;
+    virtual bool getlk(sys::NamedFileDescriptor& fd, Lock&) = 0;
+};
+
+struct NullLocker : public Locker
+{
+    bool setlk(sys::NamedFileDescriptor& fd, Lock&) override;
+    bool setlkw(sys::NamedFileDescriptor& fd, Lock&) override;
+    bool getlk(sys::NamedFileDescriptor& fd, Lock&) override;
+};
+
+struct OFDLocker : public Locker
+{
+    bool setlk(sys::NamedFileDescriptor& fd, Lock&) override;
+    bool setlkw(sys::NamedFileDescriptor& fd, Lock&) override;
+    bool getlk(sys::NamedFileDescriptor& fd, Lock&) override;
+};
+
 }
 }
 #endif

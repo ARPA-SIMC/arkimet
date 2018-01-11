@@ -76,8 +76,11 @@ struct DataQuery
      * Hint for the dataset backend to let them know that we also want the data
      * and not just the metadata.
      *
-     * This is currently only used by the HTTP client dataset, which will only
-     * download data from the server if this option is set.
+     * This is currently used:
+     *  - by the HTTP client dataset, which will only download data from the
+     *    server if this option is set
+     *  - by local datasets to read-lock the segments for the duration of the
+     *    query
      */
     bool with_data;
 
@@ -89,18 +92,18 @@ struct DataQuery
     DataQuery(const Matcher& matcher, bool with_data=false);
     ~DataQuery();
 
-	void lua_from_table(lua_State* L, int idx);
-	void lua_push_table(lua_State* L, int idx) const;
+    void lua_from_table(lua_State* L, int idx);
+    void lua_push_table(lua_State* L, int idx) const;
 };
 
 struct ByteQuery : public DataQuery
 {
-	enum Type {
-		BQ_DATA = 0,
-		BQ_POSTPROCESS = 1,
-		BQ_REP_METADATA = 2,
-		BQ_REP_SUMMARY = 3
-	};
+    enum Type {
+        BQ_DATA = 0,
+        BQ_POSTPROCESS = 1,
+        BQ_REP_METADATA = 2,
+        BQ_REP_SUMMARY = 3
+    };
 
     std::string param;
     Type type = BQ_DATA;

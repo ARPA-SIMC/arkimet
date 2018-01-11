@@ -12,6 +12,7 @@
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/lock.h"
 #include "arki/exceptions.h"
 #include "wibble/sys/childprocess.h"
 #include <sys/fcntl.h>
@@ -411,7 +412,26 @@ this->add_method("write_check", [](Fixture& f) {
     cf.wait();
 });
 
+this->add_method("nolock_read", [](Fixture& f) {
+    f.reset_test("locking=no");
+    f.import_all(f.td);
+    utils::CountLocks count;
+    wassert(f.query_results(dataset::DataQuery("", true), {1, 0, 2}));
+    count.measure();
+    wassert(actual(count.ofd_setlk) == 0u);
+    wassert(actual(count.ofd_setlkw) == 0u);
+    wassert(actual(count.ofd_getlk) == 0u);
+});
+
+this->add_method("nolock_write", [](Fixture& f) {
+    f.reset_test("locking=no");
+    utils::CountLocks count;
+    f.import_all(f.td);
+    count.measure();
+    wassert(actual(count.ofd_setlk) == 0u);
+    wassert(actual(count.ofd_setlkw) == 0u);
+    wassert(actual(count.ofd_getlk) == 0u);
+});
 
 }
 }
-
