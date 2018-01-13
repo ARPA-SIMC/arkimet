@@ -4,34 +4,16 @@
 /// Cluster a metadata stream and run a progrgam on each batch
 
 #include <arki/metadata/clusterer.h>
+#include <arki/core/file.h>
 
 namespace arki {
 namespace metadata {
 
-namespace xargs {
-
-struct Tempfile
-{
-    std::string pathname_template;
-    char* pathname;
-    int fd;
-
-    Tempfile();
-    ~Tempfile();
-
-    void set_template(const std::string& tpl);
-    void open();
-    void close();
-    void close_nothrow();
-    bool is_open() const;
-};
-
-}
-
 class Xargs : public Clusterer
 {
 protected:
-    xargs::Tempfile tempfile;
+    core::File tempfile;
+    std::string tempfile_template;
 
     void start_batch(const std::string& new_format) override;
     void add_to_batch(Metadata& md, const std::vector<uint8_t>& buf) override;

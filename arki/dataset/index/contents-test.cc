@@ -518,7 +518,7 @@ add_method("smallfiles", [] {
         const auto& buf = mdc[0].getData();
         wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
         wassert(actual(collector.events.size()) == 1u);
-        wassert(actual(collector.events[0].filename()).endswith("inbound/test.vm2"));
+        wassert(actual(collector.events[0].filename).endswith("inbound/test.vm2"));
     }
 
     // Remove index if it exists

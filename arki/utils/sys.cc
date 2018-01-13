@@ -789,10 +789,24 @@ File File::mkstemp(const std::string& prefix)
     char* fbuf = (char*)alloca(prefix.size() + 7);
     memcpy(fbuf, prefix.data(), prefix.size());
     memcpy(fbuf + prefix.size(), "XXXXXX", 7);
-    int fd = ::mkstemp(fbuf);
+    return mkstemp(fbuf);
+}
+
+File File::mkstemp(const char* prefix)
+{
+    size_t prefix_size = strlen(prefix);
+    char* fbuf = (char*)alloca(prefix_size + 7);
+    memcpy(fbuf, prefix, prefix_size);
+    memcpy(fbuf + prefix_size, "XXXXXX", 7);
+    return mkstemp(fbuf);
+}
+
+File File::mkstemp(char* pathname_template)
+{
+    int fd = ::mkstemp(pathname_template);
     if (fd < 0)
-        throw std::system_error(errno, std::system_category(), std::string("cannot create temporary file ") + fbuf);
-    return File(fd, fbuf);
+        throw std::system_error(errno, std::system_category(), std::string("cannot create temporary file ") + pathname_template);
+    return File(fd, pathname_template);
 }
 
 std::string read_file(const std::string& file)

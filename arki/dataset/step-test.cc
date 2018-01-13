@@ -4,7 +4,6 @@
 #include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/matcher.h"
-#include "arki/utils/pcounter.h"
 #include "arki/utils/sys.h"
 #include "arki/utils.h"
 #include <algorithm>

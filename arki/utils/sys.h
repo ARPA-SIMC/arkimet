@@ -481,6 +481,8 @@ public:
     bool open_ifexists(int flags, mode_t mode=0777);
 
     static File mkstemp(const std::string& prefix);
+    static File mkstemp(const char* prefix);
+    static File mkstemp(char* pathname_template);
 };
 
 /// Read whole file into memory. Throws exceptions on failure.

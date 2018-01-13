@@ -167,12 +167,9 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/geosfwd.h \
 		utils/h5.h \
 		utils.h \
-		utils/intern.h \
-		utils/pcounter.h \
 		utils/process.h \
 		utils/regexp.h \
 		utils/sqlite.h \
-		utils/raii.h \
 		utils/string.h \
 		utils/sys.h \
 		utils/yaml.h \
@@ -230,10 +227,7 @@ libarkimet_la_SOURCES += \
 		utils/accounting.cc \
 		utils/gzip.cc \
 		utils/files.cc \
-		utils/intern.cc \
-		utils/pcounter.cc \
 		utils/process.cc \
-		utils/raii.cc \
 		utils/regexp.cc \
 		utils/string.cc \
 		utils/sys.cc \
@@ -313,10 +307,7 @@ tests_arki_test_SOURCES += \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \
 		utils/files-test.cc \
-		utils/intern-tut.cc \
-		utils/pcounter-tut.cc \
 		utils/process-tut.cc \
-		utils/raii-tut.cc \
 		utils/regexp-test.cc \
 		binary-test.cc \
 		configfile-test.cc \
@@ -541,7 +532,7 @@ libarkimet_la_SOURCES += \
 
 tests_arki_test_SOURCES += \
 		targetfile-tut.cc \
-		metadata/xargs-tut.cc \
+		metadata/xargs-test.cc \
 		dataset/tests.cc \
 		dataset/reporter-test.cc \
 		dataset/time-test.cc \
