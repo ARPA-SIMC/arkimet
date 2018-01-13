@@ -33,7 +33,7 @@ struct Writer : public dataset::segment::Writer
     File* fd = nullptr;
     core::Lock lock;
 
-    Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd);
+    Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd, std::shared_ptr<core::lock::Policy> lock_policy);
     ~Writer();
 
     Pending append(Metadata& md, const types::source::Blob** new_source=0) override;

@@ -16,7 +16,7 @@ namespace arki {
 namespace tests {
 
 SegmentTest::SegmentTest()
-    : format("grib"), root("."), relname("testfile.grib"), absname(sys::abspath(relname))
+    : format("grib"), root("."), relname("testfile.grib"), absname(sys::abspath(relname)), lock_policy(new core::lock::OFDPolicy)
 {
     // Scan the test data
     scan::scan("inbound/test.grib1", mdc.inserter_func());

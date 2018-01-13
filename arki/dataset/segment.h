@@ -208,6 +208,7 @@ public:
     std::string root;
     std::string relname;
     std::string absname;
+    std::shared_ptr<core::lock::Policy> lock_policy;
 
     // TODO: document and move to the right subclass if it's not needed all the time
     struct Payload
@@ -216,7 +217,7 @@ public:
     };
     Payload* payload = nullptr;
 
-    Segment(const std::string& root, const std::string& relname, const std::string& absname);
+    Segment(const std::string& root, const std::string& relname, const std::string& absname, std::shared_ptr<core::lock::Policy> lock_policy);
     virtual ~Segment();
 };
 

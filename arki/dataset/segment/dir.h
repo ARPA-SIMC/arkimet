@@ -23,7 +23,7 @@ struct Writer : public dataset::segment::Writer
     core::Lock lock;
     std::string format;
 
-    Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname);
+    Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname, std::shared_ptr<core::lock::Policy> lock_policy);
     ~Writer();
 
     Pending append(Metadata& md, const types::source::Blob** new_source=0) override;
@@ -61,7 +61,7 @@ public:
     void validate(Metadata& md, const scan::Validator& v) override;
 
 public:
-    Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname);
+    Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname, std::shared_ptr<core::lock::Policy> lock_policy);
 
     void lock() override;
 

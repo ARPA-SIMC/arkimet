@@ -22,6 +22,7 @@ struct SegmentTest
     std::string relname;
     std::string absname;
     metadata::Collection mdc;
+    std::shared_ptr<core::lock::Policy> lock_policy;
 
     SegmentTest();
     virtual ~SegmentTest();

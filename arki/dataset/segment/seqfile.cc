@@ -10,22 +10,23 @@ namespace {
 struct FdLock
 {
     sys::NamedFileDescriptor& fd;
+    std::shared_ptr<lock::Policy> lock_policy;
     Lock lock;
 
-    FdLock(sys::NamedFileDescriptor& fd) : fd(fd)
+    FdLock(sys::NamedFileDescriptor& fd, std::shared_ptr<lock::Policy> lock_policy) : fd(fd), lock_policy(lock_policy)
     {
         lock.l_type = F_WRLCK;
         lock.l_whence = SEEK_SET;
         lock.l_start = 0;
         lock.l_len = 0;
         // Use SETLKW, so that if it is already locked, we just wait
-        lock.ofd_setlkw(fd);
+        lock_policy->setlkw(fd, lock);
     }
 
     ~FdLock()
     {
         lock.l_type = F_UNLCK;
-        lock.ofd_setlk(fd);
+        lock_policy->setlk(fd, lock);
     }
 };
 
@@ -36,8 +37,8 @@ namespace arki {
 namespace dataset {
 namespace segment {
 
-SequenceFile::SequenceFile(const std::string& dirname)
-    : dirname(dirname), fd(str::joinpath(dirname, ".sequence"))
+SequenceFile::SequenceFile(const std::string& dirname, std::shared_ptr<core::lock::Policy> lock_policy)
+    : dirname(dirname), fd(str::joinpath(dirname, ".sequence")), lock_policy(lock_policy)
 {
 }
 
@@ -57,7 +58,7 @@ void SequenceFile::close()
 
 void SequenceFile::test_add_padding(unsigned size)
 {
-    FdLock lock(fd);
+    FdLock lock(fd, lock_policy);
     uint64_t cur;
 
     // Read the value in the sequence file
@@ -75,7 +76,7 @@ void SequenceFile::test_add_padding(unsigned size)
 
 std::pair<std::string, size_t> SequenceFile::next(const std::string& format)
 {
-    FdLock lock(fd);
+    FdLock lock(fd, lock_policy);
     uint64_t cur;
 
     // Read the value in the sequence file
