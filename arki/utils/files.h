@@ -4,15 +4,13 @@
 /// utils/files - arkimet-specific file functions
 
 #include <arki/defs.h>
-#include <arki/file.h>
+#include <arki/utils/sys.h>
 #include <string>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <memory>
 #include <set>
 
-#define FLAGFILE_REBUILD ".needs-rebuild"
-#define FLAGFILE_PACK ".needs-pack"
 #define FLAGFILE_INDEX "index-out-of-sync"
 #define FLAGFILE_DONTPACK "needs-check-do-not-pack"
 
@@ -21,45 +19,6 @@ namespace utils {
 namespace files {
 
 // Flagfile handling
-
-/// Create an empty file, succeeding if it already exists
-void createRebuildFlagfile(const std::string& pathname);
-
-/// Create an empty file, failing if it already exists
-void createNewRebuildFlagfile(const std::string& pathname);
-
-/// Remove a file, succeeding if it does not exists
-void removeRebuildFlagfile(const std::string& pathname);
-
-/// Check if a file exists
-bool hasRebuildFlagfile(const std::string& pathname);
-
-
-/// Create an empty file, succeeding if it already exists
-void createPackFlagfile(const std::string& pathname);
-
-/// Create an empty file, failing if it already exists
-void createNewPackFlagfile(const std::string& pathname);
-
-/// Remove a file, succeeding if it does not exists
-void removePackFlagfile(const std::string& pathname);
-
-/// Check if a file exists
-bool hasPackFlagfile(const std::string& pathname);
-
-
-/// Create an empty file, succeeding if it already exists
-void createIndexFlagfile(const std::string& dir);
-
-/// Create an empty file, failing if it already exists
-void createNewIndexFlagfile(const std::string& dir);
-
-/// Remove a file, succeeding if it does not exists
-void removeIndexFlagfile(const std::string& dir);
-
-/// Check if a file exists
-bool hasIndexFlagfile(const std::string& dir);
-
 
 /// Create an empty file, succeeding if it already exists
 void createDontpackFlagfile(const std::string& dir);
@@ -106,15 +65,6 @@ std::string normaliseFormat(const std::string& format);
  */
 std::string format_from_ext(const std::string& fname, const char* default_format=0);
 
-struct PreserveFileTimes
-{
-    std::string fname;
-    struct timespec times[2];
-
-    PreserveFileTimes(const std::string& fname);
-    ~PreserveFileTimes() noexcept(false);
-};
-
 /**
  * Recursively visit a directory and all its subdirectories, depth-first.
  *
@@ -136,6 +86,15 @@ protected:
     void walk(const std::string& relpath, sys::Path& path);
 };
 
+
+struct PreserveFileTimes
+{
+    std::string fname;
+    struct timespec times[2];
+
+    PreserveFileTimes(const std::string& fname);
+    ~PreserveFileTimes() noexcept(false);
+};
 
 }
 }

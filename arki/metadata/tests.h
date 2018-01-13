@@ -15,6 +15,9 @@ struct ActualMetadata : public arki::utils::tests::Actual<Metadata>
 {
     ActualMetadata(const Metadata& s) : Actual<Metadata>(s) {}
 
+    void operator==(const Metadata& expected) const;
+    void operator!=(const Metadata& expected) const;
+
     /// Check that a metadata field has the expected value
     void contains(const std::string& field, const std::string& expected);
 

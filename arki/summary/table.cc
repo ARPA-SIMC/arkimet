@@ -1,17 +1,18 @@
 #include "table.h"
 #include "intern.h"
+#include "arki/core/file.h"
 #include "arki/metadata.h"
 #include "arki/matcher.h"
 #include "arki/types/utils.h"
 #include "arki/emitter/memory.h"
 #include "arki/summary.h"
 #include "arki/utils/yaml.h"
-#include "arki/utils/files.h"
 #include <system_error>
 #include <algorithm>
 #include <iostream>
 
 using namespace std;
+using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
 

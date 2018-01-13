@@ -1,12 +1,12 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
+#include "arki/core/file.h"
 #include "arki/metadata/collection.h"
 #include "arki/summary.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
 #include "arki/scan/any.h"
 #include "arki/configfile.h"
-#include "arki/utils/files.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -14,6 +14,7 @@
 using namespace std;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::core;
 using namespace arki::utils;
 using namespace arki::tests;
 

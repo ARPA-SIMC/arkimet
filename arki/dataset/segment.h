@@ -5,7 +5,6 @@
 
 #include <arki/libconfig.h>
 #include <arki/defs.h>
-#include <arki/file.h>
 #include <arki/transaction.h>
 #include <arki/nag.h>
 #include <string>

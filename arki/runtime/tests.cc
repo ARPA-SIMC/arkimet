@@ -4,6 +4,7 @@
 #include <vector>
 
 using namespace std;
+using namespace arki::core;
 
 namespace arki {
 namespace runtime {

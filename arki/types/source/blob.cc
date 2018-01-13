@@ -1,5 +1,6 @@
 #include "blob.h"
 #include "arki/binary.h"
+#include "arki/core/file.h"
 #include "arki/utils/lua.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -10,6 +11,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using namespace arki::core;
 
 namespace arki {
 namespace types {

@@ -4,7 +4,7 @@
 /// In-memory collection of metadata
 
 #include <arki/defs.h>
-#include <arki/file.h>
+#include <arki/core/fwd.h>
 #include <vector>
 #include <string>
 
@@ -14,10 +14,6 @@ struct Summary;
 
 namespace metadata {
 struct ReadContext;
-}
-
-namespace core {
-struct Time;
 }
 
 namespace dataset {
@@ -96,7 +92,7 @@ public:
     /**
      * Write all metadata to the given output file
      */
-    void write_to(NamedFileDescriptor& out) const;
+    void write_to(core::NamedFileDescriptor& out) const;
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
@@ -109,7 +105,7 @@ public:
     void read_from_file(const std::string& pathname);
 
     /// Read metadata from a file descriptor and append them to this collection
-    void read_from_file(NamedFileDescriptor& fd);
+    void read_from_file(core::NamedFileDescriptor& fd);
 
     /// Add all metadata to a summary
     void add_to_summary(Summary& out) const;

@@ -1,9 +1,10 @@
 #include "arki/tests/tests.h"
-#include "files.h"
+#include "arki/core/file.h"
 #include "yaml.h"
 
 using namespace std;
 using namespace arki;
+using namespace arki::core;
 using namespace arki::utils;
 using namespace arki::tests;
 

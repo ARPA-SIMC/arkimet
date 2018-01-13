@@ -8,11 +8,10 @@
 #include "arki/types/reftime.h"
 #include "arki/scan/any.h"
 #include "arki/configfile.h"
-#include "arki/utils/files.h"
+#include "arki/core/file.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/utils/lock.h"
 #include "arki/exceptions.h"
 #include "wibble/sys/childprocess.h"
 #include <sys/fcntl.h>
@@ -20,6 +19,7 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::core;
 using namespace arki::utils;
 using namespace arki::tests;
 
@@ -89,7 +89,7 @@ struct ConcurrentImporter : public wibble::sys::ChildProcess
 
     int main() override
     {
-        arki::utils::Lock::test_set_nowait_default(false);
+        core::lock::test_set_nowait_default(false);
         try {
             auto ds(fixture.config().create_writer());
 
@@ -365,7 +365,7 @@ this->add_method("read_repack", [](Fixture& f) {
 
 // Test parallel check and write
 this->add_method("write_check", [](Fixture& f) {
-    utils::Lock::TestNowait lock_nowait;
+    core::lock::TestNowait lock_nowait;
 
     bool is_iseg;
 
@@ -415,7 +415,7 @@ this->add_method("write_check", [](Fixture& f) {
 this->add_method("nolock_read", [](Fixture& f) {
     f.reset_test("locking=no");
     f.import_all(f.td);
-    utils::CountLocks count;
+    core::lock::TestCount count;
     wassert(f.query_results(dataset::DataQuery("", true), {1, 0, 2}));
     count.measure();
     wassert(actual(count.ofd_setlk) == 0u);
@@ -425,7 +425,7 @@ this->add_method("nolock_read", [](Fixture& f) {
 
 this->add_method("nolock_write", [](Fixture& f) {
     f.reset_test("locking=no");
-    utils::CountLocks count;
+    core::lock::TestCount count;
     f.import_all(f.td);
     count.measure();
     wassert(actual(count.ofd_setlk) == 0u);
@@ -439,7 +439,7 @@ this->add_method("nolock_rescan", [](Fixture& f) {
     string test_segment = "2007/07-08." + f.td.format;
     f.make_unaligned(test_segment);
 
-    utils::CountLocks count;
+    core::lock::TestCount count;
     {
         auto writer(f.makeSegmentedChecker());
         ReporterExpected e;
@@ -459,7 +459,7 @@ this->add_method("nolock_repack", [](Fixture& f) {
     string test_segment = "2007/07-08." + f.td.format;
     f.makeSegmentedChecker()->test_make_hole(test_segment, 10, 1);
 
-    utils::CountLocks count;
+    core::lock::TestCount count;
     {
         auto checker(f.makeSegmentedChecker());
         ReporterExpected e;

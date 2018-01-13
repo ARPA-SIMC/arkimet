@@ -1,7 +1,7 @@
 #include "configfile.h"
-#include "file.h"
 #include "libconfig.h"
 #include "exceptions.h"
+#include "core/file.h"
 #include "utils/string.h"
 #include "utils/regexp.h"
 #include <cctype>
@@ -10,6 +10,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using namespace arki::core;
 
 namespace arki {
 

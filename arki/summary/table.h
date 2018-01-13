@@ -4,7 +4,7 @@
 /// summary/table - Arkimet summary implementation in tabular form
 
 #include <arki/types.h>
-#include <arki/file.h>
+#include <arki/core/fwd.h>
 #include <arki/summary/stats.h>
 #include <vector>
 #include <array>
@@ -109,7 +109,7 @@ public:
     void merge(const Row& row);
 
     /// Merge rows read from a yaml input stream
-    bool merge_yaml(LineReader& in, const std::string& filename);
+    bool merge_yaml(core::LineReader& in, const std::string& filename);
 
     void dump(std::ostream& out);
 

@@ -1,6 +1,7 @@
 #include "manifest.h"
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
+#include "arki/core/file.h"
 #include "arki/reader.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/metadata.h"
@@ -31,6 +32,7 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::utils::sqlite;

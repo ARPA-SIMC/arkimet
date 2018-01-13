@@ -11,7 +11,6 @@
 #include "arki/scan/grib.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
-#include "arki/utils/lock.h"
 #include "arki/wibble/sys/childprocess.h"
 
 using namespace std;

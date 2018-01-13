@@ -2,10 +2,12 @@
 #include "metadata.h"
 #include "common.h"
 #include "arki/metadata.h"
+#include "arki/core/file.h"
 #include "config.h"
 
 using namespace std;
 using namespace arki;
+using namespace arki::core;
 using namespace arki::python;
 
 extern "C" {

@@ -1,5 +1,6 @@
 #include "collection.h"
 #include "arki/exceptions.h"
+#include "arki/core/file.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/utils/compress.h"
@@ -24,6 +25,7 @@
 #endif
 
 using namespace std;
+using namespace arki::core;
 using namespace arki::utils;
 using namespace arki::types;
 

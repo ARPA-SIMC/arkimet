@@ -1,6 +1,7 @@
 #include "metadata.h"
 #include "metadata/collection.h"
-#include "types/tests.h"
+#include "core/file.h"
+#include "metadata/tests.h"
 #include "tests/lua.h"
 #include "types/origin.h"
 #include "types/product.h"
@@ -18,18 +19,11 @@
 #include "utils/files.h"
 #include <fcntl.h>
 
-namespace std {
-static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
-{
-    m.writeYaml(o);
-    return o;
-}
-}
-
 namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
+using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
 using arki::core::Time;
@@ -278,7 +272,7 @@ add_method("binary_fd", [](Fixture& f) {
     md1.read(in, metadata::ReadContext(tmpfile));
     in.close();
 
-    ensure_equals(md, md1);
+    wassert(actual(md) == md1);
 });
 
 // Reproduce decoding error at #24

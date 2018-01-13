@@ -4,8 +4,7 @@
 /// dataset/local - Base class for local datasets
 
 #include <arki/dataset.h>
-#include <arki/file.h>
-#include <arki/utils/lock.h>
+#include <arki/core/file.h>
 #include <string>
 
 namespace arki {
@@ -87,8 +86,8 @@ public:
 
 struct LocalLock
 {
-    arki::File lockfile;
-    arki::utils::Lock ds_lock;
+    arki::core::File lockfile;
+    arki::core::Lock ds_lock;
     bool locked = false;
     bool write;
 

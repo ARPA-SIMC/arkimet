@@ -1,5 +1,6 @@
 #include "types/tests.h"
 #include "tests/lua.h"
+#include "core/file.h"
 #include "summary.h"
 #include "summary/stats.h"
 #include "metadata.h"
@@ -27,6 +28,7 @@ namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::core;
 using namespace arki::tests;
 using arki::core::Time;
 

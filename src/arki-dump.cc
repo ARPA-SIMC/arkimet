@@ -1,6 +1,7 @@
 /// Dump arkimet data files
 #include "config.h"
 #include <arki/utils/commandline/parser.h>
+#include <arki/exceptions.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/matcher.h>
@@ -16,6 +17,7 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
 
@@ -134,31 +136,33 @@ static void addToSummary(sys::NamedFileDescriptor& in, Summary& s)
     Metadata md;
     Summary summary;
 
-    vector<uint8_t> buf;
-    string signature;
-    unsigned version;
-
-    while (types::readBundle(in, in.name(), buf, signature, version))
+    types::Bundle bundle;
+    while (bundle.read_header(in))
     {
-        if (signature == "MD" || signature == "!D")
+        if (bundle.signature == "MD" || bundle.signature == "!D")
         {
-            BinaryDecoder dec(buf);
-            md.read_inner(dec, version, in.name());
+            if (!bundle.read_data(in)) break;
+            BinaryDecoder dec(bundle.data);
+            md.read_inner(dec, bundle.version, in.name());
             if (md.source().style() == Source::INLINE)
-                md.readInlineData(in, in.name());
+                md.read_inline_data(in);
             s.add(md);
         }
-        else if (signature == "SU")
+        else if (bundle.signature == "SU")
         {
-            BinaryDecoder dec(buf);
-            summary.read_inner(dec, version, in.name());
+            if (!bundle.read_data(in)) break;
+            BinaryDecoder dec(bundle.data);
+            summary.read_inner(dec, bundle.version, in.name());
             s.add(summary);
         }
-        else if (signature == "MG")
+        else if (bundle.signature == "MG")
         {
-            BinaryDecoder dec(buf);
-            Metadata::read_group(dec, version, in.name(), [&](unique_ptr<Metadata> md) { s.add(*md); return true; });
+            if (!bundle.read_data(in)) break;
+            BinaryDecoder dec(bundle.data);
+            Metadata::read_group(dec, bundle.version, in.name(), [&](unique_ptr<Metadata> md) { s.add(*md); return true; });
         }
+        else
+            throw_consistency_error("parsing file " + in.name(), "metadata entry does not start with 'MD', '!D', 'SU', or 'MG'");
     }
 }
 #endif
@@ -330,45 +334,47 @@ int main(int argc, const char* argv[])
             Metadata md;
             Summary summary;
 
-            vector<uint8_t> buf;
-            string signature;
-            unsigned version;
-
-            while (types::readBundle(*in, in->name(), buf, signature, version))
+            types::Bundle bundle;
+            while (bundle.read_header(*in))
             {
-                if (signature == "MD" || signature == "!D")
+                if (bundle.signature == "MD" || bundle.signature == "!D")
                 {
-                    BinaryDecoder dec(buf);
-                    md.read_inner(dec, version, in->name());
+                    if (!bundle.read_data(*in)) break;
+                    BinaryDecoder dec(bundle.data);
+                    md.read_inner(dec, bundle.version, in->name());
                     if (md.source().style() == Source::INLINE)
-                        md.readInlineData(*in, in->name());
+                        md.read_inline_data(*in);
                     writer.print(md);
                 }
-                else if (signature == "SU")
+                else if (bundle.signature == "SU")
                 {
-                    BinaryDecoder dec(buf);
-                    summary.read_inner(dec, version, in->name());
+                    if (!bundle.read_data(*in)) break;
+                    BinaryDecoder dec(bundle.data);
+                    summary.read_inner(dec, bundle.version, in->name());
                     writer.print_summary(summary);
                 }
-                else if (signature == "MG")
+                else if (bundle.signature == "MG")
                 {
-                    BinaryDecoder dec(buf);
-                    Metadata::read_group(dec, version, in->name(), [&](unique_ptr<Metadata> md) { return writer.print(*md); });
+                    if (!bundle.read_data(*in)) break;
+                    BinaryDecoder dec(bundle.data);
+                    Metadata::read_group(dec, bundle.version, in->name(), [&](unique_ptr<Metadata> md) { return writer.print(*md); });
                 }
+                else
+                    throw_consistency_error("parsing file " + in->name(), "metadata entry does not start with 'MD', '!D', 'SU', or 'MG'");
             }
 // Uncomment as a quick hack to check memory usage at this point:
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
 //types::debug_intern_stats();
 
-		}
+        }
 
-		return 0;
+        return 0;
     } catch (commandline::BadOption& e) {
         cerr << e.what() << endl;
         opts.outputHelp(cerr);
         return 1;
-	} catch (std::exception& e) {
-		cerr << e.what() << endl;
-		return 1;
-	}
+    } catch (std::exception& e) {
+        cerr << e.what() << endl;
+        return 1;
+    }
 }

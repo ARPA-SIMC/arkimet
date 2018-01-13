@@ -11,6 +11,7 @@
 #include <fcntl.h>
 
 using namespace std;
+using namespace arki::core;
 using namespace arki::utils;
 
 namespace arki {

@@ -5,6 +5,7 @@
 
 #include <arki/dataset.h>
 #include <arki/summary.h>
+#include <arki/core/fwd.h>
 #include <string>
 #include <map>
 #include <iosfwd>
@@ -85,7 +86,7 @@ public:
 
     void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
-    void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out) override;
+    void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
 
     /// Return the number of archives found, used for testing

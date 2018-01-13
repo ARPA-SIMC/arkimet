@@ -12,7 +12,6 @@
 #include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
-#include "arki/utils/lock.h"
 #include "arki/summary.h"
 #include "arki/libconfig.h"
 #include <sstream>
@@ -426,7 +425,7 @@ add_method("data_in_right_segment_rescan", [](Fixture& f) {
 
 // Test packing a dataset with VM2 data
 add_method("pack_vm2", [](Fixture& f) {
-    utils::Lock::TestNowait lock_nowait;
+    core::lock::TestNowait lock_nowait;
     f.clean_and_import("inbound/test.vm2");
 
     // Take note of all the data and delete every second item

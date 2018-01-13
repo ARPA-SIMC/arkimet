@@ -10,6 +10,7 @@
 namespace {
 using namespace std;
 using namespace arki;
+using namespace arki::core;
 using namespace arki::tests;
 using namespace arki::utils;
 using namespace arki::types;

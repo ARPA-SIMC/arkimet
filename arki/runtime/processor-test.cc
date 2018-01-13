@@ -8,6 +8,7 @@
 
 using namespace std;
 using namespace arki::tests;
+using namespace arki::core;
 using namespace arki;
 using namespace arki::runtime;
 using namespace arki::utils;

@@ -5,6 +5,7 @@
 #include "arki/runtime/config.h"
 #include <vector>
 #include <set>
+#include <ostream>
 #include <cstdint>
 
 using namespace std;

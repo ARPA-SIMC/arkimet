@@ -18,13 +18,14 @@ nobase_dist_arkiinclude_HEADERS = \
 		wibble/sys/exec.h \
 		wibble/sys/signal.h \
 		wibble/tests/tut.h \
+		core/fwd.h \
 		core/time.h \
 		core/fuzzytime.h \
+		core/file.h \
 		core/tests.h \
 		binary.h \
 		defs.h \
 		exceptions.h \
-		file.h \
 		bbox.h \
 		configfile.h \
 		libconfig.h \
@@ -165,7 +166,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/h5.h \
 		utils.h \
 		utils/intern.h \
-		utils/lock.h \
 		utils/pcounter.h \
 		utils/process.h \
 		utils/regexp.h \
@@ -221,6 +221,7 @@ libarkimet_la_SOURCES += \
 		wibble/sys/signal.cpp \
 		core/time.cc \
 		core/fuzzytime.cc \
+		core/file.cc \
 		exceptions.cc \
 		nag.cc \
 		utils.cc \
@@ -228,7 +229,6 @@ libarkimet_la_SOURCES += \
 		utils/gzip.cc \
 		utils/files.cc \
 		utils/intern.cc \
-		utils/lock.cc \
 		utils/pcounter.cc \
 		utils/process.cc \
 		utils/raii.cc \
@@ -243,7 +243,6 @@ libarkimet_la_SOURCES += \
 		utils/commandline/engine.cpp \
 		utils/commandline/wordwrap.cpp \
 		binary.cc \
-		file.cc \
 		configfile.cc \
 		transaction.cc \
 		emitter.cc \
@@ -306,19 +305,18 @@ tests_arki_test_SOURCES += \
 		tests/tests-tut.cc \
 		core/time-test.cc \
 		core/fuzzytime-test.cc \
+		core/file-test.cc \
 		utils-test.cc \
 		utils/accounting-tut.cc \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \
-		utils/files-tut.cc \
+		utils/files-test.cc \
 		utils/intern-tut.cc \
-		utils/lock-test.cc \
 		utils/pcounter-tut.cc \
 		utils/process-tut.cc \
 		utils/raii-tut.cc \
 		utils/regexp-test.cc \
 		binary-test.cc \
-		file-test.cc \
 		configfile-test.cc \
 		transaction-test.cc \
 		emitter/memory-tut.cc \
@@ -414,7 +412,7 @@ tests_arki_test_SOURCES += \
 		utils/compress-tut.cc \
 		utils/sqlite-tut.cc \
 		sort-test.cc \
-		formatter-tut.cc \
+		formatter-test.cc \
 		validator-test.cc \
 		bbox-test.cc \
 		metadata-test.cc \

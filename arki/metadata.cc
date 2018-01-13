@@ -1,5 +1,6 @@
 #include "metadata.h"
 #include "metadata/consumer.h"
+#include "core/file.h"
 #include "exceptions.h"
 #include "types/value.h"
 #include "types/source/blob.h"
@@ -28,6 +29,7 @@
 using namespace std;
 using namespace arki::types;
 using namespace arki::utils;
+using namespace arki::core;
 
 namespace arki {
 

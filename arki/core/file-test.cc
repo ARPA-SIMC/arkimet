@@ -1,12 +1,13 @@
 #include "config.h"
 #include <arki/tests/tests.h>
-#include <arki/file.h>
+#include "file.h"
 #include <sstream>
 #include <iostream>
 #include <fcntl.h>
 
 using namespace std;
 using namespace arki;
+using namespace arki::core;
 using namespace arki::utils;
 using namespace arki::tests;
 

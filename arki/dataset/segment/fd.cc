@@ -8,7 +8,6 @@
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/utils/lock.h"
 #include "arki/utils.h"
 #include "arki/dataset/reporter.h"
 #include "arki/nag.h"
@@ -22,6 +21,7 @@
 #include <cstring>
 
 using namespace std;
+using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
 
@@ -362,7 +362,7 @@ void Checker::test_truncate(size_t offset)
 
 void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
-    arki::File fd(absname, O_RDWR);
+    sys::File fd(absname, O_RDWR);
     sys::PreserveFileTimes pt(fd);
     off_t end = fd.lseek(0, SEEK_END);
     if (data_idx >= mds.size())
@@ -387,7 +387,7 @@ void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsi
 
 void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
 {
-    arki::File fd(absname, O_RDWR);
+    sys::File fd(absname, O_RDWR);
     sys::PreserveFileTimes pt(fd);
     off_t start_ofs = mds[data_idx].sourceBlob().offset;
     off_t end = fd.lseek(0, SEEK_END);
@@ -409,7 +409,7 @@ void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size
 void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
-    arki::File fd(absname, O_RDWR);
+    sys::File fd(absname, O_RDWR);
     sys::PreserveFileTimes pt(fd);
     fd.lseek(s.offset);
     fd.write_all_or_throw("\0", 1);

@@ -1,5 +1,6 @@
 #include "arki/runtime/config.h"
 #include "arki/runtime/io.h"
+#include "arki/core/file.h"
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
 #include "arki/utils.h"
@@ -12,6 +13,7 @@
 #include <unistd.h>
 
 using namespace std;
+using namespace arki::core;
 using namespace arki::utils;
 
 namespace arki {

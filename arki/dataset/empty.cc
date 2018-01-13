@@ -1,6 +1,6 @@
 #include "config.h"
-
-#include <arki/dataset/empty.h>
+#include "empty.h"
+#include <ostream>
 
 using namespace std;
 

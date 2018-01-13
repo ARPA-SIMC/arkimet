@@ -4,7 +4,7 @@
 
 /// Yaml decoding functions
 
-#include <arki/file.h>
+#include <arki/core/fwd.h>
 #include <string>
 
 namespace arki {
@@ -30,12 +30,12 @@ public:
     // TODO: add iterator_traits
     class const_iterator
     {
-        LineReader* in = nullptr;
+        core::LineReader* in = nullptr;
         std::pair<std::string, std::string> value;
         std::string line;
 
     public:
-        const_iterator(LineReader& in);
+        const_iterator(core::LineReader& in);
         const_iterator() {}
 
         const_iterator& operator++();
@@ -58,7 +58,7 @@ public:
         }
     };
 
-    const_iterator begin(LineReader& in) { return const_iterator(in); }
+    const_iterator begin(core::LineReader& in) { return const_iterator(in); }
     const_iterator end() { return const_iterator(); }
 };
 

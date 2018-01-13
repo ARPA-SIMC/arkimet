@@ -151,7 +151,7 @@ public:
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
-    void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out) override;
+    void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
 
     static void readConfig(const std::string& path, ConfigFile& cfg);
 
@@ -201,7 +201,7 @@ public:
     void scan(const std::string& fname, const std::string& format, metadata_dest_func dest);
 
     /// Run a testdispatch on a previously uploaded file
-    void testdispatch(const std::string& fname, const std::string& format, NamedFileDescriptor& out);
+    void testdispatch(const std::string& fname, const std::string& format, core::NamedFileDescriptor& out);
 
     /// Run a dispatch on a previously uploaded file
     void dispatch(const std::string& fname, const std::string& format, metadata_dest_func consumer);

@@ -1,5 +1,6 @@
 #include "arki/libconfig.h"
 #include "arki/dataset/file.h"
+#include "arki/core/file.h"
 #include "arki/metadata/consumer.h"
 #include "arki/configfile.h"
 #include "arki/matcher.h"
@@ -15,8 +16,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-
 using namespace std;
+using namespace arki::core;
 using namespace arki::utils;
 
 namespace arki {
@@ -160,7 +161,7 @@ FdFile::FdFile(std::shared_ptr<const FileConfig> config)
     if (path == "-")
         fd = new Stdin;
     else
-        fd = new arki::File(path, O_RDONLY);
+        fd = new core::File(path, O_RDONLY);
 }
 
 FdFile::~FdFile()

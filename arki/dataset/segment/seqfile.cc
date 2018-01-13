@@ -1,8 +1,8 @@
 #include "seqfile.h"
 #include "arki/utils/string.h"
-#include "arki/utils/lock.h"
 
 using namespace std;
+using namespace arki::core;
 using namespace arki::utils;
 
 namespace {
@@ -10,7 +10,7 @@ namespace {
 struct FdLock
 {
     sys::NamedFileDescriptor& fd;
-    arki::utils::Lock lock;
+    Lock lock;
 
     FdLock(sys::NamedFileDescriptor& fd) : fd(fd)
     {

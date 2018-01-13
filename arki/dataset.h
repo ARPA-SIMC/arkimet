@@ -3,7 +3,7 @@
 
 /// Base interface for arkimet datasets
 #include <arki/matcher.h>
-#include <arki/file.h>
+#include <arki/core/fwd.h>
 #include <arki/transaction.h>
 #include <string>
 #include <memory>
@@ -107,7 +107,7 @@ struct ByteQuery : public DataQuery
 
     std::string param;
     Type type = BQ_DATA;
-    std::function<void(NamedFileDescriptor&)> data_start_hook = nullptr;
+    std::function<void(core::NamedFileDescriptor&)> data_start_hook = nullptr;
 
     ByteQuery() {}
 
@@ -233,7 +233,7 @@ public:
      *
      * The default implementation in Reader is based on queryData.
      */
-    virtual void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out);
+    virtual void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out);
 
     /**
      * Expand the given begin and end ranges to include the datetime extremes

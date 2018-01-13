@@ -3,7 +3,7 @@
 
 /// arkimet metadata type system
 #include <arki/defs.h>
-#include <arki/file.h>
+#include <arki/core/fwd.h>
 #include <string>
 #include <vector>
 #include <memory>
@@ -292,21 +292,21 @@ struct Bundle
      *
      * @return true if a bundle header was read, false on end of file
      */
-    bool read_header(NamedFileDescriptor& fd);
+    bool read_header(core::NamedFileDescriptor& fd);
 
     /**
      * Read the bundle data after read_header has been called
      *
      * @return true if all bundle data was read, false on end of file
      */
-    bool read_data(NamedFileDescriptor& fd);
+    bool read_data(core::NamedFileDescriptor& fd);
 
     /**
      * read_header and read_data together
      *
      * @return true if all was read, false on end of file
      */
-    bool read(NamedFileDescriptor& fd);
+    bool read(core::NamedFileDescriptor& fd);
 };
 
 }

@@ -1,5 +1,6 @@
 #include "reader.h"
 #include "reader/registry.h"
+#include "arki/core/file.h"
 #include "arki/utils.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/compress.h"
@@ -7,7 +8,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/gzip.h"
-#include "arki/utils/lock.h"
 #include "arki/types/source/blob.h"
 #include "arki/nag.h"
 #include "arki/iotrace.h"
@@ -21,6 +21,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using namespace arki::core;
 
 namespace arki {
 namespace reader {
@@ -55,7 +56,7 @@ struct FileReader : public Reader
 {
 public:
     sys::File fd;
-    utils::Lock lock;
+    Lock lock;
 
     FileReader(const std::string& fname)
         : fd(fname, O_RDONLY

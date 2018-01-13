@@ -9,7 +9,6 @@
 #include "arki/utils/sys.h"
 #include "arki/scan/any.h"
 #include "arki/utils/string.h"
-#include "arki/utils/lock.h"
 #include "arki/dataset/reporter.h"
 #include <cerrno>
 #include <cstring>
@@ -23,6 +22,7 @@
 
 using namespace std;
 using namespace arki::types;
+using namespace arki::core;
 using namespace arki::utils;
 
 namespace arki {
@@ -63,7 +63,7 @@ Writer::~Writer()
     lock.ofd_setlk(write_lock_file);
 }
 
-size_t Writer::write_file(Metadata& md, File& fd)
+size_t Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
     try {
         const std::vector<uint8_t>& buf = md.getData();
@@ -82,7 +82,7 @@ size_t Writer::write_file(Metadata& md, File& fd)
     }
 }
 
-size_t HoleWriter::write_file(Metadata& md, File& fd)
+size_t HoleWriter::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
     try {
         if (ftruncate(fd, md.data_size()) == -1)

@@ -2,7 +2,7 @@
 #define ARKI_TYPES_SOURCE_BLOB_H
 
 #include <arki/types/source.h>
-#include <arki/file.h>
+#include <arki/core/fwd.h>
 
 namespace arki {
 struct Reader;
@@ -102,7 +102,7 @@ struct Blob : public Source
      * If rlock is true, the file descriptor will be locked for reading during
      * I/O
      */
-    std::vector<uint8_t> read_data(NamedFileDescriptor& fd, bool rlock=true) const;
+    std::vector<uint8_t> read_data(core::NamedFileDescriptor& fd, bool rlock=true) const;
 
     /**
      * Get the data referred by this blob via its reader.
@@ -118,7 +118,7 @@ struct Blob : public Source
      *
      * Returns the number of bytes written to out.
      */
-    size_t stream_data(NamedFileDescriptor& out) const;
+    size_t stream_data(core::NamedFileDescriptor& out) const;
 
     static std::unique_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<Reader> reader);
     static std::unique_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);

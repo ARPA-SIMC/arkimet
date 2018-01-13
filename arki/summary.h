@@ -5,7 +5,7 @@
 #include <arki/types/reftime.h>
 #include <arki/itemset.h>
 #include <arki/utils/geosfwd.h>
-#include <arki/file.h>
+#include <arki/core/fwd.h>
 #include <map>
 #include <set>
 #include <string>
@@ -150,7 +150,7 @@ public:
      *
      * Summary items are read from the file until the end of file is found.
      */
-    bool readYaml(LineReader& in, const std::string& filename);
+    bool readYaml(core::LineReader& in, const std::string& filename);
 
     /**
      * Write the summary to the given output file.

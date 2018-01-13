@@ -1,7 +1,9 @@
 #include "yaml.h"
+#include "arki/core/file.h"
 #include <istream>
 
 using namespace std;
+using arki::core::LineReader;
 
 namespace arki {
 namespace utils {

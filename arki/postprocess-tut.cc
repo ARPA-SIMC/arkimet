@@ -3,7 +3,7 @@
 #include "configfile.h"
 #include "metadata.h"
 #include "scan/any.h"
-#include "utils/files.h"
+#include "core/file.h"
 #include "utils/sys.h"
 #include "binary.h"
 #include <sstream>
@@ -18,6 +18,7 @@
 #endif
 
 using namespace arki::tests;
+using namespace arki::core;
 
 namespace tut {
 using namespace std;

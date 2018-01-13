@@ -1,7 +1,7 @@
 #ifndef ARKI_CONFIGFILE_H
 #define ARKI_CONFIGFILE_H
 
-#include <arki/file.h>
+#include <arki/core/fwd.h>
 #include <map>
 #include <string>
 #include <stdexcept>
@@ -162,7 +162,7 @@ public:
      * @param fileName
      *   The file name to use to generate useful parse error messages.
      */
-    void parse(NamedFileDescriptor& in);
+    void parse(core::NamedFileDescriptor& in);
 
     /**
      * Parse configuration from the given input stream.
@@ -174,7 +174,7 @@ public:
      * @param fileName
      *   The file name to use to generate useful parse error messages.
      */
-    void parse(LineReader& in, const std::string& pathname);
+    void parse(core::LineReader& in, const std::string& pathname);
 
     /**
      * Parse configuration from the given string.
