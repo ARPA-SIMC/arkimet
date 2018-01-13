@@ -30,6 +30,8 @@ public:
     int archive_age = -1;
     int delete_age = -1;
 
+    std::shared_ptr<core::lock::Policy> lock_policy;
+
     LocalConfig(const ConfigFile& cfg);
 
     /**
@@ -90,6 +92,7 @@ struct LocalLock
     arki::core::Lock ds_lock;
     bool locked = false;
     bool write;
+    std::shared_ptr<core::lock::Policy> lock_policy;
 
     LocalLock(const LocalConfig& config, bool write=true);
     ~LocalLock();

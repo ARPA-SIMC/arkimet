@@ -2,7 +2,7 @@
 #define ARKI_DATASET_INDEX_MANIFEST_H
 
 #include <arki/dataset/index.h>
-#include <arki/dataset/segment.h>
+#include <arki/transaction.h>
 #include <vector>
 #include <string>
 #include <memory>

@@ -29,6 +29,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		bbox.h \
 		configfile.h \
 		libconfig.h \
+		dataset/fwd.h \
 		dataset/reporter.h \
 		dataset/time.h \
 		dataset/archive.h \

@@ -5,7 +5,6 @@
 
 #include <arki/transaction.h>
 #include <arki/utils/sqlite.h>
-#include <arki/dataset/segment.h>
 #include <arki/dataset/iseg.h>
 #include <arki/dataset/index/attr.h>
 #include <arki/dataset/index/aggregate.h>

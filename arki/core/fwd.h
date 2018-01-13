@@ -14,10 +14,15 @@ namespace core {
 
 using arki::utils::sys::NamedFileDescriptor;
 using arki::utils::sys::File;
+struct LineReader;
+namespace lock {
+struct Policy;
+struct NullPolicy;
+struct OFDPolicy;
+}
 
 struct Time;
 struct FuzzyTime;
-struct LineReader;
 
 }
 }

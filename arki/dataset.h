@@ -4,6 +4,7 @@
 /// Base interface for arkimet datasets
 #include <arki/matcher.h>
 #include <arki/core/fwd.h>
+#include <arki/dataset/fwd.h>
 #include <arki/transaction.h>
 #include <string>
 #include <memory>
@@ -62,10 +63,6 @@ class Compare;
  * to allow complex data searches across datasets.
  */
 namespace dataset {
-class Reader;
-class Writer;
-class Checker;
-struct Reporter;
 
 struct DataQuery
 {

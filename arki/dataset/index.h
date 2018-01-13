@@ -1,10 +1,13 @@
 #ifndef ARKI_DATASET_INDEX_H
 #define ARKI_DATASET_INDEX_H
 
-#include <arki/dataset.h>
-#include <arki/dataset/segment.h>
+#include <arki/core/fwd.h>
+#include <arki/dataset/fwd.h>
 
 namespace arki {
+struct Matcher;
+struct Summary;
+
 namespace dataset {
 
 struct Index

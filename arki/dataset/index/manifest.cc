@@ -3,6 +3,7 @@
 #include "arki/exceptions.h"
 #include "arki/core/file.h"
 #include "arki/reader.h"
+#include "arki/dataset.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"

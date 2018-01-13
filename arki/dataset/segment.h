@@ -5,6 +5,7 @@
 
 #include <arki/libconfig.h>
 #include <arki/defs.h>
+#include <arki/core/fwd.h>
 #include <arki/transaction.h>
 #include <arki/nag.h>
 #include <string>
@@ -364,7 +365,7 @@ public:
     virtual void scan_dir(std::function<void(const std::string& relname)> dest) = 0;
 
     /// Create a Manager
-    static std::unique_ptr<Manager> get(const std::string& root, bool force_dir=false, bool mock_data=false);
+    static std::unique_ptr<Manager> get(const std::string& root, std::shared_ptr<core::lock::Policy> lock_policy=nullptr, bool force_dir=false, bool mock_data=false);
 };
 
 }
