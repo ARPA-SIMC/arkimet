@@ -18,20 +18,22 @@
 #include <sstream>
 #include <iostream>
 
-namespace tut {
+namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
-using namespace arki::types;
+using namespace arki::tests;
 using namespace arki::utils;
 
-struct arki_scan_any_shar {
-};
-TESTGRP(arki_scan_any);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_scan_any");
+
+void Tests::register_tests() {
 
 // Scan a well-known grib file, with no padding between messages
-def_test(1)
-{
+add_method("grib_compact", [] {
     metadata::Collection mdc;
 #ifndef HAVE_GRIBAPI
     ensure(not scan::scan("inbound/test.grib1", mdc.inserter_func()));
@@ -98,11 +100,10 @@ def_test(1)
     wassert(actual(mdc[2]).contains("reftime", "2007-10-09T00:00:00Z"));
     wassert(actual(mdc[2]).contains("run", "MINUTE(0)"));
 #endif
-}
+});
 
 // Scan a well-known bufr file, with no padding between BUFRs
-def_test(2)
-{
+add_method("bufr_compact", [] {
     metadata::Collection mdc;
 #ifndef HAVE_DBALLE
     ensure(not scan::scan("inbound/test.bufr", mdc.inserter_func()));
@@ -169,17 +170,16 @@ def_test(2)
     //wassert(actual(mdc[2]).contains("proddef", "GRIB(blo=13, sta=577)"));
     wassert(actual(mdc[2]).contains("reftime", "2004-11-30T12:00:00Z"));
 
-	// Check run
-	ensure(not mdc[2].has(TYPE_RUN));
+    // Check run
+    ensure(not mdc[2].has(TYPE_RUN));
 #endif
-}
+});
 
 // Test compression
-def_test(3)
-{
-	// Create a test file with 9 gribs inside
-	system("cat inbound/test.grib1 inbound/test.grib1 inbound/test.grib1 > a.grib1");
-	system("cp a.grib1 b.grib1");
+add_method("compress", [] {
+    // Create a test file with 9 gribs inside
+    system("cat inbound/test.grib1 inbound/test.grib1 inbound/test.grib1 > a.grib1");
+    system("cp a.grib1 b.grib1");
 
     // Compress
     scan::compress("b.grib1", 5);
@@ -191,11 +191,10 @@ def_test(3)
         scan::scan("b.grib1", [&](unique_ptr<Metadata>) { ++count; return true; });
         ensure_equals(count, 9u);
     }
-}
+});
 
 // Test reading update sequence numbers
-def_test(4)
-{
+add_method("usn", [] {
 #ifdef HAVE_DBALLE
     {
         // Gribs don't have update sequence numbrs, and the usn parameter must
@@ -223,6 +222,8 @@ def_test(4)
         ensure_equals(usn, 2);
     }
 #endif
+});
+
 }
 
 }
