@@ -18,7 +18,7 @@ Reader::Reader(std::shared_ptr<const simple::Config> config)
 
     if (index::Manifest::exists(config->path))
     {
-        unique_ptr<index::Manifest> mft = index::Manifest::create(config->path);
+        unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->lock_policy);
         mft->openRO();
         m_idx = m_mft = mft.release();
     }

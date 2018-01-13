@@ -236,7 +236,7 @@ bool Contents::get_current(const Metadata& md, Metadata& current) const
     {
         current.clear();
         string abspath = str::joinpath(config().path, m_get_current.fetchString(2));
-        auto reader = arki::Reader::for_auto(abspath);
+        auto reader = arki::Reader::create_new(abspath, config().lock_policy);
         build_md(m_get_current, current, reader);
         found = true;
     }
@@ -332,7 +332,7 @@ void Contents::scan_file(const std::string& relname, metadata_dest_func dest, co
     mdq.bind(1, relname);
 
     string abspath = str::joinpath(config().path, relname);
-    auto reader = arki::Reader::for_auto(abspath);
+    auto reader = arki::Reader::create_new(abspath, config().lock_policy);
 
     while (mdq.step())
     {
@@ -539,7 +539,7 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
             if (q.with_data)
             {
                 std::string abspath = str::joinpath(config().path, srcname);
-                reader = arki::Reader::for_auto(abspath);
+                reader = arki::Reader::create_new(abspath, config().lock_policy);
             }
 
             if (!mdbuf.empty())

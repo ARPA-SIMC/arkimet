@@ -287,7 +287,7 @@ void Index::scan(metadata_dest_func dest, const std::string& order_by) const
     Query mdq("scan_file_md", m_db);
     mdq.compile(query);
 
-    auto reader = arki::Reader::for_auto(data_pathname);
+    auto reader = arki::Reader::create_new(data_pathname, config().lock_policy);
 
     while (mdq.step())
     {
@@ -458,7 +458,7 @@ bool Index::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     metadata::Collection mdbuf;
     std::shared_ptr<arki::Reader> reader;
     if (q.with_data)
-        reader = arki::Reader::for_auto(data_pathname);
+        reader = arki::Reader::create_new(data_pathname, config().lock_policy);
 
     // Limited scope for mdq, so we finalize the query before starting to
     // emit results

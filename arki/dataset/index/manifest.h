@@ -17,11 +17,12 @@ namespace index {
 class Manifest : public dataset::Index
 {
 protected:
-	std::string m_path;
-	void querySummaries(const Matcher& matcher, Summary& summary);
+    std::string m_path;
+    std::shared_ptr<core::lock::Policy> lock_policy;
+    void querySummaries(const Matcher& matcher, Summary& summary);
 
 public:
-    Manifest(const std::string& path);
+    Manifest(const std::string& path, std::shared_ptr<core::lock::Policy> lock_policy);
     virtual ~Manifest();
 
 	virtual void openRO() = 0;
@@ -62,7 +63,7 @@ public:
 
     /// Check if the given directory contains a manifest file
     static bool exists(const std::string& dir);
-    static std::unique_ptr<Manifest> create(const std::string& dir, const std::string& index_type=std::string());
+    static std::unique_ptr<Manifest> create(const std::string& dir, std::shared_ptr<core::lock::Policy> lock_policy, const std::string& index_type=std::string());
 
     static bool get_force_sqlite();
     static void set_force_sqlite(bool val);

@@ -47,7 +47,7 @@ Writer::Writer(std::shared_ptr<const simple::Config> config)
     if (!index::Manifest::exists(config->path))
         files::createDontpackFlagfile(config->path);
 
-    unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->index_type);
+    unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->lock_policy, config->index_type);
     m_mft = mft.release();
     m_mft->openRW();
     m_idx = m_mft;
@@ -380,7 +380,7 @@ Checker::Checker(std::shared_ptr<const simple::Config> config)
     if (!index::Manifest::exists(config->path))
         files::createDontpackFlagfile(config->path);
 
-    unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->index_type);
+    unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->lock_policy, config->index_type);
     m_mft = mft.release();
     m_mft->openRW();
     m_idx = m_mft;

@@ -29,6 +29,7 @@ public:
     static std::shared_ptr<Reader> for_file(const std::string& abspath);
     static std::shared_ptr<Reader> for_dir(const std::string& abspath);
     static std::shared_ptr<Reader> for_auto(const std::string& abspath);
+    static std::shared_ptr<Reader> create_new(const std::string& abspath, std::shared_ptr<core::lock::Policy> lock_policy);
 
     /**
      * Empty the reader caches, used after a segment gets repacked, to prevent

@@ -456,6 +456,25 @@ std::shared_ptr<Reader> Reader::for_auto(const std::string& abspath)
         return for_missing(abspath);
 }
 
+std::shared_ptr<Reader> Reader::create_new(const std::string& abspath, std::shared_ptr<core::lock::Policy> lock_policy)
+{
+    // Open the new file
+    std::unique_ptr<struct stat> st = sys::stat(abspath);
+    if (st.get())
+    {
+        if (S_ISDIR(st->st_mode))
+            return std::make_shared<reader::DirReader>(abspath);
+        else
+            return std::make_shared<reader::FileReader>(abspath);
+    }
+    else if (sys::exists(abspath + ".gz.idx"))
+        return std::make_shared<reader::IdxZlibFileReader>(abspath);
+    else if (sys::exists(abspath + ".gz"))
+        return std::make_shared<reader::ZlibFileReader>(abspath);
+    else
+        return make_shared<reader::MissingFileReader>(abspath);
+}
+
 unsigned Reader::test_count_cached()
 {
     registry_file.cleanup();
