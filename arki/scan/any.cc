@@ -1,11 +1,12 @@
-#include <arki/libconfig.h>
-#include <arki/scan/any.h>
-#include <arki/metadata.h>
-#include <arki/types/source/blob.h>
-#include <arki/utils/files.h>
-#include <arki/utils/compress.h>
-#include <arki/utils/sys.h>
-#include <arki/utils/string.h>
+#include "arki/libconfig.h"
+#include "arki/scan/any.h"
+#include "arki/metadata.h"
+#include "arki/reader.h"
+#include "arki/types/source/blob.h"
+#include "arki/utils/files.h"
+#include "arki/utils/compress.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 #include <sstream>
 #include <algorithm>
 #include <utime.h>
@@ -31,10 +32,13 @@ using namespace arki::types;
 namespace arki {
 namespace scan {
 
-static void scan_metadata(const std::string& file, metadata_dest_func dest)
+static void scan_metadata(const std::string& pathname, const std::string& md_pathname, const core::lock::Policy* lock_policy, metadata_dest_func dest)
 {
-    //cerr << "Reading cached metadata from " << file << endl;
-    Metadata::read_file(file, dest);
+    auto reader = Reader::create_new(pathname, lock_policy);
+    Metadata::read_file(md_pathname, [&](unique_ptr<Metadata> md) {
+        md->sourceBlob().lock(reader);
+        return dest(move(md));
+    });
 }
 
 static bool scan_file(
@@ -199,7 +203,7 @@ bool scan(const std::string& basedir, const std::string& relname, metadata_dest_
     if (st_md.get() and st_md->st_mtime >= st_file->st_mtime)
     {
         // If there is a usable metadata file, use it to save time
-        scan_metadata(md_pathname, dest);
+        scan_metadata(pathname, md_pathname, core::lock::policy_ofd, dest);
         return true;
     } else if (S_ISDIR(st_file->st_mode)) {
         return scan_dir(pathname, basedir, relname, format, core::lock::policy_ofd, dest);
@@ -258,7 +262,6 @@ void compress(const std::string& file, size_t groupsize)
 {
     utils::compress::DataCompressor compressor(file, groupsize);
     scan(file, [&](unique_ptr<Metadata> md) {
-        md->sourceBlob().lock();
         return compressor.eat(move(md));
     });
     compressor.flush();
