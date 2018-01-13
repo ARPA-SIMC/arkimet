@@ -13,7 +13,7 @@ namespace concat {
 class Writer : public fd::Writer
 {
 public:
-    Writer(const std::string& root, const std::string& relname, const std::string& absname, std::shared_ptr<core::lock::Policy> lock_policy, int mode=0);
+    Writer(const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy, int mode=0);
 };
 
 class Checker : public fd::Checker
@@ -32,7 +32,7 @@ public:
 class HoleWriter : public fd::Writer
 {
 public:
-    HoleWriter(const std::string& root, const std::string& relname, const std::string& absname, std::shared_ptr<core::lock::Policy> lock_policy, int mode=0);
+    HoleWriter(const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy, int mode=0);
 };
 
 class HoleChecker : public Checker

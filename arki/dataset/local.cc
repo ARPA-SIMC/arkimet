@@ -36,9 +36,9 @@ LocalConfig::LocalConfig(const ConfigFile& cfg)
         delete_age = std::stoi(tmp);
 
     if (cfg.value("locking") == "no")
-        lock_policy = std::shared_ptr<core::lock::Policy>(new core::lock::NullPolicy);
+        lock_policy = core::lock::policy_null;
     else
-        lock_policy = std::shared_ptr<core::lock::Policy>(new core::lock::OFDPolicy);
+        lock_policy = core::lock::policy_ofd;
 }
 
 std::pair<bool, Writer::AcquireResult> LocalConfig::check_acquire_age(Metadata& md) const

@@ -56,10 +56,10 @@ struct FileReader : public Reader
 {
 public:
     sys::File fd;
-    std::shared_ptr<core::lock::Policy> lock_policy;
+    const core::lock::Policy* lock_policy;
     Lock lock;
 
-    FileReader(const std::string& fname, std::shared_ptr<core::lock::Policy> lock_policy)
+    FileReader(const std::string& fname, const core::lock::Policy* lock_policy)
         : fd(fname, O_RDONLY
 #ifdef linux
                 | O_CLOEXEC
@@ -156,10 +156,10 @@ public:
     std::string format;
     sys::Path dirfd;
     sys::File repack_lock;
-    std::shared_ptr<core::lock::Policy> lock_policy;
+    const core::lock::Policy* lock_policy;
     Lock lock;
 
-    DirReader(const std::string& fname, std::shared_ptr<core::lock::Policy> lock_policy)
+    DirReader(const std::string& fname, const core::lock::Policy* lock_policy)
         : dirfd(fname, O_DIRECTORY), repack_lock(dirfd.openat(".repack-lock", O_RDONLY | O_CREAT, 0777), str::joinpath(fname, ".repack-lock")),
           lock_policy(lock_policy)
     {
@@ -267,7 +267,7 @@ public:
     gzip::File fd;
     uint64_t last_ofs = 0;
 
-    ZlibFileReader(const std::string& fname, std::shared_ptr<core::lock::Policy> lock_policy)
+    ZlibFileReader(const std::string& fname, const core::lock::Policy* lock_policy)
         : fname(fname), fd(fname + ".gz", "rb")
     {
     }
@@ -326,7 +326,7 @@ public:
     gzip::File gzfd;
     uint64_t last_ofs = 0;
 
-    IdxZlibFileReader(const std::string& fname, std::shared_ptr<core::lock::Policy> lock_policy)
+    IdxZlibFileReader(const std::string& fname, const core::lock::Policy* lock_policy)
         : fname(fname), fd(fname + ".gz", O_RDONLY), gzfd(fd.name())
     {
         // Read index
@@ -459,7 +459,7 @@ std::shared_ptr<Reader> Reader::for_auto(const std::string& abspath)
         return for_missing(abspath);
 }
 
-std::shared_ptr<Reader> Reader::create_new(const std::string& abspath, std::shared_ptr<core::lock::Policy> lock_policy)
+std::shared_ptr<Reader> Reader::create_new(const std::string& abspath, const core::lock::Policy* lock_policy)
 {
     // Open the new file
     std::unique_ptr<struct stat> st = sys::stat(abspath);

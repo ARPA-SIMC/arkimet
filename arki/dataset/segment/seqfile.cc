@@ -2,6 +2,7 @@
 #include "arki/utils/string.h"
 
 using namespace std;
+using namespace arki;
 using namespace arki::core;
 using namespace arki::utils;
 
@@ -10,10 +11,10 @@ namespace {
 struct FdLock
 {
     sys::NamedFileDescriptor& fd;
-    std::shared_ptr<lock::Policy> lock_policy;
+    const core::lock::Policy* lock_policy;
     Lock lock;
 
-    FdLock(sys::NamedFileDescriptor& fd, std::shared_ptr<lock::Policy> lock_policy) : fd(fd), lock_policy(lock_policy)
+    FdLock(sys::NamedFileDescriptor& fd, const core::lock::Policy* lock_policy) : fd(fd), lock_policy(lock_policy)
     {
         lock.l_type = F_WRLCK;
         lock.l_whence = SEEK_SET;
@@ -37,7 +38,7 @@ namespace arki {
 namespace dataset {
 namespace segment {
 
-SequenceFile::SequenceFile(const std::string& dirname, std::shared_ptr<core::lock::Policy> lock_policy)
+SequenceFile::SequenceFile(const std::string& dirname, const core::lock::Policy* lock_policy)
     : dirname(dirname), fd(str::joinpath(dirname, ".sequence")), lock_policy(lock_policy)
 {
 }

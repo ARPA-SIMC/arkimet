@@ -213,13 +213,16 @@ void TestCount::measure()
 
 Policy::~Policy() {}
 
-bool NullPolicy::setlk(NamedFileDescriptor& fd, Lock&) { return true; }
-bool NullPolicy::setlkw(NamedFileDescriptor& fd, Lock&) { return true; }
-bool NullPolicy::getlk(NamedFileDescriptor& fd, Lock&) { return true; }
+bool NullPolicy::setlk(NamedFileDescriptor& fd, Lock&) const { return true; }
+bool NullPolicy::setlkw(NamedFileDescriptor& fd, Lock&) const { return true; }
+bool NullPolicy::getlk(NamedFileDescriptor& fd, Lock&) const { return true; }
 
-bool OFDPolicy::setlk(NamedFileDescriptor& fd, Lock& l) { return l.ofd_setlk(fd); }
-bool OFDPolicy::setlkw(NamedFileDescriptor& fd, Lock& l) { return l.ofd_setlkw(fd); }
-bool OFDPolicy::getlk(NamedFileDescriptor& fd, Lock& l) { return l.ofd_getlk(fd); }
+bool OFDPolicy::setlk(NamedFileDescriptor& fd, Lock& l) const { return l.ofd_setlk(fd); }
+bool OFDPolicy::setlkw(NamedFileDescriptor& fd, Lock& l) const { return l.ofd_setlkw(fd); }
+bool OFDPolicy::getlk(NamedFileDescriptor& fd, Lock& l) const { return l.ofd_getlk(fd); }
+
+const Policy* policy_null = new NullPolicy;
+const Policy* policy_ofd = new OFDPolicy;
 
 }
 

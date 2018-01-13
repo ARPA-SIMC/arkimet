@@ -21,8 +21,7 @@ protected:
 
     std::shared_ptr<Reader> instantiate(const std::string& abspath)
     {
-        std::shared_ptr<core::lock::Policy> lock_policy(new core::lock::OFDPolicy);
-        return std::make_shared<READER>(abspath, lock_policy);
+        return std::make_shared<READER>(abspath, core::lock::policy_ofd);
     }
 
 public:

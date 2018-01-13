@@ -60,13 +60,12 @@ add_method("exists", [] {
 
 // Test accessing empty manifests
 add_method("empty", [] {
-    std::shared_ptr<core::lock::Policy> lock_policy(new core::lock::OFDPolicy);
     clean();
 
     // Opening a missing manifest read only fails
     {
         wassert(actual(Manifest::exists("testds/.archive/last/" + idxfname())).isfalse());
-        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", lock_policy);
+        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
         try {
             m->openRO();
             wassert(actual(false).istrue());
@@ -77,11 +76,11 @@ add_method("empty", [] {
 
     // But an empty dataset
     {
-    std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", lock_policy);
+    std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
     m->openRW();
     }
 
-    std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", lock_policy);
+    std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
     m->openRO();
 
     vector<string> files = m->file_list(Matcher());
@@ -90,12 +89,11 @@ add_method("empty", [] {
 
 // Test creating a new manifest
 add_method("create", [] {
-    std::shared_ptr<core::lock::Policy> lock_policy(new core::lock::OFDPolicy);
     clean();
 
     // Opening a missing manifest read-write creates a new one
     ensure(!sys::exists("testds/.archive/last/" + idxfname()));
-    std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", lock_policy);
+    std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
     m->openRW();
     m->flush();
     ensure(sys::exists("testds/.archive/last/" + idxfname()));
@@ -109,14 +107,13 @@ add_method("create", [] {
 
 // Test adding and removing files
 add_method("add_remove", [] {
-    std::shared_ptr<core::lock::Policy> lock_policy(new core::lock::OFDPolicy);
     clean();
 
 	system("cp inbound/test.grib1 testds/.archive/last/a.grib1");
 	system("mkdir testds/.archive/last/foo");
 	system("cp inbound/test.grib1 testds/.archive/last/foo/b.grib1");
 
-    std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", lock_policy);
+    std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
     m->openRW();
 
     Summary s;
@@ -140,7 +137,6 @@ add_method("add_remove", [] {
 
 // Test modifying index during scanning/listing of segments
 add_method("modify_while_scanning", [] {
-    std::shared_ptr<core::lock::Policy> lock_policy(new core::lock::OFDPolicy);
     clean();
 
 #warning TODO: move to index-test once acquire is part of the index interface
@@ -154,7 +150,7 @@ add_method("modify_while_scanning", [] {
 
     // Build index
     {
-        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", lock_policy);
+        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
         m->openRW();
         m->acquire("10.grib1", mtime, s);
         m->acquire("20.grib1", mtime, s);
@@ -163,7 +159,7 @@ add_method("modify_while_scanning", [] {
 
     // Enumerate with list_segments while adding files
     {
-        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", lock_policy);
+        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
         m->openRW();
         size_t count = 0;
         m->list_segments([&](const std::string&) {
@@ -176,7 +172,7 @@ add_method("modify_while_scanning", [] {
 
     // Check again, we should have all that we added so far
     {
-        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", lock_policy);
+        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
         m->openRW();
         size_t count = 0;
         m->list_segments([&](const std::string&) { ++count; });

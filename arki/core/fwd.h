@@ -19,6 +19,8 @@ namespace lock {
 struct Policy;
 struct NullPolicy;
 struct OFDPolicy;
+extern const Policy* policy_null;
+extern const Policy* policy_ofd;
 }
 
 struct Time;

@@ -2,6 +2,7 @@
 #define ARKI_CORE_FILE_H
 
 #include <arki/utils/sys.h>
+#include <arki/core/fwd.h>
 #include <string>
 
 namespace arki {
@@ -100,25 +101,25 @@ namespace lock {
 struct Policy
 {
     virtual ~Policy();
-    virtual bool setlk(NamedFileDescriptor& fd, Lock&) = 0;
-    virtual bool setlkw(NamedFileDescriptor& fd, Lock&) = 0;
-    virtual bool getlk(NamedFileDescriptor& fd, Lock&) = 0;
+    virtual bool setlk(NamedFileDescriptor& fd, Lock&) const = 0;
+    virtual bool setlkw(NamedFileDescriptor& fd, Lock&) const = 0;
+    virtual bool getlk(NamedFileDescriptor& fd, Lock&) const = 0;
 };
 
 /// Lock Policy that does nothing
 struct NullPolicy : public Policy
 {
-    bool setlk(NamedFileDescriptor& fd, Lock&) override;
-    bool setlkw(NamedFileDescriptor& fd, Lock&) override;
-    bool getlk(NamedFileDescriptor& fd, Lock&) override;
+    bool setlk(NamedFileDescriptor& fd, Lock&) const override;
+    bool setlkw(NamedFileDescriptor& fd, Lock&) const override;
+    bool getlk(NamedFileDescriptor& fd, Lock&) const override;
 };
 
 /// Lock Policy that uses Open File Descriptor locks
 struct OFDPolicy : public Policy
 {
-    bool setlk(NamedFileDescriptor& fd, Lock&) override;
-    bool setlkw(NamedFileDescriptor& fd, Lock&) override;
-    bool getlk(NamedFileDescriptor& fd, Lock&) override;
+    bool setlk(NamedFileDescriptor& fd, Lock&) const override;
+    bool setlkw(NamedFileDescriptor& fd, Lock&) const override;
+    bool getlk(NamedFileDescriptor& fd, Lock&) const override;
 };
 
 

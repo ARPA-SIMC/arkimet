@@ -45,8 +45,7 @@ inline size_t datasize(const Metadata& md)
 std::shared_ptr<segment::dir::Writer> make_w()
 {
     string absname = sys::abspath(relname);
-    std::shared_ptr<core::lock::Policy> lock_policy(new core::lock::OFDPolicy);
-    return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer("grib", sys::getcwd(), relname, absname, lock_policy));
+    return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer("grib", sys::getcwd(), relname, absname, core::lock::policy_ofd));
 }
 
 void Tests::register_tests() {
@@ -152,11 +151,11 @@ add_method("check", [] {
     {
         std::shared_ptr<segment::Writer> make_writer() override
         {
-            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relname, absname, lock_policy));
+            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relname, absname, core::lock::policy_ofd));
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relname, absname, lock_policy));
+            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relname, absname, core::lock::policy_ofd));
         }
     } test;
 
@@ -168,11 +167,11 @@ add_method("remove", [] {
     {
         std::shared_ptr<segment::Writer> make_writer() override
         {
-            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relname, absname, lock_policy));
+            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relname, absname, core::lock::policy_ofd));
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relname, absname, lock_policy));
+            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relname, absname, core::lock::policy_ofd));
         }
     } test;
 

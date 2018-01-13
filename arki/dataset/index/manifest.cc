@@ -44,7 +44,7 @@ namespace arki {
 namespace dataset {
 namespace index {
 
-Manifest::Manifest(const std::string& path, std::shared_ptr<core::lock::Policy> lock_policy) : m_path(path), lock_policy(lock_policy) {}
+Manifest::Manifest(const std::string& path, const core::lock::Policy* lock_policy) : m_path(path), lock_policy(lock_policy) {}
 Manifest::~Manifest() {}
 
 void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
@@ -374,7 +374,7 @@ class PlainManifest : public Manifest
     }
 
 public:
-    PlainManifest(const std::string& dir, std::shared_ptr<core::lock::Policy> lock_policy)
+    PlainManifest(const std::string& dir, const core::lock::Policy* lock_policy)
         : Manifest(dir, lock_policy), last_inode(0), dirty(false), rw(false)
     {
     }
@@ -656,7 +656,7 @@ class SqliteManifest : public Manifest
 
 
 public:
-    SqliteManifest(const std::string& dir, std::shared_ptr<core::lock::Policy> lock_policy)
+    SqliteManifest(const std::string& dir, const core::lock::Policy* lock_policy)
         : Manifest(dir, lock_policy), m_insert(m_db)
     {
     }
@@ -952,7 +952,7 @@ bool Manifest::exists(const std::string& dir)
         manifest::SqliteManifest::exists(dir);
 }
 
-std::unique_ptr<Manifest> Manifest::create(const std::string& dir, std::shared_ptr<core::lock::Policy> lock_policy, const std::string& index_type)
+std::unique_ptr<Manifest> Manifest::create(const std::string& dir, const core::lock::Policy* lock_policy, const std::string& index_type)
 {
     if (index_type.empty())
     {

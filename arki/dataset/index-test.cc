@@ -60,8 +60,7 @@ struct ManifestPlainFixture : ManifestFixture
 {
     std::unique_ptr<Manifest> create() override
     {
-        std::shared_ptr<core::lock::Policy> lock_policy(new core::lock::OFDPolicy);
-        return Manifest::create("testds", lock_policy, "plain");
+        return Manifest::create("testds", core::lock::policy_ofd, "plain");
     }
 };
 
@@ -69,8 +68,7 @@ struct ManifestSqliteFixture : ManifestFixture
 {
     std::unique_ptr<Manifest> create() override
     {
-        std::shared_ptr<core::lock::Policy> lock_policy(new core::lock::OFDPolicy);
-        return Manifest::create("testds", lock_policy, "sqlite");
+        return Manifest::create("testds", core::lock::policy_ofd, "sqlite");
     }
 };
 

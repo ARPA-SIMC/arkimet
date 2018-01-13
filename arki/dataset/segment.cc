@@ -19,7 +19,7 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-Segment::Segment(const std::string& root, const std::string& relname, const std::string& absname, std::shared_ptr<core::lock::Policy> lock_policy)
+Segment::Segment(const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy)
     : root(root), relname(relname), absname(absname), lock_policy(lock_policy)
 {
 }
@@ -62,10 +62,10 @@ namespace {
 
 struct BaseManager : public segment::Manager
 {
-    std::shared_ptr<core::lock::Policy> lock_policy;
+    const core::lock::Policy* lock_policy;
     bool mockdata;
 
-    BaseManager(const std::string& root, std::shared_ptr<core::lock::Policy> lock_policy, bool mockdata=false) : Manager(root), lock_policy(lock_policy), mockdata(mockdata) {}
+    BaseManager(const std::string& root, const core::lock::Policy* lock_policy, bool mockdata=false) : Manager(root), lock_policy(lock_policy), mockdata(mockdata) {}
 
     // Instantiate the right Segment implementation for a segment that already
     // exists. Returns 0 if the segment does not exist.
@@ -213,7 +213,7 @@ struct BaseManager : public segment::Manager
 /// Segment manager that picks the right readers/writers based on file types
 struct AutoManager : public BaseManager
 {
-    AutoManager(const std::string& root, std::shared_ptr<core::lock::Policy> lock_policy, bool mockdata=false)
+    AutoManager(const std::string& root, const core::lock::Policy* lock_policy, bool mockdata=false)
         : BaseManager(root, lock_policy, mockdata) {}
 
     std::shared_ptr<Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname)
@@ -359,7 +359,7 @@ struct AutoManager : public BaseManager
 /// Segment manager that always picks directory segments
 struct ForceDirManager : public BaseManager
 {
-    ForceDirManager(const std::string& root, std::shared_ptr<core::lock::Policy> lock_policy) : BaseManager(root, lock_policy) {}
+    ForceDirManager(const std::string& root, const core::lock::Policy* lock_policy) : BaseManager(root, lock_policy) {}
 
     std::shared_ptr<Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname) override
     {
@@ -427,7 +427,7 @@ struct ForceDirManager : public BaseManager
 /// Segment manager that always uses hole file segments
 struct HoleDirManager : public ForceDirManager
 {
-    HoleDirManager(const std::string& root, std::shared_ptr<core::lock::Policy> lock_policy) : ForceDirManager(root, lock_policy) {}
+    HoleDirManager(const std::string& root, const core::lock::Policy* lock_policy) : ForceDirManager(root, lock_policy) {}
 
     std::shared_ptr<Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname) override
     {
@@ -495,10 +495,10 @@ std::shared_ptr<Checker> Manager::get_checker(const std::string& format, const s
     return create_checker_for_format(format, relname, absname);
 }
 
-std::unique_ptr<Manager> Manager::get(const std::string& root, std::shared_ptr<core::lock::Policy> lock_policy, bool force_dir, bool mock_data)
+std::unique_ptr<Manager> Manager::get(const std::string& root, const core::lock::Policy* lock_policy, bool force_dir, bool mock_data)
 {
     if (!lock_policy)
-        lock_policy = std::shared_ptr<core::lock::Policy>(new core::lock::OFDPolicy);
+        lock_policy = core::lock::policy_ofd;
 
     if (force_dir)
         if (mock_data)

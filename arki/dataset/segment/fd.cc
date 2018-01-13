@@ -86,7 +86,7 @@ struct Append : public Transaction
 }
 
 
-Writer::Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd, std::shared_ptr<core::lock::Policy> lock_policy)
+Writer::Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd, const core::lock::Policy* lock_policy)
     : segment::Writer(root, relname, fd->name(), lock_policy), fd(fd.release())
 {
     // Lock everything after the end of the file, for writing, to disallow

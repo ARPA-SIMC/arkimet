@@ -30,7 +30,7 @@ namespace dataset {
 namespace segment {
 namespace dir {
 
-Writer::Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname, std::shared_ptr<core::lock::Policy> lock_policy)
+Writer::Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy)
     : segment::Writer(root, relname, absname, lock_policy), seqfile(absname, lock_policy), write_lock_file(str::joinpath(absname, ".write-lock")), format(format)
 {
     // Ensure that the directory 'absname' exists
@@ -187,7 +187,7 @@ off_t Writer::link(const std::string& srcabsname)
 }
 
 
-Checker::Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname, std::shared_ptr<core::lock::Policy> lock_policy)
+Checker::Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy)
     : segment::Checker(root, relname, absname, lock_policy), format(format)
 {
 }
@@ -382,9 +382,9 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
         bool fired;
         sys::File repack_lock;
         Lock lock;
-        std::shared_ptr<core::lock::Policy> lock_policy;
+        const core::lock::Policy* lock_policy;
 
-        Rename(const std::string& tmpabsname, const std::string& absname, std::shared_ptr<core::lock::Policy> lock_policy)
+        Rename(const std::string& tmpabsname, const std::string& absname, const core::lock::Policy* lock_policy)
             : tmpabsname(tmpabsname), absname(absname), tmppos(absname + ".pre-repack"), fired(false), repack_lock(str::joinpath(absname, ".repack-lock"), O_RDWR | O_CREAT, 0777), lock_policy(lock_policy)
         {
             lock.l_type = F_WRLCK;

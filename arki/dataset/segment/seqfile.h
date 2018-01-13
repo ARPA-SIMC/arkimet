@@ -12,9 +12,9 @@ struct SequenceFile
 {
     std::string dirname;
     core::File fd;
-    std::shared_ptr<core::lock::Policy> lock_policy;
+    const core::lock::Policy* lock_policy;
 
-    SequenceFile(const std::string& pathname, std::shared_ptr<core::lock::Policy> lock_policy);
+    SequenceFile(const std::string& pathname, const core::lock::Policy* lock_policy);
     ~SequenceFile();
 
     /**

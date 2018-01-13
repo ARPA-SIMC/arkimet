@@ -65,7 +65,7 @@ void File::test_add_padding(size_t size)
 
 
 
-Writer::Writer(const std::string& root, const std::string& relname, const std::string& absname, std::shared_ptr<core::lock::Policy> lock_policy, int mode)
+Writer::Writer(const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy, int mode)
     : fd::Writer(root, relname, unique_ptr<fd::File>(new File(absname, O_WRONLY | O_CREAT | mode, 0666)), lock_policy)
 {
 }
