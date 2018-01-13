@@ -8,7 +8,6 @@
 #include <wreport/bulletin.h>
 #include <wreport/options.h>
 #include "arki/metadata.h"
-#include "arki/reader.h"
 #include "arki/types/source.h"
 #include "arki/types/origin.h"
 #include "arki/types/product.h"
@@ -98,10 +97,9 @@ Bufr::~Bufr()
 #endif
 }
 
-void Bufr::open(const std::string& filename, const std::string& basedir, const std::string& relname)
+void Bufr::open(const std::string& filename, const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy)
 {
-    Scanner::open(filename, basedir, relname);
-    reader = Reader::for_file(filename);
+    Scanner::open(filename, basedir, relname, lock_policy);
     if (filename == "-")
         file = dballe::File::create(dballe::File::BUFR, stdin, false, "standard input").release();
     else

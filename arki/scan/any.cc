@@ -42,6 +42,7 @@ static bool scan_file(
         const std::string& basedir,
         const std::string& relname,
         const std::string& format,
+        const core::lock::Policy* lock_policy,
         metadata_dest_func dest)
 {
     // Scan the file
@@ -60,7 +61,7 @@ static bool scan_file(
         if (st->st_size == 0) return true;
 
         scan::Grib scanner;
-        scanner.open(pathname, basedir, relname);
+        scanner.open(pathname, basedir, relname, lock_policy);
         while (true)
         {
             unique_ptr<Metadata> md(new Metadata);
@@ -77,7 +78,7 @@ static bool scan_file(
         if (st->st_size == 0) return true;
 
         scan::Bufr scanner;
-        scanner.open(pathname, basedir, relname);
+        scanner.open(pathname, basedir, relname, lock_policy);
         while (true)
         {
             unique_ptr<Metadata> md(new Metadata);
@@ -90,7 +91,7 @@ static bool scan_file(
 #ifdef HAVE_HDF5
     if ((format == "h5") || (format == "odim") || (format == "odimh5")) {
         scan::OdimH5 scanner;
-        scanner.open(pathname, basedir, relname);
+        scanner.open(pathname, basedir, relname, lock_policy);
         while (true)
         {
             unique_ptr<Metadata> md(new Metadata);
@@ -107,7 +108,7 @@ static bool scan_file(
         if (st->st_size == 0) return true;
 
         scan::Vm2 scanner;
-        scanner.open(pathname, basedir, relname);
+        scanner.open(pathname, basedir, relname, lock_policy);
         while (true)
         {
             unique_ptr<Metadata> md(new Metadata);
@@ -127,7 +128,7 @@ static bool dir_segment_fnames_lt(const std::string& a, const std::string& b)
     return na < nb;
 }
 
-static bool scan_dir(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, metadata_dest_func dest)
+static bool scan_dir(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, const core::lock::Policy* lock_policy, metadata_dest_func dest)
 {
     // Collect all file names in the directory
     vector<std::string> fnames;
@@ -145,7 +146,7 @@ static bool scan_dir(const std::string& pathname, const std::string& basedir, co
     {
         //cerr << "SCAN " << *i << " " << pathname << " " << basedir << " " << relname << endl;
         pos = strtoul(i->c_str(), 0, 10);
-        if (!scan_file(str::joinpath(pathname, *i), basedir, relname, format, [&](unique_ptr<Metadata> md) {
+        if (!scan_file(str::joinpath(pathname, *i), basedir, relname, format, lock_policy, [&](unique_ptr<Metadata> md) {
                    const source::Blob& i = md->sourceBlob();
                    md->set_source(Source::createBlob(i.format, i.basedir, relname, pos, i.size, i.reader));
                    return dest(move(md));
@@ -181,7 +182,7 @@ bool scan(const std::string& basedir, const std::string& relname, metadata_dest_
     // If we scan standard input, assume uncompressed data and do not try to
     // look for an existing .metadata file
     if (relname == "-")
-        return scan_file(relname, basedir, relname, format, dest);
+        return scan_file(relname, basedir, relname, format, core::lock::policy_ofd, dest);
 
     // stat the file (or its compressed version)
     string pathname = str::joinpath(basedir, relname);
@@ -201,9 +202,9 @@ bool scan(const std::string& basedir, const std::string& relname, metadata_dest_
         scan_metadata(md_pathname, dest);
         return true;
     } else if (S_ISDIR(st_file->st_mode)) {
-        return scan_dir(pathname, basedir, relname, format, dest);
+        return scan_dir(pathname, basedir, relname, format, core::lock::policy_ofd, dest);
     } else {
-        return scan_file(pathname, basedir, relname, format, dest);
+        return scan_file(pathname, basedir, relname, format, core::lock::policy_ofd, dest);
     }
 }
 

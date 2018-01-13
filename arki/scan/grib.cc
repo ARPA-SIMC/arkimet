@@ -3,7 +3,6 @@
 #include <grib_api.h>
 #include "arki/metadata.h"
 #include "arki/types/source.h"
-#include "arki/reader.h"
 #include "arki/exceptions.h"
 #include "arki/runtime/config.h"
 #include "arki/utils/string.h"
@@ -482,12 +481,11 @@ Grib::~Grib()
     if (L) delete L;
 }
 
-void Grib::open(const std::string& filename, const std::string& basedir, const std::string& relname)
+void Grib::open(const std::string& filename, const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy)
 {
-    Scanner::open(filename, basedir, relname);
+    Scanner::open(filename, basedir, relname, lock_policy);
     if (!(in = fopen(filename.c_str(), "rb")))
         throw_file_error(filename, "cannot open file for reading");
-    reader = Reader::for_file(filename);
 }
 
 void Grib::close()

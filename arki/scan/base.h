@@ -1,6 +1,7 @@
 #ifndef ARKI_SCAN_BASE_H
 #define ARKI_SCAN_BASE_H
 
+#include <arki/core/fwd.h>
 #include <string>
 #include <memory>
 
@@ -18,7 +19,7 @@ struct Scanner
 
     virtual ~Scanner();
 
-    virtual void open(const std::string& filename, const std::string& basedir, const std::string& relname);
+    virtual void open(const std::string& filename, const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy);
 
     virtual void close();
 
