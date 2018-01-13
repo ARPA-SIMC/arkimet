@@ -3,7 +3,7 @@
 
 /// Prettyprinter for arkimet types
 
-#include <arki/types.h>
+#include <arki/types/fwd.h>
 #include <string>
 #include <memory>
 

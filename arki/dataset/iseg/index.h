@@ -20,6 +20,7 @@ namespace arki {
 class Metadata;
 class Matcher;
 class ConfigFile;
+class Reader;
 
 namespace dataset {
 struct DataQuery;

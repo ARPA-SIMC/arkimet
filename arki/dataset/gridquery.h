@@ -2,7 +2,6 @@
 #define ARKI_DATASET_GRIDQUERY_H
 
 #include <arki/dataset.h>
-#include <arki/types.h>
 #include <arki/core/time.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>

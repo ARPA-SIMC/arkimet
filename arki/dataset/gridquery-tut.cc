@@ -5,6 +5,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
+#include "arki/types/reftime.h"
 #include "arki/types/origin.h"
 #include "arki/types/product.h"
 #include "arki/scan/grib.h"

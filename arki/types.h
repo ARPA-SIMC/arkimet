@@ -4,6 +4,7 @@
 /// arkimet metadata type system
 #include <arki/defs.h>
 #include <arki/core/fwd.h>
+#include <arki/types/fwd.h>
 #include <string>
 #include <vector>
 #include <memory>
@@ -56,8 +57,6 @@ struct Mapping;
 }
 
 namespace types {
-struct Type;
-typedef TypeCode Code;
 
 // Parse name into a type code, returning TYPE_INVALID if it does not match
 Code checkCodeName(const std::string& name);
@@ -65,13 +64,6 @@ Code checkCodeName(const std::string& name);
 Code parseCodeName(const std::string& name);
 std::string formatCode(const Code& c);
 static inline std::ostream& operator<<(std::ostream& o, const Code& c) { return o << formatCode(c); }
-
-}
-
-namespace types {
-
-template<typename T>
-class traits;
 
 /**
  * Base class for implementing arkimet metadata types

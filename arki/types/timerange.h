@@ -8,16 +8,8 @@
 struct lua_State;
 
 namespace arki {
-
 namespace types {
-struct Timerange;
-
-namespace reftime {
-struct Position;
-}
-
 namespace timerange {
-class Timedef;
 
 enum GRIB1Unit {
     SECOND = 0,
@@ -323,9 +315,6 @@ public:
 };
 
 }
-
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

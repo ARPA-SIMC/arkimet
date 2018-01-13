@@ -132,6 +132,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		targetfile.h \
 		tests/tests.h \
 		transaction.h \
+		types/fwd.h \
 		types/area.h \
 		types/assigneddataset.h \
 		types/bbox.h \

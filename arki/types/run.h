@@ -8,17 +8,15 @@ struct lua_State;
 namespace arki {
 namespace types {
 
-struct Run;
-
 template<>
 struct traits<Run>
 {
-	static const char* type_tag;
-	static const types::Code type_code;
-	static const size_t type_sersize_bytes;
-	static const char* type_lua_tag;
+    static const char* type_tag;
+    static const types::Code type_code;
+    static const size_t type_sersize_bytes;
+    static const char* type_lua_tag;
 
-	typedef unsigned char Style;
+    typedef unsigned char Style;
 };
 
 /**
@@ -77,7 +75,6 @@ public:
 };
 
 }
-
 }
 }
 #endif

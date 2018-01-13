@@ -2,6 +2,7 @@
 #include "config.h"
 #include <arki/utils/commandline/parser.h>
 #include <arki/exceptions.h>
+#include <arki/types/source.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/matcher.h>

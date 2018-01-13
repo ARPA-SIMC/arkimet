@@ -3,7 +3,7 @@
 
 #include <arki/metadata/tests.h>
 #include <arki/configfile.h>
-#include <arki/types.h>
+#include <arki/types/fwd.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/metadata/collection.h>

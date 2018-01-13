@@ -1,11 +1,11 @@
 #ifndef ARKI_SUMMARY_H
 #define ARKI_SUMMARY_H
 
-#include <arki/types.h>
-#include <arki/types/reftime.h>
+#include <arki/core/fwd.h>
+#include <arki/types/fwd.h>
 #include <arki/itemset.h>
 #include <arki/utils/geosfwd.h>
-#include <arki/core/fwd.h>
+#include <vector>
 #include <map>
 #include <set>
 #include <string>
@@ -18,6 +18,14 @@ namespace arki {
 class Metadata;
 class Matcher;
 class Formatter;
+class BinaryDecoder;
+class Emitter;
+
+namespace emitter {
+namespace memory {
+class Mapping;
+}
+}
 
 namespace summary {
 struct Table;

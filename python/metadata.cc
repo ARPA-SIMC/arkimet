@@ -3,6 +3,7 @@
 #include "common.h"
 #include "arki/metadata.h"
 #include "arki/core/file.h"
+#include "arki/types/source.h"
 #include "config.h"
 
 using namespace std;

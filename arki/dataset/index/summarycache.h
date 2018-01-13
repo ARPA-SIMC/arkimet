@@ -3,7 +3,6 @@
 
 /// dataset/index/summarycache - Cache precomputed summaries
 
-#include <arki/types.h>
 #include <arki/core/time.h>
 #include <string>
 

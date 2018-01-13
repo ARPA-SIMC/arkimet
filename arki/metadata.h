@@ -5,21 +5,13 @@
 
 #include <arki/core/fwd.h>
 #include <arki/itemset.h>
-#include <arki/types.h>
+#include <arki/types/fwd.h>
 #include <arki/types/note.h>
-#include <arki/types/source.h>
 #include <string>
 
 struct lua_State;
 
 namespace arki {
-
-namespace types {
-namespace source {
-struct Blob;
-}
-}
-
 namespace reader {
 struct Reader;
 }

@@ -2,6 +2,7 @@
 #include "grib.h"
 #include <grib_api.h>
 #include "arki/metadata.h"
+#include "arki/types/source.h"
 #include "arki/reader.h"
 #include "arki/exceptions.h"
 #include "arki/runtime/config.h"

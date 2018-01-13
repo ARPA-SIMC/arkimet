@@ -1,9 +1,10 @@
-#include <arki/metadata/tests.h>
-#include <arki/metadata/collection.h>
-#include <arki/types/value.h>
-#include <arki/scan/vm2.h>
-#include <arki/scan/any.h>
-#include <arki/utils/sys.h>
+#include "arki/metadata/tests.h"
+#include "arki/metadata/collection.h"
+#include "arki/types/source.h"
+#include "arki/types/value.h"
+#include "arki/scan/vm2.h"
+#include "arki/scan/any.h"
+#include "arki/utils/sys.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

@@ -15,8 +15,6 @@ struct Reader;
 
 namespace types {
 
-struct Source;
-
 template<>
 struct traits<Source>
 {

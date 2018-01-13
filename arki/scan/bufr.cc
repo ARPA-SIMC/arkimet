@@ -9,6 +9,7 @@
 #include <wreport/options.h>
 #include "arki/metadata.h"
 #include "arki/reader.h"
+#include "arki/types/source.h"
 #include "arki/types/origin.h"
 #include "arki/types/product.h"
 #include "arki/types/reftime.h"

@@ -1,5 +1,6 @@
 #include "clusterer.h"
 #include <arki/metadata.h>
+#include <arki/types/source.h>
 #include <arki/types/reftime.h>
 #include <cstring>
 

@@ -24,17 +24,13 @@
  */
 
 #include <arki/types.h>
-
 #include <set>
 #include <string>
-
 
 struct lua_State;
 
 namespace arki {
 namespace types {
-
-struct Quantity;
 
 template<> struct traits<Quantity>
 {
