@@ -190,7 +190,8 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
     {
         metadata::Collection mdc = f.query(Matcher::parse("origin:GRIB1,200"));
         wassert(actual(mdc.size()) == 1u);
-        mdc.compressDataFile(1024, "metadata file testds/2007/07-08.grib");
+        string dest = mdc.ensureContiguousData("metadata file testds/2007/07-08.grib");
+        scan::compress(dest, 1024);
         sys::unlink_ifexists("testds/2007/07-08.grib");
     }
 

@@ -216,7 +216,8 @@ add_method("scan_compressed", [](Fixture& f) {
             metadata::Collection mdc;
             mdc.read_from_file("testds/2007/07-08.grib.metadata");
             ensure_equals(mdc.size(), 1u);
-            mdc.compressDataFile(1024, "metadata file testds/2007/07-08.grib.metadata");
+            string dest = mdc.ensureContiguousData("metadata file testds/2007/07-08.grib.metadata");
+            scan::compress(dest, 1024);
             sys::unlink_ifexists("testds/2007/07-08.grib");
 
             ensure(!sys::exists("testds/2007/07-08.grib"));

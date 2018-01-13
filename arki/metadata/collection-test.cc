@@ -31,9 +31,9 @@ void Tests::register_tests() {
 
 // Test compression
 add_method("compression", [] {
-    metadata::Collection c;
-
-#ifdef HAVE_DBALLE
+#ifndef HAVE_DBALLE
+    throw TestSkipped();
+#else
     static const int repeats = 1024;
 
     // Create a test file with `repeats` BUFR entries
@@ -41,17 +41,17 @@ add_method("compression", [] {
     wassert(actual(bufr.size()) > 0u);
     bufr = bufr.substr(0, 194);
 
-    sys::File tf(sys::File::mkstemp("test"));
+    sys::File tf("compressed.bufr", O_WRONLY|O_CREAT|O_TRUNC);
     for (int i = 0; i < repeats; ++i)
         tf.write(bufr.data(), bufr.size());
     tf.close();
 
     // Create metadata for the big BUFR file
-    scan::scan(tf.name(), c.inserter_func(), "bufr");
+    metadata::Collection c(tf.name());
     wassert(actual(c.size()) == (size_t)repeats);
 
     // Compress the data file
-    c.compressDataFile(127, "temp BUFR " + tf.name());
+    wassert(scan::compress(tf.name(), 127));
     // Remove the original file
     sys::unlink(tf.name());
     for (auto& i: c)
@@ -125,8 +125,10 @@ add_method("compression", [] {
 
 // Test compression when the data don't compress
 add_method("uncompressible", [] {
+#ifndef HAVE_DBALLE
+    throw TestSkipped();
+#else
     metadata::Collection c;
-#ifdef HAVE_DBALLE
     // Create a collector with only one small metadata inside
     scan::scan("inbound/test.bufr", c.inserter_func());
     wassert(actual(c.size()) == 3u);

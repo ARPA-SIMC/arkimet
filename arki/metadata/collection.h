@@ -130,12 +130,6 @@ public:
 	 */
 	std::string ensureContiguousData(const std::string& source = std::string("metadata")) const;
 
-	/**
-	 * If all the metadata here entirely cover a single data file, replace
-	 * it with a compressed version
-	 */
-	void compressDataFile(size_t groupsize = 512, const std::string& source = std::string("metadata"));
-
 	/// Sort with the given order
 	void sort(const sort::Compare& cmp);
 	void sort(const std::string& cmp);

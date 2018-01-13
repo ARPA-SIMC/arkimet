@@ -260,28 +260,6 @@ std::string Collection::ensureContiguousData(const std::string& source) const
     return fname;
 }
 
-void Collection::compressDataFile(size_t groupsize, const std::string& source)
-{
-	string datafile = ensureContiguousData(source);
-
-    utils::compress::DataCompressor compressor(datafile, groupsize);
-    for (const_iterator i = vals.begin(); i != vals.end(); ++i)
-    {
-        (*i)->sourceBlob().lock();
-        compressor.add((*i)->getData());
-    }
-    compressor.flush();
-
-    // Set the same timestamp as the uncompressed file
-    std::unique_ptr<struct stat> st = sys::stat(datafile);
-    struct utimbuf times;
-    times.actime = st->st_atime;
-    times.modtime = st->st_mtime;
-    utime((datafile + ".gz").c_str(), &times);
-    utime((datafile + ".gz.idx").c_str(), &times);
-    // TODO: delete uncompressed version
-}
-
 void Collection::add_to_summary(Summary& out) const
 {
     for (const_iterator i = vals.begin(); i != vals.end(); ++i)

@@ -56,12 +56,8 @@ add_method("uncompressed_idx", [] {
     sys::unlink_ifexists("testcompr.grib1");
     sys::unlink_ifexists("testcompr.grib1.gz");
     ensure(system("cp inbound/test.grib1 testcompr.grib1") == 0);
-
-    metadata::Collection mdc;
-    scan::scan("testcompr.grib1", mdc.inserter_func());
-    mdc.compressDataFile(2, "testcompr.grib1");
+    scan::compress("testcompr.grib1", 2);
     sys::unlink_ifexists("testcompr.grib1");
-
     wassert(test_read("testcompr.grib1"));
 });
 

@@ -254,7 +254,8 @@ add_method("acquire_compressed", [](Fixture& f) {
     {
         metadata::Collection c = f.query(Matcher());
         wassert(actual(c.size()) == 1u);
-        c.compressDataFile(1024, "metadata file testds/20/2007.grib");
+        string dest = c.ensureContiguousData("metadata file testds/20/2007.grib");
+        scan::compress(dest, 1024);
         sys::unlink_ifexists("testds/20/2007.grib");
     }
     wassert(actual_file("testds/20/2007.grib").not_exists());
