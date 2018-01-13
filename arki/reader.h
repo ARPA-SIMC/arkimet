@@ -25,22 +25,7 @@ public:
     virtual std::vector<uint8_t> read(const types::source::Blob& src) = 0;
     virtual size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) = 0;
 
-    static std::shared_ptr<Reader> for_missing(const std::string& abspath);
-    static std::shared_ptr<Reader> for_file(const std::string& abspath);
-    static std::shared_ptr<Reader> for_dir(const std::string& abspath);
-    static std::shared_ptr<Reader> for_auto(const std::string& abspath);
     static std::shared_ptr<Reader> create_new(const std::string& abspath, const core::lock::Policy* lock_policy);
-
-    /**
-     * Empty the reader caches, used after a segment gets repacked, to prevent
-     * reading an old segment using new offsets
-     */
-    static void reset();
-
-    /**
-     * Count the number of cached readers
-     */
-    static unsigned test_count_cached();
 };
 
 }

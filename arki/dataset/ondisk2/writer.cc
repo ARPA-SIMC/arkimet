@@ -387,9 +387,6 @@ public:
                 throw std::system_error(errno, std::system_category(), ss.str());
             }
 
-        // Prevent reading the still open old file using the new offsets
-        Metadata::flushDataReaders();
-
         // Commit the changes in the file system
         p_repack.commit();
 

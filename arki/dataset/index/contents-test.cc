@@ -2,6 +2,7 @@
 #include "arki/exceptions.h"
 #include "arki/dataset.h"
 #include "arki/dataset/index/contents.h"
+#include "arki/reader.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
@@ -514,7 +515,7 @@ add_method("smallfiles", [] {
 
         // I/O should happen here
         mdc[0].drop_cached_data();
-        mdc[0].sourceBlob().lock();
+        mdc[0].sourceBlob().lock(Reader::create_new("inbound/test.vm2", core::lock::policy_null));
         const auto& buf = mdc[0].getData();
         wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
         wassert(actual(collector.events.size()) == 1u);

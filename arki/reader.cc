@@ -1,5 +1,4 @@
 #include "reader.h"
-#include "reader/registry.h"
 #include "arki/core/file.h"
 #include "arki/utils.h"
 #include "arki/utils/accounting.h"
@@ -407,58 +406,6 @@ public:
 }
 
 
-namespace {
-
-reader::Registry<reader::FileReader> registry_file;
-reader::Registry<reader::DirReader> registry_dir;
-reader::Registry<reader::ZlibFileReader> registry_zlib;
-reader::Registry<reader::IdxZlibFileReader> registry_idxzlib;
-
-}
-
-
-void Reader::reset()
-{
-    registry_file.clear();
-    registry_dir.clear();
-    registry_zlib.clear();
-    registry_idxzlib.clear();
-}
-
-std::shared_ptr<Reader> Reader::for_missing(const std::string& abspath)
-{
-    return make_shared<reader::MissingFileReader>(abspath);
-}
-
-std::shared_ptr<Reader> Reader::for_file(const std::string& abspath)
-{
-    return registry_file.reader(abspath);
-}
-
-std::shared_ptr<Reader> Reader::for_dir(const std::string& abspath)
-{
-    return registry_dir.reader(abspath);
-}
-
-std::shared_ptr<Reader> Reader::for_auto(const std::string& abspath)
-{
-    // Open the new file
-    std::unique_ptr<struct stat> st = sys::stat(abspath);
-    if (st.get())
-    {
-        if (S_ISDIR(st->st_mode))
-            return for_dir(abspath);
-        else
-            return for_file(abspath);
-    }
-    else if (sys::exists(abspath + ".gz.idx"))
-        return registry_idxzlib.reader(abspath);
-    else if (sys::exists(abspath + ".gz"))
-        return registry_zlib.reader(abspath);
-    else
-        return for_missing(abspath);
-}
-
 std::shared_ptr<Reader> Reader::create_new(const std::string& abspath, const core::lock::Policy* lock_policy)
 {
     // Open the new file
@@ -476,20 +423,6 @@ std::shared_ptr<Reader> Reader::create_new(const std::string& abspath, const cor
         return std::make_shared<reader::ZlibFileReader>(abspath, lock_policy);
     else
         return make_shared<reader::MissingFileReader>(abspath);
-}
-
-unsigned Reader::test_count_cached()
-{
-    registry_file.cleanup();
-    registry_dir.cleanup();
-    registry_zlib.cleanup();
-    registry_idxzlib.cleanup();
-    unsigned size = 0;
-    size += registry_file.test_inspect_cache().size();
-    size += registry_dir.test_inspect_cache().size();
-    size += registry_zlib.test_inspect_cache().size();
-    size += registry_idxzlib.test_inspect_cache().size();
-    return size;
 }
 
 }

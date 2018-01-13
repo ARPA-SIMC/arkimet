@@ -327,9 +327,6 @@ public:
         // Strip paths from mds sources
         mds.strip_source_paths();
 
-        // Prevent reading the still open old file using the new offsets
-        Metadata::flushDataReaders();
-
         // Remove existing cached metadata, since we scramble their order
         sys::unlink_ifexists(segment->absname + ".metadata");
         sys::unlink_ifexists(segment->absname + ".summary");

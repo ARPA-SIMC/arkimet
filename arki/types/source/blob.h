@@ -83,11 +83,6 @@ struct Blob : public Source
     /**
      * Make sure this blob has a reader that keeps a read lock on the source file
      */
-    void lock();
-
-    /**
-     * Make sure this blob has a reader that keeps a read lock on the source file
-     */
     void lock(std::shared_ptr<Reader> reader);
 
     /**
@@ -121,7 +116,6 @@ struct Blob : public Source
     size_t stream_data(core::NamedFileDescriptor& out) const;
 
     static std::unique_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<Reader> reader);
-    static std::unique_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Blob> create_unlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Blob> decodeMapping(const emitter::memory::Mapping& val);
 };

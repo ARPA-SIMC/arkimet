@@ -111,13 +111,6 @@ std::unique_ptr<Blob> Blob::create(const std::string& format, const std::string&
     return res;
 }
 
-std::unique_ptr<Blob> Blob::create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
-{
-    auto res = create_unlocked(format, basedir, filename, offset, size);
-    res->lock();
-    return res;
-}
-
 std::unique_ptr<Blob> Blob::create_unlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
 {
     unique_ptr<Blob> res(new Blob);
@@ -169,12 +162,6 @@ std::string Blob::absolutePathname() const
 void Blob::lock(std::shared_ptr<Reader> reader)
 {
     this->reader = reader;
-}
-
-void Blob::lock()
-{
-    if (reader) return;
-    this->reader = Reader::for_auto(absolutePathname());
 }
 
 void Blob::unlock()

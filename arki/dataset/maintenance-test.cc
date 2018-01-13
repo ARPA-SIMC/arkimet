@@ -6,7 +6,6 @@
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/time.h"
 #include "arki/reader.h"
-#include "arki/reader/registry.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
@@ -812,16 +811,6 @@ void MaintenanceTest::register_tests()
         }
         wassert(f.all_clean(2));
         wassert(f.query_results({1, 3, 0, 2}));
-    });
-
-    add_method("leaks_repack", [&](Fixture& f) {
-        // Repack a segment and check that it doesn't cause a file to stay open
-        // in the reader registry
-        auto checker = f.makeSegmentedChecker();
-
-        unsigned orig = arki::Reader::test_count_cached();
-        checker->segment(f.test_relpath)->repack();
-        wassert(actual(arki::Reader::test_count_cached()) == orig);
     });
 }
 

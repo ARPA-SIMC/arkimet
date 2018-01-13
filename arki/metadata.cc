@@ -672,11 +672,6 @@ size_t Metadata::data_size() const
     }
 }
 
-void Metadata::flushDataReaders()
-{
-    Reader::reset();
-}
-
 bool Metadata::read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& file, metadata_dest_func dest)
 {
     BinaryDecoder dec(buf);

@@ -1,17 +1,17 @@
-#include <arki/libconfig.h>
-#include <arki/types/tests.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/utils.h>
-#include <arki/utils/accounting.h>
-#include <arki/utils/sys.h>
-#include <arki/types/source.h>
-#include <arki/types/source/blob.h>
-#include <arki/summary.h>
-#include <arki/scan/any.h>
-#include <arki/runtime/io.h>
+#include "arki/libconfig.h"
+#include "arki/types/tests.h"
+#include "arki/reader.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/utils.h"
+#include "arki/utils/accounting.h"
+#include "arki/utils/sys.h"
+#include "arki/types/source.h"
+#include "arki/types/source/blob.h"
+#include "arki/summary.h"
+#include "arki/scan/any.h"
+#include "arki/runtime/io.h"
 #include <cstring>
-
 #include <sstream>
 #include <iostream>
 
@@ -59,15 +59,15 @@ add_method("compression", [] {
         i->drop_cached_data();
         i->sourceBlob().unlock();
     }
-    Metadata::flushDataReaders();
 
     // Ensure that all data can still be read
     utils::acct::gzip_data_read_count.reset();
     utils::acct::gzip_forward_seek_bytes.reset();
     utils::acct::gzip_idx_reposition_count.reset();
+    auto reader = Reader::create_new(tf.name(), core::lock::policy_null);
     for (int i = 0; i < repeats; ++i)
     {
-        c[i].sourceBlob().lock();
+        c[i].sourceBlob().lock(reader);
         const auto& b = c[i].getData();
         wassert(actual(b.size()) == bufr.size());
         wassert(actual(memcmp(b.data(), bufr.data(), bufr.size())) == 0);
@@ -82,15 +82,15 @@ add_method("compression", [] {
         i->drop_cached_data();
         i->sourceBlob().unlock();
     }
-    Metadata::flushDataReaders();
 
     // Try to read backwards to avoid sequential reads
     utils::acct::gzip_data_read_count.reset();
     utils::acct::gzip_forward_seek_bytes.reset();
     utils::acct::gzip_idx_reposition_count.reset();
+    reader = Reader::create_new(tf.name(), core::lock::policy_null);
     for (int i = repeats-1; i >= 0; --i)
     {
-        c[i].sourceBlob().lock();
+        c[i].sourceBlob().lock(reader);
         const auto& b = c[i].getData();
         ensure_equals(b.size(), bufr.size());
         ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
@@ -104,15 +104,15 @@ add_method("compression", [] {
         i->drop_cached_data();
         i->sourceBlob().unlock();
     }
-    Metadata::flushDataReaders();
 
     // Read each other one
     utils::acct::gzip_data_read_count.reset();
     utils::acct::gzip_forward_seek_bytes.reset();
     utils::acct::gzip_idx_reposition_count.reset();
+    reader = Reader::create_new(tf.name(), core::lock::policy_null);
     for (int i = 0; i < repeats; i += 2)
     {
-        c[i].sourceBlob().lock();
+        c[i].sourceBlob().lock(reader);
         const auto& b = c[i].getData();
         ensure_equals(b.size(), bufr.size());
         ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
