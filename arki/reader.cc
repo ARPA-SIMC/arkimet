@@ -56,14 +56,15 @@ struct FileReader : public Reader
 {
 public:
     sys::File fd;
+    std::shared_ptr<core::lock::Policy> lock_policy;
     Lock lock;
 
-    FileReader(const std::string& fname)
+    FileReader(const std::string& fname, std::shared_ptr<core::lock::Policy> lock_policy)
         : fd(fname, O_RDONLY
 #ifdef linux
                 | O_CLOEXEC
 #endif
-            )
+            ), lock_policy(lock_policy)
     {
         // Lock one byte at the beginning of the file, to prevent a repack but
         // allow appends: there are no functions in arkimet that would rewrite
@@ -72,7 +73,7 @@ public:
         lock.l_whence = SEEK_SET;
         lock.l_start = 0;
         lock.l_len = 1;
-        lock.ofd_setlkw(fd);
+        lock_policy->setlkw(fd, lock);
     }
 
     ~FileReader()
@@ -80,7 +81,7 @@ public:
         // TODO: consider a non-throwing setlk implementation to avoid throwing
         // in destructors
         lock.l_type = F_UNLCK;
-        lock.ofd_setlk(fd);
+        lock_policy->setlk(fd, lock);
     }
 
 
@@ -155,10 +156,12 @@ public:
     std::string format;
     sys::Path dirfd;
     sys::File repack_lock;
+    std::shared_ptr<core::lock::Policy> lock_policy;
     Lock lock;
 
-    DirReader(const std::string& fname)
-        : dirfd(fname, O_DIRECTORY), repack_lock(dirfd.openat(".repack-lock", O_RDONLY | O_CREAT, 0777), str::joinpath(fname, ".repack-lock"))
+    DirReader(const std::string& fname, std::shared_ptr<core::lock::Policy> lock_policy)
+        : dirfd(fname, O_DIRECTORY), repack_lock(dirfd.openat(".repack-lock", O_RDONLY | O_CREAT, 0777), str::joinpath(fname, ".repack-lock")),
+          lock_policy(lock_policy)
     {
         size_t pos;
         if ((pos = fname.rfind('.')) != std::string::npos)
@@ -171,13 +174,13 @@ public:
         lock.l_whence = SEEK_SET;
         lock.l_start = 0;
         lock.l_len = 0;
-        lock.ofd_setlkw(repack_lock);
+        lock_policy->setlkw(repack_lock, lock);
     }
 
     ~DirReader()
     {
         lock.l_type = F_UNLCK;
-        lock.ofd_setlk(repack_lock);
+        lock_policy->setlk(repack_lock, lock);
     }
 
     sys::File open_src(const types::source::Blob& src)
@@ -264,7 +267,7 @@ public:
     gzip::File fd;
     uint64_t last_ofs = 0;
 
-    ZlibFileReader(const std::string& fname)
+    ZlibFileReader(const std::string& fname, std::shared_ptr<core::lock::Policy> lock_policy)
         : fname(fname), fd(fname + ".gz", "rb")
     {
     }
@@ -323,7 +326,7 @@ public:
     gzip::File gzfd;
     uint64_t last_ofs = 0;
 
-    IdxZlibFileReader(const std::string& fname)
+    IdxZlibFileReader(const std::string& fname, std::shared_ptr<core::lock::Policy> lock_policy)
         : fname(fname), fd(fname + ".gz", O_RDONLY), gzfd(fd.name())
     {
         // Read index
@@ -463,14 +466,14 @@ std::shared_ptr<Reader> Reader::create_new(const std::string& abspath, std::shar
     if (st.get())
     {
         if (S_ISDIR(st->st_mode))
-            return std::make_shared<reader::DirReader>(abspath);
+            return std::make_shared<reader::DirReader>(abspath, lock_policy);
         else
-            return std::make_shared<reader::FileReader>(abspath);
+            return std::make_shared<reader::FileReader>(abspath, lock_policy);
     }
     else if (sys::exists(abspath + ".gz.idx"))
-        return std::make_shared<reader::IdxZlibFileReader>(abspath);
+        return std::make_shared<reader::IdxZlibFileReader>(abspath, lock_policy);
     else if (sys::exists(abspath + ".gz"))
-        return std::make_shared<reader::ZlibFileReader>(abspath);
+        return std::make_shared<reader::ZlibFileReader>(abspath, lock_policy);
     else
         return make_shared<reader::MissingFileReader>(abspath);
 }

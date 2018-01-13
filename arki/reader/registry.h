@@ -1,6 +1,7 @@
 #ifndef ARKI_READER_REGISTRY_H
 #define ARKI_READER_REGISTRY_H
 
+#include <arki/core/file.h>
 #include <string>
 #include <memory>
 #include <unordered_map>
@@ -20,7 +21,8 @@ protected:
 
     std::shared_ptr<Reader> instantiate(const std::string& abspath)
     {
-        return std::make_shared<READER>(abspath);
+        std::shared_ptr<core::lock::Policy> lock_policy(new core::lock::OFDPolicy);
+        return std::make_shared<READER>(abspath, lock_policy);
     }
 
 public:
