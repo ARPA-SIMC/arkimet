@@ -79,6 +79,17 @@ struct LineReader
 };
 
 
+struct Lock
+{
+    Lock() = default;
+    Lock(const Lock&) = delete;
+    Lock(Lock&&) = delete;
+    Lock& operator=(const Lock&) = delete;
+    Lock&& operator=(Lock&&) = delete;
+    virtual ~Lock();
+};
+
+
 /**
  * Wrap a struct flock, calling the corresponding FileDescriptor locking
  * operations on it.

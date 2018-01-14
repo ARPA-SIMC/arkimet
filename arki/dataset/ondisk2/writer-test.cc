@@ -9,6 +9,7 @@
 #include "arki/scan/grib.h"
 #include "arki/scan/bufr.h"
 #include "arki/scan/any.h"
+#include "arki/core/file.h"
 #include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"

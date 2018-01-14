@@ -112,6 +112,8 @@ static unsigned count_ofd_getlk = 0;
 
 }
 
+Lock::~Lock() {}
+
 
 FLock::FLock()
 {

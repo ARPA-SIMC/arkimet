@@ -15,10 +15,9 @@ namespace core {
 using arki::utils::sys::NamedFileDescriptor;
 using arki::utils::sys::File;
 struct LineReader;
+struct Lock;
 namespace lock {
 struct Policy;
-struct NullPolicy;
-struct OFDPolicy;
 extern const Policy* policy_null;
 extern const Policy* policy_ofd;
 }

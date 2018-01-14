@@ -4,7 +4,7 @@
 /// dataset/local - Base class for local datasets
 
 #include <arki/dataset.h>
-#include <arki/core/file.h>
+#include <arki/core/fwd.h>
 #include <string>
 
 namespace arki {
@@ -44,6 +44,11 @@ public:
     std::pair<bool, Writer::AcquireResult> check_acquire_age(Metadata& md) const;
 
     std::shared_ptr<ArchivesConfig> archives_config() const;
+
+    /**
+     * Create/open a dataset-wide lockfile, returning the Lock instance
+     */
+    std::shared_ptr<core::Lock> lock_dataset(bool write=true) const;
 };
 
 template<typename Parent, typename Archives>
@@ -84,21 +89,6 @@ public:
     void query_summary(const Matcher& matcher, Summary& summary) override;
 
     static void readConfig(const std::string& path, ConfigFile& cfg);
-};
-
-struct LocalLock
-{
-    arki::core::File lockfile;
-    arki::core::FLock ds_lock;
-    bool locked = false;
-    bool write;
-    const core::lock::Policy* lock_policy;
-
-    LocalLock(const LocalConfig& config, bool write=true);
-    ~LocalLock();
-
-    void acquire();
-    void release();
 };
 
 class LocalWriter : public Writer

@@ -68,6 +68,39 @@ std::shared_ptr<ArchivesConfig> LocalConfig::archives_config() const
     return m_archives_config;
 }
 
+namespace {
+
+struct LocalLock : public core::Lock
+{
+    arki::core::File lockfile;
+    const core::lock::Policy* lock_policy;
+    arki::core::FLock ds_lock;
+
+    LocalLock(const LocalConfig& config, bool write=true)
+        : lockfile(str::joinpath(config.path, "lock"), O_RDWR | O_CREAT, 0777), lock_policy(config.lock_policy)
+    {
+        ds_lock.l_type = write ? F_WRLCK : F_RDLCK;
+        ds_lock.l_whence = SEEK_SET;
+        ds_lock.l_start = 0;
+        ds_lock.l_len = 0;
+        ds_lock.l_pid = 0;
+        // Use SETLKW, so that if it is already locked, we just wait
+        lock_policy->setlkw(lockfile, ds_lock);
+    }
+    ~LocalLock()
+    {
+        ds_lock.l_type = F_UNLCK;
+        lock_policy->setlk(lockfile, ds_lock);
+    }
+};
+
+}
+
+std::shared_ptr<core::Lock> LocalConfig::lock_dataset(bool write) const
+{
+    return std::shared_ptr<core::Lock>(new LocalLock(*this, write));
+}
+
 
 template<typename Parent, typename Archive>
 LocalBase<Parent, Archive>::~LocalBase()
@@ -154,38 +187,6 @@ void LocalReader::readConfig(const std::string& path, ConfigFile& cfg)
         // Parse the config file
         cfg.parse(in);
     }
-}
-
-LocalLock::LocalLock(const LocalConfig& config, bool write)
-    : lockfile(str::joinpath(config.path, "lock")), write(write), lock_policy(config.lock_policy)
-{
-}
-
-LocalLock::~LocalLock()
-{
-    release();
-}
-
-void LocalLock::acquire()
-{
-    if (locked) return;
-    if (!lockfile.is_open()) lockfile.open(O_RDWR | O_CREAT, 0777);
-    ds_lock.l_type = write ? F_WRLCK : F_RDLCK;
-    ds_lock.l_whence = SEEK_SET;
-    ds_lock.l_start = 0;
-    ds_lock.l_len = 0;
-    ds_lock.l_pid = 0;
-    // Use SETLKW, so that if it is already locked, we just wait
-    lock_policy->setlkw(lockfile, ds_lock);
-    locked = true;
-}
-
-void LocalLock::release()
-{
-    if (!locked) return;
-    ds_lock.l_type = F_UNLCK;
-    lock_policy->setlk(lockfile, ds_lock);
-    locked = false;
 }
 
 

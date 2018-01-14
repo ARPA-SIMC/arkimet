@@ -4,6 +4,7 @@
 #include "index/manifest.h"
 #include "ondisk2/index.h"
 #include "arki/summary.h"
+#include "arki/utils/sys.h"
 
 using namespace std;
 using namespace arki;

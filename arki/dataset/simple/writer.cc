@@ -40,7 +40,7 @@ Writer::Writer(std::shared_ptr<const simple::Config> config)
     // Create the directory if it does not exist
     sys::makedirs(config->path);
 
-    acquire_lock();
+    lock = config->lock_dataset(true);
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
@@ -52,28 +52,15 @@ Writer::Writer(std::shared_ptr<const simple::Config> config)
     m_mft->openRW();
     m_idx = m_mft;
 
-    release_lock();
+    lock.reset();
 }
 
 Writer::~Writer()
 {
     flush();
-    delete lock;
 }
 
 std::string Writer::type() const { return "simple"; }
-
-void Writer::acquire_lock()
-{
-    if (!lock) lock = new LocalLock(config());
-    lock->acquire();
-}
-
-void Writer::release_lock()
-{
-    if (!lock) return;
-    lock->release();
-}
 
 std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
 {
@@ -88,7 +75,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
-    acquire_lock();
+    if (!lock) lock = config().lock_dataset();
     // TODO: refuse if md is before "archive age"
     auto writer = file(md, md.source().format);
     datafile::MdBuf* mdbuf = static_cast<datafile::MdBuf*>(writer->payload);
@@ -125,7 +112,7 @@ void Writer::flush()
 {
     segmented::Writer::flush();
     m_mft->flush();
-    release_lock();
+    lock.reset();
 }
 
 Pending Writer::test_writelock()
@@ -370,7 +357,7 @@ Checker::Checker(std::shared_ptr<const simple::Config> config)
     // Create the directory if it does not exist
     sys::makedirs(config->path);
 
-    acquire_lock();
+    auto lock = config->lock_dataset(false);
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
@@ -381,58 +368,47 @@ Checker::Checker(std::shared_ptr<const simple::Config> config)
     m_mft = mft.release();
     m_mft->openRW();
     m_idx = m_mft;
-
-    release_lock();
 }
 
 Checker::~Checker()
 {
     m_mft->flush();
-    delete lock;
 }
 
 std::string Checker::type() const { return "simple"; }
 
-void Checker::acquire_lock()
+void Checker::remove_all(dataset::Reporter& reporter, bool writable)
 {
-    if (!lock) lock = new LocalLock(config(), false);
-    lock->acquire();
+    auto lock = config().lock_dataset(false);
+    IndexedChecker::remove_all(reporter, writable);
 }
-
-void Checker::release_lock()
+void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable)
 {
-    if (!lock) return;
-    lock->release();
+    auto lock = config().lock_dataset(false);
+    IndexedChecker::remove_all_filtered(matcher, reporter, writable);
 }
-
-void Checker::remove_all(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::remove_all(reporter, writable); release_lock(); }
-void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::remove_all_filtered(matcher, reporter, writable); release_lock(); }
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
-    acquire_lock();
+    auto lock = config().lock_dataset(false);
     IndexedChecker::repack(reporter, writable, test_flags);
     m_mft->flush();
-    release_lock();
 }
 void Checker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
-    acquire_lock();
+    auto lock = config().lock_dataset(false);
     IndexedChecker::repack_filtered(matcher, reporter, writable, test_flags);
     m_mft->flush();
-    release_lock();
 }
 void Checker::check(dataset::Reporter& reporter, bool fix, bool quick) {
-    acquire_lock();
+    auto lock = config().lock_dataset(false);
     IndexedChecker::check(reporter, fix, quick);
     m_mft->flush();
-    release_lock();
 }
 void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
 {
-    acquire_lock();
+    auto lock = config().lock_dataset(false);
     IndexedChecker::check_filtered(matcher, reporter, fix, quick);
     m_mft->flush();
-    release_lock();
 }
 
 std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
