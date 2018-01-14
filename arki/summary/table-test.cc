@@ -1,17 +1,14 @@
-#include <arki/types/tests.h>
-#include <arki/metadata.h>
-#include <arki/metadata/consumer.h>
-#include <arki/metadata/test-generator.h>
+#include "arki/types/tests.h"
+#include "arki/metadata.h"
+#include "arki/metadata/test-generator.h"
 #include "table.h"
 
-namespace tut {
+namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
+using namespace arki::tests;
 using namespace arki::types;
 using namespace arki::summary;
-
-namespace {
 
 /// Function to add metadata to Tables
 metadata_dest_func make_adder(Table& root)
@@ -22,56 +19,59 @@ metadata_dest_func make_adder(Table& root)
     };
 }
 
+void fill_md(Metadata& md)
+{
+    md.set(decodeString(TYPE_ORIGIN, "GRIB1(98, 1, 2)"));
+    md.set(decodeString(TYPE_PRODUCT, "GRIB1(98, 1, 2)"));
+    md.set(decodeString(TYPE_TIMERANGE, "GRIB1(1)"));
+    md.set(decodeString(TYPE_REFTIME, "2015-01-05T12:00:00Z"));
 }
 
-struct arki_summary_table_shar {
-    Metadata md;
+void fill_with_6_samples(Table& root)
+{
+    metadata::test::Generator gen("grib1");
+    gen.add(TYPE_ORIGIN, "GRIB1(200, 0, 1)");
+    gen.add(TYPE_ORIGIN, "GRIB1(98, 0, 1)");
+    gen.add(TYPE_PRODUCT, "GRIB1(200, 0, 1)");
+    gen.add(TYPE_PRODUCT, "GRIB1(98, 0, 1)");
+    gen.add(TYPE_PRODUCT, "GRIB1(98, 0, 2)");
+    gen.add(TYPE_REFTIME, "2010-09-08T00:00:00");
+    gen.add(TYPE_REFTIME, "2010-09-09T00:00:00");
+    gen.add(TYPE_REFTIME, "2010-09-10T00:00:00");
+    gen.generate(make_adder(root));
+}
 
-    arki_summary_table_shar()
-    {
-        md.set(decodeString(TYPE_ORIGIN, "GRIB1(98, 1, 2)"));
-        md.set(decodeString(TYPE_PRODUCT, "GRIB1(98, 1, 2)"));
-        md.set(decodeString(TYPE_TIMERANGE, "GRIB1(1)"));
-        md.set(decodeString(TYPE_REFTIME, "2015-01-05T12:00:00Z"));
-    }
+void fill_with_27_samples(Table& root)
+{
+    metadata::test::Generator gen("grib1");
+    gen.add(TYPE_ORIGIN, "GRIB1(200, 0, 1)");
+    gen.add(TYPE_ORIGIN, "GRIB1(98, 0, 1)");
+    gen.add(TYPE_ORIGIN, "GRIB1(98, 0, 2)");
+    gen.add(TYPE_PRODUCT, "GRIB1(200, 0, 1)");
+    gen.add(TYPE_PRODUCT, "GRIB1(98, 0, 1)");
+    gen.add(TYPE_PRODUCT, "GRIB1(98, 0, 2)");
+    gen.add(TYPE_LEVEL, "GRIB1(0, 0, 0)");
+    gen.add(TYPE_LEVEL, "GRIB1(1)");
+    gen.add(TYPE_LEVEL, "GRIB1(2)");
+    gen.add(TYPE_REFTIME, "2010-09-08T00:00:00");
+    gen.add(TYPE_REFTIME, "2010-09-09T00:00:00");
+    gen.add(TYPE_REFTIME, "2010-09-10T00:00:00");
+    gen.generate(make_adder(root));
+}
 
-    void fill_with_6_samples(Table& root) const
-    {
-        metadata::test::Generator gen("grib1");
-        gen.add(TYPE_ORIGIN, "GRIB1(200, 0, 1)");
-        gen.add(TYPE_ORIGIN, "GRIB1(98, 0, 1)");
-        gen.add(TYPE_PRODUCT, "GRIB1(200, 0, 1)");
-        gen.add(TYPE_PRODUCT, "GRIB1(98, 0, 1)");
-        gen.add(TYPE_PRODUCT, "GRIB1(98, 0, 2)");
-        gen.add(TYPE_REFTIME, "2010-09-08T00:00:00");
-        gen.add(TYPE_REFTIME, "2010-09-09T00:00:00");
-        gen.add(TYPE_REFTIME, "2010-09-10T00:00:00");
-        gen.generate(make_adder(root));
-    }
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_summary_table");
 
-    void fill_with_27_samples(Table& root) const
-    {
-        metadata::test::Generator gen("grib1");
-        gen.add(TYPE_ORIGIN, "GRIB1(200, 0, 1)");
-        gen.add(TYPE_ORIGIN, "GRIB1(98, 0, 1)");
-        gen.add(TYPE_ORIGIN, "GRIB1(98, 0, 2)");
-        gen.add(TYPE_PRODUCT, "GRIB1(200, 0, 1)");
-        gen.add(TYPE_PRODUCT, "GRIB1(98, 0, 1)");
-        gen.add(TYPE_PRODUCT, "GRIB1(98, 0, 2)");
-        gen.add(TYPE_LEVEL, "GRIB1(0, 0, 0)");
-        gen.add(TYPE_LEVEL, "GRIB1(1)");
-        gen.add(TYPE_LEVEL, "GRIB1(2)");
-        gen.add(TYPE_REFTIME, "2010-09-08T00:00:00");
-        gen.add(TYPE_REFTIME, "2010-09-09T00:00:00");
-        gen.add(TYPE_REFTIME, "2010-09-10T00:00:00");
-        gen.generate(make_adder(root));
-    }
-};
-TESTGRP(arki_summary_table);
+void Tests::register_tests() {
 
 // Test basic operations
-def_test(1)
-{
+add_method("basic", [] {
+    Metadata md;
+    fill_md(md);
+
     // Test the empty table
     Table table;
     wassert(actual(table.empty()).istrue());
@@ -91,10 +91,12 @@ def_test(1)
     table1.merge(md);
     wassert(actual(table1.size()) == 1u);
     wassert(actual(table1.equals(table)).istrue());
-}
+});
 
-def_test(2)
-{
+add_method("merge", [] {
+    Metadata md;
+    fill_md(md);
+
     Table table;
     // Add the same item twice, they should get merged
     table.merge(md);
@@ -102,31 +104,28 @@ def_test(2)
     wassert(actual(table.empty()).isfalse());
     wassert(actual(table.size()) == 1u);
     wassert(actual(table.stats.count) == 2u);
-}
+});
 
 // Build a table a bit larger, still no reallocs triggered
-def_test(3)
-{
+add_method("smalltable", [] {
     // Look at a bigger table
     Table table;
     fill_with_6_samples(table);
     wassert(actual(table.size()) == 6u);
-}
+});
 
 // Build a table large enough to trigger a realloc
-def_test(4)
-{
+add_method("bigtable", [] {
     // Look at an even bigger table, this should trigger a realloc
     Table table3;
     fill_with_27_samples(table3);
     wassert(actual(table3.size()) == 27u);
     // Compare with itself to access all elements of the table and see if we got garbage
     wassert(actual(table3.equals(table3)).istrue());
-}
+});
 
 // Test Row
-def_test(5)
-{
+add_method("row", [] {
     Row row1;
     wassert(actual(row1.stats.count) == 0u);
     wassert(actual(row1.stats.size) == 0u);
@@ -140,7 +139,7 @@ def_test(5)
     row2.set_to_zero();
     wassert(actual(row2 < row1).istrue());
     wassert(actual(row1 == row2).isfalse());
-}
+});
 
 //    /// Return the intern version of an item
 //    const types::Type* intern(unsigned pos, std::unique_ptr<types::Type> item);
@@ -180,5 +179,7 @@ def_test(5)
 //     * nodes found that match the matcher
 //     */
 //    bool visitFiltered(const Matcher& matcher, Visitor& visitor) const;
+
+}
 
 }

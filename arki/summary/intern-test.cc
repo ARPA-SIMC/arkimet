@@ -2,24 +2,24 @@
 #include "arki/types/reftime.h"
 #include "intern.h"
 
-namespace tut {
+namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
+using namespace arki::tests;
+using namespace arki::core;
 using namespace arki::types;
 using namespace arki::summary;
-using arki::core::Time;
 
-struct arki_summary_intern_shar {
-    arki_summary_intern_shar()
-    {
-    }
-};
-TESTGRP(arki_summary_intern);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_summary_intern");
+
+void Tests::register_tests() {
 
 // Test basic operations
-def_test(1)
-{
+add_method("basic", [] {
     TypeIntern intern;
 
     const Type* val1 = intern.intern(Reftime::createPosition(Time(2015, 1, 5, 12, 0, 0)));
@@ -37,6 +37,8 @@ def_test(1)
     const Type* val3 = intern.intern(Reftime::createPosition(Time(2015, 1, 6, 12, 0, 0)));
     wassert(actual_type(val3).is_reftime_position({2015, 1, 6, 12, 0, 0}));
     wassert(actual(val1 != val2).istrue());
+});
+
 }
 
 }

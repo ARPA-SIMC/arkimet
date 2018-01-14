@@ -413,9 +413,9 @@ tests_arki_test_SOURCES += \
 		metadata/test-generator-tut.cc \
 		reader-test.cc \
 		summary-test.cc \
-		summary/intern-tut.cc \
-		summary/table-tut.cc \
-		summary/stats-tut.cc \
+		summary/intern-test.cc \
+		summary/table-test.cc \
+		summary/stats-test.cc \
 		summary/short-test.cc \
 		matcher-test.cc \
 		matcher/utils-test.cc \
