@@ -89,7 +89,7 @@ public:
 struct LocalLock
 {
     arki::core::File lockfile;
-    arki::core::Lock ds_lock;
+    arki::core::FLock ds_lock;
     bool locked = false;
     bool write;
     const core::lock::Policy* lock_policy;

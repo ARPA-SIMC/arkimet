@@ -948,6 +948,20 @@ void ActualChecker<Dataset>::remove_all_filtered(const Matcher& matcher, const R
 
 namespace testdata {
 
+void Element::set(const Metadata& md, const std::string& matcher)
+{
+    const types::reftime::Position* rt = md.get<types::reftime::Position>();
+    this->md = md;
+    this->time = rt->time;
+    this->matcher = Matcher::parse(matcher);
+}
+
+std::string Element::data()
+{
+    auto res = md.getData();
+    return std::string(res.begin(), res.end());
+}
+
 void Fixture::finalise_init()
 {
     // Compute selective_cutoff

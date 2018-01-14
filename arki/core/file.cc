@@ -113,18 +113,18 @@ static unsigned count_ofd_getlk = 0;
 }
 
 
-Lock::Lock()
+FLock::FLock()
 {
     memset(this, 0, sizeof(struct ::flock));
 }
 
-bool Lock::ofd_setlk(NamedFileDescriptor& fd)
+bool FLock::ofd_setlk(NamedFileDescriptor& fd)
 {
     ++lock::count_ofd_setlk;
     return fd.ofd_setlk(*this);
 }
 
-bool Lock::ofd_setlkw(NamedFileDescriptor& fd, bool retry_on_signal)
+bool FLock::ofd_setlkw(NamedFileDescriptor& fd, bool retry_on_signal)
 {
     ++lock::count_ofd_setlkw;
     if (lock::test_nowait)
@@ -161,7 +161,7 @@ bool Lock::ofd_setlkw(NamedFileDescriptor& fd, bool retry_on_signal)
         return fd.ofd_setlkw(*this, retry_on_signal);
 }
 
-bool Lock::ofd_getlk(NamedFileDescriptor& fd)
+bool FLock::ofd_getlk(NamedFileDescriptor& fd)
 {
     ++lock::count_ofd_getlk;
     return fd.ofd_getlk(*this);
@@ -224,13 +224,30 @@ void TestCount::measure()
 
 Policy::~Policy() {}
 
-bool NullPolicy::setlk(NamedFileDescriptor& fd, Lock&) const { return true; }
-bool NullPolicy::setlkw(NamedFileDescriptor& fd, Lock&) const { return true; }
-bool NullPolicy::getlk(NamedFileDescriptor& fd, Lock&) const { return true; }
+/// Lock Policy that does nothing
+struct NullPolicy : public Policy
+{
+    bool setlk(NamedFileDescriptor& fd, FLock&) const override;
+    bool setlkw(NamedFileDescriptor& fd, FLock&) const override;
+    bool getlk(NamedFileDescriptor& fd, FLock&) const override;
+};
 
-bool OFDPolicy::setlk(NamedFileDescriptor& fd, Lock& l) const { return l.ofd_setlk(fd); }
-bool OFDPolicy::setlkw(NamedFileDescriptor& fd, Lock& l) const { return l.ofd_setlkw(fd); }
-bool OFDPolicy::getlk(NamedFileDescriptor& fd, Lock& l) const { return l.ofd_getlk(fd); }
+/// Lock Policy that uses Open File Descriptor locks
+struct OFDPolicy : public Policy
+{
+    bool setlk(NamedFileDescriptor& fd, FLock&) const override;
+    bool setlkw(NamedFileDescriptor& fd, FLock&) const override;
+    bool getlk(NamedFileDescriptor& fd, FLock&) const override;
+};
+
+
+bool NullPolicy::setlk(NamedFileDescriptor& fd, FLock&) const { return true; }
+bool NullPolicy::setlkw(NamedFileDescriptor& fd, FLock&) const { return true; }
+bool NullPolicy::getlk(NamedFileDescriptor& fd, FLock&) const { return true; }
+
+bool OFDPolicy::setlk(NamedFileDescriptor& fd, FLock& l) const { return l.ofd_setlk(fd); }
+bool OFDPolicy::setlkw(NamedFileDescriptor& fd, FLock& l) const { return l.ofd_setlkw(fd); }
+bool OFDPolicy::getlk(NamedFileDescriptor& fd, FLock& l) const { return l.ofd_getlk(fd); }
 
 const Policy* policy_null = new NullPolicy;
 const Policy* policy_ofd = new OFDPolicy;

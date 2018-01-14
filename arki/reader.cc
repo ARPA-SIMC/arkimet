@@ -56,7 +56,7 @@ struct FileReader : public Reader
 public:
     sys::File fd;
     const core::lock::Policy* lock_policy;
-    Lock lock;
+    FLock lock;
 
     FileReader(const std::string& fname, const core::lock::Policy* lock_policy)
         : fd(fname, O_RDONLY
@@ -156,7 +156,7 @@ public:
     sys::Path dirfd;
     sys::File repack_lock;
     const core::lock::Policy* lock_policy;
-    Lock lock;
+    FLock lock;
 
     DirReader(const std::string& fname, const core::lock::Policy* lock_policy)
         : dirfd(fname, O_DIRECTORY), repack_lock(dirfd.openat(".repack-lock", O_RDONLY | O_CREAT, 0777), str::joinpath(fname, ".repack-lock")),

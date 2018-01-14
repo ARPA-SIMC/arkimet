@@ -83,9 +83,9 @@ struct LineReader
  * Wrap a struct flock, calling the corresponding FileDescriptor locking
  * operations on it.
  */
-struct Lock : public ::flock
+struct FLock : public ::flock
 {
-    Lock();
+    FLock();
 
     bool ofd_setlk(NamedFileDescriptor& fd);
     bool ofd_setlkw(NamedFileDescriptor& fd, bool retry_on_signal=true);
@@ -101,25 +101,9 @@ namespace lock {
 struct Policy
 {
     virtual ~Policy();
-    virtual bool setlk(NamedFileDescriptor& fd, Lock&) const = 0;
-    virtual bool setlkw(NamedFileDescriptor& fd, Lock&) const = 0;
-    virtual bool getlk(NamedFileDescriptor& fd, Lock&) const = 0;
-};
-
-/// Lock Policy that does nothing
-struct NullPolicy : public Policy
-{
-    bool setlk(NamedFileDescriptor& fd, Lock&) const override;
-    bool setlkw(NamedFileDescriptor& fd, Lock&) const override;
-    bool getlk(NamedFileDescriptor& fd, Lock&) const override;
-};
-
-/// Lock Policy that uses Open File Descriptor locks
-struct OFDPolicy : public Policy
-{
-    bool setlk(NamedFileDescriptor& fd, Lock&) const override;
-    bool setlkw(NamedFileDescriptor& fd, Lock&) const override;
-    bool getlk(NamedFileDescriptor& fd, Lock&) const override;
+    virtual bool setlk(NamedFileDescriptor& fd, FLock&) const = 0;
+    virtual bool setlkw(NamedFileDescriptor& fd, FLock&) const = 0;
+    virtual bool getlk(NamedFileDescriptor& fd, FLock&) const = 0;
 };
 
 

@@ -31,7 +31,7 @@ struct File : public arki::core::File
 struct Writer : public dataset::segment::Writer
 {
     File* fd = nullptr;
-    core::Lock lock;
+    core::FLock lock;
 
     Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd, const core::lock::Policy* lock_policy);
     ~Writer();
@@ -58,7 +58,7 @@ class Checker : public dataset::segment::Checker
 {
 protected:
     File* fd = nullptr;
-    core::Lock m_lock;
+    core::FLock m_lock;
 
     virtual void open() = 0;
 

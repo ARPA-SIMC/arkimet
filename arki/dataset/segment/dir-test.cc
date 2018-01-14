@@ -6,6 +6,7 @@
 #include "arki/scan/any.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 #include <fcntl.h>
 #include <sstream>
 

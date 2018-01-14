@@ -1,5 +1,7 @@
 #include "arki/dataset/tests.h"
+#include "arki/types/reftime.h"
 #include "arki/runtime/config.h"
+#include "arki/sort.h"
 #include "querymacro.h"
 #include "summary.h"
 

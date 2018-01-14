@@ -381,7 +381,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
         std::string tmppos;
         bool fired;
         sys::File repack_lock;
-        Lock lock;
+        FLock lock;
         const core::lock::Policy* lock_policy;
 
         Rename(const std::string& tmpabsname, const std::string& absname, const core::lock::Policy* lock_policy)

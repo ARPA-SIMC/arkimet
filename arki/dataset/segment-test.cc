@@ -5,6 +5,7 @@
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
+#include "arki/scan/any.h"
 #include "segment.h"
 #include "segmented.h"
 #include "segment/lines.h"

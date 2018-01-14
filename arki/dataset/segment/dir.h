@@ -20,7 +20,7 @@ struct Writer : public dataset::segment::Writer
 {
     SequenceFile seqfile;
     core::File write_lock_file;
-    core::Lock lock;
+    core::FLock lock;
     std::string format;
 
     Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy);
