@@ -120,11 +120,6 @@ Collection::Collection(dataset::Reader& ds, const std::string& q)
     add(ds, dataset::DataQuery(q));
 }
 
-Collection::Collection(const std::string& pathname)
-{
-    scan_from_file(pathname);
-}
-
 Collection::~Collection()
 {
     for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)
@@ -193,11 +188,6 @@ void Collection::write_to(NamedFileDescriptor& out) const
     }
     if (!buf.empty())
         compressAndWrite(buf, out);
-}
-
-void Collection::scan_from_file(const std::string& pathname)
-{
-    scan::scan(pathname, [&](unique_ptr<Metadata> md) { acquire(move(md)); return true; });
 }
 
 void Collection::read_from_file(const metadata::ReadContext& rc)
@@ -338,6 +328,22 @@ void Collection::drop_cached_data()
 {
     for (auto& md: *this) md->drop_cached_data();
 }
+
+TestCollection::TestCollection(const std::string& pathname)
+{
+    scan_from_file(pathname);
+}
+
+bool TestCollection::scan_from_file(const std::string& pathname)
+{
+    return scan::scan(pathname, core::lock::policy_null, [&](unique_ptr<Metadata> md) { acquire(move(md)); return true; });
+}
+
+bool TestCollection::scan_from_file(const std::string& pathname, const std::string& format)
+{
+    return scan::scan(pathname, core::lock::policy_null, format, [&](unique_ptr<Metadata> md) { acquire(move(md)); return true; });
+}
+
 
 }
 }

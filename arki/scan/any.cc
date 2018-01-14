@@ -172,21 +172,21 @@ static std::string guess_format(const std::string& basedir, const std::string& f
     return str::lower(file.substr(pos+1));
 }
 
-bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest)
+bool scan(const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy, metadata_dest_func dest)
 {
     std::string format = guess_format(basedir, relname);
 
     // If we cannot detect a format, fail
     if (format.empty()) return false;
-    return scan(basedir, relname, dest, format);
+    return scan(basedir, relname, lock_policy, format, dest);
 }
 
-bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest, const std::string& format)
+bool scan(const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy, const std::string& format, metadata_dest_func dest)
 {
     // If we scan standard input, assume uncompressed data and do not try to
     // look for an existing .metadata file
     if (relname == "-")
-        return scan_file(relname, basedir, relname, format, core::lock::policy_ofd, dest);
+        return scan_file(relname, basedir, relname, format, lock_policy, dest);
 
     // stat the file (or its compressed version)
     string pathname = str::joinpath(basedir, relname);
@@ -203,29 +203,29 @@ bool scan(const std::string& basedir, const std::string& relname, metadata_dest_
     if (st_md.get() and st_md->st_mtime >= st_file->st_mtime)
     {
         // If there is a usable metadata file, use it to save time
-        scan_metadata(pathname, md_pathname, core::lock::policy_ofd, dest);
+        scan_metadata(pathname, md_pathname, lock_policy, dest);
         return true;
     } else if (S_ISDIR(st_file->st_mode)) {
-        return scan_dir(pathname, basedir, relname, format, core::lock::policy_ofd, dest);
+        return scan_dir(pathname, basedir, relname, format, lock_policy, dest);
     } else {
-        return scan_file(pathname, basedir, relname, format, core::lock::policy_ofd, dest);
+        return scan_file(pathname, basedir, relname, format, lock_policy, dest);
     }
 }
 
-bool scan(const std::string& file, metadata_dest_func dest)
+bool scan(const std::string& file, const core::lock::Policy* lock_policy, metadata_dest_func dest)
 {
     string basedir;
     string relname;
     utils::files::resolve_path(file, basedir, relname);
-    return scan(basedir, relname, dest);
+    return scan(basedir, relname, lock_policy, dest);
 }
 
-bool scan(const std::string& file, metadata_dest_func dest, const std::string& format)
+bool scan(const std::string& file, const core::lock::Policy* lock_policy, const std::string& format, metadata_dest_func dest)
 {
     string basedir;
     string relname;
     utils::files::resolve_path(file, basedir, relname);
-    return scan(basedir, relname, dest, format);
+    return scan(basedir, relname, lock_policy, format, dest);
 }
 
 bool exists(const std::string& file)
@@ -258,10 +258,10 @@ time_t timestamp(const std::string& file)
     return sys::timestamp(str::joinpath(file, ".sequence"), 0);
 }
 
-void compress(const std::string& file, size_t groupsize)
+void compress(const std::string& file, const core::lock::Policy* lock_policy, size_t groupsize)
 {
     utils::compress::DataCompressor compressor(file, groupsize);
-    scan(file, [&](unique_ptr<Metadata> md) {
+    scan(file, lock_policy, [&](unique_ptr<Metadata> md) {
         return compressor.eat(move(md));
     });
     compressor.flush();

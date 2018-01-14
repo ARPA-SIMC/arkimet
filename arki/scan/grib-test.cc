@@ -261,8 +261,7 @@ add_method("validation", [] {
 
     fd.close();
 
-    metadata::Collection mdc;
-    scan::scan("inbound/test.grib1", mdc.inserter_func());
+    metadata::TestCollection mdc("inbound/test.grib1");
     buf = mdc[0].getData();
 
     wassert(v.validate_buf(buf.data(), buf.size()));

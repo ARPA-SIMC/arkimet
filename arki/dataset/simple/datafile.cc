@@ -23,7 +23,7 @@ namespace simple {
 
 namespace datafile {
 
-MdBuf::MdBuf(const std::string& pathname)
+MdBuf::MdBuf(const std::string& pathname, const core::lock::Policy* lock_policy)
     : dir(str::dirname(pathname)), basename(str::basename(pathname)), pathname(pathname), flushed(true)
 {
     struct stat st_data;
@@ -31,7 +31,7 @@ MdBuf::MdBuf(const std::string& pathname)
         return;
 
     // Read the metadata
-    scan::scan(pathname, mds.inserter_func());
+    scan::scan(pathname, lock_policy, mds.inserter_func());
 
     // Read the summary
     if (!mds.empty())

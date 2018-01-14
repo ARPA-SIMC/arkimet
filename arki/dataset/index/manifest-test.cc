@@ -117,10 +117,10 @@ add_method("add_remove", [] {
     m->openRW();
 
     Summary s;
-    scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) { s.add(*md); return true; });
+    scan::scan("inbound/test.grib1", core::lock::policy_null, [&](unique_ptr<Metadata> md) { s.add(*md); return true; });
 
-	m->acquire("a.grib1", 1000010, s);
-	m->acquire("foo/b.grib1", 1000011, s);
+    m->acquire("a.grib1", 1000010, s);
+    m->acquire("foo/b.grib1", 1000011, s);
 
     vector<string> files = m->file_list(Matcher());
     ensure_equals(files.size(), 2u);
@@ -144,7 +144,7 @@ add_method("modify_while_scanning", [] {
     time_t mtime = sys::timestamp("inbound/test-sorted.grib1");
 
     // Generate their metadata and summary files
-    metadata::Collection mdc("inbound/test-sorted.grib1");
+    metadata::TestCollection mdc("inbound/test-sorted.grib1");
     Summary s;
     for (const auto& md: mdc) s.add(*md);
 

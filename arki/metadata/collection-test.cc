@@ -47,11 +47,11 @@ add_method("compression", [] {
     tf.close();
 
     // Create metadata for the big BUFR file
-    metadata::Collection c(tf.name());
+    metadata::TestCollection c(tf.name());
     wassert(actual(c.size()) == (size_t)repeats);
 
     // Compress the data file
-    wassert(scan::compress(tf.name(), 127));
+    wassert(scan::compress(tf.name(), core::lock::policy_null, 127));
     // Remove the original file
     sys::unlink(tf.name());
     for (auto& i: c)
@@ -128,9 +128,8 @@ add_method("uncompressible", [] {
 #ifndef HAVE_DBALLE
     throw TestSkipped();
 #else
-    metadata::Collection c;
     // Create a collector with only one small metadata inside
-    scan::scan("inbound/test.bufr", c.inserter_func());
+    metadata::TestCollection c("inbound/test.bufr");
     wassert(actual(c.size()) == 3u);
     c.pop_back();
     c.pop_back();

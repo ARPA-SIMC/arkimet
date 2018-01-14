@@ -217,8 +217,7 @@ def_test(3)
     ensure_throws(v.validate_file(fd, 634, 10));
     fd.close();
 
-    metadata::Collection mdc;
-    scan::scan("inbound/test.bufr", mdc.inserter_func());
+    metadata::TestCollection mdc("inbound/test.bufr");
     buf = mdc[0].getData();
 
     wassert(v.validate_buf(buf.data(), buf.size()));

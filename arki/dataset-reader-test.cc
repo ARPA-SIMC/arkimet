@@ -157,8 +157,8 @@ this->add_method("querybytes", [](Fixture& f) {
         out.close();
 
         // Rescan the file
-        metadata::Collection tmp;
-        wassert(actual(scan::scan("testdata", tmp.inserter_func(), f.td.test_data[i].md.source().format)).istrue());
+        metadata::TestCollection tmp;
+        wassert(actual(tmp.scan_from_file("testdata", f.td.test_data[i].md.source().format)).istrue());
 
         // Ensure that what we rescanned is what was imported
         wassert(actual(tmp.size()) == 1u);
@@ -226,8 +226,8 @@ this->add_method("querybytes_integrity", [](Fixture& f) {
     wassert(actual(sys::size(out.name())) >= total_size);
 
     // Check that they can be scanned again
-    metadata::Collection mdc;
-    wassert(actual(scan::scan("tempdata", mdc.inserter_func(), f.td.format)).istrue());
+    metadata::TestCollection mdc;
+    wassert(actual(mdc.scan_from_file("tempdata", f.td.format)).istrue());
 
     sys::unlink("tempdata");
 });

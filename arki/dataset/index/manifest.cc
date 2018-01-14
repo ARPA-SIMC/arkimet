@@ -199,7 +199,7 @@ void Manifest::rescanSegment(const std::string& dir, const std::string& relpath)
 
     // Scan the file
     metadata::Collection mds;
-    if (!scan::scan(pathname, mds.inserter_func()))
+    if (!scan::scan(pathname, lock_policy, mds.inserter_func()))
     {
         stringstream ss;
         ss << "cannot rescan " << pathname << ": it does not look like a file we can scan";

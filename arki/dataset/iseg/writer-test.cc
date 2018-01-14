@@ -63,7 +63,7 @@ void Tests::register_tests() {
 
 // Test acquiring data
 add_method("acquire", [](Fixture& f) {
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
     Metadata& md = mdc[0];
 
     auto writer = f.makeIsegWriter();
@@ -101,7 +101,7 @@ add_method("acquire", [](Fixture& f) {
 });
 
 add_method("testacquire", [](Fixture& f) {
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
     stringstream ss;
     wassert(actual(iseg::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_OK);
 

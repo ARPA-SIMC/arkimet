@@ -113,7 +113,7 @@ add_method("regression01", [] {
     ConfigFile config;
     config.parse(conf);
 
-    metadata::Collection source("inbound/tempforecast.bufr");
+    metadata::TestCollection source("inbound/tempforecast.bufr");
     ensure_equals(source.size(), 1u);
 
     Matcher matcher = Matcher::parse("origin:BUFR,200; product:BUFR:t=temp");
@@ -151,7 +151,7 @@ add_method("validation", [] {
 // Test dispatching files with no reftime, they should end up in the error dataset
 add_method("missing_reftime", [] {
     ConfigFile config = setup1();
-    metadata::Collection source("inbound/wrongdate.bufr");
+    metadata::TestCollection source("inbound/wrongdate.bufr");
     wassert(actual(source.size()) == 6u);
 
     RealDispatcher dispatcher(config);

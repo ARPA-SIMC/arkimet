@@ -58,7 +58,7 @@ void Tests::register_tests() {
 // Try to append some data
 add_method("append", [] {
     sys::unlink_ifexists(relname);
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
     wassert(actual_file(relname).not_exists());
     {
         auto w(make_w());
@@ -81,7 +81,7 @@ add_method("append", [] {
     metadata::Collection mdc1;
 
     // Scan the file we created
-    wassert(actual(scan::scan(relname, mdc1.inserter_func())).istrue());
+    wassert(actual(scan::scan(relname, core::lock::policy_null, mdc1.inserter_func())).istrue());
 
     // Check that it only contains the 1st and 3rd data
     wassert(actual(mdc1.size()) == 2u);
@@ -92,7 +92,7 @@ add_method("append", [] {
 // Test with large files
 add_method("large", [] {
     sys::unlink_ifexists(relname);
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
     {
         // Make a file that looks HUGE, so that appending will make its size
         // not fit in a 32bit off_t

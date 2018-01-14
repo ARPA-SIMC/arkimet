@@ -42,9 +42,6 @@ public:
     /// Construct a collection filled by the results of query_data
     Collection(dataset::Reader& ds, const dataset::DataQuery& q);
     Collection(dataset::Reader& ds, const std::string& q);
-    /// Construct a collection filled with the data scanned from the given file
-    /// using scan::any
-    Collection(const std::string& pathname);
     ~Collection();
 
     Collection& operator=(const Collection& o);
@@ -93,10 +90,6 @@ public:
      * Write all metadata to the given output file
      */
     void write_to(core::NamedFileDescriptor& out) const;
-
-    /// Construct a collection filled with the data scanned from the given file
-    /// using scan::any
-    void scan_from_file(const std::string& pathname);
 
     /// Read metadata from \a pathname and append them to this collection
     void read_from_file(const metadata::ReadContext& rc);
@@ -149,6 +142,25 @@ public:
 
     /// Call drop_cached_data on all metadata in the collection
     void drop_cached_data();
+};
+
+struct TestCollection : public Collection
+{
+    using Collection::Collection;
+
+    TestCollection() = default;
+
+    /// Construct a collection filled with the data scanned from the given file
+    /// using scan::any
+    TestCollection(const std::string& pathname);
+
+    /// Construct a collection filled with the data scanned from the given file
+    /// using scan::any
+    bool scan_from_file(const std::string& pathname);
+
+    /// Construct a collection filled with the data scanned from the given file
+    /// using scan::any
+    bool scan_from_file(const std::string& pathname, const std::string& format);
 };
 
 }

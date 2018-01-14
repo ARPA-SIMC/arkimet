@@ -10,11 +10,11 @@ using namespace arki;
 using namespace arki::tests;
 
 struct arki_metadata_clusterer_shar {
-    metadata::Collection mdc;
+    metadata::TestCollection mdc;
 
     arki_metadata_clusterer_shar()
+        : mdc("inbound/test.grib1")
     {
-        scan::scan("inbound/test.grib1", mdc.inserter_func());
     }
 };
 TESTGRP(arki_metadata_clusterer);

@@ -79,7 +79,7 @@ std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::str
 {
     auto writer = segmented::Writer::file(md, format);
     if (!writer->payload)
-        writer->payload = new datafile::MdBuf(writer->absname);
+        writer->payload = new datafile::MdBuf(writer->absname, config().lock_policy);
     return writer;
 }
 
@@ -310,7 +310,7 @@ public:
     {
         // Read the metadata
         metadata::Collection mds;
-        scan::scan(segment->absname, mds.inserter_func());
+        scan::scan(segment->absname, checker.config().lock_policy, mds.inserter_func());
 
         // Sort by reference time and offset
         RepackSort cmp;

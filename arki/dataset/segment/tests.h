@@ -21,7 +21,7 @@ struct SegmentTest
     std::string root;
     std::string relname;
     std::string absname;
-    metadata::Collection mdc;
+    metadata::TestCollection mdc;
 
     SegmentTest();
     virtual ~SegmentTest();

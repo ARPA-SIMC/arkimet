@@ -40,7 +40,7 @@ add_method("grib_compact", [] {
 #else
     vector<uint8_t> buf;
 
-    ensure(scan::scan("inbound/test.grib1", mdc.inserter_func()));
+    ensure(scan::scan("inbound/test.grib1", core::lock::policy_null, mdc.inserter_func()));
     ensure_equals(mdc.size(), 3u);
 
     // Check the source info
@@ -110,7 +110,7 @@ add_method("bufr_compact", [] {
 #else
     vector<uint8_t> buf;
 
-    ensure(scan::scan("inbound/test.bufr", mdc.inserter_func()));
+    ensure(scan::scan("inbound/test.bufr", core::lock::policy_null, mdc.inserter_func()));
 
 	ensure_equals(mdc.size(), 3u);
 
@@ -182,13 +182,13 @@ add_method("compress", [] {
     system("cp a.grib1 b.grib1");
 
     // Compress
-    scan::compress("b.grib1", 5);
+    scan::compress("b.grib1", core::lock::policy_null, 5);
     sys::unlink_ifexists("b.grib1");
 
     {
         utils::compress::TempUnzip tu("b.grib1");
         unsigned count = 0;
-        scan::scan("b.grib1", [&](unique_ptr<Metadata>) { ++count; return true; });
+        scan::scan("b.grib1", core::lock::policy_null, [&](unique_ptr<Metadata>) { ++count; return true; });
         ensure_equals(count, 9u);
     }
 });
@@ -200,7 +200,7 @@ add_method("usn", [] {
         // Gribs don't have update sequence numbrs, and the usn parameter must
         // be left untouched
         metadata::Collection mdc;
-        scan::scan("inbound/test.grib1", mdc.inserter_func());
+        scan::scan("inbound/test.grib1", core::lock::policy_null, mdc.inserter_func());
         int usn = 42;
         ensure_equals(scan::update_sequence_number(mdc[0], usn), false);
         ensure_equals(usn, 42);
@@ -208,7 +208,7 @@ add_method("usn", [] {
 
     {
         metadata::Collection mdc;
-        scan::scan("inbound/synop-gts.bufr", mdc.inserter_func());
+        scan::scan("inbound/synop-gts.bufr", core::lock::policy_null, mdc.inserter_func());
         int usn;
         ensure_equals(scan::update_sequence_number(mdc[0], usn), true);
         ensure_equals(usn, 0);
@@ -216,7 +216,7 @@ add_method("usn", [] {
 
     {
         metadata::Collection mdc;
-        scan::scan("inbound/synop-gts-usn2.bufr", mdc.inserter_func());
+        scan::scan("inbound/synop-gts-usn2.bufr", core::lock::policy_null, mdc.inserter_func());
         int usn;
         ensure_equals(scan::update_sequence_number(mdc[0], usn), true);
         ensure_equals(usn, 2);

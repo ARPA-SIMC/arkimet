@@ -23,7 +23,7 @@ class Tests : public FixtureTestCase<FIXTURE>
 
 struct BaseFixture : public Fixture
 {
-    metadata::Collection mdc;
+    metadata::TestCollection mdc;
 
     void test_setup()
     {

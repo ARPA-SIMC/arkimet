@@ -277,9 +277,9 @@ void Checker::archiveSegment(const std::string& relpath)
         mdc.read_from_file(arcabspath + ".metadata");
     else if (compressed) {
         utils::compress::TempUnzip tu(arcabspath);
-        scan::scan(arcabspath, mdc.inserter_func());
+        scan::scan(arcabspath, config().lock_policy, mdc.inserter_func());
     } else
-        scan::scan(arcabspath, mdc.inserter_func());
+        scan::scan(arcabspath, config().lock_policy, mdc.inserter_func());
 
     archive().indexSegment(arcrelpath, move(mdc));
 }
@@ -299,9 +299,9 @@ void Checker::unarchive_segment(const std::string& relpath)
         mdc.read_from_file(abspath + ".metadata");
     else if (compressed) {
         utils::compress::TempUnzip tu(abspath);
-        scan::scan(abspath, mdc.inserter_func());
+        scan::scan(abspath, config().lock_policy, mdc.inserter_func());
     } else
-        scan::scan(abspath, mdc.inserter_func());
+        scan::scan(abspath, config().lock_policy, mdc.inserter_func());
 
     indexSegment(relpath, move(mdc));
 }

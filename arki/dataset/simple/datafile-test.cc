@@ -42,10 +42,10 @@ add_method("append", [] {
 
     system(("cp inbound/test.grib1 " + fname).c_str());
 
-    metadata::Collection mds("inbound/test.grib1");
+    metadata::TestCollection mds("inbound/test.grib1");
 
     {
-        datafile::MdBuf mdbuf("./" + fname);
+        datafile::MdBuf mdbuf("./" + fname, core::lock::policy_null);
 
         // Append the data, source is unchanged
         auto source = types::source::Blob::create_unlocked("grib", "", "test.grib1", 0, datasize(mds[0]));

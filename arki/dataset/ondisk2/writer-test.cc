@@ -191,7 +191,7 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
         metadata::Collection mdc = f.query(Matcher::parse("origin:GRIB1,200"));
         wassert(actual(mdc.size()) == 1u);
         string dest = mdc.ensureContiguousData("metadata file testds/2007/07-08.grib");
-        scan::compress(dest, 1024);
+        scan::compress(dest, core::lock::policy_ofd, 1024);
         sys::unlink_ifexists("testds/2007/07-08.grib");
     }
 
@@ -333,7 +333,7 @@ add_method("regression_0", [](Fixture& f) {
 
 add_method("data_in_right_segment_reindex", [](Fixture& f) {
     f.import();
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
 
     // Append one of the GRIBs to the wrong file
     const auto& buf = mdc[1].getData();
@@ -379,7 +379,7 @@ add_method("data_in_right_segment_reindex", [](Fixture& f) {
 
 add_method("data_in_right_segment_rescan", [](Fixture& f) {
     f.import();
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
 
     files::createDontpackFlagfile("testds");
 
@@ -485,7 +485,7 @@ add_method("issue57", [](Fixture& f) {
 
     // Import the sample file
     sys::write_file("issue57.vm2", "201610050000,12626,139,70,,,000000000\n");
-    metadata::Collection input("issue57.vm2");
+    metadata::TestCollection input("issue57.vm2");
     {
         auto writer = f.makeOndisk2Writer();
         wassert(actual(writer->acquire(input[0])) == dataset::Writer::ACQ_OK);
@@ -511,7 +511,7 @@ add_method("testacquire", [](Fixture& f) {
         // Create the dataset
         auto writer = f.makeOndisk2Writer();
     }
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
     stringstream ss;
     wassert(actual(ondisk2::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_OK);
 

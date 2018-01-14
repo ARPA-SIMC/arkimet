@@ -53,7 +53,7 @@ void Tests::register_tests() {
 // Try to append some data
 add_method("append", [] {
     sys::rmtree_ifexists(relname);
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
     wassert(actual_file(relname).not_exists());
     {
         auto w(make_w());
@@ -133,10 +133,10 @@ add_method("append", [] {
     }
 
     // Data writer goes out of scope, file is closed and flushed
-    metadata::Collection mdc1;
+    metadata::TestCollection mdc1;
 
     // Scan the file we created
-    wassert(actual(scan::scan(relname, mdc1.inserter_func())).istrue());
+    wassert(actual(mdc1.scan_from_file(relname)).istrue());
 
     // Check that it only contains the 1st and 3rd data
     wassert(actual(mdc1.size()) == 2u);

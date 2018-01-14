@@ -66,9 +66,9 @@ add_method("compressed", [](Fixture& f) {
     f.cfg.setValue("archive age", days_since(2007, 9, 1));
     f.test_reread_config();
 
-    scan::compress("testds/2007/07-07.grib");
-    scan::compress("testds/2007/07-08.grib");
-    scan::compress("testds/2007/10-09.grib");
+    scan::compress("testds/2007/07-07.grib", core::lock::policy_null);
+    scan::compress("testds/2007/07-08.grib", core::lock::policy_null);
+    scan::compress("testds/2007/10-09.grib", core::lock::policy_null);
     sys::unlink_ifexists("testds/2007/07-07.grib");
     sys::unlink_ifexists("testds/2007/07-08.grib");
     sys::unlink_ifexists("testds/2007/10-09.grib");
@@ -346,7 +346,7 @@ add_method("archive_age", [](Fixture& f) {
 
     // Import a file with a known reftime
     // Reftime: 2007-07-08T13:00:00Z
-    metadata::Collection mds("inbound/test.grib1");
+    metadata::TestCollection mds("inbound/test.grib1");
     dataset::Writer::AcquireResult res = wcallchecked(f.makeSegmentedWriter()->acquire(mds[0]));
     wassert(actual(res) == dataset::Writer::ACQ_OK);
     wassert(actual(f.makeSegmentedChecker().get()).check_clean(true));
@@ -379,7 +379,7 @@ add_method("delete_age", [](Fixture& f) {
 
     // Import a file with a known reftime
     // Reftime: 2007-07-08T13:00:00Z
-    metadata::Collection mds("inbound/test.grib1");
+    metadata::TestCollection mds("inbound/test.grib1");
     dataset::Writer::AcquireResult res = wcallchecked(f.makeSegmentedWriter()->acquire(mds[0]));
     wassert(actual(res) == dataset::Writer::ACQ_OK);
     wassert(actual(f.makeSegmentedChecker().get()).check_clean(true));
@@ -574,7 +574,7 @@ add_method("issue103", [](Fixture& f) {
     // Dispatch
     {
         auto writer = f.makeSegmentedWriter();
-        scan::scan("inbound/issue103.vm2", [&](unique_ptr<Metadata> md) {
+        scan::scan("inbound/issue103.vm2", core::lock::policy_null, [&](unique_ptr<Metadata> md) {
             wassert(actual(writer->acquire(*md)) == dataset::Writer::ACQ_OK);
             return true;
         });

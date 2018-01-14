@@ -317,10 +317,10 @@ add_method("lua", [](Fixture& f) {
 });
 
 add_method("stream", [](Fixture& f) {
-    metadata::Collection grib("inbound/test.grib1");
-    metadata::Collection bufr("inbound/test.bufr");
-    metadata::Collection vm2("inbound/test.vm2");
-    metadata::Collection odim("inbound/odimh5/XSEC_v21.h5");
+    metadata::TestCollection grib("inbound/test.grib1");
+    metadata::TestCollection bufr("inbound/test.bufr");
+    metadata::TestCollection vm2("inbound/test.vm2");
+    metadata::TestCollection odim("inbound/odimh5/XSEC_v21.h5");
 
     File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
     wassert(actual(grib[0].stream_data(fd)) == grib[0].sourceBlob().size);

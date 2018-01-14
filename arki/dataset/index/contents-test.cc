@@ -332,8 +332,7 @@ add_method("query_file", [] {
     ensure(test.get() != 0);
     Pending p;
 
-    metadata::Collection src;
-    scan::scan("inbound/test.grib1", src.inserter_func());
+    metadata::TestCollection src("inbound/test.grib1");
     ensure_equals(src.size(), 3u);
 
     test->open();
@@ -475,8 +474,7 @@ add_method("smallfiles", [] {
     auto md = make_md();
     auto md1 = make_md1();
 
-    metadata::Collection src;
-    scan::scan("inbound/test.vm2", src.inserter_func());
+    metadata::TestCollection src("inbound/test.vm2");
 
     // Remove index if it exists
     unlink("file1");

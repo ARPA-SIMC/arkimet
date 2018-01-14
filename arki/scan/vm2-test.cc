@@ -99,8 +99,7 @@ add_method("validate", []() {
 
     fd.close();
 
-    metadata::Collection mdc;
-    scan::scan("inbound/test.vm2", mdc.inserter_func());
+    metadata::TestCollection mdc("inbound/test.vm2");
     mdc[0].unset(TYPE_VALUE);
     buf = mdc[0].getData();
 
@@ -120,8 +119,7 @@ add_method("reconstruct", []() {
     const types::Value* value;
     vector<uint8_t> buf;
 
-    metadata::Collection mdc;
-    scan::scan("inbound/test.vm2", mdc.inserter_func());
+    metadata::TestCollection mdc("inbound/test.vm2");
 
     value = mdc[0].get<types::Value>();
     buf = scan::Vm2::reconstruct(mdc[0], value->buffer);
@@ -137,9 +135,7 @@ add_method("corrupted", []() {
     system("cp inbound/test.vm2 inbound/test-corrupted.vm2");
     system("dd if=/dev/zero of=inbound/test-corrupted.vm2 bs=1 seek=71 count=33 conv=notrunc 2>/dev/null");
 
-    metadata::Collection mdc;
-    scan::scan("inbound/test-corrupted.vm2", mdc.inserter_func());
-
+    metadata::TestCollection mdc("inbound/test-corrupted.vm2");
     wassert(actual(mdc.size()) == 3u);
 
     // Check the source info

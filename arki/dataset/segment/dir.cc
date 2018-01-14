@@ -282,10 +282,10 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
             string fname = str::joinpath(absname, SequenceFile::data_fname(idx, format));
             metadata::Collection mds;
             try {
-                scan::scan(fname, [&](unique_ptr<Metadata> md) {
+                scan::scan(fname, lock_policy, format, [&](unique_ptr<Metadata> md) {
                     mds.acquire(move(md));
                     return true;
-                }, format);
+                });
             } catch (std::exception& e) {
                 stringstream out;
                 out << "scan of unexpected file failed at " << absname << ":" << idx << ": " << e.what();

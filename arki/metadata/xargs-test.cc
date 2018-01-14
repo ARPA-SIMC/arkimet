@@ -25,7 +25,7 @@ void Tests::register_tests() {
 
 // Test what happens with children's stdin
 add_method("check_stdin", [] {
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
     sys::unlink_ifexists("tmp-xargs");
     metadata::Xargs xargs;
     xargs.command.push_back("/bin/sh");
@@ -45,7 +45,7 @@ add_method("check_stdin", [] {
 
 // Test that env vars are set
 add_method("check_env", [] {
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
     sys::unlink_ifexists("tmp-xargs");
     metadata::Xargs xargs;
     xargs.command.push_back("/bin/sh");
@@ -67,7 +67,7 @@ add_method("check_env", [] {
 });
 
 add_method("interval", [] {
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
     sys::unlink_ifexists("tmp-xargs");
     metadata::Xargs xargs;
     xargs.set_interval("day");
