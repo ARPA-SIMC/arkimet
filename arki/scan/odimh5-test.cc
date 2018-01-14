@@ -5,23 +5,23 @@
 #include "arki/utils/sys.h"
 #include <iostream>
 
-namespace tut {
-
+namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
+using namespace arki::tests;
 using namespace arki::types;
 using namespace arki::utils;
 
-struct arki_scan_odimh5_shar
+class Tests : public TestCase
 {
-};
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_scan_odimh5");
 
-TESTGRP(arki_scan_odimh5);
+void Tests::register_tests() {
 
 // Scan an ODIMH5 polar volume
-def_test(1)
-{
+add_method("pvol", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -55,11 +55,10 @@ def_test(1)
     wassert(actual(md).contains("quantity", "ACRR,BRDR,CLASS,DBZH,DBZV,HGHT,KDP,LDR,PHIDP,QIND,RATE,RHOHV,SNR,SQI,TH,TV,UWND,VIL,VRAD,VWND,WRAD,ZDR,ad,ad_dev,chi2,dbz,dbz_dev,dd,dd_dev,def,def_dev,div,div_dev,ff,ff_dev,n,rhohv,rhohv_dev,w,w_dev,z,z_dev"));
     wassert(actual(md).contains("area", "ODIMH5(lat=44456700,lon=11623600,radius=1000)"));
 
-	ensure(not scanner.next(md));
-}
+    ensure(not scanner.next(md));
+});
 
-def_test(2)
-{
+add_method("comp_cappi", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -93,9 +92,9 @@ def_test(2)
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
-}
-def_test(3)
-{
+});
+
+add_method("comp_etop", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -128,10 +127,10 @@ def_test(3)
     wassert(actual(md).contains("quantity", "HGHT"));
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
-	ensure(not scanner.next(md));
-}
-def_test(4)
-{
+    ensure(not scanner.next(md));
+});
+
+add_method("comp_lbm", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -164,10 +163,10 @@ def_test(4)
     wassert(actual(md).contains("quantity", "DBZH"));
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
-	ensure(not scanner.next(md));
-}
-def_test(5)
-{
+    ensure(not scanner.next(md));
+});
+
+add_method("comp_max", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -200,10 +199,10 @@ def_test(5)
     wassert(actual(md).contains("quantity", "DBZH"));
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
-	ensure(not scanner.next(md));
-}
-def_test(6)
-{
+    ensure(not scanner.next(md));
+});
+
+add_method("comp_pcappi", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -236,10 +235,10 @@ def_test(6)
     wassert(actual(md).contains("quantity", "DBZH"));
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
-	ensure(not scanner.next(md));
-}
-def_test(7)
-{
+    ensure(not scanner.next(md));
+});
+
+add_method("comp_ppi", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -272,10 +271,10 @@ def_test(7)
     wassert(actual(md).contains("quantity", "DBZH"));
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
-	ensure(not scanner.next(md));
-}
-def_test(8)
-{
+    ensure(not scanner.next(md));
+});
+
+add_method("comp_rr", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -309,10 +308,10 @@ def_test(8)
     wassert(actual(md).contains("quantity", "ACRR"));
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
-	ensure(not scanner.next(md));
-}
-def_test(9)
-{
+    ensure(not scanner.next(md));
+});
+
+add_method("comp_vil", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -346,10 +345,10 @@ def_test(9)
     wassert(actual(md).contains("quantity", "VIL"));
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
-	ensure(not scanner.next(md));
-}
-def_test(10)
-{
+    ensure(not scanner.next(md));
+});
+
+add_method("image_cappi", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -384,9 +383,9 @@ def_test(10)
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
-}
-def_test(11)
-{
+});
+
+add_method("image_etop", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -419,10 +418,10 @@ def_test(11)
     wassert(actual(md).contains("quantity", "HGHT"));
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
-	ensure(not scanner.next(md));
-}
-def_test(12)
-{
+    ensure(not scanner.next(md));
+});
+
+add_method("image_hvmi", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -455,10 +454,10 @@ def_test(12)
     wassert(actual(md).contains("quantity", "DBZH"));
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
-	ensure(not scanner.next(md));
-}
-def_test(13)
-{
+    ensure(not scanner.next(md));
+});
+
+add_method("image_max", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -491,10 +490,10 @@ def_test(13)
     wassert(actual(md).contains("quantity", "DBZH"));
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
-	ensure(not scanner.next(md));
-}
-def_test(14)
-{
+    ensure(not scanner.next(md));
+});
+
+add_method("image_pcappi", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -527,10 +526,10 @@ def_test(14)
     wassert(actual(md).contains("quantity", "DBZH"));
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
-	ensure(not scanner.next(md));
-}
-def_test(15)
-{
+    ensure(not scanner.next(md));
+});
+
+add_method("image_ppi", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -563,10 +562,10 @@ def_test(15)
     wassert(actual(md).contains("quantity", "DBZH"));
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
-	ensure(not scanner.next(md));
-}
-def_test(16)
-{
+    ensure(not scanner.next(md));
+});
+
+add_method("image_rr", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -600,10 +599,10 @@ def_test(16)
     wassert(actual(md).contains("quantity", "ACRR"));
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
-	ensure(not scanner.next(md));
-}
-def_test(17)
-{
+    ensure(not scanner.next(md));
+});
+
+add_method("image_vil", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -636,10 +635,10 @@ def_test(17)
     wassert(actual(md).contains("quantity", "VIL"));
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
-	ensure(not scanner.next(md));
-}
-def_test(18)
-{
+    ensure(not scanner.next(md));
+});
+
+add_method("image_zlr_bb", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -672,10 +671,10 @@ def_test(18)
     wassert(actual(md).contains("quantity", "DBZH"));
     wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
-	ensure(not scanner.next(md));
-}
-def_test(19)
-{
+    ensure(not scanner.next(md));
+});
+
+add_method("xsec", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
@@ -708,20 +707,19 @@ def_test(19)
     wassert(actual(md).contains("quantity", "DBZH"));
     wassert(actual(md).contains("area", "GRIB(latfirst=44320636,lonfirst=11122189,latlast=44821945,lonlast=12546566,type=0)"));
 
-	ensure(not scanner.next(md));
-}
+    ensure(not scanner.next(md));
+});
 
 // Check that the scanner silently discard an empty file
-def_test(20)
-{
+add_method("empty", [] {
     Metadata md;
     scan::OdimH5 scanner;
     vector<uint8_t> buf;
 
     scanner.test_open("inbound/odimh5/empty.h5");
     ensure(not scanner.next(md));
-}
+});
 
 }
 
-// vim:set ts=4 sw=4:
+}

@@ -449,7 +449,7 @@ nobase_dist_arkiinclude_HEADERS += scan/bufr.h
 libarkimet_la_SOURCES += scan/bufr.cc
 libarkimet_la_LDFLAGS += $(DBALLE_LIBS)
 AM_CPPFLAGS += $(DBALLE_CFLAGS)
-tests_arki_test_SOURCES += scan/bufr-tut.cc
+tests_arki_test_SOURCES += scan/bufr-test.cc
 if LUA
 nobase_dist_arkiinclude_HEADERS += scan/bufrlua.h
 libarkimet_la_SOURCES += scan/bufrlua.cc
@@ -461,7 +461,7 @@ AM_CPPFLAGS += $(HDF5_CFLAGS)
 nobase_dist_arkiinclude_HEADERS += scan/odimh5.h
 libarkimet_la_SOURCES += scan/odimh5.cc
 libarkimet_la_LDFLAGS += $(HDF5_LIBS)
-tests_arki_test_SOURCES += utils/h5-test.cc scan/odimh5-tut.cc
+tests_arki_test_SOURCES += utils/h5-test.cc scan/odimh5-test.cc
 tests_arki_test_LDADD += $(HDF5_LIBS)
 endif
 

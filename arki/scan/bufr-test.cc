@@ -1,46 +1,37 @@
 #include "arki/metadata/tests.h"
-#include "arki/types/tests.h"
-#include "arki/scan/bufr.h"
-#include "arki/types/source.h"
-#include "arki/types/origin.h"
-#include "arki/types/product.h"
-#include "arki/types/reftime.h"
-#include "arki/types/area.h"
-#include "arki/types/proddef.h"
-#include "arki/types/run.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/scan/any.h"
+#include "arki/scan/bufr.h"
 #include "arki/utils/sys.h"
-#include "arki/utils/string.h"
-#include <sstream>
-#include <iostream>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include "arki/types/reftime.h"
+#include "arki/types/source.h"
 
-namespace tut {
+namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
+using namespace arki::tests;
 using namespace arki::types;
 using namespace arki::utils;
 
-struct arki_scan_bufr_shar {
-};
-TESTGRP(arki_scan_bufr);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_scan_bufr");
+
+void Tests::register_tests() {
 
 // Scan a well-known bufr file, with no padding between BUFRs
-def_test(1)
-{
+add_method("contiguous", [] {
     Metadata md;
     scan::Bufr scanner;
     vector<uint8_t> buf;
 
     scanner.test_open("inbound/test.bufr");
 
-	// See how we scan the first BUFR
-	ensure(scanner.next(md));
+    // See how we scan the first BUFR
+    wassert(actual(scanner.next(md)).istrue());
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 0, 194));
@@ -110,12 +101,10 @@ def_test(1)
 
 	// No more bufrs
 	ensure(not scanner.next(md));
-}
-
+});
 
 // Scan a well-known bufr file, with extra padding data between messages
-def_test(2)
-{
+add_method("padded", [] {
     Metadata md;
     scan::Bufr scanner;
     vector<uint8_t> buf;
@@ -192,11 +181,10 @@ def_test(2)
 
 	// No more bufrs
 	ensure(not scanner.next(md));
-}
+});
 
 // Test validation
-def_test(3)
-{
+add_method("validate", [] {
     Metadata md;
     vector<uint8_t> buf;
 
@@ -223,12 +211,11 @@ def_test(3)
     wassert(v.validate_buf(buf.data(), buf.size()));
     ensure_throws(v.validate_buf((const char*)buf.data()+1, buf.size()-1));
     ensure_throws(v.validate_buf(buf.data(), buf.size()-1));
-}
+});
 
 // Test scanning a BUFR file that can only be decoded partially
 // (note: it can now be fully decoded)
-def_test(4)
-{
+add_method("partial", [] {
     Metadata md;
     scan::Bufr scanner;
     vector<uint8_t> buf;
@@ -263,11 +250,10 @@ def_test(4)
 
 	// No more bufrs
 	ensure(not scanner.next(md));
-}
+});
 
 // Test scanning a pollution BUFR file
-def_test(5)
-{
+add_method("pollution", [] {
     Metadata md;
     scan::Bufr scanner;
     vector<uint8_t> buf;
@@ -299,11 +285,10 @@ def_test(5)
 
 	// No more bufrs
 	ensure(not scanner.next(md));
-}
+});
 
 // Test scanning a BUFR file with undefined dates
-def_test(6)
-{
+add_method("zerodate", [] {
     Metadata md;
     scan::Bufr scanner;
 
@@ -312,88 +297,80 @@ def_test(6)
     // Missing datetime info should lead to missing Reftime
     wassert(actual(scanner.next(md)).istrue());
     wassert(actual(md.get<Reftime>()).isfalse());
-}
+});
 
 // Test scanning a ship
-def_test(7)
-{
+add_method("ship", [] {
     Metadata md;
     scan::Bufr scanner;
     scanner.test_open("inbound/ship.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("area", "GRIB(x=-11, y=37, type=mob)"));
     wassert(actual(md).contains("proddef", "GRIB(id=DHDE)"));
-}
+});
 
 // Test scanning an amdar
-def_test(8)
-{
+add_method("amdar", [] {
     Metadata md;
     scan::Bufr scanner;
     scanner.test_open("inbound/amdar.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("area", "GRIB(x=21, y=64, type=mob)"));
     wassert(actual(md).contains("proddef", "GRIB(id=EU4444)"));
-}
+});
 
 // Test scanning an airep
-def_test(9)
-{
+add_method("airep", [] {
     Metadata md;
     scan::Bufr scanner;
     scanner.test_open("inbound/airep.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("area", "GRIB(x=-54, y=51, type=mob)"));
     wassert(actual(md).contains("proddef", "GRIB(id=ACA872)"));
-}
+});
 
 // Test scanning an acars
-def_test(10)
-{
+add_method("acars", [] {
     Metadata md;
     scan::Bufr scanner;
     scanner.test_open("inbound/acars.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("area", "GRIB(x=-88, y=39, type=mob)"));
     wassert(actual(md).contains("proddef", "GRIB(id=JBNYR3RA)"));
-}
+});
 
 // Test scanning a GTS synop
-def_test(11)
-{
+add_method("gts", [] {
     Metadata md;
     scan::Bufr scanner;
     scanner.test_open("inbound/synop-gts.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("area", "GRIB(lat=4586878, lon=717080)"));
     wassert(actual(md).contains("proddef", "GRIB(blo=6, sta=717)"));
-}
+});
 
 // Test scanning a message with a different date in the header than in its contents
-def_test(12)
-{
+add_method("date_mismatch", [] {
     Metadata md;
     scan::Bufr scanner;
     scanner.test_open("inbound/synop-gts-different-date-in-header.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("area", "GRIB(lat=4586878, lon=717080)"));
     wassert(actual(md).contains("proddef", "GRIB(blo=6, sta=717)"));
-}
+});
 
 // Test scanning a message which raises domain errors when interpreted
-def_test(13)
-{
+add_method("out_of_range", [] {
     Metadata md;
     scan::Bufr scanner;
     scanner.test_open("inbound/interpreted-range.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("Area", "GRIB(type=mob, x=10, y=53)"));
     wassert(actual(md).contains("Proddef", "GRIB(id=DBBC)"));
-}
+});
 
 // Test scanning a temp forecast, to see if we got the right reftime
-def_test(14)
-{
+add_method("temp_reftime", [] {
     // BUFR has datetime 2009-02-13 12:00:00, timerange instant
     Metadata md;
     scan::Bufr scanner;
@@ -406,11 +383,10 @@ def_test(14)
     scanner.test_open("inbound/tempforecast1.bufr");
     ensure(scanner.next(md));
     wassert(actual(md).contains("reftime", "2013-04-03 00:00:00"));
-}
+});
 
 // Test scanning a bufr with all sorts of wrong dates
-def_test(15)
-{
+add_method("wrongdate", [] {
     Metadata md;
     scan::Bufr scanner;
     scanner.test_open("inbound/wrongdate.bufr");
@@ -434,8 +410,8 @@ def_test(15)
     wassert(actual(md.get<Reftime>()).isfalse());
 
     wassert(actual(scanner.next(md)).isfalse());
-}
+});
 
 }
 
-// vim:set ts=4 sw=4:
+}
