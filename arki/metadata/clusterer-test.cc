@@ -1,25 +1,12 @@
-#include <arki/tests/tests.h>
-#include <arki/metadata.h>
+#include "arki/tests/tests.h"
+#include "arki/metadata.h"
 #include "clusterer.h"
 #include "collection.h"
-#include <arki/scan/any.h>
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
-
-struct arki_metadata_clusterer_shar {
-    metadata::TestCollection mdc;
-
-    arki_metadata_clusterer_shar()
-        : mdc("inbound/test.grib1")
-    {
-    }
-};
-TESTGRP(arki_metadata_clusterer);
-
-namespace {
 
 struct ClusterCounter : public metadata::Clusterer
 {
@@ -39,12 +26,19 @@ inline unique_ptr<Metadata> wrap(const Metadata& md)
     return unique_ptr<Metadata>(new Metadata(md));
 }
 
-}
+
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_metadata_clusterer");
+
+void Tests::register_tests() {
 
 // Test clustering by count
-def_test(1)
-{
+add_method("by_count", [] {
     ARKI_UTILS_TEST_INFO(info);
+    metadata::TestCollection mdc("inbound/test.grib1");
     unsigned items[] = { 0, 1, 10, 11, 20, 21, 121 };
     for (unsigned* i = items; i != items + sizeof(items) / sizeof(items[0]); ++i)
     {
@@ -58,15 +52,15 @@ def_test(1)
 
         wassert(actual(clusterer.clusters_processed) == (*i + 10 - 1) / 10);
     }
-}
+});
 
 // Test clustering by size
-def_test(2)
-{
+add_method("by_size", [] {
     // mdc[0] has 7218b of data
     // mdc[1] has 34960b of data
     // mdc[2] has 2234b of data
     ARKI_UTILS_TEST_INFO(info);
+    metadata::TestCollection mdc("inbound/test.grib1");
     unsigned items[] = { 0, 1, 10, 11, 20, 21, 121 };
     for (unsigned* i = items; i != items + sizeof(items) / sizeof(items[0]); ++i)
     {
@@ -103,11 +97,11 @@ def_test(2)
 
         wassert(actual(clusterer.clusters_processed) == 3u);
     }
-}
+});
 
 // Test clustering by interval
-def_test(3)
-{
+add_method("by_interval", [] {
+    metadata::TestCollection mdc("inbound/test.grib1");
     ClusterCounter clusterer;
     clusterer.max_interval = 2; // month
 
@@ -116,11 +110,11 @@ def_test(3)
     clusterer.flush();
 
     wassert(actual(clusterer.clusters_processed) == 2u);
-}
+});
 
 // Test clustering by timerange
-def_test(4)
-{
+add_method("by_timerange", [] {
+    metadata::TestCollection mdc("inbound/test.grib1");
     ClusterCounter clusterer;
     clusterer.split_timerange = true;
 
@@ -130,8 +124,8 @@ def_test(4)
     clusterer.flush();
 
     wassert(actual(clusterer.clusters_processed) == 2u);
-}
+});
 
 }
 
-// vim:set ts=4 sw=4:
+}

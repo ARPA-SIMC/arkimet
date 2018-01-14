@@ -408,9 +408,9 @@ tests_arki_test_SOURCES += \
 		bbox-test.cc \
 		metadata-test.cc \
 		metadata/collection-test.cc \
-		metadata/clusterer-tut.cc \
+		metadata/clusterer-test.cc \
 		metadata/stream-test.cc \
-		metadata/test-generator-tut.cc \
+		metadata/test-generator-test.cc \
 		reader-test.cc \
 		summary-test.cc \
 		summary/intern-test.cc \

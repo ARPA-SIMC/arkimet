@@ -1,62 +1,56 @@
-#include "config.h"
-#include <arki/tests/tests.h>
-#include <arki/metadata.h>
-#include <arki/metadata/test-generator.h>
-#include <arki/metadata/collection.h>
-#include <arki/types/origin.h>
+#include "arki/tests/tests.h"
+#include "arki/types/origin.h"
+#include "arki/metadata.h"
+#include "test-generator.h"
+#include "collection.h"
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
-using namespace arki::metadata;
 using namespace arki::tests;
+using namespace arki::metadata;
 
-struct arki_metadata_test_generator_shar {
-    arki_metadata_test_generator_shar()
-    {
-    }
-};
-TESTGRP(arki_metadata_test_generator);
-
-// Simple generation
-def_test(1)
+class Tests : public TestCase
 {
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_metadata_test_generator");
+
+void Tests::register_tests() {
+
+add_method("grib1", [] {
     test::Generator g("grib1");
     Collection c;
     g.generate(c.inserter_func());
     ensure_equals(c.size(), 1u);
     ensure_equals(c[0].get<types::Origin>()->style(), types::Origin::GRIB1);
-}
+});
 
-def_test(2)
-{
+add_method("grib2", [] {
     test::Generator g("grib2");
     Collection c;
     g.generate(c.inserter_func());
     ensure_equals(c.size(), 1u);
     ensure_equals(c[0].get<types::Origin>()->style(), types::Origin::GRIB2);
-}
+});
 
-def_test(3)
-{
+add_method("bufr", [] {
     test::Generator g("bufr");
     Collection c;
     g.generate(c.inserter_func());
     ensure_equals(c.size(), 1u);
     ensure_equals(c[0].get<types::Origin>()->style(), types::Origin::BUFR);
-}
+});
 
-def_test(4)
-{
+add_method("odimh5", [] {
     test::Generator g("odimh5");
     Collection c;
     g.generate(c.inserter_func());
     ensure_equals(c.size(), 1u);
     ensure_equals(c[0].get<types::Origin>()->style(), types::Origin::ODIMH5);
-}
+});
 
-def_test(5)
-{
+add_method("grib1_extratypes", [] {
     test::Generator g("grib1");
     g.add(TYPE_ORIGIN, "GRIB1(98, 0, 10)");
     g.add(TYPE_ORIGIN, "GRIB1(200, 0, 10)");
@@ -68,6 +62,8 @@ def_test(5)
     Collection c;
     g.generate(c.inserter_func());
     ensure_equals(c.size(), 6u);
+});
+
 }
 
 }
