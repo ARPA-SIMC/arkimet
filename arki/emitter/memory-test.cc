@@ -1,51 +1,31 @@
-/*
- * Copyright (C) 2010--2015  ARPAE-SIMC <simc-urp@arpae.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-#include <arki/tests/tests.h>
-#include <arki/emitter/memory.h>
+#include "arki/tests/tests.h"
+#include "memory.h"
 
-namespace tut {
+namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
+using namespace arki::tests;
 using namespace arki::emitter;
 
-struct arki_emitter_memory_shar {
-    arki_emitter_memory_shar()
-    {
-    }
-};
-TESTGRP(arki_emitter_memory);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_emitter_memory");
+
+void Tests::register_tests() {
 
 // null value
-def_test(1)
-{
+add_method("null", [] {
     Memory m;
     m.add_null();
 
     wassert(actual(m.root().tag()) == "null");
     ensure(m.root().is_null());
-}
+});
 
 // bool value
-def_test(2)
-{
+add_method("bool", [] {
     {
         Memory m;
         m.add(true);
@@ -60,21 +40,19 @@ def_test(2)
         ensure(m.root().is_bool());
         ensure_equals(m.root().get_bool(), false);
     }
-}
+});
 
 // int value
-def_test(3)
-{
+add_method("int", [] {
     Memory m;
     m.add(42);
     wassert(actual(m.root().tag()) == "int");
     ensure(m.root().is_int());
     ensure_equals(m.root().get_int(), 42);
-}
+});
 
 // double value
-def_test(4)
-{
+add_method("double", [] {
     {
         Memory m;
         m.add(1.0);
@@ -90,11 +68,10 @@ def_test(4)
         ensure(m.root().is_double());
         ensure_equals(m.root().get_double(), 0.1);
     }
-}
+});
 
 // string value
-def_test(5)
-{
+add_method("string", [] {
     {
         Memory m;
         m.add_string("");
@@ -110,11 +87,10 @@ def_test(5)
         ensure(m.root().is_string());
         ensure_equals(m.root().get_string(), "antani");
     }
-}
+});
 
 // list value
-def_test(6)
-{
+add_method("list", [] {
     Memory m;
     m.start_list();
       m.add("antani");
@@ -139,11 +115,10 @@ def_test(6)
     ensure_equals(l[1].get_list()[0].get_string(), "blinda");
     ensure_equals(l[1].get_list()[1].get_string(), "supercazzola");
     ensure_equals(l[2].get_string(), "tapioca");
-}
+});
 
 // mapping value
-def_test(7)
-{
+add_method("mapping", [] {
     Memory m;
     m.start_mapping();
       m.add("antani");
@@ -170,6 +145,8 @@ def_test(7)
     ensure_equals(i["tapioca"].is_mapping(), true);
     ensure_equals(i["tapioca"].get_mapping().size(), 1u);
     ensure_equals(i["tapioca"].get_mapping()["blinda"].get_string(), "supercazzola");
+});
+
 }
 
 }

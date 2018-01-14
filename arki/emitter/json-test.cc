@@ -1,24 +1,23 @@
-#include "config.h"
-#include <arki/tests/tests.h>
-#include <arki/emitter/json.h>
-#include <arki/emitter/memory.h>
+#include "arki/tests/tests.h"
+#include "json.h"
+#include "memory.h"
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
-using namespace arki::emitter;
 using namespace arki::tests;
+using namespace arki::emitter;
 
-struct arki_emitter_json_shar {
-    arki_emitter_json_shar()
-    {
-    }
-};
-TESTGRP(arki_emitter_json);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_emitter_json");
+
+void Tests::register_tests() {
 
 // null value
-def_test(1)
-{
+add_method("null", [] {
     stringstream str;
     JSON json(str);
     json.add_null();
@@ -28,11 +27,10 @@ def_test(1)
     Memory m;
     JSON::parse(str, m);
     ensure_equals(m.root().is_null(), true);
-}
+});
 
 // bool value
-def_test(2)
-{
+add_method("bool", [] {
     {
         stringstream str;
         JSON json(str);
@@ -58,11 +56,10 @@ def_test(2)
         ensure_equals(m.root().is_bool(), true);
         ensure_equals(m.root().get_bool(), false);
     }
-}
+});
 
 // int value
-def_test(3)
-{
+add_method("int", [] {
     {
         stringstream str;
         JSON json(str);
@@ -88,11 +85,10 @@ def_test(3)
         ensure_equals(m.root().is_int(), true);
         ensure_equals(m.root().get_int(), -1234567);
     }
-}
+});
 
 // double value
-def_test(4)
-{
+add_method("double", [] {
     {
         stringstream str;
         JSON json(str);
@@ -144,11 +140,10 @@ def_test(4)
         ensure_equals(m.root().is_double(), true);
         ensure_equals(m.root().get_double(), -1.0);
     }
-}
+});
 
 // string value
-def_test(5)
-{
+add_method("string", [] {
     {
         stringstream str;
         JSON json(str);
@@ -174,57 +169,51 @@ def_test(5)
         ensure_equals(m.root().is_string(), true);
         ensure_equals(m.root().get_string(), "antani");
     }
-}
+});
 
 // list value
-def_test(6)
-{
-    {
-        stringstream str;
-        JSON json(str);
-        json.start_list();
-        json.add("");
-        json.add(1);
-        json.add(1.0);
-        json.end_list();
-        ensure_equals(str.str(), "[\"\",1,1.0]");
+add_method("list", [] {
+    stringstream str;
+    JSON json(str);
+    json.start_list();
+    json.add("");
+    json.add(1);
+    json.add(1.0);
+    json.end_list();
+    ensure_equals(str.str(), "[\"\",1,1.0]");
 
-        str.seekg(0);
-        Memory m;
-        JSON::parse(str, m);
-        ensure_equals(m.root().is_list(), true);
-        ensure_equals(m.root().get_list()[0].is_string(), true);
-        ensure_equals(m.root().get_list()[0].get_string(), "");
-        ensure_equals(m.root().get_list()[1].is_int(), true);
-        ensure_equals(m.root().get_list()[1].get_int(), 1);
-        ensure_equals(m.root().get_list()[2].is_double(), true);
-        ensure_equals(m.root().get_list()[2].get_double(), 1.0);
-    }
-}
+    str.seekg(0);
+    Memory m;
+    JSON::parse(str, m);
+    ensure_equals(m.root().is_list(), true);
+    ensure_equals(m.root().get_list()[0].is_string(), true);
+    ensure_equals(m.root().get_list()[0].get_string(), "");
+    ensure_equals(m.root().get_list()[1].is_int(), true);
+    ensure_equals(m.root().get_list()[1].get_int(), 1);
+    ensure_equals(m.root().get_list()[2].is_double(), true);
+    ensure_equals(m.root().get_list()[2].get_double(), 1.0);
+});
 
 // mapping value
-def_test(7)
-{
-    {
-        stringstream str;
-        JSON json(str);
-        json.start_mapping();
-        json.add("", 1);
-        json.add("antani", 1.0);
-        json.end_mapping();
-        ensure_equals(str.str(), "{\"\":1,\"antani\":1.0}");
+add_method("mapping", [] {
+    stringstream str;
+    JSON json(str);
+    json.start_mapping();
+    json.add("", 1);
+    json.add("antani", 1.0);
+    json.end_mapping();
+    ensure_equals(str.str(), "{\"\":1,\"antani\":1.0}");
 
-        str.seekg(0);
-        Memory m;
-        JSON::parse(str, m);
-        ensure_equals(m.root().is_mapping(), true);
-        ensure_equals(m.root().get_mapping()[""].is_int(), true);
-        ensure_equals(m.root().get_mapping()[""].get_int(), 1);
-        ensure_equals(m.root().get_mapping()["antani"].is_double(), true);
-        ensure_equals(m.root().get_mapping()["antani"].get_double(), 1.0);
-    }
-}
+    str.seekg(0);
+    Memory m;
+    JSON::parse(str, m);
+    ensure_equals(m.root().is_mapping(), true);
+    ensure_equals(m.root().get_mapping()[""].is_int(), true);
+    ensure_equals(m.root().get_mapping()[""].get_int(), 1);
+    ensure_equals(m.root().get_mapping()["antani"].is_double(), true);
+    ensure_equals(m.root().get_mapping()["antani"].get_double(), 1.0);
+});
 
 }
 
-// vim:set ts=4 sw=4:
+}

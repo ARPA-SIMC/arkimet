@@ -311,8 +311,8 @@ tests_arki_test_SOURCES += \
 		binary-test.cc \
 		configfile-test.cc \
 		transaction-test.cc \
-		emitter/memory-tut.cc \
-		emitter/json-tut.cc \
+		emitter/memory-test.cc \
+		emitter/json-test.cc \
 		values-test.cc \
 		types-test.cc \
 		types/utils-test.cc \
