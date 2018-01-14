@@ -15,7 +15,11 @@ using namespace arki;
 using namespace arki::utils;
 using namespace arki::tests;
 
-def_tests(arki_runtime);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_runtime");
 
 struct CollectProcessor : public runtime::DatasetProcessor
 {

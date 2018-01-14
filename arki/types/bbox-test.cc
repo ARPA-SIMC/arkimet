@@ -8,7 +8,11 @@ using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 
-def_tests(arki_types_bbox);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_types_bbox");
 
 void Tests::register_tests() {
 

@@ -12,7 +12,11 @@ using namespace std;
 using namespace arki;
 using namespace arki::tests;
 
-def_tests(arki_types);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_types");
 
 struct TestImpl : public types::Type
 {

@@ -20,6 +20,22 @@ using namespace arki;
 using namespace arki::utils;
 using namespace arki::tests;
 
+/**
+ * Creates a tempfile, runs body and returns the contents of the temp file after that.
+ *
+ * The temp file is created in the current directory with a fixed name; this is
+ * ok for tests that run on a temp dir, and is not to be used outside tests.
+ */
+std::string tempfile_to_string(std::function<void(arki::utils::sys::NamedFileDescriptor& out)> body)
+{
+    sys::File wr("tempfile", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    body(wr);
+    wr.close();
+    string res = sys::read_file("tempfile");
+    sys::unlink("tempfile");
+    return res;
+}
+
 void fill(Metadata& md)
 {
     using namespace arki::types;

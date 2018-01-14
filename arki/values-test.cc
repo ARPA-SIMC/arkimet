@@ -13,7 +13,11 @@ using namespace std;
 using namespace arki;
 using namespace arki::tests;
 
-def_tests(arki_values);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_values");
 
 void Tests::register_tests() {
 

@@ -22,7 +22,11 @@ using namespace arki;
 using namespace arki::types;
 using arki::core::Time;
 
-def_tests(arki_sort);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_sort");
 
 void produce(int hour, int minute, int run, sort::Stream& c)
 {

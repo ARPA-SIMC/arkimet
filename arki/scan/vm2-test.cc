@@ -17,7 +17,11 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
 
-def_tests(arki_scan_vm2);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_scan_vm2");
 
 void Tests::register_tests() {
 

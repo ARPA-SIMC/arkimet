@@ -11,7 +11,11 @@ using namespace std;
 using namespace arki;
 using namespace arki::tests;
 
-def_tests(arki_configfile);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_configfile");
 
 void Tests::register_tests() {
 

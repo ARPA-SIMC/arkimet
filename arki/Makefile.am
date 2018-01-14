@@ -17,7 +17,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		wibble/sys/childprocess.h \
 		wibble/sys/exec.h \
 		wibble/sys/signal.h \
-		wibble/tests/tut.h \
 		core/fwd.h \
 		core/time.h \
 		core/fuzzytime.h \
@@ -203,7 +202,7 @@ noinst_LTLIBRARIES = libarkimet-test.la
 libarkimet_la_CPPFLAGS = $(AM_CPPFLAGS) -Werror
 libarkimet_la_SOURCES =
 libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
-libarkimet_test_la_SOURCES = tests/tut-main.cpp
+libarkimet_test_la_SOURCES = tests/main.cpp
 tests_arki_test_SOURCES =
 tests_arki_test_LDADD =
 

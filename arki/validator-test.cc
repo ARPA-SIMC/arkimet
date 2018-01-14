@@ -33,7 +33,11 @@ static void dump_errors(const vector<string>& errors)
     }
 }
 
-def_tests(arki_validator);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_validator");
 
 void Tests::register_tests() {
 

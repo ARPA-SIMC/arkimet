@@ -15,7 +15,11 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::tests;
 
-def_tests(arki_bbox);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_bbox");
 
 void Tests::register_tests() {
 

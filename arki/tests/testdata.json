@@ -191,7 +191,7 @@
  },
  {
   "doc": "",
-  "group": "arki_dsindex_pending",
+  "group": "arki_transaction",
   "method": "empty"
  },
  {
@@ -10556,7 +10556,7 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_metadatagrid",
+  "group": "arki_metadatagrid",
   "method": "query"
  },
  {
