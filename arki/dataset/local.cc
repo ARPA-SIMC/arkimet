@@ -1,4 +1,5 @@
 #include "local.h"
+#include "lock.h"
 #include "segmented.h"
 #include "archive.h"
 #include "arki/dataset/time.h"
@@ -68,37 +69,14 @@ std::shared_ptr<ArchivesConfig> LocalConfig::archives_config() const
     return m_archives_config;
 }
 
-namespace {
-
-struct LocalLock : public core::Lock
+std::shared_ptr<DatasetReadLock> LocalConfig::read_lock_dataset() const
 {
-    arki::core::File lockfile;
-    const core::lock::Policy* lock_policy;
-    arki::core::FLock ds_lock;
-
-    LocalLock(const LocalConfig& config, bool write=true)
-        : lockfile(str::joinpath(config.path, "lock"), O_RDWR | O_CREAT, 0777), lock_policy(config.lock_policy)
-    {
-        ds_lock.l_type = write ? F_WRLCK : F_RDLCK;
-        ds_lock.l_whence = SEEK_SET;
-        ds_lock.l_start = 0;
-        ds_lock.l_len = 0;
-        ds_lock.l_pid = 0;
-        // Use SETLKW, so that if it is already locked, we just wait
-        lock_policy->setlkw(lockfile, ds_lock);
-    }
-    ~LocalLock()
-    {
-        ds_lock.l_type = F_UNLCK;
-        lock_policy->setlk(lockfile, ds_lock);
-    }
-};
-
+    return std::make_shared<DatasetReadLock>(*this);
 }
 
-std::shared_ptr<core::Lock> LocalConfig::lock_dataset(bool write) const
+std::shared_ptr<DatasetWriteLock> LocalConfig::write_lock_dataset() const
 {
-    return std::shared_ptr<core::Lock>(new LocalLock(*this, write));
+    return std::make_shared<DatasetWriteLock>(*this);
 }
 
 

@@ -1951,6 +1951,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_lock",
+  "method": "datasetlock"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_reporter",
   "method": "empty"
  },

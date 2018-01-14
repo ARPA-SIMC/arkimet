@@ -13,6 +13,8 @@ class Metadata;
 class Matcher;
 
 namespace dataset {
+class DatasetReadLock;
+class DatasetWriteLock;
 class LocalConfig;
 class ArchivesConfig;
 class ArchivesReader;
@@ -48,7 +50,8 @@ public:
     /**
      * Create/open a dataset-wide lockfile, returning the Lock instance
      */
-    std::shared_ptr<core::Lock> lock_dataset(bool write=true) const;
+    std::shared_ptr<DatasetReadLock> read_lock_dataset() const;
+    std::shared_ptr<DatasetWriteLock> write_lock_dataset() const;
 };
 
 template<typename Parent, typename Archives>

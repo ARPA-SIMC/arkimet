@@ -5,6 +5,7 @@
 #include "arki/dataset/segment.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/step.h"
+#include "arki/dataset/lock.h"
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
@@ -40,7 +41,7 @@ Writer::Writer(std::shared_ptr<const simple::Config> config)
     // Create the directory if it does not exist
     sys::makedirs(config->path);
 
-    lock = config->lock_dataset(true);
+    lock = config->write_lock_dataset();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
@@ -75,7 +76,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
-    if (!lock) lock = config().lock_dataset();
+    if (!lock) lock = config().write_lock_dataset();
     // TODO: refuse if md is before "archive age"
     auto writer = file(md, md.source().format);
     datafile::MdBuf* mdbuf = static_cast<datafile::MdBuf*>(writer->payload);
@@ -295,6 +296,8 @@ public:
 
     size_t repack(unsigned test_flags) override
     {
+        auto lock = checker.lock->write_lock();
+
         // Read the metadata
         metadata::Collection mds;
         scan::scan(segment->absname, checker.config().lock_policy, mds.inserter_func());
@@ -357,7 +360,7 @@ Checker::Checker(std::shared_ptr<const simple::Config> config)
     // Create the directory if it does not exist
     sys::makedirs(config->path);
 
-    auto lock = config->lock_dataset(false);
+    lock = config->read_lock_dataset();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
@@ -379,34 +382,28 @@ std::string Checker::type() const { return "simple"; }
 
 void Checker::remove_all(dataset::Reporter& reporter, bool writable)
 {
-    auto lock = config().lock_dataset(false);
     IndexedChecker::remove_all(reporter, writable);
 }
 void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable)
 {
-    auto lock = config().lock_dataset(false);
     IndexedChecker::remove_all_filtered(matcher, reporter, writable);
 }
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
-    auto lock = config().lock_dataset(false);
     IndexedChecker::repack(reporter, writable, test_flags);
     m_mft->flush();
 }
 void Checker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
-    auto lock = config().lock_dataset(false);
     IndexedChecker::repack_filtered(matcher, reporter, writable, test_flags);
     m_mft->flush();
 }
 void Checker::check(dataset::Reporter& reporter, bool fix, bool quick) {
-    auto lock = config().lock_dataset(false);
     IndexedChecker::check(reporter, fix, quick);
     m_mft->flush();
 }
 void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
 {
-    auto lock = config().lock_dataset(false);
     IndexedChecker::check_filtered(matcher, reporter, fix, quick);
     m_mft->flush();
 }

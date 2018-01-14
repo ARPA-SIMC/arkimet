@@ -29,6 +29,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		configfile.h \
 		libconfig.h \
 		dataset/fwd.h \
+		dataset/lock.h \
 		dataset/reporter.h \
 		dataset/time.h \
 		dataset/archive.h \
@@ -479,6 +480,7 @@ libarkimet_la_SOURCES += \
 		metadata/xargs.cc \
 		targetfile.cc \
 		dataset.cc \
+		dataset/lock.cc \
 		dataset/reporter.cc \
 		dataset/time.cc \
 		dataset/segment.cc \
@@ -530,6 +532,7 @@ tests_arki_test_SOURCES += \
 		targetfile-test.cc \
 		metadata/xargs-test.cc \
 		dataset/tests.cc \
+		dataset/lock-test.cc \
 		dataset/reporter-test.cc \
 		dataset/time-test.cc \
 		dataset/segment-test.cc \

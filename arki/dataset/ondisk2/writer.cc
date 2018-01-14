@@ -6,6 +6,7 @@
 #include "arki/dataset/segment.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/step.h"
+#include "arki/dataset/lock.h"
 #include "arki/types/source/blob.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
@@ -46,7 +47,7 @@ Writer::Writer(std::shared_ptr<const ondisk2::Config> config)
     // Create the directory if it does not exist
     bool dir_created = sys::makedirs(config->path);
 
-    lock = config->lock_dataset(true);
+    lock = config->write_lock_dataset();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
@@ -185,7 +186,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
-    if (!lock) lock = config().lock_dataset();
+    if (!lock) lock = config().write_lock_dataset();
 
     if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
 
@@ -207,7 +208,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 
 void Writer::remove(Metadata& md)
 {
-    if (!lock) lock = config().lock_dataset();
+    if (!lock) lock = config().write_lock_dataset();
 
     const types::source::Blob* source = md.has_source_blob();
     if (!source)
@@ -341,6 +342,7 @@ public:
 
     size_t repack(unsigned test_flags) override
     {
+        auto lock = checker.lock->write_lock();
         metadata::Collection mds;
         checker.idx->scan_file(segment->relname, mds.inserter_func(), "reftime, offset");
         return reorder(mds, test_flags);
@@ -403,7 +405,7 @@ Checker::Checker(std::shared_ptr<const ondisk2::Config> config)
     // Create the directory if it does not exist
     bool dir_created = sys::makedirs(config->path);
 
-    auto lock = config->lock_dataset(false);
+    lock = config->read_lock_dataset();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
@@ -421,31 +423,27 @@ std::string Checker::type() const { return "ondisk2"; }
 
 void Checker::remove_all(dataset::Reporter& reporter, bool writable)
 {
-    auto lock = config().lock_dataset(false);
     IndexedChecker::remove_all(reporter, writable);
 }
 
 void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable)
 {
-    auto lock = config().lock_dataset(false);
     IndexedChecker::remove_all_filtered(matcher, reporter, writable);
 }
 
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
-    auto lock = config().lock_dataset(false);
     IndexedChecker::repack(reporter, writable, test_flags);
 }
 
 void Checker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
-    auto lock = config().lock_dataset(false);
     IndexedChecker::repack_filtered(matcher, reporter, writable, test_flags);
 }
 
 void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
-    auto lock = config().lock_dataset(false);
+    // TODO: escalate to a write lock while repacking a file
     IndexedChecker::check(reporter, fix, quick);
 
     if (!idx->checkSummaryCache(*this, reporter) && fix)
@@ -457,7 +455,6 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
 
 void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
 {
-    auto lock = config().lock_dataset(false);
     IndexedChecker::check_filtered(matcher, reporter, fix, quick);
 
     if (!idx->checkSummaryCache(*this, reporter) && fix)
