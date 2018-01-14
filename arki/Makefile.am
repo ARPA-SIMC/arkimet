@@ -50,7 +50,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/index/aggregate.h \
 		dataset/index/summarycache.h \
 		dataset/index/manifest.h \
-		dataset/index/contents.h \
 		dataset/local.h \
 		dataset/segmented.h \
 		dataset/indexed.h \
@@ -58,6 +57,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/memory.h \
 		dataset/merged.h \
 		dataset/ondisk2.h \
+		dataset/ondisk2/index.h \
 		dataset/ondisk2/reader.h \
 		dataset/ondisk2/test-utils.h \
 		dataset/ondisk2/writer.h \
@@ -495,7 +495,6 @@ libarkimet_la_SOURCES += \
 		dataset/index/manifest.cc \
 		dataset/index/aggregate.cc \
 		dataset/index/summarycache.cc \
-		dataset/index/contents.cc \
 		dataset/step.cc \
 		dataset/local.cc \
 		dataset/segmented.cc \
@@ -511,6 +510,7 @@ libarkimet_la_SOURCES += \
 		dataset/iseg/reader.cc \
 		dataset/iseg/writer.cc \
 		dataset/ondisk2.cc \
+		dataset/ondisk2/index.cc \
 		dataset/ondisk2/reader.cc \
 		dataset/ondisk2/writer.cc \
 		dataset/outbound.cc \
@@ -547,7 +547,6 @@ tests_arki_test_SOURCES += \
 		dataset/index/manifest-test.cc \
 		dataset/index/aggregate-test.cc \
 		dataset/index/summarycache-test.cc \
-		dataset/index/contents-test.cc \
 		dataset/step-test.cc \
 		dataset/local-test.cc \
 		dataset/segmented-test.cc \
@@ -565,6 +564,7 @@ tests_arki_test_SOURCES += \
 		dataset/iseg/writer-test.cc \
 		dataset/iseg/maintenance-test.cc \
 		dataset/ondisk2-test.cc \
+		dataset/ondisk2/index-test.cc \
 		dataset/ondisk2/reader-test.cc \
 		dataset/ondisk2/writer-test.cc \
 		dataset/ondisk2/test-utils.cc \

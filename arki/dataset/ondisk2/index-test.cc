@@ -1,7 +1,6 @@
 #include "arki/metadata/tests.h"
 #include "arki/exceptions.h"
 #include "arki/dataset.h"
-#include "arki/dataset/index/contents.h"
 #include "arki/reader.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -14,6 +13,7 @@
 #include "arki/utils/sys.h"
 #include "arki/wibble/sys/process.h"
 #include "arki/wibble/sys/childprocess.h"
+#include "index.h"
 #include <memory>
 #include <sys/fcntl.h>
 #include <unistd.h>
@@ -134,7 +134,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_dataset_index_contents");
+} test("arki_dataset_ondisk2_index");
 
 void Tests::register_tests() {
 

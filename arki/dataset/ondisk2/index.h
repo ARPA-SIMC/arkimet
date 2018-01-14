@@ -1,5 +1,5 @@
-#ifndef ARKI_DATASET_INDEX_CONTENTS_H
-#define ARKI_DATASET_INDEX_CONTENTS_H
+#ifndef ARKI_DATASET_ONDISK2_INDEX_H
+#define ARKI_DATASET_ONDISK2_INDEX_H
 
 /// Index for data files and their contents
 

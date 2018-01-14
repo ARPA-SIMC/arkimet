@@ -2,7 +2,7 @@
 #include "arki/dataset/tests.h"
 #include "index.h"
 #include "index/manifest.h"
-#include "index/contents.h"
+#include "ondisk2/index.h"
 #include "arki/summary.h"
 
 using namespace std;

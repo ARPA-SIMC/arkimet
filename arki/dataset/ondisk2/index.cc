@@ -1,5 +1,5 @@
 #include "config.h"
-#include "contents.h"
+#include "index.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
@@ -396,10 +396,12 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
             // into an impossible clause that evaluates quickly
             constraints.push_back("1 == 2");
         else if (!begin.get() && !end.get())
-            ; // The matcher does not match on time ranges: do not add
-              // constraints
-        else
         {
+            // No restriction on a range of reftimes, but still add sql
+            // constraints if there is an unbounded reftime matcher (#116)
+            if (auto reftime = m.get(TYPE_REFTIME))
+                constraints.push_back(reftime->toReftimeSQL("reftime"));
+        } else {
             // Compare with the reftime bounds in the database
             unique_ptr<Time> db_begin;
             unique_ptr<Time> db_end;

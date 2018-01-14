@@ -1,6 +1,6 @@
 #include "config.h"
 #include "reader.h"
-#include "arki/dataset/index/contents.h"
+#include "index.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 

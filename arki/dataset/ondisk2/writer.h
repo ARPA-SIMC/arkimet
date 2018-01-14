@@ -4,8 +4,8 @@
 /// dataset/ondisk2/writer - Local on disk dataset writer
 
 #include <arki/dataset/ondisk2.h>
+#include <arki/dataset/ondisk2/index.h>
 #include <arki/configfile.h>
-#include <arki/dataset/index/contents.h>
 #include <string>
 #include <memory>
 
