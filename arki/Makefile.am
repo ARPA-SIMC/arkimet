@@ -432,9 +432,9 @@ tests_arki_test_SOURCES += \
 		matcher/task-test.cc \
 		matcher/quantity-test.cc \
 		scan/any-test.cc \
-		runtime/io-tut.cc \
+		runtime/io-test.cc \
 		runtime/inputs-test.cc \
-		runtime/config-tut.cc
+		runtime/config-test.cc
 
 if GRIBAPI
 nobase_dist_arkiinclude_HEADERS += scan/grib.h
