@@ -1,11 +1,12 @@
-#include <arki/libconfig.h>
-#include <arki/scan/any.h>
-#include <arki/metadata.h>
-#include <arki/types/source/blob.h>
-#include <arki/utils/files.h>
-#include <arki/utils/compress.h>
-#include <arki/utils/sys.h>
-#include <arki/utils/string.h>
+#include "arki/libconfig.h"
+#include "arki/scan/any.h"
+#include "arki/metadata.h"
+#include "arki/reader.h"
+#include "arki/types/source/blob.h"
+#include "arki/utils/files.h"
+#include "arki/utils/compress.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 #include <sstream>
 #include <algorithm>
 #include <utime.h>
@@ -31,10 +32,13 @@ using namespace arki::types;
 namespace arki {
 namespace scan {
 
-static void scan_metadata(const std::string& file, metadata_dest_func dest)
+static void scan_metadata(const std::string& pathname, const std::string& md_pathname, const core::lock::Policy* lock_policy, metadata_dest_func dest)
 {
-    //cerr << "Reading cached metadata from " << file << endl;
-    Metadata::read_file(file, dest);
+    auto reader = Reader::create_new(pathname, lock_policy);
+    Metadata::read_file(md_pathname, [&](unique_ptr<Metadata> md) {
+        md->sourceBlob().lock(reader);
+        return dest(move(md));
+    });
 }
 
 static bool scan_file(
@@ -42,6 +46,7 @@ static bool scan_file(
         const std::string& basedir,
         const std::string& relname,
         const std::string& format,
+        const core::lock::Policy* lock_policy,
         metadata_dest_func dest)
 {
     // Scan the file
@@ -60,7 +65,7 @@ static bool scan_file(
         if (st->st_size == 0) return true;
 
         scan::Grib scanner;
-        scanner.open(pathname, basedir, relname);
+        scanner.open(pathname, basedir, relname, lock_policy);
         while (true)
         {
             unique_ptr<Metadata> md(new Metadata);
@@ -77,7 +82,7 @@ static bool scan_file(
         if (st->st_size == 0) return true;
 
         scan::Bufr scanner;
-        scanner.open(pathname, basedir, relname);
+        scanner.open(pathname, basedir, relname, lock_policy);
         while (true)
         {
             unique_ptr<Metadata> md(new Metadata);
@@ -90,7 +95,7 @@ static bool scan_file(
 #ifdef HAVE_HDF5
     if ((format == "h5") || (format == "odim") || (format == "odimh5")) {
         scan::OdimH5 scanner;
-        scanner.open(pathname, basedir, relname);
+        scanner.open(pathname, basedir, relname, lock_policy);
         while (true)
         {
             unique_ptr<Metadata> md(new Metadata);
@@ -107,7 +112,7 @@ static bool scan_file(
         if (st->st_size == 0) return true;
 
         scan::Vm2 scanner;
-        scanner.open(pathname, basedir, relname);
+        scanner.open(pathname, basedir, relname, lock_policy);
         while (true)
         {
             unique_ptr<Metadata> md(new Metadata);
@@ -127,7 +132,7 @@ static bool dir_segment_fnames_lt(const std::string& a, const std::string& b)
     return na < nb;
 }
 
-static bool scan_dir(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, metadata_dest_func dest)
+static bool scan_dir(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, const core::lock::Policy* lock_policy, metadata_dest_func dest)
 {
     // Collect all file names in the directory
     vector<std::string> fnames;
@@ -145,7 +150,7 @@ static bool scan_dir(const std::string& pathname, const std::string& basedir, co
     {
         //cerr << "SCAN " << *i << " " << pathname << " " << basedir << " " << relname << endl;
         pos = strtoul(i->c_str(), 0, 10);
-        if (!scan_file(str::joinpath(pathname, *i), basedir, relname, format, [&](unique_ptr<Metadata> md) {
+        if (!scan_file(str::joinpath(pathname, *i), basedir, relname, format, lock_policy, [&](unique_ptr<Metadata> md) {
                    const source::Blob& i = md->sourceBlob();
                    md->set_source(Source::createBlob(i.format, i.basedir, relname, pos, i.size, i.reader));
                    return dest(move(md));
@@ -167,21 +172,21 @@ static std::string guess_format(const std::string& basedir, const std::string& f
     return str::lower(file.substr(pos+1));
 }
 
-bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest)
+bool scan(const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy, metadata_dest_func dest)
 {
     std::string format = guess_format(basedir, relname);
 
     // If we cannot detect a format, fail
     if (format.empty()) return false;
-    return scan(basedir, relname, dest, format);
+    return scan(basedir, relname, lock_policy, format, dest);
 }
 
-bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest, const std::string& format)
+bool scan(const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy, const std::string& format, metadata_dest_func dest)
 {
     // If we scan standard input, assume uncompressed data and do not try to
     // look for an existing .metadata file
     if (relname == "-")
-        return scan_file(relname, basedir, relname, format, dest);
+        return scan_file(relname, basedir, relname, format, lock_policy, dest);
 
     // stat the file (or its compressed version)
     string pathname = str::joinpath(basedir, relname);
@@ -198,29 +203,29 @@ bool scan(const std::string& basedir, const std::string& relname, metadata_dest_
     if (st_md.get() and st_md->st_mtime >= st_file->st_mtime)
     {
         // If there is a usable metadata file, use it to save time
-        scan_metadata(md_pathname, dest);
+        scan_metadata(pathname, md_pathname, lock_policy, dest);
         return true;
     } else if (S_ISDIR(st_file->st_mode)) {
-        return scan_dir(pathname, basedir, relname, format, dest);
+        return scan_dir(pathname, basedir, relname, format, lock_policy, dest);
     } else {
-        return scan_file(pathname, basedir, relname, format, dest);
+        return scan_file(pathname, basedir, relname, format, lock_policy, dest);
     }
 }
 
-bool scan(const std::string& file, metadata_dest_func dest)
+bool scan(const std::string& file, const core::lock::Policy* lock_policy, metadata_dest_func dest)
 {
     string basedir;
     string relname;
     utils::files::resolve_path(file, basedir, relname);
-    return scan(basedir, relname, dest);
+    return scan(basedir, relname, lock_policy, dest);
 }
 
-bool scan(const std::string& file, metadata_dest_func dest, const std::string& format)
+bool scan(const std::string& file, const core::lock::Policy* lock_policy, const std::string& format, metadata_dest_func dest)
 {
     string basedir;
     string relname;
     utils::files::resolve_path(file, basedir, relname);
-    return scan(basedir, relname, dest, format);
+    return scan(basedir, relname, lock_policy, format, dest);
 }
 
 bool exists(const std::string& file)
@@ -253,11 +258,10 @@ time_t timestamp(const std::string& file)
     return sys::timestamp(str::joinpath(file, ".sequence"), 0);
 }
 
-void compress(const std::string& file, size_t groupsize)
+void compress(const std::string& file, const core::lock::Policy* lock_policy, size_t groupsize)
 {
     utils::compress::DataCompressor compressor(file, groupsize);
-    scan(file, [&](unique_ptr<Metadata> md) {
-        md->sourceBlob().lock();
+    scan(file, lock_policy, [&](unique_ptr<Metadata> md) {
         return compressor.eat(move(md));
     });
     compressor.flush();

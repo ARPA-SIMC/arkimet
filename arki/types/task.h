@@ -8,8 +8,6 @@ struct lua_State;
 namespace arki {
 namespace types {
 
-struct Task;
-
 template<> struct traits<Task>
 {
 	static const char* type_tag;

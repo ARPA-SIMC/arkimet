@@ -1,10 +1,10 @@
 #include "arki/iotrace.h"
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
-#include "arki/utils/intern.h"
 #include "arki/runtime/config.h"
 #include <vector>
 #include <set>
+#include <ostream>
 #include <cstdint>
 
 using namespace std;
@@ -39,16 +39,10 @@ struct ListenerList
     }
 };
 
-static utils::StringInternTable* itable = 0;
 static ListenerList* listeners = 0;
 
 void init()
 {
-    // Prevent double initialisation
-    if (itable) return;
-
-    itable = new utils::StringInternTable;
-
     if (!runtime::Config::get().file_iotrace_output.empty())
     {
         FILE* out = fopen(runtime::Config::get().file_iotrace_output.c_str(), "at");
@@ -65,7 +59,7 @@ void trace_file(const std::string& name, off_t offset, size_t size, const char* 
     if (listeners)
     {
         Event ev;
-        ev.file_id = itable->intern(name);
+        ev.filename = name;
         ev.offset = offset;
         ev.size = size;
         ev.desc = desc;
@@ -78,7 +72,7 @@ void trace_file(const char* name, off_t offset, size_t size, const char* desc)
     if (listeners)
     {
         Event ev;
-        ev.file_id = itable->intern(name);
+        ev.filename = name;
         ev.offset = offset;
         ev.size = size;
         ev.desc = desc;
@@ -103,11 +97,6 @@ void remove_listener(Listener& l)
         listeners->remove(&l);
 }
 
-const std::string& Event::filename() const
-{
-    return itable->string_table[file_id];
-}
-
 
 Collector::Collector()
 {
@@ -128,12 +117,12 @@ void Collector::dump(std::ostream& out) const
 {
     for (vector<Event>::const_iterator i = events.begin();
             i != events.end(); ++i)
-        out << i->filename() << ":" << i->offset << ":" << i->size << ": " << i->desc << endl;
+        out << i->filename << ":" << i->offset << ":" << i->size << ": " << i->desc << endl;
 }
 
 void Logger::operator()(const Event& e)
 {
-    fprintf(out, "%s:%zu:%zu:%s\n", e.filename().c_str(), (size_t)e.offset, e.size, e.desc);
+    fprintf(out, "%s:%zu:%zu:%s\n", e.filename.c_str(), (size_t)e.offset, e.size, e.desc);
 }
 
 }

@@ -5,8 +5,7 @@
 
 #include <arki/libconfig.h>
 #include <arki/dataset/segment.h>
-#include <arki/file.h>
-#include <arki/utils/lock.h>
+#include <arki/core/file.h>
 #include <string>
 
 namespace arki {
@@ -19,9 +18,9 @@ namespace fd {
 /**
  * Customize in subclasses to add format-specific I/O
  */
-struct File : public arki::File
+struct File : public arki::core::File
 {
-    using arki::File::File;
+    using arki::core::File::File;
 
     void fdtruncate(off_t pos);
     virtual void write_data(off_t wrpos, const std::vector<uint8_t>& buf) = 0;
@@ -32,9 +31,9 @@ struct File : public arki::File
 struct Writer : public dataset::segment::Writer
 {
     File* fd = nullptr;
-    utils::Lock lock;
+    core::Lock lock;
 
-    Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd);
+    Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd, const core::lock::Policy* lock_policy);
     ~Writer();
 
     Pending append(Metadata& md, const types::source::Blob** new_source=0) override;
@@ -59,7 +58,7 @@ class Checker : public dataset::segment::Checker
 {
 protected:
     File* fd = nullptr;
-    utils::Lock m_lock;
+    core::Lock m_lock;
 
     virtual void open() = 0;
 

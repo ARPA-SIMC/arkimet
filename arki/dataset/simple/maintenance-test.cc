@@ -21,11 +21,6 @@ class Tests : public MaintenanceTest
 {
     using MaintenanceTest::MaintenanceTest;
 
-    void make_unaligned() override
-    {
-        touch("testds/" + fixture->test_relpath + ".metadata", 1496167200);
-    }
-
     void register_tests() override;
 
     bool can_detect_overlap() const override { return true; }
@@ -71,7 +66,7 @@ void Tests::register_tests()
     add_method("check_metadata_timestamp", R"(
     - `.metadata` file must not be older than the data [unaligned]
     )", [&](Fixture& f) {
-        touch("testds/" + f.test_relpath + ".metadata", 1496167200);
+        sys::touch("testds/" + f.test_relpath + ".metadata", 1496167200);
 
         wassert(f.state_is(3, SEGMENT_UNALIGNED));
     });
@@ -79,7 +74,7 @@ void Tests::register_tests()
     add_method("check_summary_timestamp", R"(
     - `.summary` file must not be older than the `.metadata` file [unaligned]
     )", [&](Fixture& f) {
-        touch("testds/" + f.test_relpath + ".summary", 1496167200);
+        sys::touch("testds/" + f.test_relpath + ".summary", 1496167200);
 
         wassert(f.state_is(3, SEGMENT_UNALIGNED));
     });
@@ -93,7 +88,7 @@ void Tests::register_tests()
         else
             manifest_ts = sys::timestamp("testds/index.sqlite");
 
-        touch("testds/" + f.test_relpath + ".metadata", manifest_ts + 1);
+        sys::touch("testds/" + f.test_relpath + ".metadata", manifest_ts + 1);
 
         wassert(f.state_is(3, SEGMENT_UNALIGNED));
     });

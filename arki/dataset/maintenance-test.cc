@@ -6,7 +6,6 @@
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/time.h"
 #include "arki/reader.h"
-#include "arki/reader/registry.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
@@ -94,6 +93,11 @@ MaintenanceTest::~MaintenanceTest()
 {
 }
 
+void MaintenanceTest::make_unaligned()
+{
+    fixture->make_unaligned(fixture->test_relpath);
+}
+
 void MaintenanceTest::make_hole_start()
 {
     fixture->makeSegmentedChecker()->test_make_hole(fixture->test_relpath, 10, 0);
@@ -150,13 +154,6 @@ void MaintenanceTest::rm_r(const std::string& pathname)
         sys::rmtree(pathname);
     else
         sys::unlink(pathname);
-}
-
-void MaintenanceTest::touch(const std::string& pathname, time_t ts)
-{
-    struct utimbuf t = { ts, ts };
-    if (::utime(pathname.c_str(), &t) != 0)
-        throw_system_error("cannot set mtime/atime of " + pathname);
 }
 
 void MaintenanceTest::make_hugefile()
@@ -233,7 +230,7 @@ void MaintenanceTest::register_tests_concat()
         // Set the segment to a past timestamp and rescan it, making it as if
         // it were imported a long time ago
         {
-            touch("testds/" + f.test_relpath, 199926000);
+            sys::touch("testds/" + f.test_relpath, 199926000);
 
             f.makeSegmentedChecker()->rescanSegment(f.test_relpath);
         }
@@ -283,7 +280,7 @@ void MaintenanceTest::register_tests_dir()
          so it is ignored. The modification time of the sequence file is used
          instead.
     )", [&](Fixture& f) {
-        touch("testds/" + f.test_relpath, time(NULL) + 86400);
+        sys::touch("testds/" + f.test_relpath, time(NULL) + 86400);
         wassert(f.all_clean(3));
         wassert(f.query_results({1, 3, 0, 2}));
     });
@@ -385,8 +382,7 @@ void MaintenanceTest::register_tests()
             e.deleted.emplace_back("testds", f.test_relpath);
             wassert(actual(writer.get()).repack(e, true));
 
-            wassert(actual(writer.get()).maintenance_clean(2));
-
+            wassert(f.ensure_localds_clean(2, 2));
             wassert(f.query_results({0, 2}));
         });
 
@@ -399,8 +395,7 @@ void MaintenanceTest::register_tests()
             e.repacked.emplace_back("testds", f.test_relpath);
             wassert(actual(writer.get()).repack(e, true));
 
-            wassert(actual(writer.get()).maintenance_clean(3));
-
+            wassert(f.ensure_localds_clean(3, 3));
             wassert(f.query_results({3, 0, 2}));
         });
     }
@@ -576,7 +571,7 @@ void MaintenanceTest::register_tests()
         e.rescanned.emplace_back("testds", f.test_relpath);
         wassert(actual(writer.get()).check(e, true));
 
-        wassert(actual(writer.get()).maintenance_clean(3));
+        wassert(f.ensure_localds_clean(3, 4));
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
@@ -591,7 +586,7 @@ void MaintenanceTest::register_tests()
         e.deindexed.emplace_back("testds", f.test_relpath);
         wassert(actual(writer.get()).check(e, true));
 
-        wassert(actual(writer.get()).maintenance_clean(2));
+        wassert(f.ensure_localds_clean(2, 2));
         wassert(f.query_results({0, 2}));
     });
 
@@ -669,7 +664,7 @@ void MaintenanceTest::register_tests()
         e.repacked.emplace_back("testds", f.test_relpath);
         wassert(actual(writer.get()).repack(e, true));
 
-        wassert(actual(writer.get()).maintenance_clean(3));
+        wassert(f.ensure_localds_clean(3, 4));
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
@@ -686,7 +681,7 @@ void MaintenanceTest::register_tests()
         e.deindexed.emplace_back("testds", f.test_relpath);
         wassert(actual(writer.get()).repack(e, true));
 
-        wassert(actual(writer.get()).maintenance_clean(2));
+        wassert(f.ensure_localds_clean(2, 2));
         wassert(f.query_results({0, 2}));
     });
 
@@ -724,7 +719,7 @@ void MaintenanceTest::register_tests()
             e.archived.emplace_back("testds", f.test_relpath);
             wassert(actual(writer.get()).repack(e, true));
 
-            wassert(actual(writer.get()).maintenance_clean(2));
+            wassert(f.ensure_localds_clean(2, 4));
         }
 
         // Check that the files have been moved to the archive
@@ -752,7 +747,7 @@ void MaintenanceTest::register_tests()
             e.deleted.emplace_back("testds", f.test_relpath);
             wassert(actual(writer.get()).repack(e, true));
 
-            wassert(actual(writer.get()).maintenance_clean(2));
+            wassert(f.ensure_localds_clean(2, 2));
         }
 
         wassert(f.query_results({0, 2}));
@@ -816,16 +811,6 @@ void MaintenanceTest::register_tests()
         }
         wassert(f.all_clean(2));
         wassert(f.query_results({1, 3, 0, 2}));
-    });
-
-    add_method("leaks_repack", [&](Fixture& f) {
-        // Repack a segment and check that it doesn't cause a file to stay open
-        // in the reader registry
-        auto checker = f.makeSegmentedChecker();
-
-        unsigned orig = arki::Reader::test_count_cached();
-        checker->segment(f.test_relpath)->repack();
-        wassert(actual(arki::Reader::test_count_cached()) == orig);
     });
 }
 

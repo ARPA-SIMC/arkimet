@@ -46,7 +46,7 @@ public:
 	~Bufr();
 
     /// Alternate version with explicit basedir/relname separation
-    void open(const std::string& filename, const std::string& basedir, const std::string& relname) override;
+    void open(const std::string& filename, const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy) override;
 
     /**
      * Close the input file.

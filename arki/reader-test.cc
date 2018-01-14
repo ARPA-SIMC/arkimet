@@ -16,12 +16,13 @@ using namespace arki::tests;
 
 void test_read(const char* pathname)
 {
-    auto src = types::source::Blob::create("grib", "", pathname, 0, 7218);
+    auto reader = Reader::create_new(pathname, core::lock::policy_null);
+    auto src = types::source::Blob::create("grib", "", pathname, 0, 7218, reader);
     vector<uint8_t> buf = src->read_data();
     wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
     wassert(actual(string((const char*)buf.data() + 7214, 4)) == "7777");
 
-    src = types::source::Blob::create("grib", "", pathname, 7218, 34960);
+    src = types::source::Blob::create("grib", "", pathname, 7218, 34960, reader);
     buf = src->read_data();
     wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
     wassert(actual(string((const char*)buf.data() + 34956, 4)) == "7777");
@@ -56,12 +57,8 @@ add_method("uncompressed_idx", [] {
     sys::unlink_ifexists("testcompr.grib1");
     sys::unlink_ifexists("testcompr.grib1.gz");
     ensure(system("cp inbound/test.grib1 testcompr.grib1") == 0);
-
-    metadata::Collection mdc;
-    scan::scan("testcompr.grib1", mdc.inserter_func());
-    mdc.compressDataFile(2, "testcompr.grib1");
+    scan::compress("testcompr.grib1", core::lock::policy_null, 2);
     sys::unlink_ifexists("testcompr.grib1");
-
     wassert(test_read("testcompr.grib1"));
 });
 
@@ -69,7 +66,8 @@ add_method("uncompressed_idx", [] {
 add_method("missing", [] {
     vector<uint8_t> buf(7218);
     sys::unlink_ifexists("test.grib1");
-    auto src = types::source::Blob::create("grib", "", "test,grib1", 0, 7218);
+    auto reader = Reader::create_new("test.grib1", core::lock::policy_null);
+    auto src = types::source::Blob::create("grib", "", "test,grib1", 0, 7218, reader);
     try {
         vector<uint8_t> buf = src->read_data();
         ensure(false);

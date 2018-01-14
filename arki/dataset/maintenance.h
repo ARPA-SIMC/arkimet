@@ -19,7 +19,6 @@ class Validator;
 }
 
 namespace dataset {
-class Reporter;
 class Step;
 
 namespace segmented {

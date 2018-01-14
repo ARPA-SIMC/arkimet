@@ -1,11 +1,11 @@
 #ifndef ARKI_SUMMARY_H
 #define ARKI_SUMMARY_H
 
-#include <arki/types.h>
-#include <arki/types/reftime.h>
+#include <arki/core/fwd.h>
+#include <arki/types/fwd.h>
 #include <arki/itemset.h>
 #include <arki/utils/geosfwd.h>
-#include <arki/file.h>
+#include <vector>
 #include <map>
 #include <set>
 #include <string>
@@ -18,6 +18,14 @@ namespace arki {
 class Metadata;
 class Matcher;
 class Formatter;
+class BinaryDecoder;
+class Emitter;
+
+namespace emitter {
+namespace memory {
+class Mapping;
+}
+}
 
 namespace summary {
 struct Table;
@@ -150,7 +158,7 @@ public:
      *
      * Summary items are read from the file until the end of file is found.
      */
-    bool readYaml(LineReader& in, const std::string& filename);
+    bool readYaml(core::LineReader& in, const std::string& filename);
 
     /**
      * Write the summary to the given output file.

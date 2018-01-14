@@ -7,7 +7,6 @@
 #include <arki/transaction.h>
 #include <arki/utils/sqlite.h>
 #include <arki/dataset/ondisk2.h>
-#include <arki/dataset/segment.h>
 #include <arki/dataset/index/attr.h>
 #include <arki/dataset/index/aggregate.h>
 #include <arki/dataset/index/summarycache.h>
@@ -21,6 +20,7 @@ namespace arki {
 class Metadata;
 class Matcher;
 class ConfigFile;
+class Reader;
 
 namespace dataset {
 struct DataQuery;

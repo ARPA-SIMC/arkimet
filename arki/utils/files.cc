@@ -20,60 +20,6 @@ namespace arki {
 namespace utils {
 namespace files {
 
-void createRebuildFlagfile(const std::string& pathname)
-{
-	utils::createFlagfile(pathname + FLAGFILE_REBUILD);
-}
-void createNewRebuildFlagfile(const std::string& pathname)
-{
-	utils::createNewFlagfile(pathname + FLAGFILE_REBUILD);
-}
-void removeRebuildFlagfile(const std::string& pathname)
-{
-    sys::unlink_ifexists(pathname + FLAGFILE_REBUILD);
-}
-bool hasRebuildFlagfile(const std::string& pathname)
-{
-    return sys::exists(pathname + FLAGFILE_REBUILD);
-}
-
-
-void createPackFlagfile(const std::string& pathname)
-{
-	utils::createFlagfile(pathname + FLAGFILE_PACK);
-}
-void createNewPackFlagfile(const std::string& pathname)
-{
-	utils::createNewFlagfile(pathname + FLAGFILE_PACK);
-}
-void removePackFlagfile(const std::string& pathname)
-{
-    sys::unlink_ifexists(pathname + FLAGFILE_PACK);
-}
-bool hasPackFlagfile(const std::string& pathname)
-{
-    return sys::exists(pathname + FLAGFILE_PACK);
-}
-
-
-void createIndexFlagfile(const std::string& dir)
-{
-	utils::createFlagfile(str::joinpath(dir, FLAGFILE_INDEX));
-}
-void createNewIndexFlagfile(const std::string& dir)
-{
-	utils::createNewFlagfile(str::joinpath(dir, FLAGFILE_INDEX));
-}
-void removeIndexFlagfile(const std::string& dir)
-{
-    sys::unlink_ifexists(str::joinpath(dir, FLAGFILE_INDEX));
-}
-bool hasIndexFlagfile(const std::string& dir)
-{
-    return sys::exists(str::joinpath(dir, FLAGFILE_INDEX));
-}
-
-
 void createDontpackFlagfile(const std::string& dir)
 {
 	utils::createFlagfile(str::joinpath(dir, FLAGFILE_DONTPACK));
@@ -151,22 +97,6 @@ std::string format_from_ext(const std::string& fname, const char* default_format
     }
 }
 
-PreserveFileTimes::PreserveFileTimes(const std::string& fname)
-    : fname(fname)
-{
-    struct stat st;
-    sys::stat(fname, st);
-    times[0] = st.st_atim;
-    times[1] = st.st_mtim;
-}
-
-PreserveFileTimes::~PreserveFileTimes() noexcept(false)
-{
-    if (utimensat(AT_FDCWD, fname.c_str(), times, 0) == -1)
-        throw std::system_error(errno, std::system_category(), "cannot set file times");
-}
-
-
 PathWalk::PathWalk(const std::string& root, Consumer consumer)
     : root(root), consumer(consumer)
 {
@@ -207,6 +137,23 @@ void PathWalk::walk(const std::string& relpath, sys::Path& path)
         }
     }
 }
+
+
+PreserveFileTimes::PreserveFileTimes(const std::string& fname)
+    : fname(fname)
+{
+    struct stat st;
+    sys::stat(fname, st);
+    times[0] = st.st_atim;
+    times[1] = st.st_mtim;
+}
+
+PreserveFileTimes::~PreserveFileTimes() noexcept(false)
+{
+    if (utimensat(AT_FDCWD, fname.c_str(), times, 0) == -1)
+        throw std::system_error(errno, std::system_category(), "cannot set file times");
+}
+
 
 }
 }

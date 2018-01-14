@@ -47,7 +47,7 @@ Writer::Writer(std::shared_ptr<const simple::Config> config)
     if (!index::Manifest::exists(config->path))
         files::createDontpackFlagfile(config->path);
 
-    unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->index_type);
+    unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->lock_policy, config->index_type);
     m_mft = mft.release();
     m_mft->openRW();
     m_idx = m_mft;
@@ -79,7 +79,7 @@ std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::str
 {
     auto writer = segmented::Writer::file(md, format);
     if (!writer->payload)
-        writer->payload = new datafile::MdBuf(writer->absname);
+        writer->payload = new datafile::MdBuf(writer->absname, config().lock_policy);
     return writer;
 }
 
@@ -310,7 +310,7 @@ public:
     {
         // Read the metadata
         metadata::Collection mds;
-        scan::scan(segment->absname, mds.inserter_func());
+        scan::scan(segment->absname, checker.config().lock_policy, mds.inserter_func());
 
         // Sort by reference time and offset
         RepackSort cmp;
@@ -326,9 +326,6 @@ public:
 
         // Strip paths from mds sources
         mds.strip_source_paths();
-
-        // Prevent reading the still open old file using the new offsets
-        Metadata::flushDataReaders();
 
         // Remove existing cached metadata, since we scramble their order
         sys::unlink_ifexists(segment->absname + ".metadata");
@@ -380,7 +377,7 @@ Checker::Checker(std::shared_ptr<const simple::Config> config)
     if (!index::Manifest::exists(config->path))
         files::createDontpackFlagfile(config->path);
 
-    unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->index_type);
+    unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->lock_policy, config->index_type);
     m_mft = mft.release();
     m_mft->openRW();
     m_idx = m_mft;
@@ -424,8 +421,19 @@ void Checker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporte
     m_mft->flush();
     release_lock();
 }
-void Checker::check(dataset::Reporter& reporter, bool fix, bool quick) { acquire_lock(); IndexedChecker::check(reporter, fix, quick); release_lock(); }
-void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) { acquire_lock(); IndexedChecker::check_filtered(matcher, reporter, fix, quick); release_lock(); }
+void Checker::check(dataset::Reporter& reporter, bool fix, bool quick) {
+    acquire_lock();
+    IndexedChecker::check(reporter, fix, quick);
+    m_mft->flush();
+    release_lock();
+}
+void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
+{
+    acquire_lock();
+    IndexedChecker::check_filtered(matcher, reporter, fix, quick);
+    m_mft->flush();
+    release_lock();
+}
 
 std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
 {

@@ -3,7 +3,7 @@
 #include "configfile.h"
 #include "metadata.h"
 #include "scan/any.h"
-#include "utils/files.h"
+#include "core/file.h"
 #include "utils/sys.h"
 #include "binary.h"
 #include <sstream>
@@ -18,6 +18,7 @@
 #endif
 
 using namespace arki::tests;
+using namespace arki::core;
 
 namespace tut {
 using namespace std;
@@ -44,7 +45,7 @@ struct arki_postprocess_shar {
 
     void produceGRIB(Postprocess& p)
     {
-        scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) { return p.process(move(md)); });
+        scan::scan("inbound/test.grib1", core::lock::policy_null, [&](unique_ptr<Metadata> md) { return p.process(move(md)); });
     }
 };
 TESTGRP(arki_postprocess);
@@ -98,7 +99,7 @@ def_test(4)
     vector<uint8_t> plain;
     {
         BinaryEncoder enc(plain);
-        scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) {
+        scan::scan("inbound/test.grib1", core::lock::policy_null, [&](unique_ptr<Metadata> md) {
             md->makeInline();
             md->encodeBinary(enc);
             const auto& data = md->getData();
@@ -112,7 +113,7 @@ def_test(4)
     Postprocess p("cat");
     p.set_output(out);
     p.start();
-    scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) { return p.process(move(md)); });
+    scan::scan("inbound/test.grib1", core::lock::policy_null, [&](unique_ptr<Metadata> md) { return p.process(move(md)); });
     p.flush();
     out.close();
 

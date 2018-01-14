@@ -1,12 +1,13 @@
 #include "config.h"
-#include <arki/types.h>
-#include <arki/types/utils.h>
-#include <arki/binary.h>
-#include <arki/utils/sys.h>
-#include <arki/utils/string.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include <arki/formatter.h>
+#include "core/fwd.h"
+#include "types.h"
+#include "types/utils.h"
+#include "binary.h"
+#include "utils/sys.h"
+#include "utils/string.h"
+#include "emitter.h"
+#include "emitter/memory.h"
+#include "formatter.h"
 #include <cstring>
 #include <unistd.h>
 #include <algorithm>
@@ -17,6 +18,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using namespace arki::core;
 
 namespace arki {
 namespace types {

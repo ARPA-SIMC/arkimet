@@ -1,7 +1,7 @@
 #ifndef ARKI_DATASET_SEGMENT_SEQFILE_H
 #define ARKI_DATASET_SEGMENT_SEQFILE_H
 
-#include <arki/file.h>
+#include <arki/core/file.h>
 #include <string>
 
 namespace arki {
@@ -11,9 +11,10 @@ namespace segment {
 struct SequenceFile
 {
     std::string dirname;
-    arki::File fd;
+    core::File fd;
+    const core::lock::Policy* lock_policy;
 
-    SequenceFile(const std::string& pathname);
+    SequenceFile(const std::string& pathname, const core::lock::Policy* lock_policy);
     ~SequenceFile();
 
     /**
@@ -42,7 +43,7 @@ struct SequenceFile
      * Returns the open file descriptor, and the corresponding 'offset', that
      * is, the file sequence number itself.
      */
-    File open_next(const std::string& format, size_t& pos);
+    core::File open_next(const std::string& format, size_t& pos);
 
     void test_add_padding(unsigned size);
 

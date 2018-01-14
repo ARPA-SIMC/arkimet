@@ -23,7 +23,7 @@ class Tests : public FixtureTestCase<FIXTURE>
 
 struct BaseFixture : public Fixture
 {
-    metadata::Collection mdc;
+    metadata::TestCollection mdc;
 
     void test_setup()
     {
@@ -60,7 +60,7 @@ struct ManifestPlainFixture : ManifestFixture
 {
     std::unique_ptr<Manifest> create() override
     {
-        return Manifest::create("testds", "plain");
+        return Manifest::create("testds", core::lock::policy_ofd, "plain");
     }
 };
 
@@ -68,7 +68,7 @@ struct ManifestSqliteFixture : ManifestFixture
 {
     std::unique_ptr<Manifest> create() override
     {
-        return Manifest::create("testds", "sqlite");
+        return Manifest::create("testds", core::lock::policy_ofd, "sqlite");
     }
 };
 

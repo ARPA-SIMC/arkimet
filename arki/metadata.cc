@@ -1,5 +1,6 @@
 #include "metadata.h"
 #include "metadata/consumer.h"
+#include "core/file.h"
 #include "exceptions.h"
 #include "types/value.h"
 #include "types/source/blob.h"
@@ -28,6 +29,7 @@
 using namespace std;
 using namespace arki::types;
 using namespace arki::utils;
+using namespace arki::core;
 
 namespace arki {
 
@@ -668,11 +670,6 @@ size_t Metadata::data_size() const
             // return type
             throw_consistency_error("retrieving data", "unsupported source style");
     }
-}
-
-void Metadata::flushDataReaders()
-{
-    Reader::reset();
 }
 
 bool Metadata::read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& file, metadata_dest_func dest)

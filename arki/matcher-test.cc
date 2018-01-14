@@ -11,6 +11,7 @@
 
 using namespace std;
 using namespace arki::tests;
+using namespace arki::core;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;

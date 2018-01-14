@@ -549,12 +549,12 @@ bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
     results.clear();
 
     if (!dir_copyok.empty())
-        copyok.reset(new arki::File(str::joinpath(dir_copyok, str::basename(name)), O_WRONLY | O_APPEND | O_CREAT));
+        copyok.reset(new core::File(str::joinpath(dir_copyok, str::basename(name)), O_WRONLY | O_APPEND | O_CREAT));
     else
         copyok.reset();
 
     if (!dir_copyko.empty())
-        copyko.reset(new arki::File(str::joinpath(dir_copyko, str::basename(name)), O_WRONLY | O_APPEND | O_CREAT));
+        copyko.reset(new core::File(str::joinpath(dir_copyko, str::basename(name)), O_WRONLY | O_APPEND | O_CREAT));
     else
         copyko.reset();
 

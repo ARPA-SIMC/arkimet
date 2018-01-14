@@ -3,23 +3,15 @@
 
 /// metadata - Handle arkimet metadata
 
+#include <arki/core/fwd.h>
 #include <arki/itemset.h>
-#include <arki/types.h>
+#include <arki/types/fwd.h>
 #include <arki/types/note.h>
-#include <arki/types/source.h>
-#include <arki/file.h>
 #include <string>
 
 struct lua_State;
 
 namespace arki {
-
-namespace types {
-namespace source {
-struct Blob;
-}
-}
-
 namespace reader {
 struct Reader;
 }
@@ -168,7 +160,7 @@ public:
     void read_inner(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& filename);
 
     /// Read the inline data from the given file handle
-    void read_inline_data(NamedFileDescriptor& fd);
+    void read_inline_data(core::NamedFileDescriptor& fd);
 
     /// Read the inline data from the given memory buffer
     void readInlineData(BinaryDecoder& dec, const std::string& filename);
@@ -181,7 +173,7 @@ public:
      *
      * @returns false when end-of-file is reached
      */
-    bool readYaml(LineReader& in, const std::string& filename);
+    bool readYaml(core::LineReader& in, const std::string& filename);
 
     /**
      * Write the metadata to the given output stream.
@@ -189,7 +181,7 @@ public:
      * The filename string is used to generate nicer parse error messages when
      * throwing exceptions, and can be anything.
      */
-    void write(NamedFileDescriptor& out) const;
+    void write(core::NamedFileDescriptor& out) const;
 
 	/**
 	 * Write the metadata as YAML text to the given output stream.
@@ -214,7 +206,7 @@ public:
      *
      * Return the number of bytes written
      */
-    size_t stream_data(NamedFileDescriptor& out);
+    size_t stream_data(core::NamedFileDescriptor& out);
 
     /// Return True if getData can be called without causing I/O
     bool has_cached_data() const;
@@ -243,19 +235,6 @@ public:
     /// Return the size of the data, if known, else returns 0
     size_t data_size() const;
 
-    /**
-     * Flush open data readers.
-     *
-     * A persistent data reader is used to read data, in order to keep the last
-     * file opened and buffered to speed up reading multiple data items from
-     * the same file. This function tells the data reader to close its open
-     * files.
-     *
-     * It is useful for testing cases when data files are moved or
-     * compressed.
-     */
-    static void flushDataReaders();
-
     /// Create an empty Metadata
     static std::unique_ptr<Metadata> create_empty();
 
@@ -280,7 +259,7 @@ public:
     static bool read_file(int in, const metadata::ReadContext& file, metadata_dest_func mdc);
 
     /// Read all metadata from a file into the given consumer
-    static bool read_file(NamedFileDescriptor& fd, metadata_dest_func mdc);
+    static bool read_file(core::NamedFileDescriptor& fd, metadata_dest_func mdc);
 
     /**
      * Read a metadata group into the given consumer

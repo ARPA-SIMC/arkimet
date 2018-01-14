@@ -481,6 +481,8 @@ public:
     bool open_ifexists(int flags, mode_t mode=0777);
 
     static File mkstemp(const std::string& prefix);
+    static File mkstemp(const char* prefix);
+    static File mkstemp(char* pathname_template);
 };
 
 /// Read whole file into memory. Throws exceptions on failure.
@@ -599,6 +601,11 @@ bool rmtree_ifexists(const std::string& pathname);
  * must be on the same file system.
  */
 void rename(const std::string& src_pathname, const std::string& dst_pathname);
+
+/**
+ * Set mtime and atime for the file
+ */
+void touch(const std::string& pathname, time_t ts);
 
 #if 0
 /// Nicely wrap access to directories

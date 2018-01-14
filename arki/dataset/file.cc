@@ -1,5 +1,6 @@
 #include "arki/libconfig.h"
 #include "arki/dataset/file.h"
+#include "arki/core/file.h"
 #include "arki/metadata/consumer.h"
 #include "arki/configfile.h"
 #include "arki/matcher.h"
@@ -15,8 +16,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-
 using namespace std;
+using namespace arki::core;
 using namespace arki::utils;
 
 namespace arki {
@@ -160,7 +161,7 @@ FdFile::FdFile(std::shared_ptr<const FileConfig> config)
     if (path == "-")
         fd = new Stdin;
     else
-        fd = new arki::File(path, O_RDONLY);
+        fd = new core::File(path, O_RDONLY);
 }
 
 FdFile::~FdFile()
@@ -238,7 +239,7 @@ RawFile::~RawFile() {}
 bool RawFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     auto sorter = wrap_with_query(q, dest);
-    if (!scan::scan(config().pathname, dest, config().format))
+    if (!scan::scan(config().pathname, core::lock::policy_null, config().format, dest))
         return false;
     if (sorter) return sorter->flush();
     return true;

@@ -45,7 +45,7 @@ inline size_t datasize(const Metadata& md)
 std::shared_ptr<segment::dir::Writer> make_w()
 {
     string absname = sys::abspath(relname);
-    return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer("grib", sys::getcwd(), relname, absname));
+    return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer("grib", sys::getcwd(), relname, absname, core::lock::policy_ofd));
 }
 
 void Tests::register_tests() {
@@ -53,7 +53,7 @@ void Tests::register_tests() {
 // Try to append some data
 add_method("append", [] {
     sys::rmtree_ifexists(relname);
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
     wassert(actual_file(relname).not_exists());
     {
         auto w(make_w());
@@ -133,10 +133,10 @@ add_method("append", [] {
     }
 
     // Data writer goes out of scope, file is closed and flushed
-    metadata::Collection mdc1;
+    metadata::TestCollection mdc1;
 
     // Scan the file we created
-    wassert(actual(scan::scan(relname, mdc1.inserter_func())).istrue());
+    wassert(actual(mdc1.scan_from_file(relname)).istrue());
 
     // Check that it only contains the 1st and 3rd data
     wassert(actual(mdc1.size()) == 2u);
@@ -151,11 +151,11 @@ add_method("check", [] {
     {
         std::shared_ptr<segment::Writer> make_writer() override
         {
-            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relname, absname));
+            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relname, absname, core::lock::policy_ofd));
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relname, absname));
+            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relname, absname, core::lock::policy_ofd));
         }
     } test;
 
@@ -167,11 +167,11 @@ add_method("remove", [] {
     {
         std::shared_ptr<segment::Writer> make_writer() override
         {
-            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relname, absname));
+            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relname, absname, core::lock::policy_ofd));
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relname, absname));
+            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relname, absname, core::lock::policy_ofd));
         }
     } test;
 

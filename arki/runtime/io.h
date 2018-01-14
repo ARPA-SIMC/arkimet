@@ -4,7 +4,7 @@
 /// Common I/O code used in most arkimet executables
 
 #include <arki/utils/commandline/parser.h>
-#include <arki/utils/sys.h>
+#include <arki/core/file.h>
 #include <arki/defs.h>
 #include <string>
 
@@ -14,12 +14,12 @@ struct Hook;
 }
 namespace runtime {
 
-struct InputFile : public utils::sys::File
+struct InputFile : public core::File
 {
     InputFile(const std::string& file);
 };
 
-struct File : public utils::sys::File
+struct File : public core::File
 {
     File(const std::string pathname, bool append=false);
 };
@@ -30,9 +30,9 @@ struct File : public utils::sys::File
  * If there is a commandline parameter available in the parser, use that as a
  * file name; else use the standard input.
  */
-std::unique_ptr<utils::sys::NamedFileDescriptor> make_input(utils::commandline::Parser& opts);
-std::unique_ptr<utils::sys::NamedFileDescriptor> make_output(utils::commandline::Parser& opts);
-std::unique_ptr<utils::sys::NamedFileDescriptor> make_output(utils::commandline::StringOption& opt);
+std::unique_ptr<core::NamedFileDescriptor> make_input(utils::commandline::Parser& opts);
+std::unique_ptr<core::NamedFileDescriptor> make_output(utils::commandline::Parser& opts);
+std::unique_ptr<core::NamedFileDescriptor> make_output(utils::commandline::StringOption& opt);
 
 
 /**
@@ -42,7 +42,7 @@ std::unique_ptr<utils::sys::NamedFileDescriptor> make_output(utils::commandline:
  *
  * By default, the temporary file will be deleted when the object is deleted.
  */
-class Tempfile : public utils::sys::File
+class Tempfile : public core::File
 {
 protected:
     bool m_unlink_on_exit = true;

@@ -4,12 +4,13 @@
 #include "arki/emitter/json.h"
 #include "arki/emitter/memory.h"
 #include "arki/binary.h"
-#include "arki/wibble/sys/process.h"
+#include "arki/reader.h"
 #include "arki/utils/sys.h"
 
 namespace {
 using namespace std;
 using namespace arki;
+using namespace arki::core;
 using namespace arki::tests;
 using namespace arki::utils;
 using namespace arki::types;
@@ -114,7 +115,8 @@ add_method("blob_pathnames_encode", [] {
 });
 
 add_method("blob_stream", [] {
-    unique_ptr<source::Blob> o = source::Blob::create("test", "inbound", "test.grib1", 7218, 34960);
+    auto reader = Reader::create_new("inbound/test.grib1", core::lock::policy_null);
+    unique_ptr<source::Blob> o = source::Blob::create("test", "inbound", "test.grib1", 7218, 34960, reader);
     sys::unlink_ifexists("test.grib");
     File out("test.grib", O_WRONLY | O_CREAT | O_TRUNC);
     wassert(actual(o->stream_data(out)) == 34960u);
@@ -127,6 +129,7 @@ add_method("blob_stream", [] {
 
     sys::unlink_ifexists("test.grib");
 });
+
 // Check URL
 add_method("url_details", [] {
     unique_ptr<Source> o = Source::createURL("test", "http://foobar");

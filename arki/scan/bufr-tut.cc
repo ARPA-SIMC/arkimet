@@ -1,18 +1,18 @@
-#include <arki/metadata/tests.h>
-#include <arki/types/tests.h>
-#include <arki/scan/bufr.h>
-#include <arki/types.h>
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/types/reftime.h>
-#include <arki/types/area.h>
-#include <arki/types/proddef.h>
-#include <arki/types/run.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/scan/any.h>
-#include <arki/utils/sys.h>
-#include <arki/utils/string.h>
+#include "arki/metadata/tests.h"
+#include "arki/types/tests.h"
+#include "arki/scan/bufr.h"
+#include "arki/types/source.h"
+#include "arki/types/origin.h"
+#include "arki/types/product.h"
+#include "arki/types/reftime.h"
+#include "arki/types/area.h"
+#include "arki/types/proddef.h"
+#include "arki/types/run.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/scan/any.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 #include <sstream>
 #include <iostream>
 #include <sys/types.h>
@@ -217,8 +217,7 @@ def_test(3)
     ensure_throws(v.validate_file(fd, 634, 10));
     fd.close();
 
-    metadata::Collection mdc;
-    scan::scan("inbound/test.bufr", mdc.inserter_func());
+    metadata::TestCollection mdc("inbound/test.bufr");
     buf = mdc[0].getData();
 
     wassert(v.validate_buf(buf.data(), buf.size()));

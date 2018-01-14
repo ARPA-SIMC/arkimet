@@ -52,6 +52,28 @@ void fill(Metadata& md)
     md.set(Quantity::create("a,b,c"));
 }
 
+void ActualMetadata::operator==(const Metadata& expected) const
+{
+    if (_actual == expected) return;
+    std::stringstream ss;
+    ss << "value:" << endl;
+    _actual.writeYaml(ss);
+    ss << "is different than the expected:" << endl;
+    expected.writeYaml(ss);
+    throw TestFailed(ss.str());
+}
+
+void ActualMetadata::operator!=(const Metadata& expected) const
+{
+    if (_actual != expected) return;
+    std::stringstream ss;
+    ss << "value:" << endl;
+    _actual.writeYaml(ss);
+    ss << "is not different than the expected:" << endl;
+    expected.writeYaml(ss);
+    throw TestFailed(ss.str());
+}
+
 void ActualMetadata::contains(const std::string& field, const std::string& expected)
 {
     Code code = types::parseCodeName(field);

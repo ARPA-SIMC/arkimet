@@ -1,6 +1,7 @@
 #include "config.h"
 #include "arki/runtime/processor.h"
 #include "arki/runtime/io.h"
+#include "arki/types/source.h"
 #include "arki/formatter.h"
 #include "arki/dataset.h"
 #include "arki/dataset/index/base.h"
@@ -13,6 +14,7 @@
 #include "arki/summary/stats.h"
 
 using namespace std;
+using namespace arki::core;
 using namespace arki::utils;
 
 namespace arki {

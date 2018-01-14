@@ -286,6 +286,11 @@
  },
  {
   "doc": "",
+  "group": "arki_file",
+  "method": "linereader"
+ },
+ {
+  "doc": "",
   "group": "arki_utils",
   "method": "empty"
  },
@@ -557,757 +562,17 @@
  {
   "doc": "",
   "group": "arki_utils_files",
-  "method": "50"
+  "method": "dontpack"
  },
  {
   "doc": "",
   "group": "arki_utils_files",
-  "method": "49"
+  "method": "resolve_path"
  },
  {
   "doc": "",
   "group": "arki_utils_files",
-  "method": "48"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "47"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "46"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "45"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "44"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "43"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "42"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "41"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "40"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "39"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "38"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "37"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "36"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "35"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "34"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "33"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "32"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "31"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "30"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "29"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "28"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "27"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "26"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "25"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "24"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "23"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "22"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "21"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "20"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "19"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "18"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "17"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "16"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "15"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "14"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "13"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "12"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "11"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "10"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "9"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "8"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "7"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "6"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "5"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "4"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "3"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "2"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "1"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "50"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "49"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "48"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "47"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "46"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "45"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "44"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "43"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "42"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "41"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "40"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "39"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "38"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "37"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "36"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "35"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "34"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "33"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "32"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "31"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "30"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "29"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "28"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "27"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "26"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "25"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "24"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "23"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "22"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "21"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "20"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "19"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "18"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "17"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "16"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "15"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "14"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "13"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "12"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "11"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "10"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "9"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "8"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "7"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "6"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "5"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "4"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "3"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "2"
- },
- {
-  "doc": "",
-  "group": "arki_utils_intern",
-  "method": "1"
- },
- {
-  "doc": "",
-  "group": "arki_utils_lock",
-  "method": "empty"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "50"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "49"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "48"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "47"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "46"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "45"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "44"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "43"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "42"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "41"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "40"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "39"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "38"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "37"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "36"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "35"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "34"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "33"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "32"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "31"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "30"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "29"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "28"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "27"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "26"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "25"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "24"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "23"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "22"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "21"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "20"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "19"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "18"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "17"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "16"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "15"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "14"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "13"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "12"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "11"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "10"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "9"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "8"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "7"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "6"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "5"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "4"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "3"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "2"
- },
- {
-  "doc": "",
-  "group": "arki_utils_pcounter",
-  "method": "1"
+  "method": "format_from_ext"
  },
  {
   "doc": "",
@@ -1557,256 +822,6 @@
  {
   "doc": "",
   "group": "arki_utils_process",
-  "method": "1"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "50"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "49"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "48"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "47"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "46"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "45"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "44"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "43"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "42"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "41"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "40"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "39"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "38"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "37"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "36"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "35"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "34"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "33"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "32"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "31"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "30"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "29"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "28"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "27"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "26"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "25"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "24"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "23"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "22"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "21"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "20"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "19"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "18"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "17"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "16"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "15"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "14"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "13"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "12"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "11"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "10"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "9"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "8"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "7"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "6"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "5"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "4"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "3"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
-  "method": "2"
- },
- {
-  "doc": "",
-  "group": "arki_utils_raii",
   "method": "1"
  },
  {
@@ -1863,11 +878,6 @@
   "doc": "",
   "group": "arki_binary",
   "method": "lines"
- },
- {
-  "doc": "",
-  "group": "arki_file",
-  "method": "linereader"
  },
  {
   "doc": "",
@@ -4212,252 +3222,7 @@
  {
   "doc": "",
   "group": "arki_formatter",
-  "method": "50"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "49"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "48"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "47"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "46"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "45"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "44"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "43"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "42"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "41"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "40"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "39"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "38"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "37"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "36"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "35"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "34"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "33"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "32"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "31"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "30"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "29"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "28"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "27"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "26"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "25"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "24"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "23"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "22"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "21"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "20"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "19"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "18"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "17"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "16"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "15"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "14"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "13"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "12"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "11"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "10"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "9"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "8"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "7"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "6"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "5"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "4"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "3"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "2"
- },
- {
-  "doc": "",
-  "group": "arki_formatter",
-  "method": "1"
+  "method": "yaml"
  },
  {
   "doc": "",
@@ -5103,11 +3868,6 @@
   "doc": "",
   "group": "arki_reader",
   "method": "missing"
- },
- {
-  "doc": "",
-  "group": "arki_reader_registry",
-  "method": "empty"
  },
  {
   "doc": "",
@@ -9057,252 +7817,22 @@
  {
   "doc": "",
   "group": "arki_scan_any",
-  "method": "50"
+  "method": "grib_compact"
  },
  {
   "doc": "",
   "group": "arki_scan_any",
-  "method": "49"
+  "method": "bufr_compact"
  },
  {
   "doc": "",
   "group": "arki_scan_any",
-  "method": "48"
+  "method": "compress"
  },
  {
   "doc": "",
   "group": "arki_scan_any",
-  "method": "47"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "46"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "45"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "44"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "43"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "42"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "41"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "40"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "39"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "38"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "37"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "36"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "35"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "34"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "33"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "32"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "31"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "30"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "29"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "28"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "27"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "26"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "25"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "24"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "23"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "22"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "21"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "20"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "19"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "18"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "17"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "16"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "15"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "14"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "13"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "12"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "11"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "10"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "9"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "8"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "7"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "6"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "5"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "4"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "3"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "2"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "1"
+  "method": "usn"
  },
  {
   "doc": "",
@@ -10877,252 +9407,17 @@
  {
   "doc": "",
   "group": "arki_metadata_xargs",
-  "method": "50"
+  "method": "check_stdin"
  },
  {
   "doc": "",
   "group": "arki_metadata_xargs",
-  "method": "49"
+  "method": "check_env"
  },
  {
   "doc": "",
   "group": "arki_metadata_xargs",
-  "method": "48"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "47"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "46"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "45"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "44"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "43"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "42"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "41"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "40"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "39"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "38"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "37"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "36"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "35"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "34"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "33"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "32"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "31"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "30"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "29"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "28"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "27"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "26"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "25"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "24"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "23"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "22"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "21"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "20"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "19"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "18"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "17"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "16"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "15"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "14"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "13"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "12"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "11"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "10"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "9"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "8"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "7"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "6"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "5"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "4"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "3"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "2"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_xargs",
-  "method": "1"
+  "method": "interval"
  },
  {
   "doc": "",
@@ -13100,11 +11395,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_simple_maintenance_grib_plain",
-  "method": "leaks_repack"
- },
- {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_grib_plain",
   "method": "check_new"
@@ -13310,11 +11600,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_simple_maintenance_grib_sqlite",
-  "method": "leaks_repack"
- },
- {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite",
   "method": "check_new"
@@ -13510,11 +11795,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
-  "method": "leaks_repack"
- },
- {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
   "method": "check_new"
@@ -13708,11 +11988,6 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
   "method": "repack_archive"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
-  "method": "leaks_repack"
  },
  {
   "doc": "- find data files not known by the index [unaligned]",
@@ -13920,11 +12195,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_simple_maintenance_bufr_plain",
-  "method": "leaks_repack"
- },
- {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_bufr_plain",
   "method": "check_new"
@@ -14130,11 +12400,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_simple_maintenance_bufr_sqlite",
-  "method": "leaks_repack"
- },
- {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite",
   "method": "check_new"
@@ -14330,11 +12595,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
-  "method": "leaks_repack"
- },
- {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
   "method": "check_new"
@@ -14528,11 +12788,6 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
   "method": "repack_archive"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
-  "method": "leaks_repack"
  },
  {
   "doc": "- find data files not known by the index [unaligned]",
@@ -14740,11 +12995,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_simple_maintenance_vm2_plain",
-  "method": "leaks_repack"
- },
- {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_vm2_plain",
   "method": "check_new"
@@ -14950,11 +13200,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_simple_maintenance_vm2_sqlite",
-  "method": "leaks_repack"
- },
- {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite",
   "method": "check_new"
@@ -15148,11 +13393,6 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
   "method": "repack_archive"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
-  "method": "leaks_repack"
  },
  {
   "doc": "- find data files not known by the index [unaligned]",
@@ -15350,11 +13590,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
-  "method": "leaks_repack"
- },
- {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
   "method": "check_new"
@@ -15550,11 +13785,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_simple_maintenance_odimh5_plain",
-  "method": "leaks_repack"
- },
- {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_simple_maintenance_odimh5_plain",
   "method": "check_new"
@@ -15748,11 +13978,6 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
   "method": "repack_archive"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
-  "method": "leaks_repack"
  },
  {
   "doc": "- find data files not known by the index [unaligned]",
@@ -16005,11 +14230,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_iseg_maintenance_grib",
-  "method": "leaks_repack"
- },
- {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_iseg_maintenance_grib",
   "method": "check_new"
@@ -16188,11 +14408,6 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_iseg_maintenance_grib_dirs",
   "method": "repack_archive"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_iseg_maintenance_grib_dirs",
-  "method": "leaks_repack"
  },
  {
   "doc": "- find data files not known by the index [unaligned]",
@@ -16390,11 +14605,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_iseg_maintenance_bufr",
-  "method": "leaks_repack"
- },
- {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_iseg_maintenance_bufr",
   "method": "check_new"
@@ -16573,11 +14783,6 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_iseg_maintenance_bufr_dirs",
   "method": "repack_archive"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_iseg_maintenance_bufr_dirs",
-  "method": "leaks_repack"
  },
  {
   "doc": "- find data files not known by the index [unaligned]",
@@ -16775,11 +14980,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_iseg_maintenance_vm2",
-  "method": "leaks_repack"
- },
- {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_iseg_maintenance_vm2",
   "method": "check_new"
@@ -16960,11 +15160,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_iseg_maintenance_vm2_dirs",
-  "method": "leaks_repack"
- },
- {
   "doc": "- find data files not known by the index [unaligned]",
   "group": "arki_dataset_iseg_maintenance_vm2_dirs",
   "method": "check_new"
@@ -17143,11 +15338,6 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_iseg_maintenance_odimh5",
   "method": "repack_archive"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_iseg_maintenance_odimh5",
-  "method": "leaks_repack"
  },
  {
   "doc": "- find data files not known by the index [unaligned]",
@@ -17208,6 +15398,11 @@
   "doc": "",
   "group": "arki_dataset_ondisk2",
   "method": "acquire_replace_usn"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_ondisk2",
+  "method": "locking"
  },
  {
   "doc": "",
@@ -17455,11 +15650,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_ondisk2_maintenance_grib",
-  "method": "leaks_repack"
- },
- {
   "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
   "group": "arki_dataset_ondisk2_maintenance_grib",
   "method": "check_new"
@@ -17663,11 +15853,6 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
   "method": "repack_archive"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
-  "method": "leaks_repack"
  },
  {
   "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
@@ -17885,11 +16070,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_ondisk2_maintenance_bufr",
-  "method": "leaks_repack"
- },
- {
   "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
   "group": "arki_dataset_ondisk2_maintenance_bufr",
   "method": "check_new"
@@ -18093,11 +16273,6 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
   "method": "repack_archive"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
-  "method": "leaks_repack"
  },
  {
   "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
@@ -18315,11 +16490,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_ondisk2_maintenance_vm2",
-  "method": "leaks_repack"
- },
- {
   "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
   "group": "arki_dataset_ondisk2_maintenance_vm2",
   "method": "check_new"
@@ -18525,11 +16695,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "",
-  "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
-  "method": "leaks_repack"
- },
- {
   "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
   "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
   "method": "check_new"
@@ -18733,11 +16898,6 @@
   "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
   "group": "arki_dataset_ondisk2_maintenance_odimh5",
   "method": "repack_archive"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_ondisk2_maintenance_odimh5",
-  "method": "leaks_repack"
  },
  {
   "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
@@ -20466,6 +18626,26 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_grib_ondisk2",
+  "method": "nolock_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_ondisk2",
+  "method": "nolock_write"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_ondisk2",
+  "method": "nolock_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_ondisk2",
+  "method": "nolock_repack"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_grib_simple_plain",
   "method": "read_read"
  },
@@ -20498,6 +18678,26 @@
   "doc": "",
   "group": "arki_dataset_concurrent_grib_simple_plain",
   "method": "write_check"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_plain",
+  "method": "nolock_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_plain",
+  "method": "nolock_write"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_plain",
+  "method": "nolock_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_plain",
+  "method": "nolock_repack"
  },
  {
   "doc": "",
@@ -20536,6 +18736,26 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_sqlite",
+  "method": "nolock_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_sqlite",
+  "method": "nolock_write"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_sqlite",
+  "method": "nolock_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_sqlite",
+  "method": "nolock_repack"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_grib_iseg",
   "method": "read_read"
  },
@@ -20568,6 +18788,26 @@
   "doc": "",
   "group": "arki_dataset_concurrent_grib_iseg",
   "method": "write_check"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_iseg",
+  "method": "nolock_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_iseg",
+  "method": "nolock_write"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_iseg",
+  "method": "nolock_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_iseg",
+  "method": "nolock_repack"
  },
  {
   "doc": "",
@@ -20606,6 +18846,26 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_bufr_ondisk2",
+  "method": "nolock_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_ondisk2",
+  "method": "nolock_write"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_ondisk2",
+  "method": "nolock_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_ondisk2",
+  "method": "nolock_repack"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_bufr_simple_plain",
   "method": "read_read"
  },
@@ -20638,6 +18898,26 @@
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_simple_plain",
   "method": "write_check"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_plain",
+  "method": "nolock_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_plain",
+  "method": "nolock_write"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_plain",
+  "method": "nolock_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_plain",
+  "method": "nolock_repack"
  },
  {
   "doc": "",
@@ -20676,6 +18956,26 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_sqlite",
+  "method": "nolock_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_sqlite",
+  "method": "nolock_write"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_sqlite",
+  "method": "nolock_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_sqlite",
+  "method": "nolock_repack"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_bufr_iseg",
   "method": "read_read"
  },
@@ -20708,6 +19008,26 @@
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_iseg",
   "method": "write_check"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_iseg",
+  "method": "nolock_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_iseg",
+  "method": "nolock_write"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_iseg",
+  "method": "nolock_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_iseg",
+  "method": "nolock_repack"
  },
  {
   "doc": "",
@@ -20746,6 +19066,26 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_vm2_ondisk2",
+  "method": "nolock_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_ondisk2",
+  "method": "nolock_write"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_ondisk2",
+  "method": "nolock_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_ondisk2",
+  "method": "nolock_repack"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_vm2_simple_plain",
   "method": "read_read"
  },
@@ -20778,6 +19118,26 @@
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_simple_plain",
   "method": "write_check"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_plain",
+  "method": "nolock_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_plain",
+  "method": "nolock_write"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_plain",
+  "method": "nolock_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_plain",
+  "method": "nolock_repack"
  },
  {
   "doc": "",
@@ -20816,6 +19176,26 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_sqlite",
+  "method": "nolock_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_sqlite",
+  "method": "nolock_write"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_sqlite",
+  "method": "nolock_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_sqlite",
+  "method": "nolock_repack"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_vm2_iseg",
   "method": "read_read"
  },
@@ -20851,6 +19231,26 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_vm2_iseg",
+  "method": "nolock_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_iseg",
+  "method": "nolock_write"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_iseg",
+  "method": "nolock_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_iseg",
+  "method": "nolock_repack"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_odim_ondisk2",
   "method": "read_read"
  },
@@ -20886,6 +19286,26 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_odim_ondisk2",
+  "method": "nolock_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_ondisk2",
+  "method": "nolock_write"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_ondisk2",
+  "method": "nolock_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_ondisk2",
+  "method": "nolock_repack"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_odim_simple_plain",
   "method": "read_read"
  },
@@ -20921,6 +19341,26 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_plain",
+  "method": "nolock_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_plain",
+  "method": "nolock_write"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_plain",
+  "method": "nolock_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_plain",
+  "method": "nolock_repack"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_odim_simple_sqlite",
   "method": "read_read"
  },
@@ -20956,6 +19396,26 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_sqlite",
+  "method": "nolock_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_sqlite",
+  "method": "nolock_write"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_sqlite",
+  "method": "nolock_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_sqlite",
+  "method": "nolock_repack"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_concurrent_odim_iseg",
   "method": "read_read"
  },
@@ -20988,6 +19448,26 @@
   "doc": "",
   "group": "arki_dataset_concurrent_odim_iseg",
   "method": "write_check"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_iseg",
+  "method": "nolock_read"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_iseg",
+  "method": "nolock_write"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_iseg",
+  "method": "nolock_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_iseg",
+  "method": "nolock_repack"
  },
  {
   "doc": "",

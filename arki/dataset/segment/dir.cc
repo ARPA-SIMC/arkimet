@@ -9,7 +9,6 @@
 #include "arki/utils/sys.h"
 #include "arki/scan/any.h"
 #include "arki/utils/string.h"
-#include "arki/utils/lock.h"
 #include "arki/dataset/reporter.h"
 #include <cerrno>
 #include <cstring>
@@ -23,6 +22,7 @@
 
 using namespace std;
 using namespace arki::types;
+using namespace arki::core;
 using namespace arki::utils;
 
 namespace arki {
@@ -30,8 +30,8 @@ namespace dataset {
 namespace segment {
 namespace dir {
 
-Writer::Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname)
-    : segment::Writer(root, relname, absname), seqfile(absname), write_lock_file(str::joinpath(absname, ".write-lock")), format(format)
+Writer::Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy)
+    : segment::Writer(root, relname, absname, lock_policy), seqfile(absname, lock_policy), write_lock_file(str::joinpath(absname, ".write-lock")), format(format)
 {
     // Ensure that the directory 'absname' exists
     sys::makedirs(absname);
@@ -52,7 +52,7 @@ Writer::Writer(const std::string& format, const std::string& root, const std::st
     lock.l_whence = SEEK_SET;
     lock.l_start = 0;
     lock.l_len = 0;
-    lock.ofd_setlkw(write_lock_file);
+    lock_policy->setlkw(write_lock_file, lock);
 }
 
 Writer::~Writer()
@@ -60,10 +60,10 @@ Writer::~Writer()
     // TODO: consider a non-throwing setlk implementation to avoid throwing
     // in destructors
     lock.l_type = F_UNLCK;
-    lock.ofd_setlk(write_lock_file);
+    lock_policy->setlk(write_lock_file, lock);
 }
 
-size_t Writer::write_file(Metadata& md, File& fd)
+size_t Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
     try {
         const std::vector<uint8_t>& buf = md.getData();
@@ -82,7 +82,7 @@ size_t Writer::write_file(Metadata& md, File& fd)
     }
 }
 
-size_t HoleWriter::write_file(Metadata& md, File& fd)
+size_t HoleWriter::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
     try {
         if (ftruncate(fd, md.data_size()) == -1)
@@ -187,8 +187,8 @@ off_t Writer::link(const std::string& srcabsname)
 }
 
 
-Checker::Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname)
-    : segment::Checker(root, relname, absname), format(format)
+Checker::Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy)
+    : segment::Checker(root, relname, absname, lock_policy), format(format)
 {
 }
 
@@ -282,10 +282,10 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
             string fname = str::joinpath(absname, SequenceFile::data_fname(idx, format));
             metadata::Collection mds;
             try {
-                scan::scan(fname, [&](unique_ptr<Metadata> md) {
+                scan::scan(fname, lock_policy, format, [&](unique_ptr<Metadata> md) {
                     mds.acquire(move(md));
                     return true;
-                }, format);
+                });
             } catch (std::exception& e) {
                 stringstream out;
                 out << "scan of unexpected file failed at " << absname << ":" << idx << ": " << e.what();
@@ -382,15 +382,16 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
         bool fired;
         sys::File repack_lock;
         Lock lock;
+        const core::lock::Policy* lock_policy;
 
-        Rename(const std::string& tmpabsname, const std::string& absname)
-            : tmpabsname(tmpabsname), absname(absname), tmppos(absname + ".pre-repack"), fired(false), repack_lock(str::joinpath(absname, ".repack-lock"), O_RDWR | O_CREAT, 0777)
+        Rename(const std::string& tmpabsname, const std::string& absname, const core::lock::Policy* lock_policy)
+            : tmpabsname(tmpabsname), absname(absname), tmppos(absname + ".pre-repack"), fired(false), repack_lock(str::joinpath(absname, ".repack-lock"), O_RDWR | O_CREAT, 0777), lock_policy(lock_policy)
         {
             lock.l_type = F_WRLCK;
             lock.l_whence = SEEK_SET;
             lock.l_start = 0;
             lock.l_len = 0;
-            lock.ofd_setlkw(repack_lock);
+            lock_policy->setlkw(repack_lock, lock);
         }
 
         virtual ~Rename()
@@ -419,7 +420,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
             // Release the lock
             lock.l_type = F_UNLCK;
-            lock.ofd_setlk(repack_lock);
+            lock_policy->setlk(repack_lock, lock);
 
             fired = true;
         }
@@ -439,7 +440,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
             // Release the lock
             lock.l_type = F_UNLCK;
-            lock.ofd_setlk(repack_lock);
+            lock_policy->setlk(repack_lock, lock);
 
             fired = true;
         }
@@ -453,7 +454,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
     // Reacquire the lock here for writing
     Rename* rename;
-    Pending p(rename = new Rename(tmpabsname, absname));
+    Pending p(rename = new Rename(tmpabsname, absname, lock_policy));
 
     // Create a writer for the temp dir
     auto writer(make_tmp_segment(format, tmprelname, tmpabsname));
@@ -482,7 +483,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 unique_ptr<dir::Writer> Checker::make_tmp_segment(const std::string& format, const std::string& relname, const std::string& absname)
 {
     if (sys::exists(absname)) sys::rmtree(absname);
-    unique_ptr<dir::Writer> res(new dir::Writer(format, root, relname, absname));
+    unique_ptr<dir::Writer> res(new dir::Writer(format, root, relname, absname, lock_policy));
     return res;
 }
 
@@ -502,7 +503,7 @@ void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsi
 {
     if (data_idx >= mds.size())
     {
-        SequenceFile seqfile(absname);
+        SequenceFile seqfile(absname, lock_policy);
         seqfile.open();
         sys::PreserveFileTimes pf(seqfile.fd);
         size_t pos;
@@ -554,7 +555,7 @@ State HoleChecker::check(dataset::Reporter& reporter, const std::string& ds, con
 unique_ptr<dir::Writer> HoleChecker::make_tmp_segment(const std::string& format, const std::string& relname, const std::string& absname)
 {
     if (sys::exists(absname)) sys::rmtree(absname);
-    unique_ptr<dir::Writer> res(new dir::HoleWriter(format, root, relname, absname));
+    unique_ptr<dir::Writer> res(new dir::HoleWriter(format, root, relname, absname, lock_policy));
     return res;
 }
 

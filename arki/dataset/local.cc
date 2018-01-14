@@ -18,6 +18,7 @@
 #include <sys/stat.h>
 
 using namespace std;
+using namespace arki::core;
 using namespace arki::utils;
 
 namespace arki {
@@ -33,6 +34,11 @@ LocalConfig::LocalConfig(const ConfigFile& cfg)
     tmp = cfg.value("delete age");
     if (!tmp.empty())
         delete_age = std::stoi(tmp);
+
+    if (cfg.value("locking") == "no")
+        lock_policy = core::lock::policy_null;
+    else
+        lock_policy = core::lock::policy_ofd;
 }
 
 std::pair<bool, Writer::AcquireResult> LocalConfig::check_acquire_age(Metadata& md) const
@@ -151,7 +157,7 @@ void LocalReader::readConfig(const std::string& path, ConfigFile& cfg)
 }
 
 LocalLock::LocalLock(const LocalConfig& config, bool write)
-    : lockfile(str::joinpath(config.path, "lock")), write(write)
+    : lockfile(str::joinpath(config.path, "lock")), write(write), lock_policy(config.lock_policy)
 {
 }
 
@@ -170,7 +176,7 @@ void LocalLock::acquire()
     ds_lock.l_len = 0;
     ds_lock.l_pid = 0;
     // Use SETLKW, so that if it is already locked, we just wait
-    ds_lock.ofd_setlkw(lockfile);
+    lock_policy->setlkw(lockfile, ds_lock);
     locked = true;
 }
 
@@ -178,7 +184,7 @@ void LocalLock::release()
 {
     if (!locked) return;
     ds_lock.l_type = F_UNLCK;
-    ds_lock.ofd_setlk(lockfile);
+    lock_policy->setlk(lockfile, ds_lock);
     locked = false;
 }
 

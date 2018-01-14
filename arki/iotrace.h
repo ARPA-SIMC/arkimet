@@ -21,13 +21,10 @@ namespace iotrace {
 /// Information about one I/O event
 struct Event
 {
-    unsigned file_id;
+    std::string filename;
     off_t offset;
     size_t size;
     const char* desc;
-
-    // Return the file name
-    const std::string& filename() const;
 };
 
 /// Abstract interface for I/O trace events listeners

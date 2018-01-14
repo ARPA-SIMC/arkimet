@@ -5,7 +5,7 @@
 
 #include <arki/libconfig.h>
 #include <arki/defs.h>
-#include <arki/file.h>
+#include <arki/core/fwd.h>
 #include <arki/transaction.h>
 #include <arki/nag.h>
 #include <string>
@@ -208,6 +208,7 @@ public:
     std::string root;
     std::string relname;
     std::string absname;
+    const core::lock::Policy* lock_policy;
 
     // TODO: document and move to the right subclass if it's not needed all the time
     struct Payload
@@ -216,36 +217,12 @@ public:
     };
     Payload* payload = nullptr;
 
-    Segment(const std::string& root, const std::string& relname, const std::string& absname);
+    Segment(const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy);
     virtual ~Segment();
 };
 
 
 namespace segment {
-
-#if 0
-/**
- * Lock on a segment.
- *
- * Can be:
- *  - a read lock (lock the whole segment for reading)
- *  - a write lock (allows read, disallows concurrent append)
- *  - a repack lock (allows read, disallows append)
- */
-struct Lock
-{
-    Lock(const Lock&) = delete;
-    Lock& operator=(const Lock&) = delete;
-    Lock(Lock&&) = delete;
-    Lock& operator=(Lock&&) = delete;
-    virtual ~Lock();
-
-    virtual void lock_write() = 0;
-    virtual void lock_repack() = 0;
-    virtual void unlock() = 0;
-};
-#endif
-
 
 struct Writer : public Segment
 {
@@ -389,7 +366,7 @@ public:
     virtual void scan_dir(std::function<void(const std::string& relname)> dest) = 0;
 
     /// Create a Manager
-    static std::unique_ptr<Manager> get(const std::string& root, bool force_dir=false, bool mock_data=false);
+    static std::unique_ptr<Manager> get(const std::string& root, const core::lock::Policy* lock_policy=nullptr, bool force_dir=false, bool mock_data=false);
 };
 
 }

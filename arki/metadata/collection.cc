@@ -1,5 +1,6 @@
 #include "collection.h"
 #include "arki/exceptions.h"
+#include "arki/core/file.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/utils/compress.h"
@@ -24,6 +25,7 @@
 #endif
 
 using namespace std;
+using namespace arki::core;
 using namespace arki::utils;
 using namespace arki::types;
 
@@ -118,11 +120,6 @@ Collection::Collection(dataset::Reader& ds, const std::string& q)
     add(ds, dataset::DataQuery(q));
 }
 
-Collection::Collection(const std::string& pathname)
-{
-    scan_from_file(pathname);
-}
-
 Collection::~Collection()
 {
     for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)
@@ -193,11 +190,6 @@ void Collection::write_to(NamedFileDescriptor& out) const
         compressAndWrite(buf, out);
 }
 
-void Collection::scan_from_file(const std::string& pathname)
-{
-    scan::scan(pathname, [&](unique_ptr<Metadata> md) { acquire(move(md)); return true; });
-}
-
 void Collection::read_from_file(const metadata::ReadContext& rc)
 {
     Metadata::read_file(rc, inserter_func());
@@ -256,28 +248,6 @@ std::string Collection::ensureContiguousData(const std::string& source) const
     if (st->st_size != last_end)
         throw std::runtime_error("validating " + source + ": metadata do not cover the entire data file " + fname);
     return fname;
-}
-
-void Collection::compressDataFile(size_t groupsize, const std::string& source)
-{
-	string datafile = ensureContiguousData(source);
-
-    utils::compress::DataCompressor compressor(datafile, groupsize);
-    for (const_iterator i = vals.begin(); i != vals.end(); ++i)
-    {
-        (*i)->sourceBlob().lock();
-        compressor.add((*i)->getData());
-    }
-    compressor.flush();
-
-    // Set the same timestamp as the uncompressed file
-    std::unique_ptr<struct stat> st = sys::stat(datafile);
-    struct utimbuf times;
-    times.actime = st->st_atime;
-    times.modtime = st->st_mtime;
-    utime((datafile + ".gz").c_str(), &times);
-    utime((datafile + ".gz.idx").c_str(), &times);
-    // TODO: delete uncompressed version
 }
 
 void Collection::add_to_summary(Summary& out) const
@@ -358,6 +328,22 @@ void Collection::drop_cached_data()
 {
     for (auto& md: *this) md->drop_cached_data();
 }
+
+TestCollection::TestCollection(const std::string& pathname)
+{
+    scan_from_file(pathname);
+}
+
+bool TestCollection::scan_from_file(const std::string& pathname)
+{
+    return scan::scan(pathname, core::lock::policy_null, [&](unique_ptr<Metadata> md) { acquire(move(md)); return true; });
+}
+
+bool TestCollection::scan_from_file(const std::string& pathname, const std::string& format)
+{
+    return scan::scan(pathname, core::lock::policy_null, format, [&](unique_ptr<Metadata> md) { acquire(move(md)); return true; });
+}
+
 
 }
 }

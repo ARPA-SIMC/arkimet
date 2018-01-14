@@ -70,21 +70,24 @@ protected:
     bool exceeds_timerange(const Metadata& md) const;
 
 public:
-    /// Maximum number of data items per batch
-    size_t max_count;
-    /// Maximum batch size in bytes, counting only data, not metadata
-    size_t max_bytes;
+    /// Maximum number of data items per batch (0 to ignore)
+    size_t max_count = 0;
+
+    /// Maximum batch size in bytes, counting only data, not  metadata (0 to ignore)
+    size_t max_bytes = 0;
+
     /**
-     * Cluster by time interval:
+     * Cluster by time interval (0 to ignore):
      *  1: a batch per year of data
      *  2: a batch per month of data
      *  3: a batch per day of data
      *  4: a batch per hour of data
      *  5: a batch per minute of data
      */
-    size_t max_interval;
+    size_t max_interval = 0;
+
     /// All items in a batch must have the same time range
-    bool split_timerange;
+    bool split_timerange = false;
 
     Clusterer();
 

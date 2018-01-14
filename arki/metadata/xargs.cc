@@ -1,10 +1,10 @@
 #include "xargs.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
-#include "arki/utils/raii.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/wibble/sys/exec.h"
+#include <cstring>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -12,6 +12,7 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::core;
 using namespace arki::utils;
 
 extern char **environ;
@@ -19,101 +20,33 @@ extern char **environ;
 namespace arki {
 namespace metadata {
 
-namespace xargs {
-
-Tempfile::Tempfile()
-    : pathname(0), fd(-1)
-{
-}
-
-Tempfile::~Tempfile()
-{
-    close_nothrow();
-}
-
-void Tempfile::set_template(const std::string& tpl)
-{
-    if (fd != -1)
-        throw std::runtime_error("cannot set a new temp file template: there is already a temp file open");
-
-    pathname_template = tpl;
-}
-
-void Tempfile::open()
-{
-    if (fd != -1)
-        throw std::runtime_error("cannot open temp file for new batch: there is already a tempfile open");
-
-    utils::raii::TransactionAllocArray<char> allocpn(
-            pathname,
-            pathname_template.size() + 1,
-            pathname_template.c_str());
-    fd = mkstemp(pathname);
-    if (fd < 0)
-        throw_system_error("cannot create temporary file");
-    allocpn.commit();
-}
-
-void Tempfile::close_nothrow()
-{
-    if (fd != -1)
-    {
-        ::close(fd);
-        fd = -1;
-    }
-    if (pathname)
-    {
-        delete[] pathname;
-        pathname = 0;
-    }
-}
-
-void Tempfile::close()
-{
-    if (fd == -1) return;
-
-    // Use RAII so we always reset
-    utils::raii::SetOnExit<int> xx1(fd, -1);
-    utils::raii::DeleteArrayAndZeroOnExit<char> xx2(pathname);
-
-    if (::close(fd) < 0)
-        throw_file_error(pathname, "cannot close file");
-
-    // delete the file, if it still exists
-    sys::unlink_ifexists(pathname);
-}
-
-bool Tempfile::is_open() const
-{
-    return fd != -1;
-}
-
-}
-
 Xargs::Xargs()
-    : metadata::Clusterer(), filename_argument(-1)
+    : metadata::Clusterer(), tempfile(""), filename_argument(-1)
 {
     const char* tmpdir = getenv("TMPDIR");
 
     if (tmpdir)
     {
-        tempfile.set_template(str::joinpath(tmpdir, "arki-xargs.XXXXXX"));
+        tempfile_template = str::joinpath(tmpdir, "arki-xargs.XXXXXX");
     } else {
-        tempfile.set_template("/tmp/arki-xargs.XXXXXX");
+        tempfile_template = "/tmp/arki-xargs.XXXXXX";
     }
 }
 
 void Xargs::start_batch(const std::string& new_format)
 {
     metadata::Clusterer::start_batch(new_format);
-    tempfile.open();
+
+    // Make a mutable copy of tempfile_template
+    unique_ptr<char[]> tf(new char[tempfile_template.size() + 1]);
+    memcpy(tf.get(), tempfile_template.c_str(), tempfile_template.size() + 1);
+    tempfile = File::mkstemp(tf.get());
 }
 
 void Xargs::add_to_batch(Metadata& md, const std::vector<uint8_t>& buf)
 {
     metadata::Clusterer::add_to_batch(md, buf);
-    NamedFileDescriptor out(tempfile.fd, tempfile.pathname);
-    md.stream_data(out);
+    md.stream_data(tempfile);
 }
 
 void Xargs::flush_batch()
@@ -126,7 +59,7 @@ void Xargs::flush_batch()
         res = run_child();
     } catch (...) {
         // Ignore close exceptions here, so we rethrow what really happened
-        tempfile.close_nothrow();
+        ::close(tempfile);
         throw;
     }
 
@@ -161,10 +94,10 @@ int Xargs::run_child()
     CustomChild child(command[0]);
     child.args = command;
     if (filename_argument == -1)
-        child.args.push_back(tempfile.pathname);
+        child.args.push_back(tempfile.name());
     else {
         if ((unsigned)filename_argument < child.args.size())
-            child.args[filename_argument] = tempfile.pathname;
+            child.args[filename_argument] = tempfile.name();
     }
     child.searchInPath = true;
     child.envFromParent = false;
@@ -176,7 +109,7 @@ int Xargs::run_child()
         if (str::startswith(envstr, "ARKI_XARGS_")) continue;
         child.env.push_back(envstr);
     }
-    child.env.push_back("ARKI_XARGS_FILENAME=" + string(tempfile.pathname));
+    child.env.push_back("ARKI_XARGS_FILENAME=" + tempfile.name());
     child.env.push_back("ARKI_XARGS_FORMAT=" + str::upper(format));
     char buf[32];
     snprintf(buf, 32, "ARKI_XARGS_COUNT=%zd", count);

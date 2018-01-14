@@ -840,6 +840,7 @@ metadato::
   `duplicates` (è opzionale)
 - `restrict`: da usarsi con l'opzione `--restrict`, permette di autorizzare solo
   alcuni utenti all'accesso del dataset
+- `locking`: settato a `no`, disabilita il locking nelle operazioni sul dataset
 - `__`: (doppio underscore) prefisso per inserire campi custom (che arkimet non
   interpreta)
 

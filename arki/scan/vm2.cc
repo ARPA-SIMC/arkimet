@@ -3,7 +3,6 @@
 #include "arki/core/time.h"
 #include "arki/types/source/blob.h"
 #include "arki/metadata.h"
-#include "arki/reader.h"
 #include "arki/runtime/config.h"
 #include "arki/utils/files.h"
 #include "arki/nag.h"
@@ -80,11 +79,9 @@ Vm2::~Vm2()
     close();
 }
 
-void Vm2::open(const std::string& filename, const std::string& basedir, const std::string& relname)
+void Vm2::open(const std::string& filename, const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy)
 {
-    Scanner::open(filename, basedir, relname);
-    reader = Reader::for_file(filename);
-
+    Scanner::open(filename, basedir, relname, lock_policy);
     if (relname == "-") {
         this->in = &std::cin;
     } else {

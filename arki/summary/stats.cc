@@ -1,16 +1,17 @@
 #include "arki/summary/stats.h"
 #include "arki/metadata.h"
+#include "arki/core/file.h"
 #include "arki/types/utils.h"
 #include "arki/binary.h"
 #include "arki/utils/lua.h"
 #include "arki/utils/string.h"
-#include "arki/utils/files.h"
 #include "arki/utils/yaml.h"
 #include "arki/emitter.h"
 #include "arki/emitter/memory.h"
 #include "arki/exceptions.h"
 
 using namespace std;
+using namespace arki::core;
 using namespace arki::utils;
 using namespace arki::types;
 

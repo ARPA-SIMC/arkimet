@@ -4,8 +4,7 @@
 /// dataset/local - Base class for local datasets
 
 #include <arki/dataset.h>
-#include <arki/file.h>
-#include <arki/utils/lock.h>
+#include <arki/core/file.h>
 #include <string>
 
 namespace arki {
@@ -30,6 +29,8 @@ public:
 
     int archive_age = -1;
     int delete_age = -1;
+
+    const core::lock::Policy* lock_policy;
 
     LocalConfig(const ConfigFile& cfg);
 
@@ -87,10 +88,11 @@ public:
 
 struct LocalLock
 {
-    arki::File lockfile;
-    arki::utils::Lock ds_lock;
+    arki::core::File lockfile;
+    arki::core::Lock ds_lock;
     bool locked = false;
     bool write;
+    const core::lock::Policy* lock_policy;
 
     LocalLock(const LocalConfig& config, bool write=true);
     ~LocalLock();

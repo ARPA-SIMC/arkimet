@@ -21,11 +21,12 @@ struct MdBuf : public Segment::Payload
     utils::sys::Path dir;
     std::string basename;
     std::string pathname;
+    const core::lock::Policy* lock_policy;
     bool flushed;
     metadata::Collection mds;
     Summary sum;
 
-    MdBuf(const std::string& pathname);
+    MdBuf(const std::string& pathname, const core::lock::Policy* lock_policy);
     ~MdBuf();
 
     void add(const Metadata& md, const types::source::Blob& source);

@@ -2,7 +2,7 @@
 #define ARKI_DATASET_INDEX_MANIFEST_H
 
 #include <arki/dataset/index.h>
-#include <arki/dataset/segment.h>
+#include <arki/transaction.h>
 #include <vector>
 #include <string>
 #include <memory>
@@ -17,11 +17,12 @@ namespace index {
 class Manifest : public dataset::Index
 {
 protected:
-	std::string m_path;
-	void querySummaries(const Matcher& matcher, Summary& summary);
+    std::string m_path;
+    const core::lock::Policy* lock_policy;
+    void querySummaries(const Matcher& matcher, Summary& summary);
 
 public:
-    Manifest(const std::string& path);
+    Manifest(const std::string& path, const core::lock::Policy* lock_policy);
     virtual ~Manifest();
 
 	virtual void openRO() = 0;
@@ -62,7 +63,7 @@ public:
 
     /// Check if the given directory contains a manifest file
     static bool exists(const std::string& dir);
-    static std::unique_ptr<Manifest> create(const std::string& dir, const std::string& index_type=std::string());
+    static std::unique_ptr<Manifest> create(const std::string& dir, const core::lock::Policy* lock_policy, const std::string& index_type=std::string());
 
     static bool get_force_sqlite();
     static void set_force_sqlite(bool val);

@@ -1,6 +1,7 @@
 #include "config.h"
 #include <arki/utils/sqlite.h>
 #include <arki/binary.h>
+#include <arki/types.h>
 #include <sstream>
 #include <unistd.h>
 

@@ -9,24 +9,17 @@ struct lua_State;
 namespace arki {
 namespace types {
 
-struct Reftime;
-
 template<>
 struct traits<Reftime>
 {
-	static const char* type_tag;
-	static const types::Code type_code;
-	static const size_t type_sersize_bytes;
-	static const char* type_lua_tag;
+    static const char* type_tag;
+    static const types::Code type_code;
+    static const size_t type_sersize_bytes;
+    static const char* type_lua_tag;
 
-	typedef unsigned char Style;
-
+    typedef unsigned char Style;
 };
 
-namespace reftime {
-struct Position;
-struct Period;
-}
 template<> struct traits<reftime::Position> : public traits<Reftime> {};
 template<> struct traits<reftime::Period> : public traits<Reftime> {};
 

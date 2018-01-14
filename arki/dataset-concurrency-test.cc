@@ -8,7 +8,7 @@
 #include "arki/types/reftime.h"
 #include "arki/scan/any.h"
 #include "arki/configfile.h"
-#include "arki/utils/files.h"
+#include "arki/core/file.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -19,6 +19,7 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::core;
 using namespace arki::utils;
 using namespace arki::tests;
 
@@ -88,7 +89,7 @@ struct ConcurrentImporter : public wibble::sys::ChildProcess
 
     int main() override
     {
-        arki::utils::Lock::test_set_nowait_default(false);
+        core::lock::test_set_nowait_default(false);
         try {
             auto ds(fixture.config().create_writer());
 
@@ -364,7 +365,7 @@ this->add_method("read_repack", [](Fixture& f) {
 
 // Test parallel check and write
 this->add_method("write_check", [](Fixture& f) {
-    utils::Lock::TestNowait lock_nowait;
+    core::lock::TestNowait lock_nowait;
 
     bool is_iseg;
 
@@ -411,7 +412,66 @@ this->add_method("write_check", [](Fixture& f) {
     cf.wait();
 });
 
+this->add_method("nolock_read", [](Fixture& f) {
+    f.reset_test("locking=no");
+    f.import_all(f.td);
+    core::lock::TestCount count;
+    wassert(f.query_results(dataset::DataQuery("", true), {1, 0, 2}));
+    count.measure();
+    wassert(actual(count.ofd_setlk) == 0u);
+    wassert(actual(count.ofd_setlkw) == 0u);
+    wassert(actual(count.ofd_getlk) == 0u);
+});
+
+this->add_method("nolock_write", [](Fixture& f) {
+    f.reset_test("locking=no");
+    core::lock::TestCount count;
+    f.import_all(f.td);
+    count.measure();
+    wassert(actual(count.ofd_setlk) == 0u);
+    wassert(actual(count.ofd_setlkw) == 0u);
+    wassert(actual(count.ofd_getlk) == 0u);
+});
+
+this->add_method("nolock_rescan", [](Fixture& f) {
+    f.reset_test("locking=no");
+    f.import_all(f.td);
+    string test_segment = "2007/07-08." + f.td.format;
+    f.make_unaligned(test_segment);
+
+    core::lock::TestCount count;
+    {
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "2 files ok");
+        e.rescanned.emplace_back("testds", test_segment);
+        wassert(actual(writer.get()).check(e, true));
+    }
+    count.measure();
+    wassert(actual(count.ofd_setlk) == 0u);
+    wassert(actual(count.ofd_setlkw) == 0u);
+    wassert(actual(count.ofd_getlk) == 0u);
+});
+
+this->add_method("nolock_repack", [](Fixture& f) {
+    f.reset_test("locking=no");
+    f.import_all(f.td);
+    string test_segment = "2007/07-08." + f.td.format;
+    f.makeSegmentedChecker()->test_make_hole(test_segment, 10, 1);
+
+    core::lock::TestCount count;
+    {
+        auto checker(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "repack", "2 files ok");
+        e.repacked.emplace_back("testds", test_segment);
+        wassert(actual(checker.get()).repack(e, true));
+    }
+    count.measure();
+    wassert(actual(count.ofd_setlk) == 0u);
+    wassert(actual(count.ofd_setlkw) == 0u);
+    wassert(actual(count.ofd_getlk) == 0u);
+});
 
 }
 }
-

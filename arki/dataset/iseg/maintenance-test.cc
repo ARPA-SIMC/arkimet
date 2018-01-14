@@ -19,11 +19,6 @@ class Tests : public MaintenanceTest
 {
     using MaintenanceTest::MaintenanceTest;
 
-    void make_unaligned() override
-    {
-        sys::unlink("testds/" + fixture->test_relpath + ".index");
-    }
-
     void register_tests() override;
 
     bool can_detect_overlap() const override { return segment_type != SEGMENT_DIR; }

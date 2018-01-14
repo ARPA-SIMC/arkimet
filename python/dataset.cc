@@ -3,6 +3,7 @@
 #include "common.h"
 #include "metadata.h"
 #include "summary.h"
+#include "arki/core/file.h"
 #include "arki/dataset.h"
 #include "arki/configfile.h"
 #include "arki/sort.h"
@@ -11,6 +12,7 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::core;
 using namespace arki::python;
 
 extern "C" {

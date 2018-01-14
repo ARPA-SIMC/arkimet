@@ -1,25 +1,18 @@
-#include <arki/tests/tests.h>
-#include <arki/metadata/stream.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/types/level.h>
-#include <arki/types/timerange.h>
-#include <arki/types/reftime.h>
-#include <arki/types/area.h>
-#include <arki/types/proddef.h>
-#include <arki/types/assigneddataset.h>
-#include <arki/utils/sys.h>
+#include "arki/tests/tests.h"
+#include "arki/metadata/stream.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/types/source.h"
+#include "arki/types/origin.h"
+#include "arki/types/product.h"
+#include "arki/types/level.h"
+#include "arki/types/timerange.h"
+#include "arki/types/reftime.h"
+#include "arki/types/area.h"
+#include "arki/types/proddef.h"
+#include "arki/types/assigneddataset.h"
+#include "arki/utils/sys.h"
 #include <iostream>
-
-namespace std {
-static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
-{
-    m.writeYaml(o);
-	return o;
-}
-}
 
 namespace {
 using namespace std;

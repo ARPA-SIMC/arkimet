@@ -2,8 +2,7 @@
 #define ARKI_DATASET_ISEG_H
 
 #include <arki/dataset/segmented.h>
-#include <arki/core/time.h>
-#include <arki/types.h>
+#include <arki/types/fwd.h>
 #include <set>
 
 namespace arki {

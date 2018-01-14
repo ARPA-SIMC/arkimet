@@ -62,7 +62,7 @@ add_method("acquire", [](Fixture& f) {
     // Clean the dataset
     f.clean();
 
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
     Metadata& md = mdc[0];
 
     auto writer = f.makeSimpleWriter();
@@ -104,7 +104,7 @@ add_method("acquire", [](Fixture& f) {
 add_method("append", [](Fixture& f) {
     f.cfg.setValue("step", "yearly");
 
-    metadata::Collection mdc("inbound/test-sorted.grib1");
+    metadata::TestCollection mdc("inbound/test-sorted.grib1");
 
     // Import once in the empty dataset
     {
@@ -158,11 +158,11 @@ add_method("scan_missing_summary", [](Fixture& f) {
 
     // Maintenance should show one file to rescan
     {
-        auto checker = f.makeSimpleChecker();
-        MaintenanceResults expected(false, 3);
-        expected.by_type[DatasetTest::COUNTED_OK] = 2;
-        expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 1;
-        wassert(actual(*checker).maintenance(expected));
+        auto state = f.scan_state();
+        wassert(actual(state.get("2007/07-08.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.count(SEGMENT_OK)) == 2u);
+        wassert(actual(state.count(SEGMENT_UNALIGNED)) == 1u);
+        wassert(actual(state.size()) == 3u);
     }
 
     // Fix the dataset
@@ -216,7 +216,8 @@ add_method("scan_compressed", [](Fixture& f) {
             metadata::Collection mdc;
             mdc.read_from_file("testds/2007/07-08.grib.metadata");
             ensure_equals(mdc.size(), 1u);
-            mdc.compressDataFile(1024, "metadata file testds/2007/07-08.grib.metadata");
+            string dest = mdc.ensureContiguousData("metadata file testds/2007/07-08.grib.metadata");
+            scan::compress(dest, core::lock::policy_ofd, 1024);
             sys::unlink_ifexists("testds/2007/07-08.grib");
 
             ensure(!sys::exists("testds/2007/07-08.grib"));
@@ -259,11 +260,11 @@ add_method("scan_compressed", [](Fixture& f) {
 
     // Maintenance should show one file to rescan
     {
-        auto checker = f.makeSimpleChecker();
-        MaintenanceResults expected(false, 3);
-        expected.by_type[DatasetTest::COUNTED_OK] = 2;
-        expected.by_type[DatasetTest::COUNTED_UNALIGNED] = 1;
-        wassert(actual(*checker).maintenance(expected));
+        auto state = f.scan_state();
+        wassert(actual(state.get("2007/07-08.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.count(SEGMENT_OK)) == 2u);
+        wassert(actual(state.count(SEGMENT_UNALIGNED)) == 1u);
+        wassert(actual(state.size()) == 3u);
     }
 
     // Fix the dataset
@@ -323,7 +324,7 @@ add_method("scan_compressed", [](Fixture& f) {
 });
 
 add_method("testacquire", [](Fixture& f) {
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
     stringstream ss;
     wassert(actual(simple::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_OK);
 

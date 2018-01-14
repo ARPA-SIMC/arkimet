@@ -44,7 +44,7 @@ public:
     // Nothing to do: the dataset is always empty
     bool query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)>) override { return true; }
     void query_summary(const Matcher& matcher, Summary& summary) override {}
-    void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out) override {}
+    void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override {}
 };
 
 

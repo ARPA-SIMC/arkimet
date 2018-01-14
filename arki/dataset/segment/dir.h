@@ -6,8 +6,7 @@
 #include <arki/defs.h>
 #include <arki/dataset/segment.h>
 #include <arki/dataset/segment/seqfile.h>
-#include <arki/file.h>
-#include <arki/utils/lock.h>
+#include <arki/core/file.h>
 
 namespace arki {
 class Metadata;
@@ -20,16 +19,16 @@ namespace dir {
 struct Writer : public dataset::segment::Writer
 {
     SequenceFile seqfile;
-    File write_lock_file;
-    utils::Lock lock;
+    core::File write_lock_file;
+    core::Lock lock;
     std::string format;
 
-    Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname);
+    Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy);
     ~Writer();
 
     Pending append(Metadata& md, const types::source::Blob** new_source=0) override;
 
-    virtual size_t write_file(Metadata& md, File& fd);
+    virtual size_t write_file(Metadata& md, core::NamedFileDescriptor& fd);
 
     /// Call f for each nnnnnn.format file in the directory segment, passing the file name
     void foreach_datafile(std::function<void(const char*)> f);
@@ -50,7 +49,7 @@ struct HoleWriter: public Writer
 {
     using Writer::Writer;
 
-    size_t write_file(Metadata& md, File& fd) override;
+    size_t write_file(Metadata& md, core::NamedFileDescriptor& fd) override;
 };
 
 
@@ -62,7 +61,7 @@ public:
     void validate(Metadata& md, const scan::Validator& v) override;
 
 public:
-    Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname);
+    Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy);
 
     void lock() override;
 

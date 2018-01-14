@@ -4,7 +4,7 @@
 /// SQLite helpers
 
 #include <arki/transaction.h>
-#include <arki/types.h>
+#include <arki/types/fwd.h>
 #include <sqlite3.h>
 #include <string>
 #include <sstream>

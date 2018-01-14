@@ -4,7 +4,7 @@
 /// In-memory collection of metadata
 
 #include <arki/defs.h>
-#include <arki/file.h>
+#include <arki/core/fwd.h>
 #include <vector>
 #include <string>
 
@@ -14,10 +14,6 @@ struct Summary;
 
 namespace metadata {
 struct ReadContext;
-}
-
-namespace core {
-struct Time;
 }
 
 namespace dataset {
@@ -46,9 +42,6 @@ public:
     /// Construct a collection filled by the results of query_data
     Collection(dataset::Reader& ds, const dataset::DataQuery& q);
     Collection(dataset::Reader& ds, const std::string& q);
-    /// Construct a collection filled with the data scanned from the given file
-    /// using scan::any
-    Collection(const std::string& pathname);
     ~Collection();
 
     Collection& operator=(const Collection& o);
@@ -96,11 +89,7 @@ public:
     /**
      * Write all metadata to the given output file
      */
-    void write_to(NamedFileDescriptor& out) const;
-
-    /// Construct a collection filled with the data scanned from the given file
-    /// using scan::any
-    void scan_from_file(const std::string& pathname);
+    void write_to(core::NamedFileDescriptor& out) const;
 
     /// Read metadata from \a pathname and append them to this collection
     void read_from_file(const metadata::ReadContext& rc);
@@ -109,7 +98,7 @@ public:
     void read_from_file(const std::string& pathname);
 
     /// Read metadata from a file descriptor and append them to this collection
-    void read_from_file(NamedFileDescriptor& fd);
+    void read_from_file(core::NamedFileDescriptor& fd);
 
     /// Add all metadata to a summary
     void add_to_summary(Summary& out) const;
@@ -134,12 +123,6 @@ public:
 	 */
 	std::string ensureContiguousData(const std::string& source = std::string("metadata")) const;
 
-	/**
-	 * If all the metadata here entirely cover a single data file, replace
-	 * it with a compressed version
-	 */
-	void compressDataFile(size_t groupsize = 512, const std::string& source = std::string("metadata"));
-
 	/// Sort with the given order
 	void sort(const sort::Compare& cmp);
 	void sort(const std::string& cmp);
@@ -159,6 +142,25 @@ public:
 
     /// Call drop_cached_data on all metadata in the collection
     void drop_cached_data();
+};
+
+struct TestCollection : public Collection
+{
+    using Collection::Collection;
+
+    TestCollection() = default;
+
+    /// Construct a collection filled with the data scanned from the given file
+    /// using scan::any
+    TestCollection(const std::string& pathname);
+
+    /// Construct a collection filled with the data scanned from the given file
+    /// using scan::any
+    bool scan_from_file(const std::string& pathname);
+
+    /// Construct a collection filled with the data scanned from the given file
+    /// using scan::any
+    bool scan_from_file(const std::string& pathname, const std::string& format);
 };
 
 }

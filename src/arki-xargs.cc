@@ -16,6 +16,7 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
 
@@ -82,11 +83,11 @@ int main(int argc, const char* argv[])
         if (!opts.hasNext())
             throw commandline::BadOption("please specify a command to run");
 
-		vector<string> args;
-		while (opts.hasNext())
-			args.push_back(opts.next());
+        vector<string> args;
+        while (opts.hasNext())
+            args.push_back(opts.next());
 
-		runtime::init();
+        runtime::init();
 
         metadata::Xargs consumer;
         consumer.command = args;
@@ -96,8 +97,8 @@ int main(int argc, const char* argv[])
             consumer.set_max_bytes(opts.max_bytes->stringValue());
         if (opts.time_interval->isSet())
             consumer.set_interval(opts.time_interval->stringValue());
-		if (opts.split_timerange->boolValue())
-			consumer.split_timerange = true;
+        if (opts.split_timerange->boolValue())
+            consumer.split_timerange = true;
 
         if (opts.inputfiles->values().empty())
         {
@@ -121,8 +122,8 @@ int main(int argc, const char* argv[])
         cerr << e.what() << endl;
         opts.outputHelp(cerr);
         return 1;
-	} catch (std::exception& e) {
-		cerr << e.what() << endl;
-		return 1;
-	}
+    } catch (std::exception& e) {
+        cerr << e.what() << endl;
+        return 1;
+    }
 }

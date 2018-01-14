@@ -387,9 +387,6 @@ public:
                 throw std::system_error(errno, std::system_category(), ss.str());
             }
 
-        // Prevent reading the still open old file using the new offsets
-        Metadata::flushDataReaders();
-
         // Commit the changes in the file system
         p_repack.commit();
 
@@ -566,7 +563,7 @@ void Checker::rescanSegment(const std::string& relpath)
 
     // Collect the scan results in a metadata::Collector
     metadata::Collection mds;
-    if (!scan::scan(pathname, mds.inserter_func()))
+    if (!scan::scan(pathname, config().lock_policy, mds.inserter_func()))
         throw std::runtime_error("cannot rescan " + pathname + ": file format unknown");
     //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
 

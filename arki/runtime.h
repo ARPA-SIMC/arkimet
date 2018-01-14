@@ -193,10 +193,10 @@ struct MetadataDispatch
     std::string dir_copyko;
 
     /// File to which we send data that was successfully imported
-    std::unique_ptr<arki::File> copyok;
+    std::unique_ptr<core::File> copyok;
 
     /// File to which we send data that was not successfully imported
-    std::unique_ptr<arki::File> copyko;
+    std::unique_ptr<core::File> copyko;
 
 
     MetadataDispatch(const ConfigFile& cfg, DatasetProcessor& next, bool test=false);

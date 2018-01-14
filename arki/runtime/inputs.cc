@@ -2,10 +2,12 @@
 #include "config.h"
 #include "io.h"
 #include "arki/dataset.h"
+#include "arki/core/file.h"
 #include "arki/utils/string.h"
 #include "arki/nag.h"
 
 using namespace std;
+using namespace arki::core;
 using namespace arki::utils;
 
 namespace arki {

@@ -27,9 +27,9 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
-using arki::core::Time;
 
 namespace arki {
 namespace dataset {

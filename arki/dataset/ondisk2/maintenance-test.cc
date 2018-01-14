@@ -20,12 +20,6 @@ class Tests : public MaintenanceTest
 {
     using MaintenanceTest::MaintenanceTest;
 
-    void make_unaligned() override
-    {
-        fixture->makeSegmentedChecker()->test_remove_index(fixture->test_relpath);
-        files::createDontpackFlagfile("testds");
-    }
-
     void register_tests() override;
 
     /**

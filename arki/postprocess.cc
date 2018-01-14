@@ -1,6 +1,7 @@
 #include "config.h"
 #include "postprocess.h"
 #include "arki/exceptions.h"
+#include "arki/core/file.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/utils/process.h"
@@ -26,6 +27,7 @@ typedef void (*sighandler_t)(int);
 
 using namespace std;
 using namespace arki::utils;
+using namespace arki::core;
 
 namespace {
 

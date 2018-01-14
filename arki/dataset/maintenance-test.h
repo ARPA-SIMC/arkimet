@@ -109,7 +109,7 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
     /**
      * Make the segment 2007/07-07.grib show up as unaligned
      */
-    virtual void make_unaligned() = 0;
+    void make_unaligned();
 
     /// Delete the first element in the test segment
     void delete_one_in_segment();
@@ -124,9 +124,6 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
 
     /// Remove a file or a directory
     static void rm_r(const std::string& pathname);
-
-    /// Set the mtime and atime of a file
-    static void touch(const std::string& pathname, time_t ts);
 };
 
 }

@@ -24,10 +24,10 @@
 #include <unistd.h>
 
 using namespace std;
+using namespace arki::core;
 using namespace arki::utils;
 using namespace arki::types;
 using namespace arki::summary;
-using arki::core::Time;
 
 namespace arki {
 

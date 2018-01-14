@@ -25,7 +25,7 @@ namespace {
 struct Fixture : public arki::utils::tests::Fixture
 {
     ConfigFile cfg;
-    metadata::Collection orig;
+    metadata::TestCollection orig;
     std::shared_ptr<const ArchivesConfig> config;
 
     Fixture()
@@ -85,7 +85,7 @@ add_method("acquire_last", [](Fixture& f) {
     {
         ArchivesReader reader(f.config);
         metadata::Collection res(reader, Matcher());
-        metadata::Collection orig("inbound/test-sorted.grib1");
+        metadata::TestCollection orig("inbound/test-sorted.grib1");
         // Results are in the same order as the files that have been indexed
         wassert(actual(res == orig));
     }

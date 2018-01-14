@@ -4,7 +4,7 @@
 /// dataset/file - Dataset on a single file
 
 #include <arki/defs.h>
-#include <arki/file.h>
+#include <arki/core/fwd.h>
 #include <arki/dataset.h>
 #include <string>
 
@@ -50,7 +50,7 @@ class FdFile : public File
 {
 protected:
     std::shared_ptr<const FileConfig> m_config;
-    NamedFileDescriptor* fd = nullptr;
+    core::NamedFileDescriptor* fd = nullptr;
 
 public:
     FdFile(std::shared_ptr<const FileConfig> config);
@@ -72,7 +72,7 @@ public:
 class YamlFile : public FdFile
 {
 protected:
-    LineReader* reader;
+    core::LineReader* reader;
 
 public:
     // Initialise the dataset with the information from the configurationa in 'cfg'

@@ -3,7 +3,8 @@
 
 /// arkimet metadata type system
 #include <arki/defs.h>
-#include <arki/file.h>
+#include <arki/core/fwd.h>
+#include <arki/types/fwd.h>
 #include <string>
 #include <vector>
 #include <memory>
@@ -56,8 +57,6 @@ struct Mapping;
 }
 
 namespace types {
-struct Type;
-typedef TypeCode Code;
 
 // Parse name into a type code, returning TYPE_INVALID if it does not match
 Code checkCodeName(const std::string& name);
@@ -65,13 +64,6 @@ Code checkCodeName(const std::string& name);
 Code parseCodeName(const std::string& name);
 std::string formatCode(const Code& c);
 static inline std::ostream& operator<<(std::ostream& o, const Code& c) { return o << formatCode(c); }
-
-}
-
-namespace types {
-
-template<typename T>
-class traits;
 
 /**
  * Base class for implementing arkimet metadata types
@@ -292,21 +284,21 @@ struct Bundle
      *
      * @return true if a bundle header was read, false on end of file
      */
-    bool read_header(NamedFileDescriptor& fd);
+    bool read_header(core::NamedFileDescriptor& fd);
 
     /**
      * Read the bundle data after read_header has been called
      *
      * @return true if all bundle data was read, false on end of file
      */
-    bool read_data(NamedFileDescriptor& fd);
+    bool read_data(core::NamedFileDescriptor& fd);
 
     /**
      * read_header and read_data together
      *
      * @return true if all was read, false on end of file
      */
-    bool read(NamedFileDescriptor& fd);
+    bool read(core::NamedFileDescriptor& fd);
 };
 
 }

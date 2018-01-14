@@ -39,7 +39,7 @@ void Tests::register_tests() {
 // Test acquiring the data
 add_method("import", [](Fixture& f) {
     // Import data into the datasets
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
 
     auto writer = f.config().create_writer();
     wassert(actual(writer->acquire(mdc[0])) == dataset::Writer::ACQ_OK);
@@ -48,7 +48,7 @@ add_method("import", [](Fixture& f) {
 });
 
 add_method("testacquire", [](Fixture& f) {
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
     stringstream ss;
     wassert(actual(outbound::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_OK);
 

@@ -5,7 +5,7 @@
 
 #include <arki/libconfig.h>
 #include <arki/defs.h>
-#include <arki/file.h>
+#include <arki/core/fwd.h>
 #include <vector>
 #include <string>
 #include <ctime>
@@ -25,7 +25,7 @@ namespace scan {
  * @return true if the file has been scanned, false if the file is in a format
  * that is not supported or recognised.
  */
-bool scan(const std::string& file, metadata_dest_func dest);
+bool scan(const std::string& file, const core::lock::Policy* lock_policy, metadata_dest_func dest);
 
 /**
  * Alternate version with explicit base dir.
@@ -33,7 +33,7 @@ bool scan(const std::string& file, metadata_dest_func dest);
  * The source information in the metadata will point to \a relname only, with
  * \a basedir as context.
  */
-bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest);
+bool scan(const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy, metadata_dest_func dest);
 
 /**
  * Scan the given file without format autodetection, sending its metadata to a
@@ -45,7 +45,7 @@ bool scan(const std::string& basedir, const std::string& relname, metadata_dest_
  * @return true if the file has been scanned, false if the file is in a format
  * that is not supported or recognised.
  */
-bool scan(const std::string& file, metadata_dest_func dest, const std::string& format);
+bool scan(const std::string& file, const core::lock::Policy* lock_policy, const std::string& format, metadata_dest_func dest);
 
 /**
  * Alternate version with explicit base dir.
@@ -53,7 +53,7 @@ bool scan(const std::string& file, metadata_dest_func dest, const std::string& f
  * The source information in the metadata will point to \a relname only, with
  * \a basedir as context.
  */
-bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest, const std::string& format);
+bool scan(const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy, const std::string& format, metadata_dest_func dest);
 
 /**
  * Return true if the file exists, either uncompressed or compressed
@@ -73,7 +73,7 @@ time_t timestamp(const std::string& file);
 /**
  * Compress the given file
  */
-void compress(const std::string& file, size_t groupsize=512);
+void compress(const std::string& file, const core::lock::Policy* lock_policy, size_t groupsize=512);
 
 /**
  * Reconstruct raw data based on a metadata and a value
@@ -91,7 +91,7 @@ struct Validator
     virtual std::string format() const = 0;
 
     // Validate data found in a file
-    virtual void validate_file(NamedFileDescriptor& fd, off_t offset, size_t size) const = 0;
+    virtual void validate_file(core::NamedFileDescriptor& fd, off_t offset, size_t size) const = 0;
 
     // Validate a memory buffer
     virtual void validate_buf(const void* buf, size_t size) const = 0;
@@ -105,7 +105,7 @@ struct Validator
 	static const Validator& by_filename(const std::string& filename);
 
 protected:
-    [[noreturn]] void throw_check_error(NamedFileDescriptor& fd, off_t offset, const std::string& msg) const;
+    [[noreturn]] void throw_check_error(core::NamedFileDescriptor& fd, off_t offset, const std::string& msg) const;
     [[noreturn]] void throw_check_error(const std::string& msg) const;
 };
 

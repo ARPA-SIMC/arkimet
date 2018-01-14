@@ -1,44 +1,46 @@
-#include <arki/metadata/tests.h>
-#include <arki/libconfig.h>
-#include <arki/scan/any.h>
-#include <arki/types.h>
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/types/level.h>
-#include <arki/types/timerange.h>
-#include <arki/types/reftime.h>
-#include <arki/types/area.h>
-#include <arki/types/proddef.h>
-#include <arki/types/run.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/utils/compress.h>
-#include <arki/utils/string.h>
-#include <arki/utils/sys.h>
+#include "arki/metadata/tests.h"
+#include "arki/libconfig.h"
+#include "arki/scan/any.h"
+#include "arki/types/source.h"
+#include "arki/types/origin.h"
+#include "arki/types/product.h"
+#include "arki/types/level.h"
+#include "arki/types/timerange.h"
+#include "arki/types/reftime.h"
+#include "arki/types/area.h"
+#include "arki/types/proddef.h"
+#include "arki/types/run.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/utils/compress.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 #include <sstream>
 #include <iostream>
 
-namespace tut {
+namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
-using namespace arki::types;
+using namespace arki::tests;
 using namespace arki::utils;
 
-struct arki_scan_any_shar {
-};
-TESTGRP(arki_scan_any);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_scan_any");
+
+void Tests::register_tests() {
 
 // Scan a well-known grib file, with no padding between messages
-def_test(1)
-{
+add_method("grib_compact", [] {
     metadata::Collection mdc;
 #ifndef HAVE_GRIBAPI
     ensure(not scan::scan("inbound/test.grib1", mdc.inserter_func()));
 #else
     vector<uint8_t> buf;
 
-    ensure(scan::scan("inbound/test.grib1", mdc.inserter_func()));
+    ensure(scan::scan("inbound/test.grib1", core::lock::policy_null, mdc.inserter_func()));
     ensure_equals(mdc.size(), 3u);
 
     // Check the source info
@@ -98,18 +100,17 @@ def_test(1)
     wassert(actual(mdc[2]).contains("reftime", "2007-10-09T00:00:00Z"));
     wassert(actual(mdc[2]).contains("run", "MINUTE(0)"));
 #endif
-}
+});
 
 // Scan a well-known bufr file, with no padding between BUFRs
-def_test(2)
-{
+add_method("bufr_compact", [] {
     metadata::Collection mdc;
 #ifndef HAVE_DBALLE
     ensure(not scan::scan("inbound/test.bufr", mdc.inserter_func()));
 #else
     vector<uint8_t> buf;
 
-    ensure(scan::scan("inbound/test.bufr", mdc.inserter_func()));
+    ensure(scan::scan("inbound/test.bufr", core::lock::policy_null, mdc.inserter_func()));
 
 	ensure_equals(mdc.size(), 3u);
 
@@ -169,39 +170,37 @@ def_test(2)
     //wassert(actual(mdc[2]).contains("proddef", "GRIB(blo=13, sta=577)"));
     wassert(actual(mdc[2]).contains("reftime", "2004-11-30T12:00:00Z"));
 
-	// Check run
-	ensure(not mdc[2].has(TYPE_RUN));
+    // Check run
+    ensure(not mdc[2].has(TYPE_RUN));
 #endif
-}
+});
 
 // Test compression
-def_test(3)
-{
-	// Create a test file with 9 gribs inside
-	system("cat inbound/test.grib1 inbound/test.grib1 inbound/test.grib1 > a.grib1");
-	system("cp a.grib1 b.grib1");
+add_method("compress", [] {
+    // Create a test file with 9 gribs inside
+    system("cat inbound/test.grib1 inbound/test.grib1 inbound/test.grib1 > a.grib1");
+    system("cp a.grib1 b.grib1");
 
     // Compress
-    scan::compress("b.grib1", 5);
+    scan::compress("b.grib1", core::lock::policy_null, 5);
     sys::unlink_ifexists("b.grib1");
 
     {
         utils::compress::TempUnzip tu("b.grib1");
         unsigned count = 0;
-        scan::scan("b.grib1", [&](unique_ptr<Metadata>) { ++count; return true; });
+        scan::scan("b.grib1", core::lock::policy_null, [&](unique_ptr<Metadata>) { ++count; return true; });
         ensure_equals(count, 9u);
     }
-}
+});
 
 // Test reading update sequence numbers
-def_test(4)
-{
+add_method("usn", [] {
 #ifdef HAVE_DBALLE
     {
         // Gribs don't have update sequence numbrs, and the usn parameter must
         // be left untouched
         metadata::Collection mdc;
-        scan::scan("inbound/test.grib1", mdc.inserter_func());
+        scan::scan("inbound/test.grib1", core::lock::policy_null, mdc.inserter_func());
         int usn = 42;
         ensure_equals(scan::update_sequence_number(mdc[0], usn), false);
         ensure_equals(usn, 42);
@@ -209,7 +208,7 @@ def_test(4)
 
     {
         metadata::Collection mdc;
-        scan::scan("inbound/synop-gts.bufr", mdc.inserter_func());
+        scan::scan("inbound/synop-gts.bufr", core::lock::policy_null, mdc.inserter_func());
         int usn;
         ensure_equals(scan::update_sequence_number(mdc[0], usn), true);
         ensure_equals(usn, 0);
@@ -217,12 +216,14 @@ def_test(4)
 
     {
         metadata::Collection mdc;
-        scan::scan("inbound/synop-gts-usn2.bufr", mdc.inserter_func());
+        scan::scan("inbound/synop-gts-usn2.bufr", core::lock::policy_null, mdc.inserter_func());
         int usn;
         ensure_equals(scan::update_sequence_number(mdc[0], usn), true);
         ensure_equals(usn, 2);
     }
 #endif
+});
+
 }
 
 }

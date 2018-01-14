@@ -3,7 +3,8 @@
 
 /// Base interface for arkimet datasets
 #include <arki/matcher.h>
-#include <arki/file.h>
+#include <arki/core/fwd.h>
+#include <arki/dataset/fwd.h>
 #include <arki/transaction.h>
 #include <string>
 #include <memory>
@@ -62,10 +63,6 @@ class Compare;
  * to allow complex data searches across datasets.
  */
 namespace dataset {
-class Reader;
-class Writer;
-class Checker;
-struct Reporter;
 
 struct DataQuery
 {
@@ -76,8 +73,11 @@ struct DataQuery
      * Hint for the dataset backend to let them know that we also want the data
      * and not just the metadata.
      *
-     * This is currently only used by the HTTP client dataset, which will only
-     * download data from the server if this option is set.
+     * This is currently used:
+     *  - by the HTTP client dataset, which will only download data from the
+     *    server if this option is set
+     *  - by local datasets to read-lock the segments for the duration of the
+     *    query
      */
     bool with_data;
 
@@ -89,22 +89,22 @@ struct DataQuery
     DataQuery(const Matcher& matcher, bool with_data=false);
     ~DataQuery();
 
-	void lua_from_table(lua_State* L, int idx);
-	void lua_push_table(lua_State* L, int idx) const;
+    void lua_from_table(lua_State* L, int idx);
+    void lua_push_table(lua_State* L, int idx) const;
 };
 
 struct ByteQuery : public DataQuery
 {
-	enum Type {
-		BQ_DATA = 0,
-		BQ_POSTPROCESS = 1,
-		BQ_REP_METADATA = 2,
-		BQ_REP_SUMMARY = 3
-	};
+    enum Type {
+        BQ_DATA = 0,
+        BQ_POSTPROCESS = 1,
+        BQ_REP_METADATA = 2,
+        BQ_REP_SUMMARY = 3
+    };
 
     std::string param;
     Type type = BQ_DATA;
-    std::function<void(NamedFileDescriptor&)> data_start_hook = nullptr;
+    std::function<void(core::NamedFileDescriptor&)> data_start_hook = nullptr;
 
     ByteQuery() {}
 
@@ -230,7 +230,7 @@ public:
      *
      * The default implementation in Reader is based on queryData.
      */
-    virtual void query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out);
+    virtual void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out);
 
     /**
      * Expand the given begin and end ranges to include the datetime extremes

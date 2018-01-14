@@ -11,6 +11,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/scan/any.h"
 #include "arki/types/reftime.h"
+#include "arki/types/source.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
@@ -113,7 +114,7 @@ bool Config::relpath_timespan(const std::string& path, core::Time& start_time, c
 
 std::unique_ptr<segment::Manager> Config::create_segment_manager() const
 {
-    return segment::Manager::get(path, force_dir_segments, mock_data);
+    return segment::Manager::get(path, lock_policy, force_dir_segments, mock_data);
 }
 
 std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
@@ -276,9 +277,9 @@ void Checker::archiveSegment(const std::string& relpath)
         mdc.read_from_file(arcabspath + ".metadata");
     else if (compressed) {
         utils::compress::TempUnzip tu(arcabspath);
-        scan::scan(arcabspath, mdc.inserter_func());
+        scan::scan(arcabspath, config().lock_policy, mdc.inserter_func());
     } else
-        scan::scan(arcabspath, mdc.inserter_func());
+        scan::scan(arcabspath, config().lock_policy, mdc.inserter_func());
 
     archive().indexSegment(arcrelpath, move(mdc));
 }
@@ -298,9 +299,9 @@ void Checker::unarchive_segment(const std::string& relpath)
         mdc.read_from_file(abspath + ".metadata");
     else if (compressed) {
         utils::compress::TempUnzip tu(abspath);
-        scan::scan(abspath, mdc.inserter_func());
+        scan::scan(abspath, config().lock_policy, mdc.inserter_func());
     } else
-        scan::scan(abspath, mdc.inserter_func());
+        scan::scan(abspath, config().lock_policy, mdc.inserter_func());
 
     indexSegment(relpath, move(mdc));
 }

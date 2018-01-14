@@ -59,7 +59,7 @@ void Tests::register_tests() {
 
 // Test acquiring data
 add_method("acquire", [](Fixture& f) {
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
 
     auto writer = f.makeOndisk2Writer();
 
@@ -161,7 +161,7 @@ add_method("query_summary_reftime", [](Fixture& f) {
 
 // Test acquiring data with replace=1
 add_method("acquire_replace", [](Fixture& f) {
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
 
     // Import once
     {
@@ -241,7 +241,7 @@ add_method("query_first_reftime_extreme", [](Fixture& f) {
 add_method("acquire_compressed", [](Fixture& f) {
     f.cfg.setValue("step", "yearly");
 
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
 
     // Import the first
     {
@@ -254,7 +254,8 @@ add_method("acquire_compressed", [](Fixture& f) {
     {
         metadata::Collection c = f.query(Matcher());
         wassert(actual(c.size()) == 1u);
-        c.compressDataFile(1024, "metadata file testds/20/2007.grib");
+        string dest = c.ensureContiguousData("metadata file testds/20/2007.grib");
+        scan::compress(dest, core::lock::policy_ofd, 1024);
         sys::unlink_ifexists("testds/20/2007.grib");
     }
     wassert(actual_file("testds/20/2007.grib").not_exists());
@@ -275,8 +276,8 @@ add_method("acquire_compressed", [](Fixture& f) {
 add_method("acquire_replace_usn", [](Fixture& f) {
     auto writer = f.makeOndisk2Writer();
 
-    metadata::Collection mdc("inbound/synop-gts.bufr");
-    metadata::Collection mdc_upd("inbound/synop-gts-usn2.bufr");
+    metadata::TestCollection mdc("inbound/synop-gts.bufr");
+    metadata::TestCollection mdc_upd("inbound/synop-gts-usn2.bufr");
 
     wassert(actual(mdc.size()) == 1u);
 
@@ -312,6 +313,11 @@ add_method("acquire_replace_usn", [](Fixture& f) {
         wassert(actual(scan::update_sequence_number(mdc_read[0], usn)).istrue());
         wassert(actual(usn) == 2);
     }
+});
+
+add_method("locking", [](Fixture& f) {
+    
+    f.import();
 });
 
 }

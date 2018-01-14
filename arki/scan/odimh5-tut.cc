@@ -1,8 +1,8 @@
-#include <arki/metadata/tests.h>
-#include <arki/scan/odimh5.h>
-#include <arki/metadata.h>
-#include <arki/types.h>
-#include <arki/utils/sys.h>
+#include "arki/metadata/tests.h"
+#include "arki/scan/odimh5.h"
+#include "arki/metadata.h"
+#include "arki/types/source.h"
+#include "arki/utils/sys.h"
 #include <iostream>
 
 namespace tut {

@@ -1,7 +1,9 @@
 #include "manifest.h"
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
+#include "arki/core/file.h"
 #include "arki/reader.h"
+#include "arki/dataset.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -31,6 +33,7 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::utils::sqlite;
@@ -41,7 +44,7 @@ namespace arki {
 namespace dataset {
 namespace index {
 
-Manifest::Manifest(const std::string& path) : m_path(path) {}
+Manifest::Manifest(const std::string& path, const core::lock::Policy* lock_policy) : m_path(path), lock_policy(lock_policy) {}
 Manifest::~Manifest() {}
 
 void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
@@ -89,7 +92,7 @@ bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         if (!sys::exists(fullpath)) continue;
         std::shared_ptr<arki::Reader> reader;
         if (q.with_data)
-            reader = arki::Reader::for_auto(absname);
+            reader = arki::Reader::create_new(absname, lock_policy);
         // This generates filenames relative to the metadata
         // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
         Metadata::read_file(fullpath, [&](unique_ptr<Metadata> md) {
@@ -154,7 +157,7 @@ void Manifest::query_segment(const std::string& relname, metadata_dest_func dest
     string absdir = sys::abspath(m_path);
     string prepend_fname = str::dirname(relname);
     string absname = str::joinpath(m_path, relname);
-    auto reader = arki::Reader::for_auto(absname);;
+    auto reader = arki::Reader::create_new(absname, lock_policy);;
     Metadata::read_file(absname + ".metadata", [&](unique_ptr<Metadata> md) {
         // Tweak Blob sources replacing the file name with relname
         if (const source::Blob* s = md->has_source_blob())
@@ -196,7 +199,7 @@ void Manifest::rescanSegment(const std::string& dir, const std::string& relpath)
 
     // Scan the file
     metadata::Collection mds;
-    if (!scan::scan(pathname, mds.inserter_func()))
+    if (!scan::scan(pathname, lock_policy, mds.inserter_func()))
     {
         stringstream ss;
         ss << "cannot rescan " << pathname << ": it does not look like a file we can scan";
@@ -371,8 +374,8 @@ class PlainManifest : public Manifest
     }
 
 public:
-    PlainManifest(const std::string& dir)
-        : Manifest(dir), last_inode(0), dirty(false), rw(false)
+    PlainManifest(const std::string& dir, const core::lock::Policy* lock_policy)
+        : Manifest(dir, lock_policy), last_inode(0), dirty(false), rw(false)
     {
     }
 
@@ -653,8 +656,8 @@ class SqliteManifest : public Manifest
 
 
 public:
-    SqliteManifest(const std::string& dir)
-        : Manifest(dir), m_insert(m_db)
+    SqliteManifest(const std::string& dir, const core::lock::Policy* lock_policy)
+        : Manifest(dir, lock_policy), m_insert(m_db)
     {
     }
 
@@ -949,19 +952,19 @@ bool Manifest::exists(const std::string& dir)
         manifest::SqliteManifest::exists(dir);
 }
 
-std::unique_ptr<Manifest> Manifest::create(const std::string& dir, const std::string& index_type)
+std::unique_ptr<Manifest> Manifest::create(const std::string& dir, const core::lock::Policy* lock_policy, const std::string& index_type)
 {
     if (index_type.empty())
     {
         if (manifest::mft_force_sqlite || manifest::SqliteManifest::exists(dir))
-            return unique_ptr<Manifest>(new manifest::SqliteManifest(dir));
+            return unique_ptr<Manifest>(new manifest::SqliteManifest(dir, lock_policy));
         else
-            return unique_ptr<Manifest>(new manifest::PlainManifest(dir));
+            return unique_ptr<Manifest>(new manifest::PlainManifest(dir, lock_policy));
     }
     else if (index_type == "plain")
-        return unique_ptr<Manifest>(new manifest::PlainManifest(dir));
+        return unique_ptr<Manifest>(new manifest::PlainManifest(dir, lock_policy));
     else if (index_type == "sqlite")
-        return unique_ptr<Manifest>(new manifest::SqliteManifest(dir));
+        return unique_ptr<Manifest>(new manifest::SqliteManifest(dir, lock_policy));
     else
         throw std::runtime_error("unsupported index_type " + index_type);
 }

@@ -18,16 +18,18 @@ nobase_dist_arkiinclude_HEADERS = \
 		wibble/sys/exec.h \
 		wibble/sys/signal.h \
 		wibble/tests/tut.h \
+		core/fwd.h \
 		core/time.h \
 		core/fuzzytime.h \
+		core/file.h \
 		core/tests.h \
 		binary.h \
 		defs.h \
 		exceptions.h \
-		file.h \
 		bbox.h \
 		configfile.h \
 		libconfig.h \
+		dataset/fwd.h \
 		dataset/reporter.h \
 		dataset/time.h \
 		dataset/archive.h \
@@ -107,7 +109,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		metadata/tests.h \
 		metadata/test-generator.h \
 		reader.h \
-		reader/registry.h \
 		nag.h \
 		postprocess.h \
 		querymacro.h \
@@ -131,6 +132,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		targetfile.h \
 		tests/tests.h \
 		transaction.h \
+		types/fwd.h \
 		types/area.h \
 		types/assigneddataset.h \
 		types/bbox.h \
@@ -164,13 +166,9 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/geosfwd.h \
 		utils/h5.h \
 		utils.h \
-		utils/intern.h \
-		utils/lock.h \
-		utils/pcounter.h \
 		utils/process.h \
 		utils/regexp.h \
 		utils/sqlite.h \
-		utils/raii.h \
 		utils/string.h \
 		utils/sys.h \
 		utils/yaml.h \
@@ -221,17 +219,14 @@ libarkimet_la_SOURCES += \
 		wibble/sys/signal.cpp \
 		core/time.cc \
 		core/fuzzytime.cc \
+		core/file.cc \
 		exceptions.cc \
 		nag.cc \
 		utils.cc \
 		utils/accounting.cc \
 		utils/gzip.cc \
 		utils/files.cc \
-		utils/intern.cc \
-		utils/lock.cc \
-		utils/pcounter.cc \
 		utils/process.cc \
-		utils/raii.cc \
 		utils/regexp.cc \
 		utils/string.cc \
 		utils/sys.cc \
@@ -243,7 +238,6 @@ libarkimet_la_SOURCES += \
 		utils/commandline/engine.cpp \
 		utils/commandline/wordwrap.cpp \
 		binary.cc \
-		file.cc \
 		configfile.cc \
 		transaction.cc \
 		emitter.cc \
@@ -306,19 +300,15 @@ tests_arki_test_SOURCES += \
 		tests/tests-tut.cc \
 		core/time-test.cc \
 		core/fuzzytime-test.cc \
+		core/file-test.cc \
 		utils-test.cc \
 		utils/accounting-tut.cc \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \
-		utils/files-tut.cc \
-		utils/intern-tut.cc \
-		utils/lock-test.cc \
-		utils/pcounter-tut.cc \
+		utils/files-test.cc \
 		utils/process-tut.cc \
-		utils/raii-tut.cc \
 		utils/regexp-test.cc \
 		binary-test.cc \
-		file-test.cc \
 		configfile-test.cc \
 		transaction-test.cc \
 		emitter/memory-tut.cc \
@@ -394,7 +384,6 @@ libarkimet_la_SOURCES += \
 		metadata/consumer.cc \
 		metadata/test-generator.cc \
 		reader.cc \
-		reader/registry.cc \
 		summary/stats.cc \
 		summary/intern.cc \
 		summary/table.cc \
@@ -414,7 +403,7 @@ tests_arki_test_SOURCES += \
 		utils/compress-tut.cc \
 		utils/sqlite-tut.cc \
 		sort-test.cc \
-		formatter-tut.cc \
+		formatter-test.cc \
 		validator-test.cc \
 		bbox-test.cc \
 		metadata-test.cc \
@@ -423,7 +412,6 @@ tests_arki_test_SOURCES += \
 		metadata/stream-test.cc \
 		metadata/test-generator-tut.cc \
 		reader-test.cc \
-		reader/registry-test.cc \
 		summary-test.cc \
 		summary/intern-tut.cc \
 		summary/table-tut.cc \
@@ -443,7 +431,7 @@ tests_arki_test_SOURCES += \
 		matcher/source-tut.cc \
 		matcher/task-tut.cc \
 		matcher/quantity-tut.cc \
-		scan/any-tut.cc \
+		scan/any-test.cc \
 		runtime/io-tut.cc \
 		runtime/inputs-test.cc \
 		runtime/config-tut.cc
@@ -541,7 +529,7 @@ libarkimet_la_SOURCES += \
 
 tests_arki_test_SOURCES += \
 		targetfile-tut.cc \
-		metadata/xargs-tut.cc \
+		metadata/xargs-test.cc \
 		dataset/tests.cc \
 		dataset/reporter-test.cc \
 		dataset/time-test.cc \

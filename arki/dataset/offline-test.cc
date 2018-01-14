@@ -21,7 +21,7 @@ class Tests : public TestCase
 void Tests::register_tests() {
 
 add_method("read", []() {
-    metadata::Collection mdc("inbound/test.grib1");
+    metadata::TestCollection mdc("inbound/test.grib1");
     Summary sum;
     mdc.add_to_summary(sum);
     sum.writeAtomically("test-offline.summary");

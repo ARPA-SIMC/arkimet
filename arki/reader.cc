@@ -1,5 +1,5 @@
 #include "reader.h"
-#include "reader/registry.h"
+#include "arki/core/file.h"
 #include "arki/utils.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/compress.h"
@@ -7,7 +7,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/gzip.h"
-#include "arki/utils/lock.h"
 #include "arki/types/source/blob.h"
 #include "arki/nag.h"
 #include "arki/iotrace.h"
@@ -21,6 +20,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using namespace arki::core;
 
 namespace arki {
 namespace reader {
@@ -55,14 +55,15 @@ struct FileReader : public Reader
 {
 public:
     sys::File fd;
-    utils::Lock lock;
+    const core::lock::Policy* lock_policy;
+    Lock lock;
 
-    FileReader(const std::string& fname)
+    FileReader(const std::string& fname, const core::lock::Policy* lock_policy)
         : fd(fname, O_RDONLY
 #ifdef linux
                 | O_CLOEXEC
 #endif
-            )
+            ), lock_policy(lock_policy)
     {
         // Lock one byte at the beginning of the file, to prevent a repack but
         // allow appends: there are no functions in arkimet that would rewrite
@@ -71,7 +72,7 @@ public:
         lock.l_whence = SEEK_SET;
         lock.l_start = 0;
         lock.l_len = 1;
-        lock.ofd_setlkw(fd);
+        lock_policy->setlkw(fd, lock);
     }
 
     ~FileReader()
@@ -79,7 +80,7 @@ public:
         // TODO: consider a non-throwing setlk implementation to avoid throwing
         // in destructors
         lock.l_type = F_UNLCK;
-        lock.ofd_setlk(fd);
+        lock_policy->setlk(fd, lock);
     }
 
 
@@ -154,10 +155,12 @@ public:
     std::string format;
     sys::Path dirfd;
     sys::File repack_lock;
+    const core::lock::Policy* lock_policy;
     Lock lock;
 
-    DirReader(const std::string& fname)
-        : dirfd(fname, O_DIRECTORY), repack_lock(dirfd.openat(".repack-lock", O_RDONLY | O_CREAT, 0777), str::joinpath(fname, ".repack-lock"))
+    DirReader(const std::string& fname, const core::lock::Policy* lock_policy)
+        : dirfd(fname, O_DIRECTORY), repack_lock(dirfd.openat(".repack-lock", O_RDONLY | O_CREAT, 0777), str::joinpath(fname, ".repack-lock")),
+          lock_policy(lock_policy)
     {
         size_t pos;
         if ((pos = fname.rfind('.')) != std::string::npos)
@@ -170,13 +173,13 @@ public:
         lock.l_whence = SEEK_SET;
         lock.l_start = 0;
         lock.l_len = 0;
-        lock.ofd_setlkw(repack_lock);
+        lock_policy->setlkw(repack_lock, lock);
     }
 
     ~DirReader()
     {
         lock.l_type = F_UNLCK;
-        lock.ofd_setlk(repack_lock);
+        lock_policy->setlk(repack_lock, lock);
     }
 
     sys::File open_src(const types::source::Blob& src)
@@ -263,7 +266,7 @@ public:
     gzip::File fd;
     uint64_t last_ofs = 0;
 
-    ZlibFileReader(const std::string& fname)
+    ZlibFileReader(const std::string& fname, const core::lock::Policy* lock_policy)
         : fname(fname), fd(fname + ".gz", "rb")
     {
     }
@@ -322,7 +325,7 @@ public:
     gzip::File gzfd;
     uint64_t last_ofs = 0;
 
-    IdxZlibFileReader(const std::string& fname)
+    IdxZlibFileReader(const std::string& fname, const core::lock::Policy* lock_policy)
         : fname(fname), fd(fname + ".gz", O_RDONLY), gzfd(fd.name())
     {
         // Read index
@@ -403,70 +406,23 @@ public:
 }
 
 
-namespace {
-
-reader::Registry<reader::FileReader> registry_file;
-reader::Registry<reader::DirReader> registry_dir;
-reader::Registry<reader::ZlibFileReader> registry_zlib;
-reader::Registry<reader::IdxZlibFileReader> registry_idxzlib;
-
-}
-
-
-void Reader::reset()
-{
-    registry_file.clear();
-    registry_dir.clear();
-    registry_zlib.clear();
-    registry_idxzlib.clear();
-}
-
-std::shared_ptr<Reader> Reader::for_missing(const std::string& abspath)
-{
-    return make_shared<reader::MissingFileReader>(abspath);
-}
-
-std::shared_ptr<Reader> Reader::for_file(const std::string& abspath)
-{
-    return registry_file.reader(abspath);
-}
-
-std::shared_ptr<Reader> Reader::for_dir(const std::string& abspath)
-{
-    return registry_dir.reader(abspath);
-}
-
-std::shared_ptr<Reader> Reader::for_auto(const std::string& abspath)
+std::shared_ptr<Reader> Reader::create_new(const std::string& abspath, const core::lock::Policy* lock_policy)
 {
     // Open the new file
     std::unique_ptr<struct stat> st = sys::stat(abspath);
     if (st.get())
     {
         if (S_ISDIR(st->st_mode))
-            return for_dir(abspath);
+            return std::make_shared<reader::DirReader>(abspath, lock_policy);
         else
-            return for_file(abspath);
+            return std::make_shared<reader::FileReader>(abspath, lock_policy);
     }
     else if (sys::exists(abspath + ".gz.idx"))
-        return registry_idxzlib.reader(abspath);
+        return std::make_shared<reader::IdxZlibFileReader>(abspath, lock_policy);
     else if (sys::exists(abspath + ".gz"))
-        return registry_zlib.reader(abspath);
+        return std::make_shared<reader::ZlibFileReader>(abspath, lock_policy);
     else
-        return for_missing(abspath);
-}
-
-unsigned Reader::test_count_cached()
-{
-    registry_file.cleanup();
-    registry_dir.cleanup();
-    registry_zlib.cleanup();
-    registry_idxzlib.cleanup();
-    unsigned size = 0;
-    size += registry_file.test_inspect_cache().size();
-    size += registry_dir.test_inspect_cache().size();
-    size += registry_zlib.test_inspect_cache().size();
-    size += registry_idxzlib.test_inspect_cache().size();
-    return size;
+        return make_shared<reader::MissingFileReader>(abspath);
 }
 
 }

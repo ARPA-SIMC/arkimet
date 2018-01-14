@@ -2,7 +2,7 @@
 #define ARKI_MATCHER_H
 
 /// Metadata match expressions
-#include <arki/types.h>
+#include <arki/types/fwd.h>
 #include <string>
 #include <vector>
 #include <map>

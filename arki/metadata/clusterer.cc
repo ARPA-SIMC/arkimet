@@ -1,5 +1,6 @@
 #include "clusterer.h"
 #include <arki/metadata.h>
+#include <arki/types/source.h>
 #include <arki/types/reftime.h>
 #include <cstring>
 
@@ -12,7 +13,7 @@ namespace arki {
 namespace metadata {
 
 Clusterer::Clusterer()
-    : last_timerange(0), max_count(0), max_bytes(0), max_interval(0), split_timerange(false)
+    : last_timerange(0)
 {
     cur_interval[0] = -1;
 }

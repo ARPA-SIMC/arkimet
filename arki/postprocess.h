@@ -1,7 +1,7 @@
 #ifndef ARKI_POSTPROCESS_H
 #define ARKI_POSTPROCESS_H
 
-#include <arki/file.h>
+#include <arki/core/fwd.h>
 #include <string>
 #include <map>
 #include <sstream>
@@ -45,7 +45,7 @@ public:
     void start();
 
     /// Set the output file descriptor where we send data coming from the postprocessor
-    void set_output(NamedFileDescriptor& outfd);
+    void set_output(core::NamedFileDescriptor& outfd);
 
     /// Set the output stream where we send the postprocessor stderr
     void set_error(std::ostream& err);
@@ -54,7 +54,7 @@ public:
      * Set hook to be called when the child process has produced its first
      * data, just before the data is sent to the next consumer
      */
-    void set_data_start_hook(std::function<void(NamedFileDescriptor&)> hook);
+    void set_data_start_hook(std::function<void(core::NamedFileDescriptor&)> hook);
 
     // Process one metadata
     bool process(std::unique_ptr<Metadata>&& md);

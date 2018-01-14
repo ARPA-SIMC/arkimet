@@ -6,6 +6,7 @@
 #include "dataset/local.h"
 #include "validator.h"
 #include "types/reftime.h"
+#include "types/source.h"
 #include "utils/string.h"
 #include "utils/sys.h"
 

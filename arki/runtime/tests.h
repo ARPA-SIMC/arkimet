@@ -1,7 +1,7 @@
 #ifndef ARKI_RUNTIME_TESTS_H
 #define ARKI_RUNTIME_TESTS_H
 
-#include <arki/file.h>
+#include <arki/core/file.h>
 #include <initializer_list>
 
 namespace arki {
@@ -10,9 +10,9 @@ namespace tests {
 
 struct CatchOutput
 {
-    arki::utils::sys::File file_stdin;
-    arki::utils::sys::File file_stdout;
-    arki::utils::sys::File file_stderr;
+    arki::core::File file_stdin;
+    arki::core::File file_stdout;
+    arki::core::File file_stderr;
     int orig_stdin;
     int orig_stdout;
     int orig_stderr;

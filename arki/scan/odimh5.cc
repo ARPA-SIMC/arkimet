@@ -1,7 +1,7 @@
 #include "odimh5.h"
 #include "arki/libconfig.h"
 #include "arki/metadata.h"
-#include "arki/reader.h"
+#include "arki/types/source.h"
 #include "arki/types/origin.h"
 #include "arki/types/reftime.h"
 #include "arki/types/task.h"
@@ -180,11 +180,10 @@ OdimH5::~OdimH5()
     delete L;
 }
 
-void OdimH5::open(const std::string& filename, const std::string& basedir, const std::string& relname)
+void OdimH5::open(const std::string& filename, const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy)
 {
     using namespace arki::utils::h5;
-    Scanner::open(filename, basedir, relname);
-    reader = Reader::for_file(filename);
+    Scanner::open(filename, basedir, relname, lock_policy);
 
     // Open H5 file
     read = false;

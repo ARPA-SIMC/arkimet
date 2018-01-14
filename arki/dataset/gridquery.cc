@@ -1,15 +1,17 @@
 #include "gridquery.h"
-#include <arki/utils/lua.h>
-#include <arki/utils/string.h>
-#include <arki/metadata.h>
-#include <arki/matcher.h>
-#include <arki/summary.h>
-#include <arki/nag.h>
-#include <arki/postprocess.h>
-#include <arki/types/typeset.h>
+#include "arki/utils/lua.h"
+#include "arki/utils/string.h"
+#include "arki/metadata.h"
+#include "arki/types/reftime.h"
+#include "arki/matcher.h"
+#include "arki/summary.h"
+#include "arki/nag.h"
+#include "arki/postprocess.h"
+#include "arki/types/typeset.h"
 #include <algorithm>
+#include "arki/libconfig.h"
 #ifdef HAVE_LUA
-#include <arki/report.h>
+#include "arki/report.h"
 #endif
 
 // #include <iostream>

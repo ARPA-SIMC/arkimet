@@ -11,17 +11,14 @@ struct lua_State;
 namespace arki {
 namespace types {
 
-struct Product;
-
 template<>
 struct traits<Product>
 {
-	static const char* type_tag;
-	static const types::Code type_code;
-	static const size_t type_sersize_bytes;
-	static const char* type_lua_tag;
-
-	typedef unsigned char Style;
+    static const char* type_tag;
+    static const types::Code type_code;
+    static const size_t type_sersize_bytes;
+    static const char* type_lua_tag;
+    typedef unsigned char Style;
 };
 
 /**

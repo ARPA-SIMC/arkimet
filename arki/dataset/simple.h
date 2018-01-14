@@ -2,7 +2,6 @@
 #define ARKI_DATASET_SIMPLE_H
 
 #include <arki/dataset/indexed.h>
-#include <arki/core/time.h>
 
 namespace arki {
 namespace dataset {
