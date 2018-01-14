@@ -25,9 +25,8 @@ inline arki::tests::ActualMatcher actual_matcher(const std::string& actual) { re
 inline arki::tests::ActualMatcher actual(const arki::Matcher& actual) { return arki::tests::ActualMatcher(actual); }
 
 
-#define ensure_matches(expr, md) wassert(arki::tests::impl_ensure_matches((expr), (md), true))
-#define ensure_not_matches(expr, md) wassert(arki::tests::impl_ensure_matches((expr), (md), false))
-void impl_ensure_matches(const std::string& expr, const Metadata& md, bool shouldMatch=true);
+#define ensure_matches(expr, md) wassert(arki::tests::actual_matcher(expr).matches(md))
+#define ensure_not_matches(expr, md) wassert(arki::tests::actual_matcher(expr).not_matches(md))
 
 }
 }

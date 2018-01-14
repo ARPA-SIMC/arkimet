@@ -1,43 +1,26 @@
-/*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
+#include "arki/matcher/tests.h"
+#include "arki/matcher.h"
+#include "arki/metadata.h"
+#include "arki/matcher/reftime/parser.h"
 
-#include "config.h"
-
-#include <arki/matcher/tests.h>
-#include <arki/matcher/reftime/parser.h>
-
-#include <sstream>
-#include <iostream>
-
-namespace tut {
 using namespace std;
-using namespace arki;
 using namespace arki::tests;
+using namespace arki;
+using namespace arki::types;
 using namespace arki::matcher::reftime;
 
-struct arki_matcher_reftime_parser_shar {
-};
-TESTGRP(arki_matcher_reftime_parser);
+namespace {
 
-// Try matching reference times
-def_test(1)
+class Tests : public TestCase
 {
-	Parser p;
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_matcher_reftime_parser");
+
+void Tests::register_tests() {
+
+add_method("parse", [] {
+    Parser p;
 
 	try {
 		p.parse("rusco");
@@ -86,12 +69,11 @@ def_test(1)
 	p.parse(">=12:00:00Z");
 	ensure_equals(p.res.size(), 1u);
 	ensure_equals(p.res[0]->toString(), ">=12:00:00");
-}
+});
 
 // Check that relative times are what we want
-def_test(2)
-{
-	Parser p;
+add_method("relative", [] {
+    Parser p;
 	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
 	p.tnow = 1206403200;
 	p.parse(">= yesterday");
@@ -113,11 +95,10 @@ def_test(2)
 	p.parse(">= yesterday 12:00");
 	ensure_equals(p.res.size(), 1u);
 	ensure_equals(p.res[0]->toString(), ">=2008-03-24 12:00:00");
-}
+});
 
 // Expressions used before the refactoring into bison
-def_test(3)
-{
+add_method("mix", [] {
 	Parser p;
 	p.parse(">=2008");
 	ensure_equals(p.res.size(), 1u);
@@ -134,11 +115,10 @@ def_test(3)
 	ensure_equals(p.res[1]->toString(), ">=12:30:00");
 	ensure_equals(p.res[2]->toString(), "%1h");
 	ensure_equals(p.res[3]->toString(), "<18:30:00");
-}
+});
 
 // Replace the date with today, yesterday and tomorrow
-def_test(4)
-{
+add_method("serialize_relative", [] {
 	Parser p;
 	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
 	p.tnow = 1206403200;
@@ -164,11 +144,10 @@ def_test(4)
 	p.parse("<=tomorrow 12:00");
 	ensure_equals(p.res.size(), 1u);
 	ensure_equals(p.res[0]->toString(), "<=2008-03-26 12:00:59");
-}
+});
 
 // Add a time offset before date and time
-def_test(5)
-{
+add_method("offset", [] {
 	Parser p;
 	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
 	p.tnow = 1206403200;
@@ -197,11 +176,10 @@ def_test(5)
 	p.parse(">=1 month after 2007-02-01 12:00");
 	ensure_equals(p.res.size(), 1u);
 	ensure_equals(p.res[0]->toString(), ">=2007-03-01 12:00:00");
-}
+});
 
 // Use now instead of date and time
-def_test(6)
-{
+add_method("now", [] {
     Parser p;
     // Set the date to: Tue Mar 25 01:02:03 UTC 2008 GMT
     p.tnow = 1206403200 + 3600+120+3;
@@ -209,11 +187,10 @@ def_test(6)
     // The resulting datetime should be GMT
     p.parse(">=now");
     wassert(actual(p.res[0]->toString()) == ">=2008-03-25 01:02:03");
-}
+});
 
 // Combine time intervals
-def_test(7)
-{
+add_method("combine_itervals", [] {
 	Parser p;
 	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
 	p.tnow = 1206403200;
@@ -242,11 +219,10 @@ def_test(7)
 	p.parse(">=today + 1 month - 2 weeks");
 	ensure_equals(p.res.size(), 1u);
 	ensure_equals(p.res[0]->toString(), ">=2008-04-11 00:00:00");
-}
+});
 
 // 'xxx ago' should always do the right thing with regards to incomplete dates
-def_test(8)
-{
+add_method("ago", [] {
     Parser p;
     // Set the date to: Tue Mar 25 00:00:00 UTC 2008
     p.tnow = 1206403200;
@@ -266,11 +242,10 @@ def_test(8)
     p.parse(">=3 seconds ago");
     wassert(actual(p.res.size()) == 1u);
     wassert(actual(p.res[0]->toString()) == ">=2008-03-24 23:59:57");
-}
+});
 
 // from and until can be used instead of >= and <=
-def_test(9)
-{
+add_method("from_until", [] {
     Parser p;
     // Set the date to: Tue Mar 25 00:00:00 UTC 2008
     p.tnow = 1206403200;
@@ -282,11 +257,10 @@ def_test(9)
     p.parse("until 3 years after today");
     wassert(actual(p.res.size()) == 1u);
     wassert(actual(p.res[0]->toString()) == "<=2011-03-25 23:59:59");
-}
+});
 
 // 'at' users can use midday, midnight and noon
-def_test(10)
-{
+add_method("midday_midnight_noon", [] {
 	Parser p;
 	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
 	p.tnow = 1206403200;
@@ -299,11 +273,10 @@ def_test(10)
 	ensure_equals(p.res.size(), 2u);
 	ensure_equals(p.res[0]->toString(), ">=2008-03-24 00:00:00");
 	ensure_equals(p.res[1]->toString(), "<=2008-03-26 12:00:00");
-}
+});
 
 // % can be replaced with 'every'
-def_test(11)
-{
+add_method("every", [] {
 	Parser p;
 	// Set the date to: Tue Mar 25 00:00:00 UTC 2008
 	p.tnow = 1206403200;
@@ -320,11 +293,10 @@ def_test(11)
 	ensure_equals(p.res.size(), 2u);
 	ensure_equals(p.res[0]->toString(), ">=2008-03-24 00:00:00");
 	ensure_equals(p.res[1]->toString(), "%3h");
-}
+});
 
 // To be elegant, 'a' or 'an' can be used instead of 1
-def_test(12)
-{
+add_method("a_an", [] {
     Parser p;
     // Set the date to: Tue Mar 25 00:00:00 UTC 2008
     p.tnow = 1206403200;
@@ -337,11 +309,10 @@ def_test(12)
     p.parse(">=an hour ago");
     wassert(actual(p.res.size()) == 1u);
     wassert(actual(p.res[0]->toString()) == ">=2008-03-24 23:00:00");
-}
+});
 
 // Time intervals within a day still work
-def_test(13)
-{
+add_method("intervals_in_day", [] {
     Parser p;
     // Set the date to: Tue Mar 25 00:00:00 UTC 2008
     p.tnow = 1206403200;
@@ -352,11 +323,10 @@ def_test(13)
     wassert(actual(p.res[1]->toString()) == ">=03:00:00");
     wassert(actual(p.res[2]->toString()) == "<=18:00:59");
     wassert(actual(p.res[3]->toString()) == "==00:00:00%1h");
-}
+});
 
 // Check Easter-related dates
-def_test(14)
-{
+add_method("easter", [] {
 	Parser p;
 	p.parse(">=easter 2008");
 	ensure_equals(p.res.size(), 1u);
@@ -373,8 +343,8 @@ def_test(14)
 	p.parse(">=processione san luca 2007");
 	ensure_equals(p.res.size(), 1u);
 	ensure_equals(p.res[0]->toString(), ">=2007-05-12 00:00:00");
-}
+});
 
 }
 
-// vim:set ts=4 sw=4:
+}

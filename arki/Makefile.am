@@ -418,19 +418,19 @@ tests_arki_test_SOURCES += \
 		summary/stats-tut.cc \
 		summary/short-test.cc \
 		matcher-test.cc \
-		matcher/utils-tut.cc \
-		matcher/origin-tut.cc \
-		matcher/product-tut.cc \
-		matcher/level-tut.cc \
-		matcher/timerange-tut.cc \
+		matcher/utils-test.cc \
+		matcher/origin-test.cc \
+		matcher/product-test.cc \
+		matcher/level-test.cc \
+		matcher/timerange-test.cc \
 		matcher/reftime-test.cc \
-		matcher/reftime/parser-tut.cc \
-		matcher/area-tut.cc \
-		matcher/proddef-tut.cc \
-		matcher/run-tut.cc \
-		matcher/source-tut.cc \
-		matcher/task-tut.cc \
-		matcher/quantity-tut.cc \
+		matcher/reftime/parser-test.cc \
+		matcher/area-test.cc \
+		matcher/proddef-test.cc \
+		matcher/run-test.cc \
+		matcher/source-test.cc \
+		matcher/task-test.cc \
+		matcher/quantity-test.cc \
 		scan/any-test.cc \
 		runtime/io-tut.cc \
 		runtime/inputs-test.cc \

@@ -1,52 +1,27 @@
-/*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
+#include "arki/matcher/tests.h"
+#include "arki/matcher.h"
+#include "arki/metadata.h"
+#include "arki/types/level.h"
 
-#include "config.h"
-
-#include <arki/matcher/tests.h>
-#include <arki/matcher.h>
-#include <arki/metadata.h>
-#include <arki/types/level.h>
-#include <arki/configfile.h>
-
-#include <sstream>
-#include <iostream>
-
-namespace tut {
 using namespace std;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 
-struct arki_matcher_level_shar
-{
-    Metadata md;
+namespace {
 
-    arki_matcher_level_shar()
-    {
-        arki::tests::fill(md);
-    }
-};
-TESTGRP(arki_matcher_level);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_matcher_level");
+
+void Tests::register_tests() {
 
 // Try matching GRIB1 level
-def_test(1)
-{
-	Matcher m;
+add_method("grib1", [] {
+    Metadata md;
+    arki::tests::fill(md);
 
 	ensure_matches("level:GRIB1", md);
 	ensure_matches("level:GRIB1,,,", md);
@@ -60,15 +35,13 @@ def_test(1)
 	ensure_not_matches("level:GRIB1,12", md);
 	ensure_not_matches("level:GRIB1,,13", md);
 	ensure_not_matches("level:GRIB1,,,11", md);
-	//m = Matcher::parse("level:BUFR,11,12,13");
-	//ensure(not m(md));
-}
+});
 
 // Try matching GRIB2S level
-def_test(2)
-{
-	Matcher m;
-	md.set(level::GRIB2S::create(110, 12, 13));
+add_method("grib2s", [] {
+    Metadata md;
+    arki::tests::fill(md);
+    md.set(level::GRIB2S::create(110, 12, 13));
 
 	ensure_matches("level:GRIB2S", md);
 	ensure_matches("level:GRIB2S,,,", md);
@@ -102,13 +75,13 @@ def_test(2)
     ensure_not_matches("level:GRIB2S,1,-", md);
     ensure_not_matches("level:GRIB2S,-,1", md);
     ensure_not_matches("level:GRIB2S,-,-,1", md);
-}
+});
 
 // Try matching GRIB2D level
-def_test(3)
-{
-	Matcher m;
-	md.set(level::GRIB2D::create(110, 12, 13, 114, 15, 16));
+add_method("grib2d", [] {
+    Metadata md;
+    arki::tests::fill(md);
+    md.set(level::GRIB2D::create(110, 12, 13, 114, 15, 16));
 
 	ensure_matches("level:GRIB2D", md);
 	ensure_matches("level:GRIB2D,,,", md);
@@ -154,13 +127,13 @@ def_test(3)
     ensure_not_matches("level:GRIB2D,-,-,1", md);
     ensure_not_matches("level:GRIB2D,-,-,-,1", md);
     ensure_not_matches("level:GRIB2D,-,-,-,-,1", md);
-}
+});
 
 // Try matching ODIMH5 level
-def_test(4)
-{
-	Matcher m;
-	md.set(level::ODIMH5::create(10.123, 20.123));
+add_method("odimh5", [] {
+    Metadata md;
+    arki::tests::fill(md);
+    md.set(level::ODIMH5::create(10.123, 20.123));
 
 	ensure_matches("level:ODIMH5", md);
 	ensure_matches("level:ODIMH5,", md);
@@ -185,9 +158,8 @@ def_test(4)
 	ensure_not_matches("level:GRIB2D,,13", md);
 	ensure_not_matches("level:GRIB2D,,,11", md);
 	ensure_not_matches("level:GRIB2D,,,,115", md);
+});
 
 }
 
 }
-
-// vim:set ts=4 sw=4:

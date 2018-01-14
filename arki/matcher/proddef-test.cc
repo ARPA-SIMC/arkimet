@@ -1,53 +1,28 @@
-/*
- * Copyright (C) 2007--2011  ARPAE-SIMC <simc-urp@arpae.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+#include "arki/matcher/tests.h"
+#include "arki/matcher.h"
+#include "arki/metadata.h"
+#include "arki/types/proddef.h"
 
-#include "config.h"
-
-#include <arki/matcher/tests.h>
-#include <arki/matcher.h>
-#include <arki/metadata.h>
-#include <arki/types/proddef.h>
-#include <arki/configfile.h>
-
-#include <sstream>
-#include <iostream>
-
-namespace tut {
 using namespace std;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 
-struct arki_matcher_proddef_shar
-{
-    Metadata md;
+namespace {
 
-    arki_matcher_proddef_shar()
-    {
-        arki::tests::fill(md);
-    }
-};
-TESTGRP(arki_matcher_proddef);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_matcher_proddef");
+
+void Tests::register_tests() {
 
 // Try matching Proddef
-def_test(1)
-{
+add_method("grib", [] {
+    Metadata md;
+    arki::tests::fill(md);
+
 	ValueBag testProddef2;
 	testProddef2.set("foo", Value::createInteger(15));
 	testProddef2.set("bar", Value::createInteger(15000));
@@ -56,8 +31,6 @@ def_test(1)
 	testProddef2.set("antani", Value::createInteger(0));
 	testProddef2.set("blinda", Value::createInteger(-1));
 	testProddef2.set("supercazzola", Value::createInteger(-7654321));
-
-	Matcher m;
 
 	ensure_matches("proddef:GRIB:foo=5", md);
 	ensure_matches("proddef:GRIB:bar=5000", md);
@@ -82,10 +55,10 @@ def_test(1)
 
 	md.set(proddef::GRIB::create(testProddef2));
 
-	ensure_not_matches("proddef:GRIB:foo=5", md);
-	ensure_matches("proddef:GRIB:foo=15", md);
-}
+    ensure_not_matches("proddef:GRIB:foo=5", md);
+    ensure_matches("proddef:GRIB:foo=15", md);
+});
 
 }
 
-// vim:set ts=4 sw=4:
+}
