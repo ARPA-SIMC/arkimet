@@ -1,31 +1,28 @@
+#include "arki/types/tests.h"
+#include "arki/metadata.h"
+#include "arki/matcher.h"
+#include "arki/types.h"
 #include "aggregate.h"
-#include <arki/types/tests.h>
-#include <arki/types.h>
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/metadata.h>
-#include <arki/matcher.h>
 
-namespace tut {
+namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
-using namespace arki::dataset::index;
+using namespace arki::tests;
 using namespace arki::types;
+using namespace arki::dataset::index;
 
-struct arki_dataset_index_aggregate_shar {
-	utils::sqlite::SQLiteDB db;
-	arki_dataset_index_aggregate_shar()
-	{
-		db.open(":memory:");
-		//db.open("/tmp/zaza.sqlite");
-		//db.exec("DROP TABLE IF EXISTS sub_origin");
-	}
-};
-TESTGRP(arki_dataset_index_aggregate);
-
-def_test(1)
+class Tests : public TestCase
 {
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_dataset_index_aggregate");
+
+void Tests::register_tests() {
+
+add_method("basic", [] {
+    utils::sqlite::SQLiteDB db;
+    db.open(":memory:");
+
 	set<types::Code> members;
 	members.insert(TYPE_ORIGIN);
 	members.insert(TYPE_PRODUCT);
@@ -64,6 +61,8 @@ def_test(1)
 	ensure_equals(constraints.size(), 2u);
 	ensure_equals(constraints[0], "t.origin =1");
 	ensure_equals(constraints[1], "t.product =1");
+});
+
 }
 
 }

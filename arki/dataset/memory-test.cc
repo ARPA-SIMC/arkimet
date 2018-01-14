@@ -1,44 +1,29 @@
-#include <arki/types/tests.h>
+#include "arki/types/tests.h"
+#include "arki/types/source.h"
+#include "arki/metadata.h"
+#include "arki/summary.h"
+#include "arki/scan/any.h"
+#include "arki/utils/sys.h"
 #include "memory.h"
-#include <arki/metadata.h>
-#include <arki/utils.h>
-#include <arki/utils/accounting.h>
-#include <arki/types/source.h>
-#include <arki/types/source/blob.h>
-#include <arki/summary.h>
-#include <arki/scan/any.h>
-#include <arki/runtime/io.h>
-#include <arki/utils/sys.h>
-#include <cstring>
-#include <sstream>
-#include <iostream>
 
-namespace tut {
+namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
-using namespace arki::types;
-using namespace arki::metadata;
+using namespace arki::tests;
 using namespace arki::utils;
 
-struct arki_dataset_memory_shar {
-    dataset::Memory c;
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_dataset_memory");
 
-    arki_dataset_memory_shar()
-    {
-    }
-
-    void acquireSamples()
-    {
-        scan::scan("inbound/test.grib1", core::lock::policy_null, c.inserter_func());
-    }
-};
-TESTGRP(arki_dataset_memory);
+void Tests::register_tests() {
 
 // Test querying
-def_test(1)
-{
-    acquireSamples();
+add_method("query", [] {
+    dataset::Memory c;
+    scan::scan("inbound/test.grib1", core::lock::policy_null, c.inserter_func());
 
     metadata::Collection mdc(c, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 1u);
@@ -54,25 +39,29 @@ def_test(1)
     mdc.add(c, Matcher::parse("origin:GRIB1,98"));
     ensure_equals(mdc.size(), 1u);
     wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 42178, 2234));
-}
+});
 
 // Test querying the summary
-def_test(2)
-{
-    acquireSamples();
+add_method("query_summary", [] {
+    dataset::Memory c;
+    scan::scan("inbound/test.grib1", core::lock::policy_null, c.inserter_func());
+
     Summary summary;
     c.query_summary(Matcher::parse("origin:GRIB1,200"), summary);
     ensure_equals(summary.count(), 1u);
-}
+});
 
 // Test querying the summary by reftime
-def_test(3)
-{
-    acquireSamples();
+add_method("query_summary_reftime", [] {
+    dataset::Memory c;
+    scan::scan("inbound/test.grib1", core::lock::policy_null, c.inserter_func());
+
     Summary summary;
     //system("bash");
     c.query_summary(Matcher::parse("reftime:>=2007-07"), summary);
     ensure_equals(summary.count(), 3u);
+});
+
 }
 
 }

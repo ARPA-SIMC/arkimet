@@ -541,13 +541,13 @@ tests_arki_test_SOURCES += \
 		dataset/segment/seqfile-test.cc \
 		dataset/segment/dir-test.cc \
 		dataset/maintenance-test.cc \
-		dataset/memory-tut.cc \
+		dataset/memory-test.cc \
 		dataset/index-test.cc \
-		dataset/index/base-tut.cc \
-		dataset/index/attr-tut.cc \
+		dataset/index/base-test.cc \
+		dataset/index/attr-test.cc \
 		dataset/index/manifest-test.cc \
-		dataset/index/aggregate-tut.cc \
-		dataset/index/summarycache-tut.cc \
+		dataset/index/aggregate-test.cc \
+		dataset/index/summarycache-test.cc \
 		dataset/index/contents-test.cc \
 		dataset/step-test.cc \
 		dataset/local-test.cc \
@@ -575,7 +575,7 @@ tests_arki_test_SOURCES += \
 		dataset/empty-test.cc \
 		dataset/testlarge-test.cc \
 		dataset/merged-test.cc \
-		dataset/gridquery-tut.cc \
+		dataset/gridquery-test.cc \
 		dataset-test.cc \
 		dataset-reader-test.cc \
 		dataset-writer-test.cc \
@@ -596,7 +596,7 @@ AM_CPPFLAGS += @LIBCURL_CPPFLAGS@
 nobase_dist_arkiinclude_HEADERS += dataset/http.h
 libarkimet_la_SOURCES += dataset/http.cc
 libarkimet_la_LDFLAGS += @LIBCURL@
-tests_arki_test_SOURCES += dataset/http-tut.cc
+tests_arki_test_SOURCES += dataset/http-test.cc
 endif
 
 if LUA

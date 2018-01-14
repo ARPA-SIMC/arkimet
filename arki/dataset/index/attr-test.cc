@@ -1,31 +1,28 @@
 #include "arki/types/tests.h"
-#include "arki/dataset/index/attr.h"
-#include "arki/types.h"
-#include "arki/types/origin.h"
 #include "arki/metadata.h"
 #include "arki/matcher.h"
+#include "arki/types.h"
+#include "attr.h"
 
-namespace tut {
+namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
+using namespace arki::tests;
 using namespace arki::types;
 
-struct arki_dataset_index_attr_shar {
-	utils::sqlite::SQLiteDB db;
-
-	arki_dataset_index_attr_shar()
-	{
-		db.open(":memory:");
-		//db.open("/tmp/zaza.sqlite");
-		//db.exec("DROP TABLE IF EXISTS sub_origin");
-		dataset::index::AttrSubIndex(db, TYPE_ORIGIN).initDB();
-	}
-};
-TESTGRP(arki_dataset_index_attr);
-
-def_test(1)
+class Tests : public TestCase
 {
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_dataset_index_attr");
+
+void Tests::register_tests() {
+
+add_method("basic", [] {
+    utils::sqlite::SQLiteDB db;
+    db.open(":memory:");
+    dataset::index::AttrSubIndex(db, TYPE_ORIGIN).initDB();
+
     Metadata md;
     unique_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
 
@@ -63,11 +60,14 @@ def_test(1)
     vector<int> ids = attr.query(*matcher);
     ensure_equals(ids.size(), 1u);
     ensure_equals(ids[0], 1);
-}
+});
 
 // Same as <1> but instantiates attr every time to always test with a cold cache
-def_test(2)
-{
+add_method("cold_cache", [] {
+    utils::sqlite::SQLiteDB db;
+    db.open(":memory:");
+    dataset::index::AttrSubIndex(db, TYPE_ORIGIN).initDB();
+
     Metadata md;
     unique_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
 
@@ -104,10 +104,13 @@ def_test(2)
     vector<int> ids = dataset::index::AttrSubIndex(db, TYPE_ORIGIN).query(*matcher);
     ensure_equals(ids.size(), 1u);
     ensure_equals(ids[0], 1);
-}
+});
 
-def_test(3)
-{
+add_method("obtainids", [] {
+    utils::sqlite::SQLiteDB db;
+    db.open(":memory:");
+    dataset::index::AttrSubIndex(db, TYPE_ORIGIN).initDB();
+
 	set<types::Code> members;
 	members.insert(TYPE_ORIGIN);
 	members.insert(TYPE_PRODUCT);
@@ -120,6 +123,8 @@ def_test(3)
 	ensure_equals(ids[0], -1);
 	ensure_equals(ids[1], -1);
 	ensure_equals(ids[2], -1);
+});
+
 }
 
 }
