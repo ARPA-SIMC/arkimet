@@ -1,19 +1,10 @@
-#include "config.h"
-#include <arki/tests/tests.h>
-#include <arki/utils/process.h>
-#include <sstream>
+#include "arki/tests/tests.h"
+#include "process.h"
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
-
-struct arki_utils_process_shar {
-    arki_utils_process_shar()
-    {
-    }
-};
-TESTGRP(arki_utils_process);
 
 struct IOCollector : public utils::IODispatcher
 {
@@ -52,9 +43,17 @@ struct IOCollector : public utils::IODispatcher
     }
 };
 
-// Process that just exits with success
-def_test(1)
+
+class Tests : public TestCase
 {
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_utils_process");
+
+void Tests::register_tests() {
+
+// Process that just exits with success
+add_method("true", [] {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/true");
 
@@ -73,11 +72,10 @@ def_test(1)
     ensure_equals(ioc.out.str(), "");
     ensure_equals(ioc.err.str(), "");
     ensure_equals(cmd.wait(), 0);
-}
+});
 
 // Process that just exits with error
-def_test(2)
-{
+add_method("false", [] {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/false");
 
@@ -98,11 +96,10 @@ def_test(2)
     ensure_equals(ioc.err.str(), "");
     res = cmd.wait();
     ensure_equals(WEXITSTATUS(res), 1);
-}
+});
 
 // Process that eats stdin, outputs nothing
-def_test(3)
-{
+add_method("devnull", [] {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/sh");
     cmd.args.push_back("-c");
@@ -123,11 +120,10 @@ def_test(3)
     ensure_equals(ioc.out.str(), "");
     ensure_equals(ioc.err.str(), "");
     ensure_equals(cmd.wait(), 0);
-}
+});
 
 // Process that copies stdin to stdout
-def_test(4)
-{
+add_method("cat", [] {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/cat");
 
@@ -146,11 +142,10 @@ def_test(4)
     ensure_equals(ioc.out.str(), "This is input");
     ensure_equals(ioc.err.str(), "");
     ensure_equals(cmd.wait(), 0);
-}
+});
 
 // Process that copies stdin to stderr
-def_test(5)
-{
+add_method("cat_to_stderr", [] {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/sh");
     cmd.args.push_back("-c");
@@ -171,11 +166,10 @@ def_test(5)
     ensure_equals(ioc.out.str(), "");
     ensure_equals(ioc.err.str(), "This is input");
     ensure_equals(cmd.wait(), 0);
-}
+});
 
 // Process that copies stdin to stdout and stderr
-def_test(6)
-{
+add_method("tee_to_stderr", [] {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/sh");
     cmd.args.push_back("-c");
@@ -196,11 +190,10 @@ def_test(6)
     ensure_equals(ioc.out.str(), "This is input");
     ensure_equals(ioc.err.str(), "This is input");
     ensure_equals(cmd.wait(), 0);
-}
+});
 
 // Process that outputs data to stdout without reading stdin
-def_test(7)
-{
+add_method("ignore_stdin_write_stdout", [] {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/sh");
     cmd.args.push_back("-c");
@@ -221,11 +214,10 @@ def_test(7)
     ensure_equals(ioc.out.str(), "This is output\n");
     ensure_equals(ioc.err.str(), "");
     ensure_equals(cmd.wait(), 0);
-}
+});
 
 // Process that outputs data to stderr without reading stdin
-def_test(8)
-{
+add_method("ignore_stdin_write_stderr", [] {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/sh");
     cmd.args.push_back("-c");
@@ -246,11 +238,10 @@ def_test(8)
     ensure_equals(ioc.out.str(), "");
     ensure_equals(ioc.err.str(), "This is output\n");
     ensure_equals(cmd.wait(), 0);
-}
+});
 
 // Process that copies stdin to stdout then exits with an error
-def_test(9)
-{
+add_method("cat_then_fail", [] {
     utils::Subcommand cmd;
     cmd.args.push_back("/bin/sh");
     cmd.args.push_back("-c");
@@ -273,6 +264,8 @@ def_test(9)
     ensure_equals(ioc.err.str(), "FAIL\n");
     res = cmd.wait();
     ensure_equals(WEXITSTATUS(res), 1);
+});
+
 }
 
 }

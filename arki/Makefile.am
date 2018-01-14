@@ -302,11 +302,11 @@ tests_arki_test_SOURCES += \
 		core/fuzzytime-test.cc \
 		core/file-test.cc \
 		utils-test.cc \
-		utils/accounting-tut.cc \
+		utils/accounting-test.cc \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \
 		utils/files-test.cc \
-		utils/process-tut.cc \
+		utils/process-test.cc \
 		utils/regexp-test.cc \
 		binary-test.cc \
 		configfile-test.cc \
@@ -348,7 +348,7 @@ endif
 if LUA
 nobase_dist_arkiinclude_HEADERS += report.h formatter/lua.h utils/lua.h tests/lua.h
 libarkimet_la_SOURCES += formatter/lua.cc utils/lua.cc
-tests_arki_test_SOURCES += formatter/lua-tut.cc utils/lua-tut.cc tests/lua.cc
+tests_arki_test_SOURCES += formatter/lua-tut.cc utils/lua-test.cc tests/lua.cc
 AM_CPPFLAGS += $(LUA_CFLAGS)
 libarkimet_la_LDFLAGS += $(LUA_LIBS)
 tests_arki_test_LDADD += $(LUA_LIBS)
@@ -364,7 +364,7 @@ AM_CPPFLAGS += $(VM2_CFLAGS)
 nobase_dist_arkiinclude_HEADERS += scan/vm2.h utils/vm2.h
 libarkimet_la_SOURCES += utils/vm2.cc
 libarkimet_la_LDFLAGS += $(VM2_LIBS)
-tests_arki_test_SOURCES += utils/vm2-tut.cc
+tests_arki_test_SOURCES += utils/vm2-test.cc
 endif
 
 endif
@@ -400,8 +400,8 @@ libarkimet_la_SOURCES += \
 tests_arki_test_SOURCES += \
 		metadata/tests.cc \
 		matcher/tests.cc \
-		utils/compress-tut.cc \
-		utils/sqlite-tut.cc \
+		utils/compress-test.cc \
+		utils/sqlite-test.cc \
 		sort-test.cc \
 		formatter-test.cc \
 		validator-test.cc \
@@ -461,7 +461,7 @@ AM_CPPFLAGS += $(HDF5_CFLAGS)
 nobase_dist_arkiinclude_HEADERS += scan/odimh5.h
 libarkimet_la_SOURCES += scan/odimh5.cc
 libarkimet_la_LDFLAGS += $(HDF5_LIBS)
-tests_arki_test_SOURCES += utils/h5-tut.cc scan/odimh5-tut.cc
+tests_arki_test_SOURCES += utils/h5-test.cc scan/odimh5-tut.cc
 tests_arki_test_LDADD += $(HDF5_LIBS)
 endif
 

@@ -1,28 +1,34 @@
-#include "config.h"
-#include <arki/tests/tests.h>
-#include <arki/utils/lua.h>
-#include <arki/utils/sys.h>
-#include <arki/utils/string.h>
-#include <arki/types.h>
-#include <arki/metadata.h>
-#include <arki/summary.h>
-#include <arki/matcher.h>
-#include <sstream>
-#include <iostream>
+#include "arki/tests/tests.h"
+#include "arki/utils/lua.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
+#include "arki/types.h"
+#include "arki/metadata.h"
+#include "arki/summary.h"
+#include "arki/matcher.h"
+#include "h5.h"
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
-using namespace arki::utils;
 using namespace arki::tests;
+using namespace arki::utils;
 
-struct arki_utils_lua_shar {
-};
-TESTGRP(arki_utils_lua);
-
-template<> template<>
-void to::test<1>()
+int alua_test(lua_State* L)
 {
+    lua_pushinteger(L, 1);
+    return 1;
+}
+
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_utils_lua");
+
+void Tests::register_tests() {
+
+add_method("code", [] {
     // Just run trivial Lua code, and see that nothing wrong happens
     Lua L(true, false);
     wassert(actual(lua_gettop(L)) == 0);
@@ -30,19 +36,9 @@ void to::test<1>()
     wassert(actual(L.run_string("a=3")) == "");
     wassert(actual(L.run_string("foo(")).matches("unexpected symbol near"));
     wassert(actual(lua_gettop(L)) == 0);
-}
+});
 
-namespace {
-int alua_test(lua_State* L)
-{
-    lua_pushinteger(L, 1);
-    return 1;
-}
-}
-
-template<> template<>
-void to::test<2>()
-{
+add_method("add_global_library", [] {
     // Test add_global_library
     Lua L(true, false);
 
@@ -59,12 +55,9 @@ void to::test<2>()
     wassert(actual(lua_gettop(L)) == 0);
 
     wassert(actual(L.run_string("if arki.testlib.test() ~= 1 then error('fail') end")) == "");
-}
+});
 
-template<> template<>
-void to::test<3>()
-{
-    // Test adding arkimet libraries one at a time
+add_method("arki_types", [] {
     Lua L(true, false);
 
     types::Type::lua_loadlib(L);
@@ -72,12 +65,9 @@ void to::test<3>()
 
     wassert(actual(L.run_string("a=3")) == "");
     wassert(actual(L.run_string("foo(")).matches("unexpected symbol near"));
-}
+});
 
-template<> template<>
-void to::test<4>()
-{
-    // Test adding arkimet libraries one at a time
+add_method("arki_metadata", [] {
     Lua L(true, false);
 
     Metadata::lua_openlib(L);
@@ -85,12 +75,9 @@ void to::test<4>()
 
     wassert(actual(L.run_string("a=3")) == "");
     wassert(actual(L.run_string("foo(")).matches("unexpected symbol near"));
-}
+});
 
-template<> template<>
-void to::test<5>()
-{
-    // Test adding arkimet libraries one at a time
+add_method("arki_summary", [] {
     Lua L(true, false);
 
     Summary::lua_openlib(L);
@@ -98,11 +85,9 @@ void to::test<5>()
 
     wassert(actual(L.run_string("a=3")) == "");
     wassert(actual(L.run_string("foo(")).matches("unexpected symbol near"));
-}
+});
 
-template<> template<>
-void to::test<6>()
-{
+add_method("arki_matcher", [] {
     // Test adding arkimet libraries one at a time
     Lua L(true, false);
 
@@ -111,21 +96,17 @@ void to::test<6>()
 
     wassert(actual(L.run_string("a=3")) == "");
     wassert(actual(L.run_string("foo(")).matches("unexpected symbol near"));
-}
+});
 
-template<> template<>
-void to::test<7>()
-{
+add_method("arki_code", [] {
     // Test running trivial Lua code, with arkimet libraries loaded
     Lua L(true, true);
     wassert(actual(L.run_string("a=3")) == "");
     wassert(actual(L.run_string("foo(")).matches("unexpected symbol near"));
-}
+});
 
 // Run lua-example/*.lua files, doctest style
-template<> template<>
-void to::test<8>()
-{
+add_method("examples", [] {
     ARKI_UTILS_TEST_INFO(tinfo);
     Lua L;
 
@@ -155,6 +136,8 @@ void to::test<8>()
             wassert(actual(error) == "");
         }
     }
+});
+
 }
 
 }

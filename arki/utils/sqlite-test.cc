@@ -1,31 +1,26 @@
-#include "config.h"
-#include <arki/tests/tests.h>
-#include <arki/utils/sqlite.h>
-#include <sstream>
+#include "arki/tests/tests.h"
+#include "sqlite.h"
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
 using namespace arki::utils::sqlite;
 
-struct arki_utils_sqlite_shar {
-	SQLiteDB db;
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_utils_sqlite");
 
-	arki_utils_sqlite_shar()
-	{
-		db.open(":memory:");
-
-		// Create a simple test database
-		db.exec("CREATE TABLE test (id INTEGER PRIMARY KEY, val INTEGER NOT NULL)");
-	}
-};
-TESTGRP(arki_utils_sqlite);
+void Tests::register_tests() {
 
 // Test running one shot insert queries
-template<> template<>
-void to::test<1>()
-{
+add_method("oneshot", [] {
+    SQLiteDB db;
+    db.open(":memory:");
+    db.exec("CREATE TABLE test (id INTEGER PRIMARY KEY, val INTEGER NOT NULL)");
+
 	db.exec("INSERT INTO test (val) VALUES (1)");
 	int id = db.lastInsertID();
 
@@ -35,14 +30,16 @@ void to::test<1>()
 	db.exec("INSERT INTO test (val) VALUES (3)");
 	ensure(db.lastInsertID() > id);
 
-	db.exec("INSERT INTO test (val) VALUES (-2)");
-	ensure(db.lastInsertID() > id);
-}
+    db.exec("INSERT INTO test (val) VALUES (-2)");
+    ensure(db.lastInsertID() > id);
+});
 
 // Test precompile queries
-template<> template<>
-void to::test<2>()
-{
+add_method("precompile", [] {
+    SQLiteDB db;
+    db.open(":memory:");
+    db.exec("CREATE TABLE test (id INTEGER PRIMARY KEY, val INTEGER NOT NULL)");
+
 	PrecompiledQuery select("select", db);
 	select.compile("SELECT val FROM test WHERE val>? ORDER BY val");
 
@@ -71,12 +68,14 @@ void to::test<2>()
 	ensure_equals(results.size(), 2u);
 	ensure_equals(results[0], 3);
 	ensure_equals(results[1], 4);
-}
+});
 
 // Test rollback in the middle of a query
-template<> template<>
-void to::test<3>()
-{
+add_method("rollback", [] {
+    SQLiteDB db;
+    db.open(":memory:");
+    db.exec("CREATE TABLE test (id INTEGER PRIMARY KEY, val INTEGER NOT NULL)");
+
     try {
         Pending p(new SqliteTransaction(db));
         db.exec("INSERT INTO test (val) VALUES (1)");
@@ -95,12 +94,14 @@ void to::test<3>()
         //cerr << e.what() << endl;
         wassert(actual(e.what()).contains("no problem"));
     }
-}
+});
 
 // Test inserting 64bit size_t values
-template<> template<>
-void to::test<4>()
-{
+add_method("64bit_size_t", [] {
+    SQLiteDB db;
+    db.open(":memory:");
+    db.exec("CREATE TABLE test (id INTEGER PRIMARY KEY, val INTEGER NOT NULL)");
+
 	size_t val = 0x42FFFFffffFFFFLLU;
 	PrecompiledQuery insert("insert", db);
 	insert.compile("INSERT INTO test (val) VALUES (?)");
@@ -116,12 +117,14 @@ void to::test<4>()
         val1 = select.fetch<size_t>(1);
 
     wassert(actual(val1) == val);
-}
+});
 
 // Test inserting 64bit off_t values
-template<> template<>
-void to::test<5>()
-{
+add_method("64bit_off_t", [] {
+    SQLiteDB db;
+    db.open(":memory:");
+    db.exec("CREATE TABLE test (id INTEGER PRIMARY KEY, val INTEGER NOT NULL)");
+
 	off_t val = 0x42FFFFffffFFFFLLU;
 	PrecompiledQuery insert("insert", db);
 	insert.compile("INSERT INTO test (val) VALUES (?)");
@@ -137,9 +140,8 @@ void to::test<5>()
         val1 = select.fetch<off_t>(1);
 
     wassert(actual(val1) == val);
+});
+
 }
 
-
 }
-
-// vim:set ts=4 sw=4:

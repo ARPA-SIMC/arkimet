@@ -1,26 +1,22 @@
-#include "config.h"
+#include "arki/tests/tests.h"
+#include "accounting.h"
 
-#include <arki/tests/tests.h>
-#include <arki/utils/accounting.h>
-
-#include <sstream>
-#include <iostream>
-
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
 
-struct arki_utils_accounting_shar {
-	utils::acct::Counter counter;
-	
-	arki_utils_accounting_shar() : counter("foo") {}
-};
-TESTGRP(arki_utils_accounting);
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_utils_accounting");
+
+void Tests::register_tests() {
 
 // Simple counter test
-def_test(1)
-{
+add_method("counter", [] {
+    utils::acct::Counter counter("foo");
     wassert(actual(counter.name()) == "foo");
     wassert(actual(counter.val()) == 0u);
     counter.incr();
@@ -29,8 +25,8 @@ def_test(1)
     wassert(actual(counter.val()) == 11u);
     counter.reset();
     wassert(actual(counter.val()) == 0u);
-}
+});
 
 }
 
-// vim:set ts=4 sw=4:
+}
