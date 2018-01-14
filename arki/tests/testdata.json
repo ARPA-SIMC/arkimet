@@ -9792,6 +9792,11 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_ondisk2",
+  "method": "write_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_ondisk2",
   "method": "nolock_read"
  },
  {
@@ -9847,6 +9852,11 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_simple_plain",
+  "method": "write_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_plain",
   "method": "nolock_read"
  },
  {
@@ -9902,6 +9912,11 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_simple_sqlite",
+  "method": "write_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_simple_sqlite",
   "method": "nolock_read"
  },
  {
@@ -9957,6 +9972,11 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_grib_iseg",
+  "method": "write_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_grib_iseg",
   "method": "nolock_read"
  },
  {
@@ -10012,6 +10032,11 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_ondisk2",
+  "method": "write_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_ondisk2",
   "method": "nolock_read"
  },
  {
@@ -10067,6 +10092,11 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_simple_plain",
+  "method": "write_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_plain",
   "method": "nolock_read"
  },
  {
@@ -10122,6 +10152,11 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_simple_sqlite",
+  "method": "write_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_simple_sqlite",
   "method": "nolock_read"
  },
  {
@@ -10177,6 +10212,11 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_bufr_iseg",
+  "method": "write_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_bufr_iseg",
   "method": "nolock_read"
  },
  {
@@ -10232,6 +10272,11 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_ondisk2",
+  "method": "write_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_ondisk2",
   "method": "nolock_read"
  },
  {
@@ -10287,6 +10332,11 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_simple_plain",
+  "method": "write_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_plain",
   "method": "nolock_read"
  },
  {
@@ -10342,6 +10392,11 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_simple_sqlite",
+  "method": "write_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_simple_sqlite",
   "method": "nolock_read"
  },
  {
@@ -10397,6 +10452,11 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_vm2_iseg",
+  "method": "write_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_vm2_iseg",
   "method": "nolock_read"
  },
  {
@@ -10452,6 +10512,11 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_ondisk2",
+  "method": "write_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_ondisk2",
   "method": "nolock_read"
  },
  {
@@ -10507,6 +10572,11 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_simple_plain",
+  "method": "write_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_plain",
   "method": "nolock_read"
  },
  {
@@ -10562,6 +10632,11 @@
  {
   "doc": "",
   "group": "arki_dataset_concurrent_odim_simple_sqlite",
+  "method": "write_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_simple_sqlite",
   "method": "nolock_read"
  },
  {
@@ -10613,6 +10688,11 @@
   "doc": "",
   "group": "arki_dataset_concurrent_odim_iseg",
   "method": "write_check"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_concurrent_odim_iseg",
+  "method": "write_repack"
  },
  {
   "doc": "",

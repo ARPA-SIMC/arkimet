@@ -817,6 +817,35 @@ struct CollectReporter : public dataset::Reporter
     }
 };
 
+
+template<typename Dataset>
+void ActualWriter<Dataset>::import(Metadata& md)
+{
+    auto res = wcallchecked(this->_actual->acquire(md));
+    if (res != dataset::Writer::ACQ_OK)
+    {
+        std::stringstream ss;
+        switch (res)
+        {
+            case Writer::ACQ_ERROR_DUPLICATE:
+                ss << "ACQ_ERROR_DUPLICATE when importing data. notes:" << endl;
+                break;
+            case Writer::ACQ_ERROR:
+                ss << "ACQ_ERROR when importing data. notes:" << endl;
+                break;
+            default:
+                ss << "Error " << (int)res << " when importing data. notes:" << endl;
+                break;
+        }
+
+        for (const auto& note: md.notes())
+            ss << "\t" << note << endl;
+
+        throw TestFailed(ss.str());
+    }
+}
+
+
 template<typename Dataset>
 void ActualChecker<Dataset>::repack(const ReporterExpected& expected, bool write)
 {
@@ -1006,6 +1035,9 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
 
 }
 
+template class ActualWriter<dataset::Writer>;
+template class ActualWriter<dataset::LocalWriter>;
+template class ActualWriter<dataset::segmented::Writer>;
 template class ActualChecker<dataset::Checker>;
 template class ActualChecker<dataset::LocalChecker>;
 template class ActualChecker<dataset::segmented::Checker>;

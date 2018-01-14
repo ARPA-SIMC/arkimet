@@ -132,10 +132,23 @@ void test_set_nowait_default(bool value);
 
 
 /**
+ * Change the behaviour of ofd_setlkw to wait if the lock is busy.
+ *
+ * This is used during tests to restore the standard behaviour
+ */
+struct TestWait
+{
+    bool orig;
+    TestWait();
+    ~TestWait();
+};
+
+
+/**
  * Change the behaviour of ofd_setlkw to throw an exception instead of
  * waiting if the lock is busy.
  *
- * This is used during testsd to detect attempted accesses to locked files.
+ * This is used during tests to detect attempted accesses to locked files.
  */
 struct TestNowait
 {

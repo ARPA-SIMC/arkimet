@@ -170,6 +170,17 @@ bool Lock::ofd_getlk(NamedFileDescriptor& fd)
 
 namespace lock {
 
+TestWait::TestWait()
+    : orig(test_nowait)
+{
+    test_nowait = false;
+}
+
+TestWait::~TestWait()
+{
+    test_nowait = orig;
+}
+
 TestNowait::TestNowait()
     : orig(test_nowait)
 {

@@ -167,7 +167,6 @@ template<class Fixture>
 struct CheckForever : public TestSubprocess
 {
     Fixture& fixture;
-    int commfd;
 
     CheckForever(Fixture& fixture) : fixture(fixture) {}
 
@@ -180,6 +179,27 @@ struct CheckForever : public TestSubprocess
     }
 };
 
+template<class Fixture>
+struct RepackForever : public TestSubprocess
+{
+    Fixture& fixture;
+
+    RepackForever(Fixture& fixture) : fixture(fixture) {}
+
+    int main() override
+    {
+        string segment = "2007/07-07." + fixture.td.format;
+        notify_ready();
+
+        while (true)
+        {
+            auto ds(fixture.makeSegmentedChecker());
+            auto seg = ds->segment(segment);
+            seg->repack();
+        }
+        return 0;
+    }
+};
 
 template<class Data>
 class Tests : public FixtureTestCase<FixtureWriter<Data>>
@@ -410,6 +430,42 @@ this->add_method("write_check", [](Fixture& f) {
 
     cf.kill(9);
     cf.wait();
+});
+
+// Test parallel repack and write
+this->add_method("write_repack", [](Fixture& f) {
+    core::lock::TestWait lock_wait;
+
+    Metadata md(f.td.test_data[1].md);
+    md.set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 0)));
+
+    // Import a first metadata to create a segment to repack
+    {
+        auto writer = f.config().create_writer();
+        wassert(actual(writer->acquire(f.td.test_data[0].md)) == dataset::Writer::ACQ_OK);
+    }
+
+    RepackForever<Fixture> rf(f);
+    rf.start();
+    rf.wait_until_ready();
+
+    for (unsigned minute = 0; minute < 60; ++minute)
+    {
+        for (unsigned second = 0; second < 2; ++second)
+        {
+            md.set(types::Reftime::createPosition(Time(2007, 7, 7, 0, minute, second)));
+            auto writer = f.config().create_writer();
+            wassert(actual(*writer).import(md));
+        }
+    }
+
+    rf.kill(9);
+    rf.wait();
+
+    auto reader = f.config().create_reader();
+    unsigned count = 0;
+    reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { ++count; return true; });
+    wassert(actual(count) == 121u);
 });
 
 this->add_method("nolock_read", [](Fixture& f) {
