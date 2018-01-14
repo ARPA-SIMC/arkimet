@@ -1,28 +1,19 @@
-#include "config.h"
+#include "arki/tests/tests.h"
 
-#include <arki/tests/tests.h>
-#include <arki/utils.h>
-#include <arki/utils/files.h>
-#include <arki/utils/sys.h>
-#include <sstream>
-#include <iostream>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
-using namespace arki::utils;
 using namespace arki::tests;
 
-struct arki_tests_shar {
-};
-TESTGRP(arki_tests);
-
-// Check compareMaps
-def_test(1)
+class Tests : public TestCase
 {
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_tests");
+
+void Tests::register_tests() {
+
+add_method("basic", [] {
     wassert(actual(true).istrue());
     wassert(actual(false).isfalse());
     wassert(actual(3) == 3);
@@ -39,6 +30,8 @@ def_test(1)
     wassert(actual("ciao").contains("ia"));
     wassert(actual("ciao").contains("ao"));
     wassert(actual("ciao").matches("[ia]+"));
+});
+
 }
 
 }

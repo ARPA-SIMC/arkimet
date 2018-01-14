@@ -1,134 +1,118 @@
-#include <arki/types/tests.h>
-#include <arki/querymacro.h>
-#include <arki/runtime/config.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/summary.h>
-#include <arki/dataset/ondisk2/writer.h>
-#include <arki/sort.h>
-#include <arki/scan/grib.h>
-#include <arki/utils.h>
-#include <arki/utils/lua.h>
+#include "arki/dataset/tests.h"
+#include "arki/runtime/config.h"
+#include "querymacro.h"
+#include "summary.h"
 
-#include <sstream>
-#include <iostream>
-#include <memory>
-
-namespace tut {
+namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
+using namespace arki::tests;
+using namespace arki::core;
 using namespace arki::utils;
 using namespace arki::types;
-using arki::core::Time;
 
-struct arki_querymacro_shar {
+struct Fixture : public DatasetTest {
+    using DatasetTest::DatasetTest;
+
     ConfigFile dispatch_cfg;
 
-	arki_querymacro_shar()
-	{
-		runtime::readMatcherAliasDatabase();
+    void test_setup()
+    {
+        runtime::readMatcherAliasDatabase();
 
-		// Cleanup the test datasets
-		system("rm -rf testds");
-		system("mkdir testds");
+        DatasetTest::test_setup(R"(
+            type = ondisk2
+            step = daily
+            unique = origin, reftime
+        )");
 
-        // In-memory dataset configuration
-        string conf =
-            "[testds]\n"
-            "unique = origin\n"
-            "type = ondisk2\n"
-            "step = daily\n"
-            "filter = origin: GRIB1,200\n"
-            "name = testds\n"
-            "path = testds\n";
-        dispatch_cfg.parse(conf, "(memory)");
+        dispatch_cfg.clear();
+        dispatch_cfg.mergeInto("testds", cfg);
+    }
 
-        // Import all data from test.grib1
-        Metadata md;
-        scan::Grib scanner;
-        scanner.test_open("inbound/test.grib1");
-
-        auto config = dataset::ondisk2::Config::create(*dispatch_cfg.section("testds"));
-        dataset::ondisk2::Writer testds(config);
-        vector<Time> times;
-        times.push_back(Time(2009, 8, 7, 0, 0, 0));
-        times.push_back(Time(2009, 8, 8, 0, 0, 0));
-        times.push_back(Time(2009, 8, 9, 0, 0, 0));
-        size_t count = 0;
-        while (scanner.next(md))
+    void import()
+    {
+        auto writer(config().create_writer());
+        metadata::TestCollection mdc("inbound/test.grib1");
+        for (const auto& const_md: mdc)
         {
-            for (const auto& i: times)
+            Metadata md = *const_md;
+            for (unsigned i = 7; i <= 9; ++i)
             {
-                md.set(Reftime::createPosition(i));
-                ensure(testds.acquire(md) == dataset::Writer::ACQ_OK);
+                md.set(Reftime::createPosition(Time(2009, 8, i, 0, 0, 0)));
+                wassert(actual(writer->acquire(md)) == dataset::Writer::ACQ_OK);
             }
-            ++count;
         }
-		ensure_equals(count, 3u);
-		testds.flush();
-	}
+    }
 };
-TESTGRP(arki_querymacro);
+
+class Tests : public FixtureTestCase<Fixture>
+{
+    using FixtureTestCase::FixtureTestCase;
+
+    void register_tests() override;
+} test("arki_querymacro");
+
+void Tests::register_tests() {
 
 // Test running queries from Lua
-def_test(1)
-{
+add_method("count", [](Fixture& f) {
+    f.import();
+
     ConfigFile cfg;
-    Querymacro qm(cfg, dispatch_cfg, "test0", "foo");
+    Querymacro qm(cfg, f.dispatch_cfg, "test0", "foo");
 
-	lua_getglobal(*qm.L, "count1");
-	int count1 = lua_tointeger(*qm.L, -1);
+    lua_getglobal(*qm.L, "count1");
+    int count1 = lua_tointeger(*qm.L, -1);
 
-	lua_getglobal(*qm.L, "count2");
-	int count2 = lua_tointeger(*qm.L, -1);
+    lua_getglobal(*qm.L, "count2");
+    int count2 = lua_tointeger(*qm.L, -1);
 
-	lua_pop(*qm.L, 2);
+    lua_pop(*qm.L, 2);
 
-	ensure_equals(count1, 9);
-	ensure_equals(count2, 3);
-}
+    wassert(actual(count1) == 9);
+    wassert(actual(count2) == 3);
+});
 
 // Lua script that simply passes through the queries
-def_test(2)
-{
+add_method("noop", [](Fixture& f) {
+    f.import();
     ConfigFile cfg;
-    Querymacro qm(cfg, dispatch_cfg, "noop", "testds");
+    Querymacro qm(cfg, f.dispatch_cfg, "noop", "testds");
 
     metadata::Collection mdc(qm, Matcher());
-    ensure_equals(mdc.size(), 9u);
+    wassert(actual(mdc.size()) == 9u);
     ensure(mdc[0].has_source());
     ensure(mdc[1].has_source());
     ensure(mdc[2].has_source());
 
     Summary s;
     qm.query_summary(Matcher::parse(""), s);
-    ensure_equals(s.count(), 9u);
-}
+    wassert(actual(s.count()) == 9u);
+});
 
 // Lua script that simply passes through the queries, making temporary copies of data
-def_test(3)
-{
+add_method("noopcopy", [](Fixture& f) {
+    f.import();
     ConfigFile cfg;
-    Querymacro qm(cfg, dispatch_cfg, "noopcopy", "testds");
+    Querymacro qm(cfg, f.dispatch_cfg, "noopcopy", "testds");
 
     metadata::Collection mdc(qm, Matcher());
-    ensure_equals(mdc.size(), 9u);
+    wassert(actual(mdc.size()) == 9u);
     ensure(mdc[0].has_source());
     ensure(mdc[1].has_source());
     ensure(mdc[2].has_source());
 
     Summary s;
     qm.query_summary(Matcher::parse(""), s);
-    ensure_equals(s.count(), 9u);
-}
+    wassert(actual(s.count()) == 9u);
+});
 
 // Try "expa" matchers
-def_test(4)
-{
+add_method("expa", [](Fixture& f) {
+    f.import();
     ConfigFile cfg;
-    Querymacro qm(cfg, dispatch_cfg, "expa", 
+    Querymacro qm(cfg, f.dispatch_cfg, "expa", 
             "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
     //          utils::readFile("misc/erse00.expa")
@@ -142,13 +126,13 @@ def_test(4)
     Summary s;
     qm.query_summary(Matcher::parse(""), s);
     ensure_equals(s.count(), 2u);
-}
+});
 
 // Try "expa" matchers with parameter
-def_test(5)
-{
+add_method("expa_arg", [](Fixture& f) {
+    f.import();
     ConfigFile cfg;
-    Querymacro qm(cfg, dispatch_cfg, "expa 2009-08-08", 
+    Querymacro qm(cfg, f.dispatch_cfg, "expa 2009-08-08", 
             "ds:testds. d:@. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:@-1. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
 //          utils::readFile("misc/erse00.expa")
@@ -162,15 +146,15 @@ def_test(5)
     Summary s;
     qm.query_summary(Matcher::parse(""), s);
     ensure_equals(s.count(), 2u);
-}
+});
 
 
 // Try "gridspace" matchers
-def_test(6)
-{
+add_method("gridspace", [](Fixture& f) {
+    f.import();
     ConfigFile cfg;
     {
-        Querymacro qm(cfg, dispatch_cfg, "gridspace", 
+        Querymacro qm(cfg, f.dispatch_cfg, "gridspace", 
                 "dataset: testds\n"
                 "addtime: 2009-08-07 00:00:00\n"
                 "add: timerange:AN; level:G00; product:GRIB1,200,140,229\n"
@@ -187,7 +171,7 @@ def_test(6)
         ensure_equals(s.count(), 2u);
     }
     {
-        Querymacro qm(cfg, dispatch_cfg, "gridspace", 
+        Querymacro qm(cfg, f.dispatch_cfg, "gridspace", 
                 "dataset: testds\n"
                 "addtimes: 2009-08-07 00:00:00 2009-08-08 00:00:00 86400\n"
                 "add: timerange:AN; level:G00; product:GRIB1,200,140,229\n"
@@ -203,13 +187,13 @@ def_test(6)
         qm.query_summary(Matcher::parse(""), s);
         ensure_equals(s.count(), 2u);
     }
-}
+});
 
 // Try "expa" matchers with inline option
-def_test(7)
-{
+add_method("expa_inline", [](Fixture& f) {
+    f.import();
     ConfigFile cfg;
-    Querymacro qm(cfg, dispatch_cfg, "expa",
+    Querymacro qm(cfg, f.dispatch_cfg, "expa",
             "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
             );
@@ -223,14 +207,14 @@ def_test(7)
     Summary s;
     qm.query_summary(Matcher::parse(""), s);
     ensure_equals(s.count(), 2u);
-}
+});
 
 // Try "expa" matchers with sort option
 // TODO: ensure sorting
-def_test(8)
-{
+add_method("expa_sort", [](Fixture& f) {
+    f.import();
     ConfigFile cfg;
-    Querymacro qm(cfg, dispatch_cfg, "expa",
+    Querymacro qm(cfg, f.dispatch_cfg, "expa",
             "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:2009-08-08. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
             );
@@ -247,6 +231,8 @@ def_test(8)
     Summary s;
     qm.query_summary(Matcher::parse(""), s);
     ensure_equals(s.count(), 2u);
+});
+
 }
 
 }

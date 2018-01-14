@@ -1,58 +1,58 @@
-#include "matcher/tests.h"
-#include "postprocess.h"
+#include "arki/tests/tests.h"
+#include "core/file.h"
+#include "scan/any.h"
+#include "utils/sys.h"
 #include "configfile.h"
 #include "metadata.h"
-#include "scan/any.h"
-#include "core/file.h"
-#include "utils/sys.h"
+#include "postprocess.h"
 #include "binary.h"
+#if 0
+#include "matcher/tests.h"
 #include <sstream>
 #include <iostream>
 #include <cstdio>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#endif
 
 #ifndef STDERR_FILENO
 #define STDERR_FILENO 2
 #endif
 
-using namespace arki::tests;
-using namespace arki::core;
-
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
+using namespace arki::core;
+using namespace arki::tests;
 using namespace arki::utils;
 
-struct arki_postprocess_shar {
-    ConfigFile config;
+void produceGRIB(Postprocess& p)
+{
+    scan::scan("inbound/test.grib1", core::lock::policy_null, [&](unique_ptr<Metadata> md) { return p.process(move(md)); });
+}
 
-    arki_postprocess_shar()
-    {
-        // In-memory dataset configuration
-        string conf =
-            "[testall]\n"
-            "type = test\n"
-            "step = daily\n"
-            "filter = origin: GRIB1\n"
-            "index = origin, reftime\n"
-            "postprocess = null\n"
-            "name = testall\n"
-            "path = testall\n";
-        config.parse(conf, "(memory)");
-    }
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_postprocess");
 
-    void produceGRIB(Postprocess& p)
-    {
-        scan::scan("inbound/test.grib1", core::lock::policy_null, [&](unique_ptr<Metadata> md) { return p.process(move(md)); });
-    }
-};
-TESTGRP(arki_postprocess);
+void Tests::register_tests() {
 
 // See if the postprocess makes a difference
-def_test(1)
-{
+add_method("null_validate", [] {
+    string conf =
+        "[testall]\n"
+        "type = test\n"
+        "step = daily\n"
+        "filter = origin: GRIB1\n"
+        "index = origin, reftime\n"
+        "postprocess = null\n"
+        "name = testall\n"
+        "path = testall\n";
+    ConfigFile config(conf, "(memory)");
+
     Postprocess p("null");
     Stderr out;
     p.set_output(out);
@@ -62,11 +62,10 @@ def_test(1)
     produceGRIB(p);
 
     p.flush();
-}
+});
 
 // Check that it works without validation, too
-def_test(2)
-{
+add_method("null", [] {
     Postprocess p("null");
     Stderr out;
     p.set_output(out);
@@ -75,11 +74,9 @@ def_test(2)
     produceGRIB(p);
 
     p.flush();
-}
+});
 
-// Test actually sending some data
-def_test(3)
-{
+add_method("countbytes", [] {
     sys::File out(sys::File::mkstemp("test"));
     Postprocess p("countbytes");
     p.set_output(out);
@@ -89,12 +86,10 @@ def_test(3)
     p.flush();
     out.close();
 
-    ensure_equals(sys::read_file(out.name()), "44961\n");
-}
+    wassert(actual(sys::read_file(out.name())) == "44961\n");
+});
 
-// Test actually sending some data
-def_test(4)
-{
+add_method("cat", [] {
     // Get the normal data
     vector<uint8_t> plain;
     {
@@ -119,11 +114,10 @@ def_test(4)
 
     string postprocessed = sys::read_file(out.name());
     wassert(actual(vector<uint8_t>(postprocessed.begin(), postprocessed.end()) == plain));
-}
+});
 
 // Try to shift a sizeable chunk of data to the postprocessor
-def_test(5)
-{
+add_method("countbytes_large", [] {
     sys::File out(sys::File::mkstemp("test"));
     Postprocess p("countbytes");
     p.set_output(out);
@@ -135,11 +129,9 @@ def_test(5)
     out.close();
 
     wassert(actual(sys::read_file(out.name())) == "5755008\n");
-}
+});
 
-// Try to shift a sizeable chunk of data out of the postprocessor
-def_test(6)
-{
+add_method("zeroes_arg", [] {
     const char* fname = "postprocess_output";
     stringstream str;
     Postprocess p("zeroes 4096");
@@ -154,11 +146,9 @@ def_test(6)
     wassert(actual(sys::size(fname)) == 4096*1024u);
 
     sys::unlink(fname);
-}
+});
 
-// Try to shift a sizeable chunk of data to and out of the postprocessor
-def_test(7)
-{
+add_method("zeroes_arg_large", [] {
     const char* fname = "postprocess_output";
     stringstream str;
     Postprocess p("zeroes 4096");
@@ -174,6 +164,8 @@ def_test(7)
     wassert(actual(sys::size(fname)) == 4096*1024u);
 
     sys::unlink(fname);
+});
+
 }
 
 }

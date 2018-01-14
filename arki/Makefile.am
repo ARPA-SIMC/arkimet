@@ -297,7 +297,7 @@ libarkimet_test_la_SOURCES += \
 		utils/tests.cc
 
 tests_arki_test_SOURCES += \
-		tests/tests-tut.cc \
+		tests/tests-test.cc \
 		core/time-test.cc \
 		core/fuzzytime-test.cc \
 		core/file-test.cc \
@@ -528,7 +528,7 @@ libarkimet_la_SOURCES += \
 		runtime/arki-check.cc
 
 tests_arki_test_SOURCES += \
-		targetfile-tut.cc \
+		targetfile-test.cc \
 		metadata/xargs-test.cc \
 		dataset/tests.cc \
 		dataset/reporter-test.cc \
@@ -582,8 +582,8 @@ tests_arki_test_SOURCES += \
 		dataset-checker-test.cc \
 		dataset-concurrency-test.cc \
 		metadatagrid-test.cc \
-		postprocess-tut.cc \
-		querymacro-tut.cc \
+		postprocess-test.cc \
+		querymacro-test.cc \
 		datasets-test.cc \
 		dispatcher-test.cc \
 		runtime/processor-test.cc \
@@ -601,7 +601,7 @@ endif
 
 if LUA
 libarkimet_la_SOURCES += report.cc
-tests_arki_test_SOURCES += report-tut.cc
+tests_arki_test_SOURCES += report-test.cc
 endif
 
 endif
