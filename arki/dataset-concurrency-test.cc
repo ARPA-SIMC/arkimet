@@ -450,6 +450,21 @@ this->add_method("write_check", [](Fixture& f) {
     });
 });
 
+this->add_method("read_repack2", [](Fixture& f) {
+    f.import_all(f.td);
+
+    core::lock::TestWait lock_wait;
+
+    metadata::Collection mdc;
+    RepackForever<Fixture> rf(f);
+    rf.during([&]{
+        for (unsigned i = 0; i < 120; ++i)
+            mdc.add(*f.config().create_reader(), Matcher());
+    });
+
+    wassert(actual(mdc.size()) == 120u * 3);
+});
+
 // Test parallel repack and write
 this->add_method("write_repack", [](Fixture& f) {
     core::lock::TestWait lock_wait;
