@@ -84,7 +84,7 @@ DatasetReadLock::DatasetReadLock(const LocalConfig& config)
 }
 
 SegmentReadLock::SegmentReadLock(const LocalConfig& config, const std::string& relpath)
-    : ReadLock(str::joinpath(config.path, relpath, ".lock"), config.lock_policy)
+    : ReadLock(str::joinpath(config.path, relpath + ".lock"), config.lock_policy)
 {
 }
 
@@ -94,7 +94,7 @@ DatasetWriteLock::DatasetWriteLock(const LocalConfig& config)
 }
 
 SegmentWriteLock::SegmentWriteLock(const LocalConfig& config, const std::string& relpath)
-    : WriteLock(str::joinpath(config.path, relpath, ".lock"), config.lock_policy)
+    : WriteLock(str::joinpath(config.path, relpath + ".lock"), config.lock_policy)
 {
 }
 

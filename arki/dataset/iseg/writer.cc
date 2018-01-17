@@ -5,6 +5,7 @@
 #include "arki/dataset/step.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/time.h"
+#include "arki/dataset/lock.h"
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
@@ -66,6 +67,7 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
     auto writer = file(md, md.source().format);
     WIndex* idx = static_cast<WIndex*>(writer->payload);
+    if (!idx->lock) idx->lock = config().write_lock_segment(writer->relname);
     Pending p_idx = idx->begin_transaction();
 
     const types::source::Blob* new_source;
@@ -92,6 +94,7 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 {
     auto writer = file(md, md.source().format);
     WIndex* idx = static_cast<WIndex*>(writer->payload);
+    if (!idx->lock) idx->lock = config().write_lock_segment(writer->relname);
     Pending p_idx = idx->begin_transaction();
 
     const types::source::Blob* new_source;
@@ -115,6 +118,7 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     auto writer = file(md, md.source().format);
     WIndex* idx = static_cast<WIndex*>(writer->payload);
+    if (!idx->lock) idx->lock = config().write_lock_segment(writer->relname);
     Pending p_idx = idx->begin_transaction();
 
     const types::source::Blob* new_source;
@@ -209,6 +213,7 @@ void Writer::remove(Metadata& md)
 {
     auto writer = file(md, md.source().format);
     WIndex* idx = static_cast<WIndex*>(writer->payload);
+    if (!idx->lock) idx->lock = config().write_lock_segment(writer->relname);
 
     const types::source::Blob* source = md.has_source_blob();
     if (!source)
@@ -250,10 +255,12 @@ class CheckerSegment : public segmented::CheckerSegment
 {
 public:
     Checker& checker;
+    std::shared_ptr<SegmentReadLock> lock;
 
     CheckerSegment(Checker& checker, const std::string& relpath)
         : checker(checker)
     {
+        lock = checker.config().read_lock_segment(relpath);
         segment = checker.segment_manager().get_checker(checker.config().format, relpath);
     }
 
@@ -339,6 +346,7 @@ public:
 
     size_t repack(unsigned test_flags=0) override
     {
+        auto l = lock->write_lock();
         WIndex idx(checker.m_config, segment->relname);
 
         // Lock away writes and reads
@@ -357,6 +365,7 @@ public:
 
     size_t reorder(metadata::Collection& mds, unsigned test_flags) override
     {
+        auto l = lock->write_lock();
         WIndex idx(checker.m_config, segment->relname);
 
         // Lock away writes and reads
@@ -570,6 +579,7 @@ void Checker::check_issue51(dataset::Reporter& reporter, bool fix)
 
 void Checker::indexSegment(const std::string& relpath, metadata::Collection&& mds)
 {
+    auto l = config().read_lock_segment(relpath);
     WIndex idx(m_config, relpath);
 
     // Add to index
@@ -621,6 +631,7 @@ void Checker::rescanSegment(const std::string& relpath)
         throw std::runtime_error("cannot rescan " + pathname + ": file format unknown");
     //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
 
+    auto l = config().read_lock_segment(relpath);
     WIndex idx(m_config, relpath);
 
     // Lock away writes and reads

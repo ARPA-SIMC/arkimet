@@ -248,6 +248,9 @@ protected:
     void bind_insert(utils::sqlite::Query& q, const Metadata& md, uint64_t ofs, char* timebuf);
 
 public:
+    /// Write lock for import
+    std::shared_ptr<SegmentWriteLock> lock;
+
     WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath);
 #if 0
     ~WContents();

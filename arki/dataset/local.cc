@@ -79,6 +79,16 @@ std::shared_ptr<DatasetWriteLock> LocalConfig::write_lock_dataset() const
     return std::make_shared<DatasetWriteLock>(*this);
 }
 
+std::shared_ptr<SegmentReadLock> LocalConfig::read_lock_segment(const std::string& relpath) const
+{
+    return std::make_shared<SegmentReadLock>(*this, relpath);
+}
+
+std::shared_ptr<SegmentWriteLock> LocalConfig::write_lock_segment(const std::string& relpath) const
+{
+    return std::make_shared<SegmentWriteLock>(*this, relpath);
+}
+
 
 template<typename Parent, typename Archive>
 LocalBase<Parent, Archive>::~LocalBase()
