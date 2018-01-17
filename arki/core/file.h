@@ -79,7 +79,7 @@ struct LineReader
 };
 
 
-struct Lock
+struct Lock : public std::enable_shared_from_this<Lock>
 {
     Lock() = default;
     Lock(const Lock&) = delete;

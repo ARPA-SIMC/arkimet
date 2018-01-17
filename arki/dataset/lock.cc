@@ -1,6 +1,7 @@
 #include "lock.h"
 #include "local.h"
 #include "arki/utils/string.h"
+#include <memory>
 
 using namespace arki::utils;
 
@@ -29,19 +30,19 @@ namespace {
 
 struct TemporaryWriteLock : public core::Lock
 {
-    DatasetReadLock& parent;
+    std::shared_ptr<DatasetReadLock> parent;
 
-    TemporaryWriteLock(DatasetReadLock& parent)
+    TemporaryWriteLock(std::shared_ptr<DatasetReadLock> parent)
         : parent(parent)
     {
-        parent.ds_lock.l_type = F_WRLCK;
-        parent.lock_policy->setlkw(parent.lockfile, parent.ds_lock);
+        parent->ds_lock.l_type = F_WRLCK;
+        parent->lock_policy->setlkw(parent->lockfile, parent->ds_lock);
     }
 
     ~TemporaryWriteLock()
     {
-        parent.ds_lock.l_type = F_RDLCK;
-        parent.lock_policy->setlkw(parent.lockfile, parent.ds_lock);
+        parent->ds_lock.l_type = F_RDLCK;
+        parent->lock_policy->setlkw(parent->lockfile, parent->ds_lock);
     }
 };
 
@@ -52,7 +53,7 @@ std::shared_ptr<core::Lock> DatasetReadLock::write_lock()
     if (!current_write_lock.expired())
         return current_write_lock.lock();
 
-    std::shared_ptr<core::Lock> res(new TemporaryWriteLock(*this));
+    std::shared_ptr<core::Lock> res(new TemporaryWriteLock(std::dynamic_pointer_cast<DatasetReadLock>(this->shared_from_this())));
     current_write_lock = res;
     return res;
 }
