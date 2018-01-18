@@ -418,7 +418,7 @@ this->add_method("write_check", [](Fixture& f) {
         writer->flush();
 
         // Create an error to trigger a call to the reporter that then hangs
-        // the checke
+        // the checker
         f.makeSegmentedChecker()->test_corrupt_data(f.td.test_data[0].md.sourceBlob().filename, 0);
     }
 
