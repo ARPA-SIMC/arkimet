@@ -22,7 +22,7 @@ struct File : public arki::core::File
 {
     using arki::core::File::File;
 
-    void fdtruncate(off_t pos);
+    void fdtruncate_nothrow(off_t pos) noexcept;
     virtual void write_data(off_t wrpos, const std::vector<uint8_t>& buf) = 0;
     virtual void test_add_padding(size_t size) = 0;
 };

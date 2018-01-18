@@ -30,7 +30,7 @@ namespace dataset {
 namespace segment {
 namespace fd {
 
-void File::fdtruncate(off_t pos)
+void File::fdtruncate_nothrow(off_t pos) noexcept
 {
     if (::ftruncate(*this, pos) == -1)
         nag::warning("truncating %s to previous size %zd (rollback of append operation): %m", name().c_str(), pos);
@@ -78,7 +78,16 @@ struct Append : public Transaction
         if (fired) return;
 
         // If we had a problem, attempt to truncate the file to the original size
-        fd.fdtruncate(pos);
+        fd.fdtruncate_nothrow(pos);
+        fired = true;
+    }
+
+    void rollback_nothrow() noexcept override
+    {
+        if (fired) return;
+
+        // If we had a problem, attempt to truncate the file to the original size
+        fd.fdtruncate_nothrow(pos);
         fired = true;
     }
 };
@@ -120,7 +129,7 @@ off_t Writer::append(const std::vector<uint8_t>& buf)
     try {
         fd->write_data(pos, buf);
     } catch (...) {
-        fd->fdtruncate(pos);
+        fd->fdtruncate_nothrow(pos);
         throw;
     }
     return pos;
@@ -290,7 +299,7 @@ Pending Checker::repack_impl(
             if (!fired) rollback();
         }
 
-        virtual void commit()
+        void commit() override
         {
             if (fired) return;
             // Rename the data file to its final name
@@ -299,10 +308,17 @@ Pending Checker::repack_impl(
             fired = true;
         }
 
-        virtual void rollback()
+        void rollback() override
         {
             if (fired) return;
-            unlink(tmpabsname.c_str());
+            ::unlink(tmpabsname.c_str());
+            fired = true;
+        }
+
+        void rollback_nothrow() noexcept override
+        {
+            if (fired) return;
+            ::unlink(tmpabsname.c_str());
             fired = true;
         }
     };

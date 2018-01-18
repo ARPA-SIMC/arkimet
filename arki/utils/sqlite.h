@@ -63,6 +63,15 @@ public:
 	 */
 	void exec(const std::string& query);
 
+    /**
+     * Run a query that has no return values.
+     *
+     * In case of error, use nag::warning instead of throwing an exception
+     *
+     * If it fails with SQLITE_BUSY, wait a bit and retry.
+     */
+    void exec_nothrow(const std::string& query) noexcept;
+
 	/// Run a SELECT LAST_INSERT_ROWID() statement and return the result
 	int lastInsertID();
 
@@ -278,6 +287,13 @@ public:
 	void initQueries();
 
 	void operator()();
+
+    /**
+     * Run but avoid throwing exceptions.
+     *
+     * In case of error, use nag::warning instead of throwing an exception
+     */
+    void nothrow() noexcept;
 };
 
 /**
@@ -319,8 +335,9 @@ struct SqliteTransaction : public Transaction
         if (!fired) committer.rollback();
     }
 
-	void commit();
-	void rollback();
+    void commit() override;
+    void rollback() override;
+    void rollback_nothrow() noexcept override;
 };
 
 /**

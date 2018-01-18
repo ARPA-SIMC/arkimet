@@ -118,7 +118,7 @@ struct Append : public Transaction
         if (!fired) rollback();
     }
 
-    virtual void commit()
+    void commit() override
     {
         if (fired) return;
 
@@ -128,7 +128,7 @@ struct Append : public Transaction
         fired = true;
     }
 
-    virtual void rollback()
+    void rollback() override
     {
         if (fired) return;
 
@@ -138,7 +138,22 @@ struct Append : public Transaction
         // case should be rare enough that even the cosmetic issue should
         // rarely be noticeable.
         string target_name = str::joinpath(writer.absname, SequenceFile::data_fname(pos, writer.format));
-        unlink(target_name.c_str());
+        ::unlink(target_name.c_str());
+
+        fired = true;
+    }
+
+    void rollback_nothrow() noexcept override
+    {
+        if (fired) return;
+
+        // If we had a problem, remove the file that we have created. The
+        // sequence will have skipped one number, but we do not need to
+        // guarantee consecutive numbers, so it is just a cosmetic issue. This
+        // case should be rare enough that even the cosmetic issue should
+        // rarely be noticeable.
+        string target_name = str::joinpath(writer.absname, SequenceFile::data_fname(pos, writer.format));
+        ::unlink(target_name.c_str());
 
         fired = true;
     }
@@ -399,7 +414,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
             if (!fired) rollback();
         }
 
-        virtual void commit()
+        void commit() override
         {
             if (fired) return;
 
@@ -425,7 +440,27 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
             fired = true;
         }
 
-        virtual void rollback()
+        void rollback() override
+        {
+            if (fired) return;
+
+            try
+            {
+                sys::rmtree(tmpabsname);
+            } catch (std::exception& e) {
+                nag::warning("Failed to remove %s while recovering from a failed repack: %s", tmpabsname.c_str(), e.what());
+            }
+
+            rename(tmppos.c_str(), absname.c_str());
+
+            // Release the lock
+            lock.l_type = F_UNLCK;
+            lock_policy->setlk(repack_lock, lock);
+
+            fired = true;
+        }
+
+        void rollback_nothrow() noexcept override
         {
             if (fired) return;
 

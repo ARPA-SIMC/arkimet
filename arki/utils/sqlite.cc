@@ -1,7 +1,8 @@
-#include "config.h"
-#include <arki/utils/sqlite.h>
-#include <arki/binary.h>
-#include <arki/types.h>
+#include "arki/libconfig.h"
+#include "arki/utils/sqlite.h"
+#include "arki/binary.h"
+#include "arki/types.h"
+#include "arki/nag.h"
 #include <sstream>
 #include <unistd.h>
 
@@ -76,10 +77,18 @@ sqlite3_stmt* SQLiteDB::prepare(const std::string& query) const
 
 void SQLiteDB::exec(const std::string& query)
 {
-	char* err;
-	int rc = sqlite3_exec(m_db, query.c_str(), 0, 0, &err);
-	if (rc != SQLITE_OK)
-	       	throw SQLiteError(err, "executing query " + query);
+    char* err;
+    int rc = sqlite3_exec(m_db, query.c_str(), 0, 0, &err);
+    if (rc != SQLITE_OK)
+        throw SQLiteError(err, "executing query " + query);
+}
+
+void SQLiteDB::exec_nothrow(const std::string& query) noexcept
+{
+    char* err;
+    int rc = sqlite3_exec(m_db, query.c_str(), 0, 0, &err);
+    if (rc != SQLITE_OK)
+        nag::warning("query failed: %s. Error: %s", query.c_str(), sqlite3_errmsg(m_db));
 }
 
 void SQLiteDB::checkpoint()
@@ -351,6 +360,12 @@ void OneShotQuery::operator()()
 #endif
 }
 
+void OneShotQuery::nothrow() noexcept
+{
+    m_db.exec_nothrow(m_query);
+}
+
+
 Committer::Committer(SQLiteDB& db, const char* type)
     : begin(db, "begin", type ? string("BEGIN ") + type : "BEGIN"),
       commit(db, "commit", "COMMIT"),
@@ -366,6 +381,12 @@ void SqliteTransaction::rollback()
 {
 	committer.rollback();
 	fired = true;
+}
+
+void SqliteTransaction::rollback_nothrow() noexcept
+{
+    committer.rollback.nothrow();
+    fired = true;
 }
 
 bool InsertQuery::step()

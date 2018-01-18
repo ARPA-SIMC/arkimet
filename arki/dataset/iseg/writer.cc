@@ -67,7 +67,6 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
     auto writer = file(md, md.source().format);
     WIndex* idx = static_cast<WIndex*>(writer->payload);
-    if (!idx->lock) idx->lock = config().write_lock_segment(writer->relname);
     Pending p_idx = idx->begin_transaction();
 
     const types::source::Blob* new_source;
@@ -94,7 +93,6 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 {
     auto writer = file(md, md.source().format);
     WIndex* idx = static_cast<WIndex*>(writer->payload);
-    if (!idx->lock) idx->lock = config().write_lock_segment(writer->relname);
     Pending p_idx = idx->begin_transaction();
 
     const types::source::Blob* new_source;
@@ -118,7 +116,6 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     auto writer = file(md, md.source().format);
     WIndex* idx = static_cast<WIndex*>(writer->payload);
-    if (!idx->lock) idx->lock = config().write_lock_segment(writer->relname);
     Pending p_idx = idx->begin_transaction();
 
     const types::source::Blob* new_source;
@@ -213,7 +210,6 @@ void Writer::remove(Metadata& md)
 {
     auto writer = file(md, md.source().format);
     WIndex* idx = static_cast<WIndex*>(writer->payload);
-    if (!idx->lock) idx->lock = config().write_lock_segment(writer->relname);
 
     const types::source::Blob* source = md.has_source_blob();
     if (!source)
@@ -278,7 +274,8 @@ class CheckerSegment : public segmented::CheckerSegment
 {
 public:
     Checker& checker;
-    std::shared_ptr<SegmentReadLock> lock;
+    std::shared_ptr<dataset::ReadLock> lock;
+    WIndex* m_idx = nullptr;
 
     CheckerSegment(Checker& checker, const std::string& relpath)
         : checker(checker)
@@ -286,7 +283,17 @@ public:
         lock = checker.config().read_lock_segment(relpath);
         segment = checker.segment_manager().get_checker(checker.config().format, relpath);
     }
+    ~CheckerSegment()
+    {
+        delete m_idx;
+    }
 
+    WIndex& idx()
+    {
+        if (!m_idx)
+            m_idx = new WIndex(checker.m_config, path_relative(), lock);
+        return *m_idx;
+    }
     std::string path_relative() const override { return segment->relname; }
     const iseg::Config& config() const override { return checker.config(); }
     dataset::ArchivesChecker& archives() const { return checker.archive(); }
@@ -319,9 +326,8 @@ public:
         }
 #endif
 
-        WIndex idx(checker.m_config, segment->relname);
         metadata::Collection mds;
-        idx.scan(mds.inserter_func(), "reftime, offset");
+        idx().scan(mds.inserter_func(), "reftime, offset");
         segment::State state = SEGMENT_OK;
 
         // Compute the span of reftimes inside the segment
@@ -371,46 +377,40 @@ public:
 
     size_t repack(unsigned test_flags=0) override
     {
-        auto l = lock->write_lock();
-        WIndex idx(checker.m_config, segment->relname);
-
         // Lock away writes and reads
-        Pending p = idx.begin_exclusive_transaction();
+        Pending p = idx().begin_transaction();
 
         metadata::Collection mds;
-        idx.scan(mds.inserter_func(), "reftime, offset");
+        idx().scan(mds.inserter_func(), "reftime, offset");
 
-        auto res = reorder_segment_backend(idx, p, mds, test_flags);
+        auto res = reorder_segment_backend(p, mds, test_flags);
 
         //reporter.operation_progress(checker.name(), "repack", "running VACUUM ANALYZE on segment " + segment->relname);
-        idx.vacuum();
+        idx().vacuum();
 
         return res;
     }
 
     size_t reorder(metadata::Collection& mds, unsigned test_flags) override
     {
-        auto l = lock->write_lock();
-        WIndex idx(checker.m_config, segment->relname);
-
         // Lock away writes and reads
-        Pending p = idx.begin_exclusive_transaction();
+        Pending p = idx().begin_transaction();
 
-        return reorder_segment_backend(idx, p, mds, test_flags);
+        return reorder_segment_backend(p, mds, test_flags);
     }
 
-    size_t reorder_segment_backend(WIndex& idx, Pending& p, metadata::Collection& mds, unsigned test_flags)
+    size_t reorder_segment_backend(Pending& p, metadata::Collection& mds, unsigned test_flags)
     {
         // Make a copy of the file with the right data in it, sorted by
         // reftime, and update the offsets in the index
         Pending p_repack = segment->repack(checker.config().path, mds, test_flags);
 
         // Reindex mds
-        idx.reset();
+        idx().reset();
         for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
         {
             const source::Blob& source = (*i)->sourceBlob();
-            idx.index(**i, source.offset);
+            idx().index(**i, source.offset);
         }
 
         size_t size_pre = sys::isdir(segment->absname) ? 0 : sys::size(segment->absname);
@@ -452,13 +452,10 @@ public:
 
     void index(metadata::Collection&& mds) override
     {
-        auto l = checker.config().read_lock_segment(segment->relname);
-        WIndex idx(checker.m_config, segment->relname);
-
         // Add to index
-        Pending p_idx = idx.begin_transaction();
+        Pending p_idx = idx().begin_transaction();
         for (auto& md: mds)
-            idx.index(*md, md->sourceBlob().offset);
+            idx().index(*md, md->sourceBlob().offset);
         p_idx.commit();
 
         // Remove .metadata and .summary files
@@ -479,18 +476,15 @@ public:
             throw std::runtime_error("cannot rescan " + segment->absname + ": file format unknown");
         //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
 
-        auto l = config().read_lock_segment(segment->relname);
-        WIndex idx(checker.m_config, segment->relname);
-
         // Lock away writes and reads
-        Pending p = idx.begin_exclusive_transaction();
+        Pending p = idx().begin_transaction();
 
         // Remove from the index all data about the file
-        idx.reset();
+        idx().reset();
 
         // Scan the list of metadata, looking for duplicates and marking all
         // the duplicates except the last one as deleted
-        IDMaker id_maker(idx.unique_codes());
+        IDMaker id_maker(idx().unique_codes());
 
         map<vector<uint8_t>, const Metadata*> finddupes;
         for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
@@ -515,7 +509,7 @@ public:
             try {
                 if (str::basename(blob.filename) != basename)
                     throw std::runtime_error("cannot rescan " + segment->relname + ": metadata points to the wrong file: " + blob.filename);
-                idx.index(md, blob.offset);
+                idx().index(md, blob.offset);
             } catch (utils::sqlite::DuplicateInsert& di) {
                 stringstream ss;
                 ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate elsewhere in the dataset: manual fix is required";
@@ -587,7 +581,6 @@ void Checker::segments_filtered(const Matcher& matcher, std::function<void(segme
 {
     list_segments(matcher, [&](const std::string& relpath) {
         CheckerSegment segment(*this, relpath);
-        segment.segment->lock();
         dest(segment);
     });
 }
@@ -602,7 +595,6 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     config().step().list_segments(config().path, config().format, matcher, [&](std::string&& relpath) {
         if (sys::stat(str::joinpath(config().path, relpath + ".index"))) return;
         CheckerSegment segment(*this, relpath);
-        segment.segment->lock();
         dest(segment);
     });
 }

@@ -43,8 +43,6 @@ public:
     AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
     void remove(Metadata& md);
 
-    //virtual Pending test_writelock();
-
     static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
