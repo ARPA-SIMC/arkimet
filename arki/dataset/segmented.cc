@@ -114,7 +114,7 @@ bool Config::relpath_timespan(const std::string& path, core::Time& start_time, c
 
 std::unique_ptr<segment::Manager> Config::create_segment_manager() const
 {
-    return segment::Manager::get(path, lock_policy, force_dir_segments, mock_data);
+    return segment::Manager::get(path, force_dir_segments, mock_data);
 }
 
 std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)

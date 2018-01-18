@@ -132,7 +132,6 @@ public:
     std::string root;
     std::string relname;
     std::string absname;
-    const core::lock::Policy* lock_policy;
 
     // TODO: document and move to the right subclass if it's not needed all the time
     struct Payload
@@ -141,7 +140,7 @@ public:
     };
     Payload* payload = nullptr;
 
-    Segment(const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy);
+    Segment(const std::string& root, const std::string& relname, const std::string& absname);
     virtual ~Segment();
 };
 
@@ -278,7 +277,7 @@ public:
     virtual void scan_dir(std::function<void(const std::string& relname)> dest) = 0;
 
     /// Create a Manager
-    static std::unique_ptr<Manager> get(const std::string& root, const core::lock::Policy* lock_policy=nullptr, bool force_dir=false, bool mock_data=false);
+    static std::unique_ptr<Manager> get(const std::string& root, bool force_dir=false, bool mock_data=false);
 };
 
 }

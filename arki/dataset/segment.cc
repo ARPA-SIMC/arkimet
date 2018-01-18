@@ -19,8 +19,8 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-Segment::Segment(const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy)
-    : root(root), relname(relname), absname(absname), lock_policy(lock_policy)
+Segment::Segment(const std::string& root, const std::string& relname, const std::string& absname)
+    : root(root), relname(relname), absname(absname)
 {
 }
 
@@ -62,10 +62,9 @@ namespace {
 
 struct BaseManager : public segment::Manager
 {
-    const core::lock::Policy* lock_policy;
     bool mockdata;
 
-    BaseManager(const std::string& root, const core::lock::Policy* lock_policy, bool mockdata=false) : Manager(root), lock_policy(lock_policy), mockdata(mockdata) {}
+    BaseManager(const std::string& root, bool mockdata=false) : Manager(root), mockdata(mockdata) {}
 
     // Instantiate the right Segment implementation for a segment that already
     // exists. Returns 0 if the segment does not exist.
@@ -83,9 +82,9 @@ struct BaseManager : public segment::Manager
             if (dir::can_store(format))
             {
                 if (mockdata)
-                    res.reset(new dir::HoleWriter(format, root, relname, absname, lock_policy));
+                    res.reset(new dir::HoleWriter(format, root, relname, absname));
                 else
-                    res.reset(new dir::Writer(format, root, relname, absname, lock_policy));
+                    res.reset(new dir::Writer(format, root, relname, absname));
             } else {
                 if (nullptr_on_error)
                     return res;
@@ -97,19 +96,19 @@ struct BaseManager : public segment::Manager
             if (format == "grib" || format == "grib1" || format == "grib2")
             {
                 if (mockdata)
-                    res.reset(new concat::HoleWriter(root, relname, absname, lock_policy));
+                    res.reset(new concat::HoleWriter(root, relname, absname));
                 else
-                    res.reset(new concat::Writer(root, relname, absname, lock_policy));
+                    res.reset(new concat::Writer(root, relname, absname));
             } else if (format == "bufr") {
                 if (mockdata)
-                    res.reset(new concat::HoleWriter(root, relname, absname, lock_policy));
+                    res.reset(new concat::HoleWriter(root, relname, absname));
                 else
-                    res.reset(new concat::Writer(root, relname, absname, lock_policy));
+                    res.reset(new concat::Writer(root, relname, absname));
             } else if (format == "vm2") {
                 if (mockdata)
                     throw_consistency_error("mockdata single-file line-based segments not implemented");
                 else
-                    res.reset(new lines::Writer(root, relname, absname, lock_policy));
+                    res.reset(new lines::Writer(root, relname, absname));
             } else if (format == "odimh5" || format == "h5" || format == "odim") {
                 throw_consistency_error("segment is a file, but odimh5 data can only be stored into directory segments");
             } else {
@@ -139,9 +138,9 @@ struct BaseManager : public segment::Manager
             if (dir::can_store(format))
             {
                 if (mockdata)
-                    res.reset(new dir::HoleChecker(format, root, relname, absname, lock_policy));
+                    res.reset(new dir::HoleChecker(format, root, relname, absname));
                 else
-                    res.reset(new dir::Checker(format, root, relname, absname, lock_policy));
+                    res.reset(new dir::Checker(format, root, relname, absname));
             } else {
                 if (nullptr_on_error)
                     return res;
@@ -153,26 +152,26 @@ struct BaseManager : public segment::Manager
             if (format == "grib" || format == "grib1" || format == "grib2")
             {
                 if (mockdata)
-                    res.reset(new concat::HoleChecker(root, relname, absname, lock_policy));
+                    res.reset(new concat::HoleChecker(root, relname, absname));
                 else
-                    res.reset(new concat::Checker(root, relname, absname, lock_policy));
+                    res.reset(new concat::Checker(root, relname, absname));
             } else if (format == "bufr") {
                 if (mockdata)
-                    res.reset(new concat::HoleChecker(root, relname, absname, lock_policy));
+                    res.reset(new concat::HoleChecker(root, relname, absname));
                 else
-                    res.reset(new concat::Checker(root, relname, absname, lock_policy));
+                    res.reset(new concat::Checker(root, relname, absname));
             } else if (format == "vm2") {
                 if (mockdata)
                     throw_consistency_error("mockdata single-file line-based segments not implemented");
                 else
-                    res.reset(new lines::Checker(root, relname, absname, lock_policy));
+                    res.reset(new lines::Checker(root, relname, absname));
             } else if (format == "odimh5" || format == "h5" || format == "odim") {
                 // If it's a file and we need a directory, still get a checker
                 // so it can deal with it
                 if (mockdata)
-                    res.reset(new dir::HoleChecker(format, root, relname, absname, lock_policy));
+                    res.reset(new dir::HoleChecker(format, root, relname, absname));
                 else
-                    res.reset(new dir::Checker(format, root, relname, absname, lock_policy));
+                    res.reset(new dir::Checker(format, root, relname, absname));
             } else {
                 if (nullptr_on_error)
                     return res;
@@ -213,8 +212,8 @@ struct BaseManager : public segment::Manager
 /// Segment manager that picks the right readers/writers based on file types
 struct AutoManager : public BaseManager
 {
-    AutoManager(const std::string& root, const core::lock::Policy* lock_policy, bool mockdata=false)
-        : BaseManager(root, lock_policy, mockdata) {}
+    AutoManager(const std::string& root, bool mockdata=false)
+        : BaseManager(root, mockdata) {}
 
     std::shared_ptr<Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname)
     {
@@ -224,24 +223,24 @@ struct AutoManager : public BaseManager
         if (format == "grib" || format == "grib1" || format == "grib2")
         {
             if (mockdata)
-                res.reset(new concat::HoleWriter(root, relname, absname, lock_policy));
+                res.reset(new concat::HoleWriter(root, relname, absname));
             else
-                res.reset(new concat::Writer(root, relname, absname, lock_policy));
+                res.reset(new concat::Writer(root, relname, absname));
         } else if (format == "bufr") {
             if (mockdata)
-                res.reset(new concat::HoleWriter(root, relname, absname, lock_policy));
+                res.reset(new concat::HoleWriter(root, relname, absname));
             else
-                res.reset(new concat::Writer(root, relname, absname, lock_policy));
+                res.reset(new concat::Writer(root, relname, absname));
         } else if (format == "odimh5" || format == "h5" || format == "odim") {
             if (mockdata)
-                res.reset(new dir::HoleWriter(format, root, relname, absname, lock_policy));
+                res.reset(new dir::HoleWriter(format, root, relname, absname));
             else
-                res.reset(new dir::Writer(format, root, relname, absname, lock_policy));
+                res.reset(new dir::Writer(format, root, relname, absname));
         } else if (format == "vm2") {
             if (mockdata)
                 throw_consistency_error("mockdata single-file line-based segments not implemented");
             else
-                res.reset(new lines::Writer(root, relname, absname, lock_policy));
+                res.reset(new lines::Writer(root, relname, absname));
         } else {
             throw_consistency_error(
                     "getting writer for " + format + " file " + relname,
@@ -258,24 +257,24 @@ struct AutoManager : public BaseManager
         if (format == "grib" || format == "grib1" || format == "grib2")
         {
             if (mockdata)
-                res.reset(new concat::HoleChecker(root, relname, absname, lock_policy));
+                res.reset(new concat::HoleChecker(root, relname, absname));
             else
-                res.reset(new concat::Checker(root, relname, absname, lock_policy));
+                res.reset(new concat::Checker(root, relname, absname));
         } else if (format == "bufr") {
             if (mockdata)
-                res.reset(new concat::HoleChecker(root, relname, absname, lock_policy));
+                res.reset(new concat::HoleChecker(root, relname, absname));
             else
-                res.reset(new concat::Checker(root, relname, absname, lock_policy));
+                res.reset(new concat::Checker(root, relname, absname));
         } else if (format == "odimh5" || format == "h5" || format == "odim") {
             if (mockdata)
-                res.reset(new dir::HoleChecker(format, root, relname, absname, lock_policy));
+                res.reset(new dir::HoleChecker(format, root, relname, absname));
             else
-                res.reset(new dir::Checker(format, root, relname, absname, lock_policy));
+                res.reset(new dir::Checker(format, root, relname, absname));
         } else if (format == "vm2") {
             if (mockdata)
                 throw_consistency_error("mockdata single-file line-based segments not implemented");
             else
-                res.reset(new lines::Checker(root, relname, absname, lock_policy));
+                res.reset(new lines::Checker(root, relname, absname));
         } else {
             throw_consistency_error(
                     "getting writer for " + format + " file " + relname,
@@ -359,18 +358,18 @@ struct AutoManager : public BaseManager
 /// Segment manager that always picks directory segments
 struct ForceDirManager : public BaseManager
 {
-    ForceDirManager(const std::string& root, const core::lock::Policy* lock_policy) : BaseManager(root, lock_policy) {}
+    ForceDirManager(const std::string& root) : BaseManager(root) {}
 
     std::shared_ptr<Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname) override
     {
         auto res(create_writer_for_existing_segment(format, relname, absname));
         if (res) return res;
-        return std::shared_ptr<segment::Writer>(new dir::Writer(format, root, relname, absname, lock_policy));
+        return std::shared_ptr<segment::Writer>(new dir::Writer(format, root, relname, absname));
     }
 
     std::shared_ptr<Checker> create_checker_for_format(const std::string& format, const std::string& relname, const std::string& absname) override
     {
-        return std::shared_ptr<segment::Checker>(new dir::Checker(format, root, relname, absname, lock_policy));
+        return std::shared_ptr<segment::Checker>(new dir::Checker(format, root, relname, absname));
     }
 
     bool exists(const std::string& relpath) const override
@@ -427,11 +426,11 @@ struct ForceDirManager : public BaseManager
 /// Segment manager that always uses hole file segments
 struct HoleDirManager : public ForceDirManager
 {
-    HoleDirManager(const std::string& root, const core::lock::Policy* lock_policy) : ForceDirManager(root, lock_policy) {}
+    HoleDirManager(const std::string& root) : ForceDirManager(root) {}
 
     std::shared_ptr<Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname) override
     {
-        return std::shared_ptr<Writer>(new dir::HoleWriter(format, root, relname, absname, lock_policy));
+        return std::shared_ptr<Writer>(new dir::HoleWriter(format, root, relname, absname));
     }
 };
 
@@ -480,18 +479,15 @@ std::shared_ptr<Checker> Manager::get_checker(const std::string& format, const s
     return create_checker_for_format(format, relname, absname);
 }
 
-std::unique_ptr<Manager> Manager::get(const std::string& root, const core::lock::Policy* lock_policy, bool force_dir, bool mock_data)
+std::unique_ptr<Manager> Manager::get(const std::string& root, bool force_dir, bool mock_data)
 {
-    if (!lock_policy)
-        lock_policy = core::lock::policy_ofd;
-
     if (force_dir)
         if (mock_data)
-            return unique_ptr<Manager>(new HoleDirManager(root, lock_policy));
+            return unique_ptr<Manager>(new HoleDirManager(root));
         else
-            return unique_ptr<Manager>(new ForceDirManager(root, lock_policy));
+            return unique_ptr<Manager>(new ForceDirManager(root));
     else
-        return unique_ptr<Manager>(new AutoManager(root, lock_policy, mock_data));
+        return unique_ptr<Manager>(new AutoManager(root, mock_data));
 }
 
 }

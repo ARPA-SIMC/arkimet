@@ -45,12 +45,12 @@ inline size_t datasize(const Metadata& md)
 std::shared_ptr<segment::concat::Writer> make_w()
 {
     string absname = sys::abspath(relname);
-    return std::shared_ptr<segment::concat::Writer>(new segment::concat::Writer(sys::getcwd(), relname, absname, core::lock::policy_ofd));
+    return std::shared_ptr<segment::concat::Writer>(new segment::concat::Writer(sys::getcwd(), relname, absname));
 }
 std::shared_ptr<segment::concat::Checker> make_c()
 {
     string absname = sys::abspath(relname);
-    return std::shared_ptr<segment::concat::Checker>(new segment::concat::Checker(sys::getcwd(), relname, absname, core::lock::policy_ofd));
+    return std::shared_ptr<segment::concat::Checker>(new segment::concat::Checker(sys::getcwd(), relname, absname));
 }
 
 void Tests::register_tests() {
@@ -126,11 +126,11 @@ add_method("check", [] {
     {
         std::shared_ptr<segment::Writer> make_writer() override
         {
-            return std::shared_ptr<segment::Writer>(new segment::concat::Writer(root, relname, absname, core::lock::policy_ofd));
+            return std::shared_ptr<segment::Writer>(new segment::concat::Writer(root, relname, absname));
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::concat::Checker(root, relname, absname, core::lock::policy_ofd));
+            return std::shared_ptr<segment::Checker>(new segment::concat::Checker(root, relname, absname));
         }
     } test;
 
@@ -142,11 +142,11 @@ add_method("remove", [] {
     {
         std::shared_ptr<segment::Writer> make_writer() override
         {
-            return std::shared_ptr<segment::Writer>(new segment::concat::Writer(root, relname, absname, core::lock::policy_ofd));
+            return std::shared_ptr<segment::Writer>(new segment::concat::Writer(root, relname, absname));
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::concat::Checker(root, relname, absname, core::lock::policy_ofd));
+            return std::shared_ptr<segment::Checker>(new segment::concat::Checker(root, relname, absname));
         }
     } test;
 

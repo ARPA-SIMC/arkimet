@@ -14,7 +14,7 @@ namespace lines {
 class Writer : public fd::Writer
 {
 public:
-    Writer(const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy, int mode=0);
+    Writer(const std::string& root, const std::string& relname, const std::string& absname, int mode=0);
 };
 
 class Checker : public fd::Checker

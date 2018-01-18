@@ -31,9 +31,8 @@ struct File : public arki::core::File
 struct Writer : public dataset::segment::Writer
 {
     File* fd = nullptr;
-    core::FLock lock;
 
-    Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd, const core::lock::Policy* lock_policy);
+    Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd);
     ~Writer();
 
     Pending append(Metadata& md, const types::source::Blob** new_source=0) override;
