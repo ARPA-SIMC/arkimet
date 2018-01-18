@@ -70,10 +70,6 @@ public:
     void segments_untracked(std::function<void(segmented::CheckerSegment& relpath)>) override;
     void segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
     void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
-
-    void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
-    void rescanSegment(const std::string& relpath) override;
-    void releaseSegment(const std::string& relpath, const std::string& destpath) override;
     size_t vacuum(dataset::Reporter& reporter) override;
 
     void test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx=1) override;

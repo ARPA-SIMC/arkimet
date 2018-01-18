@@ -170,7 +170,7 @@ void RealRepacker::operator()(segmented::CheckerSegment& segment, segment::State
     if (state.has(SEGMENT_ARCHIVE_AGE))
     {
         // Create the target directory in the archive
-        w.archiveSegment(segment.path_relative());
+        segment.archive();
         reporter.segment_archive(w.name(), segment.path_relative(), "archived");
         ++m_count_archived;
         m_touched_archive = true;
@@ -242,7 +242,7 @@ void RealFixer::operator()(segmented::CheckerSegment& segment, segment::State st
     */
     if (state.has(SEGMENT_UNALIGNED))
     {
-        w.rescanSegment(segment.path_relative());
+        segment.rescan();
         reporter.segment_rescan(w.name(), segment.path_relative(), "rescanned");
         ++m_count_rescanned;
         m_redo_summary = true;

@@ -83,9 +83,6 @@ public:
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
     void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) override;
 
-    void rescanSegment(const std::string& relpath) override;
-    void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
-    void releaseSegment(const std::string& relpath, const std::string& destpath) override;
     size_t vacuum(dataset::Reporter& reporter) override;
     void test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx) override;
     void test_remove_index(const std::string& relpath) override;

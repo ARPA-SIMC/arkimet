@@ -182,35 +182,20 @@ CheckerSegment::~CheckerSegment()
 {
 }
 
-
-Checker::~Checker()
+void CheckerSegment::release(const std::string& destpath)
 {
-    delete m_segment_manager;
-}
-
-segment::Manager& Checker::segment_manager()
-{
-    if (!m_segment_manager)
-        m_segment_manager = config().create_segment_manager().release();
-    return *m_segment_manager;
-}
-
-void Checker::releaseSegment(const std::string& relpath, const std::string& destpath)
-{
-    const string& root = config().path;
-    string pathname = str::joinpath(root, relpath);
     sys::makedirs(str::dirname(destpath));
 
     // Sanity checks: avoid conflicts
     if (sys::exists(destpath))
     {
         stringstream ss;
-        ss << "cannot archive " << pathname << " to " << destpath << " because the destination already exists";
+        ss << "cannot archive " << segment->absname << " to " << destpath << " because the destination already exists";
         throw runtime_error(ss.str());
     }
-    string src = pathname;
+    string src = segment->absname;
     string dst = destpath;
-    bool compressed = scan::isCompressed(pathname);
+    bool compressed = scan::isCompressed(src);
     if (compressed)
     {
         src += ".gz";
@@ -238,36 +223,34 @@ void Checker::releaseSegment(const std::string& relpath, const std::string& dest
         sys::rename_ifexists(src + ".idx", dst + ".idx");
 
     // Move metadata to archive
-    sys::rename_ifexists(pathname + ".metadata", destpath + ".metadata");
-    sys::rename_ifexists(pathname + ".summary", destpath + ".summary");
+    sys::rename_ifexists(segment->absname + ".metadata", destpath + ".metadata");
+    sys::rename_ifexists(segment->absname + ".summary", destpath + ".summary");
 }
 
-void Checker::archiveSegment(const std::string& relpath)
+void CheckerSegment::archive()
 {
     // TODO: this is a hack to ensure that 'last' is created (and clean) before
     // we start moving files into it. The "created" part is not a problem:
     // releaseSegment will create all relevant paths. The "clean" part is the
     // problem, because opening a writer on an already existing path creates a
     // needs-check-do-not-pack file
-    archive();
+    archives();
 
     // Get the format for this relpath
-    size_t pos = relpath.rfind(".");
+    size_t pos = segment->relname.rfind(".");
     if (pos == string::npos)
-        throw std::runtime_error(name() + " cannot archive segment " + relpath + " because it does not have a format extension");
-    string format = relpath.substr(pos + 1);
+        throw std::runtime_error("cannot archive segment " + segment->absname + " because it does not have a format extension");
+    string format = segment->relname.substr(pos + 1);
 
     // Get the time range for this relpath
     core::Time start_time, end_time;
-    if (!config().relpath_timespan(relpath, start_time, end_time))
-        throw std::runtime_error(name() + " cannot archive segment " + relpath + " because its name does not match the dataset step");
+    if (!config().relpath_timespan(segment->relname, start_time, end_time))
+        throw std::runtime_error("cannot archive segment " + segment->absname + " because its name does not match the dataset step");
 
     // Get the archive relpath for this segment
     string arcrelpath = str::joinpath("last", config().step()(start_time)) + "." + format;
-
-    const string& root = config().path;
-    string arcabspath = str::joinpath(root, ".archive", arcrelpath);
-    releaseSegment(relpath, arcabspath);
+    string arcabspath = str::joinpath(config().path, ".archive", arcrelpath);
+    release(arcabspath);
 
     bool compressed = scan::isCompressed(arcabspath);
 
@@ -281,29 +264,20 @@ void Checker::archiveSegment(const std::string& relpath)
     } else
         scan::scan(arcabspath, config().lock_policy, mdc.inserter_func());
 
-    archive().indexSegment(arcrelpath, move(mdc));
+    archives().indexSegment(arcrelpath, move(mdc));
 }
 
-void Checker::unarchive_segment(const std::string& relpath)
+
+Checker::~Checker()
 {
-    const string& root = config().path;
-    string abspath = str::joinpath(root, relpath);
-    string arcrelpath = str::joinpath("last", relpath);
-    archive().releaseSegment(arcrelpath, abspath);
+    delete m_segment_manager;
+}
 
-    bool compressed = scan::isCompressed(abspath);
-
-    // Acquire in the achive
-    metadata::Collection mdc;
-    if (sys::exists(abspath + ".metadata"))
-        mdc.read_from_file(abspath + ".metadata");
-    else if (compressed) {
-        utils::compress::TempUnzip tu(abspath);
-        scan::scan(abspath, config().lock_policy, mdc.inserter_func());
-    } else
-        scan::scan(abspath, config().lock_policy, mdc.inserter_func());
-
-    indexSegment(relpath, move(mdc));
+segment::Manager& Checker::segment_manager()
+{
+    if (!m_segment_manager)
+        m_segment_manager = config().create_segment_manager().release();
+    return *m_segment_manager;
 }
 
 void Checker::segments_all(std::function<void(segmented::CheckerSegment& segment)> dest)
@@ -501,6 +475,27 @@ void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter
     }
 
     LocalChecker::check(reporter, fix, quick);
+}
+
+void Checker::unarchive_segment(const std::string& relpath)
+{
+    const string& root = config().path;
+    string abspath = str::joinpath(root, relpath);
+    string arcrelpath = str::joinpath("last", relpath);
+    archive().releaseSegment(arcrelpath, abspath);
+
+    bool compressed = scan::isCompressed(abspath);
+
+    // Acquire in the achive
+    metadata::Collection mdc;
+    if (sys::exists(abspath + ".metadata"))
+        mdc.read_from_file(abspath + ".metadata");
+    else if (compressed) {
+        utils::compress::TempUnzip tu(abspath);
+        scan::scan(abspath, config().lock_policy, mdc.inserter_func());
+    } else
+        scan::scan(abspath, config().lock_policy, mdc.inserter_func());
+    segment(relpath)->index(move(mdc));
 }
 
 }

@@ -169,6 +169,8 @@ public:
     }
 
     std::string path_relative() const override { return segment->relname; }
+    const simple::Config& config() const override { return checker.config(); }
+    dataset::ArchivesChecker& archives() const { return checker.archive(); }
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
@@ -343,13 +345,54 @@ public:
         return size_pre - size_post;
     }
 
-    size_t remove(bool with_data)
+    size_t remove(bool with_data) override
     {
         checker.m_mft->remove(segment->relname);
         sys::unlink_ifexists(segment->absname + ".metadata");
         sys::unlink_ifexists(segment->absname + ".summary");
         if (!with_data) return 0;
         return segment->remove();
+    }
+
+    void index(metadata::Collection&& mds) override
+    {
+        time_t mtime = scan::timestamp(segment->absname);
+        if (mtime == 0)
+            throw std::runtime_error("cannot acquire " + segment->absname + ": file does not exist");
+
+        // Iterate the metadata, computing the summary and making the data
+        // paths relative
+        mds.strip_source_paths();
+        Summary sum;
+        mds.add_to_summary(sum);
+
+        // Regenerate .metadata
+        mds.writeAtomically(segment->absname + ".metadata");
+
+        // Regenerate .summary
+        sum.writeAtomically(segment->absname + ".summary");
+
+        // Add to manifest
+        checker.m_mft->acquire(segment->relname, mtime, sum);
+        checker.m_mft->flush();
+    }
+
+    void rescan() override
+    {
+        // Delete cached info to force a full rescan
+        sys::unlink_ifexists(segment->absname + ".metadata");
+        sys::unlink_ifexists(segment->absname + ".summary");
+
+        checker.m_mft->rescanSegment(checker.config().path, segment->relname);
+        checker.m_mft->flush();
+    }
+
+    void release(const std::string& destpath) override
+    {
+        // Remove from index
+        checker.m_mft->remove(segment->relname);
+
+        segmented::CheckerSegment::release(destpath);
     }
 };
 
@@ -459,49 +502,6 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
         CheckerSegment segment(*this, relpath);
         dest(segment);
     });
-}
-
-void Checker::indexSegment(const std::string& relname, metadata::Collection&& mds)
-{
-    string pathname = str::joinpath(config().path, relname);
-    time_t mtime = scan::timestamp(pathname);
-    if (mtime == 0)
-        throw std::runtime_error("cannot acquire " + pathname + ": file does not exist");
-
-    // Iterate the metadata, computing the summary and making the data
-    // paths relative
-    mds.strip_source_paths();
-    Summary sum;
-    mds.add_to_summary(sum);
-
-    // Regenerate .metadata
-    mds.writeAtomically(pathname + ".metadata");
-
-    // Regenerate .summary
-    sum.writeAtomically(pathname + ".summary");
-
-    // Add to manifest
-    m_mft->acquire(relname, mtime, sum);
-    m_mft->flush();
-}
-
-void Checker::rescanSegment(const std::string& relpath)
-{
-    // Delete cached info to force a full rescan
-    string pathname = str::joinpath(config().path, relpath);
-    sys::unlink_ifexists(pathname + ".metadata");
-    sys::unlink_ifexists(pathname + ".summary");
-
-    m_mft->rescanSegment(config().path, relpath);
-    m_mft->flush();
-}
-
-void Checker::releaseSegment(const std::string& relpath, const std::string& destpath)
-{
-    // Remove from index
-    m_mft->remove(relpath);
-
-    IndexedChecker::releaseSegment(relpath, destpath);
 }
 
 size_t Checker::vacuum(dataset::Reporter& reporter)

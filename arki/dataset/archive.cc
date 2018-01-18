@@ -433,7 +433,7 @@ void ArchivesChecker::indexSegment(const std::string& relname, metadata::Collect
     if (Checker* a = archives->lookup(name))
     {
         if (segmented::Checker* sc = dynamic_cast<segmented::Checker*>(a))
-            sc->indexSegment(path, move(mds));
+            sc->segment(path)->index(move(mds));
         else
             throw std::runtime_error(this->name() + ": cannot acquire " + relname + ": archive " + name + " is not writable");
     }
@@ -451,7 +451,7 @@ void ArchivesChecker::releaseSegment(const std::string& relpath, const std::stri
     if (Checker* a = archives->lookup(name))
     {
         if (segmented::Checker* sc = dynamic_cast<segmented::Checker*>(a))
-            sc->releaseSegment(path, destpath);
+            sc->segment(path)->release(destpath);
         else
             throw std::runtime_error(this->name() + ": cannot acquire " + relpath + ": archive " + name + " is not writable");
     }

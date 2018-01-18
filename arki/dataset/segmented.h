@@ -146,6 +146,9 @@ public:
     virtual ~CheckerSegment();
 
     virtual std::string path_relative() const = 0;
+    virtual const segmented::Config& config() const = 0;
+    virtual dataset::ArchivesChecker& archives() const = 0;
+
     virtual SegmentState scan(dataset::Reporter& reporter, bool quick=true) = 0;
 
     /**
@@ -172,6 +175,33 @@ public:
      * Remove the segment
      */
     virtual size_t remove(bool with_data=false) = 0;
+
+    /**
+     * Add information about a file to the index
+     */
+    virtual void index(metadata::Collection&& contents) = 0;
+
+    /**
+     * Consider all existing metadata about a file as invalid and rebuild
+     * them by rescanning the file
+     */
+    virtual void rescan() = 0;
+
+    /**
+     * Release the segment from the dataset and move it to destpath.
+     *
+     * Destpath must be on the same filesystem as the segment.
+     */
+    virtual void release(const std::string& destpath) = 0;
+
+    /**
+     * Move the file to archive
+     *
+     * The default implementation moves the file and its associated
+     * metadata and summaries (if found) to the "last" archive, and adds it
+     * to its manifest
+     */
+    virtual void archive();
 };
 
 
@@ -242,33 +272,6 @@ public:
 
     /// Remove all data from the dataset
     void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) override;
-
-    /**
-     * Add information about a file to the index
-     */
-    virtual void indexSegment(const std::string& relpath, metadata::Collection&& contents) = 0;
-
-    /**
-     * Consider all existing metadata about a file as invalid and rebuild
-     * them by rescanning the file
-     */
-    virtual void rescanSegment(const std::string& relpath) = 0;
-
-    /**
-     * Release the segment from the dataset and move it to destpath.
-     *
-     * Destpath must be on the same filesystem as the segment.
-     */
-    virtual void releaseSegment(const std::string& relpath, const std::string& destpath) = 0;
-
-    /**
-     * Move the file to archive
-     *
-     * The default implementation moves the file and its associated
-     * metadata and summaries (if found) to the "last" archive, and adds it
-     * to its manifest
-     */
-    virtual void archiveSegment(const std::string& relpath);
 
     /**
      * Move a segment from the last/ archive back to the main dataset

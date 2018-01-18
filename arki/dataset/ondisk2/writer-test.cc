@@ -348,8 +348,8 @@ add_method("data_in_right_segment_reindex", [](Fixture& f) {
     {
         auto checker = f.makeOndisk2Checker();
         try {
-            checker->rescanSegment("2007/10-09.grib");
-            wassert(throw std::runtime_error("rescanFile should have thrown at this point"));
+            checker->segment("2007/10-09.grib")->rescan();
+            wassert(throw std::runtime_error("rescan should have thrown at this point"));
         } catch (std::exception& e) {
             wassert(actual(e.what()).contains("manual fix is required"));
         }
@@ -399,7 +399,7 @@ add_method("data_in_right_segment_rescan", [](Fixture& f) {
     {
         auto checker = f.makeOndisk2Checker();
         try {
-            checker->rescanSegment("2007/06-06.grib");
+            checker->segment("2007/06-06.grib")->rescan();
             wassert(throw std::runtime_error("rescanFile should have thrown at this point"));
         } catch (std::exception& e) {
             wassert(actual(e.what()).contains("manual fix is required"));

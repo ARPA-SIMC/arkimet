@@ -248,6 +248,28 @@ Pending Writer::test_writelock()
     return idx->beginExclusiveTransaction();
 }
 
+namespace {
+
+/// Create unique strings from metadata
+struct IDMaker
+{
+    std::set<types::Code> components;
+
+    IDMaker(const std::set<types::Code>& components) : components(components) {}
+
+    vector<uint8_t> make_string(const Metadata& md) const
+    {
+        vector<uint8_t> res;
+        BinaryEncoder enc(res);
+        for (set<types::Code>::const_iterator i = components.begin(); i != components.end(); ++i)
+            if (const Type* t = md.get(*i))
+                t->encodeBinary(enc);
+        return res;
+    }
+};
+
+}
+
 
 class CheckerSegment : public segmented::CheckerSegment
 {
@@ -261,6 +283,8 @@ public:
     }
 
     std::string path_relative() const override { return segment->relname; }
+    const ondisk2::Config& config() const override { return checker.config(); }
+    dataset::ArchivesChecker& archives() const { return checker.archive(); }
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
@@ -387,12 +411,115 @@ public:
         return size_pre - size_post;
     }
 
-    size_t remove(bool with_data)
+    size_t remove(bool with_data) override
     {
         checker.idx->reset(segment->relname);
         // TODO: also remove .metadata and .summary files
         if (!with_data) return 0;
         return segment->remove();
+    }
+
+    void rescan() override
+    {
+        // Temporarily uncompress the file for scanning
+        unique_ptr<utils::compress::TempUnzip> tu;
+        if (scan::isCompressed(segment->absname))
+            tu.reset(new utils::compress::TempUnzip(segment->absname));
+
+        // Collect the scan results in a metadata::Collector
+        metadata::Collection mds;
+        if (!scan::scan(segment->absname, checker.config().lock_policy, mds.inserter_func()))
+            throw std::runtime_error("cannot rescan " + segment->absname + ": file format unknown");
+        //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
+
+        // Lock away writes and reads
+        Pending p = checker.idx->beginExclusiveTransaction();
+        // cerr << "LOCK" << endl;
+
+        // Remove from the index all data about the file
+        checker.idx->reset(segment->relname);
+        // cerr << " RESET " << file << endl;
+
+        // Scan the list of metadata, looking for duplicates and marking all
+        // the duplicates except the last one as deleted
+        IDMaker id_maker(checker.idx->unique_codes());
+
+        map<vector<uint8_t>, const Metadata*> finddupes;
+        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+        {
+            vector<uint8_t> id = id_maker.make_string(**i);
+            if (id.empty())
+                continue;
+            auto dup = finddupes.find(id);
+            if (dup == finddupes.end())
+                finddupes.insert(make_pair(id, *i));
+            else
+                dup->second = *i;
+        }
+        // cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
+
+        // Send the remaining metadata to the reindexer
+        std::string basename = str::basename(segment->relname);
+        for (const auto& i: finddupes)
+        {
+            const Metadata& md = *i.second;
+            const source::Blob& blob = md.sourceBlob();
+            try {
+                int id;
+                if (str::basename(blob.filename) != basename)
+                    throw std::runtime_error("cannot rescan " + segment->relname + ": metadata points to the wrong file: " + blob.filename);
+                checker.idx->index(md, segment->relname, blob.offset, &id);
+            } catch (utils::sqlite::DuplicateInsert& di) {
+                stringstream ss;
+                ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate elsewhere in the dataset: manual fix is required";
+                throw runtime_error(ss.str());
+            } catch (std::exception& e) {
+                stringstream ss;
+                ss << "cannot reindex " << basename << ": failed to reindex data item at offset " << blob.offset << ": " << e.what();
+                throw runtime_error(ss.str());
+                // sqlite will take care of transaction consistency
+            }
+        }
+        // cerr << " REINDEXED " << pathname << endl;
+
+        // TODO: if scan fails, remove all info from the index and rename the
+        // file to something like .broken
+
+        // Commit the changes on the database
+        p.commit();
+        // cerr << " COMMITTED" << endl;
+
+        // TODO: remove relevant summary
+    }
+
+    void index(metadata::Collection&& contents) override
+    {
+        // Add to index
+        Pending p_idx = checker.idx->beginTransaction();
+        for (auto& md: contents)
+        {
+            const auto& src = md->sourceBlob();
+            int id;
+            checker.idx->index(*md, segment->relname, src.offset, &id);
+        }
+        p_idx.commit();
+
+        // Remove .metadata and .summary files
+        sys::unlink_ifexists(segment->absname + ".metadata");
+        sys::unlink_ifexists(segment->absname + ".summary");
+    }
+
+    void release(const std::string& destpath) override
+    {
+        // Rebuild the metadata
+        metadata::Collection mds;
+        checker.idx->scan_file(segment->relname, mds.inserter_func());
+        mds.writeAtomically(segment->absname + ".metadata");
+
+        // Remove from index
+        checker.idx->reset(segment->relname);
+
+        segmented::CheckerSegment::release(destpath);
     }
 };
 
@@ -508,138 +635,6 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     });
 }
 
-
-namespace {
-
-/// Create unique strings from metadata
-struct IDMaker
-{
-    std::set<types::Code> components;
-
-    IDMaker(const std::set<types::Code>& components) : components(components) {}
-
-    vector<uint8_t> make_string(const Metadata& md) const
-    {
-        vector<uint8_t> res;
-        BinaryEncoder enc(res);
-        for (set<types::Code>::const_iterator i = components.begin(); i != components.end(); ++i)
-            if (const Type* t = md.get(*i))
-                t->encodeBinary(enc);
-        return res;
-    }
-};
-
-}
-
-
-void Checker::rescanSegment(const std::string& relpath)
-{
-    string pathname = str::joinpath(config().path, relpath);
-    //fprintf(stderr, "Checker::rescanSegment %s\n", pathname.c_str());
-
-    // Temporarily uncompress the file for scanning
-    unique_ptr<utils::compress::TempUnzip> tu;
-    if (scan::isCompressed(pathname))
-        tu.reset(new utils::compress::TempUnzip(pathname));
-
-    // Collect the scan results in a metadata::Collector
-    metadata::Collection mds;
-    if (!scan::scan(pathname, config().lock_policy, mds.inserter_func()))
-        throw std::runtime_error("cannot rescan " + pathname + ": file format unknown");
-    //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
-
-    // Lock away writes and reads
-    Pending p = idx->beginExclusiveTransaction();
-    // cerr << "LOCK" << endl;
-
-    // Remove from the index all data about the file
-    idx->reset(relpath);
-    // cerr << " RESET " << file << endl;
-
-    // Scan the list of metadata, looking for duplicates and marking all
-    // the duplicates except the last one as deleted
-    IDMaker id_maker(idx->unique_codes());
-
-    map<vector<uint8_t>, const Metadata*> finddupes;
-    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
-    {
-        vector<uint8_t> id = id_maker.make_string(**i);
-        if (id.empty())
-            continue;
-        auto dup = finddupes.find(id);
-        if (dup == finddupes.end())
-            finddupes.insert(make_pair(id, *i));
-        else
-            dup->second = *i;
-    }
-    // cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
-
-    // Send the remaining metadata to the reindexer
-    std::string basename = str::basename(relpath);
-    for (const auto& i: finddupes)
-    {
-        const Metadata& md = *i.second;
-        const source::Blob& blob = md.sourceBlob();
-        try {
-            int id;
-            if (str::basename(blob.filename) != basename)
-                throw std::runtime_error("cannot rescan " + relpath + ": metadata points to the wrong file: " + blob.filename);
-            idx->index(md, relpath, blob.offset, &id);
-        } catch (utils::sqlite::DuplicateInsert& di) {
-            stringstream ss;
-            ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate elsewhere in the dataset: manual fix is required";
-            throw runtime_error(ss.str());
-        } catch (std::exception& e) {
-            stringstream ss;
-            ss << "cannot reindex " << basename << ": failed to reindex data item at offset " << blob.offset << ": " << e.what();
-            throw runtime_error(ss.str());
-            // sqlite will take care of transaction consistency
-        }
-    }
-    // cerr << " REINDEXED " << pathname << endl;
-
-    // TODO: if scan fails, remove all info from the index and rename the
-    // file to something like .broken
-
-    // Commit the changes on the database
-    p.commit();
-    // cerr << " COMMITTED" << endl;
-
-    // TODO: remove relevant summary
-}
-
-
-void Checker::indexSegment(const std::string& relpath, metadata::Collection&& contents)
-{
-    // Add to index
-    Pending p_idx = idx->beginTransaction();
-    for (auto& md: contents)
-    {
-        const auto& src = md->sourceBlob();
-        int id;
-        idx->index(*md, relpath, src.offset, &id);
-    }
-    p_idx.commit();
-
-    // Remove .metadata and .summary files
-    sys::unlink_ifexists(str::joinpath(config().path, relpath) + ".metadata");
-    sys::unlink_ifexists(str::joinpath(config().path, relpath) + ".summary");
-}
-
-void Checker::releaseSegment(const std::string& relpath, const std::string& destpath)
-{
-    string pathname = str::joinpath(config().path, relpath);
-
-    // Rebuild the metadata
-    metadata::Collection mds;
-    idx->scan_file(relpath, mds.inserter_func());
-    mds.writeAtomically(pathname + ".metadata");
-
-    // Remove from index
-    idx->reset(relpath);
-
-    IndexedChecker::releaseSegment(relpath, destpath);
-}
 
 size_t Checker::vacuum(dataset::Reporter& reporter)
 {
