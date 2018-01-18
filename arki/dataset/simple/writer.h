@@ -26,7 +26,7 @@ class Writer : public IndexedWriter
 protected:
     std::shared_ptr<const simple::Config> m_config;
     index::Manifest* m_mft;
-    std::shared_ptr<DatasetWriteLock> lock;
+    std::shared_ptr<dataset::Lock> lock;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
     std::shared_ptr<segment::Writer> file(const Metadata& md, const std::string& format);
@@ -53,7 +53,7 @@ class Checker : public IndexedChecker
 protected:
     std::shared_ptr<const simple::Config> m_config;
     index::Manifest* m_mft;
-    std::shared_ptr<DatasetReadLock> lock;
+    std::shared_ptr<dataset::Lock> lock;
 
     /// Return a (shared) instance of the Segment for the given relative pathname
     Segment* file(const Metadata& md, const std::string& format);

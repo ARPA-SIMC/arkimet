@@ -41,7 +41,7 @@ Writer::Writer(std::shared_ptr<const simple::Config> config)
     // Create the directory if it does not exist
     sys::makedirs(config->path);
 
-    lock = config->write_lock_dataset();
+    lock = config->append_lock_dataset();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
@@ -76,7 +76,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
-    if (!lock) lock = config().write_lock_dataset();
+    if (!lock) lock = config().append_lock_dataset();
     // TODO: refuse if md is before "archive age"
     auto writer = file(md, md.source().format);
     datafile::MdBuf* mdbuf = static_cast<datafile::MdBuf*>(writer->payload);

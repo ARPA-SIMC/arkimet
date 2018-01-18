@@ -28,7 +28,7 @@ class Writer : public IndexedWriter
 protected:
     std::shared_ptr<const ondisk2::Config> m_config;
     index::WContents* idx;
-    std::shared_ptr<DatasetWriteLock> lock;
+    std::shared_ptr<dataset::Lock> lock;
 
     AcquireResult acquire_replace_never(Metadata& md);
     AcquireResult acquire_replace_always(Metadata& md);
@@ -61,7 +61,7 @@ class Checker : public IndexedChecker
 protected:
     std::shared_ptr<const ondisk2::Config> m_config;
     index::WContents* idx;
-    std::shared_ptr<DatasetReadLock> lock;
+    std::shared_ptr<dataset::Lock> lock;
 
 public:
     Checker(std::shared_ptr<const ondisk2::Config> config);

@@ -47,7 +47,7 @@ Writer::Writer(std::shared_ptr<const ondisk2::Config> config)
     // Create the directory if it does not exist
     bool dir_created = sys::makedirs(config->path);
 
-    lock = config->write_lock_dataset();
+    lock = config->append_lock_dataset();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
@@ -186,7 +186,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
-    if (!lock) lock = config().write_lock_dataset();
+    if (!lock) lock = config().append_lock_dataset();
 
     if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
 
@@ -208,7 +208,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 
 void Writer::remove(Metadata& md)
 {
-    if (!lock) lock = config().write_lock_dataset();
+    if (!lock) lock = config().append_lock_dataset();
 
     const types::source::Blob* source = md.has_source_blob();
     if (!source)

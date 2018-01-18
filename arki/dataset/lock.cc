@@ -103,6 +103,34 @@ std::shared_ptr<core::Lock> WriteLock::write_lock()
     return shared_from_this();
 }
 
+
+AppendLock::AppendLock(const std::string& pathname, const core::lock::Policy* lock_policy)
+    : Lock(pathname, lock_policy)
+{
+    trace("%s [%d] Requesting append lock\n", pathname.c_str(), (int)getpid());
+    ds_lock.l_type = F_WRLCK;
+    ds_lock.l_whence = SEEK_SET;
+    ds_lock.l_start = 0;
+    ds_lock.l_len = 0;
+    ds_lock.l_pid = 0;
+    // Use SETLKW, so that if it is already locked, we just wait
+    lock_policy->setlkw(lockfile, ds_lock);
+    trace("%s [%d] Obtained append lock\n", pathname.c_str(), (int)getpid());
+}
+
+AppendLock::~AppendLock()
+{
+    trace("%s [%d] Release append lock\n", lockfile.name().c_str(), (int)getpid());
+    ds_lock.l_type = F_UNLCK;
+    lock_policy->setlk(lockfile, ds_lock);
+}
+
+std::shared_ptr<core::Lock> AppendLock::write_lock()
+{
+    return shared_from_this();
+}
+
+
 DatasetReadLock::DatasetReadLock(const LocalConfig& config)
     : ReadLock(str::joinpath(config.path, "lock"), config.lock_policy)
 {
@@ -120,6 +148,16 @@ DatasetWriteLock::DatasetWriteLock(const LocalConfig& config)
 
 SegmentWriteLock::SegmentWriteLock(const LocalConfig& config, const std::string& relpath)
     : WriteLock(str::joinpath(config.path, relpath + ".lock"), config.lock_policy)
+{
+}
+
+DatasetAppendLock::DatasetAppendLock(const LocalConfig& config)
+    : AppendLock(str::joinpath(config.path, "lock"), config.lock_policy)
+{
+}
+
+SegmentAppendLock::SegmentAppendLock(const LocalConfig& config, const std::string& relpath)
+    : AppendLock(str::joinpath(config.path, relpath + ".lock"), config.lock_policy)
 {
 }
 

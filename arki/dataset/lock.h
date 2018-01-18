@@ -47,6 +47,17 @@ struct WriteLock : public Lock
 };
 
 
+struct AppendLock : public Lock
+{
+    AppendLock(const std::string& pathname, const core::lock::Policy* lock_policy);
+    ~AppendLock();
+
+    /**
+     * Return a reference to self
+     */
+    std::shared_ptr<core::Lock> write_lock() override;
+};
+
 
 struct DatasetReadLock : public ReadLock
 {
@@ -58,6 +69,11 @@ struct DatasetWriteLock : public WriteLock
     DatasetWriteLock(const LocalConfig& config);
 };
 
+struct DatasetAppendLock : public AppendLock
+{
+    DatasetAppendLock(const LocalConfig& config);
+};
+
 struct SegmentReadLock : public ReadLock
 {
     SegmentReadLock(const LocalConfig& config, const std::string& relpath);
@@ -66,6 +82,11 @@ struct SegmentReadLock : public ReadLock
 struct SegmentWriteLock : public WriteLock
 {
     SegmentWriteLock(const LocalConfig& config, const std::string& relpath);
+};
+
+struct SegmentAppendLock : public AppendLock
+{
+    SegmentAppendLock(const LocalConfig& config, const std::string& relpath);
 };
 
 
