@@ -28,6 +28,15 @@ public:
     SQLiteError(sqlite3* db, const std::string& msg);
 };
 
+/**
+ * Exception thrown in case of duplicate inserts
+ */
+struct DuplicateInsert : public std::runtime_error
+{
+    DuplicateInsert(sqlite3* db, const std::string& msg);
+};
+
+
 class SQLiteDB
 {
 private:
@@ -41,6 +50,8 @@ private:
 public:
 	SQLiteDB() : m_db(0), m_last_insert_id(0) {}
 	~SQLiteDB();
+
+    operator sqlite3*() const { return m_db; }
 
 	bool isOpen() const { return m_db != 0; }
 	/**
@@ -83,6 +94,13 @@ public:
 
 	/// Checkpoint the journal contents into the database file
 	void checkpoint();
+
+    /**
+     * Enable/change/disable SQLite tracing.
+     *
+     * See sqlite3_trace_v2 docmentation for values for mask use 0 to disable.
+     */
+    void trace(unsigned mask=SQLITE_TRACE_STMT);
 };
 
 /**
@@ -341,14 +359,6 @@ struct SqliteTransaction : public Transaction
 };
 
 /**
- * Exception thrown in case of duplicate inserts
- */
-struct DuplicateInsert : public std::runtime_error
-{
-    DuplicateInsert(const std::string& msg);
-};
-
-/**
  * Query that in case of duplicates throws DuplicateInsert
  */
 struct InsertQuery : public utils::sqlite::Query
@@ -357,6 +367,14 @@ struct InsertQuery : public utils::sqlite::Query
 
     // Step, but throw DuplicateInsert in case of duplicates
     bool step();
+};
+
+struct Trace
+{
+    SQLiteDB& db;
+
+    Trace(SQLiteDB& db, unsigned mask=SQLITE_TRACE_STMT);
+    ~Trace();
 };
 
 }

@@ -15,6 +15,28 @@ namespace arki {
 namespace utils {
 namespace sqlite {
 
+static int trace_callback(unsigned T, void* C, void* P,void* X)
+{
+    switch (T)
+    {
+        case SQLITE_TRACE_STMT:
+            fprintf(stderr, "SQLite: started %s\n", sqlite3_expanded_sql((sqlite3_stmt*)P));
+            break;
+        case SQLITE_TRACE_PROFILE:
+            fprintf(stderr, "SQLite: completed %s in %.9fs\n",
+                    sqlite3_expanded_sql((sqlite3_stmt*)P), *(int64_t*)X / 1000000000.0);
+
+            break;
+        case SQLITE_TRACE_ROW:
+            fprintf(stderr, "SQLite: got a row of result\n");
+            break;
+        case SQLITE_TRACE_CLOSE:
+            fprintf(stderr, "SQLite: connection closed %p\n", P);
+            break;
+    }
+    return 0;
+}
+
 // Note: msg will be deallocated using sqlite3_free
 SQLiteError::SQLiteError(char* sqlite_msg, const std::string& msg)
     : std::runtime_error(msg + ": " + sqlite_msg)
@@ -27,8 +49,8 @@ SQLiteError::SQLiteError(sqlite3* db, const std::string& msg)
 {
 }
 
-DuplicateInsert::DuplicateInsert(const std::string& msg)
-    : std::runtime_error(msg + ": duplicate element")
+DuplicateInsert::DuplicateInsert(sqlite3* db, const std::string& msg)
+    : std::runtime_error(msg + ": " + sqlite3_errmsg(db))
 {
 }
 
@@ -125,6 +147,12 @@ int SQLiteDB::lastInsertID()
 void SQLiteDB::throwException(const std::string& msg) const
 {
 	throw SQLiteError(m_db, msg);
+}
+
+void SQLiteDB::trace(unsigned mask)
+{
+    if (sqlite3_trace_v2(m_db, mask, trace_callback, nullptr) != SQLITE_OK)
+        throwException("Cannot set up SQLite tracing");
 }
 
 Query::~Query()
@@ -379,6 +407,7 @@ void SqliteTransaction::commit()
 
 void SqliteTransaction::rollback()
 {
+    abort();
 	committer.rollback();
 	fired = true;
 }
@@ -399,14 +428,24 @@ bool InsertQuery::step()
 		case SQLITE_DONE:
 			return false;
 		case SQLITE_CONSTRAINT:
-			throw DuplicateInsert("executing " + name + " query");
+			throw DuplicateInsert(m_db, "cannot execute " + name + " query");
 		default:
-			m_db.throwException("executing " + name + " query");
+			m_db.throwException("cannot execute " + name + " query");
 	}
 	// Not reached, but makes gcc happy
 	return false;
 }
 
+Trace::Trace(SQLiteDB& db, unsigned mask)
+    : db(db)
+{
+    db.trace(mask);
+}
+
+Trace::~Trace()
+{
+    db.trace(0);
+}
 
 }
 }
