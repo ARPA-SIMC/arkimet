@@ -202,10 +202,15 @@ struct CheckForever : public TestSubprocess
 
     int main() override
     {
-        auto ds(fixture.config().create_checker());
-        HungReporter reporter(*this);
-        ds->check(reporter, false, false);
-        return 0;
+        try {
+            auto ds(fixture.config().create_checker());
+            HungReporter reporter(*this);
+            ds->check(reporter, false, false);
+            return 0;
+        } catch (std::exception& e) {
+            fprintf(stderr, "CheckForever: %s\n", e.what());
+            return 1;
+        }
     }
 };
 
@@ -218,16 +223,21 @@ struct RepackForever : public TestSubprocess
 
     int main() override
     {
-        string segment = "2007/07-07." + fixture.td.format;
-        notify_ready();
+        try {
+            string segment = "2007/07-07." + fixture.td.format;
+            notify_ready();
 
-        while (true)
-        {
-            auto ds(fixture.makeSegmentedChecker());
-            auto seg = ds->segment(segment);
-            seg->repack();
+            while (true)
+            {
+                auto ds(fixture.makeSegmentedChecker());
+                auto seg = ds->segment(segment);
+                seg->repack();
+            }
+            return 0;
+        } catch (std::exception& e) {
+            fprintf(stderr, "CheckForever: %s\n", e.what());
+            return 1;
         }
-        return 0;
     }
 };
 
