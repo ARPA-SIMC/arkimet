@@ -475,7 +475,7 @@ this->add_method("write_repack", [](Fixture& f) {
     // Import a first metadata to create a segment to repack
     {
         auto writer = f.config().create_writer();
-        wassert(actual(writer->acquire(f.td.test_data[0].md)) == dataset::Writer::ACQ_OK);
+        wassert(actual(*writer).import(md));
     }
 
     RepackForever<Fixture> rf(f);
@@ -484,7 +484,7 @@ this->add_method("write_repack", [](Fixture& f) {
         {
             for (unsigned second = 0; second < 2; ++second)
             {
-                md.set(types::Reftime::createPosition(Time(2007, 7, 7, 0, minute, second)));
+                md.set(types::Reftime::createPosition(Time(2007, 7, 7, 1, minute, second)));
                 auto writer = f.config().create_writer();
                 wassert(actual(*writer).import(md));
             }
