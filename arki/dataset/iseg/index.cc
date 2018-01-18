@@ -834,6 +834,8 @@ RIndex::RIndex(std::shared_ptr<const iseg::Config> config, const std::string& da
     }
 
     m_db.open(index_pathname);
+    if (config->trace_sql) m_db.trace();
+
     init_others();
 }
 
@@ -851,6 +853,7 @@ WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& da
         else
             create_lock = config->write_lock_segment(data_relpath);
         m_db.open(index_pathname);
+        if (config->trace_sql) m_db.trace();
         setup_pragmas();
         if (!m_others)
         {
@@ -861,6 +864,7 @@ WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& da
         init_db();
     } else {
         m_db.open(index_pathname);
+        if (config->trace_sql) m_db.trace();
         init_others();
     }
 }

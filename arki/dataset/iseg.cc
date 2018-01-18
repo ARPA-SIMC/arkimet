@@ -21,7 +21,8 @@ Config::Config(const ConfigFile& cfg)
       smallfiles(ConfigFile::boolValue(cfg.value("smallfiles"))),
       index(index::parseMetadataBitmask(cfg.value("index"))),
       unique(index::parseMetadataBitmask(cfg.value("unique"))),
-      summary_cache_pathname(str::joinpath(path, ".summaries"))
+      summary_cache_pathname(str::joinpath(path, ".summaries")),
+      trace_sql(ConfigFile::boolValue(cfg.value("trace_sql")))
 {
     if (format.empty())
         throw std::runtime_error("Dataset " + name + " misses format= configuration");
