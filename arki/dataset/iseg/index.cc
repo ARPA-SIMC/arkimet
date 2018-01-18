@@ -133,7 +133,7 @@ std::shared_ptr<dataset::ReadLock> Index::read_lock()
 
 Pending Index::begin_transaction()
 {
-    return Pending(new SqliteTransaction(m_db));
+    return Pending(new IsegSqliteTransaction(*this));
 }
 
 std::set<types::Code> Index::available_other_tables() const
