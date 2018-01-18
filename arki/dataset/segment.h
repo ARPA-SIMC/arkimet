@@ -250,8 +250,6 @@ protected:
 public:
     using Segment::Segment;
 
-    virtual void lock() = 0;
-
     virtual segment::State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
 

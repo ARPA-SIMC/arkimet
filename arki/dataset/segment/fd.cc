@@ -138,27 +138,7 @@ off_t Writer::append(const std::vector<uint8_t>& buf)
 
 Checker::~Checker()
 {
-    if (fd)
-    {
-        // TODO: consider a non-throwing setlk implementation to avoid throwing
-        // in destructors
-        m_lock.l_type = F_UNLCK;
-        lock_policy->setlk(*fd, m_lock);
-        delete fd;
-    }
-}
-
-void Checker::lock()
-{
-    if (!sys::exists(absname)) return;
-    open();
-
-    // Lock the whole file even past its end, to disallow concurrent writes
-    m_lock.l_type = F_RDLCK;
-    m_lock.l_whence = SEEK_SET;
-    m_lock.l_start = 0;
-    m_lock.l_len = 0;
-    lock_policy->setlkw(*(this->fd), m_lock);
+    delete fd;
 }
 
 bool Checker::exists_on_disk()

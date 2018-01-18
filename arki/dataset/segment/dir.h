@@ -63,8 +63,6 @@ public:
 public:
     Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy);
 
-    void lock() override;
-
     bool exists_on_disk() override;
 
     State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;

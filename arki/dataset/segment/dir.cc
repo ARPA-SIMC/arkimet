@@ -207,10 +207,6 @@ Checker::Checker(const std::string& format, const std::string& root, const std::
 {
 }
 
-void Checker::lock()
-{
-}
-
 bool Checker::exists_on_disk()
 {
     if (!sys::isdir(absname)) return false;
