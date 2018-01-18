@@ -8,11 +8,20 @@ namespace arki {
 namespace dataset {
 struct LocalConfig;
 
-struct ReadLock : public core::Lock
+struct Lock : public core::Lock
 {
     arki::core::File lockfile;
     const core::lock::Policy* lock_policy;
     arki::core::FLock ds_lock;
+
+    Lock(const std::string& pathname, const core::lock::Policy* lock_policy);
+
+    virtual std::shared_ptr<core::Lock> write_lock() = 0;
+};
+
+
+struct ReadLock : public Lock
+{
     std::weak_ptr<core::Lock> current_write_lock;
 
     ReadLock(const std::string& pathname, const core::lock::Policy* lock_policy);
@@ -22,18 +31,19 @@ struct ReadLock : public core::Lock
      * Escalate a read lock to a write lock as long as the resulting lock is in
      * use
      */
-    std::shared_ptr<core::Lock> write_lock();
+    std::shared_ptr<core::Lock> write_lock() override;
 };
 
 
-struct WriteLock : public core::Lock
+struct WriteLock : public Lock
 {
-    arki::core::File lockfile;
-    const core::lock::Policy* lock_policy;
-    arki::core::FLock ds_lock;
-
     WriteLock(const std::string& pathname, const core::lock::Policy* lock_policy);
     ~WriteLock();
+
+    /**
+     * Return a reference to self
+     */
+    std::shared_ptr<core::Lock> write_lock() override;
 };
 
 

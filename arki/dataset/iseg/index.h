@@ -22,7 +22,7 @@ class ConfigFile;
 class Reader;
 
 namespace dataset {
-struct ReadLock;
+struct Lock;
 struct DataQuery;
 
 namespace index {
@@ -70,7 +70,7 @@ protected:
     index::Aggregate* m_others = nullptr;
 
     /// Optionally held read lock
-    std::weak_ptr<dataset::ReadLock> lock;
+    std::shared_ptr<dataset::Lock> lock;
 
     /// Run PRAGMA calls to setup database behaviour
     void setup_pragmas();
@@ -111,7 +111,7 @@ protected:
      */
     void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::Reader> reader) const;
 
-    Index(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::ReadLock> lock=nullptr);
+    Index(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
 
 public:
     ~Index();
@@ -124,11 +124,6 @@ public:
      * Set of metadata types that make a metadata unique
      */
     std::set<types::Code> unique_codes() const;
-
-    /**
-     * Read lock the dataset
-     */
-    std::shared_ptr<dataset::ReadLock> read_lock();
 
     /// Begin a transaction and return the corresponding Pending object
     Pending begin_transaction();
@@ -243,7 +238,7 @@ public:
 class RIndex : public Index
 {
 public:
-    RIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::ReadLock> lock=nullptr);
+    RIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
 };
 
 class WIndex : public Index
@@ -259,7 +254,7 @@ protected:
     void bind_insert(utils::sqlite::Query& q, const Metadata& md, uint64_t ofs, char* timebuf);
 
 public:
-    WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::ReadLock> lock=nullptr);
+    WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
 #if 0
     ~WContents();
 

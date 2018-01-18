@@ -157,8 +157,6 @@ std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::str
 
 void Writer::flush()
 {
-    if (m_segment_manager)
-        m_segment_manager->flush_writers();
 }
 
 LocalWriter::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)

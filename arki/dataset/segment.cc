@@ -447,16 +447,6 @@ Manager::~Manager()
 {
 }
 
-void Manager::flush_writers()
-{
-    writers.clear();
-}
-
-void Manager::foreach_cached_writer(std::function<void(Writer&)> func)
-{
-    writers.foreach_cached(func);
-}
-
 std::shared_ptr<Writer> Manager::get_writer(const std::string& relname)
 {
     return get_writer(utils::get_format(relname), relname);
@@ -464,10 +454,6 @@ std::shared_ptr<Writer> Manager::get_writer(const std::string& relname)
 
 std::shared_ptr<Writer> Manager::get_writer(const std::string& format, const std::string& relname)
 {
-    // Try to reuse an existing instance
-    auto res = writers.get(relname);
-    if (res) return res;
-
     // Ensure that the directory for 'relname' exists
     string absname = str::joinpath(root, relname);
     size_t pos = absname.rfind('/');
@@ -480,8 +466,7 @@ std::shared_ptr<Writer> Manager::get_writer(const std::string& format, const std
                 "cannot update compressed data files: please manually uncompress it first");
 
     // Else we need to create an appropriate one
-    auto new_writer(create_writer_for_format(format, relname, absname));
-    return writers.add(new_writer);
+    return create_writer_for_format(format, relname, absname);
 }
 
 std::shared_ptr<Checker> Manager::get_checker(const std::string& relname)

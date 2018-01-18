@@ -114,82 +114,6 @@ typedef std::function<void(const std::string&, segment::State)> state_func;
  */
 typedef std::function<void(const std::string&, segment::State, const metadata::Collection&)> contents_func;
 
-
-namespace impl {
-
-template<typename T, unsigned max_size=3>
-class Cache
-{
-protected:
-    std::shared_ptr<T> items[max_size];
-
-    /// Move an existing element to the front of the list
-    void move_to_front(unsigned pos)
-    {
-        // Save a pointer to the item
-        std::shared_ptr<T> item = items[pos];
-        // Shift all previous items forward
-        for (unsigned i = pos; i > 0; --i)
-            items[i] = items[i - 1];
-        // Set the first element to item
-        items[0] = item;
-    }
-
-public:
-    ~Cache()
-    {
-    }
-
-    void clear()
-    {
-        for (unsigned i = 0; i < max_size; ++i)
-            items[i].reset();
-    }
-
-    /**
-     * Get an element from the cache given its file name
-     *
-     * @returns 0 if not found, else a pointer to the element, whose memory is
-     *          still managed by the cache
-     */
-    std::shared_ptr<T> get(const std::string& relname)
-    {
-        for (unsigned i = 0; i < max_size && items[i]; ++i)
-            if (items[i]->relname == relname)
-            {
-                // Move to front if it wasn't already
-                if (i > 0)
-                    move_to_front(i);
-                return items[0];
-            }
-        // Not found
-        return std::shared_ptr<T>();
-    }
-
-    /**
-     * Add an element to the cache, taking ownership of its memory management
-     *
-     * @returns the element itself, just for the convenience of being able to
-     * type "return cache.add(Value::create());"
-     */
-    std::shared_ptr<T> add(std::shared_ptr<T> val)
-    {
-        // Shift all other elements forward
-        for (unsigned i = max_size - 1; i > 0; --i)
-            items[i] = items[i - 1];
-        // Set the first element to val
-        return items[0] = val;
-    }
-
-    void foreach_cached(std::function<void(T&)> func)
-    {
-        for (unsigned i = 0; i < max_size && items[i]; ++i)
-            func(*items[i]);
-    }
-};
-
-}
-
 }
 
 /**
@@ -305,7 +229,6 @@ public:
 class Manager
 {
 protected:
-    impl::Cache<Writer> writers;
     std::string root;
 
     virtual std::shared_ptr<Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
@@ -314,15 +237,6 @@ protected:
 public:
     Manager(const std::string& root);
     virtual ~Manager();
-
-    /**
-     * Empty the cache of segments, flushing and closing all files currently
-     * open
-     */
-    void flush_writers();
-
-    /// Run a function on each cached writer
-    void foreach_cached_writer(std::function<void(Writer&)>);
 
     std::shared_ptr<Writer> get_writer(const std::string& relname);
     std::shared_ptr<Writer> get_writer(const std::string& format, const std::string& relname);

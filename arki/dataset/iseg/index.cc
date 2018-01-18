@@ -64,7 +64,7 @@ struct IsegSqliteTransaction : public Transaction
     SqliteTransaction sqlite_transaction;
 
     IsegSqliteTransaction(Index& index, const char* type=nullptr)
-        : lock(!index.lock.expired() ? index.lock.lock()->write_lock() : index.config().write_lock_segment(index.data_relpath)),
+        : lock(index.lock ? index.lock->write_lock() : index.config().write_lock_segment(index.data_relpath)),
           sqlite_transaction(index.db(), type)
     {
     }
@@ -99,7 +99,7 @@ struct IsegSqliteTransaction : public Transaction
 };
 
 
-Index::Index(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::ReadLock> lock)
+Index::Index(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock)
     : m_config(config),
       data_relpath(data_relpath),
       data_pathname(str::joinpath(config->path, data_relpath)),
@@ -120,15 +120,6 @@ Index::~Index()
 {
     delete m_uniques;
     delete m_others;
-}
-
-std::shared_ptr<dataset::ReadLock> Index::read_lock()
-{
-    if (!lock.expired())
-        return lock.lock();
-    std::shared_ptr<dataset::ReadLock> res = config().read_lock_segment(data_relpath);
-    lock = res;
-    return res;
 }
 
 Pending Index::begin_transaction()
@@ -823,7 +814,7 @@ bool Contents::checkSummaryCache(const dataset::Base& ds, Reporter& reporter) co
 }
 #endif
 
-RIndex::RIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::ReadLock> lock)
+RIndex::RIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock)
     : Index(config, data_relpath, lock)
 {
     if (!sys::access(index_pathname, F_OK))
@@ -840,7 +831,7 @@ RIndex::RIndex(std::shared_ptr<const iseg::Config> config, const std::string& da
 }
 
 
-WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::ReadLock> lock)
+WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock)
     : Index(config, data_relpath, lock), m_insert(m_db), m_replace("replace", m_db)
 {
     bool need_create = !sys::access(index_pathname, F_OK);

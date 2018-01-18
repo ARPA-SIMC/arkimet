@@ -74,7 +74,6 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
         s->append(data.test_data[1].md).commit();
         s->append(data.test_data[1].md).commit();
         s->append(data.test_data[0].md).commit();
-        f.segments().flush_writers();
     }
 
     auto checker = f.makeOndisk2Checker();

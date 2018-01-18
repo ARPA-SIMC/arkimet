@@ -57,9 +57,12 @@ std::string Writer::type() const { return "iseg"; }
 
 std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
 {
-    auto writer = segmented::Writer::file(md, format);
-    if (!writer->payload)
-        writer->payload = new WIndex(m_config, writer->relname);
+    const core::Time& time = md.get<types::reftime::Position>()->time;
+    string relname = config().step()(time) + "." + config().format;
+    sys::makedirs(str::dirname(str::joinpath(config().path, relname)));
+    std::shared_ptr<dataset::Lock> write_lock(config().write_lock_segment(relname));
+    auto writer = segment_manager().get_writer(config().format, relname);
+    writer->payload = new WIndex(m_config, relname, write_lock);
     return writer;
 }
 

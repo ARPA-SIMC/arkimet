@@ -75,7 +75,6 @@ struct TestSegments
                 md->drop_cached_data();
                 mds.acquire(move(md));
             }
-            segment_manager->flush_writers();
         }
 
         // Repack it
@@ -117,42 +116,6 @@ class Tests : public TestCase
 } test("arki_dataset_segment");
 
 void Tests::register_tests() {
-
-// Test the item cache
-add_method("item_cache", [] {
-    segment::impl::Cache<TestItem, 3> cache;
-
-    // Empty cache does not return things
-    wassert(actual(cache.get("foo") == 0).istrue());
-
-    // Add returns the item we added
-    std::shared_ptr<TestItem> foo(new TestItem("foo"));
-    wassert(actual(cache.add(foo) == foo).istrue());
-
-    // Get returns foo
-    wassert(actual(cache.get("foo") == foo).istrue());
-
-    // Add two more items
-    std::shared_ptr<TestItem> bar(new TestItem("bar"));
-    wassert(actual(cache.add(bar) == bar).istrue());
-    std::shared_ptr<TestItem> baz(new TestItem("baz"));
-    wassert(actual(cache.add(baz) == baz).istrue());
-
-    // With max_size=3, the cache should hold them all
-    wassert(actual(cache.get("foo") == foo).istrue());
-    wassert(actual(cache.get("bar") == bar).istrue());
-    wassert(actual(cache.get("baz") == baz).istrue());
-
-    // Add an extra item: the last recently used was foo, which gets popped
-    std::shared_ptr<TestItem> gnu(new TestItem("gnu"));
-    wassert(actual(cache.add(gnu) == gnu).istrue());
-
-    // Foo is not in cache anymore, bar baz and gnu are
-    wassert(actual(cache.get("foo") == 0).istrue());
-    wassert(actual(cache.get("bar") == bar).istrue());
-    wassert(actual(cache.get("baz") == baz).istrue());
-    wassert(actual(cache.get("gnu") == gnu).istrue());
-});
 
 add_method("file_repack", [] {
     TestSegments ts;
