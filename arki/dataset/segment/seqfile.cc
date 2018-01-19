@@ -12,7 +12,7 @@ struct FdLock
 {
     sys::NamedFileDescriptor& fd;
     const core::lock::Policy* lock_policy;
-    Lock lock;
+    FLock lock;
 
     FdLock(sys::NamedFileDescriptor& fd, const core::lock::Policy* lock_policy) : fd(fd), lock_policy(lock_policy)
     {

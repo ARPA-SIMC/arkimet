@@ -9,6 +9,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
+#include "arki/nag.h"
 #include <algorithm>
 #include <cstring>
 
@@ -26,6 +27,7 @@ IndexedReader::~IndexedReader()
 
 bool IndexedReader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
+    auto lock = config().read_lock_dataset();
     if (!LocalReader::query_data(q, dest))
         return false;
     if (!m_idx) return true;
@@ -34,6 +36,7 @@ bool IndexedReader::query_data(const dataset::DataQuery& q, metadata_dest_func d
 
 void IndexedReader::query_summary(const Matcher& matcher, Summary& summary)
 {
+    auto lock = config().read_lock_dataset();
     // Query the archives first
     LocalReader::query_summary(matcher, summary);
     if (!m_idx) return;

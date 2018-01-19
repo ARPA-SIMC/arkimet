@@ -317,7 +317,7 @@ this->add_method("issue116", [](Fixture& f) {
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
     reader->query_data(dataset::DataQuery("reftime:==13:00"), [&](unique_ptr<Metadata> md) { ++count; return true; });
-    wassert(actual(count) == 1);
+    wassert(actual(count) == 1u);
 });
 
 #if 0

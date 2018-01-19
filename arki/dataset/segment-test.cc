@@ -5,6 +5,7 @@
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
+#include "arki/scan/any.h"
 #include "segment.h"
 #include "segmented.h"
 #include "segment/lines.h"
@@ -74,7 +75,6 @@ struct TestSegments
                 md->drop_cached_data();
                 mds.acquire(move(md));
             }
-            segment_manager->flush_writers();
         }
 
         // Repack it
@@ -117,42 +117,6 @@ class Tests : public TestCase
 
 void Tests::register_tests() {
 
-// Test the item cache
-add_method("item_cache", [] {
-    segment::impl::Cache<TestItem, 3> cache;
-
-    // Empty cache does not return things
-    wassert(actual(cache.get("foo") == 0).istrue());
-
-    // Add returns the item we added
-    std::shared_ptr<TestItem> foo(new TestItem("foo"));
-    wassert(actual(cache.add(foo) == foo).istrue());
-
-    // Get returns foo
-    wassert(actual(cache.get("foo") == foo).istrue());
-
-    // Add two more items
-    std::shared_ptr<TestItem> bar(new TestItem("bar"));
-    wassert(actual(cache.add(bar) == bar).istrue());
-    std::shared_ptr<TestItem> baz(new TestItem("baz"));
-    wassert(actual(cache.add(baz) == baz).istrue());
-
-    // With max_size=3, the cache should hold them all
-    wassert(actual(cache.get("foo") == foo).istrue());
-    wassert(actual(cache.get("bar") == bar).istrue());
-    wassert(actual(cache.get("baz") == baz).istrue());
-
-    // Add an extra item: the last recently used was foo, which gets popped
-    std::shared_ptr<TestItem> gnu(new TestItem("gnu"));
-    wassert(actual(cache.add(gnu) == gnu).istrue());
-
-    // Foo is not in cache anymore, bar baz and gnu are
-    wassert(actual(cache.get("foo") == 0).istrue());
-    wassert(actual(cache.get("bar") == bar).istrue());
-    wassert(actual(cache.get("baz") == baz).istrue());
-    wassert(actual(cache.get("gnu") == gnu).istrue());
-});
-
 add_method("file_repack", [] {
     TestSegments ts;
     wassert(ts.test_repack());
@@ -181,14 +145,14 @@ add_method("scan_dir_empty", [] {
     mkdir("dirscanner", 0777);
 
     {
-        auto sm = segment::Manager::get("dirscanner", nullptr, false);
+        auto sm = segment::Manager::get("dirscanner", false);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 0u);
     }
 
     {
-        auto sm = segment::Manager::get("dirscanner", nullptr, true);
+        auto sm = segment::Manager::get("dirscanner", true);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 0u);
@@ -213,7 +177,7 @@ add_method("scan_dir_dir1", [] {
     sys::write_file("dirscanner/.archive/z.grib", "");
 
     {
-        auto sm = segment::Manager::get("dirscanner", nullptr, false);
+        auto sm = segment::Manager::get("dirscanner", false);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 4u);
@@ -226,7 +190,7 @@ add_method("scan_dir_dir1", [] {
     }
 
     {
-        auto sm = segment::Manager::get("dirscanner", nullptr, true);
+        auto sm = segment::Manager::get("dirscanner", true);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 0u);
@@ -248,7 +212,7 @@ add_method("scan_dir_dir2", [] {
     sys::write_file("dirscanner/2009/b.grib", "");
 
     {
-        auto sm = segment::Manager::get("dirscanner", nullptr, false);
+        auto sm = segment::Manager::get("dirscanner", false);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 5u);
@@ -262,7 +226,7 @@ add_method("scan_dir_dir2", [] {
     }
 
     {
-        auto sm = segment::Manager::get("dirscanner", nullptr, true);
+        auto sm = segment::Manager::get("dirscanner", true);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 0u);
@@ -277,14 +241,14 @@ add_method("scan_dir_dir2", [] {
     sys::write_file("dirscanner/2008/01.odimh5", "");
 
     {
-        auto sm = segment::Manager::get("dirscanner", nullptr, false);
+        auto sm = segment::Manager::get("dirscanner", false);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 0u);
     }
 
     {
-        auto sm = segment::Manager::get("dirscanner", nullptr, true);
+        auto sm = segment::Manager::get("dirscanner", true);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 0u);

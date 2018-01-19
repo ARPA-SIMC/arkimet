@@ -5,6 +5,7 @@
 #include "arki/dataset/segment.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/step.h"
+#include "arki/dataset/lock.h"
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
@@ -40,7 +41,7 @@ Writer::Writer(std::shared_ptr<const simple::Config> config)
     // Create the directory if it does not exist
     sys::makedirs(config->path);
 
-    acquire_lock();
+    lock = config->append_lock_dataset();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
@@ -52,28 +53,15 @@ Writer::Writer(std::shared_ptr<const simple::Config> config)
     m_mft->openRW();
     m_idx = m_mft;
 
-    release_lock();
+    lock.reset();
 }
 
 Writer::~Writer()
 {
     flush();
-    delete lock;
 }
 
 std::string Writer::type() const { return "simple"; }
-
-void Writer::acquire_lock()
-{
-    if (!lock) lock = new LocalLock(config());
-    lock->acquire();
-}
-
-void Writer::release_lock()
-{
-    if (!lock) return;
-    lock->release();
-}
 
 std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
 {
@@ -88,7 +76,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
-    acquire_lock();
+    if (!lock) lock = config().append_lock_dataset();
     // TODO: refuse if md is before "archive age"
     auto writer = file(md, md.source().format);
     datafile::MdBuf* mdbuf = static_cast<datafile::MdBuf*>(writer->payload);
@@ -125,7 +113,7 @@ void Writer::flush()
 {
     segmented::Writer::flush();
     m_mft->flush();
-    release_lock();
+    lock.reset();
 }
 
 Pending Writer::test_writelock()
@@ -181,6 +169,8 @@ public:
     }
 
     std::string path_relative() const override { return segment->relname; }
+    const simple::Config& config() const override { return checker.config(); }
+    dataset::ArchivesChecker& archives() const { return checker.archive(); }
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
@@ -308,6 +298,8 @@ public:
 
     size_t repack(unsigned test_flags) override
     {
+        auto lock = checker.lock->write_lock();
+
         // Read the metadata
         metadata::Collection mds;
         scan::scan(segment->absname, checker.config().lock_policy, mds.inserter_func());
@@ -353,13 +345,54 @@ public:
         return size_pre - size_post;
     }
 
-    size_t remove(bool with_data)
+    size_t remove(bool with_data) override
     {
         checker.m_mft->remove(segment->relname);
         sys::unlink_ifexists(segment->absname + ".metadata");
         sys::unlink_ifexists(segment->absname + ".summary");
         if (!with_data) return 0;
         return segment->remove();
+    }
+
+    void index(metadata::Collection&& mds) override
+    {
+        time_t mtime = scan::timestamp(segment->absname);
+        if (mtime == 0)
+            throw std::runtime_error("cannot acquire " + segment->absname + ": file does not exist");
+
+        // Iterate the metadata, computing the summary and making the data
+        // paths relative
+        mds.strip_source_paths();
+        Summary sum;
+        mds.add_to_summary(sum);
+
+        // Regenerate .metadata
+        mds.writeAtomically(segment->absname + ".metadata");
+
+        // Regenerate .summary
+        sum.writeAtomically(segment->absname + ".summary");
+
+        // Add to manifest
+        checker.m_mft->acquire(segment->relname, mtime, sum);
+        checker.m_mft->flush();
+    }
+
+    void rescan() override
+    {
+        // Delete cached info to force a full rescan
+        sys::unlink_ifexists(segment->absname + ".metadata");
+        sys::unlink_ifexists(segment->absname + ".summary");
+
+        checker.m_mft->rescanSegment(checker.config().path, segment->relname);
+        checker.m_mft->flush();
+    }
+
+    void release(const std::string& destpath) override
+    {
+        // Remove from index
+        checker.m_mft->remove(segment->relname);
+
+        segmented::CheckerSegment::release(destpath);
     }
 };
 
@@ -370,7 +403,7 @@ Checker::Checker(std::shared_ptr<const simple::Config> config)
     // Create the directory if it does not exist
     sys::makedirs(config->path);
 
-    acquire_lock();
+    lock = config->check_lock_dataset();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
@@ -381,58 +414,41 @@ Checker::Checker(std::shared_ptr<const simple::Config> config)
     m_mft = mft.release();
     m_mft->openRW();
     m_idx = m_mft;
-
-    release_lock();
 }
 
 Checker::~Checker()
 {
     m_mft->flush();
-    delete lock;
 }
 
 std::string Checker::type() const { return "simple"; }
 
-void Checker::acquire_lock()
+void Checker::remove_all(dataset::Reporter& reporter, bool writable)
 {
-    if (!lock) lock = new LocalLock(config(), false);
-    lock->acquire();
+    IndexedChecker::remove_all(reporter, writable);
 }
-
-void Checker::release_lock()
+void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable)
 {
-    if (!lock) return;
-    lock->release();
+    IndexedChecker::remove_all_filtered(matcher, reporter, writable);
 }
-
-void Checker::remove_all(dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::remove_all(reporter, writable); release_lock(); }
-void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable) { acquire_lock(); IndexedChecker::remove_all_filtered(matcher, reporter, writable); release_lock(); }
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
-    acquire_lock();
     IndexedChecker::repack(reporter, writable, test_flags);
     m_mft->flush();
-    release_lock();
 }
 void Checker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
-    acquire_lock();
     IndexedChecker::repack_filtered(matcher, reporter, writable, test_flags);
     m_mft->flush();
-    release_lock();
 }
 void Checker::check(dataset::Reporter& reporter, bool fix, bool quick) {
-    acquire_lock();
     IndexedChecker::check(reporter, fix, quick);
     m_mft->flush();
-    release_lock();
 }
 void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
 {
-    acquire_lock();
     IndexedChecker::check_filtered(matcher, reporter, fix, quick);
     m_mft->flush();
-    release_lock();
 }
 
 std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
@@ -486,49 +502,6 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
         CheckerSegment segment(*this, relpath);
         dest(segment);
     });
-}
-
-void Checker::indexSegment(const std::string& relname, metadata::Collection&& mds)
-{
-    string pathname = str::joinpath(config().path, relname);
-    time_t mtime = scan::timestamp(pathname);
-    if (mtime == 0)
-        throw std::runtime_error("cannot acquire " + pathname + ": file does not exist");
-
-    // Iterate the metadata, computing the summary and making the data
-    // paths relative
-    mds.strip_source_paths();
-    Summary sum;
-    mds.add_to_summary(sum);
-
-    // Regenerate .metadata
-    mds.writeAtomically(pathname + ".metadata");
-
-    // Regenerate .summary
-    sum.writeAtomically(pathname + ".summary");
-
-    // Add to manifest
-    m_mft->acquire(relname, mtime, sum);
-    m_mft->flush();
-}
-
-void Checker::rescanSegment(const std::string& relpath)
-{
-    // Delete cached info to force a full rescan
-    string pathname = str::joinpath(config().path, relpath);
-    sys::unlink_ifexists(pathname + ".metadata");
-    sys::unlink_ifexists(pathname + ".summary");
-
-    m_mft->rescanSegment(config().path, relpath);
-    m_mft->flush();
-}
-
-void Checker::releaseSegment(const std::string& relpath, const std::string& destpath)
-{
-    // Remove from index
-    m_mft->remove(relpath);
-
-    IndexedChecker::releaseSegment(relpath, destpath);
 }
 
 size_t Checker::vacuum(dataset::Reporter& reporter)

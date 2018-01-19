@@ -17,6 +17,7 @@ struct Config : public segmented::Config
     std::set<types::Code> index;
     std::set<types::Code> unique;
     std::string summary_cache_pathname;
+    bool trace_sql;
 
     Config(const Config&) = default;
     Config(const ConfigFile& cfg);

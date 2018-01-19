@@ -7,6 +7,7 @@
 #include <arki/dataset/segment.h>
 #include <arki/core/file.h>
 #include <string>
+#include <vector>
 
 namespace arki {
 struct Reader;
@@ -22,7 +23,7 @@ struct File : public arki::core::File
 {
     using arki::core::File::File;
 
-    void fdtruncate(off_t pos);
+    void fdtruncate_nothrow(off_t pos) noexcept;
     virtual void write_data(off_t wrpos, const std::vector<uint8_t>& buf) = 0;
     virtual void test_add_padding(size_t size) = 0;
 };
@@ -31,9 +32,8 @@ struct File : public arki::core::File
 struct Writer : public dataset::segment::Writer
 {
     File* fd = nullptr;
-    core::Lock lock;
 
-    Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd, const core::lock::Policy* lock_policy);
+    Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd);
     ~Writer();
 
     Pending append(Metadata& md, const types::source::Blob** new_source=0) override;
@@ -58,7 +58,6 @@ class Checker : public dataset::segment::Checker
 {
 protected:
     File* fd = nullptr;
-    core::Lock m_lock;
 
     virtual void open() = 0;
 
@@ -83,8 +82,6 @@ protected:
 public:
     using dataset::segment::Checker::Checker;
     ~Checker();
-
-    void lock() override;
 
     bool exists_on_disk() override;
 

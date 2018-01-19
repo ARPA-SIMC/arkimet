@@ -140,10 +140,12 @@ void Tests::register_tests()
     )", [&](Fixture& f) {
         make_unaligned();
 
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "repack", "2 files ok");
-        wassert(actual(writer.get()).repack(e, true));
+        {
+            auto writer(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "2 files ok");
+            wassert(actual(writer.get()).repack(e, true));
+        }
 
         wassert(f.state_is(3, SEGMENT_UNALIGNED));
     });

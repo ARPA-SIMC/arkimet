@@ -45,12 +45,12 @@ inline size_t datasize(const Metadata& md)
 std::shared_ptr<segment::lines::Writer> make_w()
 {
     string absname = sys::abspath(relname);
-    return std::shared_ptr<segment::lines::Writer>(new segment::lines::Writer(sys::getcwd(), relname, absname, core::lock::policy_ofd));
+    return std::shared_ptr<segment::lines::Writer>(new segment::lines::Writer(sys::getcwd(), relname, absname));
 }
 std::shared_ptr<segment::lines::Checker> make_c()
 {
     string absname = sys::abspath(relname);
-    return std::shared_ptr<segment::lines::Checker>(new segment::lines::Checker(sys::getcwd(), relname, absname, core::lock::policy_ofd));
+    return std::shared_ptr<segment::lines::Checker>(new segment::lines::Checker(sys::getcwd(), relname, absname));
 }
 
 void Tests::register_tests() {
@@ -126,11 +126,11 @@ add_method("check", [] {
     {
         std::shared_ptr<segment::Writer> make_writer() override
         {
-            return std::shared_ptr<segment::Writer>(new segment::lines::Writer(root, relname, absname, core::lock::policy_ofd));
+            return std::shared_ptr<segment::Writer>(new segment::lines::Writer(root, relname, absname));
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::lines::Checker(root, relname, absname, core::lock::policy_ofd));
+            return std::shared_ptr<segment::Checker>(new segment::lines::Checker(root, relname, absname));
         }
     } test;
 
@@ -142,11 +142,11 @@ add_method("remove", [] {
     {
         std::shared_ptr<segment::Writer> make_writer() override
         {
-            return std::shared_ptr<segment::Writer>(new segment::lines::Writer(root, relname, absname, core::lock::policy_ofd));
+            return std::shared_ptr<segment::Writer>(new segment::lines::Writer(root, relname, absname));
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::lines::Checker(root, relname, absname, core::lock::policy_ofd));
+            return std::shared_ptr<segment::Checker>(new segment::lines::Checker(root, relname, absname));
         }
     } test;
 

@@ -5,6 +5,7 @@
 #include "arki/dataset/step.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/time.h"
+#include "arki/dataset/lock.h"
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
@@ -56,16 +57,19 @@ std::string Writer::type() const { return "iseg"; }
 
 std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
 {
-    auto writer = segmented::Writer::file(md, format);
-    if (!writer->payload)
-        writer->payload = new WIndex(m_config, writer->relname);
+    const core::Time& time = md.get<types::reftime::Position>()->time;
+    string relname = config().step()(time) + "." + config().format;
+    sys::makedirs(str::dirname(str::joinpath(config().path, relname)));
+    std::shared_ptr<dataset::AppendLock> append_lock(config().append_lock_segment(relname));
+    auto writer = segment_manager().get_writer(config().format, relname);
+    writer->payload = new AIndex(m_config, relname, append_lock);
     return writer;
 }
 
 Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
     auto writer = file(md, md.source().format);
-    WIndex* idx = static_cast<WIndex*>(writer->payload);
+    AIndex* idx = static_cast<AIndex*>(writer->payload);
     Pending p_idx = idx->begin_transaction();
 
     const types::source::Blob* new_source;
@@ -91,7 +95,7 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 {
     auto writer = file(md, md.source().format);
-    WIndex* idx = static_cast<WIndex*>(writer->payload);
+    AIndex* idx = static_cast<AIndex*>(writer->payload);
     Pending p_idx = idx->begin_transaction();
 
     const types::source::Blob* new_source;
@@ -114,7 +118,7 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     auto writer = file(md, md.source().format);
-    WIndex* idx = static_cast<WIndex*>(writer->payload);
+    AIndex* idx = static_cast<AIndex*>(writer->payload);
     Pending p_idx = idx->begin_transaction();
 
     const types::source::Blob* new_source;
@@ -208,7 +212,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 void Writer::remove(Metadata& md)
 {
     auto writer = file(md, md.source().format);
-    WIndex* idx = static_cast<WIndex*>(writer->payload);
+    AIndex* idx = static_cast<AIndex*>(writer->payload);
 
     const types::source::Blob* source = md.has_source_blob();
     if (!source)
@@ -246,18 +250,57 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
 }
 
 
+namespace {
+
+/// Create unique strings from metadata
+struct IDMaker
+{
+    std::set<types::Code> components;
+
+    IDMaker(const std::set<types::Code>& components) : components(components) {}
+
+    vector<uint8_t> make_string(const Metadata& md) const
+    {
+        vector<uint8_t> res;
+        BinaryEncoder enc(res);
+        for (set<types::Code>::const_iterator i = components.begin(); i != components.end(); ++i)
+            if (const Type* t = md.get(*i))
+                t->encodeBinary(enc);
+        return res;
+    }
+};
+
+}
+
+
 class CheckerSegment : public segmented::CheckerSegment
 {
 public:
     Checker& checker;
+    std::shared_ptr<dataset::CheckLock> lock;
+    CIndex* m_idx = nullptr;
 
     CheckerSegment(Checker& checker, const std::string& relpath)
-        : checker(checker)
+        : CheckerSegment(checker, relpath, checker.config().check_lock_segment(relpath)) {}
+    CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
+        : checker(checker), lock(lock)
     {
         segment = checker.segment_manager().get_checker(checker.config().format, relpath);
     }
+    ~CheckerSegment()
+    {
+        delete m_idx;
+    }
 
+    CIndex& idx()
+    {
+        if (!m_idx)
+            m_idx = new CIndex(checker.m_config, path_relative(), lock);
+        return *m_idx;
+    }
     std::string path_relative() const override { return segment->relname; }
+    const iseg::Config& config() const override { return checker.config(); }
+    dataset::ArchivesChecker& archives() const { return checker.archive(); }
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
@@ -287,9 +330,8 @@ public:
         }
 #endif
 
-        WIndex idx(checker.m_config, segment->relname);
         metadata::Collection mds;
-        idx.scan(mds.inserter_func(), "reftime, offset");
+        idx().scan(mds.inserter_func(), "reftime, offset");
         segment::State state = SEGMENT_OK;
 
         // Compute the span of reftimes inside the segment
@@ -339,44 +381,42 @@ public:
 
     size_t repack(unsigned test_flags=0) override
     {
-        WIndex idx(checker.m_config, segment->relname);
-
         // Lock away writes and reads
-        Pending p = idx.begin_exclusive_transaction();
+        auto write_lock = lock->write_lock();
+        Pending p = idx().begin_transaction();
 
         metadata::Collection mds;
-        idx.scan(mds.inserter_func(), "reftime, offset");
+        idx().scan(mds.inserter_func(), "reftime, offset");
 
-        auto res = reorder_segment_backend(idx, p, mds, test_flags);
+        auto res = reorder_segment_backend(p, mds, test_flags);
 
         //reporter.operation_progress(checker.name(), "repack", "running VACUUM ANALYZE on segment " + segment->relname);
-        idx.vacuum();
+        idx().vacuum();
 
         return res;
     }
 
     size_t reorder(metadata::Collection& mds, unsigned test_flags) override
     {
-        WIndex idx(checker.m_config, segment->relname);
-
         // Lock away writes and reads
-        Pending p = idx.begin_exclusive_transaction();
+        auto write_lock = lock->write_lock();
+        Pending p = idx().begin_transaction();
 
-        return reorder_segment_backend(idx, p, mds, test_flags);
+        return reorder_segment_backend(p, mds, test_flags);
     }
 
-    size_t reorder_segment_backend(WIndex& idx, Pending& p, metadata::Collection& mds, unsigned test_flags)
+    size_t reorder_segment_backend(Pending& p, metadata::Collection& mds, unsigned test_flags)
     {
         // Make a copy of the file with the right data in it, sorted by
         // reftime, and update the offsets in the index
         Pending p_repack = segment->repack(checker.config().path, mds, test_flags);
 
         // Reindex mds
-        idx.reset();
+        idx().reset();
         for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
         {
             const source::Blob& source = (*i)->sourceBlob();
-            idx.index(**i, source.offset);
+            idx().index(**i, source.offset);
         }
 
         size_t size_pre = sys::isdir(segment->absname) ? 0 : sys::size(segment->absname);
@@ -403,7 +443,7 @@ public:
         return size_pre - size_post;
     }
 
-    size_t remove(bool with_data)
+    size_t remove(bool with_data) override
     {
         string idx_abspath = str::joinpath(segment->absname + ".index");
         size_t res = 0;
@@ -414,6 +454,97 @@ public:
         }
         if (!with_data) return res;
         return res + segment->remove();
+    }
+
+    void index(metadata::Collection&& mds) override
+    {
+        // Add to index
+        auto write_lock = lock->write_lock();
+        Pending p_idx = idx().begin_transaction();
+        for (auto& md: mds)
+            idx().index(*md, md->sourceBlob().offset);
+        p_idx.commit();
+
+        // Remove .metadata and .summary files
+        sys::unlink_ifexists(segment->absname + ".metadata");
+        sys::unlink_ifexists(segment->absname + ".summary");
+    }
+
+    void rescan() override
+    {
+        // Temporarily uncompress the file for scanning
+        unique_ptr<utils::compress::TempUnzip> tu;
+        if (scan::isCompressed(segment->absname))
+            tu.reset(new utils::compress::TempUnzip(segment->absname));
+
+        // Collect the scan results in a metadata::Collector
+        metadata::Collection mds;
+        if (!scan::scan(segment->absname, checker.config().lock_policy, mds.inserter_func()))
+            throw std::runtime_error("cannot rescan " + segment->absname + ": file format unknown");
+        //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
+
+        // Lock away writes and reads
+        auto write_lock = lock->write_lock();
+        Pending p = idx().begin_transaction();
+
+        // Remove from the index all data about the file
+        idx().reset();
+
+        // Scan the list of metadata, looking for duplicates and marking all
+        // the duplicates except the last one as deleted
+        IDMaker id_maker(idx().unique_codes());
+
+        map<vector<uint8_t>, const Metadata*> finddupes;
+        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+        {
+            vector<uint8_t> id = id_maker.make_string(**i);
+            if (id.empty())
+                continue;
+            auto dup = finddupes.find(id);
+            if (dup == finddupes.end())
+                finddupes.insert(make_pair(id, *i));
+            else
+                dup->second = *i;
+        }
+        // cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
+
+        // Send the remaining metadata to the reindexer
+        std::string basename = str::basename(segment->relname);
+        for (const auto& i: finddupes)
+        {
+            const Metadata& md = *i.second;
+            const source::Blob& blob = md.sourceBlob();
+            try {
+                if (str::basename(blob.filename) != basename)
+                    throw std::runtime_error("cannot rescan " + segment->relname + ": metadata points to the wrong file: " + blob.filename);
+                idx().index(md, blob.offset);
+            } catch (utils::sqlite::DuplicateInsert& di) {
+                stringstream ss;
+                ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate elsewhere in the dataset: manual fix is required";
+                throw runtime_error(ss.str());
+            } catch (std::exception& e) {
+                stringstream ss;
+                ss << "cannot reindex " << basename << ": failed to reindex data item at offset " << blob.offset << ": " << e.what();
+                throw runtime_error(ss.str());
+                // sqlite will take care of transaction consistency
+            }
+        }
+        // cerr << " REINDEXED " << pathname << endl;
+
+        // TODO: if scan fails, remove all info from the index and rename the
+        // file to something like .broken
+
+        // Commit the changes on the database
+        p.commit();
+        // cerr << " COMMITTED" << endl;
+
+        // TODO: remove relevant summary
+    }
+
+    void release(const std::string& destpath)
+    {
+        sys::unlink_ifexists(str::joinpath(checker.config().path, segment->relname + ".index"));
+        segmented::CheckerSegment::release(destpath);
     }
 };
 
@@ -449,6 +580,11 @@ std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& r
     return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath));
 }
 
+std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
+{
+    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
+}
+
 void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> dest)
 {
     segments_filtered(Matcher(), dest);
@@ -458,7 +594,6 @@ void Checker::segments_filtered(const Matcher& matcher, std::function<void(segme
 {
     list_segments(matcher, [&](const std::string& relpath) {
         CheckerSegment segment(*this, relpath);
-        segment.segment->lock();
         dest(segment);
     });
 }
@@ -473,7 +608,6 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     config().step().list_segments(config().path, config().format, matcher, [&](std::string&& relpath) {
         if (sys::stat(str::joinpath(config().path, relpath + ".index"))) return;
         CheckerSegment segment(*this, relpath);
-        segment.segment->lock();
         dest(segment);
     });
 }
@@ -485,7 +619,8 @@ void Checker::check_issue51(dataset::Reporter& reporter, bool fix)
 
     // Iterate all segments
     list_segments([&](const std::string& relpath) {
-        WIndex idx(m_config, relpath);
+        auto lock = config().check_lock_segment(relpath);
+        CIndex idx(m_config, relpath, lock);
         metadata::Collection mds;
         idx.scan(mds.inserter_func(), "reftime, offset");
         if (mds.empty()) return;
@@ -568,124 +703,6 @@ void Checker::check_issue51(dataset::Reporter& reporter, bool fix)
     return segmented::Checker::check_issue51(reporter, fix);
 }
 
-void Checker::indexSegment(const std::string& relpath, metadata::Collection&& mds)
-{
-    WIndex idx(m_config, relpath);
-
-    // Add to index
-    Pending p_idx = idx.begin_transaction();
-    for (auto& md: mds)
-        idx.index(*md, md->sourceBlob().offset);
-    p_idx.commit();
-
-    // Remove .metadata and .summary files
-    sys::unlink_ifexists(str::joinpath(config().path, relpath) + ".metadata");
-    sys::unlink_ifexists(str::joinpath(config().path, relpath) + ".summary");
-}
-
-namespace {
-
-/// Create unique strings from metadata
-struct IDMaker
-{
-    std::set<types::Code> components;
-
-    IDMaker(const std::set<types::Code>& components) : components(components) {}
-
-    vector<uint8_t> make_string(const Metadata& md) const
-    {
-        vector<uint8_t> res;
-        BinaryEncoder enc(res);
-        for (set<types::Code>::const_iterator i = components.begin(); i != components.end(); ++i)
-            if (const Type* t = md.get(*i))
-                t->encodeBinary(enc);
-        return res;
-    }
-};
-
-}
-
-void Checker::rescanSegment(const std::string& relpath)
-{
-    string pathname = str::joinpath(config().path, relpath);
-    //fprintf(stderr, "Checker::rescanSegment %s\n", pathname.c_str());
-
-    // Temporarily uncompress the file for scanning
-    unique_ptr<utils::compress::TempUnzip> tu;
-    if (scan::isCompressed(pathname))
-        tu.reset(new utils::compress::TempUnzip(pathname));
-
-    // Collect the scan results in a metadata::Collector
-    metadata::Collection mds;
-    if (!scan::scan(pathname, config().lock_policy, mds.inserter_func()))
-        throw std::runtime_error("cannot rescan " + pathname + ": file format unknown");
-    //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
-
-    WIndex idx(m_config, relpath);
-
-    // Lock away writes and reads
-    Pending p = idx.begin_exclusive_transaction();
-
-    // Remove from the index all data about the file
-    idx.reset();
-
-    // Scan the list of metadata, looking for duplicates and marking all
-    // the duplicates except the last one as deleted
-    IDMaker id_maker(idx.unique_codes());
-
-    map<vector<uint8_t>, const Metadata*> finddupes;
-    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
-    {
-        vector<uint8_t> id = id_maker.make_string(**i);
-        if (id.empty())
-            continue;
-        auto dup = finddupes.find(id);
-        if (dup == finddupes.end())
-            finddupes.insert(make_pair(id, *i));
-        else
-            dup->second = *i;
-    }
-    // cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
-
-    // Send the remaining metadata to the reindexer
-    std::string basename = str::basename(relpath);
-    for (const auto& i: finddupes)
-    {
-        const Metadata& md = *i.second;
-        const source::Blob& blob = md.sourceBlob();
-        try {
-            if (str::basename(blob.filename) != basename)
-                throw std::runtime_error("cannot rescan " + relpath + ": metadata points to the wrong file: " + blob.filename);
-            idx.index(md, blob.offset);
-        } catch (utils::sqlite::DuplicateInsert& di) {
-            stringstream ss;
-            ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate elsewhere in the dataset: manual fix is required";
-            throw runtime_error(ss.str());
-        } catch (std::exception& e) {
-            stringstream ss;
-            ss << "cannot reindex " << basename << ": failed to reindex data item at offset " << blob.offset << ": " << e.what();
-            throw runtime_error(ss.str());
-            // sqlite will take care of transaction consistency
-        }
-    }
-    // cerr << " REINDEXED " << pathname << endl;
-
-    // TODO: if scan fails, remove all info from the index and rename the
-    // file to something like .broken
-
-    // Commit the changes on the database
-    p.commit();
-    // cerr << " COMMITTED" << endl;
-
-    // TODO: remove relevant summary
-}
-
-void Checker::releaseSegment(const std::string& relpath, const std::string& destpath)
-{
-    sys::unlink_ifexists(str::joinpath(config().path, relpath + ".index"));
-    segmented::Checker::releaseSegment(relpath, destpath);
-}
-
 size_t Checker::vacuum(dataset::Reporter& reporter)
 {
     return 0;
@@ -693,7 +710,9 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
 
 void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
 {
-    WIndex idx(m_config, relpath);
+    auto lock = config().check_lock_segment(relpath);
+    auto wrlock = lock->write_lock();
+    CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
     segment_manager().get_checker(relpath)->test_make_overlap(mds, overlap_size, data_idx);
@@ -702,7 +721,9 @@ void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_siz
 
 void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
 {
-    WIndex idx(m_config, relpath);
+    auto lock = config().check_lock_segment(relpath);
+    auto wrlock = lock->write_lock();
+    CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
     segment_manager().get_checker(relpath)->test_make_hole(mds, hole_size, data_idx);
@@ -711,7 +732,9 @@ void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, uns
 
 void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
 {
-    WIndex idx(m_config, relpath);
+    auto lock = config().check_lock_segment(relpath);
+    auto wrlock = lock->write_lock();
+    CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
     segment_manager().get_checker(relpath)->test_corrupt(mds, data_idx);
@@ -719,7 +742,9 @@ void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
 
 void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
 {
-    WIndex idx(m_config, relpath);
+    auto lock = config().check_lock_segment(relpath);
+    auto wrlock = lock->write_lock();
+    CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
     segment_manager().get_checker(relpath)->test_truncate(mds, data_idx);
@@ -727,15 +752,20 @@ void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
 
 void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
 {
+    auto lock = config().check_lock_segment(relpath);
     metadata::Collection mds;
-    WIndex idx(m_config, relpath);
-    idx.scan(mds.inserter_func(), "offset");
-    std::swap(mds[d1_idx], mds[d2_idx]);
-    segment(relpath)->reorder(mds);
+    {
+        CIndex idx(m_config, relpath, lock);
+        idx.scan(mds.inserter_func(), "offset");
+        std::swap(mds[d1_idx], mds[d2_idx]);
+    }
+    segment_prelocked(relpath, lock)->reorder(mds);
 }
 
 void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)
 {
+    auto lock = config().check_lock_segment(relpath);
+    auto wrlock = lock->write_lock();
     string abspath = str::joinpath(config().path, relpath);
     string new_abspath = str::joinpath(config().path, new_relpath);
     sys::rename(abspath, new_abspath);
@@ -744,7 +774,9 @@ void Checker::test_rename(const std::string& relpath, const std::string& new_rel
 
 void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
 {
-    WIndex idx(m_config, relpath);
+    auto lock = config().check_lock_segment(relpath);
+    auto wrlock = lock->write_lock();
+    CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
     md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));

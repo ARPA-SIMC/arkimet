@@ -5,20 +5,14 @@
 #include <arki/configfile.h>
 #include <arki/types/fwd.h>
 #include <arki/metadata.h>
-#include <arki/metadata/consumer.h>
 #include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/dataset.h>
-#include <arki/dataset/maintenance.h>
 #include <arki/dataset/segment.h>
 #include <arki/dataset/segmented.h>
-#include <arki/sort.h>
-#include <arki/scan/any.h>
-#include <arki/utils/string.h>
 #include <arki/libconfig.h>
 #include <vector>
 #include <string>
-#include <sstream>
 
 namespace arki {
 struct Metadata;
@@ -248,19 +242,8 @@ struct Element
 
     Element() : time(0, 0, 0) {}
 
-    void set(const Metadata& md, const std::string& matcher)
-    {
-        const types::reftime::Position* rt = md.get<types::reftime::Position>();
-        this->md = md;
-        this->time = rt->time;
-        this->matcher = Matcher::parse(matcher);
-    }
-
-    std::string data()
-    {
-        auto res = md.getData();
-        return std::string(res.begin(), res.end());
-    }
+    void set(const Metadata& md, const std::string& matcher);
+    std::string data();
 };
 
 struct Fixture
@@ -358,6 +341,26 @@ struct ReporterExpected
 
     void clear();
 };
+
+
+template<typename DatasetWriter>
+struct ActualWriter : public arki::utils::tests::Actual<DatasetWriter*>
+{
+    ActualWriter(DatasetWriter* s) : Actual<DatasetWriter*>(s) {}
+    void import(Metadata& md);
+};
+
+inline arki::tests::ActualWriter<dataset::LocalWriter> actual(arki::dataset::LocalWriter* actual)
+{
+    return arki::tests::ActualWriter<dataset::LocalWriter>(actual);
+}
+inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::Writer* actual) { return arki::tests::ActualWriter<dataset::Writer>(actual); }
+inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>(&actual); }
+inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::segmented::Writer* actual) { return arki::tests::ActualWriter<dataset::Writer>(actual); }
+inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::segmented::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>(&actual); }
+inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::simple::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>((arki::dataset::segmented::Writer*)&actual); }
+inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::ondisk2::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>((arki::dataset::segmented::Writer*)&actual); }
+inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::iseg::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>((arki::dataset::segmented::Writer*)&actual); }
 
 
 template<typename DatasetChecker>

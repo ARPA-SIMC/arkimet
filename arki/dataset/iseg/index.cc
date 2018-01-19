@@ -8,7 +8,7 @@
 #include "arki/matcher.h"
 #include "arki/matcher/reftime.h"
 #include "arki/dataset.h"
-#include "arki/dataset/index/base.h"
+#include "arki/dataset/lock.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/types/value.h"
@@ -58,12 +58,12 @@ struct IndexGlobalData
 };
 static IndexGlobalData igd;
 
-
-Index::Index(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath)
+Index::Index(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock)
     : m_config(config),
       data_relpath(data_relpath),
       data_pathname(str::joinpath(config->path, data_relpath)),
-      index_pathname(data_pathname + ".index")
+      index_pathname(data_pathname + ".index"),
+      lock(lock)
 #if 0
     :  m_get_id("getid", m_db), m_get_current("getcurrent", m_db)
 #endif
@@ -773,8 +773,8 @@ bool Contents::checkSummaryCache(const dataset::Base& ds, Reporter& reporter) co
 }
 #endif
 
-RIndex::RIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath)
-    : Index(config, data_relpath)
+RIndex::RIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::ReadLock> lock)
+    : Index(config, data_relpath, lock)
 {
     if (!sys::access(index_pathname, F_OK))
     {
@@ -784,19 +784,21 @@ RIndex::RIndex(std::shared_ptr<const iseg::Config> config, const std::string& da
     }
 
     m_db.open(index_pathname);
+    if (config->trace_sql) m_db.trace();
+
     init_others();
 }
 
 
-WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath)
-    : Index(config, data_relpath), m_insert(m_db), m_replace("replace", m_db)
+WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock)
+    : Index(config, data_relpath, lock), m_insert(m_db), m_replace("replace", m_db)
 {
     bool need_create = !sys::access(index_pathname, F_OK);
 
-    m_db.open(index_pathname);
-
     if (need_create)
     {
+        m_db.open(index_pathname);
+        if (config->trace_sql) m_db.trace();
         setup_pragmas();
         if (!m_others)
         {
@@ -805,8 +807,11 @@ WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& da
                 m_others = new Aggregate(m_db, "mdother", other_members);
         }
         init_db();
-    } else
+    } else {
+        m_db.open(index_pathname);
+        if (config->trace_sql) m_db.trace();
         init_others();
+    }
 }
 
 void WIndex::init_db()
@@ -902,11 +907,6 @@ void WIndex::bind_insert(Query& q, const Metadata& md, uint64_t ofs, char* timeb
             q.bindNull(++idx);
         }
     }
-}
-
-Pending WIndex::begin_exclusive_transaction()
-{
-    return Pending(new SqliteTransaction(m_db, "EXCLUSIVE"));
 }
 
 void WIndex::index(const Metadata& md, uint64_t ofs)
@@ -1016,6 +1016,16 @@ void WIndex::test_make_hole(unsigned hole_size, unsigned data_idx)
     sel.execute([&]{
         query.run(hole_size, sel.fetch<uint64_t>(0));
     });
+}
+
+AIndex::AIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::AppendLock> lock)
+    : WIndex(config, data_relpath, lock)
+{
+}
+
+CIndex::CIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::CheckLock> lock)
+    : WIndex(config, data_relpath, lock)
+{
 }
 
 }

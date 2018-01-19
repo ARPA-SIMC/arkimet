@@ -26,9 +26,7 @@ class Writer : public IndexedWriter
 protected:
     std::shared_ptr<const simple::Config> m_config;
     index::Manifest* m_mft;
-    LocalLock* lock = nullptr;
-    void acquire_lock();
-    void release_lock();
+    std::shared_ptr<dataset::Lock> lock;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
     std::shared_ptr<segment::Writer> file(const Metadata& md, const std::string& format);
@@ -55,9 +53,7 @@ class Checker : public IndexedChecker
 protected:
     std::shared_ptr<const simple::Config> m_config;
     index::Manifest* m_mft;
-    LocalLock* lock = nullptr;
-    void acquire_lock();
-    void release_lock();
+    std::shared_ptr<dataset::CheckLock> lock;
 
     /// Return a (shared) instance of the Segment for the given relative pathname
     Segment* file(const Metadata& md, const std::string& format);
@@ -82,9 +78,6 @@ public:
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
     void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) override;
 
-    void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
-    void rescanSegment(const std::string& relpath) override;
-    void releaseSegment(const std::string& relpath, const std::string& destpath) override;
     size_t vacuum(dataset::Reporter& reporter) override;
     void test_remove_index(const std::string& relpath) override;
     void test_rename(const std::string& relpath, const std::string& new_relpath) override;

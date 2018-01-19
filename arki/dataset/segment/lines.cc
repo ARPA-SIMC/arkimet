@@ -1,16 +1,13 @@
 #include "lines.h"
 #include "arki/exceptions.h"
-#include "arki/metadata.h"
 #include "arki/nag.h"
-#include "arki/utils/sys.h"
-#include "arki/utils/string.h"
-#include <arki/wibble/sys/signal.h>
 #include <system_error>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sstream>
 
 using namespace std;
 using namespace arki::types;
@@ -65,8 +62,8 @@ void File::test_add_padding(size_t size)
 
 
 
-Writer::Writer(const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy, int mode)
-    : fd::Writer(root, relname, unique_ptr<fd::File>(new File(absname, O_WRONLY | O_CREAT | mode, 0666)), lock_policy)
+Writer::Writer(const std::string& root, const std::string& relname, const std::string& absname, int mode)
+    : fd::Writer(root, relname, unique_ptr<fd::File>(new File(absname, O_WRONLY | O_CREAT | mode, 0666)))
 {
 }
 
@@ -83,7 +80,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
 
 unique_ptr<fd::Writer> Checker::make_tmp_segment(const std::string& relname, const std::string& absname)
 {
-    return unique_ptr<fd::Writer>(new lines::Writer(root, relname, absname, lock_policy, O_TRUNC));
+    return unique_ptr<fd::Writer>(new lines::Writer(root, relname, absname, O_TRUNC));
 }
 
 Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)

@@ -21,6 +21,7 @@
 #include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/nag.h"
 #include <algorithm>
 #include <cstring>
 #include <limits.h>
@@ -817,6 +818,35 @@ struct CollectReporter : public dataset::Reporter
     }
 };
 
+
+template<typename Dataset>
+void ActualWriter<Dataset>::import(Metadata& md)
+{
+    auto res = wcallchecked(this->_actual->acquire(md));
+    if (res != dataset::Writer::ACQ_OK)
+    {
+        std::stringstream ss;
+        switch (res)
+        {
+            case Writer::ACQ_ERROR_DUPLICATE:
+                ss << "ACQ_ERROR_DUPLICATE when importing data. notes:" << endl;
+                break;
+            case Writer::ACQ_ERROR:
+                ss << "ACQ_ERROR when importing data. notes:" << endl;
+                break;
+            default:
+                ss << "Error " << (int)res << " when importing data. notes:" << endl;
+                break;
+        }
+
+        for (const auto& note: md.notes())
+            ss << "\t" << note << endl;
+
+        throw TestFailed(ss.str());
+    }
+}
+
+
 template<typename Dataset>
 void ActualChecker<Dataset>::repack(const ReporterExpected& expected, bool write)
 {
@@ -919,6 +949,20 @@ void ActualChecker<Dataset>::remove_all_filtered(const Matcher& matcher, const R
 
 namespace testdata {
 
+void Element::set(const Metadata& md, const std::string& matcher)
+{
+    const types::reftime::Position* rt = md.get<types::reftime::Position>();
+    this->md = md;
+    this->time = rt->time;
+    this->matcher = Matcher::parse(matcher);
+}
+
+std::string Element::data()
+{
+    auto res = md.getData();
+    return std::string(res.begin(), res.end());
+}
+
 void Fixture::finalise_init()
 {
     // Compute selective_cutoff
@@ -1006,6 +1050,9 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
 
 }
 
+template class ActualWriter<dataset::Writer>;
+template class ActualWriter<dataset::LocalWriter>;
+template class ActualWriter<dataset::segmented::Writer>;
 template class ActualChecker<dataset::Checker>;
 template class ActualChecker<dataset::LocalChecker>;
 template class ActualChecker<dataset::segmented::Checker>;

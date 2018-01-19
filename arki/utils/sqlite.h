@@ -28,6 +28,15 @@ public:
     SQLiteError(sqlite3* db, const std::string& msg);
 };
 
+/**
+ * Exception thrown in case of duplicate inserts
+ */
+struct DuplicateInsert : public std::runtime_error
+{
+    DuplicateInsert(sqlite3* db, const std::string& msg);
+};
+
+
 class SQLiteDB
 {
 private:
@@ -41,6 +50,8 @@ private:
 public:
 	SQLiteDB() : m_db(0), m_last_insert_id(0) {}
 	~SQLiteDB();
+
+    operator sqlite3*() const { return m_db; }
 
 	bool isOpen() const { return m_db != 0; }
 	/**
@@ -63,6 +74,15 @@ public:
 	 */
 	void exec(const std::string& query);
 
+    /**
+     * Run a query that has no return values.
+     *
+     * In case of error, use nag::warning instead of throwing an exception
+     *
+     * If it fails with SQLITE_BUSY, wait a bit and retry.
+     */
+    void exec_nothrow(const std::string& query) noexcept;
+
 	/// Run a SELECT LAST_INSERT_ROWID() statement and return the result
 	int lastInsertID();
 
@@ -74,6 +94,13 @@ public:
 
 	/// Checkpoint the journal contents into the database file
 	void checkpoint();
+
+    /**
+     * Enable/change/disable SQLite tracing.
+     *
+     * See sqlite3_trace_v2 docmentation for values for mask use 0 to disable.
+     */
+    void trace(unsigned mask=SQLITE_TRACE_STMT);
 };
 
 /**
@@ -278,6 +305,13 @@ public:
 	void initQueries();
 
 	void operator()();
+
+    /**
+     * Run but avoid throwing exceptions.
+     *
+     * In case of error, use nag::warning instead of throwing an exception
+     */
+    void nothrow() noexcept;
 };
 
 /**
@@ -319,16 +353,9 @@ struct SqliteTransaction : public Transaction
         if (!fired) committer.rollback();
     }
 
-	void commit();
-	void rollback();
-};
-
-/**
- * Exception thrown in case of duplicate inserts
- */
-struct DuplicateInsert : public std::runtime_error
-{
-    DuplicateInsert(const std::string& msg);
+    void commit() override;
+    void rollback() override;
+    void rollback_nothrow() noexcept override;
 };
 
 /**
@@ -340,6 +367,14 @@ struct InsertQuery : public utils::sqlite::Query
 
     // Step, but throw DuplicateInsert in case of duplicates
     bool step();
+};
+
+struct Trace
+{
+    SQLiteDB& db;
+
+    Trace(SQLiteDB& db, unsigned mask=SQLITE_TRACE_STMT);
+    ~Trace();
 };
 
 }

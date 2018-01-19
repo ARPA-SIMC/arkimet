@@ -22,6 +22,9 @@ class ConfigFile;
 class Reader;
 
 namespace dataset {
+struct Lock;
+struct AppendLock;
+struct CheckLock;
 struct DataQuery;
 
 namespace index {
@@ -67,6 +70,9 @@ protected:
     index::Aggregate* m_uniques = nullptr;
     index::Aggregate* m_others = nullptr;
 
+    /// Optionally held read lock
+    std::shared_ptr<dataset::Lock> lock;
+
     /// Run PRAGMA calls to setup database behaviour
     void setup_pragmas();
 
@@ -106,7 +112,7 @@ protected:
      */
     void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::Reader> reader) const;
 
-    Index(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath);
+    Index(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
 
 public:
     ~Index();
@@ -232,7 +238,7 @@ public:
 class RIndex : public Index
 {
 public:
-    RIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath);
+    RIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::ReadLock> lock=nullptr);
 };
 
 class WIndex : public Index
@@ -247,22 +253,8 @@ protected:
     void compile_insert();
     void bind_insert(utils::sqlite::Query& q, const Metadata& md, uint64_t ofs, char* timebuf);
 
+    WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
 public:
-    WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath);
-#if 0
-    ~WContents();
-
-	/**
-	 * Initialise access to the index
-	 *
-	 * @return true if the index did not exist and has been created, false
-	 * if it reused the existing index
-	 */
-	bool open();
-#endif
-
-    /// Begin an EXCLUSIVE transaction and return the corresponding Pending object
-    Pending begin_exclusive_transaction();
 
     /**
      * Index the given metadata item.
@@ -303,6 +295,20 @@ public:
      * a hole is created between the ones at `data_idx - 1` and at `data_idx`
      */
     void test_make_hole(unsigned hole_size, unsigned data_idx);
+};
+
+
+class AIndex : public WIndex
+{
+public:
+    AIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::AppendLock> lock);
+};
+
+
+class CIndex : public WIndex
+{
+public:
+    CIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::CheckLock> lock);
 };
 
 }

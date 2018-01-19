@@ -28,9 +28,7 @@ class Writer : public IndexedWriter
 protected:
     std::shared_ptr<const ondisk2::Config> m_config;
     index::WContents* idx;
-    LocalLock* lock = nullptr;
-    void acquire_lock();
-    void release_lock();
+    std::shared_ptr<dataset::Lock> lock;
 
     AcquireResult acquire_replace_never(Metadata& md);
     AcquireResult acquire_replace_always(Metadata& md);
@@ -63,9 +61,7 @@ class Checker : public IndexedChecker
 protected:
     std::shared_ptr<const ondisk2::Config> m_config;
     index::WContents* idx;
-    LocalLock* lock = nullptr;
-    void acquire_lock();
-    void release_lock();
+    std::shared_ptr<dataset::CheckLock> lock;
 
 public:
     Checker(std::shared_ptr<const ondisk2::Config> config);
@@ -87,9 +83,6 @@ public:
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
     void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) override;
 
-    void rescanSegment(const std::string& relpath) override;
-    void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
-    void releaseSegment(const std::string& relpath, const std::string& destpath) override;
     size_t vacuum(dataset::Reporter& reporter) override;
     void test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx) override;
     void test_remove_index(const std::string& relpath) override;

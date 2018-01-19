@@ -18,6 +18,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::utils;
 using namespace arki::tests;
+using namespace arki::core;
 
 namespace {
 
@@ -169,6 +170,25 @@ this->add_method("import_before_delete_age", [](Fixture& f) {
 
     metadata::Collection mdc(*f.config().create_reader(), Matcher());
     wassert(actual(mdc.size()) == 0u);
+});
+
+this->add_method("second_resolution", [](Fixture& f) {
+    Metadata md(f.td.test_data[1].md);
+    md.set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 0)));
+
+    // Import a first metadata to create a segment to repack
+    {
+        auto writer = f.config().create_writer();
+        wassert(actual(*writer).import(md));
+    }
+
+    md.set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 1)));
+    {
+        auto writer = f.config().create_writer();
+        wassert(actual(*writer).import(md));
+    }
+
+    wassert(f.ensure_localds_clean(1, 2));
 });
 
 this->add_method("test_acquire", [](Fixture& f) {

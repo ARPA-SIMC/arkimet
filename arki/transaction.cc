@@ -34,18 +34,21 @@ Transaction::~Transaction() {}
 Pending::Pending(Transaction* trans) : trans(trans)
 {
 }
+
 Pending::Pending(Pending&& p) : trans(p.trans)
 {
     p.trans = nullptr;
 }
+
 Pending::~Pending()
 {
     if (trans)
     {
-        trans->rollback();
+        trans->rollback_nothrow();
         delete trans;
     }
 }
+
 Pending& Pending::operator=(Pending&& p)
 {
     // Prevent damage on assignment to self
@@ -85,5 +88,14 @@ void Pending::rollback()
     }
 }
 
+void Pending::rollback_nothrow() noexcept
+{
+    if (trans)
+    {
+        trans->rollback_nothrow();
+        delete trans;
+        trans = 0;
+    }
 }
-// vim:set ts=4 sw=4:
+
+}

@@ -36,6 +36,7 @@ public:
     virtual ~Transaction();
     virtual void commit() = 0;
     virtual void rollback() = 0;
+    virtual void rollback_nothrow() noexcept = 0;
 };
 
 /**
@@ -68,6 +69,13 @@ struct Pending
 
     /// Rollback the pending operation
     void rollback();
+
+    /**
+     * Rollback the pending operation
+     *
+     * In case of errors, use nag::warning instead of throwing an exception
+     */
+    void rollback_nothrow() noexcept;
 };
 
 }

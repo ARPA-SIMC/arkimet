@@ -79,13 +79,24 @@ struct LineReader
 };
 
 
+struct Lock : public std::enable_shared_from_this<Lock>
+{
+    Lock() = default;
+    Lock(const Lock&) = delete;
+    Lock(Lock&&) = delete;
+    Lock& operator=(const Lock&) = delete;
+    Lock&& operator=(Lock&&) = delete;
+    virtual ~Lock();
+};
+
+
 /**
  * Wrap a struct flock, calling the corresponding FileDescriptor locking
  * operations on it.
  */
-struct Lock : public ::flock
+struct FLock : public ::flock
 {
-    Lock();
+    FLock();
 
     bool ofd_setlk(NamedFileDescriptor& fd);
     bool ofd_setlkw(NamedFileDescriptor& fd, bool retry_on_signal=true);
@@ -101,25 +112,9 @@ namespace lock {
 struct Policy
 {
     virtual ~Policy();
-    virtual bool setlk(NamedFileDescriptor& fd, Lock&) const = 0;
-    virtual bool setlkw(NamedFileDescriptor& fd, Lock&) const = 0;
-    virtual bool getlk(NamedFileDescriptor& fd, Lock&) const = 0;
-};
-
-/// Lock Policy that does nothing
-struct NullPolicy : public Policy
-{
-    bool setlk(NamedFileDescriptor& fd, Lock&) const override;
-    bool setlkw(NamedFileDescriptor& fd, Lock&) const override;
-    bool getlk(NamedFileDescriptor& fd, Lock&) const override;
-};
-
-/// Lock Policy that uses Open File Descriptor locks
-struct OFDPolicy : public Policy
-{
-    bool setlk(NamedFileDescriptor& fd, Lock&) const override;
-    bool setlkw(NamedFileDescriptor& fd, Lock&) const override;
-    bool getlk(NamedFileDescriptor& fd, Lock&) const override;
+    virtual bool setlk(NamedFileDescriptor& fd, FLock&) const = 0;
+    virtual bool setlkw(NamedFileDescriptor& fd, FLock&) const = 0;
+    virtual bool getlk(NamedFileDescriptor& fd, FLock&) const = 0;
 };
 
 
@@ -132,10 +127,23 @@ void test_set_nowait_default(bool value);
 
 
 /**
+ * Change the behaviour of ofd_setlkw to wait if the lock is busy.
+ *
+ * This is used during tests to restore the standard behaviour
+ */
+struct TestWait
+{
+    bool orig;
+    TestWait();
+    ~TestWait();
+};
+
+
+/**
  * Change the behaviour of ofd_setlkw to throw an exception instead of
  * waiting if the lock is busy.
  *
- * This is used during testsd to detect attempted accesses to locked files.
+ * This is used during tests to detect attempted accesses to locked files.
  */
 struct TestNowait
 {

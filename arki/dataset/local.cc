@@ -1,4 +1,5 @@
 #include "local.h"
+#include "lock.h"
 #include "segmented.h"
 #include "archive.h"
 #include "arki/dataset/time.h"
@@ -66,6 +67,36 @@ std::shared_ptr<ArchivesConfig> LocalConfig::archives_config() const
     if (!m_archives_config)
         m_archives_config = std::shared_ptr<ArchivesConfig>(new ArchivesConfig(path));
     return m_archives_config;
+}
+
+std::shared_ptr<dataset::ReadLock> LocalConfig::read_lock_dataset() const
+{
+    return std::make_shared<DatasetReadLock>(*this);
+}
+
+std::shared_ptr<dataset::AppendLock> LocalConfig::append_lock_dataset() const
+{
+    return std::make_shared<DatasetAppendLock>(*this);
+}
+
+std::shared_ptr<dataset::CheckLock> LocalConfig::check_lock_dataset() const
+{
+    return std::make_shared<DatasetCheckLock>(*this);
+}
+
+std::shared_ptr<dataset::ReadLock> LocalConfig::read_lock_segment(const std::string& relpath) const
+{
+    return std::make_shared<SegmentReadLock>(*this, relpath);
+}
+
+std::shared_ptr<dataset::AppendLock> LocalConfig::append_lock_segment(const std::string& relpath) const
+{
+    return std::make_shared<SegmentAppendLock>(*this, relpath);
+}
+
+std::shared_ptr<dataset::CheckLock> LocalConfig::check_lock_segment(const std::string& relpath) const
+{
+    return std::make_shared<SegmentCheckLock>(*this, relpath);
 }
 
 
@@ -154,38 +185,6 @@ void LocalReader::readConfig(const std::string& path, ConfigFile& cfg)
         // Parse the config file
         cfg.parse(in);
     }
-}
-
-LocalLock::LocalLock(const LocalConfig& config, bool write)
-    : lockfile(str::joinpath(config.path, "lock")), write(write), lock_policy(config.lock_policy)
-{
-}
-
-LocalLock::~LocalLock()
-{
-    release();
-}
-
-void LocalLock::acquire()
-{
-    if (locked) return;
-    if (!lockfile.is_open()) lockfile.open(O_RDWR | O_CREAT, 0777);
-    ds_lock.l_type = write ? F_WRLCK : F_RDLCK;
-    ds_lock.l_whence = SEEK_SET;
-    ds_lock.l_start = 0;
-    ds_lock.l_len = 0;
-    ds_lock.l_pid = 0;
-    // Use SETLKW, so that if it is already locked, we just wait
-    lock_policy->setlkw(lockfile, ds_lock);
-    locked = true;
-}
-
-void LocalLock::release()
-{
-    if (!locked) return;
-    ds_lock.l_type = F_UNLCK;
-    lock_policy->setlk(lockfile, ds_lock);
-    locked = false;
 }
 
 

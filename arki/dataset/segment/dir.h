@@ -19,11 +19,9 @@ namespace dir {
 struct Writer : public dataset::segment::Writer
 {
     SequenceFile seqfile;
-    core::File write_lock_file;
-    core::Lock lock;
     std::string format;
 
-    Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy);
+    Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname);
     ~Writer();
 
     Pending append(Metadata& md, const types::source::Blob** new_source=0) override;
@@ -61,9 +59,7 @@ public:
     void validate(Metadata& md, const scan::Validator& v) override;
 
 public:
-    Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname, const core::lock::Policy* lock_policy);
-
-    void lock() override;
+    Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname);
 
     bool exists_on_disk() override;
 

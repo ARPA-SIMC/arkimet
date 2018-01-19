@@ -5,6 +5,7 @@
 #include "arki/exceptions.h"
 #include "arki/dataset/time.h"
 #include "arki/types/source/blob.h"
+#include "arki/types/reftime.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
@@ -15,6 +16,7 @@
 #include "arki/types/area.h"
 #include "arki/types/product.h"
 #include "arki/types/value.h"
+#include "arki/sort.h"
 #include "arki/utils/sys.h"
 #include <fcntl.h>
 #include <sstream>

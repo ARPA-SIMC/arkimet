@@ -1,7 +1,8 @@
-#include "config.h"
-#include <arki/utils/sqlite.h>
-#include <arki/binary.h>
-#include <arki/types.h>
+#include "arki/libconfig.h"
+#include "arki/utils/sqlite.h"
+#include "arki/binary.h"
+#include "arki/types.h"
+#include "arki/nag.h"
 #include <sstream>
 #include <unistd.h>
 
@@ -13,6 +14,28 @@ using namespace std;
 namespace arki {
 namespace utils {
 namespace sqlite {
+
+static int trace_callback(unsigned T, void* C, void* P,void* X)
+{
+    switch (T)
+    {
+        case SQLITE_TRACE_STMT:
+            fprintf(stderr, "SQLite: started %s\n", sqlite3_expanded_sql((sqlite3_stmt*)P));
+            break;
+        case SQLITE_TRACE_PROFILE:
+            fprintf(stderr, "SQLite: completed %s in %.9fs\n",
+                    sqlite3_expanded_sql((sqlite3_stmt*)P), *(int64_t*)X / 1000000000.0);
+
+            break;
+        case SQLITE_TRACE_ROW:
+            fprintf(stderr, "SQLite: got a row of result\n");
+            break;
+        case SQLITE_TRACE_CLOSE:
+            fprintf(stderr, "SQLite: connection closed %p\n", P);
+            break;
+    }
+    return 0;
+}
 
 // Note: msg will be deallocated using sqlite3_free
 SQLiteError::SQLiteError(char* sqlite_msg, const std::string& msg)
@@ -26,8 +49,8 @@ SQLiteError::SQLiteError(sqlite3* db, const std::string& msg)
 {
 }
 
-DuplicateInsert::DuplicateInsert(const std::string& msg)
-    : std::runtime_error(msg + ": duplicate element")
+DuplicateInsert::DuplicateInsert(sqlite3* db, const std::string& msg)
+    : std::runtime_error(msg + ": " + sqlite3_errmsg(db))
 {
 }
 
@@ -76,10 +99,18 @@ sqlite3_stmt* SQLiteDB::prepare(const std::string& query) const
 
 void SQLiteDB::exec(const std::string& query)
 {
-	char* err;
-	int rc = sqlite3_exec(m_db, query.c_str(), 0, 0, &err);
-	if (rc != SQLITE_OK)
-	       	throw SQLiteError(err, "executing query " + query);
+    char* err;
+    int rc = sqlite3_exec(m_db, query.c_str(), 0, 0, &err);
+    if (rc != SQLITE_OK)
+        throw SQLiteError(err, "executing query " + query);
+}
+
+void SQLiteDB::exec_nothrow(const std::string& query) noexcept
+{
+    char* err;
+    int rc = sqlite3_exec(m_db, query.c_str(), 0, 0, &err);
+    if (rc != SQLITE_OK)
+        nag::warning("query failed: %s. Error: %s", query.c_str(), sqlite3_errmsg(m_db));
 }
 
 void SQLiteDB::checkpoint()
@@ -116,6 +147,12 @@ int SQLiteDB::lastInsertID()
 void SQLiteDB::throwException(const std::string& msg) const
 {
 	throw SQLiteError(m_db, msg);
+}
+
+void SQLiteDB::trace(unsigned mask)
+{
+    if (sqlite3_trace_v2(m_db, mask, trace_callback, nullptr) != SQLITE_OK)
+        throwException("Cannot set up SQLite tracing");
 }
 
 Query::~Query()
@@ -351,6 +388,12 @@ void OneShotQuery::operator()()
 #endif
 }
 
+void OneShotQuery::nothrow() noexcept
+{
+    m_db.exec_nothrow(m_query);
+}
+
+
 Committer::Committer(SQLiteDB& db, const char* type)
     : begin(db, "begin", type ? string("BEGIN ") + type : "BEGIN"),
       commit(db, "commit", "COMMIT"),
@@ -364,8 +407,15 @@ void SqliteTransaction::commit()
 
 void SqliteTransaction::rollback()
 {
+    abort();
 	committer.rollback();
 	fired = true;
+}
+
+void SqliteTransaction::rollback_nothrow() noexcept
+{
+    committer.rollback.nothrow();
+    fired = true;
 }
 
 bool InsertQuery::step()
@@ -378,14 +428,24 @@ bool InsertQuery::step()
 		case SQLITE_DONE:
 			return false;
 		case SQLITE_CONSTRAINT:
-			throw DuplicateInsert("executing " + name + " query");
+			throw DuplicateInsert(m_db, "cannot execute " + name + " query");
 		default:
-			m_db.throwException("executing " + name + " query");
+			m_db.throwException("cannot execute " + name + " query");
 	}
 	// Not reached, but makes gcc happy
 	return false;
 }
 
+Trace::Trace(SQLiteDB& db, unsigned mask)
+    : db(db)
+{
+    db.trace(mask);
+}
+
+Trace::~Trace()
+{
+    db.trace(0);
+}
 
 }
 }

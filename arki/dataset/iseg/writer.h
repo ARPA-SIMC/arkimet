@@ -43,8 +43,6 @@ public:
     AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
     void remove(Metadata& md);
 
-    //virtual Pending test_writelock();
-
     static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
@@ -65,15 +63,12 @@ public:
     std::string type() const override;
 
     std::unique_ptr<segmented::CheckerSegment> segment(const std::string& relpath) override;
+    std::unique_ptr<segmented::CheckerSegment> segment_prelocked(const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock);
     void segments(std::function<void(segmented::CheckerSegment& segment)>) override;
     void segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
     void segments_untracked(std::function<void(segmented::CheckerSegment& relpath)>) override;
     void segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
     void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
-
-    void indexSegment(const std::string& relpath, metadata::Collection&& contents) override;
-    void rescanSegment(const std::string& relpath) override;
-    void releaseSegment(const std::string& relpath, const std::string& destpath) override;
     size_t vacuum(dataset::Reporter& reporter) override;
 
     void test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx=1) override;
