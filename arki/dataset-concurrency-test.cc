@@ -440,22 +440,18 @@ this->add_method("write_check", [](Fixture& f) {
                 f.config().create_writer();
                 wassert(actual(0) == 1);
             } catch (std::runtime_error& e) {
-                wassert(actual(e.what()).contains("a read lock is already held"));
+                wassert(actual(e.what()).contains("a write lock is already held"));
             }
         } else {
             auto writer = wcallchecked(f.makeSegmentedWriter());
-            wassert(actual(writer->acquire(f.td.test_data[2].md)) == dataset::Writer::ACQ_OK);
+            wassert(actual(*writer).import(f.td.test_data[2].md));
 
-            // Importing on the segment being checked should hang except on dir segments
-            if (f.td.format == "odimh5")
+            try {
                 writer->acquire(f.td.test_data[0].md);
-            else
-                try {
-                    writer->acquire(f.td.test_data[0].md);
-                    wassert(actual(0) == 1);
-                } catch (std::runtime_error& e) {
-                    wassert(actual(e.what()).contains("a read lock is already held"));
-                }
+                wassert(actual(0) == 1);
+            } catch (std::runtime_error& e) {
+                wassert(actual(e.what()).contains("a write lock is already held"));
+            }
         }
     });
 });
