@@ -60,16 +60,16 @@ std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::str
     const core::Time& time = md.get<types::reftime::Position>()->time;
     string relname = config().step()(time) + "." + config().format;
     sys::makedirs(str::dirname(str::joinpath(config().path, relname)));
-    std::shared_ptr<dataset::Lock> append_lock(config().append_lock_segment(relname));
+    std::shared_ptr<dataset::AppendLock> append_lock(config().append_lock_segment(relname));
     auto writer = segment_manager().get_writer(config().format, relname);
-    writer->payload = new WIndex(m_config, relname, append_lock);
+    writer->payload = new AIndex(m_config, relname, append_lock);
     return writer;
 }
 
 Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
     auto writer = file(md, md.source().format);
-    WIndex* idx = static_cast<WIndex*>(writer->payload);
+    AIndex* idx = static_cast<AIndex*>(writer->payload);
     Pending p_idx = idx->begin_transaction();
 
     const types::source::Blob* new_source;
@@ -95,7 +95,7 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
 Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 {
     auto writer = file(md, md.source().format);
-    WIndex* idx = static_cast<WIndex*>(writer->payload);
+    AIndex* idx = static_cast<AIndex*>(writer->payload);
     Pending p_idx = idx->begin_transaction();
 
     const types::source::Blob* new_source;
@@ -118,7 +118,7 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
 Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     auto writer = file(md, md.source().format);
-    WIndex* idx = static_cast<WIndex*>(writer->payload);
+    AIndex* idx = static_cast<AIndex*>(writer->payload);
     Pending p_idx = idx->begin_transaction();
 
     const types::source::Blob* new_source;
@@ -212,7 +212,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 void Writer::remove(Metadata& md)
 {
     auto writer = file(md, md.source().format);
-    WIndex* idx = static_cast<WIndex*>(writer->payload);
+    AIndex* idx = static_cast<AIndex*>(writer->payload);
 
     const types::source::Blob* source = md.has_source_blob();
     if (!source)
@@ -277,13 +277,14 @@ class CheckerSegment : public segmented::CheckerSegment
 {
 public:
     Checker& checker;
-    std::shared_ptr<dataset::Lock> lock;
-    WIndex* m_idx = nullptr;
+    std::shared_ptr<dataset::CheckLock> lock;
+    CIndex* m_idx = nullptr;
 
     CheckerSegment(Checker& checker, const std::string& relpath)
-        : checker(checker)
+        : CheckerSegment(checker, relpath, checker.config().check_lock_segment(relpath)) {}
+    CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
+        : checker(checker), lock(lock)
     {
-        lock = checker.config().read_lock_segment(relpath);
         segment = checker.segment_manager().get_checker(checker.config().format, relpath);
     }
     ~CheckerSegment()
@@ -291,10 +292,10 @@ public:
         delete m_idx;
     }
 
-    WIndex& idx()
+    CIndex& idx()
     {
         if (!m_idx)
-            m_idx = new WIndex(checker.m_config, path_relative(), lock);
+            m_idx = new CIndex(checker.m_config, path_relative(), lock);
         return *m_idx;
     }
     std::string path_relative() const override { return segment->relname; }
@@ -381,6 +382,7 @@ public:
     size_t repack(unsigned test_flags=0) override
     {
         // Lock away writes and reads
+        auto write_lock = lock->write_lock();
         Pending p = idx().begin_transaction();
 
         metadata::Collection mds;
@@ -397,6 +399,7 @@ public:
     size_t reorder(metadata::Collection& mds, unsigned test_flags) override
     {
         // Lock away writes and reads
+        auto write_lock = lock->write_lock();
         Pending p = idx().begin_transaction();
 
         return reorder_segment_backend(p, mds, test_flags);
@@ -456,6 +459,7 @@ public:
     void index(metadata::Collection&& mds) override
     {
         // Add to index
+        auto write_lock = lock->write_lock();
         Pending p_idx = idx().begin_transaction();
         for (auto& md: mds)
             idx().index(*md, md->sourceBlob().offset);
@@ -480,6 +484,7 @@ public:
         //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
 
         // Lock away writes and reads
+        auto write_lock = lock->write_lock();
         Pending p = idx().begin_transaction();
 
         // Remove from the index all data about the file
@@ -575,6 +580,11 @@ std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& r
     return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath));
 }
 
+std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
+{
+    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
+}
+
 void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> dest)
 {
     segments_filtered(Matcher(), dest);
@@ -609,7 +619,8 @@ void Checker::check_issue51(dataset::Reporter& reporter, bool fix)
 
     // Iterate all segments
     list_segments([&](const std::string& relpath) {
-        WIndex idx(m_config, relpath);
+        auto lock = config().check_lock_segment(relpath);
+        CIndex idx(m_config, relpath, lock);
         metadata::Collection mds;
         idx.scan(mds.inserter_func(), "reftime, offset");
         if (mds.empty()) return;
@@ -699,7 +710,9 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
 
 void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
 {
-    WIndex idx(m_config, relpath);
+    auto lock = config().check_lock_segment(relpath);
+    auto wrlock = lock->write_lock();
+    CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
     segment_manager().get_checker(relpath)->test_make_overlap(mds, overlap_size, data_idx);
@@ -708,7 +721,9 @@ void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_siz
 
 void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
 {
-    WIndex idx(m_config, relpath);
+    auto lock = config().check_lock_segment(relpath);
+    auto wrlock = lock->write_lock();
+    CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
     segment_manager().get_checker(relpath)->test_make_hole(mds, hole_size, data_idx);
@@ -717,7 +732,9 @@ void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, uns
 
 void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
 {
-    WIndex idx(m_config, relpath);
+    auto lock = config().check_lock_segment(relpath);
+    auto wrlock = lock->write_lock();
+    CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
     segment_manager().get_checker(relpath)->test_corrupt(mds, data_idx);
@@ -725,7 +742,9 @@ void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
 
 void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
 {
-    WIndex idx(m_config, relpath);
+    auto lock = config().check_lock_segment(relpath);
+    auto wrlock = lock->write_lock();
+    CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
     segment_manager().get_checker(relpath)->test_truncate(mds, data_idx);
@@ -733,15 +752,20 @@ void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
 
 void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
 {
+    auto lock = config().check_lock_segment(relpath);
     metadata::Collection mds;
-    WIndex idx(m_config, relpath);
-    idx.scan(mds.inserter_func(), "offset");
-    std::swap(mds[d1_idx], mds[d2_idx]);
-    segment(relpath)->reorder(mds);
+    {
+        CIndex idx(m_config, relpath, lock);
+        idx.scan(mds.inserter_func(), "offset");
+        std::swap(mds[d1_idx], mds[d2_idx]);
+    }
+    segment_prelocked(relpath, lock)->reorder(mds);
 }
 
 void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)
 {
+    auto lock = config().check_lock_segment(relpath);
+    auto wrlock = lock->write_lock();
     string abspath = str::joinpath(config().path, relpath);
     string new_abspath = str::joinpath(config().path, new_relpath);
     sys::rename(abspath, new_abspath);
@@ -750,7 +774,9 @@ void Checker::test_rename(const std::string& relpath, const std::string& new_rel
 
 void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
 {
-    WIndex idx(m_config, relpath);
+    auto lock = config().check_lock_segment(relpath);
+    auto wrlock = lock->write_lock();
+    CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
     md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));

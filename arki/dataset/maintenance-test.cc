@@ -201,10 +201,12 @@ void MaintenanceTest::register_tests_concat()
         make_hugefile();
         wassert(f.state_is(3, SEGMENT_DIRTY));
 
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "check", "2 files ok");
-        wassert(actual(writer.get()).check(e, true));
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "check", "2 files ok");
+            wassert(actual(checker.get()).check(e, true));
+        }
 
         wassert(f.state_is(3, SEGMENT_DIRTY));
         wassert(f.query_results({1, -1, 3, 0, 2}));
@@ -343,9 +345,11 @@ void MaintenanceTest::register_tests()
         add_method("fix_one_removed", [&](Fixture& f) {
             delete_one_in_segment();
 
-            auto writer(f.makeSegmentedChecker());
-            ReporterExpected e;
-            wassert(actual(writer.get()).check(e, true));
+            {
+                auto checker(f.makeSegmentedChecker());
+                ReporterExpected e;
+                wassert(actual(checker.get()).check(e, true));
+            }
 
             auto state = f.scan_state();
             wassert(actual(state.size()) == 3u);
@@ -359,10 +363,12 @@ void MaintenanceTest::register_tests()
         )", [&](Fixture& f) {
             delete_all_in_segment();
 
-            auto writer(f.makeSegmentedChecker());
-            ReporterExpected e;
-            e.report.emplace_back("testds", "check", "2 files ok");
-            wassert(actual(writer.get()).check(e, true));
+            {
+                auto checker(f.makeSegmentedChecker());
+                ReporterExpected e;
+                e.report.emplace_back("testds", "check", "2 files ok");
+                wassert(actual(checker.get()).check(e, true));
+            }
 
             auto state = f.scan_state();
             wassert(actual(state.size()) == 3u);
@@ -376,11 +382,13 @@ void MaintenanceTest::register_tests()
         )", [&](Fixture& f) {
             delete_all_in_segment();
 
-            auto writer(f.makeSegmentedChecker());
-            ReporterExpected e;
-            e.report.emplace_back("testds", "repack", "2 files ok");
-            e.deleted.emplace_back("testds", f.test_relpath);
-            wassert(actual(writer.get()).repack(e, true));
+            {
+                auto checker(f.makeSegmentedChecker());
+                ReporterExpected e;
+                e.report.emplace_back("testds", "repack", "2 files ok");
+                e.deleted.emplace_back("testds", f.test_relpath);
+                wassert(actual(checker.get()).repack(e, true));
+            }
 
             wassert(f.ensure_localds_clean(2, 2));
             wassert(f.query_results({0, 2}));
@@ -389,11 +397,13 @@ void MaintenanceTest::register_tests()
         add_method("repack_one_removed", [&](Fixture& f) {
             delete_one_in_segment();
 
-            auto writer(f.makeSegmentedChecker());
-            ReporterExpected e;
-            e.report.emplace_back("testds", "repack", "2 files ok");
-            e.repacked.emplace_back("testds", f.test_relpath);
-            wassert(actual(writer.get()).repack(e, true));
+            {
+                auto checker(f.makeSegmentedChecker());
+                ReporterExpected e;
+                e.report.emplace_back("testds", "repack", "2 files ok");
+                e.repacked.emplace_back("testds", f.test_relpath);
+                wassert(actual(checker.get()).repack(e, true));
+            }
 
             wassert(f.ensure_localds_clean(3, 3));
             wassert(f.query_results({3, 0, 2}));
@@ -551,10 +561,12 @@ void MaintenanceTest::register_tests()
     )", [&](Fixture& f) {
         make_hole_end();
 
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "check", "2 files ok");
-        wassert(actual(writer.get()).check(e, true));
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "check", "2 files ok");
+            wassert(actual(checker.get()).check(e, true));
+        }
 
         wassert(f.state_is(3, SEGMENT_DIRTY));
         wassert(f.query_results({1, 3, 0, 2}));
@@ -565,11 +577,13 @@ void MaintenanceTest::register_tests()
     )", [&](Fixture& f) {
         make_unaligned();
 
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "check", "2 files ok");
-        e.rescanned.emplace_back("testds", f.test_relpath);
-        wassert(actual(writer.get()).check(e, true));
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "check", "2 files ok");
+            e.rescanned.emplace_back("testds", f.test_relpath);
+            wassert(actual(checker.get()).check(e, true));
+        }
 
         wassert(f.ensure_localds_clean(3, 4));
         wassert(f.query_results({1, 3, 0, 2}));
@@ -580,11 +594,13 @@ void MaintenanceTest::register_tests()
     )", [&](Fixture& f) {
         rm_r("testds/" + f.test_relpath);
 
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "check", "2 files ok");
-        e.deindexed.emplace_back("testds", f.test_relpath);
-        wassert(actual(writer.get()).check(e, true));
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "check", "2 files ok");
+            e.deindexed.emplace_back("testds", f.test_relpath);
+            wassert(actual(checker.get()).check(e, true));
+        }
 
         wassert(f.ensure_localds_clean(2, 2));
         wassert(f.query_results({0, 2}));
@@ -598,10 +614,12 @@ void MaintenanceTest::register_tests()
         md.set("reftime", "2007-07-06 00:00:00");
         checker()->test_change_metadata(f.test_relpath, md, 0);
 
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "check", "2 files ok");
-        wassert(actual(writer.get()).check(e, true));
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "check", "2 files ok");
+            wassert(actual(checker.get()).check(e, true));
+        }
 
         auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
@@ -618,13 +636,12 @@ void MaintenanceTest::register_tests()
         {
             auto o = SessionTime::local_override(t20070707 + 2 * 86400);
 
-            auto writer(f.makeSegmentedChecker());
+            auto checker(f.makeSegmentedChecker());
             ReporterExpected e;
             e.report.emplace_back("testds", "check", "2 files ok");
-            wassert(actual(writer.get()).check(e, true));
-
-            wassert(f.state_is(3, SEGMENT_ARCHIVE_AGE));
+            wassert(actual(checker.get()).check(e, true));
         }
+        wassert(f.state_is(3, SEGMENT_ARCHIVE_AGE));
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
@@ -637,13 +654,12 @@ void MaintenanceTest::register_tests()
         {
             auto o = SessionTime::local_override(t20070707 + 2 * 86400);
 
-            auto writer(f.makeSegmentedChecker());
+            auto checker(f.makeSegmentedChecker());
             ReporterExpected e;
             e.report.emplace_back("testds", "check", "2 files ok");
-            wassert(actual(writer.get()).check(e, true));
-
-            wassert(f.state_is(3, SEGMENT_DELETE_AGE));
+            wassert(actual(checker.get()).check(e, true));
         }
+        wassert(f.state_is(3, SEGMENT_DELETE_AGE));
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
@@ -658,11 +674,13 @@ void MaintenanceTest::register_tests()
         make_hole_middle();
         // swap_data(); // FIXME: swap_data currently isn't detected as dirty on simple datasets
 
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "repack", "2 files ok");
-        e.repacked.emplace_back("testds", f.test_relpath);
-        wassert(actual(writer.get()).repack(e, true));
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "2 files ok");
+            e.repacked.emplace_back("testds", f.test_relpath);
+            wassert(actual(checker.get()).repack(e, true));
+        }
 
         wassert(f.ensure_localds_clean(3, 4));
         wassert(f.query_results({1, 3, 0, 2}));
@@ -675,11 +693,13 @@ void MaintenanceTest::register_tests()
     )", [&](Fixture& f) {
         rm_r("testds/" + f.test_relpath);
 
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "repack", "2 files ok");
-        e.deindexed.emplace_back("testds", f.test_relpath);
-        wassert(actual(writer.get()).repack(e, true));
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "2 files ok");
+            e.deindexed.emplace_back("testds", f.test_relpath);
+            wassert(actual(checker.get()).repack(e, true));
+        }
 
         wassert(f.ensure_localds_clean(2, 2));
         wassert(f.query_results({0, 2}));
@@ -692,10 +712,12 @@ void MaintenanceTest::register_tests()
         md.set("reftime", "2007-07-06 00:00:00");
         checker()->test_change_metadata(f.test_relpath, md, 0);
 
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "repack", "2 files ok");
-        wassert(actual(writer.get()).repack(e, true));
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "2 files ok");
+            wassert(actual(checker.get()).repack(e, true));
+        }
 
         wassert(f.state_is(3, SEGMENT_CORRUPTED));
         wassert(f.query_results({-1, 3, 0, 2}));
@@ -709,18 +731,16 @@ void MaintenanceTest::register_tests()
         f.cfg.setValue("archive age", "1");
         f.test_reread_config();
 
+        auto o = SessionTime::local_override(t20070707 + 2 * 86400);
         {
-            auto o = SessionTime::local_override(t20070707 + 2 * 86400);
-
-            auto writer(f.makeSegmentedChecker());
+            auto checker(f.makeSegmentedChecker());
             ReporterExpected e;
             e.report.emplace_back("testds", "repack", "2 files ok");
             e.repacked.emplace_back("testds", f.test_relpath);
             e.archived.emplace_back("testds", f.test_relpath);
-            wassert(actual(writer.get()).repack(e, true));
-
-            wassert(f.ensure_localds_clean(2, 4));
+            wassert(actual(checker.get()).repack(e, true));
         }
+        wassert(f.ensure_localds_clean(2, 4));
 
         // Check that the files have been moved to the archive
         wassert(actual_file("testds/" + f.test_relpath).not_exists());
@@ -738,17 +758,15 @@ void MaintenanceTest::register_tests()
         f.cfg.setValue("delete age", "1");
         f.test_reread_config();
 
+        auto o = SessionTime::local_override(t20070707 + 2 * 86400);
         {
-            auto o = SessionTime::local_override(t20070707 + 2 * 86400);
-
-            auto writer(f.makeSegmentedChecker());
+            auto checker(f.makeSegmentedChecker());
             ReporterExpected e;
             e.report.emplace_back("testds", "repack", "2 files ok");
             e.deleted.emplace_back("testds", f.test_relpath);
-            wassert(actual(writer.get()).repack(e, true));
-
-            wassert(f.ensure_localds_clean(2, 2));
+            wassert(actual(checker.get()).repack(e, true));
         }
+        wassert(f.ensure_localds_clean(2, 2));
 
         wassert(f.query_results({0, 2}));
     });
@@ -773,11 +791,11 @@ void MaintenanceTest::register_tests()
 
         // Perform packing and check that things are still ok afterwards
         {
-            auto writer(f.makeSegmentedChecker());
+            auto checker(f.makeSegmentedChecker());
             ReporterExpected e;
             e.report.emplace_back("testds", "repack", "2 files ok");
             e.deleted.emplace_back("testds", f.test_relpath);
-            wassert(actual(writer.get()).repack(e, true));
+            wassert(actual(checker.get()).repack(e, true));
         }
         wassert(f.all_clean(2));
         wassert(f.query_results({0, 2}));
@@ -803,11 +821,11 @@ void MaintenanceTest::register_tests()
 
         // Perform packing and check that things are still ok afterwards
         {
-            auto writer(f.makeSegmentedChecker());
+            auto checker(f.makeSegmentedChecker());
             ReporterExpected e;
             e.repacked.emplace_back("testds", f.test_relpath);
             e.archived.emplace_back("testds", f.test_relpath);
-            wassert(actual(writer.get()).repack(e, true));
+            wassert(actual(checker.get()).repack(e, true));
         }
         wassert(f.all_clean(2));
         wassert(f.query_results({1, 3, 0, 2}));

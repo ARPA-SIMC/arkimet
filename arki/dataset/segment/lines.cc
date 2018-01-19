@@ -1,16 +1,13 @@
 #include "lines.h"
 #include "arki/exceptions.h"
-#include "arki/metadata.h"
 #include "arki/nag.h"
-#include "arki/utils/sys.h"
-#include "arki/utils/string.h"
-#include <arki/wibble/sys/signal.h>
 #include <system_error>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sstream>
 
 using namespace std;
 using namespace arki::types;

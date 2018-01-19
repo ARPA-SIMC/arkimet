@@ -14,6 +14,9 @@ class Matcher;
 
 namespace dataset {
 class Lock;
+class ReadLock;
+class AppendLock;
+class CheckLock;
 class LocalConfig;
 class ArchivesConfig;
 class ArchivesReader;
@@ -49,12 +52,12 @@ public:
     /**
      * Create/open a dataset-wide lockfile, returning the Lock instance
      */
-    std::shared_ptr<dataset::Lock> read_lock_dataset() const;
-    std::shared_ptr<dataset::Lock> write_lock_dataset() const;
-    std::shared_ptr<dataset::Lock> append_lock_dataset() const;
-    std::shared_ptr<dataset::Lock> read_lock_segment(const std::string& relpath) const;
-    std::shared_ptr<dataset::Lock> write_lock_segment(const std::string& relpath) const;
-    std::shared_ptr<dataset::Lock> append_lock_segment(const std::string& relpath) const;
+    std::shared_ptr<dataset::ReadLock> read_lock_dataset() const;
+    std::shared_ptr<dataset::AppendLock> append_lock_dataset() const;
+    std::shared_ptr<dataset::CheckLock> check_lock_dataset() const;
+    std::shared_ptr<dataset::ReadLock> read_lock_segment(const std::string& relpath) const;
+    std::shared_ptr<dataset::AppendLock> append_lock_segment(const std::string& relpath) const;
+    std::shared_ptr<dataset::CheckLock> check_lock_segment(const std::string& relpath) const;
 };
 
 template<typename Parent, typename Archives>

@@ -7,6 +7,7 @@
 #include <arki/dataset/segment.h>
 #include <arki/core/file.h>
 #include <string>
+#include <vector>
 
 namespace arki {
 struct Reader;

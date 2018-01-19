@@ -10,6 +10,7 @@
 #include "arki/scan/any.h"
 #include "arki/utils/string.h"
 #include "arki/dataset/reporter.h"
+#include "arki/nag.h"
 #include <cerrno>
 #include <cstring>
 #include <cstdint>

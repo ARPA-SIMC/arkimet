@@ -15,6 +15,7 @@
 #include "arki/utils/sys.h"
 #include "arki/summary.h"
 #include "arki/libconfig.h"
+#include "arki/nag.h"
 #include <sstream>
 #include <iostream>
 #include <algorithm>
@@ -76,7 +77,6 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
         s->append(data.test_data[0].md).commit();
     }
 
-    auto checker = f.makeOndisk2Checker();
     {
         auto state = f.scan_state();
         wassert(actual(state.get("2007/07.grib").state) == segment::State(SEGMENT_UNALIGNED));
@@ -85,6 +85,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
 
     // Perform full maintenance and check that things are still ok afterwards
     {
+        auto checker = f.makeOndisk2Checker();
         ReporterExpected e;
         e.rescanned.emplace_back("testds", "2007/07.grib");
         wassert(actual(*checker).check(e, true, true));
@@ -115,6 +116,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
 
     // Perform packing and check that things are still ok afterwards
     {
+        auto checker = f.makeOndisk2Checker();
         ReporterExpected e;
         e.repacked.emplace_back("testds", "2007/07.grib", "34960 freed");
         wassert(actual(*checker).repack(e, true));
@@ -221,15 +223,16 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
         e.rescanned.emplace_back("testds", "2007/07-08.grib");
         e.rescanned.emplace_back("testds", "2007/10-09.grib");
         wassert(actual(*checker).check(e, true, true));
-        wassert(f.ensure_localds_clean(3, 3));
-        wassert(actual(*checker).check_clean(true, true));
-        wassert(actual(*checker).repack_clean(true));
-
-        // Ensure that we have the summary cache
-        ensure(sys::exists("testds/.summaries/all.summary"));
-        ensure(sys::exists("testds/.summaries/2007-07.summary"));
-        ensure(sys::exists("testds/.summaries/2007-10.summary"));
     }
+    wassert(f.ensure_localds_clean(3, 3));
+    auto checker = f.makeOndisk2Checker();
+    wassert(actual(*checker).check_clean(true, true));
+    wassert(actual(*checker).repack_clean(true));
+
+    // Ensure that we have the summary cache
+    ensure(sys::exists("testds/.summaries/all.summary"));
+    ensure(sys::exists("testds/.summaries/2007-07.summary"));
+    ensure(sys::exists("testds/.summaries/2007-10.summary"));
 });
 
 // Test sanity checks on summary cache
@@ -242,12 +245,11 @@ add_method("summary_checks", [](Fixture& f) {
     f.import();
     files::removeDontpackFlagfile("testds");
 
-    auto checker = f.makeOndisk2Checker();
-
     // Dataset is ok
     wassert(f.ensure_localds_clean(3, 3));
 
     // Perform packing to regenerate the summary cache
+    auto checker = f.makeOndisk2Checker();
     wassert(actual(*checker).repack_clean(true));
 
     // Ensure that we have the summary cache

@@ -7,11 +7,8 @@
 #include <arki/defs.h>
 #include <arki/core/fwd.h>
 #include <arki/transaction.h>
-#include <arki/nag.h>
 #include <string>
-#include <vector>
 #include <iosfwd>
-#include <sys/types.h>
 #include <memory>
 
 namespace arki {

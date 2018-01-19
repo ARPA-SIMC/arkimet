@@ -23,6 +23,8 @@ class Reader;
 
 namespace dataset {
 struct Lock;
+struct AppendLock;
+struct CheckLock;
 struct DataQuery;
 
 namespace index {
@@ -31,7 +33,6 @@ struct Others;
 }
 
 namespace iseg {
-struct IsegSqliteTransaction;
 
 /**
  * Dataset index.
@@ -232,13 +233,12 @@ public:
      */
     void summaryForAll(Summary& out) const;
 #endif
-    friend class IsegSqliteTransaction;
 };
 
 class RIndex : public Index
 {
 public:
-    RIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
+    RIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::ReadLock> lock=nullptr);
 };
 
 class WIndex : public Index
@@ -253,19 +253,8 @@ protected:
     void compile_insert();
     void bind_insert(utils::sqlite::Query& q, const Metadata& md, uint64_t ofs, char* timebuf);
 
-public:
     WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
-#if 0
-    ~WContents();
-
-	/**
-	 * Initialise access to the index
-	 *
-	 * @return true if the index did not exist and has been created, false
-	 * if it reused the existing index
-	 */
-	bool open();
-#endif
+public:
 
     /**
      * Index the given metadata item.
@@ -306,6 +295,20 @@ public:
      * a hole is created between the ones at `data_idx - 1` and at `data_idx`
      */
     void test_make_hole(unsigned hole_size, unsigned data_idx);
+};
+
+
+class AIndex : public WIndex
+{
+public:
+    AIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::AppendLock> lock);
+};
+
+
+class CIndex : public WIndex
+{
+public:
+    CIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::CheckLock> lock);
 };
 
 }

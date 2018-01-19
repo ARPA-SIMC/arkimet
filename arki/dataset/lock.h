@@ -15,35 +15,13 @@ struct Lock : public core::Lock
     arki::core::FLock ds_lock;
 
     Lock(const std::string& pathname, const core::lock::Policy* lock_policy);
-
-    virtual std::shared_ptr<core::Lock> write_lock() = 0;
 };
 
 
 struct ReadLock : public Lock
 {
-    std::weak_ptr<core::Lock> current_write_lock;
-
     ReadLock(const std::string& pathname, const core::lock::Policy* lock_policy);
     ~ReadLock();
-
-    /**
-     * Escalate a read lock to a write lock as long as the resulting lock is in
-     * use
-     */
-    std::shared_ptr<core::Lock> write_lock() override;
-};
-
-
-struct WriteLock : public Lock
-{
-    WriteLock(const std::string& pathname, const core::lock::Policy* lock_policy);
-    ~WriteLock();
-
-    /**
-     * Return a reference to self
-     */
-    std::shared_ptr<core::Lock> write_lock() override;
 };
 
 
@@ -51,11 +29,21 @@ struct AppendLock : public Lock
 {
     AppendLock(const std::string& pathname, const core::lock::Policy* lock_policy);
     ~AppendLock();
+};
+
+
+struct CheckLock : public Lock
+{
+    std::weak_ptr<core::Lock> current_write_lock;
+
+    CheckLock(const std::string& pathname, const core::lock::Policy* lock_policy);
+    ~CheckLock();
 
     /**
-     * Return a reference to self
+     * Escalate a read lock to a write lock as long as the resulting lock is in
+     * use
      */
-    std::shared_ptr<core::Lock> write_lock() override;
+    std::shared_ptr<core::Lock> write_lock();
 };
 
 
@@ -64,14 +52,14 @@ struct DatasetReadLock : public ReadLock
     DatasetReadLock(const LocalConfig& config);
 };
 
-struct DatasetWriteLock : public WriteLock
-{
-    DatasetWriteLock(const LocalConfig& config);
-};
-
 struct DatasetAppendLock : public AppendLock
 {
     DatasetAppendLock(const LocalConfig& config);
+};
+
+struct DatasetCheckLock : public CheckLock
+{
+    DatasetCheckLock(const LocalConfig& config);
 };
 
 struct SegmentReadLock : public ReadLock
@@ -79,14 +67,14 @@ struct SegmentReadLock : public ReadLock
     SegmentReadLock(const LocalConfig& config, const std::string& relpath);
 };
 
-struct SegmentWriteLock : public WriteLock
-{
-    SegmentWriteLock(const LocalConfig& config, const std::string& relpath);
-};
-
 struct SegmentAppendLock : public AppendLock
 {
     SegmentAppendLock(const LocalConfig& config, const std::string& relpath);
+};
+
+struct SegmentCheckLock : public CheckLock
+{
+    SegmentCheckLock(const LocalConfig& config, const std::string& relpath);
 };
 
 

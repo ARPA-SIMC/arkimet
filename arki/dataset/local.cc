@@ -69,34 +69,34 @@ std::shared_ptr<ArchivesConfig> LocalConfig::archives_config() const
     return m_archives_config;
 }
 
-std::shared_ptr<dataset::Lock> LocalConfig::read_lock_dataset() const
+std::shared_ptr<dataset::ReadLock> LocalConfig::read_lock_dataset() const
 {
     return std::make_shared<DatasetReadLock>(*this);
 }
 
-std::shared_ptr<dataset::Lock> LocalConfig::write_lock_dataset() const
-{
-    return std::make_shared<DatasetWriteLock>(*this);
-}
-
-std::shared_ptr<dataset::Lock> LocalConfig::append_lock_dataset() const
+std::shared_ptr<dataset::AppendLock> LocalConfig::append_lock_dataset() const
 {
     return std::make_shared<DatasetAppendLock>(*this);
 }
 
-std::shared_ptr<dataset::Lock> LocalConfig::read_lock_segment(const std::string& relpath) const
+std::shared_ptr<dataset::CheckLock> LocalConfig::check_lock_dataset() const
+{
+    return std::make_shared<DatasetCheckLock>(*this);
+}
+
+std::shared_ptr<dataset::ReadLock> LocalConfig::read_lock_segment(const std::string& relpath) const
 {
     return std::make_shared<SegmentReadLock>(*this, relpath);
 }
 
-std::shared_ptr<dataset::Lock> LocalConfig::write_lock_segment(const std::string& relpath) const
-{
-    return std::make_shared<SegmentWriteLock>(*this, relpath);
-}
-
-std::shared_ptr<dataset::Lock> LocalConfig::append_lock_segment(const std::string& relpath) const
+std::shared_ptr<dataset::AppendLock> LocalConfig::append_lock_segment(const std::string& relpath) const
 {
     return std::make_shared<SegmentAppendLock>(*this, relpath);
+}
+
+std::shared_ptr<dataset::CheckLock> LocalConfig::check_lock_segment(const std::string& relpath) const
+{
+    return std::make_shared<SegmentCheckLock>(*this, relpath);
 }
 
 

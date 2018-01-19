@@ -58,47 +58,6 @@ struct IndexGlobalData
 };
 static IndexGlobalData igd;
 
-struct IsegSqliteTransaction : public Transaction
-{
-    std::shared_ptr<core::Lock> lock;
-    SqliteTransaction sqlite_transaction;
-
-    IsegSqliteTransaction(Index& index, const char* type=nullptr)
-        : lock(index.lock ? index.lock->write_lock() : index.config().write_lock_segment(index.data_relpath)),
-          sqlite_transaction(index.db(), type)
-    {
-    }
-
-    void commit() override
-    {
-        try {
-            sqlite_transaction.commit();
-        } catch (...) {
-            lock.reset();
-            throw;
-        }
-        lock.reset();
-    }
-
-    void rollback() override
-    {
-        try {
-            sqlite_transaction.rollback();
-        } catch (...) {
-            lock.reset();
-            throw;
-        }
-        lock.reset();
-    }
-
-    void rollback_nothrow() noexcept override
-    {
-        sqlite_transaction.rollback_nothrow();
-        lock.reset();
-    }
-};
-
-
 Index::Index(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock)
     : m_config(config),
       data_relpath(data_relpath),
@@ -124,7 +83,7 @@ Index::~Index()
 
 Pending Index::begin_transaction()
 {
-    return Pending(new IsegSqliteTransaction(*this));
+    return Pending(new SqliteTransaction(m_db));
 }
 
 std::set<types::Code> Index::available_other_tables() const
@@ -814,7 +773,7 @@ bool Contents::checkSummaryCache(const dataset::Base& ds, Reporter& reporter) co
 }
 #endif
 
-RIndex::RIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock)
+RIndex::RIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::ReadLock> lock)
     : Index(config, data_relpath, lock)
 {
     if (!sys::access(index_pathname, F_OK))
@@ -838,11 +797,6 @@ WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& da
 
     if (need_create)
     {
-        std::shared_ptr<core::Lock> create_lock;
-        if (lock)
-            create_lock = lock->write_lock();
-        else
-            create_lock = config->write_lock_segment(data_relpath);
         m_db.open(index_pathname);
         if (config->trace_sql) m_db.trace();
         setup_pragmas();
@@ -1062,6 +1016,16 @@ void WIndex::test_make_hole(unsigned hole_size, unsigned data_idx)
     sel.execute([&]{
         query.run(hole_size, sel.fetch<uint64_t>(0));
     });
+}
+
+AIndex::AIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::AppendLock> lock)
+    : WIndex(config, data_relpath, lock)
+{
+}
+
+CIndex::CIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::CheckLock> lock)
+    : WIndex(config, data_relpath, lock)
+{
 }
 
 }

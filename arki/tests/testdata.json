@@ -1952,7 +1952,47 @@
  {
   "doc": "",
   "group": "arki_dataset_lock",
-  "method": "datasetlock"
+  "method": "reader_reader"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_lock",
+  "method": "reader_append"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_lock",
+  "method": "reader_checkro"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_lock",
+  "method": "reader_checkrw"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_lock",
+  "method": "append_append"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_lock",
+  "method": "append_checkro"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_lock",
+  "method": "append_checkrw"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_lock",
+  "method": "checkro_checkro"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_lock",
+  "method": "checkro_checkrw"
  },
  {
   "doc": "",

@@ -61,7 +61,7 @@ class Checker : public IndexedChecker
 protected:
     std::shared_ptr<const ondisk2::Config> m_config;
     index::WContents* idx;
-    std::shared_ptr<dataset::Lock> lock;
+    std::shared_ptr<dataset::CheckLock> lock;
 
 public:
     Checker(std::shared_ptr<const ondisk2::Config> config);

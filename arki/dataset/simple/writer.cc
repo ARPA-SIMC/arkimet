@@ -403,7 +403,7 @@ Checker::Checker(std::shared_ptr<const simple::Config> config)
     // Create the directory if it does not exist
     sys::makedirs(config->path);
 
-    lock = config->read_lock_dataset();
+    lock = config->check_lock_dataset();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made

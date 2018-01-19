@@ -27,7 +27,7 @@ ReadLock::ReadLock(const std::string& pathname, const core::lock::Policy* lock_p
     ds_lock.l_type = F_RDLCK;
     ds_lock.l_whence = SEEK_SET;
     ds_lock.l_start = 0;
-    ds_lock.l_len = 0;
+    ds_lock.l_len = 1;
     ds_lock.l_pid = 0;
     // Use SETLKW, so that if it is already locked, we just wait
     lock_policy->setlkw(lockfile, ds_lock);
@@ -41,68 +41,6 @@ ReadLock::~ReadLock()
     lock_policy->setlk(lockfile, ds_lock);
 }
 
-namespace {
-
-struct TemporaryWriteLock : public core::Lock
-{
-    std::shared_ptr<ReadLock> parent;
-
-    TemporaryWriteLock(std::shared_ptr<ReadLock> parent)
-        : parent(parent)
-    {
-        trace("%s [%d] Requesting escalate to write lock\n", parent->lockfile.name().c_str(), (int)getpid());
-        parent->ds_lock.l_type = F_WRLCK;
-        parent->lock_policy->setlkw(parent->lockfile, parent->ds_lock);
-        trace("%s [%d] Obtained escalate to write lock\n", parent->lockfile.name().c_str(), (int)getpid());
-    }
-
-    ~TemporaryWriteLock()
-    {
-        trace("%s [%d] Deescalate to read lock\n", parent->lockfile.name().c_str(), (int)getpid());
-        parent->ds_lock.l_type = F_RDLCK;
-        parent->lock_policy->setlkw(parent->lockfile, parent->ds_lock);
-    }
-};
-
-}
-
-std::shared_ptr<core::Lock> ReadLock::write_lock()
-{
-    if (!current_write_lock.expired())
-        return current_write_lock.lock();
-
-    std::shared_ptr<core::Lock> res(new TemporaryWriteLock(std::dynamic_pointer_cast<ReadLock>(this->shared_from_this())));
-    current_write_lock = res;
-    return res;
-}
-
-
-WriteLock::WriteLock(const std::string& pathname, const core::lock::Policy* lock_policy)
-    : Lock(pathname, lock_policy)
-{
-    trace("%s [%d] Requesting write lock\n", pathname.c_str(), (int)getpid());
-    ds_lock.l_type = F_WRLCK;
-    ds_lock.l_whence = SEEK_SET;
-    ds_lock.l_start = 0;
-    ds_lock.l_len = 0;
-    ds_lock.l_pid = 0;
-    // Use SETLKW, so that if it is already locked, we just wait
-    lock_policy->setlkw(lockfile, ds_lock);
-    trace("%s [%d] Obtained write lock\n", pathname.c_str(), (int)getpid());
-}
-
-WriteLock::~WriteLock()
-{
-    trace("%s [%d] Release write lock\n", lockfile.name().c_str(), (int)getpid());
-    ds_lock.l_type = F_UNLCK;
-    lock_policy->setlk(lockfile, ds_lock);
-}
-
-std::shared_ptr<core::Lock> WriteLock::write_lock()
-{
-    return shared_from_this();
-}
-
 
 AppendLock::AppendLock(const std::string& pathname, const core::lock::Policy* lock_policy)
     : Lock(pathname, lock_policy)
@@ -110,8 +48,8 @@ AppendLock::AppendLock(const std::string& pathname, const core::lock::Policy* lo
     trace("%s [%d] Requesting append lock\n", pathname.c_str(), (int)getpid());
     ds_lock.l_type = F_WRLCK;
     ds_lock.l_whence = SEEK_SET;
-    ds_lock.l_start = 0;
-    ds_lock.l_len = 0;
+    ds_lock.l_start = 1;
+    ds_lock.l_len = 1;
     ds_lock.l_pid = 0;
     // Use SETLKW, so that if it is already locked, we just wait
     lock_policy->setlkw(lockfile, ds_lock);
@@ -125,10 +63,69 @@ AppendLock::~AppendLock()
     lock_policy->setlk(lockfile, ds_lock);
 }
 
-std::shared_ptr<core::Lock> AppendLock::write_lock()
+
+CheckLock::CheckLock(const std::string& pathname, const core::lock::Policy* lock_policy)
+    : Lock(pathname, lock_policy)
 {
-    return shared_from_this();
+    trace("%s [%d] Requesting readonly check lock\n", pathname.c_str(), (int)getpid());
+    ds_lock.l_type = F_WRLCK;
+    ds_lock.l_whence = SEEK_SET;
+    ds_lock.l_start = 1;
+    ds_lock.l_len = 1;
+    ds_lock.l_pid = 0;
+    // Use SETLKW, so that if it is already locked, we just wait
+    lock_policy->setlkw(lockfile, ds_lock);
+    trace("%s [%d] Obtained readonly check lock\n", pathname.c_str(), (int)getpid());
 }
+
+CheckLock::~CheckLock()
+{
+    trace("%s [%d] Release check lock\n", lockfile.name().c_str(), (int)getpid());
+    ds_lock.l_type = F_UNLCK;
+    ds_lock.l_start = 0;
+    ds_lock.l_len = 2;
+    lock_policy->setlk(lockfile, ds_lock);
+}
+
+namespace {
+
+struct TemporaryWriteLock : public core::Lock
+{
+    std::shared_ptr<CheckLock> parent;
+
+    TemporaryWriteLock(std::shared_ptr<CheckLock> parent)
+        : parent(parent)
+    {
+        trace("%s [%d] Requesting escalate to write check lock\n", parent->lockfile.name().c_str(), (int)getpid());
+        parent->ds_lock.l_type = F_WRLCK;
+        parent->ds_lock.l_start = 0;
+        parent->ds_lock.l_len = 2;
+        parent->lock_policy->setlkw(parent->lockfile, parent->ds_lock);
+        trace("%s [%d] Obtained escalate to write check lock\n", parent->lockfile.name().c_str(), (int)getpid());
+    }
+
+    ~TemporaryWriteLock()
+    {
+        trace("%s [%d] Deescalate to readonly check lock\n", parent->lockfile.name().c_str(), (int)getpid());
+        parent->ds_lock.l_type = F_UNLCK;
+        parent->ds_lock.l_start = 0;
+        parent->ds_lock.l_len = 1;
+        parent->lock_policy->setlk(parent->lockfile, parent->ds_lock);
+    }
+};
+
+}
+
+std::shared_ptr<core::Lock> CheckLock::write_lock()
+{
+    if (!current_write_lock.expired())
+        return current_write_lock.lock();
+
+    std::shared_ptr<core::Lock> res(new TemporaryWriteLock(std::dynamic_pointer_cast<CheckLock>(this->shared_from_this())));
+    current_write_lock = res;
+    return res;
+}
+
 
 
 DatasetReadLock::DatasetReadLock(const LocalConfig& config)
@@ -141,16 +138,6 @@ SegmentReadLock::SegmentReadLock(const LocalConfig& config, const std::string& r
 {
 }
 
-DatasetWriteLock::DatasetWriteLock(const LocalConfig& config)
-    : WriteLock(str::joinpath(config.path, "lock"), config.lock_policy)
-{
-}
-
-SegmentWriteLock::SegmentWriteLock(const LocalConfig& config, const std::string& relpath)
-    : WriteLock(str::joinpath(config.path, relpath + ".lock"), config.lock_policy)
-{
-}
-
 DatasetAppendLock::DatasetAppendLock(const LocalConfig& config)
     : AppendLock(str::joinpath(config.path, "lock"), config.lock_policy)
 {
@@ -158,6 +145,16 @@ DatasetAppendLock::DatasetAppendLock(const LocalConfig& config)
 
 SegmentAppendLock::SegmentAppendLock(const LocalConfig& config, const std::string& relpath)
     : AppendLock(str::joinpath(config.path, relpath + ".lock"), config.lock_policy)
+{
+}
+
+DatasetCheckLock::DatasetCheckLock(const LocalConfig& config)
+    : CheckLock(str::joinpath(config.path, "lock"), config.lock_policy)
+{
+}
+
+SegmentCheckLock::SegmentCheckLock(const LocalConfig& config, const std::string& relpath)
+    : CheckLock(str::joinpath(config.path, relpath + ".lock"), config.lock_policy)
 {
 }
 

@@ -9,6 +9,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
+#include "arki/nag.h"
 #include <algorithm>
 #include <cstring>
 

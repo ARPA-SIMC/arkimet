@@ -53,7 +53,7 @@ class Checker : public IndexedChecker
 protected:
     std::shared_ptr<const simple::Config> m_config;
     index::Manifest* m_mft;
-    std::shared_ptr<dataset::Lock> lock;
+    std::shared_ptr<dataset::CheckLock> lock;
 
     /// Return a (shared) instance of the Segment for the given relative pathname
     Segment* file(const Metadata& md, const std::string& format);
