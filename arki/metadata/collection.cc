@@ -336,12 +336,12 @@ TestCollection::TestCollection(const std::string& pathname)
 
 bool TestCollection::scan_from_file(const std::string& pathname)
 {
-    return scan::scan(pathname, core::lock::policy_null, [&](unique_ptr<Metadata> md) { acquire(move(md)); return true; });
+    return scan::scan(pathname, std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata> md) { acquire(move(md)); return true; });
 }
 
 bool TestCollection::scan_from_file(const std::string& pathname, const std::string& format)
 {
-    return scan::scan(pathname, core::lock::policy_null, format, [&](unique_ptr<Metadata> md) { acquire(move(md)); return true; });
+    return scan::scan(pathname, std::make_shared<core::lock::Null>(), format, [&](unique_ptr<Metadata> md) { acquire(move(md)); return true; });
 }
 
 

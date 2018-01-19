@@ -1,18 +1,10 @@
-#include "config.h"
 #include "arki/dataset/simple/datafile.h"
 #include "arki/metadata.h"
+#include "arki/core/file.h"
 #include "arki/types/source/blob.h"
-#include "arki/utils.h"
-#include "arki/utils/files.h"
 #include "arki/scan/any.h"
 #include "arki/nag.h"
 #include "arki/utils/string.h"
-#include "arki/utils/sys.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <cerrno>
 
 using namespace std;
 using namespace arki::utils;
@@ -23,7 +15,7 @@ namespace simple {
 
 namespace datafile {
 
-MdBuf::MdBuf(const std::string& pathname, const core::lock::Policy* lock_policy)
+MdBuf::MdBuf(const std::string& pathname, std::shared_ptr<core::Lock> lock)
     : dir(str::dirname(pathname)), basename(str::basename(pathname)), pathname(pathname), flushed(true)
 {
     struct stat st_data;
@@ -31,17 +23,11 @@ MdBuf::MdBuf(const std::string& pathname, const core::lock::Policy* lock_policy)
         return;
 
     // Read the metadata
-    scan::scan(pathname, lock_policy, mds.inserter_func());
+    scan::scan(pathname, lock, mds.inserter_func());
 
     // Read the summary
     if (!mds.empty())
-    {
-        //struct stat st_summary;
-        //if (dir.fstatat_ifexists((basename + ".summary").c_str(), st_summary) && st_summary.st_mtime >= st_data.st_mtime)
-        //    sum.readFile(pathname + ".summary");
-        //else
-            mds.add_to_summary(sum);
-    }
+        mds.add_to_summary(sum);
 }
 
 MdBuf::~MdBuf()

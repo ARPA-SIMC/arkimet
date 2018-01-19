@@ -1,15 +1,8 @@
 #include "arki/metadata/tests.h"
 #include "arki/libconfig.h"
 #include "arki/scan/any.h"
+#include "arki/core/file.h"
 #include "arki/types/source.h"
-#include "arki/types/origin.h"
-#include "arki/types/product.h"
-#include "arki/types/level.h"
-#include "arki/types/timerange.h"
-#include "arki/types/reftime.h"
-#include "arki/types/area.h"
-#include "arki/types/proddef.h"
-#include "arki/types/run.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/utils/compress.h"
@@ -40,7 +33,7 @@ add_method("grib_compact", [] {
 #else
     vector<uint8_t> buf;
 
-    ensure(scan::scan("inbound/test.grib1", core::lock::policy_null, mdc.inserter_func()));
+    ensure(scan::scan("inbound/test.grib1", std::make_shared<core::lock::Null>(), mdc.inserter_func()));
     ensure_equals(mdc.size(), 3u);
 
     // Check the source info
@@ -110,7 +103,7 @@ add_method("bufr_compact", [] {
 #else
     vector<uint8_t> buf;
 
-    ensure(scan::scan("inbound/test.bufr", core::lock::policy_null, mdc.inserter_func()));
+    ensure(scan::scan("inbound/test.bufr", std::make_shared<core::lock::Null>(), mdc.inserter_func()));
 
 	ensure_equals(mdc.size(), 3u);
 
@@ -182,13 +175,13 @@ add_method("compress", [] {
     system("cp a.grib1 b.grib1");
 
     // Compress
-    scan::compress("b.grib1", core::lock::policy_null, 5);
+    scan::compress("b.grib1", std::make_shared<core::lock::Null>(), 5);
     sys::unlink_ifexists("b.grib1");
 
     {
         utils::compress::TempUnzip tu("b.grib1");
         unsigned count = 0;
-        scan::scan("b.grib1", core::lock::policy_null, [&](unique_ptr<Metadata>) { ++count; return true; });
+        scan::scan("b.grib1", std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata>) { ++count; return true; });
         ensure_equals(count, 9u);
     }
 });
@@ -200,7 +193,7 @@ add_method("usn", [] {
         // Gribs don't have update sequence numbrs, and the usn parameter must
         // be left untouched
         metadata::Collection mdc;
-        scan::scan("inbound/test.grib1", core::lock::policy_null, mdc.inserter_func());
+        scan::scan("inbound/test.grib1", std::make_shared<core::lock::Null>(), mdc.inserter_func());
         int usn = 42;
         ensure_equals(scan::update_sequence_number(mdc[0], usn), false);
         ensure_equals(usn, 42);
@@ -208,7 +201,7 @@ add_method("usn", [] {
 
     {
         metadata::Collection mdc;
-        scan::scan("inbound/synop-gts.bufr", core::lock::policy_null, mdc.inserter_func());
+        scan::scan("inbound/synop-gts.bufr", std::make_shared<core::lock::Null>(), mdc.inserter_func());
         int usn;
         ensure_equals(scan::update_sequence_number(mdc[0], usn), true);
         ensure_equals(usn, 0);
@@ -216,7 +209,7 @@ add_method("usn", [] {
 
     {
         metadata::Collection mdc;
-        scan::scan("inbound/synop-gts-usn2.bufr", core::lock::policy_null, mdc.inserter_func());
+        scan::scan("inbound/synop-gts-usn2.bufr", std::make_shared<core::lock::Null>(), mdc.inserter_func());
         int usn;
         ensure_equals(scan::update_sequence_number(mdc[0], usn), true);
         ensure_equals(usn, 2);

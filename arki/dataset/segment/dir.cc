@@ -273,7 +273,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
             string fname = str::joinpath(absname, SequenceFile::data_fname(idx, format));
             metadata::Collection mds;
             try {
-                scan::scan(fname, core::lock::policy_null, format, [&](unique_ptr<Metadata> md) {
+                scan::scan(fname, std::make_shared<core::lock::Null>(), format, [&](unique_ptr<Metadata> md) {
                     mds.acquire(move(md));
                     return true;
                 });

@@ -1,4 +1,5 @@
 #include "arki/types/tests.h"
+#include "arki/core/file.h"
 #include "arki/types/source.h"
 #include "arki/metadata.h"
 #include "arki/summary.h"
@@ -23,7 +24,7 @@ void Tests::register_tests() {
 // Test querying
 add_method("query", [] {
     dataset::Memory c;
-    scan::scan("inbound/test.grib1", core::lock::policy_null, c.inserter_func());
+    scan::scan("inbound/test.grib1", std::make_shared<core::lock::Null>(), c.inserter_func());
 
     metadata::Collection mdc(c, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 1u);
@@ -44,7 +45,7 @@ add_method("query", [] {
 // Test querying the summary
 add_method("query_summary", [] {
     dataset::Memory c;
-    scan::scan("inbound/test.grib1", core::lock::policy_null, c.inserter_func());
+    scan::scan("inbound/test.grib1", std::make_shared<core::lock::Null>(), c.inserter_func());
 
     Summary summary;
     c.query_summary(Matcher::parse("origin:GRIB1,200"), summary);
@@ -54,7 +55,7 @@ add_method("query_summary", [] {
 // Test querying the summary by reftime
 add_method("query_summary_reftime", [] {
     dataset::Memory c;
-    scan::scan("inbound/test.grib1", core::lock::policy_null, c.inserter_func());
+    scan::scan("inbound/test.grib1", std::make_shared<core::lock::Null>(), c.inserter_func());
 
     Summary summary;
     //system("bash");

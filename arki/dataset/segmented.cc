@@ -7,6 +7,7 @@
 #include "maintenance.h"
 #include "archive.h"
 #include "reporter.h"
+#include "arki/dataset/lock.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/scan/any.h"
@@ -175,6 +176,10 @@ LocalWriter::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Meta
     throw std::runtime_error("cannot simulate dataset acquisition: unknown dataset type \""+type+"\"");
 }
 
+CheckerSegment::CheckerSegment(std::shared_ptr<dataset::CheckLock> lock)
+    : lock(lock)
+{
+}
 
 CheckerSegment::~CheckerSegment()
 {
@@ -258,11 +263,30 @@ void CheckerSegment::archive()
         mdc.read_from_file(arcabspath + ".metadata");
     else if (compressed) {
         utils::compress::TempUnzip tu(arcabspath);
-        scan::scan(arcabspath, config().lock_policy, mdc.inserter_func());
+        scan::scan(arcabspath, lock, mdc.inserter_func());
     } else
-        scan::scan(arcabspath, config().lock_policy, mdc.inserter_func());
+        scan::scan(arcabspath, lock, mdc.inserter_func());
 
     archives().indexSegment(arcrelpath, move(mdc));
+}
+
+void CheckerSegment::unarchive()
+{
+    string arcrelpath = str::joinpath("last", segment->relname);
+    archives().releaseSegment(arcrelpath, segment->absname);
+
+    bool compressed = scan::isCompressed(segment->absname);
+
+    // Acquire in the achive
+    metadata::Collection mdc;
+    if (sys::exists(segment->absname + ".metadata"))
+        mdc.read_from_file(segment->absname + ".metadata");
+    else if (compressed) {
+        utils::compress::TempUnzip tu(segment->absname);
+        scan::scan(segment->absname, lock, mdc.inserter_func());
+    } else
+        scan::scan(segment->absname, lock, mdc.inserter_func());
+    index(move(mdc));
 }
 
 
@@ -473,27 +497,6 @@ void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter
     }
 
     LocalChecker::check(reporter, fix, quick);
-}
-
-void Checker::unarchive_segment(const std::string& relpath)
-{
-    const string& root = config().path;
-    string abspath = str::joinpath(root, relpath);
-    string arcrelpath = str::joinpath("last", relpath);
-    archive().releaseSegment(arcrelpath, abspath);
-
-    bool compressed = scan::isCompressed(abspath);
-
-    // Acquire in the achive
-    metadata::Collection mdc;
-    if (sys::exists(abspath + ".metadata"))
-        mdc.read_from_file(abspath + ".metadata");
-    else if (compressed) {
-        utils::compress::TempUnzip tu(abspath);
-        scan::scan(abspath, config().lock_policy, mdc.inserter_func());
-    } else
-        scan::scan(abspath, config().lock_policy, mdc.inserter_func());
-    segment(relpath)->index(move(mdc));
 }
 
 }

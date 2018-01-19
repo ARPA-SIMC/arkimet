@@ -9,6 +9,7 @@
 #include "arki/summary.h"
 #include "arki/matcher.h"
 #include "arki/scan/any.h"
+#include "arki/core/file.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/types/reftime.h"
@@ -255,7 +256,7 @@ add_method("acquire_compressed", [](Fixture& f) {
         metadata::Collection c = f.query(Matcher());
         wassert(actual(c.size()) == 1u);
         string dest = c.ensureContiguousData("metadata file testds/20/2007.grib");
-        scan::compress(dest, core::lock::policy_ofd, 1024);
+        scan::compress(dest, std::make_shared<core::lock::Null>(), 1024);
         sys::unlink_ifexists("testds/20/2007.grib");
     }
     wassert(actual_file("testds/20/2007.grib").not_exists());

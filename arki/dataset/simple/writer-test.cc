@@ -1,4 +1,5 @@
 #include "arki/dataset/tests.h"
+#include "arki/core/file.h"
 #include "arki/dataset/simple/writer.h"
 #include "arki/dataset/simple/reader.h"
 #include "arki/types/source/blob.h"
@@ -218,7 +219,7 @@ add_method("scan_compressed", [](Fixture& f) {
             mdc.read_from_file("testds/2007/07-08.grib.metadata");
             ensure_equals(mdc.size(), 1u);
             string dest = mdc.ensureContiguousData("metadata file testds/2007/07-08.grib.metadata");
-            scan::compress(dest, core::lock::policy_ofd, 1024);
+            scan::compress(dest, std::make_shared<core::lock::Null>(), 1024);
             sys::unlink_ifexists("testds/2007/07-08.grib");
 
             ensure(!sys::exists("testds/2007/07-08.grib"));

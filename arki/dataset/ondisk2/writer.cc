@@ -276,8 +276,8 @@ class CheckerSegment : public segmented::CheckerSegment
 public:
     Checker& checker;
 
-    CheckerSegment(Checker& checker, const std::string& relpath)
-        : checker(checker)
+    CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
+        : segmented::CheckerSegment(lock), checker(checker)
     {
         segment = checker.segment_manager().get_checker(relpath);
     }
@@ -428,7 +428,7 @@ public:
 
         // Collect the scan results in a metadata::Collector
         metadata::Collection mds;
-        if (!scan::scan(segment->absname, checker.config().lock_policy, mds.inserter_func()))
+        if (!scan::scan(segment->absname, lock, mds.inserter_func()))
             throw std::runtime_error("cannot rescan " + segment->absname + ": file format unknown");
         //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
 
@@ -533,6 +533,7 @@ Checker::Checker(std::shared_ptr<const ondisk2::Config> config)
     bool dir_created = sys::makedirs(config->path);
 
     lock = config->check_lock_dataset();
+    m_idx->lock = lock;
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
@@ -593,13 +594,18 @@ void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter
 
 std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
 {
-    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath));
+    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
+}
+
+std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
+{
+    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
 }
 
 void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> dest)
 {
     m_idx->list_segments([&](const std::string& relpath) {
-        CheckerSegment segment(*this, relpath);
+        CheckerSegment segment(*this, relpath, lock);
         dest(segment);
     });
 }
@@ -607,7 +613,7 @@ void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> d
 void Checker::segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
     m_idx->list_segments_filtered(matcher, [&](const std::string& relpath) {
-        CheckerSegment segment(*this, relpath);
+        CheckerSegment segment(*this, relpath, lock);
         dest(segment);
     });
 }
@@ -616,7 +622,7 @@ void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& r
 {
     segment_manager().scan_dir([&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;
-        CheckerSegment segment(*this, relpath);
+        CheckerSegment segment(*this, relpath, lock);
         dest(segment);
     });
 }
@@ -630,7 +636,7 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     segment_manager().scan_dir([&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;
         if (!config().step().pathMatches(relpath, *m)) return;
-        CheckerSegment segment(*this, relpath);
+        CheckerSegment segment(*this, relpath, lock);
         dest(segment);
     });
 }

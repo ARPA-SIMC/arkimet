@@ -1,4 +1,5 @@
 #include "config.h"
+#include "arki/core/file.h"
 #include "arki/dataset/tests.h"
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/maintenance.h"
@@ -117,7 +118,7 @@ add_method("add_remove", [] {
     m->openRW();
 
     Summary s;
-    scan::scan("inbound/test.grib1", core::lock::policy_null, [&](unique_ptr<Metadata> md) { s.add(*md); return true; });
+    scan::scan("inbound/test.grib1", std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata> md) { s.add(*md); return true; });
 
     m->acquire("a.grib1", 1000010, s);
     m->acquire("foo/b.grib1", 1000011, s);

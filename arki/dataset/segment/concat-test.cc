@@ -81,7 +81,7 @@ add_method("append", [] {
     metadata::Collection mdc1;
 
     // Scan the file we created
-    wassert(actual(scan::scan(relname, core::lock::policy_null, mdc1.inserter_func())).istrue());
+    wassert(actual(scan::scan(relname, std::make_shared<core::lock::Null>(), mdc1.inserter_func())).istrue());
 
     // Check that it only contains the 1st and 3rd data
     wassert(actual(mdc1.size()) == 2u);

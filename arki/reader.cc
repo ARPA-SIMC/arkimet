@@ -55,34 +55,16 @@ struct FileReader : public Reader
 {
 public:
     sys::File fd;
-    const core::lock::Policy* lock_policy;
-    FLock lock;
+    std::shared_ptr<core::Lock> lock;
 
-    FileReader(const std::string& fname, const core::lock::Policy* lock_policy)
+    FileReader(const std::string& fname, std::shared_ptr<core::Lock> lock)
         : fd(fname, O_RDONLY
 #ifdef linux
                 | O_CLOEXEC
 #endif
-            ), lock_policy(lock_policy)
+            ), lock(lock)
     {
-        // Lock one byte at the beginning of the file, to prevent a repack but
-        // allow appends: there are no functions in arkimet that would rewrite
-        // a part of a file: either append, or replace.
-        lock.l_type = F_RDLCK;
-        lock.l_whence = SEEK_SET;
-        lock.l_start = 0;
-        lock.l_len = 1;
-        lock_policy->setlkw(fd, lock);
     }
-
-    ~FileReader()
-    {
-        // TODO: consider a non-throwing setlk implementation to avoid throwing
-        // in destructors
-        lock.l_type = F_UNLCK;
-        lock_policy->setlk(fd, lock);
-    }
-
 
     std::vector<uint8_t> read(const types::source::Blob& src) override
     {
@@ -154,32 +136,14 @@ public:
     std::string fname;
     std::string format;
     sys::Path dirfd;
-    sys::File repack_lock;
-    const core::lock::Policy* lock_policy;
-    FLock lock;
+    std::shared_ptr<core::Lock> lock;
 
-    DirReader(const std::string& fname, const core::lock::Policy* lock_policy)
-        : dirfd(fname, O_DIRECTORY), repack_lock(dirfd.openat(".repack-lock", O_RDONLY | O_CREAT, 0777), str::joinpath(fname, ".repack-lock")),
-          lock_policy(lock_policy)
+    DirReader(const std::string& fname, std::shared_ptr<core::Lock> lock)
+        : dirfd(fname, O_DIRECTORY), lock(lock)
     {
         size_t pos;
         if ((pos = fname.rfind('.')) != std::string::npos)
             format = fname.substr(pos + 1);
-
-        // Lock the directory to prevent a repack but allow appends: there are
-        // no functions in arkimet that would rewrite a part of a file: either
-        // append, or replace.
-        lock.l_type = F_RDLCK;
-        lock.l_whence = SEEK_SET;
-        lock.l_start = 0;
-        lock.l_len = 0;
-        lock_policy->setlkw(repack_lock, lock);
-    }
-
-    ~DirReader()
-    {
-        lock.l_type = F_UNLCK;
-        lock_policy->setlk(repack_lock, lock);
     }
 
     sys::File open_src(const types::source::Blob& src)
@@ -265,9 +229,10 @@ public:
     std::string fname;
     gzip::File fd;
     uint64_t last_ofs = 0;
+    std::shared_ptr<core::Lock> lock;
 
-    ZlibFileReader(const std::string& fname, const core::lock::Policy* lock_policy)
-        : fname(fname), fd(fname + ".gz", "rb")
+    ZlibFileReader(const std::string& fname, std::shared_ptr<core::Lock> lock)
+        : fname(fname), fd(fname + ".gz", "rb"), lock(lock)
     {
     }
 
@@ -324,9 +289,10 @@ public:
     sys::File fd;
     gzip::File gzfd;
     uint64_t last_ofs = 0;
+    std::shared_ptr<core::Lock> lock;
 
-    IdxZlibFileReader(const std::string& fname, const core::lock::Policy* lock_policy)
-        : fname(fname), fd(fname + ".gz", O_RDONLY), gzfd(fd.name())
+    IdxZlibFileReader(const std::string& fname, std::shared_ptr<core::Lock> lock)
+        : fname(fname), fd(fname + ".gz", O_RDONLY), gzfd(fd.name()), lock(lock)
     {
         // Read index
         idx.read(fd.name() + ".idx");
@@ -405,22 +371,21 @@ public:
 
 }
 
-
-std::shared_ptr<Reader> Reader::create_new(const std::string& abspath, const core::lock::Policy* lock_policy)
+std::shared_ptr<Reader> Reader::create_new(const std::string& abspath, std::shared_ptr<core::Lock> lock)
 {
     // Open the new file
     std::unique_ptr<struct stat> st = sys::stat(abspath);
     if (st.get())
     {
         if (S_ISDIR(st->st_mode))
-            return std::make_shared<reader::DirReader>(abspath, lock_policy);
+            return std::make_shared<reader::DirReader>(abspath, lock);
         else
-            return std::make_shared<reader::FileReader>(abspath, lock_policy);
+            return std::make_shared<reader::FileReader>(abspath, lock);
     }
     else if (sys::exists(abspath + ".gz.idx"))
-        return std::make_shared<reader::IdxZlibFileReader>(abspath, lock_policy);
+        return std::make_shared<reader::IdxZlibFileReader>(abspath, lock);
     else if (sys::exists(abspath + ".gz"))
-        return std::make_shared<reader::ZlibFileReader>(abspath, lock_policy);
+        return std::make_shared<reader::ZlibFileReader>(abspath, lock);
     else
         return make_shared<reader::MissingFileReader>(abspath);
 }

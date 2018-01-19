@@ -277,13 +277,12 @@ class CheckerSegment : public segmented::CheckerSegment
 {
 public:
     Checker& checker;
-    std::shared_ptr<dataset::CheckLock> lock;
     CIndex* m_idx = nullptr;
 
     CheckerSegment(Checker& checker, const std::string& relpath)
         : CheckerSegment(checker, relpath, checker.config().check_lock_segment(relpath)) {}
     CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
-        : checker(checker), lock(lock)
+        : segmented::CheckerSegment(lock), checker(checker)
     {
         segment = checker.segment_manager().get_checker(checker.config().format, relpath);
     }
@@ -479,7 +478,7 @@ public:
 
         // Collect the scan results in a metadata::Collector
         metadata::Collection mds;
-        if (!scan::scan(segment->absname, checker.config().lock_policy, mds.inserter_func()))
+        if (!scan::scan(segment->absname, lock, mds.inserter_func()))
             throw std::runtime_error("cannot rescan " + segment->absname + ": file format unknown");
         //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
 

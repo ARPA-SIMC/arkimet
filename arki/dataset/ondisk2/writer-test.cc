@@ -11,6 +11,7 @@
 #include "arki/scan/any.h"
 #include "arki/core/file.h"
 #include "arki/utils.h"
+#include "arki/core/file.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/summary.h"
@@ -193,7 +194,7 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
         metadata::Collection mdc = f.query(Matcher::parse("origin:GRIB1,200"));
         wassert(actual(mdc.size()) == 1u);
         string dest = mdc.ensureContiguousData("metadata file testds/2007/07-08.grib");
-        scan::compress(dest, core::lock::policy_ofd, 1024);
+        scan::compress(dest, std::make_shared<core::lock::Null>(), 1024);
         sys::unlink_ifexists("testds/2007/07-08.grib");
     }
 

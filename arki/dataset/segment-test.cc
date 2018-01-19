@@ -98,7 +98,7 @@ struct TestSegments
         auto config = dataset::segmented::Config::create(cfg);
         auto segment_manager = config->create_segment_manager();
         sys::write_file(abspath, "");
-        scan::compress(abspath, core::lock::policy_null);
+        scan::compress(abspath, std::make_shared<core::lock::Null>());
         sys::unlink(abspath);
         dataset::NullReporter reporter;
         metadata::Collection mds;

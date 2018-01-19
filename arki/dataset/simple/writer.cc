@@ -50,6 +50,7 @@ Writer::Writer(std::shared_ptr<const simple::Config> config)
 
     unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->lock_policy, config->index_type);
     m_mft = mft.release();
+    m_mft->lock = lock;
     m_mft->openRW();
     m_idx = m_mft;
 
@@ -67,7 +68,7 @@ std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::str
 {
     auto writer = segmented::Writer::file(md, format);
     if (!writer->payload)
-        writer->payload = new datafile::MdBuf(writer->absname, config().lock_policy);
+        writer->payload = new datafile::MdBuf(writer->absname, lock);
     return writer;
 }
 
@@ -77,6 +78,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     if (age_check.first) return age_check.second;
 
     if (!lock) lock = config().append_lock_dataset();
+    m_mft->lock = lock;
     // TODO: refuse if md is before "archive age"
     auto writer = file(md, md.source().format);
     datafile::MdBuf* mdbuf = static_cast<datafile::MdBuf*>(writer->payload);
@@ -162,8 +164,8 @@ class CheckerSegment : public segmented::CheckerSegment
 public:
     Checker& checker;
 
-    CheckerSegment(Checker& checker, const std::string& relpath)
-        : checker(checker)
+    CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
+        : segmented::CheckerSegment(lock), checker(checker)
     {
         segment = checker.segment_manager().get_checker(relpath);
     }
@@ -302,7 +304,7 @@ public:
 
         // Read the metadata
         metadata::Collection mds;
-        scan::scan(segment->absname, checker.config().lock_policy, mds.inserter_func());
+        scan::scan(segment->absname, lock, mds.inserter_func());
 
         // Sort by reference time and offset
         RepackSort cmp;
@@ -412,6 +414,7 @@ Checker::Checker(std::shared_ptr<const simple::Config> config)
 
     unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->lock_policy, config->index_type);
     m_mft = mft.release();
+    m_mft->lock = lock;
     m_mft->openRW();
     m_idx = m_mft;
 }
@@ -453,7 +456,12 @@ void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter
 
 std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
 {
-    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath));
+    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
+}
+
+std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
+{
+    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
 }
 
 void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> dest)
@@ -463,7 +471,7 @@ void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> d
 
     for (const auto& relpath: names)
     {
-        CheckerSegment segment(*this, relpath);
+        CheckerSegment segment(*this, relpath, lock);
         dest(segment);
     }
 }
@@ -476,7 +484,7 @@ void Checker::segments_filtered(const Matcher& matcher, std::function<void(segme
 
     for (const auto& relpath: names)
     {
-        CheckerSegment segment(*this, relpath);
+        CheckerSegment segment(*this, relpath, lock);
         dest(segment);
     }
 }
@@ -485,7 +493,7 @@ void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& r
 {
     segment_manager().scan_dir([&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;
-        CheckerSegment segment(*this, relpath);
+        CheckerSegment segment(*this, relpath, lock);
         dest(segment);
     });
 }
@@ -499,7 +507,7 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     segment_manager().scan_dir([&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;
         if (!config().step().pathMatches(relpath, *m)) return;
-        CheckerSegment segment(*this, relpath);
+        CheckerSegment segment(*this, relpath, lock);
         dest(segment);
     });
 }

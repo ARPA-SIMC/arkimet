@@ -141,8 +141,10 @@ struct State : public std::map<std::string, SegmentState>
 class CheckerSegment
 {
 public:
+    std::shared_ptr<dataset::CheckLock> lock;
     std::shared_ptr<segment::Checker> segment;
 
+    CheckerSegment(std::shared_ptr<dataset::CheckLock> lock);
     virtual ~CheckerSegment();
 
     virtual std::string path_relative() const = 0;
@@ -202,6 +204,11 @@ public:
      * to its manifest
      */
     virtual void archive();
+
+    /**
+     * Move a segment from the last/ archive back to the main dataset
+     */
+    virtual void unarchive();
 };
 
 
@@ -236,6 +243,9 @@ public:
 
     /// Instantiate a CheckerSegment
     virtual std::unique_ptr<CheckerSegment> segment(const std::string& relpath) = 0;
+
+    /// Instantiate a CheckerSegment using an existing lock
+    virtual std::unique_ptr<CheckerSegment> segment_prelocked(const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock) = 0;
 
     /**
      * List all segments known to this dataset
@@ -272,11 +282,6 @@ public:
 
     /// Remove all data from the dataset
     void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) override;
-
-    /**
-     * Move a segment from the last/ archive back to the main dataset
-     */
-    virtual void unarchive_segment(const std::string& relpath);
 
     /**
      * Perform generic packing and optimisations
