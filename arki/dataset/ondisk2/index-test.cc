@@ -2,6 +2,7 @@
 #include "arki/exceptions.h"
 #include "arki/dataset.h"
 #include "arki/reader.h"
+#include "arki/core/file.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
@@ -29,12 +30,14 @@ using namespace arki::tests;
 
 // Create a dataset index gived its configuration
 template<typename INDEX>
-inline unique_ptr<WContents> createIndex(const std::string& text_cfg)
+inline unique_ptr<WContents> createIndex(std::shared_ptr<core::Lock> lock, const std::string& text_cfg)
 {
     ConfigFile cfg;
     cfg.parse(text_cfg);
     auto config = dataset::ondisk2::Config::create(cfg);
-    return unique_ptr<INDEX>(new INDEX(config));
+    auto res = unique_ptr<INDEX>(new INDEX(config));
+    res->lock = lock;
+    return res;
 }
 
 Metadata make_md()
@@ -96,7 +99,9 @@ struct ReadHang : public wibble::sys::ChildProcess
     {
         try {
             auto config = dataset::ondisk2::Config::create(cfg);
+            auto lock = make_shared<core::lock::Null>();
             RContents idx(config);
+            idx.lock = lock;
             idx.open();
             idx.query_data(Matcher::parse("origin:GRIB1"), [&](unique_ptr<Metadata> md) {
                 fputs("H\n", stdout);
@@ -143,7 +148,8 @@ add_method("index", [] {
     auto md = make_md();
     auto md1 = make_md1();
 
-    unique_ptr<WContents> test = createIndex<WContents>(
+    auto lock = make_shared<core::lock::Null>();
+    unique_ptr<WContents> test = createIndex<WContents>(lock,
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
@@ -191,7 +197,8 @@ add_method("remove", [] {
     auto md = make_md();
     auto md1 = make_md1();
 
-    unique_ptr<WContents> test = createIndex<WContents>(
+    auto lock = make_shared<core::lock::Null>();
+    unique_ptr<WContents> test = createIndex<WContents>(lock,
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
@@ -276,7 +283,8 @@ add_method("concurrent", [] {
 
     // Create the index and index two metadata
     {
-        unique_ptr<WContents> test1 = createIndex<WContents>(cfg);
+        auto lock = make_shared<core::lock::Null>();
+        unique_ptr<WContents> test1 = createIndex<WContents>(lock, cfg);
         test1->open();
 
         Pending p = test1->beginTransaction();
@@ -302,7 +310,8 @@ add_method("concurrent", [] {
     md3.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
     md3.add_note("this is a test");
     {
-        unique_ptr<WContents> test1 = createIndex<WContents>(cfg);
+        auto lock = make_shared<core::lock::Null>();
+        unique_ptr<WContents> test1 = createIndex<WContents>(lock, cfg);
         test1->open();
         Pending p = test1->beginTransaction();
         test1->index(md3, "inbound/test.bufr", 0);
@@ -321,7 +330,8 @@ add_method("query_file", [] {
     // Remove index if it exists
     unlink("file1");
 
-    unique_ptr<WContents> test = createIndex<WContents>(
+    auto lock = make_shared<core::lock::Null>();
+    unique_ptr<WContents> test = createIndex<WContents>(lock,
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
@@ -372,7 +382,8 @@ add_method("reproduce_old_issue1", [] {
     // Remove index if it exists
     unlink("file1");
 
-    unique_ptr<WContents> test = createIndex<WContents>(
+    auto lock = make_shared<core::lock::Null>();
+    unique_ptr<WContents> test = createIndex<WContents>(lock,
         "type = ondisk2\n"
         "path = \n"
         "step = daily\n"
@@ -435,7 +446,8 @@ add_method("largefile", [] {
     // Remove index if it exists
     unlink("file1");
 
-    unique_ptr<WContents> test = createIndex<WContents>(
+    auto lock = make_shared<core::lock::Null>();
+    unique_ptr<WContents> test = createIndex<WContents>(lock,
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
@@ -483,7 +495,8 @@ add_method("smallfiles", [] {
         iotrace::Collector collector;
 
         // An index without large files
-        unique_ptr<WContents> test = createIndex<WContents>(
+        auto lock = make_shared<core::lock::Null>();
+        unique_ptr<WContents> test = createIndex<WContents>(lock,
                 "type = ondisk2\n"
                 "path = .\n"
                 "step = daily\n"
@@ -513,7 +526,7 @@ add_method("smallfiles", [] {
 
         // I/O should happen here
         mdc[0].drop_cached_data();
-        mdc[0].sourceBlob().lock(Reader::create_new("inbound/test.vm2", core::lock::policy_null));
+        mdc[0].sourceBlob().lock(Reader::create_new("inbound/test.vm2", std::shared_ptr<core::lock::Null>()));
         const auto& buf = mdc[0].getData();
         wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
         wassert(actual(collector.events.size()) == 1u);
@@ -527,7 +540,8 @@ add_method("smallfiles", [] {
         iotrace::Collector collector;
 
         // An index without large files
-        unique_ptr<WContents> test = createIndex<WContents>(
+        auto lock = make_shared<core::lock::Null>();
+        unique_ptr<WContents> test = createIndex<WContents>(lock,
                 "type = ondisk2\n"
                 "path = .\n"
                 "step = daily\n"

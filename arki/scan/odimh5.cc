@@ -180,10 +180,10 @@ OdimH5::~OdimH5()
     delete L;
 }
 
-void OdimH5::open(const std::string& filename, const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy)
+void OdimH5::open(const std::string& filename, const std::string& basedir, const std::string& relname, std::shared_ptr<core::Lock> lock)
 {
     using namespace arki::utils::h5;
-    Scanner::open(filename, basedir, relname, lock_policy);
+    Scanner::open(filename, basedir, relname, lock);
 
     // Open H5 file
     read = false;

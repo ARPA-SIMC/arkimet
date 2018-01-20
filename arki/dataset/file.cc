@@ -239,7 +239,7 @@ RawFile::~RawFile() {}
 bool RawFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     auto sorter = wrap_with_query(q, dest);
-    if (!scan::scan(config().pathname, core::lock::policy_null, config().format, dest))
+    if (!scan::scan(config().pathname, std::make_shared<core::lock::Null>(), config().format, dest))
         return false;
     if (sorter) return sorter->flush();
     return true;

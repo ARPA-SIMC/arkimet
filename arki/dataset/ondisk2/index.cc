@@ -214,6 +214,8 @@ int Contents::id(const Metadata& md) const
 
 bool Contents::get_current(const Metadata& md, Metadata& current) const
 {
+    if (lock.expired())
+        throw std::runtime_error("cannot get_current while there is no lock held");
     m_get_current.reset();
 
     int idx = 0;
@@ -236,7 +238,7 @@ bool Contents::get_current(const Metadata& md, Metadata& current) const
     {
         current.clear();
         string abspath = str::joinpath(config().path, m_get_current.fetchString(2));
-        auto reader = arki::Reader::create_new(abspath, config().lock_policy);
+        auto reader = arki::Reader::create_new(abspath, lock.lock());
         build_md(m_get_current, current, reader);
         found = true;
     }
@@ -320,6 +322,8 @@ bool Contents::has_segment(const std::string& relpath) const
 
 void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& order_by) const
 {
+    if (lock.expired())
+        throw std::runtime_error("cannot scan_file while there is no lock held");
     string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
     if (m_uniques) query += ", m.uniq";
     if (m_others) query += ", m.other";
@@ -332,7 +336,7 @@ void Contents::scan_file(const std::string& relname, metadata_dest_func dest, co
     mdq.bind(1, relname);
 
     string abspath = str::joinpath(config().path, relname);
-    auto reader = arki::Reader::create_new(abspath, config().lock_policy);
+    auto reader = arki::Reader::create_new(abspath, lock.lock());
 
     while (mdq.step())
     {
@@ -501,6 +505,8 @@ void Contents::build_md(Query& q, Metadata& md, std::shared_ptr<arki::Reader> re
 
 bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
+    if (lock.expired())
+        throw std::runtime_error("cannot query_data while there is no lock held");
     string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 
     if (m_uniques) query += ", m.uniq";
@@ -541,7 +547,7 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
             if (q.with_data)
             {
                 std::string abspath = str::joinpath(config().path, srcname);
-                reader = arki::Reader::create_new(abspath, config().lock_policy);
+                reader = arki::Reader::create_new(abspath, lock.lock());
             }
 
             if (!mdbuf.empty())

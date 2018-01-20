@@ -3,6 +3,7 @@
 #include "indexed.h"
 #include "maintenance.h"
 #include "arki/exceptions.h"
+#include "arki/core/file.h"
 #include "arki/dataset/time.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
@@ -68,9 +69,9 @@ add_method("compressed", [](Fixture& f) {
     f.cfg.setValue("archive age", days_since(2007, 9, 1));
     f.test_reread_config();
 
-    scan::compress("testds/2007/07-07.grib", core::lock::policy_null);
-    scan::compress("testds/2007/07-08.grib", core::lock::policy_null);
-    scan::compress("testds/2007/10-09.grib", core::lock::policy_null);
+    scan::compress("testds/2007/07-07.grib", std::make_shared<core::lock::Null>());
+    scan::compress("testds/2007/07-08.grib", std::make_shared<core::lock::Null>());
+    scan::compress("testds/2007/10-09.grib", std::make_shared<core::lock::Null>());
     sys::unlink_ifexists("testds/2007/07-07.grib");
     sys::unlink_ifexists("testds/2007/07-08.grib");
     sys::unlink_ifexists("testds/2007/10-09.grib");
@@ -443,7 +444,7 @@ add_method("unarchive_segment", [](Fixture& f) {
     ensure(sys::exists("testds/2007/10-09.grib"));
 
     {
-        f.makeSegmentedChecker()->unarchive_segment("2007/07-07.grib");
+        f.makeSegmentedChecker()->segment("2007/07-07.grib")->unarchive();
     }
 
     ensure(!sys::exists("testds/.archive/last/2007/07-07.grib"));
@@ -497,7 +498,7 @@ add_method("unarchive_segment_lastonly", [](Fixture& f) {
     ensure(sys::exists("testds/2007/10-09.grib"));
 
     try {
-        f.makeSegmentedChecker()->unarchive_segment("../test-ds/2007/07-07.grib");
+        f.makeSegmentedChecker()->segment("../test-ds/2007/07-07.grib")->unarchive();
         wassert(throw std::runtime_error("unarchive_segment should have thrown at this point"));
     } catch (std::exception& e) {
         wassert(actual(e.what()).contains("segment is not in last/ archive"));
@@ -576,7 +577,7 @@ add_method("issue103", [](Fixture& f) {
     // Dispatch
     {
         auto writer = f.makeSegmentedWriter();
-        scan::scan("inbound/issue103.vm2", core::lock::policy_null, [&](unique_ptr<Metadata> md) {
+        scan::scan("inbound/issue103.vm2", std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata> md) {
             wassert(actual(writer->acquire(*md)) == dataset::Writer::ACQ_OK);
             return true;
         });

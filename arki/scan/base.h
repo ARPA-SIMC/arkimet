@@ -19,7 +19,7 @@ struct Scanner
 
     virtual ~Scanner();
 
-    virtual void open(const std::string& filename, const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy);
+    virtual void open(const std::string& filename, const std::string& basedir, const std::string& relname, std::shared_ptr<core::Lock> lock);
 
     virtual void close();
 

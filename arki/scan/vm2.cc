@@ -79,9 +79,9 @@ Vm2::~Vm2()
     close();
 }
 
-void Vm2::open(const std::string& filename, const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy)
+void Vm2::open(const std::string& filename, const std::string& basedir, const std::string& relname, std::shared_ptr<core::Lock> lock)
 {
-    Scanner::open(filename, basedir, relname, lock_policy);
+    Scanner::open(filename, basedir, relname, lock);
     if (relname == "-") {
         this->in = &std::cin;
     } else {

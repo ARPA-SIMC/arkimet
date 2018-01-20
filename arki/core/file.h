@@ -79,9 +79,12 @@ struct LineReader
 };
 
 
-struct Lock : public std::enable_shared_from_this<Lock>
+class Lock : public std::enable_shared_from_this<Lock>
 {
+protected:
     Lock() = default;
+
+public:
     Lock(const Lock&) = delete;
     Lock(Lock&&) = delete;
     Lock& operator=(const Lock&) = delete;
@@ -105,6 +108,13 @@ struct FLock : public ::flock
 
 
 namespace lock {
+
+class Null : public Lock
+{
+public:
+    using Lock::Lock;
+};
+
 
 /**
  * Abstract locking functions that allow changing locking behaviour at runtime

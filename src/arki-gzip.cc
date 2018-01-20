@@ -48,7 +48,7 @@ int main(int argc, const char* argv[])
         while (opts.hasNext())
         {
             string fname = opts.next();
-            scan::compress(fname, core::lock::policy_null);
+            scan::compress(fname, std::make_shared<core::lock::Null>());
             if (!opts.keep->boolValue())
                 sys::unlink_ifexists(fname);
         }

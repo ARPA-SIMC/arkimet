@@ -1,12 +1,9 @@
-#include <arki/dataset/tests.h>
-#include <arki/dataset/simple/datafile.h>
-#include <arki/utils/files.h>
-#include <arki/utils/sys.h>
-#include <arki/metadata.h>
-#include <arki/types/source/blob.h>
-#include <sstream>
-#include <iostream>
-#include <sys/stat.h>
+#include "arki/dataset/tests.h"
+#include "arki/core/file.h"
+#include "arki/dataset/simple/datafile.h"
+#include "arki/utils/sys.h"
+#include "arki/metadata.h"
+#include "arki/types/source/blob.h"
 
 namespace {
 using namespace std;
@@ -45,7 +42,7 @@ add_method("append", [] {
     metadata::TestCollection mds("inbound/test.grib1");
 
     {
-        datafile::MdBuf mdbuf("./" + fname, core::lock::policy_null);
+        datafile::MdBuf mdbuf("./" + fname, std::shared_ptr<core::lock::Null>());
 
         // Append the data, source is unchanged
         auto source = types::source::Blob::create_unlocked("grib", "", "test.grib1", 0, datasize(mds[0]));

@@ -97,9 +97,9 @@ Bufr::~Bufr()
 #endif
 }
 
-void Bufr::open(const std::string& filename, const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy)
+void Bufr::open(const std::string& filename, const std::string& basedir, const std::string& relname, std::shared_ptr<core::Lock> lock)
 {
-    Scanner::open(filename, basedir, relname, lock_policy);
+    Scanner::open(filename, basedir, relname, lock);
     if (filename == "-")
         file = dballe::File::create(dballe::File::BUFR, stdin, false, "standard input").release();
     else

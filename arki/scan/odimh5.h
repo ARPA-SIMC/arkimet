@@ -30,7 +30,7 @@ public:
      * Access a file with ODIMH5 data  - alternate version with explicit
      * basedir/relname separation
      */
-    void open(const std::string& filename, const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy) override;
+    void open(const std::string& filename, const std::string& basedir, const std::string& relname, std::shared_ptr<core::Lock> lock) override;
 
     /**
      * Close the input file.

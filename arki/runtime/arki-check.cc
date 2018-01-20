@@ -189,7 +189,7 @@ struct Unarchiver : public WorkerOnWritable
     {
         using namespace arki::dataset;
         if (segmented::Checker* c = dynamic_cast<segmented::Checker*>(&w))
-            c->unarchive_segment(relpath);
+            c->segment(relpath)->unarchive();
     }
 
     void done() override {}

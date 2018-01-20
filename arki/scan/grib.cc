@@ -481,9 +481,9 @@ Grib::~Grib()
     if (L) delete L;
 }
 
-void Grib::open(const std::string& filename, const std::string& basedir, const std::string& relname, const core::lock::Policy* lock_policy)
+void Grib::open(const std::string& filename, const std::string& basedir, const std::string& relname, std::shared_ptr<core::Lock> lock)
 {
-    Scanner::open(filename, basedir, relname, lock_policy);
+    Scanner::open(filename, basedir, relname, lock);
     if (!(in = fopen(filename.c_str(), "rb")))
         throw_file_error(filename, "cannot open file for reading");
 }

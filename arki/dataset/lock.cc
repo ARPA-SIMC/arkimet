@@ -126,6 +126,13 @@ std::shared_ptr<core::Lock> CheckLock::write_lock()
     return res;
 }
 
+namespace {
+const std::string& ensure_path(const std::string& pathname)
+{
+    sys::makedirs(str::dirname(pathname));
+    return pathname;
+}
+}
 
 
 DatasetReadLock::DatasetReadLock(const LocalConfig& config)
@@ -154,7 +161,7 @@ DatasetCheckLock::DatasetCheckLock(const LocalConfig& config)
 }
 
 SegmentCheckLock::SegmentCheckLock(const LocalConfig& config, const std::string& relpath)
-    : CheckLock(str::joinpath(config.path, relpath + ".lock"), config.lock_policy)
+    : CheckLock(ensure_path(str::joinpath(config.path, relpath + ".lock")), config.lock_policy)
 {
 }
 

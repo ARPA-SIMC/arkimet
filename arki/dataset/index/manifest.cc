@@ -67,6 +67,8 @@ void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
 
 bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
+    if (lock.expired())
+        throw std::runtime_error("cannot query_data while there is no lock held");
     vector<string> files = file_list(q.matcher);
 
     // TODO: does it make sense to check with the summary first?
@@ -92,7 +94,7 @@ bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         if (!sys::exists(fullpath)) continue;
         std::shared_ptr<arki::Reader> reader;
         if (q.with_data)
-            reader = arki::Reader::create_new(absname, lock_policy);
+            reader = arki::Reader::create_new(absname, lock.lock());
         // This generates filenames relative to the metadata
         // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
         Metadata::read_file(fullpath, [&](unique_ptr<Metadata> md) {
@@ -154,10 +156,12 @@ bool Manifest::query_summary(const Matcher& matcher, Summary& summary)
 
 void Manifest::query_segment(const std::string& relname, metadata_dest_func dest) const
 {
+    if (lock.expired())
+        throw std::runtime_error("cannot query_segment while there is no lock held");
     string absdir = sys::abspath(m_path);
     string prepend_fname = str::dirname(relname);
     string absname = str::joinpath(m_path, relname);
-    auto reader = arki::Reader::create_new(absname, lock_policy);;
+    auto reader = arki::Reader::create_new(absname, lock.lock());
     Metadata::read_file(absname + ".metadata", [&](unique_ptr<Metadata> md) {
         // Tweak Blob sources replacing the file name with relname
         if (const source::Blob* s = md->has_source_blob())
@@ -179,6 +183,8 @@ void Manifest::invalidate_summary(const std::string& relname)
 
 void Manifest::rescanSegment(const std::string& dir, const std::string& relpath)
 {
+    if (lock.expired())
+        throw std::runtime_error("cannot rescan a segment while there is no lock held");
     string pathname = str::joinpath(dir, relpath);
 
     // Temporarily uncompress the file for scanning
@@ -199,7 +205,7 @@ void Manifest::rescanSegment(const std::string& dir, const std::string& relpath)
 
     // Scan the file
     metadata::Collection mds;
-    if (!scan::scan(pathname, lock_policy, mds.inserter_func()))
+    if (!scan::scan(pathname, lock.lock(), mds.inserter_func()))
     {
         stringstream ss;
         ss << "cannot rescan " << pathname << ": it does not look like a file we can scan";

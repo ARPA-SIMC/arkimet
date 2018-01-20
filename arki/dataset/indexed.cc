@@ -3,6 +3,7 @@
 #include "maintenance.h"
 #include "reporter.h"
 #include "arki/dataset/time.h"
+#include "arki/dataset/lock.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
 #include "arki/core/time.h"
@@ -31,6 +32,7 @@ bool IndexedReader::query_data(const dataset::DataQuery& q, metadata_dest_func d
     if (!LocalReader::query_data(q, dest))
         return false;
     if (!m_idx) return true;
+    m_idx->lock = lock;
     return m_idx->query_data(q, dest);
 }
 
@@ -40,6 +42,7 @@ void IndexedReader::query_summary(const Matcher& matcher, Summary& summary)
     // Query the archives first
     LocalReader::query_summary(matcher, summary);
     if (!m_idx) return;
+    m_idx->lock = lock;
     // FIXME: this is cargo culted from the old ondisk2 reader: what is the use case for this?
     if (!m_idx->query_summary(matcher, summary))
         throw std::runtime_error("cannot query " + config().path + ": index could not be used");

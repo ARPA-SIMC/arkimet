@@ -464,11 +464,11 @@ this->add_method("read_repack2", [](Fixture& f) {
     metadata::Collection mdc;
     RepackForever<Fixture> rf(f);
     rf.during([&]{
-        for (unsigned i = 0; i < 120; ++i)
+        for (unsigned i = 0; i < 60; ++i)
             mdc.add(*f.config().create_reader(), Matcher());
     });
 
-    wassert(actual(mdc.size()) == 120u * 3);
+    wassert(actual(mdc.size()) == 60u * 3);
 });
 
 // Test parallel repack and write
@@ -488,19 +488,16 @@ this->add_method("write_repack", [](Fixture& f) {
     rf.during([&]{
         for (unsigned minute = 0; minute < 60; ++minute)
         {
-            for (unsigned second = 0; second < 2; ++second)
-            {
-                md.set(types::Reftime::createPosition(Time(2007, 7, 7, 1, minute, second)));
-                auto writer = f.config().create_writer();
-                wassert(actual(*writer).import(md));
-            }
+            md.set(types::Reftime::createPosition(Time(2007, 7, 7, 1, minute, 0)));
+            auto writer = f.config().create_writer();
+            wassert(actual(*writer).import(md));
         }
     });
 
     auto reader = f.config().create_reader();
     unsigned count = 0;
     reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { ++count; return true; });
-    wassert(actual(count) == 121u);
+    wassert(actual(count) == 61u);
 });
 
 this->add_method("nolock_read", [](Fixture& f) {

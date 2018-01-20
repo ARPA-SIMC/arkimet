@@ -1,5 +1,6 @@
 #include "reader.h"
 #include "arki/tests/tests.h"
+#include "arki/core/file.h"
 #include "arki/types/source/blob.h"
 #include "arki/metadata/collection.h"
 #include "arki/utils/sys.h"
@@ -16,7 +17,7 @@ using namespace arki::tests;
 
 void test_read(const char* pathname)
 {
-    auto reader = Reader::create_new(pathname, core::lock::policy_null);
+    auto reader = Reader::create_new(pathname, std::make_shared<core::lock::Null>());
     auto src = types::source::Blob::create("grib", "", pathname, 0, 7218, reader);
     vector<uint8_t> buf = src->read_data();
     wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
@@ -57,7 +58,7 @@ add_method("uncompressed_idx", [] {
     sys::unlink_ifexists("testcompr.grib1");
     sys::unlink_ifexists("testcompr.grib1.gz");
     ensure(system("cp inbound/test.grib1 testcompr.grib1") == 0);
-    scan::compress("testcompr.grib1", core::lock::policy_null, 2);
+    scan::compress("testcompr.grib1", std::make_shared<core::lock::Null>(), 2);
     sys::unlink_ifexists("testcompr.grib1");
     wassert(test_read("testcompr.grib1"));
 });
@@ -66,7 +67,7 @@ add_method("uncompressed_idx", [] {
 add_method("missing", [] {
     vector<uint8_t> buf(7218);
     sys::unlink_ifexists("test.grib1");
-    auto reader = Reader::create_new("test.grib1", core::lock::policy_null);
+    auto reader = Reader::create_new("test.grib1", std::make_shared<core::lock::Null>());
     auto src = types::source::Blob::create("grib", "", "test,grib1", 0, 7218, reader);
     try {
         vector<uint8_t> buf = src->read_data();

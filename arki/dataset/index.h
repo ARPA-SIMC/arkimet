@@ -12,6 +12,8 @@ namespace dataset {
 
 struct Index
 {
+    std::weak_ptr<core::Lock> lock;
+
     virtual ~Index();
 
     /**

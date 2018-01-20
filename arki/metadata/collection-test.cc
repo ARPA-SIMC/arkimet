@@ -51,7 +51,7 @@ add_method("compression", [] {
     wassert(actual(c.size()) == (size_t)repeats);
 
     // Compress the data file
-    wassert(scan::compress(tf.name(), core::lock::policy_null, 127));
+    wassert(scan::compress(tf.name(), std::make_shared<core::lock::Null>(), 127));
     // Remove the original file
     sys::unlink(tf.name());
     for (auto& i: c)
@@ -64,7 +64,7 @@ add_method("compression", [] {
     utils::acct::gzip_data_read_count.reset();
     utils::acct::gzip_forward_seek_bytes.reset();
     utils::acct::gzip_idx_reposition_count.reset();
-    auto reader = Reader::create_new(tf.name(), core::lock::policy_null);
+    auto reader = Reader::create_new(tf.name(), std::make_shared<core::lock::Null>());
     for (int i = 0; i < repeats; ++i)
     {
         c[i].sourceBlob().lock(reader);
@@ -87,7 +87,7 @@ add_method("compression", [] {
     utils::acct::gzip_data_read_count.reset();
     utils::acct::gzip_forward_seek_bytes.reset();
     utils::acct::gzip_idx_reposition_count.reset();
-    reader = Reader::create_new(tf.name(), core::lock::policy_null);
+    reader = Reader::create_new(tf.name(), std::make_shared<core::lock::Null>());
     for (int i = repeats-1; i >= 0; --i)
     {
         c[i].sourceBlob().lock(reader);
@@ -109,7 +109,7 @@ add_method("compression", [] {
     utils::acct::gzip_data_read_count.reset();
     utils::acct::gzip_forward_seek_bytes.reset();
     utils::acct::gzip_idx_reposition_count.reset();
-    reader = Reader::create_new(tf.name(), core::lock::policy_null);
+    reader = Reader::create_new(tf.name(), std::make_shared<core::lock::Null>());
     for (int i = 0; i < repeats; i += 2)
     {
         c[i].sourceBlob().lock(reader);

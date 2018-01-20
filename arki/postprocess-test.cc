@@ -6,15 +6,6 @@
 #include "metadata.h"
 #include "postprocess.h"
 #include "binary.h"
-#if 0
-#include "matcher/tests.h"
-#include <sstream>
-#include <iostream>
-#include <cstdio>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#endif
 
 #ifndef STDERR_FILENO
 #define STDERR_FILENO 2
@@ -29,7 +20,7 @@ using namespace arki::utils;
 
 void produceGRIB(Postprocess& p)
 {
-    scan::scan("inbound/test.grib1", core::lock::policy_null, [&](unique_ptr<Metadata> md) { return p.process(move(md)); });
+    scan::scan("inbound/test.grib1", std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata> md) { return p.process(move(md)); });
 }
 
 class Tests : public TestCase
@@ -94,7 +85,7 @@ add_method("cat", [] {
     vector<uint8_t> plain;
     {
         BinaryEncoder enc(plain);
-        scan::scan("inbound/test.grib1", core::lock::policy_null, [&](unique_ptr<Metadata> md) {
+        scan::scan("inbound/test.grib1", std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata> md) {
             md->makeInline();
             md->encodeBinary(enc);
             const auto& data = md->getData();
@@ -108,7 +99,7 @@ add_method("cat", [] {
     Postprocess p("cat");
     p.set_output(out);
     p.start();
-    scan::scan("inbound/test.grib1", core::lock::policy_null, [&](unique_ptr<Metadata> md) { return p.process(move(md)); });
+    scan::scan("inbound/test.grib1", std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata> md) { return p.process(move(md)); });
     p.flush();
     out.close();
 
