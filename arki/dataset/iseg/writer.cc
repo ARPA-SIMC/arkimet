@@ -779,6 +779,7 @@ void Checker::test_change_metadata(const std::string& relpath, Metadata& md, uns
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
     md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
+    md.sourceBlob().unlock();
     mds[data_idx] = md;
 
     // Reindex mds

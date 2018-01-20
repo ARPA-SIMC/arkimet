@@ -187,6 +187,7 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     if (age_check.first) return age_check.second;
 
     if (!lock) lock = config().append_lock_dataset();
+    m_idx->lock = lock;
 
     if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
 
@@ -671,6 +672,7 @@ void Checker::test_change_metadata(const std::string& relpath, Metadata& md, uns
     metadata::Collection mds;
     idx->query_segment(relpath, mds.inserter_func());
     md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
+    md.sourceBlob().unlock();
     mds[data_idx] = md;
 
     // Reindex mds
@@ -711,7 +713,9 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
 
     if (replace == REPLACE_ALWAYS) return ACQ_OK;
 
+    auto lock = config->read_lock_dataset();
     index::RContents idx(config);
+    idx.lock = lock;
     idx.open();
 
     Metadata old_md;
