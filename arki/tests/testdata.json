@@ -11046,6 +11046,11 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkiquery",
+  "method": "query_metadata"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime_arkicheck_ondisk2",
   "method": "clean"
  },
@@ -11163,6 +11168,21 @@
   "doc": "",
   "group": "arki_runtime_arkicheck_iseg",
   "method": "issue57"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkiscan",
+  "method": "scan_grib"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkiscan",
+  "method": "scan_bufr"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkiscan",
+  "method": "scan_metadata"
  },
  {
   "doc": "",

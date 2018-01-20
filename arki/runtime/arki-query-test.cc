@@ -55,6 +55,24 @@ add_method("postproc", [](Fixture& f) {
     wassert(actual(sys::read_file(co.file_stderr.name())) == "");
 });
 
+add_method("query_metadata", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+    metadata::TestCollection mdc("inbound/fixture.grib1");
+
+    mdc.writeAtomically("test.metadata");
+    runtime::tests::CatchOutput co;
+    int res = run_cmdline(runtime::arki_query, {
+        "arki-query",
+        "--data",
+        "",
+        "test.metadata",
+    });
+    wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+    wassert(actual(res) == 0);
+    wassert(actual(sys::read_file(co.file_stdout.name())).startswith("GRIB"));
+});
+
+
 }
 
 }
