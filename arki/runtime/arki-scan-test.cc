@@ -66,6 +66,46 @@ add_method("scan_bufr", [](Fixture& f) {
     wassert(actual(sys::read_file(co.file_stdout.name())).matches("\nOrigin:"));
 });
 
+add_method("scan_metadata", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+    metadata::TestCollection mdc("inbound/fixture.grib1");
+
+    mdc.writeAtomically("test.metadata");
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_scan, {
+            "arki-scan",
+            "--yaml",
+            "test.metadata",
+        });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(res) == 0);
+        wassert(actual(sys::read_file(co.file_stdout.name())).matches("\nOrigin:"));
+    }
+
+    mdc.writeAtomically("test.foo");
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_scan, {
+            "arki-scan",
+            "--yaml",
+            "metadata:test.foo",
+        });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(res) == 0);
+        wassert(actual(sys::read_file(co.file_stdout.name())).matches("\nOrigin:"));
+    }
+});
+
+// ./run-local arki-scan grib:test/data/fixture.grib1 > /tmp/z.metadata
+// arki-scan --yaml '' /tmp/z.metadata
+// ./run-local arki-scan --yaml '' /tmp/z.metadata
+// ./run-local arki-scan --yaml '' metadata:/tmp/z.metadata
+// ./run-local arki-scan --yaml '' /tmp/z.metadata
+// arki-query --data -o ppp '' /tmp/z.metadata 
+// ./run-local arki-query --data -o ppp '' /tmp/z.metadata 
+
+
 }
 
 }
