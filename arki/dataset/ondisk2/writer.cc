@@ -207,6 +207,15 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     }
 }
 
+std::vector<Writer::AcquireResult> Writer::acquire_collection(metadata::Collection& mds, ReplaceStrategy replace)
+{
+    std::vector<AcquireResult> res;
+    res.reserve(mds.size());
+    for (auto& md: mds)
+        res.push_back(acquire(*md, replace));
+    return res;
+}
+
 void Writer::remove(Metadata& md)
 {
     if (!lock) lock = config().append_lock_dataset();

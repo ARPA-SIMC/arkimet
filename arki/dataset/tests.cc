@@ -314,11 +314,11 @@ void DatasetTest::import(const std::string& testfile)
     {
         std::unique_ptr<Writer> writer(config().create_writer());
         metadata::TestCollection data(testfile);
-        for (auto& md: data)
+        auto res = writer->acquire_collection(data);
+        for (unsigned i = 0; i < data.size(); ++i)
         {
-            import_results.push_back(*md);
-            Writer::AcquireResult res = writer->acquire(import_results.back());
-            wassert(actual(res) == Writer::ACQ_OK);
+            wassert(actual(res[i]) == Writer::ACQ_OK);
+            import_results.push_back(data[i]);
             import_results.back().sourceBlob().unlock();
         }
     }

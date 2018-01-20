@@ -1,5 +1,6 @@
 #include "config.h"
 #include "empty.h"
+#include "arki/metadata/collection.h"
 #include <ostream>
 
 using namespace std;
@@ -30,6 +31,11 @@ Reader::~Reader() {}
 Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
     return ACQ_OK;
+}
+
+std::vector<Writer::AcquireResult> Writer::acquire_collection(metadata::Collection& mds, ReplaceStrategy replace)
+{
+    return std::vector<Writer::AcquireResult>(mds.size(), ACQ_OK);
 }
 
 Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)

@@ -63,6 +63,7 @@ public:
     std::string type() const override { return "discard"; }
 
     AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
+    std::vector<AcquireResult> acquire_collection(metadata::Collection& mds, ReplaceStrategy replace=REPLACE_DEFAULT) override;
 
     void remove(Metadata&) override
     {

@@ -16,6 +16,10 @@ class ConfigFile;
 class Metadata;
 class Summary;
 
+namespace metadata {
+class Collection;
+}
+
 namespace sort {
 class Compare;
 }
@@ -316,6 +320,18 @@ public:
 	 * @return The outcome of the operation.
 	 */
 	virtual AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) = 0;
+
+    /**
+     * Acquire the given metadata items (and related data) in this dataset.
+     *
+     * After acquiring the data successfully, the data can be retrieved from
+     * the dataset.  Also, information such as the dataset name and the id of
+     * the data in the dataset are added to the Metadata in the collection
+     *
+     * @return The outcome of the operation, as a vector with an AcquireResult
+     * for each metadata in the collection.
+     */
+    virtual std::vector<AcquireResult> acquire_collection(metadata::Collection& mds, ReplaceStrategy replace=REPLACE_DEFAULT) = 0;
 
 	/**
 	 * Remove the given metadata from the database.

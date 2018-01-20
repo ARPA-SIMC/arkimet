@@ -3,6 +3,7 @@
 #include "empty.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
+#include "arki/metadata/collection.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/dataset/segment.h"
@@ -74,6 +75,15 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     // This should never be reached, but we throw an exception to avoid a
     // warning from the compiler
     throw std::runtime_error("this code path should never be reached (it is here to appease a compiler warning)");
+}
+
+std::vector<Writer::AcquireResult> Writer::acquire_collection(metadata::Collection& mds, ReplaceStrategy replace)
+{
+    std::vector<AcquireResult> res;
+    res.reserve(mds.size());
+    for (auto& md: mds)
+        res.push_back(acquire(*md, replace));
+    return res;
 }
 
 void Writer::remove(Metadata&)

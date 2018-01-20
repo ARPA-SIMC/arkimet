@@ -54,6 +54,7 @@ public:
      * the reason of the failure.
      */
     virtual AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT);
+    std::vector<AcquireResult> acquire_collection(metadata::Collection& mds, ReplaceStrategy replace=REPLACE_DEFAULT) override;
 
     virtual void remove(Metadata& id);
     virtual void removeAll(std::ostream& log, bool writable=false);
