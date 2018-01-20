@@ -69,7 +69,7 @@ add_method("query_metadata", [](Fixture& f) {
     });
     wassert(actual(sys::read_file(co.file_stderr.name())) == "");
     wassert(actual(res) == 0);
-    wassert(actual(sys::read_file(co.file_stdout.name())).startswith("^GRIB"));
+    wassert(actual(sys::read_file(co.file_stdout.name())).startswith("GRIB"));
 });
 
 

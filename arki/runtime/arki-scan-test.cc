@@ -97,17 +97,6 @@ add_method("scan_metadata", [](Fixture& f) {
     }
 });
 
-// ./run-local arki-scan grib:test/data/fixture.grib1 > /tmp/z.metadata
-// arki-scan --yaml '' /tmp/z.metadata
-// ./run-local arki-scan --yaml '' /tmp/z.metadata
-// ./run-local arki-scan --yaml '' metadata:/tmp/z.metadata
-// ./run-local arki-scan --yaml '' /tmp/z.metadata
-// arki-query --data -o ppp '' /tmp/z.metadata 
-// ./run-local arki-query --data -o ppp '' /tmp/z.metadata 
-
-
 }
 
 }
-
-
