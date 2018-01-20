@@ -11166,6 +11166,16 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkiscan",
+  "method": "scan_grib"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkiscan",
+  "method": "scan_bufr"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime",
   "method": "files"
  },
