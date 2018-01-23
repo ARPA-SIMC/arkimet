@@ -135,7 +135,7 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
-* Tue Jan 23 2017 Daniele Branchini <dbranchini@arpae.it> - 1.6-1%{dist}
+* Tue Jan 23 2018 Daniele Branchini <dbranchini@arpae.it> - 1.6-1%{dist}
 - fixed #76, #107, #115, #116, #117
 
 * Mon Nov 27 2017 Daniele Branchini <dbranchini@arpae.it> - 1.5-2%{dist}
