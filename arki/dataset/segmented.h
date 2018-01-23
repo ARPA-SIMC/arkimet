@@ -92,7 +92,7 @@ public:
 
     virtual void flush();
 
-    static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
+    static void test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out);
 };
 
 

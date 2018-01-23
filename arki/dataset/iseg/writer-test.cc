@@ -69,8 +69,7 @@ add_method("acquire", [](Fixture& f) {
     auto writer = f.makeIsegWriter();
 
     // Import once in the empty dataset
-    Writer::AcquireResult res = writer->acquire(md);
-    wassert(actual(res) == Writer::ACQ_OK);
+    wassert(actual(*writer).import(md));
     #if 0
     for (vector<Note>::const_iterator i = md.notes.begin();
             i != md.notes.end(); ++i)
@@ -81,8 +80,7 @@ add_method("acquire", [](Fixture& f) {
     wassert(actual_type(md.source()).is_source_blob("grib", sys::abspath("./testds"), "2007/07-08.grib", 0, 7218));
 
     // Import again finds the duplicate
-    res = writer->acquire(md);
-    wassert(actual(res) == Writer::ACQ_ERROR_DUPLICATE);
+    wassert(actual(writer->acquire(md)) == ACQ_ERROR_DUPLICATE);
 
     // Flush the changes and check that everything is allright
     writer->flush();
@@ -102,14 +100,22 @@ add_method("acquire", [](Fixture& f) {
 
 add_method("testacquire", [](Fixture& f) {
     metadata::TestCollection mdc("inbound/test.grib1");
+    while (mdc.size() > 1) mdc.pop_back();
     stringstream ss;
-    wassert(actual(iseg::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_OK);
+    auto batch = mdc.make_import_batch();
+    wassert(iseg::Writer::test_acquire(f.cfg, batch, ss));
+    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[0]->dataset_name) == "testds");
 
     f.cfg.setValue("archive age", "1");
-    wassert(actual(iseg::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_ERROR);
+    wassert(iseg::Writer::test_acquire(f.cfg, batch, ss));
+    wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
+    wassert(actual(batch[0]->dataset_name) == "");
 
     f.cfg.setValue("delete age", "1");
-    wassert(actual(iseg::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_OK);
+    wassert(iseg::Writer::test_acquire(f.cfg, batch, ss));
+    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[0]->dataset_name) == "testds");
 });
 
 }

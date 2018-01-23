@@ -30,9 +30,9 @@ protected:
     index::WContents* idx;
     std::shared_ptr<dataset::Lock> lock;
 
-    AcquireResult acquire_replace_never(Metadata& md);
-    AcquireResult acquire_replace_always(Metadata& md);
-    AcquireResult acquire_replace_higher_usn(Metadata& md);
+    WriterAcquireResult acquire_replace_never(Metadata& md);
+    WriterAcquireResult acquire_replace_always(Metadata& md);
+    WriterAcquireResult acquire_replace_higher_usn(Metadata& md);
 
 public:
     Writer(std::shared_ptr<const ondisk2::Config> config);
@@ -42,8 +42,8 @@ public:
 
     std::string type() const override;
 
-    AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
-    std::vector<AcquireResult> acquire_collection(metadata::Collection& mds, ReplaceStrategy replace=REPLACE_DEFAULT) override;
+    WriterAcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
+    void acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace=REPLACE_DEFAULT) override;
     void remove(Metadata& md) override;
     void flush() override;
     virtual Pending test_writelock();
@@ -53,7 +53,7 @@ public:
      */
     //void depthFirstVisit(Visitor& v);
 
-    static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
+    static void test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out);
 };
 
 

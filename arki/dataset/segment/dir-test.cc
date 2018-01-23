@@ -137,7 +137,7 @@ add_method("append", [] {
     metadata::TestCollection mdc1;
 
     // Scan the file we created
-    wassert(actual(mdc1.scan_from_file(relname)).istrue());
+    wassert(actual(mdc1.scan_from_file(relname, false)).istrue());
 
     // Check that it only contains the 1st and 3rd data
     wassert(actual(mdc1.size()) == 2u);

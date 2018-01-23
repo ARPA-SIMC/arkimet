@@ -53,7 +53,7 @@ void Writer::storeBlob(Metadata& md, const std::string& reldest)
     w->append(md);
 }
 
-Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
+WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
@@ -77,13 +77,15 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     throw std::runtime_error("this code path should never be reached (it is here to appease a compiler warning)");
 }
 
-std::vector<Writer::AcquireResult> Writer::acquire_collection(metadata::Collection& mds, ReplaceStrategy replace)
+void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace)
 {
-    std::vector<AcquireResult> res;
-    res.reserve(mds.size());
-    for (auto& md: mds)
-        res.push_back(acquire(*md, replace));
-    return res;
+    for (auto& e: batch)
+    {
+        e->dataset_name.clear();
+        e->result = acquire(e->md, replace);
+        if (e->result == ACQ_OK)
+            e->dataset_name = name();
+    }
 }
 
 void Writer::remove(Metadata&)
@@ -96,18 +98,29 @@ void Writer::removeAll(std::ostream& log, bool writable)
     log << name() << ": cleaning dataset not implemented" << endl;
 }
 
-Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out)
 {
     std::shared_ptr<const outbound::Config> config(new outbound::Config(cfg));
-    Metadata tmp_md(md);
-    auto age_check = config->check_acquire_age(tmp_md);
-    if (age_check.first) return age_check.second;
+    for (auto& e: batch)
+    {
+        auto age_check = config->check_acquire_age(e->md);
+        if (age_check.first)
+        {
+            e->result = age_check.second;
+            if (age_check.second == ACQ_OK)
+                e->dataset_name = config->name;
+            else
+                e->dataset_name.clear();
+            continue;
+        }
 
-    const core::Time& time = md.get<types::reftime::Position>()->time;
-    auto tf = Step::create(cfg.value("step"));
-    string dest = cfg.value("path") + "/" + (*tf)(time) + "." + md.source().format;
-    out << "Assigning to dataset " << cfg.value("name") << " in file " << dest << endl;
-    return ACQ_OK;
+        const core::Time& time = e->md.get<types::reftime::Position>()->time;
+        auto tf = Step::create(cfg.value("step"));
+        string dest = cfg.value("path") + "/" + (*tf)(time) + "." + e->md.source().format;
+        out << "Assigning to dataset " << cfg.value("name") << " in file " << dest << endl;
+        e->result = ACQ_OK;
+        e->dataset_name = config->name;
+    }
 }
 
 }

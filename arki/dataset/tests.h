@@ -197,7 +197,7 @@ public:
     void import(const std::string& testfile="inbound/test.grib1");
 
     // Import a datum
-    void import(Metadata& md, dataset::Writer::AcquireResult expected_result=dataset::Writer::ACQ_OK);
+    void import(Metadata& md, dataset::WriterAcquireResult expected_result=dataset::ACQ_OK);
 
     // Recreate the dataset importing data into it
     void clean_and_import(const std::string& testfile="inbound/test.grib1");

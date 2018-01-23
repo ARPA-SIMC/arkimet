@@ -72,7 +72,7 @@ std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::str
     return writer;
 }
 
-Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
+WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
@@ -105,13 +105,15 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     // flush when the Datafile structures are deallocated
 }
 
-std::vector<Writer::AcquireResult> Writer::acquire_collection(metadata::Collection& mds, ReplaceStrategy replace)
+void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace)
 {
-    std::vector<AcquireResult> res;
-    res.reserve(mds.size());
-    for (auto& md: mds)
-        res.push_back(acquire(*md, replace));
-    return res;
+    for (auto& e: batch)
+    {
+        e->dataset_name.clear();
+        e->result = acquire(e->md, replace);
+        if (e->result == ACQ_OK)
+            e->dataset_name = name();
+    }
 }
 
 void Writer::remove(Metadata& md)
@@ -132,16 +134,26 @@ Pending Writer::test_writelock()
     return m_mft->test_writelock();
 }
 
-Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out)
 {
     std::shared_ptr<const simple::Config> config(new simple::Config(cfg));
-    Metadata tmp_md(md);
-    auto age_check = config->check_acquire_age(tmp_md);
-    if (age_check.first) return age_check.second;
-
-    // Acquire on simple datasets always succeeds except in case of envrionment
-    // issues like I/O errors and full disks
-    return ACQ_OK;
+    for (auto& e: batch)
+    {
+        auto age_check = config->check_acquire_age(e->md);
+        if (age_check.first)
+        {
+            e->result = age_check.second;
+            if (age_check.second == ACQ_OK)
+                e->dataset_name = config->name;
+            else
+                e->dataset_name.clear();
+        } else {
+            // Acquire on simple datasets always succeeds except in case of envrionment
+            // issues like I/O errors and full disks
+            e->result = ACQ_OK;
+            e->dataset_name = config->name;
+        }
+    }
 }
 
 

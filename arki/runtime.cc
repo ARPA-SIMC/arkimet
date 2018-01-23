@@ -558,20 +558,53 @@ bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
     else
         copyko.reset();
 
+    // Read
     try {
-        ds.query_data(Matcher(), [&](unique_ptr<Metadata> md) { return this->dispatch(move(md)); });
+        ds.query_data(Matcher(), results.inserter_func());
     } catch (std::exception& e) {
-        // FIXME: this is a quick experiment: a better message can
-        // print some of the stats to document partial imports
-        //cerr << i->second->value("path") << ": import FAILED: " << e.what() << endl;
-        nag::warning("import FAILED: %s", e.what());
-        // Still process what we've got so far
+        nag::warning("%s: cannot read contents: %s", name.c_str(), e.what());
         next.process(results, name);
         throw;
     }
 
-	// Process the resulting annotated metadata as a dataset
-	next.process(results, name);
+    // Dispatch
+    auto batch = results.make_import_batch();
+    try {
+        dispatcher->dispatch(batch);
+    } catch (std::exception& e) {
+        nag::warning("%s: cannot dispatch contents: %s", name.c_str(), e.what());
+        next.process(results, name);
+        throw;
+    }
+
+    // Evaluate results
+    for (auto& e: batch)
+    {
+        if (e->dataset_name.empty())
+        {
+            do_copyko(e->md);
+            // If dispatching failed, add a big note about it.
+            e->md.add_note("WARNING: The data has not been imported in ANY dataset");
+            ++countNotImported;
+        } else if (e->dataset_name == "error") {
+            do_copyko(e->md);
+            ++countInErrorDataset;
+        } else if (e->dataset_name == "duplicates") {
+            do_copyko(e->md);
+            ++countDuplicates;
+        } else if (e->result == dataset::ACQ_OK) {
+            do_copyok(e->md);
+            ++countSuccessful;
+        } else {
+            do_copyko(e->md);
+            // If dispatching failed, add a big note about it.
+            e->md.add_note("WARNING: The data failed to be imported into dataset " + e->dataset_name);
+            ++countNotImported;
+        }
+    }
+
+    // Process the resulting annotated metadata as a dataset
+    next.process(results, name);
 
 	if (reportStatus)
 	{
@@ -593,34 +626,6 @@ bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
 	countInErrorDataset = 0;
 
 	return success;
-}
-
-bool MetadataDispatch::dispatch(unique_ptr<Metadata>&& md)
-{
-    // Dispatch to matching dataset
-    switch (dispatcher->dispatch(*md))
-    {
-        case Dispatcher::DISP_OK:
-            do_copyok(*md);
-            ++countSuccessful;
-            break;
-        case Dispatcher::DISP_DUPLICATE_ERROR:
-            do_copyko(*md);
-            ++countDuplicates;
-            break;
-        case Dispatcher::DISP_ERROR:
-            do_copyko(*md);
-            ++countInErrorDataset;
-            break;
-        case Dispatcher::DISP_NOTWRITTEN:
-            do_copyko(*md);
-            // If dispatching failed, add a big note about it.
-            md->add_note("WARNING: The data has not been imported in ANY dataset");
-            ++countNotImported;
-            break;
-    }
-    results.acquire(move(md));
-    return dispatcher->canContinue();
 }
 
 void MetadataDispatch::do_copyok(Metadata& md)

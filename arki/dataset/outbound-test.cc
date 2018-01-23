@@ -42,21 +42,29 @@ add_method("import", [](Fixture& f) {
     metadata::TestCollection mdc("inbound/test.grib1");
 
     auto writer = f.config().create_writer();
-    wassert(actual(writer->acquire(mdc[0])) == dataset::Writer::ACQ_OK);
-    wassert(actual(writer->acquire(mdc[1])) == dataset::Writer::ACQ_OK);
-    wassert(actual(writer->acquire(mdc[2])) == dataset::Writer::ACQ_OK);
+    wassert(actual(*writer).import(mdc[0]));
+    wassert(actual(*writer).import(mdc[1]));
+    wassert(actual(*writer).import(mdc[2]));
 });
 
 add_method("testacquire", [](Fixture& f) {
     metadata::TestCollection mdc("inbound/test.grib1");
+    while (mdc.size() > 1) mdc.pop_back();
     stringstream ss;
-    wassert(actual(outbound::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_OK);
+    auto batch = mdc.make_import_batch();
+    wassert(outbound::Writer::test_acquire(f.cfg, batch, ss));
+    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[0]->dataset_name) == "testds");
 
     f.cfg.setValue("archive age", "1");
-    wassert(actual(outbound::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_ERROR);
+    wassert(outbound::Writer::test_acquire(f.cfg, batch, ss));
+    wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
+    wassert(actual(batch[0]->dataset_name) == "");
 
     f.cfg.setValue("delete age", "1");
-    wassert(actual(outbound::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_OK);
+    wassert(outbound::Writer::test_acquire(f.cfg, batch, ss));
+    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[0]->dataset_name) == "testds");
 });
 
 }

@@ -65,10 +65,10 @@ add_method("acquire", [](Fixture& f) {
     auto writer = f.makeOndisk2Writer();
 
     // Import once in the empty dataset
-    wassert(actual(writer->acquire(mdc[0])) == dataset::Writer::ACQ_OK);
+    wassert(actual(writer->acquire(mdc[0])) == dataset::ACQ_OK);
 
     // See if we catch duplicate imports
-    wassert(actual(writer->acquire(mdc[0])) == dataset::Writer::ACQ_ERROR_DUPLICATE);
+    wassert(actual(writer->acquire(mdc[0])) == dataset::ACQ_ERROR_DUPLICATE);
 
     // Flush the changes and check that everything is allright
     writer->flush();
@@ -91,7 +91,7 @@ add_method("replace", [](Fixture& f) {
     // Reimport, replacing
     {
         auto writer = f.makeOndisk2Writer();
-        if (writer->acquire(mdc[0], dataset::Writer::REPLACE_ALWAYS) != dataset::Writer::ACQ_OK)
+        if (writer->acquire(mdc[0], dataset::Writer::REPLACE_ALWAYS) != dataset::ACQ_OK)
         {
             std::vector<Note> notes = mdc[0].notes();
             for (size_t i = 0; i < notes.size(); ++i)
@@ -168,7 +168,7 @@ add_method("acquire_replace", [](Fixture& f) {
     {
         auto writer = f.makeOndisk2Writer();
         for (auto& md: mdc)
-            wassert(actual(writer->acquire(*md)) == dataset::Writer::ACQ_OK);
+            wassert(actual(writer->acquire(*md)) == dataset::ACQ_OK);
         writer->flush();
     }
 
@@ -176,7 +176,7 @@ add_method("acquire_replace", [](Fixture& f) {
     {
         auto writer = f.makeOndisk2Writer();
         for (auto& md: mdc)
-            wassert(actual(writer->acquire(*md)) == dataset::Writer::ACQ_ERROR_DUPLICATE);
+            wassert(actual(writer->acquire(*md)) == dataset::ACQ_ERROR_DUPLICATE);
         writer->flush();
     }
 
@@ -187,7 +187,7 @@ add_method("acquire_replace", [](Fixture& f) {
         auto config = dataset::ondisk2::Config::create(cfg);
         auto writer = config->create_writer();
         for (auto& md: mdc)
-            wassert(actual(writer->acquire(*md)) == dataset::Writer::ACQ_OK);
+            wassert(actual(writer->acquire(*md)) == dataset::ACQ_OK);
         writer->flush();
     }
 
@@ -247,7 +247,7 @@ add_method("acquire_compressed", [](Fixture& f) {
     // Import the first
     {
         auto writer = f.makeOndisk2Writer();
-        wassert(actual(writer->acquire(mdc[0])) == dataset::Writer::ACQ_OK);
+        wassert(actual(*writer).import(mdc[0]));
     }
     wassert(actual_file("testds/20/2007.grib").exists());
 
@@ -265,7 +265,8 @@ add_method("acquire_compressed", [](Fixture& f) {
     {
         auto writer = f.makeOndisk2Writer();
         try {
-            wassert(actual(writer->acquire(mdc[1])) == dataset::Writer::ACQ_OK);
+            writer->acquire(mdc[1]);
+            wassert(actual(false).istrue());
         } catch (std::exception& e) {
             wassert(actual(e.what()).contains("cannot update compressed data files"));
         }
@@ -283,28 +284,28 @@ add_method("acquire_replace_usn", [](Fixture& f) {
     wassert(actual(mdc.size()) == 1u);
 
     // Acquire
-    wassert(actual(writer->acquire(mdc[0])) == dataset::Writer::ACQ_OK);
+    wassert(actual(writer->acquire(mdc[0])) == dataset::ACQ_OK);
 
     // Acquire again: it fails
-    wassert(actual(writer->acquire(mdc[0])) == dataset::Writer::ACQ_ERROR_DUPLICATE);
+    wassert(actual(writer->acquire(mdc[0])) == dataset::ACQ_ERROR_DUPLICATE);
 
     // Acquire again: it fails even with a higher USN
-    wassert(actual(writer->acquire(mdc_upd[0])) == dataset::Writer::ACQ_ERROR_DUPLICATE);
+    wassert(actual(writer->acquire(mdc_upd[0])) == dataset::ACQ_ERROR_DUPLICATE);
 
     // Acquire with replace: it works
-    wassert(actual(writer->acquire(mdc[0], dataset::Writer::REPLACE_ALWAYS)) == dataset::Writer::ACQ_OK);
+    wassert(actual(writer->acquire(mdc[0], dataset::Writer::REPLACE_ALWAYS)) == dataset::ACQ_OK);
 
     // Acquire with USN: it works, since USNs the same as the existing ones do overwrite
-    wassert(actual(writer->acquire(mdc[0], dataset::Writer::REPLACE_HIGHER_USN)) == dataset::Writer::ACQ_OK);
+    wassert(actual(writer->acquire(mdc[0], dataset::Writer::REPLACE_HIGHER_USN)) == dataset::ACQ_OK);
 
     // Acquire with a newer USN: it works
-    wassert(actual(writer->acquire(mdc_upd[0], dataset::Writer::REPLACE_HIGHER_USN)) == dataset::Writer::ACQ_OK);
+    wassert(actual(writer->acquire(mdc_upd[0], dataset::Writer::REPLACE_HIGHER_USN)) == dataset::ACQ_OK);
 
     // Acquire with the lower USN: it fails
-    wassert(actual(writer->acquire(mdc[0], dataset::Writer::REPLACE_HIGHER_USN)) == dataset::Writer::ACQ_ERROR_DUPLICATE);
+    wassert(actual(writer->acquire(mdc[0], dataset::Writer::REPLACE_HIGHER_USN)) == dataset::ACQ_ERROR_DUPLICATE);
 
     // Acquire with the same high USN: it works, since USNs the same as the existing ones do overwrite
-    wassert(actual(writer->acquire(mdc_upd[0], dataset::Writer::REPLACE_HIGHER_USN)) == dataset::Writer::ACQ_OK);
+    wassert(actual(writer->acquire(mdc_upd[0], dataset::Writer::REPLACE_HIGHER_USN)) == dataset::ACQ_OK);
 
     // Try to query the element and see if it is the right one
     {
@@ -314,11 +315,6 @@ add_method("acquire_replace_usn", [](Fixture& f) {
         wassert(actual(scan::update_sequence_number(mdc_read[0], usn)).istrue());
         wassert(actual(usn) == 2);
     }
-});
-
-add_method("locking", [](Fixture& f) {
-    
-    f.import();
 });
 
 }

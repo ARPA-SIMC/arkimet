@@ -133,7 +133,7 @@ struct ConcurrentImporter : public wibble::sys::ChildProcess
                     md.set(types::Reftime::createPosition(core::Time(2000, 6, 1, 0, 0, i)));
                 //fprintf(stderr, "%d: %d\n", (int)getpid(), i);
                 auto res = ds->acquire(md);
-                if (res != dataset::Writer::ACQ_OK)
+                if (res != dataset::ACQ_OK)
                 {
                     fprintf(stderr, "Acquire result: %d\n", (int)res);
                     for (const auto& note: md.notes())
@@ -291,7 +291,7 @@ this->add_method("read_write", [](Fixture& f) {
     // Import one grib in the dataset
     {
         auto ds = f.config().create_writer();
-        wassert(actual(ds->acquire(f.td.test_data[0].md)) == dataset::Writer::ACQ_OK);
+        wassert(actual(*ds).import(f.td.test_data[0].md));
         ds->flush();
     }
 
@@ -301,7 +301,7 @@ this->add_method("read_write", [](Fixture& f) {
         // Import another grib in the dataset
         {
             auto ds = f.config().create_writer();
-            wassert(actual(ds->acquire(f.td.test_data[1].md)) == dataset::Writer::ACQ_OK);
+            wassert(actual(*ds).import(f.td.test_data[1].md));
             ds->flush();
         }
     });
@@ -316,7 +316,7 @@ this->add_method("read_write1", [](Fixture& f) {
     // Import one
     {
         auto writer = f.dataset_config()->create_writer();
-        wassert(actual(writer->acquire(f.td.test_data[0].md)) == dataset::Writer::ACQ_OK);
+        wassert(actual(*writer).import(f.td.test_data[0].md));
     }
 
     // Query it and import during query
@@ -329,8 +329,8 @@ this->add_method("read_write1", [](Fixture& f) {
             wassert(actual(count) == 0u);
 
             auto writer = f.dataset_config()->create_writer();
-            wassert(actual(writer->acquire(f.td.test_data[1].md)) == dataset::Writer::ACQ_OK);
-            wassert(actual(writer->acquire(f.td.test_data[2].md)) == dataset::Writer::ACQ_OK);
+            wassert(actual(*writer).import(f.td.test_data[1].md));
+            wassert(actual(*writer).import(f.td.test_data[2].md));
         }
         ++count;
         return true;
@@ -424,7 +424,7 @@ this->add_method("write_check", [](Fixture& f) {
     {
         auto writer = f.config().create_writer();
         is_iseg = writer->type() == "iseg";
-        wassert(actual(writer->acquire(f.td.test_data[0].md)) == dataset::Writer::ACQ_OK);
+        wassert(actual(*writer).import(f.td.test_data[0].md));
         writer->flush();
 
         // Create an error to trigger a call to the reporter that then hangs

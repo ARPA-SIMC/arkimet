@@ -6731,11 +6731,6 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_ondisk2",
-  "method": "locking"
- },
- {
-  "doc": "",
   "group": "arki_dataset_ondisk2_index",
   "method": "index"
  },

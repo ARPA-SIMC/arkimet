@@ -42,7 +42,7 @@ struct Fixture : public DatasetTest {
             for (unsigned i = 7; i <= 9; ++i)
             {
                 md.set(Reftime::createPosition(Time(2009, 8, i, 0, 0, 0)));
-                wassert(actual(writer->acquire(md)) == dataset::Writer::ACQ_OK);
+                wassert(actual(*writer).import(md));
             }
         }
     }

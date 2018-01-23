@@ -6,12 +6,11 @@
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
 #include "arki/types/source/blob.h"
-#include "arki/scan/grib.h"
-#include "arki/scan/any.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/validator.h"
+#include <iostream>
 
 namespace {
 using namespace std;
@@ -75,29 +74,26 @@ add_method("simple", [] {
 
     plain_data_read_count.reset();
 
-    Metadata md;
-    scan::Grib scanner;
+    metadata::TestCollection mdc("inbound/test.grib1", true);
     RealDispatcher dispatcher(config);
-    scanner.test_open("inbound/test.grib1");
-    ensure(scanner.next(md));
-    wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_OK);
-    wassert(actual(dsname(md)) == "test200");
-    ensure(scanner.next(md));
-    wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_OK);
-    wassert(actual(dsname(md)) == "test80");
-    ensure(scanner.next(md));
-    wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(md)) == "error");
-    ensure(!scanner.next(md));
-
+    auto batch = mdc.make_import_batch();
+    wassert(dispatcher.dispatch(batch));
+    wassert(actual(batch[0]->dataset_name) == "test200");
+    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[1]->dataset_name) == "test80");
+    wassert(actual(batch[1]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[2]->dataset_name) == "error");
+    wassert(actual(batch[2]->result) == dataset::ACQ_OK);
     dispatcher.flush();
 
-    ensure_equals(plain_data_read_count.val(), 0u);
+    wassert(actual(plain_data_read_count.val()) == 0u);
 });
 
 // Test a case where dispatch is known to fail
 add_method("regression01", [] {
-#ifdef HAVE_DBALLE
+#ifndef HAVE_DBALLE
+    throw TestSkipped();
+#endif
     // In-memory dataset configuration
     sys::rmtree_ifexists("lami_temp");
     sys::rmtree_ifexists("error");
@@ -113,60 +109,59 @@ add_method("regression01", [] {
     ConfigFile config;
     config.parse(conf);
 
-    metadata::TestCollection source("inbound/tempforecast.bufr");
+    metadata::TestCollection source("inbound/tempforecast.bufr", true);
     ensure_equals(source.size(), 1u);
 
     Matcher matcher = Matcher::parse("origin:BUFR,200; product:BUFR:t=temp");
     ensure(matcher(source[0]));
 
     RealDispatcher dispatcher(config);
-    wassert(actual(dispatcher.dispatch(source[0])) == Dispatcher::DISP_OK);
-    wassert(actual(source[0].sourceBlob()) == source[0].sourceBlob());
+    auto batch = source.make_import_batch();
+    wassert(dispatcher.dispatch(batch));
+    wassert(actual(batch[0]->dataset_name) == "lami_temp");
+    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     dispatcher.flush();
-#endif
 });
 
 // Test dispatch to error datasets after validation errors
 add_method("validation", [] {
     ConfigFile config = setup1();
-    Metadata md;
-    scan::Grib scanner;
     RealDispatcher dispatcher(config);
     validators::FailAlways fail_always;
     dispatcher.add_validator(fail_always);
-    scanner.test_open("inbound/test.grib1");
-    ensure(scanner.next(md));
-    wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(md)) == "error");
-    ensure(scanner.next(md));
-    wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(md)) == "error");
-    ensure(scanner.next(md));
-    wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(md)) == "error");
-    ensure(!scanner.next(md));
+    metadata::TestCollection mdc("inbound/test.grib1", true);
+    auto batch = mdc.make_import_batch();
+    wassert(dispatcher.dispatch(batch));
+    wassert(actual(batch[0]->dataset_name) == "error");
+    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[1]->dataset_name) == "error");
+    wassert(actual(batch[1]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[2]->dataset_name) == "error");
+    wassert(actual(batch[2]->result) == dataset::ACQ_OK);
     dispatcher.flush();
 });
 
 // Test dispatching files with no reftime, they should end up in the error dataset
 add_method("missing_reftime", [] {
     ConfigFile config = setup1();
-    metadata::TestCollection source("inbound/wrongdate.bufr");
+    metadata::TestCollection source("inbound/wrongdate.bufr", true);
     wassert(actual(source.size()) == 6u);
 
     RealDispatcher dispatcher(config);
-    wassert(actual(dispatcher.dispatch(source[0])) == Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(source[0])) == "error");
-    wassert(actual(dispatcher.dispatch(source[1])) == Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(source[1])) == "error");
-    wassert(actual(dispatcher.dispatch(source[2])) == Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(source[2])) == "error");
-    wassert(actual(dispatcher.dispatch(source[3])) == Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(source[3])) == "error");
-    wassert(actual(dispatcher.dispatch(source[4])) == Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(source[4])) == "error");
-    wassert(actual(dispatcher.dispatch(source[5])) == Dispatcher::DISP_ERROR);
-    wassert(actual(dsname(source[5])) == "error");
+    auto batch = source.make_import_batch();
+    wassert(dispatcher.dispatch(batch));
+    wassert(actual(batch[0]->dataset_name) == "error");
+    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[1]->dataset_name) == "error");
+    wassert(actual(batch[1]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[2]->dataset_name) == "error");
+    wassert(actual(batch[2]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[3]->dataset_name) == "error");
+    wassert(actual(batch[3]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[4]->dataset_name) == "error");
+    wassert(actual(batch[4]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[5]->dataset_name) == "error");
+    wassert(actual(batch[5]->result) == dataset::ACQ_OK);
     dispatcher.flush();
 });
 

@@ -278,8 +278,7 @@ add_method("query_lots", [](Fixture& f) {
                             md.set(Product::createVM2(varid));
                             snprintf(buf, 40, "%d,,,000000000", value);
                             md.set(types::Value::create(buf));
-                            Writer::AcquireResult res = writer->acquire(md);
-                            wassert(actual(res) == Writer::ACQ_OK);
+                            wassert(actual(*writer).import(md));
                         }
     }
 
@@ -350,8 +349,7 @@ add_method("archive_age", [](Fixture& f) {
     // Import a file with a known reftime
     // Reftime: 2007-07-08T13:00:00Z
     metadata::TestCollection mds("inbound/test.grib1");
-    dataset::Writer::AcquireResult res = wcallchecked(f.makeSegmentedWriter()->acquire(mds[0]));
-    wassert(actual(res) == dataset::Writer::ACQ_OK);
+    wassert(actual(*f.makeSegmentedWriter()).import(mds[0]));
     wassert(actual(f.makeSegmentedChecker().get()).check_clean(true));
 
     // TZ=UTC date --date="2008-01-01 00:00:00" +%s
@@ -383,8 +381,7 @@ add_method("delete_age", [](Fixture& f) {
     // Import a file with a known reftime
     // Reftime: 2007-07-08T13:00:00Z
     metadata::TestCollection mds("inbound/test.grib1");
-    dataset::Writer::AcquireResult res = wcallchecked(f.makeSegmentedWriter()->acquire(mds[0]));
-    wassert(actual(res) == dataset::Writer::ACQ_OK);
+    wassert(actual(*f.makeSegmentedWriter()).import(mds[0]));
     wassert(actual(f.makeSegmentedChecker().get()).check_clean(true));
 
     // TZ=UTC date --date="2008-01-01 00:00:00" +%s
@@ -578,7 +575,7 @@ add_method("issue103", [](Fixture& f) {
     {
         auto writer = f.makeSegmentedWriter();
         scan::scan("inbound/issue103.vm2", std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata> md) {
-            wassert(actual(writer->acquire(*md)) == dataset::Writer::ACQ_OK);
+            wassert(actual(*writer).import(*md));
             return true;
         });
     }

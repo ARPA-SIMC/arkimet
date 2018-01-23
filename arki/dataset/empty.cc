@@ -28,22 +28,29 @@ Reader::Reader(std::shared_ptr<const dataset::Config> config) : m_config(config)
 Reader::~Reader() {}
 
 
-Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
+WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
     return ACQ_OK;
 }
 
-std::vector<Writer::AcquireResult> Writer::acquire_collection(metadata::Collection& mds, ReplaceStrategy replace)
+void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace)
 {
-    return std::vector<Writer::AcquireResult>(mds.size(), ACQ_OK);
+    for (auto& e: batch)
+    {
+        e->result = ACQ_OK;
+        e->dataset_name = name();
+    }
 }
 
-Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out)
 {
-    out << "Resetting dataset information to mark that the message has been discarded" << endl;
-    return ACQ_OK;
+    std::shared_ptr<const empty::Config> config(new empty::Config(cfg));
+    for (auto& e: batch)
+    {
+        e->result = ACQ_OK;
+        e->dataset_name = config->name;
+    }
 }
-
 
 }
 }

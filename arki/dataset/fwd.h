@@ -17,6 +17,7 @@ struct Reporter;
 struct Segment;
 namespace segment {
 struct State;
+struct WriterBatchElement;
 struct Writer;
 struct Checker;
 struct Manager;

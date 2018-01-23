@@ -220,8 +220,6 @@ struct MetadataDispatch
 	void setStartTime();
 
 protected:
-    bool dispatch(std::unique_ptr<Metadata>&& md);
-
     void do_copyok(Metadata& md);
     void do_copyko(Metadata& md);
 };

@@ -94,7 +94,7 @@ add_method("data_binary", [](Fixture& f) {
     wassert(f.run_maker(pm));
 
     metadata::TestCollection mdc;
-    mdc.scan_from_file("pm-out", "grib");
+    mdc.scan_from_file("pm-out", "grib", false);
 
     wassert(actual(mdc.size()) == 3u);
     wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("."), "pm-out", 0, 34960));

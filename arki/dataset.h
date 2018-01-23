@@ -268,19 +268,26 @@ public:
 	static void readConfig(const std::string& path, ConfigFile& cfg);
 };
 
+struct WriterBatchElement
+{
+    /// Metadata to acquire
+    Metadata& md;
+    /// Name of the dataset where it has been acquired (empty when not
+    /// acquired)
+    std::string dataset_name;
+    /// Acquire result
+    WriterAcquireResult result = ACQ_ERROR;
+
+    WriterBatchElement(Metadata& md) : md(md) {}
+    WriterBatchElement(const WriterBatchElement& o) = default;
+    WriterBatchElement(WriterBatchElement&& o) = default;
+    WriterBatchElement& operator=(const WriterBatchElement& o) = default;
+    WriterBatchElement& operator=(WriterBatchElement&& o) = default;
+};
+
 class Writer : public dataset::Base
 {
 public:
-	/// Possible outcomes of acquire
-	enum AcquireResult {
-		/// Acquire successful
-		ACQ_OK,
-		/// Acquire failed because the data is already in the database
-		ACQ_ERROR_DUPLICATE,
-		/// Acquire failed for other reasons than duplicates
-		ACQ_ERROR
-	};
-
     enum ReplaceStrategy {
         /// Default strategy, as configured in the dataset
         REPLACE_DEFAULT,
@@ -319,7 +326,7 @@ public:
 	 *
 	 * @return The outcome of the operation.
 	 */
-	virtual AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) = 0;
+	virtual WriterAcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) = 0;
 
     /**
      * Acquire the given metadata items (and related data) in this dataset.
@@ -328,10 +335,10 @@ public:
      * the dataset.  Also, information such as the dataset name and the id of
      * the data in the dataset are added to the Metadata in the collection
      *
-     * @return The outcome of the operation, as a vector with an AcquireResult
+     * @return The outcome of the operation, as a vector with an WriterAcquireResult
      * for each metadata in the collection.
      */
-    virtual std::vector<AcquireResult> acquire_collection(metadata::Collection& mds, ReplaceStrategy replace=REPLACE_DEFAULT) = 0;
+    virtual void acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace=REPLACE_DEFAULT) = 0;
 
 	/**
 	 * Remove the given metadata from the database.
@@ -356,17 +363,13 @@ public:
      */
     static std::unique_ptr<Writer> create(const ConfigFile& cfg);
 
-	/**
-	 * Simulate acquiring the given metadata item (and related data) in this
-	 * dataset.
-	 *
-	 * No change of any kind happens to the dataset.  Information such as the
-	 * dataset name and the id of the data in the dataset are added to the
-	 * Metadata object.
-	 *
-	 * @return The outcome of the operation.
-	 */
-	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
+    /**
+     * Simulate acquiring the given metadata item (and related data) in this
+     * dataset.
+     *
+     * No change of any kind happens to the dataset.
+     */
+    static void test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out);
 };
 
 struct Checker : public dataset::Base

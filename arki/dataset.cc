@@ -344,17 +344,17 @@ std::unique_ptr<Writer> Writer::create(const ConfigFile& cfg)
     return config->create_writer();
 }
 
-Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out)
 {
     string type = str::lower(cfg.value("type"));
     if (type == "remote")
         throw std::runtime_error("cannot simulate dataset acquisition: remote datasets are not writable");
     if (type == "outbound")
-        return outbound::Writer::testAcquire(cfg, md, out);
+        return outbound::Writer::test_acquire(cfg, batch, out);
     if (type == "discard")
-        return empty::Writer::testAcquire(cfg, md, out);
+        return empty::Writer::test_acquire(cfg, batch, out);
 
-    return dataset::LocalWriter::testAcquire(cfg, md, out);
+    return dataset::LocalWriter::test_acquire(cfg, batch, out);
 }
 
 

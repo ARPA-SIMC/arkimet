@@ -29,7 +29,7 @@ struct BaseFixture : public Fixture
     void test_setup()
     {
         mdc.clear();
-        mdc.scan_from_file("inbound/fixture.grib1");
+        mdc.scan_from_file("inbound/fixture.grib1", false);
         sys::rmtree_ifexists("testds");
         sys::mkdir_ifmissing("testds");
     }

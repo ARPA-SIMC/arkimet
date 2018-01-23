@@ -19,6 +19,7 @@ struct ReadContext;
 namespace dataset {
 struct DataQuery;
 struct Reader;
+struct WriterBatchElement;
 }
 
 namespace sort {
@@ -61,6 +62,11 @@ public:
 
     const Metadata& back() const { return *vals.back(); }
 
+    /**
+     * Create a batch for acquire_batch with the contents of this collection
+     */
+    std::vector<std::shared_ptr<dataset::WriterBatchElement>> make_import_batch() const;
+
     /// Remove the last element
     void pop_back();
 
@@ -74,7 +80,7 @@ public:
     void push_back(const Metadata& md);
 
     /// Append md
-    void acquire(std::unique_ptr<Metadata>&& md);
+    void acquire(std::unique_ptr<Metadata>&& md, bool with_data=false);
 
 	/**
 	 * Write all the metadata to a file, atomically, using AtomicWriter
@@ -152,15 +158,15 @@ struct TestCollection : public Collection
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    TestCollection(const std::string& pathname);
+    TestCollection(const std::string& pathname, bool with_data=false);
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    bool scan_from_file(const std::string& pathname);
+    bool scan_from_file(const std::string& pathname, bool with_data);
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    bool scan_from_file(const std::string& pathname, const std::string& format);
+    bool scan_from_file(const std::string& pathname, const std::string& format, bool with_data);
 };
 
 }

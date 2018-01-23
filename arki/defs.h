@@ -41,6 +41,20 @@ enum TypeCode
     TYPE_MAXCODE
 };
 
+namespace dataset {
+
+/// Possible outcomes of acquire
+enum WriterAcquireResult {
+    /// Acquire successful
+    ACQ_OK,
+    /// Acquire failed because the data is already in the database
+    ACQ_ERROR_DUPLICATE,
+    /// Acquire failed for other reasons than duplicates
+    ACQ_ERROR
+};
+
+}
+
 }
 
 #endif

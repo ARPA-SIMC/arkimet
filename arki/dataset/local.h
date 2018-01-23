@@ -43,9 +43,9 @@ public:
      *
      * If it is, return true and the import result value.
      *
-     * If it is not, returns false and AcquireResult should be ignored.
+     * If it is not, returns false and WriterAcquireResult should be ignored.
      */
-    std::pair<bool, Writer::AcquireResult> check_acquire_age(Metadata& md) const;
+    std::pair<bool, WriterAcquireResult> check_acquire_age(Metadata& md) const;
 
     std::shared_ptr<ArchivesConfig> archives_config() const;
 
@@ -111,17 +111,7 @@ public:
     /// Return the dataset path
     const std::string& path() const { return config().path; }
 
-    /**
-     * Simulate acquiring the given metadata item (and related data) in this
-     * dataset.
-     *
-     * No change of any kind happens to the dataset.  Information such as the
-     * dataset name and the id of the data in the dataset are added to the
-     * Metadata object.
-     *
-     * @return The outcome of the operation.
-     */
-    static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
+    static void test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out);
 };
 
 struct LocalChecker : public LocalBase<Checker, ArchivesChecker>

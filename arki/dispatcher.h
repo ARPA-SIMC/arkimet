@@ -28,34 +28,13 @@ protected:
     /// Number of failed acquires to outbound datasets
     int m_outbound_failures;
 
-    /// Hook called at the beginning of the dispatch procedure for a message
-    virtual void hook_pre_dispatch(const Metadata& md);
-
-    /// Hook called with the list of matching datasets for a message
-    virtual void hook_found_datasets(const Metadata& md, std::vector<std::string>& found);
-
-    virtual dataset::Writer::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) = 0;
-    virtual dataset::Writer::AcquireResult raw_dispatch_error(Metadata& md);
-    virtual dataset::Writer::AcquireResult raw_dispatch_duplicates(Metadata& md);
+    virtual void raw_dispatch_dataset(const std::string& name, std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch) = 0;
+    virtual void raw_dispatch_error(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch);
+    virtual void raw_dispatch_duplicates(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch);
 
 public:
-	enum Outcome {
-		/// Imported ok
-		DISP_OK,
-		/// Duplicate, imported in error dataset
-		DISP_DUPLICATE_ERROR,
-		/// Imported in error dataset for other problems than duplication
-		DISP_ERROR,
-		/// Had problems, and even writing in the error dataset failed
-		DISP_NOTWRITTEN
-	};
-
-    /// If set, send here metadata sent to outbound datasets
-    metadata_dest_func outbound_md_dest;
-
-
-	Dispatcher(const ConfigFile& cfg);
-	virtual ~Dispatcher();
+    Dispatcher(const ConfigFile& cfg);
+    virtual ~Dispatcher();
 
     /**
      * Add a validator to this dispatcher.
@@ -81,11 +60,11 @@ public:
 	size_t outboundFailures() const { return m_outbound_failures; }
 
     /**
-     * Dispatch the metadata and its data.
+     * Dispatch the metadata and their data.
      *
-     * @returns The outcome of the dispatch.
+     * @returns The outcome of the dispatch, one element per metadata in mds.
      */
-    Outcome dispatch(Metadata& md);
+    virtual void dispatch(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch);
 
     virtual void flush() = 0;
 };
@@ -116,9 +95,9 @@ protected:
     // Duplicates dataset
     std::shared_ptr<dataset::Writer> dsduplicates;
 
-    dataset::Writer::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) override;
-    dataset::Writer::AcquireResult raw_dispatch_error(Metadata& md) override;
-    dataset::Writer::AcquireResult raw_dispatch_duplicates(Metadata& md) override;
+    void raw_dispatch_dataset(const std::string& name, std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch) override;
+    void raw_dispatch_error(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch) override;
+    void raw_dispatch_duplicates(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch) override;
 
 public:
 	RealDispatcher(const ConfigFile& cfg);
@@ -141,24 +120,21 @@ public:
 class TestDispatcher : public Dispatcher
 {
 protected:
-	const ConfigFile& cfg;
-	std::ostream& out;
-	size_t m_count;
-    std::string prefix;
-    std::map<std::string, std::string> m_seen;
+    const ConfigFile& cfg;
+    std::ostream& out;
 
-    void hook_pre_dispatch(const Metadata& md) override;
-    void hook_found_datasets(const Metadata& md, std::vector<std::string>& found) override;
-    dataset::Writer::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) override;
+    void raw_dispatch_dataset(const std::string& name, std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch) override;
 
 public:
-	TestDispatcher(const ConfigFile& cfg, std::ostream& out);
-	~TestDispatcher();
+    TestDispatcher(const ConfigFile& cfg, std::ostream& out);
+    ~TestDispatcher();
 
-	/**
-	 * Flush all dataset data do disk
-	 */
-	void flush();
+    void dispatch(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch) override;
+
+    /**
+     * Flush all dataset data do disk
+     */
+    void flush();
 };
 
 }

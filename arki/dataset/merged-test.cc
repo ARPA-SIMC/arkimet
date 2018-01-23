@@ -1,12 +1,9 @@
-#include "config.h"
-#include <arki/tests/tests.h>
-#include <arki/dataset/merged.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/matcher.h>
-#include <arki/scan/grib.h>
-#include <arki/dispatcher.h>
+#include "arki/dataset/tests.h"
+#include "arki/dataset/merged.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/matcher.h"
 #include <sstream>
 #include <iostream>
 
@@ -54,22 +51,19 @@ struct Fixture : public arki::utils::tests::Fixture
         config.parse(conf, "(memory)");
 
         // Import data into the datasets
-        Metadata md;
-        scan::Grib scanner;
-        RealDispatcher dispatcher(config);
-        scanner.test_open("inbound/test.grib1");
-        ensure(scanner.next(md));
-        wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_OK);
-        ensure(scanner.next(md));
-        wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_OK);
-        ensure(scanner.next(md));
-        wassert(actual(dispatcher.dispatch(md)) == Dispatcher::DISP_ERROR);
-        ensure(!scanner.next(md));
-        dispatcher.flush();
-
+        metadata::TestCollection mdc("inbound/test.grib1");
+        wassert(import("test200", mdc[0]));
+        wassert(import("test80", mdc[1]));
+        wassert(import("error", mdc[2]));
         ds.add_dataset(*config.section("test200"));
         ds.add_dataset(*config.section("test80"));
         ds.add_dataset(*config.section("error"));
+    }
+
+    void import(const std::string& dsname, Metadata& md)
+    {
+        auto writer = dataset::Config::create(*config.section(dsname))->create_writer();
+        wassert(tests::actual(writer.get()).import(md));
     }
 };
 

@@ -328,7 +328,7 @@ add_method("regression_0", [](Fixture& f) {
     scanner.test_open("inbound/conflicting-temp-same-usn.bufr");
     size_t count = 0;
     for ( ; scanner.next(md); ++count)
-        wassert(actual(writer->acquire(md)) == Writer::ACQ_OK);
+        wassert(actual(*writer).import(md));
     wassert(actual(count) == 2u);
     writer->flush();
 #endif
@@ -491,7 +491,7 @@ add_method("issue57", [](Fixture& f) {
     metadata::TestCollection input("issue57.vm2");
     {
         auto writer = f.makeOndisk2Writer();
-        wassert(actual(writer->acquire(input[0])) == dataset::Writer::ACQ_OK);
+        wassert(actual(*writer).import(input[0]));
     }
 
     // Query back the data
@@ -515,14 +515,22 @@ add_method("testacquire", [](Fixture& f) {
         auto writer = f.makeOndisk2Writer();
     }
     metadata::TestCollection mdc("inbound/test.grib1");
+    while (mdc.size() > 1) mdc.pop_back();
     stringstream ss;
-    wassert(actual(ondisk2::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_OK);
+    auto batch = mdc.make_import_batch();
+    wassert(ondisk2::Writer::test_acquire(f.cfg, batch, ss));
+    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[0]->dataset_name) == "testds");
 
     f.cfg.setValue("archive age", "1");
-    wassert(actual(ondisk2::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_ERROR);
+    wassert(ondisk2::Writer::test_acquire(f.cfg, batch, ss));
+    wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
+    wassert(actual(batch[0]->dataset_name) == "");
 
     f.cfg.setValue("delete age", "1");
-    wassert(actual(ondisk2::Writer::testAcquire(f.cfg, mdc[0], ss)) == dataset::Writer::ACQ_OK);
+    wassert(ondisk2::Writer::test_acquire(f.cfg, batch, ss));
+    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[0]->dataset_name) == "testds");
 });
 
 }

@@ -66,7 +66,7 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "ondisk2"; }
 
-Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
+WriterAcquireResult Writer::acquire_replace_never(Metadata& md)
 {
     auto w = file(md, md.source().format);
     const types::source::Blob* new_source;
@@ -90,7 +90,7 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
     }
 }
 
-Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
+WriterAcquireResult Writer::acquire_replace_always(Metadata& md)
 {
     auto w = file(md, md.source().format);
     const types::source::Blob* new_source;
@@ -114,7 +114,7 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
     }
 }
 
-Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
+WriterAcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     // Try to acquire without replacing
     auto w = file(md, md.source().format);
@@ -181,7 +181,7 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
     }
 }
 
-Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
+WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
@@ -207,13 +207,15 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     }
 }
 
-std::vector<Writer::AcquireResult> Writer::acquire_collection(metadata::Collection& mds, ReplaceStrategy replace)
+void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace)
 {
-    std::vector<AcquireResult> res;
-    res.reserve(mds.size());
-    for (auto& md: mds)
-        res.push_back(acquire(*md, replace));
-    return res;
+    for (auto& e: batch)
+    {
+        e->dataset_name.clear();
+        e->result = acquire(e->md, replace);
+        if (e->result == ACQ_OK)
+            e->dataset_name = name();
+    }
 }
 
 void Writer::remove(Metadata& md)
@@ -701,7 +703,7 @@ void Checker::test_remove_index(const std::string& relpath)
 }
 
 
-Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out)
 {
     ReplaceStrategy replace;
     string repl = cfg.value("replace");
@@ -716,44 +718,74 @@ Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata&
 
     // Refuse if md is before "archive age"
     std::shared_ptr<const ondisk2::Config> config(new ondisk2::Config(cfg));
-    Metadata tmp_md(md);
-    auto age_check = config->check_acquire_age(tmp_md);
-    if (age_check.first) return age_check.second;
-
-    if (replace == REPLACE_ALWAYS) return ACQ_OK;
-
-    auto lock = config->read_lock_dataset();
-    index::RContents idx(config);
-    idx.lock = lock;
-    idx.open();
-
-    Metadata old_md;
-    bool exists = idx.get_current(md, old_md);
-
-    if (!exists) return ACQ_OK;
-
-    if (replace == REPLACE_NEVER) return ACQ_ERROR_DUPLICATE;
-
-    // We are left with the case of REPLACE_HIGHER_USN
-
-    // Read the update sequence number of the new BUFR
-    int new_usn;
-    Metadata tmpmd(md);
-    if (!scan::update_sequence_number(tmpmd, new_usn))
-        return ACQ_ERROR_DUPLICATE;
-
-    // Read the update sequence number of the old BUFR
-    int old_usn;
-    if (!scan::update_sequence_number(old_md, old_usn))
+    for (auto& e: batch)
     {
-        out << "cannot acquire into dataset: insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
-        return ACQ_ERROR;
-    }
+        auto age_check = config->check_acquire_age(e->md);
+        if (age_check.first)
+        {
+            e->result = age_check.second;
+            if (age_check.second == ACQ_OK)
+                e->dataset_name = config->name;
+            else
+                e->dataset_name.clear();
+            continue;
+        }
 
-    // If there is no new Update Sequence Number, report a duplicate
-    if (old_usn > new_usn)
-        return ACQ_ERROR_DUPLICATE;
-    return ACQ_OK;
+        if (replace == REPLACE_ALWAYS)
+        {
+            e->result = ACQ_OK;
+            e->dataset_name = config->name;
+            continue;
+        }
+
+        auto lock = config->read_lock_dataset();
+        index::RContents idx(config);
+        idx.lock = lock;
+        idx.open();
+
+        Metadata old_md;
+        bool exists = idx.get_current(e->md, old_md);
+
+        if (!exists)
+        {
+            e->result = ACQ_OK;
+            e->dataset_name = config->name;
+            continue;
+        }
+
+        if (replace == REPLACE_NEVER) {
+            e->result = ACQ_ERROR_DUPLICATE;
+            e->dataset_name.clear();
+            continue;
+        }
+
+        // We are left with the case of REPLACE_HIGHER_USN
+
+        // Read the update sequence number of the new BUFR
+        int new_usn;
+        if (!scan::update_sequence_number(e->md, new_usn))
+        {
+            e->result = ACQ_ERROR_DUPLICATE;
+            e->dataset_name.clear();
+            continue;
+        }
+
+        // Read the update sequence number of the old BUFR
+        int old_usn;
+        if (!scan::update_sequence_number(old_md, old_usn))
+        {
+            out << "cannot acquire into dataset: insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
+            e->result = ACQ_ERROR;
+            e->dataset_name.clear();
+        } else if (old_usn > new_usn) {
+            // If there is no new Update Sequence Number, report a duplicate
+            e->result = ACQ_ERROR_DUPLICATE;
+            e->dataset_name.clear();
+        } else {
+            e->result = ACQ_OK;
+            e->dataset_name = config->name;
+        }
+    }
 }
 
 }

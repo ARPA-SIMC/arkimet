@@ -314,11 +314,13 @@ void DatasetTest::import(const std::string& testfile)
     {
         std::unique_ptr<Writer> writer(config().create_writer());
         metadata::TestCollection data(testfile);
-        auto res = writer->acquire_collection(data);
-        for (unsigned i = 0; i < data.size(); ++i)
+        auto batch = data.make_import_batch();
+        writer->acquire_batch(batch);
+        for (const auto& e: batch)
         {
-            wassert(actual(res[i]) == Writer::ACQ_OK);
-            import_results.push_back(data[i]);
+            wassert(actual(e->dataset_name) == config().name);
+            wassert(actual(e->result) == ACQ_OK);
+            import_results.push_back(e->md);
             import_results.back().sourceBlob().unlock();
         }
     }
@@ -326,11 +328,11 @@ void DatasetTest::import(const std::string& testfile)
     utils::files::removeDontpackFlagfile(ds_root);
 }
 
-void DatasetTest::import(Metadata& md, dataset::Writer::AcquireResult expected_result)
+void DatasetTest::import(Metadata& md, dataset::WriterAcquireResult expected_result)
 {
     import_results.push_back(md);
     std::unique_ptr<Writer> writer(config().create_writer());
-    Writer::AcquireResult res = writer->acquire(import_results.back());
+    WriterAcquireResult res = writer->acquire(import_results.back());
     wassert(actual(res) == expected_result);
 }
 
@@ -382,8 +384,8 @@ void DatasetTest::import_all(const testdata::Fixture& fixture)
     for (int i = 0; i < 3; ++i)
     {
         import_results.push_back(fixture.test_data[i].md);
-        Writer::AcquireResult res = writer->acquire(import_results.back());
-        wassert(actual(res) == Writer::ACQ_OK);
+        WriterAcquireResult res = writer->acquire(import_results.back());
+        wassert(actual(res) == ACQ_OK);
         import_results.back().sourceBlob().unlock();
     }
 
@@ -823,15 +825,15 @@ template<typename Dataset>
 void ActualWriter<Dataset>::import(Metadata& md)
 {
     auto res = wcallchecked(this->_actual->acquire(md));
-    if (res != dataset::Writer::ACQ_OK)
+    if (res != dataset::ACQ_OK)
     {
         std::stringstream ss;
         switch (res)
         {
-            case Writer::ACQ_ERROR_DUPLICATE:
+            case ACQ_ERROR_DUPLICATE:
                 ss << "ACQ_ERROR_DUPLICATE when importing data. notes:" << endl;
                 break;
-            case Writer::ACQ_ERROR:
+            case ACQ_ERROR:
                 ss << "ACQ_ERROR when importing data. notes:" << endl;
                 break;
             default:
@@ -1023,9 +1025,9 @@ ODIMData::ODIMData()
 {
     metadata::TestCollection mdc;
     format = "odimh5";
-    mdc.scan_from_file("inbound/fixture.h5/00.h5");
-    mdc.scan_from_file("inbound/fixture.h5/01.h5");
-    mdc.scan_from_file("inbound/fixture.h5/02.h5");
+    mdc.scan_from_file("inbound/fixture.h5/00.h5", true);
+    mdc.scan_from_file("inbound/fixture.h5/01.h5", true);
+    mdc.scan_from_file("inbound/fixture.h5/02.h5", true);
     test_data[0].set(mdc[0], "reftime:=2007-07-08");
     test_data[1].set(mdc[1], "reftime:=2007-07-07");
     test_data[2].set(mdc[2], "reftime:=2007-10-09");

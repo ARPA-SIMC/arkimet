@@ -160,18 +160,18 @@ void Writer::flush()
 {
 }
 
-LocalWriter::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out)
 {
     string type = str::lower(cfg.value("type"));
     if (type.empty())
         type = "local";
 
     if (type == "iseg")
-        return dataset::iseg::Writer::testAcquire(cfg, md, out);
+        return dataset::iseg::Writer::test_acquire(cfg, batch, out);
     if (type == "ondisk2" || type == "test")
-        return dataset::ondisk2::Writer::testAcquire(cfg, md, out);
+        return dataset::ondisk2::Writer::test_acquire(cfg, batch, out);
     if (type == "simple" || type == "error" || type == "duplicates")
-        return dataset::simple::Writer::testAcquire(cfg, md, out);
+        return dataset::simple::Writer::test_acquire(cfg, batch, out);
 
     throw std::runtime_error("cannot simulate dataset acquisition: unknown dataset type \""+type+"\"");
 }

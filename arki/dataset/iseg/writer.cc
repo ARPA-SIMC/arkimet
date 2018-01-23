@@ -66,7 +66,7 @@ std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::str
     return writer;
 }
 
-Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
+WriterAcquireResult Writer::acquire_replace_never(Metadata& md)
 {
     auto writer = file(md, md.source().format);
     AIndex* idx = static_cast<AIndex*>(writer->payload);
@@ -92,7 +92,7 @@ Writer::AcquireResult Writer::acquire_replace_never(Metadata& md)
     }
 }
 
-Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
+WriterAcquireResult Writer::acquire_replace_always(Metadata& md)
 {
     auto writer = file(md, md.source().format);
     AIndex* idx = static_cast<AIndex*>(writer->payload);
@@ -115,7 +115,7 @@ Writer::AcquireResult Writer::acquire_replace_always(Metadata& md)
     }
 }
 
-Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
+WriterAcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     auto writer = file(md, md.source().format);
     AIndex* idx = static_cast<AIndex*>(writer->payload);
@@ -185,7 +185,7 @@ Writer::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 #endif
 }
 
-Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
+WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
     if (md.source().format != config().format)
         throw std::runtime_error("cannot acquire into dataset " + name() + ": data is in format " + md.source().format + " but the dataset only accepts " + config().format);
@@ -209,13 +209,15 @@ Writer::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     }
 }
 
-std::vector<Writer::AcquireResult> Writer::acquire_collection(metadata::Collection& mds, ReplaceStrategy replace)
+void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace)
 {
-    std::vector<AcquireResult> res;
-    res.reserve(mds.size());
-    for (auto& md: mds)
-        res.push_back(acquire(*md, replace));
-    return res;
+    for (auto& e: batch)
+    {
+        e->dataset_name.clear();
+        e->result = acquire(e->md, replace);
+        if (e->result == ACQ_OK)
+            e->dataset_name = name();
+    }
 }
 
 void Writer::remove(Metadata& md)
@@ -246,16 +248,25 @@ void Writer::remove(Metadata& md)
     scache.invalidate(md);
 }
 
-Writer::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out)
 {
     std::shared_ptr<const iseg::Config> config(new iseg::Config(cfg));
-    Metadata tmp_md(md);
-    auto age_check = config->check_acquire_age(tmp_md);
-    if (age_check.first) return age_check.second;
-
-    // Acquire on iseg datasets always succeeds except in case of envrionment
-    // issues like I/O errors and full disks
-    return ACQ_OK;
+    for (auto& e: batch)
+    {
+        auto age_check = config->check_acquire_age(e->md);
+        if (age_check.first)
+        {
+            e->result = age_check.second;
+            if (age_check.second == ACQ_OK)
+                e->dataset_name = config->name;
+            else
+                e->dataset_name.clear();
+        } else {
+            // TODO: check for duplicates
+            e->result = ACQ_OK;
+            e->dataset_name = config->name;
+        }
+    }
 }
 
 

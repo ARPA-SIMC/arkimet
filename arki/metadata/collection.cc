@@ -150,6 +150,14 @@ void Collection::pop_back()
     vals.pop_back();
 }
 
+std::vector<std::shared_ptr<dataset::WriterBatchElement>> Collection::make_import_batch() const
+{
+    std::vector<std::shared_ptr<dataset::WriterBatchElement>> batch;
+    for (auto& md: *this)
+        batch.emplace_back(make_shared<dataset::WriterBatchElement>(*md));
+    return batch;
+}
+
 metadata_dest_func Collection::inserter_func()
 {
     return [=](unique_ptr<Metadata> md) { acquire(move(md)); return true; };
@@ -165,9 +173,9 @@ void Collection::push_back(const Metadata& md)
     acquire(Metadata::create_copy(md));
 }
 
-void Collection::acquire(unique_ptr<Metadata>&& md)
+void Collection::acquire(unique_ptr<Metadata>&& md, bool with_data)
 {
-    md->drop_cached_data();
+    if (!with_data) md->drop_cached_data();
     vals.push_back(md.release());
 }
 
@@ -329,19 +337,19 @@ void Collection::drop_cached_data()
     for (auto& md: *this) md->drop_cached_data();
 }
 
-TestCollection::TestCollection(const std::string& pathname)
+TestCollection::TestCollection(const std::string& pathname, bool with_data)
 {
-    scan_from_file(pathname);
+    scan_from_file(pathname, with_data);
 }
 
-bool TestCollection::scan_from_file(const std::string& pathname)
+bool TestCollection::scan_from_file(const std::string& pathname, bool with_data)
 {
-    return scan::scan(pathname, std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata> md) { acquire(move(md)); return true; });
+    return scan::scan(pathname, std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata> md) { acquire(move(md), with_data); return true; });
 }
 
-bool TestCollection::scan_from_file(const std::string& pathname, const std::string& format)
+bool TestCollection::scan_from_file(const std::string& pathname, const std::string& format, bool with_data)
 {
-    return scan::scan(pathname, std::make_shared<core::lock::Null>(), format, [&](unique_ptr<Metadata> md) { acquire(move(md)); return true; });
+    return scan::scan(pathname, std::make_shared<core::lock::Null>(), format, [&](unique_ptr<Metadata> md) { acquire(move(md), with_data); return true; });
 }
 
 

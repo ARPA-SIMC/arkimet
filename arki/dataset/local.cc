@@ -42,7 +42,7 @@ LocalConfig::LocalConfig(const ConfigFile& cfg)
         lock_policy = core::lock::policy_ofd;
 }
 
-std::pair<bool, Writer::AcquireResult> LocalConfig::check_acquire_age(Metadata& md) const
+std::pair<bool, WriterAcquireResult> LocalConfig::check_acquire_age(Metadata& md) const
 {
     const auto& st = SessionTime::get();
     const types::reftime::Position* rt = md.get<types::reftime::Position>();
@@ -50,16 +50,16 @@ std::pair<bool, Writer::AcquireResult> LocalConfig::check_acquire_age(Metadata& 
     if (delete_age != -1 && rt->time < st.age_threshold(delete_age))
     {
         md.add_note("Safely discarded: data is older than delete age");
-        return make_pair(true, Writer::ACQ_OK);
+        return make_pair(true, ACQ_OK);
     }
 
     if (archive_age != -1 && rt->time < st.age_threshold(archive_age))
     {
         md.add_note("Import refused: data is older than archive age");
-        return make_pair(true, Writer::ACQ_ERROR);
+        return make_pair(true, ACQ_ERROR);
     }
 
-    return make_pair(false, Writer::ACQ_OK);
+    return make_pair(false, ACQ_OK);
 }
 
 std::shared_ptr<ArchivesConfig> LocalConfig::archives_config() const
@@ -192,9 +192,9 @@ LocalWriter::~LocalWriter()
 {
 }
 
-LocalWriter::AcquireResult LocalWriter::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+void LocalWriter::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out)
 {
-    return segmented::Writer::testAcquire(cfg, md, out);
+    return segmented::Writer::test_acquire(cfg, batch, out);
 }
 
 

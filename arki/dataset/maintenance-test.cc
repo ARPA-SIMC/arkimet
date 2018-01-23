@@ -172,7 +172,7 @@ void MaintenanceTest::make_hugefile()
         md.makeInline();
 
         auto writer(fixture->makeSegmentedWriter());
-        wassert(actual(writer->acquire(md)) == dataset::Writer::ACQ_OK);
+        wassert(actual(*writer).import(md));
 
         wassert(actual(md.sourceBlob().offset) == 6000000000LLU);
     }
