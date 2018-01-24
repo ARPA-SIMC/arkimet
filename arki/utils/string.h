@@ -72,85 +72,19 @@ std::string join(const std::string& sep, const ITEMS& items)
 }
 
 /**
- * Return the substring of 'str' without all leading characters for which
- * 'classifier' returns true.
- */
-template<typename FUN>
-inline std::string lstrip(const std::string& str, const FUN& classifier)
-{
-    if (str.empty())
-        return str;
-
-    size_t beg = 0;
-    while (beg < str.size() && classifier(str[beg]))
-        ++beg;
-
-    return str.substr(beg, str.size() - beg + 1);
-}
-
-/**
  * Return the substring of 'str' without all leading spaces.
  */
-inline std::string lstrip(const std::string& str)
-{
-    return lstrip(str, ::isspace);
-}
-
-/**
- * Return the substring of 'str' without all trailing characters for which
- * 'classifier' returns true.
- */
-template<typename FUN>
-inline std::string rstrip(const std::string& str, const FUN& classifier)
-{
-    if (str.empty())
-        return str;
-
-    size_t end = str.size();
-    while (end > 0 && classifier(str[end - 1]))
-        --end;
-
-    if (end == 0)
-        return std::string();
-    else
-        return str.substr(0, end);
-}
+std::string lstrip(const std::string& str);
 
 /**
  * Return the substring of 'str' without all trailing spaces.
  */
-inline std::string rstrip(const std::string& str)
-{
-    return rstrip(str, ::isspace);
-}
-
-/**
- * Return the substring of 'str' without all leading and trailing characters
- * for which 'classifier' returns true.
- */
-template<typename FUN>
-inline std::string strip(const std::string& str, const FUN& classifier)
-{
-    if (str.empty())
-        return str;
-
-    size_t beg = 0;
-    size_t end = str.size() - 1;
-    while (beg < end && classifier(str[beg]))
-        ++beg;
-    while (end >= beg && classifier(str[end]))
-        --end;
-
-    return str.substr(beg, end-beg+1);
-}
+std::string rstrip(const std::string& str);
 
 /**
  * Return the substring of 'str' without all leading and trailing spaces.
  */
-inline std::string strip(const std::string& str)
-{
-    return strip(str, ::isspace);
-}
+std::string strip(const std::string& str);
 
 /// Return an uppercased copy of str
 inline std::string upper(const std::string& str)

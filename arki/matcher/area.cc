@@ -129,9 +129,8 @@ static unique_ptr<ARKI_GEOS_GEOMETRY> parseBBox(const ARKI_GEOS_GEOMETRYFACTORY&
 }
 
 MatchAreaBBox::MatchAreaBBox(const std::string& verb, const std::string& geom)
-	: gf(0), geom(0), verb(verb)
+    : gf(ARKI_GEOS_GEOMETRYFACTORY::getDefaultInstance()), geom(0), verb(verb)
 {
-	gf = new ARKI_GEOS_GEOMETRYFACTORY();
 	std::unique_ptr<ARKI_GEOS_GEOMETRY> g = parseBBox(*gf, geom);
 	this->geom = g.release();
 	geom_str = geom;
@@ -139,7 +138,6 @@ MatchAreaBBox::MatchAreaBBox(const std::string& verb, const std::string& geom)
 
 MatchAreaBBox::~MatchAreaBBox()
 {
-	if (gf) delete gf;
 	if (geom) delete geom;
 }
 

@@ -282,8 +282,8 @@ int main(int argc, const char* argv[])
             addToSummary(*in, summary);
 
             // Get the bounding box
-            ARKI_GEOS_GEOMETRYFACTORY gf;
-            std::unique_ptr<ARKI_GEOS_GEOMETRY> hull = summary.getConvexHull(gf);
+            const ARKI_GEOS_GEOMETRYFACTORY* gf = ARKI_GEOS_GEOMETRYFACTORY::getDefaultInstance();
+            std::unique_ptr<ARKI_GEOS_GEOMETRY> hull = summary.getConvexHull(*gf);
 
             // Print it out
             stringstream ss;

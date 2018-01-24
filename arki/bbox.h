@@ -16,7 +16,7 @@ class BBox
 {
 protected:
     Lua *L;
-    ARKI_GEOS_GEOMETRYFACTORY* gf;
+    const ARKI_GEOS_GEOMETRYFACTORY* gf;
     unsigned funcCount;
 
 public:

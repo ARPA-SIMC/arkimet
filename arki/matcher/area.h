@@ -77,10 +77,10 @@ struct MatchAreaVM2 : public MatchArea
  */
 struct MatchAreaBBox : public MatchArea
 {
-	ARKI_GEOS_GEOMETRYFACTORY* gf;
-	ARKI_GEOS_GEOMETRY* geom;
-	std::string verb;
-	std::string geom_str;
+    const ARKI_GEOS_GEOMETRYFACTORY* gf;
+    ARKI_GEOS_GEOMETRY* geom;
+    std::string verb;
+    std::string geom_str;
 
 	MatchAreaBBox(const std::string& verb, const std::string& geom);
 	~MatchAreaBBox();

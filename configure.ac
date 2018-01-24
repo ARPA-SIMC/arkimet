@@ -198,15 +198,26 @@ then
 fi
 AM_CONDITIONAL([LUA], [test x"$have_lua" = x"yes"])
 
-dnl Check for grib_api
-have_gribapi=yes
-AC_CHECK_LIB([grib_api], [grib_get_api_version], [true], [have_gribapi=no], [-ljasper -lm])
-AC_CHECK_HEADER([grib_api.h], [true], [have_gribapi=no])
+dnl Check for eccodes
+PKG_CHECK_EXISTS([eccodes], [have_gribapi=yes], [have_gribapi=no])
+if test x$have_gribapi = xyes
+then
+	PKG_CHECK_MODULES(GRIBAPI, [eccodes], , [have_gribapi=no])
+fi
+
+if test x$have_gribapi = xno
+then
+	dnl Check for grib_api
+	have_gribapi=yes
+	AC_CHECK_LIB([grib_api], [grib_get_long], [true], [have_gribapi=no], [-ljpeg -lm])
+	AC_CHECK_HEADER([grib_api.h], [true], [have_gribapi=no])
+	GRIBAPI_CFLAGS=
+	GRIBAPI_LIBS="-lgrib_api -ljpeg -lm"
+fi
+
 if test $have_gribapi = yes
 then
 	AC_DEFINE([HAVE_GRIBAPI], 1, [grib_api functions are available])
-	GRIBAPI_CFLAGS=
-	GRIBAPI_LIBS="-lgrib_api -ljasper -lm"
 	AC_SUBST(GRIBAPI_CFLAGS)
 	AC_SUBST(GRIBAPI_LIBS)
 

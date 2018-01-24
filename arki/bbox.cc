@@ -63,7 +63,7 @@ static void arkilua_dumpstack(lua_State* L, const std::string& title, FILE* out)
 #endif
 
 
-BBox::BBox(const std::string& code) : L(new Lua), gf(new ARKI_GEOS_GEOMETRYFACTORY), funcCount(0)
+BBox::BBox(const std::string& code) : L(new Lua), gf(ARKI_GEOS_GEOMETRYFACTORY::getDefaultInstance()), funcCount(0)
 {
     /// Load the bounding box functions
 
@@ -88,8 +88,7 @@ BBox::BBox(const std::string& code) : L(new Lua), gf(new ARKI_GEOS_GEOMETRYFACTO
 
 BBox::~BBox()
 {
-	if (L) delete L;
-	if (gf) delete gf;
+    if (L) delete L;
 }
 
 #ifdef HAVE_GEOS

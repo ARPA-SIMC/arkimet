@@ -6,6 +6,7 @@
 #include <arki/utils/sys.h>
 #include <string>
 #include <memory>
+#include <functional>
 
 namespace arki {
 class Matcher;

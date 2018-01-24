@@ -262,11 +262,11 @@ namespace summary {
 #ifdef HAVE_GEOS
 struct StatsHull : public ItemVisitor
 {
-    ARKI_GEOS_GEOMETRYFACTORY& gf;
+    const ARKI_GEOS_GEOMETRYFACTORY& gf;
     vector<ARKI_GEOS_GEOMETRY*>* geoms;
     std::set<std::vector<uint8_t>> seen;
 
-    StatsHull(ARKI_GEOS_GEOMETRYFACTORY& gf) : gf(gf), geoms(new vector<ARKI_GEOS_GEOMETRY*>) {}
+    StatsHull(const ARKI_GEOS_GEOMETRYFACTORY& gf) : gf(gf), geoms(new vector<ARKI_GEOS_GEOMETRY*>) {}
     virtual ~StatsHull()
     {
         if (geoms)
@@ -404,7 +404,7 @@ size_t Summary::resolveMatcher(const Matcher& matcher, std::vector<ItemSet>& res
     return visitor.added;
 }
 
-std::unique_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull(ARKI_GEOS_GEOMETRYFACTORY& gf) const
+std::unique_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull(const ARKI_GEOS_GEOMETRYFACTORY& gf) const
 {
 #ifdef HAVE_GEOS
     summary::StatsHull merger(gf);

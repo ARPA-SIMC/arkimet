@@ -37,15 +37,15 @@ static int upperbound_sec(const int* src)
 
 static std::string formatTime(const int& tt)
 {
-    char buf[15];
-    snprintf(buf, 15, "%02d:%02d:%02d", tt / 3600, (tt % 3600) / 60, tt % 60);
+    char buf[20];
+    snprintf(buf, 20, "%02d:%02d:%02d", tt / 3600, (tt % 3600) / 60, tt % 60);
     return buf;
 }
 
 static std::string tosqlTime(const int& tt)
 {
-    char buf[15];
-    snprintf(buf, 15, "'%02d:%02d:%02d'", tt / 3600, (tt % 3600) / 60, tt % 60);
+    char buf[20];
+    snprintf(buf, 20, "'%02d:%02d:%02d'", tt / 3600, (tt % 3600) / 60, tt % 60);
     return buf;
 }
 

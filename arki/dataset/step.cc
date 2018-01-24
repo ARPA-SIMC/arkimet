@@ -480,8 +480,8 @@ struct Yearly : public BaseStep
     std::string operator()(const core::Time& time) const override
     {
         const Time& tt = time;
-        char buf[9];
-        snprintf(buf, 9, "%02d/%04d", tt.ye/100, tt.ye);
+        char buf[22];
+        snprintf(buf, 22, "%02d/%04d", tt.ye/100, tt.ye);
         return buf;
     }
 };

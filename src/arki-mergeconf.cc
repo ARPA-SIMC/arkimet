@@ -103,7 +103,7 @@ int main(int argc, const char* argv[])
         if (opts.extra->boolValue())
         {
 #ifdef HAVE_GEOS
-            ARKI_GEOS_GEOMETRYFACTORY gf;
+            const ARKI_GEOS_GEOMETRYFACTORY* gf(ARKI_GEOS_GEOMETRYFACTORY::getDefaultInstance());
 
             for (ConfigFile& cfg: inputs)
             {
@@ -114,7 +114,7 @@ int main(int argc, const char* argv[])
                 d->query_summary(Matcher(), sum);
 
                 // Compute bounding box, and store the WKT in bounding
-                unique_ptr<ARKI_GEOS_GEOMETRY> bbox = sum.getConvexHull(gf);
+                unique_ptr<ARKI_GEOS_GEOMETRY> bbox = sum.getConvexHull(*gf);
                 if (bbox.get())
                     cfg.setValue("bounding", bbox->toString());
             }
