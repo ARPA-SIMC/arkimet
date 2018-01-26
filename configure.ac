@@ -334,7 +334,9 @@ AM_PATH_PYTHON([3.3], [enable_python=$am_cv_python_version], [enable_python=no])
 if test $enable_python != no
 then
     PYTHON_CFLAGS=`unset CFLAGS; $PYTHON-config --cflags`
+    PYTHON_LIBS=`unset CFLAGS; $PYTHON-config --libs`
     AC_SUBST(PYTHON_CFLAGS)
+    AC_SUBST(PYTHON_LIBS)
     AC_DEFINE(HAVE_PYTHON, 1, [Have Python bindings])
 fi
 fi

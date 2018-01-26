@@ -15,7 +15,7 @@ _arkimet_la_SOURCES = \
     dataset.cc \
     arkimet.cc
 _arkimet_la_CPPFLAGS = $(PYTHON_CFLAGS) -I$(top_srcdir) -I$(top_builddir)
-_arkimet_la_LDFLAGS = -module -avoid-version -export-symbols-regex init_arkimet
+_arkimet_la_LDFLAGS = -module -avoid-version -export-symbols-regex init_arkimet $(PYTHON_LIBS)
 _arkimet_la_LIBADD = ../arki/libarkimet.la
 
 #doc_DATA = python-arkimet.rst

@@ -92,7 +92,7 @@ static PyMethodDef arkimet_methods[] = {
           datasets: configuration of all the available datasets
           name: name of the query macro to use
         )" },
-    { NULL }
+    { NULL, NULL, 0, NULL }
 };
 
 static PyModuleDef arkimet_module = {
@@ -101,7 +101,7 @@ static PyModuleDef arkimet_module = {
     "Arkimet Python interface.",  /* m_doc */
     -1,             /* m_size */
     arkimet_methods, /* m_methods */
-    NULL,           /* m_reload */
+    NULL,           /* m_slots */
     NULL,           /* m_traverse */
     NULL,           /* m_clear */
     NULL,           /* m_free */
@@ -113,6 +113,7 @@ PyMODINIT_FUNC PyInit__arkimet(void)
     using namespace arki::python;
 
     PyObject* m = PyModule_Create(&arkimet_module);
+    if (!m) return m;
 
     register_metadata(m);
     register_summary(m);
