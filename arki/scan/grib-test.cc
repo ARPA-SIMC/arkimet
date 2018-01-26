@@ -1,4 +1,5 @@
 #include "arki/metadata/tests.h"
+#include "arki/core/file.h"
 #include "arki/scan/grib.h"
 #include "arki/types/source.h"
 #include "arki/types/origin.h"
@@ -370,9 +371,11 @@ add_method("cleps", [] {
     wassert(actual(scanner.next(md)).isfalse());
 });
 
-#ifdef ARPAE_TESTS
 // Scan a GRIB2 with experimental UTM areas
 add_method("utm_areas", [] {
+#ifndef ARPAE_TESTS
+    throw TestSkipped();
+#endif
     Metadata md;
     scan::Grib scanner;
     wassert(scanner.test_open("inbound/calmety_20110215.grib2"));
@@ -390,11 +393,12 @@ add_method("utm_areas", [] {
     // No more gribs
     ensure(not scanner.next(md));
 });
-#endif
 
-#ifdef ARPAE_TESTS
 // Check scanning of some Timedef cases
 add_method("ninfa", [] {
+#ifndef ARPAE_TESTS
+    throw TestSkipped();
+#endif
     {
         Metadata md;
         scan::Grib scanner;
@@ -412,16 +416,17 @@ add_method("ninfa", [] {
         wassert(actual(md).contains("timerange", "Timedef(3h,254,0s)"));
     }
 });
-#endif
 
-#ifdef ARPAE_TESTS
 // Check scanning COSMO nudging timeranges
 add_method("cosmo_nudging", [] {
+#ifndef ARPAE_TESTS
+    throw TestSkipped();
+#endif
     ARKI_UTILS_TEST_INFO(info);
 
     {
         metadata::Collection mdc;
-        wassert(scan::scan("inbound/cosmonudging-t2.grib1", mdc.inserter_func()));
+        wassert(scan::scan("inbound/cosmonudging-t2.grib1", std::make_shared<core::lock::Null>(), mdc.inserter_func()));
         wassert(actual(mdc.size()) == 35u);
         for (unsigned i = 0; i < 5; ++i)
             wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
@@ -442,7 +447,7 @@ add_method("cosmo_nudging", [] {
     }
     {
         metadata::Collection mdc;
-        wassert(scan::scan("inbound/cosmonudging-t201.grib1", mdc.inserter_func()));
+        wassert(scan::scan("inbound/cosmonudging-t201.grib1", std::make_shared<core::lock::Null>(), mdc.inserter_func()));
         wassert(actual(mdc.size()) == 33u);
         wassert(actual(mdc[0]).contains("timerange", "Timedef(0s, 0, 12h)"));
         wassert(actual(mdc[1]).contains("timerange", "Timedef(0s, 0, 12h)"));
@@ -459,7 +464,7 @@ add_method("cosmo_nudging", [] {
     }
     {
         metadata::Collection mdc;
-        wassert(scan::scan("inbound/cosmonudging-t202.grib1", mdc.inserter_func()));
+        wassert(scan::scan("inbound/cosmonudging-t202.grib1", std::make_shared<core::lock::Null>(), mdc.inserter_func()));
         wassert(actual(mdc.size()) == 11u);
         for (unsigned i = 0; i < 11; ++i)
             wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
@@ -477,7 +482,7 @@ add_method("cosmo_nudging", [] {
         {
             arki_utils_test_location_info() << "Sample: " << fname;
             metadata::Collection mdc;
-            wassert(scan::scan(fname, mdc.inserter_func()));
+            wassert(scan::scan(fname, std::make_shared<core::lock::Null>(), mdc.inserter_func()));
             wassert(actual(mdc.size()) == 1u);
             md = wcallchecked(mdc[0]);
         }
@@ -540,7 +545,6 @@ add_method("cosmo_nudging", [] {
     wassert(actual(md.md).contains("timerange", "Timedef(48h,1,24h)"));
     wassert(actual(md.md).contains("proddef", "GRIB(tod=1)"));
 });
-#endif
 
 // Check opening very long GRIB files for scanning
 add_method("bigfile", [] {
