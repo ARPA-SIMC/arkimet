@@ -27,9 +27,9 @@ def test_venti():
 
     local(cmd("git", "push", "--force", "venti", "HEAD"))
     with cd(remote_dir):
-        run(cmd("git", "checkout", "-B", "test_venti", repo.head.commit.hexsha))
         run(cmd("git", "reset", "--hard"))
         run(cmd("git", "clean", "-fx"))
+        run(cmd("git", "checkout", "-B", "test_venti", repo.head.commit.hexsha))
         run(cmd("autoreconf", "-if"))
         run(cmd("./configure",
                 "--enable-arpae-tests",
@@ -68,9 +68,9 @@ def test_ventiquattro():
 
     local(cmd("git", "push", "--force", "ventiquattro", "HEAD"))
     with cd(remote_dir):
-        run(cmd("git", "checkout", "-B", "test_venti", repo.head.commit.hexsha))
         run(cmd("git", "reset", "--hard"))
         run(cmd("git", "clean", "-fx"))
+        run(cmd("git", "checkout", "-B", "test_venti", repo.head.commit.hexsha))
         run(cmd("autoreconf", "-if"))
         run(cmd("./configure",
                 "--enable-arpae-tests",
