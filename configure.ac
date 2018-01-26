@@ -117,7 +117,7 @@ if test x"$success" = x"no"; then
 
 	SQLITE3_CFLAGS="-I`pwd`/embedded/sqlite/"
         AC_SUBST(SQLITE3_CFLAGS)
-	SQLITE3_LDFLAGS="-L`pwd`/embedded/sqlite/ -lsqlite3"
+	SQLITE3_LDFLAGS="`pwd`/embedded/sqlite/libsqlite3.la"
         AC_SUBST(SQLITE3_LDFLAGS)
 	SQLITE3_VERSION="embedded"
         AC_SUBST(SQLITE3_VERSION)
