@@ -21,6 +21,10 @@ namespace simple {
 class Reader;
 class CheckerSegment;
 
+namespace datafile {
+class MdBuf;
+}
+
 class Writer : public IndexedWriter
 {
 protected:
@@ -29,7 +33,7 @@ protected:
     std::shared_ptr<dataset::Lock> lock;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
-    std::shared_ptr<segment::Writer> file(const Metadata& md, const std::string& format);
+    std::unique_ptr<datafile::MdBuf> file(const Metadata& md, const std::string& format);
 
 public:
     Writer(std::shared_ptr<const simple::Config> config);

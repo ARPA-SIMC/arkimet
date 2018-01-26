@@ -130,13 +130,6 @@ public:
     std::string relname;
     std::string absname;
 
-    // TODO: document and move to the right subclass if it's not needed all the time
-    struct Payload
-    {
-        virtual ~Payload() {}
-    };
-    Payload* payload = nullptr;
-
     Segment(const std::string& root, const std::string& relname, const std::string& absname);
     virtual ~Segment();
 };

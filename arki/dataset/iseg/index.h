@@ -51,7 +51,7 @@ namespace iseg {
  * It must be possible to completely regenerate the dataset index by
  * rescanning all the data stored in the dataset.
  */
-class Index : public Segment::Payload
+class Index
 {
 protected:
     std::shared_ptr<const iseg::Config> m_config;
@@ -301,7 +301,9 @@ public:
 class AIndex : public WIndex
 {
 public:
-    AIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::AppendLock> lock);
+    std::shared_ptr<segment::Writer> segment;
+
+    AIndex(std::shared_ptr<const iseg::Config> config, std::shared_ptr<segment::Writer> segment, std::shared_ptr<dataset::AppendLock> lock);
 };
 
 

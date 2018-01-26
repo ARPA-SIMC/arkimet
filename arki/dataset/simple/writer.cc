@@ -64,12 +64,10 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "simple"; }
 
-std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
+std::unique_ptr<datafile::MdBuf> Writer::file(const Metadata& md, const std::string& format)
 {
-    auto writer = segmented::Writer::file(md, format);
-    if (!writer->payload)
-        writer->payload = new datafile::MdBuf(writer->absname, lock);
-    return writer;
+    auto segment = segmented::Writer::file(md, format);
+    return unique_ptr<datafile::MdBuf>(new datafile::MdBuf(segment, lock));
 }
 
 WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
@@ -80,19 +78,18 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     if (!lock) lock = config().append_lock_dataset();
     m_mft->lock = lock;
     // TODO: refuse if md is before "archive age"
-    auto writer = file(md, md.source().format);
-    datafile::MdBuf* mdbuf = static_cast<datafile::MdBuf*>(writer->payload);
+    auto mdbuf = file(md, md.source().format);
 
     // Try appending
     try {
         const types::source::Blob* new_source;
-        auto p = writer->append(md, &new_source);
+        auto p = mdbuf->segment->append(md, &new_source);
         mdbuf->add(md, *new_source);
         p.commit();
         time_t ts = scan::timestamp(mdbuf->pathname);
         if (ts == 0)
             nag::warning("simple dataset acquire: %s timestamp is 0", mdbuf->pathname.c_str());
-        m_mft->acquire(writer->relname, ts, mdbuf->sum);
+        m_mft->acquire(mdbuf->segment->relname, ts, mdbuf->sum);
         return ACQ_OK;
     } catch (std::exception& e) {
         fprintf(stderr, "ERROR %s\n", e.what());

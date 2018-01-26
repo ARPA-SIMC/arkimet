@@ -26,7 +26,6 @@ Segment::Segment(const std::string& root, const std::string& relname, const std:
 
 Segment::~Segment()
 {
-    if (payload) delete payload;
 }
 
 

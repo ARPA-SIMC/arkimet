@@ -55,25 +55,23 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "iseg"; }
 
-std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
+std::unique_ptr<AIndex> Writer::file(const Metadata& md, const std::string& format)
 {
     const core::Time& time = md.get<types::reftime::Position>()->time;
     string relname = config().step()(time) + "." + config().format;
     sys::makedirs(str::dirname(str::joinpath(config().path, relname)));
     std::shared_ptr<dataset::AppendLock> append_lock(config().append_lock_segment(relname));
     auto writer = segment_manager().get_writer(config().format, relname);
-    writer->payload = new AIndex(m_config, relname, append_lock);
-    return writer;
+    return std::unique_ptr<AIndex>(new AIndex(m_config, writer, append_lock));
 }
 
 WriterAcquireResult Writer::acquire_replace_never(Metadata& md)
 {
-    auto writer = file(md, md.source().format);
-    AIndex* idx = static_cast<AIndex*>(writer->payload);
+    auto idx = file(md, md.source().format);
     Pending p_idx = idx->begin_transaction();
 
     const types::source::Blob* new_source;
-    Pending p_df = writer->append(md, &new_source);
+    Pending p_df = idx->segment->append(md, &new_source);
 
     try {
         idx->index(md, new_source->offset);
@@ -94,12 +92,11 @@ WriterAcquireResult Writer::acquire_replace_never(Metadata& md)
 
 WriterAcquireResult Writer::acquire_replace_always(Metadata& md)
 {
-    auto writer = file(md, md.source().format);
-    AIndex* idx = static_cast<AIndex*>(writer->payload);
+    auto idx = file(md, md.source().format);
     Pending p_idx = idx->begin_transaction();
 
     const types::source::Blob* new_source;
-    Pending p_df = writer->append(md, &new_source);
+    Pending p_df = idx->segment->append(md, &new_source);
 
     try {
         idx->replace(md, new_source->offset);
@@ -117,12 +114,11 @@ WriterAcquireResult Writer::acquire_replace_always(Metadata& md)
 
 WriterAcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
-    auto writer = file(md, md.source().format);
-    AIndex* idx = static_cast<AIndex*>(writer->payload);
+    auto idx = file(md, md.source().format);
     Pending p_idx = idx->begin_transaction();
 
     const types::source::Blob* new_source;
-    Pending p_df = writer->append(md, &new_source);
+    Pending p_df = idx->segment->append(md, &new_source);
 
     try {
         // Try to acquire without replacing
@@ -222,8 +218,7 @@ void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& bat
 
 void Writer::remove(Metadata& md)
 {
-    auto writer = file(md, md.source().format);
-    AIndex* idx = static_cast<AIndex*>(writer->payload);
+    auto idx = file(md, md.source().format);
 
     const types::source::Blob* source = md.has_source_blob();
     if (!source)

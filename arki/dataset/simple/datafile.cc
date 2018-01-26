@@ -15,6 +15,12 @@ namespace simple {
 
 namespace datafile {
 
+MdBuf::MdBuf(std::shared_ptr<segment::Writer> segment, std::shared_ptr<core::Lock> lock)
+    : MdBuf(segment->absname, lock)
+{
+    this->segment = segment;
+}
+
 MdBuf::MdBuf(const std::string& pathname, std::shared_ptr<core::Lock> lock)
     : dir(str::dirname(pathname)), basename(str::basename(pathname)), pathname(pathname), flushed(true)
 {

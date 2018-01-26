@@ -16,6 +16,7 @@ class Matcher;
 namespace dataset {
 namespace iseg {
 class Reader;
+class AIndex;
 class WIndex;
 class CheckerSegment;
 
@@ -26,7 +27,7 @@ protected:
     index::SummaryCache scache;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
-    std::shared_ptr<segment::Writer> file(const Metadata& md, const std::string& format);
+    std::unique_ptr<AIndex> file(const Metadata& md, const std::string& format);
 
     WriterAcquireResult acquire_replace_never(Metadata& md);
     WriterAcquireResult acquire_replace_always(Metadata& md);
