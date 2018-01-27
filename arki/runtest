@@ -3,8 +3,6 @@
 TOP_SRCDIR=`pwd`/`dirname $0`/..
 PYTHON=${PYTHON:-python3}
 
-which ${PYTHON}-dbg && PYTHON=${PYTHON}-dbg
-
 if [ "$1" = "NOSE" ]
 then
     # Try to find out what is the name of the nose executable today (sigh)
