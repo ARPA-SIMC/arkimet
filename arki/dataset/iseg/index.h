@@ -85,11 +85,6 @@ protected:
     /// Get a list of all other attribute tables that can be created in the database
     std::set<types::Code> all_other_tables() const;
 
-#if 0
-    mutable utils::sqlite::PrecompiledQuery m_get_id;
-    mutable utils::sqlite::PrecompiledQuery m_get_current;
-#endif
-
     /**
      * Add to 'query' the SQL joins and constraints based on the given matcher.
      *
@@ -129,41 +124,6 @@ public:
     /// Begin a transaction and return the corresponding Pending object
     Pending begin_transaction();
 
-#if 0
-    const std::string& pathname() const { return config().index_pathname; }
-
-	inline bool is_indexed(types::Code c) const
-	{
-		return m_components_indexed.find(c) != m_components_indexed.end();
-	}
-
-	/**
-	 * Precompile queries.
-	 *
-	 * This must be called after the database schema has been created, as a
-	 * change in the database schema invalidates precompiled queries.
-	 */
-	void initQueries();
-
-	/// Return the database ID of a metadata in this index.  If the
-	/// metadata is not there, return -1.
-	int id(const Metadata& md) const;
-
-    /**
-     * Return the metadata for the version of \a md that is already in the
-     * database
-     *
-     * @returns
-     *   true if the element was found, else false and \a current is untouched
-     */
-    bool get_current(const Metadata& md, Metadata& current) const;
-
-	/// Return the number of items currently indexed by this index
-	size_t count() const;
-
-    bool segment_timespan(const std::string& relname, core::Time& start_time, core::Time& end_time) const override;
-#endif
-
     /**
      * Send the metadata of all data items known by the index
      */
@@ -176,9 +136,6 @@ public:
      * stopped because dest returned false.
      */
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest);
-#if 0
-    bool query_summary(const Matcher& m, Summary& summary) override;
-#endif
 
     /**
      * Query this index, returning a summary
@@ -194,45 +151,6 @@ public:
      * Get the metadata for this segment
      */
     void query_segment(metadata_dest_func) const;
-
-#if 0
-	/**
-	 * Query summary information from DB using the given WHERE body
-	 */
-	void querySummaryFromDB(const std::string& where, Summary& summary) const;
-
-    /**
-     * Run a consistency check on the summary cache, reporting issues
-     * to \a log
-     *
-     * @return
-     *   true if the summary cache looks ok
-     *   false if problems have been found
-     */
-    bool checkSummaryCache(const dataset::Base& ds, Reporter& reporter) const;
-
-	/**
-	 * Invalidate and rebuild the entire summary cache
-	 */
-	void rebuildSummaryCache();
-
-    /**
-     * Compute the summary for the given month, and output it to \a
-     * summary.
-     *
-     * Cache the result if possible, so that asking again will be much
-     * quicker.
-     */
-    void summaryForMonth(int year, int month, Summary& out) const;
-
-    /**
-     * Compute the summary for all the dataset.
-     *
-     * Cache the result if possible, so that asking again will be much
-     * quicker.
-     */
-    void summaryForAll(Summary& out) const;
-#endif
 };
 
 class RIndex : public Index
