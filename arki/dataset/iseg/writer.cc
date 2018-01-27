@@ -40,6 +40,19 @@ namespace arki {
 namespace dataset {
 namespace iseg {
 
+struct AppendSegment
+{
+    std::shared_ptr<dataset::AppendLock> append_lock;
+    std::shared_ptr<segment::Writer> segment;
+    AIndex idx;
+
+    AppendSegment(std::shared_ptr<const iseg::Config> config, std::shared_ptr<dataset::AppendLock> append_lock, std::shared_ptr<segment::Writer> segment)
+        : append_lock(append_lock), segment(segment), idx(config, segment, append_lock)
+    {
+    }
+};
+
+
 Writer::Writer(std::shared_ptr<const iseg::Config> config)
     : m_config(config), scache(config->summary_cache_pathname)
 {
@@ -55,26 +68,26 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "iseg"; }
 
-std::unique_ptr<AIndex> Writer::file(const Metadata& md, const std::string& format)
+std::unique_ptr<AppendSegment> Writer::file(const Metadata& md, const std::string& format)
 {
     const core::Time& time = md.get<types::reftime::Position>()->time;
     string relname = config().step()(time) + "." + config().format;
     sys::makedirs(str::dirname(str::joinpath(config().path, relname)));
     std::shared_ptr<dataset::AppendLock> append_lock(config().append_lock_segment(relname));
-    auto writer = segment_manager().get_writer(config().format, relname);
-    return std::unique_ptr<AIndex>(new AIndex(m_config, writer, append_lock));
+    auto segment = segment_manager().get_writer(config().format, relname);
+    return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, append_lock, segment));
 }
 
 WriterAcquireResult Writer::acquire_replace_never(Metadata& md)
 {
-    auto idx = file(md, md.source().format);
-    Pending p_idx = idx->begin_transaction();
+    auto segment = file(md, md.source().format);
+    Pending p_idx = segment->idx.begin_transaction();
 
     const types::source::Blob* new_source;
-    Pending p_df = idx->segment->append(md, &new_source);
+    Pending p_df = segment->segment->append(md, &new_source);
 
     try {
-        idx->index(md, new_source->offset);
+        segment->idx.index(md, new_source->offset);
         // Invalidate the summary cache for this month
         scache.invalidate(md);
         p_df.commit();
@@ -92,14 +105,14 @@ WriterAcquireResult Writer::acquire_replace_never(Metadata& md)
 
 WriterAcquireResult Writer::acquire_replace_always(Metadata& md)
 {
-    auto idx = file(md, md.source().format);
-    Pending p_idx = idx->begin_transaction();
+    auto segment = file(md, md.source().format);
+    Pending p_idx = segment->idx.begin_transaction();
 
     const types::source::Blob* new_source;
-    Pending p_df = idx->segment->append(md, &new_source);
+    Pending p_df = segment->segment->append(md, &new_source);
 
     try {
-        idx->replace(md, new_source->offset);
+        segment->idx.replace(md, new_source->offset);
         // Invalidate the summary cache for this month
         scache.invalidate(md);
         p_df.commit();
@@ -114,15 +127,15 @@ WriterAcquireResult Writer::acquire_replace_always(Metadata& md)
 
 WriterAcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
-    auto idx = file(md, md.source().format);
-    Pending p_idx = idx->begin_transaction();
+    auto segment = file(md, md.source().format);
+    Pending p_idx = segment->idx.begin_transaction();
 
     const types::source::Blob* new_source;
-    Pending p_df = idx->segment->append(md, &new_source);
+    Pending p_df = segment->segment->append(md, &new_source);
 
     try {
         // Try to acquire without replacing
-        idx->index(md, new_source->offset);
+        segment->idx.index(md, new_source->offset);
         // Invalidate the summary cache for this month
         scache.invalidate(md);
         p_df.commit();
@@ -218,7 +231,7 @@ void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& bat
 
 void Writer::remove(Metadata& md)
 {
-    auto idx = file(md, md.source().format);
+    auto segment = file(md, md.source().format);
 
     const types::source::Blob* source = md.has_source_blob();
     if (!source)
@@ -230,8 +243,8 @@ void Writer::remove(Metadata& md)
     // TODO: refuse if md is in the archive
 
     // Delete from DB, and get file name
-    Pending p_del = idx->begin_transaction();
-    idx->remove(source->offset);
+    Pending p_del = segment->idx.begin_transaction();
+    segment->idx.remove(source->offset);
 
     // Commit delete from DB
     p_del.commit();

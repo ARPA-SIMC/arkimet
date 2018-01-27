@@ -219,8 +219,6 @@ public:
 class AIndex : public WIndex
 {
 public:
-    std::shared_ptr<segment::Writer> segment;
-
     AIndex(std::shared_ptr<const iseg::Config> config, std::shared_ptr<segment::Writer> segment, std::shared_ptr<dataset::AppendLock> lock);
 };
 
