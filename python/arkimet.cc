@@ -81,10 +81,10 @@ static PyObject* arkipy_make_merged_dataset(arkipy_Metadata* self, PyObject *arg
 static PyMethodDef arkimet_methods[] = {
     { "expand_query", (PyCFunction)arkipy_expand_query, METH_VARARGS, "Return the same text query with all aliases expanded" },
     { "matcher_alias_database", (PyCFunction)arkipy_matcher_alias_database, METH_NOARGS, "Return a string with the current matcher alias database" },
-    { "make_merged_dataset", (PyCFunction)arkipy_make_merged_dataset, METH_VARARGS, R"(
+    { "make_merged_dataset", (PyCFunction)arkipy_make_merged_dataset, METH_VARARGS | METH_KEYWORDS, R"(
         Create a merged dataset from all the datasets found in the given configuration
         )" },
-    { "make_qmacro_dataset", (PyCFunction)arkipy_make_qmacro_dataset, METH_VARARGS, R"(
+    { "make_qmacro_dataset", (PyCFunction)arkipy_make_qmacro_dataset, METH_VARARGS | METH_KEYWORDS, R"(
         Create a qmacro dataset that aggregates the contents of multiple datasets.
 
         Arguments:
