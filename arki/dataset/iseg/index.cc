@@ -11,6 +11,7 @@
 #include "arki/dataset/lock.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
+#include "arki/types/source/blob.h"
 #include "arki/types/value.h"
 #include "arki/summary.h"
 #include "arki/summary/stats.h"
@@ -544,55 +545,74 @@ void WIndex::compile_insert()
                   " VALUES (?, ?, ?, ?" + placeholders + ")");
 }
 
-void WIndex::bind_insert(Query& q, const Metadata& md, uint64_t ofs, char* timebuf)
+namespace {
+
+struct Inserter
 {
-    int idx = 0;
+    WIndex& idx;
+    const Metadata& md;
+    char timebuf[25];
+    int timebuf_len;
+    int id_uniques = -1;
+    int id_others = -1;
 
-    q.bind(++idx, ofs);
-    q.bind(++idx, md.data_size());
-    q.bind(++idx, md.notes_encoded());
-
-    if (const reftime::Position* reftime = md.get<reftime::Position>())
+    Inserter(WIndex& idx, const Metadata& md)
+        : idx(idx), md(md)
     {
-        const auto& t = reftime->time;
-        int len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", t.ye, t.mo, t.da, t.ho, t.mi, t.se);
-        q.bind(++idx, timebuf, len);
-    } else {
-        q.bindNull(++idx);
-    }
-
-    if (m_uniques)
-    {
-        int id = m_uniques->obtain(md);
-        q.bind(++idx, id);
-    }
-    if (m_others)
-    {
-        int id = m_others->obtain(md);
-        q.bind(++idx, id);
-    }
-    if (config().smallfiles)
-    {
-        if (const types::Value* v = md.get<types::Value>())
+        if (const reftime::Position* reftime = md.get<reftime::Position>())
         {
-            q.bind(++idx, v->buffer);
+            const auto& t = reftime->time;
+            timebuf_len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", t.ye, t.mo, t.da, t.ho, t.mi, t.se);
         } else {
-            q.bindNull(++idx);
+            timebuf[0] = 0;
+            timebuf_len = 0;
+        }
+
+        if (idx.has_uniques()) id_uniques = idx.uniques().obtain(md);
+        if (idx.has_others()) id_others = idx.others().obtain(md);
+    }
+
+    void bind_insert(Query& q, uint64_t ofs)
+    {
+        int qidx = 0;
+
+        q.bind(++qidx, ofs);
+        q.bind(++qidx, md.data_size());
+        q.bind(++qidx, md.notes_encoded());
+
+        if (timebuf_len)
+            q.bind(++qidx, timebuf, timebuf_len);
+        else
+            q.bindNull(++qidx);
+
+        if (id_uniques != -1) q.bind(++qidx, id_uniques);
+        if (id_others != -1) q.bind(++qidx, id_others);
+        if (idx.config().smallfiles)
+        {
+            if (const types::Value* v = md.get<types::Value>())
+            {
+                q.bind(++qidx, v->buffer);
+            } else {
+                q.bindNull(++qidx);
+            }
         }
     }
+};
+
 }
 
-void WIndex::index(const Metadata& md, uint64_t ofs)
+std::unique_ptr<types::source::Blob> WIndex::index(const Metadata& md, uint64_t ofs)
 {
     if (!m_insert.compiled())
         compile_insert();
     m_insert.reset();
 
-    char buf[25];
-    bind_insert(m_insert, md, ofs, buf);
-
+    Inserter inserter(*this, md);
+    inserter.bind_insert(m_insert, ofs);
     while (m_insert.step())
         ;
+
+    return std::unique_ptr<types::source::Blob>();
 }
 
 void WIndex::replace(Metadata& md, uint64_t ofs)
@@ -601,9 +621,8 @@ void WIndex::replace(Metadata& md, uint64_t ofs)
         compile_insert();
     m_replace.reset();
 
-    char buf[25];
-    bind_insert(m_replace, md, ofs, buf);
-
+    Inserter inserter(*this, md);
+    inserter.bind_insert(m_replace, ofs);
     while (m_replace.step())
         ;
 }

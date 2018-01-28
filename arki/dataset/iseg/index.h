@@ -5,6 +5,7 @@
 
 #include <arki/transaction.h>
 #include <arki/utils/sqlite.h>
+#include <arki/types/fwd.h>
 #include <arki/dataset/iseg.h>
 #include <arki/dataset/index/attr.h>
 #include <arki/dataset/index/aggregate.h>
@@ -112,6 +113,11 @@ protected:
 public:
     ~Index();
 
+    bool has_uniques() const { return m_uniques != nullptr; }
+    index::Aggregate& uniques() { return *m_uniques; }
+    bool has_others() const { return m_others != nullptr; }
+    index::Aggregate& others() { return *m_others; }
+
     const iseg::Config& config() const { return *m_config; }
 
     utils::sqlite::SQLiteDB& db() { return m_db; }
@@ -169,15 +175,17 @@ protected:
     void init_db();
 
     void compile_insert();
-    void bind_insert(utils::sqlite::Query& q, const Metadata& md, uint64_t ofs, char* timebuf);
 
     WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
 public:
 
     /**
      * Index the given metadata item.
+     *
+     * If the item already exists, returns the blob source pointing to the data
+     * currently in the dataset
      */
-    void index(const Metadata& md, uint64_t ofs);
+    std::unique_ptr<types::source::Blob> index(const Metadata& md, uint64_t ofs);
 
     /**
      * Index the given metadata item, or replace it in the index.

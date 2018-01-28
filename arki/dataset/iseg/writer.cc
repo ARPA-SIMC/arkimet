@@ -188,6 +188,64 @@ WriterAcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 #endif
 }
 
+#if 0
+void Writer::acquire_batch_replace_never(std::vector<std::shared_ptr<WriterBatchElement>>& batch)
+{
+    auto segment = file(md, md.source().format);
+    Pending p_idx = segment->idx.begin_transaction();
+
+    for (auto& e: batch)
+    {
+        e->dataset_name.clear();
+
+        if (md.source().format != config().format)
+        {
+            e->md.add_note("cannot acquire into dataset " + name() + ": data is in format " + md.source().format + " but the dataset only accepts " + config().format);
+            e->result = ACQ_ERROR;
+            continue;
+        }
+
+        auto age_check = config().check_acquire_age(md);
+        if (age_check.first)
+        {
+            e->result = age_check.second;
+            if (age_check.second == ACQ_OK)
+                e->dataset_name = name();
+            continue;
+        }
+
+
+/*
+        e->result = acquire(e->md, replace);
+        if (e->result == ACQ_OK)
+            e->dataset_name = name();
+ */
+    }
+
+
+
+
+
+
+    try {
+        const types::source::Blob& new_source = segment->segment->append(md);
+        segment->idx.index(md, new_source.offset);
+        // Invalidate the summary cache for this month
+        scache.invalidate(md);
+        segment->segment->commit();
+        p_idx.commit();
+        return ACQ_OK;
+    } catch (utils::sqlite::DuplicateInsert& di) {
+        md.add_note("Failed to store in dataset '" + name() + "' because the dataset already has the data: " + di.what());
+        return ACQ_ERROR_DUPLICATE;
+    } catch (std::exception& e) {
+        // sqlite will take care of transaction consistency
+        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
+        return ACQ_ERROR;
+    }
+}
+#endif
+
 WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
     if (md.source().format != config().format)
@@ -214,12 +272,28 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 
 void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace)
 {
-    for (auto& e: batch)
+    if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
+
+    switch (replace)
     {
-        e->dataset_name.clear();
-        e->result = acquire(e->md, replace);
-        if (e->result == ACQ_OK)
-            e->dataset_name = name();
+        //case REPLACE_NEVER: return acquire_batch_replace_never(batch);
+        case REPLACE_NEVER:
+        case REPLACE_ALWAYS:
+        case REPLACE_HIGHER_USN:
+            for (auto& e: batch)
+            {
+                e->dataset_name.clear();
+                e->result = acquire(e->md, replace);
+                if (e->result == ACQ_OK)
+                    e->dataset_name = name();
+            }
+            break;
+        default:
+        {
+            stringstream ss;
+            ss << "cannot acquire into dataset " << name() << ": replace strategy " << (int)replace << " is not supported";
+            throw runtime_error(ss.str());
+        }
     }
 }
 
