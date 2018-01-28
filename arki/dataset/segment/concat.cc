@@ -64,15 +64,30 @@ struct HoleFile : public fd::File
 
 
 Writer::Writer(const std::string& root, const std::string& relname, const std::string& absname, int mode)
-    : fd::Writer(root, relname, unique_ptr<fd::File>(new File(absname, O_WRONLY | O_CREAT | mode, 0666)))
+    : fd::Writer(root, relname, open_file(absname, O_WRONLY | O_CREAT | mode, 0666))
 {
+}
+
+std::unique_ptr<fd::File> Writer::open_file(const std::string& pathname, int flags, mode_t mode)
+{
+    return unique_ptr<fd::File>(new File(pathname, flags, mode));
 }
 
 HoleWriter::HoleWriter(const std::string& root, const std::string& relname, const std::string& absname, int mode)
-    : fd::Writer(root, relname, unique_ptr<fd::File>(new HoleFile(absname, O_WRONLY | O_CREAT | mode, 0666)))
+    : fd::Writer(root, relname, open_file(absname, O_WRONLY | O_CREAT | mode, 0666))
 {
 }
 
+std::unique_ptr<fd::File> HoleWriter::open_file(const std::string& pathname, int flags, mode_t mode)
+{
+    return unique_ptr<fd::File>(new HoleFile(pathname, flags, mode));
+}
+
+
+std::unique_ptr<fd::File> Checker::open_file(const std::string& pathname, int flags, mode_t mode)
+{
+    return unique_ptr<fd::File>(new File(pathname, flags, mode));
+}
 
 void Checker::open()
 {
@@ -85,25 +100,20 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
     return check_fd(reporter, ds, mds, 0, quick);
 }
 
-unique_ptr<fd::Writer> Checker::make_tmp_segment(const std::string& relname, const std::string& absname)
-{
-    return unique_ptr<fd::Writer>(new concat::Writer(root, relname, absname, O_TRUNC));
-}
-
 Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
     return fd::Checker::repack_impl(rootdir, mds, false, test_flags);
+}
+
+std::unique_ptr<fd::File> HoleChecker::open_file(const std::string& pathname, int flags, mode_t mode)
+{
+    return unique_ptr<fd::File>(new HoleFile(pathname, flags, mode));
 }
 
 void HoleChecker::open()
 {
     if (fd) return;
     fd = new HoleFile(absname, O_RDWR, 0666);
-}
-
-unique_ptr<fd::Writer> HoleChecker::make_tmp_segment(const std::string& relname, const std::string& absname)
-{
-    return unique_ptr<fd::Writer>(new concat::HoleWriter(root, relname, absname, O_TRUNC));
 }
 
 Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)

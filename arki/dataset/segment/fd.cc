@@ -61,19 +61,6 @@ const types::source::Blob& Writer::append(Metadata& md)
     return *pending.back().new_source;
 }
 
-off_t Writer::append_raw(const std::vector<uint8_t>& buf)
-{
-    fired = false;
-    off_t start_pos = current_pos;
-    try {
-        current_pos += fd->write_data(buf);
-    } catch (...) {
-        fd->fdtruncate_nothrow(start_pos);
-        throw;
-    }
-    return start_pos;
-}
-
 void Writer::commit()
 {
     if (fired) return;
@@ -286,10 +273,11 @@ Pending Checker::repack_impl(
     Pending p(rename = new Rename(tmpabsname, absname));
 
     // Create a writer for the temp file
-    auto writer(make_tmp_segment(tmprelname, tmpabsname));
+    auto new_fd = open_file(tmpabsname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    size_t wrpos = 0;
 
     if (test_flags & TEST_MISCHIEF_MOVE_DATA)
-        writer->fd->test_add_padding(1);
+        new_fd->test_add_padding(1);
 
     // Fill the temp file with all the data in the right order
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
@@ -300,15 +288,16 @@ Pending Checker::repack_impl(
         if (!skip_validation)
             validator.validate_buf(buf.data(), buf.size());
         // Append it to the new file
-        off_t w_off = writer->append_raw(buf);
+        auto new_source = Source::createBlobUnlocked((*i)->source().format, rootdir, relname, wrpos, buf.size());
+        wrpos += new_fd->write_data(buf);
         // Update the source information in the metadata
-        (*i)->set_source(Source::createBlobUnlocked((*i)->source().format, rootdir, relname, w_off, buf.size()));
+        (*i)->set_source(move(new_source));
         // Drop the cached data, to prevent ending up with the whole segment
         // sitting in memory
         (*i)->drop_cached_data();
     }
 
-    writer->commit();
+    new_fd->fdatasync();
 
     return p;
 }

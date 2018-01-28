@@ -57,8 +57,18 @@ struct File : public fd::File
 
 
 Writer::Writer(const std::string& root, const std::string& relname, const std::string& absname, int mode)
-    : fd::Writer(root, relname, unique_ptr<fd::File>(new File(absname, O_WRONLY | O_CREAT | mode, 0666)))
+    : fd::Writer(root, relname, open_file(absname, O_WRONLY | O_CREAT | mode, 0666))
 {
+}
+
+std::unique_ptr<fd::File> Writer::open_file(const std::string& pathname, int flags, mode_t mode)
+{
+    return unique_ptr<fd::File>(new File(pathname, flags, mode));
+}
+
+std::unique_ptr<fd::File> Checker::open_file(const std::string& pathname, int flags, mode_t mode)
+{
+    return unique_ptr<fd::File>(new File(pathname, flags, mode));
 }
 
 void Checker::open()
@@ -70,11 +80,6 @@ void Checker::open()
 State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
 {
     return check_fd(reporter, ds, mds, 2, quick);
-}
-
-unique_ptr<fd::Writer> Checker::make_tmp_segment(const std::string& relname, const std::string& absname)
-{
-    return unique_ptr<fd::Writer>(new lines::Writer(root, relname, absname, O_TRUNC));
 }
 
 Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
