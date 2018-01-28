@@ -7,6 +7,7 @@
 #include "arki/dataset/time.h"
 #include "arki/dataset/lock.h"
 #include "arki/types/source/blob.h"
+#include "arki/reader.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
 #include "arki/matcher.h"
@@ -128,65 +129,49 @@ WriterAcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
     Pending p_idx = segment->idx.begin_transaction();
 
     try {
-        const types::source::Blob& new_source = segment->segment->append(md);
         // Try to acquire without replacing
-        segment->idx.index(md, new_source.offset);
-        // Invalidate the summary cache for this month
-        scache.invalidate(md);
-        segment->segment->commit();
-        p_idx.commit();
-        return ACQ_OK;
-    } catch (utils::sqlite::DuplicateInsert& di) {
-        // It already exists, so we keep p_df uncommitted and check Update Sequence Numbers
+        if (std::unique_ptr<types::source::Blob> old = segment->idx.index(md, segment->segment->next_offset()))
+        {
+            // Duplicate detected
+
+            // Read the update sequence number of the new BUFR
+            int new_usn;
+            if (!scan::update_sequence_number(md, new_usn))
+                return ACQ_ERROR_DUPLICATE;
+
+            // Read the update sequence number of the old BUFR
+            auto reader = arki::Reader::create_new(old->absolutePathname(), segment->append_lock);
+            old->lock(reader);
+            int old_usn;
+            if (!scan::update_sequence_number(*old, old_usn))
+            {
+                md.add_note("Failed to store in dataset '" + name() + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
+                return ACQ_ERROR;
+            }
+
+            // If the new element has no higher Update Sequence Number, report a duplicate
+            if (old_usn > new_usn)
+                return ACQ_ERROR_DUPLICATE;
+
+            // Replace, reusing the pending datafile transaction from earlier
+            segment->idx.replace(md, segment->segment->next_offset());
+            segment->segment->append(md);
+            segment->segment->commit();
+            p_idx.commit();
+            return ACQ_OK;
+        } else {
+            segment->segment->append(md);
+            // Invalidate the summary cache for this month
+            scache.invalidate(md);
+            segment->segment->commit();
+            p_idx.commit();
+            return ACQ_OK;
+        }
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
         md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
         return ACQ_ERROR;
     }
-
-    // Read the update sequence number of the new BUFR
-    int new_usn;
-    if (!scan::update_sequence_number(md, new_usn))
-        return ACQ_ERROR_DUPLICATE;
-
-    // Read the metadata of the existing BUFR
-    throw std::runtime_error("iseg::Writer::acquire_replace_higher_usn not yet implemented");
-#if 0
-    Metadata old_md;
-    if (!idx->get_current(md, old_md))
-    {
-        stringstream ss;
-        ss << "cannot acquire into dataset " << name() << ": insert reported a conflict, the index failed to find the original version";
-        throw runtime_error(ss.str());
-    }
-
-    // Read the update sequence number of the old BUFR
-    int old_usn;
-    if (!scan::update_sequence_number(old_md, old_usn))
-    {
-        stringstream ss;
-        ss << "cannot acquire into dataset " << name() << ": insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
-        throw runtime_error(ss.str());
-    }
-
-    // If there is no new Update Sequence Number, report a duplicate
-    if (old_usn > new_usn)
-        return ACQ_ERROR_DUPLICATE;
-
-    // Replace, reusing the pending datafile transaction from earlier
-    try {
-        idx->replace(md, ofs);
-        p_df.commit();
-        p_idx.commit();
-        source->lock();
-        md.set_source(move(source));
-        return ACQ_OK;
-    } catch (std::exception& e) {
-        // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
-        return ACQ_ERROR;
-    }
-#endif
 }
 
 #if 0

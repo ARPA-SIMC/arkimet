@@ -319,6 +319,22 @@ const Validator& Validator::by_filename(const std::string& filename)
     throw runtime_error("cannot find a validator for " + filename + ": no validator available");
 }
 
+bool update_sequence_number(const types::source::Blob& source, int& usn)
+{
+#ifdef HAVE_DBALLE
+    // Update Sequence Numbers are only supported by BUFR
+    if (source.format != "bufr")
+        return false;
+
+    auto data = source.read_data();
+    string buf((const char*)data.data(), data.size());
+    usn = Bufr::update_sequence_number(buf);
+    return true;
+#else
+    return false;
+#endif
+}
+
 bool update_sequence_number(Metadata& md, int& usn)
 {
 #ifdef HAVE_DBALLE

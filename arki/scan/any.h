@@ -6,6 +6,7 @@
 #include <arki/libconfig.h>
 #include <arki/defs.h>
 #include <arki/core/fwd.h>
+#include <arki/types/fwd.h>
 #include <vector>
 #include <string>
 #include <ctime>
@@ -122,6 +123,18 @@ protected:
  *
  */
 bool update_sequence_number(Metadata& md, int& usn);
+
+/**
+ * Return the update sequence number for this data
+ *
+ * @retval
+ *   The update sequence number found. This is left untouched if the function
+ *   returns false.
+ * @returns
+ *   true if the update sequence number could be found, else false
+ *
+ */
+bool update_sequence_number(const types::source::Blob& source, int& usn);
 
 }
 }

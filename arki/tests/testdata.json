@@ -5376,6 +5376,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_iseg",
+  "method": "acquire_replace_usn"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_iseg_index",
   "method": "locks"
  },
