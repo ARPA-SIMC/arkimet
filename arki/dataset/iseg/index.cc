@@ -465,7 +465,7 @@ RIndex::RIndex(std::shared_ptr<const iseg::Config> config, const std::string& da
 
 
 WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock)
-    : Index(config, data_relpath, lock), m_insert(m_db), m_replace("replace", m_db)
+    : Index(config, data_relpath, lock), m_get_current("get_current", m_db), m_insert(m_db), m_replace("replace", m_db)
 {
     bool need_create = !sys::access(index_pathname, F_OK);
 
@@ -536,6 +536,11 @@ void WIndex::compile_insert()
         placeholders += ", ?";
     }
 
+    // Precompile get_current
+    string cur_query = "SELECT offset, size FROM md WHERE reftime=?";
+    if (m_uniques) cur_query += " AND uniq=?";
+    m_get_current.compile(cur_query);
+
     // Precompile insert
     m_insert.compile("INSERT INTO md (offset, size, notes, reftime" + un_ot + ")"
              " VALUES (?, ?, ?, ?" + placeholders + ")");
@@ -572,6 +577,16 @@ struct Inserter
         if (idx.has_others()) id_others = idx.others().obtain(md);
     }
 
+    void bind_get_current(Query& q)
+    {
+        if (timebuf_len)
+            q.bind(1, timebuf, timebuf_len);
+        else
+            q.bindNull(1);
+
+        if (id_uniques != -1) q.bind(2, id_uniques);
+    }
+
     void bind_insert(Query& q, uint64_t ofs)
     {
         int qidx = 0;
@@ -603,16 +618,26 @@ struct Inserter
 
 std::unique_ptr<types::source::Blob> WIndex::index(const Metadata& md, uint64_t ofs)
 {
-    if (!m_insert.compiled())
-        compile_insert();
-    m_insert.reset();
-
+    std::unique_ptr<types::source::Blob> res;
+    if (!m_insert.compiled()) compile_insert();
     Inserter inserter(*this, md);
+
+    // Check if a conflicting metadata exists in the dataset
+    m_get_current.reset();
+    inserter.bind_get_current(m_get_current);
+    while (m_get_current.step())
+        res = types::source::Blob::create_unlocked(
+                config().format, config().path, data_relpath,
+                m_get_current.fetch<uint64_t>(0),
+                m_get_current.fetch<uint64_t>(1));
+    if (res) return res;
+
+    m_insert.reset();
     inserter.bind_insert(m_insert, ofs);
     while (m_insert.step())
         ;
 
-    return std::unique_ptr<types::source::Blob>();
+    return res;
 }
 
 void WIndex::replace(Metadata& md, uint64_t ofs)

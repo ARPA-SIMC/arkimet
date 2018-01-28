@@ -84,16 +84,17 @@ WriterAcquireResult Writer::acquire_replace_never(Metadata& md)
     Pending p_idx = segment->idx.begin_transaction();
 
     try {
-        const types::source::Blob& new_source = segment->segment->append(md);
-        segment->idx.index(md, new_source.offset);
+        if (std::unique_ptr<types::source::Blob> old = segment->idx.index(md, segment->segment->next_offset()))
+        {
+            md.add_note("Failed to store in dataset '" + name() + "' because the dataset already has the data in " + segment->segment->relname + ":" + std::to_string(old->offset));
+            return ACQ_ERROR_DUPLICATE;
+        }
         // Invalidate the summary cache for this month
         scache.invalidate(md);
+        segment->segment->append(md);
         segment->segment->commit();
         p_idx.commit();
         return ACQ_OK;
-    } catch (utils::sqlite::DuplicateInsert& di) {
-        md.add_note("Failed to store in dataset '" + name() + "' because the dataset already has the data: " + di.what());
-        return ACQ_ERROR_DUPLICATE;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
         md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
@@ -511,7 +512,8 @@ public:
         for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
         {
             const source::Blob& source = (*i)->sourceBlob();
-            idx().index(**i, source.offset);
+            if (idx().index(**i, source.offset))
+                throw std::runtime_error("duplicate detected while reordering segment");
         }
 
         size_t size_pre = sys::isdir(segment->absname) ? 0 : sys::size(segment->absname);
@@ -557,7 +559,8 @@ public:
         auto write_lock = lock->write_lock();
         Pending p_idx = idx().begin_transaction();
         for (auto& md: mds)
-            idx().index(*md, md->sourceBlob().offset);
+            if (idx().index(*md, md->sourceBlob().offset))
+                throw std::runtime_error("duplicate detected while reordering segment");
         p_idx.commit();
 
         // Remove .metadata and .summary files
@@ -612,11 +615,12 @@ public:
             try {
                 if (str::basename(blob.filename) != basename)
                     throw std::runtime_error("cannot rescan " + segment->relname + ": metadata points to the wrong file: " + blob.filename);
-                idx().index(md, blob.offset);
-            } catch (utils::sqlite::DuplicateInsert& di) {
-                stringstream ss;
-                ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate elsewhere in the dataset: manual fix is required";
-                throw runtime_error(ss.str());
+                if (std::unique_ptr<types::source::Blob> old = idx().index(md, blob.offset))
+                {
+                    stringstream ss;
+                    ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate at offset " << old->offset << ": manual fix is required";
+                    throw runtime_error(ss.str());
+                }
             } catch (std::exception& e) {
                 stringstream ss;
                 ss << "cannot reindex " << basename << ": failed to reindex data item at offset " << blob.offset << ": " << e.what();
@@ -883,7 +887,8 @@ void Checker::test_change_metadata(const std::string& relpath, Metadata& md, uns
     for (auto& m: mds)
     {
         const source::Blob& source = m->sourceBlob();
-        idx.index(*m, source.offset);
+        if (idx.index(*m, source.offset))
+            throw std::runtime_error("duplicate detected in test_change_metadata");
     }
 
     md = mds[data_idx];

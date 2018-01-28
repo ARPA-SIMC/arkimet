@@ -168,6 +168,7 @@ public:
 class WIndex : public Index
 {
 protected:
+    utils::sqlite::PrecompiledQuery m_get_current;
     utils::sqlite::InsertQuery m_insert;
     utils::sqlite::PrecompiledQuery m_replace;
 
