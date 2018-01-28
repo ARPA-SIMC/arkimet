@@ -6,40 +6,12 @@ using namespace arki;
 using namespace arki::core;
 using namespace arki::utils;
 
-namespace {
-
-struct FdLock
-{
-    sys::NamedFileDescriptor& fd;
-    const core::lock::Policy* lock_policy;
-    FLock lock;
-
-    FdLock(sys::NamedFileDescriptor& fd, const core::lock::Policy* lock_policy) : fd(fd), lock_policy(lock_policy)
-    {
-        lock.l_type = F_WRLCK;
-        lock.l_whence = SEEK_SET;
-        lock.l_start = 0;
-        lock.l_len = 0;
-        // Use SETLKW, so that if it is already locked, we just wait
-        lock_policy->setlkw(fd, lock);
-    }
-
-    ~FdLock()
-    {
-        lock.l_type = F_UNLCK;
-        lock_policy->setlk(fd, lock);
-    }
-};
-
-}
-
-
 namespace arki {
 namespace dataset {
 namespace segment {
 
-SequenceFile::SequenceFile(const std::string& dirname, const core::lock::Policy* lock_policy)
-    : dirname(dirname), fd(str::joinpath(dirname, ".sequence")), lock_policy(lock_policy)
+SequenceFile::SequenceFile(const std::string& dirname)
+    : core::File(str::joinpath(dirname, ".sequence")), dirname(dirname)
 {
 }
 
@@ -49,75 +21,25 @@ SequenceFile::~SequenceFile()
 
 void SequenceFile::open()
 {
-    fd.open(O_RDWR | O_CREAT | O_CLOEXEC | O_NOATIME | O_NOFOLLOW, 0666);
+    core::File::open(O_RDWR | O_CREAT | O_CLOEXEC | O_NOATIME | O_NOFOLLOW, 0666);
 }
 
-void SequenceFile::close()
-{
-    fd.close();
-}
-
-void SequenceFile::test_add_padding(unsigned size)
-{
-    FdLock lock(fd, lock_policy);
-    uint64_t cur;
-
-    // Read the value in the sequence file
-    ssize_t count = fd.pread(&cur, sizeof(cur), 0);
-    if ((size_t)count < sizeof(cur))
-        cur = size;
-    else
-        cur += size;
-
-    // Write it out
-    count = fd.pwrite(&cur, sizeof(cur), 0);
-    if (count != sizeof(cur))
-        fd.throw_runtime_error("cannot write the whole sequence file");
-}
-
-size_t SequenceFile::peek_next()
+size_t SequenceFile::read_sequence()
 {
     uint64_t cur;
-    ssize_t count = fd.pread(&cur, sizeof(cur), 0);
+    ssize_t count = pread(&cur, sizeof(cur), 0);
     if ((size_t)count < sizeof(cur))
         return 0;
     else
-        return cur + 1;
+        return cur;
 }
 
-std::pair<std::string, size_t> SequenceFile::next(const std::string& format)
+void SequenceFile::write_sequence(size_t val)
 {
-    FdLock lock(fd, lock_policy);
-    uint64_t cur;
-
-    // Read the value in the sequence file
-    ssize_t count = fd.pread(&cur, sizeof(cur), 0);
-    if ((size_t)count < sizeof(cur))
-        cur = 0;
-    else
-        ++cur;
-
-    // Write it out
-    count = fd.pwrite(&cur, sizeof(cur), 0);
+    uint64_t cur = val;
+    ssize_t count = pwrite(&cur, sizeof(cur), 0);
     if (count != sizeof(cur))
-        fd.throw_runtime_error("cannot write the whole sequence file");
-
-    return make_pair(str::joinpath(dirname, data_fname(cur, format)), (size_t)cur);
-}
-
-File SequenceFile::open_next(const std::string& format, size_t& pos)
-{
-    while (true)
-    {
-        pair<string, size_t> dest = next(format);
-
-        File fd(dest.first);
-        if (fd.open_ifexists(O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666))
-        {
-            pos = dest.second;
-            return fd;
-        }
-    }
+        throw_runtime_error("cannot write the whole sequence file");
 }
 
 std::string SequenceFile::data_fname(size_t pos, const std::string& format)

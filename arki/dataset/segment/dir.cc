@@ -32,12 +32,12 @@ namespace segment {
 namespace dir {
 
 Writer::Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname)
-    : segment::Writer(root, relname, absname), seqfile(absname, core::lock::policy_null), format(format)
+    : segment::Writer(root, relname, absname), seqfile(absname), format(format)
 {
     // Ensure that the directory 'absname' exists
     sys::makedirs(absname);
     seqfile.open();
-    current_pos = seqfile.peek_next();
+    current_pos = seqfile.read_sequence();
 }
 
 Writer::~Writer()
@@ -52,7 +52,9 @@ size_t Writer::next_offset() const
 const types::source::Blob& Writer::append(Metadata& md)
 {
     fired = false;
-    File fd = seqfile.open_next(format, current_pos);
+
+    File fd(str::joinpath(absname, SequenceFile::data_fname(current_pos, format)),
+                O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
     write_file(md, fd);
     written.push_back(fd.name());
     fd.close();
@@ -64,6 +66,7 @@ const types::source::Blob& Writer::append(Metadata& md)
 void Writer::commit()
 {
     if (fired) return;
+    seqfile.write_sequence(current_pos);
     for (auto& p: pending)
         p.set_source();
     pending.clear();
@@ -393,18 +396,13 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
         ++pos;
 
     // Fill the temp file with all the data in the right order, using hard links
-    char src_data_fname[32];
-    char dst_data_fname[32];
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         const source::Blob& source = (*i)->sourceBlob();
         auto new_source = Source::createBlobUnlocked(source.format, rootdir, relname, pos, source.size);
 
-        snprintf(src_data_fname, 32, "%06zd.%s", source.offset, source.format.c_str());
-        std::string src = str::joinpath(source.absolutePathname(), src_data_fname);
-
-        snprintf(dst_data_fname, 32, "%06zd.%s", pos, source.format.c_str());
-        std::string dst = str::joinpath(tmpabsname, dst_data_fname);
+        std::string src = str::joinpath(source.absolutePathname(), SequenceFile::data_fname(source.offset, format));
+        std::string dst = str::joinpath(tmpabsname, SequenceFile::data_fname(pos, format));
 
         if (::link(src.c_str(), dst.c_str()) != 0)
             throw_system_error("cannot link " + src + " as " + dst);
@@ -416,10 +414,9 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     }
 
     // Write it out
-    sys::File seq_fd(str::joinpath(tmpabsname, ".sequence"), O_CREAT | O_TRUNC | O_EXCL | O_WRONLY, 0666);
-    uint64_t seq = pos;
-    seq_fd.write_all_or_throw(&seq, sizeof(seq));
-    seq_fd.close();
+    SequenceFile seqfile(tmpabsname);
+    seqfile.open();
+    seqfile.write_sequence(pos);
 
     return p;
 }
@@ -438,16 +435,18 @@ void Checker::test_truncate(size_t offset)
 
 void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
+    SequenceFile seqfile(absname);
+    seqfile.open();
+    sys::PreserveFileTimes pf(seqfile);
+    size_t pos = seqfile.read_sequence();
     if (data_idx >= mds.size())
     {
-        SequenceFile seqfile(absname, core::lock::policy_null);
-        seqfile.open();
-        sys::PreserveFileTimes pf(seqfile.fd);
-        size_t pos;
         for (unsigned i = 0; i < hole_size; ++i)
         {
-            File fd = seqfile.open_next(mds[0].sourceBlob().format, pos);
+            File fd(str::joinpath(absname, SequenceFile::data_fname(pos, format)),
+                O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
             fd.close();
+            ++pos;
         }
     } else {
         for (int i = mds.size() - 1; i >= (int)data_idx; --i)
@@ -459,8 +458,9 @@ void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsi
             source->offset += hole_size;
             mds[i].set_source(move(source));
         }
-        // TODO: update seqfile to be mds.size() + hole_size
+        pos += hole_size;
     }
+    seqfile.write_sequence(pos);
 }
 
 void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
