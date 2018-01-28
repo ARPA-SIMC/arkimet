@@ -119,35 +119,6 @@ void HoleWriter::write_file(Metadata& md, NamedFileDescriptor& fd)
     }
 }
 
-void Writer::foreach_datafile(std::function<void(const char*)> f)
-{
-    sys::Path dir(absname);
-    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
-    {
-        if (!i.isreg()) continue;
-        if (strcmp(i->d_name, ".sequence") == 0) continue;
-        if (!str::endswith(i->d_name, format)) continue;
-        f(i->d_name);
-    }
-}
-
-off_t Writer::link(const std::string& srcabsname)
-{
-    size_t pos;
-    while (true)
-    {
-        pair<string, size_t> dest = seqfile.next(format);
-        if (::link(srcabsname.c_str(), dest.first.c_str()) == 0)
-        {
-            pos = dest.second;
-            break;
-        }
-        if (errno != EEXIST)
-            throw_system_error("cannot link " + srcabsname + " as " + dest.first);
-    }
-    return pos;
-}
-
 
 Checker::Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname)
     : segment::Checker(root, relname, absname), format(format)
@@ -415,36 +386,42 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     Pending p(rename = new Rename(tmpabsname, absname));
 
     // Create a writer for the temp dir
-    auto writer(make_tmp_segment(format, tmprelname, tmpabsname));
+    sys::makedirs(tmpabsname);
+    size_t pos = 0;
 
     if (test_flags & TEST_MISCHIEF_MOVE_DATA)
-        writer->seqfile.test_add_padding(1);
+        ++pos;
 
-    // Fill the temp file with all the data in the right order
+    // Fill the temp file with all the data in the right order, using hard links
+    char src_data_fname[32];
+    char dst_data_fname[32];
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         const source::Blob& source = (*i)->sourceBlob();
+        auto new_source = Source::createBlobUnlocked(source.format, rootdir, relname, pos, source.size);
 
-        // Make a hardlink in the target directory for the file pointed by *i
-        off_t pos = writer->link(str::joinpath(source.absolutePathname(), SequenceFile::data_fname(source.offset, source.format)));
+        snprintf(src_data_fname, 32, "%06zd.%s", source.offset, source.format.c_str());
+        std::string src = str::joinpath(source.absolutePathname(), src_data_fname);
+
+        snprintf(dst_data_fname, 32, "%06zd.%s", pos, source.format.c_str());
+        std::string dst = str::joinpath(tmpabsname, dst_data_fname);
+
+        if (::link(src.c_str(), dst.c_str()) != 0)
+            throw_system_error("cannot link " + src + " as " + dst);
 
         // Update the source information in the metadata
         (*i)->set_source(Source::createBlobUnlocked(source.format, rootdir, relname, pos, source.size));
+
+        ++pos;
     }
 
-    writer->commit();
-
-    // Close the temp writer
-    writer.reset();
+    // Write it out
+    sys::File seq_fd(str::joinpath(tmpabsname, ".sequence"), O_CREAT | O_TRUNC | O_EXCL | O_WRONLY, 0666);
+    uint64_t seq = pos;
+    seq_fd.write_all_or_throw(&seq, sizeof(seq));
+    seq_fd.close();
 
     return p;
-}
-
-unique_ptr<dir::Writer> Checker::make_tmp_segment(const std::string& format, const std::string& relname, const std::string& absname)
-{
-    if (sys::exists(absname)) sys::rmtree(absname);
-    unique_ptr<dir::Writer> res(new dir::Writer(format, root, relname, absname));
-    return res;
 }
 
 void Checker::test_truncate(size_t offset)
@@ -512,14 +489,6 @@ State HoleChecker::check(dataset::Reporter& reporter, const std::string& ds, con
     return Checker::check(reporter, ds, mds, true);
 }
 
-unique_ptr<dir::Writer> HoleChecker::make_tmp_segment(const std::string& format, const std::string& relname, const std::string& absname)
-{
-    if (sys::exists(absname)) sys::rmtree(absname);
-    unique_ptr<dir::Writer> res(new dir::HoleWriter(format, root, relname, absname));
-    return res;
-}
-
-
 bool can_store(const std::string& format)
 {
     return format == "grib" || format == "grib1" || format == "grib2"
@@ -527,7 +496,6 @@ bool can_store(const std::string& format)
         || format == "odimh5" || format == "h5" || format == "odim"
         || format == "vm2";
 }
-
 
 }
 }

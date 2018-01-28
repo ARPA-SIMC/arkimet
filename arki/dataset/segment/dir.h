@@ -33,20 +33,6 @@ struct Writer : public dataset::segment::Writer
 
     virtual void write_file(Metadata& md, core::NamedFileDescriptor& fd);
 
-    /// Call f for each nnnnnn.format file in the directory segment, passing the file name
-    void foreach_datafile(std::function<void(const char*)> f);
-
-    /*
-     * Append a hardlink to the data pointed by md.
-     *
-     * This of course only works if it is possible to hardlink from this
-     * segment to the file pointed by md. That is, if they are in the same file
-     * system.
-     *
-     * @returns the offset in the segment at which md was appended
-     */
-    off_t link(const std::string& absname);
-
     void commit() override;
     void rollback() override;
     void rollback_nothrow() noexcept override;
@@ -83,9 +69,6 @@ public:
     void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
     void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
     void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
-
-protected:
-    virtual std::unique_ptr<dir::Writer> make_tmp_segment(const std::string& format, const std::string& relname, const std::string& absname);
 };
 
 
@@ -100,9 +83,6 @@ public:
     using Checker::Checker;
 
     State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
-
-protected:
-    std::unique_ptr<dir::Writer> make_tmp_segment(const std::string& format, const std::string& relname, const std::string& absname) override;
 };
 
 bool can_store(const std::string& format);
