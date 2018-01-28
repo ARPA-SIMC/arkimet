@@ -7,6 +7,7 @@
 #include <arki/dataset/segment.h>
 #include <arki/dataset/segment/seqfile.h>
 #include <arki/core/file.h>
+#include <vector>
 
 namespace arki {
 class Metadata;
@@ -20,13 +21,17 @@ struct Writer : public dataset::segment::Writer
 {
     SequenceFile seqfile;
     std::string format;
+    std::vector<std::string> written;
+    std::vector<PendingMetadata> pending;
+    size_t current_pos;
 
     Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname);
     ~Writer();
 
-    Pending append(Metadata& md, const types::source::Blob** new_source=0) override;
+    size_t next_offset() const override;
+    const types::source::Blob& append(Metadata& md) override;
 
-    virtual size_t write_file(Metadata& md, core::NamedFileDescriptor& fd);
+    virtual void write_file(Metadata& md, core::NamedFileDescriptor& fd);
 
     /// Call f for each nnnnnn.format file in the directory segment, passing the file name
     void foreach_datafile(std::function<void(const char*)> f);
@@ -41,13 +46,17 @@ struct Writer : public dataset::segment::Writer
      * @returns the offset in the segment at which md was appended
      */
     off_t link(const std::string& absname);
+
+    void commit() override;
+    void rollback() override;
+    void rollback_nothrow() noexcept override;
 };
 
 struct HoleWriter: public Writer
 {
     using Writer::Writer;
 
-    size_t write_file(Metadata& md, core::NamedFileDescriptor& fd) override;
+    void write_file(Metadata& md, core::NamedFileDescriptor& fd) override;
 };
 
 

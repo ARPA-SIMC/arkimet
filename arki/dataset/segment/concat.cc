@@ -23,8 +23,20 @@ struct File : public fd::File
 {
     using fd::File::File;
 
-    void write_data(off_t wrpos, const std::vector<uint8_t>& buf) override;
-    void test_add_padding(size_t size) override;
+    size_t write_data(const std::vector<uint8_t>& buf) override
+    {
+        // Prevent caching (ignore function result)
+        //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
+
+        // Append the data
+        write_all_or_throw(buf.data(), buf.size());
+        return buf.size();
+    }
+    void test_add_padding(size_t size) override
+    {
+        for (unsigned i = 0; i < size; ++i)
+            write("", 1);
+    }
 };
 
 
@@ -32,46 +44,21 @@ struct HoleFile : public fd::File
 {
     using fd::File::File;
 
-    void write_data(off_t wrpos, const std::vector<uint8_t>& buf) override;
-    void test_add_padding(size_t size) override;
+    size_t write_data(const std::vector<uint8_t>& buf) override
+    {
+        // Get the current file size
+        off_t size = lseek(0, SEEK_END);
+
+        // Enlarge its apparent size to include the size of buf
+        ftruncate(size + buf.size());
+
+        return buf.size();
+    }
+    void test_add_padding(size_t size) override
+    {
+        throw std::runtime_error("HoleFile::test_add_padding not implemented");
+    }
 };
-
-
-
-void File::write_data(off_t wrpos, const std::vector<uint8_t>& buf)
-{
-    // Prevent caching (ignore function result)
-    //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
-
-    // Append the data
-    lseek(wrpos);
-    write_all_or_throw(buf.data(), buf.size());
-
-    fdatasync();
-}
-
-void File::test_add_padding(size_t size)
-{
-    for (unsigned i = 0; i < size; ++i)
-        write("", 1);
-}
-
-void HoleFile::write_data(off_t wrpos, const std::vector<uint8_t>& buf)
-{
-    // Get the current file size
-    off_t size = lseek(0, SEEK_END);
-
-    if (wrpos + buf.size() <= (size_t)size)
-        return;
-
-    // Enlarge its apparent size to include the size of buf
-    ftruncate(wrpos + buf.size());
-}
-
-void HoleFile::test_add_padding(size_t size)
-{
-    throw std::runtime_error("HoleFile::test_add_padding not implemented");
-}
 
 }
 

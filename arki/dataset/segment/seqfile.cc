@@ -75,6 +75,16 @@ void SequenceFile::test_add_padding(unsigned size)
         fd.throw_runtime_error("cannot write the whole sequence file");
 }
 
+size_t SequenceFile::peek_next()
+{
+    uint64_t cur;
+    ssize_t count = fd.pread(&cur, sizeof(cur), 0);
+    if ((size_t)count < sizeof(cur))
+        return 0;
+    else
+        return cur + 1;
+}
+
 std::pair<std::string, size_t> SequenceFile::next(const std::string& format)
 {
     FdLock lock(fd, lock_policy);

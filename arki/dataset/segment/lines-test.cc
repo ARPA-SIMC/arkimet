@@ -71,7 +71,7 @@ add_method("append", [] {
         wassert(test_append_transaction_ok(w.get(), mdc[0], 1));
 
         // Then fail one
-        wassert(test_append_transaction_rollback(w.get(), mdc[1]));
+        wassert(test_append_transaction_rollback(w.get(), mdc[1], 1));
 
         // Then succeed again
         wassert(test_append_transaction_ok(w.get(), mdc[2], 1));
@@ -107,7 +107,7 @@ add_method("large", [] {
         wassert(test_append_transaction_ok(dw.get(), mdc[0], 1));
 
         // Then fail one
-        wassert(test_append_transaction_rollback(dw.get(), mdc[1]));
+        wassert(test_append_transaction_rollback(dw.get(), mdc[1], 1));
 
         // Then succeed again
         wassert(test_append_transaction_ok(dw.get(), mdc[2], 1));

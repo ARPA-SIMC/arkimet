@@ -73,9 +73,10 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     // TODO: use segments also in the other tests, and instantiate a new test suite for different segment types
     {
         auto s = f.segments().get_writer("2007/07.grib");
-        s->append(data.test_data[1].md).commit();
-        s->append(data.test_data[1].md).commit();
-        s->append(data.test_data[0].md).commit();
+        s->append(data.test_data[1].md);
+        s->append(data.test_data[1].md);
+        s->append(data.test_data[0].md);
+        s->commit();
     }
 
     {

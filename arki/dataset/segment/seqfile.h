@@ -30,6 +30,15 @@ struct SequenceFile
     void close();
 
     /**
+     * Return the next offset that would be used, without incrementing it.
+     *
+     * This skips locking, because it is only useful if the caller has locked
+     * write access to the seqfile in some other way, since the result of
+     * peek_next might be invalidated by a concurrent write at any time.
+     */
+    size_t peek_next();
+
+    /**
      * Increment the sequence and get the pathname of the file corresponding
      * to the new value, and the corresponding 'offset', that is, the file
      * sequence number itself.

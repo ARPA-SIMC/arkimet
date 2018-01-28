@@ -83,14 +83,12 @@ WriterAcquireResult Writer::acquire_replace_never(Metadata& md)
     auto segment = file(md, md.source().format);
     Pending p_idx = segment->idx.begin_transaction();
 
-    const types::source::Blob* new_source;
-    Pending p_df = segment->segment->append(md, &new_source);
-
     try {
-        segment->idx.index(md, new_source->offset);
+        const types::source::Blob& new_source = segment->segment->append(md);
+        segment->idx.index(md, new_source.offset);
         // Invalidate the summary cache for this month
         scache.invalidate(md);
-        p_df.commit();
+        segment->segment->commit();
         p_idx.commit();
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
@@ -108,14 +106,12 @@ WriterAcquireResult Writer::acquire_replace_always(Metadata& md)
     auto segment = file(md, md.source().format);
     Pending p_idx = segment->idx.begin_transaction();
 
-    const types::source::Blob* new_source;
-    Pending p_df = segment->segment->append(md, &new_source);
-
     try {
-        segment->idx.replace(md, new_source->offset);
+        const types::source::Blob& new_source = segment->segment->append(md);
+        segment->idx.replace(md, new_source.offset);
         // Invalidate the summary cache for this month
         scache.invalidate(md);
-        p_df.commit();
+        segment->segment->commit();
         p_idx.commit();
         return ACQ_OK;
     } catch (std::exception& e) {
@@ -130,15 +126,13 @@ WriterAcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
     auto segment = file(md, md.source().format);
     Pending p_idx = segment->idx.begin_transaction();
 
-    const types::source::Blob* new_source;
-    Pending p_df = segment->segment->append(md, &new_source);
-
     try {
+        const types::source::Blob& new_source = segment->segment->append(md);
         // Try to acquire without replacing
-        segment->idx.index(md, new_source->offset);
+        segment->idx.index(md, new_source.offset);
         // Invalidate the summary cache for this month
         scache.invalidate(md);
-        p_df.commit();
+        segment->segment->commit();
         p_idx.commit();
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {

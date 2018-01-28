@@ -24,39 +24,33 @@ struct File : public fd::File
 {
     using fd::File::File;
 
-    void write_data(off_t wrpos, const std::vector<uint8_t>& buf) override;
-    void test_add_padding(size_t size) override;
-};
-
-void File::write_data(off_t wrpos, const std::vector<uint8_t>& buf)
-{
-    struct iovec todo[2] = {
-        { (void*)buf.data(), buf.size() },
-        { (void*)"\n", 1 },
-    };
-
-    // Prevent caching (ignore function result)
-    //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
-
-    lseek(wrpos);
-
-    // Append the data
-    ssize_t res = ::writev(*this, todo, 2);
-    if (res < 0 || (unsigned)res != buf.size() + 1)
+    size_t write_data(const std::vector<uint8_t>& buf) override
     {
-        stringstream ss;
-        ss << "cannot write " << (buf.size() + 1) << " bytes to " << name();
-        throw std::system_error(errno, std::system_category(), ss.str());
+        struct iovec todo[2] = {
+            { (void*)buf.data(), buf.size() },
+            { (void*)"\n", 1 },
+        };
+
+        // Prevent caching (ignore function result)
+        //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
+
+        // Append the data
+        ssize_t res = ::writev(*this, todo, 2);
+        if (res < 0 || (unsigned)res != buf.size() + 1)
+        {
+            stringstream ss;
+            ss << "cannot write " << (buf.size() + 1) << " bytes to " << name();
+            throw std::system_error(errno, std::system_category(), ss.str());
+        }
+
+        return buf.size() + 1;
     }
-
-    fdatasync();
-}
-
-void File::test_add_padding(size_t size)
-{
-    for (unsigned i = 0; i < size; ++i)
-        write("\n", 1);
-}
+    void test_add_padding(size_t size) override
+    {
+        for (unsigned i = 0; i < size; ++i)
+            write("\n", 1);
+    }
+};
 
 }
 

@@ -24,7 +24,7 @@ struct File : public arki::core::File
     using arki::core::File::File;
 
     void fdtruncate_nothrow(off_t pos) noexcept;
-    virtual void write_data(off_t wrpos, const std::vector<uint8_t>& buf) = 0;
+    virtual size_t write_data(const std::vector<uint8_t>& buf) = 0;
     virtual void test_add_padding(size_t size) = 0;
 };
 
@@ -32,11 +32,15 @@ struct File : public arki::core::File
 struct Writer : public dataset::segment::Writer
 {
     File* fd = nullptr;
+    off_t initial_size;
+    off_t current_pos;
+    std::vector<PendingMetadata> pending;
 
     Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd);
     ~Writer();
 
-    Pending append(Metadata& md, const types::source::Blob** new_source=0) override;
+    size_t next_offset() const override;
+    const types::source::Blob& append(Metadata& md) override;
 
     /**
      * Append raw data to the file, wrapping it with the right envelope if
@@ -50,7 +54,11 @@ struct Writer : public dataset::segment::Writer
      *
      * @return the offset at which the buffer is written
      */
-    off_t append(const std::vector<uint8_t>& buf);
+    off_t append_raw(const std::vector<uint8_t>& buf);
+
+    void commit() override;
+    void rollback() override;
+    void rollback_nothrow() noexcept override;
 };
 
 

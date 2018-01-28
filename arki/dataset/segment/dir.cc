@@ -37,13 +37,61 @@ Writer::Writer(const std::string& format, const std::string& root, const std::st
     // Ensure that the directory 'absname' exists
     sys::makedirs(absname);
     seqfile.open();
+    current_pos = seqfile.peek_next();
 }
 
 Writer::~Writer()
 {
 }
 
-size_t Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
+size_t Writer::next_offset() const
+{
+    return current_pos;
+}
+
+const types::source::Blob& Writer::append(Metadata& md)
+{
+    fired = false;
+    File fd = seqfile.open_next(format, current_pos);
+    write_file(md, fd);
+    written.push_back(fd.name());
+    fd.close();
+    pending.emplace_back(md, source::Blob::create_unlocked(md.source().format, root, relname, current_pos, md.data_size()));
+    ++current_pos;
+    return *pending.back().new_source;
+}
+
+void Writer::commit()
+{
+    if (fired) return;
+    for (auto& p: pending)
+        p.set_source();
+    pending.clear();
+    written.clear();
+    fired = true;
+}
+
+void Writer::rollback()
+{
+    if (fired) return;
+    for (auto fn: written)
+        sys::unlink(fn);
+    pending.clear();
+    written.clear();
+    fired = true;
+}
+
+void Writer::rollback_nothrow() noexcept
+{
+    if (fired) return;
+    for (auto fn: written)
+        ::unlink(fn.c_str());
+    pending.clear();
+    written.clear();
+    fired = true;
+}
+
+void Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
     try {
         const std::vector<uint8_t>& buf = md.getData();
@@ -54,102 +102,21 @@ size_t Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
 
         if (fdatasync(fd) < 0)
             fd.throw_error("cannot flush write");
-
-        return buf.size();
     } catch (...) {
         unlink(absname.c_str());
         throw;
     }
 }
 
-size_t HoleWriter::write_file(Metadata& md, NamedFileDescriptor& fd)
+void HoleWriter::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
     try {
         if (ftruncate(fd, md.data_size()) == -1)
             fd.throw_error("cannot set file size");
-
-        return md.data_size();
     } catch (...) {
         unlink(absname.c_str());
         throw;
     }
-}
-
-
-namespace {
-
-struct Append : public Transaction
-{
-    const dir::Writer& writer;
-    bool fired;
-    Metadata& md;
-    size_t pos;
-    size_t size;
-    std::unique_ptr<types::source::Blob> new_source;
-
-    Append(const dir::Writer& writer, Metadata& md, size_t pos, size_t size)
-        : writer(writer), fired(false), md(md), pos(pos), size(size)
-    {
-        new_source = source::Blob::create_unlocked(md.source().format, writer.root, writer.relname, pos, size);
-    }
-
-    virtual ~Append()
-    {
-        if (!fired) rollback();
-    }
-
-    void commit() override
-    {
-        if (fired) return;
-
-        // Set the source information that we are writing in the metadata
-        md.set_source(move(new_source));
-
-        fired = true;
-    }
-
-    void rollback() override
-    {
-        if (fired) return;
-
-        // If we had a problem, remove the file that we have created. The
-        // sequence will have skipped one number, but we do not need to
-        // guarantee consecutive numbers, so it is just a cosmetic issue. This
-        // case should be rare enough that even the cosmetic issue should
-        // rarely be noticeable.
-        string target_name = str::joinpath(writer.absname, SequenceFile::data_fname(pos, writer.format));
-        ::unlink(target_name.c_str());
-
-        fired = true;
-    }
-
-    void rollback_nothrow() noexcept override
-    {
-        if (fired) return;
-
-        // If we had a problem, remove the file that we have created. The
-        // sequence will have skipped one number, but we do not need to
-        // guarantee consecutive numbers, so it is just a cosmetic issue. This
-        // case should be rare enough that even the cosmetic issue should
-        // rarely be noticeable.
-        string target_name = str::joinpath(writer.absname, SequenceFile::data_fname(pos, writer.format));
-        ::unlink(target_name.c_str());
-
-        fired = true;
-    }
-};
-
-}
-
-Pending Writer::append(Metadata& md, const types::source::Blob** new_source)
-{
-    size_t pos;
-    File fd = seqfile.open_next(format, pos);
-    size_t size = write_file(md, fd);
-    fd.close();
-    auto res = new Append(*this, md, pos, size);
-    if (new_source) *new_source = res->new_source.get();
-    return res;
 }
 
 void Writer::foreach_datafile(std::function<void(const char*)> f)
@@ -464,6 +431,8 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
         // Update the source information in the metadata
         (*i)->set_source(Source::createBlobUnlocked(source.format, rootdir, relname, pos, source.size));
     }
+
+    writer->commit();
 
     // Close the temp writer
     writer.reset();

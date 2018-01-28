@@ -37,91 +37,71 @@ void File::fdtruncate_nothrow(off_t pos) noexcept
 }
 
 
-namespace {
-
-struct Append : public Transaction
-{
-    fd::Writer& w;
-    File& fd;
-    Metadata& md;
-    bool fired = false;
-    const std::vector<uint8_t>& buf;
-    off_t pos;
-    std::unique_ptr<types::source::Blob> new_source;
-
-    Append(fd::Writer& w, Metadata& md)
-        : w(w), fd(*w.fd), md(md), buf(md.getData()), pos(fd.lseek(0, SEEK_END))
-    {
-        new_source = source::Blob::create_unlocked(md.source().format, w.root, w.relname, pos, buf.size());
-    }
-
-    virtual ~Append()
-    {
-        if (!fired) rollback();
-    }
-
-    void commit() override
-    {
-        if (fired) return;
-
-        // Append the data
-        fd.write_data(pos, buf);
-
-        // Set the source information that we are writing in the metadata
-        md.set_source(move(new_source));
-
-        fired = true;
-    }
-
-    void rollback() override
-    {
-        if (fired) return;
-
-        // If we had a problem, attempt to truncate the file to the original size
-        fd.fdtruncate_nothrow(pos);
-        fired = true;
-    }
-
-    void rollback_nothrow() noexcept override
-    {
-        if (fired) return;
-
-        // If we had a problem, attempt to truncate the file to the original size
-        fd.fdtruncate_nothrow(pos);
-        fired = true;
-    }
-};
-
-}
-
-
 Writer::Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd)
     : segment::Writer(root, relname, fd->name()), fd(fd.release())
 {
+    initial_size = this->fd->lseek(0, SEEK_END);
+    current_pos = initial_size;
 }
 
 Writer::~Writer()
 {
+    if (!fired) rollback_nothrow();
     delete fd;
 }
 
-Pending Writer::append(Metadata& md, const types::source::Blob** new_source)
+size_t Writer::next_offset() const { return current_pos; }
+
+const types::source::Blob& Writer::append(Metadata& md)
 {
-    Append* res = new Append(*this, md);
-    if (new_source) *new_source = res->new_source.get();
-    return res;
+    fired = false;
+    const std::vector<uint8_t>& buf = md.getData();
+    pending.emplace_back(md, source::Blob::create_unlocked(md.source().format, root, relname, current_pos, buf.size()));
+    current_pos += fd->write_data(buf);
+    return *pending.back().new_source;
 }
 
-off_t Writer::append(const std::vector<uint8_t>& buf)
+off_t Writer::append_raw(const std::vector<uint8_t>& buf)
 {
-    off_t pos = fd->lseek(0, SEEK_END);
+    fired = false;
+    off_t start_pos = current_pos;
     try {
-        fd->write_data(pos, buf);
+        current_pos += fd->write_data(buf);
     } catch (...) {
-        fd->fdtruncate_nothrow(pos);
+        fd->fdtruncate_nothrow(start_pos);
         throw;
     }
-    return pos;
+    return start_pos;
+}
+
+void Writer::commit()
+{
+    if (fired) return;
+    fd->fdatasync();
+    for (auto& p: pending)
+        p.set_source();
+    pending.clear();
+    initial_size = current_pos;
+    fired = true;
+}
+
+void Writer::rollback()
+{
+    if (fired) return;
+    fd->ftruncate(initial_size);
+    fd->lseek(initial_size, SEEK_SET);
+    current_pos = initial_size;
+    pending.clear();
+    fired = true;
+}
+
+void Writer::rollback_nothrow() noexcept
+{
+    if (fired) return;
+    fd->fdtruncate_nothrow(initial_size);
+    ::lseek(*fd, initial_size, SEEK_SET);
+    pending.clear();
+    fired = true;
 }
 
 
@@ -320,13 +300,15 @@ Pending Checker::repack_impl(
         if (!skip_validation)
             validator.validate_buf(buf.data(), buf.size());
         // Append it to the new file
-        off_t w_off = writer->append(buf);
+        off_t w_off = writer->append_raw(buf);
         // Update the source information in the metadata
         (*i)->set_source(Source::createBlobUnlocked((*i)->source().format, rootdir, relname, w_off, buf.size()));
         // Drop the cached data, to prevent ending up with the whole segment
         // sitting in memory
         (*i)->drop_cached_data();
     }
+
+    writer->commit();
 
     return p;
 }

@@ -82,10 +82,9 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 
     // Try appending
     try {
-        const types::source::Blob* new_source;
-        auto p = mdbuf->segment->append(md, &new_source);
-        mdbuf->add(md, *new_source);
-        p.commit();
+        const types::source::Blob& new_source = mdbuf->segment->append(md);
+        mdbuf->add(md, new_source);
+        mdbuf->segment->commit();
         time_t ts = scan::timestamp(mdbuf->pathname);
         if (ts == 0)
             nag::warning("simple dataset acquire: %s timestamp is 0", mdbuf->pathname.c_str());
