@@ -144,6 +144,32 @@ struct AppendSegment
             return ACQ_ERROR;
         }
     }
+
+    void acquire_batch_replace_never(std::vector<std::shared_ptr<WriterBatchElement>>& batch, index::SummaryCache& scache)
+    {
+        Pending p_idx = idx.begin_transaction();
+
+        for (auto& e: batch)
+        {
+            e->dataset_name.clear();
+
+            if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->next_offset()))
+            {
+                e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relname + ":" + std::to_string(old->offset));
+                e->result = ACQ_ERROR_DUPLICATE;
+                continue;
+            }
+
+            // Invalidate the summary cache for this month
+            scache.invalidate(e->md);
+            segment->append(e->md);
+            e->result = ACQ_OK;
+            e->dataset_name = config->name;
+        }
+
+        segment->commit();
+        p_idx.commit();
+    }
 };
 
 
@@ -176,82 +202,6 @@ std::unique_ptr<AppendSegment> Writer::file(const std::string& relname)
     auto segment = segment_manager().get_writer(config().format, relname);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, append_lock, segment));
 }
-
-#if 0
-void Writer::acquire_batch_replace_never(std::vector<std::shared_ptr<WriterBatchElement>>& batch)
-{
-    // Divide batch by segment
-    // import segment by segment
-
-
-    auto segment = file(md, md.source().format);
-    Pending p_idx = segment->idx.begin_transaction();
-
-    for (auto& e: batch)
-    {
-        e->dataset_name.clear();
-
-        if (md.source().format != config().format)
-        {
-            e->md.add_note("cannot acquire into dataset " + name() + ": data is in format " + md.source().format + " but the dataset only accepts " + config().format);
-            e->result = ACQ_ERROR;
-            continue;
-        }
-
-        auto age_check = config().check_acquire_age(md);
-        if (age_check.first)
-        {
-            e->result = age_check.second;
-            if (age_check.second == ACQ_OK)
-                e->dataset_name = name();
-            continue;
-        }
-
-        if (std::unique_ptr<types::source::Blob> old = segment->idx.index(md, segment->segment->next_offset()))
-        {
-            e->md.add_note("Failed to store in dataset '" + name() + "' because the dataset already has the data in " + segment->segment->relname + ":" + std::to_string(old->offset));
-            e->result = ACQ_ERROR_DUPLICATE;
-            continue;
-        }
-
-            // Invalidate the summary cache for this month
-            scache.invalidate(md);
-            segment->segment->append(md);
-            segment->segment->commit();
-            p_idx.commit();
-            return ACQ_OK;
-        } catch (std::exception& e) {
-            // sqlite will take care of transaction consistency
-            e->md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
-            e->result = ACQ_ERROR;
-            continue;
-        }
-
-/*
-        e->result = acquire(e->md, replace);
-        if (e->result == ACQ_OK)
-            e->dataset_name = name();
- */
-    }
-
-    try {
-        const types::source::Blob& new_source = segment->segment->append(md);
-        segment->idx.index(md, new_source.offset);
-        // Invalidate the summary cache for this month
-        scache.invalidate(md);
-        segment->segment->commit();
-        p_idx.commit();
-        return ACQ_OK;
-    } catch (utils::sqlite::DuplicateInsert& di) {
-        md.add_note("Failed to store in dataset '" + name() + "' because the dataset already has the data: " + di.what());
-        return ACQ_ERROR_DUPLICATE;
-    } catch (std::exception& e) {
-        // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
-        return ACQ_ERROR;
-    }
-}
-#endif
 
 WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
@@ -327,18 +277,26 @@ void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& bat
     for (auto& s: by_segment)
     {
         auto segment = file(s.first);
-        for (auto& e: s.second)
+        switch (replace)
         {
-            switch (replace)
-            {
-                //case REPLACE_NEVER: return acquire_batch_replace_never(batch);
-                case REPLACE_NEVER: e->result = segment->acquire_replace_never(e->md, scache); break;
-                case REPLACE_ALWAYS: e->result = segment->acquire_replace_always(e->md, scache); break;
-                case REPLACE_HIGHER_USN: e->result = segment->acquire_replace_higher_usn(e->md, scache); break;
-                default: throw std::runtime_error("programmign error: replace value has changed since previous check");
-            }
-            if (e->result == ACQ_OK)
-                e->dataset_name = name();
+            case REPLACE_NEVER:
+                segment->acquire_batch_replace_never(s.second, scache);
+                break;
+            case REPLACE_ALWAYS:
+                for (auto& e: s.second)
+                {
+                    e->result = segment->acquire_replace_always(e->md, scache);
+                    if (e->result == ACQ_OK) e->dataset_name = name();
+                }
+                break;
+            case REPLACE_HIGHER_USN:
+                for (auto& e: s.second)
+                {
+                    e->result = segment->acquire_replace_higher_usn(e->md, scache);
+                    if (e->result == ACQ_OK) e->dataset_name = name();
+                }
+                break;
+            default: throw std::runtime_error("programmign error: replace value has changed since previous check");
         }
     }
 }
