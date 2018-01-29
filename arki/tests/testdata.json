@@ -9297,6 +9297,21 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_grib_ondisk2",
+  "method": "import_batch_replace_never"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_ondisk2",
+  "method": "import_batch_replace_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_ondisk2",
+  "method": "import_batch_replace_usn"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_ondisk2",
   "method": "import_before_archive_age"
  },
  {
@@ -9318,6 +9333,21 @@
   "doc": "",
   "group": "arki_dataset_writer_grib_simple_plain",
   "method": "import"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_plain",
+  "method": "import_batch_replace_never"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_plain",
+  "method": "import_batch_replace_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_plain",
+  "method": "import_batch_replace_usn"
  },
  {
   "doc": "",
@@ -9343,6 +9373,21 @@
   "doc": "",
   "group": "arki_dataset_writer_grib_simple_sqlite",
   "method": "import"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_sqlite",
+  "method": "import_batch_replace_never"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_sqlite",
+  "method": "import_batch_replace_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_sqlite",
+  "method": "import_batch_replace_usn"
  },
  {
   "doc": "",
@@ -9368,6 +9413,21 @@
   "doc": "",
   "group": "arki_dataset_writer_grib_iseg",
   "method": "import"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_iseg",
+  "method": "import_batch_replace_never"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_iseg",
+  "method": "import_batch_replace_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_iseg",
+  "method": "import_batch_replace_usn"
  },
  {
   "doc": "",
@@ -9393,6 +9453,21 @@
   "doc": "",
   "group": "arki_dataset_writer_bufr_ondisk2",
   "method": "import"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_ondisk2",
+  "method": "import_batch_replace_never"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_ondisk2",
+  "method": "import_batch_replace_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_ondisk2",
+  "method": "import_batch_replace_usn"
  },
  {
   "doc": "",
@@ -9418,6 +9493,21 @@
   "doc": "",
   "group": "arki_dataset_writer_bufr_simple_plain",
   "method": "import"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_plain",
+  "method": "import_batch_replace_never"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_plain",
+  "method": "import_batch_replace_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_plain",
+  "method": "import_batch_replace_usn"
  },
  {
   "doc": "",
@@ -9443,6 +9533,21 @@
   "doc": "",
   "group": "arki_dataset_writer_bufr_simple_sqlite",
   "method": "import"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_sqlite",
+  "method": "import_batch_replace_never"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_sqlite",
+  "method": "import_batch_replace_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_sqlite",
+  "method": "import_batch_replace_usn"
  },
  {
   "doc": "",
@@ -9468,6 +9573,21 @@
   "doc": "",
   "group": "arki_dataset_writer_bufr_iseg",
   "method": "import"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_iseg",
+  "method": "import_batch_replace_never"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_iseg",
+  "method": "import_batch_replace_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_iseg",
+  "method": "import_batch_replace_usn"
  },
  {
   "doc": "",
@@ -9493,6 +9613,21 @@
   "doc": "",
   "group": "arki_dataset_writer_vm2_ondisk2",
   "method": "import"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_ondisk2",
+  "method": "import_batch_replace_never"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_ondisk2",
+  "method": "import_batch_replace_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_ondisk2",
+  "method": "import_batch_replace_usn"
  },
  {
   "doc": "",
@@ -9518,6 +9653,21 @@
   "doc": "",
   "group": "arki_dataset_writer_vm2_simple_plain",
   "method": "import"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_plain",
+  "method": "import_batch_replace_never"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_plain",
+  "method": "import_batch_replace_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_plain",
+  "method": "import_batch_replace_usn"
  },
  {
   "doc": "",
@@ -9543,6 +9693,21 @@
   "doc": "",
   "group": "arki_dataset_writer_vm2_simple_sqlite",
   "method": "import"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_sqlite",
+  "method": "import_batch_replace_never"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_sqlite",
+  "method": "import_batch_replace_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_sqlite",
+  "method": "import_batch_replace_usn"
  },
  {
   "doc": "",
@@ -9568,6 +9733,21 @@
   "doc": "",
   "group": "arki_dataset_writer_vm2_iseg",
   "method": "import"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_iseg",
+  "method": "import_batch_replace_never"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_iseg",
+  "method": "import_batch_replace_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_iseg",
+  "method": "import_batch_replace_usn"
  },
  {
   "doc": "",
@@ -9593,6 +9773,21 @@
   "doc": "",
   "group": "arki_dataset_writer_odim_ondisk2",
   "method": "import"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_ondisk2",
+  "method": "import_batch_replace_never"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_ondisk2",
+  "method": "import_batch_replace_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_ondisk2",
+  "method": "import_batch_replace_usn"
  },
  {
   "doc": "",
@@ -9618,6 +9813,21 @@
   "doc": "",
   "group": "arki_dataset_writer_odim_simple_plain",
   "method": "import"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_plain",
+  "method": "import_batch_replace_never"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_plain",
+  "method": "import_batch_replace_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_plain",
+  "method": "import_batch_replace_usn"
  },
  {
   "doc": "",
@@ -9643,6 +9853,21 @@
   "doc": "",
   "group": "arki_dataset_writer_odim_simple_sqlite",
   "method": "import"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_sqlite",
+  "method": "import_batch_replace_never"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_sqlite",
+  "method": "import_batch_replace_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_sqlite",
+  "method": "import_batch_replace_usn"
  },
  {
   "doc": "",
@@ -9668,6 +9893,21 @@
   "doc": "",
   "group": "arki_dataset_writer_odim_iseg",
   "method": "import"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_iseg",
+  "method": "import_batch_replace_never"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_iseg",
+  "method": "import_batch_replace_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_iseg",
+  "method": "import_batch_replace_usn"
  },
  {
   "doc": "",
