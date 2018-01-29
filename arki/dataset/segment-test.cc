@@ -70,8 +70,8 @@ struct TestSegments
             {
                 unique_ptr<Metadata> md(new Metadata(testdata::make_large_mock("grib", 1024*1024, i / (30 * 24), (i/24) % 30, i % 24)));
                 unique_ptr<types::Source> old_source(md->source().clone());
-                const types::source::Blob* new_source;
-                w->append(*md, &new_source).commit();
+                w->append(*md);
+                w->commit();
                 md->drop_cached_data();
                 mds.acquire(move(md));
             }

@@ -44,7 +44,8 @@ std::shared_ptr<segment::Writer> SegmentTest::make_full_writer()
 {
     auto res(make_empty_writer());
     for (unsigned i = 0; i < mdc.size(); ++i)
-        res->append(mdc[i]).commit();
+        res->append(mdc[i]);
+    res->commit();
     return res;
 }
 

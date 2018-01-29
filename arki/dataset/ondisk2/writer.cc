@@ -69,15 +69,13 @@ std::string Writer::type() const { return "ondisk2"; }
 WriterAcquireResult Writer::acquire_replace_never(Metadata& md)
 {
     auto w = file(md, md.source().format);
-    const types::source::Blob* new_source;
 
     Pending p_idx = idx->beginTransaction();
-    Pending p_df = w->append(md, &new_source);
-
     try {
+        const types::source::Blob& new_source = w->append(md);
         int id;
-        idx->index(md, w->relname, new_source->offset, &id);
-        p_df.commit();
+        idx->index(md, w->relname, new_source.offset, &id);
+        w->commit();
         p_idx.commit();
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
@@ -93,18 +91,16 @@ WriterAcquireResult Writer::acquire_replace_never(Metadata& md)
 WriterAcquireResult Writer::acquire_replace_always(Metadata& md)
 {
     auto w = file(md, md.source().format);
-    const types::source::Blob* new_source;
 
     Pending p_idx = idx->beginTransaction();
-    Pending p_df = w->append(md, &new_source);
-
     try {
+        const types::source::Blob& new_source = w->append(md);
         int id;
-        idx->replace(md, w->relname, new_source->offset, &id);
+        idx->replace(md, w->relname, new_source.offset, &id);
         // In a replace, we necessarily replace inside the same file,
         // as it depends on the metadata reftime
         //createPackFlagfile(df->pathname);
-        p_df.commit();
+        w->commit();
         p_idx.commit();
         return ACQ_OK;
     } catch (std::exception& e) {
@@ -118,60 +114,58 @@ WriterAcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     // Try to acquire without replacing
     auto w = file(md, md.source().format);
-    const types::source::Blob* new_source;
 
     Pending p_idx = idx->beginTransaction();
-    Pending p_df = w->append(md, &new_source);
 
     try {
+        bool exists = false;
+        try {
+            int id;
+            idx->index(md, w->relname, w->next_offset(), &id);
+        } catch (utils::sqlite::DuplicateInsert& di) {
+            // It already exists, so we keep p_df uncommitted and check Update Sequence Numbers
+            exists = true;
+        }
+
+        if (!exists)
+        {
+            w->append(md);
+            w->commit();
+            p_idx.commit();
+            return ACQ_OK;
+        }
+
+        // Read the update sequence number of the new BUFR
+        int new_usn;
+        if (!scan::update_sequence_number(md, new_usn))
+            return ACQ_ERROR_DUPLICATE;
+
+        // Read the metadata of the existing BUFR
+        Metadata old_md;
+        if (!idx->get_current(md, old_md))
+        {
+            stringstream ss;
+            ss << "cannot acquire into dataset " << name() << ": insert reported a conflict, the index failed to find the original version";
+            throw runtime_error(ss.str());
+        }
+
+        // Read the update sequence number of the old BUFR
+        int old_usn;
+        if (!scan::update_sequence_number(old_md, old_usn))
+        {
+            stringstream ss;
+            ss << "cannot acquire into dataset " << name() << ": insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
+            throw runtime_error(ss.str());
+        }
+
+        // If there is no new Update Sequence Number, report a duplicate
+        if (old_usn > new_usn)
+            return ACQ_ERROR_DUPLICATE;
+
         int id;
-        idx->index(md, w->relname, new_source->offset, &id);
-        p_df.commit();
-        p_idx.commit();
-        return ACQ_OK;
-    } catch (utils::sqlite::DuplicateInsert& di) {
-        // It already exists, so we keep p_df uncommitted and check Update Sequence Numbers
-    } catch (std::exception& e) {
-        // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
-        return ACQ_ERROR;
-    }
-
-    // Read the update sequence number of the new BUFR
-    int new_usn;
-    if (!scan::update_sequence_number(md, new_usn))
-        return ACQ_ERROR_DUPLICATE;
-
-    // Read the metadata of the existing BUFR
-    Metadata old_md;
-    if (!idx->get_current(md, old_md))
-    {
-        stringstream ss;
-        ss << "cannot acquire into dataset " << name() << ": insert reported a conflict, the index failed to find the original version";
-        throw runtime_error(ss.str());
-    }
-
-    // Read the update sequence number of the old BUFR
-    int old_usn;
-    if (!scan::update_sequence_number(old_md, old_usn))
-    {
-        stringstream ss;
-        ss << "cannot acquire into dataset " << name() << ": insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
-        throw runtime_error(ss.str());
-    }
-
-    // If there is no new Update Sequence Number, report a duplicate
-    if (old_usn > new_usn)
-        return ACQ_ERROR_DUPLICATE;
-
-    // Replace, reusing the pending datafile transaction from earlier
-    try {
-        int id;
-        idx->replace(md, w->relname, new_source->offset, &id);
-        // In a replace, we necessarily replace inside the same file,
-        // as it depends on the metadata reftime
-        //createPackFlagfile(df->pathname);
-        p_df.commit();
+        idx->replace(md, w->relname, w->next_offset(), &id);
+        w->append(md);
+        w->commit();
         p_idx.commit();
         return ACQ_OK;
     } catch (std::exception& e) {

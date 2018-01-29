@@ -7,6 +7,7 @@
 #include "arki/dataset/time.h"
 #include "arki/dataset/lock.h"
 #include "arki/types/source/blob.h"
+#include "arki/reader.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
 #include "arki/matcher.h"
@@ -40,6 +41,217 @@ namespace arki {
 namespace dataset {
 namespace iseg {
 
+struct AppendSegment
+{
+    std::shared_ptr<const iseg::Config> config;
+    std::shared_ptr<dataset::AppendLock> append_lock;
+    std::shared_ptr<segment::Writer> segment;
+    AIndex idx;
+
+    AppendSegment(std::shared_ptr<const iseg::Config> config, std::shared_ptr<dataset::AppendLock> append_lock, std::shared_ptr<segment::Writer> segment)
+        : config(config), append_lock(append_lock), segment(segment), idx(config, segment, append_lock)
+    {
+    }
+
+    WriterAcquireResult acquire_replace_never(Metadata& md, index::SummaryCache& scache)
+    {
+        Pending p_idx = idx.begin_transaction();
+
+        try {
+            if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->next_offset()))
+            {
+                md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relname + ":" + std::to_string(old->offset));
+                return ACQ_ERROR_DUPLICATE;
+            }
+            // Invalidate the summary cache for this month
+            scache.invalidate(md);
+            segment->append(md);
+            segment->commit();
+            p_idx.commit();
+            return ACQ_OK;
+        } catch (std::exception& e) {
+            // sqlite will take care of transaction consistency
+            md.add_note("Failed to store in dataset '" + config->name + "': " + e.what());
+            return ACQ_ERROR;
+        }
+    }
+
+    WriterAcquireResult acquire_replace_always(Metadata& md, index::SummaryCache& scache)
+    {
+        Pending p_idx = idx.begin_transaction();
+
+        try {
+            idx.replace(md, segment->next_offset());
+            // Invalidate the summary cache for this month
+            scache.invalidate(md);
+            segment->append(md);
+            segment->commit();
+            p_idx.commit();
+            return ACQ_OK;
+        } catch (std::exception& e) {
+            // sqlite will take care of transaction consistency
+            md.add_note("Failed to store in dataset '" + config->name + "': " + e.what());
+            return ACQ_ERROR;
+        }
+    }
+
+    WriterAcquireResult acquire_replace_higher_usn(Metadata& md, index::SummaryCache& scache)
+    {
+        Pending p_idx = idx.begin_transaction();
+
+        try {
+            // Try to acquire without replacing
+            if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->next_offset()))
+            {
+                // Duplicate detected
+
+                // Read the update sequence number of the new BUFR
+                int new_usn;
+                if (!scan::update_sequence_number(md, new_usn))
+                    return ACQ_ERROR_DUPLICATE;
+
+                // Read the update sequence number of the old BUFR
+                auto reader = arki::Reader::create_new(old->absolutePathname(), append_lock);
+                old->lock(reader);
+                int old_usn;
+                if (!scan::update_sequence_number(*old, old_usn))
+                {
+                    md.add_note("Failed to store in dataset '" + config->name + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
+                    return ACQ_ERROR;
+                }
+
+                // If the new element has no higher Update Sequence Number, report a duplicate
+                if (old_usn > new_usn)
+                    return ACQ_ERROR_DUPLICATE;
+
+                // Replace, reusing the pending datafile transaction from earlier
+                idx.replace(md, segment->next_offset());
+                segment->append(md);
+                segment->commit();
+                p_idx.commit();
+                return ACQ_OK;
+            } else {
+                segment->append(md);
+                // Invalidate the summary cache for this month
+                scache.invalidate(md);
+                segment->commit();
+                p_idx.commit();
+                return ACQ_OK;
+            }
+        } catch (std::exception& e) {
+            // sqlite will take care of transaction consistency
+            md.add_note("Failed to store in dataset '" + config->name + "': " + e.what());
+            return ACQ_ERROR;
+        }
+    }
+
+    void acquire_batch_replace_never(std::vector<std::shared_ptr<WriterBatchElement>>& batch, index::SummaryCache& scache)
+    {
+        Pending p_idx = idx.begin_transaction();
+
+        for (auto& e: batch)
+        {
+            e->dataset_name.clear();
+
+            if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->next_offset()))
+            {
+                e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relname + ":" + std::to_string(old->offset));
+                e->result = ACQ_ERROR_DUPLICATE;
+                continue;
+            }
+
+            // Invalidate the summary cache for this month
+            scache.invalidate(e->md);
+            segment->append(e->md);
+            e->result = ACQ_OK;
+            e->dataset_name = config->name;
+        }
+
+        segment->commit();
+        p_idx.commit();
+    }
+
+    void acquire_batch_replace_always(std::vector<std::shared_ptr<WriterBatchElement>>& batch, index::SummaryCache& scache)
+    {
+        Pending p_idx = idx.begin_transaction();
+
+        for (auto& e: batch)
+        {
+            e->dataset_name.clear();
+            idx.replace(e->md, segment->next_offset());
+            // Invalidate the summary cache for this month
+            scache.invalidate(e->md);
+            segment->append(e->md);
+            e->result = ACQ_OK;
+            e->dataset_name = config->name;
+        }
+
+        segment->commit();
+        p_idx.commit();
+    }
+
+    void acquire_batch_replace_higher_usn(std::vector<std::shared_ptr<WriterBatchElement>>& batch, index::SummaryCache& scache)
+    {
+        Pending p_idx = idx.begin_transaction();
+
+        for (auto& e: batch)
+        {
+            e->dataset_name.clear();
+
+            // Try to acquire without replacing
+            if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->next_offset()))
+            {
+                // Duplicate detected
+
+                // Read the update sequence number of the new BUFR
+                int new_usn;
+                if (!scan::update_sequence_number(e->md, new_usn))
+                {
+                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relname + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
+                    e->result = ACQ_ERROR_DUPLICATE;
+                    continue;
+                }
+
+                // Read the update sequence number of the old BUFR
+                auto reader = arki::Reader::create_new(old->absolutePathname(), append_lock);
+                old->lock(reader);
+                int old_usn;
+                if (!scan::update_sequence_number(*old, old_usn))
+                {
+                    e->md.add_note("Failed to store in dataset '" + config->name + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
+                    e->result = ACQ_ERROR;
+                    continue;
+                }
+
+                // If the new element has no higher Update Sequence Number, report a duplicate
+                if (old_usn > new_usn)
+                {
+                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relname + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
+                    e->result = ACQ_ERROR_DUPLICATE;
+                    continue;
+                }
+
+                // Replace, reusing the pending datafile transaction from earlier
+                idx.replace(e->md, segment->next_offset());
+                segment->append(e->md);
+                e->result = ACQ_OK;
+                e->dataset_name = config->name;
+                continue;
+            } else {
+                // Invalidate the summary cache for this month
+                scache.invalidate(e->md);
+                segment->append(e->md);
+                e->result = ACQ_OK;
+                e->dataset_name = config->name;
+            }
+        }
+
+        segment->commit();
+        p_idx.commit();
+    }
+};
+
+
 Writer::Writer(std::shared_ptr<const iseg::Config> config)
     : m_config(config), scache(config->summary_cache_pathname)
 {
@@ -55,130 +267,19 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "iseg"; }
 
-std::unique_ptr<AIndex> Writer::file(const Metadata& md, const std::string& format)
+std::unique_ptr<AppendSegment> Writer::file(const Metadata& md)
 {
     const core::Time& time = md.get<types::reftime::Position>()->time;
     string relname = config().step()(time) + "." + config().format;
+    return file(relname);
+}
+
+std::unique_ptr<AppendSegment> Writer::file(const std::string& relname)
+{
     sys::makedirs(str::dirname(str::joinpath(config().path, relname)));
     std::shared_ptr<dataset::AppendLock> append_lock(config().append_lock_segment(relname));
-    auto writer = segment_manager().get_writer(config().format, relname);
-    return std::unique_ptr<AIndex>(new AIndex(m_config, writer, append_lock));
-}
-
-WriterAcquireResult Writer::acquire_replace_never(Metadata& md)
-{
-    auto idx = file(md, md.source().format);
-    Pending p_idx = idx->begin_transaction();
-
-    const types::source::Blob* new_source;
-    Pending p_df = idx->segment->append(md, &new_source);
-
-    try {
-        idx->index(md, new_source->offset);
-        // Invalidate the summary cache for this month
-        scache.invalidate(md);
-        p_df.commit();
-        p_idx.commit();
-        return ACQ_OK;
-    } catch (utils::sqlite::DuplicateInsert& di) {
-        md.add_note("Failed to store in dataset '" + name() + "' because the dataset already has the data: " + di.what());
-        return ACQ_ERROR_DUPLICATE;
-    } catch (std::exception& e) {
-        // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
-        return ACQ_ERROR;
-    }
-}
-
-WriterAcquireResult Writer::acquire_replace_always(Metadata& md)
-{
-    auto idx = file(md, md.source().format);
-    Pending p_idx = idx->begin_transaction();
-
-    const types::source::Blob* new_source;
-    Pending p_df = idx->segment->append(md, &new_source);
-
-    try {
-        idx->replace(md, new_source->offset);
-        // Invalidate the summary cache for this month
-        scache.invalidate(md);
-        p_df.commit();
-        p_idx.commit();
-        return ACQ_OK;
-    } catch (std::exception& e) {
-        // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
-        return ACQ_ERROR;
-    }
-}
-
-WriterAcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
-{
-    auto idx = file(md, md.source().format);
-    Pending p_idx = idx->begin_transaction();
-
-    const types::source::Blob* new_source;
-    Pending p_df = idx->segment->append(md, &new_source);
-
-    try {
-        // Try to acquire without replacing
-        idx->index(md, new_source->offset);
-        // Invalidate the summary cache for this month
-        scache.invalidate(md);
-        p_df.commit();
-        p_idx.commit();
-        return ACQ_OK;
-    } catch (utils::sqlite::DuplicateInsert& di) {
-        // It already exists, so we keep p_df uncommitted and check Update Sequence Numbers
-    } catch (std::exception& e) {
-        // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
-        return ACQ_ERROR;
-    }
-
-    // Read the update sequence number of the new BUFR
-    int new_usn;
-    if (!scan::update_sequence_number(md, new_usn))
-        return ACQ_ERROR_DUPLICATE;
-
-    // Read the metadata of the existing BUFR
-    throw std::runtime_error("iseg::Writer::acquire_replace_higher_usn not yet implemented");
-#if 0
-    Metadata old_md;
-    if (!idx->get_current(md, old_md))
-    {
-        stringstream ss;
-        ss << "cannot acquire into dataset " << name() << ": insert reported a conflict, the index failed to find the original version";
-        throw runtime_error(ss.str());
-    }
-
-    // Read the update sequence number of the old BUFR
-    int old_usn;
-    if (!scan::update_sequence_number(old_md, old_usn))
-    {
-        stringstream ss;
-        ss << "cannot acquire into dataset " << name() << ": insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
-        throw runtime_error(ss.str());
-    }
-
-    // If there is no new Update Sequence Number, report a duplicate
-    if (old_usn > new_usn)
-        return ACQ_ERROR_DUPLICATE;
-
-    // Replace, reusing the pending datafile transaction from earlier
-    try {
-        idx->replace(md, ofs);
-        p_df.commit();
-        p_idx.commit();
-        source->lock();
-        md.set_source(move(source));
-        return ACQ_OK;
-    } catch (std::exception& e) {
-        // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
-        return ACQ_ERROR;
-    }
-#endif
+    auto segment = segment_manager().get_writer(config().format, relname);
+    return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, append_lock, segment));
 }
 
 WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
@@ -191,11 +292,12 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 
     if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
 
+    auto segment = file(md);
     switch (replace)
     {
-        case REPLACE_NEVER: return acquire_replace_never(md);
-        case REPLACE_ALWAYS: return acquire_replace_always(md);
-        case REPLACE_HIGHER_USN: return acquire_replace_higher_usn(md);
+        case REPLACE_NEVER: return segment->acquire_replace_never(md, scache);
+        case REPLACE_ALWAYS: return segment->acquire_replace_always(md, scache);
+        case REPLACE_HIGHER_USN: return segment->acquire_replace_higher_usn(md, scache);
         default:
         {
             stringstream ss;
@@ -207,18 +309,72 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 
 void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace)
 {
+    if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
+
+    // Clear dataset names, pre-process items that do not need further
+    // dispatching, and divide the rest of the batch by segment
+    std::map<std::string, std::vector<std::shared_ptr<dataset::WriterBatchElement>>> by_segment;
     for (auto& e: batch)
     {
         e->dataset_name.clear();
-        e->result = acquire(e->md, replace);
-        if (e->result == ACQ_OK)
-            e->dataset_name = name();
+
+        switch (replace)
+        {
+            case REPLACE_NEVER:
+            case REPLACE_ALWAYS:
+            case REPLACE_HIGHER_USN: break;
+            default:
+            {
+                e->md.add_note("cannot acquire into dataset " + name() + ": replace strategy " + std::to_string(replace) + " is not supported");
+                e->result = ACQ_ERROR;
+                continue;
+            }
+        }
+
+        if (e->md.source().format != config().format)
+        {
+            e->md.add_note("cannot acquire into dataset " + name() + ": data is in format " + e->md.source().format + " but the dataset only accepts " + config().format);
+            e->result = ACQ_ERROR;
+            continue;
+        }
+
+        auto age_check = config().check_acquire_age(e->md);
+        if (age_check.first)
+        {
+            e->result = age_check.second;
+            if (age_check.second == ACQ_OK)
+                e->dataset_name = name();
+            continue;
+        }
+
+        const core::Time& time = e->md.get<types::reftime::Position>()->time;
+        string relname = config().step()(time) + "." + config().format;
+        by_segment[relname].push_back(e);
+    }
+
+    // Import segment by segment
+    for (auto& s: by_segment)
+    {
+        auto segment = file(s.first);
+        switch (replace)
+        {
+            case REPLACE_NEVER:
+                segment->acquire_batch_replace_never(s.second, scache);
+                break;
+            case REPLACE_ALWAYS:
+                segment->acquire_batch_replace_always(s.second, scache);
+                break;
+            case REPLACE_HIGHER_USN:
+                segment->acquire_batch_replace_higher_usn(s.second, scache);
+                break;
+            default: throw std::runtime_error("programmign error: replace value has changed since previous check");
+        }
     }
 }
 
 void Writer::remove(Metadata& md)
 {
-    auto idx = file(md, md.source().format);
+    auto segment = file(md);
 
     const types::source::Blob* source = md.has_source_blob();
     if (!source)
@@ -230,8 +386,8 @@ void Writer::remove(Metadata& md)
     // TODO: refuse if md is in the archive
 
     // Delete from DB, and get file name
-    Pending p_del = idx->begin_transaction();
-    idx->remove(source->offset);
+    Pending p_del = segment->idx.begin_transaction();
+    segment->idx.remove(source->offset);
 
     // Commit delete from DB
     p_del.commit();
@@ -430,7 +586,8 @@ public:
         for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
         {
             const source::Blob& source = (*i)->sourceBlob();
-            idx().index(**i, source.offset);
+            if (idx().index(**i, source.offset))
+                throw std::runtime_error("duplicate detected while reordering segment");
         }
 
         size_t size_pre = sys::isdir(segment->absname) ? 0 : sys::size(segment->absname);
@@ -476,7 +633,8 @@ public:
         auto write_lock = lock->write_lock();
         Pending p_idx = idx().begin_transaction();
         for (auto& md: mds)
-            idx().index(*md, md->sourceBlob().offset);
+            if (idx().index(*md, md->sourceBlob().offset))
+                throw std::runtime_error("duplicate detected while reordering segment");
         p_idx.commit();
 
         // Remove .metadata and .summary files
@@ -531,11 +689,12 @@ public:
             try {
                 if (str::basename(blob.filename) != basename)
                     throw std::runtime_error("cannot rescan " + segment->relname + ": metadata points to the wrong file: " + blob.filename);
-                idx().index(md, blob.offset);
-            } catch (utils::sqlite::DuplicateInsert& di) {
-                stringstream ss;
-                ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate elsewhere in the dataset: manual fix is required";
-                throw runtime_error(ss.str());
+                if (std::unique_ptr<types::source::Blob> old = idx().index(md, blob.offset))
+                {
+                    stringstream ss;
+                    ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate at offset " << old->offset << ": manual fix is required";
+                    throw runtime_error(ss.str());
+                }
             } catch (std::exception& e) {
                 stringstream ss;
                 ss << "cannot reindex " << basename << ": failed to reindex data item at offset " << blob.offset << ": " << e.what();
@@ -802,7 +961,8 @@ void Checker::test_change_metadata(const std::string& relpath, Metadata& md, uns
     for (auto& m: mds)
     {
         const source::Blob& source = m->sourceBlob();
-        idx.index(*m, source.offset);
+        if (idx.index(*m, source.offset))
+            throw std::runtime_error("duplicate detected in test_change_metadata");
     }
 
     md = mds[data_idx];

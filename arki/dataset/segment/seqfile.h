@@ -8,13 +8,11 @@ namespace arki {
 namespace dataset {
 namespace segment {
 
-struct SequenceFile
+struct SequenceFile : public core::File
 {
     std::string dirname;
-    core::File fd;
-    const core::lock::Policy* lock_policy;
 
-    SequenceFile(const std::string& pathname, const core::lock::Policy* lock_policy);
+    SequenceFile(const std::string& dirname);
     ~SequenceFile();
 
     /**
@@ -29,23 +27,11 @@ struct SequenceFile
     /// Close the sequence file
     void close();
 
-    /**
-     * Increment the sequence and get the pathname of the file corresponding
-     * to the new value, and the corresponding 'offset', that is, the file
-     * sequence number itself.
-     */
-    std::pair<std::string, size_t> next(const std::string& format);
+    /// Read the value in the sequence file
+    size_t read_sequence();
 
-    /**
-     * Call next() then open its result with O_EXCL; retry with a higher number
-     * if the file already exists.
-     *
-     * Returns the open file descriptor, and the corresponding 'offset', that
-     * is, the file sequence number itself.
-     */
-    core::File open_next(const std::string& format, size_t& pos);
-
-    void test_add_padding(unsigned size);
+    /// Write the value to the sequence file
+    void write_sequence(size_t val);
 
     static std::string data_fname(size_t pos, const std::string& format);
 };

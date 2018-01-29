@@ -15,12 +15,13 @@ class Writer : public fd::Writer
 {
 public:
     Writer(const std::string& root, const std::string& relname, const std::string& absname, int mode=0);
+    std::unique_ptr<fd::File> open_file(const std::string& pathname, int flags, mode_t mode) override;
 };
 
 class Checker : public fd::Checker
 {
 protected:
-    std::unique_ptr<fd::Writer> make_tmp_segment(const std::string& relname, const std::string& absname) override;
+    std::unique_ptr<fd::File> open_file(const std::string& pathname, int flags, mode_t mode) override;
     void open() override;
 
 public:

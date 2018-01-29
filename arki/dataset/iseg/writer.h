@@ -18,6 +18,7 @@ namespace iseg {
 class Reader;
 class AIndex;
 class WIndex;
+class AppendSegment;
 class CheckerSegment;
 
 class Writer : public segmented::Writer
@@ -26,12 +27,13 @@ protected:
     std::shared_ptr<const iseg::Config> m_config;
     index::SummaryCache scache;
 
-    /// Return a (shared) instance of the Datafile for the given relative pathname
-    std::unique_ptr<AIndex> file(const Metadata& md, const std::string& format);
+    /// Return an inserter for the given Metadata
+    std::unique_ptr<AppendSegment> file(const Metadata& md);
 
-    WriterAcquireResult acquire_replace_never(Metadata& md);
-    WriterAcquireResult acquire_replace_always(Metadata& md);
-    WriterAcquireResult acquire_replace_higher_usn(Metadata& md);
+    /// Return an inserter for the given relative pathname
+    std::unique_ptr<AppendSegment> file(const std::string& relname);
+
+    //void acquire_batch_replace_never(std::vector<std::shared_ptr<WriterBatchElement>>& batch);
 
 public:
     Writer(std::shared_ptr<const iseg::Config> config);

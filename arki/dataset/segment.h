@@ -137,9 +137,31 @@ public:
 
 namespace segment {
 
-struct Writer : public Segment
+struct Writer : public Segment, Transaction
 {
     using Segment::Segment;
+
+    struct PendingMetadata
+    {
+        Metadata& md;
+        types::source::Blob* new_source;
+
+        PendingMetadata(Metadata& md, std::unique_ptr<types::source::Blob> new_source);
+        PendingMetadata(const PendingMetadata&) = delete;
+        PendingMetadata(PendingMetadata&& o);
+        ~PendingMetadata();
+        PendingMetadata& operator=(const PendingMetadata&) = delete;
+        PendingMetadata& operator=(PendingMetadata&&) = delete;
+
+        void set_source();
+    };
+
+    bool fired = false;
+
+    /**
+     * Return the write offset for the next append operation
+     */
+    virtual size_t next_offset() const = 0;
 
     /**
      * Append the data, in a transaction, updating md's source information.
@@ -151,7 +173,7 @@ struct Writer : public Segment
      * Returns a reference to the blob source that will be set into \a md on
      * commit
      */
-    virtual Pending append(Metadata& md, const types::source::Blob** new_source=0) = 0;
+    virtual const types::source::Blob& append(Metadata& md) = 0;
 };
 
 

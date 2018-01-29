@@ -32,18 +32,69 @@ namespace segment {
 namespace dir {
 
 Writer::Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname)
-    : segment::Writer(root, relname, absname), seqfile(absname, core::lock::policy_null), format(format)
+    : segment::Writer(root, relname, absname), seqfile(absname), format(format)
 {
     // Ensure that the directory 'absname' exists
     sys::makedirs(absname);
     seqfile.open();
+    current_pos = seqfile.read_sequence();
 }
 
 Writer::~Writer()
 {
 }
 
-size_t Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
+size_t Writer::next_offset() const
+{
+    return current_pos;
+}
+
+const types::source::Blob& Writer::append(Metadata& md)
+{
+    fired = false;
+
+    File fd(str::joinpath(absname, SequenceFile::data_fname(current_pos, format)),
+                O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
+    write_file(md, fd);
+    written.push_back(fd.name());
+    fd.close();
+    pending.emplace_back(md, source::Blob::create_unlocked(md.source().format, root, relname, current_pos, md.data_size()));
+    ++current_pos;
+    return *pending.back().new_source;
+}
+
+void Writer::commit()
+{
+    if (fired) return;
+    seqfile.write_sequence(current_pos);
+    for (auto& p: pending)
+        p.set_source();
+    pending.clear();
+    written.clear();
+    fired = true;
+}
+
+void Writer::rollback()
+{
+    if (fired) return;
+    for (auto fn: written)
+        sys::unlink(fn);
+    pending.clear();
+    written.clear();
+    fired = true;
+}
+
+void Writer::rollback_nothrow() noexcept
+{
+    if (fired) return;
+    for (auto fn: written)
+        ::unlink(fn.c_str());
+    pending.clear();
+    written.clear();
+    fired = true;
+}
+
+void Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
     try {
         const std::vector<uint8_t>& buf = md.getData();
@@ -54,131 +105,21 @@ size_t Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
 
         if (fdatasync(fd) < 0)
             fd.throw_error("cannot flush write");
-
-        return buf.size();
     } catch (...) {
         unlink(absname.c_str());
         throw;
     }
 }
 
-size_t HoleWriter::write_file(Metadata& md, NamedFileDescriptor& fd)
+void HoleWriter::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
     try {
         if (ftruncate(fd, md.data_size()) == -1)
             fd.throw_error("cannot set file size");
-
-        return md.data_size();
     } catch (...) {
         unlink(absname.c_str());
         throw;
     }
-}
-
-
-namespace {
-
-struct Append : public Transaction
-{
-    const dir::Writer& writer;
-    bool fired;
-    Metadata& md;
-    size_t pos;
-    size_t size;
-    std::unique_ptr<types::source::Blob> new_source;
-
-    Append(const dir::Writer& writer, Metadata& md, size_t pos, size_t size)
-        : writer(writer), fired(false), md(md), pos(pos), size(size)
-    {
-        new_source = source::Blob::create_unlocked(md.source().format, writer.root, writer.relname, pos, size);
-    }
-
-    virtual ~Append()
-    {
-        if (!fired) rollback();
-    }
-
-    void commit() override
-    {
-        if (fired) return;
-
-        // Set the source information that we are writing in the metadata
-        md.set_source(move(new_source));
-
-        fired = true;
-    }
-
-    void rollback() override
-    {
-        if (fired) return;
-
-        // If we had a problem, remove the file that we have created. The
-        // sequence will have skipped one number, but we do not need to
-        // guarantee consecutive numbers, so it is just a cosmetic issue. This
-        // case should be rare enough that even the cosmetic issue should
-        // rarely be noticeable.
-        string target_name = str::joinpath(writer.absname, SequenceFile::data_fname(pos, writer.format));
-        ::unlink(target_name.c_str());
-
-        fired = true;
-    }
-
-    void rollback_nothrow() noexcept override
-    {
-        if (fired) return;
-
-        // If we had a problem, remove the file that we have created. The
-        // sequence will have skipped one number, but we do not need to
-        // guarantee consecutive numbers, so it is just a cosmetic issue. This
-        // case should be rare enough that even the cosmetic issue should
-        // rarely be noticeable.
-        string target_name = str::joinpath(writer.absname, SequenceFile::data_fname(pos, writer.format));
-        ::unlink(target_name.c_str());
-
-        fired = true;
-    }
-};
-
-}
-
-Pending Writer::append(Metadata& md, const types::source::Blob** new_source)
-{
-    size_t pos;
-    File fd = seqfile.open_next(format, pos);
-    size_t size = write_file(md, fd);
-    fd.close();
-    auto res = new Append(*this, md, pos, size);
-    if (new_source) *new_source = res->new_source.get();
-    return res;
-}
-
-void Writer::foreach_datafile(std::function<void(const char*)> f)
-{
-    sys::Path dir(absname);
-    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
-    {
-        if (!i.isreg()) continue;
-        if (strcmp(i->d_name, ".sequence") == 0) continue;
-        if (!str::endswith(i->d_name, format)) continue;
-        f(i->d_name);
-    }
-}
-
-off_t Writer::link(const std::string& srcabsname)
-{
-    size_t pos;
-    while (true)
-    {
-        pair<string, size_t> dest = seqfile.next(format);
-        if (::link(srcabsname.c_str(), dest.first.c_str()) == 0)
-        {
-            pos = dest.second;
-            break;
-        }
-        if (errno != EEXIST)
-            throw_system_error("cannot link " + srcabsname + " as " + dest.first);
-    }
-    return pos;
 }
 
 
@@ -448,34 +389,36 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     Pending p(rename = new Rename(tmpabsname, absname));
 
     // Create a writer for the temp dir
-    auto writer(make_tmp_segment(format, tmprelname, tmpabsname));
+    sys::makedirs(tmpabsname);
+    size_t pos = 0;
 
     if (test_flags & TEST_MISCHIEF_MOVE_DATA)
-        writer->seqfile.test_add_padding(1);
+        ++pos;
 
-    // Fill the temp file with all the data in the right order
+    // Fill the temp file with all the data in the right order, using hard links
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         const source::Blob& source = (*i)->sourceBlob();
+        auto new_source = Source::createBlobUnlocked(source.format, rootdir, relname, pos, source.size);
 
-        // Make a hardlink in the target directory for the file pointed by *i
-        off_t pos = writer->link(str::joinpath(source.absolutePathname(), SequenceFile::data_fname(source.offset, source.format)));
+        std::string src = str::joinpath(source.absolutePathname(), SequenceFile::data_fname(source.offset, format));
+        std::string dst = str::joinpath(tmpabsname, SequenceFile::data_fname(pos, format));
+
+        if (::link(src.c_str(), dst.c_str()) != 0)
+            throw_system_error("cannot link " + src + " as " + dst);
 
         // Update the source information in the metadata
         (*i)->set_source(Source::createBlobUnlocked(source.format, rootdir, relname, pos, source.size));
+
+        ++pos;
     }
 
-    // Close the temp writer
-    writer.reset();
+    // Write it out
+    SequenceFile seqfile(tmpabsname);
+    seqfile.open();
+    seqfile.write_sequence(pos);
 
     return p;
-}
-
-unique_ptr<dir::Writer> Checker::make_tmp_segment(const std::string& format, const std::string& relname, const std::string& absname)
-{
-    if (sys::exists(absname)) sys::rmtree(absname);
-    unique_ptr<dir::Writer> res(new dir::Writer(format, root, relname, absname));
-    return res;
 }
 
 void Checker::test_truncate(size_t offset)
@@ -492,16 +435,18 @@ void Checker::test_truncate(size_t offset)
 
 void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
+    SequenceFile seqfile(absname);
+    seqfile.open();
+    sys::PreserveFileTimes pf(seqfile);
+    size_t pos = seqfile.read_sequence();
     if (data_idx >= mds.size())
     {
-        SequenceFile seqfile(absname, core::lock::policy_null);
-        seqfile.open();
-        sys::PreserveFileTimes pf(seqfile.fd);
-        size_t pos;
         for (unsigned i = 0; i < hole_size; ++i)
         {
-            File fd = seqfile.open_next(mds[0].sourceBlob().format, pos);
+            File fd(str::joinpath(absname, SequenceFile::data_fname(pos, format)),
+                O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
             fd.close();
+            ++pos;
         }
     } else {
         for (int i = mds.size() - 1; i >= (int)data_idx; --i)
@@ -513,8 +458,9 @@ void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsi
             source->offset += hole_size;
             mds[i].set_source(move(source));
         }
-        // TODO: update seqfile to be mds.size() + hole_size
+        pos += hole_size;
     }
+    seqfile.write_sequence(pos);
 }
 
 void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
@@ -543,14 +489,6 @@ State HoleChecker::check(dataset::Reporter& reporter, const std::string& ds, con
     return Checker::check(reporter, ds, mds, true);
 }
 
-unique_ptr<dir::Writer> HoleChecker::make_tmp_segment(const std::string& format, const std::string& relname, const std::string& absname)
-{
-    if (sys::exists(absname)) sys::rmtree(absname);
-    unique_ptr<dir::Writer> res(new dir::HoleWriter(format, root, relname, absname));
-    return res;
-}
-
-
 bool can_store(const std::string& format)
 {
     return format == "grib" || format == "grib1" || format == "grib2"
@@ -558,7 +496,6 @@ bool can_store(const std::string& format)
         || format == "odimh5" || format == "h5" || format == "odim"
         || format == "vm2";
 }
-
 
 }
 }

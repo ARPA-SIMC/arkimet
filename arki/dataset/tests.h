@@ -383,7 +383,7 @@ struct ActualChecker : public arki::utils::tests::Actual<DatasetChecker*>
 };
 
 void test_append_transaction_ok(dataset::segment::Writer* dw, Metadata& md, int append_amount_adjust=0);
-void test_append_transaction_rollback(dataset::segment::Writer* dw, Metadata& md);
+void test_append_transaction_rollback(dataset::segment::Writer* dw, Metadata& md, int append_amount_adjust=0);
 
 inline arki::tests::ActualChecker<dataset::LocalChecker> actual(arki::dataset::LocalChecker* actual)
 {

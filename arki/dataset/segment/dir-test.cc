@@ -72,14 +72,13 @@ add_method("append", [] {
             size_t data_size = md.data_size();
 
             // Start the append transaction, the file is written
-            const types::source::Blob* new_source;
-            Pending p = w->append(md, &new_source);
-            wassert(actual((size_t)new_source->offset) == 0u);
+            const types::source::Blob& new_source = w->append(md);
+            wassert(actual((size_t)new_source.offset) == 0u);
             wassert(actual(sys::size(str::joinpath(w->absname, "000000.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Commit
-            p.commit();
+            w->commit();
 
             // After commit, metadata is updated
             wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), w->relname, 0, data_size));
@@ -95,14 +94,13 @@ add_method("append", [] {
             size_t data_size = md.data_size();
 
             // Start the append transaction, the file is written
-            const types::source::Blob* new_source;
-            Pending p = w->append(md, &new_source);
-            wassert(actual((size_t)new_source->offset) == 1u);
+            const types::source::Blob& new_source = w->append(md);
+            wassert(actual((size_t)new_source.offset) == 1u);
             wassert(actual(sys::size(str::joinpath(w->absname, "000001.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Rollback
-            p.rollback();
+            w->rollback();
 
             // After rollback, the file has been deleted
             wassert(actual(sys::exists(str::joinpath(w->absname, "000001.grib"))).isfalse());
@@ -119,14 +117,13 @@ add_method("append", [] {
 
             // Start the append transaction, the file is written
             // Rolling back a transaction does leave a gap in the sequence
-            const types::source::Blob* new_source;
-            Pending p = w->append(md, &new_source);
-            wassert(actual((size_t)new_source->offset) == 2u);
+            const types::source::Blob& new_source = w->append(md);
+            wassert(actual((size_t)new_source.offset) == 2u);
             wassert(actual(sys::size(str::joinpath(w->absname, "000002.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Commit
-            p.commit();
+            w->commit();
 
             // After commit, metadata is updated
             wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), w->relname, 2, data_size));

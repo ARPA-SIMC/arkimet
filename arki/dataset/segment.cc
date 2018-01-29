@@ -31,6 +31,32 @@ Segment::~Segment()
 
 namespace segment {
 
+Writer::PendingMetadata::PendingMetadata(Metadata& md, std::unique_ptr<types::source::Blob> new_source)
+    : md(md), new_source(new_source.release())
+{
+}
+
+Writer::PendingMetadata::PendingMetadata(PendingMetadata&& o)
+    : md(o.md), new_source(o.new_source)
+{
+    o.new_source = nullptr;
+}
+
+Writer::PendingMetadata::~PendingMetadata()
+{
+    delete new_source;
+}
+
+void Writer::PendingMetadata::set_source()
+{
+    std::unique_ptr<types::source::Blob> source(new_source);
+    new_source = 0;
+    md.set_source(move(source));
+}
+
+
+
+
 void Checker::test_truncate(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
