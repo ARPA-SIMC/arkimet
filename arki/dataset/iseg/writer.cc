@@ -170,6 +170,25 @@ struct AppendSegment
         segment->commit();
         p_idx.commit();
     }
+
+    void acquire_batch_replace_always(std::vector<std::shared_ptr<WriterBatchElement>>& batch, index::SummaryCache& scache)
+    {
+        Pending p_idx = idx.begin_transaction();
+
+        for (auto& e: batch)
+        {
+            e->dataset_name.clear();
+            idx.replace(e->md, segment->next_offset());
+            // Invalidate the summary cache for this month
+            scache.invalidate(e->md);
+            segment->append(e->md);
+            e->result = ACQ_OK;
+            e->dataset_name = config->name;
+        }
+
+        segment->commit();
+        p_idx.commit();
+    }
 };
 
 
@@ -283,11 +302,7 @@ void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& bat
                 segment->acquire_batch_replace_never(s.second, scache);
                 break;
             case REPLACE_ALWAYS:
-                for (auto& e: s.second)
-                {
-                    e->result = segment->acquire_replace_always(e->md, scache);
-                    if (e->result == ACQ_OK) e->dataset_name = name();
-                }
+                segment->acquire_batch_replace_always(s.second, scache);
                 break;
             case REPLACE_HIGHER_USN:
                 for (auto& e: s.second)
