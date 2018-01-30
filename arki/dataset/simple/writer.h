@@ -25,7 +25,7 @@ namespace datafile {
 class MdBuf;
 }
 
-class Writer : public IndexedWriter
+class Writer : public segmented::Writer
 {
 protected:
     std::shared_ptr<const simple::Config> m_config;

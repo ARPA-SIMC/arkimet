@@ -49,12 +49,6 @@ void IndexedReader::query_summary(const Matcher& matcher, Summary& summary)
 }
 
 
-IndexedWriter::~IndexedWriter()
-{
-    delete m_idx;
-}
-
-
 IndexedChecker::~IndexedChecker()
 {
     delete m_idx;

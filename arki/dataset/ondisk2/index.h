@@ -100,6 +100,8 @@ public:
 
     const std::string& pathname() const { return config().index_pathname; }
 
+    bool exists() const;
+
 	inline bool is_indexed(types::Code c) const
 	{
 		return m_components_indexed.find(c) != m_components_indexed.end();

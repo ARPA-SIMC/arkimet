@@ -135,7 +135,7 @@ struct ConcurrentImporter : public wibble::sys::ChildProcess
                 auto res = ds->acquire(md);
                 if (res != dataset::ACQ_OK)
                 {
-                    fprintf(stderr, "Acquire result: %d\n", (int)res);
+                    fprintf(stderr, "ConcurrentImporter: Acquire result: %d\n", (int)res);
                     for (const auto& note: md.notes())
                         fprintf(stderr, "  note: %s\n", note.content.c_str());
                     return 2;
@@ -419,11 +419,11 @@ this->add_method("read_repack", [](Fixture& f) {
 this->add_method("write_check", [](Fixture& f) {
     core::lock::TestNowait lock_nowait;
 
-    bool is_iseg;
+    string type;
 
     {
         auto writer = f.config().create_writer();
-        is_iseg = writer->type() == "iseg";
+        type = writer->type();
         wassert(actual(*writer).import(f.td.test_data[0].md));
         writer->flush();
 
@@ -434,7 +434,7 @@ this->add_method("write_check", [](Fixture& f) {
 
     CheckForever<Fixture> cf(f);
     cf.during([&]{
-        if (!is_iseg)
+        if (type == "simple")
         {
             try {
                 f.config().create_writer();
@@ -442,7 +442,15 @@ this->add_method("write_check", [](Fixture& f) {
             } catch (std::runtime_error& e) {
                 wassert(actual(e.what()).contains("a write lock is already held"));
             }
-        } else {
+        } else if (type == "ondisk2") {
+            auto writer = wcallchecked(f.config().create_writer());
+            try {
+                writer->acquire(f.td.test_data[2].md);
+                wassert(actual(0) == 1);
+            } catch (std::runtime_error& e) {
+                wassert(actual(e.what()).contains("a write lock is already held"));
+            }
+        } else if (type == "iseg") {
             auto writer = wcallchecked(f.makeSegmentedWriter());
             wassert(actual(*writer).import(f.td.test_data[2].md));
 
@@ -452,7 +460,8 @@ this->add_method("write_check", [](Fixture& f) {
             } catch (std::runtime_error& e) {
                 wassert(actual(e.what()).contains("a write lock is already held"));
             }
-        }
+        } else
+            throw std::runtime_error("untested segment type " + type);
     });
 });
 

@@ -57,11 +57,12 @@ void Tests::register_tests()
         wassert(actual_file("testds/index.sqlite").not_exists());
         wassert(actual_file("testds/needs-check-do-not-pack").not_exists());
 
+        // A writer currently does not create the index until a write actually happens
         f.makeSegmentedWriter();
-        wassert(actual_file("testds/index.sqlite").exists());
+        wassert(actual_file("testds/index.sqlite").not_exists());
         wassert(actual_file("testds/needs-check-do-not-pack").exists());
 
-        sys::unlink("testds/index.sqlite");
+        //sys::unlink("testds/index.sqlite");
         sys::unlink("testds/needs-check-do-not-pack");
 
         f.makeSegmentedChecker();

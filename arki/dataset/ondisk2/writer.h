@@ -24,13 +24,10 @@ class RealRepacker;
 class RealFixer;
 }
 
-class Writer : public IndexedWriter
+class Writer : public segmented::Writer
 {
 protected:
     std::shared_ptr<const ondisk2::Config> m_config;
-    index::WContents* idx;
-    std::shared_ptr<dataset::Lock> lock;
-
     std::unique_ptr<AppendSegment> segment(const Metadata& md, const std::string& format);
 
 public:
@@ -44,8 +41,6 @@ public:
     WriterAcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
     void acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace=REPLACE_DEFAULT) override;
     void remove(Metadata& md) override;
-    void flush() override;
-    virtual Pending test_writelock();
 
     /**
      * Iterate through the contents of the dataset, in depth-first order.

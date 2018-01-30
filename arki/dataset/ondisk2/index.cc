@@ -81,6 +81,11 @@ Contents::~Contents()
     if (m_others) delete m_others;
 }
 
+bool Contents::exists() const
+{
+    return sys::exists(pathname());
+}
+
 std::set<types::Code> Contents::available_other_tables() const
 {
     // See what metadata types are already handled by m_uniques,

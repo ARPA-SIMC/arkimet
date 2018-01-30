@@ -41,12 +41,19 @@ namespace ondisk2 {
 struct AppendSegment
 {
     std::shared_ptr<const ondisk2::Config> config;
-    index::WContents& idx;
+    std::shared_ptr<dataset::AppendLock> lock;
+    index::WContents idx;
     std::shared_ptr<segment::Writer> segment;
 
-    AppendSegment(std::shared_ptr<const ondisk2::Config> config, index::WContents& idx, std::shared_ptr<segment::Writer> segment)
-        : config(config), idx(idx), segment(segment)
+    AppendSegment(std::shared_ptr<const ondisk2::Config> config, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
+        : config(config), lock(lock), idx(config), segment(segment)
     {
+        idx.lock = lock;
+        idx.open();
+    }
+    ~AppendSegment()
+    {
+        idx.flush();
     }
 
     WriterAcquireResult acquire_replace_never(Metadata& md)
@@ -153,23 +160,15 @@ struct AppendSegment
 };
 
 Writer::Writer(std::shared_ptr<const ondisk2::Config> config)
-    : m_config(config), idx(new index::WContents(config))
+    : m_config(config)
 {
-    m_idx = idx;
-
     // Create the directory if it does not exist
     bool dir_created = sys::makedirs(config->path);
-
-    lock = config->append_lock_dataset();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
     if (!dir_created and !sys::exists(config->index_pathname))
         files::createDontpackFlagfile(config->path);
-
-    idx->open();
-
-    lock.reset();
 }
 
 Writer::~Writer()
@@ -181,16 +180,14 @@ std::string Writer::type() const { return "ondisk2"; }
 
 std::unique_ptr<AppendSegment> Writer::segment(const Metadata& md, const std::string& format)
 {
-    return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, *idx, IndexedWriter::file(md, format)));
+    auto lock = config().append_lock_dataset();
+    return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segmented::Writer::file(md, format)));
 }
 
 WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
-
-    if (!lock) lock = config().append_lock_dataset();
-    m_idx->lock = lock;
 
     if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
 
@@ -223,8 +220,6 @@ void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& bat
 
 void Writer::remove(Metadata& md)
 {
-    if (!lock) lock = config().append_lock_dataset();
-
     const types::source::Blob* source = md.has_source_blob();
     if (!source)
         throw std::runtime_error("cannot remove metadata from dataset, because it has no Blob source");
@@ -234,9 +229,14 @@ void Writer::remove(Metadata& md)
 
     // TODO: refuse if md is in the archive
 
+    auto lock = config().append_lock_dataset();
+
     // Delete from DB, and get file name
-    Pending p_del = idx->beginTransaction();
-    idx->remove(source->filename, source->offset);
+    index::WContents idx(m_config);
+    idx.open();
+    idx.lock = lock;
+    Pending p_del = idx.beginTransaction();
+    idx.remove(source->filename, source->offset);
 
     // Create flagfile
     //createPackFlagfile(str::joinpath(config().path, file));
@@ -247,20 +247,6 @@ void Writer::remove(Metadata& md)
     // reset source and dataset in the metadata
     md.unset_source();
     md.unset(TYPE_ASSIGNEDDATASET);
-
-    lock.reset();
-}
-
-void Writer::flush()
-{
-    IndexedWriter::flush();
-    idx->flush();
-    lock.reset();
-}
-
-Pending Writer::test_writelock()
-{
-    return idx->beginExclusiveTransaction();
 }
 
 namespace {
@@ -742,7 +728,15 @@ void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<Wri
         }
 
         auto lock = config->read_lock_dataset();
+
         index::RContents idx(config);
+        if (!idx.exists())
+        {
+            // If there is no index, there can be no duplicates
+            e->result = ACQ_OK;
+            e->dataset_name = config->name;
+            continue;
+        }
         idx.lock = lock;
         idx.open();
 
