@@ -204,7 +204,7 @@ public:
     void summaryForAll(Summary& out) const;
 };
 
-class RContents : public Contents
+class RIndex : public Contents
 {
 protected:
 	/**
@@ -216,8 +216,8 @@ protected:
 	void initQueries();
 
 public:
-    RContents(std::shared_ptr<const ondisk2::Config> config);
-    ~RContents();
+    RIndex(std::shared_ptr<const ondisk2::Config> config);
+    ~RIndex();
 
     /// Initialise access to the index
     void open();

@@ -100,7 +100,7 @@ struct ReadHang : public wibble::sys::ChildProcess
         try {
             auto config = dataset::ondisk2::Config::create(cfg);
             auto lock = make_shared<core::lock::Null>();
-            RContents idx(config);
+            RIndex idx(config);
             idx.lock = lock;
             idx.open();
             idx.query_data(Matcher::parse("origin:GRIB1"), [&](unique_ptr<Metadata> md) {

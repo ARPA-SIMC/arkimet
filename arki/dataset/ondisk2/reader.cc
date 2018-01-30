@@ -16,7 +16,7 @@ Reader::Reader(std::shared_ptr<const ondisk2::Config> config)
 {
     if (sys::access(str::joinpath(config->path, "index.sqlite"), F_OK))
     {
-        unique_ptr<index::RContents> idx(new index::RContents(m_config));
+        unique_ptr<index::RIndex> idx(new index::RIndex(m_config));
         idx->open();
         m_idx = idx.release();
     }

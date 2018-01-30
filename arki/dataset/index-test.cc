@@ -94,7 +94,7 @@ step = daily
             idx.index(mdc[2], "2007/10-09.grib", 0);
             idx.flush();
         }
-        unique_ptr<RContents> res(new RContents(cfg));
+        unique_ptr<RIndex> res(new RIndex(cfg));
         res->open();
         return std::unique_ptr<dataset::Index>(res.release());
     }

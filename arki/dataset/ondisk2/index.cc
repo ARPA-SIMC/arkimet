@@ -827,14 +827,14 @@ bool Contents::checkSummaryCache(const dataset::Base& ds, Reporter& reporter) co
     return scache.check(ds, reporter);
 }
 
-RContents::RContents(std::shared_ptr<const ondisk2::Config> config)
+RIndex::RIndex(std::shared_ptr<const ondisk2::Config> config)
     : Contents(config) {}
 
-RContents::~RContents()
+RIndex::~RIndex()
 {
 }
 
-void RContents::open()
+void RIndex::open()
 {
     if (m_db.isOpen())
     {
@@ -857,27 +857,27 @@ void RContents::open()
     scache.openRO();
 }
 
-void RContents::initQueries()
+void RIndex::initQueries()
 {
     Contents::initQueries();
 }
 
-void RContents::test_rename(const std::string& relname, const std::string& new_relname)
+void RIndex::test_rename(const std::string& relname, const std::string& new_relname)
 {
     throw std::runtime_error("test_rename is only allowed on WIndex");
 }
 
-void RContents::test_deindex(const std::string& relname)
+void RIndex::test_deindex(const std::string& relname)
 {
     throw std::runtime_error("test_deindex is only allowed on WIndex");
 }
 
-void RContents::test_make_overlap(const std::string& relname, unsigned overlap_size, unsigned data_idx)
+void RIndex::test_make_overlap(const std::string& relname, unsigned overlap_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_overlap is only allowed on WIndex");
 }
 
-void RContents::test_make_hole(const std::string& relname, unsigned hole_size, unsigned data_idx)
+void RIndex::test_make_hole(const std::string& relname, unsigned hole_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_hole is only allowed on WIndex");
 }

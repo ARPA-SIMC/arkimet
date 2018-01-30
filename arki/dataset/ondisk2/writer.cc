@@ -867,7 +867,7 @@ void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<Wri
 
         auto lock = config->read_lock_dataset();
 
-        index::RContents idx(config);
+        index::RIndex idx(config);
         if (!idx.exists())
         {
             // If there is no index, there can be no duplicates
