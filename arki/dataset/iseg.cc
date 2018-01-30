@@ -1,12 +1,14 @@
 #include "iseg.h"
 #include "iseg/reader.h"
 #include "iseg/writer.h"
+#include "iseg/checker.h"
 #include "step.h"
 #include "arki/defs.h"
 #include "arki/dataset/index/base.h"
 #include "arki/utils/string.h"
 #include "arki/metadata.h"
 #include "arki/types/reftime.h"
+#include "arki/configfile.h"
 
 using namespace std;
 using namespace arki::utils;

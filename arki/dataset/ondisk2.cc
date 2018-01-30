@@ -1,7 +1,9 @@
 #include "ondisk2.h"
 #include "ondisk2/reader.h"
 #include "ondisk2/writer.h"
+#include "ondisk2/checker.h"
 #include "arki/utils/string.h"
+#include "arki/configfile.h"
 #include "step.h"
 
 using namespace std;

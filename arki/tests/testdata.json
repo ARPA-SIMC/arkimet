@@ -5400,6 +5400,11 @@
   "method": "testacquire"
  },
  {
+  "doc": "",
+  "group": "arki_dataset_iseg_checker",
+  "method": "empty"
+ },
+ {
   "doc": "- the segment must be a file",
   "group": "arki_dataset_iseg_maintenance_grib",
   "method": "check_isfile"
@@ -6792,26 +6797,6 @@
  {
   "doc": "",
   "group": "arki_dataset_ondisk2_writer",
-  "method": "reindex_with_duplicates"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_ondisk2_writer",
-  "method": "scan_reindex"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_ondisk2_writer",
-  "method": "scan_reindex_compressed"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_ondisk2_writer",
-  "method": "summary_checks"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_ondisk2_writer",
   "method": "summary_invalidate"
  },
  {
@@ -6822,27 +6807,47 @@
  {
   "doc": "",
   "group": "arki_dataset_ondisk2_writer",
-  "method": "data_in_right_segment_reindex"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_ondisk2_writer",
-  "method": "data_in_right_segment_rescan"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_ondisk2_writer",
-  "method": "pack_vm2"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_ondisk2_writer",
   "method": "issue57"
  },
  {
   "doc": "",
   "group": "arki_dataset_ondisk2_writer",
   "method": "testacquire"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_checker",
+  "method": "reindex_with_duplicates"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_checker",
+  "method": "scan_reindex"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_checker",
+  "method": "scan_reindex_compressed"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_checker",
+  "method": "summary_checks"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_checker",
+  "method": "data_in_right_segment_reindex"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_checker",
+  "method": "data_in_right_segment_rescan"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_ondisk2_checker",
+  "method": "pack_vm2"
  },
  {
   "doc": "- the segment must be a file",

@@ -62,6 +62,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/ondisk2/reader.h \
 		dataset/ondisk2/test-utils.h \
 		dataset/ondisk2/writer.h \
+		dataset/ondisk2/checker.h \
 		dataset/outbound.h \
 		dataset/offline.h \
 		dataset/simple.h \
@@ -72,6 +73,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/iseg/index.h \
 		dataset/iseg/reader.h \
 		dataset/iseg/writer.h \
+		dataset/iseg/checker.h \
 		dataset/step.h \
 		dataset/tests.h \
 		dataset/maintenance-test.h \
@@ -512,10 +514,12 @@ libarkimet_la_SOURCES += \
 		dataset/iseg/index.cc \
 		dataset/iseg/reader.cc \
 		dataset/iseg/writer.cc \
+		dataset/iseg/checker.cc \
 		dataset/ondisk2.cc \
 		dataset/ondisk2/index.cc \
 		dataset/ondisk2/reader.cc \
 		dataset/ondisk2/writer.cc \
+		dataset/ondisk2/checker.cc \
 		dataset/outbound.cc \
 		dataset/offline.cc \
 		dataset/empty.cc \
@@ -567,11 +571,13 @@ tests_arki_test_SOURCES += \
 		dataset/iseg/index-test.cc \
 		dataset/iseg/reader-test.cc \
 		dataset/iseg/writer-test.cc \
+		dataset/iseg/checker-test.cc \
 		dataset/iseg/maintenance-test.cc \
 		dataset/ondisk2-test.cc \
 		dataset/ondisk2/index-test.cc \
 		dataset/ondisk2/reader-test.cc \
 		dataset/ondisk2/writer-test.cc \
+		dataset/ondisk2/checker-test.cc \
 		dataset/ondisk2/test-utils.cc \
 		dataset/ondisk2/maintenance-test.cc \
 		dataset/outbound-test.cc \
