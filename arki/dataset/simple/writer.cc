@@ -32,7 +32,6 @@ struct AppendSegment
     std::shared_ptr<const simple::Config> config;
     std::shared_ptr<dataset::AppendLock> lock;
     std::shared_ptr<segment::Writer> segment;
-    index::Manifest* mft = nullptr;
     utils::sys::Path dir;
     std::string basename;
     bool flushed = true;
@@ -41,13 +40,9 @@ struct AppendSegment
 
     AppendSegment(std::shared_ptr<const simple::Config> config, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
         : config(config), lock(lock), segment(segment),
-          mft(index::Manifest::create(config->path, config->lock_policy, config->index_type).release()),
           dir(str::dirname(segment->absname)),
           basename(str::basename(segment->absname))
     {
-        mft->lock = lock;
-        mft->openRW();
-
         struct stat st_data;
         if (!dir.fstatat_ifexists(basename.c_str(), st_data))
             return;
@@ -63,7 +58,6 @@ struct AppendSegment
     ~AppendSegment()
     {
         flush();
-        delete mft;
     }
 
     void add(const Metadata& md, const types::source::Blob& source)
@@ -77,10 +71,10 @@ struct AppendSegment
         mds.acquire(move(copy));
         flushed = false;
     }
+
     void flush()
     {
         if (flushed) return;
-        mft->flush();
         mds.writeAtomically(segment->absname + ".metadata");
         sum.writeAtomically(segment->absname + ".summary");
         //fsync(dir);
@@ -88,6 +82,10 @@ struct AppendSegment
 
     WriterAcquireResult acquire(Metadata& md)
     {
+        auto mft = index::Manifest::create(config->path, config->lock_policy, config->index_type).release();
+        mft->lock = lock;
+        mft->openRW();
+
         // Try appending
         try {
             const types::source::Blob& new_source = segment->append(md);
@@ -97,6 +95,7 @@ struct AppendSegment
             if (ts == 0)
                 nag::warning("simple dataset acquire: %s timestamp is 0", segment->absname.c_str());
             mft->acquire(segment->relname, ts, sum);
+            mft->flush();
             return ACQ_OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
@@ -107,6 +106,7 @@ struct AppendSegment
 
     void acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch)
     {
+#if 1
         for (auto& e: batch)
         {
             e->dataset_name.clear();
@@ -114,6 +114,19 @@ struct AppendSegment
             if (e->result == ACQ_OK)
                 e->dataset_name = config->name;
         }
+#else
+        for (auto& e: batch)
+        {
+            e->dataset_name.clear();
+            const types::source::Blob& new_source = segment->append(e->md);
+            add(e->md, new_source);
+            e->result = ACQ_OK;
+            e->dataset_name = config->name;
+        }
+
+        segment->commit();
+        mft->flush();
+#endif
     }
 };
 
