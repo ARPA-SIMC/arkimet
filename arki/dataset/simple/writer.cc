@@ -82,7 +82,7 @@ struct AppendSegment
 
     WriterAcquireResult acquire(Metadata& md)
     {
-        auto mft = index::Manifest::create(config->path, config->lock_policy, config->index_type).release();
+        auto mft = index::Manifest::create(config->path, config->lock_policy, config->index_type);
         mft->lock = lock;
         mft->openRW();
 
@@ -90,11 +90,11 @@ struct AppendSegment
         try {
             const types::source::Blob& new_source = segment->append(md);
             add(md, new_source);
-            segment->commit();
             time_t ts = scan::timestamp(segment->absname);
             if (ts == 0)
                 nag::warning("simple dataset acquire: %s timestamp is 0", segment->absname.c_str());
             mft->acquire(segment->relname, ts, sum);
+            segment->commit();
             mft->flush();
             return ACQ_OK;
         } catch (std::exception& e) {
@@ -106,27 +106,25 @@ struct AppendSegment
 
     void acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch)
     {
-#if 1
-        for (auto& e: batch)
-        {
-            e->dataset_name.clear();
-            e->result = acquire(e->md);
-            if (e->result == ACQ_OK)
-                e->dataset_name = config->name;
-        }
-#else
+        auto mft = index::Manifest::create(config->path, config->lock_policy, config->index_type);
+        mft->lock = lock;
+        mft->openRW();
+
         for (auto& e: batch)
         {
             e->dataset_name.clear();
             const types::source::Blob& new_source = segment->append(e->md);
             add(e->md, new_source);
+            time_t ts = scan::timestamp(segment->absname);
+            if (ts == 0)
+                nag::warning("simple dataset acquire: %s timestamp is 0", segment->absname.c_str());
+            mft->acquire(segment->relname, ts, sum);
             e->result = ACQ_OK;
             e->dataset_name = config->name;
         }
 
         segment->commit();
         mft->flush();
-#endif
     }
 };
 
