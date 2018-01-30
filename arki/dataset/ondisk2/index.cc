@@ -60,7 +60,7 @@ static IndexGlobalData igd;
 
 
 Contents::Contents(std::shared_ptr<const ondisk2::Config> config)
-    : m_config(config),  m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
+    : m_config(config),  m_get_current("getcurrent", m_db),
       m_uniques(0), m_others(0), scache(config->summary_cache_pathname)
 {
     m_components_indexed = parseMetadataBitmask(config->index);
@@ -140,13 +140,7 @@ void Contents::initQueries()
             m_others = new Aggregate(m_db, "mdother", other_members);
     }
 
-    string query = "SELECT id FROM md WHERE reftime=?";
-    if (m_uniques) query += " AND uniq=?";
-    if (m_others) query += " AND other=?";
-    if (config().smallfiles) query += " AND data=?";
-    m_get_id.compile(query);
-
-    query = "SELECT format, file, offset, size FROM md WHERE reftime=?";
+    string query = "SELECT format, file, offset, size FROM md WHERE reftime=?";
     if (m_uniques) query += " AND uniq=?";
     m_get_current.compile(query);
 }
@@ -178,39 +172,6 @@ void Contents::setupPragmas()
     // Use new features, if we write we read it, so we do not need to
     // support sqlite < 3.3.0 if we are above that version
     m_db.exec("PRAGMA legacy_file_format = 0");
-}
-
-int Contents::id(const Metadata& md) const
-{
-    m_get_id.reset();
-
-    int idx = 0;
-    const reftime::Position* rt = md.get<reftime::Position>();
-    if (!rt) return -1;
-    string sqltime = rt->time.to_sql();
-    m_get_id.bind(++idx, sqltime);
-
-    if (m_uniques)
-    {
-        int id = m_uniques->get(md);
-        // If we do not have this aggregate, then we do not have this metadata
-        if (id == -1) return -1;
-        m_get_id.bind(++idx, id);
-    }
-
-    if (m_others)
-    {
-        int id = m_others->get(md);
-        // If we do not have this aggregate, then we do not have this metadata
-        if (id == -1) return -1;
-        m_get_id.bind(++idx, id);
-    }
-
-    int id = -1;
-    while (m_get_id.step())
-        id = m_get_id.fetch<int>(0);
-
-    return id;
 }
 
 std::unique_ptr<types::source::Blob> Contents::get_current(const Metadata& md) const

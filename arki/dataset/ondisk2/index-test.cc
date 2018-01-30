@@ -217,7 +217,7 @@ add_method("remove", [] {
 
     // Index a second one
     test->index(md1, "inbound/test-sorted.grib1", 0);
-    int id1 = test->id(md1);
+    auto pos1 = test->get_current(md1);
 
     // Ensure that we have two items
     metadata::Collection mdc;
@@ -242,7 +242,8 @@ add_method("remove", [] {
     ensure_equals(mdc.size(), 1u);
 
     // It should be the second item we inserted
-    ensure_equals(test->id(mdc[0]), id1);
+    auto pos2 = test->get_current(mdc[0]);
+    wassert(actual(*pos1) == *pos2);
     mdc.clear();
 
     // Replace it with a different one

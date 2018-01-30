@@ -52,7 +52,6 @@ protected:
     std::shared_ptr<const ondisk2::Config> m_config;
 
     mutable utils::sqlite::SQLiteDB m_db;
-    mutable utils::sqlite::PrecompiledQuery m_get_id;
     mutable utils::sqlite::PrecompiledQuery m_get_current;
 
     // Subtables
@@ -127,10 +126,6 @@ public:
 
 	/// Run PRAGMA calls to setup database behaviour
 	void setupPragmas();
-
-	/// Return the database ID of a metadata in this index.  If the
-	/// metadata is not there, return -1.
-	int id(const Metadata& md) const;
 
     /**
      * Return the metadata for the version of \a md that is already in the
