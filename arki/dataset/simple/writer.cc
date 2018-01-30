@@ -109,6 +109,7 @@ std::string Writer::type() const { return "simple"; }
 
 std::unique_ptr<AppendSegment> Writer::file(const Metadata& md, const std::string& format)
 {
+    auto lock = m_config->append_lock_dataset();
     auto segment = segmented::Writer::file(md, format);
     return unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segment));
 }
@@ -118,7 +119,6 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
-    if (!lock) lock = config().append_lock_dataset();
     auto segment = file(md, md.source().format);
 
     // Try appending
@@ -157,12 +157,6 @@ void Writer::remove(Metadata& md)
 {
     // Nothing to do
     throw std::runtime_error("cannot remove data from simple dataset: dataset does not support removing items");
-}
-
-void Writer::flush()
-{
-    segmented::Writer::flush();
-    lock.reset();
 }
 
 void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out)

@@ -23,7 +23,6 @@ class Writer : public segmented::Writer
 {
 protected:
     std::shared_ptr<const simple::Config> m_config;
-    std::shared_ptr<dataset::AppendLock> lock;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
     std::unique_ptr<AppendSegment> file(const Metadata& md, const std::string& format);
@@ -39,7 +38,6 @@ public:
     WriterAcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
     void acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace=REPLACE_DEFAULT) override;
     void remove(Metadata& md);
-    void flush() override;
 
     static void test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out);
 };
