@@ -3,6 +3,7 @@
 #include "index/manifest.h"
 #include "simple/reader.h"
 #include "simple/writer.h"
+#include "simple/checker.h"
 #include "offline.h"
 #include "maintenance.h"
 #include "empty.h"

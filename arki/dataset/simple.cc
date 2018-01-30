@@ -1,10 +1,12 @@
 #include "simple.h"
 #include "simple/reader.h"
 #include "simple/writer.h"
+#include "simple/checker.h"
 #include "step.h"
 #include "arki/utils/string.h"
 #include "arki/metadata.h"
 #include "arki/types/reftime.h"
+#include "arki/configfile.h"
 
 using namespace std;
 using namespace arki::utils;

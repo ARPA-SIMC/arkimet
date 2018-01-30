@@ -7,6 +7,7 @@
 #include "arki/dataset/ondisk2/checker.h"
 #include "arki/dataset/simple/reader.h"
 #include "arki/dataset/simple/writer.h"
+#include "arki/dataset/simple/checker.h"
 #include "arki/dataset/iseg/reader.h"
 #include "arki/dataset/iseg/writer.h"
 #include "arki/dataset/iseg/checker.h"
