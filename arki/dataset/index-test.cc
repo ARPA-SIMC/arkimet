@@ -5,6 +5,7 @@
 #include "ondisk2/index.h"
 #include "arki/summary.h"
 #include "arki/utils/sys.h"
+#include "arki/types/source/blob.h"
 
 using namespace std;
 using namespace arki;
@@ -86,14 +87,14 @@ step = daily
         ConfigFile configfile(config);
         auto cfg = dataset::ondisk2::Config::create(configfile);
         {
-            WContents idx(cfg);
+            WIndex idx(cfg);
             idx.open();
             idx.index(mdc[0], "2007/07-08.grib", 0);
             idx.index(mdc[1], "2007/07-07.grib", 0);
             idx.index(mdc[2], "2007/10-09.grib", 0);
             idx.flush();
         }
-        unique_ptr<RContents> res(new RContents(cfg));
+        unique_ptr<RIndex> res(new RIndex(cfg));
         res->open();
         return std::unique_ptr<dataset::Index>(res.release());
     }

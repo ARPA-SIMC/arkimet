@@ -60,7 +60,7 @@ static IndexGlobalData igd;
 
 
 Contents::Contents(std::shared_ptr<const ondisk2::Config> config)
-    : m_config(config),  m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
+    : m_config(config),  m_get_current("getcurrent", m_db),
       m_uniques(0), m_others(0), scache(config->summary_cache_pathname)
 {
     m_components_indexed = parseMetadataBitmask(config->index);
@@ -79,6 +79,11 @@ Contents::~Contents()
 {
     if (m_uniques) delete m_uniques;
     if (m_others) delete m_others;
+}
+
+bool Contents::exists() const
+{
+    return sys::exists(pathname());
 }
 
 std::set<types::Code> Contents::available_other_tables() const
@@ -135,17 +140,7 @@ void Contents::initQueries()
             m_others = new Aggregate(m_db, "mdother", other_members);
     }
 
-    string query = "SELECT id FROM md WHERE reftime=?";
-    if (m_uniques) query += " AND uniq=?";
-    if (m_others) query += " AND other=?";
-    if (config().smallfiles) query += " AND data=?";
-    m_get_id.compile(query);
-
-    query = "SELECT id, format, file, offset, size, notes, reftime";
-    if (m_uniques) query += ", uniq";
-    if (m_others) query += ", other";
-    if (config().smallfiles) query += ", data";
-    query += " FROM md WHERE reftime=?";
+    string query = "SELECT format, file, offset, size FROM md WHERE reftime=?";
     if (m_uniques) query += " AND uniq=?";
     m_get_current.compile(query);
 }
@@ -179,48 +174,17 @@ void Contents::setupPragmas()
     m_db.exec("PRAGMA legacy_file_format = 0");
 }
 
-int Contents::id(const Metadata& md) const
-{
-    m_get_id.reset();
-
-    int idx = 0;
-    const reftime::Position* rt = md.get<reftime::Position>();
-    if (!rt) return -1;
-    string sqltime = rt->time.to_sql();
-    m_get_id.bind(++idx, sqltime);
-
-    if (m_uniques)
-    {
-        int id = m_uniques->get(md);
-        // If we do not have this aggregate, then we do not have this metadata
-        if (id == -1) return -1;
-        m_get_id.bind(++idx, id);
-    }
-
-    if (m_others)
-    {
-        int id = m_others->get(md);
-        // If we do not have this aggregate, then we do not have this metadata
-        if (id == -1) return -1;
-        m_get_id.bind(++idx, id);
-    }
-
-    int id = -1;
-    while (m_get_id.step())
-        id = m_get_id.fetch<int>(0);
-
-    return id;
-}
-
-bool Contents::get_current(const Metadata& md, Metadata& current) const
+std::unique_ptr<types::source::Blob> Contents::get_current(const Metadata& md) const
 {
     if (lock.expired())
         throw std::runtime_error("cannot get_current while there is no lock held");
     m_get_current.reset();
+    const reftime::Position* rt = md.get<reftime::Position>();
+    if (!rt) throw std::runtime_error("cannot get_current on a Metadata with no reftime information");
+
+    std::unique_ptr<types::source::Blob> res;
 
     int idx = 0;
-    const reftime::Position* rt = md.get<reftime::Position>();
-    if (!rt) return -1;
     string sqltime = rt->time.to_sql();
     m_get_current.bind(++idx, sqltime);
 
@@ -229,20 +193,18 @@ bool Contents::get_current(const Metadata& md, Metadata& current) const
     {
         id_unique = m_uniques->get(md);
         // If we do not have this aggregate, then we do not have this metadata
-        if (id_unique == -1) return false;
+        if (id_unique == -1) return res;
         m_get_current.bind(++idx, id_unique);
     }
 
-    bool found = false;
     while (m_get_current.step())
-    {
-        current.clear();
-        string abspath = str::joinpath(config().path, m_get_current.fetchString(2));
-        auto reader = arki::Reader::create_new(abspath, lock.lock());
-        build_md(m_get_current, current, reader);
-        found = true;
-    }
-    return found;
+        res = types::source::Blob::create_unlocked(
+                m_get_current.fetchString(0),
+                config().path,
+                m_get_current.fetchString(1),
+                m_get_current.fetch<uint64_t>(2),
+                m_get_current.fetch<uint64_t>(3));
+    return res;
 }
 
 size_t Contents::count() const
@@ -865,14 +827,14 @@ bool Contents::checkSummaryCache(const dataset::Base& ds, Reporter& reporter) co
     return scache.check(ds, reporter);
 }
 
-RContents::RContents(std::shared_ptr<const ondisk2::Config> config)
+RIndex::RIndex(std::shared_ptr<const ondisk2::Config> config)
     : Contents(config) {}
 
-RContents::~RContents()
+RIndex::~RIndex()
 {
 }
 
-void RContents::open()
+void RIndex::open()
 {
     if (m_db.isOpen())
     {
@@ -895,42 +857,42 @@ void RContents::open()
     scache.openRO();
 }
 
-void RContents::initQueries()
+void RIndex::initQueries()
 {
     Contents::initQueries();
 }
 
-void RContents::test_rename(const std::string& relname, const std::string& new_relname)
+void RIndex::test_rename(const std::string& relname, const std::string& new_relname)
 {
     throw std::runtime_error("test_rename is only allowed on WIndex");
 }
 
-void RContents::test_deindex(const std::string& relname)
+void RIndex::test_deindex(const std::string& relname)
 {
     throw std::runtime_error("test_deindex is only allowed on WIndex");
 }
 
-void RContents::test_make_overlap(const std::string& relname, unsigned overlap_size, unsigned data_idx)
+void RIndex::test_make_overlap(const std::string& relname, unsigned overlap_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_overlap is only allowed on WIndex");
 }
 
-void RContents::test_make_hole(const std::string& relname, unsigned hole_size, unsigned data_idx)
+void RIndex::test_make_hole(const std::string& relname, unsigned hole_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_hole is only allowed on WIndex");
 }
 
 
-WContents::WContents(std::shared_ptr<const ondisk2::Config> config)
+WIndex::WIndex(std::shared_ptr<const ondisk2::Config> config)
     : Contents(config), m_insert(m_db), m_delete("delete", m_db), m_replace("replace", m_db)
 {
 }
 
-WContents::~WContents()
+WIndex::~WIndex()
 {
 }
 
-bool WContents::open()
+bool WIndex::open()
 {
     if (m_db.isOpen())
     {
@@ -962,7 +924,7 @@ bool WContents::open()
     return need_create;
 }
 
-void WContents::initQueries()
+void WIndex::initQueries()
 {
     Contents::initQueries();
 
@@ -997,7 +959,7 @@ void WContents::initQueries()
     m_delete.compile("DELETE FROM md WHERE id=?");
 }
 
-void WContents::initDB()
+void WIndex::initDB()
 {
     if (m_uniques) m_uniques->initDB(m_components_indexed);
     if (m_others) m_others->initDB(m_components_indexed);
@@ -1028,92 +990,120 @@ void WContents::initDB()
     if (m_others) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_other ON md (other)");
 }
 
-void WContents::bindInsertParams(Query& q, const Metadata& md, const std::string& file, uint64_t ofs, char* timebuf)
-{
-    int idx = 0;
-
-    q.bind(++idx, md.source().format);
-    q.bind(++idx, file);
-    q.bind(++idx, ofs);
-    q.bind(++idx, md.data_size());
-    //q.bindItems(++idx, md.notes);
-    q.bind(++idx, md.notes_encoded());
-
-    if (const reftime::Position* reftime = md.get<reftime::Position>())
-    {
-        const auto& t = reftime->time;
-        int len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", t.ye, t.mo, t.da, t.ho, t.mi, t.se);
-        q.bind(++idx, timebuf, len);
-    } else {
-        q.bindNull(++idx);
-    }
-
-    if (m_uniques)
-    {
-        int id = m_uniques->obtain(md);
-        q.bind(++idx, id);
-    }
-    if (m_others)
-    {
-        int id = m_others->obtain(md);
-        q.bind(++idx, id);
-    }
-    if (config().smallfiles)
-    {
-        if (const types::Value* v = md.get<types::Value>())
-        {
-            q.bind(++idx, v->buffer);
-        } else {
-            q.bindNull(++idx);
-        }
-    }
-}
-
-Pending WContents::beginTransaction()
+Pending WIndex::begin_transaction()
 {
     return Pending(new SqliteTransaction(m_db));
 }
 
-Pending WContents::beginExclusiveTransaction()
+namespace {
+
+struct Inserter
 {
-    return Pending(new SqliteTransaction(m_db, "EXCLUSIVE"));
+    WIndex& idx;
+    const Metadata& md;
+    char timebuf[25];
+    int timebuf_len;
+    int id_uniques = -1;
+    int id_others = -1;
+
+    Inserter(WIndex& idx, const Metadata& md)
+        : idx(idx), md(md)
+    {
+        if (const reftime::Position* reftime = md.get<reftime::Position>())
+        {
+            const auto& t = reftime->time;
+            timebuf_len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", t.ye, t.mo, t.da, t.ho, t.mi, t.se);
+        } else {
+            timebuf[0] = 0;
+            timebuf_len = 0;
+        }
+
+        if (idx.has_uniques()) id_uniques = idx.uniques().obtain(md);
+        if (idx.has_others()) id_others = idx.others().obtain(md);
+    }
+
+    void bind_get_current(Query& q)
+    {
+        if (timebuf_len)
+            q.bind(1, timebuf, timebuf_len);
+        else
+            q.bindNull(1);
+
+        if (id_uniques != -1) q.bind(2, id_uniques);
+    }
+
+    void bind_insert(Query& q, const std::string& file, uint64_t ofs)
+    {
+        int qidx = 0;
+
+        q.bind(++qidx, md.source().format);
+        q.bind(++qidx, file);
+        q.bind(++qidx, ofs);
+        q.bind(++qidx, md.data_size());
+        q.bind(++qidx, md.notes_encoded());
+
+        if (timebuf_len)
+            q.bind(++qidx, timebuf, timebuf_len);
+        else
+            q.bindNull(++qidx);
+
+        if (id_uniques != -1) q.bind(++qidx, id_uniques);
+        if (id_others != -1) q.bind(++qidx, id_others);
+        if (idx.config().smallfiles)
+        {
+            if (const types::Value* v = md.get<types::Value>())
+            {
+                q.bind(++qidx, v->buffer);
+            } else {
+                q.bindNull(++qidx);
+            }
+        }
+    }
+};
+
 }
 
-void WContents::index(const Metadata& md, const std::string& file, uint64_t ofs, int* id)
+std::unique_ptr<types::source::Blob> WIndex::index(const Metadata& md, const std::string& relpath, uint64_t ofs)
 {
+    std::unique_ptr<types::source::Blob> res;
+    Inserter inserter(*this, md);
+
+    // Check if a conflicting metadata exists in the dataset
+    m_get_current.reset();
+    inserter.bind_get_current(m_get_current);
+    while (m_get_current.step())
+        res = types::source::Blob::create_unlocked(
+                m_get_current.fetchString(0),
+                config().path,
+                m_get_current.fetchString(1),
+                m_get_current.fetch<uint64_t>(2),
+                m_get_current.fetch<uint64_t>(3));
+    if (res) return res;
+
     m_insert.reset();
-
-    char buf[25];
-    bindInsertParams(m_insert, md, file, ofs, buf);
-
+    inserter.bind_insert(m_insert, relpath, ofs);
     while (m_insert.step())
         ;
 
-    if (id)
-        *id = m_db.lastInsertID();
-
     // Invalidate the summary cache for this month
     scache.invalidate(md);
+    return res;
 }
 
-void WContents::replace(Metadata& md, const std::string& file, uint64_t ofs, int* id)
+void WIndex::replace(Metadata& md, const std::string& relpath, uint64_t ofs)
 {
     m_replace.reset();
 
-    char buf[25];
-    bindInsertParams(m_replace, md, file, ofs, buf);
-
+    Inserter inserter(*this, md);
+    inserter.bind_insert(m_replace, relpath, ofs);
     while (m_replace.step())
         ;
-
-    if (id)
-        *id = m_db.lastInsertID();
 
     // Invalidate the summary cache for this month
     scache.invalidate(md);
 }
 
-void WContents::remove(const std::string& relname, off_t ofs)
+void WIndex::remove(const std::string& relname, off_t ofs)
 {
     Query fetch_id("byfile", m_db);
     fetch_id.compile("SELECT id, reftime FROM md WHERE file=? AND offset=?");
@@ -1144,13 +1134,13 @@ void WContents::remove(const std::string& relname, off_t ofs)
         ;
 }
 
-void WContents::reset()
+void WIndex::reset()
 {
     m_db.exec("DELETE FROM md");
     scache.invalidate();
 }
 
-void WContents::reset(const std::string& file)
+void WIndex::reset(const std::string& file)
 {
     // Get the file date extremes to invalidate the summary cache
     string fmin, fmax;
@@ -1181,7 +1171,7 @@ void WContents::reset(const std::string& file)
     scache.invalidate(tmin, tmax);
 }
 
-void WContents::vacuum()
+void WIndex::vacuum()
 {
     //m_db.exec("PRAGMA journal_mode = TRUNCATE");
     if (m_uniques)
@@ -1193,14 +1183,14 @@ void WContents::vacuum()
     //m_db.exec("PRAGMA journal_mode = PERSIST");
 }
 
-void WContents::flush()
+void WIndex::flush()
 {
     // Not needed for index data consistency, but we need it to ensure file
     // timestamps are consistent at this point.
     m_db.checkpoint();
 }
 
-void WContents::test_rename(const std::string& relname, const std::string& new_relname)
+void WIndex::test_rename(const std::string& relname, const std::string& new_relname)
 {
     Query query("test_rename", m_db);
     query.compile("UPDATE md SET file=? WHERE file=?");
@@ -1210,12 +1200,12 @@ void WContents::test_rename(const std::string& relname, const std::string& new_r
         ;
 }
 
-void WContents::test_deindex(const std::string& relname)
+void WIndex::test_deindex(const std::string& relname)
 {
     reset(relname);
 }
 
-void WContents::test_make_overlap(const std::string& relname, unsigned overlap_size, unsigned data_idx)
+void WIndex::test_make_overlap(const std::string& relname, unsigned overlap_size, unsigned data_idx)
 {
     // Get the minimum offset to move
     uint64_t offset = 0;
@@ -1234,7 +1224,7 @@ void WContents::test_make_overlap(const std::string& relname, unsigned overlap_s
     query.run(overlap_size, relname, offset);
 }
 
-void WContents::test_make_hole(const std::string& relname, unsigned hole_size, unsigned data_idx)
+void WIndex::test_make_hole(const std::string& relname, unsigned hole_size, unsigned data_idx)
 {
     // Get the minimum offset to move
     uint64_t offset = 0;

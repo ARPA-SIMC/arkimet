@@ -30,7 +30,7 @@ using namespace arki::tests;
 
 // Create a dataset index gived its configuration
 template<typename INDEX>
-inline unique_ptr<WContents> createIndex(std::shared_ptr<core::Lock> lock, const std::string& text_cfg)
+inline unique_ptr<WIndex> createIndex(std::shared_ptr<core::Lock> lock, const std::string& text_cfg)
 {
     ConfigFile cfg;
     cfg.parse(text_cfg);
@@ -80,7 +80,7 @@ Metadata make_md1()
     return md1;
 }
 
-void query_index(WContents& idx, const dataset::DataQuery& q, metadata::Collection& dest)
+void query_index(WIndex& idx, const dataset::DataQuery& q, metadata::Collection& dest)
 {
     idx.query_data(q, dest.inserter_func());
 }
@@ -100,7 +100,7 @@ struct ReadHang : public wibble::sys::ChildProcess
         try {
             auto config = dataset::ondisk2::Config::create(cfg);
             auto lock = make_shared<core::lock::Null>();
-            RContents idx(config);
+            RIndex idx(config);
             idx.lock = lock;
             idx.open();
             idx.query_data(Matcher::parse("origin:GRIB1"), [&](unique_ptr<Metadata> md) {
@@ -149,7 +149,7 @@ add_method("index", [] {
     auto md1 = make_md1();
 
     auto lock = make_shared<core::lock::Null>();
-    unique_ptr<WContents> test = createIndex<WContents>(lock,
+    unique_ptr<WIndex> test = createIndex<WIndex>(lock,
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
@@ -161,21 +161,13 @@ add_method("index", [] {
     Pending p;
 
     test->open();
-    p = test->beginTransaction();
+    p = test->begin_transaction();
 
     // Index a metadata
-    int id = test->id(md);
-    wassert(actual(id) == -1);
-    wassert(test->index(md, "inbound/test.grib1", 0, &id));
-    wassert(actual(id) == 1);
-    wassert(actual(test->id(md)) == 1);
+    wassert(actual(test->index(md, "inbound/test.grib1", 0)).isfalse());
 
     // Index a second one
-    id = test->id(md1);
-    wassert(actual(id) == -1);
-    wassert(test->index(md1, "inbound/test-sorted.grib1", 0, &id));
-    wassert(actual(id) == 2);
-    wassert(actual(test->id(md1)) == 2);
+    wassert(actual(test->index(md1, "inbound/test-sorted.grib1", 0)).isfalse());
 
     // Query various kinds of metadata
     metadata::Collection mdc;
@@ -198,7 +190,7 @@ add_method("remove", [] {
     auto md1 = make_md1();
 
     auto lock = make_shared<core::lock::Null>();
-    unique_ptr<WContents> test = createIndex<WContents>(lock,
+    unique_ptr<WIndex> test = createIndex<WIndex>(lock,
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
@@ -210,7 +202,7 @@ add_method("remove", [] {
     Pending p;
 
     test->open();
-    p = test->beginTransaction();
+    p = test->begin_transaction();
 
     // Index a metadata
     test->index(md, "inbound/test.grib1", 0);
@@ -225,7 +217,7 @@ add_method("remove", [] {
 
     // Index a second one
     test->index(md1, "inbound/test-sorted.grib1", 0);
-    int id1 = test->id(md1);
+    auto pos1 = test->get_current(md1);
 
     // Ensure that we have two items
     metadata::Collection mdc;
@@ -250,7 +242,8 @@ add_method("remove", [] {
     ensure_equals(mdc.size(), 1u);
 
     // It should be the second item we inserted
-    ensure_equals(test->id(mdc[0]), id1);
+    auto pos2 = test->get_current(mdc[0]);
+    wassert(actual(*pos1) == *pos2);
     mdc.clear();
 
     // Replace it with a different one
@@ -284,10 +277,10 @@ add_method("concurrent", [] {
     // Create the index and index two metadata
     {
         auto lock = make_shared<core::lock::Null>();
-        unique_ptr<WContents> test1 = createIndex<WContents>(lock, cfg);
+        unique_ptr<WIndex> test1 = createIndex<WIndex>(lock, cfg);
         test1->open();
 
-        Pending p = test1->beginTransaction();
+        Pending p = test1->begin_transaction();
         wassert(test1->index(md, "inbound/test.grib1", 0));
         wassert(test1->index(md1, "inbound/test-sorted.grib1", 0));
         p.commit();
@@ -311,9 +304,9 @@ add_method("concurrent", [] {
     md3.add_note("this is a test");
     {
         auto lock = make_shared<core::lock::Null>();
-        unique_ptr<WContents> test1 = createIndex<WContents>(lock, cfg);
+        unique_ptr<WIndex> test1 = createIndex<WIndex>(lock, cfg);
         test1->open();
-        Pending p = test1->beginTransaction();
+        Pending p = test1->begin_transaction();
         test1->index(md3, "inbound/test.bufr", 0);
         p.commit();
     }
@@ -331,7 +324,7 @@ add_method("query_file", [] {
     unlink("file1");
 
     auto lock = make_shared<core::lock::Null>();
-    unique_ptr<WContents> test = createIndex<WContents>(lock,
+    unique_ptr<WIndex> test = createIndex<WIndex>(lock,
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
@@ -346,7 +339,7 @@ add_method("query_file", [] {
     ensure_equals(src.size(), 3u);
 
     test->open();
-    p = test->beginTransaction();
+    p = test->begin_transaction();
 
     // Index two metadata in one file
     test->index(md, "inbound/padded.grib1", 0);
@@ -383,7 +376,7 @@ add_method("reproduce_old_issue1", [] {
     unlink("file1");
 
     auto lock = make_shared<core::lock::Null>();
-    unique_ptr<WContents> test = createIndex<WContents>(lock,
+    unique_ptr<WIndex> test = createIndex<WIndex>(lock,
         "type = ondisk2\n"
         "path = \n"
         "step = daily\n"
@@ -395,7 +388,7 @@ add_method("reproduce_old_issue1", [] {
     Pending p;
 
     test->open();
-    p = test->beginTransaction();
+    p = test->begin_transaction();
 
     // Index some metadata
     test->index(md, "test-md", 0);
@@ -447,7 +440,7 @@ add_method("largefile", [] {
     unlink("file1");
 
     auto lock = make_shared<core::lock::Null>();
-    unique_ptr<WContents> test = createIndex<WContents>(lock,
+    unique_ptr<WIndex> test = createIndex<WIndex>(lock,
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
@@ -459,7 +452,7 @@ add_method("largefile", [] {
     Pending p;
 
     test->open();
-    p = test->beginTransaction();
+    p = test->begin_transaction();
 
     // Index the two metadata
     test->index(md, "inbound/test.grib1", md.sourceBlob().offset);
@@ -496,7 +489,7 @@ add_method("smallfiles", [] {
 
         // An index without large files
         auto lock = make_shared<core::lock::Null>();
-        unique_ptr<WContents> test = createIndex<WContents>(lock,
+        unique_ptr<WIndex> test = createIndex<WIndex>(lock,
                 "type = ondisk2\n"
                 "path = .\n"
                 "step = daily\n"
@@ -508,7 +501,7 @@ add_method("smallfiles", [] {
         test->open();
 
         // Insert a metadata
-        Pending p = test->beginTransaction();
+        Pending p = test->begin_transaction();
         test->index(src[0], "inbound/test.vm2", src[0].sourceBlob().offset);
         p.commit();
 
@@ -541,7 +534,7 @@ add_method("smallfiles", [] {
 
         // An index without large files
         auto lock = make_shared<core::lock::Null>();
-        unique_ptr<WContents> test = createIndex<WContents>(lock,
+        unique_ptr<WIndex> test = createIndex<WIndex>(lock,
                 "type = ondisk2\n"
                 "path = .\n"
                 "step = daily\n"
@@ -554,7 +547,7 @@ add_method("smallfiles", [] {
         test->open();
 
         // Insert a metadata
-        Pending p = test->beginTransaction();
+        Pending p = test->begin_transaction();
         test->index(src[0], "inbound/test.vm2", src[0].sourceBlob().offset);
         p.commit();
 

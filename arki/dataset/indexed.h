@@ -36,32 +36,6 @@ public:
     bool hasWorkingIndex() const { return m_idx != 0; }
 };
 
-class IndexedWriter : public segmented::Writer
-{
-protected:
-    Index* m_idx = nullptr;
-
-public:
-    using segmented::Writer::Writer;
-    ~IndexedWriter();
-
-    const IndexedConfig& config() const override = 0;
-
-    /**
-     * Make the index accessible.
-     *
-     * Only to be used in unit tests
-     */
-    Index& test_get_index() { return *m_idx; }
-
-    /**
-     * Make the index accessible.
-     *
-     * Only to be used in unit tests
-     */
-    const Index& test_get_index() const { return *m_idx; }
-};
-
 class IndexedChecker : public segmented::Checker
 {
 protected:

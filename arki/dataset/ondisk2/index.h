@@ -52,7 +52,6 @@ protected:
     std::shared_ptr<const ondisk2::Config> m_config;
 
     mutable utils::sqlite::SQLiteDB m_db;
-    mutable utils::sqlite::PrecompiledQuery m_get_id;
     mutable utils::sqlite::PrecompiledQuery m_get_current;
 
     // Subtables
@@ -100,6 +99,13 @@ public:
 
     const std::string& pathname() const { return config().index_pathname; }
 
+    bool exists() const;
+
+    bool has_uniques() const { return m_uniques != nullptr; }
+    index::Aggregate& uniques() { return *m_uniques; }
+    bool has_others() const { return m_others != nullptr; }
+    index::Aggregate& others() { return *m_others; }
+
 	inline bool is_indexed(types::Code c) const
 	{
 		return m_components_indexed.find(c) != m_components_indexed.end();
@@ -121,10 +127,6 @@ public:
 	/// Run PRAGMA calls to setup database behaviour
 	void setupPragmas();
 
-	/// Return the database ID of a metadata in this index.  If the
-	/// metadata is not there, return -1.
-	int id(const Metadata& md) const;
-
     /**
      * Return the metadata for the version of \a md that is already in the
      * database
@@ -132,7 +134,7 @@ public:
      * @returns
      *   true if the element was found, else false and \a current is untouched
      */
-    bool get_current(const Metadata& md, Metadata& current) const;
+    std::unique_ptr<types::source::Blob> get_current(const Metadata& md) const;
 
     /// Return the number of items currently indexed by this index
     size_t count() const;
@@ -202,7 +204,7 @@ public:
     void summaryForAll(Summary& out) const;
 };
 
-class RContents : public Contents
+class RIndex : public Contents
 {
 protected:
 	/**
@@ -214,8 +216,8 @@ protected:
 	void initQueries();
 
 public:
-    RContents(std::shared_ptr<const ondisk2::Config> config);
-    ~RContents();
+    RIndex(std::shared_ptr<const ondisk2::Config> config);
+    ~RIndex();
 
     /// Initialise access to the index
     void open();
@@ -226,7 +228,7 @@ public:
     void test_make_hole(const std::string& relname, unsigned hole_size, unsigned data_idx) override;
 };
 
-class WContents : public Contents
+class WIndex : public Contents
 {
 protected:
 	utils::sqlite::InsertQuery m_insert;
@@ -244,11 +246,9 @@ protected:
 	/// Create the tables in the database
 	void initDB();
 
-	void bindInsertParams(utils::sqlite::Query& q, const Metadata& md, const std::string& file, uint64_t ofs, char* timebuf);
-
 public:
-    WContents(std::shared_ptr<const ondisk2::Config> config);
-    ~WContents();
+    WIndex(std::shared_ptr<const ondisk2::Config> config);
+    ~WIndex();
 
 	/**
 	 * Initialise access to the index
@@ -258,27 +258,19 @@ public:
 	 */
 	bool open();
 
-	/// Begin a transaction and return the corresponding Pending object
-	Pending beginTransaction();
+    /// Begin a transaction and return the corresponding Pending object
+    Pending begin_transaction();
 
-	/// Begin an EXCLUSIVE transaction and return the corresponding Pending object
-	Pending beginExclusiveTransaction();
+    /**
+     * Index the given metadata item.
+     *
+     * If the item already exists, returns the blob source pointing to the data
+     * currently in the dataset
+     */
+    std::unique_ptr<types::source::Blob> index(const Metadata& md, const std::string& relpath, uint64_t ofs);
 
-	/**
-	 * Index the given metadata item.
-	 *
-	 * @retval id
-	 *   The id of the metadata in the database
-	 */
-	void index(const Metadata& md, const std::string& file, uint64_t ofs, int* id = 0);
-
-	/**
-	 * Index the given metadata item, or replace it in the index.
-	 *
-	 * @retval id
-	 *   The id of the metadata in the database
-	 */
-	void replace(Metadata& md, const std::string& file, uint64_t ofs, int* id = 0);
+    /// Index the given metadata item, or replace it in the index.
+    void replace(Metadata& md, const std::string& relpath, uint64_t ofs);
 
     /**
      * Remove the given metadata item from the index.

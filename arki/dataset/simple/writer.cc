@@ -52,7 +52,6 @@ Writer::Writer(std::shared_ptr<const simple::Config> config)
     m_mft = mft.release();
     m_mft->lock = lock;
     m_mft->openRW();
-    m_idx = m_mft;
 
     lock.reset();
 }
@@ -60,6 +59,7 @@ Writer::Writer(std::shared_ptr<const simple::Config> config)
 Writer::~Writer()
 {
     flush();
+    delete m_mft;
 }
 
 std::string Writer::type() const { return "simple"; }

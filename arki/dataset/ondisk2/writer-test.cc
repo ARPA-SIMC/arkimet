@@ -155,7 +155,7 @@ add_method("scan_reindex", [](Fixture& f) {
     f.import();
     system("cat inbound/test.grib1 >> testds/2007/07-08.grib");
     {
-        index::WContents index(f.ondisk2_config());
+        index::WIndex index(f.ondisk2_config());
         index.open();
         index.reset("2007/07-08.grib");
     }

@@ -16,6 +16,7 @@ class Summary;
 
 namespace dataset {
 namespace ondisk2 {
+struct AppendSegment;
 struct CheckerSegment;
 
 namespace writer {
@@ -23,16 +24,12 @@ class RealRepacker;
 class RealFixer;
 }
 
-class Writer : public IndexedWriter
+class Writer : public segmented::Writer
 {
 protected:
     std::shared_ptr<const ondisk2::Config> m_config;
-    index::WContents* idx;
-    std::shared_ptr<dataset::Lock> lock;
-
-    WriterAcquireResult acquire_replace_never(Metadata& md);
-    WriterAcquireResult acquire_replace_always(Metadata& md);
-    WriterAcquireResult acquire_replace_higher_usn(Metadata& md);
+    std::unique_ptr<AppendSegment> segment(const Metadata& md, const std::string& format);
+    std::unique_ptr<AppendSegment> segment(const std::string& relname);
 
 public:
     Writer(std::shared_ptr<const ondisk2::Config> config);
@@ -45,8 +42,6 @@ public:
     WriterAcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
     void acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace=REPLACE_DEFAULT) override;
     void remove(Metadata& md) override;
-    void flush() override;
-    virtual Pending test_writelock();
 
     /**
      * Iterate through the contents of the dataset, in depth-first order.
@@ -61,7 +56,7 @@ class Checker : public IndexedChecker
 {
 protected:
     std::shared_ptr<const ondisk2::Config> m_config;
-    index::WContents* idx;
+    index::WIndex* idx;
     std::shared_ptr<dataset::CheckLock> lock;
 
 public:

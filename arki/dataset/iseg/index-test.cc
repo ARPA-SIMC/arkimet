@@ -239,7 +239,7 @@ struct ReadHang : public wibble::sys::ChildProcess
     {
         try {
             auto config = dataset::ondisk2::Config::create(cfg);
-            RContents idx(config);
+            RIndex idx(config);
             idx.open();
             idx.query_data(Matcher::parse("origin:GRIB1"), [&](unique_ptr<Metadata> md) {
                 fputs("H\n", stdout);

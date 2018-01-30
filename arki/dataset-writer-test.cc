@@ -119,6 +119,48 @@ add_method("import_largefile", [](Fixture& f) {
     wassert(reader->query_bytes(bq, out));
 });
 
+add_method("import_batch_replace_usn", [](Fixture& f) {
+    f.cfg.setValue("format", "bufr");
+    f.cfg.setValue("step", "daily");
+    metadata::TestCollection mdc("inbound/synop-gts.bufr");
+    metadata::TestCollection mdc_upd("inbound/synop-gts-usn2.bufr");
+
+    auto ds = f.config().create_writer();
+
+    std::vector<shared_ptr<dataset::WriterBatchElement>> batch;
+    batch.emplace_back(make_shared<dataset::WriterBatchElement>(mdc[0]));
+    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[0]->dataset_name) == "testds");
+    wassert(actual_file(str::joinpath(f.ds_root, "2009/12-04.bufr")).exists());
+    wassert(actual_type(mdc[0].source()).is_source_blob("bufr", f.ds_root, "2009/12-04.bufr"));
+
+    // Acquire again: it works, since USNs the same as the existing ones do overwrite
+    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[0]->dataset_name) == "testds");
+
+    // Acquire with a newer USN: it works
+    batch.clear();
+    batch.emplace_back(make_shared<dataset::WriterBatchElement>(mdc_upd[0]));
+    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[0]->dataset_name) == "testds");
+
+    // Acquire with the lower USN: it fails
+    batch.clear();
+    batch.emplace_back(make_shared<dataset::WriterBatchElement>(mdc[0]));
+    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
+    if (ds->type() == "simple")
+    {
+        wassert(actual(batch[0]->result) == dataset::ACQ_OK);
+        wassert(actual(batch[0]->dataset_name) == "testds");
+    } else {
+        wassert(actual(batch[0]->result) == dataset::ACQ_ERROR_DUPLICATE);
+        wassert(actual(batch[0]->dataset_name) == "");
+    }
+});
+
 }
 
 
@@ -207,47 +249,6 @@ this->add_method("import_batch_replace_always", [](Fixture& f) {
         wassert(actual(mds[i].sourceBlob().absolutePathname()) == f.td.test_data[i].md.sourceBlob().absolutePathname());
         wassert(actual(mds[i].sourceBlob().offset) > f.td.test_data[i].md.sourceBlob().offset);
         wassert(actual(mds[i].sourceBlob().size) == f.td.test_data[i].md.sourceBlob().size);
-    }
-});
-
-this->add_method("import_batch_replace_usn", [](Fixture& f) {
-    f.cfg.setValue("format", "bufr");
-    metadata::TestCollection mdc("inbound/synop-gts.bufr");
-    metadata::TestCollection mdc_upd("inbound/synop-gts-usn2.bufr");
-
-    auto ds = f.config().create_writer();
-
-    std::vector<shared_ptr<dataset::WriterBatchElement>> batch;
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(mdc[0]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[0]->dataset_name) == "testds");
-    wassert(actual_file(str::joinpath(f.ds_root, "2009/12-04.bufr")).exists());
-    wassert(actual_type(mdc[0].source()).is_source_blob("bufr", f.ds_root, "2009/12-04.bufr"));
-
-    // Acquire again: it works, since USNs the same as the existing ones do overwrite
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[0]->dataset_name) == "testds");
-
-    // Acquire with a newer USN: it works
-    batch.clear();
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(mdc_upd[0]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[0]->dataset_name) == "testds");
-
-    // Acquire with the lower USN: it fails
-    batch.clear();
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(mdc[0]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
-    if (ds->type() == "simple")
-    {
-        wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-        wassert(actual(batch[0]->dataset_name) == "testds");
-    } else {
-        wassert(actual(batch[0]->result) == dataset::ACQ_ERROR_DUPLICATE);
-        wassert(actual(batch[0]->dataset_name) == "");
     }
 });
 
