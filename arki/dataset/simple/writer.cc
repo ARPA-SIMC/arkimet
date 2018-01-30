@@ -85,6 +85,36 @@ struct AppendSegment
         sum.writeAtomically(segment->absname + ".summary");
         //fsync(dir);
     }
+
+    WriterAcquireResult acquire(Metadata& md)
+    {
+        // Try appending
+        try {
+            const types::source::Blob& new_source = segment->append(md);
+            add(md, new_source);
+            segment->commit();
+            time_t ts = scan::timestamp(segment->absname);
+            if (ts == 0)
+                nag::warning("simple dataset acquire: %s timestamp is 0", segment->absname.c_str());
+            mft->acquire(segment->relname, ts, sum);
+            return ACQ_OK;
+        } catch (std::exception& e) {
+            // sqlite will take care of transaction consistency
+            md.add_note("Failed to store in dataset '" + config->name + "': " + e.what());
+            return ACQ_ERROR;
+        }
+    }
+
+    void acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch)
+    {
+        for (auto& e: batch)
+        {
+            e->dataset_name.clear();
+            e->result = acquire(e->md);
+            if (e->result == ACQ_OK)
+                e->dataset_name = config->name;
+        }
+    }
 };
 
 
@@ -109,9 +139,16 @@ std::string Writer::type() const { return "simple"; }
 
 std::unique_ptr<AppendSegment> Writer::file(const Metadata& md, const std::string& format)
 {
-    auto lock = m_config->append_lock_dataset();
-    auto segment = segmented::Writer::file(md, format);
-    return unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segment));
+    auto lock = config().append_lock_dataset();
+    return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segmented::Writer::file(md, format)));
+}
+
+std::unique_ptr<AppendSegment> Writer::file(const std::string& relname)
+{
+    sys::makedirs(str::dirname(str::joinpath(config().path, relname)));
+    auto lock = config().append_lock_dataset();
+    auto segment = segment_manager().get_writer(relname);
+    return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segment));
 }
 
 WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
@@ -120,36 +157,52 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     if (age_check.first) return age_check.second;
 
     auto segment = file(md, md.source().format);
-
-    // Try appending
-    try {
-        const types::source::Blob& new_source = segment->segment->append(md);
-        segment->add(md, new_source);
-        segment->segment->commit();
-        time_t ts = scan::timestamp(segment->segment->absname);
-        if (ts == 0)
-            nag::warning("simple dataset acquire: %s timestamp is 0", segment->segment->absname.c_str());
-        segment->mft->acquire(segment->segment->relname, ts, segment->sum);
-        return ACQ_OK;
-    } catch (std::exception& e) {
-        fprintf(stderr, "ERROR %s\n", e.what());
-        // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '" + config().name + "': " + e.what());
-        return ACQ_ERROR;
-    }
-
-    // After appending, keep updated info in-memory, and update manifest on
-    // flush when the Datafile structures are deallocated
+    return segment->acquire(md);
 }
 
 void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace)
 {
+    if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
+
+    // Clear dataset names, pre-process items that do not need further
+    // dispatching, and divide the rest of the batch by segment
+    std::map<std::string, std::vector<std::shared_ptr<dataset::WriterBatchElement>>> by_segment;
     for (auto& e: batch)
     {
         e->dataset_name.clear();
-        e->result = acquire(e->md, replace);
-        if (e->result == ACQ_OK)
-            e->dataset_name = name();
+
+        switch (replace)
+        {
+            case REPLACE_NEVER:
+            case REPLACE_ALWAYS:
+            case REPLACE_HIGHER_USN: break;
+            default:
+            {
+                e->md.add_note("cannot acquire into dataset " + name() + ": replace strategy " + std::to_string(replace) + " is not supported");
+                e->result = ACQ_ERROR;
+                continue;
+            }
+        }
+
+        auto age_check = config().check_acquire_age(e->md);
+        if (age_check.first)
+        {
+            e->result = age_check.second;
+            if (age_check.second == ACQ_OK)
+                e->dataset_name = name();
+            continue;
+        }
+
+        const core::Time& time = e->md.get<types::reftime::Position>()->time;
+        string relname = config().step()(time) + "." + e->md.source().format;
+        by_segment[relname].push_back(e);
+    }
+
+    // Import segment by segment
+    for (auto& s: by_segment)
+    {
+        auto segment = file(s.first);
+        segment->acquire_batch(s.second);
     }
 }
 

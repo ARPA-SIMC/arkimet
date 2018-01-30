@@ -26,6 +26,7 @@ protected:
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
     std::unique_ptr<AppendSegment> file(const Metadata& md, const std::string& format);
+    std::unique_ptr<AppendSegment> file(const std::string& relname);
 
 public:
     Writer(std::shared_ptr<const simple::Config> config);
