@@ -17,8 +17,7 @@ class Manifest;
 
 namespace simple {
 class Reader;
-
-namespace datafile { struct MdBuf; }
+class AppendSegment;
 
 class Writer : public segmented::Writer
 {
@@ -28,7 +27,7 @@ protected:
     std::shared_ptr<dataset::Lock> lock;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
-    std::unique_ptr<datafile::MdBuf> file(const Metadata& md, const std::string& format);
+    std::unique_ptr<AppendSegment> file(const Metadata& md, const std::string& format);
 
 public:
     Writer(std::shared_ptr<const simple::Config> config);

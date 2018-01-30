@@ -1,6 +1,5 @@
 #include "arki/dataset/simple/writer.h"
 #include "arki/dataset/index/manifest.h"
-#include "arki/dataset/simple/datafile.h"
 #include "arki/dataset/segment.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
@@ -12,6 +11,8 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/summary.h"
 #include <ctime>
 #include <cstdio>
 
@@ -24,6 +25,65 @@ using arki::core::Time;
 namespace arki {
 namespace dataset {
 namespace simple {
+
+/// Accumulate metadata and summaries while writing
+struct AppendSegment
+{
+    std::shared_ptr<segment::Writer> segment;
+    utils::sys::Path dir;
+    std::string basename;
+    std::string pathname;
+    bool flushed;
+    metadata::Collection mds;
+    Summary sum;
+
+    AppendSegment(const std::string& pathname, std::shared_ptr<core::Lock> lock)
+        : dir(str::dirname(pathname)), basename(str::basename(pathname)), pathname(pathname), flushed(true)
+    {
+        struct stat st_data;
+        if (!dir.fstatat_ifexists(basename.c_str(), st_data))
+            return;
+
+        // Read the metadata
+        scan::scan(pathname, lock, mds.inserter_func());
+
+        // Read the summary
+        if (!mds.empty())
+            mds.add_to_summary(sum);
+    }
+
+    AppendSegment(std::shared_ptr<segment::Writer> segment, std::shared_ptr<core::Lock> lock)
+        : AppendSegment(segment->absname, lock)
+    {
+        this->segment = segment;
+    }
+
+    ~AppendSegment()
+    {
+        flush();
+    }
+
+
+    void add(const Metadata& md, const types::source::Blob& source)
+    {
+        using namespace arki::types;
+
+        // Replace the pathname with its basename
+        unique_ptr<Metadata> copy(md.clone());
+        copy->set_source(Source::createBlobUnlocked(source.format, dir.name(), basename, source.offset, source.size));
+        sum.add(*copy);
+        mds.acquire(move(copy));
+        flushed = false;
+    }
+    void flush()
+    {
+        if (flushed) return;
+        mds.writeAtomically(pathname + ".metadata");
+        sum.writeAtomically(pathname + ".summary");
+        //fsync(dir);
+    }
+};
+
 
 Writer::Writer(std::shared_ptr<const simple::Config> config)
     : m_config(config), m_mft(0)
@@ -54,10 +114,10 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "simple"; }
 
-std::unique_ptr<datafile::MdBuf> Writer::file(const Metadata& md, const std::string& format)
+std::unique_ptr<AppendSegment> Writer::file(const Metadata& md, const std::string& format)
 {
     auto segment = segmented::Writer::file(md, format);
-    return unique_ptr<datafile::MdBuf>(new datafile::MdBuf(segment, lock));
+    return unique_ptr<AppendSegment>(new AppendSegment(segment, lock));
 }
 
 WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)

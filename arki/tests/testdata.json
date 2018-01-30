@@ -2546,11 +2546,6 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_simple_datafile",
-  "method": "append"
- },
- {
-  "doc": "",
   "group": "arki_dataset_simple_reader_plain",
   "method": "empty"
  },
