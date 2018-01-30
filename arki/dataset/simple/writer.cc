@@ -29,33 +29,28 @@ namespace simple {
 /// Accumulate metadata and summaries while writing
 struct AppendSegment
 {
+    std::shared_ptr<const simple::Config> config;
+    std::shared_ptr<dataset::AppendLock> lock;
     std::shared_ptr<segment::Writer> segment;
     utils::sys::Path dir;
     std::string basename;
-    std::string pathname;
     bool flushed;
     metadata::Collection mds;
     Summary sum;
 
-    AppendSegment(const std::string& pathname, std::shared_ptr<core::Lock> lock)
-        : dir(str::dirname(pathname)), basename(str::basename(pathname)), pathname(pathname), flushed(true)
+    AppendSegment(std::shared_ptr<const simple::Config> config, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
+        : config(config), lock(lock), segment(segment), dir(str::dirname(segment->absname)), basename(str::basename(segment->absname)), flushed(true)
     {
         struct stat st_data;
         if (!dir.fstatat_ifexists(basename.c_str(), st_data))
             return;
 
         // Read the metadata
-        scan::scan(pathname, lock, mds.inserter_func());
+        scan::scan(segment->absname, lock, mds.inserter_func());
 
         // Read the summary
         if (!mds.empty())
             mds.add_to_summary(sum);
-    }
-
-    AppendSegment(std::shared_ptr<segment::Writer> segment, std::shared_ptr<core::Lock> lock)
-        : AppendSegment(segment->absname, lock)
-    {
-        this->segment = segment;
     }
 
     ~AppendSegment()
@@ -78,8 +73,8 @@ struct AppendSegment
     void flush()
     {
         if (flushed) return;
-        mds.writeAtomically(pathname + ".metadata");
-        sum.writeAtomically(pathname + ".summary");
+        mds.writeAtomically(segment->absname + ".metadata");
+        sum.writeAtomically(segment->absname + ".summary");
         //fsync(dir);
     }
 };
@@ -117,7 +112,7 @@ std::string Writer::type() const { return "simple"; }
 std::unique_ptr<AppendSegment> Writer::file(const Metadata& md, const std::string& format)
 {
     auto segment = segmented::Writer::file(md, format);
-    return unique_ptr<AppendSegment>(new AppendSegment(segment, lock));
+    return unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segment));
 }
 
 WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
@@ -135,9 +130,9 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
         const types::source::Blob& new_source = mdbuf->segment->append(md);
         mdbuf->add(md, new_source);
         mdbuf->segment->commit();
-        time_t ts = scan::timestamp(mdbuf->pathname);
+        time_t ts = scan::timestamp(mdbuf->segment->absname);
         if (ts == 0)
-            nag::warning("simple dataset acquire: %s timestamp is 0", mdbuf->pathname.c_str());
+            nag::warning("simple dataset acquire: %s timestamp is 0", mdbuf->segment->absname.c_str());
         m_mft->acquire(mdbuf->segment->relname, ts, mdbuf->sum);
         return ACQ_OK;
     } catch (std::exception& e) {
