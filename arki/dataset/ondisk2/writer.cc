@@ -61,15 +61,15 @@ struct AppendSegment
     {
         Pending p_idx = idx.beginTransaction();
         try {
-            int id;
-            idx.index(md, segment->relname, segment->next_offset(), &id);
+            if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->relname, segment->next_offset()))
+            {
+                md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + old->filename + ":" + std::to_string(old->offset));
+                return ACQ_ERROR_DUPLICATE;
+            }
             segment->append(md);
             segment->commit();
             p_idx.commit();
             return ACQ_OK;
-        } catch (utils::sqlite::DuplicateInsert& di) {
-            md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data: " + di.what());
-            return ACQ_ERROR_DUPLICATE;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
             md.add_note("Failed to store in dataset '" + config->name + "': " + e.what());
@@ -81,8 +81,7 @@ struct AppendSegment
     {
         Pending p_idx = idx.beginTransaction();
         try {
-            int id;
-            idx.replace(md, segment->relname, segment->next_offset(), &id);
+            idx.replace(md, segment->relname, segment->next_offset());
             segment->append(md);
             // In a replace, we necessarily replace inside the same file,
             // as it depends on the metadata reftime
@@ -102,58 +101,42 @@ struct AppendSegment
         Pending p_idx = idx.beginTransaction();
 
         try {
-            bool exists = false;
-            try {
-                int id;
-                idx.index(md, segment->relname, segment->next_offset(), &id);
-            } catch (utils::sqlite::DuplicateInsert& di) {
-                // It already exists, so we keep p_df uncommitted and check Update Sequence Numbers
-                exists = true;
-            }
-
-            if (!exists)
+            // Try to acquire without replacing
+            if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->relname, segment->next_offset()))
             {
+                // Duplicate detected
+
+                // Read the update sequence number of the new BUFR
+                int new_usn;
+                if (!scan::update_sequence_number(md, new_usn))
+                    return ACQ_ERROR_DUPLICATE;
+
+                // Read the update sequence number of the old BUFR
+                auto reader = arki::Reader::create_new(old->absolutePathname(), lock);
+                old->lock(reader);
+                int old_usn;
+                if (!scan::update_sequence_number(*old, old_usn))
+                {
+                    md.add_note("Failed to store in dataset '" + config->name + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
+                    return ACQ_ERROR;
+                }
+
+                // If the new element has no higher Update Sequence Number, report a duplicate
+                if (old_usn > new_usn)
+                    return ACQ_ERROR_DUPLICATE;
+
+                // Replace, reusing the pending datafile transaction from earlier
+                idx.replace(md, segment->relname, segment->next_offset());
+                segment->append(md);
+                segment->commit();
+                p_idx.commit();
+                return ACQ_OK;
+            } else {
                 segment->append(md);
                 segment->commit();
                 p_idx.commit();
                 return ACQ_OK;
             }
-
-            // Read the update sequence number of the new BUFR
-            int new_usn;
-            if (!scan::update_sequence_number(md, new_usn))
-                return ACQ_ERROR_DUPLICATE;
-
-            // Read the metadata of the existing BUFR
-            std::unique_ptr<types::source::Blob> old = idx.get_current(md);
-            if (!old)
-            {
-                stringstream ss;
-                ss << "cannot acquire into dataset " << config->name << ": insert reported a conflict, the index failed to find the original version";
-                throw runtime_error(ss.str());
-            }
-
-            // Read the update sequence number of the old BUFR
-            auto reader = arki::Reader::create_new(old->absolutePathname(), lock);
-            old->lock(reader);
-            int old_usn;
-            if (!scan::update_sequence_number(*old, old_usn))
-            {
-                stringstream ss;
-                ss << "cannot acquire into dataset " << config->name << ": insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
-                throw runtime_error(ss.str());
-            }
-
-            // If there is no new Update Sequence Number, report a duplicate
-            if (old_usn > new_usn)
-                return ACQ_ERROR_DUPLICATE;
-
-            int id;
-            idx.replace(md, segment->relname, segment->next_offset(), &id);
-            segment->append(md);
-            segment->commit();
-            p_idx.commit();
-            return ACQ_OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
             md.add_note("Failed to store in dataset '" + config->name + "': " + e.what());
@@ -469,14 +452,14 @@ public:
             const Metadata& md = *i.second;
             const source::Blob& blob = md.sourceBlob();
             try {
-                int id;
                 if (str::basename(blob.filename) != basename)
                     throw std::runtime_error("cannot rescan " + segment->relname + ": metadata points to the wrong file: " + blob.filename);
-                checker.idx->index(md, segment->relname, blob.offset, &id);
-            } catch (utils::sqlite::DuplicateInsert& di) {
-                stringstream ss;
-                ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate elsewhere in the dataset: manual fix is required";
-                throw runtime_error(ss.str());
+                if (std::unique_ptr<types::source::Blob> old = checker.idx->index(md, segment->relname, blob.offset))
+                {
+                    stringstream ss;
+                    ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate at offset " << old->offset << ": manual fix is required";
+                    throw runtime_error(ss.str());
+                }
             } catch (std::exception& e) {
                 stringstream ss;
                 ss << "cannot reindex " << basename << ": failed to reindex data item at offset " << blob.offset << ": " << e.what();
@@ -501,11 +484,8 @@ public:
         // Add to index
         Pending p_idx = checker.idx->beginTransaction();
         for (auto& md: contents)
-        {
-            const auto& src = md->sourceBlob();
-            int id;
-            checker.idx->index(*md, segment->relname, src.offset, &id);
-        }
+            if (checker.idx->index(*md, segment->relname, md->sourceBlob().offset))
+                throw std::runtime_error("duplicate detected while reordering segment");
         p_idx.commit();
 
         // Remove .metadata and .summary files

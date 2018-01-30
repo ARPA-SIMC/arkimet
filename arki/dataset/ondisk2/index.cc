@@ -1029,47 +1029,6 @@ void WIndex::initDB()
     if (m_others) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_other ON md (other)");
 }
 
-void WIndex::bindInsertParams(Query& q, const Metadata& md, const std::string& file, uint64_t ofs, char* timebuf)
-{
-    int idx = 0;
-
-    q.bind(++idx, md.source().format);
-    q.bind(++idx, file);
-    q.bind(++idx, ofs);
-    q.bind(++idx, md.data_size());
-    //q.bindItems(++idx, md.notes);
-    q.bind(++idx, md.notes_encoded());
-
-    if (const reftime::Position* reftime = md.get<reftime::Position>())
-    {
-        const auto& t = reftime->time;
-        int len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", t.ye, t.mo, t.da, t.ho, t.mi, t.se);
-        q.bind(++idx, timebuf, len);
-    } else {
-        q.bindNull(++idx);
-    }
-
-    if (m_uniques)
-    {
-        int id = m_uniques->obtain(md);
-        q.bind(++idx, id);
-    }
-    if (m_others)
-    {
-        int id = m_others->obtain(md);
-        q.bind(++idx, id);
-    }
-    if (config().smallfiles)
-    {
-        if (const types::Value* v = md.get<types::Value>())
-        {
-            q.bind(++idx, v->buffer);
-        } else {
-            q.bindNull(++idx);
-        }
-    }
-}
-
 Pending WIndex::beginTransaction()
 {
     return Pending(new SqliteTransaction(m_db));
@@ -1080,35 +1039,109 @@ Pending WIndex::beginExclusiveTransaction()
     return Pending(new SqliteTransaction(m_db, "EXCLUSIVE"));
 }
 
-void WIndex::index(const Metadata& md, const std::string& file, uint64_t ofs, int* id)
+namespace {
+
+struct Inserter
 {
+    WIndex& idx;
+    const Metadata& md;
+    char timebuf[25];
+    int timebuf_len;
+    int id_uniques = -1;
+    int id_others = -1;
+
+    Inserter(WIndex& idx, const Metadata& md)
+        : idx(idx), md(md)
+    {
+        if (const reftime::Position* reftime = md.get<reftime::Position>())
+        {
+            const auto& t = reftime->time;
+            timebuf_len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", t.ye, t.mo, t.da, t.ho, t.mi, t.se);
+        } else {
+            timebuf[0] = 0;
+            timebuf_len = 0;
+        }
+
+        if (idx.has_uniques()) id_uniques = idx.uniques().obtain(md);
+        if (idx.has_others()) id_others = idx.others().obtain(md);
+    }
+
+    void bind_get_current(Query& q)
+    {
+        if (timebuf_len)
+            q.bind(1, timebuf, timebuf_len);
+        else
+            q.bindNull(1);
+
+        if (id_uniques != -1) q.bind(2, id_uniques);
+    }
+
+    void bind_insert(Query& q, const std::string& file, uint64_t ofs)
+    {
+        int qidx = 0;
+
+        q.bind(++qidx, md.source().format);
+        q.bind(++qidx, file);
+        q.bind(++qidx, ofs);
+        q.bind(++qidx, md.data_size());
+        q.bind(++qidx, md.notes_encoded());
+
+        if (timebuf_len)
+            q.bind(++qidx, timebuf, timebuf_len);
+        else
+            q.bindNull(++qidx);
+
+        if (id_uniques != -1) q.bind(++qidx, id_uniques);
+        if (id_others != -1) q.bind(++qidx, id_others);
+        if (idx.config().smallfiles)
+        {
+            if (const types::Value* v = md.get<types::Value>())
+            {
+                q.bind(++qidx, v->buffer);
+            } else {
+                q.bindNull(++qidx);
+            }
+        }
+    }
+};
+
+}
+
+std::unique_ptr<types::source::Blob> WIndex::index(const Metadata& md, const std::string& relpath, uint64_t ofs)
+{
+    std::unique_ptr<types::source::Blob> res;
+    Inserter inserter(*this, md);
+
+    // Check if a conflicting metadata exists in the dataset
+    m_get_current.reset();
+    inserter.bind_get_current(m_get_current);
+    while (m_get_current.step())
+        res = types::source::Blob::create_unlocked(
+                m_get_current.fetchString(0),
+                config().path,
+                m_get_current.fetchString(1),
+                m_get_current.fetch<uint64_t>(2),
+                m_get_current.fetch<uint64_t>(3));
+    if (res) return res;
+
     m_insert.reset();
-
-    char buf[25];
-    bindInsertParams(m_insert, md, file, ofs, buf);
-
+    inserter.bind_insert(m_insert, relpath, ofs);
     while (m_insert.step())
         ;
 
-    if (id)
-        *id = m_db.lastInsertID();
-
     // Invalidate the summary cache for this month
     scache.invalidate(md);
+    return res;
 }
 
-void WIndex::replace(Metadata& md, const std::string& file, uint64_t ofs, int* id)
+void WIndex::replace(Metadata& md, const std::string& relpath, uint64_t ofs)
 {
     m_replace.reset();
 
-    char buf[25];
-    bindInsertParams(m_replace, md, file, ofs, buf);
-
+    Inserter inserter(*this, md);
+    inserter.bind_insert(m_replace, relpath, ofs);
     while (m_replace.step())
         ;
-
-    if (id)
-        *id = m_db.lastInsertID();
 
     // Invalidate the summary cache for this month
     scache.invalidate(md);

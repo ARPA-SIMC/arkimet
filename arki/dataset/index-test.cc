@@ -5,6 +5,7 @@
 #include "ondisk2/index.h"
 #include "arki/summary.h"
 #include "arki/utils/sys.h"
+#include "arki/types/source/blob.h"
 
 using namespace std;
 using namespace arki;

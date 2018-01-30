@@ -164,18 +164,10 @@ add_method("index", [] {
     p = test->beginTransaction();
 
     // Index a metadata
-    int id = test->id(md);
-    wassert(actual(id) == -1);
-    wassert(test->index(md, "inbound/test.grib1", 0, &id));
-    wassert(actual(id) == 1);
-    wassert(actual(test->id(md)) == 1);
+    wassert(actual(test->index(md, "inbound/test.grib1", 0)).isfalse());
 
     // Index a second one
-    id = test->id(md1);
-    wassert(actual(id) == -1);
-    wassert(test->index(md1, "inbound/test-sorted.grib1", 0, &id));
-    wassert(actual(id) == 2);
-    wassert(actual(test->id(md1)) == 2);
+    wassert(actual(test->index(md1, "inbound/test-sorted.grib1", 0)).isfalse());
 
     // Query various kinds of metadata
     metadata::Collection mdc;
