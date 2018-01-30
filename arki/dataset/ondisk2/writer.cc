@@ -60,7 +60,7 @@ struct AppendSegment
 
     WriterAcquireResult acquire_replace_never(Metadata& md)
     {
-        Pending p_idx = idx.beginTransaction();
+        Pending p_idx = idx.begin_transaction();
         try {
             if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->relname, segment->next_offset()))
             {
@@ -80,7 +80,7 @@ struct AppendSegment
 
     WriterAcquireResult acquire_replace_always(Metadata& md)
     {
-        Pending p_idx = idx.beginTransaction();
+        Pending p_idx = idx.begin_transaction();
         try {
             idx.replace(md, segment->relname, segment->next_offset());
             segment->append(md);
@@ -99,7 +99,7 @@ struct AppendSegment
 
     WriterAcquireResult acquire_replace_higher_usn(Metadata& md)
     {
-        Pending p_idx = idx.beginTransaction();
+        Pending p_idx = idx.begin_transaction();
 
         try {
             // Try to acquire without replacing
@@ -148,7 +148,7 @@ struct AppendSegment
 
     void acquire_batch_replace_never(std::vector<std::shared_ptr<WriterBatchElement>>& batch)
     {
-        Pending p_idx = idx.beginTransaction();
+        Pending p_idx = idx.begin_transaction();
 
         for (auto& e: batch)
         {
@@ -171,7 +171,7 @@ struct AppendSegment
 
     void acquire_batch_replace_always(std::vector<std::shared_ptr<WriterBatchElement>>& batch)
     {
-        Pending p_idx = idx.beginTransaction();
+        Pending p_idx = idx.begin_transaction();
 
         for (auto& e: batch)
         {
@@ -188,7 +188,7 @@ struct AppendSegment
 
     void acquire_batch_replace_higher_usn(std::vector<std::shared_ptr<WriterBatchElement>>& batch)
     {
-        Pending p_idx = idx.beginTransaction();
+        Pending p_idx = idx.begin_transaction();
 
         for (auto& e: batch)
         {
@@ -376,7 +376,7 @@ void Writer::remove(Metadata& md)
     index::WIndex idx(m_config);
     idx.open();
     idx.lock = lock;
-    Pending p_del = idx.beginTransaction();
+    Pending p_del = idx.begin_transaction();
     idx.remove(source->filename, source->offset);
 
     // Create flagfile
@@ -517,7 +517,7 @@ public:
     size_t reorder(metadata::Collection& mds, unsigned test_flags) override
     {
         // Lock away writes and reads
-        Pending p = checker.idx->beginExclusiveTransaction();
+        Pending p = checker.idx->begin_transaction();
 
         Pending p_repack = segment->repack(checker.config().path, mds, test_flags);
 
@@ -575,7 +575,7 @@ public:
         //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
 
         // Lock away writes and reads
-        Pending p = checker.idx->beginExclusiveTransaction();
+        Pending p = checker.idx->begin_transaction();
         // cerr << "LOCK" << endl;
 
         // Remove from the index all data about the file
@@ -637,7 +637,7 @@ public:
     void index(metadata::Collection&& contents) override
     {
         // Add to index
-        Pending p_idx = checker.idx->beginTransaction();
+        Pending p_idx = checker.idx->begin_transaction();
         for (auto& md: contents)
             if (checker.idx->index(*md, segment->relname, md->sourceBlob().offset))
                 throw std::runtime_error("duplicate detected while reordering segment");

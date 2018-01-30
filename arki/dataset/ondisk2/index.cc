@@ -990,14 +990,9 @@ void WIndex::initDB()
     if (m_others) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_other ON md (other)");
 }
 
-Pending WIndex::beginTransaction()
+Pending WIndex::begin_transaction()
 {
     return Pending(new SqliteTransaction(m_db));
-}
-
-Pending WIndex::beginExclusiveTransaction()
-{
-    return Pending(new SqliteTransaction(m_db, "EXCLUSIVE"));
 }
 
 namespace {

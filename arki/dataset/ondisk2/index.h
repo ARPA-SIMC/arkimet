@@ -258,11 +258,8 @@ public:
 	 */
 	bool open();
 
-	/// Begin a transaction and return the corresponding Pending object
-	Pending beginTransaction();
-
-	/// Begin an EXCLUSIVE transaction and return the corresponding Pending object
-	Pending beginExclusiveTransaction();
+    /// Begin a transaction and return the corresponding Pending object
+    Pending begin_transaction();
 
     /**
      * Index the given metadata item.

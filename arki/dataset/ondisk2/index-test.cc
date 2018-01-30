@@ -161,7 +161,7 @@ add_method("index", [] {
     Pending p;
 
     test->open();
-    p = test->beginTransaction();
+    p = test->begin_transaction();
 
     // Index a metadata
     wassert(actual(test->index(md, "inbound/test.grib1", 0)).isfalse());
@@ -202,7 +202,7 @@ add_method("remove", [] {
     Pending p;
 
     test->open();
-    p = test->beginTransaction();
+    p = test->begin_transaction();
 
     // Index a metadata
     test->index(md, "inbound/test.grib1", 0);
@@ -280,7 +280,7 @@ add_method("concurrent", [] {
         unique_ptr<WIndex> test1 = createIndex<WIndex>(lock, cfg);
         test1->open();
 
-        Pending p = test1->beginTransaction();
+        Pending p = test1->begin_transaction();
         wassert(test1->index(md, "inbound/test.grib1", 0));
         wassert(test1->index(md1, "inbound/test-sorted.grib1", 0));
         p.commit();
@@ -306,7 +306,7 @@ add_method("concurrent", [] {
         auto lock = make_shared<core::lock::Null>();
         unique_ptr<WIndex> test1 = createIndex<WIndex>(lock, cfg);
         test1->open();
-        Pending p = test1->beginTransaction();
+        Pending p = test1->begin_transaction();
         test1->index(md3, "inbound/test.bufr", 0);
         p.commit();
     }
@@ -339,7 +339,7 @@ add_method("query_file", [] {
     ensure_equals(src.size(), 3u);
 
     test->open();
-    p = test->beginTransaction();
+    p = test->begin_transaction();
 
     // Index two metadata in one file
     test->index(md, "inbound/padded.grib1", 0);
@@ -388,7 +388,7 @@ add_method("reproduce_old_issue1", [] {
     Pending p;
 
     test->open();
-    p = test->beginTransaction();
+    p = test->begin_transaction();
 
     // Index some metadata
     test->index(md, "test-md", 0);
@@ -452,7 +452,7 @@ add_method("largefile", [] {
     Pending p;
 
     test->open();
-    p = test->beginTransaction();
+    p = test->begin_transaction();
 
     // Index the two metadata
     test->index(md, "inbound/test.grib1", md.sourceBlob().offset);
@@ -501,7 +501,7 @@ add_method("smallfiles", [] {
         test->open();
 
         // Insert a metadata
-        Pending p = test->beginTransaction();
+        Pending p = test->begin_transaction();
         test->index(src[0], "inbound/test.vm2", src[0].sourceBlob().offset);
         p.commit();
 
@@ -547,7 +547,7 @@ add_method("smallfiles", [] {
         test->open();
 
         // Insert a metadata
-        Pending p = test->beginTransaction();
+        Pending p = test->begin_transaction();
         test->index(src[0], "inbound/test.vm2", src[0].sourceBlob().offset);
         p.commit();
 
