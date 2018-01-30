@@ -16,6 +16,7 @@ class Summary;
 
 namespace dataset {
 namespace ondisk2 {
+struct AppendSegment;
 struct CheckerSegment;
 
 namespace writer {
@@ -30,9 +31,7 @@ protected:
     index::WContents* idx;
     std::shared_ptr<dataset::Lock> lock;
 
-    WriterAcquireResult acquire_replace_never(Metadata& md);
-    WriterAcquireResult acquire_replace_always(Metadata& md);
-    WriterAcquireResult acquire_replace_higher_usn(Metadata& md);
+    std::unique_ptr<AppendSegment> segment(const Metadata& md, const std::string& format);
 
 public:
     Writer(std::shared_ptr<const ondisk2::Config> config);

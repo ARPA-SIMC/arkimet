@@ -38,6 +38,119 @@ namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
+struct AppendSegment
+{
+    std::shared_ptr<const ondisk2::Config> config;
+    index::WContents& idx;
+    std::shared_ptr<segment::Writer> segment;
+
+    AppendSegment(std::shared_ptr<const ondisk2::Config> config, index::WContents& idx, std::shared_ptr<segment::Writer> segment)
+        : config(config), idx(idx), segment(segment)
+    {
+    }
+
+    WriterAcquireResult acquire_replace_never(Metadata& md)
+    {
+        Pending p_idx = idx.beginTransaction();
+        try {
+            int id;
+            idx.index(md, segment->relname, segment->next_offset(), &id);
+            segment->append(md);
+            segment->commit();
+            p_idx.commit();
+            return ACQ_OK;
+        } catch (utils::sqlite::DuplicateInsert& di) {
+            md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data: " + di.what());
+            return ACQ_ERROR_DUPLICATE;
+        } catch (std::exception& e) {
+            // sqlite will take care of transaction consistency
+            md.add_note("Failed to store in dataset '" + config->name + "': " + e.what());
+            return ACQ_ERROR;
+        }
+    }
+
+    WriterAcquireResult acquire_replace_always(Metadata& md)
+    {
+        Pending p_idx = idx.beginTransaction();
+        try {
+            int id;
+            idx.replace(md, segment->relname, segment->next_offset(), &id);
+            segment->append(md);
+            // In a replace, we necessarily replace inside the same file,
+            // as it depends on the metadata reftime
+            //createPackFlagfile(df->pathname);
+            segment->commit();
+            p_idx.commit();
+            return ACQ_OK;
+        } catch (std::exception& e) {
+            // sqlite will take care of transaction consistency
+            md.add_note("Failed to store in dataset '" + config->name + "': " + e.what());
+            return ACQ_ERROR;
+        }
+    }
+
+    WriterAcquireResult acquire_replace_higher_usn(Metadata& md)
+    {
+        Pending p_idx = idx.beginTransaction();
+
+        try {
+            bool exists = false;
+            try {
+                int id;
+                idx.index(md, segment->relname, segment->next_offset(), &id);
+            } catch (utils::sqlite::DuplicateInsert& di) {
+                // It already exists, so we keep p_df uncommitted and check Update Sequence Numbers
+                exists = true;
+            }
+
+            if (!exists)
+            {
+                segment->append(md);
+                segment->commit();
+                p_idx.commit();
+                return ACQ_OK;
+            }
+
+            // Read the update sequence number of the new BUFR
+            int new_usn;
+            if (!scan::update_sequence_number(md, new_usn))
+                return ACQ_ERROR_DUPLICATE;
+
+            // Read the metadata of the existing BUFR
+            Metadata old_md;
+            if (!idx.get_current(md, old_md))
+            {
+                stringstream ss;
+                ss << "cannot acquire into dataset " << config->name << ": insert reported a conflict, the index failed to find the original version";
+                throw runtime_error(ss.str());
+            }
+
+            // Read the update sequence number of the old BUFR
+            int old_usn;
+            if (!scan::update_sequence_number(old_md, old_usn))
+            {
+                stringstream ss;
+                ss << "cannot acquire into dataset " << config->name << ": insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
+                throw runtime_error(ss.str());
+            }
+
+            // If there is no new Update Sequence Number, report a duplicate
+            if (old_usn > new_usn)
+                return ACQ_ERROR_DUPLICATE;
+
+            int id;
+            idx.replace(md, segment->relname, segment->next_offset(), &id);
+            segment->append(md);
+            segment->commit();
+            p_idx.commit();
+            return ACQ_OK;
+        } catch (std::exception& e) {
+            // sqlite will take care of transaction consistency
+            md.add_note("Failed to store in dataset '" + config->name + "': " + e.what());
+            return ACQ_ERROR;
+        }
+    }
+};
 
 Writer::Writer(std::shared_ptr<const ondisk2::Config> config)
     : m_config(config), idx(new index::WContents(config))
@@ -66,113 +179,9 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "ondisk2"; }
 
-WriterAcquireResult Writer::acquire_replace_never(Metadata& md)
+std::unique_ptr<AppendSegment> Writer::segment(const Metadata& md, const std::string& format)
 {
-    auto w = file(md, md.source().format);
-
-    Pending p_idx = idx->beginTransaction();
-    try {
-        const types::source::Blob& new_source = w->append(md);
-        int id;
-        idx->index(md, w->relname, new_source.offset, &id);
-        w->commit();
-        p_idx.commit();
-        return ACQ_OK;
-    } catch (utils::sqlite::DuplicateInsert& di) {
-        md.add_note("Failed to store in dataset '" + name() + "' because the dataset already has the data: " + di.what());
-        return ACQ_ERROR_DUPLICATE;
-    } catch (std::exception& e) {
-        // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
-        return ACQ_ERROR;
-    }
-}
-
-WriterAcquireResult Writer::acquire_replace_always(Metadata& md)
-{
-    auto w = file(md, md.source().format);
-
-    Pending p_idx = idx->beginTransaction();
-    try {
-        const types::source::Blob& new_source = w->append(md);
-        int id;
-        idx->replace(md, w->relname, new_source.offset, &id);
-        // In a replace, we necessarily replace inside the same file,
-        // as it depends on the metadata reftime
-        //createPackFlagfile(df->pathname);
-        w->commit();
-        p_idx.commit();
-        return ACQ_OK;
-    } catch (std::exception& e) {
-        // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
-        return ACQ_ERROR;
-    }
-}
-
-WriterAcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
-{
-    // Try to acquire without replacing
-    auto w = file(md, md.source().format);
-
-    Pending p_idx = idx->beginTransaction();
-
-    try {
-        bool exists = false;
-        try {
-            int id;
-            idx->index(md, w->relname, w->next_offset(), &id);
-        } catch (utils::sqlite::DuplicateInsert& di) {
-            // It already exists, so we keep p_df uncommitted and check Update Sequence Numbers
-            exists = true;
-        }
-
-        if (!exists)
-        {
-            w->append(md);
-            w->commit();
-            p_idx.commit();
-            return ACQ_OK;
-        }
-
-        // Read the update sequence number of the new BUFR
-        int new_usn;
-        if (!scan::update_sequence_number(md, new_usn))
-            return ACQ_ERROR_DUPLICATE;
-
-        // Read the metadata of the existing BUFR
-        Metadata old_md;
-        if (!idx->get_current(md, old_md))
-        {
-            stringstream ss;
-            ss << "cannot acquire into dataset " << name() << ": insert reported a conflict, the index failed to find the original version";
-            throw runtime_error(ss.str());
-        }
-
-        // Read the update sequence number of the old BUFR
-        int old_usn;
-        if (!scan::update_sequence_number(old_md, old_usn))
-        {
-            stringstream ss;
-            ss << "cannot acquire into dataset " << name() << ": insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
-            throw runtime_error(ss.str());
-        }
-
-        // If there is no new Update Sequence Number, report a duplicate
-        if (old_usn > new_usn)
-            return ACQ_ERROR_DUPLICATE;
-
-        int id;
-        idx->replace(md, w->relname, w->next_offset(), &id);
-        w->append(md);
-        w->commit();
-        p_idx.commit();
-        return ACQ_OK;
-    } catch (std::exception& e) {
-        // sqlite will take care of transaction consistency
-        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
-        return ACQ_ERROR;
-    }
+    return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, *idx, IndexedWriter::file(md, format)));
 }
 
 WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
@@ -185,13 +194,13 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 
     if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
 
-    // TODO: refuse if md is before "archive age"
+    auto w = segment(md, md.source().format);
 
     switch (replace)
     {
-        case REPLACE_NEVER: return acquire_replace_never(md);
-        case REPLACE_ALWAYS: return acquire_replace_always(md);
-        case REPLACE_HIGHER_USN: return acquire_replace_higher_usn(md);
+        case REPLACE_NEVER: return w->acquire_replace_never(md);
+        case REPLACE_ALWAYS: return w->acquire_replace_always(md);
+        case REPLACE_HIGHER_USN: return w->acquire_replace_higher_usn(md);
         default:
         {
             stringstream ss;
