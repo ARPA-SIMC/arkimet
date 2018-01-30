@@ -146,11 +146,7 @@ void Contents::initQueries()
     if (config().smallfiles) query += " AND data=?";
     m_get_id.compile(query);
 
-    query = "SELECT id, format, file, offset, size, notes, reftime";
-    if (m_uniques) query += ", uniq";
-    if (m_others) query += ", other";
-    if (config().smallfiles) query += ", data";
-    query += " FROM md WHERE reftime=?";
+    query = "SELECT format, file, offset, size FROM md WHERE reftime=?";
     if (m_uniques) query += " AND uniq=?";
     m_get_current.compile(query);
 }
@@ -217,15 +213,17 @@ int Contents::id(const Metadata& md) const
     return id;
 }
 
-bool Contents::get_current(const Metadata& md, Metadata& current) const
+std::unique_ptr<types::source::Blob> Contents::get_current(const Metadata& md) const
 {
     if (lock.expired())
         throw std::runtime_error("cannot get_current while there is no lock held");
     m_get_current.reset();
+    const reftime::Position* rt = md.get<reftime::Position>();
+    if (!rt) throw std::runtime_error("cannot get_current on a Metadata with no reftime information");
+
+    std::unique_ptr<types::source::Blob> res;
 
     int idx = 0;
-    const reftime::Position* rt = md.get<reftime::Position>();
-    if (!rt) return -1;
     string sqltime = rt->time.to_sql();
     m_get_current.bind(++idx, sqltime);
 
@@ -234,20 +232,18 @@ bool Contents::get_current(const Metadata& md, Metadata& current) const
     {
         id_unique = m_uniques->get(md);
         // If we do not have this aggregate, then we do not have this metadata
-        if (id_unique == -1) return false;
+        if (id_unique == -1) return res;
         m_get_current.bind(++idx, id_unique);
     }
 
-    bool found = false;
     while (m_get_current.step())
-    {
-        current.clear();
-        string abspath = str::joinpath(config().path, m_get_current.fetchString(2));
-        auto reader = arki::Reader::create_new(abspath, lock.lock());
-        build_md(m_get_current, current, reader);
-        found = true;
-    }
-    return found;
+        res = types::source::Blob::create_unlocked(
+                m_get_current.fetchString(0),
+                config().path,
+                m_get_current.fetchString(1),
+                m_get_current.fetch<uint64_t>(2),
+                m_get_current.fetch<uint64_t>(3));
+    return res;
 }
 
 size_t Contents::count() const

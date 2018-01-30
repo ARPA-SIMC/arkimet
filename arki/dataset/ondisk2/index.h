@@ -134,7 +134,7 @@ public:
      * @returns
      *   true if the element was found, else false and \a current is untouched
      */
-    bool get_current(const Metadata& md, Metadata& current) const;
+    std::unique_ptr<types::source::Blob> get_current(const Metadata& md) const;
 
     /// Return the number of items currently indexed by this index
     size_t count() const;

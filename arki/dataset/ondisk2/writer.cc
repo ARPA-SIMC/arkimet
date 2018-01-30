@@ -7,6 +7,7 @@
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
+#include "arki/reader.h"
 #include "arki/types/source/blob.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
@@ -124,8 +125,8 @@ struct AppendSegment
                 return ACQ_ERROR_DUPLICATE;
 
             // Read the metadata of the existing BUFR
-            Metadata old_md;
-            if (!idx.get_current(md, old_md))
+            std::unique_ptr<types::source::Blob> old = idx.get_current(md);
+            if (!old)
             {
                 stringstream ss;
                 ss << "cannot acquire into dataset " << config->name << ": insert reported a conflict, the index failed to find the original version";
@@ -133,8 +134,10 @@ struct AppendSegment
             }
 
             // Read the update sequence number of the old BUFR
+            auto reader = arki::Reader::create_new(old->absolutePathname(), lock);
+            old->lock(reader);
             int old_usn;
-            if (!scan::update_sequence_number(old_md, old_usn))
+            if (!scan::update_sequence_number(*old, old_usn))
             {
                 stringstream ss;
                 ss << "cannot acquire into dataset " << config->name << ": insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
@@ -740,10 +743,8 @@ void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<Wri
         idx.lock = lock;
         idx.open();
 
-        Metadata old_md;
-        bool exists = idx.get_current(e->md, old_md);
-
-        if (!exists)
+        std::unique_ptr<types::source::Blob> old = idx.get_current(e->md);
+        if (!old)
         {
             e->result = ACQ_OK;
             e->dataset_name = config->name;
@@ -768,8 +769,10 @@ void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<Wri
         }
 
         // Read the update sequence number of the old BUFR
+        auto reader = arki::Reader::create_new(old->absolutePathname(), lock);
+        old->lock(reader);
         int old_usn;
-        if (!scan::update_sequence_number(old_md, old_usn))
+        if (!scan::update_sequence_number(*old, old_usn))
         {
             out << "cannot acquire into dataset: insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
             e->result = ACQ_ERROR;
