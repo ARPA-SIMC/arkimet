@@ -228,7 +228,7 @@ public:
     void test_make_hole(const std::string& relname, unsigned hole_size, unsigned data_idx) override;
 };
 
-class WContents : public Contents
+class WIndex : public Contents
 {
 protected:
 	utils::sqlite::InsertQuery m_insert;
@@ -249,8 +249,8 @@ protected:
 	void bindInsertParams(utils::sqlite::Query& q, const Metadata& md, const std::string& file, uint64_t ofs, char* timebuf);
 
 public:
-    WContents(std::shared_ptr<const ondisk2::Config> config);
-    ~WContents();
+    WIndex(std::shared_ptr<const ondisk2::Config> config);
+    ~WIndex();
 
 	/**
 	 * Initialise access to the index

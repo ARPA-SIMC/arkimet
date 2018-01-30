@@ -30,7 +30,7 @@ using namespace arki::tests;
 
 // Create a dataset index gived its configuration
 template<typename INDEX>
-inline unique_ptr<WContents> createIndex(std::shared_ptr<core::Lock> lock, const std::string& text_cfg)
+inline unique_ptr<WIndex> createIndex(std::shared_ptr<core::Lock> lock, const std::string& text_cfg)
 {
     ConfigFile cfg;
     cfg.parse(text_cfg);
@@ -80,7 +80,7 @@ Metadata make_md1()
     return md1;
 }
 
-void query_index(WContents& idx, const dataset::DataQuery& q, metadata::Collection& dest)
+void query_index(WIndex& idx, const dataset::DataQuery& q, metadata::Collection& dest)
 {
     idx.query_data(q, dest.inserter_func());
 }
@@ -149,7 +149,7 @@ add_method("index", [] {
     auto md1 = make_md1();
 
     auto lock = make_shared<core::lock::Null>();
-    unique_ptr<WContents> test = createIndex<WContents>(lock,
+    unique_ptr<WIndex> test = createIndex<WIndex>(lock,
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
@@ -198,7 +198,7 @@ add_method("remove", [] {
     auto md1 = make_md1();
 
     auto lock = make_shared<core::lock::Null>();
-    unique_ptr<WContents> test = createIndex<WContents>(lock,
+    unique_ptr<WIndex> test = createIndex<WIndex>(lock,
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
@@ -284,7 +284,7 @@ add_method("concurrent", [] {
     // Create the index and index two metadata
     {
         auto lock = make_shared<core::lock::Null>();
-        unique_ptr<WContents> test1 = createIndex<WContents>(lock, cfg);
+        unique_ptr<WIndex> test1 = createIndex<WIndex>(lock, cfg);
         test1->open();
 
         Pending p = test1->beginTransaction();
@@ -311,7 +311,7 @@ add_method("concurrent", [] {
     md3.add_note("this is a test");
     {
         auto lock = make_shared<core::lock::Null>();
-        unique_ptr<WContents> test1 = createIndex<WContents>(lock, cfg);
+        unique_ptr<WIndex> test1 = createIndex<WIndex>(lock, cfg);
         test1->open();
         Pending p = test1->beginTransaction();
         test1->index(md3, "inbound/test.bufr", 0);
@@ -331,7 +331,7 @@ add_method("query_file", [] {
     unlink("file1");
 
     auto lock = make_shared<core::lock::Null>();
-    unique_ptr<WContents> test = createIndex<WContents>(lock,
+    unique_ptr<WIndex> test = createIndex<WIndex>(lock,
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
@@ -383,7 +383,7 @@ add_method("reproduce_old_issue1", [] {
     unlink("file1");
 
     auto lock = make_shared<core::lock::Null>();
-    unique_ptr<WContents> test = createIndex<WContents>(lock,
+    unique_ptr<WIndex> test = createIndex<WIndex>(lock,
         "type = ondisk2\n"
         "path = \n"
         "step = daily\n"
@@ -447,7 +447,7 @@ add_method("largefile", [] {
     unlink("file1");
 
     auto lock = make_shared<core::lock::Null>();
-    unique_ptr<WContents> test = createIndex<WContents>(lock,
+    unique_ptr<WIndex> test = createIndex<WIndex>(lock,
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
@@ -496,7 +496,7 @@ add_method("smallfiles", [] {
 
         // An index without large files
         auto lock = make_shared<core::lock::Null>();
-        unique_ptr<WContents> test = createIndex<WContents>(lock,
+        unique_ptr<WIndex> test = createIndex<WIndex>(lock,
                 "type = ondisk2\n"
                 "path = .\n"
                 "step = daily\n"
@@ -541,7 +541,7 @@ add_method("smallfiles", [] {
 
         // An index without large files
         auto lock = make_shared<core::lock::Null>();
-        unique_ptr<WContents> test = createIndex<WContents>(lock,
+        unique_ptr<WIndex> test = createIndex<WIndex>(lock,
                 "type = ondisk2\n"
                 "path = .\n"
                 "step = daily\n"

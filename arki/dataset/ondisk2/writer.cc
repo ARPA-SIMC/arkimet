@@ -42,7 +42,7 @@ struct AppendSegment
 {
     std::shared_ptr<const ondisk2::Config> config;
     std::shared_ptr<dataset::AppendLock> lock;
-    index::WContents idx;
+    index::WIndex idx;
     std::shared_ptr<segment::Writer> segment;
 
     AppendSegment(std::shared_ptr<const ondisk2::Config> config, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
@@ -232,7 +232,7 @@ void Writer::remove(Metadata& md)
     auto lock = config().append_lock_dataset();
 
     // Delete from DB, and get file name
-    index::WContents idx(m_config);
+    index::WIndex idx(m_config);
     idx.open();
     idx.lock = lock;
     Pending p_del = idx.beginTransaction();
@@ -526,7 +526,7 @@ public:
 
 
 Checker::Checker(std::shared_ptr<const ondisk2::Config> config)
-    : m_config(config), idx(new index::WContents(config))
+    : m_config(config), idx(new index::WIndex(config))
 {
     m_idx = idx;
 

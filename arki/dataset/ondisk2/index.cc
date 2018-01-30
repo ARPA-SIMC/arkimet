@@ -926,16 +926,16 @@ void RContents::test_make_hole(const std::string& relname, unsigned hole_size, u
 }
 
 
-WContents::WContents(std::shared_ptr<const ondisk2::Config> config)
+WIndex::WIndex(std::shared_ptr<const ondisk2::Config> config)
     : Contents(config), m_insert(m_db), m_delete("delete", m_db), m_replace("replace", m_db)
 {
 }
 
-WContents::~WContents()
+WIndex::~WIndex()
 {
 }
 
-bool WContents::open()
+bool WIndex::open()
 {
     if (m_db.isOpen())
     {
@@ -967,7 +967,7 @@ bool WContents::open()
     return need_create;
 }
 
-void WContents::initQueries()
+void WIndex::initQueries()
 {
     Contents::initQueries();
 
@@ -1002,7 +1002,7 @@ void WContents::initQueries()
     m_delete.compile("DELETE FROM md WHERE id=?");
 }
 
-void WContents::initDB()
+void WIndex::initDB()
 {
     if (m_uniques) m_uniques->initDB(m_components_indexed);
     if (m_others) m_others->initDB(m_components_indexed);
@@ -1033,7 +1033,7 @@ void WContents::initDB()
     if (m_others) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_other ON md (other)");
 }
 
-void WContents::bindInsertParams(Query& q, const Metadata& md, const std::string& file, uint64_t ofs, char* timebuf)
+void WIndex::bindInsertParams(Query& q, const Metadata& md, const std::string& file, uint64_t ofs, char* timebuf)
 {
     int idx = 0;
 
@@ -1074,17 +1074,17 @@ void WContents::bindInsertParams(Query& q, const Metadata& md, const std::string
     }
 }
 
-Pending WContents::beginTransaction()
+Pending WIndex::beginTransaction()
 {
     return Pending(new SqliteTransaction(m_db));
 }
 
-Pending WContents::beginExclusiveTransaction()
+Pending WIndex::beginExclusiveTransaction()
 {
     return Pending(new SqliteTransaction(m_db, "EXCLUSIVE"));
 }
 
-void WContents::index(const Metadata& md, const std::string& file, uint64_t ofs, int* id)
+void WIndex::index(const Metadata& md, const std::string& file, uint64_t ofs, int* id)
 {
     m_insert.reset();
 
@@ -1101,7 +1101,7 @@ void WContents::index(const Metadata& md, const std::string& file, uint64_t ofs,
     scache.invalidate(md);
 }
 
-void WContents::replace(Metadata& md, const std::string& file, uint64_t ofs, int* id)
+void WIndex::replace(Metadata& md, const std::string& file, uint64_t ofs, int* id)
 {
     m_replace.reset();
 
@@ -1118,7 +1118,7 @@ void WContents::replace(Metadata& md, const std::string& file, uint64_t ofs, int
     scache.invalidate(md);
 }
 
-void WContents::remove(const std::string& relname, off_t ofs)
+void WIndex::remove(const std::string& relname, off_t ofs)
 {
     Query fetch_id("byfile", m_db);
     fetch_id.compile("SELECT id, reftime FROM md WHERE file=? AND offset=?");
@@ -1149,13 +1149,13 @@ void WContents::remove(const std::string& relname, off_t ofs)
         ;
 }
 
-void WContents::reset()
+void WIndex::reset()
 {
     m_db.exec("DELETE FROM md");
     scache.invalidate();
 }
 
-void WContents::reset(const std::string& file)
+void WIndex::reset(const std::string& file)
 {
     // Get the file date extremes to invalidate the summary cache
     string fmin, fmax;
@@ -1186,7 +1186,7 @@ void WContents::reset(const std::string& file)
     scache.invalidate(tmin, tmax);
 }
 
-void WContents::vacuum()
+void WIndex::vacuum()
 {
     //m_db.exec("PRAGMA journal_mode = TRUNCATE");
     if (m_uniques)
@@ -1198,14 +1198,14 @@ void WContents::vacuum()
     //m_db.exec("PRAGMA journal_mode = PERSIST");
 }
 
-void WContents::flush()
+void WIndex::flush()
 {
     // Not needed for index data consistency, but we need it to ensure file
     // timestamps are consistent at this point.
     m_db.checkpoint();
 }
 
-void WContents::test_rename(const std::string& relname, const std::string& new_relname)
+void WIndex::test_rename(const std::string& relname, const std::string& new_relname)
 {
     Query query("test_rename", m_db);
     query.compile("UPDATE md SET file=? WHERE file=?");
@@ -1215,12 +1215,12 @@ void WContents::test_rename(const std::string& relname, const std::string& new_r
         ;
 }
 
-void WContents::test_deindex(const std::string& relname)
+void WIndex::test_deindex(const std::string& relname)
 {
     reset(relname);
 }
 
-void WContents::test_make_overlap(const std::string& relname, unsigned overlap_size, unsigned data_idx)
+void WIndex::test_make_overlap(const std::string& relname, unsigned overlap_size, unsigned data_idx)
 {
     // Get the minimum offset to move
     uint64_t offset = 0;
@@ -1239,7 +1239,7 @@ void WContents::test_make_overlap(const std::string& relname, unsigned overlap_s
     query.run(overlap_size, relname, offset);
 }
 
-void WContents::test_make_hole(const std::string& relname, unsigned hole_size, unsigned data_idx)
+void WIndex::test_make_hole(const std::string& relname, unsigned hole_size, unsigned data_idx)
 {
     // Get the minimum offset to move
     uint64_t offset = 0;
