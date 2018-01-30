@@ -148,33 +148,100 @@ struct AppendSegment
 
     void acquire_batch_replace_never(std::vector<std::shared_ptr<WriterBatchElement>>& batch)
     {
+        Pending p_idx = idx.beginTransaction();
+
         for (auto& e: batch)
         {
             e->dataset_name.clear();
-            e->result = acquire_replace_never(e->md);
-            if (e->result == ACQ_OK)
-                e->dataset_name = config->name;
+
+            if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->relname, segment->next_offset()))
+            {
+                e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + old->filename + ":" + std::to_string(old->offset));
+                e->result = ACQ_ERROR_DUPLICATE;
+                continue;
+            }
+            segment->append(e->md);
+            e->result = ACQ_OK;
+            e->dataset_name = config->name;
         }
+
+        segment->commit();
+        p_idx.commit();
     }
+
     void acquire_batch_replace_always(std::vector<std::shared_ptr<WriterBatchElement>>& batch)
     {
+        Pending p_idx = idx.beginTransaction();
+
         for (auto& e: batch)
         {
             e->dataset_name.clear();
-            e->result = acquire_replace_always(e->md);
-            if (e->result == ACQ_OK)
-                e->dataset_name = config->name;
+            idx.replace(e->md, segment->relname, segment->next_offset());
+            segment->append(e->md);
+            e->result = ACQ_OK;
+            e->dataset_name = config->name;
         }
+
+        segment->commit();
+        p_idx.commit();
     }
+
     void acquire_batch_replace_higher_usn(std::vector<std::shared_ptr<WriterBatchElement>>& batch)
     {
+        Pending p_idx = idx.beginTransaction();
+
         for (auto& e: batch)
         {
             e->dataset_name.clear();
-            e->result = acquire_replace_higher_usn(e->md);
-            if (e->result == ACQ_OK)
+
+            // Try to acquire without replacing
+            if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->relname, segment->next_offset()))
+            {
+                // Duplicate detected
+
+                // Read the update sequence number of the new BUFR
+                int new_usn;
+                if (!scan::update_sequence_number(e->md, new_usn))
+                {
+                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relname + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
+                    e->result = ACQ_ERROR_DUPLICATE;
+                    continue;
+                }
+
+                // Read the update sequence number of the old BUFR
+                auto reader = arki::Reader::create_new(old->absolutePathname(), lock);
+                old->lock(reader);
+                int old_usn;
+                if (!scan::update_sequence_number(*old, old_usn))
+                {
+                    e->md.add_note("Failed to store in dataset '" + config->name + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
+                    e->result = ACQ_ERROR;
+                    continue;
+                }
+
+                // If the new element has no higher Update Sequence Number, report a duplicate
+                if (old_usn > new_usn)
+                {
+                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relname + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
+                    e->result = ACQ_ERROR_DUPLICATE;
+                    continue;
+                }
+
+                // Replace, reusing the pending datafile transaction from earlier
+                idx.replace(e->md, segment->relname, segment->next_offset());
+                segment->append(e->md);
+                e->result = ACQ_OK;
                 e->dataset_name = config->name;
+                continue;
+            } else {
+                segment->append(e->md);
+                e->result = ACQ_OK;
+                e->dataset_name = config->name;
+            }
         }
+
+        segment->commit();
+        p_idx.commit();
     }
 };
 
