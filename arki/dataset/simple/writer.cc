@@ -32,15 +32,22 @@ struct AppendSegment
     std::shared_ptr<const simple::Config> config;
     std::shared_ptr<dataset::AppendLock> lock;
     std::shared_ptr<segment::Writer> segment;
+    index::Manifest* mft = nullptr;
     utils::sys::Path dir;
     std::string basename;
-    bool flushed;
+    bool flushed = true;
     metadata::Collection mds;
     Summary sum;
 
     AppendSegment(std::shared_ptr<const simple::Config> config, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
-        : config(config), lock(lock), segment(segment), dir(str::dirname(segment->absname)), basename(str::basename(segment->absname)), flushed(true)
+        : config(config), lock(lock), segment(segment),
+          mft(index::Manifest::create(config->path, config->lock_policy, config->index_type).release()),
+          dir(str::dirname(segment->absname)),
+          basename(str::basename(segment->absname))
     {
+        mft->lock = lock;
+        mft->openRW();
+
         struct stat st_data;
         if (!dir.fstatat_ifexists(basename.c_str(), st_data))
             return;
@@ -56,8 +63,8 @@ struct AppendSegment
     ~AppendSegment()
     {
         flush();
+        delete mft;
     }
-
 
     void add(const Metadata& md, const types::source::Blob& source)
     {
@@ -73,6 +80,7 @@ struct AppendSegment
     void flush()
     {
         if (flushed) return;
+        mft->flush();
         mds.writeAtomically(segment->absname + ".metadata");
         sum.writeAtomically(segment->absname + ".summary");
         //fsync(dir);
@@ -81,30 +89,20 @@ struct AppendSegment
 
 
 Writer::Writer(std::shared_ptr<const simple::Config> config)
-    : m_config(config), m_mft(0)
+    : m_config(config)
 {
     // Create the directory if it does not exist
     sys::makedirs(config->path);
-
-    lock = config->append_lock_dataset();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
     if (!index::Manifest::exists(config->path))
         files::createDontpackFlagfile(config->path);
-
-    unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->lock_policy, config->index_type);
-    m_mft = mft.release();
-    m_mft->lock = lock;
-    m_mft->openRW();
-
-    lock.reset();
 }
 
 Writer::~Writer()
 {
     flush();
-    delete m_mft;
 }
 
 std::string Writer::type() const { return "simple"; }
@@ -121,19 +119,17 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     if (age_check.first) return age_check.second;
 
     if (!lock) lock = config().append_lock_dataset();
-    m_mft->lock = lock;
-    // TODO: refuse if md is before "archive age"
-    auto mdbuf = file(md, md.source().format);
+    auto segment = file(md, md.source().format);
 
     // Try appending
     try {
-        const types::source::Blob& new_source = mdbuf->segment->append(md);
-        mdbuf->add(md, new_source);
-        mdbuf->segment->commit();
-        time_t ts = scan::timestamp(mdbuf->segment->absname);
+        const types::source::Blob& new_source = segment->segment->append(md);
+        segment->add(md, new_source);
+        segment->segment->commit();
+        time_t ts = scan::timestamp(segment->segment->absname);
         if (ts == 0)
-            nag::warning("simple dataset acquire: %s timestamp is 0", mdbuf->segment->absname.c_str());
-        m_mft->acquire(mdbuf->segment->relname, ts, mdbuf->sum);
+            nag::warning("simple dataset acquire: %s timestamp is 0", segment->segment->absname.c_str());
+        segment->mft->acquire(segment->segment->relname, ts, segment->sum);
         return ACQ_OK;
     } catch (std::exception& e) {
         fprintf(stderr, "ERROR %s\n", e.what());
@@ -166,13 +162,7 @@ void Writer::remove(Metadata& md)
 void Writer::flush()
 {
     segmented::Writer::flush();
-    m_mft->flush();
     lock.reset();
-}
-
-Pending Writer::test_writelock()
-{
-    return m_mft->test_writelock();
 }
 
 void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out)
