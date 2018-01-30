@@ -9,6 +9,7 @@
 #include "arki/dataset/lock.h"
 #include "arki/reader.h"
 #include "arki/types/source/blob.h"
+#include "arki/types/reftime.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -143,6 +144,38 @@ struct AppendSegment
             return ACQ_ERROR;
         }
     }
+
+
+    void acquire_batch_replace_never(std::vector<std::shared_ptr<WriterBatchElement>>& batch)
+    {
+        for (auto& e: batch)
+        {
+            e->dataset_name.clear();
+            e->result = acquire_replace_never(e->md);
+            if (e->result == ACQ_OK)
+                e->dataset_name = config->name;
+        }
+    }
+    void acquire_batch_replace_always(std::vector<std::shared_ptr<WriterBatchElement>>& batch)
+    {
+        for (auto& e: batch)
+        {
+            e->dataset_name.clear();
+            e->result = acquire_replace_always(e->md);
+            if (e->result == ACQ_OK)
+                e->dataset_name = config->name;
+        }
+    }
+    void acquire_batch_replace_higher_usn(std::vector<std::shared_ptr<WriterBatchElement>>& batch)
+    {
+        for (auto& e: batch)
+        {
+            e->dataset_name.clear();
+            e->result = acquire_replace_higher_usn(e->md);
+            if (e->result == ACQ_OK)
+                e->dataset_name = config->name;
+        }
+    }
 };
 
 Writer::Writer(std::shared_ptr<const ondisk2::Config> config)
@@ -170,6 +203,14 @@ std::unique_ptr<AppendSegment> Writer::segment(const Metadata& md, const std::st
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segmented::Writer::file(md, format)));
 }
 
+std::unique_ptr<AppendSegment> Writer::segment(const std::string& relname)
+{
+    sys::makedirs(str::dirname(str::joinpath(config().path, relname)));
+    auto lock = config().append_lock_dataset();
+    auto segment = segment_manager().get_writer(relname);
+    return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segment));
+}
+
 WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
     auto age_check = config().check_acquire_age(md);
@@ -195,12 +236,59 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 
 void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace)
 {
+    if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
+
+    // Clear dataset names, pre-process items that do not need further
+    // dispatching, and divide the rest of the batch by segment
+    std::map<std::string, std::vector<std::shared_ptr<dataset::WriterBatchElement>>> by_segment;
     for (auto& e: batch)
     {
         e->dataset_name.clear();
-        e->result = acquire(e->md, replace);
-        if (e->result == ACQ_OK)
-            e->dataset_name = name();
+
+        switch (replace)
+        {
+            case REPLACE_NEVER:
+            case REPLACE_ALWAYS:
+            case REPLACE_HIGHER_USN: break;
+            default:
+            {
+                e->md.add_note("cannot acquire into dataset " + name() + ": replace strategy " + std::to_string(replace) + " is not supported");
+                e->result = ACQ_ERROR;
+                continue;
+            }
+        }
+
+        auto age_check = config().check_acquire_age(e->md);
+        if (age_check.first)
+        {
+            e->result = age_check.second;
+            if (age_check.second == ACQ_OK)
+                e->dataset_name = name();
+            continue;
+        }
+
+        const core::Time& time = e->md.get<types::reftime::Position>()->time;
+        string relname = config().step()(time) + "." + e->md.source().format;
+        by_segment[relname].push_back(e);
+    }
+
+    // Import segment by segment
+    for (auto& s: by_segment)
+    {
+        auto seg = segment(s.first);
+        switch (replace)
+        {
+            case REPLACE_NEVER:
+                seg->acquire_batch_replace_never(s.second);
+                break;
+            case REPLACE_ALWAYS:
+                seg->acquire_batch_replace_always(s.second);
+                break;
+            case REPLACE_HIGHER_USN:
+                seg->acquire_batch_replace_higher_usn(s.second);
+                break;
+            default: throw std::runtime_error("programmign error: replace value has changed since previous check");
+        }
     }
 }
 
