@@ -574,11 +574,9 @@ add_method("issue103", [](Fixture& f) {
 
     // Dispatch
     {
+        metadata::TestCollection mds("inbound/issue103.vm2");
         auto writer = f.makeSegmentedWriter();
-        scan::scan("inbound/issue103.vm2", std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata> md) {
-            wassert(actual(*writer).import(*md));
-            return true;
-        });
+        wassert(actual(*writer).import(mds));
     }
 
     // Check

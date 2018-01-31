@@ -348,6 +348,7 @@ struct ActualWriter : public arki::utils::tests::Actual<DatasetWriter*>
 {
     ActualWriter(DatasetWriter* s) : Actual<DatasetWriter*>(s) {}
     void import(Metadata& md);
+    void import(metadata::Collection& mds, dataset::Writer::ReplaceStrategy strategy=dataset::Writer::REPLACE_DEFAULT);
 };
 
 inline arki::tests::ActualWriter<dataset::LocalWriter> actual(arki::dataset::LocalWriter* actual)

@@ -849,6 +849,39 @@ void ActualWriter<Dataset>::import(Metadata& md)
     }
 }
 
+template<typename Dataset>
+void ActualWriter<Dataset>::import(metadata::Collection& mds, dataset::Writer::ReplaceStrategy strategy)
+{
+    std::vector<std::shared_ptr<WriterBatchElement>> batch;
+    batch.reserve(mds.size());
+    for (auto& md: mds)
+        batch.emplace_back(make_shared<WriterBatchElement>(*md));
+    wassert(this->_actual->acquire_batch(batch, strategy));
+
+    std::stringstream ss;
+    for (const auto& e: batch)
+    {
+        if (e->result == dataset::ACQ_OK) continue;
+        switch (e->result)
+        {
+            case ACQ_ERROR_DUPLICATE:
+                ss << "ACQ_ERROR_DUPLICATE when importing data. notes:" << endl;
+                break;
+            case ACQ_ERROR:
+                ss << "ACQ_ERROR when importing data. notes:" << endl;
+                break;
+            default:
+                ss << "Error " << (int)e->result << " when importing data. notes:" << endl;
+                break;
+        }
+
+        for (const auto& note: e->md.notes())
+            ss << "\t" << note << endl;
+    }
+    if (!ss.str().empty())
+        throw TestFailed(ss.str());
+}
+
 
 template<typename Dataset>
 void ActualChecker<Dataset>::repack(const ReporterExpected& expected, bool write)

@@ -32,13 +32,6 @@ using namespace arki::types;
 using namespace arki::dataset;
 using namespace arki::utils;
 
-namespace std {
-static ostream& operator<<(ostream& out, const vector<uint8_t>& buf)
-{
-    return out.write((const char*)buf.data(), buf.size());
-}
-}
-
 namespace {
 
 struct Fixture : public DatasetTest {
