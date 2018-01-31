@@ -57,6 +57,66 @@ class Tests : public FixtureTestCase<Fixture>
 
 void Tests::register_tests() {
 
+#if 0
+// Try to append some data
+add_method("segment_append", [] {
+    string fname = "testfile.grib";
+    string mdfname = "testfile.grib.metadata";
+    string sumfname = "testfile.grib.summary";
+
+    sys::unlink_ifexists(fname);
+    ino_t inomd;
+    ino_t inosum;
+
+    system(("cp inbound/test.grib1 " + fname).c_str());
+
+    metadata::TestCollection mds("inbound/test.grib1");
+
+    {
+        datafile::MdBuf mdbuf("./" + fname, std::shared_ptr<core::lock::Null>());
+
+        // Append the data, source is unchanged
+        auto source = types::source::Blob::create_unlocked("grib", "", "test.grib1", 0, datasize(mds[0]));
+        wassert(mdbuf.add(mds[0], *source));
+        wassert(actual_type(mds[0].source()).is_source_blob("grib", sys::getcwd(), "inbound/test.grib1", 0, datasize(mds[0])));
+
+        // Metadata and summaries don't get touched
+        wassert(actual_file(mdfname).not_exists());
+        wassert(actual_file(sumfname).not_exists());
+
+        // Append another metadata
+        source = types::source::Blob::create_unlocked("grib", "", "test.grib1", source->offset + source->size, datasize(mds[1]));
+        wassert(mdbuf.add(mds[1], *source));
+        wassert(actual_type(mds[1].source()).is_source_blob("grib", sys::getcwd(), "inbound/test.grib1", source->offset, datasize(mds[1])));
+
+        // Metadata and summaries don't get touched
+        wassert(actual_file(mdfname).not_exists());
+        wassert(actual_file(sumfname).not_exists());
+
+        wassert(mdbuf.flush());
+
+        // Metadata and summaries are now there
+        wassert(actual_file(mdfname).exists());
+        wassert(actual_file(sumfname).exists());
+        inomd = sys::inode(mdfname);
+        inosum = sys::inode(sumfname);
+
+        // Append another metadata
+        source = types::source::Blob::create_unlocked("grib", sys::getcwd(), "inbound/test.grib1", source->offset + source->size, datasize(mds[2]));
+        wassert(mdbuf.add(mds[2], *source));
+        wassert(actual_type(mds[2].source()).is_source_blob("grib", sys::getcwd(), "inbound/test.grib1", source->offset, datasize(mds[2])));
+
+        // Metadata and summaries don't get touched
+        wassert(actual(sys::inode(mdfname)) == inomd);
+        wassert(actual(sys::inode(sumfname)) == inosum);
+    }
+
+    // After Datafile is destroyed, metadata and summaries are flushed
+    wassert(actual(sys::inode(mdfname)) != inomd);
+    wassert(actual(sys::inode(sumfname)) != inosum);
+});
+#endif
+
 // Add here only simple-specific tests that are not convered by tests in dataset-writer-test.cc
 
 // Test acquiring data
@@ -130,195 +190,6 @@ add_method("append", [](Fixture& f) {
 
     // Dataset is fine and clean
     wassert(f.ensure_localds_clean(1, 2));
-});
-
-// Test maintenance scan on missing summary
-add_method("scan_missing_summary", [](Fixture& f) {
-    struct Setup {
-        void operator() ()
-        {
-            sys::unlink_ifexists("testds/2007/07-08.grib.summary");
-            ensure(sys::exists("testds/2007/07-08.grib"));
-            ensure(sys::exists("testds/2007/07-08.grib.metadata"));
-            ensure(!sys::exists("testds/2007/07-08.grib.summary"));
-        }
-    } setup;
-
-    f.clean_and_import();
-    setup();
-    ensure(sys::exists("testds/" + f.idxfname()));
-
-    // Query is ok
-    {
-        metadata::Collection mdc(*f.makeSimpleReader(), Matcher());
-        ensure_equals(mdc.size(), 3u);
-    }
-
-    // Maintenance should show one file to rescan
-    {
-        auto state = f.scan_state();
-        wassert(actual(state.get("2007/07-08.grib").state) == segment::State(SEGMENT_UNALIGNED));
-        wassert(actual(state.count(SEGMENT_OK)) == 2u);
-        wassert(actual(state.count(SEGMENT_UNALIGNED)) == 1u);
-        wassert(actual(state.size()) == 3u);
-    }
-
-    // Fix the dataset
-    {
-        auto checker = f.makeSimpleChecker();
-
-        // Check should reindex the file
-        ReporterExpected e;
-        e.rescanned.emplace_back("testds", "2007/07-08.grib");
-        wassert(actual(*checker).check(e, true, true));
-
-        // Repack should do nothing
-        wassert(actual(*checker).repack_clean(true));
-    }
-
-    // Everything should be fine now
-    wassert(f.ensure_localds_clean(3, 3));
-    ensure(sys::exists("testds/2007/07-08.grib"));
-    ensure(sys::exists("testds/2007/07-08.grib.metadata"));
-    ensure(sys::exists("testds/2007/07-08.grib.summary"));
-    ensure(sys::exists("testds/" + f.idxfname()));
-
-
-    // Restart again
-    f.clean_and_import();
-    setup();
-    files::removeDontpackFlagfile("testds");
-    ensure(sys::exists("testds/" + f.idxfname()));
-
-    // Repack here should act as if the dataset were empty
-    wassert(actual(*f.makeSimpleChecker()).repack_clean(true));
-
-    // And repack should have changed nothing
-    {
-        auto reader = f.makeSimpleReader();
-        metadata::Collection mdc(*reader, Matcher());
-        ensure_equals(mdc.size(), 3u);
-    }
-    ensure(sys::exists("testds/2007/07-08.grib"));
-    ensure(sys::exists("testds/2007/07-08.grib.metadata"));
-    ensure(!sys::exists("testds/2007/07-08.grib.summary"));
-    ensure(sys::exists("testds/" + f.idxfname()));
-});
-
-// Test maintenance scan on compressed archives
-add_method("scan_compressed", [](Fixture& f) {
-    struct Setup {
-        void operator() ()
-        {
-            // Compress one file
-            metadata::Collection mdc;
-            mdc.read_from_file("testds/2007/07-08.grib.metadata");
-            ensure_equals(mdc.size(), 1u);
-            string dest = mdc.ensureContiguousData("metadata file testds/2007/07-08.grib.metadata");
-            scan::compress(dest, std::make_shared<core::lock::Null>(), 1024);
-            sys::unlink_ifexists("testds/2007/07-08.grib");
-
-            ensure(!sys::exists("testds/2007/07-08.grib"));
-            ensure(sys::exists("testds/2007/07-08.grib.gz"));
-            ensure(sys::exists("testds/2007/07-08.grib.gz.idx"));
-            ensure(sys::exists("testds/2007/07-08.grib.metadata"));
-            ensure(sys::exists("testds/2007/07-08.grib.summary"));
-        }
-
-        void removemd()
-        {
-            sys::unlink_ifexists("testds/2007/07-08.grib.metadata");
-            sys::unlink_ifexists("testds/2007/07-08.grib.summary");
-            ensure(!sys::exists("testds/2007/07-08.grib.metadata"));
-            ensure(!sys::exists("testds/2007/07-08.grib.summary"));
-        }
-    } setup;
-
-    f.clean_and_import();
-    setup();
-    ensure(sys::exists("testds/" + f.idxfname()));
-
-    // Query is ok
-    wassert(f.ensure_localds_clean(3, 3));
-
-    // Try removing summary and metadata
-    setup.removemd();
-
-    // Cannot query anymore
-    {
-        metadata::Collection mdc;
-        auto reader = f.makeSimpleReader();
-        try {
-            mdc.add(*reader, Matcher());
-            ensure(false);
-        } catch (std::exception& e) {
-            ensure(str::endswith(e.what(), "file needs to be manually decompressed before scanning"));
-        }
-    }
-
-    // Maintenance should show one file to rescan
-    {
-        auto state = f.scan_state();
-        wassert(actual(state.get("2007/07-08.grib").state) == segment::State(SEGMENT_UNALIGNED));
-        wassert(actual(state.count(SEGMENT_OK)) == 2u);
-        wassert(actual(state.count(SEGMENT_UNALIGNED)) == 1u);
-        wassert(actual(state.size()) == 3u);
-    }
-
-    // Fix the dataset
-    {
-        auto checker = f.makeSimpleChecker();
-
-        // Check should reindex the file
-        ReporterExpected e;
-        e.rescanned.emplace_back("testds", "2007/07-08.grib");
-        wassert(actual(*checker).check(e, true, true));
-
-        // Repack should do nothing
-        wassert(actual(*checker).repack_clean(true));
-    }
-
-    // Everything should be fine now
-    wassert(f.ensure_localds_clean(3, 3));
-    ensure(!sys::exists("testds/2007/07-08.grib"));
-    ensure(sys::exists("testds/2007/07-08.grib.gz"));
-    ensure(sys::exists("testds/2007/07-08.grib.gz.idx"));
-    ensure(sys::exists("testds/2007/07-08.grib.metadata"));
-    ensure(sys::exists("testds/2007/07-08.grib.summary"));
-    ensure(sys::exists("testds/" + f.idxfname()));
-
-
-    // Restart again
-    f.clean_and_import();
-    setup();
-    files::removeDontpackFlagfile("testds");
-    ensure(sys::exists("testds/" + f.idxfname()));
-    setup.removemd();
-
-    // Repack here should act as if the dataset were empty
-    {
-        // Repack should find nothing to repack
-        auto checker = f.makeSimpleChecker();
-        wassert(actual(*checker).repack_clean(true));
-    }
-
-    // And repack should have changed nothing
-    {
-        metadata::Collection mdc;
-        auto reader = f.makeSimpleReader();
-        try {
-            mdc.add(*reader, Matcher());
-            ensure(false);
-        } catch (std::exception& e) {
-            ensure(str::endswith(e.what(), "file needs to be manually decompressed before scanning"));
-        }
-    }
-    ensure(!sys::exists("testds/2007/07-08.grib"));
-    ensure(sys::exists("testds/2007/07-08.grib.gz"));
-    ensure(sys::exists("testds/2007/07-08.grib.gz.idx"));
-    ensure(!sys::exists("testds/2007/07-08.grib.metadata"));
-    ensure(!sys::exists("testds/2007/07-08.grib.summary"));
-    ensure(sys::exists("testds/" + f.idxfname()));
 });
 
 add_method("testacquire", [](Fixture& f) {

@@ -2546,11 +2546,6 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_simple_datafile",
-  "method": "append"
- },
- {
-  "doc": "",
   "group": "arki_dataset_simple_reader_plain",
   "method": "empty"
  },
@@ -2572,17 +2567,17 @@
  {
   "doc": "",
   "group": "arki_dataset_simple_writer",
+  "method": "testacquire"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_simple_checker",
   "method": "scan_missing_summary"
  },
  {
   "doc": "",
-  "group": "arki_dataset_simple_writer",
+  "group": "arki_dataset_simple_checker",
   "method": "scan_compressed"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_simple_writer",
-  "method": "testacquire"
  },
  {
   "doc": "- the segment must be a file",
