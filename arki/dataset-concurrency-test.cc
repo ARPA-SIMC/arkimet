@@ -434,15 +434,7 @@ this->add_method("write_check", [](Fixture& f) {
 
     CheckForever<Fixture> cf(f);
     cf.during([&]{
-        if (type == "simple")
-        {
-            try {
-                f.config().create_writer();
-                wassert(actual(0) == 1);
-            } catch (std::runtime_error& e) {
-                wassert(actual(e.what()).contains("a write lock is already held"));
-            }
-        } else if (type == "ondisk2") {
+        if (type == "ondisk2" || type == "simple") {
             auto writer = wcallchecked(f.config().create_writer());
             try {
                 writer->acquire(f.td.test_data[2].md);
