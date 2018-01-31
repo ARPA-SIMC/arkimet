@@ -77,9 +77,7 @@ struct AppendSegment
         try {
             const types::source::Blob& new_source = segment->append(md);
             add(md, new_source);
-            time_t ts = scan::timestamp(segment->absname);
-            if (ts == 0)
-                nag::warning("simple dataset acquire: %s timestamp is 0", segment->absname.c_str());
+            time_t ts = time(nullptr);
             mft->acquire(segment->relname, ts, sum);
             segment->commit();
             mds.writeAtomically(segment->absname + ".metadata");
@@ -104,14 +102,11 @@ struct AppendSegment
             e->dataset_name.clear();
             const types::source::Blob& new_source = segment->append(e->md);
             add(e->md, new_source);
-            time_t ts = scan::timestamp(segment->absname);
-            if (ts == 0)
-                nag::warning("simple dataset acquire: %s timestamp is 0", segment->absname.c_str());
-            mft->acquire(segment->relname, ts, sum);
             e->result = ACQ_OK;
             e->dataset_name = config->name;
         }
 
+        mft->acquire(segment->relname, time(nullptr), sum);
         segment->commit();
         mds.writeAtomically(segment->absname + ".metadata");
         sum.writeAtomically(segment->absname + ".summary");
