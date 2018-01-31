@@ -77,7 +77,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     throw std::runtime_error("this code path should never be reached (it is here to appease a compiler warning)");
 }
 
-void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace)
+void Writer::acquire_batch(WriterBatch& batch, ReplaceStrategy replace)
 {
     for (auto& e: batch)
     {
@@ -98,7 +98,7 @@ void Writer::removeAll(std::ostream& log, bool writable)
     log << name() << ": cleaning dataset not implemented" << endl;
 }
 
-void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out)
+void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out)
 {
     std::shared_ptr<const outbound::Config> config(new outbound::Config(cfg));
     for (auto& e: batch)

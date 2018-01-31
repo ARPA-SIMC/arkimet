@@ -150,9 +150,9 @@ void Collection::pop_back()
     vals.pop_back();
 }
 
-std::vector<std::shared_ptr<dataset::WriterBatchElement>> Collection::make_import_batch() const
+dataset::WriterBatch Collection::make_import_batch() const
 {
-    std::vector<std::shared_ptr<dataset::WriterBatchElement>> batch;
+    dataset::WriterBatch batch;
     for (auto& md: *this)
         batch.emplace_back(make_shared<dataset::WriterBatchElement>(*md));
     return batch;

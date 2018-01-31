@@ -852,7 +852,7 @@ void ActualWriter<Dataset>::import(Metadata& md)
 template<typename Dataset>
 void ActualWriter<Dataset>::import(metadata::Collection& mds, dataset::Writer::ReplaceStrategy strategy)
 {
-    std::vector<std::shared_ptr<WriterBatchElement>> batch;
+    WriterBatch batch;
     batch.reserve(mds.size());
     for (auto& md: mds)
         batch.emplace_back(make_shared<WriterBatchElement>(*md));

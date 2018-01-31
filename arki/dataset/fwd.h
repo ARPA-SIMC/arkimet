@@ -11,13 +11,14 @@ struct ByteQuery;
 struct Config;
 struct Reader;
 struct Writer;
+struct WriterBatchElement;
+struct WriterBatch;
 struct Checker;
 struct Reporter;
 
 struct Segment;
 namespace segment {
 struct State;
-struct WriterBatchElement;
 struct Writer;
 struct Checker;
 struct Manager;

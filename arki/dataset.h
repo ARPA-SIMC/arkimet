@@ -285,6 +285,14 @@ struct WriterBatchElement
     WriterBatchElement& operator=(WriterBatchElement&& o) = default;
 };
 
+struct WriterBatch : public std::vector<std::shared_ptr<WriterBatchElement>>
+{
+    /**
+     * Set all elements in the batch to ACQ_ERROR
+     */
+    void set_all_error(const std::string& note);
+};
+
 class Writer : public dataset::Base
 {
 public:
@@ -338,7 +346,7 @@ public:
      * @return The outcome of the operation, as a vector with an WriterAcquireResult
      * for each metadata in the collection.
      */
-    virtual void acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace=REPLACE_DEFAULT) = 0;
+    virtual void acquire_batch(WriterBatch& batch, ReplaceStrategy replace=REPLACE_DEFAULT) = 0;
 
 	/**
 	 * Remove the given metadata from the database.
@@ -369,7 +377,7 @@ public:
      *
      * No change of any kind happens to the dataset.
      */
-    static void test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out);
+    static void test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out);
 };
 
 struct Checker : public dataset::Base

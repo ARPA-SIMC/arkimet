@@ -127,7 +127,7 @@ add_method("import_batch_replace_usn", [](Fixture& f) {
 
     auto ds = f.config().create_writer();
 
-    std::vector<shared_ptr<dataset::WriterBatchElement>> batch;
+    dataset::WriterBatch batch;
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mdc[0]));
     wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
@@ -184,7 +184,7 @@ this->add_method("import", [](Fixture& f) {
 this->add_method("import_batch_replace_never", [](Fixture& f) {
     auto ds = f.config().create_writer();
 
-    std::vector<shared_ptr<dataset::WriterBatchElement>> batch;
+    dataset::WriterBatch batch;
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.test_data[0].md));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.test_data[1].md));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.test_data[2].md));
@@ -222,7 +222,7 @@ this->add_method("import_batch_replace_never", [](Fixture& f) {
 this->add_method("import_batch_replace_always", [](Fixture& f) {
     auto ds = f.config().create_writer();
 
-    std::vector<shared_ptr<dataset::WriterBatchElement>> batch;
+    dataset::WriterBatch batch;
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.test_data[0].md));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.test_data[1].md));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.test_data[2].md));

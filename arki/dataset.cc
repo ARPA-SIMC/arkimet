@@ -333,6 +333,16 @@ void Reader::readConfig(const std::string& path, ConfigFile& cfg)
 }
 
 
+void WriterBatch::set_all_error(const std::string& note)
+{
+    for (auto& e: *this)
+    {
+        e->dataset_name.clear();
+        e->md.add_note(note);
+        e->result = ACQ_ERROR;
+    }
+}
+
 
 void Writer::flush() {}
 
@@ -344,7 +354,7 @@ std::unique_ptr<Writer> Writer::create(const ConfigFile& cfg)
     return config->create_writer();
 }
 
-void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out)
+void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out)
 {
     string type = str::lower(cfg.value("type"));
     if (type == "remote")

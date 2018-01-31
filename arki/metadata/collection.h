@@ -5,6 +5,7 @@
 
 #include <arki/defs.h>
 #include <arki/core/fwd.h>
+#include <arki/dataset/fwd.h>
 #include <vector>
 #include <string>
 
@@ -14,12 +15,6 @@ struct Summary;
 
 namespace metadata {
 struct ReadContext;
-}
-
-namespace dataset {
-struct DataQuery;
-struct Reader;
-struct WriterBatchElement;
 }
 
 namespace sort {
@@ -65,7 +60,7 @@ public:
     /**
      * Create a batch for acquire_batch with the contents of this collection
      */
-    std::vector<std::shared_ptr<dataset::WriterBatchElement>> make_import_batch() const;
+    dataset::WriterBatch make_import_batch() const;
 
     /// Remove the last element
     void pop_back();

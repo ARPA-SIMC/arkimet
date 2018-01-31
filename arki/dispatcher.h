@@ -28,9 +28,9 @@ protected:
     /// Number of failed acquires to outbound datasets
     int m_outbound_failures;
 
-    virtual void raw_dispatch_dataset(const std::string& name, std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch) = 0;
-    virtual void raw_dispatch_error(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch);
-    virtual void raw_dispatch_duplicates(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch);
+    virtual void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch) = 0;
+    virtual void raw_dispatch_error(dataset::WriterBatch& batch);
+    virtual void raw_dispatch_duplicates(dataset::WriterBatch& batch);
 
 public:
     Dispatcher(const ConfigFile& cfg);
@@ -64,7 +64,7 @@ public:
      *
      * @returns The outcome of the dispatch, one element per metadata in mds.
      */
-    virtual void dispatch(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch);
+    virtual void dispatch(dataset::WriterBatch& batch);
 
     virtual void flush() = 0;
 };
@@ -95,9 +95,9 @@ protected:
     // Duplicates dataset
     std::shared_ptr<dataset::Writer> dsduplicates;
 
-    void raw_dispatch_dataset(const std::string& name, std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch) override;
-    void raw_dispatch_error(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch) override;
-    void raw_dispatch_duplicates(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch) override;
+    void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch) override;
+    void raw_dispatch_error(dataset::WriterBatch& batch) override;
+    void raw_dispatch_duplicates(dataset::WriterBatch& batch) override;
 
 public:
 	RealDispatcher(const ConfigFile& cfg);
@@ -123,13 +123,13 @@ protected:
     const ConfigFile& cfg;
     std::ostream& out;
 
-    void raw_dispatch_dataset(const std::string& name, std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch) override;
+    void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch) override;
 
 public:
     TestDispatcher(const ConfigFile& cfg, std::ostream& out);
     ~TestDispatcher();
 
-    void dispatch(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch) override;
+    void dispatch(dataset::WriterBatch& batch) override;
 
     /**
      * Flush all dataset data do disk

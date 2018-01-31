@@ -66,15 +66,15 @@ void Dispatcher::add_validator(const Validator& v)
     validators.push_back(&v);
 }
 
-void Dispatcher::raw_dispatch_error(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch) { raw_dispatch_dataset("error", batch); }
-void Dispatcher::raw_dispatch_duplicates(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch) { raw_dispatch_dataset("duplicates", batch); }
+void Dispatcher::raw_dispatch_error(dataset::WriterBatch& batch) { raw_dispatch_dataset("error", batch); }
+void Dispatcher::raw_dispatch_duplicates(dataset::WriterBatch& batch) { raw_dispatch_dataset("duplicates", batch); }
 
-void Dispatcher::dispatch(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch)
+void Dispatcher::dispatch(dataset::WriterBatch& batch)
 {
-    std::vector<std::shared_ptr<dataset::WriterBatchElement>> error_batch;
-    std::vector<std::shared_ptr<dataset::WriterBatchElement>> duplicate_batch;
-    std::map<std::string, std::vector<std::shared_ptr<dataset::WriterBatchElement>>> by_dataset;
-    std::map<std::string, std::vector<std::shared_ptr<dataset::WriterBatchElement>>> outbound_by_dataset;
+    dataset::WriterBatch error_batch;
+    dataset::WriterBatch duplicate_batch;
+    std::map<std::string, dataset::WriterBatch> by_dataset;
+    std::map<std::string, dataset::WriterBatch> outbound_by_dataset;
 
     // Choose the target dataset(s) for each element in the batch
     for (auto& e: batch)
@@ -214,18 +214,18 @@ RealDispatcher::~RealDispatcher()
 {
 }
 
-void RealDispatcher::raw_dispatch_dataset(const std::string& name, std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch)
+void RealDispatcher::raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch)
 {
     if (batch.empty()) return;
     pool.get(name)->acquire_batch(batch);
 }
 
-void RealDispatcher::raw_dispatch_error(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch)
+void RealDispatcher::raw_dispatch_error(dataset::WriterBatch& batch)
 {
     dserror->acquire_batch(batch);
 }
 
-void RealDispatcher::raw_dispatch_duplicates(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch)
+void RealDispatcher::raw_dispatch_duplicates(dataset::WriterBatch& batch)
 {
     dsduplicates->acquire_batch(batch);
 }
@@ -242,13 +242,13 @@ TestDispatcher::TestDispatcher(const ConfigFile& cfg, std::ostream& out)
 }
 TestDispatcher::~TestDispatcher() {}
 
-void TestDispatcher::raw_dispatch_dataset(const std::string& name, std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch)
+void TestDispatcher::raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch)
 {
     if (batch.empty()) return;
     dataset::Writer::test_acquire(*cfg.section(name), batch, out);
 }
 
-void TestDispatcher::dispatch(std::vector<std::shared_ptr<dataset::WriterBatchElement>>& batch)
+void TestDispatcher::dispatch(dataset::WriterBatch& batch)
 {
     Dispatcher::dispatch(batch);
     for (const auto& e: batch)

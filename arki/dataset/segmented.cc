@@ -157,11 +157,47 @@ std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::str
     return segment_manager().get_writer(format, relname);
 }
 
+std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
+{
+    // Clear dataset names, pre-process items that do not need further
+    // dispatching, and divide the rest of the batch by segment
+    std::map<std::string, WriterBatch> by_segment;
+
+    if (batch.empty()) return by_segment;
+    std::string format = batch[0]->md.source().format;
+
+    for (auto& e: batch)
+    {
+        e->dataset_name.clear();
+
+        if (e->md.source().format != format)
+        {
+            e->md.add_note("cannot acquire into dataset " + name() + ": data is in format " + e->md.source().format + " but the batch also has data in format " + format);
+            e->result = ACQ_ERROR;
+            continue;
+        }
+
+        auto age_check = config().check_acquire_age(e->md);
+        if (age_check.first)
+        {
+            e->result = age_check.second;
+            if (age_check.second == ACQ_OK)
+                e->dataset_name = name();
+            continue;
+        }
+
+        const core::Time& time = e->md.get<types::reftime::Position>()->time;
+        string relname = config().step()(time) + "." + format;
+        by_segment[relname].push_back(e);
+    }
+    return by_segment;
+}
+
 void Writer::flush()
 {
 }
 
-void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out)
+void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out)
 {
     string type = str::lower(cfg.value("type"));
     if (type.empty())

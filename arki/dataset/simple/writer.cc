@@ -91,7 +91,7 @@ struct AppendSegment
         }
     }
 
-    void acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch)
+    void acquire_batch(WriterBatch& batch)
     {
         auto mft = index::Manifest::create(config->path, config->lock_policy, config->index_type);
         mft->lock = lock;
@@ -157,43 +157,11 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     return segment->acquire(md);
 }
 
-void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace)
+void Writer::acquire_batch(WriterBatch& batch, ReplaceStrategy replace)
 {
     if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
 
-    // Clear dataset names, pre-process items that do not need further
-    // dispatching, and divide the rest of the batch by segment
-    std::map<std::string, std::vector<std::shared_ptr<dataset::WriterBatchElement>>> by_segment;
-    for (auto& e: batch)
-    {
-        e->dataset_name.clear();
-
-        switch (replace)
-        {
-            case REPLACE_NEVER:
-            case REPLACE_ALWAYS:
-            case REPLACE_HIGHER_USN: break;
-            default:
-            {
-                e->md.add_note("cannot acquire into dataset " + name() + ": replace strategy " + std::to_string(replace) + " is not supported");
-                e->result = ACQ_ERROR;
-                continue;
-            }
-        }
-
-        auto age_check = config().check_acquire_age(e->md);
-        if (age_check.first)
-        {
-            e->result = age_check.second;
-            if (age_check.second == ACQ_OK)
-                e->dataset_name = name();
-            continue;
-        }
-
-        const core::Time& time = e->md.get<types::reftime::Position>()->time;
-        string relname = config().step()(time) + "." + e->md.source().format;
-        by_segment[relname].push_back(e);
-    }
+    std::map<std::string, WriterBatch> by_segment = batch_by_segment(batch);
 
     // Import segment by segment
     for (auto& s: by_segment)
@@ -209,7 +177,7 @@ void Writer::remove(Metadata& md)
     throw std::runtime_error("cannot remove data from simple dataset: dataset does not support removing items");
 }
 
-void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out)
+void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out)
 {
     std::shared_ptr<const simple::Config> config(new simple::Config(cfg));
     for (auto& e: batch)

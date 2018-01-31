@@ -83,6 +83,8 @@ protected:
      */
     std::shared_ptr<segment::Writer> file(const Metadata& md, const std::string& format);
 
+    std::map<std::string, WriterBatch> batch_by_segment(WriterBatch& batch);
+
 public:
     using LocalWriter::LocalWriter;
     ~Writer();
@@ -92,7 +94,7 @@ public:
 
     virtual void flush();
 
-    static void test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out);
+    static void test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out);
 };
 
 

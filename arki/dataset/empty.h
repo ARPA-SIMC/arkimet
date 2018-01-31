@@ -63,7 +63,7 @@ public:
     std::string type() const override { return "discard"; }
 
     WriterAcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
-    void acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace=REPLACE_DEFAULT) override;
+    void acquire_batch(WriterBatch& batch, ReplaceStrategy replace=REPLACE_DEFAULT) override;
 
     void remove(Metadata&) override
     {
@@ -71,7 +71,7 @@ public:
         // in the dataset
     }
 
-    static void test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out);
+    static void test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out);
 };
 
 

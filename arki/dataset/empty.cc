@@ -33,7 +33,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     return ACQ_OK;
 }
 
-void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace)
+void Writer::acquire_batch(WriterBatch& batch, ReplaceStrategy replace)
 {
     for (auto& e: batch)
     {
@@ -42,7 +42,7 @@ void Writer::acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& bat
     }
 }
 
-void Writer::test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out)
+void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out)
 {
     std::shared_ptr<const empty::Config> config(new empty::Config(cfg));
     for (auto& e: batch)

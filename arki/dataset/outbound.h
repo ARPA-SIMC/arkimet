@@ -54,12 +54,12 @@ public:
      * the reason of the failure.
      */
     WriterAcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
-    void acquire_batch(std::vector<std::shared_ptr<WriterBatchElement>>& batch, ReplaceStrategy replace=REPLACE_DEFAULT) override;
+    void acquire_batch(WriterBatch& batch, ReplaceStrategy replace=REPLACE_DEFAULT) override;
 
     virtual void remove(Metadata& id);
     virtual void removeAll(std::ostream& log, bool writable=false);
 
-    static void test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out);
+    static void test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out);
 };
 
 }

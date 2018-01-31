@@ -111,7 +111,7 @@ public:
     /// Return the dataset path
     const std::string& path() const { return config().path; }
 
-    static void test_acquire(const ConfigFile& cfg, std::vector<std::shared_ptr<WriterBatchElement>>& batch, std::ostream& out);
+    static void test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out);
 };
 
 struct LocalChecker : public LocalBase<Checker, ArchivesChecker>
