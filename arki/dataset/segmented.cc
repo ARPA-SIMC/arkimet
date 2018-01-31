@@ -18,6 +18,7 @@
 #include "arki/utils/files.h"
 #include "arki/utils/compress.h"
 #include "arki/configfile.h"
+#include <algorithm>
 #include <system_error>
 #include <sstream>
 
@@ -157,6 +158,16 @@ std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::str
     return segment_manager().get_writer(format, relname);
 }
 
+static bool writer_batch_element_lt(const std::shared_ptr<WriterBatchElement>& a, const std::shared_ptr<WriterBatchElement>& b)
+{
+    const types::Type* ta = a->md.get(TYPE_REFTIME);
+    const types::Type* tb = b->md.get(TYPE_REFTIME);
+    if (!ta && !tb) return false;
+    if (ta && !tb) return false;
+    if (!ta && tb) return true;
+    return *ta < *tb;
+}
+
 std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
 {
     // Clear dataset names, pre-process items that do not need further
@@ -190,6 +201,10 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
         string relname = config().step()(time) + "." + format;
         by_segment[relname].push_back(e);
     }
+
+    for (auto& b: by_segment)
+        std::sort(b.second.begin(), b.second.end(), writer_batch_element_lt);
+
     return by_segment;
 }
 
