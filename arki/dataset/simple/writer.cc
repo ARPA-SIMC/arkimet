@@ -55,11 +55,6 @@ struct AppendSegment
             mds.add_to_summary(sum);
     }
 
-    ~AppendSegment()
-    {
-        flush();
-    }
-
     void add(const Metadata& md, const types::source::Blob& source)
     {
         using namespace arki::types;
@@ -70,14 +65,6 @@ struct AppendSegment
         sum.add(*copy);
         mds.acquire(move(copy));
         flushed = false;
-    }
-
-    void flush()
-    {
-        if (flushed) return;
-        mds.writeAtomically(segment->absname + ".metadata");
-        sum.writeAtomically(segment->absname + ".summary");
-        //fsync(dir);
     }
 
     WriterAcquireResult acquire(Metadata& md)
@@ -95,6 +82,8 @@ struct AppendSegment
                 nag::warning("simple dataset acquire: %s timestamp is 0", segment->absname.c_str());
             mft->acquire(segment->relname, ts, sum);
             segment->commit();
+            mds.writeAtomically(segment->absname + ".metadata");
+            sum.writeAtomically(segment->absname + ".summary");
             mft->flush();
             return ACQ_OK;
         } catch (std::exception& e) {
@@ -124,6 +113,8 @@ struct AppendSegment
         }
 
         segment->commit();
+        mds.writeAtomically(segment->absname + ".metadata");
+        sum.writeAtomically(segment->absname + ".summary");
         mft->flush();
     }
 };
