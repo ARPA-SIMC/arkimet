@@ -208,10 +208,6 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
     return by_segment;
 }
 
-void Writer::flush()
-{
-}
-
 void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out)
 {
     string type = str::lower(cfg.value("type"));

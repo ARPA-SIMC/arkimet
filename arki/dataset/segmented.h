@@ -92,8 +92,6 @@ public:
     const Config& config() const override = 0;
     segment::Manager& segment_manager();
 
-    virtual void flush();
-
     static void test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out);
 };
 
