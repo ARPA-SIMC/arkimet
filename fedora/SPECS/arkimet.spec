@@ -136,7 +136,7 @@ fi
 
 %changelog
 * Tue Jan 23 2018 Daniele Branchini <dbranchini@arpae.it> - 1.6-1%{dist}
-- fixed #76, #107, #115, #116, #117
+- fixed #76, #107, #110, #115, #116, #117, #118, #119
 
 * Mon Nov 27 2017 Daniele Branchini <dbranchini@arpae.it> - 1.5-2%{dist}
 - fixed #103, #108, #109, #111, #113
