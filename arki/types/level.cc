@@ -1,14 +1,18 @@
-#include <arki/exceptions.h>
-#include <arki/binary.h>
-#include <arki/utils.h>
-#include <arki/types/level.h>
-#include <arki/types/utils.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include "config.h"
+#include "arki/exceptions.h"
+#include "arki/binary.h"
+#include "arki/utils.h"
+#include "arki/types/level.h"
+#include "arki/types/utils.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/libconfig.h"
 #include <sstream>
 #include <iomanip>
 #include <cmath>
+
+#ifdef HAVE_GRIBAPI
+#include <grib_api.h>
+#endif
 
 #ifdef HAVE_LUA
 #include <arki/utils/lua.h>
@@ -802,7 +806,11 @@ unique_ptr<GRIB2S> GRIB2S::create(unsigned char type, unsigned char scale, unsig
     GRIB2S* res = new GRIB2S;
     res->m_type = type;
     res->m_scale = scale;
+#ifdef HAVE_GRIBAPI
+    res->m_value = value == GRIB_MISSING_LONG ? MISSING_VALUE : value;
+#else
     res->m_value = value;
+#endif
     return unique_ptr<GRIB2S>(res);
 }
 
