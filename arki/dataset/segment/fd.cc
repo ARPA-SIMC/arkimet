@@ -64,7 +64,7 @@ const types::source::Blob& Writer::append(Metadata& md)
 void Writer::commit()
 {
     if (fired) return;
-    fd->fdatasync();
+    fd->fsync();
     for (auto& p: pending)
         p.set_source();
     pending.clear();

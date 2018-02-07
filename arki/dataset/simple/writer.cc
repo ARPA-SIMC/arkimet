@@ -77,9 +77,9 @@ struct AppendSegment
         try {
             const types::source::Blob& new_source = segment->append(md);
             add(md, new_source);
-            time_t ts = time(nullptr);
-            mft->acquire(segment->relname, ts, sum);
             segment->commit();
+            time_t ts = scan::timestamp(segment->absname);
+            mft->acquire(segment->relname, ts, sum);
             mds.writeAtomically(segment->absname + ".metadata");
             sum.writeAtomically(segment->absname + ".summary");
             mft->flush();
@@ -106,8 +106,9 @@ struct AppendSegment
             e->dataset_name = config->name;
         }
 
-        mft->acquire(segment->relname, time(nullptr), sum);
         segment->commit();
+        time_t ts = scan::timestamp(segment->absname);
+        mft->acquire(segment->relname, ts, sum);
         mds.writeAtomically(segment->absname + ".metadata");
         sum.writeAtomically(segment->absname + ".summary");
         mft->flush();
