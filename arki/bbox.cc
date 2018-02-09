@@ -1,69 +1,16 @@
 #include "config.h"
 #include "arki/bbox.h"
 #include "arki/exceptions.h"
-#include "arki/utils/geosdef.h"
+#include "arki/utils/geos.h"
 #include "arki/runtime/config.h"
 #include "arki/utils/string.h"
 #include <memory>
-
-using namespace ARKI_GEOS_NS;
 
 using namespace std;
 
 namespace arki {
 
-#if 0
-static string arkilua_dumptablekeys(lua_State* L, int index)
-{
-	string res;
-	// Start iteration
-	lua_pushnil(L);
-	while (lua_next(L, index) != 0)
-	{
-		if (!res.empty()) res += ", ";
-		// key is at index -2 and we want it to be a string
-		if (lua_type(L, -2) != LUA_TSTRING)
-			res += "<not a string>";
-		else
-			res += lua_tostring(L, -2);
-		lua_pop(L, 1);
-	}
-	return res;
-}
-
-static void arkilua_dumpstack(lua_State* L, const std::string& title, FILE* out)
-{
-	fprintf(out, "%s\n", title.c_str());
-	for (int i = lua_gettop(L); i; --i)
-	{
-		int t = lua_type(L, i);
-		switch (t)
-		{
-			case LUA_TNIL:
-				fprintf(out, " %d: nil\n", i);
-				break;
-			case LUA_TBOOLEAN:
-				fprintf(out, " %d: %s\n", i, lua_toboolean(L, i) ? "true" : "false");
-				break;
-			case LUA_TNUMBER:
-				fprintf(out, " %d: %g\n", i, lua_tonumber(L, i));
-				break;
-			case LUA_TSTRING:
-				fprintf(out, " %d: '%s'\n", i, lua_tostring(L, i));
-				break;
-			case LUA_TTABLE:
-				fprintf(out, " %d: table: '%s'\n", i, arkilua_dumptablekeys(L, i).c_str());
-				break;
-			default:
-				fprintf(out, " %d: <%s>\n", i, lua_typename(L, t));
-				break;
-		}
-	}
-}
-#endif
-
-
-BBox::BBox(const std::string& code) : L(new Lua), gf(ARKI_GEOS_GEOMETRYFACTORY::getDefaultInstance()), funcCount(0)
+BBox::BBox(const std::string& code) : L(new Lua), funcCount(0)
 {
     /// Load the bounding box functions
 
@@ -82,8 +29,6 @@ BBox::BBox(const std::string& code) : L(new Lua), gf(ARKI_GEOS_GEOMETRYFACTORY::
         snprintf(buf, 32, "BBOX_%u", funcCount++);
         L->functionFromString(buf, code, "bbox scan instructions");
     }
-
-	//arkilua_dumpstack(L, "Afterinit", stderr);
 }
 
 BBox::~BBox()
@@ -149,7 +94,7 @@ static vector< pair<double, double> > bbox(lua_State* L)
 }
 #endif
 
-std::unique_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const types::Area& v) const
+std::unique_ptr<arki::utils::geos::Geometry> BBox::operator()(const types::Area& v) const
 {
 #ifdef HAVE_GEOS
 	// Set the area information as the 'area' global
@@ -163,26 +108,26 @@ std::unique_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const types::Area& v) const
     {
         throw_consistency_error("computing bounding box via Lua", error);
     } else {
-		//arkilua_dumpstack(L, "Afterscan", stderr);
-		vector< pair<double, double> > points = bbox(*L);
+        vector< pair<double, double> > points = bbox(*L);
+        auto gf = arki::utils::geos::GeometryFactory::getDefaultInstance();
 		switch (points.size())
 		{
 			case 0:
-				return unique_ptr<ARKI_GEOS_GEOMETRY>();
+				return unique_ptr<arki::utils::geos::Geometry>();
 			case 1:
-				return unique_ptr<ARKI_GEOS_GEOMETRY>(
-						gf->createPoint(Coordinate(points[0].second, points[0].first)));
+				return unique_ptr<arki::utils::geos::Geometry>(
+						gf->createPoint(arki::utils::geos::Coordinate(points[0].second, points[0].first)));
 			default:
-				CoordinateArraySequence cas;
-				for (size_t i = 0; i < points.size(); ++i)
-					cas.add(Coordinate(points[i].second, points[i].first));
-				unique_ptr<LinearRing> lr(gf->createLinearRing(cas));
-				return unique_ptr<ARKI_GEOS_GEOMETRY>(
-						gf->createPolygon(*lr, vector<Geometry*>()));
-		}
-	}
+                arki::utils::geos::CoordinateArraySequence cas;
+                for (size_t i = 0; i < points.size(); ++i)
+                    cas.add(arki::utils::geos::Coordinate(points[i].second, points[i].first));
+                unique_ptr<arki::utils::geos::LinearRing> lr(gf->createLinearRing(cas));
+                return unique_ptr<arki::utils::geos::Geometry>(
+                        gf->createPolygon(*lr, vector<arki::utils::geos::Geometry*>()));
+        }
+    }
 #else
-	return unique_ptr<ARKI_GEOS_GEOMETRY>();
+    return unique_ptr<arki::utils::geos::Geometry>();
 #endif
 }
 

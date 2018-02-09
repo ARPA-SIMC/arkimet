@@ -10,7 +10,7 @@
 #include "core/time.h"
 #include "types/utils.h"
 #include "types/area.h"
-#include "utils/geosdef.h"
+#include "utils/geos.h"
 #include "utils/compress.h"
 #include "emitter.h"
 #include "emitter/memory.h"
@@ -262,22 +262,27 @@ namespace summary {
 #ifdef HAVE_GEOS
 struct StatsHull : public ItemVisitor
 {
-    const ARKI_GEOS_GEOMETRYFACTORY& gf;
-    vector<ARKI_GEOS_GEOMETRY*>* geoms;
+    const arki::utils::geos::GeometryFactory* gf;
+    vector<arki::utils::geos::Geometry*>* geoms;
     std::set<std::vector<uint8_t>> seen;
 
-    StatsHull(const ARKI_GEOS_GEOMETRYFACTORY& gf) : gf(gf), geoms(new vector<ARKI_GEOS_GEOMETRY*>) {}
+    StatsHull()
+        : gf(arki::utils::geos::GeometryFactory::getDefaultInstance()),
+          geoms(new vector<arki::utils::geos::Geometry*>)
+    {
+    }
+
     virtual ~StatsHull()
     {
         if (geoms)
         {
-            for (vector<ARKI_GEOS_GEOMETRY*>::iterator i = geoms->begin(); i != geoms->end(); ++i)
-                delete *i;
+            for (auto i: *geoms)
+                delete i;
             delete geoms;
         }
     }
 
-    virtual bool operator()(const Type& type)
+    bool operator()(const Type& type) override
     {
         const Area& a = *dynamic_cast<const Area*>(&type);
         vector<uint8_t> encoded;
@@ -286,7 +291,7 @@ struct StatsHull : public ItemVisitor
         pair<set<vector<uint8_t>>::iterator, bool> i = seen.insert(encoded);
         if (i.second)
         {
-            const ARKI_GEOS_GEOMETRY* g = a.bbox();
+            const arki::utils::geos::Geometry* g = a.bbox();
             //cerr << "Got: " << g << g->getGeometryType() << endl;
             if (!g) return true;
             //cerr << "Adding: " << g->toString() << endl;
@@ -295,14 +300,14 @@ struct StatsHull : public ItemVisitor
         return true;
     }
 
-    unique_ptr<ARKI_GEOS_GEOMETRY> makeBBox()
+    unique_ptr<arki::utils::geos::Geometry> makeBBox()
     {
         if (geoms->empty())
-            return unique_ptr<ARKI_GEOS_GEOMETRY>();
+            return unique_ptr<arki::utils::geos::Geometry>();
 
-        unique_ptr<ARKI_GEOS_NS::GeometryCollection> gc(gf.createGeometryCollection(geoms));
+        auto gc(gf->createGeometryCollection(geoms));
         geoms = 0;
-        return unique_ptr<ARKI_GEOS_GEOMETRY>(gc->convexHull());
+        return unique_ptr<arki::utils::geos::Geometry>(gc->convexHull());
     }
 };
 #endif
@@ -404,14 +409,14 @@ size_t Summary::resolveMatcher(const Matcher& matcher, std::vector<ItemSet>& res
     return visitor.added;
 }
 
-std::unique_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull(const ARKI_GEOS_GEOMETRYFACTORY& gf) const
+std::unique_ptr<arki::utils::geos::Geometry> Summary::getConvexHull() const
 {
 #ifdef HAVE_GEOS
-    summary::StatsHull merger(gf);
+    summary::StatsHull merger;
     root->visitItem(summary::Visitor::posForCode(TYPE_AREA), merger);
     return merger.makeBBox();
 #else
-    return std::unique_ptr<ARKI_GEOS_GEOMETRY>();
+    return std::unique_ptr<arki::utils::geos::Geometry>();
 #endif
 }
 

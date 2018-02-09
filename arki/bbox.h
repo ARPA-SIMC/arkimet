@@ -16,7 +16,6 @@ class BBox
 {
 protected:
     Lua *L;
-    const ARKI_GEOS_GEOMETRYFACTORY* gf;
     unsigned funcCount;
 
 public:
@@ -32,7 +31,7 @@ public:
      * @return the Geometry object with the bounding box, or 0 if the
      * computation is unsupported for this area.
      */
-    virtual std::unique_ptr<ARKI_GEOS_GEOMETRY> operator()(const types::Area& v) const;
+    virtual std::unique_ptr<arki::utils::geos::Geometry> operator()(const types::Area& v) const;
 
     static const BBox& get_singleton();
 };

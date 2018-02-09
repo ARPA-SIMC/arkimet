@@ -1,7 +1,7 @@
 #include "config.h"
 #include <arki/matcher/area.h>
 #include <arki/matcher/utils.h>
-#include <arki/utils/geosdef.h>
+#include <arki/utils/geos.h>
 #include <arki/utils/regexp.h>
 #include <strings.h>
 #include <algorithm>
@@ -120,20 +120,14 @@ unique_ptr<MatchArea> MatchArea::parse(const std::string& pattern)
 }
 
 #ifdef HAVE_GEOS
-static unique_ptr<ARKI_GEOS_GEOMETRY> parseBBox(const ARKI_GEOS_GEOMETRYFACTORY& gf, const std::string sb)
-{
-	using namespace ARKI_GEOS_IO_NS;
-
-	WKTReader reader(&gf);
-	return unique_ptr<ARKI_GEOS_GEOMETRY>(reader.read(sb));
-}
 
 MatchAreaBBox::MatchAreaBBox(const std::string& verb, const std::string& geom)
-    : gf(ARKI_GEOS_GEOMETRYFACTORY::getDefaultInstance()), geom(0), verb(verb)
+    : geom(0), verb(verb)
 {
-	std::unique_ptr<ARKI_GEOS_GEOMETRY> g = parseBBox(*gf, geom);
-	this->geom = g.release();
-	geom_str = geom;
+    auto gf = arki::utils::geos::GeometryFactory::getDefaultInstance();
+    arki::utils::geos::WKTReader reader(gf);
+    this->geom = reader.read(geom);
+    geom_str = geom;
 }
 
 MatchAreaBBox::~MatchAreaBBox()
@@ -176,7 +170,7 @@ bool MatchAreaBBox::matchItem(const Type& o) const
 
     const types::Area* v = dynamic_cast<const types::Area*>(&o);
     if (!v) return false;
-    const ARKI_GEOS_GEOMETRY* bbox = v->bbox();
+    const arki::utils::geos::Geometry* bbox = v->bbox();
     if (bbox == 0) return false;
 
 	return matchGeom(bbox);
@@ -193,14 +187,14 @@ std::string MatchAreaBBox::toString() const
 
 MatchAreaBBoxEquals::MatchAreaBBoxEquals(const std::string& geom) : MatchAreaBBox("equals", geom) {}
 
-bool MatchAreaBBoxEquals::matchGeom(const ARKI_GEOS_GEOMETRY* val) const
+bool MatchAreaBBoxEquals::matchGeom(const arki::utils::geos::Geometry* val) const
 {
 	return val->equals(geom);
 }
 
 MatchAreaBBoxIntersects::MatchAreaBBoxIntersects(const std::string& geom) : MatchAreaBBox("intersects", geom) {}
 
-bool MatchAreaBBoxIntersects::matchGeom(const ARKI_GEOS_GEOMETRY* val) const
+bool MatchAreaBBoxIntersects::matchGeom(const arki::utils::geos::Geometry* val) const
 {
 	return val->intersects(geom);
 }
@@ -208,14 +202,14 @@ bool MatchAreaBBoxIntersects::matchGeom(const ARKI_GEOS_GEOMETRY* val) const
 #ifdef ARKI_NEW_GEOS
 MatchAreaBBoxCovers::MatchAreaBBoxCovers(const std::string& geom) : MatchAreaBBox("covers", geom) {}
 
-bool MatchAreaBBoxCovers::matchGeom(const ARKI_GEOS_GEOMETRY* val) const
+bool MatchAreaBBoxCovers::matchGeom(const arki::utils::geos::Geometry* val) const
 {
 	return val->covers(geom);
 }
 
 MatchAreaBBoxCoveredBy::MatchAreaBBoxCoveredBy(const std::string& geom) : MatchAreaBBox("coveredby", geom) {}
 
-bool MatchAreaBBoxCoveredBy::matchGeom(const ARKI_GEOS_GEOMETRY* val) const
+bool MatchAreaBBoxCoveredBy::matchGeom(const arki::utils::geos::Geometry* val) const
 {
 	return val->coveredBy(geom);
 }

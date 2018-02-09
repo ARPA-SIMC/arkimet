@@ -1,8 +1,8 @@
-#include "libconfig.h"
 #include "bbox.h"
-#include <arki/types/tests.h>
-#include <arki/utils/geosdef.h>
-#include <arki/types/area.h>
+#include "libconfig.h"
+#include "arki/types/tests.h"
+#include "arki/utils/geos.h"
+#include "arki/types/area.h"
 
 #include <cmath>
 #include <sstream>
@@ -28,7 +28,7 @@ add_method("1", [] {
     BBox bbox;
     ValueBag vb;
     unique_ptr<Area> area(Area::createGRIB(vb));
-    unique_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    unique_ptr<arki::utils::geos::Geometry> g(bbox(*area));
 
     ensure(g.get() == 0);
 });
@@ -47,7 +47,7 @@ add_method("2", [] {
 	vb.set("type", Value::createInteger(0));
 
     unique_ptr<Area> area(Area::createGRIB(vb));
-    unique_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    auto g = bbox(*area);
     //cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
@@ -57,19 +57,19 @@ add_method("2", [] {
 	//ensure(g->isRectangle());
 	ensure_equals(g->getDimension(), 2);
 
-	unique_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
-	ensure_equals(cs->getAt(0).x, 12.00);
-	ensure_equals(cs->getAt(0).y, 40.00);
-	ensure_equals(cs->getAt(1).x, 12.00);
-	ensure_equals(cs->getAt(1).y, 46.00);
-	ensure_equals(cs->getAt(2).x, 20.00);
-	ensure_equals(cs->getAt(2).y, 46.00);
-	ensure_equals(cs->getAt(3).x, 20.00);
-	ensure_equals(cs->getAt(3).y, 40.00);
-	ensure_equals(cs->getAt(4).x, 12.00);
-	ensure_equals(cs->getAt(4).y, 40.00);
-
-	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
+    auto cs = g->getCoordinates();
+    wassert(actual(cs->getAt(0).x) == 12.00);
+    wassert(actual(cs->getAt(0).y) == 40.00);
+    wassert(actual(cs->getAt(1).x) == 12.00);
+    wassert(actual(cs->getAt(1).y) == 46.00);
+    wassert(actual(cs->getAt(2).x) == 20.00);
+    wassert(actual(cs->getAt(2).y) == 46.00);
+    wassert(actual(cs->getAt(3).x) == 20.00);
+    wassert(actual(cs->getAt(3).y) == 40.00);
+    wassert(actual(cs->getAt(4).x) == 12.00);
+    wassert(actual(cs->getAt(4).y) == 40.00);
+#else
+    throw TestSkipped();
 #endif
 });
 
@@ -88,7 +88,7 @@ add_method("3", [] {
 	vb.set("utm", Value::createInteger(1));
 
     unique_ptr<Area> area(Area::createGRIB(vb));
-    unique_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    auto g = bbox(*area);
     //cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
@@ -98,7 +98,7 @@ add_method("3", [] {
 	//ensure(g->isRectangle());
 	ensure_equals(g->getDimension(), 2);
 
-    unique_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
+    auto cs(g->getCoordinates());
     wassert(actual(cs->getAt(0).x).almost_equal( 3.3241, 4)); // 7.7876   These are the values computed
     wassert(actual(cs->getAt(0).y).almost_equal(43.6864, 4)); // 43.8211  with the old BB algorithm
     wassert(actual(cs->getAt(1).x).almost_equal( 8.8445, 4)); // 7.7876   that however only produced
@@ -111,6 +111,8 @@ add_method("3", [] {
     wassert(actual(cs->getAt(4).y).almost_equal(43.6864, 4)); // 43.8211
 
     //ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
+#else
+    throw TestSkipped();
 #endif
 });
 
@@ -131,7 +133,7 @@ add_method("4", [] {
 	vb.set("rot", Value::createInteger(0));
 
     unique_ptr<Area> area(Area::createGRIB(vb));
-    unique_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    auto g = bbox(*area);
     //cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
@@ -141,7 +143,7 @@ add_method("4", [] {
 	//ensure(g->isRectangle());
 	ensure_equals(g->getDimension(), 2);
 
-    unique_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
+    auto cs = g->getCoordinates();
     wassert(actual(cs->getAt( 0).x).almost_equal( 6.0124, 4)); wassert(actual(cs->getAt( 0).y).almost_equal(35.4723, 4));
     wassert(actual(cs->getAt( 1).x).almost_equal( 8.1280, 4)); wassert(actual(cs->getAt( 1).y).almost_equal(35.5524, 4));
     wassert(actual(cs->getAt( 2).x).almost_equal(10.2471, 4)); wassert(actual(cs->getAt( 2).y).almost_equal(35.5746, 4));
@@ -171,6 +173,8 @@ add_method("4", [] {
     wassert(actual(cs->getAt(26).x).almost_equal( 5.8357, 4)); wassert(actual(cs->getAt(26).y).almost_equal(37.6802, 4));
     wassert(actual(cs->getAt(27).x).almost_equal( 6.0124, 4)); wassert(actual(cs->getAt(27).y).almost_equal(35.4723, 4));
     //ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
+#else
+    throw TestSkipped();
 #endif
 });
 
@@ -188,7 +192,7 @@ add_method("5", [] {
 	vb.set("type", Value::createInteger(0));
 
     unique_ptr<Area> area(Area::createGRIB(vb));
-    unique_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    auto g = bbox(*area);
     //cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
@@ -198,19 +202,19 @@ add_method("5", [] {
 	//ensure(g->isRectangle());
 	ensure_equals(g->getDimension(), 2);
 
-	unique_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
-	ensure_equals(cs->getAt(0).x,  2.40000);
-	ensure_equals(cs->getAt(0).y, 49.20000);
-	ensure_equals(cs->getAt(1).x,  2.40000);
-	ensure_equals(cs->getAt(1).y, 34.65000);
-	ensure_equals(cs->getAt(2).x, 22.50000);
-	ensure_equals(cs->getAt(2).y, 34.65000);
-	ensure_equals(cs->getAt(3).x, 22.50000);
-	ensure_equals(cs->getAt(3).y, 49.20000);
-	ensure_equals(cs->getAt(4).x,  2.40000);
-	ensure_equals(cs->getAt(4).y, 49.20000);
-
-	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
+    auto cs = g->getCoordinates();
+    wassert(actual(cs->getAt(0).x) ==  2.40000);
+    wassert(actual(cs->getAt(0).y) == 49.20000);
+    wassert(actual(cs->getAt(1).x) ==  2.40000);
+    wassert(actual(cs->getAt(1).y) == 34.65000);
+    wassert(actual(cs->getAt(2).x) == 22.50000);
+    wassert(actual(cs->getAt(2).y) == 34.65000);
+    wassert(actual(cs->getAt(3).x) == 22.50000);
+    wassert(actual(cs->getAt(3).y) == 49.20000);
+    wassert(actual(cs->getAt(4).x) ==  2.40000);
+    wassert(actual(cs->getAt(4).y) == 49.20000);
+#else
+    throw TestSkipped();
 #endif
 });
 
@@ -224,7 +228,7 @@ add_method("6", [] {
     vb.set("y", Value::createInteger(45));
 
     unique_ptr<Area> area(Area::createGRIB(vb));
-    unique_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    auto g(bbox(*area));
     //cerr <<" AREA " << area << endl;
 
     ensure(g.get() != 0);
@@ -234,17 +238,19 @@ add_method("6", [] {
     //ensure(g->isRectangle());
     ensure_equals(g->getDimension(), 2);
 
-    unique_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
-    ensure_equals(cs->getAt(0).x, 11.0);
-    ensure_equals(cs->getAt(0).y, 45.0);
-    ensure_equals(cs->getAt(1).x, 11.0);
-    ensure_equals(cs->getAt(1).y, 46.0);
-    ensure_equals(cs->getAt(2).x, 12.0);
-    ensure_equals(cs->getAt(2).y, 46.0);
-    ensure_equals(cs->getAt(3).x, 12.0);
-    ensure_equals(cs->getAt(3).y, 45.0);
-    ensure_equals(cs->getAt(4).x, 11.0);
-    ensure_equals(cs->getAt(4).y, 45.0);
+    auto cs(g->getCoordinates());
+    wassert(actual(cs->getAt(0).x) == 11.0);
+    wassert(actual(cs->getAt(0).y) == 45.0);
+    wassert(actual(cs->getAt(1).x) == 11.0);
+    wassert(actual(cs->getAt(1).y) == 46.0);
+    wassert(actual(cs->getAt(2).x) == 12.0);
+    wassert(actual(cs->getAt(2).y) == 46.0);
+    wassert(actual(cs->getAt(3).x) == 12.0);
+    wassert(actual(cs->getAt(3).y) == 45.0);
+    wassert(actual(cs->getAt(4).x) == 11.0);
+    wassert(actual(cs->getAt(4).y) == 45.0);
+#else
+    throw TestSkipped();
 #endif
 });
 
@@ -254,7 +260,7 @@ add_method("7", [] {
     BBox bbox;
     unique_ptr<Area> area = Area::decodeString("GRIB(fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)");
 
-    unique_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    auto g(bbox(*area));
     //cerr <<" AREA " << area << endl;
 
     ensure(g.get() != 0);
@@ -264,17 +270,19 @@ add_method("7", [] {
     //ensure(g->isRectangle());
     ensure_equals(g->getDimension(), 2);
 
-    unique_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
-    ensure_equals(floor(cs->getAt(0).x * 1000), 13996);
-    ensure_equals(floor(cs->getAt(0).y * 1000), 43718);
-    ensure_equals(floor(cs->getAt(1).x * 1000), 19453);
-    ensure_equals(floor(cs->getAt(1).y * 1000), 43346);
-    ensure_equals(floor(cs->getAt(2).x * 1000), 19868);
-    ensure_equals(floor(cs->getAt(2).y * 1000), 45602);
-    ensure_equals(floor(cs->getAt(3).x * 1000), 14198);
-    ensure_equals(floor(cs->getAt(3).y * 1000), 46004);
-    ensure_equals(floor(cs->getAt(4).x * 1000), 13996);
-    ensure_equals(floor(cs->getAt(4).y * 1000), 43718);
+    auto cs(g->getCoordinates());
+    wassert(actual(cs->getAt(0).x).almost_equal(13.996, 3));
+    wassert(actual(cs->getAt(0).y).almost_equal(43.718, 3));
+    wassert(actual(cs->getAt(1).x).almost_equal(19.453, 3));
+    wassert(actual(cs->getAt(1).y).almost_equal(43.347, 3));
+    wassert(actual(cs->getAt(2).x).almost_equal(19.869, 3));
+    wassert(actual(cs->getAt(2).y).almost_equal(45.603, 3));
+    wassert(actual(cs->getAt(3).x).almost_equal(14.199, 3));
+    wassert(actual(cs->getAt(3).y).almost_equal(46.005, 3));
+    wassert(actual(cs->getAt(4).x).almost_equal(13.996, 3));
+    wassert(actual(cs->getAt(4).y).almost_equal(43.718, 3));
+#else
+    throw TestSkipped();
 #endif
 });
 

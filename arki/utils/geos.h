@@ -24,19 +24,18 @@
  */
 
 #include <arki/utils/geosfwd.h>
+#include <memory>
 
 #ifdef HAVE_GEOS
+
 #if GEOS_VERSION < 3
 
 #include <geos/geom.h>
 #include <geos/io.h>
+
 #ifdef INLINE
 #undef INLINE
 #endif
-
-namespace geos {
-typedef DefaultCoordinateSequence CoordinateArraySequence;
-}
 
 #else
 
@@ -48,12 +47,22 @@ typedef DefaultCoordinateSequence CoordinateArraySequence;
 #include <geos/geom/LinearRing.h>
 #include <geos/geom/Polygon.h>
 #include <geos/io/WKTReader.h>
+
 #ifdef INLINE
 #undef INLINE
 #endif
 
 #endif
+
+
+namespace arki {
+namespace utils {
+namespace geos {
+
+}
+}
+}
+
 #endif
 
-// vim:set ts=4 sw=4:
 #endif

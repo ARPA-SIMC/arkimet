@@ -263,7 +263,7 @@ public:
 	 * Get the convex hull of the union of all bounding boxes covered by the
 	 * metadata bundle.
 	 */
-	std::unique_ptr<ARKI_GEOS_GEOMETRY> getConvexHull(const ARKI_GEOS_GEOMETRYFACTORY& gf) const;
+	std::unique_ptr<arki::utils::geos::Geometry> getConvexHull() const;
 
 	/**
 	 * Return all the unique combination of metadata items that are found

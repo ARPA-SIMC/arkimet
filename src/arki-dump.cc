@@ -9,7 +9,7 @@
 #include <arki/dataset/http.h>
 #include <arki/summary.h>
 #include <arki/formatter.h>
-#include <arki/utils/geosdef.h>
+#include <arki/utils/geos.h>
 #include <arki/utils/files.h>
 #include <arki/binary.h>
 #include <arki/runtime.h>
@@ -282,8 +282,7 @@ int main(int argc, const char* argv[])
             addToSummary(*in, summary);
 
             // Get the bounding box
-            const ARKI_GEOS_GEOMETRYFACTORY* gf = ARKI_GEOS_GEOMETRYFACTORY::getDefaultInstance();
-            std::unique_ptr<ARKI_GEOS_GEOMETRY> hull = summary.getConvexHull(*gf);
+            auto hull = summary.getConvexHull();
 
             // Print it out
             stringstream ss;

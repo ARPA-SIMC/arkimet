@@ -28,7 +28,7 @@ struct traits<Area>
  */
 struct Area : public types::StyledType<Area>
 {
-	mutable ARKI_GEOS_GEOMETRY* cached_bbox;
+    mutable arki::utils::geos::Geometry* cached_bbox = nullptr;
 
 	/// Style values
 	static const Style GRIB = 1;
@@ -47,8 +47,8 @@ struct Area : public types::StyledType<Area>
     static std::unique_ptr<Area> decodeString(const std::string& val);
     static std::unique_ptr<Area> decodeMapping(const emitter::memory::Mapping& val);
 
-	/// Return the geographical bounding box
-	const ARKI_GEOS_GEOMETRY* bbox() const;
+    /// Return the geographical bounding box
+    const arki::utils::geos::Geometry* bbox() const;
 
 	static void lua_loadlib(lua_State* L);
 

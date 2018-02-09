@@ -25,43 +25,76 @@
 
 #include <arki/libconfig.h>
 
+/*
+ * The C++ interface of GEOS is not guaranteed to be stable.
+ *
+ * The C interface of GEOS is guaranteed to be stable, but it requires
+ * reimplementing extensive resource management, which would mean re-wrapping
+ * the C GEOS API in C++ wrappers that do proper RAII resource management.
+ *
+ * At the moment it seems easier to use a local thin adapter layer to make the
+ * C++ GEOS API changes manageable. This may change in the future depending on
+ * how extensive future GEOS API breaks are going to be.
+ */
+
+// Forward-declare geos components
+#ifdef HAVE_GEOS
+namespace geos {
+#if GEOS_VERSION < 3
+struct Geometry;
+struct GeometryFactory;
+struct Coordinate;
+struct CoordinateArraySequence;
+struct LinearRing;
+struct WKTReader;
+#else
+#define ARKI_NEW_GEOS
+namespace geom {
+struct Geometry;
+struct GeometryFactory;
+struct Coordinate;
+struct CoordinateArraySequence;
+struct LinearRing;
+}
+namespace io {
+struct WKTReader;
+}
+#endif
+}
+#endif
+
+// Bring geos components into a local, stable namespace
+namespace arki {
+namespace utils {
+namespace geos {
 
 #ifdef HAVE_GEOS
 
 #if GEOS_VERSION < 3
-namespace geos {
-struct Geometry;
-struct GeometryFactory;
-}
-#define ARKI_GEOS_NS geos
-#define ARKI_GEOS_IO_NS geos
-#define ARKI_OLD_GEOS
+using ::geos::Geometry;
+using ::geos::GeometryFactory;
+using ::geos::Coordinate;
+using ::geos::CoordinateArraySequence;
+using ::geos::LinearRing;
+using ::geos::WKTReader;
 #else
-namespace geos {
-namespace geom {
-struct Geometry;
-struct GeometryFactory;
-}
-}
-#define ARKI_GEOS_NS geos::geom
-#define ARKI_GEOS_IO_NS geos::io
-#define ARKI_NEW_GEOS
+using ::geos::geom::Geometry;
+using ::geos::geom::GeometryFactory;
+using ::geos::geom::Coordinate;
+using ::geos::geom::CoordinateArraySequence;
+using ::geos::geom::LinearRing;
+using ::geos::io::WKTReader;
 #endif
-
-#define ARKI_GEOS_GEOMETRY ARKI_GEOS_NS::Geometry
-#define ARKI_GEOS_GEOMETRYFACTORY ARKI_GEOS_NS::GeometryFactory
 
 #else
 
-namespace dummygeos {
-struct DummyGeos {};
-}
-
-#define ARKI_GEOS_NS dummygeos
-#define ARKI_GEOS_GEOMETRY ARKI_GEOS_NS::DummyGeos
-#define ARKI_GEOS_GEOMETRYFACTORY ARKI_GEOS_NS::DummyGeos
+struct Geometry {};
+struct GeometryFactory {};
+struct Coordinate {};
 
 #endif
 
-// vim:set ts=4 sw=4:
+}
+}
+}
 #endif

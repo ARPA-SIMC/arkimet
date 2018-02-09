@@ -6,7 +6,7 @@
 #include <arki/matcher.h>
 #include <arki/runtime.h>
 #include <arki/utils/commandline/parser.h>
-#include <arki/utils/geosdef.h>
+#include <arki/utils/geos.h>
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
 #include <memory>
@@ -103,8 +103,6 @@ int main(int argc, const char* argv[])
         if (opts.extra->boolValue())
         {
 #ifdef HAVE_GEOS
-            const ARKI_GEOS_GEOMETRYFACTORY* gf(ARKI_GEOS_GEOMETRYFACTORY::getDefaultInstance());
-
             for (ConfigFile& cfg: inputs)
             {
                 // Instantiate the dataset
@@ -114,7 +112,7 @@ int main(int argc, const char* argv[])
                 d->query_summary(Matcher(), sum);
 
                 // Compute bounding box, and store the WKT in bounding
-                unique_ptr<ARKI_GEOS_GEOMETRY> bbox = sum.getConvexHull(*gf);
+                auto bbox = sum.getConvexHull();
                 if (bbox.get())
                     cfg.setValue("bounding", bbox->toString());
             }

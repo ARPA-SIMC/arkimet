@@ -161,6 +161,11 @@
  },
  {
   "doc": "",
+  "group": "arki_utils_geos",
+  "method": "empty"
+ },
+ {
+  "doc": "",
   "group": "arki_binary",
   "method": "integer"
  },
@@ -1052,7 +1057,22 @@
  {
   "doc": "",
   "group": "arki_metadata",
-  "method": "stream"
+  "method": "stream_grib"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata",
+  "method": "stream_bufr"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata",
+  "method": "stream_vm2"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata",
+  "method": "stream_odim"
  },
  {
   "doc": "",

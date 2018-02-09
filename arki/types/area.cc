@@ -2,7 +2,7 @@
 #include <arki/types/area.h>
 #include <arki/types/utils.h>
 #include <arki/binary.h>
-#include <arki/utils/geosdef.h>
+#include <arki/utils/geos.h>
 #include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
@@ -61,16 +61,16 @@ std::string Area::formatStyle(Area::Style s)
 	}
 }
 
-Area::Area() : cached_bbox(0)
+Area::Area()
 {
 }
 
-const ARKI_GEOS_GEOMETRY* Area::bbox() const
+const arki::utils::geos::Geometry* Area::bbox() const
 {
 #ifdef HAVE_GEOS
     if (!cached_bbox)
     {
-        std::unique_ptr<ARKI_GEOS_GEOMETRY> res = BBox::get_singleton()(*this);
+        std::unique_ptr<arki::utils::geos::Geometry> res = BBox::get_singleton()(*this);
         if (res.get())
             cached_bbox = res.release();
     }
