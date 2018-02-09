@@ -605,6 +605,8 @@ static int arkilua_new_timedef_combined(lua_State* L)
     // Parse length of statistical processing
     pos += arkilua_checkunit_val(L, pos, stat_unit, stat_len);
 
+    // TODO: normalise/uniform units to the highest common one that does not lose precision for both
+
     timerange::Timedef::create(step_len + stat_len, step_unit, stat_type, stat_len, stat_unit)->lua_push(L);
     return 1;
 }

@@ -261,6 +261,7 @@ add_method("query_lots", [](Fixture& f) {
 
         // Reverse order of import, so we can check if things get sorted properly when querying
         // TODO: speed up using batch import? Though in the future it might also optimize sorting metadata by reftime
+        // TODO: speed up here, and check sorting in a reader test
         for (int month = 12; month >= 1; --month)
             for (int day = 28; day >= 1; --day)
                 for (int hour = 21; hour >= 0; hour -= 3)
