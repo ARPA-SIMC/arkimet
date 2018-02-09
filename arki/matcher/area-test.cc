@@ -64,7 +64,7 @@ add_method("grib", [] {
 // Try matching with "bbox equals"
 add_method("bbox_equals", [] {
 #ifndef HAVE_GEOS
-    throw TestSkipped;
+    throw TestSkipped();
 #endif
     Metadata md;
     arki::tests::fill(md);
@@ -78,7 +78,7 @@ add_method("bbox_equals", [] {
 // Try matching with "bbox covers"
 add_method("bbox_covers", [] {
 #ifndef HAVE_GEOS
-    throw TestSkipped;
+    throw TestSkipped();
 #endif
     Metadata md;
     arki::tests::fill(md);
@@ -105,7 +105,7 @@ add_method("bbox_covers", [] {
 // Try matching with "bbox intersects"
 add_method("bbox_intersects", [] {
 #ifndef HAVE_GEOS
-    throw TestSkipped;
+    throw TestSkipped();
 #endif
     Metadata md;
     arki::tests::fill(md);
@@ -129,7 +129,7 @@ add_method("bbox_intersects", [] {
 // Try matching with "bbox coveredby"
 add_method("bbox_coveredby", [] {
 #ifndef HAVE_GEOS
-    throw TestSkipped;
+    throw TestSkipped();
 #endif
     Metadata md;
     arki::tests::fill(md);
@@ -213,7 +213,7 @@ add_method("odimh5_octagon", [] {
 // Try matching Area with ODIMH5
 add_method("bbox_odimh5", [] {
 #ifndef HAVE_GEOS
-    throw TestSkipped;
+    throw TestSkipped();
 #endif
 
     //Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona

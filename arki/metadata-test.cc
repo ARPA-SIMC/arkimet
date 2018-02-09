@@ -316,28 +316,45 @@ add_method("lua", [](Fixture& f) {
 #endif
 });
 
-add_method("stream", [](Fixture& f) {
+add_method("stream_grib", [](Fixture& f) {
+#ifndef HAVE_GRIBAPI
+    throw TestSkipped();
+#endif
     metadata::TestCollection grib("inbound/test.grib1");
-    metadata::TestCollection bufr("inbound/test.bufr");
-    metadata::TestCollection vm2("inbound/test.vm2");
-    metadata::TestCollection odim("inbound/odimh5/XSEC_v21.h5");
-
     File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
     wassert(actual(grib[0].stream_data(fd)) == grib[0].sourceBlob().size);
     fd.close();
     wassert(actual(sys::size("tmpfile")) == grib[0].sourceBlob().size);
+});
 
-    fd.open(O_WRONLY | O_CREAT | O_TRUNC);
+add_method("stream_bufr", [](Fixture& f) {
+#ifndef HAVE_DBALLE
+    throw TestSkipped();
+#endif
+    metadata::TestCollection bufr("inbound/test.bufr");
+    File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
     wassert(actual(bufr[0].stream_data(fd)) == bufr[0].sourceBlob().size);
     fd.close();
     wassert(actual(sys::size("tmpfile")) == bufr[0].sourceBlob().size);
+});
 
-    fd.open(O_WRONLY | O_CREAT | O_TRUNC);
+add_method("stream_vm2", [](Fixture& f) {
+#ifndef HAVE_VM2
+    throw TestSkipped();
+#endif
+    metadata::TestCollection vm2("inbound/test.vm2");
+    File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
     wassert(actual(vm2[0].stream_data(fd)) == vm2[0].sourceBlob().size + 1);
     fd.close();
     wassert(actual(sys::size("tmpfile")) == vm2[0].sourceBlob().size + 1);
+});
 
-    fd.open(O_WRONLY | O_CREAT | O_TRUNC);
+add_method("stream_odim", [](Fixture& f) {
+#ifndef HAVE_HDF5
+    throw TestSkipped();
+#endif
+    metadata::TestCollection odim("inbound/odimh5/XSEC_v21.h5");
+    File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
     wassert(actual(odim[0].stream_data(fd)) == odim[0].sourceBlob().size);
     fd.close();
     wassert(actual(sys::size("tmpfile")) == odim[0].sourceBlob().size);
