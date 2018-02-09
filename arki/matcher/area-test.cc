@@ -233,6 +233,9 @@ add_method("bbox_odimh5", [] {
 
 // Try matching Area with VM2
 add_method("vm2", [] {
+#ifndef HAVE_VM2
+    throw TestSkipped();
+#endif
     Metadata md;
     md.set(area::VM2::create(1));
 

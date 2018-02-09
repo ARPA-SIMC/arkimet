@@ -552,6 +552,9 @@ void Tests103::register_tests() {
 
 // Test datasets with more segments than the number of open files allowed
 add_method("issue103", [](Fixture& f) {
+#ifndef HAVE_VM2
+    throw TestSkipped();
+#endif
     struct rlimit limits;
     if (getrlimit(RLIMIT_NOFILE, &limits) == -1)
         throw_system_error("getrlimit failed");

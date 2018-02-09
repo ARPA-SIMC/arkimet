@@ -387,6 +387,9 @@ add_method("data_in_right_segment_rescan", [](Fixture& f) {
 
 // Test packing a dataset with VM2 data
 add_method("pack_vm2", [](Fixture& f) {
+#ifndef HAVE_VM2
+    throw TestSkipped();
+#endif
     core::lock::TestNowait lock_nowait;
     f.clean_and_import("inbound/test.vm2");
 

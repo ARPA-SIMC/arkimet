@@ -155,6 +155,9 @@ path = duplicates
 });
 
 add_method("issue68", [] {
+#ifndef HAVE_VM2
+    throw TestSkipped();
+#endif
     for (auto path: { "issue68" })
         if (sys::exists(path))
             sys::rmtree(path);;

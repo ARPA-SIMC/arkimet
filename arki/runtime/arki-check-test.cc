@@ -286,6 +286,9 @@ add_method("archive", [](Fixture& f) {
 });
 
 add_method("issue57", [](Fixture& f) {
+#ifndef HAVE_VM2
+    throw TestSkipped();
+#endif
     using runtime::tests::run_cmdline;
 
     if (f.cfg.value("type") == "simple")

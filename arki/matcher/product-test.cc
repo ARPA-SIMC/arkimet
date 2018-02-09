@@ -79,6 +79,9 @@ add_method("bufr", [] {
 
 // Try matching VM2 product
 add_method("vm2", [] {
+#ifndef HAVE_VM2
+    throw TestSkipped();
+#endif
     Metadata md;
     arki::tests::fill(md);
     md.set(product::VM2::create(1));
