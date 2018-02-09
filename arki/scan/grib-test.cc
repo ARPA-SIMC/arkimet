@@ -556,6 +556,34 @@ add_method("bigfile", [] {
     wassert(scanner.test_open("bigfile.grib1"));
 });
 
+add_method("issue120", [] {
+    Metadata md;
+    scan::Grib scanner;
+    scanner.test_open("inbound/oddunits.grib");
+    wassert(actual(scanner.next(md)).istrue());
+
+    // Check the source info
+    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/oddunits.grib", 0, 245));
+
+    // Check that the source can be read properly
+    auto buf = wcallchecked(md.getData());
+    wassert(actual(buf.size()) == 245u);
+    wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
+    wassert(actual(string((const char*)buf.data() + 241, 4)) == "7777");
+
+    wassert(actual(md).contains("origin", "GRIB2(00080, 00255, 005, 255, 015)"));
+    wassert(actual(md).contains("product", "GRIB2(00080, 000, 001, 052, 011, 001)"));
+    wassert(actual(md).contains("level", "GRIB2S(1, -, -)"));
+    wassert(actual(md).contains("timerange", "Timedef(27h, 4, 24h)"));
+    wassert(actual(md).contains("area", "GRIB(Ni=576, Nj=701, latfirst=-8500000, latlast=5500000, latp=-47000000, lonfirst=-3800000, lonlast=7700000, lonp=10000000, rot=0, tn=1)"));
+    wassert(actual(md).contains("proddef", "GRIB(tod=5)"));
+    wassert(actual(md).contains("reftime", "2018-01-25T21:00:00"));
+    wassert(actual(md).contains("run", "MINUTE(21:00)"));
+
+    // No more gribs
+    wassert(actual(scanner.next(md)).isfalse());
+});
+
 }
 
 }
