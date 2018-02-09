@@ -886,6 +886,26 @@
  },
  {
   "doc": "",
+  "group": "arki_utils_vm2",
+  "method": "find_stations"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_vm2",
+  "method": "find_variables"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_vm2",
+  "method": "get_station"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_vm2",
+  "method": "get_variable"
+ },
+ {
+  "doc": "",
   "group": "arki_utils_compress",
   "method": "incompressible"
  },
@@ -1918,6 +1938,31 @@
   "doc": "",
   "group": "arki_scan_odimh5",
   "method": "empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan_vm2",
+  "method": "scan"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan_vm2",
+  "method": "scan_seconds"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan_vm2",
+  "method": "validate"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan_vm2",
+  "method": "reconstruct"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan_vm2",
+  "method": "corrupted"
  },
  {
   "doc": "",

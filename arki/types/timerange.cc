@@ -580,6 +580,36 @@ static int arkilua_new_timedef(lua_State* L)
     return 1;
 }
 
+static int arkilua_new_timedef_combined(lua_State* L)
+{
+    using namespace timerange;
+
+    uint32_t step_len = 0;
+    TimedefUnit step_unit = timerange::UNIT_SECOND;
+    int stat_type = 255;
+    uint32_t stat_len = 0;
+    TimedefUnit stat_unit = timerange::UNIT_MISSING;
+
+    int pos = 1;
+
+    if (lua_gettop(L) != 5)
+        luaL_argcheck(L, 0, lua_gettop(L), "timedef_combined requires 5 arguments");
+
+    // Parse forecast step
+    pos += arkilua_checkunit_val(L, pos, step_unit, step_len);
+
+    // Parse type of statistical processing
+    stat_type = luaL_checkint(L, pos);
+    ++pos;
+
+    // Parse length of statistical processing
+    pos += arkilua_checkunit_val(L, pos, stat_unit, stat_len);
+
+    timerange::Timedef::create(step_len + stat_len, step_unit, stat_type, stat_len, stat_unit)->lua_push(L);
+    return 1;
+}
+
+
 static int arkilua_new_bufr(lua_State* L)
 {
 	int value = luaL_checkint(L, 1);
@@ -596,6 +626,7 @@ void Timerange::lua_loadlib(lua_State* L)
 		{ "grib1", arkilua_new_grib1 },
 		{ "grib2", arkilua_new_grib2 },
 		{ "timedef", arkilua_new_timedef },
+		{ "timedef_combined", arkilua_new_timedef_combined },
 		{ "bufr", arkilua_new_bufr },
 		{ NULL, NULL }
 	};
