@@ -393,55 +393,6 @@ void ActualFile::startswith(const std::string& data) const
         throw TestFailed("file " + _actual + " starts with '" + str::encode_cstring(buf) + "' instead of '" + str::encode_cstring(data) + "'");
 }
 
-#if 0
-void test_assert_file_exists(WIBBLE_TEST_LOCPRM, const std::string& fname)
-{
-    if (not sys::fs::exists(fname))
-    {
-        std::stringstream ss;
-        ss << "file '" << fname << "' does not exists";
-        arki::utils_test_location.fail_test(ss.str());
-    }
-}
-
-void test_assert_not_file_exists(WIBBLE_TEST_LOCPRM, const std::string& fname)
-{
-    if (sys::fs::exists(fname))
-    {
-        std::stringstream ss;
-        ss << "file '" << fname << "' does exists";
-        arki::utils_test_location.fail_test(ss.str());
-    }
-}
-
-#if 0
-struct TestFileExists
-{
-    std::string pathname;
-    bool inverted;
-    TestFileExists(const std::string& pathname, bool inverted=false) : pathname(pathname), inverted(inverted) {}
-    TestFileExists operator!() { return TestFileExists(pathname, !inverted); }
-    void check(ARKI_UTILS_TEST_LOCPRM) const;
-};
-#endif
-
-void TestFileExists::check(WIBBLE_TEST_LOCPRM) const
-{
-    if (!inverted)
-    {
-        if (sys::fs::exists(pathname)) return;
-        std::stringstream ss;
-        ss << "file '" << pathname << "' does not exists";
-        arki::utils_test_location.fail_test(ss.str());
-    } else {
-        if (not sys::fs::exists(pathname)) return;
-        std::stringstream ss;
-        ss << "file '" << pathname << "' exists";
-        arki::utils_test_location.fail_test(ss.str());
-    }
-}
-#endif
-
 TestRegistry& TestRegistry::get()
 {
     static TestRegistry* instance = 0;
@@ -495,22 +446,30 @@ TestCaseResult TestCase::run_tests(TestController& controller)
         return res;
     }
 
+    bool skip_all = false;
     try {
         setup();
     } catch (TestSkipped) {
-        res.skipped = true;
-        controller.test_case_end(*this, res);
-        return res;
+        skip_all = true;
     } catch (std::exception& e) {
         res.set_setup_failed(e);
         controller.test_case_end(*this, res);
         return res;
     }
 
-    for (auto& m: methods)
+    if (skip_all)
     {
-        // TODO: filter on m.name
-        res.add_test_method(run_test(controller, m));
+        for (auto& method: methods)
+        {
+            TestMethodResult tmr(name, method.name);
+            controller.test_method_begin(method, tmr);
+            tmr.skipped = true;
+            controller.test_method_end(method, tmr);
+            res.add_test_method(move(tmr));
+        }
+    } else {
+        for (auto& m: methods)
+            res.add_test_method(run_test(controller, m));
     }
 
     try {
