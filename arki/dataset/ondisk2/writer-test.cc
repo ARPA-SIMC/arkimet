@@ -89,7 +89,9 @@ add_method("summary_invalidate", [](Fixture& f) {
 // Try to reproduce a bug where two conflicting BUFR files were not properly
 // imported with USN handling
 add_method("regression_0", [](Fixture& f) {
-#ifdef HAVE_DBALLE
+#ifndef HAVE_DBALLE
+    throw TestSkipped();
+#endif
     ConfigFile cfg;
     cfg.setValue("path", "gts_temp");
     cfg.setValue("name", "gts_temp");
@@ -102,19 +104,15 @@ add_method("regression_0", [](Fixture& f) {
     auto config = dataset::Config::create(cfg);
     auto writer = config->create_writer();
 
-    Metadata md;
-    scan::Bufr scanner;
-    scanner.test_open("inbound/conflicting-temp-same-usn.bufr");
-    size_t count = 0;
-    for ( ; scanner.next(md); ++count)
-        wassert(actual(*writer).import(md));
-    wassert(actual(count) == 2u);
-    writer->flush();
-#endif
+    metadata::TestCollection mds("inbound/conflicting-temp-same-usn.bufr");
+    wassert(actual(*writer).import(mds));
 });
 
 // Test removal of VM2 data
 add_method("issue57", [](Fixture& f) {
+#ifndef HAVE_VM2
+    throw TestSkipped();
+#endif
     f.cfg.setValue("unique", "reftime, area, product");
 
     // Import the sample file

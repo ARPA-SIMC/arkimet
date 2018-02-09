@@ -1025,6 +1025,9 @@ Element& Fixture::earliest_element()
 
 GRIBData::GRIBData()
 {
+#ifndef HAVE_GRIBAPI
+    throw TestSkipped();
+#endif
     metadata::TestCollection mdc("inbound/fixture.grib1");
     format = "grib";
     test_data[0].set(mdc[0], "reftime:=2007-07-08");
@@ -1035,18 +1038,22 @@ GRIBData::GRIBData()
 
 BUFRData::BUFRData()
 {
-#ifdef HAVE_DBALLE
+#ifndef HAVE_DBALLE
+    throw TestSkipped();
+#endif
     metadata::TestCollection mdc("inbound/fixture.bufr");
     format = "bufr";
     test_data[0].set(mdc[0], "reftime:=2007-07-08");
     test_data[1].set(mdc[1], "reftime:=2007-07-07");
     test_data[2].set(mdc[2], "reftime:=2007-10-09");
     finalise_init();
-#endif
 }
 
 VM2Data::VM2Data()
 {
+#ifndef HAVE_VM2
+    throw TestSkipped();
+#endif
     metadata::TestCollection mdc("inbound/fixture.vm2");
     format = "vm2";
     test_data[0].set(mdc[0], "reftime:=2007-07-08");
@@ -1057,6 +1064,9 @@ VM2Data::VM2Data()
 
 ODIMData::ODIMData()
 {
+#ifndef HAVE_HDF5
+    throw TestSkipped();
+#endif
     metadata::TestCollection mdc;
     format = "odimh5";
     mdc.scan_from_file("inbound/fixture.h5/00.h5", true);

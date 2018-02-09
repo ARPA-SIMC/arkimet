@@ -37,6 +37,9 @@ Fixture::Fixture(const std::string& format, const std::string& cfg_instance)
 {
     if (format == "grib")
     {
+#ifndef HAVE_GRIBAPI
+        throw TestSkipped();
+#endif
         import_files = { "inbound/mainttest.grib" };
         test_relpath = "2007/07-07.grib";
         test_relpath_wrongstep = "2007/07.grib";
@@ -44,6 +47,9 @@ Fixture::Fixture(const std::string& format, const std::string& cfg_instance)
     }
     else if (format == "bufr")
     {
+#ifndef HAVE_DBALLE
+        throw TestSkipped();
+#endif
         import_files = { "inbound/mainttest.bufr" };
         test_relpath = "2007/07-07.bufr";
         test_relpath_wrongstep = "2007/07.bufr";
@@ -51,6 +57,9 @@ Fixture::Fixture(const std::string& format, const std::string& cfg_instance)
     }
     else if (format == "vm2")
     {
+#ifndef HAVE_VM2
+        throw TestSkipped();
+#endif
         import_files = { "inbound/mainttest.vm2" };
         test_relpath = "2007/07-07.vm2";
         test_relpath_wrongstep = "2007/07.vm2";
@@ -58,6 +67,9 @@ Fixture::Fixture(const std::string& format, const std::string& cfg_instance)
     }
     else if (format == "odimh5")
     {
+#ifndef HAVE_HDF5
+        throw TestSkipped();
+#endif
         import_files = {
             "inbound/mainttest.h5/00.h5",
             "inbound/mainttest.h5/01.h5",
