@@ -702,6 +702,26 @@
  {
   "doc": "",
   "group": "arki_types_timerange",
+  "method": "restrict_unit"
+ },
+ {
+  "doc": "",
+  "group": "arki_types_timerange",
+  "method": "enlarge_unit"
+ },
+ {
+  "doc": "",
+  "group": "arki_types_timerange",
+  "method": "compare_units"
+ },
+ {
+  "doc": "",
+  "group": "arki_types_timerange",
+  "method": "make_same_units"
+ },
+ {
+  "doc": "",
+  "group": "arki_types_timerange",
   "method": "lua"
  },
  {
@@ -883,6 +903,26 @@
   "doc": "",
   "group": "arki_utils_lua",
   "method": "examples"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_vm2",
+  "method": "find_stations"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_vm2",
+  "method": "find_variables"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_vm2",
+  "method": "get_station"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_vm2",
+  "method": "get_variable"
  },
  {
   "doc": "",
@@ -1736,6 +1776,11 @@
  },
  {
   "doc": "",
+  "group": "arki_scan_grib",
+  "method": "issue120"
+ },
+ {
+  "doc": "",
   "group": "arki_scan_bufr",
   "method": "contiguous"
  },
@@ -1913,6 +1958,31 @@
   "doc": "",
   "group": "arki_scan_odimh5",
   "method": "empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan_vm2",
+  "method": "scan"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan_vm2",
+  "method": "scan_seconds"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan_vm2",
+  "method": "validate"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan_vm2",
+  "method": "reconstruct"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan_vm2",
+  "method": "corrupted"
  },
  {
   "doc": "",

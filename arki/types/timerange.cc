@@ -580,6 +580,39 @@ static int arkilua_new_timedef(lua_State* L)
     return 1;
 }
 
+static int arkilua_new_timedef_combined(lua_State* L)
+{
+    using namespace timerange;
+
+    uint32_t step_len = 0;
+    TimedefUnit step_unit = timerange::UNIT_SECOND;
+    int stat_type = 255;
+    uint32_t stat_len = 0;
+    TimedefUnit stat_unit = timerange::UNIT_MISSING;
+
+    int pos = 1;
+
+    if (lua_gettop(L) != 5)
+        luaL_argcheck(L, 0, lua_gettop(L), "timedef_combined requires 5 arguments");
+
+    // Parse forecast step
+    pos += arkilua_checkunit_val(L, pos, step_unit, step_len);
+
+    // Parse type of statistical processing
+    stat_type = luaL_checkint(L, pos);
+    ++pos;
+
+    // Parse length of statistical processing
+    pos += arkilua_checkunit_val(L, pos, stat_unit, stat_len);
+
+    // Normalise/uniform units to the highest common one that does not lose precision for both
+    make_same_units(step_len, step_unit, stat_len, stat_unit);
+
+    timerange::Timedef::create(step_len + stat_len, step_unit, stat_type, stat_len, stat_unit)->lua_push(L);
+    return 1;
+}
+
+
 static int arkilua_new_bufr(lua_State* L)
 {
 	int value = luaL_checkint(L, 1);
@@ -596,6 +629,7 @@ void Timerange::lua_loadlib(lua_State* L)
 		{ "grib1", arkilua_new_grib1 },
 		{ "grib2", arkilua_new_grib2 },
 		{ "timedef", arkilua_new_timedef },
+		{ "timedef_combined", arkilua_new_timedef_combined },
 		{ "bufr", arkilua_new_bufr },
 		{ NULL, NULL }
 	};
@@ -625,6 +659,260 @@ unique_ptr<Timerange> Timerange::createBUFR(unsigned value, unsigned char unit)
 }
 
 namespace timerange {
+
+bool restrict_unit(uint32_t& val, TimedefUnit& unit)
+{
+    switch (unit)
+    {
+        case UNIT_MINUTE: val *= 60; unit = UNIT_SECOND; return true;
+        case UNIT_HOUR: val *= 60; unit = UNIT_MINUTE; return true;
+        case UNIT_DAY: val *= 24; unit = UNIT_HOUR; return true;
+        case UNIT_MONTH: return false;
+        case UNIT_YEAR: val *= 12; unit = UNIT_MONTH; return true;
+        case UNIT_DECADE: val *= 10; unit = UNIT_YEAR; return true;
+        case UNIT_NORMAL: val *= 3; unit = UNIT_DECADE; return true;
+        case UNIT_CENTURY: val *= 10; unit = UNIT_DECADE; return true;
+        case UNIT_3HOURS: val *= 3; unit = UNIT_HOUR; return true;
+        case UNIT_6HOURS: val *= 2; unit = UNIT_3HOURS; return true;
+        case UNIT_12HOURS: val *= 2; unit = UNIT_6HOURS; return true;
+        case UNIT_SECOND: return false;
+        case UNIT_MISSING: return false;
+        default: return false;
+    }
+}
+
+bool enlarge_unit(uint32_t& val, TimedefUnit& unit)
+{
+    switch (unit)
+    {
+        case UNIT_MINUTE:
+            if ((val % 60) != 0) return false;
+            val /= 60; unit = UNIT_HOUR; return true;
+        case UNIT_HOUR:
+            if ((val % 24) != 0) return false;
+            val /= 24; unit = UNIT_DAY; return true;
+        case UNIT_DAY:
+            return false;
+        case UNIT_MONTH:
+            if ((val % 12) != 0) return false;
+            val /= 12; unit = UNIT_YEAR; return true;
+        case UNIT_YEAR:
+            if ((val % 10) != 0) return false;
+            val /= 10; unit = UNIT_DECADE; return true;
+        case UNIT_DECADE:
+            if ((val % 100) != 0) return false;
+            val /= 100; unit = UNIT_CENTURY; return true;
+        case UNIT_NORMAL:
+            return false;
+        case UNIT_CENTURY:
+            return false;
+        case UNIT_3HOURS:
+            if ((val % 2) != 0) return false;
+            val /= 2; unit = UNIT_6HOURS; return true;
+        case UNIT_6HOURS:
+            if ((val % 2) != 0) return false;
+            val /= 2; unit = UNIT_12HOURS; return true;
+        case UNIT_12HOURS:
+            if ((val % 2) != 0) return false;
+            val /= 2; unit = UNIT_DAY; return true;
+        case UNIT_SECOND:
+            if ((val % 60) != 0) return false;
+            val /= 60; unit = UNIT_MINUTE; return true;
+        case UNIT_MISSING:
+            return false;
+        default: return false;
+    }
+}
+
+bool unit_can_be_seconds(TimedefUnit unit)
+{
+    switch (unit)
+    {
+        case UNIT_SECOND:
+        case UNIT_MINUTE:
+        case UNIT_HOUR:
+        case UNIT_3HOURS:
+        case UNIT_6HOURS:
+        case UNIT_12HOURS:
+        case UNIT_DAY:
+            return true;
+        case UNIT_MONTH:
+        case UNIT_YEAR:
+        case UNIT_DECADE:
+        case UNIT_NORMAL:
+        case UNIT_CENTURY:
+        case UNIT_MISSING:
+        default:
+            return false;
+    }
+}
+
+int compare_units(TimedefUnit unit1, TimedefUnit unit2)
+{
+    if (unit1 == unit2) return 0;
+
+    if (unit_can_be_seconds(unit1))
+    {
+        if (!unit_can_be_seconds(unit2))
+        {
+            std::stringstream ss;
+            ss << "cannot compare two different kinds of time units (";
+            ss << Timedef::timeunit_suffix(unit1);
+            ss << " and ";
+            ss << Timedef::timeunit_suffix(unit2);
+            ss << ")";
+            throw std::runtime_error(ss.str());
+        }
+        switch (unit1)
+        {
+            case UNIT_SECOND: return -1;
+            case UNIT_MINUTE:
+                switch (unit2)
+                {
+                    case UNIT_SECOND: return 1;
+                    default: return -1;
+                }
+            case UNIT_HOUR:
+                switch (unit2)
+                {
+                    case UNIT_MINUTE:
+                    case UNIT_SECOND: return 1;
+                    default: return -1;
+                }
+            case UNIT_3HOURS:
+                switch (unit2)
+                {
+                    case UNIT_HOUR:
+                    case UNIT_MINUTE:
+                    case UNIT_SECOND: return 1;
+                    default: return -1;
+                }
+            case UNIT_6HOURS:
+                switch (unit2)
+                {
+                    case UNIT_3HOURS:
+                    case UNIT_HOUR:
+                    case UNIT_MINUTE:
+                    case UNIT_SECOND: return 1;
+                    default: return -1;
+                }
+            case UNIT_12HOURS:
+                switch (unit2)
+                {
+                    case UNIT_6HOURS:
+                    case UNIT_3HOURS:
+                    case UNIT_HOUR:
+                    case UNIT_MINUTE:
+                    case UNIT_SECOND: return 1;
+                    default: return -1;
+                }
+            case UNIT_DAY: return 1;
+            default:
+            {
+                std::stringstream ss;
+                ss << "unable to compare unknown unit type ";
+                ss << Timedef::timeunit_suffix(unit1);
+                throw std::runtime_error(ss.str());
+            }
+        }
+    } else {
+        if (unit_can_be_seconds(unit2))
+        {
+            std::stringstream ss;
+            ss << "cannot compare two different kinds of time units (";
+            ss << Timedef::timeunit_suffix(unit1);
+            ss << " and ";
+            ss << Timedef::timeunit_suffix(unit2);
+            ss << ")";
+            throw std::runtime_error(ss.str());
+        }
+        switch (unit1)
+        {
+            case UNIT_MONTH: return -1;
+            case UNIT_YEAR:
+                switch (unit2)
+                {
+                    case UNIT_MONTH: return 1;
+                    default: return -1;
+                }
+            case UNIT_DECADE:
+                switch (unit2)
+                {
+                    case UNIT_MONTH:
+                    case UNIT_YEAR: return 1;
+                    default: return -1;
+                }
+            case UNIT_NORMAL:
+                switch (unit2)
+                {
+                    case UNIT_MONTH:
+                    case UNIT_YEAR:
+                    case UNIT_DECADE: return 1;
+                    default: return -1;
+                }
+            case UNIT_CENTURY:
+                switch (unit2)
+                {
+                    case UNIT_MONTH:
+                    case UNIT_YEAR:
+                    case UNIT_DECADE:
+                    case UNIT_NORMAL: return 1;
+                    default: return -1;
+                }
+            default:
+            {
+                std::stringstream ss;
+                ss << "unable to compare unknown unit type ";
+                ss << Timedef::timeunit_suffix(unit1);
+                throw std::runtime_error(ss.str());
+            }
+        }
+    }
+}
+
+void make_same_units(uint32_t& val1, TimedefUnit& unit1, uint32_t& val2, TimedefUnit& unit2)
+{
+    if (unit1 == unit2) return;
+
+    // Try enlarging the smallest
+    while (true)
+    {
+        int cmp = compare_units(unit1, unit2);
+        if (cmp < 0)
+        {
+            if (!enlarge_unit(val1, unit1))
+                break;
+        } else if (cmp == 0) {
+            return;
+        } else {
+            if (!enlarge_unit(val2, unit2))
+                break;
+        }
+    }
+
+    // Still not matching, try restricting the largest
+    while (true)
+    {
+        int cmp = compare_units(unit1, unit2);
+        if (cmp < 0)
+        {
+            if (!restrict_unit(val2, unit2))
+                break;
+        } else if (cmp == 0) {
+            return;
+        } else {
+            if (!restrict_unit(val1, unit1))
+                break;
+        }
+    }
+
+    std::stringstream ss;
+    ss << "Cannot convert " << Timedef::timeunit_suffix(unit1);
+    ss << " and " << Timedef::timeunit_suffix(unit2);
+    ss << " to the same unit";
+    throw std::runtime_error(ss.str());
+}
+
 
 Timerange::Style GRIB1::style() const { return Timerange::GRIB1; }
 
@@ -2027,5 +2315,3 @@ void Timerange::init()
 }
 
 #include <arki/types.tcc>
-
-// vim:set ts=4 sw=4:

@@ -32,6 +32,46 @@ enum TimedefUnit {
     UNIT_MISSING = 255
 };
 
+/**
+ * Convert the value/unit pair to an equivalent pair with a unit with a smaller
+ * granularity (e.g. years to months, hours to minutes), with no loss of
+ * precision.
+ *
+ * Return false if the value was unchanged because no further change is
+ * possible.
+ */
+bool restrict_unit(uint32_t& val, TimedefUnit& unit);
+
+/**
+ * Convert the value/unit pair to an equivalent pair with a unit with a larger
+ * granularity (e.g. months to years, minutes to hours), with no loss of
+ * precision.
+ *
+ * Return false if the value was unchanged because no further change is
+ * possible.
+ */
+bool enlarge_unit(uint32_t& val, TimedefUnit& unit);
+
+/**
+ * Return true if the unit can be represented in seconds, false if the unit can
+ * be represented in months.
+ */
+bool unit_can_be_seconds(TimedefUnit unit);
+
+/**
+ * Return -1 if unit1 represent a smaller time lapse than unit2, 0 if they are
+ * the same, 1 if unit1 represents a bigger time lapse than unit1.
+ *
+ * Raises an exception if the two units cannot be compared (like seconds and
+ * months)
+ */
+int compare_units(TimedefUnit unit1, TimedefUnit unit2);
+
+/**
+ * Make sure val1:unit1 and val2:unit2 are expressed using the same units.
+ */
+void make_same_units(uint32_t& val1, TimedefUnit& unit1, uint32_t& val2, TimedefUnit& unit2);
+
 }
 
 template<>
