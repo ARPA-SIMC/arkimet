@@ -717,6 +717,11 @@
  {
   "doc": "",
   "group": "arki_types_timerange",
+  "method": "make_same_units"
+ },
+ {
+  "doc": "",
+  "group": "arki_types_timerange",
   "method": "lua"
  },
  {

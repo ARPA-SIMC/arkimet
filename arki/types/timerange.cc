@@ -605,7 +605,8 @@ static int arkilua_new_timedef_combined(lua_State* L)
     // Parse length of statistical processing
     pos += arkilua_checkunit_val(L, pos, stat_unit, stat_len);
 
-    // TODO: normalise/uniform units to the highest common one that does not lose precision for both
+    // Normalise/uniform units to the highest common one that does not lose precision for both
+    make_same_units(step_len, step_unit, stat_len, stat_unit);
 
     timerange::Timedef::create(step_len + stat_len, step_unit, stat_type, stat_len, stat_unit)->lua_push(L);
     return 1;
@@ -867,6 +868,49 @@ int compare_units(TimedefUnit unit1, TimedefUnit unit2)
             }
         }
     }
+}
+
+void make_same_units(uint32_t& val1, TimedefUnit& unit1, uint32_t& val2, TimedefUnit& unit2)
+{
+    if (unit1 == unit2) return;
+
+    // Try enlarging the smallest
+    while (true)
+    {
+        int cmp = compare_units(unit1, unit2);
+        if (cmp < 0)
+        {
+            if (!enlarge_unit(val1, unit1))
+                break;
+        } else if (cmp == 0) {
+            return;
+        } else {
+            if (!enlarge_unit(val2, unit2))
+                break;
+        }
+    }
+
+    // Still not matching, try restricting the largest
+    while (true)
+    {
+        int cmp = compare_units(unit1, unit2);
+        if (cmp < 0)
+        {
+            if (!restrict_unit(val2, unit2))
+                break;
+        } else if (cmp == 0) {
+            return;
+        } else {
+            if (!restrict_unit(val1, unit1))
+                break;
+        }
+    }
+
+    std::stringstream ss;
+    ss << "Cannot convert " << Timedef::timeunit_suffix(unit1);
+    ss << " and " << Timedef::timeunit_suffix(unit2);
+    ss << " to the same unit";
+    throw std::runtime_error(ss.str());
 }
 
 
@@ -2271,5 +2315,3 @@ void Timerange::init()
 }
 
 #include <arki/types.tcc>
-
-// vim:set ts=4 sw=4:

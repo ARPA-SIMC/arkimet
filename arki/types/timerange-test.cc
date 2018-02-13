@@ -483,6 +483,61 @@ add_method("compare_units", [] {
     wassert(actual(compare_units(UNIT_HOUR, UNIT_HOUR)) == 0);
 });
 
+add_method("make_same_units", [] {
+    using namespace timerange;
+    uint32_t val1, val2;
+    TimedefUnit unit1, unit2;
+
+    val1 = 60; unit1 = UNIT_MINUTE;
+    val2 = 1; unit2 = UNIT_DAY;
+    wassert(make_same_units(val1, unit1, val2, unit2));
+    wassert(actual(val1) == 1u);
+    wassert(actual(unit1) == UNIT_HOUR);
+    wassert(actual(val2) == 24u);
+    wassert(actual(unit2) == UNIT_HOUR);
+
+    val1 = 60; unit1 = UNIT_12HOURS;
+    val2 = 1; unit2 = UNIT_SECOND;
+    wassert(make_same_units(val1, unit1, val2, unit2));
+    wassert(actual(val1) == 60u * 12 * 3600);
+    wassert(actual(unit1) == UNIT_SECOND);
+    wassert(actual(val2) == 1u);
+    wassert(actual(unit2) == UNIT_SECOND);
+
+    val1 = 60; unit1 = UNIT_SECOND;
+    val2 = 1; unit2 = UNIT_SECOND;
+    wassert(make_same_units(val1, unit1, val2, unit2));
+    wassert(actual(val1) == 60u);
+    wassert(actual(unit1) == UNIT_SECOND);
+    wassert(actual(val2) == 1u);
+    wassert(actual(unit2) == UNIT_SECOND);
+
+    val1 = 60; unit1 = UNIT_MONTH;
+    val2 = 1; unit2 = UNIT_DECADE;
+    wassert(make_same_units(val1, unit1, val2, unit2));
+    wassert(actual(val1) == 5u);
+    wassert(actual(unit1) == UNIT_YEAR);
+    wassert(actual(val2) == 10u);
+    wassert(actual(unit2) == UNIT_YEAR);
+
+    val1 = 1; unit1 = UNIT_NORMAL;
+    val2 = 1; unit2 = UNIT_CENTURY;
+    wassert(make_same_units(val1, unit1, val2, unit2));
+    wassert(actual(val1) == 3u);
+    wassert(actual(unit1) == UNIT_DECADE);
+    wassert(actual(val2) == 10u);
+    wassert(actual(unit2) == UNIT_DECADE);
+
+    val1 = 1; unit1 = UNIT_SECOND;
+    val2 = 1; unit2 = UNIT_MONTH;
+    auto e = wassert_throws(std::runtime_error, make_same_units(val1, unit1, val2, unit2));
+    wassert(actual(val1) == 1u);
+    wassert(actual(unit1) == UNIT_SECOND);
+    wassert(actual(val2) == 1u);
+    wassert(actual(unit2) == UNIT_MONTH);
+    wassert(actual(e.what()) == "cannot compare two different kinds of time units (s and mo)");
+});
+
 // Test Lua functions
 add_lua_test("lua", "GRIB1(2, 2s, 3s)", R"(
     function test(o)

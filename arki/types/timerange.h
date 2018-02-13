@@ -67,6 +67,11 @@ bool unit_can_be_seconds(TimedefUnit unit);
  */
 int compare_units(TimedefUnit unit1, TimedefUnit unit2);
 
+/**
+ * Make sure val1:unit1 and val2:unit2 are expressed using the same units.
+ */
+void make_same_units(uint32_t& val1, TimedefUnit& unit1, uint32_t& val2, TimedefUnit& unit2);
+
 }
 
 template<>
