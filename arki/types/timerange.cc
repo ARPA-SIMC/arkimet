@@ -659,6 +659,71 @@ unique_ptr<Timerange> Timerange::createBUFR(unsigned value, unsigned char unit)
 
 namespace timerange {
 
+bool restrict_unit(uint32_t& val, TimedefUnit& unit)
+{
+    switch (unit)
+    {
+        case UNIT_MINUTE: val *= 60; unit = UNIT_SECOND; return true;
+        case UNIT_HOUR: val *= 60; unit = UNIT_MINUTE; return true;
+        case UNIT_DAY: val *= 24; unit = UNIT_HOUR; return true;
+        case UNIT_MONTH: return false;
+        case UNIT_YEAR: val *= 12; unit = UNIT_MONTH; return true;
+        case UNIT_DECADE: val *= 10; unit = UNIT_YEAR; return true;
+        case UNIT_NORMAL: val *= 3; unit = UNIT_DECADE; return true;
+        case UNIT_CENTURY: val *= 10; unit = UNIT_DECADE; return true;
+        case UNIT_3HOURS: val *= 3; unit = UNIT_HOUR; return true;
+        case UNIT_6HOURS: val *= 2; unit = UNIT_3HOURS; return true;
+        case UNIT_12HOURS: val *= 2; unit = UNIT_6HOURS; return true;
+        case UNIT_SECOND: return false;
+        case UNIT_MISSING: return false;
+        default: return false;
+    }
+}
+
+bool enlarge_unit(uint32_t& val, TimedefUnit& unit)
+{
+    switch (unit)
+    {
+        case UNIT_MINUTE:
+            if ((val % 60) != 0) return false;
+            val /= 60; unit = UNIT_HOUR; return true;
+        case UNIT_HOUR:
+            if ((val % 24) != 0) return false;
+            val /= 24; unit = UNIT_DAY; return true;
+        case UNIT_DAY:
+            return false;
+        case UNIT_MONTH:
+            if ((val % 12) != 0) return false;
+            val /= 12; unit = UNIT_YEAR; return true;
+        case UNIT_YEAR:
+            if ((val % 10) != 0) return false;
+            val /= 10; unit = UNIT_DECADE; return true;
+        case UNIT_DECADE:
+            if ((val % 100) != 0) return false;
+            val /= 100; unit = UNIT_CENTURY; return true;
+        case UNIT_NORMAL:
+            return false;
+        case UNIT_CENTURY:
+            return false;
+        case UNIT_3HOURS:
+            if ((val % 2) != 0) return false;
+            val /= 2; unit = UNIT_6HOURS; return true;
+        case UNIT_6HOURS:
+            if ((val % 2) != 0) return false;
+            val /= 2; unit = UNIT_12HOURS; return true;
+        case UNIT_12HOURS:
+            if ((val % 2) != 0) return false;
+            val /= 2; unit = UNIT_DAY; return true;
+        case UNIT_SECOND:
+            if ((val % 60) != 0) return false;
+            val /= 60; unit = UNIT_MINUTE; return true;
+        case UNIT_MISSING:
+            return false;
+        default: return false;
+    }
+}
+
+
 Timerange::Style GRIB1::style() const { return Timerange::GRIB1; }
 
 void GRIB1::encodeWithoutEnvelope(BinaryEncoder& enc) const

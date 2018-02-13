@@ -32,6 +32,26 @@ enum TimedefUnit {
     UNIT_MISSING = 255
 };
 
+/**
+ * Convert the value/unit pair to an equivalent pair with a unit with a smaller
+ * granularity (e.g. years to months, hours to minutes), with no loss of
+ * precision.
+ *
+ * Return false if the value was unchanged because no further change is
+ * possible.
+ */
+bool restrict_unit(uint32_t& val, TimedefUnit& unit);
+
+/**
+ * Convert the value/unit pair to an equivalent pair with a unit with a larger
+ * granularity (e.g. months to years, minutes to hours), with no loss of
+ * precision.
+ *
+ * Return false if the value was unchanged because no further change is
+ * possible.
+ */
+bool enlarge_unit(uint32_t& val, TimedefUnit& unit);
+
 }
 
 template<>
