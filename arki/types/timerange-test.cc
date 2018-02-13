@@ -407,27 +407,27 @@ add_method("restrict_unit", [] {
 
     val = 60; unit = UNIT_MINUTE;
     wassert_true(restrict_unit(val, unit));
-    wassert(actual(val) == 3600);
+    wassert(actual(val) == 3600u);
     wassert(actual(unit) == UNIT_SECOND);
 
     val = 1; unit = UNIT_SECOND;
     wassert_false(restrict_unit(val, unit));
-    wassert(actual(val) == 1);
+    wassert(actual(val) == 1u);
     wassert(actual(unit) == UNIT_SECOND);
 
     val = 10; unit = UNIT_YEAR;
     wassert_true(restrict_unit(val, unit));
-    wassert(actual(val) == 120);
+    wassert(actual(val) == 120u);
     wassert(actual(unit) == UNIT_MONTH);
 
     val = 1; unit = UNIT_MONTH;
     wassert_false(restrict_unit(val, unit));
-    wassert(actual(val) == 1);
+    wassert(actual(val) == 1u);
     wassert(actual(unit) == UNIT_MONTH);
 
     val = 1; unit = UNIT_MISSING;
     wassert_false(restrict_unit(val, unit));
-    wassert(actual(val) == 1);
+    wassert(actual(val) == 1u);
     wassert(actual(unit) == UNIT_MISSING);
 });
 
@@ -437,43 +437,50 @@ add_method("enlarge_unit", [] {
 
     val = 600; unit = UNIT_SECOND;
     wassert_true(enlarge_unit(val, unit));
-    wassert(actual(val) == 10);
+    wassert(actual(val) == 10u);
     wassert(actual(unit) == UNIT_MINUTE);
 
     val = 601; unit = UNIT_SECOND;
     wassert_false(enlarge_unit(val, unit));
-    wassert(actual(val) == 601);
+    wassert(actual(val) == 601u);
     wassert(actual(unit) == UNIT_SECOND);
 
     val = 1; unit = UNIT_DAY;
     wassert_false(enlarge_unit(val, unit));
-    wassert(actual(val) == 1);
+    wassert(actual(val) == 1u);
     wassert(actual(unit) == UNIT_DAY);
 
     val = 600; unit = UNIT_MONTH;
     wassert_true(enlarge_unit(val, unit));
-    wassert(actual(val) == 50);
+    wassert(actual(val) == 50u);
     wassert(actual(unit) == UNIT_YEAR);
 
     val = 601; unit = UNIT_MONTH;
     wassert_false(enlarge_unit(val, unit));
-    wassert(actual(val) == 601);
+    wassert(actual(val) == 601u);
     wassert(actual(unit) == UNIT_MONTH);
 
     val = 1; unit = UNIT_NORMAL;
     wassert_false(enlarge_unit(val, unit));
-    wassert(actual(val) == 1);
+    wassert(actual(val) == 1u);
     wassert(actual(unit) == UNIT_NORMAL);
 
     val = 1; unit = UNIT_CENTURY;
     wassert_false(enlarge_unit(val, unit));
-    wassert(actual(val) == 1);
+    wassert(actual(val) == 1u);
     wassert(actual(unit) == UNIT_CENTURY);
 
     val = 1; unit = UNIT_MISSING;
     wassert_false(enlarge_unit(val, unit));
-    wassert(actual(val) == 1);
+    wassert(actual(val) == 1u);
     wassert(actual(unit) == UNIT_MISSING);
+});
+
+add_method("compare_units", [] {
+    using namespace timerange;
+    wassert(actual(compare_units(UNIT_SECOND, UNIT_HOUR)) == -1);
+    wassert(actual(compare_units(UNIT_HOUR, UNIT_SECOND)) == 1);
+    wassert(actual(compare_units(UNIT_HOUR, UNIT_HOUR)) == 0);
 });
 
 // Test Lua functions

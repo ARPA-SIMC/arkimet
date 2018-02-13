@@ -52,6 +52,21 @@ bool restrict_unit(uint32_t& val, TimedefUnit& unit);
  */
 bool enlarge_unit(uint32_t& val, TimedefUnit& unit);
 
+/**
+ * Return true if the unit can be represented in seconds, false if the unit can
+ * be represented in months.
+ */
+bool unit_can_be_seconds(TimedefUnit unit);
+
+/**
+ * Return -1 if unit1 represent a smaller time lapse than unit2, 0 if they are
+ * the same, 1 if unit1 represents a bigger time lapse than unit1.
+ *
+ * Raises an exception if the two units cannot be compared (like seconds and
+ * months)
+ */
+int compare_units(TimedefUnit unit1, TimedefUnit unit2);
+
 }
 
 template<>

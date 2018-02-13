@@ -712,6 +712,11 @@
  {
   "doc": "",
   "group": "arki_types_timerange",
+  "method": "compare_units"
+ },
+ {
+  "doc": "",
+  "group": "arki_types_timerange",
   "method": "lua"
  },
  {
