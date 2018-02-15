@@ -1,4 +1,4 @@
-#include "arki/tests/tests.h"
+#include "arki/core/tests.h"
 #include "arki/metadata.h"
 #include "xargs.h"
 #include "collection.h"
@@ -83,6 +83,42 @@ add_method("interval", [] {
 
     string out = sys::read_file("tmp-xargs");
     wassert(actual(out).matches("([[:alnum:]/]+/arki-xargs.[[:alnum:]]+\n){3}"));
+});
+
+add_method("issue124", [] {
+    sys::rmtree_ifexists("xargs_tmpdir");
+    sys::mkdir_ifmissing("xargs_tmpdir");
+    arki::tests::OverrideEnvironment oe("TMPDIR", sys::abspath("xargs_tmpdir"));
+
+    metadata::TestCollection mdc("inbound/test.grib1");
+
+    {
+        metadata::Xargs xargs;
+        xargs.command.push_back("/bin/sh");
+        xargs.command.push_back("-c");
+        xargs.command.push_back("cat > /dev/null");
+        xargs.filename_argument = 1000; // Do not pass the file name
+        xargs.eat(wrap(mdc[0]));
+        xargs.eat(wrap(mdc[1]));
+        xargs.eat(wrap(mdc[2]));
+        xargs.flush();
+
+        // Check that xargs_tmpdir contains 1 file
+        sys::Path path("xargs_tmpdir");
+        std::vector<std::string> contents;
+        for (auto name: path)
+            if (name.d_name[0] != '.')
+                contents.push_back(name.d_name);
+        wassert(actual(contents.size()) == 1);
+    }
+
+    // Check that xargs_tmpdir contains 0 files
+    sys::Path path("xargs_tmpdir");
+    std::vector<std::string> contents;
+    for (auto name: path)
+        if (name.d_name[0] != '.')
+            contents.push_back(name.d_name);
+    wassert(actual(contents.size()) == 0);
 });
 
 }
