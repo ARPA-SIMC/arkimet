@@ -2011,6 +2011,11 @@
  },
  {
   "doc": "",
+  "group": "arki_metadata_xargs",
+  "method": "issue124"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_lock",
   "method": "reader_reader"
  },

@@ -10,6 +10,22 @@
 namespace arki {
 namespace tests {
 
+/**
+ * Override an environment variable for the duration of this object
+ */
+struct OverrideEnvironment
+{
+    std::string name;
+    bool was_set = false;
+    std::string orig_value;
+
+    // Unset the variable
+    OverrideEnvironment(const std::string& name);
+    // Set the variable to the given value
+    OverrideEnvironment(const std::string& name, const std::string& value);
+    ~OverrideEnvironment();
+};
+
 class ActualTime : public arki::utils::tests::Actual<arki::core::Time>
 {
 public:

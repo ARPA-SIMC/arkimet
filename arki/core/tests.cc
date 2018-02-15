@@ -1,7 +1,9 @@
 #include "tests.h"
-#include <arki/binary.h>
-#include <arki/emitter/json.h>
-#include <arki/emitter/memory.h>
+#include "arki/binary.h"
+#include "arki/emitter/json.h"
+#include "arki/emitter/memory.h"
+#include "arki/exceptions.h"
+#include <cstdlib>
 
 using namespace std;
 using namespace arki;
@@ -10,6 +12,40 @@ using arki::core::Time;
 
 namespace arki {
 namespace tests {
+
+OverrideEnvironment::OverrideEnvironment(const std::string& name)
+    : name(name)
+{
+    char* old_val = getenv(name.c_str());
+    if (old_val)
+    {
+        was_set = true;
+        orig_value = old_val;
+    }
+    if (::unsetenv(name.c_str()) == -1)
+        throw_system_error("unsetenv " + name + " failed");
+}
+
+OverrideEnvironment::OverrideEnvironment(const std::string& name, const std::string& value)
+    : name(name)
+{
+    char* old_val = getenv(name.c_str());
+    if (old_val)
+    {
+        was_set = true;
+        orig_value = old_val;
+    }
+    if (::setenv(name.c_str(), value.c_str(), 1) == -1)
+        throw_system_error("setenv " + name + "=" + value + " failed");
+}
+
+OverrideEnvironment::~OverrideEnvironment()
+{
+    if (was_set)
+        setenv(name.c_str(), orig_value.c_str(), 1);
+    else
+        unsetenv(name.c_str());
+}
 
 void ActualTime::operator==(const std::string& expected) const
 {

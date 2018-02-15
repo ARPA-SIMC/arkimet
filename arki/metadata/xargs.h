@@ -44,9 +44,7 @@ public:
     int filename_argument;
 
     Xargs();
-    ~Xargs()
-    {
-    }
+    ~Xargs();
 
     void set_max_bytes(const std::string& val);
     void set_interval(const std::string& val);
