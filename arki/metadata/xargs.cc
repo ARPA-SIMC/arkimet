@@ -33,6 +33,10 @@ Xargs::Xargs()
     }
 }
 
+Xargs::~Xargs()
+{
+}
+
 void Xargs::start_batch(const std::string& new_format)
 {
     metadata::Clusterer::start_batch(new_format);
@@ -60,10 +64,12 @@ void Xargs::flush_batch()
     } catch (...) {
         // Ignore close exceptions here, so we rethrow what really happened
         ::close(tempfile);
+        ::unlink(tempfile.name().c_str());
         throw;
     }
 
     tempfile.close();
+    sys::unlink(tempfile.name());
     metadata::Clusterer::flush_batch();
 
     if (res != 0)

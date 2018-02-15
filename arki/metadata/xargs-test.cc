@@ -101,7 +101,6 @@ add_method("issue124", [] {
         xargs.eat(wrap(mdc[0]));
         xargs.eat(wrap(mdc[1]));
         xargs.eat(wrap(mdc[2]));
-        xargs.flush();
 
         // Check that xargs_tmpdir contains 1 file
         sys::Path path("xargs_tmpdir");
@@ -109,7 +108,9 @@ add_method("issue124", [] {
         for (auto name: path)
             if (name.d_name[0] != '.')
                 contents.push_back(name.d_name);
-        wassert(actual(contents.size()) == 1);
+        wassert(actual(contents.size()) == 1u);
+
+        xargs.flush();
     }
 
     // Check that xargs_tmpdir contains 0 files
@@ -118,7 +119,7 @@ add_method("issue124", [] {
     for (auto name: path)
         if (name.d_name[0] != '.')
             contents.push_back(name.d_name);
-    wassert(actual(contents.size()) == 0);
+    wassert(actual(contents.size()) == 0u);
 });
 
 }
