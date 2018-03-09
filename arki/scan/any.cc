@@ -54,15 +54,18 @@ static bool scan_file(
         throw std::runtime_error("cannot scan " + relname + ".gz: file needs to be manually decompressed before scanning");
 
     auto st = sys::stat(pathname);
-    if (!st)
+    if (!st and relname != "-")
         throw std::runtime_error("cannot scan " + relname + ": file does not exist");
 
 #ifdef HAVE_GRIBAPI
     if (format == "grib" || format == "grib1" || format == "grib2")
     {
+        // GRIB file cannot be read from stdin
+        if (relname == "-")
+            throw std::runtime_error("cannot read GRIB files from stdin");
         // An empty file is valid, and we can return without instantiating read
         // locks and parsing structures
-        if (st->st_size == 0) return true;
+        if (st and st->st_size == 0) return true;
 
         scan::Grib scanner;
         scanner.open(pathname, basedir, relname, lock);
@@ -79,7 +82,7 @@ static bool scan_file(
     if (format == "bufr") {
         // An empty file is valid, and we can return without instantiating read
         // locks and parsing structures
-        if (st->st_size == 0) return true;
+        if (st and st->st_size == 0) return true;
 
         scan::Bufr scanner;
         scanner.open(pathname, basedir, relname, lock);
@@ -94,6 +97,9 @@ static bool scan_file(
 #endif
 #ifdef HAVE_HDF5
     if ((format == "h5") || (format == "odim") || (format == "odimh5")) {
+        // H5 file cannot be read from stdin
+        if (relname == "-")
+            throw std::runtime_error("cannot read ODIMH5 files from stdin");
         scan::OdimH5 scanner;
         scanner.open(pathname, basedir, relname, lock);
         while (true)
@@ -109,7 +115,7 @@ static bool scan_file(
     if (format == "vm2") {
         // An empty file is valid, and we can return without instantiating read
         // locks and parsing structures
-        if (st->st_size == 0) return true;
+        if (st and st->st_size == 0) return true;
 
         scan::Vm2 scanner;
         scanner.open(pathname, basedir, relname, lock);
