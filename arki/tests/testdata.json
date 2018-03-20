@@ -11427,6 +11427,11 @@
  {
   "doc": "",
   "group": "arki_runtime_arkiscan",
+  "method": "scan_bufr_multiple"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkiscan",
   "method": "scan_metadata"
  },
  {

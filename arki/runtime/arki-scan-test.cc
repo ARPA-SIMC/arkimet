@@ -66,6 +66,23 @@ add_method("scan_bufr", [](Fixture& f) {
     wassert(actual(sys::read_file(co.file_stdout.name())).matches("\nOrigin:"));
 });
 
+add_method("scan_bufr_multiple", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+#ifndef HAVE_DBALLE
+    throw TestSkipped;
+#endif
+    runtime::tests::CatchOutput co;
+    int res = run_cmdline(runtime::arki_scan, {
+        "arki-scan",
+        "--yaml",
+        "inbound/test.bufr",
+        "inbound/ship.bufr",
+    });
+    wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+    wassert(actual(res) == 0);
+    wassert(actual(sys::read_file(co.file_stdout.name())).matches("\nOrigin:"));
+});
+
 add_method("scan_metadata", [](Fixture& f) {
     using runtime::tests::run_cmdline;
     metadata::TestCollection mdc("inbound/fixture.grib1");
