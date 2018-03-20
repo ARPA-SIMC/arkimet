@@ -330,9 +330,9 @@ void CommandLine::setupProcessing()
     // Some things cannot be done when querying multiple datasets at the same time
     if (inputs.size() > 1 && !dispatcher && !(qmacro && qmacro->isSet()))
     {
-        if (postprocess->boolValue())
+        if (postprocess && postprocess->boolValue())
             throw commandline::BadOption("postprocessing is not possible when querying more than one dataset at the same time");
-        if (report->boolValue())
+        if (report && report->boolValue())
             throw commandline::BadOption("reports are not possible when querying more than one dataset at the same time");
     }
 
