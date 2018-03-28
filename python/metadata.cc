@@ -119,6 +119,7 @@ static void arkipy_Metadata_dealloc(arkipy_Metadata* self)
 {
     delete self->md;
     self->md = nullptr;
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static PyObject* arkipy_Metadata_str(arkipy_Metadata* self)

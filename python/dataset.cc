@@ -247,6 +247,7 @@ static void arkipy_DatasetReader_dealloc(arkipy_DatasetReader* self)
 {
     delete self->ds;
     self->ds = nullptr;
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static PyObject* arkipy_DatasetReader_str(arkipy_DatasetReader* self)

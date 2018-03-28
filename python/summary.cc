@@ -149,6 +149,7 @@ static void arkipy_Summary_dealloc(arkipy_Summary* self)
 {
     delete self->summary;
     self->summary = nullptr;
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static PyObject* arkipy_Summary_str(arkipy_Summary* self)
