@@ -38,7 +38,7 @@ struct SegmentTest
 
     /// Create a segment importing all mdc into it
     std::shared_ptr<dataset::segment::Writer> make_full_writer();
-    std::shared_ptr<dataset::segment::Checker> make_full_checker();
+    virtual std::shared_ptr<dataset::segment::Checker> make_full_checker();
 
     void append_all();
 };

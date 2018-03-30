@@ -39,6 +39,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/segment/lines.h \
 		dataset/segment/seqfile.h \
 		dataset/segment/dir.h \
+		dataset/segment/tar.h \
 		dataset/segment/tests.h \
 		dataset/empty.h \
 		dataset/testlarge.h \
@@ -497,6 +498,7 @@ libarkimet_la_SOURCES += \
 		dataset/segment/lines.cc \
 		dataset/segment/seqfile.cc \
 		dataset/segment/dir.cc \
+		dataset/segment/tar.cc \
 		dataset/maintenance.cc \
 		dataset/memory.cc \
 		dataset/index.cc \
@@ -553,6 +555,7 @@ tests_arki_test_SOURCES += \
 		dataset/segment/lines-test.cc \
 		dataset/segment/seqfile-test.cc \
 		dataset/segment/dir-test.cc \
+		dataset/segment/tar-test.cc \
 		dataset/maintenance-test.cc \
 		dataset/memory-test.cc \
 		dataset/index-test.cc \

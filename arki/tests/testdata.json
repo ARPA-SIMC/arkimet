@@ -2196,6 +2196,16 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_segment_tar",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_tar",
+  "method": "remove"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_memory",
   "method": "query"
  },

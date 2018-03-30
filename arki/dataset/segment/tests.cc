@@ -116,7 +116,7 @@ void SegmentCheckTest::run()
         mdc1.push_back(mdc[1]);
         mdc1.push_back(mdc[2]);
         unique_ptr<types::source::Blob> src(mdc[0].sourceBlob().clone());
-        src->offset += 3;
+        src->offset += 1024;
         mdc1[0].set_source(unique_ptr<types::Source>(src.release()));
         state = segment->check(rep, "test", mdc1);
         wassert(actual(state.value) == dataset::SEGMENT_UNALIGNED);
@@ -127,9 +127,9 @@ void SegmentCheckTest::run()
         mdc1.push_back(mdc[1]);
         mdc1.push_back(mdc[2]);
         unique_ptr<types::source::Blob> src(mdc[0].sourceBlob().clone());
-        src->offset += 3;
+        src->offset += 1;
         mdc1[0].set_source(unique_ptr<types::Source>(src.release()));
-        state = segment->check(rep, "test", mdc1, true);
+        state = segment->check(rep, "test", mdc1, false);
         wassert(actual(state.value) == dataset::SEGMENT_UNALIGNED);
     }
 }
@@ -138,11 +138,11 @@ void SegmentRemoveTest::run()
 {
     auto segment(make_full_checker());
 
-    wassert(actual(sys::exists(absname)).istrue());
+    wassert(actual(segment->exists_on_disk()).istrue());
 
     wassert(actual(segment->remove()) >= 44412u);
 
-    wassert(actual(sys::exists(absname)).isfalse());
+    wassert(actual(segment->exists_on_disk()).isfalse());
 }
 
 }
