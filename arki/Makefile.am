@@ -175,6 +175,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/string.h \
 		utils/sys.h \
 		utils/yaml.h \
+		utils/tar.h \
 		utils/commandline/core.h \
 		utils/commandline/doc.h \
 		utils/commandline/engine.h \
@@ -235,6 +236,7 @@ libarkimet_la_SOURCES += \
 		utils/string.cc \
 		utils/sys.cc \
 		utils/yaml.cc \
+		utils/tar.cc \
 		utils/commandline/core.cpp \
 		utils/commandline/options.cpp \
 		utils/commandline/doc.cpp \
@@ -309,6 +311,7 @@ tests_arki_test_SOURCES += \
 		utils/accounting-test.cc \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \
+		utils/tar-test.cc \
 		utils/files-test.cc \
 		utils/process-test.cc \
 		utils/regexp-test.cc \
