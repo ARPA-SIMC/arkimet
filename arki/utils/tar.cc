@@ -1,4 +1,5 @@
 #include "tar.h"
+#include <algorithm>
 #include <cstring>
 
 namespace arki {
@@ -52,12 +53,53 @@ void TarHeader::set_mtime(time_t mtime)
     snprintf(data + 136, 12, "%11zo", (size_t)mtime);
 }
 
+void TarHeader::set_typeflag(char flag)
+{
+    data[156] = flag;
+}
+
 void TarHeader::compute_checksum()
 {
     unsigned sum = 0;
     for (unsigned i = 0; i < 512; ++i)
         sum += (unsigned char)data[i];
     snprintf(data + 148, 8, "%07o", sum);
+}
+
+
+size_t PaxHeader::size_with_length(size_t field_size)
+{
+    size_t e10 = 10;
+    for (unsigned i = 1; i < 12; ++i, e10 *= 10)
+        if (field_size < e10 - i)
+        {
+            field_size += i;
+            break;
+        }
+    return field_size;
+}
+
+void PaxHeader::append(const std::string& key, const std::string& value)
+{
+    size_t size = size_with_length(1 + key.size() + 1 + value.size() + 1);
+    std::string len = std::to_string(size);
+    std::copy(len.begin(), len.end(), std::back_inserter(data));
+    data.push_back(' ');
+    std::copy(key.begin(), key.end(), std::back_inserter(data));
+    data.push_back('=');
+    std::copy(value.begin(), value.end(), std::back_inserter(data));
+    data.push_back('\n');
+}
+
+void PaxHeader::append(const std::string& key, const std::vector<uint8_t>& value)
+{
+    std::string len = std::to_string(1 + key.size() + 1 + value.size() + 1);
+    std::copy(len.begin(), len.end(), std::back_inserter(data));
+    data.push_back(' ');
+    std::copy(key.begin(), key.end(), std::back_inserter(data));
+    data.push_back('=');
+    std::copy(value.begin(), value.end(), std::back_inserter(data));
+    data.push_back('\n');
 }
 
 
@@ -99,9 +141,18 @@ void TarOutput::_write(const std::vector<uint8_t>& data)
     out_pos += pad_len;
 }
 
+void TarOutput::append(const PaxHeader& pax)
+{
+    TarHeader header("././@PaxHeader", 0);
+    header.set_size(pax.data.size());
+    header.set_typeflag('x');
+    _write(header);
+    _write(pax.data);
+}
+
 off_t TarOutput::append(const std::string& name, const std::string& data)
 {
-    TarHeader header(name, 0644);;
+    TarHeader header(name, 0644);
     header.set_size(data.size());
     _write(header);
     off_t res = out_pos;

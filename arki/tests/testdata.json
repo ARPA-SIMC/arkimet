@@ -72,7 +72,17 @@
  {
   "doc": "",
   "group": "arki_utils_tar",
-  "method": "empty"
+  "method": "size_with_length"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_tar",
+  "method": "plain"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_tar",
+  "method": "pax"
  },
  {
   "doc": "",
