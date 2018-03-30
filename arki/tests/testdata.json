@@ -71,6 +71,11 @@
  },
  {
   "doc": "",
+  "group": "arki_utils_tar",
+  "method": "empty"
+ },
+ {
+  "doc": "",
   "group": "arki_utils_files",
   "method": "dontpack"
  },
