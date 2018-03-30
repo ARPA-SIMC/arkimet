@@ -393,6 +393,8 @@ inline ActualFile actual_file(const std::string& pathname) { return ActualFile(p
     [&]() { try { \
         __VA_ARGS__ ; \
         wfail_test(#__VA_ARGS__ " did not throw " #exc); \
+    } catch (TestFailed& e) { \
+        throw; \
     } catch (exc& e) { \
         return e; \
     } catch (std::exception& e) { \
