@@ -132,6 +132,14 @@ public:
 
     Segment(const std::string& root, const std::string& relname, const std::string& absname);
     virtual ~Segment();
+
+    /**
+     * Return a name identifying the type of segment backend
+     *
+     * This is used mostly for tests, actual code must nto differentiate on
+     * this.
+     */
+    virtual const char* type() const = 0;
 };
 
 

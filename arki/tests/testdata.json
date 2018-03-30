@@ -47,7 +47,7 @@
  {
   "doc": "",
   "group": "arki_utils",
-  "method": "empty"
+  "method": "get_format"
  },
  {
   "doc": "",
@@ -2203,6 +2203,26 @@
   "doc": "",
   "group": "arki_dataset_segment_tar",
   "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_managers",
+  "method": "auto_instantiate_existing"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_managers",
+  "method": "auto_instantiate_new"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_managers",
+  "method": "forcedir_instantiate_existing"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_managers",
+  "method": "forcedir_instantiate_new"
  },
  {
   "doc": "",

@@ -2,6 +2,7 @@
 #include "segment/concat.h"
 #include "segment/lines.h"
 #include "segment/dir.h"
+#include "segment/tar.h"
 #include "arki/configfile.h"
 #include "arki/exceptions.h"
 #include "arki/scan/any.h"
@@ -100,6 +101,14 @@ struct BaseManager : public segment::Manager
         if (!st.get())
             st = sys::stat(absname + ".gz");
         if (!st.get())
+        {
+            st = sys::stat(absname + ".tar");
+            if (st.get())
+                throw_consistency_error(
+                        "getting writer for " + format + " file " + relname,
+                        "cannot write to .tar segments");
+        }
+        if (!st.get())
             return res;
 
         if (S_ISDIR(st->st_mode))
@@ -114,7 +123,7 @@ struct BaseManager : public segment::Manager
                 if (nullptr_on_error)
                     return res;
                 throw_consistency_error(
-                        "getting segment for " + format + " file " + relname,
+                        "getting writer for " + format + " file " + relname,
                         "format not supported");
             }
         } else {
@@ -155,6 +164,15 @@ struct BaseManager : public segment::Manager
         std::shared_ptr<Checker> res;
         if (!st.get())
             st = sys::stat(absname + ".gz");
+        if (!st.get())
+        {
+            st = sys::stat(absname + ".tar");
+            if (st.get())
+            {
+                res.reset(new tar::Checker(root, relname, absname));
+                return res;
+            }
+        }
         if (!st.get())
             return res;
 
@@ -207,6 +225,7 @@ struct BaseManager : public segment::Manager
         }
         return res;
     }
+
     Pending repack(const std::string& relname, metadata::Collection& mds, unsigned test_flags=0)
     {
         string format = utils::get_format(relname);

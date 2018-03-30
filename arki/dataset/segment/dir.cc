@@ -44,6 +44,8 @@ Writer::~Writer()
 {
 }
 
+const char* Writer::type() const { return "dir"; }
+
 size_t Writer::next_offset() const
 {
     return current_pos;
@@ -111,6 +113,8 @@ void Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
     }
 }
 
+const char* HoleWriter::type() const { return "hole_dir"; }
+
 void HoleWriter::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
     try {
@@ -127,6 +131,8 @@ Checker::Checker(const std::string& format, const std::string& root, const std::
     : segment::Checker(root, relname, absname), format(format)
 {
 }
+
+const char* Checker::type() const { return "dir"; }
 
 bool Checker::exists_on_disk()
 {
@@ -482,6 +488,8 @@ void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
     File fd(str::joinpath(s.absolutePathname(), SequenceFile::data_fname(s.offset, s.format)), O_WRONLY);
     fd.write_all_or_throw("\0", 1);
 }
+
+const char* HoleChecker::type() const { return "hole_dir"; }
 
 State HoleChecker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
 {

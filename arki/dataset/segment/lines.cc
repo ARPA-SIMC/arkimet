@@ -61,10 +61,14 @@ Writer::Writer(const std::string& root, const std::string& relname, const std::s
 {
 }
 
+const char* Writer::type() const { return "lines"; }
+
 std::unique_ptr<fd::File> Writer::open_file(const std::string& pathname, int flags, mode_t mode)
 {
     return unique_ptr<fd::File>(new File(pathname, flags, mode));
 }
+
+const char* Checker::type() const { return "lines"; }
 
 std::unique_ptr<fd::File> Checker::open_file(const std::string& pathname, int flags, mode_t mode)
 {

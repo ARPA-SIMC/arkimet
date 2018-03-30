@@ -68,6 +68,8 @@ Writer::Writer(const std::string& root, const std::string& relname, const std::s
 {
 }
 
+const char* Writer::type() const { return "concat"; }
+
 std::unique_ptr<fd::File> Writer::open_file(const std::string& pathname, int flags, mode_t mode)
 {
     return unique_ptr<fd::File>(new File(pathname, flags, mode));
@@ -78,11 +80,15 @@ HoleWriter::HoleWriter(const std::string& root, const std::string& relname, cons
 {
 }
 
+const char* HoleWriter::type() const { return "hole_concat"; }
+
 std::unique_ptr<fd::File> HoleWriter::open_file(const std::string& pathname, int flags, mode_t mode)
 {
     return unique_ptr<fd::File>(new HoleFile(pathname, flags, mode));
 }
 
+
+const char* Checker::type() const { return "concat"; }
 
 std::unique_ptr<fd::File> Checker::open_file(const std::string& pathname, int flags, mode_t mode)
 {
@@ -104,6 +110,9 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 {
     return fd::Checker::repack_impl(rootdir, mds, false, test_flags);
 }
+
+
+const char* HoleChecker::type() const { return "hole_concat"; }
 
 std::unique_ptr<fd::File> HoleChecker::open_file(const std::string& pathname, int flags, mode_t mode)
 {
