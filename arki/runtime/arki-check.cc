@@ -234,45 +234,6 @@ struct PrintState : public WorkerOnWritable
     void done() override {}
 };
 
-#if 0
-struct Invalidator : public Worker
-{
-    virtual void operator()(dataset::LocalWriter& w)
-    {
-        dataset::ondisk::Writer* ow = dynamic_cast<dataset::ondisk::Writer*>(&w);
-        if (ow == 0)
-            cerr << "Skipping dataset " << w.name() << ": not an ondisk dataset" << endl;
-        else
-            ow->invalidateAll();
-    }
-
-    virtual void done()
-    {
-    }
-};
-#endif
-
-#if 0
-struct Statistician : public Worker
-{
-    Stats st;
-
-    virtual void operator()(dataset::LocalWriter& w)
-    {
-        dataset::ondisk::Writer* ow = dynamic_cast<dataset::ondisk::Writer*>(&w);
-        if (ow == 0)
-            cerr << "Skipping dataset " << w.name() << ": not an ondisk dataset" << endl;
-        else
-            ow->depthFirstVisit(st);
-    }
-
-    virtual void done()
-    {
-        st.stats();
-    }
-};
-#endif
-
 }
 
 

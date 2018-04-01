@@ -337,9 +337,9 @@ segmented::State Checker::scan_filtered(const Matcher& matcher, dataset::Reporte
 
 void Checker::remove_all(dataset::Reporter& reporter, bool writable)
 {
-    // TODO: decide if we're removing archives at all
-    // TODO: if (hasArchive())
-    // TODO:    archive().removeAll(reporter, writable);
+    if (hasArchive())
+        archive().remove_all(reporter, writable);
+
     segments_all([&](CheckerSegment& segment) {
         if (writable)
         {
@@ -353,9 +353,9 @@ void Checker::remove_all(dataset::Reporter& reporter, bool writable)
 
 void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable)
 {
-    // TODO: decide if we're removing archives at all
-    // TODO: if (hasArchive())
-    // TODO:    archive().removeAll(reporter, writable);
+    if (hasArchive())
+       archive().remove_all_filtered(matcher, reporter, writable);
+
     segments_all_filtered(matcher, [&](CheckerSegment& segment) {
         if (writable)
         {

@@ -303,7 +303,9 @@ struct ReporterExpected
 {
     struct OperationMatch
     {
+        // Dataset name
         std::string name;
+        // Operation name: "check", "repack"
         std::string operation;
         std::string message;
 
@@ -313,6 +315,7 @@ struct ReporterExpected
 
     struct SegmentMatch
     {
+        // "dataset_name:segment_name"
         std::string name;
         std::string message;
 
@@ -339,7 +342,13 @@ struct ReporterExpected
     int count_rescanned = -1;
     int count_issue51 = -1;
 
+    unsigned flags;
+
     void clear();
+
+    static const unsigned ENFORCE_REPORTS = 1 << 0;
+
+    ReporterExpected(unsigned flags=0);
 };
 
 

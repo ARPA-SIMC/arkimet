@@ -497,7 +497,6 @@ void test_append_transaction_rollback(dataset::segment::Writer* dw, Metadata& md
     wassert(actual_type(md.source()) == *orig_source);
 }
 
-/// Run maintenance and see that the results are as expected
 
 ReporterExpected::OperationMatch::OperationMatch(const std::string& dsname, const std::string& operation, const std::string& message)
     : name(dsname), operation(operation), message(message)
@@ -511,6 +510,12 @@ std::string ReporterExpected::OperationMatch::error_unmatched(const std::string&
         msg += " (matching '" + message + "')";
     return msg;
 }
+
+ReporterExpected::ReporterExpected(unsigned flags)
+    : flags(flags)
+{
+}
+
 
 ReporterExpected::SegmentMatch::SegmentMatch(const std::string& dsname, const std::string& relpath, const std::string& message)
     : name(dsname + ":" + relpath), message(message)
@@ -548,22 +553,23 @@ void ReporterExpected::clear()
 }
 
 
-struct MainteanceCheckResult
+struct MaintenanceCheckResult
 {
     std::string type;
+    // dataset or dataset:segment
     std::string name;
     bool matched = false;
 
-    MainteanceCheckResult(const std::string& type, const std::string& name) : type(type), name(name) {}
+    MaintenanceCheckResult(const std::string& type, const std::string& name) : type(type), name(name) {}
 };
 
-struct OperationResult : public MainteanceCheckResult
+struct OperationResult : public MaintenanceCheckResult
 {
     std::string operation;
     std::string message;
 
     OperationResult(const std::string& type, const std::string& dsname, const std::string& operation, const std::string& message=std::string())
-        : MainteanceCheckResult(type, dsname), operation(operation), message(message) {}
+        : MaintenanceCheckResult(type, dsname), operation(operation), message(message) {}
 
     bool match(const ReporterExpected::OperationMatch& m) const
     {
@@ -585,12 +591,12 @@ struct OperationResult : public MainteanceCheckResult
     }
 };
 
-struct SegmentResult : public MainteanceCheckResult
+struct SegmentResult : public MaintenanceCheckResult
 {
     std::string message;
 
     SegmentResult(const std::string& operation, const std::string& dsname, const std::string& relpath, const std::string& message=std::string())
-        : MainteanceCheckResult(operation, dsname + ":" + relpath), message(message) {}
+        : MaintenanceCheckResult(operation, dsname + ":" + relpath), message(message) {}
 
     bool match(const ReporterExpected::SegmentMatch& m) const
     {
@@ -612,7 +618,7 @@ struct SegmentResult : public MainteanceCheckResult
 };
 
 template<typename Matcher, typename Result>
-struct MainteanceCheckResults : public std::vector<Result>
+struct MaintenanceCheckResults : public std::vector<Result>
 {
     std::map<std::string, std::vector<std::string>> extra_info;
 
@@ -705,8 +711,8 @@ struct MainteanceCheckResults : public std::vector<Result>
 
 struct CollectReporter : public dataset::Reporter
 {
-    typedef MainteanceCheckResults<ReporterExpected::OperationMatch, OperationResult> OperationResults;
-    typedef MainteanceCheckResults<ReporterExpected::SegmentMatch, SegmentResult> SegmentResults;
+    typedef MaintenanceCheckResults<ReporterExpected::OperationMatch, OperationResult> OperationResults;
+    typedef MaintenanceCheckResults<ReporterExpected::SegmentMatch, SegmentResult> SegmentResults;
 
     std::stringstream report;
     OstreamReporter recorder;
@@ -783,6 +789,8 @@ struct CollectReporter : public dataset::Reporter
 
         op_results.report_unmatched(issues, "manual_intervention");
         op_results.report_unmatched(issues, "aborted");
+        if (expected.flags & ReporterExpected::ENFORCE_REPORTS)
+            op_results.report_unmatched(issues, "report");
 
         seg_results.match("repacked", expected.repacked, issues);
         seg_results.match("archived", expected.archived, issues);

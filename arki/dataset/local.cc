@@ -204,31 +204,43 @@ LocalChecker::~LocalChecker()
 
 void LocalChecker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
-    if (hasArchive())
+    if (check_archives && hasArchive())
         archive().repack(reporter, writable, test_flags);
 }
 
 void LocalChecker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
-    if (hasArchive())
+    if (check_archives && hasArchive())
         archive().repack_filtered(matcher, reporter, writable, test_flags);
 }
 
 void LocalChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
 {
-    if (hasArchive())
+    if (check_archives && hasArchive())
         archive().check(reporter, fix, quick);
 }
 
 void LocalChecker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
 {
-    if (hasArchive())
+    if (check_archives && hasArchive())
         archive().check_filtered(matcher, reporter, fix, quick);
+}
+
+void LocalChecker::remove_all(dataset::Reporter& reporter, bool writable)
+{
+    if (check_archives && hasArchive())
+        archive().remove_all(reporter, writable);
+}
+
+void LocalChecker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable)
+{
+    if (check_archives && hasArchive())
+        archive().remove_all_filtered(matcher, reporter, writable);
 }
 
 void LocalChecker::check_issue51(dataset::Reporter& reporter, bool fix)
 {
-    if (hasArchive())
+    if (check_archives && hasArchive())
         archive().check_issue51(reporter, fix);
 }
 

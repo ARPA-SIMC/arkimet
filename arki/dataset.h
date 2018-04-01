@@ -384,6 +384,8 @@ struct Checker : public dataset::Base
 {
     using Base::Base;
 
+    bool check_archives = true;
+
     /**
      * Repack the dataset, logging status to the given file.
      *
@@ -395,6 +397,9 @@ struct Checker : public dataset::Base
      */
     virtual void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) = 0;
 
+    /// Same as repack, but limited to the parts of the dataset matching the given matcher
+    virtual void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) = 0;
+
     /**
      * Check the dataset for errors, logging status to the given file.
      *
@@ -402,9 +407,6 @@ struct Checker : public dataset::Base
      * If \a fix is true, errors are fixed.
      */
     virtual void check(dataset::Reporter& reporter, bool fix, bool quick) = 0;
-
-    /// Same as repack, but limited to the parts of the dataset matching the given matcher
-    virtual void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) = 0;
 
     /// Same as check, but limited to the parts of the dataset matching the given matcher
     virtual void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) = 0;

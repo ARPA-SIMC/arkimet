@@ -1,6 +1,7 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
 #include "arki/dataset/local.h"
+#include "arki/dataset/time.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
@@ -46,18 +47,6 @@ struct FixtureChecker : public DatasetTest
             else
                 relpaths_old.insert(destfile(el));
     }
-
-    const types::source::Blob& find_imported_second_in_file()
-    {
-        // Find the imported_result element whose offset is > 0
-        for (int i = 0; i < 3; ++i)
-        {
-            const types::source::Blob& second_in_segment = import_results[i].sourceBlob();
-            if (second_in_segment.offset > 0)
-                return second_in_segment;
-        }
-        throw std::runtime_error("second in file not found");
-    }
 };
 
 
@@ -77,6 +66,14 @@ TestsChecker<testdata::BUFRData> test_checker_bufr_ondisk2("arki_dataset_checker
 TestsChecker<testdata::BUFRData> test_checker_bufr_simple_plain("arki_dataset_checker_bufr_simple_plain", "type=simple\nindex_type=plain\n");
 TestsChecker<testdata::BUFRData> test_checker_bufr_simple_sqlite("arki_dataset_checker_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsChecker<testdata::BUFRData> test_checker_bufr_iseg("arki_dataset_checker_bufr_iseg", "type=iseg\nformat=bufr\n");
+TestsChecker<testdata::VM2Data> test_checker_vm2_ondisk2("arki_dataset_checker_vm2_ondisk2", "type=ondisk2\n");
+TestsChecker<testdata::VM2Data> test_checker_vm2_simple_plain("arki_dataset_checker_vm2_simple_plain", "type=simple\nindex_type=plain\n");
+TestsChecker<testdata::VM2Data> test_checker_vm2_simple_sqlite("arki_dataset_checker_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<testdata::VM2Data> test_checker_vm2_iseg("arki_dataset_checker_vm2_iseg", "type=iseg\nformat=vm2\n");
+TestsChecker<testdata::ODIMData> test_checker_odim_ondisk2("arki_dataset_checker_odim_ondisk2", "type=ondisk2\n");
+TestsChecker<testdata::ODIMData> test_checker_odim_simple_plain("arki_dataset_checker_odim_simple_plain", "type=simple\nindex_type=plain\n");
+TestsChecker<testdata::ODIMData> test_checker_odim_simple_sqlite("arki_dataset_checker_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<testdata::ODIMData> test_checker_odim_iseg("arki_dataset_checker_odim_iseg", "type=iseg\nformat=odimh5\n");
 
 template<class Data>
 void TestsChecker<Data>::register_tests() {
@@ -89,22 +86,56 @@ this->add_method("preconditions", [](Fixture& f) {
     wassert(actual(f.relpaths_old.size() + f.relpaths_new.size()) == f.count_dataset_files(f.td));
 });
 
+this->add_method("check", [](Fixture& f) {
+    wassert(f.import_all_packed(f.td));
+
+    auto checker(f.makeSegmentedChecker());
+
+    ReporterExpected e;
+    e.report.emplace_back("testds", "check", "3 files ok");
+    wassert(actual(checker.get()).check(e, true));
+});
+
+this->add_method("check_archives", [](Fixture& f) {
+    auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
+    wassert(f.import_all(f.td));
+    f.cfg.setValue("archive age", "1");
+    f.test_reread_config();
+
+    auto checker(f.makeSegmentedChecker());
+
+    {
+        ReporterExpected e;
+        e.archived.emplace_back("testds", "2007/07-07." + f.td.format);
+        e.report.emplace_back("testds", "repack", "2 files ok, 1 file archived");
+        e.report.emplace_back("testds.archives.last", "repack", "1 file ok");
+        wassert(actual(*checker).repack(e, true));
+    }
+
+    {
+        ReporterExpected e(ReporterExpected::ENFORCE_REPORTS);
+        e.report.emplace_back("testds", "check", "2 files ok");
+        e.report.emplace_back("testds.archives.last", "check", "1 file ok");
+        wassert(actual(checker.get()).check(e, true));
+    }
+
+    checker->check_archives = false;
+
+    {
+        ReporterExpected e(ReporterExpected::ENFORCE_REPORTS);
+        e.report.emplace_back("testds", "check", "2 files ok");
+        wassert(actual(checker.get()).check(e, true));
+    }
+});
+
 this->add_method("check_filtered", [](Fixture& f) {
     wassert(f.import_all_packed(f.td));
 
-    auto state = f.scan_state(Matcher::parse("reftime:>=2007-07-08"));
-    wassert(actual(state.get("2007/07-08." + f.td.format).state) == segment::State(SEGMENT_OK));
-    wassert(actual(state.get("2007/10-09." + f.td.format).state) == segment::State(SEGMENT_OK));
-    wassert(actual(state.count(SEGMENT_OK)) == 2u);
-    wassert(actual(state.size()) == 2u);
+    auto checker(f.makeSegmentedChecker());
 
-    {
-        auto checker(f.makeSegmentedChecker());
-
-        ReporterExpected e;
-        e.report.emplace_back("testds", "check", "2 files ok");
-        wassert(actual(checker.get()).check_filtered(Matcher::parse("reftime:>=2007-07-08"), e, true));
-    }
+    ReporterExpected e;
+    e.report.emplace_back("testds", "check", "2 files ok");
+    wassert(actual(checker.get()).check_filtered(Matcher::parse("reftime:>=2007-07-08"), e, true));
 });
 
 this->add_method("remove_all", [](Fixture& f) {
