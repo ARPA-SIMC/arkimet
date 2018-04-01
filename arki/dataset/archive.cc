@@ -427,7 +427,7 @@ static std::string poppath(std::string& path)
 	return res;
 }
 
-void ArchivesChecker::indexSegment(const std::string& relname, metadata::Collection&& mds)
+void ArchivesChecker::index_segment(const std::string& relname, metadata::Collection&& mds)
 {
     string path = relname;
     string name = poppath(path);
@@ -443,7 +443,7 @@ void ArchivesChecker::indexSegment(const std::string& relname, metadata::Collect
     archives->invalidate_summary_cache();
 }
 
-void ArchivesChecker::releaseSegment(const std::string& relpath, const std::string& destpath)
+void ArchivesChecker::release_segment(const std::string& relpath, const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
     string path = utils::str::normpath(relpath);
     string name = poppath(path);
@@ -452,7 +452,7 @@ void ArchivesChecker::releaseSegment(const std::string& relpath, const std::stri
     if (Checker* a = archives->lookup(name))
     {
         if (segmented::Checker* sc = dynamic_cast<segmented::Checker*>(a))
-            sc->segment(path)->release(destpath);
+            sc->segment(path)->release(new_root, new_relpath, new_abspath);
         else
             throw std::runtime_error(this->name() + ": cannot acquire " + relpath + ": archive " + name + " is not writable");
     }

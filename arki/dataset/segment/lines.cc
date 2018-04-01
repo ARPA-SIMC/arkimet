@@ -75,10 +75,9 @@ std::unique_ptr<fd::File> Checker::open_file(const std::string& pathname, int fl
     return unique_ptr<fd::File>(new File(pathname, flags, mode));
 }
 
-void Checker::open()
+std::unique_ptr<fd::File> Checker::open(const std::string& pathname)
 {
-    if (fd) return;
-    fd = new File(absname, O_RDWR, 0666);
+    return std::unique_ptr<fd::File>(new File(pathname, O_RDWR, 0666));
 }
 
 State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)

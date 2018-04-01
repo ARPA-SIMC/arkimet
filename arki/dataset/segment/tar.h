@@ -35,6 +35,7 @@ protected:
             metadata::Collection& mds,
             bool skip_validation=false,
             unsigned test_flags=0);
+    void move_data(const std::string& new_root, const std::string& new_relname, const std::string& new_absname) override;
 
 public:
     Checker(const std::string& root, const std::string& relname, const std::string& absname);
@@ -42,6 +43,7 @@ public:
     const char* type() const override;
 
     bool exists_on_disk() override;
+    time_t timestamp() override;
 
     State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;

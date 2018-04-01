@@ -192,9 +192,11 @@ bool scan(const std::string& basedir, const std::string& relname, std::shared_pt
     string pathname = str::joinpath(basedir, relname);
     unique_ptr<struct stat> st_file = sys::stat(pathname);
     if (!st_file.get())
+        st_file = sys::stat(pathname + ".tar");
+    if (!st_file.get())
         st_file = sys::stat(pathname + ".gz");
     if (!st_file.get())
-        throw runtime_error(pathname + " or " + pathname + ".gz not found");
+        throw runtime_error(pathname + " or " + pathname + ".gz or " + pathname + ".tar not found");
 
     // stat the metadata file, if it exists
     string md_pathname = pathname + ".metadata";

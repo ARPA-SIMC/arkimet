@@ -140,6 +140,21 @@ bool Checker::exists_on_disk()
     return sys::exists(str::joinpath(absname, ".sequence"));
 }
 
+time_t Checker::timestamp()
+{
+    return sys::timestamp(str::joinpath(absname, ".sequence"));
+}
+
+void Checker::move_data(const std::string& new_root, const std::string& new_relname, const std::string& new_absname)
+{
+    if (rename(absname.c_str(), new_absname.c_str()) < 0)
+    {
+        stringstream ss;
+        ss << "cannot rename " << absname << " to " << new_absname;
+        throw std::system_error(errno, std::system_category(), ss.str());
+    }
+}
+
 State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
 {
     size_t next_sequence_expected(0);
@@ -221,7 +236,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
             metadata::Collection mds;
             try {
                 scan::scan(fname, std::make_shared<core::lock::Null>(), format, [&](unique_ptr<Metadata> md) {
-                    mds.acquire(move(md));
+                    mds.acquire(std::move(md));
                     return true;
                 });
             } catch (std::exception& e) {
@@ -462,7 +477,7 @@ void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsi
                     str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
                     str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset + hole_size, source->format)));
             source->offset += hole_size;
-            mds[i].set_source(move(source));
+            mds[i].set_source(std::move(source));
         }
         pos += hole_size;
     }
@@ -478,7 +493,7 @@ void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size
                 str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
                 str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset - overlap_size, source->format)));
         source->offset -= overlap_size;
-        mds[i].set_source(move(source));
+        mds[i].set_source(std::move(source));
     }
 }
 

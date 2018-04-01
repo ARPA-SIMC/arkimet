@@ -95,10 +95,9 @@ std::unique_ptr<fd::File> Checker::open_file(const std::string& pathname, int fl
     return unique_ptr<fd::File>(new File(pathname, flags, mode));
 }
 
-void Checker::open()
+std::unique_ptr<fd::File> Checker::open(const std::string& pathname)
 {
-    if (fd) return;
-    fd = new File(absname, O_RDWR, 0666);
+    return std::unique_ptr<fd::File>(new File(pathname, O_RDWR, 0666));
 }
 
 State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
@@ -119,10 +118,9 @@ std::unique_ptr<fd::File> HoleChecker::open_file(const std::string& pathname, in
     return unique_ptr<fd::File>(new HoleFile(pathname, flags, mode));
 }
 
-void HoleChecker::open()
+std::unique_ptr<fd::File> HoleChecker::open(const std::string& pathname)
 {
-    if (fd) return;
-    fd = new HoleFile(absname, O_RDWR, 0666);
+    return std::unique_ptr<fd::File>(new HoleFile(pathname, O_RDWR, 0666));
 }
 
 Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)

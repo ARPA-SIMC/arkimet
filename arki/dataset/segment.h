@@ -189,6 +189,7 @@ class Checker : public Segment
 {
 protected:
     virtual void validate(Metadata& md, const scan::Validator& v) = 0;
+    virtual void move_data(const std::string& new_root, const std::string& new_relname, const std::string& new_absname) = 0;
 
 public:
     using Segment::Segment;
@@ -202,11 +203,27 @@ public:
     virtual bool exists_on_disk() = 0;
 
     /**
+     * Get the last modification timestamp for the segment
+     */
+    virtual time_t timestamp() = 0;
+
+    /**
      * Rewrite this segment so that the data are in the same order as in `mds`.
      *
      * `rootdir` is the directory to use as root for the Blob sources in `mds`.
      */
     virtual Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) = 0;
+
+    /**
+     * Replace this segment with a tar segment, updating the metadata in mds to
+     * point to the right locations inside the tarball
+     */
+    virtual std::shared_ptr<segment::Checker> tar(metadata::Collection& mds);
+
+    /**
+     * Move this segment to a new location
+     */
+    void move(const std::string& new_root, const std::string& new_relname, const std::string& new_absname);
 
     /**
      * Truncate the segment at the given offset

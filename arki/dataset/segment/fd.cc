@@ -92,11 +92,6 @@ void Writer::rollback_nothrow() noexcept
 }
 
 
-Checker::~Checker()
-{
-    delete fd;
-}
-
 bool Checker::exists_on_disk()
 {
     if (sys::isdir(absname)) return false;
@@ -107,6 +102,43 @@ bool Checker::exists_on_disk()
         return false;
 
     return true;
+}
+
+time_t Checker::timestamp()
+{
+    std::unique_ptr<File> fd;
+
+    if (sys::exists(absname))
+        fd = open(absname);
+    else if (sys::exists(absname + ".gz"))
+        fd = open(absname + ".gz");
+    else
+        throw std::runtime_error("neither " + absname + " nor " + absname + ".gz exist");
+
+    struct stat st;
+    fd->fstat(st);
+    return st.st_mtime;
+}
+
+void Checker::move_data(const std::string& new_root, const std::string& new_relname, const std::string& new_absname)
+{
+    string src = absname;
+    string dst = new_absname;
+    bool compressed = scan::isCompressed(src);
+    if (compressed)
+    {
+        src += ".gz";
+        dst += ".gz";
+    }
+
+    if (rename(src.c_str(), dst.c_str()) < 0)
+    {
+        stringstream ss;
+        ss << "cannot rename " << src << " to " << dst;
+        throw std::system_error(errno, std::system_category(), ss.str());
+    }
+    if (compressed)
+        sys::rename_ifexists(src + ".idx", dst + ".idx");
 }
 
 State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap, bool quick)
@@ -291,7 +323,7 @@ Pending Checker::repack_impl(
         auto new_source = Source::createBlobUnlocked((*i)->source().format, rootdir, relname, wrpos, buf.size());
         wrpos += new_fd->write_data(buf);
         // Update the source information in the metadata
-        (*i)->set_source(move(new_source));
+        (*i)->set_source(std::move(new_source));
         // Drop the cached data, to prevent ending up with the whole segment
         // sitting in memory
         (*i)->drop_cached_data();
@@ -336,7 +368,7 @@ void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsi
         {
             unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
             source->offset += hole_size;
-            mds[i].set_source(move(source));
+            mds[i].set_source(std::move(source));
         }
     }
 }
@@ -358,7 +390,7 @@ void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size
     {
         unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
         source->offset -= overlap_size;
-        mds[i].set_source(move(source));
+        mds[i].set_source(std::move(source));
     }
 }
 

@@ -107,8 +107,8 @@ public:
     std::string type() const override;
     const ArchivesConfig& config() const override { return *m_config; }
 
-    void indexSegment(const std::string& relname, metadata::Collection&& mds);
-    void releaseSegment(const std::string& relpath, const std::string& destpath);
+    void index_segment(const std::string& relname, metadata::Collection&& mds);
+    void release_segment(const std::string& relpath, const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath);
 
     void remove_all(dataset::Reporter& reporter, bool writable=false) override;
     void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) override;

@@ -74,6 +74,11 @@ public:
     const ondisk2::Config& config() const override { return checker.config(); }
     dataset::ArchivesChecker& archives() const { return checker.archive(); }
 
+    void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
+    {
+        checker.idx->scan_file(segment->relname, mds.inserter_func(), "reftime, offset");
+    }
+
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
         if (!segment->exists_on_disk())
@@ -127,13 +132,6 @@ public:
                     state = SEGMENT_CORRUPTED;
                 }
             }
-        }
-
-        if (!checker.segment_manager().exists(segment->relname))
-        {
-            // The segment does not exist on disk
-            reporter.segment_info(checker.name(), segment->relname, "segment found in index but not on disk");
-            state = state - SEGMENT_UNALIGNED + SEGMENT_MISSING;
         }
 
         if (state.is_ok())
@@ -197,6 +195,43 @@ public:
         size_t size_post = sys::isdir(segment->absname) ? 0 : sys::size(segment->absname);
 
         return size_pre - size_post;
+    }
+
+    void tar() override
+    {
+        if (sys::exists(segment->absname + ".tar"))
+            return;
+
+        auto lock = checker.lock->write_lock();
+        Pending p = checker.idx->begin_transaction();
+
+        // Rescan file
+        metadata::Collection mds;
+        checker.idx->scan_file(segment->relname, mds.inserter_func(), "reftime, offset");
+
+        // Create the .tar segment
+        segment = segment->tar(mds);
+
+        // Reindex the new metadata
+        checker.idx->reset(segment->relname);
+        for (auto& md: mds)
+        {
+            const source::Blob& source = md->sourceBlob();
+            checker.idx->index(*md, segment->relname, source.offset);
+        }
+
+        // Remove the .metadata file if present, because we are shuffling the
+        // data file and it will not be valid anymore
+        string mdpathname = segment->absname + ".metadata";
+        if (sys::exists(mdpathname))
+            if (unlink(mdpathname.c_str()) < 0)
+            {
+                stringstream ss;
+                ss << "cannot remove obsolete metadata file " << mdpathname;
+                throw std::system_error(errno, std::system_category(), ss.str());
+            }
+
+        p.commit();
     }
 
     size_t remove(bool with_data) override
@@ -294,7 +329,7 @@ public:
         sys::unlink_ifexists(segment->absname + ".summary");
     }
 
-    void release(const std::string& destpath) override
+    void release(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override
     {
         // Rebuild the metadata
         metadata::Collection mds;
@@ -304,7 +339,7 @@ public:
         // Remove from index
         checker.idx->reset(segment->relname);
 
-        segmented::CheckerSegment::release(destpath);
+        segment->move(new_root, new_relpath, new_abspath);
     }
 };
 

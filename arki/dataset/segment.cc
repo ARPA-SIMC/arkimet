@@ -56,7 +56,39 @@ void Writer::PendingMetadata::set_source()
 }
 
 
+std::shared_ptr<segment::Checker> Checker::tar(metadata::Collection& mds)
+{
+    segment::tar::Checker::create(root, relname + ".tar", absname + ".tar", mds);
+    remove();
+    return make_shared<segment::tar::Checker>(root, relname, absname);
+}
 
+void Checker::move(const std::string& new_root, const std::string& new_relname, const std::string& new_absname)
+{
+    sys::makedirs(str::dirname(new_absname));
+
+    // Sanity checks: avoid conflicts
+    if (sys::exists(new_absname) || sys::exists(new_absname + ".tar") || sys::exists(new_absname + ".gz"))
+    {
+        stringstream ss;
+        ss << "cannot archive " << absname << " to " << new_absname << " because the destination already exists";
+        throw runtime_error(ss.str());
+    }
+
+    // Remove stale metadata and summaries that may have been left around
+    sys::unlink_ifexists(new_absname + ".metadata");
+    sys::unlink_ifexists(new_absname + ".summary");
+
+    move_data(new_root, new_relname, new_absname);
+
+    // Move metadata to archive
+    sys::rename_ifexists(absname + ".metadata", new_absname + ".metadata");
+    sys::rename_ifexists(absname + ".summary", new_absname + ".summary");
+
+    root = new_root;
+    relname = new_relname;
+    absname = new_absname;
+}
 
 void Checker::test_truncate(const metadata::Collection& mds, unsigned data_idx)
 {

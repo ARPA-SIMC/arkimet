@@ -43,6 +43,22 @@ bool Checker::exists_on_disk()
     return sys::exists(tarabsname);
 }
 
+time_t Checker::timestamp()
+{
+    return sys::timestamp(tarabsname);
+}
+
+void Checker::move_data(const std::string& new_root, const std::string& new_relname, const std::string& new_absname)
+{
+    string new_tarabsname = new_absname + ".tar";
+    if (rename(tarabsname.c_str(), new_tarabsname.c_str()) < 0)
+    {
+        stringstream ss;
+        ss << "cannot rename " << tarabsname << " to " << new_tarabsname;
+        throw std::system_error(errno, std::system_category(), ss.str());
+    }
+}
+
 State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
 {
     std::unique_ptr<struct stat> st = sys::stat(tarabsname);
@@ -222,7 +238,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
         off_t wrpos = tarfd.append(fname, buf);
         auto new_source = Source::createBlobUnlocked((*i)->source().format, rootdir, tarrelname, wrpos, buf.size());
         // Update the source information in the metadata
-        (*i)->set_source(move(new_source));
+        (*i)->set_source(std::move(new_source));
         // Drop the cached data, to prevent ending up with the whole segment
         // sitting in memory
         (*i)->drop_cached_data();
@@ -256,7 +272,7 @@ void Checker::create(const std::string& rootdir, const std::string& tarrelname, 
         off_t wrpos = tarfd.append(fname, buf);
         auto new_source = Source::createBlobUnlocked(md->source().format, rootdir, tarrelname, wrpos, buf.size());
         // Update the source information in the metadata
-        md->set_source(move(new_source));
+        md->set_source(std::move(new_source));
         // Drop the cached data, to prevent ending up with the whole segment
         // sitting in memory
         md->drop_cached_data();

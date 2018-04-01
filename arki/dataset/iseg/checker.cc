@@ -85,6 +85,11 @@ public:
     const iseg::Config& config() const override { return checker.config(); }
     dataset::ArchivesChecker& archives() const { return checker.archive(); }
 
+    void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
+    {
+        idx().scan(mds.inserter_func(), "reftime, offset");
+    }
+
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
         if (!segment->exists_on_disk())
@@ -160,6 +165,45 @@ public:
         auto res = segmented::SegmentState(state, *md_begin, *md_until);
         res.check_age(segment->relname, checker.config(), reporter);
         return res;
+    }
+
+    void tar() override
+    {
+        if (sys::exists(segment->absname + ".tar"))
+            return;
+
+        auto write_lock = lock->write_lock();
+        Pending p = idx().begin_transaction();
+
+        // Rescan file
+        metadata::Collection mds;
+        idx().scan(mds.inserter_func(), "reftime, offset");
+
+        // Create the .tar segment
+        segment = segment->tar(mds);
+
+        // Reindex the new metadata
+        idx().reset();
+        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+        {
+            const source::Blob& source = (*i)->sourceBlob();
+            if (idx().index(**i, source.offset))
+                throw std::runtime_error("duplicate detected while reordering segment");
+        }
+
+        // Remove the .metadata file if present, because we are shuffling the
+        // data file and it will not be valid anymore
+        string mdpathname = segment->absname + ".metadata";
+        if (sys::exists(mdpathname))
+            if (unlink(mdpathname.c_str()) < 0)
+            {
+                stringstream ss;
+                ss << "cannot remove obsolete metadata file " << mdpathname;
+                throw std::system_error(errno, std::system_category(), ss.str());
+            }
+
+        // Commit the changes in the database
+        p.commit();
     }
 
     size_t repack(unsigned test_flags=0) override
@@ -327,10 +371,10 @@ public:
         // TODO: remove relevant summary
     }
 
-    void release(const std::string& destpath)
+    void release(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override
     {
         sys::unlink_ifexists(str::joinpath(checker.config().path, segment->relname + ".index"));
-        segmented::CheckerSegment::release(destpath);
+        segment->move(new_root, new_relpath, new_abspath);
     }
 };
 

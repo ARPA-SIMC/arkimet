@@ -147,6 +147,14 @@ public:
     CheckerSegment(std::shared_ptr<dataset::CheckLock> lock);
     virtual ~CheckerSegment();
 
+    /**
+     * Get the metadata for the contents of this segment known to the dataset
+     */
+    virtual void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) = 0;
+
+    /// Convert the segment into a tar segment
+    virtual void tar() = 0;
+
     virtual std::string path_relative() const = 0;
     virtual const segmented::Config& config() const = 0;
     virtual dataset::ArchivesChecker& archives() const = 0;
@@ -194,7 +202,7 @@ public:
      *
      * Destpath must be on the same filesystem as the segment.
      */
-    virtual void release(const std::string& destpath) = 0;
+    virtual void release(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) = 0;
 
     /**
      * Move the file to archive

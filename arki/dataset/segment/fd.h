@@ -52,9 +52,7 @@ struct Writer : public dataset::segment::Writer
 class Checker : public dataset::segment::Checker
 {
 protected:
-    File* fd = nullptr;
-
-    virtual void open() = 0;
+    virtual std::unique_ptr<File> open(const std::string& pathname) = 0;
 
     void validate(Metadata& md, const scan::Validator& v) override;
 
@@ -73,12 +71,13 @@ protected:
             unsigned test_flags=0);
 
     virtual std::unique_ptr<File> open_file(const std::string& pathname, int flags, mode_t mode) = 0;
+    void move_data(const std::string& new_root, const std::string& new_relname, const std::string& new_absname) override;
 
 public:
     using dataset::segment::Checker::Checker;
-    ~Checker();
 
     bool exists_on_disk() override;
+    time_t timestamp() override;
 
     size_t remove() override;
 

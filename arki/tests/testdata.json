@@ -2397,6 +2397,11 @@
  {
   "doc": "",
   "group": "arki_dataset_segmented_ondisk2",
+  "method": "tarred"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segmented_ondisk2",
   "method": "query_archived"
  },
  {
@@ -2433,6 +2438,11 @@
   "doc": "",
   "group": "arki_dataset_segmented_simple_plain",
   "method": "compressed"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segmented_simple_plain",
+  "method": "tarred"
  },
  {
   "doc": "",
@@ -2473,6 +2483,11 @@
   "doc": "",
   "group": "arki_dataset_segmented_simple_sqlite",
   "method": "compressed"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segmented_simple_sqlite",
+  "method": "tarred"
  },
  {
   "doc": "",
@@ -2513,6 +2528,11 @@
   "doc": "",
   "group": "arki_dataset_segmented_iseg",
   "method": "compressed"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segmented_iseg",
+  "method": "tarred"
  },
  {
   "doc": "",

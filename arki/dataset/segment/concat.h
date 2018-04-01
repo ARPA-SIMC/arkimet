@@ -22,7 +22,7 @@ class Checker : public fd::Checker
 {
 protected:
     std::unique_ptr<fd::File> open_file(const std::string& pathname, int flags, mode_t mode) override;
-    void open() override;
+    std::unique_ptr<fd::File> open(const std::string& pathname) override;
 
 public:
     using fd::Checker::Checker;
@@ -43,7 +43,7 @@ class HoleChecker : public Checker
 {
 protected:
     std::unique_ptr<fd::File> open_file(const std::string& pathname, int flags, mode_t mode) override;
-    void open() override;
+    std::unique_ptr<fd::File> open(const std::string& pathname) override;
 
 public:
     using Checker::Checker;
