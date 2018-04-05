@@ -370,6 +370,14 @@ void ArchivesChecker::segments_recursive(CheckerConfig& opts, std::function<void
     });
 }
 
+void ArchivesChecker::remove_old(CheckerConfig& opts)
+{
+    archives->iter([&](Checker& a) {
+        a.remove_all(opts);
+        return true;
+    });
+}
+
 void ArchivesChecker::remove_all(CheckerConfig& opts)
 {
     archives->iter([&](Checker& a) {

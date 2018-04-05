@@ -272,6 +272,7 @@ public:
      */
     void segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest);
 
+    void remove_old(CheckerConfig& opts) override;
     void remove_all(CheckerConfig& opts) override;
     void tar(CheckerConfig& config) override;
     void state(CheckerConfig& config) override;

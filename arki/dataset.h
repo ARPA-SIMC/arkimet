@@ -419,6 +419,9 @@ struct Checker : public dataset::Base
     /// Check the dataset for errors
     virtual void check(CheckerConfig& opts) = 0;
 
+    /// Remove data from the dataset that is older than `delete age`
+    virtual void remove_old(CheckerConfig& opts) = 0;
+
     /// Remove all data from the dataset
     virtual void remove_all(CheckerConfig& opts) = 0;
 

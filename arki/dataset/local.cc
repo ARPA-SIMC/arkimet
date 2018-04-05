@@ -214,6 +214,12 @@ void LocalChecker::check(CheckerConfig& opts)
         archive().check(opts);
 }
 
+void LocalChecker::remove_old(CheckerConfig& opts)
+{
+    if (opts.offline && hasArchive())
+        archive().remove_old(opts);
+}
+
 void LocalChecker::remove_all(CheckerConfig& opts)
 {
     if (opts.offline && hasArchive())

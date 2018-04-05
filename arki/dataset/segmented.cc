@@ -313,6 +313,23 @@ void Checker::segments_recursive(CheckerConfig& opts, std::function<void(segment
         archive().segments_recursive(opts, dest);
 }
 
+void Checker::remove_old(CheckerConfig& opts)
+{
+    segments(opts, [&](CheckerSegment& segment) {
+        auto state = segment.scan(*opts.reporter, !opts.accurate);
+        if (!state.state.has(SEGMENT_DELETE_AGE)) return;
+        if (opts.readonly)
+            opts.reporter->segment_delete(name(), segment.path_relative(), "should be deleted");
+        else
+        {
+            auto freed = segment.remove(true);
+            opts.reporter->segment_delete(name(), segment.path_relative(), "deleted (" + std::to_string(freed) + " freed)");
+        }
+    });
+
+    LocalChecker::remove_all(opts);
+}
+
 void Checker::remove_all(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {

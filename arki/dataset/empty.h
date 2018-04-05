@@ -88,6 +88,7 @@ public:
     const dataset::Config& config() const override { return *m_config; }
     std::string type() const override { return "empty"; }
 
+    void remove_old(CheckerConfig& opts) override {}
     void remove_all(CheckerConfig& opts) override {}
     void tar(CheckerConfig&) override {}
     void repack(CheckerConfig&, unsigned test_flags=0) override {}

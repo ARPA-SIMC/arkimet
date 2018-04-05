@@ -449,6 +449,89 @@ add_method("scan", [](Fixture& f) {
     }
 });
 
+add_method("remove_old", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+
+    f.cfg.setValue("format", "odimh5");
+    f.test_reread_config();
+    f.clean_and_import("inbound/fixture.h5/00.h5");
+    f.import("inbound/fixture.h5/01.h5");
+    f.import("inbound/fixture.h5/02.h5");
+
+    auto o = dataset::SessionTime::local_override(1184104800); // date +%s --date="2007-07-11"
+    f.cfg.setValue("archive age", "2");
+    f.test_reread_config();
+    f.repack();
+
+    f.cfg.setValue("delete age", "1");
+    f.test_reread_config();
+
+    wassert(actual_file("testds/.archive/last/2007/07-07.odimh5").exists());
+    wassert(actual_file("testds/2007/07-08.odimh5").exists());
+    wassert(actual_file("testds/2007/10-09.odimh5").exists());
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--remove-old", "testds", });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
+            "testds:2007/07-08.odimh5: segment old enough to be deleted\n"
+            "testds:2007/07-08.odimh5: should be deleted\n"
+        );
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--remove-old", "--offline", "testds", });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
+            // "testds.archives.last:2007/07-07.odimh5: segment old enough to be deleted\n"
+            "testds.archives.last:2007/07-07.odimh5: should be deleted\n"
+        );
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--remove-old", "--online", "testds", });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
+            "testds:2007/07-08.odimh5: segment old enough to be deleted\n"
+            "testds:2007/07-08.odimh5: should be deleted\n"
+        );
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--remove-old", "--offline", "--online", "testds" });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
+            "testds:2007/07-08.odimh5: segment old enough to be deleted\n"
+            "testds:2007/07-08.odimh5: should be deleted\n"
+            "testds.archives.last:2007/07-07.odimh5: should be deleted\n"
+        );
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--remove-old", "testds", "-f" });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())).matches(
+            "testds:2007/07-08.odimh5: segment old enough to be deleted\n"
+            "testds:2007/07-08.odimh5: deleted \\([0-9]+ freed\\)\n"
+        ));
+        wassert(actual(res) == 0);
+    }
+
+    wassert(actual_file("testds/.archive/last/2007/07-07.odimh5").exists());
+    wassert(actual_file("testds/2007/07-08.odimh5").not_exists());
+    wassert(actual_file("testds/2007/07-08.odimh5.tar").not_exists());
+    wassert(actual_file("testds/2007/10-09.odimh5").exists());
+});
+
 }
 
 }

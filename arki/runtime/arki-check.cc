@@ -36,6 +36,7 @@ struct Options : public BaseCommandLine
     commandline::BoolOption* accurate;
     commandline::BoolOption* repack;
     commandline::BoolOption* remove_all;
+    commandline::BoolOption* remove_old;
     commandline::BoolOption* tar;
     commandline::BoolOption* op_state;
     commandline::BoolOption* op_issue51;
@@ -66,6 +67,8 @@ struct Options : public BaseCommandLine
             "Also verify the consistency of the contents of the data files (slow)");
         repack = add<BoolOption>("repack", 'r', "repack", "",
             "Perform a repack instead of a check");
+        remove_old = add<BoolOption>("remove-old", 0, "remove-old", "",
+            "Remove data older than delete age");
         remove_all = add<BoolOption>("remove-all", 0, "remove-all", "",
             "Completely empty the dataset, removing all data and metadata");
         tar = add<BoolOption>("tar", 0, "tar", "",
@@ -178,6 +181,18 @@ struct Repacker : public WorkerWithConfig
     void done() override {}
 };
 
+struct RemoveOld : public WorkerWithConfig
+{
+    using WorkerWithConfig::WorkerWithConfig;
+
+    void operator()(dataset::Checker& w) override
+    {
+        w.remove_old(opts);
+    }
+
+    void done() {}
+};
+
 struct RemoveAller : public WorkerWithConfig
 {
     using WorkerWithConfig::WorkerWithConfig;
@@ -264,13 +279,14 @@ int arki_check(int argc, const char* argv[])
         size_t actionCount = 0;
         if (opts.repack->isSet()) ++actionCount;
         if (opts.remove_all->isSet()) ++actionCount;
+        if (opts.remove_old->isSet()) ++actionCount;
         if (opts.tar->isSet()) ++actionCount;
         if (opts.op_remove->isSet()) ++actionCount;
         if (opts.op_unarchive->isSet()) ++actionCount;
         if (opts.op_state->isSet()) ++actionCount;
         if (opts.op_issue51->isSet()) ++actionCount;
         if (actionCount > 1)
-            throw commandline::BadOption("only one of --repack, --remove, --remove-all, --tar, --unarchive, --state, or --issue51 can be given in one invocation");
+            throw commandline::BadOption("only one of --repack, --remove, --remove-all, --remove-old, --tar, --unarchive, --state, or --issue51 can be given in one invocation");
 
         // Read the config file(s)
         runtime::Inputs inputs;
@@ -342,6 +358,11 @@ int arki_check(int argc, const char* argv[])
             {
                 opts.set_checker_config(config, false, true);
                 worker.reset(new RemoveAller(config));
+            }
+            else if (opts.remove_old->boolValue())
+            {
+                opts.set_checker_config(config, false, true);
+                worker.reset(new RemoveOld(config));
             }
             else if (opts.repack->boolValue())
             {
