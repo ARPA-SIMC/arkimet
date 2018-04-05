@@ -138,7 +138,6 @@ add_method("dir_check_empty", [] {
     wassert(ts.test_check_empty());
 });
 
-
 // Test scan_dir on an empty directory
 add_method("scan_dir_empty", [] {
     system("rm -rf dirscanner");

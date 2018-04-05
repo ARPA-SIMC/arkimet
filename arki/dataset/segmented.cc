@@ -29,19 +29,6 @@ namespace arki {
 namespace dataset {
 namespace segmented {
 
-bool State::has(const std::string& relpath) const
-{
-    return find(relpath) != end();
-}
-
-const SegmentState& State::get(const std::string& seg) const
-{
-    auto res = find(seg);
-    if (res == end())
-        throw std::runtime_error("segment " + seg + " not found in state");
-    return res->second;
-}
-
 void SegmentState::check_age(const std::string& relpath, const Config& cfg, dataset::Reporter& reporter)
 {
     core::Time archive_threshold(0, 0, 0);
@@ -68,26 +55,12 @@ void SegmentState::check_age(const std::string& relpath, const Config& cfg, data
     }
 }
 
-unsigned State::count(segment::State state) const
-{
-    unsigned res = 0;
-    for (const auto& i: *this)
-        if (i.second.state == state)
-            ++res;
-    return res;
-}
-
-void State::dump(FILE* out) const
-{
-    for (const auto& i: *this)
-        fprintf(stderr, "%s: %s %s to %s\n", i.first.c_str(), i.second.state.to_string().c_str(), i.second.begin.to_iso8601(' ').c_str(), i.second.until.to_iso8601(' ').c_str());
-}
-
 Config::Config(const ConfigFile& cfg)
     : LocalConfig(cfg),
       step_name(str::lower(cfg.value("step"))),
       force_dir_segments(cfg.value("segments") == "dir"),
-      mock_data(cfg.value("mockdata") == "true")
+      mock_data(cfg.value("mockdata") == "true"),
+      offline(cfg.value("offline") == "true")
 {
     if (step_name.empty())
         throw std::runtime_error("Dataset " + name + " misses step= configuration");
@@ -233,49 +206,8 @@ CheckerSegment::~CheckerSegment()
 {
 }
 
-void CheckerSegment::release(const std::string& destpath)
+void CheckerSegment::tar()
 {
-    sys::makedirs(str::dirname(destpath));
-
-    // Sanity checks: avoid conflicts
-    if (sys::exists(destpath))
-    {
-        stringstream ss;
-        ss << "cannot archive " << segment->absname << " to " << destpath << " because the destination already exists";
-        throw runtime_error(ss.str());
-    }
-    string src = segment->absname;
-    string dst = destpath;
-    bool compressed = scan::isCompressed(src);
-    if (compressed)
-    {
-        src += ".gz";
-        dst += ".gz";
-        if (sys::exists(dst))
-        {
-            stringstream ss;
-            ss << "cannot archive " << src << " to " << dst << " because the destination already exists";
-            throw runtime_error(ss.str());
-        }
-    }
-
-    // Remove stale metadata and summaries that may have been left around
-    sys::unlink_ifexists(destpath + ".metadata");
-    sys::unlink_ifexists(destpath + ".summary");
-
-    // Move data to archive
-    if (rename(src.c_str(), dst.c_str()) < 0)
-    {
-        stringstream ss;
-        ss << "cannot rename " << src << " to " << dst;
-        throw std::system_error(errno, std::system_category(), ss.str());
-    }
-    if (compressed)
-        sys::rename_ifexists(src + ".idx", dst + ".idx");
-
-    // Move metadata to archive
-    sys::rename_ifexists(segment->absname + ".metadata", destpath + ".metadata");
-    sys::rename_ifexists(segment->absname + ".summary", destpath + ".summary");
 }
 
 void CheckerSegment::archive()
@@ -286,6 +218,8 @@ void CheckerSegment::archive()
     // problem, because opening a writer on an already existing path creates a
     // needs-check-do-not-pack file
     archives();
+
+    auto wlock = lock->write_lock();
 
     // Get the format for this relpath
     size_t pos = segment->relname.rfind(".");
@@ -298,30 +232,24 @@ void CheckerSegment::archive()
     if (!config().relpath_timespan(segment->relname, start_time, end_time))
         throw std::runtime_error("cannot archive segment " + segment->absname + " because its name does not match the dataset step");
 
-    // Get the archive relpath for this segment
-    string arcrelpath = str::joinpath("last", config().step()(start_time)) + "." + format;
-    string arcabspath = str::joinpath(config().path, ".archive", arcrelpath);
-    release(arcabspath);
+    // Get the contents of this segment
+    metadata::Collection mdc;
+    get_metadata(wlock, mdc);
 
-    bool compressed = scan::isCompressed(arcabspath);
+    // Move the segment to the archive and deindex it
+    string new_root = str::joinpath(config().path, ".archive", "last");
+    string new_relpath = config().step()(start_time) + "." + format;
+    string new_abspath = str::joinpath(new_root, new_relpath);
+    release(new_root, new_relpath, new_abspath);
 
     // Acquire in the achive
-    metadata::Collection mdc;
-    if (sys::exists(arcabspath + ".metadata"))
-        mdc.read_from_file(arcabspath + ".metadata");
-    else if (compressed) {
-        utils::compress::TempUnzip tu(arcabspath);
-        scan::scan(arcabspath, lock, mdc.inserter_func());
-    } else
-        scan::scan(arcabspath, lock, mdc.inserter_func());
-
-    archives().indexSegment(arcrelpath, move(mdc));
+    archives().index_segment(str::joinpath("last", new_relpath), move(mdc));
 }
 
 void CheckerSegment::unarchive()
 {
     string arcrelpath = str::joinpath("last", segment->relname);
-    archives().releaseSegment(arcrelpath, segment->absname);
+    archives().release_segment(arcrelpath, segment->root, segment->relname, segment->absname);
 
     bool compressed = scan::isCompressed(segment->absname);
 
@@ -352,88 +280,102 @@ segment::Manager& Checker::segment_manager()
 
 void Checker::segments_all(std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    segments([&](CheckerSegment& segment) { dest(segment); });
-    segments_untracked([&](segmented::CheckerSegment& segment) { dest(segment); });
+    segments_tracked(dest);
+    segments_untracked(dest);
 }
 
 void Checker::segments_all_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    segments_filtered(matcher, [&](CheckerSegment& segment) { dest(segment); });
-    segments_untracked_filtered(matcher, [&](segmented::CheckerSegment& segment) { dest(segment); });
+    segments_tracked_filtered(matcher, dest);
+    segments_untracked_filtered(matcher, dest);
 }
 
-segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
+void Checker::segments(CheckerConfig& opts, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    segmented::State segments_state;
-    segments_all([&](CheckerSegment& segment) {
-        segments_state.insert(make_pair(segment.path_relative(), segment.scan(reporter, quick)));
-    });
-    return segments_state;
+    if (!opts.online && !config().offline) return;
+    if (!opts.offline && config().offline) return;
+
+    if (opts.segment_filter.empty())
+    {
+        segments_tracked(dest);
+        segments_untracked(dest);
+    } else {
+        segments_tracked_filtered(opts.segment_filter, dest);
+        segments_untracked_filtered(opts.segment_filter, dest);
+    }
 }
 
-segmented::State Checker::scan_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool quick)
+void Checker::segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest)
 {
-    segmented::State segments_state;
-    segments_all_filtered(matcher, [&](CheckerSegment& segment) {
-        segments_state.insert(make_pair(segment.path_relative(), segment.scan(reporter, quick)));
-    });
-    return segments_state;
+    if ((opts.online && !config().offline) || (opts.offline && config().offline))
+        segments(opts, [&](CheckerSegment& segment) { dest(*this, segment); });
+    if (opts.offline && hasArchive())
+        archive().segments_recursive(opts, dest);
 }
 
-void Checker::remove_all(dataset::Reporter& reporter, bool writable)
+void Checker::remove_all(CheckerConfig& opts)
 {
-    // TODO: decide if we're removing archives at all
-    // TODO: if (hasArchive())
-    // TODO:    archive().removeAll(reporter, writable);
-    segments_all([&](CheckerSegment& segment) {
-        if (writable)
+    segments(opts, [&](CheckerSegment& segment) {
+        if (opts.readonly)
+            opts.reporter->segment_delete(name(), segment.path_relative(), "should be deleted");
+        else
         {
             auto freed = segment.remove(true);
-            reporter.segment_delete(name(), segment.path_relative(), "deleted (" + std::to_string(freed) + " freed)");
+            opts.reporter->segment_delete(name(), segment.path_relative(), "deleted (" + std::to_string(freed) + " freed)");
         }
-        else
-            reporter.segment_delete(name(), segment.path_relative(), "should be deleted");
     });
+
+    LocalChecker::remove_all(opts);
 }
 
-void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable)
+void Checker::tar(CheckerConfig& opts)
 {
-    // TODO: decide if we're removing archives at all
-    // TODO: if (hasArchive())
-    // TODO:    archive().removeAll(reporter, writable);
-    segments_all_filtered(matcher, [&](CheckerSegment& segment) {
-        if (writable)
-        {
-            auto freed = segment.remove(true);
-            reporter.segment_delete(name(), segment.path_relative(), "deleted (" + std::to_string(freed) + " freed)");
-        }
+    segments(opts, [&](CheckerSegment& segment) {
+        if (segment.segment->single_file()) return;
+        if (opts.readonly)
+            opts.reporter->segment_tar(name(), segment.path_relative(), "should be tarred");
         else
-            reporter.segment_delete(name(), segment.path_relative(), "should be deleted");
+        {
+            segment.tar();
+            opts.reporter->segment_tar(name(), segment.path_relative(), "tarred");
+        }
     });
+
+    LocalChecker::tar(opts);
 }
 
+void Checker::state(CheckerConfig& opts)
+{
+    segments(opts, [&](CheckerSegment& segment) {
+        auto state = segment.scan(*opts.reporter, !opts.accurate);
+        opts.reporter->segment_tar(name(), segment.path_relative(),
+                state.state.to_string() + " " + state.begin.to_iso8601(' ') + " to " + state.until.to_iso8601(' '));
+    });
 
-void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
+    LocalChecker::state(opts);
+}
+
+void Checker::repack(CheckerConfig& opts, unsigned test_flags)
 {
     const string& root = config().path;
 
     if (files::hasDontpackFlagfile(root))
     {
-        reporter.operation_aborted(name(), "repack", "dataset needs checking first");
+        opts.reporter->operation_aborted(name(), "repack", "dataset needs checking first");
         return;
     }
 
     unique_ptr<maintenance::Agent> repacker;
-    if (writable)
+    if (opts.readonly)
+        repacker.reset(new maintenance::MockRepacker(*opts.reporter, *this, test_flags));
+    else
         // No safeguard against a deleted index: we catch that in the
         // constructor and create the don't pack flagfile
-        repacker.reset(new maintenance::RealRepacker(reporter, *this, test_flags));
-    else
-        repacker.reset(new maintenance::MockRepacker(reporter, *this, test_flags));
+        repacker.reset(new maintenance::RealRepacker(*opts.reporter, *this, test_flags));
 
     try {
-        segments_all([&](CheckerSegment& segment) {
-            (*repacker)(segment, segment.scan(reporter, true).state);
+        segments(opts, [&](CheckerSegment& segment) {
+            (*repacker)(segment, segment.scan(*opts.reporter, true).state);
         });
         repacker->end();
     } catch (...) {
@@ -445,54 +387,25 @@ void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_f
         throw;
     }
 
-    LocalChecker::repack(reporter, writable);
+    LocalChecker::repack(opts, test_flags);
 }
 
-void Checker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
+void Checker::check(CheckerConfig& opts)
 {
     const string& root = config().path;
 
-    if (files::hasDontpackFlagfile(root))
+    if (opts.readonly)
     {
-        reporter.operation_aborted(name(), "repack", "dataset needs checking first");
-        return;
-    }
-
-    unique_ptr<maintenance::Agent> repacker;
-    if (writable)
-        // No safeguard against a deleted index: we catch that in the
-        // constructor and create the don't pack flagfile
-        repacker.reset(new maintenance::RealRepacker(reporter, *this, test_flags));
-    else
-        repacker.reset(new maintenance::MockRepacker(reporter, *this, test_flags));
-
-    try {
-        segments_all_filtered(matcher, [&](CheckerSegment& segment) {
-            (*repacker)(segment, segment.scan(reporter, true).state);
+        maintenance::MockFixer fixer(*opts.reporter, *this);
+        segments(opts, [&](CheckerSegment& segment) {
+            fixer(segment, segment.scan(*opts.reporter, !opts.accurate).state);
         });
-        repacker->end();
-    } catch (...) {
-        // FIXME: this only makes sense for ondisk2
-        // FIXME: also for iseg. Add the marker at the segment level instead of
-        // the dataset level, so that the try/catch can be around the single
-        // segment, and cleared on a segment by segment basis
-        files::createDontpackFlagfile(root);
-        throw;
-    }
-
-    LocalChecker::repack(reporter, writable);
-}
-
-void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
-{
-    const string& root = config().path;
-
-    if (fix)
-    {
-        maintenance::RealFixer fixer(reporter, *this);
+        fixer.end();
+    } else {
+        maintenance::RealFixer fixer(*opts.reporter, *this);
         try {
-            segments_all([&](CheckerSegment& segment) {
-                fixer(segment, segment.scan(reporter, quick).state);
+            segments(opts, [&](CheckerSegment& segment) {
+                fixer(segment, segment.scan(*opts.reporter, !opts.accurate).state);
             });
             fixer.end();
         } catch (...) {
@@ -504,47 +417,8 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
         }
 
         files::removeDontpackFlagfile(root);
-    } else {
-        maintenance::MockFixer fixer(reporter, *this);
-        segments_all([&](CheckerSegment& segment) {
-            fixer(segment, segment.scan(reporter, quick).state);
-        });
-        fixer.end();
     }
-
-    LocalChecker::check(reporter, fix, quick);
-}
-
-void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
-{
-    const string& root = config().path;
-
-    if (fix)
-    {
-        maintenance::RealFixer fixer(reporter, *this);
-        try {
-            segments_all_filtered(matcher, [&](CheckerSegment& segment) {
-                fixer(segment, segment.scan(reporter, quick).state);
-            });
-            fixer.end();
-        } catch (...) {
-            // FIXME: Add the marker at the segment level instead of
-            // the dataset level, so that the try/catch can be around the single
-            // segment, and cleared on a segment by segment basis
-            files::createDontpackFlagfile(root);
-            throw;
-        }
-
-        files::removeDontpackFlagfile(root);
-    } else {
-        maintenance::MockFixer fixer(reporter, *this);
-        segments_all_filtered(matcher, [&](CheckerSegment& segment) {
-            fixer(segment, segment.scan(reporter, quick).state);
-        });
-        fixer.end();
-    }
-
-    LocalChecker::check(reporter, fix, quick);
+    LocalChecker::check(opts);
 }
 
 }

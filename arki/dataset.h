@@ -380,40 +380,53 @@ public:
     static void test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out);
 };
 
+struct CheckerConfig
+{
+    /// Reporter that gets notified of check progress and results
+    std::shared_ptr<dataset::Reporter> reporter;
+    /// If set, work only on segments that could contain data that matches this
+    /// matcher
+    Matcher segment_filter;
+    /// Work on offline archives
+    bool offline = true;
+    /// Work on online data
+    bool online = true;
+    /// Simulate, do not write any changes
+    bool readonly = true;
+    /// Perform optional and time consuming operations
+    bool accurate = false;
+
+    CheckerConfig();
+    CheckerConfig(std::shared_ptr<dataset::Reporter> reporter, bool readonly=true);
+    CheckerConfig(const CheckerConfig&) = default;
+    CheckerConfig(CheckerConfig&&) = default;
+    CheckerConfig& operator=(const CheckerConfig&) = default;
+    CheckerConfig& operator=(CheckerConfig&&) = default;
+};
+
 struct Checker : public dataset::Base
 {
     using Base::Base;
 
     /**
-     * Repack the dataset, logging status to the given file.
-     *
-     * If writable is false, the process is simulated but no changes are
-     * saved.
+     * Repack the dataset.
      *
      * test_flags are used to select alternate and usually undesirable repack
      * behaviours during tests, and should always be 0 outside tests.
      */
-    virtual void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) = 0;
+    virtual void repack(CheckerConfig& opts, unsigned test_flags=0) = 0;
 
-    /**
-     * Check the dataset for errors, logging status to the given file.
-     *
-     * If \a fix is false, the process is simulated but no changes are saved.
-     * If \a fix is true, errors are fixed.
-     */
-    virtual void check(dataset::Reporter& reporter, bool fix, bool quick) = 0;
-
-    /// Same as repack, but limited to the parts of the dataset matching the given matcher
-    virtual void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) = 0;
-
-    /// Same as check, but limited to the parts of the dataset matching the given matcher
-    virtual void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) = 0;
+    /// Check the dataset for errors
+    virtual void check(CheckerConfig& opts) = 0;
 
     /// Remove all data from the dataset
-    virtual void remove_all(dataset::Reporter& reporter, bool writable=false) = 0;
+    virtual void remove_all(CheckerConfig& opts) = 0;
 
-    /// Remove the segments from the dataset that match the given matcher
-    virtual void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) = 0;
+    /// Convert directory segments into tar segments
+    virtual void tar(CheckerConfig& opts) = 0;
+
+    /// Send the dataset state to the reporter
+    virtual void state(CheckerConfig& opts) = 0;
 
     /**
      * Check consistency of the last byte of GRIB and BUFR data in the archive,
@@ -421,7 +434,7 @@ struct Checker : public dataset::Base
      *
      * See https://github.com/ARPAE-SIMC/arkimet/issues/51 for details.
      */
-    virtual void check_issue51(dataset::Reporter& reporter, bool fix=false);
+    virtual void check_issue51(CheckerConfig& opts);
 
     /**
      * Instantiate an appropriate Checker for the given configuration

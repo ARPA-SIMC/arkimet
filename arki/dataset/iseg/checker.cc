@@ -85,6 +85,11 @@ public:
     const iseg::Config& config() const override { return checker.config(); }
     dataset::ArchivesChecker& archives() const { return checker.archive(); }
 
+    void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
+    {
+        idx().scan(mds.inserter_func(), "reftime, offset");
+    }
+
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
         if (!segment->exists_on_disk())
@@ -160,6 +165,45 @@ public:
         auto res = segmented::SegmentState(state, *md_begin, *md_until);
         res.check_age(segment->relname, checker.config(), reporter);
         return res;
+    }
+
+    void tar() override
+    {
+        if (sys::exists(segment->absname + ".tar"))
+            return;
+
+        auto write_lock = lock->write_lock();
+        Pending p = idx().begin_transaction();
+
+        // Rescan file
+        metadata::Collection mds;
+        idx().scan(mds.inserter_func(), "reftime, offset");
+
+        // Create the .tar segment
+        segment = segment->tar(mds);
+
+        // Reindex the new metadata
+        idx().reset();
+        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+        {
+            const source::Blob& source = (*i)->sourceBlob();
+            if (idx().index(**i, source.offset))
+                throw std::runtime_error("duplicate detected while reordering segment");
+        }
+
+        // Remove the .metadata file if present, because we are shuffling the
+        // data file and it will not be valid anymore
+        string mdpathname = segment->absname + ".metadata";
+        if (sys::exists(mdpathname))
+            if (unlink(mdpathname.c_str()) < 0)
+            {
+                stringstream ss;
+                ss << "cannot remove obsolete metadata file " << mdpathname;
+                throw std::system_error(errno, std::system_category(), ss.str());
+            }
+
+        // Commit the changes in the database
+        p.commit();
     }
 
     size_t repack(unsigned test_flags=0) override
@@ -327,10 +371,10 @@ public:
         // TODO: remove relevant summary
     }
 
-    void release(const std::string& destpath)
+    void release(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override
     {
         sys::unlink_ifexists(str::joinpath(checker.config().path, segment->relname + ".index"));
-        segmented::CheckerSegment::release(destpath);
+        segment->move(new_root, new_relpath, new_abspath);
     }
 };
 
@@ -371,12 +415,12 @@ std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std:
     return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
 }
 
-void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> dest)
+void Checker::segments_tracked(std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    segments_filtered(Matcher(), dest);
+    segments_tracked_filtered(Matcher(), dest);
 }
 
-void Checker::segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
+void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
     list_segments(matcher, [&](const std::string& relpath) {
         CheckerSegment segment(*this, relpath);
@@ -398,8 +442,11 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     });
 }
 
-void Checker::check_issue51(dataset::Reporter& reporter, bool fix)
+void Checker::check_issue51(CheckerConfig& opts)
 {
+    if (!opts.online && !config().offline) return;
+    if (!opts.offline && config().offline) return;
+
     // Broken metadata for each segment
     std::map<string, metadata::Collection> broken_mds;
 
@@ -428,7 +475,7 @@ void Checker::check_issue51(dataset::Reporter& reporter, bool fix)
             char tail[4];
             if (datafile.pread(tail, 4, blob.offset + blob.size - 4) != 4)
             {
-                reporter.segment_info(name(), relpath, "cannot read 4 bytes at position " + std::to_string(blob.offset + blob.size - 4));
+                opts.reporter->segment_info(name(), relpath, "cannot read 4 bytes at position " + std::to_string(blob.offset + blob.size - 4));
                 return;
             }
             // Check if it ends with 7777
@@ -444,16 +491,16 @@ void Checker::check_issue51(dataset::Reporter& reporter, bool fix)
                 broken_mds[relpath].push_back(*md);
             } else {
                 ++count_corrupted;
-                reporter.segment_info(name(), relpath, "end marker 7777 or 777? not found at position " + std::to_string(blob.offset + blob.size - 4));
+                opts.reporter->segment_info(name(), relpath, "end marker 7777 or 777? not found at position " + std::to_string(blob.offset + blob.size - 4));
             }
         }
         nag::verbose("Checked %s:%s: %u ok, %u other formats, %u issue51, %u corrupted", name().c_str(), relpath.c_str(), count_ok, count_otherformat, count_issue51, count_corrupted);
     });
 
-    if (!fix)
+    if (opts.readonly)
     {
         for (const auto& i: broken_mds)
-            reporter.segment_issue51(name(), i.first, "segment contains data with corrupted terminator signature");
+            opts.reporter->segment_issue51(name(), i.first, "segment contains data with corrupted terminator signature");
     } else {
         for (const auto& i: broken_mds)
         {
@@ -482,11 +529,11 @@ void Checker::check_issue51(dataset::Reporter& reporter, bool fix)
                     return;
                 datafile.pwrite("7", 1, blob.offset + blob.size - 1);
             }
-            reporter.segment_issue51(name(), i.first, "fixed corrupted terminator signatures");
+            opts.reporter->segment_issue51(name(), i.first, "fixed corrupted terminator signatures");
         }
     }
 
-    return segmented::Checker::check_issue51(reporter, fix);
+    return segmented::Checker::check_issue51(opts);
 }
 
 size_t Checker::vacuum(dataset::Reporter& reporter)

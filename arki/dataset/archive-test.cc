@@ -67,7 +67,7 @@ add_method("acquire_last", [](Fixture& f) {
     {
         ArchivesChecker checker(f.config);
         system("cp -a inbound/test-sorted.grib1 testds/.archive/last/test-sorted.grib1");
-        wassert(checker.indexSegment("last/test-sorted.grib1", metadata::Collection(f.orig)));
+        wassert(checker.index_segment("last/test-sorted.grib1", metadata::Collection(f.orig)));
         wassert(actual_file("testds/.archive/last/test-sorted.grib1").exists());
         wassert(actual_file("testds/.archive/last/test-sorted.grib1.metadata").exists());
         wassert(actual_file("testds/.archive/last/test-sorted.grib1.summary").exists());
@@ -150,7 +150,7 @@ add_method("reader_empty_last", [](Fixture& f) {
         system("cp inbound/test-sorted.grib1 testds/.archive/foo/");
 
         ArchivesChecker checker(f.config);
-        wassert(checker.indexSegment("foo/test-sorted.grib1", metadata::Collection(f.orig)));
+        wassert(checker.index_segment("foo/test-sorted.grib1", metadata::Collection(f.orig)));
 
         wassert(actual(checker).check_clean(true, true));
         wassert(actual(checker).repack_clean(true));

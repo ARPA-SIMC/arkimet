@@ -202,34 +202,40 @@ LocalChecker::~LocalChecker()
 {
 }
 
-void LocalChecker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
+void LocalChecker::repack(CheckerConfig& opts, unsigned test_flags)
 {
-    if (hasArchive())
-        archive().repack(reporter, writable, test_flags);
+    if (opts.offline && hasArchive())
+        archive().repack(opts, test_flags);
 }
 
-void LocalChecker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
+void LocalChecker::check(CheckerConfig& opts)
 {
-    if (hasArchive())
-        archive().repack_filtered(matcher, reporter, writable, test_flags);
+    if (opts.offline && hasArchive())
+        archive().check(opts);
 }
 
-void LocalChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
+void LocalChecker::remove_all(CheckerConfig& opts)
 {
-    if (hasArchive())
-        archive().check(reporter, fix, quick);
+    if (opts.offline && hasArchive())
+        archive().remove_all(opts);
 }
 
-void LocalChecker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
+void LocalChecker::tar(CheckerConfig& opts)
 {
-    if (hasArchive())
-        archive().check_filtered(matcher, reporter, fix, quick);
+    if (opts.offline && hasArchive())
+        archive().tar(opts);
 }
 
-void LocalChecker::check_issue51(dataset::Reporter& reporter, bool fix)
+void LocalChecker::check_issue51(CheckerConfig& opts)
 {
-    if (hasArchive())
-        archive().check_issue51(reporter, fix);
+    if (opts.offline && hasArchive())
+        archive().check_issue51(opts);
+}
+
+void LocalChecker::state(CheckerConfig& opts)
+{
+    if (opts.offline && hasArchive())
+        archive().state(opts);
 }
 
 template class LocalBase<Reader, ArchivesReader>;

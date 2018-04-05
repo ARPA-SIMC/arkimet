@@ -62,6 +62,11 @@ void OstreamReporter::segment_rescan(const std::string& ds, const std::string& r
     out << ds << ":" << relpath << ": " << message << endl;
 }
 
+void OstreamReporter::segment_tar(const std::string& ds, const std::string& relpath, const std::string& message)
+{
+    out << ds << ":" << relpath << ": " << message << endl;
+}
+
 void OstreamReporter::segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message)
 {
     out << ds << ":" << relpath << ": " << message << endl;

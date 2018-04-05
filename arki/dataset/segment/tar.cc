@@ -1,4 +1,4 @@
-#include "fd.h"
+#include "tar.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -8,6 +8,7 @@
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/tar.h"
 #include "arki/utils.h"
 #include "arki/dataset/reporter.h"
 #include "arki/nag.h"
@@ -28,125 +29,43 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 namespace segment {
-namespace fd {
+namespace tar {
 
-void File::fdtruncate_nothrow(off_t pos) noexcept
+Checker::Checker(const std::string& root, const std::string& relname, const std::string& absname)
+    : segment::Checker(root, relname, absname), tarabsname(absname + ".tar")
 {
-    if (::ftruncate(*this, pos) == -1)
-        nag::warning("truncating %s to previous size %zd (rollback of append operation): %m", name().c_str(), pos);
 }
 
-
-Writer::Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd)
-    : segment::Writer(root, relname, fd->name()), fd(fd.release())
-{
-    initial_size = this->fd->lseek(0, SEEK_END);
-    current_pos = initial_size;
-}
-
-Writer::~Writer()
-{
-    if (!fired) rollback_nothrow();
-    delete fd;
-}
-
-bool Writer::single_file() const { return true; }
-
-size_t Writer::next_offset() const { return current_pos; }
-
-const types::source::Blob& Writer::append(Metadata& md)
-{
-    fired = false;
-    const std::vector<uint8_t>& buf = md.getData();
-    pending.emplace_back(md, source::Blob::create_unlocked(md.source().format, root, relname, current_pos, buf.size()));
-    current_pos += fd->write_data(buf);
-    return *pending.back().new_source;
-}
-
-void Writer::commit()
-{
-    if (fired) return;
-    fd->fsync();
-    for (auto& p: pending)
-        p.set_source();
-    pending.clear();
-    initial_size = current_pos;
-    fired = true;
-}
-
-void Writer::rollback()
-{
-    if (fired) return;
-    fd->ftruncate(initial_size);
-    fd->lseek(initial_size, SEEK_SET);
-    current_pos = initial_size;
-    pending.clear();
-    fired = true;
-}
-
-void Writer::rollback_nothrow() noexcept
-{
-    if (fired) return;
-    fd->fdtruncate_nothrow(initial_size);
-    ::lseek(*fd, initial_size, SEEK_SET);
-    pending.clear();
-    fired = true;
-}
-
-
+const char* Checker::type() const { return "tar"; }
 bool Checker::single_file() const { return true; }
 
 bool Checker::exists_on_disk()
 {
-    if (sys::isdir(absname)) return false;
-
-    // If it's not a directory, it must exist in the file system,
-    // compressed or not
-    if (!sys::exists(absname) && !sys::exists(absname + ".gz"))
-        return false;
-
-    return true;
+    return sys::exists(tarabsname);
 }
 
 time_t Checker::timestamp()
 {
-    std::unique_ptr<File> fd;
-
-    if (sys::exists(absname))
-        fd = open(absname);
-    else if (sys::exists(absname + ".gz"))
-        fd = open(absname + ".gz");
-    else
-        throw std::runtime_error("neither " + absname + " nor " + absname + ".gz exist");
-
-    struct stat st;
-    fd->fstat(st);
-    return st.st_mtime;
+    return sys::timestamp(tarabsname);
 }
 
 void Checker::move_data(const std::string& new_root, const std::string& new_relname, const std::string& new_absname)
 {
-    string src = absname;
-    string dst = new_absname;
-    bool compressed = scan::isCompressed(src);
-    if (compressed)
-    {
-        src += ".gz";
-        dst += ".gz";
-    }
-
-    if (rename(src.c_str(), dst.c_str()) < 0)
+    string new_tarabsname = new_absname + ".tar";
+    if (rename(tarabsname.c_str(), new_tarabsname.c_str()) < 0)
     {
         stringstream ss;
-        ss << "cannot rename " << src << " to " << dst;
+        ss << "cannot rename " << tarabsname << " to " << new_tarabsname;
         throw std::system_error(errno, std::system_category(), ss.str());
     }
-    if (compressed)
-        sys::rename_ifexists(src + ".idx", dst + ".idx");
 }
 
-State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap, bool quick)
+State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
 {
+    std::unique_ptr<struct stat> st = sys::stat(tarabsname);
+    if (st.get() == nullptr)
+        return SEGMENT_DELETED;
+
     // Check the data if requested
     if (!quick)
     {
@@ -186,7 +105,7 @@ State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, cons
     }
 
     // Check for truncation
-    off_t file_size = utils::compress::filesize(absname);
+    off_t file_size = st->st_size;
     if (file_size < end_of_last_data_checked)
     {
         stringstream ss;
@@ -197,7 +116,7 @@ State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, cons
 
     // Check if file_size matches the expected file size
     bool has_hole = false;
-    if (file_size > end_of_last_data_checked + max_gap)
+    if (file_size > end_of_last_data_checked + 511 + 1024) // last padding plus two trailing zero blocks
         has_hole = true;
 
     // Check for holes or elements out of order
@@ -205,7 +124,7 @@ State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, cons
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         const source::Blob& source = (*i)->sourceBlob();
-        if (source.offset < (size_t)end_of_last_data_checked || source.offset > (size_t)end_of_last_data_checked + max_gap)
+        if (source.offset < (size_t)end_of_last_data_checked || source.offset > (size_t)end_of_last_data_checked + 1023) // last padding plus file header
             has_hole = true;
 
         end_of_last_data_checked = max(end_of_last_data_checked, (off_t)(source.offset + source.size));
@@ -223,19 +142,14 @@ State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, cons
 
 void Checker::validate(Metadata& md, const scan::Validator& v)
 {
-    if (const types::source::Blob* blob = md.has_source_blob()) {
+    if (const types::source::Blob* blob = md.has_source_blob())
+    {
         if (blob->filename != relname)
             throw std::runtime_error("metadata to validate does not appear to be from this segment");
 
-        if (sys::exists(absname))
-        {
-            sys::File fd(absname, O_RDONLY);
-            v.validate_file(fd, blob->offset, blob->size);
-            return;
-        }
-        // If the file does not exist, it may be a compressed segment.
-        // TODO: Until handling of compressed segments is incorporated here, we
-        // just let Metadata::getData see if it can load the data somehow.
+        sys::File fd(tarabsname, O_RDONLY);
+        v.validate_file(fd, blob->offset, blob->size);
+        return;
     }
     const auto& buf = md.getData();
     v.validate_buf(buf.data(), buf.size());
@@ -243,16 +157,12 @@ void Checker::validate(Metadata& md, const scan::Validator& v)
 
 size_t Checker::remove()
 {
-    size_t size = sys::size(absname);
-    sys::unlink(absname.c_str());
+    size_t size = sys::size(tarabsname);
+    sys::unlink(tarabsname);
     return size;
 }
 
-Pending Checker::repack_impl(
-        const std::string& rootdir,
-        metadata::Collection& mds,
-        bool skip_validation,
-        unsigned test_flags)
+Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
     struct Rename : public Transaction
     {
@@ -283,20 +193,19 @@ Pending Checker::repack_impl(
         void rollback() override
         {
             if (fired) return;
-            ::unlink(tmpabsname.c_str());
+            sys::unlink(tmpabsname);
             fired = true;
         }
 
         void rollback_nothrow() noexcept override
         {
             if (fired) return;
-            ::unlink(tmpabsname.c_str());
+            sys::unlink(tmpabsname);
             fired = true;
         }
     };
 
-    string tmprelname = relname + ".repack";
-    string tmpabsname = absname + ".repack";
+    string tmpabsname = tarabsname + ".repack";
 
     // Make sure mds are not holding a read lock on the file to repack
     for (auto& md: mds) md->sourceBlob().unlock();
@@ -309,23 +218,26 @@ Pending Checker::repack_impl(
     Pending p(rename = new Rename(tmpabsname, absname));
 
     // Create a writer for the temp file
-    auto new_fd = open_file(tmpabsname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    size_t wrpos = 0;
+    File fd(tmpabsname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    TarOutput tarfd(fd);
 
     if (test_flags & TEST_MISCHIEF_MOVE_DATA)
-        new_fd->test_add_padding(1);
+        tarfd.append("mischief", "test data intended to create a gap");
 
     // Fill the temp file with all the data in the right order
+    size_t idx = 0;
+    char fname[100];
+    std::string tarrelname = relname + ".tar";
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         // Read the data
         auto buf = (*i)->sourceBlob().read_data(rename->src, false);
         // Validate it
-        if (!skip_validation)
-            validator.validate_buf(buf.data(), buf.size());
+        validator.validate_buf(buf.data(), buf.size());
         // Append it to the new file
-        auto new_source = Source::createBlobUnlocked((*i)->source().format, rootdir, relname, wrpos, buf.size());
-        wrpos += new_fd->write_data(buf);
+        snprintf(fname, 99, "%06zd.%s", idx, (*i)->source().format.c_str());
+        off_t wrpos = tarfd.append(fname, buf);
+        auto new_source = Source::createBlobUnlocked((*i)->source().format, rootdir, tarrelname, wrpos, buf.size());
         // Update the source information in the metadata
         (*i)->set_source(std::move(new_source));
         // Drop the cached data, to prevent ending up with the whole segment
@@ -333,15 +245,52 @@ Pending Checker::repack_impl(
         (*i)->drop_cached_data();
     }
 
-    new_fd->fdatasync();
+    tarfd.end();
+    fd.fdatasync();
+    fd.close();
 
     return p;
+}
+
+void Checker::create(const std::string& rootdir, const std::string& tarrelname, const std::string& tarabsname, metadata::Collection& mds, unsigned test_flags)
+{
+    // Create a writer for the temp file
+    File fd(tarabsname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    TarOutput tarfd(fd);
+
+    if (test_flags & TEST_MISCHIEF_MOVE_DATA)
+        tarfd.append("mischief", "test data intended to create a gap");
+
+    // Fill the temp file with all the data in the right order
+    size_t idx = 0;
+    char fname[100];
+    for (auto& md: mds)
+    {
+        // Read the data
+        auto buf = md->sourceBlob().read_data();
+        // Append it to the new file
+        snprintf(fname, 99, "%06zd.%s", idx, md->source().format.c_str());
+        off_t wrpos = tarfd.append(fname, buf);
+        auto new_source = Source::createBlobUnlocked(md->source().format, rootdir, tarrelname, wrpos, buf.size());
+        // Update the source information in the metadata
+        md->set_source(std::move(new_source));
+        // Drop the cached data, to prevent ending up with the whole segment
+        // sitting in memory
+        md->drop_cached_data();
+    }
+
+    tarfd.end();
+    fd.fdatasync();
+    fd.close();
 }
 
 void Checker::test_truncate(size_t offset)
 {
     if (!sys::exists(absname))
         utils::createFlagfile(absname);
+
+    if (offset % 512 != 0)
+        offset += 512 - (offset % 512);
 
     utils::files::PreserveFileTimes pft(absname);
     if (::truncate(absname.c_str(), offset) < 0)
@@ -354,48 +303,12 @@ void Checker::test_truncate(size_t offset)
 
 void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
-    sys::File fd(absname, O_RDWR);
-    sys::PreserveFileTimes pt(fd);
-    off_t end = fd.lseek(0, SEEK_END);
-    if (data_idx >= mds.size())
-    {
-        fd.ftruncate(end + hole_size);
-    } else {
-        off_t start_ofs = mds[data_idx].sourceBlob().offset;
-        std::vector<uint8_t> buf(end - start_ofs);
-        fd.lseek(start_ofs);
-        fd.read_all_or_throw(buf.data(), buf.size());
-        fd.lseek(start_ofs + hole_size);
-        fd.write_all_or_throw(buf.data(), buf.size());
-
-        for (unsigned i = data_idx; i < mds.size(); ++i)
-        {
-            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
-            source->offset += hole_size;
-            mds[i].set_source(std::move(source));
-        }
-    }
+    throw std::runtime_error("test_make_hole not implemented");
 }
 
 void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
 {
-    sys::File fd(absname, O_RDWR);
-    sys::PreserveFileTimes pt(fd);
-    off_t start_ofs = mds[data_idx].sourceBlob().offset;
-    off_t end = fd.lseek(0, SEEK_END);
-    std::vector<uint8_t> buf(end - start_ofs);
-    fd.lseek(start_ofs);
-    fd.read_all_or_throw(buf.data(), buf.size());
-    fd.lseek(start_ofs - overlap_size);
-    fd.write_all_or_throw(buf.data(), buf.size());
-    fd.ftruncate(end - overlap_size);
-
-    for (unsigned i = data_idx; i < mds.size(); ++i)
-    {
-        unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
-        source->offset -= overlap_size;
-        mds[i].set_source(std::move(source));
-    }
+    throw std::runtime_error("test_make_overlap not implemented");
 }
 
 void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
@@ -410,8 +323,7 @@ void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 
 bool can_store(const std::string& format)
 {
-    return format == "grib" || format == "grib1" || format == "grib2"
-        || format == "bufr" || format == "vm2";
+    return true;
 }
 
 }

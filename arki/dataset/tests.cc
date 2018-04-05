@@ -54,6 +54,36 @@ int days_since(int year, int month, int day)
     return duration/(3600*24);
 }
 
+
+bool State::has(const std::string& relpath) const
+{
+    return find(relpath) != end();
+}
+
+const segmented::SegmentState& State::get(const std::string& seg) const
+{
+    auto res = find(seg);
+    if (res == end())
+        throw std::runtime_error("segment " + seg + " not found in state");
+    return res->second;
+}
+
+unsigned State::count(segment::State state) const
+{
+    unsigned res = 0;
+    for (const auto& i: *this)
+        if (i.second.state == state)
+            ++res;
+    return res;
+}
+
+void State::dump(FILE* out) const
+{
+    for (const auto& i: *this)
+        fprintf(out, "%s: %s %s to %s\n", i.first.c_str(), i.second.state.to_string().c_str(), i.second.begin.to_iso8601(' ').c_str(), i.second.until.to_iso8601(' ').c_str());
+}
+
+
 DatasetTest::DatasetTest(const std::string& cfg_instance)
     : cfg_instance(cfg_instance), ds_name("testds"), ds_root(sys::abspath("testds"))
 {
@@ -180,20 +210,23 @@ std::string manifest_idx_fname()
     return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
-segmented::State DatasetTest::scan_state(bool quick)
+State DatasetTest::scan_state(bool quick)
 {
-    // OstreamReporter nr(cerr);
-    NullReporter nr;
+    CheckerConfig opts;
     auto checker = makeSegmentedChecker();
-    return checker->scan(nr, quick);
+    State res;
+    checker->segments(opts, [&](segmented::CheckerSegment& segment) { res.insert(make_pair(segment.path_relative(), segment.scan(*opts.reporter, quick))); });
+    return res;
 }
 
-segmented::State DatasetTest::scan_state(const Matcher& matcher, bool quick)
+State DatasetTest::scan_state(const Matcher& matcher, bool quick)
 {
-    // OstreamReporter nr(cerr);
-    NullReporter nr;
+    CheckerConfig opts;
+    opts.segment_filter = matcher;
     auto checker = makeSegmentedChecker();
-    return checker->scan_filtered(matcher, nr, quick);
+    State res;
+    checker->segments(opts, [&](segmented::CheckerSegment& segment) { res.insert(make_pair(segment.path_relative(), segment.scan(*opts.reporter, quick))); });
+    return res;
 }
 
 std::unique_ptr<dataset::segmented::Reader> DatasetTest::makeSegmentedReader()
@@ -398,13 +431,16 @@ void DatasetTest::import_all(const testdata::Fixture& fixture)
 void DatasetTest::import_all_packed(const testdata::Fixture& fixture)
 {
     wassert(import_all(fixture));
+    wassert(repack());
+}
 
+void DatasetTest::repack()
+{
     // Pack the dataset in case something imported data out of order
-    {
-        auto checker = config().create_checker();
-        NullReporter r;
-        wassert(checker->repack(r, true));
-    }
+    auto checker = config().create_checker();
+    CheckerConfig opts;
+    opts.readonly = false;
+    wassert(checker->repack(opts));
 }
 
 void DatasetTest::query_results(const std::vector<int>& expected)
@@ -497,7 +533,6 @@ void test_append_transaction_rollback(dataset::segment::Writer* dw, Metadata& md
     wassert(actual_type(md.source()) == *orig_source);
 }
 
-/// Run maintenance and see that the results are as expected
 
 ReporterExpected::OperationMatch::OperationMatch(const std::string& dsname, const std::string& operation, const std::string& message)
     : name(dsname), operation(operation), message(message)
@@ -511,6 +546,12 @@ std::string ReporterExpected::OperationMatch::error_unmatched(const std::string&
         msg += " (matching '" + message + "')";
     return msg;
 }
+
+ReporterExpected::ReporterExpected(unsigned flags)
+    : flags(flags)
+{
+}
+
 
 ReporterExpected::SegmentMatch::SegmentMatch(const std::string& dsname, const std::string& relpath, const std::string& message)
     : name(dsname + ":" + relpath), message(message)
@@ -537,6 +578,7 @@ void ReporterExpected::clear()
     deleted.clear();
     deindexed.clear();
     rescanned.clear();
+    tarred.clear();
     issue51.clear();
 
     count_repacked = -1;
@@ -544,26 +586,28 @@ void ReporterExpected::clear()
     count_deleted = -1;
     count_deindexed = -1;
     count_rescanned = -1;
+    count_tarred = -1;
     count_issue51 = -1;
 }
 
 
-struct MainteanceCheckResult
+struct MaintenanceCheckResult
 {
     std::string type;
+    // dataset or dataset:segment
     std::string name;
     bool matched = false;
 
-    MainteanceCheckResult(const std::string& type, const std::string& name) : type(type), name(name) {}
+    MaintenanceCheckResult(const std::string& type, const std::string& name) : type(type), name(name) {}
 };
 
-struct OperationResult : public MainteanceCheckResult
+struct OperationResult : public MaintenanceCheckResult
 {
     std::string operation;
     std::string message;
 
     OperationResult(const std::string& type, const std::string& dsname, const std::string& operation, const std::string& message=std::string())
-        : MainteanceCheckResult(type, dsname), operation(operation), message(message) {}
+        : MaintenanceCheckResult(type, dsname), operation(operation), message(message) {}
 
     bool match(const ReporterExpected::OperationMatch& m) const
     {
@@ -585,12 +629,12 @@ struct OperationResult : public MainteanceCheckResult
     }
 };
 
-struct SegmentResult : public MainteanceCheckResult
+struct SegmentResult : public MaintenanceCheckResult
 {
     std::string message;
 
     SegmentResult(const std::string& operation, const std::string& dsname, const std::string& relpath, const std::string& message=std::string())
-        : MainteanceCheckResult(operation, dsname + ":" + relpath), message(message) {}
+        : MaintenanceCheckResult(operation, dsname + ":" + relpath), message(message) {}
 
     bool match(const ReporterExpected::SegmentMatch& m) const
     {
@@ -612,7 +656,7 @@ struct SegmentResult : public MainteanceCheckResult
 };
 
 template<typename Matcher, typename Result>
-struct MainteanceCheckResults : public std::vector<Result>
+struct MaintenanceCheckResults : public std::vector<Result>
 {
     std::map<std::string, std::vector<std::string>> extra_info;
 
@@ -705,8 +749,8 @@ struct MainteanceCheckResults : public std::vector<Result>
 
 struct CollectReporter : public dataset::Reporter
 {
-    typedef MainteanceCheckResults<ReporterExpected::OperationMatch, OperationResult> OperationResults;
-    typedef MainteanceCheckResults<ReporterExpected::SegmentMatch, SegmentResult> SegmentResults;
+    typedef MaintenanceCheckResults<ReporterExpected::OperationMatch, OperationResult> OperationResults;
+    typedef MaintenanceCheckResults<ReporterExpected::SegmentMatch, SegmentResult> SegmentResults;
 
     std::stringstream report;
     OstreamReporter recorder;
@@ -766,6 +810,11 @@ struct CollectReporter : public dataset::Reporter
         recorder.segment_rescan(ds, relpath, message);
         seg_results.emplace_back("rescanned", ds, relpath, message);
     }
+    void segment_tar(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        recorder.segment_tar(ds, relpath, message);
+        seg_results.emplace_back("tarred", ds, relpath, message);
+    }
     void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override
     {
         recorder.segment_issue51(ds, relpath, message);
@@ -783,12 +832,15 @@ struct CollectReporter : public dataset::Reporter
 
         op_results.report_unmatched(issues, "manual_intervention");
         op_results.report_unmatched(issues, "aborted");
+        if (expected.flags & ReporterExpected::ENFORCE_REPORTS)
+            op_results.report_unmatched(issues, "report");
 
         seg_results.match("repacked", expected.repacked, issues);
         seg_results.match("archived", expected.archived, issues);
         seg_results.match("deleted", expected.deleted, issues);
         seg_results.match("deindexed", expected.deindexed, issues);
         seg_results.match("rescanned", expected.rescanned, issues);
+        seg_results.match("tarred", expected.tarred, issues);
         seg_results.match("issue51", expected.issue51, issues);
 
         seg_results.count_equals("repacked", expected.count_repacked, issues);
@@ -796,6 +848,7 @@ struct CollectReporter : public dataset::Reporter
         seg_results.count_equals("deleted", expected.count_deleted, issues);
         seg_results.count_equals("deindexed", expected.count_deindexed, issues);
         seg_results.count_equals("rescanned", expected.count_rescanned, issues);
+        seg_results.count_equals("tarred", expected.count_tarred, issues);
         seg_results.count_equals("issue51", expected.count_issue51, issues);
 
         seg_results.report_unmatched(issues);
@@ -886,46 +939,64 @@ void ActualWriter<Dataset>::import(metadata::Collection& mds, dataset::Writer::R
 template<typename Dataset>
 void ActualChecker<Dataset>::repack(const ReporterExpected& expected, bool write)
 {
-    CollectReporter reporter;
-    wassert(this->_actual->repack(reporter, write));
+    auto reporter = make_shared<CollectReporter>();
+    dataset::CheckerConfig opts(reporter, !write);
+    wassert(this->_actual->repack(opts));
     // reporter.dump(stderr);
-    wassert(reporter.check(expected));
+    wassert(reporter->check(expected));
 }
 
 template<typename Dataset>
 void ActualChecker<Dataset>::repack_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write)
 {
-    CollectReporter reporter;
-    wassert(this->_actual->repack_filtered(matcher, reporter, write));
+    auto reporter = make_shared<CollectReporter>();
+    dataset::CheckerConfig opts(reporter, !write);
+    opts.segment_filter = matcher;
+    wassert(this->_actual->repack(opts));
     // reporter.dump(stderr);
-    wassert(reporter.check(expected));
+    wassert(reporter->check(expected));
+}
+
+template<typename Dataset>
+void ActualChecker<Dataset>::check(const ReporterExpected& expected, dataset::CheckerConfig& opts)
+{
+    auto reporter = make_shared<CollectReporter>();
+    opts.reporter = reporter;
+    wassert(this->_actual->check(opts));
+    wassert(reporter->check(expected));
 }
 
 template<typename Dataset>
 void ActualChecker<Dataset>::check(const ReporterExpected& expected, bool write, bool quick)
 {
-    CollectReporter reporter;
-    wassert(this->_actual->check(reporter, write, quick));
+    auto reporter = make_shared<CollectReporter>();
+    dataset::CheckerConfig opts(reporter, !write);
+    opts.accurate = !quick;
+    wassert(this->_actual->check(opts));
     // reporter.dump(stderr);
-    wassert(reporter.check(expected));
+    wassert(reporter->check(expected));
 }
 
 template<typename Dataset>
 void ActualChecker<Dataset>::check_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write, bool quick)
 {
-    CollectReporter reporter;
-    wassert(this->_actual->check_filtered(matcher, reporter, write, quick));
+    auto reporter = make_shared<CollectReporter>();
+    dataset::CheckerConfig opts(reporter, !write);
+    opts.accurate = !quick;
+    opts.segment_filter = matcher;
+    wassert(this->_actual->check(opts));
     //reporter.dump(stderr);
-    wassert(reporter.check(expected));
+    wassert(reporter->check(expected));
 }
 
 template<typename Dataset>
 void ActualChecker<Dataset>::check_issue51(const ReporterExpected& expected, bool write)
 {
-    CollectReporter reporter;
-    wassert(this->_actual->check_issue51(reporter, write));
+    auto reporter = make_shared<CollectReporter>();
+    dataset::CheckerConfig opts(reporter, !write);
+    wassert(this->_actual->check_issue51(opts));
     // reporter.dump(stderr);
-    wassert(reporter.check(expected));
+    wassert(reporter->check(expected));
 }
 
 template<typename Dataset>
@@ -966,19 +1037,22 @@ void ActualChecker<Dataset>::check_issue51_clean(bool write)
 template<typename Dataset>
 void ActualChecker<Dataset>::remove_all(const ReporterExpected& expected, bool write)
 {
-    CollectReporter reporter;
-    wassert(this->_actual->remove_all(reporter, write));
+    auto reporter = make_shared<CollectReporter>();
+    dataset::CheckerConfig opts(reporter, !write);
+    wassert(this->_actual->remove_all(opts));
     // reporter.dump(stderr);
-    wassert(reporter.check(expected));
+    wassert(reporter->check(expected));
 }
 
 template<typename Dataset>
 void ActualChecker<Dataset>::remove_all_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write)
 {
-    CollectReporter reporter;
-    wassert(this->_actual->remove_all_filtered(matcher, reporter, write));
+    auto reporter = make_shared<CollectReporter>();
+    dataset::CheckerConfig opts(reporter, !write);
+    opts.segment_filter = matcher;
+    wassert(this->_actual->remove_all(opts));
     // reporter.dump(stderr);
-    wassert(reporter.check(expected));
+    wassert(reporter->check(expected));
 }
 
 }

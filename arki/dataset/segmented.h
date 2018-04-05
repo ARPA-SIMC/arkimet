@@ -40,6 +40,11 @@ public:
      */
     bool mock_data = false;
 
+    /**
+     * If true, this dataset is used as an archive for offline data
+     */
+    bool offline = false;
+
     Config(const ConfigFile& cfg);
     ~Config();
 
@@ -120,24 +125,6 @@ struct SegmentState
 };
 
 
-/**
- * State of all segments in the dataset
- */
-struct State : public std::map<std::string, SegmentState>
-{
-    using std::map<std::string, SegmentState>::map;
-
-    bool has(const std::string& relpath) const;
-
-    const SegmentState& get(const std::string& seg) const;
-
-    /// Count how many segments have this state
-    unsigned count(segment::State state) const;
-
-    void dump(FILE* out) const;
-};
-
-
 class CheckerSegment
 {
 public:
@@ -146,6 +133,14 @@ public:
 
     CheckerSegment(std::shared_ptr<dataset::CheckLock> lock);
     virtual ~CheckerSegment();
+
+    /**
+     * Get the metadata for the contents of this segment known to the dataset
+     */
+    virtual void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) = 0;
+
+    /// Convert the segment into a tar segment
+    virtual void tar() = 0;
 
     virtual std::string path_relative() const = 0;
     virtual const segmented::Config& config() const = 0;
@@ -194,7 +189,7 @@ public:
      *
      * Destpath must be on the same filesystem as the segment.
      */
-    virtual void release(const std::string& destpath) = 0;
+    virtual void release(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) = 0;
 
     /**
      * Move the file to archive
@@ -227,19 +222,8 @@ public:
     const Config& config() const override = 0;
     segment::Manager& segment_manager();
 
-    void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
-    void check(dataset::Reporter& reporter, bool fix, bool quick) override;
-    void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
-    void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) override;
-
-    /**
-     * Scan the dataset, computing the state of each unarchived segment that is
-     * either on disk or known by the index.
-     */
-    State scan(dataset::Reporter& reporter, bool quick=true);
-
-    /// Same as scan, but limited to segments matching the given matcher
-    State scan_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool quick=true);
+    void check(CheckerConfig& opts) override;
+    void repack(CheckerConfig& opts, unsigned test_flags=0) override;
 
     /// Instantiate a CheckerSegment
     virtual std::unique_ptr<CheckerSegment> segment(const std::string& relpath) = 0;
@@ -250,12 +234,12 @@ public:
     /**
      * List all segments known to this dataset
      */
-    virtual void segments(std::function<void(CheckerSegment& segment)>) = 0;
+    virtual void segments_tracked(std::function<void(CheckerSegment& segment)>) = 0;
 
     /**
      * List all segments known to this dataset
      */
-    virtual void segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) = 0;
+    virtual void segments_tracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) = 0;
 
     /**
      * List all segments present on disk but not known to this dataset
@@ -270,6 +254,11 @@ public:
     /**
      * List all segments, both known to this dataset or unknown but found on disk
      */
+    void segments(CheckerConfig& config, std::function<void(segmented::CheckerSegment& segment)>);
+
+    /**
+     * List all segments, both known to this dataset or unknown but found on disk
+     */
     void segments_all(std::function<void(segmented::CheckerSegment& segment)>);
 
     /**
@@ -277,11 +266,15 @@ public:
      */
     void segments_all_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>);
 
-    /// Remove all data from the dataset
-    void remove_all(dataset::Reporter& reporter, bool writable=false) override;
+    /**
+     * List all segments, both known to the dataset and unknown but found on
+     * disk, for this dataset and all its archives
+     */
+    void segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest);
 
-    /// Remove all data from the dataset
-    void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) override;
+    void remove_all(CheckerConfig& opts) override;
+    void tar(CheckerConfig& config) override;
+    void state(CheckerConfig& config) override;
 
     /**
      * Perform generic packing and optimisations

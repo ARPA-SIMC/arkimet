@@ -68,6 +68,25 @@ int days_since(int year, int month, int day);
 // Return the file name of the Manifest index
 std::string manifest_idx_fname();
 
+
+/**
+ * State of all segments in the dataset
+ */
+struct State : public std::map<std::string, dataset::segmented::SegmentState>
+{
+    using std::map<std::string, dataset::segmented::SegmentState>::map;
+
+    bool has(const std::string& relpath) const;
+
+    const dataset::segmented::SegmentState& get(const std::string& seg) const;
+
+    /// Count how many segments have this state
+    unsigned count(dataset::segment::State state) const;
+
+    void dump(FILE* out) const;
+};
+
+
 /**
  * Test fixture to test a dataset.
  *
@@ -172,10 +191,10 @@ public:
     unsigned count_dataset_files(const testdata::Fixture& f) const;
 
     /// Scan the dataset and return its state
-    dataset::segmented::State scan_state(bool quick=true);
+    State scan_state(bool quick=true);
 
     /// Scan the dataset and return its state
-    dataset::segmented::State scan_state(const Matcher& matcher, bool quick=true);
+    State scan_state(const Matcher& matcher, bool quick=true);
 
     std::unique_ptr<dataset::segmented::Reader> makeSegmentedReader();
     std::unique_ptr<dataset::segmented::Writer> makeSegmentedWriter();
@@ -211,6 +230,7 @@ public:
 
     void import_all(const testdata::Fixture& fixture);
     void import_all_packed(const testdata::Fixture& fixture);
+    void repack();
 
     /// Equivalent to calling query_results with an empty query
     void query_results(const std::vector<int>& expected);
@@ -303,7 +323,9 @@ struct ReporterExpected
 {
     struct OperationMatch
     {
+        // Dataset name
         std::string name;
+        // Operation name: "check", "repack"
         std::string operation;
         std::string message;
 
@@ -313,6 +335,7 @@ struct ReporterExpected
 
     struct SegmentMatch
     {
+        // "dataset_name:segment_name"
         std::string name;
         std::string message;
 
@@ -330,6 +353,7 @@ struct ReporterExpected
     std::vector<SegmentMatch> deleted;
     std::vector<SegmentMatch> deindexed;
     std::vector<SegmentMatch> rescanned;
+    std::vector<SegmentMatch> tarred;
     std::vector<SegmentMatch> issue51;
 
     int count_repacked = -1;
@@ -337,9 +361,16 @@ struct ReporterExpected
     int count_deleted = -1;
     int count_deindexed = -1;
     int count_rescanned = -1;
+    int count_tarred = -1;
     int count_issue51 = -1;
 
+    unsigned flags;
+
     void clear();
+
+    static const unsigned ENFORCE_REPORTS = 1 << 0;
+
+    ReporterExpected(unsigned flags=0);
 };
 
 
@@ -374,6 +405,7 @@ struct ActualChecker : public arki::utils::tests::Actual<DatasetChecker*>
     void repack_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write=false);
     void repack_filtered_clean(const Matcher& matcher, bool write=false);
     void check(const ReporterExpected& expected, bool write=false, bool quick=true);
+    void check(const ReporterExpected& expected, dataset::CheckerConfig& opts);
     void check_clean(bool write=false, bool quick=true);
     void check_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write=false, bool quick=true);
     void check_filtered_clean(const Matcher& matcher, bool write=false, bool quick=true);

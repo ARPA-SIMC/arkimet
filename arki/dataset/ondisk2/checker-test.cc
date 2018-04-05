@@ -160,11 +160,12 @@ add_method("scan_reindex", [](Fixture& f) {
         index::WIndex index(f.ondisk2_config());
         index.open();
         index.reset("2007/07-08.grib");
+        files::createDontpackFlagfile("testds");
     }
 
     auto state = f.scan_state();
     wassert(actual(state.count(SEGMENT_OK)) == 2u);
-    wassert(actual(state.get("2007/07-08.grib").state) == segment::State(SEGMENT_DELETED));
+    wassert(actual(state.get("2007/07-08.grib").state) == segment::State(SEGMENT_UNALIGNED));
     wassert(actual(state.size()) == 3u);
 
     // Perform full maintenance and check that things are still ok afterwards
@@ -178,24 +179,12 @@ add_method("scan_reindex", [](Fixture& f) {
     // away; therefore, we can only interrupt the maintenance and raise an
     // exception calling for manual fixing.
     auto checker = f.makeOndisk2Checker();
-    try {
-        NullReporter r;
-        checker->check(r, true, true);
-        ensure(false);
-    } catch (std::runtime_error) {
-        ensure(true);
-    } catch (...) {
-        ensure(false);
-    }
-
-    /*
-    try {
-        wassert(actual(*f.makeSegmentedChecker()).check_clean(true));
-        wassert(actual(false).istrue());
-    } catch (std::runtime_error& e) {
-        wassert(actual(e.what()).contains("manual"));
-    }
-    */
+    auto e = wassert_throws(std::runtime_error, {
+        CheckerConfig opts;
+        opts.readonly = false;
+        checker->check(opts);
+    });
+    wassert(actual(e.what()).contains("manual"));
 });
 
 add_method("scan_reindex_compressed", [](Fixture& f) {
@@ -328,13 +317,12 @@ add_method("data_in_right_segment_reindex", [](Fixture& f) {
     {
         // Perform full maintenance and check that things are still ok afterwards
         auto checker = f.makeOndisk2Checker();
-        try {
-            NullReporter r;
-            checker->check(r, true, true);
-            wassert(throw std::runtime_error("writer.check should have thrown at this point"));
-        } catch (std::exception& e) {
-            wassert(actual(e.what()).contains("manual fix is required"));
-        }
+        auto e = wassert_throws(std::runtime_error, {
+            CheckerConfig opts;
+            opts.readonly = false;
+            checker->check(opts);
+        });
+        wassert(actual(e.what()).contains("manual fix is required"));
     }
 });
 
@@ -375,13 +363,12 @@ add_method("data_in_right_segment_rescan", [](Fixture& f) {
     {
         // Perform full maintenance and check that things are still ok afterwards
         auto checker = f.makeOndisk2Checker();
-        try {
-            NullReporter r;
-            checker->check(r, true, true);
-            wassert(throw std::runtime_error("writer.check should have thrown at this point"));
-        } catch (std::exception& e) {
-            wassert(actual(e.what()).contains("manual fix is required"));
-        }
+        auto e = wassert_throws(std::runtime_error, {
+            CheckerConfig opts;
+            opts.readonly = false;
+            checker->check(opts);
+        });
+        wassert(actual(e.what()).contains("manual fix is required"));
     }
 });
 

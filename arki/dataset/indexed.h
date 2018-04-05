@@ -47,7 +47,7 @@ public:
 
     const IndexedConfig& config() const override = 0;
 
-    void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
+    void check_issue51(CheckerConfig& opts) override;
 
     void test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx=1) override;
     void test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx=0) override;

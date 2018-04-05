@@ -41,7 +41,6 @@ public:
     const dataset::Config& config() const override { return *m_config; }
     std::string type() const override { return "empty"; }
 
-    // Nothing to do: the dataset is always empty
     bool query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)>) override { return true; }
     void query_summary(const Matcher& matcher, Summary& summary) override {}
     void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override {}
@@ -89,12 +88,11 @@ public:
     const dataset::Config& config() const override { return *m_config; }
     std::string type() const override { return "empty"; }
 
-    void remove_all(dataset::Reporter& reporter, bool writable=false) override {}
-    void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) override {}
-    void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override {}
-    void check(dataset::Reporter& reporter, bool fix, bool quick) override {}
-    void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override {}
-    void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) override {}
+    void remove_all(CheckerConfig& opts) override {}
+    void tar(CheckerConfig&) override {}
+    void repack(CheckerConfig&, unsigned test_flags=0) override {}
+    void check(CheckerConfig&) override {}
+    void state(CheckerConfig&) override {}
 };
 
 

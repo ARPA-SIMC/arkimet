@@ -68,6 +68,8 @@ Writer::Writer(const std::string& root, const std::string& relname, const std::s
 {
 }
 
+const char* Writer::type() const { return "concat"; }
+
 std::unique_ptr<fd::File> Writer::open_file(const std::string& pathname, int flags, mode_t mode)
 {
     return unique_ptr<fd::File>(new File(pathname, flags, mode));
@@ -78,21 +80,24 @@ HoleWriter::HoleWriter(const std::string& root, const std::string& relname, cons
 {
 }
 
+const char* HoleWriter::type() const { return "hole_concat"; }
+
 std::unique_ptr<fd::File> HoleWriter::open_file(const std::string& pathname, int flags, mode_t mode)
 {
     return unique_ptr<fd::File>(new HoleFile(pathname, flags, mode));
 }
 
 
+const char* Checker::type() const { return "concat"; }
+
 std::unique_ptr<fd::File> Checker::open_file(const std::string& pathname, int flags, mode_t mode)
 {
     return unique_ptr<fd::File>(new File(pathname, flags, mode));
 }
 
-void Checker::open()
+std::unique_ptr<fd::File> Checker::open(const std::string& pathname)
 {
-    if (fd) return;
-    fd = new File(absname, O_RDWR, 0666);
+    return std::unique_ptr<fd::File>(new File(pathname, O_RDWR, 0666));
 }
 
 State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
@@ -105,15 +110,17 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     return fd::Checker::repack_impl(rootdir, mds, false, test_flags);
 }
 
+
+const char* HoleChecker::type() const { return "hole_concat"; }
+
 std::unique_ptr<fd::File> HoleChecker::open_file(const std::string& pathname, int flags, mode_t mode)
 {
     return unique_ptr<fd::File>(new HoleFile(pathname, flags, mode));
 }
 
-void HoleChecker::open()
+std::unique_ptr<fd::File> HoleChecker::open(const std::string& pathname)
 {
-    if (fd) return;
-    fd = new HoleFile(absname, O_RDWR, 0666);
+    return std::unique_ptr<fd::File>(new HoleFile(pathname, O_RDWR, 0666));
 }
 
 Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)

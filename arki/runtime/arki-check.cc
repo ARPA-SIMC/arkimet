@@ -35,15 +35,16 @@ struct Options : public BaseCommandLine
     commandline::BoolOption* fix;
     commandline::BoolOption* accurate;
     commandline::BoolOption* repack;
-    commandline::BoolOption* invalidate;
     commandline::BoolOption* remove_all;
-    commandline::BoolOption* stats;
+    commandline::BoolOption* tar;
     commandline::BoolOption* op_state;
     commandline::BoolOption* op_issue51;
     commandline::StringOption* op_remove;
     commandline::StringOption* op_unarchive;
     commandline::StringOption* restr;
     commandline::StringOption* filter;
+    commandline::BoolOption* online;
+    commandline::BoolOption* offline;
 
     Options() : BaseCommandLine("arki-check", 1)
     {
@@ -67,10 +68,8 @@ struct Options : public BaseCommandLine
             "Perform a repack instead of a check");
         remove_all = add<BoolOption>("remove-all", 0, "remove-all", "",
             "Completely empty the dataset, removing all data and metadata");
-        invalidate = add<BoolOption>("invalidate", 0, "invalidate", "",
-            "Create flagfiles to invalidate all metadata in a dataset.  Warning, this will work without requiring -f, and should be invoked only after a repack.");
-        stats = add<BoolOption>("stats", 0, "stats", "",
-            "Compute statistics about the various datasets.");
+        tar = add<BoolOption>("tar", 0, "tar", "",
+            "Convert directory segments into tar files");
         op_remove = add<StringOption>("remove", 0, "remove", "file",
             "Given metadata extracted from one or more datasets, remove it from the datasets where it is stored");
         op_unarchive = add<StringOption>("unarchive", 0, "unarchive", "file",
@@ -83,6 +82,34 @@ struct Options : public BaseCommandLine
                 "Restrict operations to only those datasets that allow one of the given (comma separated) names");
         filter = add<StringOption>("filter", 0, "filter", "matcher",
                 "Restrict operations to at least those segments whose reference time matches the given matcher (but may be more)");
+        online = add<BoolOption>("online", 0, "online", "",
+                "Work on online data, skipping archives unless --offline is also provided");
+        offline = add<BoolOption>("offline", 0, "offline", "",
+                "Work on archives, skipping online data unless --online is also provided");
+    }
+
+    void set_checker_config(dataset::CheckerConfig& config, bool default_offline, bool default_online)
+    {
+        if (filter->isSet())
+            config.segment_filter = Matcher::parse(filter->stringValue());
+
+        if (accurate->isSet())
+            config.accurate = accurate->boolValue();
+
+        if (offline->isSet() && online->isSet())
+        {
+            config.offline = true;
+            config.online = true;
+        } else if (offline->isSet() && !online->isSet()) {
+            config.offline = true;
+            config.online = false;
+        } else if (!offline->isSet() && online->isSet()) {
+            config.offline = false;
+            config.online = true;
+        } else {
+            config.offline = default_offline;
+            config.online = default_online;
+        }
     }
 };
 
@@ -99,8 +126,6 @@ struct SkipDataset : public std::exception
 
 struct Worker
 {
-    Matcher filter;
-
     ~Worker() {}
     virtual void process(const ConfigFile& cfg) = 0;
     virtual void done() = 0;
@@ -122,58 +147,56 @@ struct WorkerOnWritable : public Worker
     virtual void operator()(dataset::Checker& w) = 0;
 };
 
-struct Maintainer : public WorkerOnWritable
+struct WorkerWithConfig : public WorkerOnWritable
 {
-    bool fix;
-    bool quick;
+    dataset::CheckerConfig& opts;
 
-    Maintainer(bool fix, bool quick) : fix(fix), quick(quick)
-    {
-    }
+    WorkerWithConfig(dataset::CheckerConfig& opts) : opts(opts) {}
+};
+
+struct Checker : public WorkerWithConfig
+{
+    using WorkerWithConfig::WorkerWithConfig;
 
     void operator()(dataset::Checker& w) override
     {
-        dataset::OstreamReporter r(cerr);
-        if (filter.empty())
-            w.check(r, fix, quick);
-        else
-            w.check_filtered(filter, r, fix, quick);
+        w.check(opts);
     }
 
     void done() override {}
 };
 
-struct Repacker : public WorkerOnWritable
+struct Repacker : public WorkerWithConfig
 {
-    bool fix;
-
-    Repacker(bool fix) : fix(fix) {}
+    using WorkerWithConfig::WorkerWithConfig;
 
     void operator()(dataset::Checker& w) override
     {
-        dataset::OstreamReporter r(cerr);
-        if (filter.empty())
-            w.repack(r, fix);
-        else
-            w.repack_filtered(filter, r, fix);
+        w.repack(opts);
     }
 
     void done() override {}
 };
 
-struct RemoveAller : public WorkerOnWritable
+struct RemoveAller : public WorkerWithConfig
 {
-    bool fix;
-
-    RemoveAller(bool fix) : fix(fix) {}
+    using WorkerWithConfig::WorkerWithConfig;
 
     void operator()(dataset::Checker& w) override
     {
-        dataset::OstreamReporter r(cout);
-        if (filter.empty())
-            w.remove_all(r, fix);
-        else
-            w.remove_all_filtered(filter, r, fix);
+        w.remove_all(opts);
+    }
+
+    void done() {}
+};
+
+struct Tarrer : public WorkerWithConfig
+{
+    using WorkerWithConfig::WorkerWithConfig;
+
+    void operator()(dataset::Checker& w) override
+    {
+        w.tar(opts);
     }
 
     void done() {}
@@ -195,83 +218,29 @@ struct Unarchiver : public WorkerOnWritable
     void done() override {}
 };
 
-struct Issue51 : public WorkerOnWritable
+struct Issue51 : public WorkerWithConfig
 {
-    bool fix;
-
-    Issue51(bool fix) : fix(fix) {}
+    using WorkerWithConfig::WorkerWithConfig;
 
     void operator()(dataset::Checker& w) override
     {
-        dataset::OstreamReporter r(cout);
-        w.check_issue51(r, fix);
+        w.check_issue51(opts);
     }
 
     void done() override {}
 };
 
-struct PrintState : public WorkerOnWritable
+struct PrintState : public WorkerWithConfig
 {
-    bool quick;
-
-    PrintState(bool quick) : quick(quick) {}
+    using WorkerWithConfig::WorkerWithConfig;
 
     void operator()(dataset::Checker& w) override
     {
-        using namespace arki::dataset;
-        if (segmented::Checker* c = dynamic_cast<segmented::Checker*>(&w))
-        {
-            OstreamReporter r(cerr);
-            segmented::State state;
-            if (filter.empty())
-                state = c->scan(r, quick);
-            else
-                state = c->scan_filtered(filter, r, quick);
-            state.dump(stdout);
-        }
+        w.state(opts);
     }
 
     void done() override {}
 };
-
-#if 0
-struct Invalidator : public Worker
-{
-    virtual void operator()(dataset::LocalWriter& w)
-    {
-        dataset::ondisk::Writer* ow = dynamic_cast<dataset::ondisk::Writer*>(&w);
-        if (ow == 0)
-            cerr << "Skipping dataset " << w.name() << ": not an ondisk dataset" << endl;
-        else
-            ow->invalidateAll();
-    }
-
-    virtual void done()
-    {
-    }
-};
-#endif
-
-#if 0
-struct Statistician : public Worker
-{
-    Stats st;
-
-    virtual void operator()(dataset::LocalWriter& w)
-    {
-        dataset::ondisk::Writer* ow = dynamic_cast<dataset::ondisk::Writer*>(&w);
-        if (ow == 0)
-            cerr << "Skipping dataset " << w.name() << ": not an ondisk dataset" << endl;
-        else
-            ow->depthFirstVisit(st);
-    }
-
-    virtual void done()
-    {
-        st.stats();
-    }
-};
-#endif
 
 }
 
@@ -293,16 +262,15 @@ int arki_check(int argc, const char* argv[])
         unique_ptr<Worker> worker;
 
         size_t actionCount = 0;
-        if (opts.stats->isSet()) ++actionCount;
-        if (opts.invalidate->isSet()) ++actionCount;
         if (opts.repack->isSet()) ++actionCount;
         if (opts.remove_all->isSet()) ++actionCount;
+        if (opts.tar->isSet()) ++actionCount;
         if (opts.op_remove->isSet()) ++actionCount;
         if (opts.op_unarchive->isSet()) ++actionCount;
         if (opts.op_state->isSet()) ++actionCount;
         if (opts.op_issue51->isSet()) ++actionCount;
         if (actionCount > 1)
-            throw commandline::BadOption("only one of --stats, --invalidate, --repack, --remove, --remove-all, --unarchive, --state, or --issue51 can be given in one invocation");
+            throw commandline::BadOption("only one of --repack, --remove, --remove-all, --tar, --unarchive, --state, or --issue51 can be given in one invocation");
 
         // Read the config file(s)
         runtime::Inputs inputs;
@@ -368,28 +336,40 @@ int arki_check(int argc, const char* argv[])
                 ++count;
             }
         } else {
-            if (opts.stats->boolValue())
-                // worker.reset(new Statistician());
-                throw_consistency_error("running --stats", "statistics code needs to be reimplemented");
-            else if (opts.invalidate->boolValue())
-                // worker.reset(new Invalidator);
-                throw_consistency_error("running --invalidate", "invalidate code needs to be reimplemented");
-            else if (opts.remove_all->boolValue())
-                worker.reset(new RemoveAller(opts.fix->boolValue()));
+            dataset::CheckerConfig config(make_shared<dataset::OstreamReporter>(cout), !opts.fix->boolValue());
+
+            if (opts.remove_all->boolValue())
+            {
+                opts.set_checker_config(config, false, true);
+                worker.reset(new RemoveAller(config));
+            }
             else if (opts.repack->boolValue())
-                worker.reset(new Repacker(opts.fix->boolValue()));
+            {
+                opts.set_checker_config(config, false, true);
+                worker.reset(new Repacker(config));
+            }
+            else if (opts.tar->boolValue())
+            {
+                opts.set_checker_config(config, true, false);
+                worker.reset(new Tarrer(config));
+            }
             else if (opts.op_unarchive->boolValue())
                 worker.reset(new Unarchiver(opts.op_unarchive->stringValue()));
             else if (opts.op_state->boolValue())
-                worker.reset(new PrintState(not opts.accurate->boolValue()));
+            {
+                opts.set_checker_config(config, true, true);
+                worker.reset(new PrintState(config));
+            }
             else if (opts.op_issue51->boolValue())
-                worker.reset(new Issue51(opts.fix->boolValue()));
+            {
+                opts.set_checker_config(config, true, true);
+                worker.reset(new Issue51(config));
+            }
             else
-                worker.reset(new Maintainer(opts.fix->boolValue(),
-                             not opts.accurate->boolValue()));
-
-            if (opts.filter->isSet())
-                worker->filter = Matcher::parse(opts.filter->stringValue());
+            {
+                opts.set_checker_config(config, true, true);
+                worker.reset(new Checker(config));
+            }
 
             // Harvest the paths from it
             for (const ConfigFile& cfg: inputs)

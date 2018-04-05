@@ -49,6 +49,7 @@ static ConfigFile make_config(const std::string& dir)
     cfg.setValue("name", str::basename(dir));
     cfg.setValue("path", dir);
     cfg.setValue("step", "monthly");
+    cfg.setValue("offline", "true");
     return cfg;
 }
 
@@ -228,8 +229,9 @@ struct ArchivesCheckerRoot: public ArchivesRoot<Checker>
             // before starting moving files into it.
 
             // Run a check to remove needs-check-do-not-pack files
-            NullReporter r;
-            last->check(r, true, true);
+            CheckerConfig conf;
+            conf.readonly = false;
+            last->check(conf);
         }
     }
 
@@ -355,58 +357,66 @@ ArchivesChecker::~ArchivesChecker()
 
 std::string ArchivesChecker::type() const { return "archives"; }
 
-void ArchivesChecker::remove_all(Reporter& reporter, bool writable)
+void ArchivesChecker::segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest)
 {
     archives->iter([&](Checker& a) {
-        a.remove_all(reporter, writable);
+        if (segmented::Checker* sc = dynamic_cast<segmented::Checker*>(&a))
+        {
+            sc->segments(opts, [&](segmented::CheckerSegment& segment) {
+                dest(*sc, segment);
+            });
+        }
         return true;
     });
 }
 
-void ArchivesChecker::remove_all_filtered(const Matcher& matcher, Reporter& reporter, bool writable)
+void ArchivesChecker::remove_all(CheckerConfig& opts)
 {
     archives->iter([&](Checker& a) {
-        a.remove_all_filtered(matcher, reporter, writable);
+        a.remove_all(opts);
         return true;
     });
 }
 
-void ArchivesChecker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
+void ArchivesChecker::tar(CheckerConfig& opts)
 {
+    if (!opts.offline) return;
     archives->iter([&](Checker& a) {
-        a.repack(reporter, writable, test_flags);
+        a.tar(opts);
         return true;
     });
 }
 
-void ArchivesChecker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
+void ArchivesChecker::repack(CheckerConfig& opts, unsigned test_flags)
 {
     archives->iter([&](Checker& a) {
-        a.repack_filtered(matcher, reporter, writable, test_flags);
+        a.repack(opts, test_flags);
         return true;
     });
 }
 
-void ArchivesChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
+void ArchivesChecker::check(CheckerConfig& opts)
 {
     archives->iter([&](Checker& a) {
-        a.check(reporter, fix, quick);
+        a.check(opts);
         return true;
     });
 }
 
-void ArchivesChecker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
+void ArchivesChecker::check_issue51(CheckerConfig& opts)
 {
+    if (!opts.offline) return;
     archives->iter([&](Checker& a) {
-        a.check_filtered(matcher, reporter, fix, quick);
+        a.check_issue51(opts);
         return true;
     });
 }
 
-void ArchivesChecker::check_issue51(dataset::Reporter& reporter, bool fix)
+void ArchivesChecker::state(CheckerConfig& opts)
 {
+    if (!opts.offline) return;
     archives->iter([&](Checker& a) {
-        a.check_issue51(reporter, fix);
+        a.state(opts);
         return true;
     });
 }
@@ -427,7 +437,7 @@ static std::string poppath(std::string& path)
 	return res;
 }
 
-void ArchivesChecker::indexSegment(const std::string& relname, metadata::Collection&& mds)
+void ArchivesChecker::index_segment(const std::string& relname, metadata::Collection&& mds)
 {
     string path = relname;
     string name = poppath(path);
@@ -443,7 +453,7 @@ void ArchivesChecker::indexSegment(const std::string& relname, metadata::Collect
     archives->invalidate_summary_cache();
 }
 
-void ArchivesChecker::releaseSegment(const std::string& relpath, const std::string& destpath)
+void ArchivesChecker::release_segment(const std::string& relpath, const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
     string path = utils::str::normpath(relpath);
     string name = poppath(path);
@@ -452,7 +462,7 @@ void ArchivesChecker::releaseSegment(const std::string& relpath, const std::stri
     if (Checker* a = archives->lookup(name))
     {
         if (segmented::Checker* sc = dynamic_cast<segmented::Checker*>(a))
-            sc->segment(path)->release(destpath);
+            sc->segment(path)->release(new_root, new_relpath, new_abspath);
         else
             throw std::runtime_error(this->name() + ": cannot acquire " + relpath + ": archive " + name + " is not writable");
     }

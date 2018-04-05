@@ -18,9 +18,9 @@ struct Reporter;
 
 struct Segment;
 namespace segment {
-struct State;
 struct Writer;
 struct Checker;
+struct CheckerSegment;
 struct Manager;
 }
 

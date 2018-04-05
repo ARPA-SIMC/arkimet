@@ -22,6 +22,11 @@ namespace dataset {
 class DataQuery;
 class ByteQuery;
 
+namespace segmented {
+class Checker;
+class CheckerSegment;
+}
+
 namespace index {
 class Manifest;
 }
@@ -107,16 +112,16 @@ public:
     std::string type() const override;
     const ArchivesConfig& config() const override { return *m_config; }
 
-    void indexSegment(const std::string& relname, metadata::Collection&& mds);
-    void releaseSegment(const std::string& relpath, const std::string& destpath);
+    void index_segment(const std::string& relname, metadata::Collection&& mds);
+    void release_segment(const std::string& relpath, const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath);
+    void segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest);
 
-    void remove_all(dataset::Reporter& reporter, bool writable=false) override;
-    void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) override;
-    void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
-    void check(dataset::Reporter& reporter, bool fix, bool quick) override;
-    void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
-    void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
-    void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) override;
+    void remove_all(CheckerConfig& opts) override;
+    void repack(CheckerConfig& opts, unsigned test_flags=0) override;
+    void check(CheckerConfig& opts) override;
+    void check_issue51(CheckerConfig& opts) override;
+    void tar(CheckerConfig& config) override;
+    void state(CheckerConfig& config) override;
 
     /// Return the number of archives found, used for testing
     unsigned test_count_archives() const;

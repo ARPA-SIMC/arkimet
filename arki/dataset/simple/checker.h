@@ -39,16 +39,12 @@ public:
 
     std::unique_ptr<segmented::CheckerSegment> segment(const std::string& relpath) override;
     std::unique_ptr<segmented::CheckerSegment> segment_prelocked(const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock) override;
-    void segments(std::function<void(segmented::CheckerSegment& segment)>) override;
-    void segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
+    void segments_tracked(std::function<void(segmented::CheckerSegment& segment)>) override;
+    void segments_tracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
     void segments_untracked(std::function<void(segmented::CheckerSegment& relpath)>) override;
     void segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
-    void remove_all(dataset::Reporter& reporter, bool writable=false) override;
-    void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) override;
-    void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
-    void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
-    void check(dataset::Reporter& reporter, bool fix, bool quick) override;
-    void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) override;
+    void repack(CheckerConfig& opts, unsigned test_flags=0) override;
+    void check(CheckerConfig& opts) override;
 
     size_t vacuum(dataset::Reporter& reporter) override;
     void test_remove_index(const std::string& relpath) override;

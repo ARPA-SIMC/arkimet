@@ -61,20 +61,23 @@ Writer::Writer(const std::string& root, const std::string& relname, const std::s
 {
 }
 
+const char* Writer::type() const { return "lines"; }
+
 std::unique_ptr<fd::File> Writer::open_file(const std::string& pathname, int flags, mode_t mode)
 {
     return unique_ptr<fd::File>(new File(pathname, flags, mode));
 }
+
+const char* Checker::type() const { return "lines"; }
 
 std::unique_ptr<fd::File> Checker::open_file(const std::string& pathname, int flags, mode_t mode)
 {
     return unique_ptr<fd::File>(new File(pathname, flags, mode));
 }
 
-void Checker::open()
+std::unique_ptr<fd::File> Checker::open(const std::string& pathname)
 {
-    if (fd) return;
-    fd = new File(absname, O_RDWR, 0666);
+    return std::unique_ptr<fd::File>(new File(pathname, O_RDWR, 0666));
 }
 
 State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)

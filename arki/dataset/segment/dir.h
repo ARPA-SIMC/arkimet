@@ -28,6 +28,9 @@ struct Writer : public dataset::segment::Writer
     Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname);
     ~Writer();
 
+    const char* type() const override;
+    bool single_file() const override;
+
     size_t next_offset() const override;
     const types::source::Blob& append(Metadata& md) override;
 
@@ -42,6 +45,8 @@ struct HoleWriter: public Writer
 {
     using Writer::Writer;
 
+    const char* type() const override;
+
     void write_file(Metadata& md, core::NamedFileDescriptor& fd) override;
 };
 
@@ -52,11 +57,16 @@ public:
     std::string format;
 
     void validate(Metadata& md, const scan::Validator& v) override;
+    void move_data(const std::string& new_root, const std::string& new_relname, const std::string& new_absname) override;
 
 public:
     Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname);
 
+    const char* type() const override;
+    bool single_file() const override;
+
     bool exists_on_disk() override;
+    time_t timestamp() override;
 
     State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
@@ -81,6 +91,8 @@ class HoleChecker : public Checker
 {
 public:
     using Checker::Checker;
+
+    const char* type() const override;
 
     State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
 };

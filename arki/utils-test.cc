@@ -6,6 +6,7 @@ namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
+using namespace arki::utils;
 
 class Tests : public TestCase
 {
@@ -15,7 +16,9 @@ class Tests : public TestCase
 
 void Tests::register_tests() {
 
-add_method("empty", [] {
+add_method("get_format", [] {
+    wassert(actual(get_format("z.grib")) == "grib");
+    wassert(actual(get_format("z.grib.tar")) == "tar");
 });
 
 }

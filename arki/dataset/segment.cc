@@ -2,6 +2,7 @@
 #include "segment/concat.h"
 #include "segment/lines.h"
 #include "segment/dir.h"
+#include "segment/tar.h"
 #include "arki/configfile.h"
 #include "arki/exceptions.h"
 #include "arki/scan/any.h"
@@ -55,7 +56,39 @@ void Writer::PendingMetadata::set_source()
 }
 
 
+std::shared_ptr<segment::Checker> Checker::tar(metadata::Collection& mds)
+{
+    segment::tar::Checker::create(root, relname + ".tar", absname + ".tar", mds);
+    remove();
+    return make_shared<segment::tar::Checker>(root, relname, absname);
+}
 
+void Checker::move(const std::string& new_root, const std::string& new_relname, const std::string& new_absname)
+{
+    sys::makedirs(str::dirname(new_absname));
+
+    // Sanity checks: avoid conflicts
+    if (sys::exists(new_absname) || sys::exists(new_absname + ".tar") || sys::exists(new_absname + ".gz"))
+    {
+        stringstream ss;
+        ss << "cannot archive " << absname << " to " << new_absname << " because the destination already exists";
+        throw runtime_error(ss.str());
+    }
+
+    // Remove stale metadata and summaries that may have been left around
+    sys::unlink_ifexists(new_absname + ".metadata");
+    sys::unlink_ifexists(new_absname + ".summary");
+
+    move_data(new_root, new_relname, new_absname);
+
+    // Move metadata to archive
+    sys::rename_ifexists(absname + ".metadata", new_absname + ".metadata");
+    sys::rename_ifexists(absname + ".summary", new_absname + ".summary");
+
+    root = new_root;
+    relname = new_relname;
+    absname = new_absname;
+}
 
 void Checker::test_truncate(const metadata::Collection& mds, unsigned data_idx)
 {
@@ -100,6 +133,14 @@ struct BaseManager : public segment::Manager
         if (!st.get())
             st = sys::stat(absname + ".gz");
         if (!st.get())
+        {
+            st = sys::stat(absname + ".tar");
+            if (st.get())
+                throw_consistency_error(
+                        "getting writer for " + format + " file " + relname,
+                        "cannot write to .tar segments");
+        }
+        if (!st.get())
             return res;
 
         if (S_ISDIR(st->st_mode))
@@ -114,7 +155,7 @@ struct BaseManager : public segment::Manager
                 if (nullptr_on_error)
                     return res;
                 throw_consistency_error(
-                        "getting segment for " + format + " file " + relname,
+                        "getting writer for " + format + " file " + relname,
                         "format not supported");
             }
         } else {
@@ -155,6 +196,15 @@ struct BaseManager : public segment::Manager
         std::shared_ptr<Checker> res;
         if (!st.get())
             st = sys::stat(absname + ".gz");
+        if (!st.get())
+        {
+            st = sys::stat(absname + ".tar");
+            if (st.get())
+            {
+                res.reset(new tar::Checker(root, relname, absname));
+                return res;
+            }
+        }
         if (!st.get())
             return res;
 
@@ -207,6 +257,7 @@ struct BaseManager : public segment::Manager
         }
         return res;
     }
+
     Pending repack(const std::string& relname, metadata::Collection& mds, unsigned test_flags=0)
     {
         string format = utils::get_format(relname);
