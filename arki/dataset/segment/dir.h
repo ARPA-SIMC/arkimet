@@ -29,6 +29,7 @@ struct Writer : public dataset::segment::Writer
     ~Writer();
 
     const char* type() const override;
+    bool single_file() const override;
 
     size_t next_offset() const override;
     const types::source::Blob& append(Metadata& md) override;
@@ -62,6 +63,7 @@ public:
     Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname);
 
     const char* type() const override;
+    bool single_file() const override;
 
     bool exists_on_disk() override;
     time_t timestamp() override;

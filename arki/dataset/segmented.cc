@@ -307,14 +307,26 @@ segment::Manager& Checker::segment_manager()
 
 void Checker::segments_all(std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    segments([&](CheckerSegment& segment) { dest(segment); });
-    segments_untracked([&](segmented::CheckerSegment& segment) { dest(segment); });
+    segments_tracked(dest);
+    segments_untracked(dest);
 }
 
 void Checker::segments_all_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    segments_filtered(matcher, [&](CheckerSegment& segment) { dest(segment); });
-    segments_untracked_filtered(matcher, [&](segmented::CheckerSegment& segment) { dest(segment); });
+    segments_tracked_filtered(matcher, dest);
+    segments_untracked_filtered(matcher, dest);
+}
+
+void Checker::segments(CheckerConfig& config, std::function<void(segmented::CheckerSegment& segment)> dest)
+{
+    if (config.segment_filter.empty())
+    {
+        segments_tracked(dest);
+        segments_untracked(dest);
+    } else {
+        segments_tracked_filtered(config.segment_filter, dest);
+        segments_untracked_filtered(config.segment_filter, dest);
+    }
 }
 
 segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
@@ -367,6 +379,19 @@ void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& rep
     });
 }
 
+void Checker::tar(CheckerConfig& config)
+{
+    segments(config, [&](CheckerSegment& segment) {
+        if (segment.segment->single_file()) return;
+        if (config.readonly)
+            config.reporter.segment_tar(name(), segment.path_relative(), "should be tarred");
+        else
+        {
+            segment.tar();
+            config.reporter.segment_tar(name(), segment.path_relative(), "tarred");
+        }
+    });
+}
 
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {

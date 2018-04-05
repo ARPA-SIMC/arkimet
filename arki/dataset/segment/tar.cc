@@ -37,6 +37,7 @@ Checker::Checker(const std::string& root, const std::string& relname, const std:
 }
 
 const char* Checker::type() const { return "tar"; }
+bool Checker::single_file() const { return true; }
 
 bool Checker::exists_on_disk()
 {

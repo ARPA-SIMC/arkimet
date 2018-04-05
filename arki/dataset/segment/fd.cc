@@ -50,6 +50,8 @@ Writer::~Writer()
     delete fd;
 }
 
+bool Writer::single_file() const { return true; }
+
 size_t Writer::next_offset() const { return current_pos; }
 
 const types::source::Blob& Writer::append(Metadata& md)
@@ -91,6 +93,8 @@ void Writer::rollback_nothrow() noexcept
     fired = true;
 }
 
+
+bool Checker::single_file() const { return true; }
 
 bool Checker::exists_on_disk()
 {

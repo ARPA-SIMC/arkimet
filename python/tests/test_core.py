@@ -1,6 +1,7 @@
 import unittest
 import arkimet as arki
 
+
 class TestImport(unittest.TestCase):
     def test_import(self):
         import inspect
@@ -13,4 +14,3 @@ class TestImport(unittest.TestCase):
         cfg = configparser.ConfigParser()
         cfg.read_string(db)
         self.assertTrue(cfg.has_section("origin"))
-

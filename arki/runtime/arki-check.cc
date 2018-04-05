@@ -35,15 +35,16 @@ struct Options : public BaseCommandLine
     commandline::BoolOption* fix;
     commandline::BoolOption* accurate;
     commandline::BoolOption* repack;
-    commandline::BoolOption* invalidate;
     commandline::BoolOption* remove_all;
-    commandline::BoolOption* stats;
+    commandline::BoolOption* tar;
     commandline::BoolOption* op_state;
     commandline::BoolOption* op_issue51;
     commandline::StringOption* op_remove;
     commandline::StringOption* op_unarchive;
     commandline::StringOption* restr;
     commandline::StringOption* filter;
+    commandline::BoolOption* online;
+    commandline::BoolOption* offline;
 
     Options() : BaseCommandLine("arki-check", 1)
     {
@@ -67,10 +68,8 @@ struct Options : public BaseCommandLine
             "Perform a repack instead of a check");
         remove_all = add<BoolOption>("remove-all", 0, "remove-all", "",
             "Completely empty the dataset, removing all data and metadata");
-        invalidate = add<BoolOption>("invalidate", 0, "invalidate", "",
-            "Create flagfiles to invalidate all metadata in a dataset.  Warning, this will work without requiring -f, and should be invoked only after a repack.");
-        stats = add<BoolOption>("stats", 0, "stats", "",
-            "Compute statistics about the various datasets.");
+        tar = add<BoolOption>("tar", 0, "tar", "",
+            "Convert directory segments into tar files");
         op_remove = add<StringOption>("remove", 0, "remove", "file",
             "Given metadata extracted from one or more datasets, remove it from the datasets where it is stored");
         op_unarchive = add<StringOption>("unarchive", 0, "unarchive", "file",
@@ -83,6 +82,10 @@ struct Options : public BaseCommandLine
                 "Restrict operations to only those datasets that allow one of the given (comma separated) names");
         filter = add<StringOption>("filter", 0, "filter", "matcher",
                 "Restrict operations to at least those segments whose reference time matches the given matcher (but may be more)");
+        online = add<BoolOption>("online", 0, "online", "",
+                "Work on online data, skipping archives unless --offline is also provided");
+        offline = add<BoolOption>("offline", 0, "offline", "",
+                "Work on archives, skipping online data unless --online is also provided");
     }
 };
 
@@ -99,6 +102,7 @@ struct SkipDataset : public std::exception
 
 struct Worker
 {
+    bool skip_archives = false;
     Matcher filter;
 
     ~Worker() {}
@@ -114,6 +118,7 @@ struct WorkerOnWritable : public Worker
         try {
             auto config = dataset::Config::create(cfg);
             ds = config->create_checker();
+            ds->skip_archives = skip_archives;
         } catch (std::exception& e) {
             throw SkipDataset(e.what());
         }
@@ -174,6 +179,20 @@ struct RemoveAller : public WorkerOnWritable
             w.remove_all(r, fix);
         else
             w.remove_all_filtered(filter, r, fix);
+    }
+
+    void done() {}
+};
+
+struct Tarrer : public WorkerOnWritable
+{
+    dataset::CheckerConfig& config;
+
+    Tarrer(dataset::CheckerConfig& config) : config(config) {}
+
+    void operator()(dataset::Checker& w) override
+    {
+        w.tar(config);
     }
 
     void done() {}
@@ -254,16 +273,15 @@ int arki_check(int argc, const char* argv[])
         unique_ptr<Worker> worker;
 
         size_t actionCount = 0;
-        if (opts.stats->isSet()) ++actionCount;
-        if (opts.invalidate->isSet()) ++actionCount;
         if (opts.repack->isSet()) ++actionCount;
         if (opts.remove_all->isSet()) ++actionCount;
+        if (opts.tar->isSet()) ++actionCount;
         if (opts.op_remove->isSet()) ++actionCount;
         if (opts.op_unarchive->isSet()) ++actionCount;
         if (opts.op_state->isSet()) ++actionCount;
         if (opts.op_issue51->isSet()) ++actionCount;
         if (actionCount > 1)
-            throw commandline::BadOption("only one of --stats, --invalidate, --repack, --remove, --remove-all, --unarchive, --state, or --issue51 can be given in one invocation");
+            throw commandline::BadOption("only one of --repack, --remove, --remove-all, --tar, --unarchive, --state, or --issue51 can be given in one invocation");
 
         // Read the config file(s)
         runtime::Inputs inputs;
@@ -329,16 +347,23 @@ int arki_check(int argc, const char* argv[])
                 ++count;
             }
         } else {
-            if (opts.stats->boolValue())
-                // worker.reset(new Statistician());
-                throw_consistency_error("running --stats", "statistics code needs to be reimplemented");
-            else if (opts.invalidate->boolValue())
-                // worker.reset(new Invalidator);
-                throw_consistency_error("running --invalidate", "invalidate code needs to be reimplemented");
-            else if (opts.remove_all->boolValue())
+            dataset::OstreamReporter reporter(cerr);
+            dataset::CheckerConfig config(reporter, !opts.fix->boolValue());
+            if (opts.filter->isSet())
+                config.segment_filter = Matcher::parse(opts.filter->stringValue());
+
+            if (opts.remove_all->boolValue())
                 worker.reset(new RemoveAller(opts.fix->boolValue()));
             else if (opts.repack->boolValue())
                 worker.reset(new Repacker(opts.fix->boolValue()));
+            else if (opts.tar->boolValue())
+            {
+                config.offline = true;
+                config.online = false;
+                if (opts.offline->isSet()) config.offline = opts.offline->boolValue();
+                if (opts.online->isSet()) config.online = opts.online->boolValue();
+                worker.reset(new Tarrer(config));
+            }
             else if (opts.op_unarchive->boolValue())
                 worker.reset(new Unarchiver(opts.op_unarchive->stringValue()));
             else if (opts.op_state->boolValue())
@@ -351,6 +376,8 @@ int arki_check(int argc, const char* argv[])
 
             if (opts.filter->isSet())
                 worker->filter = Matcher::parse(opts.filter->stringValue());
+            if (opts.online->isSet())
+                worker->skip_archives = true;
 
             // Harvest the paths from it
             for (const ConfigFile& cfg: inputs)

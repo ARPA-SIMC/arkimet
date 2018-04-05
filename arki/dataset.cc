@@ -368,6 +368,12 @@ void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostrea
 }
 
 
+CheckerConfig::CheckerConfig(dataset::Reporter& reporter, bool readonly)
+    : reporter(reporter), readonly(readonly)
+{
+}
+
+
 std::unique_ptr<Checker> Checker::create(const ConfigFile& cfg)
 {
     auto config = Config::create(cfg);

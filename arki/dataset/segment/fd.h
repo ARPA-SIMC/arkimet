@@ -39,6 +39,7 @@ struct Writer : public dataset::segment::Writer
     Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd);
     ~Writer();
 
+    bool single_file() const override;
     virtual std::unique_ptr<File> open_file(const std::string& pathname, int flags, mode_t mode) = 0;
     size_t next_offset() const override;
     const types::source::Blob& append(Metadata& md) override;
@@ -76,6 +77,7 @@ protected:
 public:
     using dataset::segment::Checker::Checker;
 
+    bool single_file() const override;
     bool exists_on_disk() override;
     time_t timestamp() override;
 

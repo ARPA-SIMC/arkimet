@@ -154,7 +154,7 @@ add_method("tarred", [](Fixture& f) {
     // tar segments
     {
         auto checker(f.makeSegmentedChecker());
-        checker->segments([&](segmented::CheckerSegment& seg) {
+        checker->segments_tracked([&](segmented::CheckerSegment& seg) {
             seg.tar();
         });
     }

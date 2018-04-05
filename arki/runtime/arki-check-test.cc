@@ -1,4 +1,5 @@
 #include "arki/dataset/tests.h"
+#include "arki/dataset/time.h"
 #include "arki/runtime/tests.h"
 #include "arki/exceptions.h"
 #include "arki/types/source/blob.h"
@@ -112,7 +113,7 @@ add_method("clean_filtered", [](Fixture& f) {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack", "--fix", "--filter=reftime:>=2007-07-08" });
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
-        wassert(actual(sys::read_file(co.file_stderr.name())) == 
+        wassert(actual(sys::read_file(co.file_stderr.name())) ==
                 "testds: repack 2 files ok\n");
         wassert(actual(res) == 0);
     }
@@ -205,7 +206,7 @@ add_method("archive", [](Fixture& f) {
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", });
         wassert(actual(res) == 0);
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
-        wassert(actual(sys::read_file(co.file_stderr.name())) == 
+        wassert(actual(sys::read_file(co.file_stderr.name())) ==
             "testds:2007/07-07.grib: segment old enough to be archived\n"
             "testds:2007/07-08.grib: segment old enough to be archived\n"
             "testds:2007/10-09.grib: segment old enough to be archived\n"
@@ -218,7 +219,7 @@ add_method("archive", [](Fixture& f) {
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--fix" });
         wassert(actual(res) == 0);
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
-        wassert(actual(sys::read_file(co.file_stderr.name())) == 
+        wassert(actual(sys::read_file(co.file_stderr.name())) ==
             "testds:2007/07-07.grib: segment old enough to be archived\n"
             "testds:2007/07-08.grib: segment old enough to be archived\n"
             "testds:2007/10-09.grib: segment old enough to be archived\n"
@@ -231,7 +232,7 @@ add_method("archive", [](Fixture& f) {
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack" });
         wassert(actual(res) == 0);
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
-        wassert(actual(sys::read_file(co.file_stderr.name())) == 
+        wassert(actual(sys::read_file(co.file_stderr.name())) ==
             "testds:2007/07-07.grib: segment old enough to be archived\n"
             "testds:2007/07-07.grib: should be archived\n"
             "testds:2007/07-08.grib: segment old enough to be archived\n"
@@ -329,6 +330,56 @@ add_method("issue57", [](Fixture& f) {
 
     metadata::Collection post_delete(*f.config().create_reader(), "");
     wassert(actual(post_delete.size()) == 0u);
+});
+
+add_method("tar", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+
+    f.cfg.setValue("format", "odimh5");
+    f.test_reread_config();
+    f.clean_and_import("inbound/fixture.h5/00.h5");
+    f.import("inbound/fixture.h5/01.h5");
+    f.import("inbound/fixture.h5/02.h5");
+
+    auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
+    f.cfg.setValue("archive age", "1");
+    f.test_reread_config();
+    f.repack();
+
+    wassert(actual_file("testds/.archive/last/2007/07-07.odimh5").exists());
+    wassert(actual_file("testds/2007/07-08.odimh5").exists());
+    wassert(actual_file("testds/2007/10-09.odimh5").exists());
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "testds", });
+        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
+        wassert(actual(sys::read_file(co.file_stderr.name())) ==
+            "testds:.archive/last/2007/07-07.odimh5: segment should be tarred\n"
+        );
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "--offline", "testds", });
+        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
+        wassert(actual(sys::read_file(co.file_stderr.name())) ==
+            "testds:.archive/last/2007/07-07.odimh5: segment should be tarred\n"
+        );
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "--online", "testds", });
+        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
+        wassert(actual(sys::read_file(co.file_stderr.name())) ==
+            "testds:2007/07-08.odimh5: segment tarred\n"
+            "testds:2007/10-09.odimh5: segment tarred\n"
+        );
+        wassert(actual(res) == 0);
+    }
 });
 
 }

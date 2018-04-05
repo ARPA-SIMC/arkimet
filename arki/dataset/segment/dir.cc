@@ -45,6 +45,7 @@ Writer::~Writer()
 }
 
 const char* Writer::type() const { return "dir"; }
+bool Writer::single_file() const { return false; }
 
 size_t Writer::next_offset() const
 {
@@ -133,6 +134,7 @@ Checker::Checker(const std::string& format, const std::string& root, const std::
 }
 
 const char* Checker::type() const { return "dir"; }
+bool Checker::single_file() const { return false; }
 
 bool Checker::exists_on_disk()
 {

@@ -371,6 +371,20 @@ void ArchivesChecker::remove_all_filtered(const Matcher& matcher, Reporter& repo
     });
 }
 
+void ArchivesChecker::tar(CheckerConfig& config)
+{
+    if (!config.offline) return;
+
+    CheckerConfig arc_config(config);
+    arc_config.online = true;
+    arc_config.offline = false;
+    archives->iter([&](Checker& a) {
+        a.tar(arc_config);
+        return true;
+    });
+}
+
+
 void ArchivesChecker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
     archives->iter([&](Checker& a) {

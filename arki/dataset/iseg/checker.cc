@@ -415,12 +415,12 @@ std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std:
     return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
 }
 
-void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> dest)
+void Checker::segments_tracked(std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    segments_filtered(Matcher(), dest);
+    segments_tracked_filtered(Matcher(), dest);
 }
 
-void Checker::segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
+void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
     list_segments(matcher, [&](const std::string& relpath) {
         CheckerSegment segment(*this, relpath);

@@ -391,7 +391,7 @@ std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std:
     return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
 }
 
-void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> dest)
+void Checker::segments_tracked(std::function<void(segmented::CheckerSegment& segment)> dest)
 {
     std::vector<std::string> names;
     m_idx->list_segments([&](const std::string& relpath) { names.push_back(relpath); });
@@ -403,7 +403,7 @@ void Checker::segments(std::function<void(segmented::CheckerSegment& segment)> d
     }
 }
 
-void Checker::segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
+void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
     // TODO: implement filtering
     std::vector<std::string> names;

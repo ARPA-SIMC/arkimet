@@ -258,12 +258,12 @@ public:
     /**
      * List all segments known to this dataset
      */
-    virtual void segments(std::function<void(CheckerSegment& segment)>) = 0;
+    virtual void segments_tracked(std::function<void(CheckerSegment& segment)>) = 0;
 
     /**
      * List all segments known to this dataset
      */
-    virtual void segments_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) = 0;
+    virtual void segments_tracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) = 0;
 
     /**
      * List all segments present on disk but not known to this dataset
@@ -278,6 +278,11 @@ public:
     /**
      * List all segments, both known to this dataset or unknown but found on disk
      */
+    void segments(CheckerConfig& config, std::function<void(segmented::CheckerSegment& segment)>);
+
+    /**
+     * List all segments, both known to this dataset or unknown but found on disk
+     */
     void segments_all(std::function<void(segmented::CheckerSegment& segment)>);
 
     /**
@@ -285,11 +290,9 @@ public:
      */
     void segments_all_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>);
 
-    /// Remove all data from the dataset
     void remove_all(dataset::Reporter& reporter, bool writable=false) override;
-
-    /// Remove all data from the dataset
     void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) override;
+    void tar(CheckerConfig& config) override;
 
     /**
      * Perform generic packing and optimisations

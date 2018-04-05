@@ -380,11 +380,26 @@ public:
     static void test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out);
 };
 
+struct CheckerConfig
+{
+    dataset::Reporter& reporter;
+    Matcher segment_filter;
+    bool offline = true;
+    bool online = true;
+    bool readonly = true;
+
+    CheckerConfig(dataset::Reporter& reporter, bool readonly=true);
+    CheckerConfig(const CheckerConfig&) = default;
+    CheckerConfig(CheckerConfig&&) = default;
+    CheckerConfig& operator=(const CheckerConfig&) = default;
+    CheckerConfig& operator=(CheckerConfig&&) = default;
+};
+
 struct Checker : public dataset::Base
 {
     using Base::Base;
 
-    bool check_archives = true;
+    bool skip_archives = false;
 
     /**
      * Repack the dataset, logging status to the given file.
@@ -416,6 +431,9 @@ struct Checker : public dataset::Base
 
     /// Remove the segments from the dataset that match the given matcher
     virtual void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) = 0;
+
+    /// Convert directory segments into tar segments
+    virtual void tar(CheckerConfig& config) = 0;
 
     /**
      * Check consistency of the last byte of GRIB and BUFR data in the archive,

@@ -211,6 +211,7 @@ public:
 
     void import_all(const testdata::Fixture& fixture);
     void import_all_packed(const testdata::Fixture& fixture);
+    void repack();
 
     /// Equivalent to calling query_results with an empty query
     void query_results(const std::vector<int>& expected);
@@ -333,6 +334,7 @@ struct ReporterExpected
     std::vector<SegmentMatch> deleted;
     std::vector<SegmentMatch> deindexed;
     std::vector<SegmentMatch> rescanned;
+    std::vector<SegmentMatch> tarred;
     std::vector<SegmentMatch> issue51;
 
     int count_repacked = -1;
@@ -340,6 +342,7 @@ struct ReporterExpected
     int count_deleted = -1;
     int count_deindexed = -1;
     int count_rescanned = -1;
+    int count_tarred = -1;
     int count_issue51 = -1;
 
     unsigned flags;

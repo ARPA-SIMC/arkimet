@@ -117,6 +117,7 @@ public:
     void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
     void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
     void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) override;
+    void tar(CheckerConfig& config) override;
 
     /// Return the number of archives found, used for testing
     unsigned test_count_archives() const;

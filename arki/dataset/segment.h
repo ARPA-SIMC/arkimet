@@ -136,10 +136,15 @@ public:
     /**
      * Return a name identifying the type of segment backend
      *
-     * This is used mostly for tests, actual code must nto differentiate on
+     * This is used mostly for tests, actual code must not differentiate on
      * this.
      */
     virtual const char* type() const = 0;
+
+    /**
+     * Return true if the segment stores everything in a single file
+     */
+    virtual bool single_file() const = 0;
 };
 
 

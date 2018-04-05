@@ -119,7 +119,7 @@ this->add_method("check_archives", [](Fixture& f) {
         wassert(actual(checker.get()).check(e, true));
     }
 
-    checker->check_archives = false;
+    checker->skip_archives = true;
 
     {
         ReporterExpected e(ReporterExpected::ENFORCE_REPORTS);
