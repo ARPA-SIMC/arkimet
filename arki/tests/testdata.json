@@ -1172,6 +1172,11 @@
  {
   "doc": "",
   "group": "arki_metadata_libarchive",
+  "method": "tar"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_libarchive",
   "method": "targz"
  },
  {

@@ -33,7 +33,12 @@ LibarchiveOutput::LibarchiveOutput(const std::string& format, core::NamedFileDes
     if (entry == nullptr)
         throw_system_error("archive_entry_new failed");
 
-    if (format == "tar.gz")
+    if (format == "tar")
+    {
+        if (archive_write_set_format_gnutar(a) != ARCHIVE_OK)
+            throw archive_runtime_error(a, "cannot set tar archive format");
+    }
+    else if (format == "tar.gz")
     {
         if (archive_write_set_format_gnutar(a) != ARCHIVE_OK)
             throw archive_runtime_error(a, "cannot set tar archive format");
@@ -71,7 +76,7 @@ void LibarchiveOutput::append(const Metadata& md)
 #ifndef HAVE_LIBARCHIVE
     throw std::runtime_error("libarchive not supported in this build");
 #else
-    snprintf(filename_buf, 255, "%06zd.%s", mds.size() + 1, md.source().format.c_str());
+    snprintf(filename_buf, 255, "data/%06zd.%s", mds.size() + 1, md.source().format.c_str());
     std::unique_ptr<Metadata> stored_md = Metadata::create_copy(md);
     const std::vector<uint8_t>& stored_data = stored_md->getData();
     std::unique_ptr<types::Source> stored_source = types::Source::createBlobUnlocked(md.source().format, "", filename_buf, 0, stored_data.size());
@@ -125,7 +130,7 @@ void LibarchiveOutput::flush()
         md->encodeBinary(enc);
 
     archive_entry_clear(entry);
-    archive_entry_set_pathname(entry, "metadata.md");
+    archive_entry_set_pathname(entry, "data/metadata.md");
     archive_entry_set_size(entry, buf.size());
     archive_entry_set_filetype(entry, AE_IFREG);
     archive_entry_set_perm(entry, 0644);

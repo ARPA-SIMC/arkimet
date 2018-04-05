@@ -64,7 +64,7 @@ struct ProcessorMaker
     bool server_side = false;
     std::string postprocess;
     std::string report;
-
+    std::string archive;
     std::string summary_restrict;
     std::string sort;
 

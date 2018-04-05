@@ -1,6 +1,7 @@
 #include "config.h"
 #include "arki/runtime/processor.h"
 #include "arki/runtime/io.h"
+#include "arki/metadata/libarchive.h"
 #include "arki/types/source.h"
 #include "arki/formatter.h"
 #include "arki/dataset.h"
@@ -25,6 +26,7 @@ struct Printer
     Printer(sys::NamedFileDescriptor& out) : out(out) {}
     virtual ~Printer() {}
     virtual void operator()(const arki::Metadata& md) = 0;
+    virtual void flush() {}
 };
 
 struct BinaryPrinter : public Printer
@@ -36,16 +38,23 @@ struct BinaryPrinter : public Printer
     }
 };
 
-#if 0
 struct LibarchivePrinter : public Printer
 {
-    using Printer::Printer;
+    arki::metadata::LibarchiveOutput arc_out;
+
+    LibarchivePrinter(sys::NamedFileDescriptor& out, const std::string& format)
+        : Printer(out), arc_out(format, out)
+    {
+    }
     void operator()(const arki::Metadata& md) override
     {
-        md.write(out);
+        arc_out.append(md);
+    }
+    void flush() override
+    {
+        arc_out.flush();
     }
 };
-#endif
 
 struct FormattedPrinter : public Printer
 {
@@ -104,6 +113,9 @@ SingleOutputProcessor::SingleOutputProcessor(const utils::sys::NamedFileDescript
 
 std::unique_ptr<Printer> create_metadata_printer(ProcessorMaker& maker, sys::NamedFileDescriptor& out)
 {
+    if (!maker.archive.empty())
+        return std::unique_ptr<Printer>(new LibarchivePrinter(out, maker.archive));
+
     if (!maker.json && !maker.yaml && !maker.annotate)
         return std::unique_ptr<Printer>(new BinaryPrinter(out));
 
@@ -232,6 +244,7 @@ struct DataProcessor : public SingleOutputProcessor
 
     void end() override
     {
+        printer->flush();
     }
 };
 
@@ -462,6 +475,8 @@ std::string ProcessorMaker::verify_option_consistency()
 			return "--postprocess conflicts with --report";
 		if (!sort.empty())
 			return "--sort conflicts with --report";
+        if (!archive.empty())
+            return "--sort conflicts with --archive";
 	}
 #endif
 	if (yaml)
@@ -474,6 +489,8 @@ std::string ProcessorMaker::verify_option_consistency()
 			return "--dump/--yaml conflicts with --data";
 		if (!postprocess.empty())
 			return "--dump/--yaml conflicts with --postprocess";
+        if (!archive.empty())
+            return "--dump/--yaml conflicts with --archive";
 	}
 	if (annotate)
 	{
@@ -483,6 +500,8 @@ std::string ProcessorMaker::verify_option_consistency()
 			return "--annotate conflicts with --data";
 		if (!postprocess.empty())
 			return "--annotate conflicts with --postprocess";
+        if (!archive.empty())
+            return "--annotate conflicts with --archive";
 	}
 	if (summary)
 	{
@@ -496,6 +515,8 @@ std::string ProcessorMaker::verify_option_consistency()
 			return "--summary conflicts with --postprocess";
 		if (!sort.empty())
 			return "--summary conflicts with --sort";
+        if (!archive.empty())
+            return "--summary conflicts with --archive";
 	} else if (!summary_restrict.empty())
 		return "--summary-restrict only makes sense with --summary";
     if (summary_short)
@@ -508,6 +529,8 @@ std::string ProcessorMaker::verify_option_consistency()
             return "--summary-short conflicts with --postprocess";
         if (!sort.empty())
             return "--summary-short conflicts with --sort";
+        if (!archive.empty())
+            return "--summary-short conflicts with --archive";
     }
 	if (data_inline)
 	{
@@ -515,12 +538,21 @@ std::string ProcessorMaker::verify_option_consistency()
 			return "--inline conflicts with --data";
 		if (!postprocess.empty())
 			return "--inline conflicts with --postprocess";
+        if (!archive.empty())
+            return "--inline conflicts with --archive";
 	}
 	if (!postprocess.empty())
 	{
 		if (data_only)
 			return "--postprocess conflicts with --data";
-	}
+        if (!archive.empty())
+            return "--postprocess conflicts with --archive";
+    }
+    if (data_only)
+    {
+        if (!archive.empty())
+            return "--data conflicts with --archive";
+    }
     return std::string();
 }
 
