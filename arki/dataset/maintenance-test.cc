@@ -327,8 +327,7 @@ void MaintenanceTest::register_tests()
     )", [&](Fixture& f) {
         rm_r("testds/" + f.test_relpath);
 
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
+        auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
         wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_MISSING));
         wassert(f.query_results({1, 3, 0, 2}));
@@ -558,8 +557,7 @@ void MaintenanceTest::register_tests()
     )", [&](Fixture& f) {
         corrupt_first();
 
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr, false);
+        auto state = f.scan_state(false);
         wassert(actual(state.size()) == 3u);
         // TODO: should it be CORRUPTED?
         wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_UNALIGNED));

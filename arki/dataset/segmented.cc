@@ -29,19 +29,6 @@ namespace arki {
 namespace dataset {
 namespace segmented {
 
-bool State::has(const std::string& relpath) const
-{
-    return find(relpath) != end();
-}
-
-const SegmentState& State::get(const std::string& seg) const
-{
-    auto res = find(seg);
-    if (res == end())
-        throw std::runtime_error("segment " + seg + " not found in state");
-    return res->second;
-}
-
 void SegmentState::check_age(const std::string& relpath, const Config& cfg, dataset::Reporter& reporter)
 {
     core::Time archive_threshold(0, 0, 0);
@@ -66,21 +53,6 @@ void SegmentState::check_age(const std::string& relpath, const Config& cfg, data
         state = state + SEGMENT_ARCHIVE_AGE;
         return;
     }
-}
-
-unsigned State::count(segment::State state) const
-{
-    unsigned res = 0;
-    for (const auto& i: *this)
-        if (i.second.state == state)
-            ++res;
-    return res;
-}
-
-void State::dump(FILE* out) const
-{
-    for (const auto& i: *this)
-        fprintf(stderr, "%s: %s %s to %s\n", i.first.c_str(), i.second.state.to_string().c_str(), i.second.begin.to_iso8601(' ').c_str(), i.second.until.to_iso8601(' ').c_str());
 }
 
 Config::Config(const ConfigFile& cfg)
@@ -333,22 +305,12 @@ void Checker::segments(CheckerConfig& opts, std::function<void(segmented::Checke
     }
 }
 
-segmented::State Checker::scan(dataset::Reporter& reporter, bool quick)
+void Checker::segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest)
 {
-    segmented::State segments_state;
-    segments_all([&](CheckerSegment& segment) {
-        segments_state.insert(make_pair(segment.path_relative(), segment.scan(reporter, quick)));
-    });
-    return segments_state;
-}
-
-segmented::State Checker::scan_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool quick)
-{
-    segmented::State segments_state;
-    segments_all_filtered(matcher, [&](CheckerSegment& segment) {
-        segments_state.insert(make_pair(segment.path_relative(), segment.scan(reporter, quick)));
-    });
-    return segments_state;
+    if ((opts.online && !config().offline) || (opts.offline && config().offline))
+        segments(opts, [&](CheckerSegment& segment) { dest(*this, segment); });
+    if (opts.offline && hasArchive())
+        archive().segments_recursive(opts, dest);
 }
 
 void Checker::remove_all(CheckerConfig& opts)

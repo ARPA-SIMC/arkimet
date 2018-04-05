@@ -54,6 +54,36 @@ int days_since(int year, int month, int day)
     return duration/(3600*24);
 }
 
+
+bool State::has(const std::string& relpath) const
+{
+    return find(relpath) != end();
+}
+
+const segmented::SegmentState& State::get(const std::string& seg) const
+{
+    auto res = find(seg);
+    if (res == end())
+        throw std::runtime_error("segment " + seg + " not found in state");
+    return res->second;
+}
+
+unsigned State::count(segment::State state) const
+{
+    unsigned res = 0;
+    for (const auto& i: *this)
+        if (i.second.state == state)
+            ++res;
+    return res;
+}
+
+void State::dump(FILE* out) const
+{
+    for (const auto& i: *this)
+        fprintf(out, "%s: %s %s to %s\n", i.first.c_str(), i.second.state.to_string().c_str(), i.second.begin.to_iso8601(' ').c_str(), i.second.until.to_iso8601(' ').c_str());
+}
+
+
 DatasetTest::DatasetTest(const std::string& cfg_instance)
     : cfg_instance(cfg_instance), ds_name("testds"), ds_root(sys::abspath("testds"))
 {
@@ -180,20 +210,23 @@ std::string manifest_idx_fname()
     return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
-segmented::State DatasetTest::scan_state(bool quick)
+State DatasetTest::scan_state(bool quick)
 {
-    // OstreamReporter nr(cerr);
-    NullReporter nr;
+    CheckerConfig opts;
     auto checker = makeSegmentedChecker();
-    return checker->scan(nr, quick);
+    State res;
+    checker->segments(opts, [&](segmented::CheckerSegment& segment) { res.insert(make_pair(segment.path_relative(), segment.scan(*opts.reporter, quick))); });
+    return res;
 }
 
-segmented::State DatasetTest::scan_state(const Matcher& matcher, bool quick)
+State DatasetTest::scan_state(const Matcher& matcher, bool quick)
 {
-    // OstreamReporter nr(cerr);
-    NullReporter nr;
+    CheckerConfig opts;
+    opts.segment_filter = matcher;
     auto checker = makeSegmentedChecker();
-    return checker->scan_filtered(matcher, nr, quick);
+    State res;
+    checker->segments(opts, [&](segmented::CheckerSegment& segment) { res.insert(make_pair(segment.path_relative(), segment.scan(*opts.reporter, quick))); });
+    return res;
 }
 
 std::unique_ptr<dataset::segmented::Reader> DatasetTest::makeSegmentedReader()

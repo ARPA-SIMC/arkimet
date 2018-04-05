@@ -35,8 +35,7 @@ void Tests::register_tests()
     )", [&](Fixture& f) {
         remove_index();
 
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
+        auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
         wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_UNALIGNED));
     });
@@ -46,8 +45,7 @@ void Tests::register_tests()
     )", [&](Fixture& f) {
         make_unaligned();
 
-        arki::dataset::NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
+        auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
         wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_UNALIGNED));
     });
@@ -62,8 +60,7 @@ void Tests::register_tests()
         e.report.emplace_back("testds", "repack", "2 files ok");
         wassert(actual(writer.get()).repack(e, true));
 
-        NullReporter nr;
-        auto state = f.makeSegmentedChecker()->scan(nr);
+        auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
         wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_UNALIGNED));
     });

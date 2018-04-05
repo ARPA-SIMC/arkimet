@@ -126,9 +126,6 @@ struct SkipDataset : public std::exception
 
 struct Worker
 {
-    bool skip_archives = false;
-    Matcher filter;
-
     ~Worker() {}
     virtual void process(const ConfigFile& cfg) = 0;
     virtual void done() = 0;
@@ -150,11 +147,16 @@ struct WorkerOnWritable : public Worker
     virtual void operator()(dataset::Checker& w) = 0;
 };
 
-struct Checker : public WorkerOnWritable
+struct WorkerWithConfig : public WorkerOnWritable
 {
     dataset::CheckerConfig& opts;
 
-    Checker(dataset::CheckerConfig& opts) : opts(opts) {}
+    WorkerWithConfig(dataset::CheckerConfig& opts) : opts(opts) {}
+};
+
+struct Checker : public WorkerWithConfig
+{
+    using WorkerWithConfig::WorkerWithConfig;
 
     void operator()(dataset::Checker& w) override
     {
@@ -164,11 +166,9 @@ struct Checker : public WorkerOnWritable
     void done() override {}
 };
 
-struct Repacker : public WorkerOnWritable
+struct Repacker : public WorkerWithConfig
 {
-    dataset::CheckerConfig& opts;
-
-    Repacker(dataset::CheckerConfig& opts) : opts(opts) {}
+    using WorkerWithConfig::WorkerWithConfig;
 
     void operator()(dataset::Checker& w) override
     {
@@ -178,11 +178,9 @@ struct Repacker : public WorkerOnWritable
     void done() override {}
 };
 
-struct RemoveAller : public WorkerOnWritable
+struct RemoveAller : public WorkerWithConfig
 {
-    dataset::CheckerConfig& opts;
-
-    RemoveAller(dataset::CheckerConfig& opts) : opts(opts) {}
+    using WorkerWithConfig::WorkerWithConfig;
 
     void operator()(dataset::Checker& w) override
     {
@@ -192,11 +190,9 @@ struct RemoveAller : public WorkerOnWritable
     void done() {}
 };
 
-struct Tarrer : public WorkerOnWritable
+struct Tarrer : public WorkerWithConfig
 {
-    dataset::CheckerConfig& opts;
-
-    Tarrer(dataset::CheckerConfig& opts) : opts(opts) {}
+    using WorkerWithConfig::WorkerWithConfig;
 
     void operator()(dataset::Checker& w) override
     {
@@ -222,11 +218,9 @@ struct Unarchiver : public WorkerOnWritable
     void done() override {}
 };
 
-struct Issue51 : public WorkerOnWritable
+struct Issue51 : public WorkerWithConfig
 {
-    dataset::CheckerConfig& opts;
-
-    Issue51(dataset::CheckerConfig& opts) : opts(opts) {}
+    using WorkerWithConfig::WorkerWithConfig;
 
     void operator()(dataset::Checker& w) override
     {
@@ -236,24 +230,22 @@ struct Issue51 : public WorkerOnWritable
     void done() override {}
 };
 
-struct PrintState : public WorkerOnWritable
+struct PrintState : public WorkerWithConfig
 {
-    bool quick;
-
-    PrintState(bool quick) : quick(quick) {}
+    using WorkerWithConfig::WorkerWithConfig;
 
     void operator()(dataset::Checker& w) override
     {
         using namespace arki::dataset;
         if (segmented::Checker* c = dynamic_cast<segmented::Checker*>(&w))
         {
-            OstreamReporter r(cerr);
-            segmented::State state;
-            if (filter.empty())
-                state = c->scan(r, quick);
-            else
-                state = c->scan_filtered(filter, r, quick);
-            state.dump(stdout);
+            c->segments_recursive(opts, [&](segmented::Checker& ds, segmented::CheckerSegment& segment) {
+                auto state = segment.scan(*opts.reporter, !opts.accurate);
+                fprintf(stdout, "%s:%s: %s %s to %s\n",
+                        ds.name().c_str(), segment.segment->relname.c_str(),
+                        state.state.to_string().c_str(),
+                        state.begin.to_iso8601(' ').c_str(), state.until.to_iso8601(' ').c_str());
+            });
         }
     }
 
@@ -374,7 +366,10 @@ int arki_check(int argc, const char* argv[])
             else if (opts.op_unarchive->boolValue())
                 worker.reset(new Unarchiver(opts.op_unarchive->stringValue()));
             else if (opts.op_state->boolValue())
-                worker.reset(new PrintState(not opts.accurate->boolValue()));
+            {
+                opts.set_checker_config(config, true, true);
+                worker.reset(new PrintState(config));
+            }
             else if (opts.op_issue51->boolValue())
             {
                 opts.set_checker_config(config, true, true);
@@ -385,9 +380,6 @@ int arki_check(int argc, const char* argv[])
                 opts.set_checker_config(config, true, true);
                 worker.reset(new Checker(config));
             }
-
-            if (opts.filter->isSet())
-                worker->filter = Matcher::parse(opts.filter->stringValue());
 
             // Harvest the paths from it
             for (const ConfigFile& cfg: inputs)

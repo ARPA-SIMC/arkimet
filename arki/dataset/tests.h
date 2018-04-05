@@ -68,6 +68,25 @@ int days_since(int year, int month, int day);
 // Return the file name of the Manifest index
 std::string manifest_idx_fname();
 
+
+/**
+ * State of all segments in the dataset
+ */
+struct State : public std::map<std::string, dataset::segmented::SegmentState>
+{
+    using std::map<std::string, dataset::segmented::SegmentState>::map;
+
+    bool has(const std::string& relpath) const;
+
+    const dataset::segmented::SegmentState& get(const std::string& seg) const;
+
+    /// Count how many segments have this state
+    unsigned count(dataset::segment::State state) const;
+
+    void dump(FILE* out) const;
+};
+
+
 /**
  * Test fixture to test a dataset.
  *
@@ -172,10 +191,10 @@ public:
     unsigned count_dataset_files(const testdata::Fixture& f) const;
 
     /// Scan the dataset and return its state
-    dataset::segmented::State scan_state(bool quick=true);
+    State scan_state(bool quick=true);
 
     /// Scan the dataset and return its state
-    dataset::segmented::State scan_state(const Matcher& matcher, bool quick=true);
+    State scan_state(const Matcher& matcher, bool quick=true);
 
     std::unique_ptr<dataset::segmented::Reader> makeSegmentedReader();
     std::unique_ptr<dataset::segmented::Writer> makeSegmentedWriter();

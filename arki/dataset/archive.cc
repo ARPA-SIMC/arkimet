@@ -357,6 +357,19 @@ ArchivesChecker::~ArchivesChecker()
 
 std::string ArchivesChecker::type() const { return "archives"; }
 
+void ArchivesChecker::segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest)
+{
+    archives->iter([&](Checker& a) {
+        if (segmented::Checker* sc = dynamic_cast<segmented::Checker*>(&a))
+        {
+            sc->segments(opts, [&](segmented::CheckerSegment& segment) {
+                dest(*sc, segment);
+            });
+        }
+        return true;
+    });
+}
+
 void ArchivesChecker::remove_all(CheckerConfig& opts)
 {
     archives->iter([&](Checker& a) {

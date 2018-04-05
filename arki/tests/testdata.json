@@ -11756,6 +11756,11 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkicheck_ondisk2",
+  "method": "scan"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime_arkicheck_simple_plain",
   "method": "clean"
  },
@@ -11791,6 +11796,11 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkicheck_simple_plain",
+  "method": "scan"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime_arkicheck_simple_sqlite",
   "method": "clean"
  },
@@ -11826,6 +11836,11 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkicheck_simple_sqlite",
+  "method": "scan"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime_arkicheck_iseg",
   "method": "clean"
  },
@@ -11858,6 +11873,11 @@
   "doc": "",
   "group": "arki_runtime_arkicheck_iseg",
   "method": "tar"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_iseg",
+  "method": "scan"
  },
  {
   "doc": "",

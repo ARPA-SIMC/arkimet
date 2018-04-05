@@ -125,24 +125,6 @@ struct SegmentState
 };
 
 
-/**
- * State of all segments in the dataset
- */
-struct State : public std::map<std::string, SegmentState>
-{
-    using std::map<std::string, SegmentState>::map;
-
-    bool has(const std::string& relpath) const;
-
-    const SegmentState& get(const std::string& seg) const;
-
-    /// Count how many segments have this state
-    unsigned count(segment::State state) const;
-
-    void dump(FILE* out) const;
-};
-
-
 class CheckerSegment
 {
 public:
@@ -243,15 +225,6 @@ public:
     void check(CheckerConfig& opts) override;
     void repack(CheckerConfig& opts, unsigned test_flags=0) override;
 
-    /**
-     * Scan the dataset, computing the state of each unarchived segment that is
-     * either on disk or known by the index.
-     */
-    State scan(dataset::Reporter& reporter, bool quick=true);
-
-    /// Same as scan, but limited to segments matching the given matcher
-    State scan_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool quick=true);
-
     /// Instantiate a CheckerSegment
     virtual std::unique_ptr<CheckerSegment> segment(const std::string& relpath) = 0;
 
@@ -292,6 +265,12 @@ public:
      * List all segments, both known to this dataset or unknown but found on disk
      */
     void segments_all_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>);
+
+    /**
+     * List all segments, both known to the dataset and unknown but found on
+     * disk, for this dataset and all its archives
+     */
+    void segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest);
 
     void remove_all(CheckerConfig& opts) override;
     void tar(CheckerConfig& config) override;

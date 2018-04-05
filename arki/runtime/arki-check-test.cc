@@ -397,6 +397,58 @@ add_method("tar", [](Fixture& f) {
     wassert(actual_file("testds/2007/10-09.odimh5").exists());
 });
 
+add_method("scan", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+
+    f.cfg.setValue("format", "odimh5");
+    f.test_reread_config();
+    f.clean_and_import("inbound/fixture.h5/00.h5");
+    f.import("inbound/fixture.h5/01.h5");
+    f.import("inbound/fixture.h5/02.h5");
+
+    auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
+    f.cfg.setValue("archive age", "1");
+    f.test_reread_config();
+    f.repack();
+
+    wassert(actual_file("testds/.archive/last/2007/07-07.odimh5").exists());
+    wassert(actual_file("testds/2007/07-08.odimh5").exists());
+    wassert(actual_file("testds/2007/10-09.odimh5").exists());
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--state", "testds", });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
+            "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z\n"
+            "testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-09 23:59:59Z\n"
+            "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-07-31 23:59:59Z\n"
+        );
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--state", "--offline", "testds", });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
+            "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-07-31 23:59:59Z\n"
+        );
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--state", "--online", "testds", });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
+            "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z\n"
+            "testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-09 23:59:59Z\n"
+        );
+        wassert(actual(res) == 0);
+    }
+});
+
 }
 
 }
