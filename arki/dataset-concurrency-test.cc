@@ -204,8 +204,9 @@ struct CheckForever : public TestSubprocess
     {
         try {
             auto ds(fixture.config().create_checker());
-            HungReporter reporter(*this);
-            ds->check(reporter, false, false);
+            dataset::CheckerConfig opts(make_shared<HungReporter>(*this));
+            opts.accurate = true;
+            ds->check(opts);
             return 0;
         } catch (std::exception& e) {
             fprintf(stderr, "CheckForever: %s\n", e.what());

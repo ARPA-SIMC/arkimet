@@ -112,10 +112,9 @@ public:
 
     void remove_all(CheckerConfig& opts) override;
     void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
-    void check(dataset::Reporter& reporter, bool fix, bool quick) override;
-    void check_issue51(CheckerConfig& opts) override;
     void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
-    void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) override;
+    void check(CheckerConfig& opts) override;
+    void check_issue51(CheckerConfig& opts) override;
     void tar(CheckerConfig& config) override;
 
     /// Return the number of archives found, used for testing

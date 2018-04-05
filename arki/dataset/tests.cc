@@ -921,31 +921,45 @@ void ActualChecker<Dataset>::repack_filtered(const Matcher& matcher, const Repor
 }
 
 template<typename Dataset>
+void ActualChecker<Dataset>::check(const ReporterExpected& expected, dataset::CheckerConfig& opts)
+{
+    auto reporter = make_shared<CollectReporter>();
+    opts.reporter = reporter;
+    wassert(this->_actual->check(opts));
+    wassert(reporter->check(expected));
+}
+
+template<typename Dataset>
 void ActualChecker<Dataset>::check(const ReporterExpected& expected, bool write, bool quick)
 {
-    CollectReporter reporter;
-    wassert(this->_actual->check(reporter, write, quick));
+    auto reporter = make_shared<CollectReporter>();
+    dataset::CheckerConfig opts(reporter, !write);
+    opts.accurate = !quick;
+    wassert(this->_actual->check(opts));
     // reporter.dump(stderr);
-    wassert(reporter.check(expected));
+    wassert(reporter->check(expected));
 }
 
 template<typename Dataset>
 void ActualChecker<Dataset>::check_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write, bool quick)
 {
-    CollectReporter reporter;
-    wassert(this->_actual->check_filtered(matcher, reporter, write, quick));
+    auto reporter = make_shared<CollectReporter>();
+    dataset::CheckerConfig opts(reporter, !write);
+    opts.accurate = !quick;
+    opts.segment_filter = matcher;
+    wassert(this->_actual->check(opts));
     //reporter.dump(stderr);
-    wassert(reporter.check(expected));
+    wassert(reporter->check(expected));
 }
 
 template<typename Dataset>
 void ActualChecker<Dataset>::check_issue51(const ReporterExpected& expected, bool write)
 {
-    CollectReporter reporter;
+    auto reporter = make_shared<CollectReporter>();
     dataset::CheckerConfig opts(reporter, !write);
     wassert(this->_actual->check_issue51(opts));
     // reporter.dump(stderr);
-    wassert(reporter.check(expected));
+    wassert(reporter->check(expected));
 }
 
 template<typename Dataset>
@@ -986,22 +1000,22 @@ void ActualChecker<Dataset>::check_issue51_clean(bool write)
 template<typename Dataset>
 void ActualChecker<Dataset>::remove_all(const ReporterExpected& expected, bool write)
 {
-    CollectReporter reporter;
+    auto reporter = make_shared<CollectReporter>();
     dataset::CheckerConfig opts(reporter, !write);
     wassert(this->_actual->remove_all(opts));
     // reporter.dump(stderr);
-    wassert(reporter.check(expected));
+    wassert(reporter->check(expected));
 }
 
 template<typename Dataset>
 void ActualChecker<Dataset>::remove_all_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write)
 {
-    CollectReporter reporter;
+    auto reporter = make_shared<CollectReporter>();
     dataset::CheckerConfig opts(reporter, !write);
     opts.segment_filter = matcher;
     wassert(this->_actual->remove_all(opts));
     // reporter.dump(stderr);
-    wassert(reporter.check(expected));
+    wassert(reporter->check(expected));
 }
 
 }

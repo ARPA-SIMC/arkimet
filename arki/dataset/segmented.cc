@@ -355,11 +355,11 @@ void Checker::remove_all(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
         if (opts.readonly)
-            opts.reporter.segment_delete(name(), segment.path_relative(), "should be deleted");
+            opts.reporter->segment_delete(name(), segment.path_relative(), "should be deleted");
         else
         {
             auto freed = segment.remove(true);
-            opts.reporter.segment_delete(name(), segment.path_relative(), "deleted (" + std::to_string(freed) + " freed)");
+            opts.reporter->segment_delete(name(), segment.path_relative(), "deleted (" + std::to_string(freed) + " freed)");
         }
     });
 
@@ -371,11 +371,11 @@ void Checker::tar(CheckerConfig& opts)
     segments(opts, [&](CheckerSegment& segment) {
         if (segment.segment->single_file()) return;
         if (opts.readonly)
-            opts.reporter.segment_tar(name(), segment.path_relative(), "should be tarred");
+            opts.reporter->segment_tar(name(), segment.path_relative(), "should be tarred");
         else
         {
             segment.tar();
-            opts.reporter.segment_tar(name(), segment.path_relative(), "tarred");
+            opts.reporter->segment_tar(name(), segment.path_relative(), "tarred");
         }
     });
 
@@ -452,16 +452,22 @@ void Checker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporte
     LocalChecker::repack(reporter, writable);
 }
 
-void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
+void Checker::check(CheckerConfig& opts)
 {
     const string& root = config().path;
 
-    if (fix)
+    if (opts.readonly)
     {
-        maintenance::RealFixer fixer(reporter, *this);
+        maintenance::MockFixer fixer(*opts.reporter, *this);
+        segments(opts, [&](CheckerSegment& segment) {
+            fixer(segment, segment.scan(*opts.reporter, !opts.accurate).state);
+        });
+        fixer.end();
+    } else {
+        maintenance::RealFixer fixer(*opts.reporter, *this);
         try {
-            segments_all([&](CheckerSegment& segment) {
-                fixer(segment, segment.scan(reporter, quick).state);
+            segments(opts, [&](CheckerSegment& segment) {
+                fixer(segment, segment.scan(*opts.reporter, !opts.accurate).state);
             });
             fixer.end();
         } catch (...) {
@@ -473,47 +479,8 @@ void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
         }
 
         files::removeDontpackFlagfile(root);
-    } else {
-        maintenance::MockFixer fixer(reporter, *this);
-        segments_all([&](CheckerSegment& segment) {
-            fixer(segment, segment.scan(reporter, quick).state);
-        });
-        fixer.end();
     }
-
-    LocalChecker::check(reporter, fix, quick);
-}
-
-void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
-{
-    const string& root = config().path;
-
-    if (fix)
-    {
-        maintenance::RealFixer fixer(reporter, *this);
-        try {
-            segments_all_filtered(matcher, [&](CheckerSegment& segment) {
-                fixer(segment, segment.scan(reporter, quick).state);
-            });
-            fixer.end();
-        } catch (...) {
-            // FIXME: Add the marker at the segment level instead of
-            // the dataset level, so that the try/catch can be around the single
-            // segment, and cleared on a segment by segment basis
-            files::createDontpackFlagfile(root);
-            throw;
-        }
-
-        files::removeDontpackFlagfile(root);
-    } else {
-        maintenance::MockFixer fixer(reporter, *this);
-        segments_all_filtered(matcher, [&](CheckerSegment& segment) {
-            fixer(segment, segment.scan(reporter, quick).state);
-        });
-        fixer.end();
-    }
-
-    LocalChecker::check(reporter, fix, quick);
+    LocalChecker::check(opts);
 }
 
 }

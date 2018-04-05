@@ -45,8 +45,7 @@ public:
     void segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
     void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
     void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
-    void check(dataset::Reporter& reporter, bool fix, bool quick) override;
-    void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) override;
+    void check(CheckerConfig& opts) override;
 
     size_t vacuum(dataset::Reporter& reporter) override;
     void test_remove_index(const std::string& relpath) override;

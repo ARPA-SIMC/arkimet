@@ -119,12 +119,12 @@ this->add_method("check_archives", [](Fixture& f) {
         wassert(actual(checker.get()).check(e, true));
     }
 
-    checker->skip_archives = true;
-
     {
         ReporterExpected e(ReporterExpected::ENFORCE_REPORTS);
         e.report.emplace_back("testds", "check", "2 files ok");
-        wassert(actual(checker.get()).check(e, true));
+        dataset::CheckerConfig opts;
+        opts.offline = false;
+        wassert(actual(checker.get()).check(e, opts));
     }
 });
 

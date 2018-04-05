@@ -8,6 +8,7 @@
 #include <arki/dataset/outbound.h>
 #include <arki/dataset/empty.h>
 #include <arki/dataset/testlarge.h>
+#include <arki/dataset/reporter.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/sort.h>
@@ -367,8 +368,12 @@ void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostrea
     return dataset::LocalWriter::test_acquire(cfg, batch, out);
 }
 
+CheckerConfig::CheckerConfig()
+    : reporter(make_shared<NullReporter>())
+{
+}
 
-CheckerConfig::CheckerConfig(dataset::Reporter& reporter, bool readonly)
+CheckerConfig::CheckerConfig(std::shared_ptr<dataset::Reporter> reporter, bool readonly)
     : reporter(reporter), readonly(readonly)
 {
 }
@@ -378,25 +383,6 @@ std::unique_ptr<Checker> Checker::create(const ConfigFile& cfg)
 {
     auto config = Config::create(cfg);
     return config->create_checker();
-}
-
-void Checker::remove_all(dataset::Reporter& reporter, bool writable)
-{
-    CheckerConfig opts(reporter, !writable);
-    remove_all(opts);
-}
-
-void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable)
-{
-    CheckerConfig opts(reporter, !writable);
-    opts.segment_filter = matcher;
-    remove_all(opts);
-}
-
-void Checker::check_issue51(dataset::Reporter& reporter, bool fix)
-{
-    CheckerConfig opts(reporter, !fix);
-    check_issue51(opts);
 }
 
 void Checker::check_issue51(CheckerConfig& opts)

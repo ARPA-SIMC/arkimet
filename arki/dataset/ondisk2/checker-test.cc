@@ -178,15 +178,11 @@ add_method("scan_reindex", [](Fixture& f) {
     // away; therefore, we can only interrupt the maintenance and raise an
     // exception calling for manual fixing.
     auto checker = f.makeOndisk2Checker();
-    try {
-        NullReporter r;
-        checker->check(r, true, true);
-        ensure(false);
-    } catch (std::runtime_error) {
-        ensure(true);
-    } catch (...) {
-        ensure(false);
-    }
+    wassert_throws(std::runtime_error, [&]{
+        CheckerConfig opts;
+        opts.readonly = false;
+        checker->check(opts);
+    });
 
     /*
     try {
@@ -328,13 +324,12 @@ add_method("data_in_right_segment_reindex", [](Fixture& f) {
     {
         // Perform full maintenance and check that things are still ok afterwards
         auto checker = f.makeOndisk2Checker();
-        try {
-            NullReporter r;
-            checker->check(r, true, true);
-            wassert(throw std::runtime_error("writer.check should have thrown at this point"));
-        } catch (std::exception& e) {
-            wassert(actual(e.what()).contains("manual fix is required"));
-        }
+        auto e = wassert_throws(std::runtime_error, [&]{
+            CheckerConfig opts;
+            opts.readonly = false;
+            checker->check(opts);
+        });
+        wassert(actual(e.what()).contains("manual fix is required"));
     }
 });
 
@@ -375,13 +370,12 @@ add_method("data_in_right_segment_rescan", [](Fixture& f) {
     {
         // Perform full maintenance and check that things are still ok afterwards
         auto checker = f.makeOndisk2Checker();
-        try {
-            NullReporter r;
-            checker->check(r, true, true);
-            wassert(throw std::runtime_error("writer.check should have thrown at this point"));
-        } catch (std::exception& e) {
-            wassert(actual(e.what()).contains("manual fix is required"));
-        }
+        auto e = wassert_throws(std::runtime_error, [&]{
+            CheckerConfig opts;
+            opts.readonly = false;
+            checker->check(opts);
+        });
+        wassert(actual(e.what()).contains("manual fix is required"));
     }
 });
 

@@ -93,6 +93,9 @@ struct Options : public BaseCommandLine
         if (filter->isSet())
             config.segment_filter = Matcher::parse(filter->stringValue());
 
+        if (accurate->isSet())
+            config.accurate = accurate->boolValue();
+
         if (offline->isSet() && online->isSet())
         {
             config.offline = true;
@@ -148,22 +151,15 @@ struct WorkerOnWritable : public Worker
     virtual void operator()(dataset::Checker& w) = 0;
 };
 
-struct Maintainer : public WorkerOnWritable
+struct Checker : public WorkerOnWritable
 {
-    bool fix;
-    bool quick;
+    dataset::CheckerConfig& opts;
 
-    Maintainer(bool fix, bool quick) : fix(fix), quick(quick)
-    {
-    }
+    Checker(dataset::CheckerConfig& opts) : opts(opts) {}
 
     void operator()(dataset::Checker& w) override
     {
-        dataset::OstreamReporter r(cerr);
-        if (filter.empty())
-            w.check(r, fix, quick);
-        else
-            w.check_filtered(filter, r, fix, quick);
+        w.check(opts);
     }
 
     void done() override {}
@@ -363,8 +359,7 @@ int arki_check(int argc, const char* argv[])
                 ++count;
             }
         } else {
-            dataset::OstreamReporter reporter(cout);
-            dataset::CheckerConfig config(reporter, !opts.fix->boolValue());
+            dataset::CheckerConfig config(make_shared<dataset::OstreamReporter>(cout), !opts.fix->boolValue());
 
             if (opts.remove_all->boolValue())
             {
@@ -388,8 +383,10 @@ int arki_check(int argc, const char* argv[])
                 worker.reset(new Issue51(config));
             }
             else
-                worker.reset(new Maintainer(opts.fix->boolValue(),
-                             not opts.accurate->boolValue()));
+            {
+                opts.set_checker_config(config, true, true);
+                worker.reset(new Checker(config));
+            }
 
             if (opts.filter->isSet())
                 worker->filter = Matcher::parse(opts.filter->stringValue());

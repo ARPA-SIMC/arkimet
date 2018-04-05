@@ -88,7 +88,7 @@ void IndexedChecker::check_issue51(CheckerConfig& opts)
             char tail[4];
             if (datafile.pread(tail, 4, blob.offset + blob.size - 4) != 4)
             {
-                opts.reporter.segment_info(name(), relpath, "cannot read 4 bytes at position " + std::to_string(blob.offset + blob.size - 4));
+                opts.reporter->segment_info(name(), relpath, "cannot read 4 bytes at position " + std::to_string(blob.offset + blob.size - 4));
                 return;
             }
             // Check if it ends with 7777
@@ -104,7 +104,7 @@ void IndexedChecker::check_issue51(CheckerConfig& opts)
                 broken_mds[relpath].push_back(*md);
             } else {
                 ++count_corrupted;
-                opts.reporter.segment_info(name(), relpath, "end marker 7777 or 777? not found at position " + std::to_string(blob.offset + blob.size - 4));
+                opts.reporter->segment_info(name(), relpath, "end marker 7777 or 777? not found at position " + std::to_string(blob.offset + blob.size - 4));
             }
         }
         nag::verbose("Checked %s:%s: %u ok, %u other formats, %u issue51, %u corrupted", name().c_str(), relpath.c_str(), count_ok, count_otherformat, count_issue51, count_corrupted);
@@ -113,7 +113,7 @@ void IndexedChecker::check_issue51(CheckerConfig& opts)
     if (opts.readonly)
     {
         for (const auto& i: broken_mds)
-            opts.reporter.segment_issue51(name(), i.first, "segment contains data with corrupted terminator signature");
+            opts.reporter->segment_issue51(name(), i.first, "segment contains data with corrupted terminator signature");
     } else {
         for (const auto& i: broken_mds)
         {
@@ -142,7 +142,7 @@ void IndexedChecker::check_issue51(CheckerConfig& opts)
                     return;
                 datafile.pwrite("7", 1, blob.offset + blob.size - 1);
             }
-            opts.reporter.segment_issue51(name(), i.first, "fixed corrupted terminator signatures");
+            opts.reporter->segment_issue51(name(), i.first, "fixed corrupted terminator signatures");
         }
     }
 

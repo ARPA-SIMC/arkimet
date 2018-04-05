@@ -229,8 +229,9 @@ struct ArchivesCheckerRoot: public ArchivesRoot<Checker>
             // before starting moving files into it.
 
             // Run a check to remove needs-check-do-not-pack files
-            NullReporter r;
-            last->check(r, true, true);
+            CheckerConfig conf;
+            conf.readonly = false;
+            last->check(conf);
         }
     }
 
@@ -389,18 +390,10 @@ void ArchivesChecker::repack_filtered(const Matcher& matcher, dataset::Reporter&
     });
 }
 
-void ArchivesChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
+void ArchivesChecker::check(CheckerConfig& opts)
 {
     archives->iter([&](Checker& a) {
-        a.check(reporter, fix, quick);
-        return true;
-    });
-}
-
-void ArchivesChecker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
-{
-    archives->iter([&](Checker& a) {
-        a.check_filtered(matcher, reporter, fix, quick);
+        a.check(opts);
         return true;
     });
 }

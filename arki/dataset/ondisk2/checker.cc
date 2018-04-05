@@ -379,25 +379,13 @@ void Checker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporte
     IndexedChecker::repack_filtered(matcher, reporter, writable, test_flags);
 }
 
-void Checker::check(dataset::Reporter& reporter, bool fix, bool quick)
+void Checker::check(CheckerConfig& opts)
 {
-    // TODO: escalate to a write lock while repacking a file
-    IndexedChecker::check(reporter, fix, quick);
+    IndexedChecker::check(opts);
 
-    if (!idx->checkSummaryCache(*this, reporter) && fix)
+    if (!idx->checkSummaryCache(*this, *opts.reporter) && !opts.readonly)
     {
-        reporter.operation_progress(name(), "check", "rebuilding summary cache");
-        idx->rebuildSummaryCache();
-    }
-}
-
-void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
-{
-    IndexedChecker::check_filtered(matcher, reporter, fix, quick);
-
-    if (!idx->checkSummaryCache(*this, reporter) && fix)
-    {
-        reporter.operation_progress(name(), "check", "rebuilding summary cache");
+        opts.reporter->operation_progress(name(), "check", "rebuilding summary cache");
         idx->rebuildSummaryCache();
     }
 }

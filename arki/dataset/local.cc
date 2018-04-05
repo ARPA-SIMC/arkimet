@@ -214,16 +214,10 @@ void LocalChecker::repack_filtered(const Matcher& matcher, dataset::Reporter& re
         archive().repack_filtered(matcher, reporter, writable, test_flags);
 }
 
-void LocalChecker::check(dataset::Reporter& reporter, bool fix, bool quick)
+void LocalChecker::check(CheckerConfig& opts)
 {
-    if (!skip_archives && hasArchive())
-        archive().check(reporter, fix, quick);
-}
-
-void LocalChecker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
-{
-    if (!skip_archives && hasArchive())
-        archive().check_filtered(matcher, reporter, fix, quick);
+    if (opts.offline && hasArchive())
+        archive().check(opts);
 }
 
 void LocalChecker::remove_all(CheckerConfig& opts)

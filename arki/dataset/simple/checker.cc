@@ -363,13 +363,10 @@ void Checker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporte
     IndexedChecker::repack_filtered(matcher, reporter, writable, test_flags);
     m_mft->flush();
 }
-void Checker::check(dataset::Reporter& reporter, bool fix, bool quick) {
-    IndexedChecker::check(reporter, fix, quick);
-    m_mft->flush();
-}
-void Checker::check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick)
+
+void Checker::check(CheckerConfig& opts)
 {
-    IndexedChecker::check_filtered(matcher, reporter, fix, quick);
+    IndexedChecker::check(opts);
     m_mft->flush();
 }
 
