@@ -11,6 +11,7 @@ Build-Depends: debhelper (>= 9), dh-python, dh-autoreconf, dh-buildinfo,
   libdballe-dev (>= 5.0),
   libgrib-api-dev,
   libhdf5-dev,
+  libarchive-dev,
   curl,
   python3-all-dev, python3-nose2, python3-werkzeug, python3-setproctitle
 Standards-Version: 3.7.2.0

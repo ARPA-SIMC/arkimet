@@ -416,7 +416,7 @@ void Metadata::write(NamedFileDescriptor& out) const
     }
 }
 
-void Metadata::writeYaml(std::ostream& out, const Formatter* formatter) const
+void Metadata::write_yaml(std::ostream& out, const Formatter* formatter) const
 {
     if (m_source) out << "Source: " << *m_source << endl;
     for (map<types::Code, types::Type*>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i)

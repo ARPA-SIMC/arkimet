@@ -2,7 +2,7 @@
 
 SUBDIRS = .
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(LIBARCHIVE_CFLAGS)
 if FILE_OFFSET_BITS_64
 AM_CPPFLAGS += -D_FILE_OFFSET_BITS=64
 endif
@@ -107,6 +107,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		metadata/consumer.h \
 		metadata/clusterer.h \
 		metadata/xargs.h \
+		metadata/libarchive.h \
 		metadatagrid.h \
 		metadata.h \
 		metadata/stream.h \
@@ -208,7 +209,7 @@ noinst_LTLIBRARIES = libarkimet-test.la
 # Build these incrementally
 libarkimet_la_CPPFLAGS = $(AM_CPPFLAGS) -Werror
 libarkimet_la_SOURCES =
-libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
+libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(LIBARCHIVE_LIBS) $(DEVEL_LIBS) -lpthread
 libarkimet_test_la_SOURCES = tests/main.cpp
 tests_arki_test_SOURCES =
 tests_arki_test_LDADD =
@@ -392,6 +393,7 @@ libarkimet_la_SOURCES += \
 		metadata/stream.cc \
 		metadata/clusterer.cc \
 		metadata/consumer.cc \
+		metadata/libarchive.cc \
 		metadata/test-generator.cc \
 		reader.cc \
 		summary/stats.cc \
@@ -420,6 +422,7 @@ tests_arki_test_SOURCES += \
 		metadata/collection-test.cc \
 		metadata/clusterer-test.cc \
 		metadata/stream-test.cc \
+		metadata/libarchive-test.cc \
 		metadata/test-generator-test.cc \
 		reader-test.cc \
 		summary-test.cc \
@@ -651,7 +654,7 @@ check-local:
 		$(TESTS_ENVIRONMENT) $$test ; \
 	done
 
-tests_arki_test_LDADD += libarkimet.la libarkimet-test.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
+tests_arki_test_LDADD += libarkimet.la libarkimet-test.la $(SQLITE3_LDFLAGS) $(LIBARCHIVE_LIBS) $(DEVEL_LIBS) -lpthread
 
 tests/testdata.json: tests/arki-test
 	$(top_srcdir)/doc/update --testsuite=$< --cache-testsuite=$@

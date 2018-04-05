@@ -74,7 +74,7 @@ add_method("yaml", [](Fixture& f) {
     f.summary.visit(shrt);
 
     stringstream ss;
-    shrt.writeYaml(ss);
+    shrt.write_yaml(ss);
 
     wassert(actual(ss.str()) == R"(SummaryStats:
   Size: 30

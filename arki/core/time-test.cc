@@ -116,6 +116,14 @@ add_method("range_overlaps", [] {
     wassert(actual(Time::range_overlaps(t2010.get(), topen.get(), topen.get(), t2005.get())).isfalse());
 });
 
+add_method("to_unix", [] {
+    Time t = Time::decodeString("2005-12-01T18:00:00Z");
+    wassert(actual(t.to_unix()) == 1133460000);
+
+    t = Time::decodeString("2005-12-01T18:01:02Z");
+    wassert(actual(t.to_unix()) == 1133460062);
+});
+
 // Reproduce bugs
 add_method("regression1", [] {
     Time decoded = Time::decodeString("2005-12-01T18:00:00Z");

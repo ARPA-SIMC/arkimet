@@ -32,6 +32,11 @@
  {
   "doc": "",
   "group": "arki_core_time",
+  "method": "to_unix"
+ },
+ {
+  "doc": "",
+  "group": "arki_core_time",
   "method": "regression1"
  },
  {
@@ -1163,6 +1168,26 @@
   "doc": "",
   "group": "arki_metadata_stream",
   "method": "split"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_libarchive",
+  "method": "tar"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_libarchive",
+  "method": "targz"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_libarchive",
+  "method": "tarxz"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_libarchive",
+  "method": "zip"
  },
  {
   "doc": "",

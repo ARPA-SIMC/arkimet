@@ -82,6 +82,7 @@ struct CommandLine : public BaseCommandLine
     utils::commandline::StringOption* targetfile = nullptr;
     utils::commandline::StringOption* postprocess = nullptr;
     utils::commandline::StringOption* report = nullptr;
+    utils::commandline::OptvalStringOption* archive = nullptr;
     utils::commandline::StringOption* sort = nullptr;
     utils::commandline::StringOption* files = nullptr;
     utils::commandline::StringOption* moveok = nullptr;

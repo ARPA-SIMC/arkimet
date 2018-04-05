@@ -30,10 +30,10 @@ add_method("yaml", [] {
     unique_ptr<Formatter> formatter(Formatter::create());
 
     stringstream str1;
-    md.writeYaml(str1);
+    md.write_yaml(str1);
 
     stringstream str2;
-    md.writeYaml(str2, formatter.get());
+    md.write_yaml(str2, formatter.get());
 
     // They must be different
     wassert(actual(str1.str()) != str2.str());

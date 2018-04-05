@@ -22,6 +22,9 @@
 /* lua is available */
 #undef HAVE_LUA
 
+/* lua is available */
+#undef HAVE_LIBARCHIVE
+
 /* SQLite 3 is available */
 #undef HAVE_SQLITE3
 

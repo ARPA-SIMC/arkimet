@@ -350,12 +350,12 @@ add_method("postproc_error1", [] {
     string yaml1, yaml2;
     {
         stringstream s1;
-        mdc1[0].writeYaml(s1);
+        mdc1[0].write_yaml(s1);
         yaml1 = s1.str();
     }
     {
         stringstream s1;
-        mdc2[0].writeYaml(s1);
+        mdc2[0].write_yaml(s1);
         yaml2 = s1.str();
     }
     ensure_equals(yaml1, yaml2);

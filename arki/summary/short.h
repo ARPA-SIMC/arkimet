@@ -23,7 +23,7 @@ struct Short : public summary::Visitor
     /**
      * Write the short summary as YAML text to the given output stream.
      */
-    void writeYaml(std::ostream& out, const Formatter* f=0) const;
+    void write_yaml(std::ostream& out, const Formatter* f=nullptr) const;
 
     bool operator()(const std::vector<const types::Type*>& md, const summary::Stats& stats) override;
 };

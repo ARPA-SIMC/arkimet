@@ -3,9 +3,11 @@
 
 /// Run user requested operations on datasets
 
+#include <arki/core/fwd.h>
 #include <arki/utils/sys.h>
 #include <string>
 #include <memory>
+#include <vector>
 #include <functional>
 
 namespace arki {
@@ -62,7 +64,7 @@ struct ProcessorMaker
     bool server_side = false;
     std::string postprocess;
     std::string report;
-
+    std::string archive;
     std::string summary_restrict;
     std::string sort;
 

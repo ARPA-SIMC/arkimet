@@ -31,7 +31,7 @@ void Short::serialise(Emitter& e, const Formatter* f) const
     e.end_mapping();
 }
 
-void Short::writeYaml(std::ostream& out, const Formatter* f) const
+void Short::write_yaml(std::ostream& out, const Formatter* f) const
 {
     out << "SummaryStats:" << endl;
     out << "  " << "Size: " << stats.size << endl;

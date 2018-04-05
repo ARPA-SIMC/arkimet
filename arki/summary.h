@@ -178,10 +178,10 @@ public:
 	 */
 	void writeAtomically(const std::string& filename);
 
-	/**
-	 * Write the summary as YAML text to the given output stream.
-	 */
-	void writeYaml(std::ostream& out, const Formatter* f = 0) const;
+    /**
+     * Write the summary as YAML text to the given output stream.
+     */
+    void write_yaml(std::ostream& out, const Formatter* f=nullptr) const;
 
     /// Serialise using an emitter
     void serialise(Emitter& e, const Formatter* f=0) const;

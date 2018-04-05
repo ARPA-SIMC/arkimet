@@ -114,7 +114,7 @@ struct YamlPrinter
     std::string serialize(const Metadata& md)
     {
         stringstream ss;
-        md.writeYaml(ss, formatter);
+        md.write_yaml(ss, formatter);
         ss << endl;
         return ss.str();
     }
@@ -122,7 +122,7 @@ struct YamlPrinter
     std::string serialize(const Summary& s)
     {
         stringstream ss;
-        s.writeYaml(ss, formatter);
+        s.write_yaml(ss, formatter);
         ss << endl;
         return ss.str();
     }
