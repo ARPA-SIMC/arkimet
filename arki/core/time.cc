@@ -317,6 +317,19 @@ std::string Time::to_sql() const
     return buf;
 }
 
+time_t Time::to_unix() const
+{
+    if (ye < 1970) return 0;
+    struct tm t;
+    t.tm_sec = se;
+    t.tm_min = mi;
+    t.tm_hour = ho;
+    t.tm_mday = da;
+    t.tm_mon = mo - 1;
+    t.tm_year = ye - 1900;
+    return timegm(&t);
+}
+
 Time Time::decode(BinaryDecoder& dec)
 {
     uint32_t a = dec.pop_uint(4, "first 32 bits of encoded time");

@@ -175,6 +175,14 @@ public:
     /// Return the time formatted as a string in SQL format
     std::string to_sql() const;
 
+    /**
+     * Return the time as a time_t value.
+     *
+     * Values not representable as time_t will be rendered with the closest
+     * time_t value. This means that a value from 1968 will appear as
+     * 1970-01-01
+     */
+    time_t to_unix() const;
 
     /// CODEC functions
     void encodeWithoutEnvelope(BinaryEncoder& enc) const;

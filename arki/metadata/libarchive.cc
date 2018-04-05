@@ -4,6 +4,7 @@
 #include "arki/exceptions.h"
 #include "arki/utils/sys.h"
 #include "arki/types/source/blob.h"
+#include "arki/types/reftime.h"
 #include <archive.h>
 #include <archive_entry.h>
 #include <cstring>
@@ -75,11 +76,15 @@ void LibarchiveOutput::append(const Metadata& md)
     const std::vector<uint8_t>& stored_data = stored_md->getData();
     std::unique_ptr<types::Source> stored_source = types::Source::createBlobUnlocked(md.source().format, "", filename_buf, 0, stored_data.size());
 
+
     archive_entry_clear(entry);
     archive_entry_set_pathname(entry, filename_buf);
     archive_entry_set_size(entry, stored_data.size());
     archive_entry_set_filetype(entry, AE_IFREG);
     archive_entry_set_perm(entry, 0644);
+    if (const auto* reftime = stored_md->get<types::reftime::Position>())
+        archive_entry_set_mtime(entry, reftime->time.to_unix(), 0);
+
     if (archive_write_header(a, entry) != ARCHIVE_OK)
         throw archive_runtime_error(a, "cannot write entry header");
 
@@ -124,6 +129,7 @@ void LibarchiveOutput::flush()
     archive_entry_set_size(entry, buf.size());
     archive_entry_set_filetype(entry, AE_IFREG);
     archive_entry_set_perm(entry, 0644);
+    archive_entry_set_mtime(entry, time(nullptr), 0);
     if (archive_write_header(a, entry) != ARCHIVE_OK)
         throw archive_runtime_error(a, "cannot write entry header");
 

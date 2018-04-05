@@ -32,6 +32,11 @@
  {
   "doc": "",
   "group": "arki_core_time",
+  "method": "to_unix"
+ },
+ {
+  "doc": "",
+  "group": "arki_core_time",
   "method": "regression1"
  },
  {
