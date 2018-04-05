@@ -274,6 +274,7 @@ public:
 
     void remove_all(CheckerConfig& opts) override;
     void tar(CheckerConfig& config) override;
+    void state(CheckerConfig& config) override;
 
     /**
      * Perform generic packing and optimisations

@@ -236,17 +236,7 @@ struct PrintState : public WorkerWithConfig
 
     void operator()(dataset::Checker& w) override
     {
-        using namespace arki::dataset;
-        if (segmented::Checker* c = dynamic_cast<segmented::Checker*>(&w))
-        {
-            c->segments_recursive(opts, [&](segmented::Checker& ds, segmented::CheckerSegment& segment) {
-                auto state = segment.scan(*opts.reporter, !opts.accurate);
-                fprintf(stdout, "%s:%s: %s %s to %s\n",
-                        ds.name().c_str(), segment.segment->relname.c_str(),
-                        state.state.to_string().c_str(),
-                        state.begin.to_iso8601(' ').c_str(), state.until.to_iso8601(' ').c_str());
-            });
-        }
+        w.state(opts);
     }
 
     void done() override {}

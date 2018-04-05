@@ -232,6 +232,12 @@ void LocalChecker::check_issue51(CheckerConfig& opts)
         archive().check_issue51(opts);
 }
 
+void LocalChecker::state(CheckerConfig& opts)
+{
+    if (opts.offline && hasArchive())
+        archive().state(opts);
+}
+
 template class LocalBase<Reader, ArchivesReader>;
 template class LocalBase<Checker, ArchivesChecker>;
 }

@@ -121,6 +121,7 @@ public:
     void check(CheckerConfig& opts) override;
     void check_issue51(CheckerConfig& opts) override;
     void tar(CheckerConfig& config) override;
+    void state(CheckerConfig& config) override;
 
     /// Return the number of archives found, used for testing
     unsigned test_count_archives() const;

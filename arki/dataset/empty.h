@@ -92,6 +92,7 @@ public:
     void tar(CheckerConfig&) override {}
     void repack(CheckerConfig&, unsigned test_flags=0) override {}
     void check(CheckerConfig&) override {}
+    void state(CheckerConfig&) override {}
 };
 
 

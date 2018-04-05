@@ -344,6 +344,17 @@ void Checker::tar(CheckerConfig& opts)
     LocalChecker::tar(opts);
 }
 
+void Checker::state(CheckerConfig& opts)
+{
+    segments(opts, [&](CheckerSegment& segment) {
+        auto state = segment.scan(*opts.reporter, !opts.accurate);
+        opts.reporter->segment_tar(name(), segment.path_relative(),
+                state.state.to_string() + " " + state.begin.to_iso8601(' ') + " to " + state.until.to_iso8601(' '));
+    });
+
+    LocalChecker::state(opts);
+}
+
 void Checker::repack(CheckerConfig& opts, unsigned test_flags)
 {
     const string& root = config().path;

@@ -425,6 +425,9 @@ struct Checker : public dataset::Base
     /// Convert directory segments into tar segments
     virtual void tar(CheckerConfig& opts) = 0;
 
+    /// Send the dataset state to the reporter
+    virtual void state(CheckerConfig& opts) = 0;
+
     /**
      * Check consistency of the last byte of GRIB and BUFR data in the archive,
      * optionally fixing it.

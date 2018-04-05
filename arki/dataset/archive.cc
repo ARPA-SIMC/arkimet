@@ -412,6 +412,15 @@ void ArchivesChecker::check_issue51(CheckerConfig& opts)
     });
 }
 
+void ArchivesChecker::state(CheckerConfig& opts)
+{
+    if (!opts.offline) return;
+    archives->iter([&](Checker& a) {
+        a.state(opts);
+        return true;
+    });
+}
+
 static std::string poppath(std::string& path)
 {
 	size_t start = 0;
