@@ -160,11 +160,12 @@ add_method("scan_reindex", [](Fixture& f) {
         index::WIndex index(f.ondisk2_config());
         index.open();
         index.reset("2007/07-08.grib");
+        files::createDontpackFlagfile("testds");
     }
 
     auto state = f.scan_state();
     wassert(actual(state.count(SEGMENT_OK)) == 2u);
-    wassert(actual(state.get("2007/07-08.grib").state) == segment::State(SEGMENT_DELETED));
+    wassert(actual(state.get("2007/07-08.grib").state) == segment::State(SEGMENT_UNALIGNED));
     wassert(actual(state.size()) == 3u);
 
     // Perform full maintenance and check that things are still ok afterwards
@@ -178,21 +179,12 @@ add_method("scan_reindex", [](Fixture& f) {
     // away; therefore, we can only interrupt the maintenance and raise an
     // exception calling for manual fixing.
     auto checker = f.makeOndisk2Checker();
-    wassert_throws(std::runtime_error, {
+    auto e = wassert_throws(std::runtime_error, {
         CheckerConfig opts;
         opts.readonly = false;
-        //opts.accurate = true;
         checker->check(opts);
     });
-
-    /*
-    try {
-        wassert(actual(*f.makeSegmentedChecker()).check_clean(true));
-        wassert(actual(false).istrue());
-    } catch (std::runtime_error& e) {
-        wassert(actual(e.what()).contains("manual"));
-    }
-    */
+    wassert(actual(e.what()).contains("manual"));
 });
 
 add_method("scan_reindex_compressed", [](Fixture& f) {
