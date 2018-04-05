@@ -56,6 +56,7 @@ public:
     const_iterator end() const { return vals.end(); }
 
     const Metadata& back() const { return *vals.back(); }
+    Metadata& back() { return *vals.back(); }
 
     /**
      * Create a batch for acquire_batch with the contents of this collection

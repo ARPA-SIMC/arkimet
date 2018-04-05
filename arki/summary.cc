@@ -579,7 +579,7 @@ bool Summary::visitFiltered(const Matcher& matcher, summary::Visitor& visitor) c
         return root->visitFiltered(matcher, visitor);
 }
 
-void Summary::writeYaml(std::ostream& out, const Formatter* f) const
+void Summary::write_yaml(std::ostream& out, const Formatter* f) const
 {
     if (root->empty()) return;
     summary::YamlPrinter printer(out, 2, f);
@@ -745,7 +745,7 @@ void Summary::filter(const Matcher& matcher, Summary& result) const
 
 std::ostream& operator<<(std::ostream& o, const Summary& s)
 {
-    s.writeYaml(o);
+    s.write_yaml(o);
     return o;
 }
 

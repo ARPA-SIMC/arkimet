@@ -17,6 +17,74 @@ using namespace std;
 using namespace arki::core;
 using namespace arki::utils;
 
+namespace {
+
+struct Printer
+{
+    sys::NamedFileDescriptor& out;
+    Printer(sys::NamedFileDescriptor& out) : out(out) {}
+    virtual ~Printer() {}
+    virtual void operator()(const arki::Metadata& md) = 0;
+};
+
+struct BinaryPrinter : public Printer
+{
+    using Printer::Printer;
+    void operator()(const arki::Metadata& md) override
+    {
+        md.write(out);
+    }
+};
+
+#if 0
+struct LibarchivePrinter : public Printer
+{
+    using Printer::Printer;
+    void operator()(const arki::Metadata& md) override
+    {
+        md.write(out);
+    }
+};
+#endif
+
+struct FormattedPrinter : public Printer
+{
+    arki::Formatter* formatter = nullptr;
+    FormattedPrinter(sys::NamedFileDescriptor& out, bool annotate)
+        : Printer(out)
+    {
+        if (annotate)
+            formatter = arki::Formatter::create().release();
+    }
+    ~FormattedPrinter() { delete formatter; }
+};
+
+struct JSONPrinter : public FormattedPrinter
+{
+    using FormattedPrinter::FormattedPrinter;
+    void operator()(const arki::Metadata& md) override
+    {
+        stringstream ss;
+        arki::emitter::JSON json(ss);
+        md.serialise(json, formatter);
+        out.write_all_or_throw(ss.str());
+    }
+};
+
+struct YamlPrinter : public FormattedPrinter
+{
+    using FormattedPrinter::FormattedPrinter;
+    void operator()(const arki::Metadata& md) override
+    {
+        stringstream ss;
+        md.write_yaml(ss, formatter);
+        ss << endl;
+        out.write_all_or_throw(ss.str());
+    }
+};
+
+}
+
 namespace arki {
 namespace runtime {
 
@@ -34,29 +102,15 @@ SingleOutputProcessor::SingleOutputProcessor(const utils::sys::NamedFileDescript
 }
 
 
-metadata_print_func create_metadata_printer(ProcessorMaker& maker, sys::NamedFileDescriptor& out)
+std::unique_ptr<Printer> create_metadata_printer(ProcessorMaker& maker, sys::NamedFileDescriptor& out)
 {
     if (!maker.json && !maker.yaml && !maker.annotate)
-        return [&](const Metadata& md) { md.write(out); };
-
-    shared_ptr<Formatter> formatter;
-    if (maker.annotate)
-        formatter = Formatter::create();
+        return std::unique_ptr<Printer>(new BinaryPrinter(out));
 
     if (maker.json)
-        return [&out, formatter](const Metadata& md) {
-            stringstream ss;
-            emitter::JSON json(ss);
-            md.serialise(json, formatter.get());
-            out.write_all_or_throw(ss.str());
-        };
+        return std::unique_ptr<Printer>(new JSONPrinter(out, maker.annotate));
 
-    return [&out, formatter](const Metadata& md) {
-        stringstream ss;
-        md.writeYaml(ss, formatter.get());
-        ss << endl;
-        out.write_all_or_throw(ss.str());
-    };
+    return std::unique_ptr<Printer>(new YamlPrinter(out, maker.annotate));
 }
 
 summary_print_func create_summary_printer(ProcessorMaker& maker, sys::NamedFileDescriptor& out)
@@ -79,7 +133,7 @@ summary_print_func create_summary_printer(ProcessorMaker& maker, sys::NamedFileD
 
     return [&out, formatter](const Summary& s) {
         stringstream ss;
-        s.writeYaml(ss, formatter.get());
+        s.write_yaml(ss, formatter.get());
         ss << endl;
         string res = ss.str();
         out.write_all_or_throw(ss.str());
@@ -99,7 +153,7 @@ std::string describe_printer(ProcessorMaker& maker)
 
 struct DataProcessor : public SingleOutputProcessor
 {
-    metadata_print_func printer;
+    std::unique_ptr<Printer> printer;
     dataset::DataQuery query;
     vector<string> description_attrs;
     bool data_inline;
@@ -147,7 +201,7 @@ struct DataProcessor : public SingleOutputProcessor
     {
         if (data_inline)
         {
-            ds.query_data(query, [&](unique_ptr<Metadata> md) { check_hooks(); md->makeInline(); printer(*md); return true; });
+            ds.query_data(query, [&](unique_ptr<Metadata> md) { check_hooks(); md->makeInline(); (*printer)(*md); return true; });
         } else if (server_side) {
             map<string, string>::const_iterator iurl = ds.cfg().find("url");
             if (iurl == ds.cfg().end())
@@ -155,14 +209,14 @@ struct DataProcessor : public SingleOutputProcessor
                 ds.query_data(query, [&](unique_ptr<Metadata> md) {
                     check_hooks();
                     md->make_absolute();
-                    printer(*md);
+                    (*printer)(*md);
                     return true;
                 });
             } else {
                 ds.query_data(query, [&](unique_ptr<Metadata> md) {
                     check_hooks();
                     md->set_source(types::Source::createURL(md->source().format, iurl->second));
-                    printer(*md);
+                    (*printer)(*md);
                     return true;
                 });
             }
@@ -170,7 +224,7 @@ struct DataProcessor : public SingleOutputProcessor
             ds.query_data(query, [&](unique_ptr<Metadata> md) {
                 check_hooks();
                 md->make_absolute();
-                printer(*md);
+                (*printer)(*md);
                 return true;
             });
         }
@@ -280,7 +334,7 @@ struct SummaryShortProcessor : public SingleOutputProcessor
             c.serialise(json, formatter.get());
         }
         else
-            c.writeYaml(ss, formatter.get());
+            c.write_yaml(ss, formatter.get());
 
         output.write_all_or_retry(ss.str());
     }

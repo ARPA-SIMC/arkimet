@@ -39,7 +39,7 @@ static PyObject* arkipy_Summary_write(arkipy_Summary* self, PyObject *args, PyOb
             self->summary->write(fd, fd_name);
         } else if (strcmp(format, "yaml") == 0) {
             std::stringstream buf;
-            self->summary->writeYaml(buf);
+            self->summary->write_yaml(buf);
             sys::NamedFileDescriptor outfd(fd, fd_name);
             outfd.write_all_or_retry(buf.str());
             return nullptr;
@@ -79,7 +79,7 @@ static PyObject* arkipy_Summary_write_short(arkipy_Summary* self, PyObject *args
         if (!format || strcmp(format, "yaml") == 0)
         {
             std::stringstream buf;
-            shrt.writeYaml(buf);
+            shrt.write_yaml(buf);
             sys::NamedFileDescriptor outfd(fd, fd_name);
             outfd.write_all_or_retry(buf.str());
             return nullptr;

@@ -167,7 +167,7 @@ add_method("yaml", [](Fixture& f) {
     f.fill(md);
 
     stringstream output;
-    md.writeYaml(output);
+    md.write_yaml(output);
     Metadata md1;
     string s(output.str());
     auto reader = LineReader::from_chars(s.data(), s.size());
@@ -181,7 +181,7 @@ add_method("yaml", [](Fixture& f) {
     md.set(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
 
     stringstream output1;
-    md.writeYaml(output1);
+    md.write_yaml(output1);
     Metadata md2;
     s = output1.str();
     reader = LineReader::from_chars(s.data(), s.size());

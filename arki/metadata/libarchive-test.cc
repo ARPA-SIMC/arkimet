@@ -1,5 +1,7 @@
 #include "arki/tests/tests.h"
-#include "arki/metadata/stream.h"
+#include "libarchive.h"
+#include "arki/utils/sys.h"
+#if 0
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source.h"
@@ -11,8 +13,8 @@
 #include "arki/types/area.h"
 #include "arki/types/proddef.h"
 #include "arki/types/assigneddataset.h"
-#include "arki/utils/sys.h"
 #include <iostream>
+#endif
 
 namespace {
 using namespace std;
@@ -20,6 +22,7 @@ using namespace arki;
 using namespace arki::utils;
 using namespace arki::tests;
 
+#if 0
 /**
  * Creates a tempfile, runs body and returns the contents of the temp file after that.
  *
@@ -85,88 +88,90 @@ inline bool cmpmd(Metadata& md1, Metadata& md2)
     }
     return true;
 }
-
+#endif
 
 class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_metadata_stream");
+} test("arki_metadata_libarchive");
 
 void Tests::register_tests() {
 
 // Test compression
-add_method("stream", [] {
-    // Create test metadata
-    Metadata md1;
-    md1.set_source(types::Source::createURL("grib", "http://www.example.org"));
-    fill(md1);
+add_method("targz", [] {
+#ifndef HAVE_LIBARCHIVE
+    throw TestSkipped();
+#endif
+    metadata::TestCollection mds("inbound/test.grib1");
+    sys::File out("test.tar.gz", O_WRONLY | O_CREAT | O_TRUNC);
+    metadata::LibarchiveOutput arc_out("tar.gz", out);
+    wassert(arc_out.append(mds[0]));
+    wassert(arc_out.append(mds[1]));
+    wassert(arc_out.append(mds[2]));
+    wassert(arc_out.flush());
+    out.close();
 
-    Metadata md2;
-    md2 = md1;
-    md2.set(types::origin::BUFR::create(1, 2));
-
-    const char* teststr = "this is a test";
-    md1.set_source_inline("test", vector<uint8_t>(teststr, teststr + 14));
-
-    // Encode everything in a buffer
-    size_t end1, end2;
-    std::string input = tempfile_to_string([&](sys::NamedFileDescriptor& out) {
-        md1.write(out);
-        end1 = out.lseek(0, SEEK_CUR);
-        md2.write(out);
-        end2 = out.lseek(0, SEEK_CUR);
-    });
-
-	// Where we collect the decoded metadata
-	metadata::Collection results;
-
-    // Stream for the decoding
-    metadata::Stream mdstream(results.inserter_func(), "test stream");
-
-	size_t cur = 0;
-
-	// Not a full metadata yet
-	mdstream.readData(input.data() + cur, end1 - 20);
-	cur += end1-20;
-	ensure_equals(results.size(), 0u);
-
-	// The full metadata but not the data
-	mdstream.readData(input.data() + cur, 10);
-	cur += 10;
-	ensure_equals(results.size(), 0u);
-
-	// The full metadata and the data and part of the next metadata
-	mdstream.readData(input.data() + cur, 40);
-	cur += 40;
-	ensure_equals(results.size(), 1u);
-
-	// All the rest
-	mdstream.readData(input.data() + cur, end2-cur);
-	cur = end2;
-
-	// No bytes must be left to decode
-	ensure_equals(mdstream.countBytesUnprocessed(), 0u);
-
-	// See that we've got what we expect
-	ensure_equals(results.size(), 2u);
-	ensure(cmpmd(md1, results[0]));
-	ensure(cmpmd(md2, results[1]));
-	
-	results.clear();
-
-	// Try feeding all the data at the same time
-	mdstream.readData(input.data(), input.size());
-
-	// No bytes must be left to decode
-	ensure_equals(mdstream.countBytesUnprocessed(), 0u);
-
-	// See that we've got what we expect
-	ensure_equals(results.size(), 2u);
-	ensure(cmpmd(md1, results[0]));
-	ensure(cmpmd(md2, results[1]));
+    wassert(actual(system("tar ztf test.tar.gz > test.out")) == 0);
+    wassert(actual(sys::read_file("test.out")) == 
+        "000001.grib\n"
+        "000002.grib\n"
+        "000003.grib\n"
+        "metadata.md\n"
+    );
 });
 
+add_method("tarxz", [] {
+#ifndef HAVE_LIBARCHIVE
+    throw TestSkipped();
+#endif
+    metadata::TestCollection mds("inbound/test.grib1");
+    sys::File out("test.tar.xz", O_WRONLY | O_CREAT | O_TRUNC);
+    metadata::LibarchiveOutput arc_out("tar.xz", out);
+    wassert(arc_out.append(mds[0]));
+    wassert(arc_out.append(mds[1]));
+    wassert(arc_out.append(mds[2]));
+    wassert(arc_out.flush());
+    out.close();
+
+    wassert(actual(system("tar Jtf test.tar.xz > test.out")) == 0);
+    wassert(actual(sys::read_file("test.out")) == 
+        "000001.grib\n"
+        "000002.grib\n"
+        "000003.grib\n"
+        "metadata.md\n"
+    );
+});
+
+add_method("zip", [] {
+#ifndef HAVE_LIBARCHIVE
+    throw TestSkipped();
+#endif
+    metadata::TestCollection mds("inbound/test.grib1");
+    sys::File out("test.zip", O_WRONLY | O_CREAT | O_TRUNC);
+    metadata::LibarchiveOutput arc_out("zip", out);
+    wassert(arc_out.append(mds[0]));
+    wassert(arc_out.append(mds[1]));
+    wassert(arc_out.append(mds[2]));
+    wassert(arc_out.flush());
+    out.close();
+
+    wassert(actual(system("unzip -l test.zip > test.out")) == 0);
+    wassert(actual(sys::read_file("test.out")) == 
+R"(Archive:  test.zip
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+     7218  1980-01-01 00:00   000001.grib
+    34960  1980-01-01 00:00   000002.grib
+     2234  1980-01-01 00:00   000003.grib
+      612  1980-01-01 00:00   metadata.md
+---------                     -------
+    45024                     4 files
+)"
+    );
+});
+
+#if 0
 // Send data split in less chunks than we have metadata
 add_method("split", [] {
     // Create test metadata
@@ -201,7 +206,7 @@ add_method("split", [] {
     ensure(cmpmd(md, results[1]));
     ensure(cmpmd(md, results[2]));
 });
+#endif
 
 }
-
 }

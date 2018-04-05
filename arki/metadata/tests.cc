@@ -57,9 +57,9 @@ void ActualMetadata::operator==(const Metadata& expected) const
     if (_actual == expected) return;
     std::stringstream ss;
     ss << "value:" << endl;
-    _actual.writeYaml(ss);
+    _actual.write_yaml(ss);
     ss << "is different than the expected:" << endl;
-    expected.writeYaml(ss);
+    expected.write_yaml(ss);
     throw TestFailed(ss.str());
 }
 
@@ -68,9 +68,9 @@ void ActualMetadata::operator!=(const Metadata& expected) const
     if (_actual != expected) return;
     std::stringstream ss;
     ss << "value:" << endl;
-    _actual.writeYaml(ss);
+    _actual.write_yaml(ss);
     ss << "is not different than the expected:" << endl;
-    expected.writeYaml(ss);
+    expected.write_yaml(ss);
     throw TestFailed(ss.str());
 }
 

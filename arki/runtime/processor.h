@@ -3,9 +3,11 @@
 
 /// Run user requested operations on datasets
 
+#include <arki/core/fwd.h>
 #include <arki/utils/sys.h>
 #include <string>
 #include <memory>
+#include <vector>
 #include <functional>
 
 namespace arki {

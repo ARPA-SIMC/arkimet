@@ -183,10 +183,10 @@ public:
      */
     void write(core::NamedFileDescriptor& out) const;
 
-	/**
-	 * Write the metadata as YAML text to the given output stream.
-	 */
-	void writeYaml(std::ostream& out, const Formatter* formatter = 0) const;
+    /**
+     * Write the metadata as YAML text to the given output stream.
+     */
+    void write_yaml(std::ostream& out, const Formatter* formatter=nullptr) const;
 
     /// Serialise using an emitter
     void serialise(Emitter& e, const Formatter* f=0) const;

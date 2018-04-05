@@ -155,7 +155,7 @@ add_method("binary", [](Fixture& f) {
 // Test serialisation to Yaml
 add_method("yaml", [](Fixture& f) {
     stringstream stream1;
-    f.s.writeYaml(stream1);
+    f.s.write_yaml(stream1);
     Summary s2;
     string st(stream1.str());
     auto reader = LineReader::from_chars(st.data(), st.size());
@@ -285,7 +285,7 @@ add_method("summarise_grib", [](Fixture& f) {
 
     // Serialisation to Yaml
     stringstream stream1;
-    s1.writeYaml(stream1);
+    s1.write_yaml(stream1);
     Summary s3;
     string st2(stream1.str());
     auto reader = LineReader::from_chars(st2.data(), st2.size());
@@ -357,7 +357,7 @@ add_method("binary_old", [](Fixture& f) {
     // Serialisation to Yaml
     {
         stringstream stream;
-        s.writeYaml(stream);
+        s.write_yaml(stream);
         string st = stream.str();
         auto reader = LineReader::from_chars(st.data(), st.size());
         Summary s2;

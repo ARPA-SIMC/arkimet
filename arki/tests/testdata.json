@@ -1166,6 +1166,21 @@
  },
  {
   "doc": "",
+  "group": "arki_metadata_libarchive",
+  "method": "targz"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_libarchive",
+  "method": "tarxz"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_libarchive",
+  "method": "zip"
+ },
+ {
+  "doc": "",
   "group": "arki_metadata_test_generator",
   "method": "grib1"
  },

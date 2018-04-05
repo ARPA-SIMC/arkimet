@@ -107,6 +107,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		metadata/consumer.h \
 		metadata/clusterer.h \
 		metadata/xargs.h \
+		metadata/libarchive.h \
 		metadatagrid.h \
 		metadata.h \
 		metadata/stream.h \
@@ -392,6 +393,7 @@ libarkimet_la_SOURCES += \
 		metadata/stream.cc \
 		metadata/clusterer.cc \
 		metadata/consumer.cc \
+		metadata/libarchive.cc \
 		metadata/test-generator.cc \
 		reader.cc \
 		summary/stats.cc \
@@ -420,6 +422,7 @@ tests_arki_test_SOURCES += \
 		metadata/collection-test.cc \
 		metadata/clusterer-test.cc \
 		metadata/stream-test.cc \
+		metadata/libarchive-test.cc \
 		metadata/test-generator-test.cc \
 		reader-test.cc \
 		summary-test.cc \

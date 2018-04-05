@@ -12,7 +12,7 @@
 namespace std {
 static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 {
-    m.writeYaml(o);
+    m.write_yaml(o);
     return o;
 }
 }
