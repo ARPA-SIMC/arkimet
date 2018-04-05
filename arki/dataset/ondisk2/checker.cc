@@ -369,16 +369,6 @@ Checker::~Checker()
 
 std::string Checker::type() const { return "ondisk2"; }
 
-void Checker::remove_all(dataset::Reporter& reporter, bool writable)
-{
-    IndexedChecker::remove_all(reporter, writable);
-}
-
-void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable)
-{
-    IndexedChecker::remove_all_filtered(matcher, reporter, writable);
-}
-
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
     IndexedChecker::repack(reporter, writable, test_flags);

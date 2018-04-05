@@ -226,16 +226,10 @@ void LocalChecker::check_filtered(const Matcher& matcher, dataset::Reporter& rep
         archive().check_filtered(matcher, reporter, fix, quick);
 }
 
-void LocalChecker::remove_all(dataset::Reporter& reporter, bool writable)
+void LocalChecker::remove_all(CheckerConfig& opts)
 {
-    if (!skip_archives && hasArchive())
-        archive().remove_all(reporter, writable);
-}
-
-void LocalChecker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable)
-{
-    if (!skip_archives && hasArchive())
-        archive().remove_all_filtered(matcher, reporter, writable);
+    if (opts.offline && hasArchive())
+        archive().remove_all(opts);
 }
 
 void LocalChecker::tar(CheckerConfig& opts)

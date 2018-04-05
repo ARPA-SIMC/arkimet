@@ -427,13 +427,16 @@ struct Checker : public dataset::Base
     /* [[deprecated("use CheckerConfig")]] */ virtual void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) = 0;
 
     /// Remove all data from the dataset
-    /* [[deprecated("use CheckerConfig")]] */ virtual void remove_all(dataset::Reporter& reporter, bool writable=false) = 0;
+    [[deprecated("use CheckerConfig")]] virtual void remove_all(dataset::Reporter& reporter, bool writable=false);
 
     /// Remove the segments from the dataset that match the given matcher
-    /* [[deprecated("use CheckerConfig")]] */ virtual void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) = 0;
+    [[deprecated("use CheckerConfig")]] virtual void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false);
+
+    /// Remove all data from the dataset
+    virtual void remove_all(CheckerConfig& opts) = 0;
 
     /// Convert directory segments into tar segments
-    virtual void tar(CheckerConfig& config) = 0;
+    virtual void tar(CheckerConfig& opts) = 0;
 
     /**
      * Check consistency of the last byte of GRIB and BUFR data in the archive,

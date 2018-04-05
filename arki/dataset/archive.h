@@ -110,8 +110,7 @@ public:
     void index_segment(const std::string& relname, metadata::Collection&& mds);
     void release_segment(const std::string& relpath, const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath);
 
-    void remove_all(dataset::Reporter& reporter, bool writable=false) override;
-    void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) override;
+    void remove_all(CheckerConfig& opts) override;
     void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;
     void check_issue51(CheckerConfig& opts) override;

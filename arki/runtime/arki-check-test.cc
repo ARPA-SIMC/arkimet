@@ -305,12 +305,12 @@ add_method("issue57", [](Fixture& f) {
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "-f", "testds" });
-        wassert(actual(res) == 0);
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
         wassert(actual(sys::read_file(co.file_stderr.name())) ==
             "testds:2016/10-05.vm2: segment found on disk with no associated index data\n"
             "testds:2016/10-05.vm2: rescanned\n"
             "testds: check 0 files ok, 1 file rescanned\n");
+        wassert(actual(res) == 0);
     }
 
     //arki-query '' issue57 > issue57/todelete.md
@@ -323,8 +323,8 @@ add_method("issue57", [](Fixture& f) {
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--remove=testds/todelete.md" });
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
         wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
         wassert(actual(res) == 0);
     }
 
@@ -353,8 +353,8 @@ add_method("tar", [](Fixture& f) {
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "testds", });
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
-        wassert(actual(sys::read_file(co.file_stderr.name())) ==
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
             "testds.archives.last:2007/07-07.odimh5: should be tarred\n"
         );
         wassert(actual(res) == 0);
@@ -363,8 +363,8 @@ add_method("tar", [](Fixture& f) {
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "--offline", "testds", });
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
-        wassert(actual(sys::read_file(co.file_stderr.name())) ==
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
             "testds.archives.last:2007/07-07.odimh5: should be tarred\n"
         );
         wassert(actual(res) == 0);
@@ -373,8 +373,8 @@ add_method("tar", [](Fixture& f) {
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "--online", "testds", });
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
-        wassert(actual(sys::read_file(co.file_stderr.name())) ==
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
             "testds:2007/07-08.odimh5: should be tarred\n"
             "testds:2007/10-09.odimh5: should be tarred\n"
         );
@@ -384,8 +384,8 @@ add_method("tar", [](Fixture& f) {
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "testds", "-f" });
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
-        wassert(actual(sys::read_file(co.file_stderr.name())) ==
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
             "testds.archives.last:2007/07-07.odimh5: tarred\n"
         );
         wassert(actual(res) == 0);

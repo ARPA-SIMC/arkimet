@@ -351,53 +351,35 @@ segmented::State Checker::scan_filtered(const Matcher& matcher, dataset::Reporte
     return segments_state;
 }
 
-void Checker::remove_all(dataset::Reporter& reporter, bool writable)
+void Checker::remove_all(CheckerConfig& opts)
 {
-    if (hasArchive())
-        archive().remove_all(reporter, writable);
-
-    segments_all([&](CheckerSegment& segment) {
-        if (writable)
+    segments(opts, [&](CheckerSegment& segment) {
+        if (opts.readonly)
+            opts.reporter.segment_delete(name(), segment.path_relative(), "should be deleted");
+        else
         {
             auto freed = segment.remove(true);
-            reporter.segment_delete(name(), segment.path_relative(), "deleted (" + std::to_string(freed) + " freed)");
+            opts.reporter.segment_delete(name(), segment.path_relative(), "deleted (" + std::to_string(freed) + " freed)");
         }
-        else
-            reporter.segment_delete(name(), segment.path_relative(), "should be deleted");
     });
+
+    LocalChecker::remove_all(opts);
 }
 
-void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable)
+void Checker::tar(CheckerConfig& opts)
 {
-    if (hasArchive())
-       archive().remove_all_filtered(matcher, reporter, writable);
-
-    segments_all_filtered(matcher, [&](CheckerSegment& segment) {
-        if (writable)
-        {
-            auto freed = segment.remove(true);
-            reporter.segment_delete(name(), segment.path_relative(), "deleted (" + std::to_string(freed) + " freed)");
-        }
-        else
-            reporter.segment_delete(name(), segment.path_relative(), "should be deleted");
-    });
-}
-
-void Checker::tar(CheckerConfig& config)
-{
-    if (hasArchive())
-        archive().tar(config);
-
-    segments(config, [&](CheckerSegment& segment) {
+    segments(opts, [&](CheckerSegment& segment) {
         if (segment.segment->single_file()) return;
-        if (config.readonly)
-            config.reporter.segment_tar(name(), segment.path_relative(), "should be tarred");
+        if (opts.readonly)
+            opts.reporter.segment_tar(name(), segment.path_relative(), "should be tarred");
         else
         {
             segment.tar();
-            config.reporter.segment_tar(name(), segment.path_relative(), "tarred");
+            opts.reporter.segment_tar(name(), segment.path_relative(), "tarred");
         }
     });
+
+    LocalChecker::tar(opts);
 }
 
 void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)

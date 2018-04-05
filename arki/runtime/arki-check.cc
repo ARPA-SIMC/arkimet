@@ -189,17 +189,13 @@ struct Repacker : public WorkerOnWritable
 
 struct RemoveAller : public WorkerOnWritable
 {
-    bool fix;
+    dataset::CheckerConfig& opts;
 
-    RemoveAller(bool fix) : fix(fix) {}
+    RemoveAller(dataset::CheckerConfig& opts) : opts(opts) {}
 
     void operator()(dataset::Checker& w) override
     {
-        dataset::OstreamReporter r(cout);
-        if (filter.empty())
-            w.remove_all(r, fix);
-        else
-            w.remove_all_filtered(filter, r, fix);
+        w.remove_all(opts);
     }
 
     void done() {}
@@ -367,11 +363,14 @@ int arki_check(int argc, const char* argv[])
                 ++count;
             }
         } else {
-            dataset::OstreamReporter reporter(cerr);
+            dataset::OstreamReporter reporter(cout);
             dataset::CheckerConfig config(reporter, !opts.fix->boolValue());
 
             if (opts.remove_all->boolValue())
-                worker.reset(new RemoveAller(opts.fix->boolValue()));
+            {
+                opts.set_checker_config(config, false, true);
+                worker.reset(new RemoveAller(config));
+            }
             else if (opts.repack->boolValue())
                 worker.reset(new Repacker(opts.fix->boolValue()));
             else if (opts.tar->boolValue())

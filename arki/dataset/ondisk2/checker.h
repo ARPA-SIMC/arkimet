@@ -43,8 +43,6 @@ public:
     void segments_tracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
     void segments_untracked(std::function<void(segmented::CheckerSegment& segment)>) override;
     void segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
-    void remove_all(dataset::Reporter& reporter, bool writable=false) override;
-    void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) override;
     void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
     void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
     void check(dataset::Reporter& reporter, bool fix, bool quick) override;

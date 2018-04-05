@@ -295,8 +295,7 @@ public:
      */
     void segments_all_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>);
 
-    void remove_all(dataset::Reporter& reporter, bool writable=false) override;
-    void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) override;
+    void remove_all(CheckerConfig& opts) override;
     void tar(CheckerConfig& config) override;
 
     /**

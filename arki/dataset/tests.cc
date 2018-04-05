@@ -987,7 +987,8 @@ template<typename Dataset>
 void ActualChecker<Dataset>::remove_all(const ReporterExpected& expected, bool write)
 {
     CollectReporter reporter;
-    wassert(this->_actual->remove_all(reporter, write));
+    dataset::CheckerConfig opts(reporter, !write);
+    wassert(this->_actual->remove_all(opts));
     // reporter.dump(stderr);
     wassert(reporter.check(expected));
 }
@@ -996,7 +997,9 @@ template<typename Dataset>
 void ActualChecker<Dataset>::remove_all_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write)
 {
     CollectReporter reporter;
-    wassert(this->_actual->remove_all_filtered(matcher, reporter, write));
+    dataset::CheckerConfig opts(reporter, !write);
+    opts.segment_filter = matcher;
+    wassert(this->_actual->remove_all(opts));
     // reporter.dump(stderr);
     wassert(reporter.check(expected));
 }

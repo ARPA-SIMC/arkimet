@@ -380,6 +380,19 @@ std::unique_ptr<Checker> Checker::create(const ConfigFile& cfg)
     return config->create_checker();
 }
 
+void Checker::remove_all(dataset::Reporter& reporter, bool writable)
+{
+    CheckerConfig opts(reporter, !writable);
+    remove_all(opts);
+}
+
+void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable)
+{
+    CheckerConfig opts(reporter, !writable);
+    opts.segment_filter = matcher;
+    remove_all(opts);
+}
+
 void Checker::check_issue51(dataset::Reporter& reporter, bool fix)
 {
     CheckerConfig opts(reporter, !fix);
