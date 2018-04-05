@@ -202,16 +202,10 @@ LocalChecker::~LocalChecker()
 {
 }
 
-void LocalChecker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
+void LocalChecker::repack(CheckerConfig& opts, unsigned test_flags)
 {
-    if (!skip_archives && hasArchive())
-        archive().repack(reporter, writable, test_flags);
-}
-
-void LocalChecker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
-{
-    if (!skip_archives && hasArchive())
-        archive().repack_filtered(matcher, reporter, writable, test_flags);
+    if (opts.offline && hasArchive())
+        archive().repack(opts, test_flags);
 }
 
 void LocalChecker::check(CheckerConfig& opts)

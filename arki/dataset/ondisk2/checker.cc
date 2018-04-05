@@ -369,16 +369,6 @@ Checker::~Checker()
 
 std::string Checker::type() const { return "ondisk2"; }
 
-void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
-{
-    IndexedChecker::repack(reporter, writable, test_flags);
-}
-
-void Checker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
-{
-    IndexedChecker::repack_filtered(matcher, reporter, writable, test_flags);
-}
-
 void Checker::check(CheckerConfig& opts)
 {
     IndexedChecker::check(opts);

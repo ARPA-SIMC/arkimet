@@ -111,8 +111,7 @@ public:
     void release_segment(const std::string& relpath, const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath);
 
     void remove_all(CheckerConfig& opts) override;
-    void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
-    void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
+    void repack(CheckerConfig& opts, unsigned test_flags=0) override;
     void check(CheckerConfig& opts) override;
     void check_issue51(CheckerConfig& opts) override;
     void tar(CheckerConfig& config) override;

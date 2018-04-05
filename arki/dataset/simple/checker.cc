@@ -353,14 +353,9 @@ Checker::~Checker()
 
 std::string Checker::type() const { return "simple"; }
 
-void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
+void Checker::repack(CheckerConfig& opts, unsigned test_flags)
 {
-    IndexedChecker::repack(reporter, writable, test_flags);
-    m_mft->flush();
-}
-void Checker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
-{
-    IndexedChecker::repack_filtered(matcher, reporter, writable, test_flags);
+    IndexedChecker::repack(opts, test_flags);
     m_mft->flush();
 }
 

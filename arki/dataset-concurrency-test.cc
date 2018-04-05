@@ -402,12 +402,12 @@ this->add_method("read_repack", [](Fixture& f) {
     reader->query_data(dataset::DataQuery("", true), [&](unique_ptr<Metadata> md) {
         {
             auto checker = f.dataset_config()->create_checker();
-            dataset::NullReporter rep;
-            try {
-                checker->repack(rep, true, dataset::TEST_MISCHIEF_MOVE_DATA);
-            } catch (std::exception& e) {
-                wassert(actual(e.what()).contains("a read lock is already held"));
-            }
+            auto e = wassert_throws(std::runtime_error, {
+                dataset::CheckerConfig opts;
+                opts.readonly = false;
+                checker->repack(opts, dataset::TEST_MISCHIEF_MOVE_DATA);
+            });
+            wassert(actual(e.what()).contains("a read lock is already held"));
         }
 
         auto data = md->getData();

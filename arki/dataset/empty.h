@@ -90,8 +90,7 @@ public:
 
     void remove_all(CheckerConfig& opts) override {}
     void tar(CheckerConfig&) override {}
-    void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override {}
-    void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override {}
+    void repack(CheckerConfig&, unsigned test_flags=0) override {}
     void check(CheckerConfig&) override {}
 };
 

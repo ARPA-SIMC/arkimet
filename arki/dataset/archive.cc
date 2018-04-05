@@ -374,18 +374,10 @@ void ArchivesChecker::tar(CheckerConfig& opts)
     });
 }
 
-void ArchivesChecker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
+void ArchivesChecker::repack(CheckerConfig& opts, unsigned test_flags)
 {
     archives->iter([&](Checker& a) {
-        a.repack(reporter, writable, test_flags);
-        return true;
-    });
-}
-
-void ArchivesChecker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
-{
-    archives->iter([&](Checker& a) {
-        a.repack_filtered(matcher, reporter, writable, test_flags);
+        a.repack(opts, test_flags);
         return true;
     });
 }

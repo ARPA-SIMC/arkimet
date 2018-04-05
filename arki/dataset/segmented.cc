@@ -382,27 +382,27 @@ void Checker::tar(CheckerConfig& opts)
     LocalChecker::tar(opts);
 }
 
-void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
+void Checker::repack(CheckerConfig& opts, unsigned test_flags)
 {
     const string& root = config().path;
 
     if (files::hasDontpackFlagfile(root))
     {
-        reporter.operation_aborted(name(), "repack", "dataset needs checking first");
+        opts.reporter->operation_aborted(name(), "repack", "dataset needs checking first");
         return;
     }
 
     unique_ptr<maintenance::Agent> repacker;
-    if (writable)
+    if (opts.readonly)
+        repacker.reset(new maintenance::MockRepacker(*opts.reporter, *this, test_flags));
+    else
         // No safeguard against a deleted index: we catch that in the
         // constructor and create the don't pack flagfile
-        repacker.reset(new maintenance::RealRepacker(reporter, *this, test_flags));
-    else
-        repacker.reset(new maintenance::MockRepacker(reporter, *this, test_flags));
+        repacker.reset(new maintenance::RealRepacker(*opts.reporter, *this, test_flags));
 
     try {
-        segments_all([&](CheckerSegment& segment) {
-            (*repacker)(segment, segment.scan(reporter, true).state);
+        segments(opts, [&](CheckerSegment& segment) {
+            (*repacker)(segment, segment.scan(*opts.reporter, true).state);
         });
         repacker->end();
     } catch (...) {
@@ -414,42 +414,7 @@ void Checker::repack(dataset::Reporter& reporter, bool writable, unsigned test_f
         throw;
     }
 
-    LocalChecker::repack(reporter, writable);
-}
-
-void Checker::repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable, unsigned test_flags)
-{
-    const string& root = config().path;
-
-    if (files::hasDontpackFlagfile(root))
-    {
-        reporter.operation_aborted(name(), "repack", "dataset needs checking first");
-        return;
-    }
-
-    unique_ptr<maintenance::Agent> repacker;
-    if (writable)
-        // No safeguard against a deleted index: we catch that in the
-        // constructor and create the don't pack flagfile
-        repacker.reset(new maintenance::RealRepacker(reporter, *this, test_flags));
-    else
-        repacker.reset(new maintenance::MockRepacker(reporter, *this, test_flags));
-
-    try {
-        segments_all_filtered(matcher, [&](CheckerSegment& segment) {
-            (*repacker)(segment, segment.scan(reporter, true).state);
-        });
-        repacker->end();
-    } catch (...) {
-        // FIXME: this only makes sense for ondisk2
-        // FIXME: also for iseg. Add the marker at the segment level instead of
-        // the dataset level, so that the try/catch can be around the single
-        // segment, and cleared on a segment by segment basis
-        files::createDontpackFlagfile(root);
-        throw;
-    }
-
-    LocalChecker::repack(reporter, writable);
+    LocalChecker::repack(opts, test_flags);
 }
 
 void Checker::check(CheckerConfig& opts)

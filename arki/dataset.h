@@ -408,21 +408,13 @@ struct Checker : public dataset::Base
 {
     using Base::Base;
 
-    bool skip_archives = false;
-
     /**
-     * Repack the dataset, logging status to the given file.
-     *
-     * If writable is false, the process is simulated but no changes are
-     * saved.
+     * Repack the dataset.
      *
      * test_flags are used to select alternate and usually undesirable repack
      * behaviours during tests, and should always be 0 outside tests.
      */
-    /* [[deprecated("use CheckerConfig")]] */ virtual void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) = 0;
-
-    /// Same as repack, but limited to the parts of the dataset matching the given matcher
-    /* [[deprecated("use CheckerConfig")]] */ virtual void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) = 0;
+    virtual void repack(CheckerConfig& opts, unsigned test_flags=0) = 0;
 
     /// Check the dataset for errors
     virtual void check(CheckerConfig& opts) = 0;

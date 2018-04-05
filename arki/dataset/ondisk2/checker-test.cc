@@ -178,9 +178,10 @@ add_method("scan_reindex", [](Fixture& f) {
     // away; therefore, we can only interrupt the maintenance and raise an
     // exception calling for manual fixing.
     auto checker = f.makeOndisk2Checker();
-    wassert_throws(std::runtime_error, [&]{
+    wassert_throws(std::runtime_error, {
         CheckerConfig opts;
         opts.readonly = false;
+        //opts.accurate = true;
         checker->check(opts);
     });
 
@@ -324,7 +325,7 @@ add_method("data_in_right_segment_reindex", [](Fixture& f) {
     {
         // Perform full maintenance and check that things are still ok afterwards
         auto checker = f.makeOndisk2Checker();
-        auto e = wassert_throws(std::runtime_error, [&]{
+        auto e = wassert_throws(std::runtime_error, {
             CheckerConfig opts;
             opts.readonly = false;
             checker->check(opts);
@@ -370,7 +371,7 @@ add_method("data_in_right_segment_rescan", [](Fixture& f) {
     {
         // Perform full maintenance and check that things are still ok afterwards
         auto checker = f.makeOndisk2Checker();
-        auto e = wassert_throws(std::runtime_error, [&]{
+        auto e = wassert_throws(std::runtime_error, {
             CheckerConfig opts;
             opts.readonly = false;
             checker->check(opts);

@@ -405,8 +405,9 @@ void DatasetTest::repack()
 {
     // Pack the dataset in case something imported data out of order
     auto checker = config().create_checker();
-    NullReporter r;
-    wassert(checker->repack(r, true));
+    CheckerConfig opts;
+    opts.readonly = false;
+    wassert(checker->repack(opts));
 }
 
 void DatasetTest::query_results(const std::vector<int>& expected)
@@ -905,19 +906,22 @@ void ActualWriter<Dataset>::import(metadata::Collection& mds, dataset::Writer::R
 template<typename Dataset>
 void ActualChecker<Dataset>::repack(const ReporterExpected& expected, bool write)
 {
-    CollectReporter reporter;
-    wassert(this->_actual->repack(reporter, write));
+    auto reporter = make_shared<CollectReporter>();
+    dataset::CheckerConfig opts(reporter, !write);
+    wassert(this->_actual->repack(opts));
     // reporter.dump(stderr);
-    wassert(reporter.check(expected));
+    wassert(reporter->check(expected));
 }
 
 template<typename Dataset>
 void ActualChecker<Dataset>::repack_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write)
 {
-    CollectReporter reporter;
-    wassert(this->_actual->repack_filtered(matcher, reporter, write));
+    auto reporter = make_shared<CollectReporter>();
+    dataset::CheckerConfig opts(reporter, !write);
+    opts.segment_filter = matcher;
+    wassert(this->_actual->repack(opts));
     // reporter.dump(stderr);
-    wassert(reporter.check(expected));
+    wassert(reporter->check(expected));
 }
 
 template<typename Dataset>

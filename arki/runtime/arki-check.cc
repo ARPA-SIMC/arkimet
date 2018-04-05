@@ -142,7 +142,6 @@ struct WorkerOnWritable : public Worker
         try {
             auto config = dataset::Config::create(cfg);
             ds = config->create_checker();
-            ds->skip_archives = skip_archives;
         } catch (std::exception& e) {
             throw SkipDataset(e.what());
         }
@@ -167,17 +166,13 @@ struct Checker : public WorkerOnWritable
 
 struct Repacker : public WorkerOnWritable
 {
-    bool fix;
+    dataset::CheckerConfig& opts;
 
-    Repacker(bool fix) : fix(fix) {}
+    Repacker(dataset::CheckerConfig& opts) : opts(opts) {}
 
     void operator()(dataset::Checker& w) override
     {
-        dataset::OstreamReporter r(cerr);
-        if (filter.empty())
-            w.repack(r, fix);
-        else
-            w.repack_filtered(filter, r, fix);
+        w.repack(opts);
     }
 
     void done() override {}
@@ -367,7 +362,10 @@ int arki_check(int argc, const char* argv[])
                 worker.reset(new RemoveAller(config));
             }
             else if (opts.repack->boolValue())
-                worker.reset(new Repacker(opts.fix->boolValue()));
+            {
+                opts.set_checker_config(config, false, true);
+                worker.reset(new Repacker(config));
+            }
             else if (opts.tar->boolValue())
             {
                 opts.set_checker_config(config, true, false);

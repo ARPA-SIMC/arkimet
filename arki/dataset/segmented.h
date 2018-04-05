@@ -241,8 +241,7 @@ public:
     segment::Manager& segment_manager();
 
     void check(CheckerConfig& opts) override;
-    void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
-    void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) override;
+    void repack(CheckerConfig& opts, unsigned test_flags=0) override;
 
     /**
      * Scan the dataset, computing the state of each unarchived segment that is

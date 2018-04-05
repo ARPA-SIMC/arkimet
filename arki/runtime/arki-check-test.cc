@@ -46,32 +46,32 @@ add_method("clean", [](Fixture& f) {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", });
         wassert(actual(res) == 0);
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "testds: check 3 files ok\n");
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) == "testds: check 3 files ok\n");
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--fix" });
         wassert(actual(res) == 0);
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "testds: check 3 files ok\n");
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) == "testds: check 3 files ok\n");
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack" });
         wassert(actual(res) == 0);
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "testds: repack 3 files ok\n");
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) == "testds: repack 3 files ok\n");
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack", "--fix" });
         wassert(actual(res) == 0);
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
-        wassert(actual(sys::read_file(co.file_stderr.name())).matches(
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())).matches(
                 "(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?\n)?"
                 "(testds: repack: rebuilding the summary cache\n)?"
                 "testds: repack 3 files ok\n"));
@@ -245,7 +245,7 @@ add_method("archive", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack", "--fix" });
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack", "--fix", "--online", "--offline" });
         wassert(actual(res) == 0);
         wassert(actual(sys::read_file(co.file_stderr.name())) == "");
         wassert(actual(sys::read_file(co.file_stdout.name())).matches(
