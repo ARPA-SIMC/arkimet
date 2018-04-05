@@ -358,10 +358,20 @@ int arki_check(int argc, const char* argv[])
                 worker.reset(new Repacker(opts.fix->boolValue()));
             else if (opts.tar->boolValue())
             {
-                config.offline = true;
-                config.online = false;
-                if (opts.offline->isSet()) config.offline = opts.offline->boolValue();
-                if (opts.online->isSet()) config.online = opts.online->boolValue();
+                if (opts.offline->isSet() && opts.online->isSet())
+                {
+                    config.offline = true;
+                    config.online = true;
+                } else if (opts.offline->isSet() && !opts.online->isSet()) {
+                    config.offline = true;
+                    config.online = false;
+                } else if (!opts.offline->isSet() && opts.online->isSet()) {
+                    config.offline = false;
+                    config.online = true;
+                } else {
+                    config.offline = true;
+                    config.online = false;
+                }
                 worker.reset(new Tarrer(config));
             }
             else if (opts.op_unarchive->boolValue())

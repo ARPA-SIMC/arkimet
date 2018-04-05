@@ -355,7 +355,7 @@ add_method("tar", [](Fixture& f) {
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "testds", });
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
         wassert(actual(sys::read_file(co.file_stderr.name())) ==
-            "testds:.archive/last/2007/07-07.odimh5: segment should be tarred\n"
+            "testds.archives.last:2007/07-07.odimh5: should be tarred\n"
         );
         wassert(actual(res) == 0);
     }
@@ -365,7 +365,7 @@ add_method("tar", [](Fixture& f) {
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "--offline", "testds", });
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
         wassert(actual(sys::read_file(co.file_stderr.name())) ==
-            "testds:.archive/last/2007/07-07.odimh5: segment should be tarred\n"
+            "testds.archives.last:2007/07-07.odimh5: should be tarred\n"
         );
         wassert(actual(res) == 0);
     }
@@ -375,11 +375,26 @@ add_method("tar", [](Fixture& f) {
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "--online", "testds", });
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
         wassert(actual(sys::read_file(co.file_stderr.name())) ==
-            "testds:2007/07-08.odimh5: segment tarred\n"
-            "testds:2007/10-09.odimh5: segment tarred\n"
+            "testds:2007/07-08.odimh5: should be tarred\n"
+            "testds:2007/10-09.odimh5: should be tarred\n"
         );
         wassert(actual(res) == 0);
     }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "testds", "-f" });
+        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
+        wassert(actual(sys::read_file(co.file_stderr.name())) ==
+            "testds.archives.last:2007/07-07.odimh5: tarred\n"
+        );
+        wassert(actual(res) == 0);
+    }
+
+    wassert(actual_file("testds/.archive/last/2007/07-07.odimh5").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/07-07.odimh5.tar").exists());
+    wassert(actual_file("testds/2007/07-08.odimh5").exists());
+    wassert(actual_file("testds/2007/10-09.odimh5").exists());
 });
 
 }

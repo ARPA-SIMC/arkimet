@@ -49,6 +49,7 @@ static ConfigFile make_config(const std::string& dir)
     cfg.setValue("name", str::basename(dir));
     cfg.setValue("path", dir);
     cfg.setValue("step", "monthly");
+    cfg.setValue("offline", "true");
     return cfg;
 }
 
@@ -374,12 +375,8 @@ void ArchivesChecker::remove_all_filtered(const Matcher& matcher, Reporter& repo
 void ArchivesChecker::tar(CheckerConfig& config)
 {
     if (!config.offline) return;
-
-    CheckerConfig arc_config(config);
-    arc_config.online = true;
-    arc_config.offline = false;
     archives->iter([&](Checker& a) {
-        a.tar(arc_config);
+        a.tar(config);
         return true;
     });
 }

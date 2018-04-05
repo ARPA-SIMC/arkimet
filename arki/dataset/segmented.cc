@@ -87,7 +87,8 @@ Config::Config(const ConfigFile& cfg)
     : LocalConfig(cfg),
       step_name(str::lower(cfg.value("step"))),
       force_dir_segments(cfg.value("segments") == "dir"),
-      mock_data(cfg.value("mockdata") == "true")
+      mock_data(cfg.value("mockdata") == "true"),
+      offline(cfg.value("offline") == "true")
 {
     if (step_name.empty())
         throw std::runtime_error("Dataset " + name + " misses step= configuration");
@@ -317,15 +318,18 @@ void Checker::segments_all_filtered(const Matcher& matcher, std::function<void(s
     segments_untracked_filtered(matcher, dest);
 }
 
-void Checker::segments(CheckerConfig& config, std::function<void(segmented::CheckerSegment& segment)> dest)
+void Checker::segments(CheckerConfig& opts, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    if (config.segment_filter.empty())
+    if (!opts.online && !config().offline) return;
+    if (!opts.offline && config().offline) return;
+
+    if (opts.segment_filter.empty())
     {
         segments_tracked(dest);
         segments_untracked(dest);
     } else {
-        segments_tracked_filtered(config.segment_filter, dest);
-        segments_untracked_filtered(config.segment_filter, dest);
+        segments_tracked_filtered(opts.segment_filter, dest);
+        segments_untracked_filtered(opts.segment_filter, dest);
     }
 }
 
@@ -381,6 +385,9 @@ void Checker::remove_all_filtered(const Matcher& matcher, dataset::Reporter& rep
 
 void Checker::tar(CheckerConfig& config)
 {
+    if (hasArchive())
+        archive().tar(config);
+
     segments(config, [&](CheckerSegment& segment) {
         if (segment.segment->single_file()) return;
         if (config.readonly)

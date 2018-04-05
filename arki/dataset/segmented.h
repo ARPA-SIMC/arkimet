@@ -40,6 +40,11 @@ public:
      */
     bool mock_data = false;
 
+    /**
+     * If true, this dataset is used as an archive for offline data
+     */
+    bool offline = false;
+
     Config(const ConfigFile& cfg);
     ~Config();
 
