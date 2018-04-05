@@ -57,8 +57,11 @@ IndexedChecker::~IndexedChecker()
 // TODO: during checks, run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
 // and delete the index if it fails
 
-void IndexedChecker::check_issue51(dataset::Reporter& reporter, bool fix)
+void IndexedChecker::check_issue51(CheckerConfig& opts)
 {
+    if (!opts.online && !config().offline) return;
+    if (!opts.offline && config().offline) return;
+
     // Broken metadata for each segment
     std::map<string, metadata::Collection> broken_mds;
 
@@ -85,7 +88,7 @@ void IndexedChecker::check_issue51(dataset::Reporter& reporter, bool fix)
             char tail[4];
             if (datafile.pread(tail, 4, blob.offset + blob.size - 4) != 4)
             {
-                reporter.segment_info(name(), relpath, "cannot read 4 bytes at position " + std::to_string(blob.offset + blob.size - 4));
+                opts.reporter.segment_info(name(), relpath, "cannot read 4 bytes at position " + std::to_string(blob.offset + blob.size - 4));
                 return;
             }
             // Check if it ends with 7777
@@ -101,16 +104,16 @@ void IndexedChecker::check_issue51(dataset::Reporter& reporter, bool fix)
                 broken_mds[relpath].push_back(*md);
             } else {
                 ++count_corrupted;
-                reporter.segment_info(name(), relpath, "end marker 7777 or 777? not found at position " + std::to_string(blob.offset + blob.size - 4));
+                opts.reporter.segment_info(name(), relpath, "end marker 7777 or 777? not found at position " + std::to_string(blob.offset + blob.size - 4));
             }
         }
         nag::verbose("Checked %s:%s: %u ok, %u other formats, %u issue51, %u corrupted", name().c_str(), relpath.c_str(), count_ok, count_otherformat, count_issue51, count_corrupted);
     });
 
-    if (!fix)
+    if (opts.readonly)
     {
         for (const auto& i: broken_mds)
-            reporter.segment_issue51(name(), i.first, "segment contains data with corrupted terminator signature");
+            opts.reporter.segment_issue51(name(), i.first, "segment contains data with corrupted terminator signature");
     } else {
         for (const auto& i: broken_mds)
         {
@@ -139,11 +142,11 @@ void IndexedChecker::check_issue51(dataset::Reporter& reporter, bool fix)
                     return;
                 datafile.pwrite("7", 1, blob.offset + blob.size - 1);
             }
-            reporter.segment_issue51(name(), i.first, "fixed corrupted terminator signatures");
+            opts.reporter.segment_issue51(name(), i.first, "fixed corrupted terminator signatures");
         }
     }
 
-    return segmented::Checker::check_issue51(reporter, fix);
+    return segmented::Checker::check_issue51(opts);
 }
 
 void IndexedChecker::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)

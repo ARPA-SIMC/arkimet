@@ -942,7 +942,8 @@ template<typename Dataset>
 void ActualChecker<Dataset>::check_issue51(const ReporterExpected& expected, bool write)
 {
     CollectReporter reporter;
-    wassert(this->_actual->check_issue51(reporter, write));
+    dataset::CheckerConfig opts(reporter, !write);
+    wassert(this->_actual->check_issue51(opts));
     // reporter.dump(stderr);
     wassert(reporter.check(expected));
 }

@@ -126,8 +126,8 @@ public:
     void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) override;
     void remove_all(dataset::Reporter& reporter, bool writable=false) override;
     void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) override;
-    void check_issue51(dataset::Reporter& reporter, bool fix=false) override;
-    void tar(CheckerConfig& config) override;
+    void check_issue51(CheckerConfig& opts) override;
+    void tar(CheckerConfig& opts) override;
 };
 
 }

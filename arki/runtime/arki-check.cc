@@ -87,6 +87,27 @@ struct Options : public BaseCommandLine
         offline = add<BoolOption>("offline", 0, "offline", "",
                 "Work on archives, skipping online data unless --online is also provided");
     }
+
+    void set_checker_config(dataset::CheckerConfig& config, bool default_offline, bool default_online)
+    {
+        if (filter->isSet())
+            config.segment_filter = Matcher::parse(filter->stringValue());
+
+        if (offline->isSet() && online->isSet())
+        {
+            config.offline = true;
+            config.online = true;
+        } else if (offline->isSet() && !online->isSet()) {
+            config.offline = true;
+            config.online = false;
+        } else if (!offline->isSet() && online->isSet()) {
+            config.offline = false;
+            config.online = true;
+        } else {
+            config.offline = default_offline;
+            config.online = default_online;
+        }
+    }
 };
 
 struct SkipDataset : public std::exception
@@ -186,13 +207,13 @@ struct RemoveAller : public WorkerOnWritable
 
 struct Tarrer : public WorkerOnWritable
 {
-    dataset::CheckerConfig& config;
+    dataset::CheckerConfig& opts;
 
-    Tarrer(dataset::CheckerConfig& config) : config(config) {}
+    Tarrer(dataset::CheckerConfig& opts) : opts(opts) {}
 
     void operator()(dataset::Checker& w) override
     {
-        w.tar(config);
+        w.tar(opts);
     }
 
     void done() {}
@@ -216,14 +237,13 @@ struct Unarchiver : public WorkerOnWritable
 
 struct Issue51 : public WorkerOnWritable
 {
-    bool fix;
+    dataset::CheckerConfig& opts;
 
-    Issue51(bool fix) : fix(fix) {}
+    Issue51(dataset::CheckerConfig& opts) : opts(opts) {}
 
     void operator()(dataset::Checker& w) override
     {
-        dataset::OstreamReporter r(cout);
-        w.check_issue51(r, fix);
+        w.check_issue51(opts);
     }
 
     void done() override {}
@@ -349,8 +369,6 @@ int arki_check(int argc, const char* argv[])
         } else {
             dataset::OstreamReporter reporter(cerr);
             dataset::CheckerConfig config(reporter, !opts.fix->boolValue());
-            if (opts.filter->isSet())
-                config.segment_filter = Matcher::parse(opts.filter->stringValue());
 
             if (opts.remove_all->boolValue())
                 worker.reset(new RemoveAller(opts.fix->boolValue()));
@@ -358,20 +376,7 @@ int arki_check(int argc, const char* argv[])
                 worker.reset(new Repacker(opts.fix->boolValue()));
             else if (opts.tar->boolValue())
             {
-                if (opts.offline->isSet() && opts.online->isSet())
-                {
-                    config.offline = true;
-                    config.online = true;
-                } else if (opts.offline->isSet() && !opts.online->isSet()) {
-                    config.offline = true;
-                    config.online = false;
-                } else if (!opts.offline->isSet() && opts.online->isSet()) {
-                    config.offline = false;
-                    config.online = true;
-                } else {
-                    config.offline = true;
-                    config.online = false;
-                }
+                opts.set_checker_config(config, true, false);
                 worker.reset(new Tarrer(config));
             }
             else if (opts.op_unarchive->boolValue())
@@ -379,15 +384,16 @@ int arki_check(int argc, const char* argv[])
             else if (opts.op_state->boolValue())
                 worker.reset(new PrintState(not opts.accurate->boolValue()));
             else if (opts.op_issue51->boolValue())
-                worker.reset(new Issue51(opts.fix->boolValue()));
+            {
+                opts.set_checker_config(config, true, true);
+                worker.reset(new Issue51(config));
+            }
             else
                 worker.reset(new Maintainer(opts.fix->boolValue(),
                              not opts.accurate->boolValue()));
 
             if (opts.filter->isSet())
                 worker->filter = Matcher::parse(opts.filter->stringValue());
-            if (opts.online->isSet())
-                worker->skip_archives = true;
 
             // Harvest the paths from it
             for (const ConfigFile& cfg: inputs)

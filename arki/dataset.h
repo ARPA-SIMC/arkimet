@@ -410,10 +410,10 @@ struct Checker : public dataset::Base
      * test_flags are used to select alternate and usually undesirable repack
      * behaviours during tests, and should always be 0 outside tests.
      */
-    virtual void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) = 0;
+    /* [[deprecated("use CheckerConfig")]] */ virtual void repack(dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) = 0;
 
     /// Same as repack, but limited to the parts of the dataset matching the given matcher
-    virtual void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) = 0;
+    /* [[deprecated("use CheckerConfig")]] */ virtual void repack_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false, unsigned test_flags=0) = 0;
 
     /**
      * Check the dataset for errors, logging status to the given file.
@@ -421,16 +421,16 @@ struct Checker : public dataset::Base
      * If \a fix is false, the process is simulated but no changes are saved.
      * If \a fix is true, errors are fixed.
      */
-    virtual void check(dataset::Reporter& reporter, bool fix, bool quick) = 0;
+    /* [[deprecated("use CheckerConfig")]] */ virtual void check(dataset::Reporter& reporter, bool fix, bool quick) = 0;
 
     /// Same as check, but limited to the parts of the dataset matching the given matcher
-    virtual void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) = 0;
+    /* [[deprecated("use CheckerConfig")]] */ virtual void check_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool fix, bool quick) = 0;
 
     /// Remove all data from the dataset
-    virtual void remove_all(dataset::Reporter& reporter, bool writable=false) = 0;
+    /* [[deprecated("use CheckerConfig")]] */ virtual void remove_all(dataset::Reporter& reporter, bool writable=false) = 0;
 
     /// Remove the segments from the dataset that match the given matcher
-    virtual void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) = 0;
+    /* [[deprecated("use CheckerConfig")]] */ virtual void remove_all_filtered(const Matcher& matcher, dataset::Reporter& reporter, bool writable=false) = 0;
 
     /// Convert directory segments into tar segments
     virtual void tar(CheckerConfig& config) = 0;
@@ -441,7 +441,9 @@ struct Checker : public dataset::Base
      *
      * See https://github.com/ARPAE-SIMC/arkimet/issues/51 for details.
      */
-    virtual void check_issue51(dataset::Reporter& reporter, bool fix=false);
+    [[deprecated("use CheckerConfig")]] void check_issue51(dataset::Reporter& reporter, bool fix=false);
+
+    virtual void check_issue51(CheckerConfig& opts);
 
     /**
      * Instantiate an appropriate Checker for the given configuration

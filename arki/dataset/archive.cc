@@ -372,15 +372,14 @@ void ArchivesChecker::remove_all_filtered(const Matcher& matcher, Reporter& repo
     });
 }
 
-void ArchivesChecker::tar(CheckerConfig& config)
+void ArchivesChecker::tar(CheckerConfig& opts)
 {
-    if (!config.offline) return;
+    if (!opts.offline) return;
     archives->iter([&](Checker& a) {
-        a.tar(config);
+        a.tar(opts);
         return true;
     });
 }
-
 
 void ArchivesChecker::repack(dataset::Reporter& reporter, bool writable, unsigned test_flags)
 {
@@ -414,10 +413,11 @@ void ArchivesChecker::check_filtered(const Matcher& matcher, dataset::Reporter& 
     });
 }
 
-void ArchivesChecker::check_issue51(dataset::Reporter& reporter, bool fix)
+void ArchivesChecker::check_issue51(CheckerConfig& opts)
 {
+    if (!opts.offline) return;
     archives->iter([&](Checker& a) {
-        a.check_issue51(reporter, fix);
+        a.check_issue51(opts);
         return true;
     });
 }

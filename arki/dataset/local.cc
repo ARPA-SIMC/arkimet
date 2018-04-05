@@ -238,16 +238,16 @@ void LocalChecker::remove_all_filtered(const Matcher& matcher, dataset::Reporter
         archive().remove_all_filtered(matcher, reporter, writable);
 }
 
-void LocalChecker::tar(CheckerConfig& config)
+void LocalChecker::tar(CheckerConfig& opts)
 {
-    if (config.offline && hasArchive())
-        archive().tar(config);
+    if (opts.offline && hasArchive())
+        archive().tar(opts);
 }
 
-void LocalChecker::check_issue51(dataset::Reporter& reporter, bool fix)
+void LocalChecker::check_issue51(CheckerConfig& opts)
 {
-    if (skip_archives && hasArchive())
-        archive().check_issue51(reporter, fix);
+    if (opts.offline && hasArchive())
+        archive().check_issue51(opts);
 }
 
 template class LocalBase<Reader, ArchivesReader>;
