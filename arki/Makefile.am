@@ -129,6 +129,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		segment/lines.h \
 		segment/dir.h \
 		segment/tar.h \
+		segment/gz.h \
 		segment/seqfile.h \
 		segment/tests.h \
 		sort.h \
@@ -411,6 +412,7 @@ libarkimet_la_SOURCES += \
 		segment/lines.cc \
 		segment/dir.cc \
 		segment/tar.cc \
+		segment/gz.cc \
 		segment/seqfile.cc \
 		sort.cc \
 		formatter.cc \
@@ -462,6 +464,7 @@ tests_arki_test_SOURCES += \
 		segment/seqfile-test.cc \
 		segment/dir-test.cc \
 		segment/tar-test.cc \
+		segment/gz-test.cc \
 		segment/tests.cc \
 		runtime/io-test.cc \
 		runtime/inputs-test.cc \

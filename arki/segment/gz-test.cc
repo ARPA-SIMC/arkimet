@@ -1,4 +1,4 @@
-#include "tar.h"
+#include "gz.h"
 #include "tests.h"
 #include "arki/metadata/tests.h"
 #include "arki/metadata/collection.h"
@@ -20,7 +20,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_segment_tar");
+} test("arki_segment_gz");
 
 void Tests::register_tests() {
 
@@ -29,16 +29,16 @@ add_method("check", [] {
     {
         std::shared_ptr<segment::Writer> make_writer() override
         {
-            throw std::runtime_error("writes for .tar segments are not implemented");
+            throw std::runtime_error("writes for .gz segments are not implemented");
         }
         std::shared_ptr<segment::Checker> make_full_checker() override
         {
-            segment::tar::Checker::create(root, relpath + ".tar", abspath + ".tar", mdc);
+            segment::gz::Checker::create(root, relpath, abspath, mdc);
             return make_checker();
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::tar::Checker(root, relpath, abspath));
+            return std::shared_ptr<segment::Checker>(new segment::gz::Checker(root, relpath, abspath));
         }
     } test;
 
@@ -50,16 +50,16 @@ add_method("remove", [] {
     {
         std::shared_ptr<segment::Writer> make_writer() override
         {
-            throw std::runtime_error("writes for .tar segments are not implemented");
+            throw std::runtime_error("writes for .gz segments are not implemented");
         }
         std::shared_ptr<segment::Checker> make_full_checker() override
         {
-            segment::tar::Checker::create(root, relpath + ".tar", abspath + ".tar", mdc);
+            segment::gz::Checker::create(root, relpath, abspath, mdc);
             return make_checker();
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::tar::Checker(root, relpath, abspath));
+            return std::shared_ptr<segment::Checker>(new segment::gz::Checker(root, relpath, abspath));
         }
     } test;
 
@@ -69,3 +69,4 @@ add_method("remove", [] {
 }
 
 }
+

@@ -971,6 +971,16 @@
  },
  {
   "doc": "",
+  "group": "arki_utils_compress",
+  "method": "gzipwriter"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_compress",
+  "method": "gzipindexingwriter"
+ },
+ {
+  "doc": "",
   "group": "arki_utils_sqlite",
   "method": "oneshot"
  },
@@ -1751,47 +1761,47 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_fd",
+  "group": "arki_segment_fd",
   "method": "empty"
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_concat",
+  "group": "arki_segment_concat",
   "method": "append"
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_concat",
+  "group": "arki_segment_concat",
   "method": "large"
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_concat",
+  "group": "arki_segment_concat",
   "method": "check"
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_concat",
+  "group": "arki_segment_concat",
   "method": "remove"
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_lines",
+  "group": "arki_segment_lines",
   "method": "append"
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_lines",
+  "group": "arki_segment_lines",
   "method": "large"
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_lines",
+  "group": "arki_segment_lines",
   "method": "check"
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_lines",
+  "group": "arki_segment_lines",
   "method": "remove"
  },
  {
@@ -1801,27 +1811,37 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_dir",
+  "group": "arki_segment_dir",
   "method": "append"
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_dir",
+  "group": "arki_segment_dir",
   "method": "check"
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_dir",
+  "group": "arki_segment_dir",
   "method": "remove"
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_tar",
+  "group": "arki_segment_tar",
   "method": "check"
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_tar",
+  "group": "arki_segment_tar",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz",
   "method": "remove"
  },
  {

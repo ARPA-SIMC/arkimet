@@ -4,6 +4,7 @@
 /// Compression/decompression utilities
 
 #include <arki/libconfig.h>
+#include <arki/core/fwd.h>
 #include <arki/utils/sys.h>
 #include <sys/types.h>
 #include <string>
@@ -58,13 +59,13 @@ public:
     /**
      * Set the data for the encoder/decoder
      */
-    void feedData(const void* buf, size_t len);
+    void feed_data(const void* buf, size_t len);
 
 	/**
 	 * Run an encoder loop filling in the given buffer
 	 * 
 	 * @returns the count of data written (if the same as len, you need to
-	 *          call run() again before feedData)
+	 *          call run() again before feed_data)
 	 */
 	size_t get(void* buf, size_t len, bool flush = false);
 	size_t get(std::vector<uint8_t>& buf, bool flush = false);
@@ -107,7 +108,7 @@ struct SeekIndex
 	size_t lookup(size_t unc) const;
 
     /// Read the index from the given file descriptor
-    void read(sys::File& fd);
+    void read(core::File& fd);
 
 	/**
 	 * Read the index from the given file
@@ -126,6 +127,36 @@ struct SeekIndex
  */
 off_t filesize(const std::string& file);
 
+class GzipWriter
+{
+protected:
+    core::NamedFileDescriptor& out;
+    // Compressor
+    ZlibCompressor compressor;
+    // Output buffer for the compressor
+    std::vector<uint8_t> outbuf;
+
+    /**
+     * Write out all data in the compressor buffer, emptying it.
+     *
+     * Returns the number of bytes written
+     */
+    size_t flush_compressor();
+
+public:
+    GzipWriter(core::NamedFileDescriptor& out);
+    ~GzipWriter();
+
+    /**
+     * Feed \a buf to the compressor, writing out the data that come out.
+     *
+     * Returns the number of bytes written
+     */
+    size_t add(const std::vector<uint8_t>& buf);
+
+    void flush();
+};
+
 /**
  * Create a file with a compressed version of the data described by the
  * metadata that it receives.
@@ -133,15 +164,46 @@ off_t filesize(const std::string& file);
  * It also creates a compressed file index for faster seeking in the compressed
  * file.
  */
+class GzipIndexingWriter : public GzipWriter
+{
+protected:
+    /// Number of data items in a compressed block
+    size_t groupsize;
+    /// Index output
+    core::NamedFileDescriptor& outidx;
+    /// Offset of end of last uncompressed data read
+    off_t unc_ofs = 0;
+    /// Offset of end of last uncompressed block written
+    off_t last_unc_ofs = 0;
+    /// Offset of end of last compressed data written
+    off_t ofs = 0;
+    /// Offset of end of last compressed block written
+    off_t last_ofs = 0;
+    /// Number of data compressed so far
+    size_t count = 0;
+
+    // End one compressed block
+    void end_block(bool is_final=false);
+
+public:
+    GzipIndexingWriter(core::NamedFileDescriptor& out, core::NamedFileDescriptor& outidx, size_t groupsize=512);
+    ~GzipIndexingWriter();
+
+    void add(const std::vector<uint8_t>& buf);
+
+    void flush();
+};
+
+
 class DataCompressor
 {
 protected:
 	// Number of data items in a compressed block
 	size_t groupsize;
     // Compressed output
-    sys::File outfd;
+    core::File outfd;
     // Index output
-    sys::File outidx;
+    core::File outidx;
 	// Compressor
 	ZlibCompressor compressor;
 	// Output buffer for the compressor

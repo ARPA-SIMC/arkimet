@@ -64,7 +64,7 @@ void SegmentCheckTest::run()
 
     // A simple segment freshly imported is ok
     state = segment->check(rep, "test", mdc);
-    wassert(actual(state.is_ok()).istrue());
+    wassert(actual(state) == segment::SEGMENT_OK);
 
     state = segment->check(rep, "test", mdc, true);
     wassert(actual(state.is_ok()).istrue());

@@ -30,7 +30,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_dataset_segment_lines");
+} test("arki_segment_lines");
 
 inline size_t datasize(const Metadata& md)
 {
