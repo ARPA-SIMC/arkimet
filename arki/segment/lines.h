@@ -29,6 +29,7 @@ public:
     const char* type() const override;
     State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
+    std::shared_ptr<segment::Checker> compress(metadata::Collection& mds) override;
 };
 
 }

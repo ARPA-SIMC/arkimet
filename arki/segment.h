@@ -184,6 +184,7 @@ public:
 
     virtual segment::State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
+    virtual size_t size() = 0;
 
     /**
      * Check if the segment exists on disk
@@ -207,6 +208,12 @@ public:
      * point to the right locations inside the tarball
      */
     virtual std::shared_ptr<Checker> tar(metadata::Collection& mds);
+
+    /**
+     * Replace this segment with a compressed segment, updating the metadata in
+     * mds to point to the right locations if needed
+     */
+    virtual std::shared_ptr<Checker> compress(metadata::Collection& mds);
 
     /**
      * Move this segment to a new location

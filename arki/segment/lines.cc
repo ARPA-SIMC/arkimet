@@ -1,4 +1,5 @@
 #include "lines.h"
+#include "gzidx.h"
 #include "arki/exceptions.h"
 #include "arki/nag.h"
 #include <system_error>
@@ -87,6 +88,13 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
 Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
     return fd::Checker::repack_impl(rootdir, mds, false, test_flags);
+}
+
+std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds)
+{
+    segment::gzidxlines::Checker::create(root, relpath + ".tar", abspath + ".tar", mds);
+    remove();
+    return make_shared<segment::gzidxlines::Checker>(root, relpath, abspath);
 }
 
 }

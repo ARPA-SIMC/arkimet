@@ -134,6 +134,13 @@ std::shared_ptr<segment::Checker> Checker::tar(metadata::Collection& mds)
     return make_shared<segment::tar::Checker>(root, relpath, abspath);
 }
 
+std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds)
+{
+    segment::gzidx::Checker::create(root, relpath, abspath, mds);
+    remove();
+    return make_shared<segment::gzidx::Checker>(root, relpath, abspath);
+}
+
 void Checker::move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
     sys::makedirs(str::dirname(new_abspath));

@@ -206,10 +206,6 @@ CheckerSegment::~CheckerSegment()
 {
 }
 
-void CheckerSegment::tar()
-{
-}
-
 void CheckerSegment::archive()
 {
     // TODO: this is a hack to ensure that 'last' is created (and clean) before
@@ -359,6 +355,22 @@ void Checker::tar(CheckerConfig& opts)
     });
 
     LocalChecker::tar(opts);
+}
+
+void Checker::compress(CheckerConfig& opts)
+{
+    segments(opts, [&](CheckerSegment& segment) {
+        if (!segment.segment->single_file()) return;
+        if (opts.readonly)
+            opts.reporter->segment_compress(name(), segment.path_relative(), "should be compressed");
+        else
+        {
+            auto freed = segment.compress();
+            opts.reporter->segment_compress(name(), segment.path_relative(), "compressed (" + std::to_string(freed) + " freed)");
+        }
+    });
+
+    LocalChecker::compress(opts);
 }
 
 void Checker::state(CheckerConfig& opts)

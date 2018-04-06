@@ -142,6 +142,14 @@ public:
     /// Convert the segment into a tar segment
     virtual void tar() = 0;
 
+    /**
+     * Compress the segment
+     *
+     * Returns the size difference between the original size and the compressed
+     * size
+     */
+    virtual size_t compress() = 0;
+
     virtual std::string path_relative() const = 0;
     virtual const segmented::Config& config() const = 0;
     virtual dataset::ArchivesChecker& archives() const = 0;
@@ -275,6 +283,7 @@ public:
     void remove_old(CheckerConfig& opts) override;
     void remove_all(CheckerConfig& opts) override;
     void tar(CheckerConfig& config) override;
+    void compress(CheckerConfig& config) override;
     void state(CheckerConfig& config) override;
 
     /**

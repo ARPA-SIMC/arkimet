@@ -77,6 +77,7 @@ public:
     bool single_file() const override;
     bool exists_on_disk() override;
     time_t timestamp() override;
+    size_t size() override;
 
     size_t remove() override;
 

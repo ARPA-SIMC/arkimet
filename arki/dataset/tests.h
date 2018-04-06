@@ -354,6 +354,7 @@ struct ReporterExpected
     std::vector<SegmentMatch> deindexed;
     std::vector<SegmentMatch> rescanned;
     std::vector<SegmentMatch> tarred;
+    std::vector<SegmentMatch> compressed;
     std::vector<SegmentMatch> issue51;
 
     int count_repacked = -1;
@@ -362,6 +363,7 @@ struct ReporterExpected
     int count_deindexed = -1;
     int count_rescanned = -1;
     int count_tarred = -1;
+    int count_compressed = -1;
     int count_issue51 = -1;
 
     unsigned flags;

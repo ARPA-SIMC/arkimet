@@ -43,6 +43,11 @@ time_t Checker::timestamp()
     return sys::timestamp(tarabspath);
 }
 
+size_t Checker::size()
+{
+    return sys::size(tarabspath);
+}
+
 void Checker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
     string new_tarabspath = new_abspath + ".tar";

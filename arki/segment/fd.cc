@@ -110,6 +110,13 @@ time_t Checker::timestamp()
     return st.st_mtime;
 }
 
+size_t Checker::size()
+{
+    struct stat st;
+    sys::stat(abspath, st);
+    return st.st_size;
+}
+
 void Checker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
     sys::rename(abspath, new_abspath);

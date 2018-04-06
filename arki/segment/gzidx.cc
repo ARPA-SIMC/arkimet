@@ -43,6 +43,11 @@ time_t Checker::timestamp()
     return max(sys::timestamp(gzabspath), sys::timestamp(gzidxabspath));
 }
 
+size_t Checker::size()
+{
+    return sys::size(gzabspath) + sys::size(gzidxabspath);
+}
+
 void Checker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
     sys::rename(gzabspath, new_abspath + ".gz");

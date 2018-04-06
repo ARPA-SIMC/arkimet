@@ -41,6 +41,7 @@ public:
 
     bool exists_on_disk() override;
     time_t timestamp() override;
+    size_t size() override;
 
     State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;

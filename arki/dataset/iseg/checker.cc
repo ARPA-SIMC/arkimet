@@ -206,6 +206,52 @@ public:
         p.commit();
     }
 
+    size_t compress() override
+    {
+        if (sys::exists(segment->abspath + ".gz") || sys::exists(segment->abspath + ".gz.idx"))
+            return 0;
+
+        auto write_lock = lock->write_lock();
+        Pending p = idx().begin_transaction();
+
+        // Rescan file
+        metadata::Collection mds;
+        idx().scan(mds.inserter_func(), "reftime, offset");
+
+        // Create the .tar segment
+        size_t old_size = segment->size();
+        segment = segment->compress(mds);
+        size_t new_size = segment->size();
+
+        // Reindex the new metadata
+        idx().reset();
+        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+        {
+            const source::Blob& source = (*i)->sourceBlob();
+            if (idx().index(**i, source.offset))
+                throw std::runtime_error("duplicate detected while reordering segment");
+        }
+
+        // Remove the .metadata file if present, because we are shuffling the
+        // data file and it will not be valid anymore
+        string mdpathname = segment->abspath + ".metadata";
+        if (sys::exists(mdpathname))
+            if (unlink(mdpathname.c_str()) < 0)
+            {
+                stringstream ss;
+                ss << "cannot remove obsolete metadata file " << mdpathname;
+                throw std::system_error(errno, std::system_category(), ss.str());
+            }
+
+        // Commit the changes in the database
+        p.commit();
+
+        if (old_size > new_size)
+            return old_size - new_size;
+        else
+            return 0;
+    }
+
     size_t repack(unsigned test_flags=0) override
     {
         // Lock away writes and reads

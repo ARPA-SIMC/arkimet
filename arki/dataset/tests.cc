@@ -532,6 +532,7 @@ void ReporterExpected::clear()
     deindexed.clear();
     rescanned.clear();
     tarred.clear();
+    compressed.clear();
     issue51.clear();
 
     count_repacked = -1;
@@ -540,6 +541,7 @@ void ReporterExpected::clear()
     count_deindexed = -1;
     count_rescanned = -1;
     count_tarred = -1;
+    count_compressed = -1;
     count_issue51 = -1;
 }
 
@@ -768,6 +770,11 @@ struct CollectReporter : public dataset::Reporter
         recorder.segment_tar(ds, relpath, message);
         seg_results.emplace_back("tarred", ds, relpath, message);
     }
+    void segment_compress(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        recorder.segment_compress(ds, relpath, message);
+        seg_results.emplace_back("compressed", ds, relpath, message);
+    }
     void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override
     {
         recorder.segment_issue51(ds, relpath, message);
@@ -794,6 +801,7 @@ struct CollectReporter : public dataset::Reporter
         seg_results.match("deindexed", expected.deindexed, issues);
         seg_results.match("rescanned", expected.rescanned, issues);
         seg_results.match("tarred", expected.tarred, issues);
+        seg_results.match("compressed", expected.compressed, issues);
         seg_results.match("issue51", expected.issue51, issues);
 
         seg_results.count_equals("repacked", expected.count_repacked, issues);
@@ -802,6 +810,7 @@ struct CollectReporter : public dataset::Reporter
         seg_results.count_equals("deindexed", expected.count_deindexed, issues);
         seg_results.count_equals("rescanned", expected.count_rescanned, issues);
         seg_results.count_equals("tarred", expected.count_tarred, issues);
+        seg_results.count_equals("compressed", expected.count_compressed, issues);
         seg_results.count_equals("issue51", expected.count_issue51, issues);
 
         seg_results.report_unmatched(issues);

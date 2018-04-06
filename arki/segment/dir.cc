@@ -146,14 +146,24 @@ time_t Checker::timestamp()
     return sys::timestamp(str::joinpath(abspath, ".sequence"));
 }
 
+size_t Checker::size()
+{
+    size_t res = 0;
+    sys::Path dir(abspath);
+    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
+    {
+        if (!i.isreg()) continue;
+        if (!str::endswith(i->d_name, format)) continue;
+        struct stat st;
+        i.path->fstatat(i->d_name, st);
+        res += st.st_size;
+    }
+    return res;
+}
+
 void Checker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
-    if (rename(abspath.c_str(), new_abspath.c_str()) < 0)
-    {
-        stringstream ss;
-        ss << "cannot rename " << abspath << " to " << new_abspath;
-        throw std::system_error(errno, std::system_category(), ss.str());
-    }
+    sys::rename(abspath.c_str(), new_abspath.c_str());
 }
 
 State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
