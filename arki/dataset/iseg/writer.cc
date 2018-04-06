@@ -46,7 +46,7 @@ struct AppendSegment
         try {
             if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->next_offset()))
             {
-                md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relname + ":" + std::to_string(old->offset));
+                md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relpath + ":" + std::to_string(old->offset));
                 return ACQ_ERROR_DUPLICATE;
             }
             // Invalidate the summary cache for this month
@@ -141,7 +141,7 @@ struct AppendSegment
 
             if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->next_offset()))
             {
-                e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relname + ":" + std::to_string(old->offset));
+                e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relpath + ":" + std::to_string(old->offset));
                 e->result = ACQ_ERROR_DUPLICATE;
                 continue;
             }
@@ -193,7 +193,7 @@ struct AppendSegment
                 int new_usn;
                 if (!scan::update_sequence_number(e->md, new_usn))
                 {
-                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relname + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
+                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relpath + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
                     e->result = ACQ_ERROR_DUPLICATE;
                     continue;
                 }
@@ -212,7 +212,7 @@ struct AppendSegment
                 // If the new element has no higher Update Sequence Number, report a duplicate
                 if (old_usn > new_usn)
                 {
-                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relname + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
+                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relpath + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
                     e->result = ACQ_ERROR_DUPLICATE;
                     continue;
                 }
@@ -256,15 +256,15 @@ std::string Writer::type() const { return "iseg"; }
 std::unique_ptr<AppendSegment> Writer::file(const Metadata& md)
 {
     const core::Time& time = md.get<types::reftime::Position>()->time;
-    string relname = config().step()(time) + "." + config().format;
-    return file(relname);
+    string relpath = config().step()(time) + "." + config().format;
+    return file(relpath);
 }
 
-std::unique_ptr<AppendSegment> Writer::file(const std::string& relname)
+std::unique_ptr<AppendSegment> Writer::file(const std::string& relpath)
 {
-    sys::makedirs(str::dirname(str::joinpath(config().path, relname)));
-    std::shared_ptr<dataset::AppendLock> append_lock(config().append_lock_segment(relname));
-    auto segment = segment_manager().get_writer(config().format, relname);
+    sys::makedirs(str::dirname(str::joinpath(config().path, relpath)));
+    std::shared_ptr<dataset::AppendLock> append_lock(config().append_lock_segment(relpath));
+    auto segment = segment_manager().get_writer(config().format, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, append_lock, segment));
 }
 

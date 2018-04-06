@@ -28,9 +28,9 @@ public:
 
     /**
      * Access a file with ODIMH5 data  - alternate version with explicit
-     * basedir/relname separation
+     * basedir/relpath separation
      */
-    void open(const std::string& filename, const std::string& basedir, const std::string& relname, std::shared_ptr<core::Lock> lock) override;
+    void open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock) override;
 
     /**
      * Close the input file.

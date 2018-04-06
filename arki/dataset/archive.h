@@ -112,7 +112,7 @@ public:
     std::string type() const override;
     const ArchivesConfig& config() const override { return *m_config; }
 
-    void index_segment(const std::string& relname, metadata::Collection&& mds);
+    void index_segment(const std::string& relpath, metadata::Collection&& mds);
     void release_segment(const std::string& relpath, const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath);
     void segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest);
 

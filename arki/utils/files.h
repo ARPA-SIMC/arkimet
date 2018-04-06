@@ -46,10 +46,10 @@ std::string read_file(const std::string &file);
  * @retval basedir
  *   The base directory to use with str::joinpath to make the file name absolute.
  *   It is set to the empty string if \a pathname is an absolute path
- * @retval relname
+ * @retval relpath
  *   The normalised version of \a pathname
  */
-void resolve_path(const std::string& pathname, std::string& basedir, std::string& relname);
+void resolve_path(const std::string& pathname, std::string& basedir, std::string& relpath);
 
 /**
  * Normalise a file format string using the most widely used version

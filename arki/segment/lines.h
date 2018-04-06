@@ -13,7 +13,7 @@ namespace lines {
 class Writer : public fd::Writer
 {
 public:
-    Writer(const std::string& root, const std::string& relname, const std::string& absname, int mode=0);
+    Writer(const std::string& root, const std::string& relpath, const std::string& abspath, int mode=0);
     const char* type() const override;
     std::unique_ptr<fd::File> open_file(const std::string& pathname, int flags, mode_t mode) override;
 };

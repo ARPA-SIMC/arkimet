@@ -21,75 +21,75 @@ BaseManager::BaseManager(const std::string& root, bool mockdata) : SegmentManage
 AutoManager::AutoManager(const std::string& root, bool mockdata)
     : BaseManager(root, mockdata) {}
 
-std::shared_ptr<segment::Writer> AutoManager::create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname)
+std::shared_ptr<segment::Writer> AutoManager::create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
 {
-    auto res(segment::Writer::for_pathname(format, root, relname, absname, mockdata));
+    auto res(segment::Writer::for_pathname(format, root, relpath, abspath, mockdata));
     if (res) return res;
 
     if (format == "grib" || format == "grib1" || format == "grib2")
     {
         if (mockdata)
-            res.reset(new segment::concat::HoleWriter(root, relname, absname));
+            res.reset(new segment::concat::HoleWriter(root, relpath, abspath));
         else
-            res.reset(new segment::concat::Writer(root, relname, absname));
+            res.reset(new segment::concat::Writer(root, relpath, abspath));
     } else if (format == "bufr") {
         if (mockdata)
-            res.reset(new segment::concat::HoleWriter(root, relname, absname));
+            res.reset(new segment::concat::HoleWriter(root, relpath, abspath));
         else
-            res.reset(new segment::concat::Writer(root, relname, absname));
+            res.reset(new segment::concat::Writer(root, relpath, abspath));
     } else if (format == "odimh5" || format == "h5" || format == "odim") {
         if (mockdata)
-            res.reset(new segment::dir::HoleWriter(format, root, relname, absname));
+            res.reset(new segment::dir::HoleWriter(format, root, relpath, abspath));
         else
-            res.reset(new segment::dir::Writer(format, root, relname, absname));
+            res.reset(new segment::dir::Writer(format, root, relpath, abspath));
     } else if (format == "vm2") {
         if (mockdata)
             throw_consistency_error("mockdata single-file line-based segments not implemented");
         else
-            res.reset(new segment::lines::Writer(root, relname, absname));
+            res.reset(new segment::lines::Writer(root, relpath, abspath));
     } else {
         throw_consistency_error(
-                "getting writer for " + format + " file " + relname,
+                "getting writer for " + format + " file " + relpath,
                 "format not supported");
     }
     return res;
 }
 
-std::shared_ptr<segment::Checker> AutoManager::create_checker_for_format(const std::string& format, const std::string& relname, const std::string& absname)
+std::shared_ptr<segment::Checker> AutoManager::create_checker_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
 {
-    auto res(segment::Checker::for_pathname(format, root, relname, absname, mockdata));
+    auto res(segment::Checker::for_pathname(format, root, relpath, abspath, mockdata));
     if (res) return res;
 
     if (format == "grib" || format == "grib1" || format == "grib2")
     {
         if (mockdata)
-            res.reset(new segment::concat::HoleChecker(root, relname, absname));
+            res.reset(new segment::concat::HoleChecker(root, relpath, abspath));
         else
-            res.reset(new segment::concat::Checker(root, relname, absname));
+            res.reset(new segment::concat::Checker(root, relpath, abspath));
     } else if (format == "bufr") {
         if (mockdata)
-            res.reset(new segment::concat::HoleChecker(root, relname, absname));
+            res.reset(new segment::concat::HoleChecker(root, relpath, abspath));
         else
-            res.reset(new segment::concat::Checker(root, relname, absname));
+            res.reset(new segment::concat::Checker(root, relpath, abspath));
     } else if (format == "odimh5" || format == "h5" || format == "odim") {
         if (mockdata)
-            res.reset(new segment::dir::HoleChecker(format, root, relname, absname));
+            res.reset(new segment::dir::HoleChecker(format, root, relpath, abspath));
         else
-            res.reset(new segment::dir::Checker(format, root, relname, absname));
+            res.reset(new segment::dir::Checker(format, root, relpath, abspath));
     } else if (format == "vm2") {
         if (mockdata)
             throw_consistency_error("mockdata single-file line-based segments not implemented");
         else
-            res.reset(new segment::lines::Checker(root, relname, absname));
+            res.reset(new segment::lines::Checker(root, relpath, abspath));
     } else {
         throw_consistency_error(
-                "getting writer for " + format + " file " + relname,
+                "getting writer for " + format + " file " + relpath,
                 "format not supported");
     }
     return res;
 }
 
-void AutoManager::scan_dir(std::function<void(const std::string& relname)> dest)
+void AutoManager::scan_dir(std::function<void(const std::string& relpath)> dest)
 {
     // Trim trailing '/'
     string m_root = root;
@@ -143,19 +143,19 @@ void AutoManager::scan_dir(std::function<void(const std::string& relname)> dest)
 
 ForceDirManager::ForceDirManager(const std::string& root) : BaseManager(root) {}
 
-std::shared_ptr<segment::Writer> ForceDirManager::create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname)
+std::shared_ptr<segment::Writer> ForceDirManager::create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
 {
-    auto res(segment::Writer::for_pathname(format, root, relname, absname, mockdata));
+    auto res(segment::Writer::for_pathname(format, root, relpath, abspath, mockdata));
     if (res) return res;
-    return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relname, absname));
+    return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relpath, abspath));
 }
 
-std::shared_ptr<segment::Checker> ForceDirManager::create_checker_for_format(const std::string& format, const std::string& relname, const std::string& absname)
+std::shared_ptr<segment::Checker> ForceDirManager::create_checker_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
 {
-    return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relname, absname));
+    return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relpath, abspath));
 }
 
-void ForceDirManager::scan_dir(std::function<void(const std::string& relname)> dest)
+void ForceDirManager::scan_dir(std::function<void(const std::string& relpath)> dest)
 {
     // Trim trailing '/'
     string m_root = root;
@@ -197,9 +197,9 @@ void ForceDirManager::scan_dir(std::function<void(const std::string& relname)> d
 
 HoleDirManager::HoleDirManager(const std::string& root) : ForceDirManager(root) {}
 
-std::shared_ptr<segment::Writer> HoleDirManager::create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname)
+std::shared_ptr<segment::Writer> HoleDirManager::create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
 {
-    return std::shared_ptr<segment::Writer>(new segment::dir::HoleWriter(format, root, relname, absname));
+    return std::shared_ptr<segment::Writer>(new segment::dir::HoleWriter(format, root, relpath, abspath));
 }
 
 }

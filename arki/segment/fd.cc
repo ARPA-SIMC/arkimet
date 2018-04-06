@@ -36,8 +36,8 @@ void File::fdtruncate_nothrow(off_t pos) noexcept
 }
 
 
-Writer::Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd)
-    : segment::Writer(root, relname, fd->name()), fd(fd.release())
+Writer::Writer(const std::string& root, const std::string& relpath, std::unique_ptr<File> fd)
+    : segment::Writer(root, relpath, fd->name()), fd(fd.release())
 {
     initial_size = this->fd->lseek(0, SEEK_END);
     current_pos = initial_size;
@@ -57,7 +57,7 @@ const types::source::Blob& Writer::append(Metadata& md)
 {
     fired = false;
     const std::vector<uint8_t>& buf = md.getData();
-    pending.emplace_back(md, source::Blob::create_unlocked(md.source().format, root, relname, current_pos, buf.size()));
+    pending.emplace_back(md, source::Blob::create_unlocked(md.source().format, root, relpath, current_pos, buf.size()));
     current_pos += fd->write_data(buf);
     return *pending.back().new_source;
 }
@@ -97,11 +97,11 @@ bool Checker::single_file() const { return true; }
 
 bool Checker::exists_on_disk()
 {
-    if (sys::isdir(absname)) return false;
+    if (sys::isdir(abspath)) return false;
 
     // If it's not a directory, it must exist in the file system,
     // compressed or not
-    if (!sys::exists(absname) && !sys::exists(absname + ".gz"))
+    if (!sys::exists(abspath) && !sys::exists(abspath + ".gz"))
         return false;
 
     return true;
@@ -111,22 +111,22 @@ time_t Checker::timestamp()
 {
     std::unique_ptr<File> fd;
 
-    if (sys::exists(absname))
-        fd = open(absname);
-    else if (sys::exists(absname + ".gz"))
-        fd = open(absname + ".gz");
+    if (sys::exists(abspath))
+        fd = open(abspath);
+    else if (sys::exists(abspath + ".gz"))
+        fd = open(abspath + ".gz");
     else
-        throw std::runtime_error("neither " + absname + " nor " + absname + ".gz exist");
+        throw std::runtime_error("neither " + abspath + " nor " + abspath + ".gz exist");
 
     struct stat st;
     fd->fstat(st);
     return st.st_mtime;
 }
 
-void Checker::move_data(const std::string& new_root, const std::string& new_relname, const std::string& new_absname)
+void Checker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
-    string src = absname;
-    string dst = new_absname;
+    string src = abspath;
+    string dst = new_abspath;
     bool compressed = scan::isCompressed(src);
     if (compressed)
     {
@@ -149,7 +149,7 @@ State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, cons
     // Check the data if requested
     if (!quick)
     {
-        const scan::Validator* validator = &scan::Validator::by_filename(absname.c_str());
+        const scan::Validator* validator = &scan::Validator::by_filename(abspath.c_str());
 
         for (const auto& i: mds)
         {
@@ -158,7 +158,7 @@ State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, cons
             } catch (std::exception& e) {
                 stringstream out;
                 out << "validation failed at " << i->source() << ": " << e.what();
-                reporter.segment_info(ds, relname, out.str());
+                reporter.segment_info(ds, relpath, out.str());
                 return SEGMENT_UNALIGNED;
             }
         }
@@ -185,12 +185,12 @@ State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, cons
     }
 
     // Check for truncation
-    off_t file_size = utils::compress::filesize(absname);
+    off_t file_size = utils::compress::filesize(abspath);
     if (file_size < end_of_last_data_checked)
     {
         stringstream ss;
         ss << "file looks truncated: its size is " << file_size << " but data is known to exist until " << end_of_last_data_checked << " bytes";
-        reporter.segment_info(ds, relname, ss.str());
+        reporter.segment_info(ds, relpath, ss.str());
         return SEGMENT_UNALIGNED;
     }
 
@@ -213,7 +213,7 @@ State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, cons
     // Take note of files with holes
     if (has_hole)
     {
-        nag::verbose("%s: contains deleted data or data to be reordered", absname.c_str());
+        nag::verbose("%s: contains deleted data or data to be reordered", abspath.c_str());
         return SEGMENT_DIRTY;
     } else {
         return SEGMENT_OK;
@@ -223,12 +223,12 @@ State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, cons
 void Checker::validate(Metadata& md, const scan::Validator& v)
 {
     if (const types::source::Blob* blob = md.has_source_blob()) {
-        if (blob->filename != relname)
+        if (blob->filename != relpath)
             throw std::runtime_error("metadata to validate does not appear to be from this segment");
 
-        if (sys::exists(absname))
+        if (sys::exists(abspath))
         {
-            sys::File fd(absname, O_RDONLY);
+            sys::File fd(abspath, O_RDONLY);
             v.validate_file(fd, blob->offset, blob->size);
             return;
         }
@@ -242,8 +242,8 @@ void Checker::validate(Metadata& md, const scan::Validator& v)
 
 size_t Checker::remove()
 {
-    size_t size = sys::size(absname);
-    sys::unlink(absname.c_str());
+    size_t size = sys::size(abspath);
+    sys::unlink(abspath.c_str());
     return size;
 }
 
@@ -256,12 +256,12 @@ Pending Checker::repack_impl(
     struct Rename : public Transaction
     {
         sys::File src;
-        std::string tmpabsname;
-        std::string absname;
+        std::string tmpabspath;
+        std::string abspath;
         bool fired = false;
 
-        Rename(const std::string& tmpabsname, const std::string& absname)
-            : src(absname, O_RDWR), tmpabsname(tmpabsname), absname(absname)
+        Rename(const std::string& tmpabspath, const std::string& abspath)
+            : src(abspath, O_RDWR), tmpabspath(tmpabspath), abspath(abspath)
         {
         }
 
@@ -274,41 +274,41 @@ Pending Checker::repack_impl(
         {
             if (fired) return;
             // Rename the data file to its final name
-            if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
-                throw_system_error("cannot rename " + tmpabsname + " to " + absname);
+            if (rename(tmpabspath.c_str(), abspath.c_str()) < 0)
+                throw_system_error("cannot rename " + tmpabspath + " to " + abspath);
             fired = true;
         }
 
         void rollback() override
         {
             if (fired) return;
-            ::unlink(tmpabsname.c_str());
+            ::unlink(tmpabspath.c_str());
             fired = true;
         }
 
         void rollback_nothrow() noexcept override
         {
             if (fired) return;
-            ::unlink(tmpabsname.c_str());
+            ::unlink(tmpabspath.c_str());
             fired = true;
         }
     };
 
-    string tmprelname = relname + ".repack";
-    string tmpabsname = absname + ".repack";
+    string tmprelpath = relpath + ".repack";
+    string tmpabspath = abspath + ".repack";
 
     // Make sure mds are not holding a read lock on the file to repack
     for (auto& md: mds) md->sourceBlob().unlock();
 
     // Get a validator for this file
-    const scan::Validator& validator = scan::Validator::by_filename(absname);
+    const scan::Validator& validator = scan::Validator::by_filename(abspath);
 
     // Reacquire the lock here for writing
     Rename* rename;
-    Pending p(rename = new Rename(tmpabsname, absname));
+    Pending p(rename = new Rename(tmpabspath, abspath));
 
     // Create a writer for the temp file
-    auto new_fd = open_file(tmpabsname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    auto new_fd = open_file(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
     size_t wrpos = 0;
 
     if (test_flags & TEST_MISCHIEF_MOVE_DATA)
@@ -323,7 +323,7 @@ Pending Checker::repack_impl(
         if (!skip_validation)
             validator.validate_buf(buf.data(), buf.size());
         // Append it to the new file
-        auto new_source = Source::createBlobUnlocked((*i)->source().format, rootdir, relname, wrpos, buf.size());
+        auto new_source = Source::createBlobUnlocked((*i)->source().format, rootdir, relpath, wrpos, buf.size());
         wrpos += new_fd->write_data(buf);
         // Update the source information in the metadata
         (*i)->set_source(std::move(new_source));
@@ -339,21 +339,21 @@ Pending Checker::repack_impl(
 
 void Checker::test_truncate(size_t offset)
 {
-    if (!sys::exists(absname))
-        utils::createFlagfile(absname);
+    if (!sys::exists(abspath))
+        utils::createFlagfile(abspath);
 
-    utils::files::PreserveFileTimes pft(absname);
-    if (::truncate(absname.c_str(), offset) < 0)
+    utils::files::PreserveFileTimes pft(abspath);
+    if (::truncate(abspath.c_str(), offset) < 0)
     {
         stringstream ss;
-        ss << "cannot truncate " << absname << " at " << offset;
+        ss << "cannot truncate " << abspath << " at " << offset;
         throw std::system_error(errno, std::system_category(), ss.str());
     }
 }
 
 void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
-    sys::File fd(absname, O_RDWR);
+    sys::File fd(abspath, O_RDWR);
     sys::PreserveFileTimes pt(fd);
     off_t end = fd.lseek(0, SEEK_END);
     if (data_idx >= mds.size())
@@ -378,7 +378,7 @@ void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsi
 
 void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
 {
-    sys::File fd(absname, O_RDWR);
+    sys::File fd(abspath, O_RDWR);
     sys::PreserveFileTimes pt(fd);
     off_t start_ofs = mds[data_idx].sourceBlob().offset;
     off_t end = fd.lseek(0, SEEK_END);
@@ -400,7 +400,7 @@ void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size
 void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
-    sys::File fd(absname, O_RDWR);
+    sys::File fd(abspath, O_RDWR);
     sys::PreserveFileTimes pt(fd);
     fd.lseek(s.offset);
     fd.write_all_or_throw("\0", 1);

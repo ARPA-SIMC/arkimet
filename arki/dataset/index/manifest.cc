@@ -89,12 +89,12 @@ bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
         prepend_fname = str::dirname(*i);
-        string absname = str::joinpath(absdir, *i);
-        string fullpath = absname + ".metadata";
+        string abspath = str::joinpath(absdir, *i);
+        string fullpath = abspath + ".metadata";
         if (!sys::exists(fullpath)) continue;
         std::shared_ptr<arki::Reader> reader;
         if (q.with_data)
-            reader = arki::Reader::create_new(absname, lock.lock());
+            reader = arki::Reader::create_new(abspath, lock.lock());
         // This generates filenames relative to the metadata
         // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
         Metadata::read_file(fullpath, [&](unique_ptr<Metadata> md) {
@@ -154,16 +154,16 @@ bool Manifest::query_summary(const Matcher& matcher, Summary& summary)
     return true;
 }
 
-void Manifest::query_segment(const std::string& relname, metadata_dest_func dest) const
+void Manifest::query_segment(const std::string& relpath, metadata_dest_func dest) const
 {
     if (lock.expired())
         throw std::runtime_error("cannot query_segment while there is no lock held");
     string absdir = sys::abspath(m_path);
-    string prepend_fname = str::dirname(relname);
-    string absname = str::joinpath(m_path, relname);
-    auto reader = arki::Reader::create_new(absname, lock.lock());
-    Metadata::read_file(absname + ".metadata", [&](unique_ptr<Metadata> md) {
-        // Tweak Blob sources replacing the file name with relname
+    string prepend_fname = str::dirname(relpath);
+    string abspath = str::joinpath(m_path, relpath);
+    auto reader = arki::Reader::create_new(abspath, lock.lock());
+    Metadata::read_file(abspath + ".metadata", [&](unique_ptr<Metadata> md) {
+        // Tweak Blob sources replacing the file name with relpath
         if (const source::Blob* s = md->has_source_blob())
             md->set_source(Source::createBlob(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size, reader));
         return dest(move(md));
@@ -175,9 +175,9 @@ void Manifest::invalidate_summary()
     sys::unlink_ifexists(str::joinpath(m_path, "summary"));
 }
 
-void Manifest::invalidate_summary(const std::string& relname)
+void Manifest::invalidate_summary(const std::string& relpath)
 {
-    sys::unlink_ifexists(str::joinpath(m_path, relname) + ".summary");
+    sys::unlink_ifexists(str::joinpath(m_path, relpath) + ".summary");
     invalidate_summary();
 }
 
@@ -442,13 +442,13 @@ public:
         return files;
     }
 
-    bool segment_timespan(const std::string& relname, Time& start_time, Time& end_time) const override
+    bool segment_timespan(const std::string& relpath, Time& start_time, Time& end_time) const override
     {
         // Lookup the file (FIXME: reimplement binary search so we
         // don't need to create a temporary Info)
-        Info sample(relname, 0, Time(0, 0, 0), Time(0, 0, 0));
+        Info sample(relpath, 0, Time(0, 0, 0), Time(0, 0, 0));
         vector<Info>::const_iterator lb = lower_bound(info.begin(), info.end(), sample);
-        if (lb != info.end() && lb->file == relname)
+        if (lb != info.end() && lb->file == relpath)
         {
             start_time = lb->start_time;
             end_time = lb->end_time;
@@ -479,14 +479,14 @@ public:
         return Pending();
     }
 
-    void acquire(const std::string& relname, time_t mtime, const Summary& sum)
+    void acquire(const std::string& relpath, time_t mtime, const Summary& sum)
     {
         reread();
 
         // Add to index
         unique_ptr<Reftime> rt = sum.getReferenceTime();
 
-        Info item(relname, mtime, rt->period_begin(), rt->period_end());
+        Info item(relpath, mtime, rt->period_begin(), rt->period_end());
 
         // Insertion sort; at the end, everything is already sorted and we
         // avoid inserting lots of duplicate items
@@ -501,12 +501,12 @@ public:
         dirty = true;
     }
 
-    void remove(const std::string& relname) override
+    void remove(const std::string& relpath) override
     {
         reread();
         vector<Info>::iterator i;
         for (i = info.begin(); i != info.end(); ++i)
-            if (i->file == relname)
+            if (i->file == relpath)
                 break;
         if (i != info.end())
             info.erase(i);
@@ -752,11 +752,11 @@ public:
         return files;
     }
 
-    bool segment_timespan(const std::string& relname, Time& start_time, Time& end_time) const override
+    bool segment_timespan(const std::string& relpath, Time& start_time, Time& end_time) const override
     {
         Query q("sel_file_ts", m_db);
         q.compile("SELECT start_time, end_time FROM files WHERE file=?");
-        q.bind(1, relname);
+        q.bind(1, relpath);
 
         bool found = false;
         while (q.step())
@@ -802,7 +802,7 @@ public:
         return Pending(new SqliteTransaction(m_db, "EXCLUSIVE"));
     }
 
-    void acquire(const std::string& relname, time_t mtime, const Summary& sum)
+    void acquire(const std::string& relpath, time_t mtime, const Summary& sum)
     {
         // Add to index
         unique_ptr<types::Reftime> rt = sum.getReferenceTime();
@@ -830,7 +830,7 @@ public:
         }
 
         m_insert.reset();
-        m_insert.bind(1, relname);
+        m_insert.bind(1, relpath);
         m_insert.bind(2, mtime);
         m_insert.bind(3, bt);
         m_insert.bind(4, et);

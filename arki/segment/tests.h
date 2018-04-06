@@ -14,8 +14,8 @@ struct SegmentTest
 {
     std::string format;
     std::string root;
-    std::string relname;
-    std::string absname;
+    std::string relpath;
+    std::string abspath;
     metadata::TestCollection mdc;
 
     SegmentTest();
@@ -54,8 +54,8 @@ struct SegmentRemoveTest : public SegmentTest
     void run() override;
 };
 
-// TODO: virtual void truncate(const std::string& absname, size_t offset) = 0;
-// TODO: virtual Pending repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds) = 0;
+// TODO: virtual void truncate(const std::string& abspath, size_t offset) = 0;
+// TODO: virtual Pending repack(const std::string& rootdir, const std::string& relpath, metadata::Collection& mds) = 0;
 
 void test_append_transaction_ok(segment::Writer* dw, Metadata& md, int append_amount_adjust=0);
 void test_append_transaction_rollback(segment::Writer* dw, Metadata& md, int append_amount_adjust=0);

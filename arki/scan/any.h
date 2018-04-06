@@ -31,10 +31,10 @@ bool scan(const std::string& file, std::shared_ptr<core::Lock> lock, metadata_de
 /**
  * Alternate version with explicit base dir.
  *
- * The source information in the metadata will point to \a relname only, with
+ * The source information in the metadata will point to \a relpath only, with
  * \a basedir as context.
  */
-bool scan(const std::string& basedir, const std::string& relname, std::shared_ptr<core::Lock> lock, metadata_dest_func dest);
+bool scan(const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock, metadata_dest_func dest);
 
 /**
  * Scan the given file without format autodetection, sending its metadata to a
@@ -51,10 +51,10 @@ bool scan(const std::string& file, std::shared_ptr<core::Lock> lock, const std::
 /**
  * Alternate version with explicit base dir.
  *
- * The source information in the metadata will point to \a relname only, with
+ * The source information in the metadata will point to \a relpath only, with
  * \a basedir as context.
  */
-bool scan(const std::string& basedir, const std::string& relname, std::shared_ptr<core::Lock> lock, const std::string& format, metadata_dest_func dest);
+bool scan(const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock, const std::string& format, metadata_dest_func dest);
 
 /**
  * Return true if the file exists, either uncompressed or compressed

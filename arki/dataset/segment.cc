@@ -30,37 +30,37 @@ SegmentManager::~SegmentManager()
 {
 }
 
-std::shared_ptr<segment::Writer> SegmentManager::get_writer(const std::string& relname)
+std::shared_ptr<segment::Writer> SegmentManager::get_writer(const std::string& relpath)
 {
-    return get_writer(utils::get_format(relname), relname);
+    return get_writer(utils::get_format(relpath), relpath);
 }
 
-std::shared_ptr<segment::Writer> SegmentManager::get_writer(const std::string& format, const std::string& relname)
+std::shared_ptr<segment::Writer> SegmentManager::get_writer(const std::string& format, const std::string& relpath)
 {
-    // Ensure that the directory for 'relname' exists
-    string absname = str::joinpath(root, relname);
-    size_t pos = absname.rfind('/');
+    // Ensure that the directory for 'relpath' exists
+    string abspath = str::joinpath(root, relpath);
+    size_t pos = abspath.rfind('/');
     if (pos != string::npos)
-        sys::makedirs(absname.substr(0, pos));
+        sys::makedirs(abspath.substr(0, pos));
 
     // Refuse to write to compressed files
-    if (scan::isCompressed(absname))
-        throw_consistency_error("accessing data file " + relname,
+    if (scan::isCompressed(abspath))
+        throw_consistency_error("accessing data file " + relpath,
                 "cannot update compressed data files: please manually uncompress it first");
 
     // Else we need to create an appropriate one
-    return create_writer_for_format(format, relname, absname);
+    return create_writer_for_format(format, relpath, abspath);
 }
 
-std::shared_ptr<segment::Checker> SegmentManager::get_checker(const std::string& relname)
+std::shared_ptr<segment::Checker> SegmentManager::get_checker(const std::string& relpath)
 {
-    return get_checker(utils::get_format(relname), relname);
+    return get_checker(utils::get_format(relpath), relpath);
 }
 
-std::shared_ptr<segment::Checker> SegmentManager::get_checker(const std::string& format, const std::string& relname)
+std::shared_ptr<segment::Checker> SegmentManager::get_checker(const std::string& format, const std::string& relpath)
 {
-    string absname = str::joinpath(root, relname);
-    return create_checker_for_format(format, relname, absname);
+    string abspath = str::joinpath(root, relpath);
+    return create_checker_for_format(format, relpath, abspath);
 }
 
 std::unique_ptr<SegmentManager> SegmentManager::get(const std::string& root, bool force_dir, bool mock_data)

@@ -33,7 +33,7 @@ struct Writer : public segment::Writer
     off_t current_pos;
     std::vector<PendingMetadata> pending;
 
-    Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd);
+    Writer(const std::string& root, const std::string& relpath, std::unique_ptr<File> fd);
     ~Writer();
 
     bool single_file() const override;
@@ -69,7 +69,7 @@ protected:
             unsigned test_flags=0);
 
     virtual std::unique_ptr<File> open_file(const std::string& pathname, int flags, mode_t mode) = 0;
-    void move_data(const std::string& new_root, const std::string& new_relname, const std::string& new_absname) override;
+    void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 
 public:
     using segment::Checker::Checker;

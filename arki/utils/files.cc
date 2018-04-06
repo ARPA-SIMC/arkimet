@@ -57,13 +57,13 @@ std::string read_file(const std::string &file)
         return sys::read_file(file);
 }
 
-void resolve_path(const std::string& pathname, std::string& basedir, std::string& relname)
+void resolve_path(const std::string& pathname, std::string& basedir, std::string& relpath)
 {
     if (pathname[0] == '/')
         basedir.clear();
     else
         basedir = sys::getcwd();
-    relname = str::normpath(pathname);
+    relpath = str::normpath(pathname);
 }
 
 string normaliseFormat(const std::string& format)

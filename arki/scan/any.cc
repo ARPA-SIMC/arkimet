@@ -44,18 +44,18 @@ static void scan_metadata(const std::string& pathname, const std::string& md_pat
 static bool scan_file(
         const std::string& pathname,
         const std::string& basedir,
-        const std::string& relname,
+        const std::string& relpath,
         const std::string& format,
         std::shared_ptr<core::Lock> lock,
         metadata_dest_func dest)
 {
     // Scan the file
     if (isCompressed(pathname))
-        throw std::runtime_error("cannot scan " + relname + ".gz: file needs to be manually decompressed before scanning");
+        throw std::runtime_error("cannot scan " + relpath + ".gz: file needs to be manually decompressed before scanning");
 
     auto st = sys::stat(pathname);
     if (!st)
-        throw std::runtime_error("cannot scan " + relname + ": file does not exist");
+        throw std::runtime_error("cannot scan " + relpath + ": file does not exist");
 
 #ifdef HAVE_GRIBAPI
     if (format == "grib" || format == "grib1" || format == "grib2")
@@ -65,7 +65,7 @@ static bool scan_file(
         if (st->st_size == 0) return true;
 
         scan::Grib scanner;
-        scanner.open(pathname, basedir, relname, lock);
+        scanner.open(pathname, basedir, relpath, lock);
         while (true)
         {
             unique_ptr<Metadata> md(new Metadata);
@@ -82,7 +82,7 @@ static bool scan_file(
         if (st->st_size == 0) return true;
 
         scan::Bufr scanner;
-        scanner.open(pathname, basedir, relname, lock);
+        scanner.open(pathname, basedir, relpath, lock);
         while (true)
         {
             unique_ptr<Metadata> md(new Metadata);
@@ -95,7 +95,7 @@ static bool scan_file(
 #ifdef HAVE_HDF5
     if ((format == "h5") || (format == "odim") || (format == "odimh5")) {
         scan::OdimH5 scanner;
-        scanner.open(pathname, basedir, relname, lock);
+        scanner.open(pathname, basedir, relpath, lock);
         while (true)
         {
             unique_ptr<Metadata> md(new Metadata);
@@ -112,7 +112,7 @@ static bool scan_file(
         if (st->st_size == 0) return true;
 
         scan::Vm2 scanner;
-        scanner.open(pathname, basedir, relname, lock);
+        scanner.open(pathname, basedir, relpath, lock);
         while (true)
         {
             unique_ptr<Metadata> md(new Metadata);
@@ -132,7 +132,7 @@ static bool dir_segment_fnames_lt(const std::string& a, const std::string& b)
     return na < nb;
 }
 
-static bool scan_dir(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+static bool scan_dir(const std::string& pathname, const std::string& basedir, const std::string& relpath, const std::string& format, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
 {
     // Collect all file names in the directory
     vector<std::string> fnames;
@@ -148,11 +148,11 @@ static bool scan_dir(const std::string& pathname, const std::string& basedir, co
     size_t pos = 0;
     for (vector<string>::const_iterator i = fnames.begin(); i != fnames.end(); ++i)
     {
-        //cerr << "SCAN " << *i << " " << pathname << " " << basedir << " " << relname << endl;
+        //cerr << "SCAN " << *i << " " << pathname << " " << basedir << " " << relpath << endl;
         pos = strtoul(i->c_str(), 0, 10);
-        if (!scan_file(str::joinpath(pathname, *i), basedir, relname, format, lock, [&](unique_ptr<Metadata> md) {
+        if (!scan_file(str::joinpath(pathname, *i), basedir, relpath, format, lock, [&](unique_ptr<Metadata> md) {
                    const source::Blob& i = md->sourceBlob();
-                   md->set_source(Source::createBlob(i.format, i.basedir, relname, pos, i.size, i.reader));
+                   md->set_source(Source::createBlob(i.format, i.basedir, relpath, pos, i.size, i.reader));
                    return dest(move(md));
                 }))
             return false;
@@ -172,24 +172,24 @@ static std::string guess_format(const std::string& basedir, const std::string& f
     return str::lower(file.substr(pos+1));
 }
 
-bool scan(const std::string& basedir, const std::string& relname, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+bool scan(const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
 {
-    std::string format = guess_format(basedir, relname);
+    std::string format = guess_format(basedir, relpath);
 
     // If we cannot detect a format, fail
     if (format.empty()) return false;
-    return scan(basedir, relname, lock, format, dest);
+    return scan(basedir, relpath, lock, format, dest);
 }
 
-bool scan(const std::string& basedir, const std::string& relname, std::shared_ptr<core::Lock> lock, const std::string& format, metadata_dest_func dest)
+bool scan(const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock, const std::string& format, metadata_dest_func dest)
 {
     // If we scan standard input, assume uncompressed data and do not try to
     // look for an existing .metadata file
-    if (relname == "-")
-        return scan_file(relname, basedir, relname, format, lock, dest);
+    if (relpath == "-")
+        return scan_file(relpath, basedir, relpath, format, lock, dest);
 
     // stat the file (or its compressed version)
-    string pathname = str::joinpath(basedir, relname);
+    string pathname = str::joinpath(basedir, relpath);
     unique_ptr<struct stat> st_file = sys::stat(pathname);
     if (!st_file.get())
         st_file = sys::stat(pathname + ".tar");
@@ -208,26 +208,26 @@ bool scan(const std::string& basedir, const std::string& relname, std::shared_pt
         scan_metadata(pathname, md_pathname, lock, dest);
         return true;
     } else if (S_ISDIR(st_file->st_mode)) {
-        return scan_dir(pathname, basedir, relname, format, lock, dest);
+        return scan_dir(pathname, basedir, relpath, format, lock, dest);
     } else {
-        return scan_file(pathname, basedir, relname, format, lock, dest);
+        return scan_file(pathname, basedir, relpath, format, lock, dest);
     }
 }
 
 bool scan(const std::string& file, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
 {
     string basedir;
-    string relname;
-    utils::files::resolve_path(file, basedir, relname);
-    return scan(basedir, relname, lock, dest);
+    string relpath;
+    utils::files::resolve_path(file, basedir, relpath);
+    return scan(basedir, relpath, lock, dest);
 }
 
 bool scan(const std::string& file, std::shared_ptr<core::Lock> lock, const std::string& format, metadata_dest_func dest)
 {
     string basedir;
-    string relname;
-    utils::files::resolve_path(file, basedir, relname);
-    return scan(basedir, relname, lock, format, dest);
+    string relpath;
+    utils::files::resolve_path(file, basedir, relpath);
+    return scan(basedir, relpath, lock, format, dest);
 }
 
 bool exists(const std::string& file)

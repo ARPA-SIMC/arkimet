@@ -16,7 +16,7 @@ namespace arki {
 namespace tests {
 
 SegmentTest::SegmentTest()
-    : format("grib"), root("."), relname("testfile.grib"), absname(sys::abspath(relname)), mdc("inbound/test.grib1")
+    : format("grib"), root("."), relpath("testfile.grib"), abspath(sys::abspath(relpath)), mdc("inbound/test.grib1")
 {
 }
 
@@ -27,7 +27,7 @@ SegmentTest::~SegmentTest()
 std::shared_ptr<segment::Writer> SegmentTest::make_empty_writer()
 {
     // Clear potentially existing segments
-    system(("rm -rf " + absname).c_str());
+    system(("rm -rf " + abspath).c_str());
 
     return make_writer();
 }
@@ -35,7 +35,7 @@ std::shared_ptr<segment::Writer> SegmentTest::make_empty_writer()
 std::shared_ptr<segment::Checker> SegmentTest::make_empty_checker()
 {
     // Clear potentially existing segments
-    system(("rm -rf " + absname).c_str());
+    system(("rm -rf " + abspath).c_str());
 
     return make_checker();
 }
@@ -151,44 +151,44 @@ void test_append_transaction_ok(segment::Writer* dw, Metadata& md, int append_am
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());
     size_t data_size = md.data_size();
-    size_t orig_fsize = sys::size(dw->absname, 0);
+    size_t orig_fsize = sys::size(dw->abspath, 0);
 
     // Start the append transaction, nothing happens until commit
     const types::source::Blob& new_source = dw->append(md);
     wassert(actual((size_t)new_source.offset) == orig_fsize);
     wassert(actual((size_t)new_source.size) == data_size);
     wassert(actual(new_source.basedir) == sys::getcwd());
-    wassert(actual(new_source.filename) == dw->relname);
-    wassert(actual(sys::size(dw->absname)) == orig_fsize + data_size + append_amount_adjust);
+    wassert(actual(new_source.filename) == dw->relpath);
+    wassert(actual(sys::size(dw->abspath)) == orig_fsize + data_size + append_amount_adjust);
     wassert(actual_type(md.source()) == *orig_source);
 
     // Commit
     dw->commit();
 
     // After commit, data is appended
-    wassert(actual(sys::size(dw->absname)) == orig_fsize + data_size + append_amount_adjust);
+    wassert(actual(sys::size(dw->abspath)) == orig_fsize + data_size + append_amount_adjust);
 
     // And metadata is updated
-    wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), dw->relname, orig_fsize, data_size));
+    wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), dw->relpath, orig_fsize, data_size));
 }
 
 void test_append_transaction_rollback(segment::Writer* dw, Metadata& md, int append_amount_adjust)
 {
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());
-    size_t orig_fsize = sys::size(dw->absname, 0);
+    size_t orig_fsize = sys::size(dw->abspath, 0);
 
     // Start the append transaction, nothing happens until commit
     const types::source::Blob& new_source = dw->append(md);
     wassert(actual((size_t)new_source.offset) == orig_fsize);
-    wassert(actual(sys::size(dw->absname, 0)) == orig_fsize + new_source.size + append_amount_adjust);
+    wassert(actual(sys::size(dw->abspath, 0)) == orig_fsize + new_source.size + append_amount_adjust);
     wassert(actual_type(md.source()) == *orig_source);
 
     // Rollback
     dw->rollback();
 
     // After rollback, nothing has changed
-    wassert(actual(sys::size(dw->absname, 0)) == orig_fsize);
+    wassert(actual(sys::size(dw->abspath, 0)) == orig_fsize);
     wassert(actual_type(md.source()) == *orig_source);
 }
 

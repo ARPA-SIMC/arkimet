@@ -481,9 +481,9 @@ Grib::~Grib()
     if (L) delete L;
 }
 
-void Grib::open(const std::string& filename, const std::string& basedir, const std::string& relname, std::shared_ptr<core::Lock> lock)
+void Grib::open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock)
 {
-    Scanner::open(filename, basedir, relname, lock);
+    Scanner::open(filename, basedir, relpath, lock);
     if (!(in = fopen(filename.c_str(), "rb")))
         throw_file_error(filename, "cannot open file for reading");
 }
@@ -565,11 +565,11 @@ void Grib::setSource(Metadata& md)
     }
     else
     {
-        md.set_source(Source::createBlob("grib", basedir, relname, offset, size, reader));
+        md.set_source(Source::createBlob("grib", basedir, relpath, offset, size, reader));
         md.set_cached_data(vector<uint8_t>(vbuf, vbuf + size));
     }
     stringstream note;
-    note << "Scanned from " << relname << ":" << offset << "+" << size;
+    note << "Scanned from " << relpath << ":" << offset << "+" << size;
     md.add_note(note.str());
 }
 

@@ -59,8 +59,8 @@ struct HoleFile : public fd::File
 }
 
 
-Writer::Writer(const std::string& root, const std::string& relname, const std::string& absname, int mode)
-    : fd::Writer(root, relname, open_file(absname, O_WRONLY | O_CREAT | mode, 0666))
+Writer::Writer(const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
+    : fd::Writer(root, relpath, open_file(abspath, O_WRONLY | O_CREAT | mode, 0666))
 {
 }
 
@@ -71,8 +71,8 @@ std::unique_ptr<fd::File> Writer::open_file(const std::string& pathname, int fla
     return unique_ptr<fd::File>(new File(pathname, flags, mode));
 }
 
-HoleWriter::HoleWriter(const std::string& root, const std::string& relname, const std::string& absname, int mode)
-    : fd::Writer(root, relname, open_file(absname, O_WRONLY | O_CREAT | mode, 0666))
+HoleWriter::HoleWriter(const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
+    : fd::Writer(root, relpath, open_file(abspath, O_WRONLY | O_CREAT | mode, 0666))
 {
 }
 

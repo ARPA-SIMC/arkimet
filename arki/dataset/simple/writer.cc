@@ -40,15 +40,15 @@ struct AppendSegment
 
     AppendSegment(std::shared_ptr<const simple::Config> config, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
         : config(config), lock(lock), segment(segment),
-          dir(str::dirname(segment->absname)),
-          basename(str::basename(segment->absname))
+          dir(str::dirname(segment->abspath)),
+          basename(str::basename(segment->abspath))
     {
         struct stat st_data;
         if (!dir.fstatat_ifexists(basename.c_str(), st_data))
             return;
 
         // Read the metadata
-        scan::scan(segment->absname, lock, mds.inserter_func());
+        scan::scan(segment->abspath, lock, mds.inserter_func());
 
         // Read the summary
         if (!mds.empty())
@@ -78,10 +78,10 @@ struct AppendSegment
             const types::source::Blob& new_source = segment->append(md);
             add(md, new_source);
             segment->commit();
-            time_t ts = scan::timestamp(segment->absname);
-            mft->acquire(segment->relname, ts, sum);
-            mds.writeAtomically(segment->absname + ".metadata");
-            sum.writeAtomically(segment->absname + ".summary");
+            time_t ts = scan::timestamp(segment->abspath);
+            mft->acquire(segment->relpath, ts, sum);
+            mds.writeAtomically(segment->abspath + ".metadata");
+            sum.writeAtomically(segment->abspath + ".summary");
             mft->flush();
             return ACQ_OK;
         } catch (std::exception& e) {
@@ -107,10 +107,10 @@ struct AppendSegment
         }
 
         segment->commit();
-        time_t ts = scan::timestamp(segment->absname);
-        mft->acquire(segment->relname, ts, sum);
-        mds.writeAtomically(segment->absname + ".metadata");
-        sum.writeAtomically(segment->absname + ".summary");
+        time_t ts = scan::timestamp(segment->abspath);
+        mft->acquire(segment->relpath, ts, sum);
+        mds.writeAtomically(segment->abspath + ".metadata");
+        sum.writeAtomically(segment->abspath + ".summary");
         mft->flush();
     }
 };
@@ -141,11 +141,11 @@ std::unique_ptr<AppendSegment> Writer::file(const Metadata& md, const std::strin
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segmented::Writer::file(md, format)));
 }
 
-std::unique_ptr<AppendSegment> Writer::file(const std::string& relname)
+std::unique_ptr<AppendSegment> Writer::file(const std::string& relpath)
 {
-    sys::makedirs(str::dirname(str::joinpath(config().path, relname)));
+    sys::makedirs(str::dirname(str::joinpath(config().path, relpath)));
     auto lock = config().append_lock_dataset();
-    auto segment = segment_manager().get_writer(relname);
+    auto segment = segment_manager().get_writer(relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segment));
 }
 

@@ -25,8 +25,8 @@ namespace arki {
 namespace segment {
 namespace tar {
 
-Checker::Checker(const std::string& root, const std::string& relname, const std::string& absname)
-    : segment::Checker(root, relname, absname), tarabsname(absname + ".tar")
+Checker::Checker(const std::string& root, const std::string& relpath, const std::string& abspath)
+    : segment::Checker(root, relpath, abspath), tarabspath(abspath + ".tar")
 {
 }
 
@@ -35,35 +35,35 @@ bool Checker::single_file() const { return true; }
 
 bool Checker::exists_on_disk()
 {
-    return sys::exists(tarabsname);
+    return sys::exists(tarabspath);
 }
 
 time_t Checker::timestamp()
 {
-    return sys::timestamp(tarabsname);
+    return sys::timestamp(tarabspath);
 }
 
-void Checker::move_data(const std::string& new_root, const std::string& new_relname, const std::string& new_absname)
+void Checker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
-    string new_tarabsname = new_absname + ".tar";
-    if (rename(tarabsname.c_str(), new_tarabsname.c_str()) < 0)
+    string new_tarabspath = new_abspath + ".tar";
+    if (rename(tarabspath.c_str(), new_tarabspath.c_str()) < 0)
     {
         stringstream ss;
-        ss << "cannot rename " << tarabsname << " to " << new_tarabsname;
+        ss << "cannot rename " << tarabspath << " to " << new_tarabspath;
         throw std::system_error(errno, std::system_category(), ss.str());
     }
 }
 
 State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
 {
-    std::unique_ptr<struct stat> st = sys::stat(tarabsname);
+    std::unique_ptr<struct stat> st = sys::stat(tarabspath);
     if (st.get() == nullptr)
         return SEGMENT_DELETED;
 
     // Check the data if requested
     if (!quick)
     {
-        const scan::Validator* validator = &scan::Validator::by_filename(absname.c_str());
+        const scan::Validator* validator = &scan::Validator::by_filename(abspath.c_str());
 
         for (const auto& i: mds)
         {
@@ -72,7 +72,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
             } catch (std::exception& e) {
                 stringstream out;
                 out << "validation failed at " << i->source() << ": " << e.what();
-                reporter.segment_info(ds, relname, out.str());
+                reporter.segment_info(ds, relpath, out.str());
                 return SEGMENT_UNALIGNED;
             }
         }
@@ -104,7 +104,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
     {
         stringstream ss;
         ss << "file looks truncated: its size is " << file_size << " but data is known to exist until " << end_of_last_data_checked << " bytes";
-        reporter.segment_info(ds, relname, ss.str());
+        reporter.segment_info(ds, relpath, ss.str());
         return SEGMENT_UNALIGNED;
     }
 
@@ -127,7 +127,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
     // Take note of files with holes
     if (has_hole)
     {
-        nag::verbose("%s: contains deleted data or data to be reordered", absname.c_str());
+        nag::verbose("%s: contains deleted data or data to be reordered", abspath.c_str());
         return SEGMENT_DIRTY;
     } else {
         return SEGMENT_OK;
@@ -138,10 +138,10 @@ void Checker::validate(Metadata& md, const scan::Validator& v)
 {
     if (const types::source::Blob* blob = md.has_source_blob())
     {
-        if (blob->filename != relname)
+        if (blob->filename != relpath)
             throw std::runtime_error("metadata to validate does not appear to be from this segment");
 
-        sys::File fd(tarabsname, O_RDONLY);
+        sys::File fd(tarabspath, O_RDONLY);
         v.validate_file(fd, blob->offset, blob->size);
         return;
     }
@@ -151,8 +151,8 @@ void Checker::validate(Metadata& md, const scan::Validator& v)
 
 size_t Checker::remove()
 {
-    size_t size = sys::size(tarabsname);
-    sys::unlink(tarabsname);
+    size_t size = sys::size(tarabspath);
+    sys::unlink(tarabspath);
     return size;
 }
 
@@ -161,12 +161,12 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     struct Rename : public Transaction
     {
         sys::File src;
-        std::string tmpabsname;
-        std::string absname;
+        std::string tmpabspath;
+        std::string abspath;
         bool fired = false;
 
-        Rename(const std::string& tmpabsname, const std::string& absname)
-            : src(absname, O_RDWR), tmpabsname(tmpabsname), absname(absname)
+        Rename(const std::string& tmpabspath, const std::string& abspath)
+            : src(abspath, O_RDWR), tmpabspath(tmpabspath), abspath(abspath)
         {
         }
 
@@ -179,40 +179,40 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
         {
             if (fired) return;
             // Rename the data file to its final name
-            if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
-                throw_system_error("cannot rename " + tmpabsname + " to " + absname);
+            if (rename(tmpabspath.c_str(), abspath.c_str()) < 0)
+                throw_system_error("cannot rename " + tmpabspath + " to " + abspath);
             fired = true;
         }
 
         void rollback() override
         {
             if (fired) return;
-            sys::unlink(tmpabsname);
+            sys::unlink(tmpabspath);
             fired = true;
         }
 
         void rollback_nothrow() noexcept override
         {
             if (fired) return;
-            sys::unlink(tmpabsname);
+            sys::unlink(tmpabspath);
             fired = true;
         }
     };
 
-    string tmpabsname = tarabsname + ".repack";
+    string tmpabspath = tarabspath + ".repack";
 
     // Make sure mds are not holding a read lock on the file to repack
     for (auto& md: mds) md->sourceBlob().unlock();
 
     // Get a validator for this file
-    const scan::Validator& validator = scan::Validator::by_filename(absname);
+    const scan::Validator& validator = scan::Validator::by_filename(abspath);
 
     // Reacquire the lock here for writing
     Rename* rename;
-    Pending p(rename = new Rename(tmpabsname, absname));
+    Pending p(rename = new Rename(tmpabspath, abspath));
 
     // Create a writer for the temp file
-    File fd(tmpabsname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    File fd(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
     TarOutput tarfd(fd);
 
     if (test_flags & TEST_MISCHIEF_MOVE_DATA)
@@ -221,7 +221,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     // Fill the temp file with all the data in the right order
     size_t idx = 0;
     char fname[100];
-    std::string tarrelname = relname + ".tar";
+    std::string tarrelpath = relpath + ".tar";
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         // Read the data
@@ -231,7 +231,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
         // Append it to the new file
         snprintf(fname, 99, "%06zd.%s", idx, (*i)->source().format.c_str());
         off_t wrpos = tarfd.append(fname, buf);
-        auto new_source = Source::createBlobUnlocked((*i)->source().format, rootdir, tarrelname, wrpos, buf.size());
+        auto new_source = Source::createBlobUnlocked((*i)->source().format, rootdir, tarrelpath, wrpos, buf.size());
         // Update the source information in the metadata
         (*i)->set_source(std::move(new_source));
         // Drop the cached data, to prevent ending up with the whole segment
@@ -246,10 +246,10 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     return p;
 }
 
-void Checker::create(const std::string& rootdir, const std::string& tarrelname, const std::string& tarabsname, metadata::Collection& mds, unsigned test_flags)
+void Checker::create(const std::string& rootdir, const std::string& tarrelpath, const std::string& tarabspath, metadata::Collection& mds, unsigned test_flags)
 {
     // Create a writer for the temp file
-    File fd(tarabsname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    File fd(tarabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
     TarOutput tarfd(fd);
 
     if (test_flags & TEST_MISCHIEF_MOVE_DATA)
@@ -265,7 +265,7 @@ void Checker::create(const std::string& rootdir, const std::string& tarrelname, 
         // Append it to the new file
         snprintf(fname, 99, "%06zd.%s", idx, md->source().format.c_str());
         off_t wrpos = tarfd.append(fname, buf);
-        auto new_source = Source::createBlobUnlocked(md->source().format, rootdir, tarrelname, wrpos, buf.size());
+        auto new_source = Source::createBlobUnlocked(md->source().format, rootdir, tarrelpath, wrpos, buf.size());
         // Update the source information in the metadata
         md->set_source(std::move(new_source));
         // Drop the cached data, to prevent ending up with the whole segment
@@ -280,17 +280,17 @@ void Checker::create(const std::string& rootdir, const std::string& tarrelname, 
 
 void Checker::test_truncate(size_t offset)
 {
-    if (!sys::exists(absname))
-        utils::createFlagfile(absname);
+    if (!sys::exists(abspath))
+        utils::createFlagfile(abspath);
 
     if (offset % 512 != 0)
         offset += 512 - (offset % 512);
 
-    utils::files::PreserveFileTimes pft(absname);
-    if (::truncate(absname.c_str(), offset) < 0)
+    utils::files::PreserveFileTimes pft(abspath);
+    if (::truncate(abspath.c_str(), offset) < 0)
     {
         stringstream ss;
-        ss << "cannot truncate " << absname << " at " << offset;
+        ss << "cannot truncate " << abspath << " at " << offset;
         throw std::system_error(errno, std::system_category(), ss.str());
     }
 }
@@ -308,7 +308,7 @@ void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size
 void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
-    sys::File fd(absname, O_RDWR);
+    sys::File fd(abspath, O_RDWR);
     sys::PreserveFileTimes pt(fd);
     fd.lseek(s.offset);
     fd.write_all_or_throw("\0", 1);

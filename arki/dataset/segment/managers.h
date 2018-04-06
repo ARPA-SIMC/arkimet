@@ -21,11 +21,11 @@ struct AutoManager : public BaseManager
 {
     AutoManager(const std::string& root, bool mockdata=false);
 
-    std::shared_ptr<segment::Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname);
+    std::shared_ptr<segment::Writer> create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath);
 
-    std::shared_ptr<segment::Checker> create_checker_for_format(const std::string& format, const std::string& relname, const std::string& absname);
+    std::shared_ptr<segment::Checker> create_checker_for_format(const std::string& format, const std::string& relpath, const std::string& abspath);
 
-    void scan_dir(std::function<void(const std::string& relname)> dest) override;
+    void scan_dir(std::function<void(const std::string& relpath)> dest) override;
 };
 
 /// Segment manager that always picks directory segments
@@ -33,11 +33,11 @@ struct ForceDirManager : public BaseManager
 {
     ForceDirManager(const std::string& root);
 
-    std::shared_ptr<segment::Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname) override;
+    std::shared_ptr<segment::Writer> create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath) override;
 
-    std::shared_ptr<segment::Checker> create_checker_for_format(const std::string& format, const std::string& relname, const std::string& absname) override;
+    std::shared_ptr<segment::Checker> create_checker_for_format(const std::string& format, const std::string& relpath, const std::string& abspath) override;
 
-    void scan_dir(std::function<void(const std::string& relname)> dest) override;
+    void scan_dir(std::function<void(const std::string& relpath)> dest) override;
 };
 
 /// Segment manager that always uses hole file segments
@@ -45,7 +45,7 @@ struct HoleDirManager : public ForceDirManager
 {
     HoleDirManager(const std::string& root);
 
-    std::shared_ptr<segment::Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname) override;
+    std::shared_ptr<segment::Writer> create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath) override;
 };
 
 }

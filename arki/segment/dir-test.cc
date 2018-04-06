@@ -25,7 +25,7 @@ using namespace arki::tests;
 using namespace arki::utils;
 using namespace arki::dataset;
 
-const char* relname = "testfile.grib";
+const char* relpath = "testfile.grib";
 
 class Tests : public TestCase
 {
@@ -45,17 +45,17 @@ inline size_t datasize(const Metadata& md)
  */
 std::shared_ptr<segment::dir::Writer> make_w()
 {
-    string absname = sys::abspath(relname);
-    return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer("grib", sys::getcwd(), relname, absname));
+    string abspath = sys::abspath(relpath);
+    return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer("grib", sys::getcwd(), relpath, abspath));
 }
 
 void Tests::register_tests() {
 
 // Try to append some data
 add_method("append", [] {
-    sys::rmtree_ifexists(relname);
+    sys::rmtree_ifexists(relpath);
     metadata::TestCollection mdc("inbound/test.grib1");
-    wassert(actual_file(relname).not_exists());
+    wassert(actual_file(relpath).not_exists());
     {
         auto w(make_w());
 
@@ -74,14 +74,14 @@ add_method("append", [] {
             // Start the append transaction, the file is written
             const types::source::Blob& new_source = w->append(md);
             wassert(actual((size_t)new_source.offset) == 0u);
-            wassert(actual(sys::size(str::joinpath(w->absname, "000000.grib"))) == data_size);
+            wassert(actual(sys::size(str::joinpath(w->abspath, "000000.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Commit
             w->commit();
 
             // After commit, metadata is updated
-            wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), w->relname, 0, data_size));
+            wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), w->relpath, 0, data_size));
         }
 
 
@@ -96,14 +96,14 @@ add_method("append", [] {
             // Start the append transaction, the file is written
             const types::source::Blob& new_source = w->append(md);
             wassert(actual((size_t)new_source.offset) == 1u);
-            wassert(actual(sys::size(str::joinpath(w->absname, "000001.grib"))) == data_size);
+            wassert(actual(sys::size(str::joinpath(w->abspath, "000001.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Rollback
             w->rollback();
 
             // After rollback, the file has been deleted
-            wassert(actual(sys::exists(str::joinpath(w->absname, "000001.grib"))).isfalse());
+            wassert(actual(sys::exists(str::joinpath(w->abspath, "000001.grib"))).isfalse());
             wassert(actual_type(md.source()) == *orig_source);
         }
 
@@ -119,14 +119,14 @@ add_method("append", [] {
             // Rolling back a transaction does leave a gap in the sequence
             const types::source::Blob& new_source = w->append(md);
             wassert(actual((size_t)new_source.offset) == 2u);
-            wassert(actual(sys::size(str::joinpath(w->absname, "000002.grib"))) == data_size);
+            wassert(actual(sys::size(str::joinpath(w->abspath, "000002.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Commit
             w->commit();
 
             // After commit, metadata is updated
-            wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), w->relname, 2, data_size));
+            wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), w->relpath, 2, data_size));
         }
     }
 
@@ -134,7 +134,7 @@ add_method("append", [] {
     metadata::TestCollection mdc1;
 
     // Scan the file we created
-    wassert(actual(mdc1.scan_from_file(relname, false)).istrue());
+    wassert(actual(mdc1.scan_from_file(relpath, false)).istrue());
 
     // Check that it only contains the 1st and 3rd data
     wassert(actual(mdc1.size()) == 2u);
@@ -149,11 +149,11 @@ add_method("check", [] {
     {
         std::shared_ptr<segment::Writer> make_writer() override
         {
-            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relname, absname));
+            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relpath, abspath));
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relname, absname));
+            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relpath, abspath));
         }
     } test;
 
@@ -165,11 +165,11 @@ add_method("remove", [] {
     {
         std::shared_ptr<segment::Writer> make_writer() override
         {
-            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relname, absname));
+            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relpath, abspath));
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relname, absname));
+            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relpath, abspath));
         }
     } test;
 

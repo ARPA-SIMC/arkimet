@@ -17,7 +17,7 @@ namespace tar {
 class Checker : public segment::Checker
 {
 protected:
-    std::string tarabsname;
+    std::string tarabspath;
     void validate(Metadata& md, const scan::Validator& v) override;
 
     /**
@@ -33,10 +33,10 @@ protected:
             metadata::Collection& mds,
             bool skip_validation=false,
             unsigned test_flags=0);
-    void move_data(const std::string& new_root, const std::string& new_relname, const std::string& new_absname) override;
+    void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 
 public:
-    Checker(const std::string& root, const std::string& relname, const std::string& absname);
+    Checker(const std::string& root, const std::string& relpath, const std::string& abspath);
 
     const char* type() const override;
     bool single_file() const override;
@@ -56,7 +56,7 @@ public:
     /**
      * Create a tar segment with the data in mds
      */
-    static void create(const std::string& rootdir, const std::string& tarrelname, const std::string& tarabsname, metadata::Collection& mds, unsigned test_flags=0);
+    static void create(const std::string& rootdir, const std::string& tarrelpath, const std::string& tarabspath, metadata::Collection& mds, unsigned test_flags=0);
 };
 
 bool can_store(const std::string& format);

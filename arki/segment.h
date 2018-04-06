@@ -107,10 +107,10 @@ class Segment
 {
 public:
     std::string root;
-    std::string relname;
-    std::string absname;
+    std::string relpath;
+    std::string abspath;
 
-    Segment(const std::string& root, const std::string& relname, const std::string& absname);
+    Segment(const std::string& root, const std::string& relpath, const std::string& abspath);
     virtual ~Segment();
 
     /**
@@ -178,7 +178,7 @@ class Checker : public Segment
 {
 protected:
     virtual void validate(Metadata& md, const scan::Validator& v) = 0;
-    virtual void move_data(const std::string& new_root, const std::string& new_relname, const std::string& new_absname) = 0;
+    virtual void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) = 0;
 
 public:
     using Segment::Segment;
@@ -212,7 +212,7 @@ public:
     /**
      * Move this segment to a new location
      */
-    void move(const std::string& new_root, const std::string& new_relname, const std::string& new_absname);
+    void move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath);
 
     /**
      * Truncate the segment at the given offset

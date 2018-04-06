@@ -1747,11 +1747,6 @@
  {
   "doc": "",
   "group": "arki_segment",
-  "method": "empty"
- },
- {
-  "doc": "",
-  "group": "arki_segment",
   "method": "auto_instantiate_existing"
  },
  {

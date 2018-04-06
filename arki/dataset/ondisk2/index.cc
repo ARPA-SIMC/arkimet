@@ -282,7 +282,7 @@ bool Contents::has_segment(const std::string& relpath) const
     return res;
 }
 
-void Contents::scan_file(const std::string& relname, metadata_dest_func dest, const std::string& order_by) const
+void Contents::scan_file(const std::string& relpath, metadata_dest_func dest, const std::string& order_by) const
 {
     if (lock.expired())
         throw std::runtime_error("cannot scan_file while there is no lock held");
@@ -295,9 +295,9 @@ void Contents::scan_file(const std::string& relname, metadata_dest_func dest, co
 
     Query mdq("scan_file_md", m_db);
     mdq.compile(query);
-    mdq.bind(1, relname);
+    mdq.bind(1, relpath);
 
-    string abspath = str::joinpath(config().path, relname);
+    string abspath = str::joinpath(config().path, relpath);
     auto reader = arki::Reader::create_new(abspath, lock.lock());
 
     while (mdq.step())
@@ -309,16 +309,16 @@ void Contents::scan_file(const std::string& relname, metadata_dest_func dest, co
     }
 }
 
-void Contents::query_segment(const std::string& relname, metadata_dest_func dest) const
+void Contents::query_segment(const std::string& relpath, metadata_dest_func dest) const
 {
-    scan_file(relname, dest);
+    scan_file(relpath, dest);
 }
 
-bool Contents::segment_timespan(const std::string& relname, Time& start_time, Time& end_time) const
+bool Contents::segment_timespan(const std::string& relpath, Time& start_time, Time& end_time) const
 {
     Query sq("max_file_reftime", m_db);
     sq.compile("SELECT MIN(reftime), MAX(reftime) FROM md WHERE file=?");
-    sq.bind(1, relname);
+    sq.bind(1, relpath);
     bool res = false;
     while (sq.step())
     {
@@ -862,22 +862,22 @@ void RIndex::initQueries()
     Contents::initQueries();
 }
 
-void RIndex::test_rename(const std::string& relname, const std::string& new_relname)
+void RIndex::test_rename(const std::string& relpath, const std::string& new_relpath)
 {
     throw std::runtime_error("test_rename is only allowed on WIndex");
 }
 
-void RIndex::test_deindex(const std::string& relname)
+void RIndex::test_deindex(const std::string& relpath)
 {
     throw std::runtime_error("test_deindex is only allowed on WIndex");
 }
 
-void RIndex::test_make_overlap(const std::string& relname, unsigned overlap_size, unsigned data_idx)
+void RIndex::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_overlap is only allowed on WIndex");
 }
 
-void RIndex::test_make_hole(const std::string& relname, unsigned hole_size, unsigned data_idx)
+void RIndex::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_hole is only allowed on WIndex");
 }
@@ -1103,11 +1103,11 @@ void WIndex::replace(Metadata& md, const std::string& relpath, uint64_t ofs)
     scache.invalidate(md);
 }
 
-void WIndex::remove(const std::string& relname, off_t ofs)
+void WIndex::remove(const std::string& relpath, off_t ofs)
 {
     Query fetch_id("byfile", m_db);
     fetch_id.compile("SELECT id, reftime FROM md WHERE file=? AND offset=?");
-    fetch_id.bind(1, relname);
+    fetch_id.bind(1, relpath);
     fetch_id.bind(2, ofs);
     int id = 0;
     string reftime;
@@ -1119,7 +1119,7 @@ void WIndex::remove(const std::string& relname, off_t ofs)
     if (reftime.empty())
     {
         stringstream ss;
-        ss << "cannot remove item " << relname << ":" << ofs << " because it does not exist in the index";
+        ss << "cannot remove item " << relpath << ":" << ofs << " because it does not exist in the index";
         throw runtime_error(ss.str());
     }
 
@@ -1190,29 +1190,29 @@ void WIndex::flush()
     m_db.checkpoint();
 }
 
-void WIndex::test_rename(const std::string& relname, const std::string& new_relname)
+void WIndex::test_rename(const std::string& relpath, const std::string& new_relpath)
 {
     Query query("test_rename", m_db);
     query.compile("UPDATE md SET file=? WHERE file=?");
-    query.bind(1, new_relname);
-    query.bind(2, relname);
+    query.bind(1, new_relpath);
+    query.bind(2, relpath);
     while (query.step())
         ;
 }
 
-void WIndex::test_deindex(const std::string& relname)
+void WIndex::test_deindex(const std::string& relpath)
 {
-    reset(relname);
+    reset(relpath);
 }
 
-void WIndex::test_make_overlap(const std::string& relname, unsigned overlap_size, unsigned data_idx)
+void WIndex::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
 {
     // Get the minimum offset to move
     uint64_t offset = 0;
     {
         Query query("test_make_overlap_get_ofs", m_db);
         query.compile("SELECT offset FROM md WHERE file=? ORDER BY offset LIMIT ?, 1");
-        query.bind(1, relname);
+        query.bind(1, relpath);
         query.bind(2, data_idx);
         while (query.step())
             offset = query.fetch<uint64_t>(0);
@@ -1221,10 +1221,10 @@ void WIndex::test_make_overlap(const std::string& relname, unsigned overlap_size
     // Move all offsets >= of the first one back by 1
     Query query("test_make_overlap", m_db);
     query.compile("UPDATE md SET offset=offset-? WHERE file=? AND offset >= ?");
-    query.run(overlap_size, relname, offset);
+    query.run(overlap_size, relpath, offset);
 }
 
-void WIndex::test_make_hole(const std::string& relname, unsigned hole_size, unsigned data_idx)
+void WIndex::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
 {
     // Get the minimum offset to move
     uint64_t offset = 0;
@@ -1232,7 +1232,7 @@ void WIndex::test_make_hole(const std::string& relname, unsigned hole_size, unsi
     {
         Query query("test_make_hole_get_ofs", m_db);
         query.compile("SELECT offset FROM md WHERE file=? ORDER BY offset LIMIT ?, 1");
-        query.bind(1, relname);
+        query.bind(1, relpath);
         query.bind(2, data_idx);
         while (query.step())
         {
@@ -1248,7 +1248,7 @@ void WIndex::test_make_hole(const std::string& relname, unsigned hole_size, unsi
     Query query("test_make_hole", m_db);
     query.compile("UPDATE md SET offset=offset+? WHERE file=? AND offset >= ?");
     query.bind(1, hole_size);
-    query.bind(2, relname);
+    query.bind(2, relpath);
     query.bind(3, offset);
     while (query.step())
         ;

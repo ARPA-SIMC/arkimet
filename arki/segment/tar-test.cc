@@ -33,12 +33,12 @@ add_method("check", [] {
         }
         std::shared_ptr<segment::Checker> make_full_checker() override
         {
-            segment::tar::Checker::create(root, relname + ".tar", absname + ".tar", mdc);
+            segment::tar::Checker::create(root, relpath + ".tar", abspath + ".tar", mdc);
             return make_checker();
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::tar::Checker(root, relname, absname));
+            return std::shared_ptr<segment::Checker>(new segment::tar::Checker(root, relpath, abspath));
         }
     } test;
 
@@ -54,12 +54,12 @@ add_method("remove", [] {
         }
         std::shared_ptr<segment::Checker> make_full_checker() override
         {
-            segment::tar::Checker::create(root, relname + ".tar", absname + ".tar", mdc);
+            segment::tar::Checker::create(root, relpath + ".tar", abspath + ".tar", mdc);
             return make_checker();
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::tar::Checker(root, relname, absname));
+            return std::shared_ptr<segment::Checker>(new segment::tar::Checker(root, relpath, abspath));
         }
     } test;
 

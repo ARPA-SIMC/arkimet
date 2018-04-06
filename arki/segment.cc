@@ -19,8 +19,8 @@ using namespace arki::utils;
 
 namespace arki {
 
-Segment::Segment(const std::string& root, const std::string& relname, const std::string& abspath)
-    : root(root), relname(relname), absname(abspath)
+Segment::Segment(const std::string& root, const std::string& relpath, const std::string& abspath)
+    : root(root), relpath(relpath), abspath(abspath)
 {
 }
 
@@ -115,36 +115,36 @@ std::shared_ptr<Writer> Writer::for_pathname(const std::string& format, const st
 
 std::shared_ptr<segment::Checker> Checker::tar(metadata::Collection& mds)
 {
-    segment::tar::Checker::create(root, relname + ".tar", absname + ".tar", mds);
+    segment::tar::Checker::create(root, relpath + ".tar", abspath + ".tar", mds);
     remove();
-    return make_shared<segment::tar::Checker>(root, relname, absname);
+    return make_shared<segment::tar::Checker>(root, relpath, abspath);
 }
 
-void Checker::move(const std::string& new_root, const std::string& new_relname, const std::string& new_absname)
+void Checker::move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
-    sys::makedirs(str::dirname(new_absname));
+    sys::makedirs(str::dirname(new_abspath));
 
     // Sanity checks: avoid conflicts
-    if (sys::exists(new_absname) || sys::exists(new_absname + ".tar") || sys::exists(new_absname + ".gz"))
+    if (sys::exists(new_abspath) || sys::exists(new_abspath + ".tar") || sys::exists(new_abspath + ".gz"))
     {
         stringstream ss;
-        ss << "cannot archive " << absname << " to " << new_absname << " because the destination already exists";
+        ss << "cannot archive " << abspath << " to " << new_abspath << " because the destination already exists";
         throw runtime_error(ss.str());
     }
 
     // Remove stale metadata and summaries that may have been left around
-    sys::unlink_ifexists(new_absname + ".metadata");
-    sys::unlink_ifexists(new_absname + ".summary");
+    sys::unlink_ifexists(new_abspath + ".metadata");
+    sys::unlink_ifexists(new_abspath + ".summary");
 
-    move_data(new_root, new_relname, new_absname);
+    move_data(new_root, new_relpath, new_abspath);
 
     // Move metadata to archive
-    sys::rename_ifexists(absname + ".metadata", new_absname + ".metadata");
-    sys::rename_ifexists(absname + ".summary", new_absname + ".summary");
+    sys::rename_ifexists(abspath + ".metadata", new_abspath + ".metadata");
+    sys::rename_ifexists(abspath + ".summary", new_abspath + ".summary");
 
     root = new_root;
-    relname = new_relname;
-    absname = new_absname;
+    relpath = new_relpath;
+    abspath = new_abspath;
 }
 
 void Checker::test_truncate(const metadata::Collection& mds, unsigned data_idx)
