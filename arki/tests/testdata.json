@@ -1746,23 +1746,8 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment",
-  "method": "file_repack"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment",
-  "method": "file_check_empty"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment",
-  "method": "dir_repack"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment",
-  "method": "dir_check_empty"
+  "group": "arki_segment",
+  "method": "empty"
  },
  {
   "doc": "",

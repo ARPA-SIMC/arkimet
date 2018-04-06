@@ -147,32 +147,6 @@ std::shared_ptr<segment::Checker> BaseManager::create_checker_for_existing_segme
     return res;
 }
 
-Pending BaseManager::repack(const std::string& relname, metadata::Collection& mds, unsigned test_flags)
-{
-    string format = utils::get_format(relname);
-    string absname = str::joinpath(root, relname);
-    auto maint = create_checker_for_format(format, relname, absname);
-    return maint->repack(root, mds, test_flags);
-}
-
-segment::State BaseManager::check(dataset::Reporter& reporter, const std::string& ds, const std::string& relname, const metadata::Collection& mds, bool quick)
-{
-    string format = utils::get_format(relname);
-    string absname = str::joinpath(root, relname);
-    auto maint = create_checker_for_existing_segment(format, relname, absname, true);
-    if (!maint)
-        return segment::SEGMENT_MISSING;
-    return maint->check(reporter, ds, mds, quick);
-}
-
-void BaseManager::test_truncate(const std::string& relname, size_t offset)
-{
-    string format = utils::get_format(relname);
-    string absname = str::joinpath(root, relname);
-    auto maint(create_checker_for_format(format, relname, absname));
-    return maint->test_truncate(offset);
-}
-
 
 AutoManager::AutoManager(const std::string& root, bool mockdata)
     : BaseManager(root, mockdata) {}
@@ -245,25 +219,6 @@ std::shared_ptr<segment::Checker> AutoManager::create_checker_for_format(const s
     return res;
 }
 
-bool AutoManager::exists(const std::string& relpath) const
-{
-    string abspath = str::joinpath(root, relpath);
-    auto st = sys::stat(abspath);
-    if (!st)
-    {
-        st = sys::stat(abspath + ".gz");
-        return st && S_ISREG(st->st_mode);
-    }
-
-    if (S_ISDIR(st->st_mode))
-    {
-        st = sys::stat(str::joinpath(abspath, ".sequence"));
-        return st && S_ISREG(st->st_mode);
-    }
-
-    return S_ISREG(st->st_mode);
-}
-
 void AutoManager::scan_dir(std::function<void(const std::string& relname)> dest)
 {
     // Trim trailing '/'
@@ -328,17 +283,6 @@ std::shared_ptr<segment::Writer> ForceDirManager::create_writer_for_format(const
 std::shared_ptr<segment::Checker> ForceDirManager::create_checker_for_format(const std::string& format, const std::string& relname, const std::string& absname)
 {
     return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relname, absname));
-}
-
-bool ForceDirManager::exists(const std::string& relpath) const
-{
-    string abspath = str::joinpath(root, relpath);
-    auto st = sys::stat(abspath);
-    if (!st || !S_ISDIR(st->st_mode))
-        return false;
-
-    st = sys::stat(str::joinpath(abspath, ".sequence"));
-    return st && S_ISREG(st->st_mode);
 }
 
 void ForceDirManager::scan_dir(std::function<void(const std::string& relname)> dest)

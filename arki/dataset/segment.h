@@ -43,33 +43,6 @@ public:
     std::shared_ptr<segment::Checker> get_checker(const std::string& format, const std::string& relname);
 
     /**
-     * Repack the file relname, so that it contains only the data in mds, in
-     * the same order as in mds.
-     *
-     * The source metadata in mds will be updated to point to the new file.
-     */
-    virtual Pending repack(const std::string& relname, metadata::Collection& mds, unsigned test_flags=0) = 0;
-
-    /**
-     * Check the given file against its expected set of contents.
-     *
-     * @returns the State with the state of the file
-     */
-    virtual segment::State check(dataset::Reporter& reporter, const std::string& ds, const std::string& relname, const metadata::Collection& mds, bool quick=true) = 0;
-
-    /**
-     * Truncate a file at the given offset
-     *
-     * This function is useful for implementing unit tests.
-     */
-    virtual void test_truncate(const std::string& relname, size_t offset) = 0;
-
-    /**
-     * Given the relative path of a segment, return true if it exists on disk
-     */
-    virtual bool exists(const std::string& relpath) const = 0;
-
-    /**
      * Scan a dataset for data files, returning a set of pathnames relative to
      * root.
      */
