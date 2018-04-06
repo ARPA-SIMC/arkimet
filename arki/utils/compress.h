@@ -79,7 +79,12 @@ public:
 /**
  * Gunzip the file opened at \a rdfd sending data to the file opened at \a wrfd
  */
-void gunzip(int rdfd, const std::string& rdfname, int wrfd, const std::string& wrfname, size_t bufsize = 4096);
+void gunzip(int rdfd, const std::string& rdfname, int wrfd, const std::string& wrfname, size_t bufsize=4096);
+
+/**
+ * Gunzip the file decompressing it to memory
+ */
+std::vector<uint8_t> gunzip(const std::string& abspath, size_t bufsize=4096);
 
 /**
  * At constructor time, create an uncompressed version of the given file

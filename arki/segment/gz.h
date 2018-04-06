@@ -16,7 +16,6 @@ class Checker : public segment::Checker
 {
 protected:
     std::string gzabspath;
-    void validate(Metadata& md, const scan::Validator& v) override;
 
     /**
      * If skip_validation is true, repack will skip validating the data that is
@@ -52,7 +51,7 @@ public:
     void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
 
     /**
-     * Create a tar segment with the data in mds
+     * Create a gz segment with the data in mds
      */
     static void create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
 };
@@ -60,6 +59,24 @@ public:
 bool can_store(const std::string& format);
 
 }
+
+namespace gzlines {
+
+class Checker : public gz::Checker
+{
+public:
+    using gz::Checker::Checker;
+
+    /**
+     * Create a gz lines segment with the data in mds
+     */
+    static void create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+};
+
+bool can_store(const std::string& format);
+
+}
+
 }
 }
 #endif

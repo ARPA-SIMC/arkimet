@@ -140,7 +140,7 @@ void SegmentRemoveTest::run()
 
     wassert(actual(segment->exists_on_disk()).istrue());
 
-    wassert(actual(segment->remove()) >= 44412u);
+    wassert(actual(segment->remove()) >= 42000u);
 
     wassert(actual(segment->exists_on_disk()).isfalse());
 }

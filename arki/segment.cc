@@ -226,7 +226,21 @@ std::shared_ptr<Checker> Checker::for_pathname(const std::string& format, const 
             throw_consistency_error(
                     "getting checker for " + format + " file " + relpath,
                     "cannot handle a directory with a .gz extension");
-        throw std::runtime_error("gz checkers are not yet implemented");
+
+        if (format == "grib" || format == "grib1" || format == "grib2" || format == "bufr")
+        {
+            res.reset(new segment::gz::Checker(root, relpath, abspath));
+        } else if (format == "vm2") {
+            res.reset(new segment::gzlines::Checker(root, relpath, abspath));
+        } else if (format == "odimh5" || format == "h5" || format == "odim") {
+            throw_consistency_error(
+                    "getting checker for " + format + " file " + relpath,
+                    "cannot handle a gzipped odim file as a segment");
+        } else {
+            throw_consistency_error(
+                    "getting segment for " + format + " file " + relpath,
+                    "format not supported");
+        }
     }
 
     st = sys::stat(abspath + ".tar");

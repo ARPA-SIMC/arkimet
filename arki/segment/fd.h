@@ -52,7 +52,7 @@ class Checker : public segment::Checker
 protected:
     virtual std::unique_ptr<File> open(const std::string& pathname) = 0;
 
-    void validate(Metadata& md, const scan::Validator& v) override;
+    void validate(Metadata& md, const scan::Validator& v);
 
     /**
      * If skip_validation is true, repack will skip validating the data that is

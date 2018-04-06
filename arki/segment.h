@@ -177,7 +177,6 @@ struct Writer : public Segment, Transaction
 class Checker : public Segment
 {
 protected:
-    virtual void validate(Metadata& md, const scan::Validator& v) = 0;
     virtual void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) = 0;
 
 public:

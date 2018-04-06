@@ -26,7 +26,7 @@ namespace segment {
 namespace gz {
 
 Checker::Checker(const std::string& root, const std::string& relpath, const std::string& abspath)
-    : segment::Checker(root, relpath, abspath), gzabspath(abspath + ".tar")
+    : segment::Checker(root, relpath, abspath), gzabspath(abspath + ".gz")
 {
 }
 
@@ -60,20 +60,44 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
     if (st.get() == nullptr)
         return SEGMENT_DELETED;
 
-    // Check the data if requested
+    // Decompress all the segment in memory
+    std::vector<uint8_t> all_data = compress::gunzip(gzabspath);
+
     if (!quick)
     {
         const scan::Validator* validator = &scan::Validator::by_filename(abspath.c_str());
 
         for (const auto& i: mds)
         {
-            try {
-                validate(*i, *validator);
-            } catch (std::exception& e) {
-                stringstream out;
-                out << "validation failed at " << i->source() << ": " << e.what();
-                reporter.segment_info(ds, relpath, out.str());
-                return SEGMENT_UNALIGNED;
+            if (const types::source::Blob* blob = i->has_source_blob())
+            {
+                if (blob->filename != relpath)
+                    throw std::runtime_error("metadata to validate does not appear to be from this segment");
+
+                if (blob->offset + blob->size > all_data.size())
+                {
+                    reporter.segment_info(ds, relpath, "data is supposed to be past the end of the uncompressed segment");
+                    return SEGMENT_UNALIGNED;
+                }
+
+                try {
+                    validator->validate_buf(all_data.data() + blob->offset, blob->size);
+                } catch (std::exception& e) {
+                    stringstream out;
+                    out << "validation failed at " << i->source() << ": " << e.what();
+                    reporter.segment_info(ds, relpath, out.str());
+                    return SEGMENT_UNALIGNED;
+                }
+            } else {
+                try {
+                    const auto& buf = i->getData();
+                    validator->validate_buf(buf.data(), buf.size());
+                } catch (std::exception& e) {
+                    stringstream out;
+                    out << "validation failed at " << i->source() << ": " << e.what();
+                    reporter.segment_info(ds, relpath, out.str());
+                    return SEGMENT_UNALIGNED;
+                }
             }
         }
     }
@@ -99,7 +123,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
     }
 
     // Check for truncation
-    off_t file_size = st->st_size;
+    off_t file_size = all_data.size();
     if (file_size < end_of_last_data_checked)
     {
         stringstream ss;
@@ -110,7 +134,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
 
     // Check if file_size matches the expected file size
     bool has_hole = false;
-    if (file_size > end_of_last_data_checked + 511 + 1024) // last padding plus two trailing zero blocks
+    if (file_size > end_of_last_data_checked) // last padding plus two trailing zero blocks
         has_hole = true;
 
     // Check for holes or elements out of order
@@ -118,7 +142,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         const source::Blob& source = (*i)->sourceBlob();
-        if (source.offset < (size_t)end_of_last_data_checked || source.offset > (size_t)end_of_last_data_checked + 1023) // last padding plus file header
+        if (source.offset < (size_t)end_of_last_data_checked || source.offset > (size_t)end_of_last_data_checked) // last padding plus file header
             has_hole = true;
 
         end_of_last_data_checked = max(end_of_last_data_checked, (off_t)(source.offset + source.size));
@@ -132,12 +156,6 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
     } else {
         return SEGMENT_OK;
     }
-}
-
-void Checker::validate(Metadata& md, const scan::Validator& v)
-{
-    const auto& buf = md.getData();
-    v.validate_buf(buf.data(), buf.size());
 }
 
 size_t Checker::remove()
@@ -303,10 +321,52 @@ void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 
 bool can_store(const std::string& format)
 {
-    return true;
+    return format == "grib" || format == "grib1" || format == "grib2"
+        || format == "bufr" || format == "vm2";
 }
 
 }
+
+namespace gzlines
+{
+
+void Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+{
+    string gzabspath = abspath + ".gz";
+    File fd(gzabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    compress::GzipWriter gzout(fd);
+
+    std::vector<uint8_t> newline(1, '\n');
+
+    // Fill the temp file with all the data in the right order
+    size_t ofs = 0;
+    for (auto& md: mds)
+    {
+        // Read the data
+        auto buf = md->sourceBlob().read_data();
+        gzout.add(buf);
+        gzout.add(newline);
+        auto new_source = Source::createBlobUnlocked(md->source().format, rootdir, relpath, ofs, buf.size());
+        // Update the source information in the metadata
+        md->set_source(std::move(new_source));
+        // Drop the cached data, to prevent ending up with the whole segment
+        // sitting in memory
+        md->drop_cached_data();
+        ofs += buf.size() + 1;
+    }
+
+    gzout.flush();
+    fd.fdatasync();
+    fd.close();
+}
+
+bool can_store(const std::string& format)
+{
+    return format == "vm2";
+}
+
+}
+
 }
 }
 

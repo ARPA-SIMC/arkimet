@@ -55,7 +55,7 @@ class Checker : public segment::Checker
 public:
     std::string format;
 
-    void validate(Metadata& md, const scan::Validator& v) override;
+    void validate(Metadata& md, const scan::Validator& v);
     void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 
 public:

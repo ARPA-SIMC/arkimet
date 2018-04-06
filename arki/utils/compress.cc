@@ -164,6 +164,21 @@ void gunzip(int rdfd, const std::string& rdfname, int wrfd, const std::string& w
     // Let the caller close file rdfd and wrfd
 }
 
+std::vector<uint8_t> gunzip(const std::string& abspath, size_t bufsize)
+{
+    gzip::File gzfd(abspath, "rb");
+    vector<uint8_t> buf(bufsize);
+    vector<uint8_t> res;
+    while (true)
+    {
+        unsigned count = gzfd.read(buf.data(), buf.size());
+        res.insert(res.end(), buf.begin(), buf.begin() + count);
+        if (count < bufsize)
+            break;
+    }
+    return res;
+}
+
 TempUnzip::TempUnzip(const std::string& fname)
     : fname(fname)
 {

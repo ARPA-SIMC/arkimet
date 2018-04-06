@@ -112,14 +112,8 @@ add_method("gzipwriter", [] {
     wassert(writer.flush());
     fd.close();
 
-    fd = sys::File("test.gz", O_RDONLY);
-    sys::File ufd("test", O_WRONLY | O_CREAT | O_TRUNC);
-    compress::gunzip(fd, "test.gz", ufd, "test");
-    ufd.close();
-    fd.close();
-
-    std::string d = sys::read_file("test");
-    wassert(actual(d.size()) == 40960);
+    std::vector<uint8_t> d = gunzip("test.gz");
+    wassert(actual(d.size()) == 40960u);
     for (unsigned i = 0; i < d.size(); ++i)
     {
         if ((i % 4096) == 0)
@@ -143,14 +137,8 @@ add_method("gzipindexingwriter", [] {
     fd.close();
     idxfd.close();
 
-    fd = sys::File("test.gz", O_RDONLY);
-    sys::File ufd("test", O_WRONLY | O_CREAT | O_TRUNC);
-    compress::gunzip(fd, "test.gz", ufd, "test");
-    ufd.close();
-    fd.close();
-
-    std::string d = sys::read_file("test");
-    wassert(actual(d.size()) == 40960);
+    std::vector<uint8_t> d = gunzip("test.gz");
+    wassert(actual(d.size()) == 40960u);
     for (unsigned i = 0; i < d.size(); ++i)
     {
         if ((i % 4096) == 0)
