@@ -1,9 +1,6 @@
 #include "concat.h"
 #include "arki/exceptions.h"
 #include "arki/nag.h"
-#include <system_error>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sstream>
@@ -13,7 +10,6 @@ using namespace arki::types;
 using namespace arki::utils;
 
 namespace arki {
-namespace dataset {
 namespace segment {
 namespace concat {
 
@@ -63,8 +59,8 @@ struct HoleFile : public fd::File
 }
 
 
-Writer::Writer(const std::string& root, const std::string& relname, const std::string& absname, int mode)
-    : fd::Writer(root, relname, open_file(absname, O_WRONLY | O_CREAT | mode, 0666))
+Writer::Writer(const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
+    : fd::Writer(root, relpath, open_file(abspath, O_WRONLY | O_CREAT | mode, 0666))
 {
 }
 
@@ -75,8 +71,8 @@ std::unique_ptr<fd::File> Writer::open_file(const std::string& pathname, int fla
     return unique_ptr<fd::File>(new File(pathname, flags, mode));
 }
 
-HoleWriter::HoleWriter(const std::string& root, const std::string& relname, const std::string& absname, int mode)
-    : fd::Writer(root, relname, open_file(absname, O_WRONLY | O_CREAT | mode, 0666))
+HoleWriter::HoleWriter(const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
+    : fd::Writer(root, relpath, open_file(abspath, O_WRONLY | O_CREAT | mode, 0666))
 {
 }
 
@@ -128,7 +124,6 @@ Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& md
     return fd::Checker::repack_impl(rootdir, mds, true, test_flags);
 }
 
-}
 }
 }
 }

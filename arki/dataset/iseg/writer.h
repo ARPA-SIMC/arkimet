@@ -27,7 +27,7 @@ protected:
     std::unique_ptr<AppendSegment> file(const Metadata& md);
 
     /// Return an inserter for the given relative pathname
-    std::unique_ptr<AppendSegment> file(const std::string& relname);
+    std::unique_ptr<AppendSegment> file(const std::string& relpath);
 
 public:
     Writer(std::shared_ptr<const iseg::Config> config);

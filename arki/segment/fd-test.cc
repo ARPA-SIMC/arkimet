@@ -1,5 +1,5 @@
 #include "fd.h"
-#include "arki/dataset/segment/tests.h"
+#include "tests.h"
 #include "arki/metadata/tests.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
@@ -20,7 +20,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_dataset_segment_fd");
+} test("arki_segment_fd");
 
 void Tests::register_tests() {
 

@@ -38,6 +38,7 @@ struct Options : public BaseCommandLine
     commandline::BoolOption* remove_all;
     commandline::BoolOption* remove_old;
     commandline::BoolOption* tar;
+    commandline::BoolOption* compress;
     commandline::BoolOption* op_state;
     commandline::BoolOption* op_issue51;
     commandline::StringOption* op_remove;
@@ -73,6 +74,8 @@ struct Options : public BaseCommandLine
             "Completely empty the dataset, removing all data and metadata");
         tar = add<BoolOption>("tar", 0, "tar", "",
             "Convert directory segments into tar files");
+        compress = add<BoolOption>("compress", 0, "compress", "",
+            "Compress file segments");
         op_remove = add<StringOption>("remove", 0, "remove", "file",
             "Given metadata extracted from one or more datasets, remove it from the datasets where it is stored");
         op_unarchive = add<StringOption>("unarchive", 0, "unarchive", "file",
@@ -217,6 +220,18 @@ struct Tarrer : public WorkerWithConfig
     void done() {}
 };
 
+struct Compress : public WorkerWithConfig
+{
+    using WorkerWithConfig::WorkerWithConfig;
+
+    void operator()(dataset::Checker& w) override
+    {
+        w.compress(opts);
+    }
+
+    void done() {}
+};
+
 struct Unarchiver : public WorkerOnWritable
 {
     std::string relpath;
@@ -281,12 +296,13 @@ int arki_check(int argc, const char* argv[])
         if (opts.remove_all->isSet()) ++actionCount;
         if (opts.remove_old->isSet()) ++actionCount;
         if (opts.tar->isSet()) ++actionCount;
+        if (opts.compress->isSet()) ++actionCount;
         if (opts.op_remove->isSet()) ++actionCount;
         if (opts.op_unarchive->isSet()) ++actionCount;
         if (opts.op_state->isSet()) ++actionCount;
         if (opts.op_issue51->isSet()) ++actionCount;
         if (actionCount > 1)
-            throw commandline::BadOption("only one of --repack, --remove, --remove-all, --remove-old, --tar, --unarchive, --state, or --issue51 can be given in one invocation");
+            throw commandline::BadOption("only one of --repack, --remove, --remove-all, --remove-old, --tar, --compress, --unarchive, --state, or --issue51 can be given in one invocation");
 
         // Read the config file(s)
         runtime::Inputs inputs;
@@ -373,6 +389,11 @@ int arki_check(int argc, const char* argv[])
             {
                 opts.set_checker_config(config, true, false);
                 worker.reset(new Tarrer(config));
+            }
+            else if (opts.compress->boolValue())
+            {
+                opts.set_checker_config(config, true, false);
+                worker.reset(new Compress(config));
             }
             else if (opts.op_unarchive->boolValue())
                 worker.reset(new Unarchiver(opts.op_unarchive->stringValue()));

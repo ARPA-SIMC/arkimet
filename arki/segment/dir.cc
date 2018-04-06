@@ -27,15 +27,14 @@ using namespace arki::core;
 using namespace arki::utils;
 
 namespace arki {
-namespace dataset {
 namespace segment {
 namespace dir {
 
-Writer::Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname)
-    : segment::Writer(root, relname, absname), seqfile(absname), format(format)
+Writer::Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+    : segment::Writer(root, relpath, abspath), seqfile(abspath), format(format)
 {
-    // Ensure that the directory 'absname' exists
-    sys::makedirs(absname);
+    // Ensure that the directory 'abspath' exists
+    sys::makedirs(abspath);
     seqfile.open();
     current_pos = seqfile.read_sequence();
 }
@@ -56,12 +55,12 @@ const types::source::Blob& Writer::append(Metadata& md)
 {
     fired = false;
 
-    File fd(str::joinpath(absname, SequenceFile::data_fname(current_pos, format)),
+    File fd(str::joinpath(abspath, SequenceFile::data_fname(current_pos, format)),
                 O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
     write_file(md, fd);
     written.push_back(fd.name());
     fd.close();
-    pending.emplace_back(md, source::Blob::create_unlocked(md.source().format, root, relname, current_pos, md.data_size()));
+    pending.emplace_back(md, source::Blob::create_unlocked(md.source().format, root, relpath, current_pos, md.data_size()));
     ++current_pos;
     return *pending.back().new_source;
 }
@@ -109,7 +108,7 @@ void Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
         if (fdatasync(fd) < 0)
             fd.throw_error("cannot flush write");
     } catch (...) {
-        unlink(absname.c_str());
+        unlink(abspath.c_str());
         throw;
     }
 }
@@ -122,14 +121,14 @@ void HoleWriter::write_file(Metadata& md, NamedFileDescriptor& fd)
         if (ftruncate(fd, md.data_size()) == -1)
             fd.throw_error("cannot set file size");
     } catch (...) {
-        unlink(absname.c_str());
+        unlink(abspath.c_str());
         throw;
     }
 }
 
 
-Checker::Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname)
-    : segment::Checker(root, relname, absname), format(format)
+Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+    : segment::Checker(root, relpath, abspath), format(format)
 {
 }
 
@@ -138,23 +137,33 @@ bool Checker::single_file() const { return false; }
 
 bool Checker::exists_on_disk()
 {
-    if (!sys::isdir(absname)) return false;
-    return sys::exists(str::joinpath(absname, ".sequence"));
+    if (!sys::isdir(abspath)) return false;
+    return sys::exists(str::joinpath(abspath, ".sequence"));
 }
 
 time_t Checker::timestamp()
 {
-    return sys::timestamp(str::joinpath(absname, ".sequence"));
+    return sys::timestamp(str::joinpath(abspath, ".sequence"));
 }
 
-void Checker::move_data(const std::string& new_root, const std::string& new_relname, const std::string& new_absname)
+size_t Checker::size()
 {
-    if (rename(absname.c_str(), new_absname.c_str()) < 0)
+    size_t res = 0;
+    sys::Path dir(abspath);
+    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
-        stringstream ss;
-        ss << "cannot rename " << absname << " to " << new_absname;
-        throw std::system_error(errno, std::system_category(), ss.str());
+        if (!i.isreg()) continue;
+        if (!str::endswith(i->d_name, format)) continue;
+        struct stat st;
+        i.path->fstatat(i->d_name, st);
+        res += st.st_size;
     }
+    return res;
+}
+
+void Checker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
+{
+    sys::rename(abspath.c_str(), new_abspath.c_str());
 }
 
 State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
@@ -162,18 +171,18 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
     size_t next_sequence_expected(0);
     const scan::Validator* validator(0);
     bool out_of_order(false);
-    std::string format = utils::require_format(absname);
+    std::string format = utils::require_format(abspath);
 
     if (!quick)
-        validator = &scan::Validator::by_filename(absname.c_str());
+        validator = &scan::Validator::by_filename(abspath.c_str());
 
     // Deal with segments that just do not exist
-    if (!sys::exists(absname))
+    if (!sys::exists(abspath))
         return SEGMENT_UNALIGNED;
 
     // List the dir elements we know about
     map<size_t, size_t> expected;
-    sys::Path dir(absname);
+    sys::Path dir(abspath);
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
         if (!i.isreg()) continue;
@@ -196,7 +205,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
             } catch (std::exception& e) {
                 stringstream out;
                 out << "validation failed at " << i->source() << ": " << e.what();
-                reporter.segment_info(ds, relname, out.str());
+                reporter.segment_info(ds, relpath, out.str());
                 return SEGMENT_UNALIGNED;
             }
         }
@@ -211,14 +220,14 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
         {
             stringstream ss;
             ss << "expected file " << source.offset << " not found in the file system";
-            reporter.segment_info(ds, relname, ss.str());
+            reporter.segment_info(ds, relpath, ss.str());
             return SEGMENT_UNALIGNED;
         } else {
             if (source.size != ei->second)
             {
                 stringstream ss;
                 ss << "expected file " << source.offset << " has size " << ei->second << " instead of expected " << source.size;
-                reporter.segment_info(ds, relname, ss.str());
+                reporter.segment_info(ds, relpath, ss.str());
                 return SEGMENT_CORRUPTED;
             }
             expected.erase(ei);
@@ -234,7 +243,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
         auto idx = ei.first;
         if (validator)
         {
-            string fname = str::joinpath(absname, SequenceFile::data_fname(idx, format));
+            string fname = str::joinpath(abspath, SequenceFile::data_fname(idx, format));
             metadata::Collection mds;
             try {
                 scan::scan(fname, std::make_shared<core::lock::Null>(), format, [&](unique_ptr<Metadata> md) {
@@ -243,8 +252,8 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
                 });
             } catch (std::exception& e) {
                 stringstream out;
-                out << "scan of unexpected file failed at " << absname << ":" << idx << ": " << e.what();
-                reporter.segment_info(ds, relname, out.str());
+                out << "scan of unexpected file failed at " << abspath << ":" << idx << ": " << e.what();
+                reporter.segment_info(ds, relpath, out.str());
                 res = SEGMENT_DIRTY;
                 continue;
             }
@@ -253,7 +262,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
             {
                 stringstream ss;
                 ss << "file does not contain any " << format << " items";
-                reporter.segment_info(ds, relname, ss.str());
+                reporter.segment_info(ds, relpath, ss.str());
                 res = SEGMENT_DIRTY;
                 continue;
             }
@@ -262,20 +271,20 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
             {
                 stringstream ss;
                 ss << "file contains " << mds.size() << " " << format << " items instead of 1";
-                reporter.segment_info(ds, relname, ss.str());
+                reporter.segment_info(ds, relpath, ss.str());
                 return SEGMENT_CORRUPTED;
             }
         }
         stringstream ss;
         ss << "found " << expected.size() << " file(s) that the index does now know about";
-        reporter.segment_info(ds, relname, ss.str());
+        reporter.segment_info(ds, relpath, ss.str());
         return SEGMENT_DIRTY;
     }
 
     // Take note of files with holes
     if (out_of_order)
     {
-        reporter.segment_info(ds, relname, "contains deleted data or data to be reordered");
+        reporter.segment_info(ds, relpath, "contains deleted data or data to be reordered");
         return SEGMENT_DIRTY;
     } else {
         return res;
@@ -285,10 +294,10 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
 void Checker::validate(Metadata& md, const scan::Validator& v)
 {
     if (const types::source::Blob* blob = md.has_source_blob()) {
-        if (blob->filename != relname)
+        if (blob->filename != relpath)
             throw std::runtime_error("metadata to validate does not appear to be from this segment");
 
-        string fname = str::joinpath(absname, SequenceFile::data_fname(blob->offset, blob->format));
+        string fname = str::joinpath(abspath, SequenceFile::data_fname(blob->offset, blob->format));
         sys::File fd(fname, O_RDONLY);
         v.validate_file(fd, 0, blob->size);
         return;
@@ -299,7 +308,7 @@ void Checker::validate(Metadata& md, const scan::Validator& v)
 
 void Checker::foreach_datafile(std::function<void(const char*)> f)
 {
-    sys::Path dir(absname);
+    sys::Path dir(abspath);
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
         if (!i.isreg()) continue;
@@ -311,19 +320,19 @@ void Checker::foreach_datafile(std::function<void(const char*)> f)
 
 size_t Checker::remove()
 {
-    std::string format = utils::require_format(absname);
+    std::string format = utils::require_format(abspath);
 
     size_t size = 0;
     foreach_datafile([&](const char* name) {
-        string pathname = str::joinpath(absname, name);
+        string pathname = str::joinpath(abspath, name);
         size += sys::size(pathname);
         sys::unlink(pathname);
     });
-    sys::unlink_ifexists(str::joinpath(absname, ".sequence"));
-    sys::unlink_ifexists(str::joinpath(absname, ".write-lock"));
-    sys::unlink_ifexists(str::joinpath(absname, ".repack-lock"));
+    sys::unlink_ifexists(str::joinpath(abspath, ".sequence"));
+    sys::unlink_ifexists(str::joinpath(abspath, ".write-lock"));
+    sys::unlink_ifexists(str::joinpath(abspath, ".repack-lock"));
     // Also remove the directory if it is empty
-    rmdir(absname.c_str());
+    rmdir(abspath.c_str());
     return size;
 }
 
@@ -331,13 +340,13 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 {
     struct Rename : public Transaction
     {
-        std::string tmpabsname;
-        std::string absname;
+        std::string tmpabspath;
+        std::string abspath;
         std::string tmppos;
         bool fired;
 
-        Rename(const std::string& tmpabsname, const std::string& absname)
-            : tmpabsname(tmpabsname), absname(absname), tmppos(absname + ".pre-repack"), fired(false)
+        Rename(const std::string& tmpabspath, const std::string& abspath)
+            : tmpabspath(tmpabspath), abspath(abspath), tmppos(abspath + ".pre-repack"), fired(false)
         {
         }
 
@@ -353,14 +362,14 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
             // It is impossible to make this atomic, so we just try to make it as quick as possible
 
             // Move the old directory inside the temp dir, to free the old directory name
-            if (rename(absname.c_str(), tmppos.c_str()))
-                throw_system_error("cannot rename " + absname + " to " + tmppos);
+            if (rename(abspath.c_str(), tmppos.c_str()))
+                throw_system_error("cannot rename " + abspath + " to " + tmppos);
 
             // Rename the data file to its final name
-            if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
-                throw_system_error("cannot rename " + tmpabsname + " to " + absname
-                    + " (ATTENTION: please check if you need to rename " + tmppos + " to " + absname
-                    + " manually to restore the dataset as it was before the repack)");
+            if (rename(tmpabspath.c_str(), abspath.c_str()) < 0)
+                throw_system_error("cannot rename " + tmpabspath + " to " + abspath
+                    + " (ATTENTION: please check if you need to rename " + tmppos + " to " + abspath
+                    + " manually to restore it as it was before the repack)");
 
             // Remove the old data
             sys::rmtree(tmppos);
@@ -374,12 +383,12 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
             try
             {
-                sys::rmtree(tmpabsname);
+                sys::rmtree(tmpabspath);
             } catch (std::exception& e) {
-                nag::warning("Failed to remove %s while recovering from a failed repack: %s", tmpabsname.c_str(), e.what());
+                nag::warning("Failed to remove %s while recovering from a failed repack: %s", tmpabspath.c_str(), e.what());
             }
 
-            rename(tmppos.c_str(), absname.c_str());
+            rename(tmppos.c_str(), abspath.c_str());
 
             fired = true;
         }
@@ -390,29 +399,29 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
             try
             {
-                sys::rmtree(tmpabsname);
+                sys::rmtree(tmpabspath);
             } catch (std::exception& e) {
-                nag::warning("Failed to remove %s while recovering from a failed repack: %s", tmpabsname.c_str(), e.what());
+                nag::warning("Failed to remove %s while recovering from a failed repack: %s", tmpabspath.c_str(), e.what());
             }
 
-            rename(tmppos.c_str(), absname.c_str());
+            rename(tmppos.c_str(), abspath.c_str());
 
             fired = true;
         }
     };
 
-    string tmprelname = relname + ".repack";
-    string tmpabsname = absname + ".repack";
+    string tmprelpath = relpath + ".repack";
+    string tmpabspath = abspath + ".repack";
 
     // Make sure mds are not holding a read lock on the file to repack
     for (auto& md: mds) md->sourceBlob().unlock();
 
     // Reacquire the lock here for writing
     Rename* rename;
-    Pending p(rename = new Rename(tmpabsname, absname));
+    Pending p(rename = new Rename(tmpabspath, abspath));
 
     // Create a writer for the temp dir
-    sys::makedirs(tmpabsname);
+    sys::makedirs(tmpabspath);
     size_t pos = 0;
 
     if (test_flags & TEST_MISCHIEF_MOVE_DATA)
@@ -422,22 +431,22 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         const source::Blob& source = (*i)->sourceBlob();
-        auto new_source = Source::createBlobUnlocked(source.format, rootdir, relname, pos, source.size);
+        auto new_source = Source::createBlobUnlocked(source.format, rootdir, relpath, pos, source.size);
 
         std::string src = str::joinpath(source.absolutePathname(), SequenceFile::data_fname(source.offset, format));
-        std::string dst = str::joinpath(tmpabsname, SequenceFile::data_fname(pos, format));
+        std::string dst = str::joinpath(tmpabspath, SequenceFile::data_fname(pos, format));
 
         if (::link(src.c_str(), dst.c_str()) != 0)
             throw_system_error("cannot link " + src + " as " + dst);
 
         // Update the source information in the metadata
-        (*i)->set_source(Source::createBlobUnlocked(source.format, rootdir, relname, pos, source.size));
+        (*i)->set_source(Source::createBlobUnlocked(source.format, rootdir, relpath, pos, source.size));
 
         ++pos;
     }
 
     // Write it out
-    SequenceFile seqfile(tmpabsname);
+    SequenceFile seqfile(tmpabspath);
     seqfile.open();
     seqfile.write_sequence(pos);
 
@@ -446,19 +455,19 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
 void Checker::test_truncate(size_t offset)
 {
-    utils::files::PreserveFileTimes pft(absname);
+    utils::files::PreserveFileTimes pft(abspath);
 
     // Truncate dir segment
-    string format = utils::require_format(absname);
+    string format = utils::require_format(abspath);
     foreach_datafile([&](const char* name) {
         if (strtoul(name, 0, 10) >= offset)
-            sys::unlink(str::joinpath(absname, name));
+            sys::unlink(str::joinpath(abspath, name));
     });
 }
 
 void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
-    SequenceFile seqfile(absname);
+    SequenceFile seqfile(abspath);
     seqfile.open();
     sys::PreserveFileTimes pf(seqfile);
     size_t pos = seqfile.read_sequence();
@@ -466,7 +475,7 @@ void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsi
     {
         for (unsigned i = 0; i < hole_size; ++i)
         {
-            File fd(str::joinpath(absname, SequenceFile::data_fname(pos, format)),
+            File fd(str::joinpath(abspath, SequenceFile::data_fname(pos, format)),
                 O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
             fd.close();
             ++pos;
@@ -522,7 +531,6 @@ bool can_store(const std::string& format)
         || format == "vm2";
 }
 
-}
 }
 }
 }

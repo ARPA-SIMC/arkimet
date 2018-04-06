@@ -153,7 +153,7 @@ std::shared_ptr<const dataset::ondisk2::Config> DatasetTest::ondisk2_config()
     return dynamic_pointer_cast<const dataset::ondisk2::Config>(m_config);
 }
 
-dataset::segment::Manager& DatasetTest::segments()
+SegmentManager& DatasetTest::segments()
 {
     if (!segment_manager)
     {
@@ -387,7 +387,7 @@ void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount, boo
 {
     nag::TestCollect tc;
     auto state = scan_state(quick);
-    wassert(actual(state.count(SEGMENT_OK)) == filecount);
+    wassert(actual(state.count(segment::SEGMENT_OK)) == filecount);
     wassert(actual(state.size()) == filecount);
 
     auto reader = makeSegmentedReader();
@@ -404,7 +404,7 @@ void DatasetTest::all_clean(size_t segment_count)
     auto state = scan_state();
     try {
         wassert(actual(state.size()) == segment_count);
-        wassert(actual(state.count(SEGMENT_OK)) == segment_count);
+        wassert(actual(state.count(segment::SEGMENT_OK)) == segment_count);
     } catch (...) {
         fprintf(stderr, "Dump of unexpected state:\n");
         state.dump(stderr);
@@ -487,53 +487,6 @@ void DatasetTest::make_unaligned(const std::string& segment)
 
 namespace tests {
 
-void test_append_transaction_ok(dataset::segment::Writer* dw, Metadata& md, int append_amount_adjust)
-{
-    // Make a snapshot of everything before appending
-    unique_ptr<Source> orig_source(md.source().clone());
-    size_t data_size = md.data_size();
-    size_t orig_fsize = sys::size(dw->absname, 0);
-
-    // Start the append transaction, nothing happens until commit
-    const types::source::Blob& new_source = dw->append(md);
-    wassert(actual((size_t)new_source.offset) == orig_fsize);
-    wassert(actual((size_t)new_source.size) == data_size);
-    wassert(actual(new_source.basedir) == sys::getcwd());
-    wassert(actual(new_source.filename) == dw->relname);
-    wassert(actual(sys::size(dw->absname)) == orig_fsize + data_size + append_amount_adjust);
-    wassert(actual_type(md.source()) == *orig_source);
-
-    // Commit
-    dw->commit();
-
-    // After commit, data is appended
-    wassert(actual(sys::size(dw->absname)) == orig_fsize + data_size + append_amount_adjust);
-
-    // And metadata is updated
-    wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), dw->relname, orig_fsize, data_size));
-}
-
-void test_append_transaction_rollback(dataset::segment::Writer* dw, Metadata& md, int append_amount_adjust)
-{
-    // Make a snapshot of everything before appending
-    unique_ptr<Source> orig_source(md.source().clone());
-    size_t orig_fsize = sys::size(dw->absname, 0);
-
-    // Start the append transaction, nothing happens until commit
-    const types::source::Blob& new_source = dw->append(md);
-    wassert(actual((size_t)new_source.offset) == orig_fsize);
-    wassert(actual(sys::size(dw->absname, 0)) == orig_fsize + new_source.size + append_amount_adjust);
-    wassert(actual_type(md.source()) == *orig_source);
-
-    // Rollback
-    dw->rollback();
-
-    // After rollback, nothing has changed
-    wassert(actual(sys::size(dw->absname, 0)) == orig_fsize);
-    wassert(actual_type(md.source()) == *orig_source);
-}
-
-
 ReporterExpected::OperationMatch::OperationMatch(const std::string& dsname, const std::string& operation, const std::string& message)
     : name(dsname), operation(operation), message(message)
 {
@@ -579,6 +532,7 @@ void ReporterExpected::clear()
     deindexed.clear();
     rescanned.clear();
     tarred.clear();
+    compressed.clear();
     issue51.clear();
 
     count_repacked = -1;
@@ -587,6 +541,7 @@ void ReporterExpected::clear()
     count_deindexed = -1;
     count_rescanned = -1;
     count_tarred = -1;
+    count_compressed = -1;
     count_issue51 = -1;
 }
 
@@ -815,6 +770,11 @@ struct CollectReporter : public dataset::Reporter
         recorder.segment_tar(ds, relpath, message);
         seg_results.emplace_back("tarred", ds, relpath, message);
     }
+    void segment_compress(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        recorder.segment_compress(ds, relpath, message);
+        seg_results.emplace_back("compressed", ds, relpath, message);
+    }
     void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override
     {
         recorder.segment_issue51(ds, relpath, message);
@@ -841,6 +801,7 @@ struct CollectReporter : public dataset::Reporter
         seg_results.match("deindexed", expected.deindexed, issues);
         seg_results.match("rescanned", expected.rescanned, issues);
         seg_results.match("tarred", expected.tarred, issues);
+        seg_results.match("compressed", expected.compressed, issues);
         seg_results.match("issue51", expected.issue51, issues);
 
         seg_results.count_equals("repacked", expected.count_repacked, issues);
@@ -849,6 +810,7 @@ struct CollectReporter : public dataset::Reporter
         seg_results.count_equals("deindexed", expected.count_deindexed, issues);
         seg_results.count_equals("rescanned", expected.count_rescanned, issues);
         seg_results.count_equals("tarred", expected.count_tarred, issues);
+        seg_results.count_equals("compressed", expected.count_compressed, issues);
         seg_results.count_equals("issue51", expected.count_issue51, issues);
 
         seg_results.report_unmatched(issues);

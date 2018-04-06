@@ -2,7 +2,7 @@
 #define ARKI_DATASET_SEGMENTED_H
 
 #include <arki/dataset/local.h>
-#include <arki/dataset/segment.h>
+#include <arki/segment.h>
 #include <arki/core/time.h>
 
 namespace arki {
@@ -52,7 +52,7 @@ public:
 
     const Step& step() const { return *m_step; }
 
-    std::unique_ptr<segment::Manager> create_segment_manager() const;
+    std::unique_ptr<SegmentManager> create_segment_manager() const;
 
     static std::shared_ptr<const Config> create(const ConfigFile& cfg);
 };
@@ -63,14 +63,14 @@ public:
 class Reader : public LocalReader
 {
 private:
-    segment::Manager* m_segment_manager = nullptr;
+    SegmentManager* m_segment_manager = nullptr;
 
 public:
     using LocalReader::LocalReader;
     ~Reader();
 
     const Config& config() const override = 0;
-    segment::Manager& segment_manager();
+    SegmentManager& segment_manager();
 };
 
 /**
@@ -79,7 +79,7 @@ public:
 class Writer : public LocalWriter
 {
 private:
-    segment::Manager* m_segment_manager = nullptr;
+    SegmentManager* m_segment_manager = nullptr;
 
 protected:
     /**
@@ -95,7 +95,7 @@ public:
     ~Writer();
 
     const Config& config() const override = 0;
-    segment::Manager& segment_manager();
+    SegmentManager& segment_manager();
 
     static void test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out);
 };
@@ -107,15 +107,15 @@ public:
 struct SegmentState
 {
     // Segment state
-    segment::State state;
+    arki::segment::State state;
     // Minimum reference time of data that can fit in the segment
     core::Time begin;
     // Maximum reference time of data that can fit in the segment
     core::Time until;
 
-    SegmentState(segment::State state)
+    SegmentState(arki::segment::State state)
         : state(state), begin(0, 0, 0), until(0, 0, 0) {}
-    SegmentState(segment::State state, const core::Time& begin, const core::Time& until)
+    SegmentState(arki::segment::State state, const core::Time& begin, const core::Time& until)
         : state(state), begin(begin), until(until) {}
     SegmentState(const SegmentState&) = default;
     SegmentState(SegmentState&&) = default;
@@ -141,6 +141,14 @@ public:
 
     /// Convert the segment into a tar segment
     virtual void tar() = 0;
+
+    /**
+     * Compress the segment
+     *
+     * Returns the size difference between the original size and the compressed
+     * size
+     */
+    virtual size_t compress() = 0;
 
     virtual std::string path_relative() const = 0;
     virtual const segmented::Config& config() const = 0;
@@ -213,14 +221,14 @@ public:
 class Checker : public LocalChecker
 {
 private:
-    segment::Manager* m_segment_manager = nullptr;
+    SegmentManager* m_segment_manager = nullptr;
 
 public:
     using LocalChecker::LocalChecker;
     ~Checker();
 
     const Config& config() const override = 0;
-    segment::Manager& segment_manager();
+    SegmentManager& segment_manager();
 
     void check(CheckerConfig& opts) override;
     void repack(CheckerConfig& opts, unsigned test_flags=0) override;
@@ -275,6 +283,7 @@ public:
     void remove_old(CheckerConfig& opts) override;
     void remove_all(CheckerConfig& opts) override;
     void tar(CheckerConfig& config) override;
+    void compress(CheckerConfig& config) override;
     void state(CheckerConfig& config) override;
 
     /**

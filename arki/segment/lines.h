@@ -1,20 +1,19 @@
-#ifndef ARKI_DATASET_SEGMENT_LINES_H
-#define ARKI_DATASET_SEGMENT_LINES_H
+#ifndef ARKI_SEGMENT_LINES_H
+#define ARKI_SEGMENT_LINES_H
 
 /// Read/write functions for data blobs with newline separators
 #include <arki/libconfig.h>
-#include <arki/dataset/segment/fd.h>
+#include <arki/segment/fd.h>
 #include <string>
 
 namespace arki {
-namespace dataset {
 namespace segment {
 namespace lines {
 
 class Writer : public fd::Writer
 {
 public:
-    Writer(const std::string& root, const std::string& relname, const std::string& absname, int mode=0);
+    Writer(const std::string& root, const std::string& relpath, const std::string& abspath, int mode=0);
     const char* type() const override;
     std::unique_ptr<fd::File> open_file(const std::string& pathname, int flags, mode_t mode) override;
 };
@@ -30,9 +29,9 @@ public:
     const char* type() const override;
     State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
+    std::shared_ptr<segment::Checker> compress(metadata::Collection& mds) override;
 };
 
-}
 }
 }
 }

@@ -41,7 +41,7 @@ void Tests::register_tests()
     )", [&](Fixture& f) {
         remove_index();
 
-        wassert(f.state_is(3, SEGMENT_DELETED));
+        wassert(f.state_is(3, segment::SEGMENT_DELETED));
     });
 
     add_method("check_missing_index", R"(
@@ -69,7 +69,7 @@ void Tests::register_tests()
         wassert(actual_file("testds/index.sqlite").exists());
         wassert(actual_file("testds/needs-check-do-not-pack").exists());
 
-        wassert(f.state_is(3, SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
     add_method("check_missing_index_spurious_files", R"(
@@ -81,7 +81,7 @@ void Tests::register_tests()
 
         wassert(f.query_results({}));
 
-        wassert(f.state_is(3, SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
     add_method("check_missing_index_rescan_partial_files", R"(
@@ -108,7 +108,7 @@ void Tests::register_tests()
         }
 
         // Make sure that the segment is seen as unaligned instead of dirty
-        wassert(f.state_is(3, SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
     add_method("check_unaligned", R"(
@@ -117,7 +117,7 @@ void Tests::register_tests()
     )", [&](Fixture& f) {
         make_unaligned();
 
-        wassert(f.state_is(3, SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
     add_method("repack_unaligned", R"(
@@ -137,7 +137,7 @@ void Tests::register_tests()
             wassert(actual(e.what()).contains("dataset needs checking first"));
         }
 
-        wassert(f.state_is(3, SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 }
 

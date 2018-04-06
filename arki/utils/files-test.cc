@@ -46,19 +46,19 @@ add_method("dontpack", [] {
 // Test resolve_path
 add_method("resolve_path", [] {
     using namespace arki::utils::files;
-    string basedir, relname;
+    string basedir, relpath;
 
-    resolve_path(".", basedir, relname);
+    resolve_path(".", basedir, relpath);
     wassert(actual(basedir) == sys::abspath("."));
-    wassert(actual(relname) == ".");
+    wassert(actual(relpath) == ".");
 
-    resolve_path("/tmp/foo", basedir, relname);
+    resolve_path("/tmp/foo", basedir, relpath);
     wassert(actual(basedir) == "");
-    wassert(actual(relname) == "/tmp/foo");
+    wassert(actual(relpath) == "/tmp/foo");
 
-    resolve_path("foo/bar/../baz", basedir, relname);
+    resolve_path("foo/bar/../baz", basedir, relpath);
     wassert(actual(basedir) == sys::abspath("."));
-    wassert(actual(relname) == "foo/baz");
+    wassert(actual(relpath) == "foo/baz");
 });
 
 // Test format_from_ext

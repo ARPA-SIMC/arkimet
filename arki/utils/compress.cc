@@ -119,7 +119,7 @@ ZlibCompressor::~ZlibCompressor()
 	}
 }
 
-void ZlibCompressor::feedData(const void* buf, size_t len)
+void ZlibCompressor::feed_data(const void* buf, size_t len)
 {
     strm->avail_in = len;
     strm->next_in = (Bytef*)buf;
@@ -162,6 +162,21 @@ void gunzip(int rdfd, const std::string& rdfname, int wrfd, const std::string& w
             break;
     }
     // Let the caller close file rdfd and wrfd
+}
+
+std::vector<uint8_t> gunzip(const std::string& abspath, size_t bufsize)
+{
+    gzip::File gzfd(abspath, "rb");
+    vector<uint8_t> buf(bufsize);
+    vector<uint8_t> res;
+    while (true)
+    {
+        unsigned count = gzfd.read(buf.data(), buf.size());
+        res.insert(res.end(), buf.begin(), buf.begin() + count);
+        if (count < bufsize)
+            break;
+    }
+    return res;
 }
 
 TempUnzip::TempUnzip(const std::string& fname)
@@ -253,6 +268,97 @@ off_t filesize(const std::string& file)
 }
 
 
+GzipWriter::GzipWriter(core::NamedFileDescriptor& out)
+    : out(out), outbuf(4096 * 2)
+{
+}
+
+GzipWriter::~GzipWriter()
+{
+}
+
+size_t GzipWriter::add(const std::vector<uint8_t>& buf)
+{
+    size_t written = 0;
+    compressor.feed_data(buf.data(), buf.size());
+    while (true)
+    {
+        size_t len = compressor.get(outbuf, false);
+        if (len > 0)
+        {
+            out.write_all_or_throw(outbuf.data(), len);
+            written += len;
+        }
+        if (len < outbuf.size())
+            break;
+    }
+    return written;
+}
+
+size_t GzipWriter::flush_compressor()
+{
+    size_t written = 0;
+    while (true)
+    {
+        // Flush the compressor
+        size_t len = compressor.get(outbuf, true);
+        if (len > 0)
+        {
+            out.write_all_or_throw(outbuf.data(), len);
+            written += len;
+        }
+        if (len < outbuf.size())
+            break;
+    }
+    return written;
+}
+
+void GzipWriter::flush()
+{
+    flush_compressor();
+}
+
+
+GzipIndexingWriter::GzipIndexingWriter(core::NamedFileDescriptor& out, core::NamedFileDescriptor& outidx, size_t groupsize)
+    : GzipWriter(out), groupsize(groupsize), outidx(outidx)
+{
+}
+
+GzipIndexingWriter::~GzipIndexingWriter()
+{
+}
+
+void GzipIndexingWriter::add(const std::vector<uint8_t>& buf)
+{
+    ofs += GzipWriter::add(buf);
+    unc_ofs += buf.size();
+    ++count;
+    if ((count % groupsize) == 0)
+        end_block();
+}
+
+void GzipIndexingWriter::end_block(bool is_final)
+{
+    ofs += GzipWriter::flush_compressor();
+
+    // Write last block size to the index
+    uint32_t unc_size = htonl(unc_ofs - last_unc_ofs);
+    uint32_t size = htonl(ofs - last_ofs);
+    outidx.write_all_or_throw(&unc_size, sizeof(unc_size));
+    outidx.write_all_or_throw(&size, sizeof(size));
+    last_ofs = ofs;
+    last_unc_ofs = unc_ofs;
+
+    if (!is_final) compressor.restart();
+}
+
+void GzipIndexingWriter::flush()
+{
+    if (unc_ofs > 0 && last_unc_ofs != unc_ofs)
+        end_block(true);
+}
+
+
 DataCompressor::DataCompressor(const std::string& outfile, size_t groupsize)
     : groupsize(groupsize),
       outfd(outfile + ".gz", O_WRONLY | O_CREAT | O_EXCL, 0666),
@@ -275,7 +381,7 @@ bool DataCompressor::eat(unique_ptr<Metadata>&& md)
 void DataCompressor::add(const std::vector<uint8_t>& buf)
 {
     // Compress data
-    compressor.feedData(buf.data(), buf.size());
+    compressor.feed_data(buf.data(), buf.size());
     while (true)
     {
         size_t len = compressor.get(outbuf, false);

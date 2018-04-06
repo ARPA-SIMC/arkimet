@@ -79,10 +79,10 @@ Vm2::~Vm2()
     close();
 }
 
-void Vm2::open(const std::string& filename, const std::string& basedir, const std::string& relname, std::shared_ptr<core::Lock> lock)
+void Vm2::open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock)
 {
-    Scanner::open(filename, basedir, relname, lock);
-    if (relname == "-") {
+    Scanner::open(filename, basedir, relpath, lock);
+    if (relpath == "-") {
         this->in = &std::cin;
     } else {
         this->in = new std::ifstream(filename.c_str());
@@ -95,7 +95,7 @@ void Vm2::open(const std::string& filename, const std::string& basedir, const st
 void Vm2::close()
 {
     Scanner::close();
-    if (in && relname != "-")
+    if (in && relpath != "-")
         delete in;
     if (parser) delete parser;
     in = 0;
@@ -124,10 +124,10 @@ bool Vm2::next(Metadata& md)
     size_t size = line.size();
 
     md.clear();
-    unique_ptr<source::Blob> source(source::Blob::create("vm2", basedir, relname, offset, size, reader));
+    unique_ptr<source::Blob> source(source::Blob::create("vm2", basedir, relpath, offset, size, reader));
     md.set_cached_data(vector<uint8_t>(line.begin(), line.end()));
     md.set_source(upcast<Source>(move(source)));
-    md.add_note("Scanned from " + relname);
+    md.add_note("Scanned from " + relpath);
     md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
     md.set(Area::createVM2(value.station_id));
     md.set(Product::createVM2(value.variable_id));

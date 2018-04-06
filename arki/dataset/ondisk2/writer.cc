@@ -52,7 +52,7 @@ struct AppendSegment
     {
         Pending p_idx = idx.begin_transaction();
         try {
-            if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->relname, segment->next_offset()))
+            if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->relpath, segment->next_offset()))
             {
                 md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + old->filename + ":" + std::to_string(old->offset));
                 return ACQ_ERROR_DUPLICATE;
@@ -72,7 +72,7 @@ struct AppendSegment
     {
         Pending p_idx = idx.begin_transaction();
         try {
-            idx.replace(md, segment->relname, segment->next_offset());
+            idx.replace(md, segment->relpath, segment->next_offset());
             segment->append(md);
             // In a replace, we necessarily replace inside the same file,
             // as it depends on the metadata reftime
@@ -93,7 +93,7 @@ struct AppendSegment
 
         try {
             // Try to acquire without replacing
-            if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->relname, segment->next_offset()))
+            if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->relpath, segment->next_offset()))
             {
                 // Duplicate detected
 
@@ -117,7 +117,7 @@ struct AppendSegment
                     return ACQ_ERROR_DUPLICATE;
 
                 // Replace, reusing the pending datafile transaction from earlier
-                idx.replace(md, segment->relname, segment->next_offset());
+                idx.replace(md, segment->relpath, segment->next_offset());
                 segment->append(md);
                 segment->commit();
                 p_idx.commit();
@@ -144,7 +144,7 @@ struct AppendSegment
         {
             e->dataset_name.clear();
 
-            if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->relname, segment->next_offset()))
+            if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->relpath, segment->next_offset()))
             {
                 e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + old->filename + ":" + std::to_string(old->offset));
                 e->result = ACQ_ERROR_DUPLICATE;
@@ -166,7 +166,7 @@ struct AppendSegment
         for (auto& e: batch)
         {
             e->dataset_name.clear();
-            idx.replace(e->md, segment->relname, segment->next_offset());
+            idx.replace(e->md, segment->relpath, segment->next_offset());
             segment->append(e->md);
             e->result = ACQ_OK;
             e->dataset_name = config->name;
@@ -185,7 +185,7 @@ struct AppendSegment
             e->dataset_name.clear();
 
             // Try to acquire without replacing
-            if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->relname, segment->next_offset()))
+            if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->relpath, segment->next_offset()))
             {
                 // Duplicate detected
 
@@ -193,7 +193,7 @@ struct AppendSegment
                 int new_usn;
                 if (!scan::update_sequence_number(e->md, new_usn))
                 {
-                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relname + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
+                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relpath + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
                     e->result = ACQ_ERROR_DUPLICATE;
                     continue;
                 }
@@ -212,13 +212,13 @@ struct AppendSegment
                 // If the new element has no higher Update Sequence Number, report a duplicate
                 if (old_usn > new_usn)
                 {
-                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relname + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
+                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relpath + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
                     e->result = ACQ_ERROR_DUPLICATE;
                     continue;
                 }
 
                 // Replace, reusing the pending datafile transaction from earlier
-                idx.replace(e->md, segment->relname, segment->next_offset());
+                idx.replace(e->md, segment->relpath, segment->next_offset());
                 segment->append(e->md);
                 e->result = ACQ_OK;
                 e->dataset_name = config->name;
@@ -260,11 +260,11 @@ std::unique_ptr<AppendSegment> Writer::segment(const Metadata& md, const std::st
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segmented::Writer::file(md, format)));
 }
 
-std::unique_ptr<AppendSegment> Writer::segment(const std::string& relname)
+std::unique_ptr<AppendSegment> Writer::segment(const std::string& relpath)
 {
-    sys::makedirs(str::dirname(str::joinpath(config().path, relname)));
+    sys::makedirs(str::dirname(str::joinpath(config().path, relpath)));
     auto lock = config().append_lock_dataset();
-    auto segment = segment_manager().get_writer(relname);
+    auto segment = segment_manager().get_writer(relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segment));
 }
 

@@ -1,19 +1,18 @@
-#ifndef ARKI_DATASET_SEGMENT_CONCAT_H
-#define ARKI_DATASET_SEGMENT_CONCAT_H
+#ifndef ARKI_SEGMENT_CONCAT_H
+#define ARKI_SEGMENT_CONCAT_H
 
 #include <arki/libconfig.h>
-#include <arki/dataset/segment/fd.h>
+#include <arki/segment/fd.h>
 #include <string>
 
 namespace arki {
-namespace dataset {
 namespace segment {
 namespace concat {
 
 class Writer : public fd::Writer
 {
 public:
-    Writer(const std::string& root, const std::string& relname, const std::string& absname, int mode=0);
+    Writer(const std::string& root, const std::string& relpath, const std::string& abspath, int mode=0);
     const char* type() const override;
     std::unique_ptr<fd::File> open_file(const std::string& pathname, int flags, mode_t mode) override;
 };
@@ -34,7 +33,7 @@ public:
 class HoleWriter : public fd::Writer
 {
 public:
-    HoleWriter(const std::string& root, const std::string& relname, const std::string& absname, int mode=0);
+    HoleWriter(const std::string& root, const std::string& relpath, const std::string& abspath, int mode=0);
     const char* type() const override;
     std::unique_ptr<fd::File> open_file(const std::string& pathname, int flags, mode_t mode) override;
 };
@@ -51,7 +50,6 @@ public:
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
 };
 
-}
 }
 }
 }

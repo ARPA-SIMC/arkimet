@@ -14,12 +14,12 @@ struct Scanner
 {
     std::string filename;
     std::string basedir;
-    std::string relname;
+    std::string relpath;
     std::shared_ptr<Reader> reader;
 
     virtual ~Scanner();
 
-    virtual void open(const std::string& filename, const std::string& basedir, const std::string& relname, std::shared_ptr<core::Lock> lock);
+    virtual void open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock);
 
     virtual void close();
 

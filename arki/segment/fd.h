@@ -1,18 +1,15 @@
-#ifndef ARKI_DATASET_SEGMENT_FD_H
-#define ARKI_DATASET_SEGMENT_FD_H
+#ifndef ARKI_SEGMENT_FD_H
+#define ARKI_SEGMENT_FD_H
 
 /// Base class for unix fd based read/write functions
 
 #include <arki/libconfig.h>
-#include <arki/dataset/segment.h>
+#include <arki/segment.h>
 #include <arki/core/file.h>
 #include <string>
 #include <vector>
 
 namespace arki {
-struct Reader;
-
-namespace dataset {
 namespace segment {
 namespace fd {
 
@@ -29,14 +26,14 @@ struct File : public arki::core::File
 };
 
 
-struct Writer : public dataset::segment::Writer
+struct Writer : public segment::Writer
 {
     File* fd = nullptr;
     off_t initial_size;
     off_t current_pos;
     std::vector<PendingMetadata> pending;
 
-    Writer(const std::string& root, const std::string& relname, std::unique_ptr<File> fd);
+    Writer(const std::string& root, const std::string& relpath, std::unique_ptr<File> fd);
     ~Writer();
 
     bool single_file() const override;
@@ -50,12 +47,12 @@ struct Writer : public dataset::segment::Writer
 };
 
 
-class Checker : public dataset::segment::Checker
+class Checker : public segment::Checker
 {
 protected:
     virtual std::unique_ptr<File> open(const std::string& pathname) = 0;
 
-    void validate(Metadata& md, const scan::Validator& v) override;
+    void validate(Metadata& md, const scan::Validator& v);
 
     /**
      * If skip_validation is true, repack will skip validating the data that is
@@ -72,14 +69,15 @@ protected:
             unsigned test_flags=0);
 
     virtual std::unique_ptr<File> open_file(const std::string& pathname, int flags, mode_t mode) = 0;
-    void move_data(const std::string& new_root, const std::string& new_relname, const std::string& new_absname) override;
+    void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 
 public:
-    using dataset::segment::Checker::Checker;
+    using segment::Checker::Checker;
 
     bool single_file() const override;
     bool exists_on_disk() override;
     time_t timestamp() override;
+    size_t size() override;
 
     size_t remove() override;
 
@@ -93,7 +91,6 @@ public:
 
 bool can_store(const std::string& format);
 
-}
 }
 }
 }

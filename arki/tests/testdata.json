@@ -971,6 +971,16 @@
  },
  {
   "doc": "",
+  "group": "arki_utils_compress",
+  "method": "gzipwriter"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_compress",
+  "method": "gzipindexingwriter"
+ },
+ {
+  "doc": "",
   "group": "arki_utils_sqlite",
   "method": "oneshot"
  },
@@ -1746,6 +1756,106 @@
  },
  {
   "doc": "",
+  "group": "arki_segment",
+  "method": "auto_instantiate_existing"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_fd",
+  "method": "empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_concat",
+  "method": "append"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_concat",
+  "method": "large"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_concat",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_concat",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_lines",
+  "method": "append"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_lines",
+  "method": "large"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_lines",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_lines",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_seqfile",
+  "method": "empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir",
+  "method": "append"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx",
+  "method": "remove"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime_io",
   "method": "tempfile"
  },
@@ -2117,26 +2227,6 @@
  {
   "doc": "",
   "group": "arki_dataset_segment",
-  "method": "file_repack"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment",
-  "method": "file_check_empty"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment",
-  "method": "dir_repack"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment",
-  "method": "dir_check_empty"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment",
   "method": "scan_dir_empty"
  },
  {
@@ -2156,93 +2246,8 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_fd",
-  "method": "empty"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_concat",
-  "method": "append"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_concat",
-  "method": "large"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_concat",
-  "method": "check"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_concat",
-  "method": "remove"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_lines",
-  "method": "append"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_lines",
-  "method": "large"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_lines",
-  "method": "check"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_lines",
-  "method": "remove"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_seqfile",
-  "method": "empty"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_dir",
-  "method": "append"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_dir",
-  "method": "check"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_dir",
-  "method": "remove"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_tar",
-  "method": "check"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_tar",
-  "method": "remove"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_managers",
-  "method": "auto_instantiate_existing"
- },
- {
-  "doc": "",
   "group": "arki_dataset_segment_managers",
   "method": "auto_instantiate_new"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_managers",
-  "method": "forcedir_instantiate_existing"
  },
  {
   "doc": "",
@@ -11782,6 +11787,11 @@
  {
   "doc": "",
   "group": "arki_runtime_arkicheck_ondisk2",
+  "method": "compress"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_ondisk2",
   "method": "scan"
  },
  {
@@ -11827,6 +11837,11 @@
  {
   "doc": "",
   "group": "arki_runtime_arkicheck_simple_plain",
+  "method": "compress"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_plain",
   "method": "scan"
  },
  {
@@ -11872,6 +11887,11 @@
  {
   "doc": "",
   "group": "arki_runtime_arkicheck_simple_sqlite",
+  "method": "compress"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_sqlite",
   "method": "scan"
  },
  {
@@ -11913,6 +11933,11 @@
   "doc": "",
   "group": "arki_runtime_arkicheck_iseg",
   "method": "tar"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_iseg",
+  "method": "compress"
  },
  {
   "doc": "",

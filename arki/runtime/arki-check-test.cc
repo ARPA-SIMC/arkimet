@@ -397,6 +397,67 @@ add_method("tar", [](Fixture& f) {
     wassert(actual_file("testds/2007/10-09.odimh5").exists());
 });
 
+add_method("compress", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+
+    f.clean_and_import("inbound/fixture.grib1");
+    auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
+    f.cfg.setValue("archive age", "1");
+    f.test_reread_config();
+    f.repack();
+
+    wassert(actual_file("testds/.archive/last/2007/07-07.grib").exists());
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/10-09.grib").exists());
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--compress", "testds", });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
+            "testds.archives.last:2007/07-07.grib: should be compressed\n"
+        );
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--compress", "--offline", "testds", });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
+            "testds.archives.last:2007/07-07.grib: should be compressed\n"
+        );
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--compress", "--online", "testds", });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
+            "testds:2007/07-08.grib: should be compressed\n"
+            "testds:2007/10-09.grib: should be compressed\n"
+        );
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--compress", "testds", "-f" });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())).matches(
+            "testds.archives.last:2007/07-07.grib: compressed \\([0-9]+ freed\\)\n"
+        ));
+        wassert(actual(res) == 0);
+    }
+
+    wassert(actual_file("testds/.archive/last/2007/07-07.grib").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/07-07.grib.gz").exists());
+    wassert(actual_file("testds/.archive/last/2007/07-07.grib.gz.idx").exists());
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/10-09.grib").exists());
+});
+
 add_method("scan", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 

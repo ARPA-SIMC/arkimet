@@ -43,14 +43,14 @@ void SegmentState::check_age(const std::string& relpath, const Config& cfg, data
     if (delete_threshold.ye != 0 && delete_threshold >= until)
     {
         reporter.segment_info(cfg.name, relpath, "segment old enough to be deleted");
-        state = state + SEGMENT_DELETE_AGE;
+        state = state + segment::SEGMENT_DELETE_AGE;
         return;
     }
 
     if (archive_threshold.ye != 0 && archive_threshold >= until)
     {
         reporter.segment_info(cfg.name, relpath, "segment old enough to be archived");
-        state = state + SEGMENT_ARCHIVE_AGE;
+        state = state + segment::SEGMENT_ARCHIVE_AGE;
         return;
     }
 }
@@ -88,9 +88,9 @@ bool Config::relpath_timespan(const std::string& path, core::Time& start_time, c
     return step().path_timespan(path, start_time, end_time);
 }
 
-std::unique_ptr<segment::Manager> Config::create_segment_manager() const
+std::unique_ptr<SegmentManager> Config::create_segment_manager() const
 {
-    return segment::Manager::get(path, force_dir_segments, mock_data);
+    return SegmentManager::get(path, force_dir_segments, mock_data);
 }
 
 std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
@@ -104,7 +104,7 @@ Reader::~Reader()
     delete m_segment_manager;
 }
 
-segment::Manager& Reader::segment_manager()
+SegmentManager& Reader::segment_manager()
 {
     if (!m_segment_manager)
         m_segment_manager = config().create_segment_manager().release();
@@ -117,7 +117,7 @@ Writer::~Writer()
     delete m_segment_manager;
 }
 
-segment::Manager& Writer::segment_manager()
+SegmentManager& Writer::segment_manager()
 {
     if (!m_segment_manager)
         m_segment_manager = config().create_segment_manager().release();
@@ -127,8 +127,8 @@ segment::Manager& Writer::segment_manager()
 std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
 {
     const core::Time& time = md.get<types::reftime::Position>()->time;
-    string relname = config().step()(time) + "." + md.source().format;
-    return segment_manager().get_writer(format, relname);
+    string relpath = config().step()(time) + "." + md.source().format;
+    return segment_manager().get_writer(format, relpath);
 }
 
 static bool writer_batch_element_lt(const std::shared_ptr<WriterBatchElement>& a, const std::shared_ptr<WriterBatchElement>& b)
@@ -171,8 +171,8 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
         }
 
         const core::Time& time = e->md.get<types::reftime::Position>()->time;
-        string relname = config().step()(time) + "." + format;
-        by_segment[relname].push_back(e);
+        string relpath = config().step()(time) + "." + format;
+        by_segment[relpath].push_back(e);
     }
 
     for (auto& b: by_segment)
@@ -206,10 +206,6 @@ CheckerSegment::~CheckerSegment()
 {
 }
 
-void CheckerSegment::tar()
-{
-}
-
 void CheckerSegment::archive()
 {
     // TODO: this is a hack to ensure that 'last' is created (and clean) before
@@ -222,15 +218,15 @@ void CheckerSegment::archive()
     auto wlock = lock->write_lock();
 
     // Get the format for this relpath
-    size_t pos = segment->relname.rfind(".");
+    size_t pos = segment->relpath.rfind(".");
     if (pos == string::npos)
-        throw std::runtime_error("cannot archive segment " + segment->absname + " because it does not have a format extension");
-    string format = segment->relname.substr(pos + 1);
+        throw std::runtime_error("cannot archive segment " + segment->abspath + " because it does not have a format extension");
+    string format = segment->relpath.substr(pos + 1);
 
     // Get the time range for this relpath
     core::Time start_time, end_time;
-    if (!config().relpath_timespan(segment->relname, start_time, end_time))
-        throw std::runtime_error("cannot archive segment " + segment->absname + " because its name does not match the dataset step");
+    if (!config().relpath_timespan(segment->relpath, start_time, end_time))
+        throw std::runtime_error("cannot archive segment " + segment->abspath + " because its name does not match the dataset step");
 
     // Get the contents of this segment
     metadata::Collection mdc;
@@ -248,20 +244,20 @@ void CheckerSegment::archive()
 
 void CheckerSegment::unarchive()
 {
-    string arcrelpath = str::joinpath("last", segment->relname);
-    archives().release_segment(arcrelpath, segment->root, segment->relname, segment->absname);
+    string arcrelpath = str::joinpath("last", segment->relpath);
+    archives().release_segment(arcrelpath, segment->root, segment->relpath, segment->abspath);
 
-    bool compressed = scan::isCompressed(segment->absname);
+    bool compressed = scan::isCompressed(segment->abspath);
 
     // Acquire in the achive
     metadata::Collection mdc;
-    if (sys::exists(segment->absname + ".metadata"))
-        mdc.read_from_file(segment->absname + ".metadata");
+    if (sys::exists(segment->abspath + ".metadata"))
+        mdc.read_from_file(segment->abspath + ".metadata");
     else if (compressed) {
-        utils::compress::TempUnzip tu(segment->absname);
-        scan::scan(segment->absname, lock, mdc.inserter_func());
+        utils::compress::TempUnzip tu(segment->abspath);
+        scan::scan(segment->abspath, lock, mdc.inserter_func());
     } else
-        scan::scan(segment->absname, lock, mdc.inserter_func());
+        scan::scan(segment->abspath, lock, mdc.inserter_func());
     index(move(mdc));
 }
 
@@ -271,7 +267,7 @@ Checker::~Checker()
     delete m_segment_manager;
 }
 
-segment::Manager& Checker::segment_manager()
+SegmentManager& Checker::segment_manager()
 {
     if (!m_segment_manager)
         m_segment_manager = config().create_segment_manager().release();
@@ -317,7 +313,7 @@ void Checker::remove_old(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
         auto state = segment.scan(*opts.reporter, !opts.accurate);
-        if (!state.state.has(SEGMENT_DELETE_AGE)) return;
+        if (!state.state.has(segment::SEGMENT_DELETE_AGE)) return;
         if (opts.readonly)
             opts.reporter->segment_delete(name(), segment.path_relative(), "should be deleted");
         else
@@ -359,6 +355,22 @@ void Checker::tar(CheckerConfig& opts)
     });
 
     LocalChecker::tar(opts);
+}
+
+void Checker::compress(CheckerConfig& opts)
+{
+    segments(opts, [&](CheckerSegment& segment) {
+        if (!segment.segment->single_file()) return;
+        if (opts.readonly)
+            opts.reporter->segment_compress(name(), segment.path_relative(), "should be compressed");
+        else
+        {
+            auto freed = segment.compress();
+            opts.reporter->segment_compress(name(), segment.path_relative(), "compressed (" + std::to_string(freed) + " freed)");
+        }
+    });
+
+    LocalChecker::compress(opts);
 }
 
 void Checker::state(CheckerConfig& opts)

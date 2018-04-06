@@ -232,6 +232,12 @@ void LocalChecker::tar(CheckerConfig& opts)
         archive().tar(opts);
 }
 
+void LocalChecker::compress(CheckerConfig& opts)
+{
+    if (opts.offline && hasArchive())
+        archive().compress(opts);
+}
+
 void LocalChecker::check_issue51(CheckerConfig& opts)
 {
     if (opts.offline && hasArchive())

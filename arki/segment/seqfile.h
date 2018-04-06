@@ -1,11 +1,10 @@
-#ifndef ARKI_DATASET_SEGMENT_SEQFILE_H
-#define ARKI_DATASET_SEGMENT_SEQFILE_H
+#ifndef ARKI_SEGMENT_SEQFILE_H
+#define ARKI_SEGMENT_SEQFILE_H
 
 #include <arki/core/file.h>
 #include <string>
 
 namespace arki {
-namespace dataset {
 namespace segment {
 
 struct SequenceFile : public core::File
@@ -38,6 +37,4 @@ struct SequenceFile : public core::File
 
 }
 }
-}
-
 #endif

@@ -39,7 +39,7 @@ struct Index
      *
      * If the segment does not exist in the index, return false
      */
-    virtual bool segment_timespan(const std::string& relname, core::Time& start_time, core::Time& end_time) const = 0;
+    virtual bool segment_timespan(const std::string& relpath, core::Time& start_time, core::Time& end_time) const = 0;
 
     /**
      * List all segments known to the index.
@@ -61,7 +61,7 @@ struct Index
     /**
      * Get the metadata for a segment.
      */
-    virtual void query_segment(const std::string& relname, metadata_dest_func) const = 0;
+    virtual void query_segment(const std::string& relpath, metadata_dest_func) const = 0;
 
     /**
      * Rename a segment in the index.
@@ -70,7 +70,7 @@ struct Index
      *
      * The version on disk is not touched.
      */
-    virtual void test_rename(const std::string& relname, const std::string& new_relname) = 0;
+    virtual void test_rename(const std::string& relpath, const std::string& new_relpath) = 0;
 
     /**
      * Remove a segment from the index.
@@ -79,7 +79,7 @@ struct Index
      *
      * The version on disk is not touched.
      */
-    virtual void test_deindex(const std::string& relname) = 0;
+    virtual void test_deindex(const std::string& relpath) = 0;
 
     /**
      * Update the index so that the offset of all data in the segment starting
@@ -87,7 +87,7 @@ struct Index
      * `overlap_size`, so that the ones at `data_idx - 1` and at `data_idx`
      * overlap.
      */
-    virtual void test_make_overlap(const std::string& relname, unsigned overlap_size, unsigned data_idx) = 0;
+    virtual void test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx) = 0;
 
     /**
      * Update the index so that the offset of all data in the segment starting
@@ -95,7 +95,7 @@ struct Index
      * so that a hole is created between the ones at `data_idx - 1` and at
      * `data_idx`
      */
-    virtual void test_make_hole(const std::string& relname, unsigned hole_size, unsigned data_idx) = 0;
+    virtual void test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx) = 0;
 };
 
 }

@@ -1,23 +1,22 @@
-#ifndef ARKI_DATASET_DATA_DIR_H
-#define ARKI_DATASET_DATA_DIR_H
+#ifndef ARKI_SEGMENT_DIR_H
+#define ARKI_SEGMENT_DIR_H
 
 /// Directory based data collection
 
 #include <arki/defs.h>
-#include <arki/dataset/segment.h>
-#include <arki/dataset/segment/seqfile.h>
+#include <arki/segment.h>
+#include <arki/segment/seqfile.h>
 #include <arki/core/file.h>
 #include <vector>
 
 namespace arki {
 class Metadata;
 
-namespace dataset {
 namespace segment {
 namespace dir {
 
 
-struct Writer : public dataset::segment::Writer
+struct Writer : public segment::Writer
 {
     SequenceFile seqfile;
     std::string format;
@@ -25,7 +24,7 @@ struct Writer : public dataset::segment::Writer
     std::vector<PendingMetadata> pending;
     size_t current_pos;
 
-    Writer(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname);
+    Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
     ~Writer();
 
     const char* type() const override;
@@ -51,22 +50,23 @@ struct HoleWriter: public Writer
 };
 
 
-class Checker : public dataset::segment::Checker
+class Checker : public segment::Checker
 {
 public:
     std::string format;
 
-    void validate(Metadata& md, const scan::Validator& v) override;
-    void move_data(const std::string& new_root, const std::string& new_relname, const std::string& new_absname) override;
+    void validate(Metadata& md, const scan::Validator& v);
+    void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 
 public:
-    Checker(const std::string& format, const std::string& root, const std::string& relname, const std::string& absname);
+    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
 
     const char* type() const override;
     bool single_file() const override;
 
     bool exists_on_disk() override;
     time_t timestamp() override;
+    size_t size() override;
 
     State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
@@ -99,7 +99,6 @@ public:
 
 bool can_store(const std::string& format);
 
-}
 }
 }
 }

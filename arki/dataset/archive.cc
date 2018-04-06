@@ -395,6 +395,15 @@ void ArchivesChecker::tar(CheckerConfig& opts)
     });
 }
 
+void ArchivesChecker::compress(CheckerConfig& opts)
+{
+    if (!opts.offline) return;
+    archives->iter([&](Checker& a) {
+        a.compress(opts);
+        return true;
+    });
+}
+
 void ArchivesChecker::repack(CheckerConfig& opts, unsigned test_flags)
 {
     archives->iter([&](Checker& a) {
@@ -445,19 +454,19 @@ static std::string poppath(std::string& path)
 	return res;
 }
 
-void ArchivesChecker::index_segment(const std::string& relname, metadata::Collection&& mds)
+void ArchivesChecker::index_segment(const std::string& relpath, metadata::Collection&& mds)
 {
-    string path = relname;
+    string path = relpath;
     string name = poppath(path);
     if (Checker* a = archives->lookup(name))
     {
         if (segmented::Checker* sc = dynamic_cast<segmented::Checker*>(a))
             sc->segment(path)->index(move(mds));
         else
-            throw std::runtime_error(this->name() + ": cannot acquire " + relname + ": archive " + name + " is not writable");
+            throw std::runtime_error(this->name() + ": cannot acquire " + relpath + ": archive " + name + " is not writable");
     }
     else
-        throw std::runtime_error(this->name() + ": cannot acquire " + relname + ": archive " + name + " does not exist in " + archives->archive_root);
+        throw std::runtime_error(this->name() + ": cannot acquire " + relpath + ": archive " + name + " does not exist in " + archives->archive_root);
     archives->invalidate_summary_cache();
 }
 

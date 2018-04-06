@@ -20,7 +20,7 @@ class Writer : public segmented::Writer
 protected:
     std::shared_ptr<const ondisk2::Config> m_config;
     std::unique_ptr<AppendSegment> segment(const Metadata& md, const std::string& format);
-    std::unique_ptr<AppendSegment> segment(const std::string& relname);
+    std::unique_ptr<AppendSegment> segment(const std::string& relpath);
 
 public:
     Writer(std::shared_ptr<const ondisk2::Config> config);

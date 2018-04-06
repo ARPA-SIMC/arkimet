@@ -36,8 +36,8 @@ public:
 	Vm2();
 	virtual ~Vm2();
 
-    /// Alternate version with explicit basedir/relname separation
-    void open(const std::string& filename, const std::string& basedir, const std::string& relname, std::shared_ptr<core::Lock> lock) override;
+    /// Alternate version with explicit basedir/relpath separation
+    void open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock) override;
 
     /**
      * Close the input file.

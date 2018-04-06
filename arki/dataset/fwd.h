@@ -15,14 +15,7 @@ struct WriterBatchElement;
 struct WriterBatch;
 struct Checker;
 struct Reporter;
-
-struct Segment;
-namespace segment {
-struct Writer;
-struct Checker;
-struct CheckerSegment;
-struct Manager;
-}
+struct SegmentManager;
 
 }
 }
