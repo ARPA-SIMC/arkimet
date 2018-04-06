@@ -87,15 +87,15 @@ public:
         if (!segment->exists_on_disk())
         {
             reporter.segment_info(checker.name(), segment->relname, "segment found in index but not on disk");
-            return segmented::SegmentState(SEGMENT_MISSING);
+            return segmented::SegmentState(segment::SEGMENT_MISSING);
         }
 
         if (!checker.m_idx->has_segment(segment->relname))
         {
             //bool untrusted_index = files::hasDontpackFlagfile(checker.config().path);
             reporter.segment_info(checker.name(), segment->relname, "segment found on disk with no associated index data");
-            //return segmented::SegmentState(untrusted_index ? SEGMENT_UNALIGNED : SEGMENT_DELETED);
-            return segmented::SegmentState(SEGMENT_UNALIGNED);
+            //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
+            return segmented::SegmentState(segment::SEGMENT_UNALIGNED);
         }
 
         // TODO: replace with a method of Segment
@@ -104,7 +104,7 @@ public:
         time_t ts_sum = sys::timestamp(segment->absname + ".summary", 0);
         time_t ts_idx = checker.m_mft->segment_mtime(segment->relname);
 
-        segment::State state = SEGMENT_OK;
+        segment::State state = segment::SEGMENT_OK;
 
         // Check timestamp consistency
         if (ts_idx != ts_data || ts_md < ts_data || ts_sum < ts_md)
@@ -118,7 +118,7 @@ public:
             if (ts_md < ts_data)
                 nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
                         checker.config().path.c_str(), segment->relname.c_str(), ts_md, ts_sum);
-            state = SEGMENT_UNALIGNED;
+            state = segment::SEGMENT_UNALIGNED;
         }
 
         // Read metadata of segment contents
@@ -145,10 +145,10 @@ public:
             });
         }
         else
-            // The index knows about the file, so instead of saying SEGMENT_DELETED
-            // because we have data without metadata, we say SEGMENT_UNALIGNED
+            // The index knows about the file, so instead of saying segment::SEGMENT_DELETED
+            // because we have data without metadata, we say segment::SEGMENT_UNALIGNED
             // because the metadata needs to be regenerated
-            state += SEGMENT_UNALIGNED;
+            state += segment::SEGMENT_UNALIGNED;
 
         RepackSort cmp;
         contents.sort(cmp); // Sort by reftime and by offset
@@ -161,12 +161,12 @@ public:
             reporter.segment_info(checker.name(), segment->relname, "index knows of this segment but contains no data for it");
             md_begin.reset(new Time(0, 0, 0));
             md_until.reset(new Time(0, 0, 0));
-            state = SEGMENT_UNALIGNED;
+            state = segment::SEGMENT_UNALIGNED;
         } else {
             if (!contents.expand_date_range(md_begin, md_until))
             {
                 reporter.segment_info(checker.name(), segment->relname, "index data for this segment has no reference time information");
-                state = SEGMENT_CORRUPTED;
+                state = segment::SEGMENT_CORRUPTED;
                 md_begin.reset(new Time(0, 0, 0));
                 md_until.reset(new Time(0, 0, 0));
             } else {
@@ -178,14 +178,14 @@ public:
                     if (*md_begin < seg_begin || *md_until > seg_until)
                     {
                         reporter.segment_info(checker.name(), segment->relname, "segment contents do not fit inside the step of this dataset");
-                        state = SEGMENT_CORRUPTED;
+                        state = segment::SEGMENT_CORRUPTED;
                     }
                     // Expand segment timespan to the full possible segment timespan
                     *md_begin = seg_begin;
                     *md_until = seg_until;
                 } else {
                     reporter.segment_info(checker.name(), segment->relname, "segment name does not fit the step of this dataset");
-                    state = SEGMENT_CORRUPTED;
+                    state = segment::SEGMENT_CORRUPTED;
                 }
             }
         }

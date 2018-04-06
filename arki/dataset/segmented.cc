@@ -43,14 +43,14 @@ void SegmentState::check_age(const std::string& relpath, const Config& cfg, data
     if (delete_threshold.ye != 0 && delete_threshold >= until)
     {
         reporter.segment_info(cfg.name, relpath, "segment old enough to be deleted");
-        state = state + SEGMENT_DELETE_AGE;
+        state = state + segment::SEGMENT_DELETE_AGE;
         return;
     }
 
     if (archive_threshold.ye != 0 && archive_threshold >= until)
     {
         reporter.segment_info(cfg.name, relpath, "segment old enough to be archived");
-        state = state + SEGMENT_ARCHIVE_AGE;
+        state = state + segment::SEGMENT_ARCHIVE_AGE;
         return;
     }
 }
@@ -88,9 +88,9 @@ bool Config::relpath_timespan(const std::string& path, core::Time& start_time, c
     return step().path_timespan(path, start_time, end_time);
 }
 
-std::unique_ptr<segment::Manager> Config::create_segment_manager() const
+std::unique_ptr<SegmentManager> Config::create_segment_manager() const
 {
-    return segment::Manager::get(path, force_dir_segments, mock_data);
+    return SegmentManager::get(path, force_dir_segments, mock_data);
 }
 
 std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
@@ -104,7 +104,7 @@ Reader::~Reader()
     delete m_segment_manager;
 }
 
-segment::Manager& Reader::segment_manager()
+SegmentManager& Reader::segment_manager()
 {
     if (!m_segment_manager)
         m_segment_manager = config().create_segment_manager().release();
@@ -117,7 +117,7 @@ Writer::~Writer()
     delete m_segment_manager;
 }
 
-segment::Manager& Writer::segment_manager()
+SegmentManager& Writer::segment_manager()
 {
     if (!m_segment_manager)
         m_segment_manager = config().create_segment_manager().release();
@@ -271,7 +271,7 @@ Checker::~Checker()
     delete m_segment_manager;
 }
 
-segment::Manager& Checker::segment_manager()
+SegmentManager& Checker::segment_manager()
 {
     if (!m_segment_manager)
         m_segment_manager = config().create_segment_manager().release();
@@ -317,7 +317,7 @@ void Checker::remove_old(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
         auto state = segment.scan(*opts.reporter, !opts.accurate);
-        if (!state.state.has(SEGMENT_DELETE_AGE)) return;
+        if (!state.state.has(segment::SEGMENT_DELETE_AGE)) return;
         if (opts.readonly)
             opts.reporter->segment_delete(name(), segment.path_relative(), "should be deleted");
         else

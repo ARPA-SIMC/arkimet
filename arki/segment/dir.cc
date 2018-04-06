@@ -27,7 +27,6 @@ using namespace arki::core;
 using namespace arki::utils;
 
 namespace arki {
-namespace dataset {
 namespace segment {
 namespace dir {
 
@@ -360,7 +359,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
             if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
                 throw_system_error("cannot rename " + tmpabsname + " to " + absname
                     + " (ATTENTION: please check if you need to rename " + tmppos + " to " + absname
-                    + " manually to restore the dataset as it was before the repack)");
+                    + " manually to restore it as it was before the repack)");
 
             // Remove the old data
             sys::rmtree(tmppos);
@@ -522,7 +521,6 @@ bool can_store(const std::string& format)
         || format == "vm2";
 }
 
-}
 }
 }
 }

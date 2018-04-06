@@ -1,5 +1,5 @@
-#ifndef ARKI_DATASET_TESTUTILS_H
-#define ARKI_DATASET_TESTUTILS_H
+#ifndef ARKI_DATASET_TESTS_H
+#define ARKI_DATASET_TESTS_H
 
 #include <arki/metadata/tests.h>
 #include <arki/configfile.h>
@@ -81,7 +81,7 @@ struct State : public std::map<std::string, dataset::segmented::SegmentState>
     const dataset::segmented::SegmentState& get(const std::string& seg) const;
 
     /// Count how many segments have this state
-    unsigned count(dataset::segment::State state) const;
+    unsigned count(segment::State state) const;
 
     void dump(FILE* out) const;
 };
@@ -132,7 +132,7 @@ public:
     std::string ds_name;
     // Dataset root directory
     std::string ds_root;
-    dataset::segment::Manager* segment_manager = nullptr;
+    dataset::SegmentManager* segment_manager = nullptr;
     std::vector<Metadata> import_results;
 
     /**
@@ -161,7 +161,7 @@ public:
     std::shared_ptr<const dataset::LocalConfig> local_config();
     std::shared_ptr<const dataset::ondisk2::Config> ondisk2_config();
 
-    dataset::segment::Manager& segments();
+    dataset::SegmentManager& segments();
 
     // Return the file name of the index of the current dataset
     std::string idxfname(const ConfigFile* wcfg = 0) const;
@@ -414,9 +414,6 @@ struct ActualChecker : public arki::utils::tests::Actual<DatasetChecker*>
     void remove_all(const ReporterExpected& expected, bool write=false);
     void remove_all_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write=false);
 };
-
-void test_append_transaction_ok(dataset::segment::Writer* dw, Metadata& md, int append_amount_adjust=0);
-void test_append_transaction_rollback(dataset::segment::Writer* dw, Metadata& md, int append_amount_adjust=0);
 
 inline arki::tests::ActualChecker<dataset::LocalChecker> actual(arki::dataset::LocalChecker* actual)
 {

@@ -1746,6 +1746,101 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_segment",
+  "method": "file_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment",
+  "method": "file_check_empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment",
+  "method": "dir_repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment",
+  "method": "dir_check_empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_fd",
+  "method": "empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_concat",
+  "method": "append"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_concat",
+  "method": "large"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_concat",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_concat",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_lines",
+  "method": "append"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_lines",
+  "method": "large"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_lines",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_lines",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_seqfile",
+  "method": "empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_dir",
+  "method": "append"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_dir",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_dir",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_tar",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segment_tar",
+  "method": "remove"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime_io",
   "method": "tempfile"
  },
@@ -2117,26 +2212,6 @@
  {
   "doc": "",
   "group": "arki_dataset_segment",
-  "method": "file_repack"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment",
-  "method": "file_check_empty"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment",
-  "method": "dir_repack"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment",
-  "method": "dir_check_empty"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment",
   "method": "scan_dir_empty"
  },
  {
@@ -2153,81 +2228,6 @@
   "doc": "",
   "group": "arki_dataset_segment",
   "method": "scan_dir_dir2"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_fd",
-  "method": "empty"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_concat",
-  "method": "append"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_concat",
-  "method": "large"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_concat",
-  "method": "check"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_concat",
-  "method": "remove"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_lines",
-  "method": "append"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_lines",
-  "method": "large"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_lines",
-  "method": "check"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_lines",
-  "method": "remove"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_seqfile",
-  "method": "empty"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_dir",
-  "method": "append"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_dir",
-  "method": "check"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_dir",
-  "method": "remove"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_tar",
-  "method": "check"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_tar",
-  "method": "remove"
  },
  {
   "doc": "",

@@ -57,7 +57,7 @@ void Tests::register_tests() {
 
 add_method("auto_instantiate_existing", [] {
     make_samples();
-    segment::AutoManager manager(".");
+    AutoManager manager(".");
 
     auto get_writer = [&](const char* name, bool nullptr_on_error=false) {
         return manager.create_writer_for_existing_segment(utils::get_format(name), name, sys::abspath(name), nullptr_on_error);
@@ -99,7 +99,7 @@ add_method("auto_instantiate_new", [] {
 
 add_method("forcedir_instantiate_existing", [] {
     make_samples();
-    segment::ForceDirManager manager(".");
+    ForceDirManager manager(".");
 
     auto get_writer = [&](const char* name, bool nullptr_on_error=false) {
         return manager.create_writer_for_existing_segment(utils::get_format(name), name, sys::abspath(name), nullptr_on_error);

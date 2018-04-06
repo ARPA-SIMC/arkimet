@@ -4,6 +4,7 @@
 /// metadata - Handle arkimet metadata
 
 #include <arki/core/fwd.h>
+#include <arki/metadata/fwd.h>
 #include <arki/itemset.h>
 #include <arki/types/fwd.h>
 #include <arki/types/note.h>

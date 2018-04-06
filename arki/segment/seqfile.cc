@@ -7,7 +7,6 @@ using namespace arki::core;
 using namespace arki::utils;
 
 namespace arki {
-namespace dataset {
 namespace segment {
 
 SequenceFile::SequenceFile(const std::string& dirname)
@@ -49,6 +48,5 @@ std::string SequenceFile::data_fname(size_t pos, const std::string& format)
     return buf;
 }
 
-}
 }
 }

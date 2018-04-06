@@ -1,12 +1,11 @@
-#ifndef ARKI_DATASET_SEGMENT_CONCAT_H
-#define ARKI_DATASET_SEGMENT_CONCAT_H
+#ifndef ARKI_SEGMENT_CONCAT_H
+#define ARKI_SEGMENT_CONCAT_H
 
 #include <arki/libconfig.h>
-#include <arki/dataset/segment/fd.h>
+#include <arki/segment/fd.h>
 #include <string>
 
 namespace arki {
-namespace dataset {
 namespace segment {
 namespace concat {
 
@@ -51,7 +50,6 @@ public:
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
 };
 
-}
 }
 }
 }

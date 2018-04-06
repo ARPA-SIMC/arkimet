@@ -14,7 +14,6 @@ using namespace arki::types;
 using namespace arki::utils;
 
 namespace arki {
-namespace dataset {
 namespace segment {
 namespace lines {
 
@@ -90,7 +89,6 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     return fd::Checker::repack_impl(rootdir, mds, false, test_flags);
 }
 
-}
 }
 }
 }

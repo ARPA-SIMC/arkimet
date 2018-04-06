@@ -82,19 +82,19 @@ public:
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
         if (!segment->exists_on_disk())
-            return segmented::SegmentState(SEGMENT_MISSING);
+            return segmented::SegmentState(segment::SEGMENT_MISSING);
 
         if (!checker.m_idx->has_segment(segment->relname))
         {
             bool untrusted_index = files::hasDontpackFlagfile(checker.config().path);
             reporter.segment_info(checker.name(), segment->relname, "segment found on disk with no associated index data");
-            return segmented::SegmentState(untrusted_index ? SEGMENT_UNALIGNED : SEGMENT_DELETED);
+            return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
         }
 
         metadata::Collection mds;
         checker.idx->scan_file(segment->relname, mds.inserter_func(), "m.file, m.reftime, m.offset");
 
-        segment::State state = SEGMENT_OK;
+        segment::State state = segment::SEGMENT_OK;
         bool untrusted_index = files::hasDontpackFlagfile(checker.config().path);
 
         // Compute the span of reftimes inside the segment
@@ -105,12 +105,12 @@ public:
             reporter.segment_info(checker.name(), segment->relname, "index knows of this segment but contains no data for it");
             md_begin.reset(new Time(0, 0, 0));
             md_until.reset(new Time(0, 0, 0));
-            state = untrusted_index ? SEGMENT_UNALIGNED : SEGMENT_DELETED;
+            state = untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED;
         } else {
             if (!mds.expand_date_range(md_begin, md_until))
             {
                 reporter.segment_info(checker.name(), segment->relname, "index data for this segment has no reference time information");
-                state = SEGMENT_CORRUPTED;
+                state = segment::SEGMENT_CORRUPTED;
                 md_begin.reset(new Time(0, 0, 0));
                 md_until.reset(new Time(0, 0, 0));
             } else {
@@ -122,14 +122,14 @@ public:
                     if (*md_begin < seg_begin || *md_until > seg_until)
                     {
                         reporter.segment_info(checker.name(), segment->relname, "segment contents do not fit inside the step of this dataset");
-                        state = SEGMENT_CORRUPTED;
+                        state = segment::SEGMENT_CORRUPTED;
                     }
                     // Expand segment timespan to the full possible segment timespan
                     *md_begin = seg_begin;
                     *md_until = seg_until;
                 } else {
                     reporter.segment_info(checker.name(), segment->relname, "segment name does not fit the step of this dataset");
-                    state = SEGMENT_CORRUPTED;
+                    state = segment::SEGMENT_CORRUPTED;
                 }
             }
         }
@@ -142,8 +142,8 @@ public:
         // That segment would show in the index as DIRTY, because it has a gap of
         // data not indexed. Since the needs-check-do-not-pack file is present,
         // however, mark that file for rescanning instead of repacking.
-        if (untrusted_index && state.has(SEGMENT_DIRTY))
-            state = state - SEGMENT_DIRTY + SEGMENT_UNALIGNED;
+        if (untrusted_index && state.has(segment::SEGMENT_DIRTY))
+            state = state - segment::SEGMENT_DIRTY + segment::SEGMENT_UNALIGNED;
 
         auto res = segmented::SegmentState(state, *md_begin, *md_until);
         res.check_age(segment->relname, checker.config(), reporter);

@@ -34,14 +34,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/time.h \
 		dataset/archive.h \
 		dataset/segment.h \
-		dataset/segment/fd.h \
-		dataset/segment/concat.h \
-		dataset/segment/lines.h \
-		dataset/segment/seqfile.h \
-		dataset/segment/dir.h \
-		dataset/segment/tar.h \
 		dataset/segment/managers.h \
-		dataset/segment/tests.h \
 		dataset/empty.h \
 		dataset/testlarge.h \
 		dataset/file.h \
@@ -103,16 +96,17 @@ nobase_dist_arkiinclude_HEADERS = \
 		matcher/tests.h \
 		matcher/timerange.h \
 		matcher/utils.h \
+		metadata.h \
 		metadata/collection.h \
 		metadata/consumer.h \
 		metadata/clusterer.h \
 		metadata/xargs.h \
 		metadata/libarchive.h \
-		metadatagrid.h \
-		metadata.h \
+		metadata/fwd.h \
 		metadata/stream.h \
 		metadata/tests.h \
 		metadata/test-generator.h \
+		metadatagrid.h \
 		reader.h \
 		nag.h \
 		postprocess.h \
@@ -128,6 +122,15 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/arki-scan.h \
 		scan/base.h \
 		scan/any.h \
+		segment.h \
+		segment/fwd.h \
+		segment/fd.h \
+		segment/concat.h \
+		segment/lines.h \
+		segment/dir.h \
+		segment/tar.h \
+		segment/seqfile.h \
+		segment/tests.h \
 		sort.h \
 		summary.h \
 		summary/intern.h \
@@ -402,6 +405,13 @@ libarkimet_la_SOURCES += \
 		summary/codec.cc \
 		summary/short.cc \
 		summary.cc \
+		segment.cc \
+		segment/fd.cc \
+		segment/concat.cc \
+		segment/lines.cc \
+		segment/dir.cc \
+		segment/tar.cc \
+		segment/seqfile.cc \
 		sort.cc \
 		formatter.cc \
 		validator.cc \
@@ -445,6 +455,14 @@ tests_arki_test_SOURCES += \
 		matcher/task-test.cc \
 		matcher/quantity-test.cc \
 		scan/any-test.cc \
+		segment-test.cc \
+		segment/fd-test.cc \
+		segment/concat-test.cc \
+		segment/lines-test.cc \
+		segment/seqfile-test.cc \
+		segment/dir-test.cc \
+		segment/tar-test.cc \
+		segment/tests.cc \
 		runtime/io-test.cc \
 		runtime/inputs-test.cc \
 		runtime/config-test.cc
@@ -497,12 +515,6 @@ libarkimet_la_SOURCES += \
 		dataset/reporter.cc \
 		dataset/time.cc \
 		dataset/segment.cc \
-		dataset/segment/fd.cc \
-		dataset/segment/concat.cc \
-		dataset/segment/lines.cc \
-		dataset/segment/seqfile.cc \
-		dataset/segment/dir.cc \
-		dataset/segment/tar.cc \
 		dataset/segment/managers.cc \
 		dataset/maintenance.cc \
 		dataset/memory.cc \
@@ -554,13 +566,6 @@ tests_arki_test_SOURCES += \
 		dataset/reporter-test.cc \
 		dataset/time-test.cc \
 		dataset/segment-test.cc \
-		dataset/segment/tests.cc \
-		dataset/segment/fd-test.cc \
-		dataset/segment/concat-test.cc \
-		dataset/segment/lines-test.cc \
-		dataset/segment/seqfile-test.cc \
-		dataset/segment/dir-test.cc \
-		dataset/segment/tar-test.cc \
 		dataset/segment/managers-test.cc \
 		dataset/maintenance-test.cc \
 		dataset/memory-test.cc \

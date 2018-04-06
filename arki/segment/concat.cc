@@ -1,9 +1,6 @@
 #include "concat.h"
 #include "arki/exceptions.h"
 #include "arki/nag.h"
-#include <system_error>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sstream>
@@ -13,7 +10,6 @@ using namespace arki::types;
 using namespace arki::utils;
 
 namespace arki {
-namespace dataset {
 namespace segment {
 namespace concat {
 
@@ -128,7 +124,6 @@ Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& md
     return fd::Checker::repack_impl(rootdir, mds, true, test_flags);
 }
 
-}
 }
 }
 }

@@ -62,7 +62,7 @@ Agent::Agent(dataset::Reporter& reporter, segmented::Checker& w, unsigned test_f
 
 void FailsafeRepacker::operator()(segmented::CheckerSegment& file, segment::State state)
 {
-    if (state.has(SEGMENT_DELETED)) ++m_count_deleted;
+    if (state.has(segment::SEGMENT_DELETED)) ++m_count_deleted;
 }
 
 void FailsafeRepacker::end()
@@ -75,33 +75,33 @@ void FailsafeRepacker::end()
 
 void MockRepacker::operator()(segmented::CheckerSegment& segment, segment::State state)
 {
-    if (state.has(SEGMENT_DIRTY) && !state.has(SEGMENT_DELETE_AGE))
+    if (state.has(segment::SEGMENT_DIRTY) && !state.has(segment::SEGMENT_DELETE_AGE))
     {
         reporter.segment_repack(w.name(), segment.path_relative(), "should be packed");
         ++m_count_packed;
     }
-    if (state.has(SEGMENT_ARCHIVE_AGE))
+    if (state.has(segment::SEGMENT_ARCHIVE_AGE))
     {
         reporter.segment_archive(w.name(), segment.path_relative(), "should be archived");
         ++m_count_archived;
     }
-    if (state.has(SEGMENT_DELETE_AGE))
+    if (state.has(segment::SEGMENT_DELETE_AGE))
     {
         reporter.segment_delete(w.name(), segment.path_relative(), "should be deleted and removed from the index");
         ++m_count_deleted;
         ++m_count_deindexed;
     }
-    if (state.has(SEGMENT_DELETED))
+    if (state.has(segment::SEGMENT_DELETED))
     {
         reporter.segment_delete(w.name(), segment.path_relative(), "should be deleted");
         ++m_count_deleted;
     }
-    if (state.has(SEGMENT_MISSING))
+    if (state.has(segment::SEGMENT_MISSING))
     {
         reporter.segment_deindex(w.name(), segment.path_relative(), "should be removed from the index");
         ++m_count_deindexed;
     }
-    if (state.has(SEGMENT_UNALIGNED))
+    if (state.has(segment::SEGMENT_UNALIGNED))
     {
         reporter.segment_rescan(w.name(), segment.path_relative(), "should be rescanned");
         ++m_count_rescanned;
@@ -125,17 +125,17 @@ void MockRepacker::end()
 
 void MockFixer::operator()(segmented::CheckerSegment& segment, segment::State state)
 {
-    if (state.has(SEGMENT_DIRTY))
+    if (state.has(segment::SEGMENT_DIRTY))
     {
         reporter.segment_repack(w.name(), segment.path_relative(), "should be packed");
         ++m_count_packed;
     }
-    if (state.has(SEGMENT_UNALIGNED))
+    if (state.has(segment::SEGMENT_UNALIGNED))
     {
         reporter.segment_rescan(w.name(), segment.path_relative(), "should be rescanned");
         ++m_count_rescanned;
     }
-    if (state.has(SEGMENT_MISSING))
+    if (state.has(segment::SEGMENT_MISSING))
     {
         reporter.segment_deindex(w.name(), segment.path_relative(), "should be removed from the index");
         ++m_count_deindexed;
@@ -157,9 +157,9 @@ void MockFixer::end()
 
 void RealRepacker::operator()(segmented::CheckerSegment& segment, segment::State state)
 {
-    if (test_flags & TEST_MISCHIEF_MOVE_DATA) state = state + SEGMENT_DIRTY;
+    if (test_flags & segment::TEST_MISCHIEF_MOVE_DATA) state = state + segment::SEGMENT_DIRTY;
 
-    if (state.has(SEGMENT_DIRTY) && !state.has(SEGMENT_DELETE_AGE))
+    if (state.has(segment::SEGMENT_DIRTY) && !state.has(segment::SEGMENT_DELETE_AGE))
     {
         // Repack the file
         size_t saved = segment.repack(test_flags);
@@ -167,7 +167,7 @@ void RealRepacker::operator()(segmented::CheckerSegment& segment, segment::State
         ++m_count_packed;
         m_count_freed += saved;
     }
-    if (state.has(SEGMENT_ARCHIVE_AGE))
+    if (state.has(segment::SEGMENT_ARCHIVE_AGE))
     {
         // Create the target directory in the archive
         segment.archive();
@@ -176,7 +176,7 @@ void RealRepacker::operator()(segmented::CheckerSegment& segment, segment::State
         m_touched_archive = true;
         m_redo_summary = true;
     }
-    if (state.has(SEGMENT_DELETE_AGE))
+    if (state.has(segment::SEGMENT_DELETE_AGE))
     {
         // Delete obsolete files
         size_t size = segment.remove(true);
@@ -186,7 +186,7 @@ void RealRepacker::operator()(segmented::CheckerSegment& segment, segment::State
         m_count_freed += size;
         m_redo_summary = true;
     }
-    if (state.has(SEGMENT_DELETED))
+    if (state.has(segment::SEGMENT_DELETED))
     {
         // Delete all files not indexed
         size_t size = segment.remove(true);
@@ -194,7 +194,7 @@ void RealRepacker::operator()(segmented::CheckerSegment& segment, segment::State
         ++m_count_deleted;
         m_count_freed += size;
     }
-    if (state.has(SEGMENT_MISSING))
+    if (state.has(segment::SEGMENT_MISSING))
     {
         // Remove from index those files that have been deleted
         segment.remove(false);
@@ -232,7 +232,7 @@ void RealFixer::operator()(segmented::CheckerSegment& segment, segment::State st
 {
     /* Packing is left to the repacker, during check we do not
      * mangle the data files
-    case SEGMENT_DIRTY: {
+     case segment::SEGMENT_DIRTY: {
             // Repack the file
             size_t saved = repack(w.path(), file, w.m_idx);
             log() << "packed " << file << " (" << saved << " saved)" << endl;
@@ -240,14 +240,14 @@ void RealFixer::operator()(segmented::CheckerSegment& segment, segment::State st
             break;
     }
     */
-    if (state.has(SEGMENT_UNALIGNED))
+    if (state.has(segment::SEGMENT_UNALIGNED))
     {
         segment.rescan();
         reporter.segment_rescan(w.name(), segment.path_relative(), "rescanned");
         ++m_count_rescanned;
         m_redo_summary = true;
     }
-    if (state.has(SEGMENT_MISSING))
+    if (state.has(segment::SEGMENT_MISSING))
     {
         // Remove from index those files that have been deleted
         segment.remove(false);

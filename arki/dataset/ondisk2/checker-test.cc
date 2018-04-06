@@ -83,7 +83,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
 
     {
         auto state = f.scan_state();
-        wassert(actual(state.get("2007/07.grib").state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.get("2007/07.grib").state) == segment::State(segment::SEGMENT_UNALIGNED));
         wassert(actual(state.size()) == 1u);
     }
 
@@ -97,7 +97,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
 
     {
         auto state = f.scan_state();
-        wassert(actual(state.get("2007/07.grib").state) == segment::State(SEGMENT_DIRTY));
+        wassert(actual(state.get("2007/07.grib").state) == segment::State(segment::SEGMENT_DIRTY));
         wassert(actual(state.size()) == 1u);
     }
 
@@ -164,8 +164,8 @@ add_method("scan_reindex", [](Fixture& f) {
     }
 
     auto state = f.scan_state();
-    wassert(actual(state.count(SEGMENT_OK)) == 2u);
-    wassert(actual(state.get("2007/07-08.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    wassert(actual(state.count(segment::SEGMENT_OK)) == 2u);
+    wassert(actual(state.get("2007/07-08.grib").state) == segment::State(segment::SEGMENT_UNALIGNED));
     wassert(actual(state.size()) == 3u);
 
     // Perform full maintenance and check that things are still ok afterwards
@@ -214,7 +214,7 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
     // See how maintenance scan copes
     {
         auto state = f.scan_state();
-        wassert(actual(state.count(SEGMENT_UNALIGNED)) == 3u);
+        wassert(actual(state.count(segment::SEGMENT_UNALIGNED)) == 3u);
         wassert(actual(state.size()) == 3u);
 
         auto checker = f.makeOndisk2Checker();
@@ -310,7 +310,7 @@ add_method("data_in_right_segment_reindex", [](Fixture& f) {
     // Run maintenance check
     {
         auto state = f.scan_state();
-        wassert(actual(state.count(SEGMENT_UNALIGNED)) == 3u);
+        wassert(actual(state.count(segment::SEGMENT_UNALIGNED)) == 3u);
         wassert(actual(state.size()) == 3u);
     }
 
@@ -357,8 +357,8 @@ add_method("data_in_right_segment_rescan", [](Fixture& f) {
     // Run maintenance check
     auto state = f.scan_state();
     wassert(actual(state.size()) == 4u);
-    wassert(actual(state.count(SEGMENT_OK)) == 3u);
-    wassert(actual(state.get("2007/06-06.grib").state) == segment::State(SEGMENT_UNALIGNED));
+    wassert(actual(state.count(segment::SEGMENT_OK)) == 3u);
+    wassert(actual(state.get("2007/06-06.grib").state) == segment::State(segment::SEGMENT_UNALIGNED));
 
     {
         // Perform full maintenance and check that things are still ok afterwards
@@ -399,9 +399,9 @@ add_method("pack_vm2", [](Fixture& f) {
     // Ensure the dataset has items to pack
     {
         auto state = f.scan_state();
-        wassert(actual(state.get("1987/10-31.vm2").state) == segment::State(SEGMENT_DIRTY));
-        wassert(actual(state.get("2011/01-01.vm2").state) == segment::State(SEGMENT_DIRTY));
-        wassert(actual(state.count(SEGMENT_DIRTY)) == 2u);
+        wassert(actual(state.get("1987/10-31.vm2").state) == segment::State(segment::SEGMENT_DIRTY));
+        wassert(actual(state.get("2011/01-01.vm2").state) == segment::State(segment::SEGMENT_DIRTY));
+        wassert(actual(state.count(segment::SEGMENT_DIRTY)) == 2u);
         wassert(actual(state.size()) == 2u);
         wassert(actual_file("testds/.archive").not_exists());
     }

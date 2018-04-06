@@ -1,5 +1,5 @@
-#include "lines.h"
-#include "arki/dataset/segment/tests.h"
+#include "concat.h"
+#include "tests.h"
 #include "arki/metadata/tests.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
@@ -30,7 +30,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_dataset_segment_lines");
+} test("arki_dataset_segment_concat");
 
 inline size_t datasize(const Metadata& md)
 {
@@ -42,15 +42,15 @@ inline size_t datasize(const Metadata& md)
  * return the data::Writer so that we manage the writer lifetime, but also
  * the underlying implementation so we can test it.
  */
-std::shared_ptr<segment::lines::Writer> make_w()
+std::shared_ptr<segment::concat::Writer> make_w()
 {
     string absname = sys::abspath(relname);
-    return std::shared_ptr<segment::lines::Writer>(new segment::lines::Writer(sys::getcwd(), relname, absname));
+    return std::shared_ptr<segment::concat::Writer>(new segment::concat::Writer(sys::getcwd(), relname, absname));
 }
-std::shared_ptr<segment::lines::Checker> make_c()
+std::shared_ptr<segment::concat::Checker> make_c()
 {
     string absname = sys::abspath(relname);
-    return std::shared_ptr<segment::lines::Checker>(new segment::lines::Checker(sys::getcwd(), relname, absname));
+    return std::shared_ptr<segment::concat::Checker>(new segment::concat::Checker(sys::getcwd(), relname, absname));
 }
 
 void Tests::register_tests() {
@@ -68,20 +68,20 @@ add_method("append", [] {
         //wassert(actual(sys::size(fname)) == 0u);
 
         // Try a successful transaction
-        wassert(test_append_transaction_ok(w.get(), mdc[0], 1));
+        wassert(test_append_transaction_ok(w.get(), mdc[0]));
 
         // Then fail one
-        wassert(test_append_transaction_rollback(w.get(), mdc[1], 1));
+        wassert(test_append_transaction_rollback(w.get(), mdc[1]));
 
         // Then succeed again
-        wassert(test_append_transaction_ok(w.get(), mdc[2], 1));
+        wassert(test_append_transaction_ok(w.get(), mdc[2]));
     }
 
     // Data writer goes out of scope, file is closed and flushed
-    metadata::TestCollection mdc1;
+    metadata::Collection mdc1;
 
     // Scan the file we created
-    wassert(actual(mdc1.scan_from_file(relname, false)).istrue());
+    wassert(actual(scan::scan(relname, std::make_shared<core::lock::Null>(), mdc1.inserter_func())).istrue());
 
     // Check that it only contains the 1st and 3rd data
     wassert(actual(mdc1.size()) == 2u);
@@ -104,16 +104,16 @@ add_method("large", [] {
         auto dw(make_w());
 
         // Try a successful transaction
-        wassert(test_append_transaction_ok(dw.get(), mdc[0], 1));
+        wassert(test_append_transaction_ok(dw.get(), mdc[0]));
 
         // Then fail one
-        wassert(test_append_transaction_rollback(dw.get(), mdc[1], 1));
+        wassert(test_append_transaction_rollback(dw.get(), mdc[1]));
 
         // Then succeed again
-        wassert(test_append_transaction_ok(dw.get(), mdc[2], 1));
+        wassert(test_append_transaction_ok(dw.get(), mdc[2]));
     }
 
-    wassert(actual(sys::size(relname)) == 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]) + 2);
+    wassert(actual(sys::size(relname)) == 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]));
 
     // Won't attempt rescanning, as the grib reading library will have to
     // process gigabytes of zeros
@@ -126,11 +126,11 @@ add_method("check", [] {
     {
         std::shared_ptr<segment::Writer> make_writer() override
         {
-            return std::shared_ptr<segment::Writer>(new segment::lines::Writer(root, relname, absname));
+            return std::shared_ptr<segment::Writer>(new segment::concat::Writer(root, relname, absname));
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::lines::Checker(root, relname, absname));
+            return std::shared_ptr<segment::Checker>(new segment::concat::Checker(root, relname, absname));
         }
     } test;
 
@@ -142,11 +142,11 @@ add_method("remove", [] {
     {
         std::shared_ptr<segment::Writer> make_writer() override
         {
-            return std::shared_ptr<segment::Writer>(new segment::lines::Writer(root, relname, absname));
+            return std::shared_ptr<segment::Writer>(new segment::concat::Writer(root, relname, absname));
         }
         std::shared_ptr<segment::Checker> make_checker() override
         {
-            return std::shared_ptr<segment::Checker>(new segment::lines::Checker(root, relname, absname));
+            return std::shared_ptr<segment::Checker>(new segment::concat::Checker(root, relname, absname));
         }
     } test;
 

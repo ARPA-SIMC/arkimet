@@ -1,13 +1,12 @@
-#ifndef ARKI_DATASET_SEGMENT_LINES_H
-#define ARKI_DATASET_SEGMENT_LINES_H
+#ifndef ARKI_SEGMENT_LINES_H
+#define ARKI_SEGMENT_LINES_H
 
 /// Read/write functions for data blobs with newline separators
 #include <arki/libconfig.h>
-#include <arki/dataset/segment/fd.h>
+#include <arki/segment/fd.h>
 #include <string>
 
 namespace arki {
-namespace dataset {
 namespace segment {
 namespace lines {
 
@@ -32,7 +31,6 @@ public:
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
 };
 
-}
 }
 }
 }

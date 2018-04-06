@@ -37,7 +37,7 @@ void Tests::register_tests()
 
         auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.get(f.test_relpath).state) == segment::State(segment::SEGMENT_UNALIGNED));
     });
 
     add_method("check_unaligned", R"(
@@ -47,7 +47,7 @@ void Tests::register_tests()
 
         auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.get(f.test_relpath).state) == segment::State(segment::SEGMENT_UNALIGNED));
     });
 
     add_method("repack_unaligned", R"(
@@ -62,7 +62,7 @@ void Tests::register_tests()
 
         auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.get(f.test_relpath).state) == segment::State(segment::SEGMENT_UNALIGNED));
     });
 }
 

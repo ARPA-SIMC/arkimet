@@ -1,23 +1,22 @@
-#ifndef ARKI_DATASET_DATA_DIR_H
-#define ARKI_DATASET_DATA_DIR_H
+#ifndef ARKI_SEGMENT_DIR_H
+#define ARKI_SEGMENT_DIR_H
 
 /// Directory based data collection
 
 #include <arki/defs.h>
-#include <arki/dataset/segment.h>
-#include <arki/dataset/segment/seqfile.h>
+#include <arki/segment.h>
+#include <arki/segment/seqfile.h>
 #include <arki/core/file.h>
 #include <vector>
 
 namespace arki {
 class Metadata;
 
-namespace dataset {
 namespace segment {
 namespace dir {
 
 
-struct Writer : public dataset::segment::Writer
+struct Writer : public segment::Writer
 {
     SequenceFile seqfile;
     std::string format;
@@ -51,7 +50,7 @@ struct HoleWriter: public Writer
 };
 
 
-class Checker : public dataset::segment::Checker
+class Checker : public segment::Checker
 {
 public:
     std::string format;
@@ -99,7 +98,6 @@ public:
 
 bool can_store(const std::string& format);
 
-}
 }
 }
 }

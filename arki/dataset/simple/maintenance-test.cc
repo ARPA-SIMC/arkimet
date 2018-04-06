@@ -39,7 +39,7 @@ void Tests::register_tests()
 
         auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.get(f.test_relpath).state) == segment::State(segment::SEGMENT_UNALIGNED));
     });
 
     add_method("check_unaligned", R"(
@@ -49,7 +49,7 @@ void Tests::register_tests()
 
         auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get(f.test_relpath).state) == segment::State(SEGMENT_UNALIGNED));
+        wassert(actual(state.get(f.test_relpath).state) == segment::State(segment::SEGMENT_UNALIGNED));
     });
 
     add_method("check_empty_metadata", R"(
@@ -58,7 +58,7 @@ void Tests::register_tests()
         sys::File mdf("testds/" + f.test_relpath + ".metadata", O_RDWR);
         mdf.ftruncate(0);
 
-        wassert(f.state_is(3, SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
     add_method("check_metadata_timestamp", R"(
@@ -66,7 +66,7 @@ void Tests::register_tests()
     )", [&](Fixture& f) {
         sys::touch("testds/" + f.test_relpath + ".metadata", 1496167200);
 
-        wassert(f.state_is(3, SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
     add_method("check_summary_timestamp", R"(
@@ -74,7 +74,7 @@ void Tests::register_tests()
     )", [&](Fixture& f) {
         sys::touch("testds/" + f.test_relpath + ".summary", 1496167200);
 
-        wassert(f.state_is(3, SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
     add_method("check_manifest_timestamp", R"(
@@ -88,7 +88,7 @@ void Tests::register_tests()
 
         sys::touch("testds/" + f.test_relpath + ".metadata", manifest_ts + 1);
 
-        wassert(f.state_is(3, SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
     add_method("check_missing_index", R"(
@@ -104,7 +104,7 @@ void Tests::register_tests()
 
         wassert(f.query_results({}));
 
-        wassert(f.state_is(3, SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
     add_method("check_missing_index_spurious_files", R"(
@@ -117,7 +117,7 @@ void Tests::register_tests()
 
         wassert(f.query_results({}));
 
-        wassert(f.state_is(3, SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
     add_method("check_metadata_must_contain_reftimes", R"(
@@ -130,7 +130,7 @@ void Tests::register_tests()
             md->unset(TYPE_REFTIME);
         mds.writeAtomically("testds/" + f.test_relpath + ".metadata");
 
-        wassert(f.state_is(3, SEGMENT_CORRUPTED));
+        wassert(f.state_is(3, segment::SEGMENT_CORRUPTED));
     });
 
     add_method("repack_unaligned", R"(
@@ -145,7 +145,7 @@ void Tests::register_tests()
             wassert(actual(writer.get()).repack(e, true));
         }
 
-        wassert(f.state_is(3, SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 }
 

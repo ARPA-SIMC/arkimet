@@ -58,7 +58,7 @@ std::shared_ptr<segment::Checker> SegmentTest::make_full_checker()
 void SegmentCheckTest::run()
 {
     auto segment(make_full_checker());
-    dataset::segment::State state;
+    segment::State state;
 
     dataset::NullReporter rep;
 
@@ -75,21 +75,21 @@ void SegmentCheckTest::run()
         mdc1.push_back(mdc[1]);
         mdc1.push_back(mdc[2]);
         state = segment->check(rep, "test", mdc1);
-        wassert(actual(state.value) == dataset::SEGMENT_DIRTY);
+        wassert(actual(state.value) == segment::SEGMENT_DIRTY);
     }
     {
         metadata::Collection mdc1;
         mdc1.push_back(mdc[0]);
         mdc1.push_back(mdc[2]);
         state = segment->check(rep, "test", mdc1);
-        wassert(actual(state.value) == dataset::SEGMENT_DIRTY);
+        wassert(actual(state.value) == segment::SEGMENT_DIRTY);
     }
     {
         metadata::Collection mdc1;
         mdc1.push_back(mdc[0]);
         mdc1.push_back(mdc[1]);
         state = segment->check(rep, "test", mdc1);
-        wassert(actual(state.value) == dataset::SEGMENT_DIRTY);
+        wassert(actual(state.value) == segment::SEGMENT_DIRTY);
     }
 
     // Simulate elements out of order
@@ -99,14 +99,14 @@ void SegmentCheckTest::run()
         mdc1.push_back(mdc[2]);
         mdc1.push_back(mdc[1]);
         state = segment->check(rep, "test", mdc1);
-        wassert(actual(state.value) == dataset::SEGMENT_DIRTY);
+        wassert(actual(state.value) == segment::SEGMENT_DIRTY);
     }
 
     // Simulate all elements deleted
     {
         metadata::Collection mdc1;
         state = segment->check(rep, "test", mdc1);
-        wassert(actual(state.value) == dataset::SEGMENT_DIRTY);
+        wassert(actual(state.value) == segment::SEGMENT_DIRTY);
     }
 
     // Simulate corrupted file
@@ -119,7 +119,7 @@ void SegmentCheckTest::run()
         src->offset += 1024;
         mdc1[0].set_source(unique_ptr<types::Source>(src.release()));
         state = segment->check(rep, "test", mdc1);
-        wassert(actual(state.value) == dataset::SEGMENT_UNALIGNED);
+        wassert(actual(state.value) == segment::SEGMENT_UNALIGNED);
     }
     {
         metadata::Collection mdc1;
@@ -130,7 +130,7 @@ void SegmentCheckTest::run()
         src->offset += 1;
         mdc1[0].set_source(unique_ptr<types::Source>(src.release()));
         state = segment->check(rep, "test", mdc1, false);
-        wassert(actual(state.value) == dataset::SEGMENT_UNALIGNED);
+        wassert(actual(state.value) == segment::SEGMENT_UNALIGNED);
     }
 }
 
@@ -143,6 +143,53 @@ void SegmentRemoveTest::run()
     wassert(actual(segment->remove()) >= 44412u);
 
     wassert(actual(segment->exists_on_disk()).isfalse());
+}
+
+
+void test_append_transaction_ok(segment::Writer* dw, Metadata& md, int append_amount_adjust)
+{
+    // Make a snapshot of everything before appending
+    unique_ptr<Source> orig_source(md.source().clone());
+    size_t data_size = md.data_size();
+    size_t orig_fsize = sys::size(dw->absname, 0);
+
+    // Start the append transaction, nothing happens until commit
+    const types::source::Blob& new_source = dw->append(md);
+    wassert(actual((size_t)new_source.offset) == orig_fsize);
+    wassert(actual((size_t)new_source.size) == data_size);
+    wassert(actual(new_source.basedir) == sys::getcwd());
+    wassert(actual(new_source.filename) == dw->relname);
+    wassert(actual(sys::size(dw->absname)) == orig_fsize + data_size + append_amount_adjust);
+    wassert(actual_type(md.source()) == *orig_source);
+
+    // Commit
+    dw->commit();
+
+    // After commit, data is appended
+    wassert(actual(sys::size(dw->absname)) == orig_fsize + data_size + append_amount_adjust);
+
+    // And metadata is updated
+    wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), dw->relname, orig_fsize, data_size));
+}
+
+void test_append_transaction_rollback(segment::Writer* dw, Metadata& md, int append_amount_adjust)
+{
+    // Make a snapshot of everything before appending
+    unique_ptr<Source> orig_source(md.source().clone());
+    size_t orig_fsize = sys::size(dw->absname, 0);
+
+    // Start the append transaction, nothing happens until commit
+    const types::source::Blob& new_source = dw->append(md);
+    wassert(actual((size_t)new_source.offset) == orig_fsize);
+    wassert(actual(sys::size(dw->absname, 0)) == orig_fsize + new_source.size + append_amount_adjust);
+    wassert(actual_type(md.source()) == *orig_source);
+
+    // Rollback
+    dw->rollback();
+
+    // After rollback, nothing has changed
+    wassert(actual(sys::size(dw->absname, 0)) == orig_fsize);
+    wassert(actual_type(md.source()) == *orig_source);
 }
 
 }

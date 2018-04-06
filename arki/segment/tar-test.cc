@@ -1,5 +1,5 @@
 #include "tar.h"
-#include "arki/dataset/segment/tests.h"
+#include "tests.h"
 #include "arki/metadata/tests.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
@@ -31,7 +31,7 @@ add_method("check", [] {
         {
             throw std::runtime_error("writes for .tar segments are not implemented");
         }
-        std::shared_ptr<dataset::segment::Checker> make_full_checker() override
+        std::shared_ptr<segment::Checker> make_full_checker() override
         {
             segment::tar::Checker::create(root, relname + ".tar", absname + ".tar", mdc);
             return make_checker();
@@ -52,7 +52,7 @@ add_method("remove", [] {
         {
             throw std::runtime_error("writes for .tar segments are not implemented");
         }
-        std::shared_ptr<dataset::segment::Checker> make_full_checker() override
+        std::shared_ptr<segment::Checker> make_full_checker() override
         {
             segment::tar::Checker::create(root, relname + ".tar", absname + ".tar", mdc);
             return make_checker();
