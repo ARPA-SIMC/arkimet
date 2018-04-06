@@ -1,4 +1,4 @@
-#include "gz.h"
+#include "gzidx.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -23,29 +23,30 @@ using namespace arki::utils;
 
 namespace arki {
 namespace segment {
-namespace gz {
+namespace gzidx {
 
 Checker::Checker(const std::string& root, const std::string& relpath, const std::string& abspath)
-    : segment::Checker(root, relpath, abspath), gzabspath(abspath + ".gz")
+    : segment::Checker(root, relpath, abspath), gzabspath(abspath + ".gz"), gzidxabspath(abspath + ".gz.idx")
 {
 }
 
-const char* Checker::type() const { return "gz"; }
+const char* Checker::type() const { return "gzidx"; }
 bool Checker::single_file() const { return true; }
 
 bool Checker::exists_on_disk()
 {
-    return sys::exists(gzabspath);
+    return sys::exists(gzabspath) && sys::exists(gzidxabspath);
 }
 
 time_t Checker::timestamp()
 {
-    return sys::timestamp(gzabspath);
+    return max(sys::timestamp(gzabspath), sys::timestamp(gzidxabspath));
 }
 
 void Checker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
     sys::rename(gzabspath, new_abspath + ".gz");
+    sys::rename(gzidxabspath, new_abspath + ".gz.idx");
 }
 
 State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
@@ -54,12 +55,13 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
     if (st.get() == nullptr)
         return SEGMENT_DELETED;
 
-    // Decompress all the segment in memory
-    std::vector<uint8_t> all_data = compress::gunzip(gzabspath);
 
     if (!quick)
     {
         const scan::Validator* validator = &scan::Validator::by_filename(abspath.c_str());
+
+        // Decompress all the segment in memory
+        std::vector<uint8_t> all_data = compress::gunzip(gzabspath);
 
         for (const auto& i: mds)
         {
@@ -116,8 +118,20 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
         end_of_last_data_checked = i->first + i->second;
     }
 
+    // Get the uncompressed size via the index
+    off_t file_size;
+    compress::SeekIndex idx;
+    if (idx.read(gzidxabspath))
+        file_size = idx.ofs_unc.back();
+    else
+    {
+        stringstream ss;
+        ss << "missing " << gzidxabspath;
+        reporter.segment_info(ds, relpath, ss.str());
+        return SEGMENT_CORRUPTED;
+    }
+
     // Check for truncation
-    off_t file_size = all_data.size();
     if (file_size < end_of_last_data_checked)
     {
         stringstream ss;
@@ -252,8 +266,10 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 void Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
 {
     string gzabspath = abspath + ".gz";
+    string gzidxabspath = abspath + ".gz.idx";
     File fd(gzabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    compress::GzipWriter gzout(fd);
+    File idxfd(gzidxabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    compress::GzipIndexingWriter gzout(fd, idxfd);
 
     // Fill the temp file with all the data in the right order
     size_t ofs = 0;
@@ -273,7 +289,9 @@ void Checker::create(const std::string& rootdir, const std::string& relpath, con
 
     gzout.flush();
     fd.fdatasync();
+    idxfd.fdatasync();
     fd.close();
+    idxfd.close();
 }
 
 void Checker::test_truncate(size_t offset)
@@ -321,7 +339,7 @@ bool can_store(const std::string& format)
 
 }
 
-namespace gzlines
+namespace gzidxlines
 {
 
 void Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)

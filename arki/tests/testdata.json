@@ -1846,6 +1846,16 @@
  },
  {
   "doc": "",
+  "group": "arki_segment_gzidx",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx",
+  "method": "remove"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime_io",
   "method": "tempfile"
  },

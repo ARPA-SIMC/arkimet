@@ -97,51 +97,22 @@ bool Checker::single_file() const { return true; }
 
 bool Checker::exists_on_disk()
 {
-    if (sys::isdir(abspath)) return false;
-
-    // If it's not a directory, it must exist in the file system,
-    // compressed or not
-    if (!sys::exists(abspath) && !sys::exists(abspath + ".gz"))
-        return false;
-
+    std::unique_ptr<struct stat> st = sys::stat(abspath);
+    if (!st) return false;
+    if (S_ISDIR(st->st_mode)) return false;
     return true;
 }
 
 time_t Checker::timestamp()
 {
-    std::unique_ptr<File> fd;
-
-    if (sys::exists(abspath))
-        fd = open(abspath);
-    else if (sys::exists(abspath + ".gz"))
-        fd = open(abspath + ".gz");
-    else
-        throw std::runtime_error("neither " + abspath + " nor " + abspath + ".gz exist");
-
     struct stat st;
-    fd->fstat(st);
+    sys::stat(abspath, st);
     return st.st_mtime;
 }
 
 void Checker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
-    string src = abspath;
-    string dst = new_abspath;
-    bool compressed = scan::isCompressed(src);
-    if (compressed)
-    {
-        src += ".gz";
-        dst += ".gz";
-    }
-
-    if (rename(src.c_str(), dst.c_str()) < 0)
-    {
-        stringstream ss;
-        ss << "cannot rename " << src << " to " << dst;
-        throw std::system_error(errno, std::system_category(), ss.str());
-    }
-    if (compressed)
-        sys::rename_ifexists(src + ".idx", dst + ".idx");
+    sys::rename(abspath, new_abspath);
 }
 
 State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap, bool quick)

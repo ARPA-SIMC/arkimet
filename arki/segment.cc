@@ -4,6 +4,7 @@
 #include "segment/dir.h"
 #include "segment/tar.h"
 #include "segment/gz.h"
+#include "segment/gzidx.h"
 #include "arki/configfile.h"
 #include "arki/exceptions.h"
 #include "arki/scan/any.h"
@@ -229,9 +230,15 @@ std::shared_ptr<Checker> Checker::for_pathname(const std::string& format, const 
 
         if (format == "grib" || format == "grib1" || format == "grib2" || format == "bufr")
         {
-            res.reset(new segment::gz::Checker(root, relpath, abspath));
+            if (sys::exists(abspath + ".gz.idx"))
+                res.reset(new segment::gzidx::Checker(root, relpath, abspath));
+            else
+                res.reset(new segment::gz::Checker(root, relpath, abspath));
         } else if (format == "vm2") {
-            res.reset(new segment::gzlines::Checker(root, relpath, abspath));
+            if (sys::exists(abspath + ".gz.idx"))
+                res.reset(new segment::gzidxlines::Checker(root, relpath, abspath));
+            else
+                res.reset(new segment::gzlines::Checker(root, relpath, abspath));
         } else if (format == "odimh5" || format == "h5" || format == "odim") {
             throw_consistency_error(
                     "getting checker for " + format + " file " + relpath,
