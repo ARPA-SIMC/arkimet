@@ -17,11 +17,11 @@ struct BaseManager : public SegmentManager
 
     // Instantiate the right Segment implementation for a segment that already
     // exists. Returns 0 if the segment does not exist.
-    std::shared_ptr<segment::Writer> create_writer_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname, bool nullptr_on_error=false);
+    std::shared_ptr<segment::Writer> create_writer_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname);
 
     // Instantiate the right Segment implementation for a segment that already
     // exists. Returns 0 if the segment does not exist.
-    std::shared_ptr<segment::Checker> create_checker_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname, bool nullptr_on_error=false);
+    std::shared_ptr<segment::Checker> create_checker_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname);
 };
 
 /// Segment manager that picks the right readers/writers based on file types

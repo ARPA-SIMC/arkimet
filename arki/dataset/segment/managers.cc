@@ -17,7 +17,7 @@ namespace dataset {
 
 BaseManager::BaseManager(const std::string& root, bool mockdata) : SegmentManager(root), mockdata(mockdata) {}
 
-std::shared_ptr<segment::Writer> BaseManager::create_writer_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname, bool nullptr_on_error)
+std::shared_ptr<segment::Writer> BaseManager::create_writer_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname)
 {
     std::unique_ptr<struct stat> st = sys::stat(absname);
     std::shared_ptr<segment::Writer> res;
@@ -43,8 +43,6 @@ std::shared_ptr<segment::Writer> BaseManager::create_writer_for_existing_segment
             else
                 res.reset(new segment::dir::Writer(format, root, relname, absname));
         } else {
-            if (nullptr_on_error)
-                return res;
             throw_consistency_error(
                     "getting writer for " + format + " file " + relname,
                     "format not supported");
@@ -69,8 +67,6 @@ std::shared_ptr<segment::Writer> BaseManager::create_writer_for_existing_segment
         } else if (format == "odimh5" || format == "h5" || format == "odim") {
             throw_consistency_error("segment is a file, but odimh5 data can only be stored into directory segments");
         } else {
-            if (nullptr_on_error)
-                return res;
             throw_consistency_error(
                     "getting segment for " + format + " file " + relname,
                     "format not supported");
@@ -79,7 +75,7 @@ std::shared_ptr<segment::Writer> BaseManager::create_writer_for_existing_segment
     return res;
 }
 
-std::shared_ptr<segment::Checker> BaseManager::create_checker_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname, bool nullptr_on_error)
+std::shared_ptr<segment::Checker> BaseManager::create_checker_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname)
 {
     std::unique_ptr<struct stat> st = sys::stat(absname);
     std::shared_ptr<segment::Checker> res;
@@ -106,8 +102,6 @@ std::shared_ptr<segment::Checker> BaseManager::create_checker_for_existing_segme
             else
                 res.reset(new segment::dir::Checker(format, root, relname, absname));
         } else {
-            if (nullptr_on_error)
-                return res;
             throw_consistency_error(
                     "getting segment for " + format + " file " + relname,
                     "format not supported");
@@ -137,8 +131,6 @@ std::shared_ptr<segment::Checker> BaseManager::create_checker_for_existing_segme
             else
                 res.reset(new segment::dir::Checker(format, root, relname, absname));
         } else {
-            if (nullptr_on_error)
-                return res;
             throw_consistency_error(
                     "getting segment for " + format + " file " + relname,
                     "format not supported");
