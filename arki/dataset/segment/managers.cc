@@ -17,135 +17,13 @@ namespace dataset {
 
 BaseManager::BaseManager(const std::string& root, bool mockdata) : SegmentManager(root), mockdata(mockdata) {}
 
-std::shared_ptr<segment::Writer> BaseManager::create_writer_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname)
-{
-    std::unique_ptr<struct stat> st = sys::stat(absname);
-    std::shared_ptr<segment::Writer> res;
-    if (!st.get())
-        st = sys::stat(absname + ".gz");
-    if (!st.get())
-    {
-        st = sys::stat(absname + ".tar");
-        if (st.get())
-            throw_consistency_error(
-                    "getting writer for " + format + " file " + relname,
-                    "cannot write to .tar segments");
-    }
-    if (!st.get())
-        return res;
-
-    if (S_ISDIR(st->st_mode))
-    {
-        if (segment::dir::can_store(format))
-        {
-            if (mockdata)
-                res.reset(new segment::dir::HoleWriter(format, root, relname, absname));
-            else
-                res.reset(new segment::dir::Writer(format, root, relname, absname));
-        } else {
-            throw_consistency_error(
-                    "getting writer for " + format + " file " + relname,
-                    "format not supported");
-        }
-    } else {
-        if (format == "grib" || format == "grib1" || format == "grib2")
-        {
-            if (mockdata)
-                res.reset(new segment::concat::HoleWriter(root, relname, absname));
-            else
-                res.reset(new segment::concat::Writer(root, relname, absname));
-        } else if (format == "bufr") {
-            if (mockdata)
-                res.reset(new segment::concat::HoleWriter(root, relname, absname));
-            else
-                res.reset(new segment::concat::Writer(root, relname, absname));
-        } else if (format == "vm2") {
-            if (mockdata)
-                throw_consistency_error("mockdata single-file line-based segments not implemented");
-            else
-                res.reset(new segment::lines::Writer(root, relname, absname));
-        } else if (format == "odimh5" || format == "h5" || format == "odim") {
-            throw_consistency_error("segment is a file, but odimh5 data can only be stored into directory segments");
-        } else {
-            throw_consistency_error(
-                    "getting segment for " + format + " file " + relname,
-                    "format not supported");
-        }
-    }
-    return res;
-}
-
-std::shared_ptr<segment::Checker> BaseManager::create_checker_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname)
-{
-    std::unique_ptr<struct stat> st = sys::stat(absname);
-    std::shared_ptr<segment::Checker> res;
-    if (!st.get())
-        st = sys::stat(absname + ".gz");
-    if (!st.get())
-    {
-        st = sys::stat(absname + ".tar");
-        if (st.get())
-        {
-            res.reset(new segment::tar::Checker(root, relname, absname));
-            return res;
-        }
-    }
-    if (!st.get())
-        return res;
-
-    if (S_ISDIR(st->st_mode))
-    {
-        if (segment::dir::can_store(format))
-        {
-            if (mockdata)
-                res.reset(new segment::dir::HoleChecker(format, root, relname, absname));
-            else
-                res.reset(new segment::dir::Checker(format, root, relname, absname));
-        } else {
-            throw_consistency_error(
-                    "getting segment for " + format + " file " + relname,
-                    "format not supported");
-        }
-    } else {
-        if (format == "grib" || format == "grib1" || format == "grib2")
-        {
-            if (mockdata)
-                res.reset(new segment::concat::HoleChecker(root, relname, absname));
-            else
-                res.reset(new segment::concat::Checker(root, relname, absname));
-        } else if (format == "bufr") {
-            if (mockdata)
-                res.reset(new segment::concat::HoleChecker(root, relname, absname));
-            else
-                res.reset(new segment::concat::Checker(root, relname, absname));
-        } else if (format == "vm2") {
-            if (mockdata)
-                throw_consistency_error("mockdata single-file line-based segments not implemented");
-            else
-                res.reset(new segment::lines::Checker(root, relname, absname));
-        } else if (format == "odimh5" || format == "h5" || format == "odim") {
-            // If it's a file and we need a directory, still get a checker
-            // so it can deal with it
-            if (mockdata)
-                res.reset(new segment::dir::HoleChecker(format, root, relname, absname));
-            else
-                res.reset(new segment::dir::Checker(format, root, relname, absname));
-        } else {
-            throw_consistency_error(
-                    "getting segment for " + format + " file " + relname,
-                    "format not supported");
-        }
-    }
-    return res;
-}
-
 
 AutoManager::AutoManager(const std::string& root, bool mockdata)
     : BaseManager(root, mockdata) {}
 
 std::shared_ptr<segment::Writer> AutoManager::create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname)
 {
-    auto res(create_writer_for_existing_segment(format, relname, absname));
+    auto res(segment::Writer::for_pathname(format, root, relname, absname, mockdata));
     if (res) return res;
 
     if (format == "grib" || format == "grib1" || format == "grib2")
@@ -179,7 +57,7 @@ std::shared_ptr<segment::Writer> AutoManager::create_writer_for_format(const std
 
 std::shared_ptr<segment::Checker> AutoManager::create_checker_for_format(const std::string& format, const std::string& relname, const std::string& absname)
 {
-    auto res(create_checker_for_existing_segment(format, relname, absname));
+    auto res(segment::Checker::for_pathname(format, root, relname, absname, mockdata));
     if (res) return res;
 
     if (format == "grib" || format == "grib1" || format == "grib2")
@@ -267,7 +145,7 @@ ForceDirManager::ForceDirManager(const std::string& root) : BaseManager(root) {}
 
 std::shared_ptr<segment::Writer> ForceDirManager::create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname)
 {
-    auto res(create_writer_for_existing_segment(format, relname, absname));
+    auto res(segment::Writer::for_pathname(format, root, relname, absname, mockdata));
     if (res) return res;
     return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relname, absname));
 }

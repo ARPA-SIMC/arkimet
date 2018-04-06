@@ -55,84 +55,8 @@ void make_samples()
 
 void Tests::register_tests() {
 
-add_method("auto_instantiate_existing", [] {
-    make_samples();
-    AutoManager manager(".");
-
-    auto get_writer = [&](const char* name) {
-        return manager.create_writer_for_existing_segment(utils::get_format(name), name, sys::abspath(name));
-    };
-    auto get_checker = [&](const char* name) {
-        return manager.create_checker_for_existing_segment(utils::get_format(name), name, sys::abspath(name));
-    };
-
-    wassert(actual(get_writer("testfile.grib")->type()) == "concat");
-    wassert(actual(get_writer("testfile.bufr")->type()) == "concat");
-    wassert(actual(get_writer("testfile.vm2")->type()) == "lines");
-    wassert_throws(std::runtime_error, get_writer("testfile.h5"));
-    wassert(actual(get_writer("testdir.grib")->type()) == "dir");
-    wassert(actual(get_writer("testdir.bufr")->type()) == "dir");
-    wassert(actual(get_writer("testdir.vm2")->type()) == "dir");
-    wassert(actual(get_writer("testdir.h5")->type()) == "dir");
-    wassert_throws(std::runtime_error, get_writer("testtar.grib"));
-    wassert_throws(std::runtime_error, get_writer("testtar.bufr"));
-    wassert_throws(std::runtime_error, get_writer("testtar.vm2"));
-    wassert_throws(std::runtime_error, get_writer("testtar.h5"));
-
-    wassert(actual(get_checker("testfile.grib")->type()) == "concat");
-    wassert(actual(get_checker("testfile.bufr")->type()) == "concat");
-    wassert(actual(get_checker("testfile.vm2")->type()) == "lines");
-    wassert(actual(get_checker("testfile.h5")->type()) == "dir");
-    wassert(actual(get_checker("testdir.grib")->type()) == "dir");
-    wassert(actual(get_checker("testdir.bufr")->type()) == "dir");
-    wassert(actual(get_checker("testdir.vm2")->type()) == "dir");
-    wassert(actual(get_checker("testdir.h5")->type()) == "dir");
-    wassert(actual(get_checker("testtar.grib")->type()) == "tar");
-    wassert(actual(get_checker("testtar.bufr")->type()) == "tar");
-    wassert(actual(get_checker("testtar.vm2")->type()) == "tar");
-    wassert(actual(get_checker("testtar.h5")->type()) == "tar");
-});
-
 add_method("auto_instantiate_new", [] {
     make_samples();
-});
-
-add_method("forcedir_instantiate_existing", [] {
-    make_samples();
-    ForceDirManager manager(".");
-
-    auto get_writer = [&](const char* name) {
-        return manager.create_writer_for_existing_segment(utils::get_format(name), name, sys::abspath(name));
-    };
-    auto get_checker = [&](const char* name) {
-        return manager.create_checker_for_existing_segment(utils::get_format(name), name, sys::abspath(name));
-    };
-
-    wassert(actual(get_writer("testfile.grib")->type()) == "concat");
-    wassert(actual(get_writer("testfile.bufr")->type()) == "concat");
-    wassert(actual(get_writer("testfile.vm2")->type()) == "lines");
-    wassert_throws(std::runtime_error, get_writer("testfile.h5"));
-    wassert(actual(get_writer("testdir.grib")->type()) == "dir");
-    wassert(actual(get_writer("testdir.bufr")->type()) == "dir");
-    wassert(actual(get_writer("testdir.vm2")->type()) == "dir");
-    wassert(actual(get_writer("testdir.h5")->type()) == "dir");
-    wassert_throws(std::runtime_error, get_writer("testtar.grib"));
-    wassert_throws(std::runtime_error, get_writer("testtar.bufr"));
-    wassert_throws(std::runtime_error, get_writer("testtar.vm2"));
-    wassert_throws(std::runtime_error, get_writer("testtar.h5"));
-
-    wassert(actual(get_checker("testfile.grib")->type()) == "concat");
-    wassert(actual(get_checker("testfile.bufr")->type()) == "concat");
-    wassert(actual(get_checker("testfile.vm2")->type()) == "lines");
-    wassert(actual(get_checker("testfile.h5")->type()) == "dir");
-    wassert(actual(get_checker("testdir.grib")->type()) == "dir");
-    wassert(actual(get_checker("testdir.bufr")->type()) == "dir");
-    wassert(actual(get_checker("testdir.vm2")->type()) == "dir");
-    wassert(actual(get_checker("testdir.h5")->type()) == "dir");
-    wassert(actual(get_checker("testtar.grib")->type()) == "tar");
-    wassert(actual(get_checker("testtar.bufr")->type()) == "tar");
-    wassert(actual(get_checker("testtar.vm2")->type()) == "tar");
-    wassert(actual(get_checker("testtar.h5")->type()) == "tar");
 });
 
 add_method("forcedir_instantiate_new", [] {

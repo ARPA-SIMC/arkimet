@@ -1751,6 +1751,11 @@
  },
  {
   "doc": "",
+  "group": "arki_segment",
+  "method": "auto_instantiate_existing"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_segment_fd",
   "method": "empty"
  },
@@ -2217,17 +2222,7 @@
  {
   "doc": "",
   "group": "arki_dataset_segment_managers",
-  "method": "auto_instantiate_existing"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_managers",
   "method": "auto_instantiate_new"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_segment_managers",
-  "method": "forcedir_instantiate_existing"
  },
  {
   "doc": "",

@@ -167,6 +167,10 @@ struct Writer : public Segment, Transaction
      * commit
      */
     virtual const types::source::Blob& append(Metadata& md) = 0;
+
+    /// Instantiate the right Segment implementation for a segment that already
+    /// exists
+    static std::shared_ptr<Writer> for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
 };
 
 
@@ -243,6 +247,10 @@ public:
      * with the value 0.
      */
     virtual void test_corrupt(const metadata::Collection& mds, unsigned data_idx) = 0;
+
+    /// Instantiate the right Segment implementation for a segment that already
+    /// exists
+    static std::shared_ptr<Checker> for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
 };
 
 }

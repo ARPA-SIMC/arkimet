@@ -19,8 +19,8 @@ using namespace arki::utils;
 
 namespace arki {
 
-Segment::Segment(const std::string& root, const std::string& relname, const std::string& absname)
-    : root(root), relname(relname), absname(absname)
+Segment::Segment(const std::string& root, const std::string& relname, const std::string& abspath)
+    : root(root), relname(relname), absname(abspath)
 {
 }
 
@@ -52,6 +52,64 @@ void Writer::PendingMetadata::set_source()
     std::unique_ptr<types::source::Blob> source(new_source);
     new_source = 0;
     md.set_source(move(source));
+}
+
+std::shared_ptr<Writer> Writer::for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data)
+{
+    std::unique_ptr<struct stat> st = sys::stat(abspath);
+    std::shared_ptr<segment::Writer> res;
+    if (!st.get())
+        st = sys::stat(abspath + ".gz");
+    if (!st.get())
+    {
+        st = sys::stat(abspath + ".tar");
+        if (st.get())
+            throw_consistency_error(
+                    "getting writer for " + format + " file " + relpath,
+                    "cannot write to .tar segments");
+    }
+    if (!st.get())
+        return res;
+
+    if (S_ISDIR(st->st_mode))
+    {
+        if (segment::dir::can_store(format))
+        {
+            if (mock_data)
+                res.reset(new segment::dir::HoleWriter(format, root, relpath, abspath));
+            else
+                res.reset(new segment::dir::Writer(format, root, relpath, abspath));
+        } else {
+            throw_consistency_error(
+                    "getting writer for " + format + " file " + relpath,
+                    "format not supported");
+        }
+    } else {
+        if (format == "grib" || format == "grib1" || format == "grib2")
+        {
+            if (mock_data)
+                res.reset(new segment::concat::HoleWriter(root, relpath, abspath));
+            else
+                res.reset(new segment::concat::Writer(root, relpath, abspath));
+        } else if (format == "bufr") {
+            if (mock_data)
+                res.reset(new segment::concat::HoleWriter(root, relpath, abspath));
+            else
+                res.reset(new segment::concat::Writer(root, relpath, abspath));
+        } else if (format == "vm2") {
+            if (mock_data)
+                throw_consistency_error("mock_data single-file line-based segments are not implemented");
+            else
+                res.reset(new segment::lines::Writer(root, relpath, abspath));
+        } else if (format == "odimh5" || format == "h5" || format == "odim") {
+            throw_consistency_error("segment is a file, but odimh5 data can only be stored into directory segments");
+        } else {
+            throw_consistency_error(
+                    "getting segment for " + format + " file " + relpath,
+                    "format not supported");
+        }
+    }
+    return res;
 }
 
 
@@ -94,6 +152,71 @@ void Checker::test_truncate(const metadata::Collection& mds, unsigned data_idx)
     const auto& s = mds[data_idx].sourceBlob();
     test_truncate(s.offset);
 }
+
+std::shared_ptr<Checker> Checker::for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data)
+{
+    std::unique_ptr<struct stat> st = sys::stat(abspath);
+    std::shared_ptr<segment::Checker> res;
+    if (!st.get())
+        st = sys::stat(abspath + ".gz");
+    if (!st.get())
+    {
+        st = sys::stat(abspath + ".tar");
+        if (st.get())
+        {
+            res.reset(new segment::tar::Checker(root, relpath, abspath));
+            return res;
+        }
+    }
+    if (!st.get())
+        return res;
+
+    if (S_ISDIR(st->st_mode))
+    {
+        if (segment::dir::can_store(format))
+        {
+            if (mock_data)
+                res.reset(new segment::dir::HoleChecker(format, root, relpath, abspath));
+            else
+                res.reset(new segment::dir::Checker(format, root, relpath, abspath));
+        } else {
+            throw_consistency_error(
+                    "getting segment for " + format + " file " + relpath,
+                    "format not supported");
+        }
+    } else {
+        if (format == "grib" || format == "grib1" || format == "grib2")
+        {
+            if (mock_data)
+                res.reset(new segment::concat::HoleChecker(root, relpath, abspath));
+            else
+                res.reset(new segment::concat::Checker(root, relpath, abspath));
+        } else if (format == "bufr") {
+            if (mock_data)
+                res.reset(new segment::concat::HoleChecker(root, relpath, abspath));
+            else
+                res.reset(new segment::concat::Checker(root, relpath, abspath));
+        } else if (format == "vm2") {
+            if (mock_data)
+                throw_consistency_error("mockdata single-file line-based segments not implemented");
+            else
+                res.reset(new segment::lines::Checker(root, relpath, abspath));
+        } else if (format == "odimh5" || format == "h5" || format == "odim") {
+            // If it's a file and we need a directory, still get a checker
+            // so it can deal with it
+            if (mock_data)
+                res.reset(new segment::dir::HoleChecker(format, root, relpath, abspath));
+            else
+                res.reset(new segment::dir::Checker(format, root, relpath, abspath));
+        } else {
+            throw_consistency_error(
+                    "getting segment for " + format + " file " + relpath,
+                    "format not supported");
+        }
+    }
+    return res;
+}
+
 
 
 std::string State::to_string() const
