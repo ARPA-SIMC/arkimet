@@ -35,11 +35,11 @@ namespace {
 struct Creator : public AppendCreator
 {
     std::string format;
-    SequenceFile seqfile;
+    std::string dest_abspath;
     size_t current_pos = 0;
 
     Creator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
-        : AppendCreator(root, relpath, abspath, mds), seqfile(abspath)
+        : AppendCreator(root, relpath, abspath, mds), dest_abspath(abspath)
     {
         if (!mds.empty())
             format = mds[0].source().format;
@@ -47,7 +47,7 @@ struct Creator : public AppendCreator
 
     size_t append(const std::vector<uint8_t>& data) override
     {
-        sys::File fd(str::joinpath(abspath, SequenceFile::data_fname(current_pos, format)),
+        sys::File fd(str::joinpath(dest_abspath, SequenceFile::data_fname(current_pos, format)),
                     O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
         try {
             const std::vector<uint8_t>& buf = data;
@@ -60,7 +60,7 @@ struct Creator : public AppendCreator
                 fd.throw_error("cannot flush write");
             fd.close();
         } catch (...) {
-            unlink(abspath.c_str());
+            unlink(fd.name().c_str());
             throw;
         }
         auto res = current_pos;
@@ -70,9 +70,11 @@ struct Creator : public AppendCreator
 
     void create()
     {
-        sys::makedirs(abspath);
-        seqfile.open();
+        sys::makedirs(dest_abspath);
         AppendCreator::create();
+        SequenceFile seqfile(dest_abspath);
+        seqfile.open();
+        seqfile.write_sequence(current_pos);
     }
 };
 
@@ -142,7 +144,12 @@ const types::source::Blob& Writer::append(Metadata& md)
 
     File fd(str::joinpath(abspath, SequenceFile::data_fname(current_pos, format)),
                 O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
-    write_file(md, fd);
+    try {
+        write_file(md, fd);
+    } catch (...) {
+        unlink(fd.name().c_str());
+        throw;
+    }
     written.push_back(fd.name());
     fd.close();
     pending.emplace_back(md, source::Blob::create_unlocked(md.source().format, root, relpath, current_pos, md.data_size()));
@@ -183,32 +190,22 @@ void Writer::rollback_nothrow() noexcept
 
 void Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
-    try {
-        const std::vector<uint8_t>& buf = md.getData();
+    const std::vector<uint8_t>& buf = md.getData();
 
-        size_t count = fd.pwrite(buf.data(), buf.size(), 0);
-        if (count != buf.size())
-            throw std::runtime_error(fd.name() + ": written only " + std::to_string(count) + "/" + std::to_string(buf.size()) + " bytes");
+    size_t count = fd.pwrite(buf.data(), buf.size(), 0);
+    if (count != buf.size())
+        throw std::runtime_error(fd.name() + ": written only " + std::to_string(count) + "/" + std::to_string(buf.size()) + " bytes");
 
-        if (fdatasync(fd) < 0)
-            fd.throw_error("cannot flush write");
-    } catch (...) {
-        unlink(abspath.c_str());
-        throw;
-    }
+    if (fdatasync(fd) < 0)
+        fd.throw_error("cannot flush write");
 }
 
 const char* HoleWriter::type() const { return "hole_dir"; }
 
 void HoleWriter::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
-    try {
-        if (ftruncate(fd, md.data_size()) == -1)
-            fd.throw_error("cannot set file size");
-    } catch (...) {
-        unlink(abspath.c_str());
-        throw;
-    }
+    if (ftruncate(fd, md.data_size()) == -1)
+        fd.throw_error("cannot set file size");
 }
 
 
@@ -498,42 +495,16 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     string tmprelpath = relpath + ".repack";
     string tmpabspath = abspath + ".repack";
 
-    // Make sure mds are not holding a read lock on the file to repack
+    Pending p(new Rename(tmpabspath, abspath));
+
+    Creator creator(rootdir, relpath, abspath, mds);
+    creator.dest_abspath = tmpabspath;
+    creator.validator = &scan::Validator::by_filename(abspath);
+    creator.create();
+
+    // Make sure mds are not holding a reader on the file to repack, because it
+    // will soon be invalidated
     for (auto& md: mds) md->sourceBlob().unlock();
-
-    // Reacquire the lock here for writing
-    Rename* rename;
-    Pending p(rename = new Rename(tmpabspath, abspath));
-
-    // Create a writer for the temp dir
-    sys::makedirs(tmpabspath);
-    size_t pos = 0;
-
-    if (test_flags & TEST_MISCHIEF_MOVE_DATA)
-        ++pos;
-
-    // Fill the temp file with all the data in the right order, using hard links
-    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
-    {
-        const source::Blob& source = (*i)->sourceBlob();
-        auto new_source = Source::createBlobUnlocked(source.format, rootdir, relpath, pos, source.size);
-
-        std::string src = str::joinpath(source.absolutePathname(), SequenceFile::data_fname(source.offset, format));
-        std::string dst = str::joinpath(tmpabspath, SequenceFile::data_fname(pos, format));
-
-        if (::link(src.c_str(), dst.c_str()) != 0)
-            throw_system_error("cannot link " + src + " as " + dst);
-
-        // Update the source information in the metadata
-        (*i)->set_source(Source::createBlobUnlocked(source.format, rootdir, relpath, pos, source.size));
-
-        ++pos;
-    }
-
-    // Write it out
-    SequenceFile seqfile(tmpabspath);
-    seqfile.open();
-    seqfile.write_sequence(pos);
 
     return p;
 }
