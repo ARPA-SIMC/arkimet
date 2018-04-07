@@ -62,12 +62,14 @@ struct Creator : public AppendCreator
 struct CheckBackend : public AppendCheckBackend
 {
     const std::string& tarabspath;
-    const std::string& relpath;
+    std::unique_ptr<struct stat> st;
 
     CheckBackend(const std::string& tarabspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
-        : AppendCheckBackend(reporter, mds), tarabspath(tarabspath), relpath(relpath)
+        : AppendCheckBackend(reporter, relpath, mds), tarabspath(tarabspath)
     {
     }
+
+    size_t offset_end() const override { return st->st_size - 1024; }
 
     size_t padding_head(off_t offset, size_t size) const override
     {
@@ -81,74 +83,13 @@ struct CheckBackend : public AppendCheckBackend
 
     State check()
     {
-        std::unique_ptr<struct stat> st = sys::stat(tarabspath);
+        st = sys::stat(tarabspath);
         if (st.get() == nullptr)
         {
             reporter(tarabspath + " not found on disk");
             return SEGMENT_DELETED;
         }
-
-        size_t file_size = st->st_size - 1024;
-
-        if (accurate && !mds.empty())
-        {
-            const scan::Validator* validator = &scan::Validator::by_format(mds[0].source().format);
-
-            for (const auto& i: mds)
-            {
-                if (const types::source::Blob* blob = i->has_source_blob())
-                {
-                    if (blob->filename != relpath)
-                        throw std::runtime_error("metadata to validate does not appear to be from this segment");
-
-                    if (blob->offset + blob->size > file_size)
-                    {
-                        reporter("data is supposed to be past the end of the uncompressed segment");
-                        return SEGMENT_UNALIGNED;
-                    }
-
-                    try {
-                        auto buf = i->getData();
-                        validator->validate_buf(buf.data(), buf.size());
-                    } catch (std::exception& e) {
-                        stringstream out;
-                        out << "validation failed at " << i->source() << ": " << e.what();
-                        reporter(out.str());
-                        return SEGMENT_UNALIGNED;
-                    }
-                } else {
-                    try {
-                        const auto& buf = i->getData();
-                        validator->validate_buf(buf.data(), buf.size());
-                    } catch (std::exception& e) {
-                        stringstream out;
-                        out << "validation failed at " << i->source() << ": " << e.what();
-                        reporter(out.str());
-                        return SEGMENT_UNALIGNED;
-                    }
-                }
-            }
-        }
-
-        State state = check_contiguous();
-        if (!state.is_ok())
-            return state;
-
-        // Check the match between end of data and end of file
-        if (file_size < end_of_known_data)
-        {
-            stringstream ss;
-            ss << "file looks truncated: its size is " << file_size << " but data is known to exist until " << end_of_known_data << " bytes";
-            reporter(ss.str());
-            return SEGMENT_UNALIGNED;
-        }
-        if (file_size > end_of_known_data)
-        {
-            reporter("segment contains possibly deleted data at the end");
-            return SEGMENT_DIRTY;
-        }
-
-        return SEGMENT_OK;
+        return AppendCheckBackend::check();
     }
 };
 
