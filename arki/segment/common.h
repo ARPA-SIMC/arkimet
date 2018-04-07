@@ -1,10 +1,12 @@
 #ifndef ARKI_SEGMENT_COMMON_H
 #define ARKI_SEGMENT_COMMON_H
 
+#include <arki/segment.h>
 #include <arki/metadata/fwd.h>
 #include <arki/scan/fwd.h>
 #include <string>
 #include <vector>
+#include <functional>
 
 namespace arki {
 namespace segment {
@@ -24,14 +26,22 @@ struct AppendCreator
     void create();
 };
 
-#if 0
-struct CheckBackend
+struct AppendCheckBackend
 {
-    const std::string& gzabspath;
-    const std::string& relpath;
     std::function<void(const std::string&)> reporter;
     const metadata::Collection& mds;
     bool accurate = false;
+    size_t end_of_known_data = 0;
+
+    AppendCheckBackend(std::function<void(const std::string&)> reporter, const metadata::Collection& mds);
+    virtual ~AppendCheckBackend();
+
+    virtual size_t compute_padding(off_t offset, size_t size) const;
+    State check_contiguous();
+
+#if 0
+    const std::string& gzabspath;
+    const std::string& relpath;
     unsigned pad_size = 0;
 
     CheckBackend(const std::string& gzabspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
@@ -87,31 +97,6 @@ struct CheckBackend
             }
         }
 
-        // Create the list of data (offset, size) sorted by offset, to detect overlaps
-        vector< pair<off_t, size_t> > spans;
-        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
-        {
-            const source::Blob& source = (*i)->sourceBlob();
-            spans.push_back(make_pair(source.offset, source.size));
-        }
-        std::sort(spans.begin(), spans.end());
-
-        // Check for overlaps
-        off_t end_of_last_data_checked = 0;
-        for (vector< pair<off_t, size_t> >::const_iterator i = spans.begin(); i != spans.end(); ++i)
-        {
-            // If an item begins after the end of another, they overlap and the file needs rescanning
-            if (i->first < end_of_last_data_checked)
-            {
-                stringstream out;
-                out << "item at offset " << i->first << " starts before the end of the previous item at offset " << end_of_last_data_checked;
-                reporter(out.str());
-                return SEGMENT_UNALIGNED;
-            }
-
-            end_of_last_data_checked = i->first + i->second + pad_size;
-        }
-
         // Check for truncation
         off_t file_size = all_data.size();
         if (file_size < end_of_last_data_checked)
@@ -146,8 +131,8 @@ struct CheckBackend
         } else
             return SEGMENT_OK;
     }
-};
 #endif
+};
 
 }
 }

@@ -58,7 +58,9 @@ void SegmentCheckTest::run()
     auto segment(make_full_checker());
     segment::State state;
 
-    auto rep = [](const std::string&) {};
+    auto rep = [](const std::string& msg) {
+        // fprintf(stderr, "CHECK %s\n", msg.c_str());
+    };
 
     // A simple segment freshly imported is ok
     state = segment->check(rep, mdc);

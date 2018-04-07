@@ -1,4 +1,5 @@
 #include "gz.h"
+#include "common.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -26,64 +27,42 @@ namespace gz {
 
 namespace {
 
-struct Creator
+struct Creator : public AppendCreator
 {
-    const std::string& root;
-    const std::string& relpath;
-    const std::string& abspath;
-    metadata::Collection& mds;
-    string gzabspath;
     std::vector<uint8_t> padding;
-    const scan::Validator* validator = nullptr;
+    File out;
+    compress::GzipWriter gzout;
 
     Creator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
-        : root(root), relpath(relpath), abspath(abspath), mds(mds), gzabspath(abspath + ".gz")
+        : AppendCreator(root, relpath, abspath, mds), out(abspath + ".gz"), gzout(out)
     {
+    }
+
+    size_t append(const std::vector<uint8_t>& data) override
+    {
+        gzout.add(data);
+        if (!padding.empty())
+            gzout.add(padding);
+        return data.size() + padding.size();
     }
 
     void create()
     {
-        File fd(gzabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-        compress::GzipWriter gzout(fd);
-
-        // Fill the temp file with all the data in the right order
-        size_t ofs = 0;
-        for (auto& md: mds)
-        {
-            bool had_cached_data = md->has_cached_data();
-            // Read the data
-            auto buf = md->getData();
-            // Validate it if requested
-            if (validator)
-                validator->validate_buf(buf.data(), buf.size());
-            gzout.add(buf);
-            if (!padding.empty())
-                gzout.add(padding);
-            auto new_source = Source::createBlobUnlocked(md->source().format, root, relpath, ofs, buf.size());
-            // Update the source information in the metadata
-            md->set_source(std::move(new_source));
-            // Drop the cached data, to prevent accidentally loading the whole segment in memory
-            if (!had_cached_data) md->drop_cached_data();
-            ofs += buf.size() + padding.size();
-        }
-
+        out.open(O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        AppendCreator::create();
         gzout.flush();
-        fd.fdatasync();
-        fd.close();
+        out.fdatasync();
+        out.close();
     }
 };
 
-struct CheckBackend
+struct CheckBackend : public AppendCheckBackend
 {
     const std::string& gzabspath;
     const std::string& relpath;
-    std::function<void(const std::string&)> reporter;
-    const metadata::Collection& mds;
-    bool accurate = false;
-    unsigned pad_size = 0;
 
     CheckBackend(const std::string& gzabspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
-        : gzabspath(gzabspath), relpath(relpath), reporter(reporter), mds(mds)
+        : AppendCheckBackend(reporter, mds), gzabspath(gzabspath), relpath(relpath)
     {
     }
 
@@ -135,64 +114,26 @@ struct CheckBackend
             }
         }
 
-        // Create the list of data (offset, size) sorted by offset, to detect overlaps
-        vector< pair<off_t, size_t> > spans;
-        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
-        {
-            const source::Blob& source = (*i)->sourceBlob();
-            spans.push_back(make_pair(source.offset, source.size));
-        }
-        std::sort(spans.begin(), spans.end());
+        State state = check_contiguous();
+        if (!state.is_ok())
+            return state;
 
-        // Check for overlaps
-        off_t end_of_last_data_checked = 0;
-        for (vector< pair<off_t, size_t> >::const_iterator i = spans.begin(); i != spans.end(); ++i)
-        {
-            // If an item begins after the end of another, they overlap and the file needs rescanning
-            if (i->first < end_of_last_data_checked)
-            {
-                stringstream out;
-                out << "item at offset " << i->first << " starts before the end of the previous item at offset " << end_of_last_data_checked;
-                reporter(out.str());
-                return SEGMENT_UNALIGNED;
-            }
-
-            end_of_last_data_checked = i->first + i->second + pad_size;
-        }
-
-        // Check for truncation
-        off_t file_size = all_data.size();
-        if (file_size < end_of_last_data_checked)
+        // Check the match between end of data and end of file
+        size_t file_size = all_data.size();
+        if (file_size < end_of_known_data)
         {
             stringstream ss;
-            ss << "file looks truncated: its size is " << file_size << " but data is known to exist until " << end_of_last_data_checked << " bytes";
+            ss << "file looks truncated: its size is " << file_size << " but data is known to exist until " << end_of_known_data << " bytes";
             reporter(ss.str());
             return SEGMENT_UNALIGNED;
         }
-
-        // Check if file_size matches the expected file size
-        bool has_hole = false;
-        if (file_size > end_of_last_data_checked)
-            has_hole = true;
-
-        // Check for holes or elements out of order
-        end_of_last_data_checked = 0;
-        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+        if (file_size > end_of_known_data)
         {
-            const source::Blob& source = (*i)->sourceBlob();
-            if (source.offset < (size_t)end_of_last_data_checked || source.offset > (size_t)end_of_last_data_checked) // last padding plus file header
-                has_hole = true;
-
-            end_of_last_data_checked = max(end_of_last_data_checked, (off_t)(source.offset + source.size + pad_size));
+            reporter("segment contains possibly deleted data at the end");
+            return SEGMENT_DIRTY;
         }
 
-        // Take note of files with holes
-        if (has_hole)
-        {
-            reporter("segments contains deleted data or needs reordering");
-            return SEGMENT_DIRTY;
-        } else
-            return SEGMENT_OK;
+        return SEGMENT_OK;
     }
 };
 
@@ -244,11 +185,10 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 {
     string tmpabspath = gzabspath + ".repack";
 
-    files::RenameTransaction* rename;
-    Pending p(rename = new files::RenameTransaction(tmpabspath, abspath));
+    Pending p(new files::RenameTransaction(tmpabspath, abspath));
 
     Creator creator(rootdir, relpath, abspath, mds);
-    creator.gzabspath = tmpabspath;
+    creator.out = sys::File(tmpabspath);
     creator.validator = &scan::Validator::by_filename(abspath);
     creator.create();
 
@@ -314,11 +254,21 @@ bool Checker::can_store(const std::string& format)
 namespace gzlines
 {
 
+struct CheckBackend : public gz::CheckBackend
+{
+    using gz::CheckBackend::CheckBackend;
+
+    size_t compute_padding(off_t offset, size_t size) const override
+    {
+        return 1;
+    }
+};
+
+
 State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    gz::CheckBackend checker(gzabspath, relpath, reporter, mds);
+    CheckBackend checker(gzabspath, relpath, reporter, mds);
     checker.accurate = !quick;
-    checker.pad_size = 1;
     return checker.check();
 }
 
@@ -330,7 +280,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     Pending p(rename = new files::RenameTransaction(tmpabspath, abspath));
 
     gz::Creator creator(rootdir, relpath, abspath, mds);
-    creator.gzabspath = tmpabspath;
+    creator.out = sys::File(tmpabspath);
     creator.validator = &scan::Validator::by_filename(abspath);
     creator.padding.push_back('\n');
     creator.create();

@@ -3,6 +3,11 @@
 #include "arki/metadata/collection.h"
 #include "arki/scan/any.h"
 #include "arki/types/source.h"
+#include "arki/types/source/blob.h"
+#include <algorithm>
+#include <sstream>
+
+using namespace std;
 
 namespace arki {
 namespace segment {
@@ -36,6 +41,75 @@ void AppendCreator::create()
         if (!had_cached_data) md->drop_cached_data();
         ofs += appended;
     }
+}
+
+AppendCheckBackend::AppendCheckBackend(std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+    : reporter(reporter), mds(mds)
+{
+}
+
+AppendCheckBackend::~AppendCheckBackend()
+{
+}
+
+size_t AppendCheckBackend::compute_padding(off_t offset, size_t size) const
+{
+    return 0;
+}
+
+namespace {
+struct Span
+{
+    size_t offset;
+    size_t size;
+    Span(size_t offset, size_t size) : offset(offset), size(size) {}
+    bool operator<(const Span& o) const { return std::tie(offset, size) < std::tie(o.offset, o.size); }
+};
+}
+
+State AppendCheckBackend::check_contiguous()
+{
+    bool dirty = false;
+
+    // List of data (offset, size) sorted by offset, to detect overlaps
+    std::vector<Span> spans;
+    for (const auto& md: mds)
+    {
+        const types::source::Blob& source = md->sourceBlob();
+        if (!dirty && !spans.empty() && source.offset < spans.back().offset)
+        {
+            stringstream out;
+            out << "item at offset " << source.offset << " is wrongly ordered before item at offset " << spans.back().offset;
+            reporter(out.str());
+            dirty = true;
+        }
+        spans.push_back(Span(source.offset, source.size));
+    }
+    std::sort(spans.begin(), spans.end());
+
+    // Check for overlaps
+    for (const auto& i: spans)
+    {
+        // If an item begins after the end of another, they overlap and the file needs rescanning
+        if (i.offset < end_of_known_data)
+        {
+            stringstream out;
+            out << "item at offset " << i.offset << " overlaps with the previous items that ends at offset" << end_of_known_data;
+            reporter(out.str());
+            return SEGMENT_UNALIGNED;
+        }
+        else if (!dirty && i.offset > end_of_known_data)
+        {
+            stringstream out;
+            out << "item at offset " << i.offset << " begins past the end of the previous item (offset " << end_of_known_data << ")";
+            reporter(out.str());
+            dirty = true;
+        }
+
+        end_of_known_data = i.offset + i.size + compute_padding(i.offset, i.size);
+    }
+
+    return dirty ? SEGMENT_DIRTY : SEGMENT_OK;
 }
 
 }

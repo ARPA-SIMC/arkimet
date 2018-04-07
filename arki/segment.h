@@ -7,6 +7,7 @@
 #include <arki/defs.h>
 #include <arki/core/fwd.h>
 #include <arki/types/fwd.h>
+#include <arki/scan/fwd.h>
 #include <arki/metadata/fwd.h>
 #include <arki/transaction.h>
 #include <string>
@@ -15,10 +16,6 @@
 
 namespace arki {
 class Segment;
-
-namespace scan {
-class Validator;
-}
 
 namespace segment {
 
