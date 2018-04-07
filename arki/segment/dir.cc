@@ -9,7 +9,6 @@
 #include "arki/utils/sys.h"
 #include "arki/scan/any.h"
 #include "arki/utils/string.h"
-#include "arki/dataset/reporter.h"
 #include "arki/nag.h"
 #include <cerrno>
 #include <cstring>
@@ -166,7 +165,7 @@ void Checker::move_data(const std::string& new_root, const std::string& new_relp
     sys::rename(abspath.c_str(), new_abspath.c_str());
 }
 
-State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
+State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
     size_t next_sequence_expected(0);
     const scan::Validator* validator(0);
@@ -205,7 +204,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
             } catch (std::exception& e) {
                 stringstream out;
                 out << "validation failed at " << i->source() << ": " << e.what();
-                reporter.segment_info(ds, relpath, out.str());
+                reporter(out.str());
                 return SEGMENT_UNALIGNED;
             }
         }
@@ -220,14 +219,14 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
         {
             stringstream ss;
             ss << "expected file " << source.offset << " not found in the file system";
-            reporter.segment_info(ds, relpath, ss.str());
+            reporter(ss.str());
             return SEGMENT_UNALIGNED;
         } else {
             if (source.size != ei->second)
             {
                 stringstream ss;
                 ss << "expected file " << source.offset << " has size " << ei->second << " instead of expected " << source.size;
-                reporter.segment_info(ds, relpath, ss.str());
+                reporter(ss.str());
                 return SEGMENT_CORRUPTED;
             }
             expected.erase(ei);
@@ -253,7 +252,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
             } catch (std::exception& e) {
                 stringstream out;
                 out << "scan of unexpected file failed at " << abspath << ":" << idx << ": " << e.what();
-                reporter.segment_info(ds, relpath, out.str());
+                reporter(out.str());
                 res = SEGMENT_DIRTY;
                 continue;
             }
@@ -262,7 +261,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
             {
                 stringstream ss;
                 ss << "file does not contain any " << format << " items";
-                reporter.segment_info(ds, relpath, ss.str());
+                reporter(ss.str());
                 res = SEGMENT_DIRTY;
                 continue;
             }
@@ -271,20 +270,20 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
             {
                 stringstream ss;
                 ss << "file contains " << mds.size() << " " << format << " items instead of 1";
-                reporter.segment_info(ds, relpath, ss.str());
+                reporter(ss.str());
                 return SEGMENT_CORRUPTED;
             }
         }
         stringstream ss;
         ss << "found " << expected.size() << " file(s) that the index does now know about";
-        reporter.segment_info(ds, relpath, ss.str());
+        reporter(ss.str());
         return SEGMENT_DIRTY;
     }
 
     // Take note of files with holes
     if (out_of_order)
     {
-        reporter.segment_info(ds, relpath, "contains deleted data or data to be reordered");
+        reporter("contains deleted data or data to be reordered");
         return SEGMENT_DIRTY;
     } else {
         return res;
@@ -517,10 +516,10 @@ void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 
 const char* HoleChecker::type() const { return "hole_dir"; }
 
-State HoleChecker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
+State HoleChecker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
     // Force quick, since the file contents are fake
-    return Checker::check(reporter, ds, mds, true);
+    return Checker::check(reporter, mds, true);
 }
 
 bool can_store(const std::string& format)

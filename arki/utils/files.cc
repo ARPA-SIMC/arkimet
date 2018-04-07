@@ -155,6 +155,37 @@ PreserveFileTimes::~PreserveFileTimes() noexcept(false)
 }
 
 
+RenameTransaction::RenameTransaction(const std::string& tmpabspath, const std::string& abspath)
+    : tmpabspath(tmpabspath), abspath(abspath)
+{
+}
+
+RenameTransaction::~RenameTransaction()
+{
+    if (!fired) rollback_nothrow();
+}
+
+void RenameTransaction::commit()
+{
+    if (fired) return;
+    sys::rename(tmpabspath, abspath);
+    fired = true;
+}
+
+void RenameTransaction::rollback()
+{
+    if (fired) return;
+    sys::unlink(tmpabspath);
+    fired = true;
+}
+
+void RenameTransaction::rollback_nothrow() noexcept
+{
+    if (fired) return;
+    ::unlink(tmpabspath.c_str());
+    fired = true;
+}
+
 }
 }
 }

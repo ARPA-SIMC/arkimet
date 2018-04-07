@@ -135,7 +135,7 @@ public:
         }
 
         if (state.is_ok())
-            state = segment->check(reporter, checker.name(), mds, quick);
+            state = segment->check([&](const std::string& msg) { reporter.segment_info(checker.name(), segment->relpath, msg); }, mds, quick);
 
         // Scenario: the index has been deleted, and some data has been imported
         // and appended to an existing segment, recreating an empty index.

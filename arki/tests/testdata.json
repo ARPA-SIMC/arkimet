@@ -1806,7 +1806,7 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_seqfile",
+  "group": "arki_segment_seqfile",
   "method": "empty"
  },
  {

@@ -191,7 +191,7 @@ public:
         }
 
         if (state.is_ok())
-            state = segment->check(reporter, checker.name(), contents, quick);
+            state = segment->check([&](const std::string& msg) { reporter.segment_info(checker.name(), segment->relpath, msg); }, contents, quick);
 
         auto res = segmented::SegmentState(state, *md_begin, *md_until);
         res.check_age(segment->relpath, checker.config(), reporter);

@@ -81,7 +81,7 @@ public:
 
     size_t remove() override;
 
-    State check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
+    State check_fd(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
 
     void test_truncate(size_t offset) override;
     void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;

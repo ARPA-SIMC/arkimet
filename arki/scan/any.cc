@@ -321,6 +321,27 @@ const Validator& Validator::by_filename(const std::string& filename)
     throw runtime_error("cannot find a validator for " + filename + ": no validator available");
 }
 
+const Validator& Validator::by_format(const std::string& format)
+{
+#ifdef HAVE_GRIBAPI
+    if (format == "grib")
+        return grib::validator();
+#endif
+#ifdef HAVE_DBALLE
+    if (format == "bufr")
+        return bufr::validator();
+#endif
+#ifdef HAVE_HDF5
+    if (format == "odimh5")
+        return odimh5::validator();
+#endif
+#ifdef HAVE_VM2
+   if (format == "vm2")
+       return vm2::validator();
+#endif
+    throw runtime_error("cannot find a validator for " + format + " format");
+}
+
 bool update_sequence_number(const types::source::Blob& source, int& usn)
 {
 #ifdef HAVE_DBALLE

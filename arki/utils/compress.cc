@@ -332,6 +332,10 @@ void GzipIndexingWriter::add(const std::vector<uint8_t>& buf)
 {
     ofs += GzipWriter::add(buf);
     unc_ofs += buf.size();
+}
+
+void GzipIndexingWriter::close_entry()
+{
     ++count;
     if ((count % groupsize) == 0)
         end_block();

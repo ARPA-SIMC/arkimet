@@ -105,6 +105,14 @@ struct Validator
 	 */
 	static const Validator& by_filename(const std::string& filename);
 
+    /**
+     * Get the validator for a given foramt
+     *
+     * @returns
+     *   a pointer to a static object, which should not be deallocated.
+     */
+    static const Validator& by_format(const std::string& format);
+
 protected:
     [[noreturn]] void throw_check_error(core::NamedFileDescriptor& fd, off_t offset, const std::string& msg) const;
     [[noreturn]] void throw_check_error(const std::string& msg) const;

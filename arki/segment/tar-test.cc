@@ -14,7 +14,6 @@ using namespace std;
 using namespace arki;
 using namespace arki::tests;
 using namespace arki::utils;
-using namespace arki::dataset;
 
 template<class Segment, class Data>
 class Tests : public SegmentTests<Segment, Data>

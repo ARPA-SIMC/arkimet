@@ -33,7 +33,7 @@ GRIBData::GRIBData()
 #ifndef HAVE_GRIBAPI
     throw TestSkipped();
 #endif
-    mds.scan_from_file("inbound/fixture.grib1", format, false);
+    mds.scan_from_file("inbound/fixture.grib1", format, true);
 }
 
 BUFRData::BUFRData()
@@ -42,7 +42,7 @@ BUFRData::BUFRData()
 #ifndef HAVE_DBALLE
     throw TestSkipped();
 #endif
-    mds.scan_from_file("inbound/fixture.bufr", format, false);
+    mds.scan_from_file("inbound/fixture.bufr", format, true);
 }
 
 VM2Data::VM2Data()
@@ -51,7 +51,7 @@ VM2Data::VM2Data()
 #ifndef HAVE_VM2
     throw TestSkipped();
 #endif
-    mds.scan_from_file("inbound/fixture.vm2", format, false);
+    mds.scan_from_file("inbound/fixture.vm2", format, true);
 }
 
 ODIMData::ODIMData()
@@ -60,9 +60,9 @@ ODIMData::ODIMData()
 #ifndef HAVE_HDF5
     throw TestSkipped();
 #endif
-    mds.scan_from_file("inbound/fixture.h5/00.h5", format, false);
-    mds.scan_from_file("inbound/fixture.h5/01.h5", format, false);
-    mds.scan_from_file("inbound/fixture.h5/02.h5", format, false);
+    mds.scan_from_file("inbound/fixture.h5/00.h5", format, true);
+    mds.scan_from_file("inbound/fixture.h5/01.h5", format, true);
+    mds.scan_from_file("inbound/fixture.h5/02.h5", format, true);
 }
 
 

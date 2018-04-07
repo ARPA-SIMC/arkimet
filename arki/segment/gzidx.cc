@@ -10,7 +10,6 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/tar.h"
 #include "arki/utils.h"
-#include "arki/dataset/reporter.h"
 #include "arki/nag.h"
 #include <fcntl.h>
 #include <vector>
@@ -54,7 +53,7 @@ void Checker::move_data(const std::string& new_root, const std::string& new_relp
     sys::rename(gzidxabspath, new_abspath + ".gz.idx");
 }
 
-State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
+State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
     std::unique_ptr<struct stat> st = sys::stat(gzabspath);
     if (st.get() == nullptr)
@@ -77,7 +76,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
 
                 if (blob->offset + blob->size > all_data.size())
                 {
-                    reporter.segment_info(ds, relpath, "data is supposed to be past the end of the uncompressed segment");
+                    reporter("data is supposed to be past the end of the uncompressed segment");
                     return SEGMENT_UNALIGNED;
                 }
 
@@ -86,7 +85,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
                 } catch (std::exception& e) {
                     stringstream out;
                     out << "validation failed at " << i->source() << ": " << e.what();
-                    reporter.segment_info(ds, relpath, out.str());
+                    reporter(out.str());
                     return SEGMENT_UNALIGNED;
                 }
             } else {
@@ -96,7 +95,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
                 } catch (std::exception& e) {
                     stringstream out;
                     out << "validation failed at " << i->source() << ": " << e.what();
-                    reporter.segment_info(ds, relpath, out.str());
+                    reporter(out.str());
                     return SEGMENT_UNALIGNED;
                 }
             }
@@ -132,7 +131,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
     {
         stringstream ss;
         ss << "missing " << gzidxabspath;
-        reporter.segment_info(ds, relpath, ss.str());
+        reporter(ss.str());
         return SEGMENT_CORRUPTED;
     }
 
@@ -141,7 +140,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
     {
         stringstream ss;
         ss << "file looks truncated: its size is " << file_size << " but data is known to exist until " << end_of_last_data_checked << " bytes";
-        reporter.segment_info(ds, relpath, ss.str());
+        reporter(ss.str());
         return SEGMENT_UNALIGNED;
     }
 
@@ -268,36 +267,58 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     return p;
 }
 
-std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+struct Creator
 {
-    string gzabspath = abspath + ".gz";
-    string gzidxabspath = abspath + ".gz.idx";
-    File fd(gzabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    File idxfd(gzidxabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    compress::GzipIndexingWriter gzout(fd, idxfd);
+    const std::string& root;
+    const std::string& relpath;
+    const std::string& abspath;
+    metadata::Collection& mds;
+    string gzabspath;
+    string gzidxabspath;
+    std::vector<uint8_t> padding;
 
-    // Fill the temp file with all the data in the right order
-    size_t ofs = 0;
-    for (auto& md: mds)
+    Creator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
+        : root(root), relpath(relpath), abspath(abspath), mds(mds), gzabspath(abspath + ".gz"), gzidxabspath(abspath + ".gz.idx")
     {
-        // Read the data
-        auto buf = md->sourceBlob().read_data();
-        gzout.add(buf);
-        auto new_source = Source::createBlobUnlocked(md->source().format, rootdir, relpath, ofs, buf.size());
-        // Update the source information in the metadata
-        md->set_source(std::move(new_source));
-        // Drop the cached data, to prevent ending up with the whole segment
-        // sitting in memory
-        md->drop_cached_data();
-        ofs += buf.size();
     }
 
-    gzout.flush();
-    fd.fdatasync();
-    idxfd.fdatasync();
-    fd.close();
-    idxfd.close();
+    void create()
+    {
+        File fd(gzabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        File idxfd(gzidxabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        compress::GzipIndexingWriter gzout(fd, idxfd);
 
+        // Fill the temp file with all the data in the right order
+        size_t ofs = 0;
+        for (auto& md: mds)
+        {
+            // Read the data
+            auto buf = md->sourceBlob().read_data();
+            gzout.add(buf);
+            if (!padding.empty())
+                gzout.add(padding);
+            gzout.close_entry();
+            auto new_source = Source::createBlobUnlocked(md->source().format, root, relpath, ofs, buf.size());
+            // Update the source information in the metadata
+            md->set_source(std::move(new_source));
+            // Drop the cached data, to prevent ending up with the whole segment
+            // sitting in memory
+            md->drop_cached_data();
+            ofs += buf.size() + padding.size();
+        }
+
+        gzout.flush();
+        fd.fdatasync();
+        idxfd.fdatasync();
+        fd.close();
+        idxfd.close();
+    }
+};
+
+std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+{
+    Creator creator(rootdir, relpath, abspath, mds);
+    creator.create();
     return make_shared<Checker>(rootdir, relpath, abspath);
 }
 
@@ -351,33 +372,9 @@ namespace gzidxlines
 
 std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
 {
-    string gzabspath = abspath + ".gz";
-    File fd(gzabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    compress::GzipWriter gzout(fd);
-
-    std::vector<uint8_t> newline(1, '\n');
-
-    // Fill the temp file with all the data in the right order
-    size_t ofs = 0;
-    for (auto& md: mds)
-    {
-        // Read the data
-        auto buf = md->sourceBlob().read_data();
-        gzout.add(buf);
-        gzout.add(newline);
-        auto new_source = Source::createBlobUnlocked(md->source().format, rootdir, relpath, ofs, buf.size());
-        // Update the source information in the metadata
-        md->set_source(std::move(new_source));
-        // Drop the cached data, to prevent ending up with the whole segment
-        // sitting in memory
-        md->drop_cached_data();
-        ofs += buf.size() + 1;
-    }
-
-    gzout.flush();
-    fd.fdatasync();
-    fd.close();
-
+    gzidx::Creator creator(rootdir, relpath, abspath, mds);
+    creator.padding.push_back('\n');
+    creator.create();
     return make_shared<Checker>(rootdir, relpath, abspath);
 }
 

@@ -10,7 +10,6 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/tar.h"
 #include "arki/utils.h"
-#include "arki/dataset/reporter.h"
 #include "arki/nag.h"
 #include <fcntl.h>
 #include <vector>
@@ -59,7 +58,7 @@ void Checker::move_data(const std::string& new_root, const std::string& new_relp
     }
 }
 
-State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
+State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
     std::unique_ptr<struct stat> st = sys::stat(tarabspath);
     if (st.get() == nullptr)
@@ -77,7 +76,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
             } catch (std::exception& e) {
                 stringstream out;
                 out << "validation failed at " << i->source() << ": " << e.what();
-                reporter.segment_info(ds, relpath, out.str());
+                reporter(out.str());
                 return SEGMENT_UNALIGNED;
             }
         }
@@ -109,7 +108,7 @@ State Checker::check(dataset::Reporter& reporter, const std::string& ds, const m
     {
         stringstream ss;
         ss << "file looks truncated: its size is " << file_size << " but data is known to exist until " << end_of_last_data_checked << " bytes";
-        reporter.segment_info(ds, relpath, ss.str());
+        reporter(ss.str());
         return SEGMENT_UNALIGNED;
     }
 

@@ -11,7 +11,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_dataset_segment_seqfile");
+} test("arki_segment_seqfile");
 
 void Tests::register_tests() {
 

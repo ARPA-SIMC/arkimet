@@ -80,9 +80,9 @@ std::unique_ptr<fd::File> Checker::open(const std::string& pathname)
     return std::unique_ptr<fd::File>(new File(pathname, O_RDWR, 0666));
 }
 
-State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
+State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    return check_fd(reporter, ds, mds, 2, quick);
+    return check_fd(reporter, mds, 2, quick);
 }
 
 Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)

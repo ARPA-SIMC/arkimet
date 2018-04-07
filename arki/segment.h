@@ -20,10 +20,6 @@ namespace scan {
 class Validator;
 }
 
-namespace dataset {
-class Reporter;
-}
-
 namespace segment {
 
 static const unsigned SEGMENT_OK          = 0;
@@ -39,7 +35,7 @@ static const unsigned TEST_MISCHIEF_MOVE_DATA = 1; /// During repack, move all d
 
 
 /**
- * State of a file in a dataset, as one or more of the FILE_* flags
+ * State of a segment
  */
 struct State
 {
@@ -94,14 +90,14 @@ std::ostream& operator<<(std::ostream&, const State&);
 }
 
 /**
- * Interface for managing a dataset segment.
+ * Interface for managing a segment.
  *
- * A dataset segment is a group of data elements stored on disk. It can be a
- * file with all data elements appended one after the other, for formats like
- * BUFR or GRIB that support it; it can be a text file with one data item per
- * line, for line based formats like VM2, or it can be a tar file or a
- * directory with each data item in a different file, for formats like HDF5
- * that cannot be trivially concatenated in the same file.
+ * A segment is a group of data elements stored on disk. It can be a file with
+ * all data elements appended one after the other, for formats like BUFR or
+ * GRIB that support it; it can be a text file with one data item per line, for
+ * line based formats like VM2, or it can be a tar file or a directory with
+ * each data item in a different file, for formats like HDF5 that cannot be
+ * trivially concatenated in the same file.
  */
 class Segment
 {
@@ -182,7 +178,7 @@ protected:
 public:
     using Segment::Segment;
 
-    virtual segment::State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) = 0;
+    virtual segment::State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
     virtual size_t size() = 0;
 

@@ -9,7 +9,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils.h"
-#include "arki/dataset/reporter.h"
 #include "arki/nag.h"
 #include <algorithm>
 #include <system_error>
@@ -122,7 +121,7 @@ void Checker::move_data(const std::string& new_root, const std::string& new_relp
     sys::rename(abspath, new_abspath);
 }
 
-State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap, bool quick)
+State Checker::check_fd(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, unsigned max_gap, bool quick)
 {
     // Check the data if requested
     if (!quick)
@@ -136,7 +135,7 @@ State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, cons
             } catch (std::exception& e) {
                 stringstream out;
                 out << "validation failed at " << i->source() << ": " << e.what();
-                reporter.segment_info(ds, relpath, out.str());
+                reporter(out.str());
                 return SEGMENT_UNALIGNED;
             }
         }
@@ -168,7 +167,7 @@ State Checker::check_fd(dataset::Reporter& reporter, const std::string& ds, cons
     {
         stringstream ss;
         ss << "file looks truncated: its size is " << file_size << " but data is known to exist until " << end_of_last_data_checked << " bytes";
-        reporter.segment_info(ds, relpath, ss.str());
+        reporter(ss.str());
         return SEGMENT_UNALIGNED;
     }
 
