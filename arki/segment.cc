@@ -65,7 +65,7 @@ std::shared_ptr<Writer> Writer::for_pathname(const std::string& format, const st
     {
         if (S_ISDIR(st->st_mode))
         {
-            if (segment::dir::can_store(format))
+            if (segment::dir::Checker::can_store(format))
             {
                 if (mock_data)
                     res.reset(new segment::dir::HoleWriter(format, root, relpath, abspath));
@@ -183,7 +183,7 @@ std::shared_ptr<Checker> Checker::for_pathname(const std::string& format, const 
     {
         if (S_ISDIR(st->st_mode))
         {
-            if (segment::dir::can_store(format))
+            if (segment::dir::Checker::can_store(format))
             {
                 if (mock_data)
                     res.reset(new segment::dir::HoleChecker(format, root, relpath, abspath));

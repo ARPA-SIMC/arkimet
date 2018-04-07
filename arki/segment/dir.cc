@@ -1,4 +1,5 @@
 #include "dir.h"
+#include "common.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -28,6 +29,91 @@ using namespace arki::utils;
 namespace arki {
 namespace segment {
 namespace dir {
+
+namespace {
+
+struct Creator : public AppendCreator
+{
+    std::string format;
+    SequenceFile seqfile;
+    size_t current_pos = 0;
+
+    Creator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
+        : AppendCreator(root, relpath, abspath, mds), seqfile(abspath)
+    {
+        if (!mds.empty())
+            format = mds[0].source().format;
+    }
+
+    size_t append(const std::vector<uint8_t>& data) override
+    {
+        sys::File fd(str::joinpath(abspath, SequenceFile::data_fname(current_pos, format)),
+                    O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
+        try {
+            const std::vector<uint8_t>& buf = data;
+
+            size_t count = fd.pwrite(buf.data(), buf.size(), 0);
+            if (count != buf.size())
+                throw std::runtime_error(fd.name() + ": written only " + std::to_string(count) + "/" + std::to_string(buf.size()) + " bytes");
+
+            if (fdatasync(fd) < 0)
+                fd.throw_error("cannot flush write");
+            fd.close();
+        } catch (...) {
+            unlink(abspath.c_str());
+            throw;
+        }
+        auto res = current_pos;
+        ++current_pos;
+        return res;
+    }
+
+    void create()
+    {
+        sys::makedirs(abspath);
+        seqfile.open();
+        AppendCreator::create();
+    }
+};
+
+#if 0
+struct CheckBackend : public AppendCheckBackend
+{
+    const std::string& tarabspath;
+    std::unique_ptr<struct stat> st;
+
+    CheckBackend(const std::string& tarabspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+        : AppendCheckBackend(reporter, relpath, mds), tarabspath(tarabspath)
+    {
+    }
+
+    size_t offset_end() const override { return st->st_size - 1024; }
+
+    size_t padding_head(off_t offset, size_t size) const override
+    {
+        return 512;
+    }
+
+    size_t padding_tail(off_t offset, size_t size) const override
+    {
+        return 512 - (size % 512);
+    }
+
+    State check()
+    {
+        st = sys::stat(tarabspath);
+        if (st.get() == nullptr)
+        {
+            reporter(tarabspath + " not found on disk");
+            return SEGMENT_DELETED;
+        }
+        return AppendCheckBackend::check();
+    }
+};
+#endif
+
+}
+
 
 Writer::Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
     : segment::Writer(root, relpath, abspath), seqfile(abspath), format(format)
@@ -514,6 +600,13 @@ void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
     fd.write_all_or_throw("\0", 1);
 }
 
+std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+{
+    Creator creator(rootdir, relpath, abspath, mds);
+    creator.create();
+    return make_shared<Checker>(creator.format, rootdir, relpath, abspath);
+}
+
 const char* HoleChecker::type() const { return "hole_dir"; }
 
 State HoleChecker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
@@ -522,7 +615,7 @@ State HoleChecker::check(std::function<void(const std::string&)> reporter, const
     return Checker::check(reporter, mds, true);
 }
 
-bool can_store(const std::string& format)
+bool Checker::can_store(const std::string& format)
 {
     return format == "grib" || format == "grib1" || format == "grib2"
         || format == "bufr"

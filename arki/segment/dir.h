@@ -79,6 +79,9 @@ public:
     void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
     void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
     void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
+
+    static std::shared_ptr<Checker> create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static bool can_store(const std::string& format);
 };
 
 
@@ -96,8 +99,6 @@ public:
 
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
 };
-
-bool can_store(const std::string& format);
 
 }
 }
