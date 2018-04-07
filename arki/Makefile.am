@@ -133,6 +133,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		segment/gzidx.h \
 		segment/seqfile.h \
 		segment/tests.h \
+		segment/tests.tcc \
 		sort.h \
 		summary.h \
 		summary/intern.h \

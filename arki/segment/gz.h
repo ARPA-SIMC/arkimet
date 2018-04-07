@@ -54,10 +54,9 @@ public:
     /**
      * Create a gz segment with the data in mds
      */
-    static void create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static std::shared_ptr<Checker> create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static bool can_store(const std::string& format);
 };
-
-bool can_store(const std::string& format);
 
 }
 
@@ -71,10 +70,10 @@ public:
     /**
      * Create a gz lines segment with the data in mds
      */
-    static void create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static std::shared_ptr<Checker> create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static bool can_store(const std::string& format);
 };
 
-bool can_store(const std::string& format);
 
 }
 

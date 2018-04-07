@@ -268,7 +268,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     return p;
 }
 
-void Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
 {
     string gzabspath = abspath + ".gz";
     string gzidxabspath = abspath + ".gz.idx";
@@ -297,6 +297,8 @@ void Checker::create(const std::string& rootdir, const std::string& relpath, con
     idxfd.fdatasync();
     fd.close();
     idxfd.close();
+
+    return make_shared<Checker>(rootdir, relpath, abspath);
 }
 
 void Checker::test_truncate(size_t offset)
@@ -336,7 +338,7 @@ void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 }
 
 
-bool can_store(const std::string& format)
+bool Checker::can_store(const std::string& format)
 {
     return format == "grib" || format == "grib1" || format == "grib2"
         || format == "bufr" || format == "vm2";
@@ -347,7 +349,7 @@ bool can_store(const std::string& format)
 namespace gzidxlines
 {
 
-void Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
 {
     string gzabspath = abspath + ".gz";
     File fd(gzabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
@@ -375,9 +377,11 @@ void Checker::create(const std::string& rootdir, const std::string& relpath, con
     gzout.flush();
     fd.fdatasync();
     fd.close();
+
+    return make_shared<Checker>(rootdir, relpath, abspath);
 }
 
-bool can_store(const std::string& format)
+bool Checker::can_store(const std::string& format)
 {
     return format == "vm2";
 }

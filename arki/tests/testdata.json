@@ -1826,32 +1826,152 @@
  },
  {
   "doc": "",
-  "group": "arki_segment_tar",
+  "group": "arki_segment_tar_grib",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_grib",
   "method": "check"
  },
  {
   "doc": "",
-  "group": "arki_segment_tar",
+  "group": "arki_segment_tar_grib",
   "method": "remove"
  },
  {
   "doc": "",
-  "group": "arki_segment_gz",
+  "group": "arki_segment_tar_bufr",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_bufr",
   "method": "check"
  },
  {
   "doc": "",
-  "group": "arki_segment_gz",
+  "group": "arki_segment_tar_bufr",
   "method": "remove"
  },
  {
   "doc": "",
-  "group": "arki_segment_gzidx",
+  "group": "arki_segment_tar_odim",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_odim",
   "method": "check"
  },
  {
   "doc": "",
-  "group": "arki_segment_gzidx",
+  "group": "arki_segment_tar_odim",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_vm2",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_vm2",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_vm2",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_grib",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_grib",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_grib",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_bufr",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_bufr",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_bufr",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzlines_vm2",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzlines_vm2",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzlines_vm2",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx_grib",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx_grib",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx_grib",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx_bufr",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx_bufr",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx_bufr",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidxlines_vm2",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidxlines_vm2",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidxlines_vm2",
   "method": "remove"
  },
  {

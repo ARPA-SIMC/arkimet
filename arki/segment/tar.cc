@@ -251,8 +251,11 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     return p;
 }
 
-void Checker::create(const std::string& rootdir, const std::string& tarrelpath, const std::string& tarabspath, metadata::Collection& mds, unsigned test_flags)
+std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
 {
+    string tarrelpath = relpath + ".tar";
+    string tarabspath = abspath + ".tar";
+
     // Create a writer for the temp file
     File fd(tarabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
     TarOutput tarfd(fd);
@@ -281,6 +284,8 @@ void Checker::create(const std::string& rootdir, const std::string& tarrelpath, 
     tarfd.end();
     fd.fdatasync();
     fd.close();
+
+    return make_shared<Checker>(rootdir, relpath, abspath);
 }
 
 void Checker::test_truncate(size_t offset)
@@ -320,7 +325,7 @@ void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 }
 
 
-bool can_store(const std::string& format)
+bool Checker::can_store(const std::string& format)
 {
     return true;
 }

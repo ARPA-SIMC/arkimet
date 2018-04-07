@@ -129,7 +129,7 @@ std::shared_ptr<Writer> Writer::for_pathname(const std::string& format, const st
 
 std::shared_ptr<segment::Checker> Checker::tar(metadata::Collection& mds)
 {
-    segment::tar::Checker::create(root, relpath + ".tar", abspath + ".tar", mds);
+    segment::tar::Checker::create(root, relpath, abspath, mds);
     remove();
     return make_shared<segment::tar::Checker>(root, relpath, abspath);
 }
