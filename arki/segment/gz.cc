@@ -32,6 +32,7 @@ struct Creator : public AppendCreator
     std::vector<uint8_t> padding;
     File out;
     compress::GzipWriter gzout;
+    size_t written = 0;
 
     Creator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
         : AppendCreator(root, relpath, abspath, mds), out(abspath + ".gz"), gzout(out)
@@ -40,10 +41,12 @@ struct Creator : public AppendCreator
 
     size_t append(const std::vector<uint8_t>& data) override
     {
+        size_t wrpos = written;
         gzout.add(data);
         if (!padding.empty())
             gzout.add(padding);
-        return data.size() + padding.size();
+        written += data.size() + padding.size();
+        return wrpos;
     }
 
     void create()
@@ -251,18 +254,21 @@ bool Checker::can_store(const std::string& format)
 
 }
 
-namespace gzlines
-{
+namespace gzlines {
+
+namespace {
 
 struct CheckBackend : public gz::CheckBackend
 {
     using gz::CheckBackend::CheckBackend;
 
-    size_t compute_padding(off_t offset, size_t size) const override
+    size_t padding_tail(off_t offset, size_t size) const override
     {
         return 1;
     }
 };
+
+}
 
 
 State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)

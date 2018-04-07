@@ -24,7 +24,6 @@ AppendCreator::~AppendCreator()
 void AppendCreator::create()
 {
     // Fill the temp file with all the data in the right order
-    size_t ofs = 0;
     for (auto& md: mds)
     {
         bool had_cached_data = md->has_cached_data();
@@ -33,13 +32,12 @@ void AppendCreator::create()
         // Validate it if requested
         if (validator)
             validator->validate_buf(buf.data(), buf.size());
-        size_t appended = append(buf);
+        size_t ofs = append(buf);
         auto new_source = types::Source::createBlobUnlocked(md->source().format, root, relpath, ofs, buf.size());
         // Update the source information in the metadata
         md->set_source(std::move(new_source));
         // Drop the cached data, to prevent accidentally loading the whole segment in memory
         if (!had_cached_data) md->drop_cached_data();
-        ofs += appended;
     }
 }
 
@@ -52,7 +50,12 @@ AppendCheckBackend::~AppendCheckBackend()
 {
 }
 
-size_t AppendCheckBackend::compute_padding(off_t offset, size_t size) const
+size_t AppendCheckBackend::padding_head(off_t offset, size_t size) const
+{
+    return 0;
+}
+
+size_t AppendCheckBackend::padding_tail(off_t offset, size_t size) const
 {
     return 0;
 }
@@ -90,23 +93,25 @@ State AppendCheckBackend::check_contiguous()
     // Check for overlaps
     for (const auto& i: spans)
     {
+        size_t start = i.offset - padding_head(i.offset, i.size);
+
         // If an item begins after the end of another, they overlap and the file needs rescanning
-        if (i.offset < end_of_known_data)
+        if (start < end_of_known_data)
         {
             stringstream out;
-            out << "item at offset " << i.offset << " overlaps with the previous items that ends at offset" << end_of_known_data;
+            out << "item at offset " << start << " overlaps with the previous items that ends at offset" << end_of_known_data;
             reporter(out.str());
             return SEGMENT_UNALIGNED;
         }
-        else if (!dirty && i.offset > end_of_known_data)
+        else if (!dirty && start > end_of_known_data)
         {
             stringstream out;
-            out << "item at offset " << i.offset << " begins past the end of the previous item (offset " << end_of_known_data << ")";
+            out << "item at offset " << start << " begins past the end of the previous item (offset " << end_of_known_data << ")";
             reporter(out.str());
             dirty = true;
         }
 
-        end_of_known_data = i.offset + i.size + compute_padding(i.offset, i.size);
+        end_of_known_data = i.offset + i.size + padding_tail(i.offset, i.size);
     }
 
     return dirty ? SEGMENT_DIRTY : SEGMENT_OK;

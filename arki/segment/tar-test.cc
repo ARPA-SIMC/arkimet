@@ -40,7 +40,7 @@ this->add_method("check", [](Fixture& f) {
         }
         std::shared_ptr<segment::Checker> make_full_checker() override
         {
-            segment::tar::Checker::create(root, relpath + ".tar", abspath + ".tar", mdc);
+            segment::tar::Checker::create(root, relpath, abspath, mdc);
             return make_checker();
         }
         std::shared_ptr<segment::Checker> make_checker() override

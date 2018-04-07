@@ -22,7 +22,10 @@ struct AppendCreator
     AppendCreator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds);
     virtual ~AppendCreator();
 
+    /// Append data to the segment, returning the offset at which it has been written
     virtual size_t append(const std::vector<uint8_t>& data) = 0;
+
+    /// Perform segment creation
     void create();
 };
 
@@ -36,7 +39,8 @@ struct AppendCheckBackend
     AppendCheckBackend(std::function<void(const std::string&)> reporter, const metadata::Collection& mds);
     virtual ~AppendCheckBackend();
 
-    virtual size_t compute_padding(off_t offset, size_t size) const;
+    virtual size_t padding_head(off_t offset, size_t size) const;
+    virtual size_t padding_tail(off_t offset, size_t size) const;
     State check_contiguous();
 
 #if 0
