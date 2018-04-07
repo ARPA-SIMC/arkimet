@@ -18,7 +18,7 @@ this->add_method("create", [](Fixture& f) {
     std::shared_ptr<Segment> checker = Segment::create(curdir, relpath, str::joinpath(curdir, relpath), mds);
     wassert_true(checker->exists_on_disk());
     auto rep = [](const std::string& msg) {
-        fprintf(stderr, "CHECK: %s\n", msg.c_str());
+        // fprintf(stderr, "CHECK: %s\n", msg.c_str());
     };
     wassert(actual(checker->check(rep, mds, true)) == segment::SEGMENT_OK);
     wassert(actual(checker->check(rep, mds, false)) == segment::SEGMENT_OK);

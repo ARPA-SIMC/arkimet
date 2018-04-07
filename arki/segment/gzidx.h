@@ -69,6 +69,9 @@ class Checker : public gzidx::Checker
 public:
     using gzidx::Checker::Checker;
 
+    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
+
     /**
      * Create a gz lines segment with the data in mds
      */
