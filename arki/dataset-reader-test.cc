@@ -26,6 +26,7 @@ struct FixtureReader : public DatasetTest
     using DatasetTest::DatasetTest;
 
     Data td;
+    const vector<std::string> matchers = { "reftime:=2007-07-08", "reftime:=2007-07-07", "reftime:=2007-10-09" };
 
     void test_setup()
     {
@@ -35,7 +36,7 @@ struct FixtureReader : public DatasetTest
         )");
         if (td.format == "vm2")
             cfg.setValue("smallfiles", "true");
-        import_all_packed(td);
+        import_all_packed(td.mds);
     }
 
     bool smallfiles() const
@@ -54,22 +55,22 @@ class TestsReader : public FixtureTestCase<FixtureReader<Data>>
     void register_tests() override;
 };
 
-TestsReader<testdata::GRIBData> test_reader_grib_ondisk2("arki_dataset_reader_grib_ondisk2", "type=ondisk2\n");
-TestsReader<testdata::GRIBData> test_reader_grib_simple_plain("arki_dataset_reader_grib_simple_plain", "type=simple\nindex_type=plain\n");
-TestsReader<testdata::GRIBData> test_reader_grib_simple_sqlite("arki_dataset_reader_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
-TestsReader<testdata::GRIBData> test_reader_grib_iseg("arki_dataset_reader_grib_iseg", "type=iseg\nformat=grib\n");
-TestsReader<testdata::BUFRData> test_reader_bufr_ondisk2("arki_dataset_reader_bufr_ondisk2", "type=ondisk2\n");
-TestsReader<testdata::BUFRData> test_reader_bufr_simple_plain("arki_dataset_reader_bufr_simple_plain", "type=simple\nindex_type=plain\n");
-TestsReader<testdata::BUFRData> test_reader_bufr_simple_sqlite("arki_dataset_reader_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
-TestsReader<testdata::BUFRData> test_reader_bufr_iseg("arki_dataset_reader_bufr_iseg", "type=iseg\nformat=bufr\n");
-TestsReader<testdata::VM2Data> test_reader_vm2_ondisk2("arki_dataset_reader_vm2_ondisk2", "type=ondisk2\n");
-TestsReader<testdata::VM2Data> test_reader_vm2_simple_plain("arki_dataset_reader_vm2_simple_plain", "type=simple\nindex_type=plain\n");
-TestsReader<testdata::VM2Data> test_reader_vm2_simple_sqlite("arki_dataset_reader_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
-TestsReader<testdata::VM2Data> test_reader_vm2_iseg("arki_dataset_reader_vm2_iseg", "type=iseg\nformat=vm2\n");
-TestsReader<testdata::ODIMData> test_reader_odim_ondisk2("arki_dataset_reader_odim_ondisk2", "type=ondisk2\n");
-TestsReader<testdata::ODIMData> test_reader_odim_simple_plain("arki_dataset_reader_odim_simple_plain", "type=simple\nindex_type=plain\n");
-TestsReader<testdata::ODIMData> test_reader_odim_simple_sqlite("arki_dataset_reader_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
-TestsReader<testdata::ODIMData> test_reader_odim_iseg("arki_dataset_reader_odim_iseg", "type=iseg\nformat=odimh5\n");
+TestsReader<GRIBData> test_reader_grib_ondisk2("arki_dataset_reader_grib_ondisk2", "type=ondisk2\n");
+TestsReader<GRIBData> test_reader_grib_simple_plain("arki_dataset_reader_grib_simple_plain", "type=simple\nindex_type=plain\n");
+TestsReader<GRIBData> test_reader_grib_simple_sqlite("arki_dataset_reader_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsReader<GRIBData> test_reader_grib_iseg("arki_dataset_reader_grib_iseg", "type=iseg\nformat=grib\n");
+TestsReader<BUFRData> test_reader_bufr_ondisk2("arki_dataset_reader_bufr_ondisk2", "type=ondisk2\n");
+TestsReader<BUFRData> test_reader_bufr_simple_plain("arki_dataset_reader_bufr_simple_plain", "type=simple\nindex_type=plain\n");
+TestsReader<BUFRData> test_reader_bufr_simple_sqlite("arki_dataset_reader_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsReader<BUFRData> test_reader_bufr_iseg("arki_dataset_reader_bufr_iseg", "type=iseg\nformat=bufr\n");
+TestsReader<VM2Data> test_reader_vm2_ondisk2("arki_dataset_reader_vm2_ondisk2", "type=ondisk2\n");
+TestsReader<VM2Data> test_reader_vm2_simple_plain("arki_dataset_reader_vm2_simple_plain", "type=simple\nindex_type=plain\n");
+TestsReader<VM2Data> test_reader_vm2_simple_sqlite("arki_dataset_reader_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsReader<VM2Data> test_reader_vm2_iseg("arki_dataset_reader_vm2_iseg", "type=iseg\nformat=vm2\n");
+TestsReader<ODIMData> test_reader_odim_ondisk2("arki_dataset_reader_odim_ondisk2", "type=ondisk2\n");
+TestsReader<ODIMData> test_reader_odim_simple_plain("arki_dataset_reader_odim_simple_plain", "type=simple\nindex_type=plain\n");
+TestsReader<ODIMData> test_reader_odim_simple_sqlite("arki_dataset_reader_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsReader<ODIMData> test_reader_odim_iseg("arki_dataset_reader_odim_iseg", "type=iseg\nformat=odimh5\n");
 
 template<class Data>
 void TestsReader<Data>::register_tests() {
@@ -91,19 +92,20 @@ this->add_method("querydata", [](Fixture& f) {
     for (unsigned i = 0; i < 3; ++i)
     {
         using namespace arki::types;
+        Matcher matcher = Matcher::parse(f.matchers[i]);
 
         // Check that what we imported can be queried
-        metadata::Collection mdc(*ds, dataset::DataQuery(f.td.test_data[i].matcher, true));
+        metadata::Collection mdc(*ds, dataset::DataQuery(matcher, true));
         wassert(actual(mdc.size()) == 1u);
 
         // Check that the result matches what was imported
-        const source::Blob& s1 = f.td.test_data[i].md.sourceBlob();
+        const source::Blob& s1 = f.td.mds[i].sourceBlob();
         const source::Blob& s2 = mdc[0].sourceBlob();
         wassert(actual(s2.format) == s1.format);
         wassert(actual(s2.size) == s1.size);
-        wassert(actual(mdc[0]).is_similar(f.td.test_data[i].md));
+        wassert(actual(mdc[0]).is_similar(f.td.mds[i]));
 
-        wassert(actual(f.td.test_data[i].matcher(mdc[0])).istrue());
+        wassert(actual(matcher(mdc[0])).istrue());
 
         // Check that the data can be loaded
         const auto& data = mdc[0].getData();
@@ -130,14 +132,15 @@ this->add_method("querysummary", [](Fixture& f) {
     for (unsigned i = 0; i < 3; ++i)
     {
         using namespace arki::types;
+        Matcher matcher = Matcher::parse(f.matchers[i]);
 
         // Query summary of single items
         Summary s;
-        ds->query_summary(f.td.test_data[i].matcher, s);
+        ds->query_summary(matcher, s);
 
         wassert(actual(s.count()) == 1u);
 
-        const source::Blob& s1 = f.td.test_data[i].md.sourceBlob();
+        const source::Blob& s1 = f.td.mds[i].sourceBlob();
         wassert(actual(s.size()) == s1.size);
     }
 });
@@ -148,21 +151,22 @@ this->add_method("querybytes", [](Fixture& f) {
     for (unsigned i = 0; i < 3; ++i)
     {
         using namespace arki::types;
+        Matcher matcher = Matcher::parse(f.matchers[i]);
 
         // Query into a file
         dataset::ByteQuery bq;
-        bq.setData(f.td.test_data[i].matcher);
+        bq.setData(matcher);
         sys::File out("testdata", O_WRONLY | O_CREAT | O_TRUNC);
         ds->query_bytes(bq, out);
         out.close();
 
         // Rescan the file
         metadata::TestCollection tmp;
-        wassert(actual(tmp.scan_from_file("testdata", f.td.test_data[i].md.source().format, false)).istrue());
+        wassert(actual(tmp.scan_from_file("testdata", f.td.mds[i].source().format, false)).istrue());
 
         // Ensure that what we rescanned is what was imported
         wassert(actual(tmp.size()) == 1u);
-        wassert(actual(tmp[0]).is_similar(f.td.test_data[i].md));
+        wassert(actual(tmp[0]).is_similar(f.td.mds[i]));
 
         //UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
         //wassert(actual(os.str().size()) == s1->size);
@@ -172,23 +176,28 @@ this->add_method("querybytes", [](Fixture& f) {
 this->add_method("query_data", [](Fixture& f) {
     // Test querying with data only
     auto reader(f.config().create_reader());
+    Matcher matcher = Matcher::parse(f.matchers[1]);
 
     sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
-    bq.setData(f.td.test_data[1].matcher);
+    bq.setData(matcher);
     reader->query_bytes(bq, out);
+    out.close();
 
-    string res = sys::read_file(out.name());
-    wassert(actual(res.substr(0, 8)) == f.td.test_data[1].data().substr(0, 8));
+    string queried = sys::read_file(out.name());
+    std::vector<uint8_t> data = f.td.mds[1].getData();
+    string strdata(data.begin(), data.end());
+    wassert(actual(queried.substr(0, 8)) == strdata.substr(0, 8));
 });
 
 this->add_method("query_inline", [](Fixture& f) {
     // Test querying with inline data
     using namespace arki::types;
+    Matcher matcher = Matcher::parse(f.matchers[0]);
 
     auto reader(f.config().create_reader());
 
-    metadata::Collection mdc(*reader, dataset::DataQuery(f.td.test_data[0].matcher, true));
+    metadata::Collection mdc(*reader, dataset::DataQuery(matcher, true));
     wassert(actual(mdc.size()) == 1u);
 
     // Check that the source record that comes out is ok
@@ -196,14 +205,14 @@ this->add_method("query_inline", [](Fixture& f) {
 
     // Check that data is accessible
     const auto& buf = mdc[0].getData();
-    wassert(actual(buf.size()) == f.td.test_data[0].md.sourceBlob().size);
+    wassert(actual(buf.size()) == f.td.mds[0].sourceBlob().size);
 
     mdc.clear();
-    mdc.add(*reader, f.td.test_data[1].matcher);
+    mdc.add(*reader, Matcher::parse(f.matchers[1]));
     wassert(actual(mdc.size()) == 1u);
 
     mdc.clear();
-    mdc.add(*reader, f.td.test_data[2].matcher);
+    mdc.add(*reader, Matcher::parse(f.matchers[2]));
     wassert(actual(mdc.size()) == 1u);
 });
 
@@ -220,7 +229,7 @@ this->add_method("querybytes_integrity", [](Fixture& f) {
     // Check that what we got matches the total size of what we imported
     size_t total_size = 0;
     for (unsigned i = 0; i < 3; ++i)
-        total_size += f.td.test_data[i].md.sourceBlob().size;
+        total_size += f.td.mds[i].sourceBlob().size;
     // We use >= and not == because some data sources add extra information
     // to data, like line endings for VM2
     wassert(actual(sys::size(out.name())) >= total_size);
@@ -234,16 +243,17 @@ this->add_method("querybytes_integrity", [](Fixture& f) {
 
 this->add_method("postprocess", [](Fixture& f) {
     auto ds(f.config().create_reader());
+    Matcher matcher = Matcher::parse(f.matchers[0]);
 
     // Do a simple export first, to get the exact metadata that would come
     // out
-    metadata::Collection mdc(*ds, dataset::DataQuery(f.td.test_data[0].matcher, true));
+    metadata::Collection mdc(*ds, dataset::DataQuery(matcher, true));
     wassert(actual(mdc.size()) == 1u);
 
     // Then do a postprocessed query_bytes
 
     dataset::ByteQuery bq;
-    bq.setPostprocess(f.td.test_data[0].matcher, "testcountbytes");
+    bq.setPostprocess(matcher, "testcountbytes");
     Stderr outfd;
     ds->query_bytes(bq, outfd);
 
@@ -271,7 +281,7 @@ this->add_method("locked", [](Fixture& f) {
 });
 
 this->add_method("interrupted_read", [](Fixture& f) {
-    auto orig_data = f.td.earliest_element().md.getData();
+    auto orig_data = f.td.mds[1].getData();
 
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();

@@ -16,15 +16,26 @@ using namespace arki::tests;
 using namespace arki::utils;
 using namespace arki::dataset;
 
-class Tests : public TestCase
+template<class Segment, class Data>
+struct SegmentFixture : public Fixture
 {
-    using TestCase::TestCase;
+    using Fixture::Fixture;
+};
+
+template<class Segment, class Data>
+class Tests : public FixtureTestCase<SegmentFixture<Segment, Data>>
+{
+    typedef SegmentFixture<Segment, Data> Fixture;
+    using FixtureTestCase<Fixture>::FixtureTestCase;
     void register_tests() override;
-} test("arki_segment_gzidx");
+};
 
-void Tests::register_tests() {
+Tests<segment::gzidx::Checker, GRIBData> test("arki_segment_gzidx");
 
-add_method("check", [] {
+template<class Segment, class Data>
+void Tests<Segment, Data>::register_tests() {
+
+this->add_method("check", [](Fixture& f) {
     struct Test : public SegmentCheckTest
     {
         std::shared_ptr<segment::Writer> make_writer() override
@@ -45,7 +56,7 @@ add_method("check", [] {
     wassert(test.run());
 });
 
-add_method("remove", [] {
+this->add_method("remove", [](Fixture& f) {
     struct Test : public SegmentRemoveTest
     {
         std::shared_ptr<segment::Writer> make_writer() override

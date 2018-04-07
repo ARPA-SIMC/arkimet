@@ -41,11 +41,9 @@ struct FixtureChecker : public DatasetTest
         // Partition data in two groups: before and after selective_cutoff
         relpaths_old.clear();
         relpaths_new.clear();
-        for (const auto& el: td.test_data)
-            if (el.time >= td.selective_cutoff)
-                relpaths_new.insert(destfile(el));
-            else
-                relpaths_old.insert(destfile(el));
+        relpaths_old.insert(destfile(td.mds[0]));
+        relpaths_old.insert(destfile(td.mds[1]));
+        relpaths_new.insert(destfile(td.mds[2]));
     }
 };
 
@@ -58,22 +56,22 @@ class TestsChecker : public FixtureTestCase<FixtureChecker<Data>>
     void register_tests() override;
 };
 
-TestsChecker<testdata::GRIBData> test_checker_grib_ondisk2("arki_dataset_checker_grib_ondisk2", "type=ondisk2\n");
-TestsChecker<testdata::GRIBData> test_checker_grib_simple_plain("arki_dataset_checker_grib_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<testdata::GRIBData> test_checker_grib_simple_sqlite("arki_dataset_checker_grib_simple_sqlite", "type=simple\nindex_type=sqlite\n");
-TestsChecker<testdata::GRIBData> test_checker_grib_iseg("arki_dataset_checker_grib_iseg", "type=iseg\nformat=grib\n");
-TestsChecker<testdata::BUFRData> test_checker_bufr_ondisk2("arki_dataset_checker_bufr_ondisk2", "type=ondisk2\n");
-TestsChecker<testdata::BUFRData> test_checker_bufr_simple_plain("arki_dataset_checker_bufr_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<testdata::BUFRData> test_checker_bufr_simple_sqlite("arki_dataset_checker_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
-TestsChecker<testdata::BUFRData> test_checker_bufr_iseg("arki_dataset_checker_bufr_iseg", "type=iseg\nformat=bufr\n");
-TestsChecker<testdata::VM2Data> test_checker_vm2_ondisk2("arki_dataset_checker_vm2_ondisk2", "type=ondisk2\n");
-TestsChecker<testdata::VM2Data> test_checker_vm2_simple_plain("arki_dataset_checker_vm2_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<testdata::VM2Data> test_checker_vm2_simple_sqlite("arki_dataset_checker_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
-TestsChecker<testdata::VM2Data> test_checker_vm2_iseg("arki_dataset_checker_vm2_iseg", "type=iseg\nformat=vm2\n");
-TestsChecker<testdata::ODIMData> test_checker_odim_ondisk2("arki_dataset_checker_odim_ondisk2", "type=ondisk2\n");
-TestsChecker<testdata::ODIMData> test_checker_odim_simple_plain("arki_dataset_checker_odim_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<testdata::ODIMData> test_checker_odim_simple_sqlite("arki_dataset_checker_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
-TestsChecker<testdata::ODIMData> test_checker_odim_iseg("arki_dataset_checker_odim_iseg", "type=iseg\nformat=odimh5\n");
+TestsChecker<GRIBData> test_checker_grib_ondisk2("arki_dataset_checker_grib_ondisk2", "type=ondisk2\n");
+TestsChecker<GRIBData> test_checker_grib_simple_plain("arki_dataset_checker_grib_simple_plain", "type=simple\nindex_type=plain\n");
+TestsChecker<GRIBData> test_checker_grib_simple_sqlite("arki_dataset_checker_grib_simple_sqlite", "type=simple\nindex_type=sqlite\n");
+TestsChecker<GRIBData> test_checker_grib_iseg("arki_dataset_checker_grib_iseg", "type=iseg\nformat=grib\n");
+TestsChecker<BUFRData> test_checker_bufr_ondisk2("arki_dataset_checker_bufr_ondisk2", "type=ondisk2\n");
+TestsChecker<BUFRData> test_checker_bufr_simple_plain("arki_dataset_checker_bufr_simple_plain", "type=simple\nindex_type=plain\n");
+TestsChecker<BUFRData> test_checker_bufr_simple_sqlite("arki_dataset_checker_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<BUFRData> test_checker_bufr_iseg("arki_dataset_checker_bufr_iseg", "type=iseg\nformat=bufr\n");
+TestsChecker<VM2Data> test_checker_vm2_ondisk2("arki_dataset_checker_vm2_ondisk2", "type=ondisk2\n");
+TestsChecker<VM2Data> test_checker_vm2_simple_plain("arki_dataset_checker_vm2_simple_plain", "type=simple\nindex_type=plain\n");
+TestsChecker<VM2Data> test_checker_vm2_simple_sqlite("arki_dataset_checker_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<VM2Data> test_checker_vm2_iseg("arki_dataset_checker_vm2_iseg", "type=iseg\nformat=vm2\n");
+TestsChecker<ODIMData> test_checker_odim_ondisk2("arki_dataset_checker_odim_ondisk2", "type=ondisk2\n");
+TestsChecker<ODIMData> test_checker_odim_simple_plain("arki_dataset_checker_odim_simple_plain", "type=simple\nindex_type=plain\n");
+TestsChecker<ODIMData> test_checker_odim_simple_sqlite("arki_dataset_checker_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<ODIMData> test_checker_odim_iseg("arki_dataset_checker_odim_iseg", "type=iseg\nformat=odimh5\n");
 
 template<class Data>
 void TestsChecker<Data>::register_tests() {
@@ -83,11 +81,11 @@ typedef FixtureChecker<Data> Fixture;
 this->add_method("preconditions", [](Fixture& f) {
     wassert(actual(f.relpaths_old.size()) > 0u);
     wassert(actual(f.relpaths_new.size()) > 0u);
-    wassert(actual(f.relpaths_old.size() + f.relpaths_new.size()) == f.count_dataset_files(f.td));
+    wassert(actual(f.relpaths_old.size() + f.relpaths_new.size()) == f.count_dataset_files(f.td.mds));
 });
 
 this->add_method("check", [](Fixture& f) {
-    wassert(f.import_all_packed(f.td));
+    wassert(f.import_all_packed(f.td.mds));
 
     auto checker(f.makeSegmentedChecker());
 
@@ -98,7 +96,7 @@ this->add_method("check", [](Fixture& f) {
 
 this->add_method("check_archives", [](Fixture& f) {
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
-    wassert(f.import_all(f.td));
+    wassert(f.import_all(f.td.mds));
     f.cfg.setValue("archive age", "1");
     f.test_reread_config();
 
@@ -129,7 +127,7 @@ this->add_method("check_archives", [](Fixture& f) {
 });
 
 this->add_method("check_filtered", [](Fixture& f) {
-    wassert(f.import_all_packed(f.td));
+    wassert(f.import_all_packed(f.td.mds));
 
     auto checker(f.makeSegmentedChecker());
 
@@ -139,7 +137,7 @@ this->add_method("check_filtered", [](Fixture& f) {
 });
 
 this->add_method("remove_all", [](Fixture& f) {
-    wassert(f.import_all_packed(f.td));
+    wassert(f.import_all_packed(f.td.mds));
 
     {
         auto checker(f.makeSegmentedChecker());
@@ -161,7 +159,7 @@ this->add_method("remove_all", [](Fixture& f) {
 });
 
 this->add_method("remove_all_filtered", [](Fixture& f) {
-    wassert(f.import_all_packed(f.td));
+    wassert(f.import_all_packed(f.td.mds));
 
     {
         auto checker(f.makeSegmentedChecker());
@@ -184,7 +182,7 @@ this->add_method("remove_all_filtered", [](Fixture& f) {
 this->add_method("check_issue51", [](Fixture& f) {
     f.cfg.setValue("step", "yearly");
     if (f.td.format != "grib" && f.td.format != "bufr") return;
-    wassert(f.import_all_packed(f.td));
+    wassert(f.import_all_packed(f.td.mds));
 
     // Get metadata for all data in the dataset and corrupt the last character
     // of them all

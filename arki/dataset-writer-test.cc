@@ -64,22 +64,22 @@ class TestsWriter : public FixtureTestCase<FixtureWriter<Data>>
     void register_tests() override;
 };
 
-TestsWriter<testdata::GRIBData> test_writer_grib_ondisk2("arki_dataset_writer_grib_ondisk2", "type=ondisk2\n");
-TestsWriter<testdata::GRIBData> test_writer_grib_simple_plain("arki_dataset_writer_grib_simple_plain", "type=simple\nindex_type=plain\n");
-TestsWriter<testdata::GRIBData> test_writer_grib_simple_sqlite("arki_dataset_writer_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
-TestsWriter<testdata::GRIBData> test_writer_grib_iseg("arki_dataset_writer_grib_iseg", "type=iseg\nformat=grib\n");
-TestsWriter<testdata::BUFRData> test_writer_bufr_ondisk2("arki_dataset_writer_bufr_ondisk2", "type=ondisk2\n");
-TestsWriter<testdata::BUFRData> test_writer_bufr_simple_plain("arki_dataset_writer_bufr_simple_plain", "type=simple\nindex_type=plain\n");
-TestsWriter<testdata::BUFRData> test_writer_bufr_simple_sqlite("arki_dataset_writer_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
-TestsWriter<testdata::BUFRData> test_writer_bufr_iseg("arki_dataset_writer_bufr_iseg", "type=iseg\nformat=bufr\n");
-TestsWriter<testdata::VM2Data> test_writer_vm2_ondisk2("arki_dataset_writer_vm2_ondisk2", "type=ondisk2\n");
-TestsWriter<testdata::VM2Data> test_writer_vm2_simple_plain("arki_dataset_writer_vm2_simple_plain", "type=simple\nindex_type=plain\n");
-TestsWriter<testdata::VM2Data> test_writer_vm2_simple_sqlite("arki_dataset_writer_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
-TestsWriter<testdata::VM2Data> test_writer_vm2_iseg("arki_dataset_writer_vm2_iseg", "type=iseg\nformat=vm2\n");
-TestsWriter<testdata::ODIMData> test_writer_odim_ondisk2("arki_dataset_writer_odim_ondisk2", "type=ondisk2\n");
-TestsWriter<testdata::ODIMData> test_writer_odim_simple_plain("arki_dataset_writer_odim_simple_plain", "type=simple\nindex_type=plain\n");
-TestsWriter<testdata::ODIMData> test_writer_odim_simple_sqlite("arki_dataset_writer_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
-TestsWriter<testdata::ODIMData> test_writer_odim_iseg("arki_dataset_writer_odim_iseg", "type=iseg\nformat=odimh5\n");
+TestsWriter<GRIBData> test_writer_grib_ondisk2("arki_dataset_writer_grib_ondisk2", "type=ondisk2\n");
+TestsWriter<GRIBData> test_writer_grib_simple_plain("arki_dataset_writer_grib_simple_plain", "type=simple\nindex_type=plain\n");
+TestsWriter<GRIBData> test_writer_grib_simple_sqlite("arki_dataset_writer_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsWriter<GRIBData> test_writer_grib_iseg("arki_dataset_writer_grib_iseg", "type=iseg\nformat=grib\n");
+TestsWriter<BUFRData> test_writer_bufr_ondisk2("arki_dataset_writer_bufr_ondisk2", "type=ondisk2\n");
+TestsWriter<BUFRData> test_writer_bufr_simple_plain("arki_dataset_writer_bufr_simple_plain", "type=simple\nindex_type=plain\n");
+TestsWriter<BUFRData> test_writer_bufr_simple_sqlite("arki_dataset_writer_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsWriter<BUFRData> test_writer_bufr_iseg("arki_dataset_writer_bufr_iseg", "type=iseg\nformat=bufr\n");
+TestsWriter<VM2Data> test_writer_vm2_ondisk2("arki_dataset_writer_vm2_ondisk2", "type=ondisk2\n");
+TestsWriter<VM2Data> test_writer_vm2_simple_plain("arki_dataset_writer_vm2_simple_plain", "type=simple\nindex_type=plain\n");
+TestsWriter<VM2Data> test_writer_vm2_simple_sqlite("arki_dataset_writer_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsWriter<VM2Data> test_writer_vm2_iseg("arki_dataset_writer_vm2_iseg", "type=iseg\nformat=vm2\n");
+TestsWriter<ODIMData> test_writer_odim_ondisk2("arki_dataset_writer_odim_ondisk2", "type=ondisk2\n");
+TestsWriter<ODIMData> test_writer_odim_simple_plain("arki_dataset_writer_odim_simple_plain", "type=simple\nindex_type=plain\n");
+TestsWriter<ODIMData> test_writer_odim_simple_sqlite("arki_dataset_writer_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsWriter<ODIMData> test_writer_odim_iseg("arki_dataset_writer_odim_iseg", "type=iseg\nformat=odimh5\n");
 
 void Tests::register_tests() {
 
@@ -97,7 +97,7 @@ add_method("import_largefile", [](Fixture& f) {
         {
             for (unsigned hour = 0; hour < 24; ++hour)
             {
-                Metadata md = testdata::make_large_mock("grib", 10*1024*1024, 12, day, hour);
+                Metadata md = make_large_mock("grib", 10*1024*1024, 12, day, hour);
                 wassert(actual(*writer).import(md));
             }
         }
@@ -174,10 +174,10 @@ this->add_method("import", [](Fixture& f) {
 
     for (unsigned i = 0; i < 3; ++i)
     {
-        Metadata md = f.td.test_data[i].md;
+        Metadata md = f.td.mds[i];
         wassert(actual(*ds).import(md));
-        wassert(actual_file(str::joinpath(f.ds_root, f.destfile(f.td.test_data[i]))).exists());
-        wassert(actual_type(md.source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.test_data[i])));
+        wassert(actual_file(str::joinpath(f.ds_root, f.destfile(f.td.mds[i]))).exists());
+        wassert(actual_type(md.source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.mds[i])));
     }
 });
 
@@ -185,19 +185,19 @@ this->add_method("import_batch_replace_never", [](Fixture& f) {
     auto ds = f.config().create_writer();
 
     dataset::WriterBatch batch;
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.test_data[0].md));
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.test_data[1].md));
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.test_data[2].md));
+    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[0]));
+    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[1]));
+    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[2]));
     wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_NEVER));
     for (unsigned i = 0; i < 3; ++i)
     {
         wassert(actual(batch[i]->result) == dataset::ACQ_OK);
         wassert(actual(batch[i]->dataset_name) == "testds");
-        wassert(actual_file(str::joinpath(f.ds_root, f.destfile(f.td.test_data[i]))).exists());
-        wassert(actual_type(f.td.test_data[i].md.source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.test_data[i])));
+        wassert(actual_file(str::joinpath(f.ds_root, f.destfile(f.td.mds[i]))).exists());
+        wassert(actual_type(f.td.mds[i].source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.mds[i])));
     }
 
-    Metadata mds[3] = { f.td.test_data[0].md, f.td.test_data[1].md, f.td.test_data[2].md };
+    Metadata mds[3] = { f.td.mds[0], f.td.mds[1], f.td.mds[2] };
     batch.clear();
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[0]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[1]));
@@ -209,9 +209,9 @@ this->add_method("import_batch_replace_never", [](Fixture& f) {
         {
             wassert(actual(batch[i]->result) == dataset::ACQ_OK);
             wassert(actual(batch[i]->dataset_name) == "testds");
-            wassert(actual(mds[i].sourceBlob().absolutePathname()) == f.td.test_data[i].md.sourceBlob().absolutePathname());
-            wassert(actual(mds[i].sourceBlob().offset) > f.td.test_data[i].md.sourceBlob().offset);
-            wassert(actual(mds[i].sourceBlob().size) == f.td.test_data[i].md.sourceBlob().size);
+            wassert(actual(mds[i].sourceBlob().absolutePathname()) == f.td.mds[i].sourceBlob().absolutePathname());
+            wassert(actual(mds[i].sourceBlob().offset) > f.td.mds[i].sourceBlob().offset);
+            wassert(actual(mds[i].sourceBlob().size) == f.td.mds[i].sourceBlob().size);
         } else {
             wassert(actual(batch[i]->result) == dataset::ACQ_ERROR_DUPLICATE);
             wassert(actual(batch[i]->dataset_name) == "");
@@ -223,20 +223,20 @@ this->add_method("import_batch_replace_always", [](Fixture& f) {
     auto ds = f.config().create_writer();
 
     dataset::WriterBatch batch;
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.test_data[0].md));
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.test_data[1].md));
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.test_data[2].md));
+    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[0]));
+    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[1]));
+    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[2]));
     wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_ALWAYS));
 
     for (unsigned i = 0; i < 3; ++i)
     {
         wassert(actual(batch[i]->result) == dataset::ACQ_OK);
         wassert(actual(batch[i]->dataset_name) == "testds");
-        wassert(actual_file(str::joinpath(f.ds_root, f.destfile(f.td.test_data[i]))).exists());
-        wassert(actual_type(f.td.test_data[i].md.source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.test_data[i])));
+        wassert(actual_file(str::joinpath(f.ds_root, f.destfile(f.td.mds[i]))).exists());
+        wassert(actual_type(f.td.mds[i].source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.mds[i])));
     }
 
-    Metadata mds[3] = { f.td.test_data[0].md, f.td.test_data[1].md, f.td.test_data[2].md };
+    Metadata mds[3] = { f.td.mds[0], f.td.mds[1], f.td.mds[2] };
     batch.clear();
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[0]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[1]));
@@ -246,9 +246,9 @@ this->add_method("import_batch_replace_always", [](Fixture& f) {
     {
         wassert(actual(batch[i]->result) == dataset::ACQ_OK);
         wassert(actual(batch[i]->dataset_name) == "testds");
-        wassert(actual(mds[i].sourceBlob().absolutePathname()) == f.td.test_data[i].md.sourceBlob().absolutePathname());
-        wassert(actual(mds[i].sourceBlob().offset) > f.td.test_data[i].md.sourceBlob().offset);
-        wassert(actual(mds[i].sourceBlob().size) == f.td.test_data[i].md.sourceBlob().size);
+        wassert(actual(mds[i].sourceBlob().absolutePathname()) == f.td.mds[i].sourceBlob().absolutePathname());
+        wassert(actual(mds[i].sourceBlob().offset) > f.td.mds[i].sourceBlob().offset);
+        wassert(actual(mds[i].sourceBlob().size) == f.td.mds[i].sourceBlob().size);
     }
 });
 
@@ -259,7 +259,7 @@ this->add_method("import_before_archive_age", [](Fixture& f) {
 
     for (unsigned i = 0; i < 3; ++i)
     {
-        Metadata md = f.td.test_data[i].md;
+        Metadata md = f.td.mds[i];
         wassert(actual(ds->acquire(md)) == dataset::ACQ_ERROR);
         wassert(actual(md.notes().back().content).contains("is older than archive age"));
     }
@@ -275,7 +275,7 @@ this->add_method("import_before_delete_age", [](Fixture& f) {
 
     for (unsigned i = 0; i < 3; ++i)
     {
-        Metadata md = f.td.test_data[i].md;
+        Metadata md = f.td.mds[i];
         wassert(actual(*ds).import(md));
         wassert(actual(md.notes().back().content).contains("is older than delete age"));
     }
@@ -285,7 +285,7 @@ this->add_method("import_before_delete_age", [](Fixture& f) {
 });
 
 this->add_method("second_resolution", [](Fixture& f) {
-    Metadata md(f.td.test_data[1].md);
+    Metadata md(f.td.mds[1]);
     md.set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 0)));
 
     // Import a first metadata to create a segment to repack

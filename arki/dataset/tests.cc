@@ -175,34 +175,36 @@ std::string DatasetTest::idxfname(const ConfigFile* wcfg) const
         return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
-std::string DatasetTest::destfile(const testdata::Element& el) const
+std::string DatasetTest::destfile(const Metadata& md) const
 {
+    const auto* rt = md.get<types::reftime::Position>();
     char buf[32];
     if (cfg.value("shard").empty())
-        snprintf(buf, 32, "%04d/%02d-%02d.%s", el.time.ye, el.time.mo, el.time.da, el.md.source().format.c_str());
+        snprintf(buf, 32, "%04d/%02d-%02d.%s", rt->time.ye, rt->time.mo, rt->time.da, md.source().format.c_str());
     else
-        snprintf(buf, 32, "%04d/%02d/%02d.%s", el.time.ye, el.time.mo, el.time.da, el.md.source().format.c_str());
+        snprintf(buf, 32, "%04d/%02d/%02d.%s", rt->time.ye, rt->time.mo, rt->time.da, md.source().format.c_str());
     return buf;
 }
 
-std::string DatasetTest::archive_destfile(const testdata::Element& el) const
+std::string DatasetTest::archive_destfile(const Metadata& md) const
 {
+    const auto* rt = md.get<types::reftime::Position>();
     char buf[64];
-    snprintf(buf, 64, ".archive/last/%04d/%02d-%02d.%s", el.time.ye, el.time.mo, el.time.da, el.md.source().format.c_str());
+    snprintf(buf, 64, ".archive/last/%04d/%02d-%02d.%s", rt->time.ye, rt->time.mo, rt->time.da, md.source().format.c_str());
     return buf;
 }
 
-std::set<std::string> DatasetTest::destfiles(const testdata::Fixture& f) const
+std::set<std::string> DatasetTest::destfiles(const metadata::Collection& mds) const
 {
     std::set<std::string> fnames;
-    for (unsigned i = 0; i < 3; ++i)
-        fnames.insert(destfile(f.test_data[i]));
+    for (const auto& md: mds)
+        fnames.insert(destfile(*md));
     return fnames;
 }
 
-unsigned DatasetTest::count_dataset_files(const testdata::Fixture& f) const
+unsigned DatasetTest::count_dataset_files(const metadata::Collection& mds) const
 {
-    return destfiles(f).size();
+    return destfiles(mds).size();
 }
 
 std::string manifest_idx_fname()
@@ -412,14 +414,14 @@ void DatasetTest::all_clean(size_t segment_count)
     }
 }
 
-void DatasetTest::import_all(const testdata::Fixture& fixture)
+void DatasetTest::import_all(const metadata::Collection& mds)
 {
     clean();
 
     auto writer = config().create_writer();
-    for (int i = 0; i < 3; ++i)
+    for (const auto& md: mds)
     {
-        import_results.push_back(fixture.test_data[i].md);
+        import_results.push_back(*md);
         WriterAcquireResult res = writer->acquire(import_results.back());
         wassert(actual(res) == ACQ_OK);
         import_results.back().sourceBlob().unlock();
@@ -428,9 +430,9 @@ void DatasetTest::import_all(const testdata::Fixture& fixture)
     utils::files::removeDontpackFlagfile(cfg.value("path"));
 }
 
-void DatasetTest::import_all_packed(const testdata::Fixture& fixture)
+void DatasetTest::import_all_packed(const metadata::Collection& mds)
 {
-    wassert(import_all(fixture));
+    wassert(import_all(mds));
     wassert(repack());
 }
 
@@ -1015,119 +1017,6 @@ void ActualChecker<Dataset>::remove_all_filtered(const Matcher& matcher, const R
     wassert(this->_actual->remove_all(opts));
     // reporter.dump(stderr);
     wassert(reporter->check(expected));
-}
-
-}
-
-namespace testdata {
-
-void Element::set(const Metadata& md, const std::string& matcher)
-{
-    const types::reftime::Position* rt = md.get<types::reftime::Position>();
-    this->md = md;
-    this->time = rt->time;
-    this->matcher = Matcher::parse(matcher);
-}
-
-std::string Element::data()
-{
-    auto res = md.getData();
-    return std::string(res.begin(), res.end());
-}
-
-void Fixture::finalise_init()
-{
-    // Compute selective_cutoff
-    selective_cutoff = min({test_data[0].time, test_data[1].time, test_data[2].time});
-    ++selective_cutoff.mo;
-    selective_cutoff.normalise();
-}
-
-unsigned Fixture::selective_days_since() const
-{
-    return tests::days_since(selective_cutoff.ye, selective_cutoff.mo, selective_cutoff.da);
-}
-
-Element& Fixture::earliest_element()
-{
-    Element* res = nullptr;
-
-    for (auto& e: test_data)
-        if (!res || *e.md.get(TYPE_REFTIME) < *res->md.get(TYPE_REFTIME))
-            res = &e;
-
-    return *res;
-}
-
-GRIBData::GRIBData()
-{
-#ifndef HAVE_GRIBAPI
-    throw TestSkipped();
-#endif
-    metadata::TestCollection mdc("inbound/fixture.grib1");
-    format = "grib";
-    test_data[0].set(mdc[0], "reftime:=2007-07-08");
-    test_data[1].set(mdc[1], "reftime:=2007-07-07");
-    test_data[2].set(mdc[2], "reftime:=2007-10-09");
-    finalise_init();
-}
-
-BUFRData::BUFRData()
-{
-#ifndef HAVE_DBALLE
-    throw TestSkipped();
-#endif
-    metadata::TestCollection mdc("inbound/fixture.bufr");
-    format = "bufr";
-    test_data[0].set(mdc[0], "reftime:=2007-07-08");
-    test_data[1].set(mdc[1], "reftime:=2007-07-07");
-    test_data[2].set(mdc[2], "reftime:=2007-10-09");
-    finalise_init();
-}
-
-VM2Data::VM2Data()
-{
-#ifndef HAVE_VM2
-    throw TestSkipped();
-#endif
-    metadata::TestCollection mdc("inbound/fixture.vm2");
-    format = "vm2";
-    test_data[0].set(mdc[0], "reftime:=2007-07-08");
-    test_data[1].set(mdc[1], "reftime:=2007-07-07");
-    test_data[2].set(mdc[2], "reftime:=2007-10-09");
-    finalise_init();
-}
-
-ODIMData::ODIMData()
-{
-#ifndef HAVE_HDF5
-    throw TestSkipped();
-#endif
-    metadata::TestCollection mdc;
-    format = "odimh5";
-    mdc.scan_from_file("inbound/fixture.h5/00.h5", true);
-    mdc.scan_from_file("inbound/fixture.h5/01.h5", true);
-    mdc.scan_from_file("inbound/fixture.h5/02.h5", true);
-    test_data[0].set(mdc[0], "reftime:=2007-07-08");
-    test_data[1].set(mdc[1], "reftime:=2007-07-07");
-    test_data[2].set(mdc[2], "reftime:=2007-10-09");
-    finalise_init();
-}
-
-
-Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour)
-{
-    Metadata md;
-    md.set_source_inline(format, vector<uint8_t>(size));
-    md.set("origin", "GRIB1(200, 10, 100)");
-    md.set("product", "GRIB1(3, 4, 5)");
-    md.set("level", "GRIB1(1, 2)");
-    md.set("timerange", "GRIB1(4, 5s, 6s)");
-    md.set(Reftime::createPosition(Time(2014, month, day, hour, 0, 0)));
-    md.set("area", "GRIB(foo=5,bar=5000)");
-    md.set("proddef", "GRIB(foo=5,bar=5000)");
-    md.add_note("this is a test");
-    return md;
 }
 
 }
