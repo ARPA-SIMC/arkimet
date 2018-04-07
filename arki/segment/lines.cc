@@ -80,9 +80,25 @@ std::unique_ptr<fd::File> Checker::open(const std::string& pathname)
     return std::unique_ptr<fd::File>(new File(pathname, O_RDWR, 0666));
 }
 
+namespace {
+
+struct CheckBackend : public fd::CheckBackend
+{
+    using fd::CheckBackend::CheckBackend;
+
+    size_t actual_end(off_t offset, size_t size) const override
+    {
+        return offset + size + 1;
+    }
+};
+
+}
+
 State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    return check_fd(reporter, mds, 2, quick);
+    CheckBackend checker(abspath, relpath, reporter, mds);
+    checker.accurate = !quick;
+    return checker.check();
 }
 
 Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
@@ -95,6 +111,19 @@ std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds)
     segment::gzidxlines::Checker::create(root, relpath + ".tar", abspath + ".tar", mds);
     remove();
     return make_shared<segment::gzidxlines::Checker>(root, relpath, abspath);
+}
+
+bool Checker::can_store(const std::string& format)
+{
+    return format == "vm2";
+}
+
+std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
+{
+    fd::Creator creator(rootdir, relpath, abspath, mds);
+    creator.out = new File(abspath);
+    creator.create();
+    return make_shared<Checker>(rootdir, relpath, abspath);
 }
 
 }

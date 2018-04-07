@@ -16,6 +16,14 @@ struct SegmentFixture : public Fixture
     using Fixture::Fixture;
 
     Data td;
+    metadata::Collection seg_mds;
+    std::string root;
+    std::string relpath;
+    std::string abspath;
+
+    std::shared_ptr<Segment> create();
+
+    void test_setup();
 };
 
 template<class Segment, class Data>

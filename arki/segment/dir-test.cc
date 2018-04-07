@@ -61,7 +61,10 @@ SegmentTests<Segment, Data>::register_tests();
 
 // Try to append some data
 this->add_method("append", [](Fixture& f) {
-    sys::rmtree_ifexists(relpath);
+    if (sys::isdir(relpath))
+        sys::rmtree_ifexists(relpath);
+    else
+        sys::unlink_ifexists(relpath);
     metadata::TestCollection mdc("inbound/test.grib1");
     wassert(actual_file(relpath).not_exists());
     {
@@ -148,40 +151,6 @@ this->add_method("append", [](Fixture& f) {
     wassert(actual(mdc1.size()) == 2u);
     wassert(actual(mdc1[0]).is_similar(mdc[0]));
     wassert(actual(mdc1[1]).is_similar(mdc[2]));
-});
-
-// Common segment tests
-
-this->add_method("check", [](Fixture& f) {
-    struct Test : public SegmentCheckTest
-    {
-        std::shared_ptr<segment::Writer> make_writer() override
-        {
-            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relpath, abspath));
-        }
-        std::shared_ptr<segment::Checker> make_checker() override
-        {
-            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relpath, abspath));
-        }
-    } test;
-
-    wassert(test.run());
-});
-
-this->add_method("remove", [](Fixture& f) {
-    struct Test : public SegmentRemoveTest
-    {
-        std::shared_ptr<segment::Writer> make_writer() override
-        {
-            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relpath, abspath));
-        }
-        std::shared_ptr<segment::Checker> make_checker() override
-        {
-            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relpath, abspath));
-        }
-    } test;
-
-    wassert(test.run());
 });
 
 }

@@ -34,6 +34,49 @@ void File::fdtruncate_nothrow(off_t pos) noexcept
         nag::warning("truncating %s to previous size %zd (rollback of append operation): %m", name().c_str(), pos);
 }
 
+Creator::Creator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
+    : AppendCreator(root, relpath, abspath, mds)
+{
+}
+
+Creator::~Creator()
+{
+    delete out;
+}
+
+void Creator::create()
+{
+    if (!out->is_open())
+        out->open(O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    AppendCreator::create();
+    out->fdatasync();
+    out->close();
+}
+
+size_t Creator::append(const std::vector<uint8_t>& data)
+{
+    size_t wrpos = written;
+    written += out->write_data(data);
+    return wrpos;
+}
+
+
+CheckBackend::CheckBackend(const std::string& abspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+    : AppendCheckBackend(reporter, relpath, mds), abspath(abspath)
+{
+}
+
+size_t CheckBackend::offset_end() const { return st->st_size; }
+
+State CheckBackend::check()
+{
+    st = sys::stat(abspath);
+    if (st.get() == nullptr)
+        return SEGMENT_DELETED;
+
+    return AppendCheckBackend::check();
+}
+
 
 Writer::Writer(const std::string& root, const std::string& relpath, std::unique_ptr<File> fd)
     : segment::Writer(root, relpath, fd->name()), fd(fd.release())
@@ -121,82 +164,6 @@ void Checker::move_data(const std::string& new_root, const std::string& new_relp
     sys::rename(abspath, new_abspath);
 }
 
-State Checker::check_fd(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, unsigned max_gap, bool quick)
-{
-    // Check the data if requested
-    if (!quick)
-    {
-        const scan::Validator* validator = &scan::Validator::by_filename(abspath.c_str());
-
-        for (const auto& i: mds)
-        {
-            try {
-                validate(*i, *validator);
-            } catch (std::exception& e) {
-                stringstream out;
-                out << "validation failed at " << i->source() << ": " << e.what();
-                reporter(out.str());
-                return SEGMENT_UNALIGNED;
-            }
-        }
-    }
-
-    // Create the list of data (offset, size) sorted by offset
-    vector< pair<off_t, size_t> > spans;
-    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
-    {
-        const source::Blob& source = (*i)->sourceBlob();
-        spans.push_back(make_pair(source.offset, source.size));
-    }
-    std::sort(spans.begin(), spans.end());
-
-    // Check for overlaps
-    off_t end_of_last_data_checked = 0;
-    for (vector< pair<off_t, size_t> >::const_iterator i = spans.begin(); i != spans.end(); ++i)
-    {
-        // If an item begins after the end of another, they overlap and the file needs rescanning
-        if (i->first < end_of_last_data_checked)
-            return SEGMENT_UNALIGNED;
-
-        end_of_last_data_checked = i->first + i->second;
-    }
-
-    // Check for truncation
-    off_t file_size = utils::compress::filesize(abspath);
-    if (file_size < end_of_last_data_checked)
-    {
-        stringstream ss;
-        ss << "file looks truncated: its size is " << file_size << " but data is known to exist until " << end_of_last_data_checked << " bytes";
-        reporter(ss.str());
-        return SEGMENT_UNALIGNED;
-    }
-
-    // Check if file_size matches the expected file size
-    bool has_hole = false;
-    if (file_size > end_of_last_data_checked + max_gap)
-        has_hole = true;
-
-    // Check for holes or elements out of order
-    end_of_last_data_checked = 0;
-    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
-    {
-        const source::Blob& source = (*i)->sourceBlob();
-        if (source.offset < (size_t)end_of_last_data_checked || source.offset > (size_t)end_of_last_data_checked + max_gap)
-            has_hole = true;
-
-        end_of_last_data_checked = max(end_of_last_data_checked, (off_t)(source.offset + source.size));
-    }
-
-    // Take note of files with holes
-    if (has_hole)
-    {
-        nag::verbose("%s: contains deleted data or data to be reordered", abspath.c_str());
-        return SEGMENT_DIRTY;
-    } else {
-        return SEGMENT_OK;
-    }
-}
-
 void Checker::validate(Metadata& md, const scan::Validator& v)
 {
     if (const types::source::Blob* blob = md.has_source_blob()) {
@@ -230,86 +197,19 @@ Pending Checker::repack_impl(
         bool skip_validation,
         unsigned test_flags)
 {
-    struct Rename : public Transaction
-    {
-        sys::File src;
-        std::string tmpabspath;
-        std::string abspath;
-        bool fired = false;
-
-        Rename(const std::string& tmpabspath, const std::string& abspath)
-            : src(abspath, O_RDWR), tmpabspath(tmpabspath), abspath(abspath)
-        {
-        }
-
-        virtual ~Rename()
-        {
-            if (!fired) rollback();
-        }
-
-        void commit() override
-        {
-            if (fired) return;
-            // Rename the data file to its final name
-            if (rename(tmpabspath.c_str(), abspath.c_str()) < 0)
-                throw_system_error("cannot rename " + tmpabspath + " to " + abspath);
-            fired = true;
-        }
-
-        void rollback() override
-        {
-            if (fired) return;
-            ::unlink(tmpabspath.c_str());
-            fired = true;
-        }
-
-        void rollback_nothrow() noexcept override
-        {
-            if (fired) return;
-            ::unlink(tmpabspath.c_str());
-            fired = true;
-        }
-    };
-
-    string tmprelpath = relpath + ".repack";
     string tmpabspath = abspath + ".repack";
 
-    // Make sure mds are not holding a read lock on the file to repack
+    Pending p(new files::RenameTransaction(tmpabspath, abspath));
+
+    Creator creator(rootdir, relpath, abspath, mds);
+    creator.out = open_file(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666).release();
+    if (!skip_validation)
+        creator.validator = &scan::Validator::by_filename(abspath);
+    creator.create();
+
+    // Make sure mds are not holding a reader on the file to repack, because it
+    // will soon be invalidated
     for (auto& md: mds) md->sourceBlob().unlock();
-
-    // Get a validator for this file
-    const scan::Validator& validator = scan::Validator::by_filename(abspath);
-
-    // Reacquire the lock here for writing
-    Rename* rename;
-    Pending p(rename = new Rename(tmpabspath, abspath));
-
-    // Create a writer for the temp file
-    auto new_fd = open_file(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    size_t wrpos = 0;
-
-    if (test_flags & TEST_MISCHIEF_MOVE_DATA)
-        new_fd->test_add_padding(1);
-
-    // Fill the temp file with all the data in the right order
-    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
-    {
-        // Read the data
-        auto buf = (*i)->sourceBlob().read_data(rename->src, false);
-        // Validate it
-        if (!skip_validation)
-            validator.validate_buf(buf.data(), buf.size());
-        // Append it to the new file
-        auto new_source = Source::createBlobUnlocked((*i)->source().format, rootdir, relpath, wrpos, buf.size());
-        wrpos += new_fd->write_data(buf);
-        // Update the source information in the metadata
-        (*i)->set_source(std::move(new_source));
-        // Drop the cached data, to prevent ending up with the whole segment
-        // sitting in memory
-        (*i)->drop_cached_data();
-    }
-
-    new_fd->fdatasync();
 
     return p;
 }

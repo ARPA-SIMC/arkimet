@@ -135,9 +135,10 @@ State Checker::check(std::function<void(const std::string&)> reporter, const met
 
 size_t Checker::remove()
 {
-    size_t size = sys::size(gzabspath);
+    size_t res = size();
     sys::unlink(gzabspath);
-    return size;
+    sys::unlink(gzidxabspath);
+    return res;
 }
 
 Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
@@ -220,9 +221,9 @@ struct CheckBackend : public gzidx::CheckBackend
 {
     using gzidx::CheckBackend::CheckBackend;
 
-    size_t padding_tail(off_t offset, size_t size) const override
+    size_t actual_end(off_t offset, size_t size) const override
     {
-        return 1;
+        return offset + size + 1;
     }
 };
 

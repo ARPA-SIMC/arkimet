@@ -98,7 +98,9 @@ std::unique_ptr<fd::File> Checker::open(const std::string& pathname)
 
 State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    return check_fd(reporter, mds, 0, quick);
+    fd::CheckBackend checker(abspath, relpath, reporter, mds);
+    checker.accurate = !quick;
+    return checker.check();
 }
 
 Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
@@ -122,6 +124,19 @@ std::unique_ptr<fd::File> HoleChecker::open(const std::string& pathname)
 Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
     return fd::Checker::repack_impl(rootdir, mds, true, test_flags);
+}
+
+bool Checker::can_store(const std::string& format)
+{
+    return format == "grib" || format == "bufr";
+}
+
+std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
+{
+    fd::Creator creator(rootdir, relpath, abspath, mds);
+    creator.out = new File(abspath);
+    creator.create();
+    return make_shared<Checker>(rootdir, relpath, abspath);
 }
 
 }

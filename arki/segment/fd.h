@@ -5,6 +5,7 @@
 
 #include <arki/libconfig.h>
 #include <arki/segment.h>
+#include <arki/segment/common.h>
 #include <arki/core/file.h>
 #include <string>
 #include <vector>
@@ -16,13 +17,34 @@ namespace fd {
 /**
  * Customize in subclasses to add format-specific I/O
  */
-struct File : public arki::core::File
+struct File : public core::File
 {
-    using arki::core::File::File;
+    using core::File::File;
 
     void fdtruncate_nothrow(off_t pos) noexcept;
     virtual size_t write_data(const std::vector<uint8_t>& buf) = 0;
     virtual void test_add_padding(size_t size) = 0;
+};
+
+struct Creator : public AppendCreator
+{
+    File* out = nullptr;
+    size_t written = 0;
+
+    Creator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds);
+    ~Creator();
+    size_t append(const std::vector<uint8_t>& data) override;
+    void create();
+};
+
+struct CheckBackend : public AppendCheckBackend
+{
+    const std::string& abspath;
+    std::unique_ptr<struct stat> st;
+
+    CheckBackend(const std::string& abspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds);
+    size_t offset_end() const override;
+    State check();
 };
 
 
@@ -80,8 +102,6 @@ public:
     size_t size() override;
 
     size_t remove() override;
-
-    State check_fd(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
 
     void test_truncate(size_t offset) override;
     void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;

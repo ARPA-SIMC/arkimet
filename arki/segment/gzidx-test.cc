@@ -29,48 +29,6 @@ template<class Segment, class Data>
 void Tests<Segment, Data>::register_tests() {
 SegmentTests<Segment, Data>::register_tests();
 
-this->add_method("check", [](Fixture& f) {
-    struct Test : public SegmentCheckTest
-    {
-        std::shared_ptr<segment::Writer> make_writer() override
-        {
-            throw std::runtime_error("writes for .gz segments are not implemented");
-        }
-        std::shared_ptr<segment::Checker> make_full_checker() override
-        {
-            segment::gzidx::Checker::create(root, relpath, abspath, mdc);
-            return make_checker();
-        }
-        std::shared_ptr<segment::Checker> make_checker() override
-        {
-            return std::shared_ptr<segment::Checker>(new segment::gzidx::Checker(root, relpath, abspath));
-        }
-    } test;
-
-    wassert(test.run());
-});
-
-this->add_method("remove", [](Fixture& f) {
-    struct Test : public SegmentRemoveTest
-    {
-        std::shared_ptr<segment::Writer> make_writer() override
-        {
-            throw std::runtime_error("writes for .gz segments are not implemented");
-        }
-        std::shared_ptr<segment::Checker> make_full_checker() override
-        {
-            segment::gzidx::Checker::create(root, relpath, abspath, mdc);
-            return make_checker();
-        }
-        std::shared_ptr<segment::Checker> make_checker() override
-        {
-            return std::shared_ptr<segment::Checker>(new segment::gzidx::Checker(root, relpath, abspath));
-        }
-    } test;
-
-    wassert(test.run());
-});
-
 }
 
 }

@@ -71,14 +71,14 @@ struct CheckBackend : public AppendCheckBackend
 
     size_t offset_end() const override { return st->st_size - 1024; }
 
-    size_t padding_head(off_t offset, size_t size) const override
+    size_t actual_start(off_t offset, size_t size) const override
     {
-        return 512;
+        return offset - 512;
     }
 
-    size_t padding_tail(off_t offset, size_t size) const override
+    size_t actual_end(off_t offset, size_t size) const override
     {
-        return 512 - (size % 512);
+        return offset + size + 512 - (size % 512);
     }
 
     State check()

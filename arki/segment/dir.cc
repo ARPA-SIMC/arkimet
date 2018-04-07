@@ -37,6 +37,7 @@ struct Creator : public AppendCreator
     std::string format;
     std::string dest_abspath;
     size_t current_pos = 0;
+    bool hardlink = false;
 
     Creator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
         : AppendCreator(root, relpath, abspath, mds), dest_abspath(abspath)
@@ -47,23 +48,45 @@ struct Creator : public AppendCreator
 
     size_t append(const std::vector<uint8_t>& data) override
     {
-        sys::File fd(str::joinpath(dest_abspath, SequenceFile::data_fname(current_pos, format)),
-                    O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
-        try {
-            const std::vector<uint8_t>& buf = data;
+        throw std::runtime_error("append on dir creator should never be called");
+    }
 
-            size_t count = fd.pwrite(buf.data(), buf.size(), 0);
-            if (count != buf.size())
-                throw std::runtime_error(fd.name() + ": written only " + std::to_string(count) + "/" + std::to_string(buf.size()) + " bytes");
+    Span append_md(Metadata& md) override
+    {
+        Span res;
 
-            if (fdatasync(fd) < 0)
-                fd.throw_error("cannot flush write");
-            fd.close();
-        } catch (...) {
-            unlink(fd.name().c_str());
-            throw;
+        if (hardlink)
+        {
+            const source::Blob& source = md.sourceBlob();
+            res.size = source.size;
+            std::string src = str::joinpath(source.absolutePathname(), SequenceFile::data_fname(source.offset, format));
+            std::string dst = str::joinpath(dest_abspath, SequenceFile::data_fname(current_pos, format));
+
+            if (::link(src.c_str(), dst.c_str()) != 0)
+                throw_system_error("cannot link " + src + " as " + dst);
+        } else {
+            auto buf = md.getData();
+            res.size = buf.size();
+            if (validator)
+                validator->validate_buf(buf.data(), buf.size());
+
+            sys::File fd(str::joinpath(dest_abspath, SequenceFile::data_fname(current_pos, format)),
+                        O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
+            try {
+                size_t count = fd.pwrite(buf.data(), buf.size(), 0);
+                if (count != buf.size())
+                    throw std::runtime_error(fd.name() + ": written only " + std::to_string(count) + "/" + std::to_string(buf.size()) + " bytes");
+
+                if (fdatasync(fd) < 0)
+                    fd.throw_error("cannot flush write");
+                fd.close();
+            } catch (...) {
+                unlink(fd.name().c_str());
+                throw;
+            }
         }
-        auto res = current_pos;
+
+        res.offset = current_pos;
         ++current_pos;
         return res;
     }
@@ -78,41 +101,134 @@ struct Creator : public AppendCreator
     }
 };
 
-#if 0
 struct CheckBackend : public AppendCheckBackend
 {
-    const std::string& tarabspath;
+    const std::string& format;
+    const std::string& abspath;
     std::unique_ptr<struct stat> st;
+    // File size by offset
+    map<size_t, size_t> on_disk;
+    size_t count_on_disk = 0;
 
-    CheckBackend(const std::string& tarabspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
-        : AppendCheckBackend(reporter, relpath, mds), tarabspath(tarabspath)
+    CheckBackend(const std::string& format, const std::string& abspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+        : AppendCheckBackend(reporter, relpath, mds), format(format), abspath(abspath)
     {
     }
 
-    size_t offset_end() const override { return st->st_size - 1024; }
+    size_t actual_end(off_t offset, size_t size) const override { return offset + 1; }
+    size_t offset_end() const override { return count_on_disk; }
 
-    size_t padding_head(off_t offset, size_t size) const override
+    State check_source(const types::source::Blob& source) override
     {
-        return 512;
-    }
-
-    size_t padding_tail(off_t offset, size_t size) const override
-    {
-        return 512 - (size % 512);
+        auto si = on_disk.find(source.offset);
+        if (si == on_disk.end())
+        {
+            stringstream ss;
+            ss << "expected file " << source.offset << " not found in the file system";
+            reporter(ss.str());
+            return SEGMENT_CORRUPTED;
+        }
+        if (source.size != si->second)
+        {
+            stringstream ss;
+            ss << "expected file " << source.offset << " has size " << si->second << " instead of expected " << source.size;
+            reporter(ss.str());
+            return SEGMENT_CORRUPTED;
+        }
+        on_disk.erase(si);
+        return SEGMENT_OK;
     }
 
     State check()
     {
-        st = sys::stat(tarabspath);
+        st = sys::stat(abspath);
         if (st.get() == nullptr)
         {
-            reporter(tarabspath + " not found on disk");
+            reporter(abspath + " not found on disk");
             return SEGMENT_DELETED;
         }
-        return AppendCheckBackend::check();
+
+        if (!S_ISDIR(st->st_mode))
+        {
+            reporter(abspath + " is not a directory");
+            return SEGMENT_CORRUPTED;
+        }
+
+        sys::Path dir(abspath);
+        for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
+        {
+            if (!i.isreg()) continue;
+            if (!str::endswith(i->d_name, format)) continue;
+            struct stat st;
+            i.path->fstatat(i->d_name, st);
+            on_disk.insert(make_pair(
+                        (size_t)strtoul(i->d_name, 0, 10),
+                        st.st_size));
+        }
+
+        count_on_disk = on_disk.size();
+
+        bool dirty = false;
+        State state = AppendCheckBackend::check();
+        if (!state.is_ok())
+        {
+            if (state.value == SEGMENT_DIRTY)
+                dirty = true;
+            else
+                return state;
+        }
+
+        // Check files on disk that were not accounted for
+        for (const auto& di: on_disk)
+        {
+            auto idx = di.first;
+            if (accurate)
+            {
+                string fname = str::joinpath(abspath, SequenceFile::data_fname(idx, format));
+                metadata::Collection mds;
+                try {
+                    scan::scan(fname, std::make_shared<core::lock::Null>(), format, [&](unique_ptr<Metadata> md) {
+                        mds.acquire(std::move(md));
+                        return true;
+                    });
+                } catch (std::exception& e) {
+                    stringstream out;
+                    out << "unexpected data file " << idx << " fails to scan (" << e.what() << ")";
+                    reporter(out.str());
+                    dirty = true;
+                    continue;
+                }
+
+                if (mds.size() == 0)
+                {
+                    stringstream ss;
+                    ss << "unexpected data file " << idx << " does not contain any " << format << " items";
+                    reporter(ss.str());
+                    dirty = true;
+                    continue;
+                }
+
+                if (mds.size() > 1)
+                {
+                    stringstream ss;
+                    ss << "unexpected data file " << idx << " contains " << mds.size() << " " << format << " items instead of 1";
+                    reporter(ss.str());
+                    return SEGMENT_CORRUPTED;
+                }
+            }
+        }
+
+        if (!on_disk.empty())
+        {
+            stringstream ss;
+            ss << "segment contains " << on_disk.size() << " file(s) that the index does now know about";
+            reporter(ss.str());
+            dirty = true;
+        }
+
+        return dirty ? SEGMENT_DIRTY : SEGMENT_OK;
     }
 };
-#endif
 
 }
 
@@ -250,127 +366,9 @@ void Checker::move_data(const std::string& new_root, const std::string& new_relp
 
 State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    size_t next_sequence_expected(0);
-    const scan::Validator* validator(0);
-    bool out_of_order(false);
-    std::string format = utils::require_format(abspath);
-
-    if (!quick)
-        validator = &scan::Validator::by_filename(abspath.c_str());
-
-    // Deal with segments that just do not exist
-    if (!sys::exists(abspath))
-        return SEGMENT_UNALIGNED;
-
-    // List the dir elements we know about
-    map<size_t, size_t> expected;
-    sys::Path dir(abspath);
-    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
-    {
-        if (!i.isreg()) continue;
-        if (!str::endswith(i->d_name, format)) continue;
-        struct stat st;
-        i.path->fstatat(i->d_name, st);
-        expected.insert(make_pair(
-                    (size_t)strtoul(i->d_name, 0, 10),
-                    st.st_size));
-    }
-
-    // Check the list of elements we expect for sort order, gaps, and match
-    // with what is in the file system
-    for (const auto& i: mds)
-    {
-        if (validator)
-        {
-            try {
-                validate(*i, *validator);
-            } catch (std::exception& e) {
-                stringstream out;
-                out << "validation failed at " << i->source() << ": " << e.what();
-                reporter(out.str());
-                return SEGMENT_UNALIGNED;
-            }
-        }
-
-        const source::Blob& source = i->sourceBlob();
-
-        if (source.offset != next_sequence_expected)
-            out_of_order = true;
-
-        auto ei = expected.find(source.offset);
-        if (ei == expected.end())
-        {
-            stringstream ss;
-            ss << "expected file " << source.offset << " not found in the file system";
-            reporter(ss.str());
-            return SEGMENT_UNALIGNED;
-        } else {
-            if (source.size != ei->second)
-            {
-                stringstream ss;
-                ss << "expected file " << source.offset << " has size " << ei->second << " instead of expected " << source.size;
-                reporter(ss.str());
-                return SEGMENT_CORRUPTED;
-            }
-            expected.erase(ei);
-        }
-
-        ++next_sequence_expected;
-    }
-
-    State res = SEGMENT_OK;
-
-    for (const auto& ei: expected)
-    {
-        auto idx = ei.first;
-        if (validator)
-        {
-            string fname = str::joinpath(abspath, SequenceFile::data_fname(idx, format));
-            metadata::Collection mds;
-            try {
-                scan::scan(fname, std::make_shared<core::lock::Null>(), format, [&](unique_ptr<Metadata> md) {
-                    mds.acquire(std::move(md));
-                    return true;
-                });
-            } catch (std::exception& e) {
-                stringstream out;
-                out << "scan of unexpected file failed at " << abspath << ":" << idx << ": " << e.what();
-                reporter(out.str());
-                res = SEGMENT_DIRTY;
-                continue;
-            }
-
-            if (mds.size() == 0)
-            {
-                stringstream ss;
-                ss << "file does not contain any " << format << " items";
-                reporter(ss.str());
-                res = SEGMENT_DIRTY;
-                continue;
-            }
-
-            if (mds.size() > 1)
-            {
-                stringstream ss;
-                ss << "file contains " << mds.size() << " " << format << " items instead of 1";
-                reporter(ss.str());
-                return SEGMENT_CORRUPTED;
-            }
-        }
-        stringstream ss;
-        ss << "found " << expected.size() << " file(s) that the index does now know about";
-        reporter(ss.str());
-        return SEGMENT_DIRTY;
-    }
-
-    // Take note of files with holes
-    if (out_of_order)
-    {
-        reporter("contains deleted data or data to be reordered");
-        return SEGMENT_DIRTY;
-    } else {
-        return res;
-    }
+    CheckBackend checker(format, abspath, relpath, reporter, mds);
+    checker.accurate = !quick;
+    return checker.check();
 }
 
 void Checker::validate(Metadata& md, const scan::Validator& v)
@@ -499,6 +497,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
     Creator creator(rootdir, relpath, abspath, mds);
     creator.dest_abspath = tmpabspath;
+    creator.hardlink = true;
     creator.validator = &scan::Validator::by_filename(abspath);
     creator.create();
 

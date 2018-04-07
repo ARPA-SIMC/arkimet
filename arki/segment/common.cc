@@ -21,19 +21,24 @@ AppendCreator::~AppendCreator()
 {
 }
 
+Span AppendCreator::append_md(Metadata& md)
+{
+    // Read the data
+    auto buf = md.getData();
+    // Validate it if requested
+    if (validator)
+        validator->validate_buf(buf.data(), buf.size());
+    return Span(append(buf), buf.size());
+}
+
 void AppendCreator::create()
 {
     // Fill the temp file with all the data in the right order
     for (auto& md: mds)
     {
         bool had_cached_data = md->has_cached_data();
-        // Read the data
-        auto buf = md->getData();
-        // Validate it if requested
-        if (validator)
-            validator->validate_buf(buf.data(), buf.size());
-        size_t ofs = append(buf);
-        auto new_source = types::Source::createBlobUnlocked(md->source().format, root, relpath, ofs, buf.size());
+        Span span = append_md(*md);
+        auto new_source = types::Source::createBlobUnlocked(md->source().format, root, relpath, span.offset, span.size);
         // Update the source information in the metadata
         md->set_source(std::move(new_source));
         // Drop the cached data, to prevent accidentally loading the whole segment in memory
@@ -50,14 +55,14 @@ AppendCheckBackend::~AppendCheckBackend()
 {
 }
 
-size_t AppendCheckBackend::padding_head(off_t offset, size_t size) const
+size_t AppendCheckBackend::actual_start(off_t offset, size_t size) const
 {
-    return 0;
+    return offset;
 }
 
-size_t AppendCheckBackend::padding_tail(off_t offset, size_t size) const
+size_t AppendCheckBackend::actual_end(off_t offset, size_t size) const
 {
-    return 0;
+    return offset + size;
 }
 
 void AppendCheckBackend::validate(Metadata& md, const types::source::Blob& source) const
@@ -66,14 +71,11 @@ void AppendCheckBackend::validate(Metadata& md, const types::source::Blob& sourc
     validator->validate_buf(buf.data(), buf.size());
 }
 
-namespace {
-struct Span
+State AppendCheckBackend::check_source(const types::source::Blob& source)
 {
-    size_t offset;
-    size_t size;
-    Span(size_t offset, size_t size) : offset(offset), size(size) {}
-    bool operator<(const Span& o) const { return std::tie(offset, size) < std::tie(o.offset, o.size); }
-};
+    if (source.filename != relpath)
+        throw std::runtime_error("metadata to validate does not appear to be from this segment");
+    return SEGMENT_OK;
 }
 
 State AppendCheckBackend::check_contiguous()
@@ -85,8 +87,9 @@ State AppendCheckBackend::check_contiguous()
     for (const auto& md: mds)
     {
         const types::source::Blob& source = md->sourceBlob();
-        if (source.filename != relpath)
-            throw std::runtime_error("metadata to validate does not appear to be from this segment");
+        State state = check_source(source);
+        if (!state.is_ok())
+            return state;
 
         if (!dirty && !spans.empty() && source.offset < spans.back().offset)
         {
@@ -102,15 +105,15 @@ State AppendCheckBackend::check_contiguous()
     // Check for overlaps
     for (const auto& i: spans)
     {
-        size_t start = i.offset - padding_head(i.offset, i.size);
+        size_t start = actual_start(i.offset, i.size);
 
         // If an item begins after the end of another, they overlap and the file needs rescanning
         if (start < end_of_known_data)
         {
             stringstream out;
-            out << "item at offset " << start << " overlaps with the previous items that ends at offset" << end_of_known_data;
+            out << "item at offset " << start << " overlaps with the previous items that ends at offset " << end_of_known_data;
             reporter(out.str());
-            return SEGMENT_UNALIGNED;
+            return SEGMENT_CORRUPTED;
         }
         else if (!dirty && start > end_of_known_data)
         {
@@ -120,7 +123,7 @@ State AppendCheckBackend::check_contiguous()
             dirty = true;
         }
 
-        end_of_known_data = i.offset + i.size + padding_tail(i.offset, i.size);
+        end_of_known_data = actual_end(i.offset, i.size);
     }
 
     // Check the match between end of data and end of file
@@ -130,7 +133,7 @@ State AppendCheckBackend::check_contiguous()
         stringstream ss;
         ss << "file looks truncated: data end at offset " << end << " but it is supposed to extend until " << end_of_known_data << " bytes";
         reporter(ss.str());
-        return SEGMENT_UNALIGNED;
+        return SEGMENT_CORRUPTED;
     }
 
     if (!dirty && end > end_of_known_data)
@@ -154,10 +157,10 @@ State AppendCheckBackend::validate_data()
     {
         const types::source::Blob& source = md->sourceBlob();
 
-        if (source.offset + source.size > end)
+        if (actual_end(source.offset, source.size) > end)
         {
-            reporter("data is supposed to be past the end of the uncompressed segment");
-            return SEGMENT_UNALIGNED;
+            reporter("data at offset " + std::to_string(source.offset) + " would continue past the end of the segment");
+            return SEGMENT_CORRUPTED;
         }
 
         try {
@@ -166,7 +169,7 @@ State AppendCheckBackend::validate_data()
             stringstream out;
             out << "validation failed at " << md->source() << ": " << e.what();
             reporter(out.str());
-            return SEGMENT_UNALIGNED;
+            return SEGMENT_CORRUPTED;
         }
     }
 

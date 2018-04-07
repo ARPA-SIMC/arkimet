@@ -211,9 +211,9 @@ struct CheckBackend : public gz::CheckBackend
 {
     using gz::CheckBackend::CheckBackend;
 
-    size_t padding_tail(off_t offset, size_t size) const override
+    size_t actual_end(off_t offset, size_t size) const override
     {
-        return 1;
+        return offset + size + 1;
     }
 };
 
