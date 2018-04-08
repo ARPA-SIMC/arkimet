@@ -48,6 +48,8 @@ public:
      */
     std::vector<uint8_t> get(const segment::Span& span);
 
+    static std::string data_fname(size_t pos, const std::string& format);
+
     friend class ZipFile;
 };
 

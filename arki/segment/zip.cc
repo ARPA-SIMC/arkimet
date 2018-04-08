@@ -10,7 +10,7 @@
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-//#include "arki/utils/zip.h"
+#include "arki/utils/zip.h"
 #include "arki/utils.h"
 #include "arki/nag.h"
 #include <fcntl.h>
@@ -37,9 +37,10 @@ struct Creator : public AppendCreator
     char fname[100];
 
     Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath)
-        : AppendCreator(root, relpath, mds), out(dest_abspath), zipout("zip", out)
+        : AppendCreator(root, relpath, mds), out(dest_abspath, O_WRONLY | O_CREAT | O_TRUNC), zipout("zip", out)
     {
         zipout.with_metadata = false;
+        zipout.subdir.clear();
         if (!mds.empty())
             format = mds[0].source().format;
     }
@@ -64,40 +65,135 @@ struct Creator : public AppendCreator
 
 struct CheckBackend : public AppendCheckBackend
 {
-    core::File data;
-    struct stat st;
+    const std::string& format;
+    ZipReader reader;
+    std::unique_ptr<struct stat> st;
+    // File size by offset
+    map<size_t, size_t> on_disk;
+    size_t max_sequence = 0;
 
-    CheckBackend(const std::string& zipabspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
-        : AppendCheckBackend(reporter, relpath, mds), data(zipabspath)
+    CheckBackend(const std::string& format, const std::string& abspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+        : AppendCheckBackend(reporter, relpath, mds), format(format), reader(format, core::File(abspath, O_RDONLY))
     {
     }
 
     void validate(Metadata& md, const types::source::Blob& source) override
     {
-        validator->validate_file(data, source.offset, source.size);
+        std::vector<uint8_t> buf = reader.get(Span(source.offset, source.size));
+        validator->validate_buf(buf.data(), buf.size());
     }
 
-    size_t offset_end() const override { return st.st_size - 1024; }
+    size_t actual_start(off_t offset, size_t size) const override { return offset - 1; }
+    size_t actual_end(off_t offset, size_t size) const override { return offset; }
+    size_t offset_end() const override { return max_sequence; }
 
-    size_t actual_start(off_t offset, size_t size) const override
+    State check_source(const types::source::Blob& source) override
     {
-        return offset - 512;
-    }
-
-    size_t actual_end(off_t offset, size_t size) const override
-    {
-        return offset + size + 512 - (size % 512);
+        auto si = on_disk.find(source.offset);
+        if (si == on_disk.end())
+        {
+            stringstream ss;
+            ss << "expected file " << source.offset << " not found in the zip archive";
+            reporter(ss.str());
+            return SEGMENT_CORRUPTED;
+        }
+        if (source.size != si->second)
+        {
+            stringstream ss;
+            ss << "expected file " << source.offset << " has size " << si->second << " instead of expected " << source.size;
+            reporter(ss.str());
+            return SEGMENT_CORRUPTED;
+        }
+        on_disk.erase(si);
+        return SEGMENT_OK;
     }
 
     State check()
     {
-        if (!data.open_ifexists(O_RDONLY))
+/*
+        st = sys::stat(abspath);
+        if (st.get() == nullptr)
         {
-            reporter(data.name() + " not found on disk");
+            reporter(abspath + " not found on disk");
             return SEGMENT_DELETED;
         }
-        data.fstat(st);
-        return AppendCheckBackend::check();
+        if (!S_ISDIR(st->st_mode))
+        {
+            reporter(abspath + " is not a directory");
+            return SEGMENT_CORRUPTED;
+        }
+*/
+
+        std::vector<segment::Span> spans = reader.list_data();
+        for (const auto& span: spans)
+        {
+            on_disk.insert(make_pair(span.offset, span.size));
+            max_sequence = max(max_sequence, span.offset);
+        }
+
+        bool dirty = false;
+        State state = AppendCheckBackend::check();
+        if (!state.is_ok())
+        {
+            if (state.value == SEGMENT_DIRTY)
+                dirty = true;
+            else
+                return state;
+        }
+
+        // Check files on disk that were not accounted for
+        // TODO: we need to implement scanning from a memory buffer, or write
+        // the decompressed data to a temp file for scanning
+        /*
+        for (const auto& di: on_disk)
+        {
+            auto idx = di.first;
+            if (accurate)
+            {
+                string fname = str::joinpath(abspath, ZipReader::data_fname(idx, format));
+                metadata::Collection mds;
+                try {
+                    scan::scan(fname, std::make_shared<core::lock::Null>(), format, [&](unique_ptr<Metadata> md) {
+                        mds.acquire(std::move(md));
+                        return true;
+                    });
+                } catch (std::exception& e) {
+                    stringstream out;
+                    out << "unexpected data file " << idx << " fails to scan (" << e.what() << ")";
+                    reporter(out.str());
+                    dirty = true;
+                    continue;
+                }
+
+                if (mds.size() == 0)
+                {
+                    stringstream ss;
+                    ss << "unexpected data file " << idx << " does not contain any " << format << " items";
+                    reporter(ss.str());
+                    dirty = true;
+                    continue;
+                }
+
+                if (mds.size() > 1)
+                {
+                    stringstream ss;
+                    ss << "unexpected data file " << idx << " contains " << mds.size() << " " << format << " items instead of 1";
+                    reporter(ss.str());
+                    return SEGMENT_CORRUPTED;
+                }
+            }
+        }
+        */
+
+        if (!on_disk.empty())
+        {
+            stringstream ss;
+            ss << "segment contains " << on_disk.size() << " file(s) that the index does now know about";
+            reporter(ss.str());
+            dirty = true;
+        }
+
+        return dirty ? SEGMENT_DIRTY : SEGMENT_OK;
     }
 };
 
@@ -140,7 +236,11 @@ void Checker::move_data(const std::string& new_root, const std::string& new_relp
 
 State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    CheckBackend checker(zipabspath, relpath, reporter, mds);
+    // TODO: require format as a checker constructor argument, like we have with dir
+    string format;
+    if (!mds.empty())
+        format = mds[0].source().format;
+    CheckBackend checker(format, zipabspath, relpath, reporter, mds);
     checker.accurate = !quick;
     return checker.check();
 }

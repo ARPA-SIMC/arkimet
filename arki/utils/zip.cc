@@ -103,6 +103,13 @@ ZipReader::~ZipReader()
 #endif
 }
 
+std::string ZipReader::data_fname(size_t pos, const std::string& format)
+{
+    char buf[32];
+    snprintf(buf, 32, "%06zd.%s", pos, format.c_str());
+    return buf;
+}
+
 #ifdef HAVE_LIBZIP
 void ZipReader::stat(zip_int64_t index, zip_stat_t* st)
 {
@@ -143,8 +150,7 @@ std::vector<uint8_t> ZipReader::get(const segment::Span& span)
 #ifndef HAVE_LIBZIP
     throw std::runtime_error("cannot read .zip files: libzip was not available at compile time");
 #else
-    char fname[32];
-    snprintf(fname, 32, "%06zd.%s", span.offset, format.c_str());
+    auto fname = data_fname(span.offset, format);
     auto idx = locate(fname);
     zip_stat_t st;
     stat(idx, &st);
