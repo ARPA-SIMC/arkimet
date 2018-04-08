@@ -61,15 +61,20 @@ struct Creator : public AppendCreator
 
 struct CheckBackend : public AppendCheckBackend
 {
-    const std::string& tarabspath;
-    std::unique_ptr<struct stat> st;
+    core::File data;
+    struct stat st;
 
     CheckBackend(const std::string& tarabspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
-        : AppendCheckBackend(reporter, relpath, mds), tarabspath(tarabspath)
+        : AppendCheckBackend(reporter, relpath, mds), data(tarabspath)
     {
     }
 
-    size_t offset_end() const override { return st->st_size - 1024; }
+    void validate(Metadata& md, const types::source::Blob& source) override
+    {
+        validator->validate_file(data, source.offset, source.size);
+    }
+
+    size_t offset_end() const override { return st.st_size - 1024; }
 
     size_t actual_start(off_t offset, size_t size) const override
     {
@@ -83,12 +88,12 @@ struct CheckBackend : public AppendCheckBackend
 
     State check()
     {
-        st = sys::stat(tarabspath);
-        if (st.get() == nullptr)
+        if (!data.open_ifexists(O_RDONLY))
         {
-            reporter(tarabspath + " not found on disk");
+            reporter(data.name() + " not found on disk");
             return SEGMENT_DELETED;
         }
+        data.fstat(st);
         return AppendCheckBackend::check();
     }
 };

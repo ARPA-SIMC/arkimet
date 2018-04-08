@@ -39,10 +39,11 @@ struct Creator : public AppendCreator
 
 struct CheckBackend : public AppendCheckBackend
 {
-    const std::string& abspath;
-    std::unique_ptr<struct stat> st;
+    core::File data;
+    struct stat st;
 
     CheckBackend(const std::string& abspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds);
+    void validate(Metadata& md, const types::source::Blob& source) override;
     size_t offset_end() const override;
     State check();
 };
@@ -74,22 +75,6 @@ class Checker : public segment::Checker
 protected:
     virtual std::unique_ptr<File> open(const std::string& pathname) = 0;
 
-    void validate(Metadata& md, const scan::Validator& v);
-
-    /**
-     * If skip_validation is true, repack will skip validating the data that is
-     * being read.
-     *
-     * This is only used during tests to support repacking files with mock data
-     * inside. The files are made of filesystem holes, so the data that is read
-     * from them is always zeroes.
-     */
-    Pending repack_impl(
-            const std::string& rootdir,
-            metadata::Collection& mds,
-            bool skip_validation=false,
-            unsigned test_flags=0);
-
     virtual std::unique_ptr<File> open_file(const std::string& pathname, int flags, mode_t mode) = 0;
     void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 
@@ -101,6 +86,7 @@ public:
     time_t timestamp() override;
     size_t size() override;
 
+    Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
     size_t remove() override;
 
     void test_truncate(size_t offset) override;

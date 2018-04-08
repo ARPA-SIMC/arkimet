@@ -76,7 +76,7 @@ struct CheckBackend : public AppendCheckBackend
 
     size_t offset_end() const override { return all_data.size(); }
 
-    void validate(Metadata& md, const types::source::Blob& source) const override
+    void validate(Metadata& md, const types::source::Blob& source) override
     {
         validator->validate_buf(all_data.data() + source.offset, source.size);
     }

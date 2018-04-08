@@ -1,6 +1,10 @@
 #include "concat.h"
 #include "arki/exceptions.h"
 #include "arki/nag.h"
+#include "arki/utils/files.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/types/source/blob.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <sstream>
@@ -103,11 +107,6 @@ State Checker::check(std::function<void(const std::string&)> reporter, const met
     return checker.check();
 }
 
-Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
-{
-    return fd::Checker::repack_impl(rootdir, mds, false, test_flags);
-}
-
 
 const char* HoleChecker::type() const { return "hole_concat"; }
 
@@ -123,7 +122,20 @@ std::unique_ptr<fd::File> HoleChecker::open(const std::string& pathname)
 
 Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
-    return fd::Checker::repack_impl(rootdir, mds, true, test_flags);
+    string tmpabspath = abspath + ".repack";
+
+    Pending p(new files::RenameTransaction(tmpabspath, abspath));
+
+    fd::Creator creator(rootdir, relpath, abspath, mds);
+    creator.out = open_file(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666).release();
+    // creator.validator = &scan::Validator::by_filename(abspath);
+    creator.create();
+
+    // Make sure mds are not holding a reader on the file to repack, because it
+    // will soon be invalidated
+    for (auto& md: mds) md->sourceBlob().unlock();
+
+    return p;
 }
 
 bool Checker::can_store(const std::string& format)

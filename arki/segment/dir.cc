@@ -108,15 +108,22 @@ struct CheckBackend : public AppendCheckBackend
     std::unique_ptr<struct stat> st;
     // File size by offset
     map<size_t, size_t> on_disk;
-    size_t count_on_disk = 0;
+    size_t max_sequence = 0;
 
     CheckBackend(const std::string& format, const std::string& abspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
         : AppendCheckBackend(reporter, relpath, mds), format(format), abspath(abspath)
     {
     }
 
+    void validate(Metadata& md, const types::source::Blob& source) override
+    {
+        string fname = str::joinpath(abspath, SequenceFile::data_fname(source.offset, format));
+        core::File data(fname, O_RDONLY);
+        validator->validate_file(data, 0, source.size);
+    }
+
     size_t actual_end(off_t offset, size_t size) const override { return offset + 1; }
-    size_t offset_end() const override { return count_on_disk; }
+    size_t offset_end() const override { return max_sequence + 1; }
 
     State check_source(const types::source::Blob& source) override
     {
@@ -161,12 +168,10 @@ struct CheckBackend : public AppendCheckBackend
             if (!str::endswith(i->d_name, format)) continue;
             struct stat st;
             i.path->fstatat(i->d_name, st);
-            on_disk.insert(make_pair(
-                        (size_t)strtoul(i->d_name, 0, 10),
-                        st.st_size));
+            size_t seq = (size_t)strtoul(i->d_name, 0, 10);
+            on_disk.insert(make_pair(seq, st.st_size));
+            max_sequence = max(max_sequence, seq);
         }
-
-        count_on_disk = on_disk.size();
 
         bool dirty = false;
         State state = AppendCheckBackend::check();

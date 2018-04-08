@@ -53,7 +53,7 @@ struct AppendCheckBackend
     AppendCheckBackend(std::function<void(const std::string&)> reporter, const std::string& relpath, const metadata::Collection& mds);
     virtual ~AppendCheckBackend();
 
-    virtual void validate(Metadata& md, const types::source::Blob& source) const;
+    virtual void validate(Metadata& md, const types::source::Blob& source) = 0;
     virtual size_t offset_end() const = 0;
     virtual size_t actual_start(off_t offset, size_t size) const;
     virtual size_t actual_end(off_t offset, size_t size) const;

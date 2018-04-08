@@ -69,7 +69,7 @@ struct CheckBackend : public AppendCheckBackend
     {
     }
 
-    void validate(Metadata& md, const types::source::Blob& source) const override
+    void validate(Metadata& md, const types::source::Blob& source) override
     {
         validator->validate_buf(all_data.data() + source.offset, source.size);
     }

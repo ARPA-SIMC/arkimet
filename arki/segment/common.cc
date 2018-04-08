@@ -65,11 +65,13 @@ size_t AppendCheckBackend::actual_end(off_t offset, size_t size) const
     return offset + size;
 }
 
+#if 0
 void AppendCheckBackend::validate(Metadata& md, const types::source::Blob& source) const
 {
     auto buf = md.getData();
     validator->validate_buf(buf.data(), buf.size());
 }
+#endif
 
 State AppendCheckBackend::check_source(const types::source::Blob& source)
 {
@@ -131,7 +133,7 @@ State AppendCheckBackend::check_contiguous()
     if (end < end_of_known_data)
     {
         stringstream ss;
-        ss << "file looks truncated: data end at offset " << end << " but it is supposed to extend until " << end_of_known_data << " bytes";
+        ss << "file looks truncated: data ends at offset " << end << " but it is supposed to extend until " << end_of_known_data << " bytes";
         reporter(ss.str());
         return SEGMENT_CORRUPTED;
     }

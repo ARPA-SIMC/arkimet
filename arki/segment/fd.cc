@@ -62,18 +62,25 @@ size_t Creator::append(const std::vector<uint8_t>& data)
 
 
 CheckBackend::CheckBackend(const std::string& abspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
-    : AppendCheckBackend(reporter, relpath, mds), abspath(abspath)
+    : AppendCheckBackend(reporter, relpath, mds), data(abspath)
 {
 }
 
-size_t CheckBackend::offset_end() const { return st->st_size; }
+size_t CheckBackend::offset_end() const { return st.st_size; }
+
+void CheckBackend::validate(Metadata& md, const types::source::Blob& source)
+{
+    validator->validate_file(data, source.offset, source.size);
+}
 
 State CheckBackend::check()
 {
-    st = sys::stat(abspath);
-    if (st.get() == nullptr)
+    if (!data.open_ifexists(O_RDONLY))
+    {
+        reporter(data.name() + " not found on disk");
         return SEGMENT_DELETED;
-
+    }
+    data.fstat(st);
     return AppendCheckBackend::check();
 }
 
@@ -164,26 +171,6 @@ void Checker::move_data(const std::string& new_root, const std::string& new_relp
     sys::rename(abspath, new_abspath);
 }
 
-void Checker::validate(Metadata& md, const scan::Validator& v)
-{
-    if (const types::source::Blob* blob = md.has_source_blob()) {
-        if (blob->filename != relpath)
-            throw std::runtime_error("metadata to validate does not appear to be from this segment");
-
-        if (sys::exists(abspath))
-        {
-            sys::File fd(abspath, O_RDONLY);
-            v.validate_file(fd, blob->offset, blob->size);
-            return;
-        }
-        // If the file does not exist, it may be a compressed segment.
-        // TODO: Until handling of compressed segments is incorporated here, we
-        // just let Metadata::getData see if it can load the data somehow.
-    }
-    const auto& buf = md.getData();
-    v.validate_buf(buf.data(), buf.size());
-}
-
 size_t Checker::remove()
 {
     size_t size = sys::size(abspath);
@@ -191,11 +178,7 @@ size_t Checker::remove()
     return size;
 }
 
-Pending Checker::repack_impl(
-        const std::string& rootdir,
-        metadata::Collection& mds,
-        bool skip_validation,
-        unsigned test_flags)
+Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
     string tmpabspath = abspath + ".repack";
 
@@ -203,8 +186,7 @@ Pending Checker::repack_impl(
 
     Creator creator(rootdir, relpath, abspath, mds);
     creator.out = open_file(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666).release();
-    if (!skip_validation)
-        creator.validator = &scan::Validator::by_filename(abspath);
+    creator.validator = &scan::Validator::by_filename(abspath);
     creator.create();
 
     // Make sure mds are not holding a reader on the file to repack, because it

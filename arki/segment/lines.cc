@@ -101,11 +101,6 @@ State Checker::check(std::function<void(const std::string&)> reporter, const met
     return checker.check();
 }
 
-Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
-{
-    return fd::Checker::repack_impl(rootdir, mds, false, test_flags);
-}
-
 std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds)
 {
     segment::gzidxlines::Checker::create(root, relpath + ".tar", abspath + ".tar", mds);
