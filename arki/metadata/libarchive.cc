@@ -3,11 +3,14 @@
 #include "arki/binary.h"
 #include "arki/exceptions.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include <archive.h>
 #include <archive_entry.h>
 #include <cstring>
+
+using namespace arki::utils;
 
 namespace arki {
 namespace metadata {
@@ -140,8 +143,13 @@ void LibarchiveOutput::append_metadata()
     for (const auto& md: mds)
         md->encodeBinary(enc);
 
+    std::string name;
+    if (subdir.empty())
+        name = "metadata.md";
+    else
+        name = str::joinpath(subdir, "metadata.md");
     archive_entry_clear(entry);
-    archive_entry_set_pathname(entry, "data/metadata.md");
+    archive_entry_set_pathname(entry, name.c_str());
     archive_entry_set_size(entry, buf.size());
     archive_entry_set_filetype(entry, AE_IFREG);
     archive_entry_set_perm(entry, 0644);

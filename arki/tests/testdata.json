@@ -91,6 +91,11 @@
  },
  {
   "doc": "",
+  "group": "arki_utils_zip",
+  "method": "read"
+ },
+ {
+  "doc": "",
   "group": "arki_utils_files",
   "method": "dontpack"
  },

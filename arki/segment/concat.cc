@@ -127,6 +127,7 @@ Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& md
     Pending p(new files::RenameTransaction(tmpabspath, abspath));
 
     fd::Creator creator(rootdir, relpath, mds, open_file(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666));
+    // Skip validation, since all data reads as zeroes
     // creator.validator = &scan::Validator::by_filename(abspath);
     creator.create();
 

@@ -11,15 +11,6 @@
 namespace arki {
 namespace segment {
 
-struct Span
-{
-    size_t offset;
-    size_t size;
-    Span() = default;
-    Span(size_t offset, size_t size) : offset(offset), size(size) {}
-    bool operator<(const Span& o) const { return std::tie(offset, size) < std::tie(o.offset, o.size); }
-};
-
 struct AppendCreator
 {
     const std::string& root;

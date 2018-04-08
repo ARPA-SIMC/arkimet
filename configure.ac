@@ -143,6 +143,15 @@ else
 	AC_MSG_WARN([compiling without libarchive])
 fi
 
+PKG_CHECK_EXISTS([libzip], [have_libzip=yes], [have_libzip=no])
+if test $have_libzip = yes
+then
+	AC_DEFINE([HAVE_LIBZIP], 1, [libzip functions are available])
+	PKG_CHECK_MODULES(LIBZIP, [libzip])
+else
+	AC_MSG_WARN([compiling without libzip])
+fi
+
 dnl Look for DB-All.e C++ libraries, for BUFR support
 if test $enable_bufr = yes
 then
@@ -449,6 +458,7 @@ AS_HELP_STRING([Lua support:], [$have_lua])
 AS_HELP_STRING([GEOS support:], [$have_geos, version $GEOS_VERSION])
 AS_HELP_STRING([GNU readline support:], [$have_readline])
 AS_HELP_STRING([libarchive support:], [$have_libarchive])
+AS_HELP_STRING([libzip support:], [$have_libzip])
 AS_HELP_STRING([LZO compression:], [$LZO_VERSION])
 AS_HELP_STRING([Zlib compression:], [$have_zlib])
 AS_HELP_STRING([SQLite version:], [$SQLITE3_VERSION])
