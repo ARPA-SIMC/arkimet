@@ -65,7 +65,7 @@ std::shared_ptr<Writer> Writer::for_pathname(const std::string& format, const st
     {
         if (S_ISDIR(st->st_mode))
         {
-            if (segment::dir::can_store(format))
+            if (segment::dir::Checker::can_store(format))
             {
                 if (mock_data)
                     res.reset(new segment::dir::HoleWriter(format, root, relpath, abspath));
@@ -129,7 +129,7 @@ std::shared_ptr<Writer> Writer::for_pathname(const std::string& format, const st
 
 std::shared_ptr<segment::Checker> Checker::tar(metadata::Collection& mds)
 {
-    segment::tar::Checker::create(root, relpath + ".tar", abspath + ".tar", mds);
+    segment::tar::Checker::create(root, relpath, abspath, mds);
     remove();
     return make_shared<segment::tar::Checker>(root, relpath, abspath);
 }
@@ -183,7 +183,7 @@ std::shared_ptr<Checker> Checker::for_pathname(const std::string& format, const 
     {
         if (S_ISDIR(st->st_mode))
         {
-            if (segment::dir::can_store(format))
+            if (segment::dir::Checker::can_store(format))
             {
                 if (mock_data)
                     res.reset(new segment::dir::HoleChecker(format, root, relpath, abspath));

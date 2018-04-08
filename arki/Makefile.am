@@ -120,10 +120,12 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/arki-query.h \
 		runtime/arki-check.h \
 		runtime/arki-scan.h \
+		scan/fwd.h \
 		scan/base.h \
 		scan/any.h \
 		segment.h \
 		segment/fwd.h \
+		segment/common.h \
 		segment/fd.h \
 		segment/concat.h \
 		segment/lines.h \
@@ -133,6 +135,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		segment/gzidx.h \
 		segment/seqfile.h \
 		segment/tests.h \
+		segment/tests.tcc \
 		sort.h \
 		summary.h \
 		summary/intern.h \
@@ -408,6 +411,7 @@ libarkimet_la_SOURCES += \
 		summary/short.cc \
 		summary.cc \
 		segment.cc \
+		segment/common.cc \
 		segment/fd.cc \
 		segment/concat.cc \
 		segment/lines.cc \
@@ -460,6 +464,7 @@ tests_arki_test_SOURCES += \
 		matcher/quantity-test.cc \
 		scan/any-test.cc \
 		segment-test.cc \
+		segment/common-test.cc \
 		segment/fd-test.cc \
 		segment/concat-test.cc \
 		segment/lines-test.cc \

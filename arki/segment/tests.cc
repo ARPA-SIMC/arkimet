@@ -3,14 +3,12 @@
 #include <arki/types/source/blob.h>
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
-#include <arki/dataset/reporter.h>
 
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
 using namespace arki::types;
 using namespace arki::utils;
-using namespace arki::dataset;
 
 namespace arki {
 namespace tests {
@@ -60,13 +58,15 @@ void SegmentCheckTest::run()
     auto segment(make_full_checker());
     segment::State state;
 
-    dataset::NullReporter rep;
+    auto rep = [](const std::string& msg) {
+        // fprintf(stderr, "CHECK %s\n", msg.c_str());
+    };
 
     // A simple segment freshly imported is ok
-    state = segment->check(rep, "test", mdc);
+    state = segment->check(rep, mdc);
     wassert(actual(state) == segment::SEGMENT_OK);
 
-    state = segment->check(rep, "test", mdc, true);
+    state = segment->check(rep, mdc, true);
     wassert(actual(state.is_ok()).istrue());
 
     // Simulate one element being deleted
@@ -74,21 +74,21 @@ void SegmentCheckTest::run()
         metadata::Collection mdc1;
         mdc1.push_back(mdc[1]);
         mdc1.push_back(mdc[2]);
-        state = segment->check(rep, "test", mdc1);
+        state = segment->check(rep, mdc1);
         wassert(actual(state.value) == segment::SEGMENT_DIRTY);
     }
     {
         metadata::Collection mdc1;
         mdc1.push_back(mdc[0]);
         mdc1.push_back(mdc[2]);
-        state = segment->check(rep, "test", mdc1);
+        state = segment->check(rep, mdc1);
         wassert(actual(state.value) == segment::SEGMENT_DIRTY);
     }
     {
         metadata::Collection mdc1;
         mdc1.push_back(mdc[0]);
         mdc1.push_back(mdc[1]);
-        state = segment->check(rep, "test", mdc1);
+        state = segment->check(rep, mdc1);
         wassert(actual(state.value) == segment::SEGMENT_DIRTY);
     }
 
@@ -98,14 +98,14 @@ void SegmentCheckTest::run()
         mdc1.push_back(mdc[0]);
         mdc1.push_back(mdc[2]);
         mdc1.push_back(mdc[1]);
-        state = segment->check(rep, "test", mdc1);
+        state = segment->check(rep, mdc1);
         wassert(actual(state.value) == segment::SEGMENT_DIRTY);
     }
 
     // Simulate all elements deleted
     {
         metadata::Collection mdc1;
-        state = segment->check(rep, "test", mdc1);
+        state = segment->check(rep, mdc1);
         wassert(actual(state.value) == segment::SEGMENT_DIRTY);
     }
 
@@ -118,7 +118,7 @@ void SegmentCheckTest::run()
         unique_ptr<types::source::Blob> src(mdc[0].sourceBlob().clone());
         src->offset += 1024;
         mdc1[0].set_source(unique_ptr<types::Source>(src.release()));
-        state = segment->check(rep, "test", mdc1);
+        state = segment->check(rep, mdc1);
         wassert(actual(state.value) == segment::SEGMENT_UNALIGNED);
     }
     {
@@ -129,7 +129,7 @@ void SegmentCheckTest::run()
         unique_ptr<types::source::Blob> src(mdc[0].sourceBlob().clone());
         src->offset += 1;
         mdc1[0].set_source(unique_ptr<types::Source>(src.release()));
-        state = segment->check(rep, "test", mdc1, false);
+        state = segment->check(rep, mdc1, false);
         wassert(actual(state.value) == segment::SEGMENT_UNALIGNED);
     }
 }

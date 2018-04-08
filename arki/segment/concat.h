@@ -26,8 +26,9 @@ protected:
 public:
     using fd::Checker::Checker;
     const char* type() const override;
-    State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
-    Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
+    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
+    static bool can_store(const std::string& format);
+    static std::shared_ptr<Checker> create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds);
 };
 
 class HoleWriter : public fd::Writer

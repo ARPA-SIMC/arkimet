@@ -117,7 +117,7 @@ void AutoManager::scan_dir(std::function<void(const std::string& relpath)> dest)
             {
                 // Directory segment
                 string format = utils::get_format(name);
-                if (segment::dir::can_store(format))
+                if (segment::dir::Checker::can_store(format))
                     dest(str::joinpath(relpath, name));
                 return false;
             }
@@ -186,7 +186,7 @@ void ForceDirManager::scan_dir(std::function<void(const std::string& relpath)> d
         // Check whether the file format (from the extension) could be
         // stored in this kind of segment
         string format = utils::get_format(name);
-        if (segment::dir::can_store(format))
+        if (segment::dir::Checker::can_store(format))
             dest(str::joinpath(relpath, name));
         return false;
     };

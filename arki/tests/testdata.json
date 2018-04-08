@@ -1761,97 +1761,407 @@
  },
  {
   "doc": "",
+  "group": "arki_segment_common",
+  "method": "empty"
+ },
+ {
+  "doc": "",
   "group": "arki_segment_fd",
   "method": "empty"
  },
  {
   "doc": "",
-  "group": "arki_segment_concat",
-  "method": "append"
+  "group": "arki_segment_concat_grib",
+  "method": "create"
  },
  {
   "doc": "",
-  "group": "arki_segment_concat",
-  "method": "large"
+  "group": "arki_segment_concat_grib",
+  "method": "repack"
  },
  {
   "doc": "",
-  "group": "arki_segment_concat",
+  "group": "arki_segment_concat_grib",
   "method": "check"
  },
  {
   "doc": "",
-  "group": "arki_segment_concat",
+  "group": "arki_segment_concat_grib",
   "method": "remove"
  },
  {
   "doc": "",
-  "group": "arki_segment_lines",
+  "group": "arki_segment_concat_grib",
   "method": "append"
  },
  {
   "doc": "",
-  "group": "arki_segment_lines",
+  "group": "arki_segment_concat_grib",
   "method": "large"
  },
  {
   "doc": "",
-  "group": "arki_segment_lines",
+  "group": "arki_segment_concat_bufr",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_concat_bufr",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_concat_bufr",
   "method": "check"
  },
  {
   "doc": "",
-  "group": "arki_segment_lines",
+  "group": "arki_segment_concat_bufr",
   "method": "remove"
  },
  {
   "doc": "",
-  "group": "arki_dataset_segment_seqfile",
+  "group": "arki_segment_concat_bufr",
+  "method": "append"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_concat_bufr",
+  "method": "large"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_lines_vm2",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_lines_vm2",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_lines_vm2",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_lines_vm2",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_lines_vm2",
+  "method": "append"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_lines_vm2",
+  "method": "large"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_seqfile",
   "method": "empty"
  },
  {
   "doc": "",
-  "group": "arki_segment_dir",
+  "group": "arki_segment_dir_grib",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_grib",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_grib",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_grib",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_grib",
   "method": "append"
  },
  {
   "doc": "",
-  "group": "arki_segment_dir",
+  "group": "arki_segment_dir_bufr",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_bufr",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_bufr",
   "method": "check"
  },
  {
   "doc": "",
-  "group": "arki_segment_dir",
+  "group": "arki_segment_dir_bufr",
   "method": "remove"
  },
  {
   "doc": "",
-  "group": "arki_segment_tar",
+  "group": "arki_segment_dir_bufr",
+  "method": "append"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_odim",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_odim",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_odim",
   "method": "check"
  },
  {
   "doc": "",
-  "group": "arki_segment_tar",
+  "group": "arki_segment_dir_odim",
   "method": "remove"
  },
  {
   "doc": "",
-  "group": "arki_segment_gz",
+  "group": "arki_segment_dir_odim",
+  "method": "append"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_vm2",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_vm2",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_vm2",
   "method": "check"
  },
  {
   "doc": "",
-  "group": "arki_segment_gz",
+  "group": "arki_segment_dir_vm2",
   "method": "remove"
  },
  {
   "doc": "",
-  "group": "arki_segment_gzidx",
+  "group": "arki_segment_dir_vm2",
+  "method": "append"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_grib",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_grib",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_grib",
   "method": "check"
  },
  {
   "doc": "",
-  "group": "arki_segment_gzidx",
+  "group": "arki_segment_tar_grib",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_bufr",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_bufr",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_bufr",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_bufr",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_odim",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_odim",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_odim",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_odim",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_vm2",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_vm2",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_vm2",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_vm2",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_grib",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_grib",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_grib",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_grib",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_bufr",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_bufr",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_bufr",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_bufr",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzlines_vm2",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzlines_vm2",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzlines_vm2",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzlines_vm2",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx_grib",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx_grib",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx_grib",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx_grib",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx_bufr",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx_bufr",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx_bufr",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx_bufr",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidxlines_vm2",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidxlines_vm2",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidxlines_vm2",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidxlines_vm2",
   "method": "remove"
  },
  {
@@ -2760,12 +3070,12 @@
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_plain",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_plain",
   "method": "check_data_overlap"
  },
@@ -2810,7 +3120,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_plain",
   "method": "tcheck_corrupted_data"
  },
@@ -2965,12 +3275,12 @@
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite",
   "method": "check_data_overlap"
  },
@@ -3015,7 +3325,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite",
   "method": "tcheck_corrupted_data"
  },
@@ -3160,12 +3470,12 @@
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
   "method": "check_data_overlap"
  },
@@ -3210,7 +3520,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
   "method": "tcheck_corrupted_data"
  },
@@ -3355,12 +3665,12 @@
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
   "method": "check_data_overlap"
  },
@@ -3405,7 +3715,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
   "method": "tcheck_corrupted_data"
  },
@@ -3560,12 +3870,12 @@
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_plain",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_plain",
   "method": "check_data_overlap"
  },
@@ -3610,7 +3920,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_plain",
   "method": "tcheck_corrupted_data"
  },
@@ -3765,12 +4075,12 @@
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite",
   "method": "check_data_overlap"
  },
@@ -3815,7 +4125,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite",
   "method": "tcheck_corrupted_data"
  },
@@ -3960,12 +4270,12 @@
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
   "method": "check_data_overlap"
  },
@@ -4010,7 +4320,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
   "method": "tcheck_corrupted_data"
  },
@@ -4155,12 +4465,12 @@
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
   "method": "check_data_overlap"
  },
@@ -4205,7 +4515,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
   "method": "tcheck_corrupted_data"
  },
@@ -4360,12 +4670,12 @@
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_plain",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_plain",
   "method": "check_data_overlap"
  },
@@ -4410,7 +4720,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_plain",
   "method": "tcheck_corrupted_data"
  },
@@ -4565,12 +4875,12 @@
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite",
   "method": "check_data_overlap"
  },
@@ -4615,7 +4925,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite",
   "method": "tcheck_corrupted_data"
  },
@@ -4760,12 +5070,12 @@
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
   "method": "check_data_overlap"
  },
@@ -4810,7 +5120,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
   "method": "tcheck_corrupted_data"
  },
@@ -4955,12 +5265,12 @@
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
   "method": "check_data_overlap"
  },
@@ -5005,7 +5315,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
   "method": "tcheck_corrupted_data"
  },
@@ -5150,12 +5460,12 @@
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_odimh5_plain",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_simple_maintenance_odimh5_plain",
   "method": "check_data_overlap"
  },
@@ -5200,7 +5510,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_odimh5_plain",
   "method": "tcheck_corrupted_data"
  },
@@ -5345,12 +5655,12 @@
   "method": "check_exists"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
   "method": "check_data_overlap"
  },
@@ -5395,7 +5705,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
   "method": "tcheck_corrupted_data"
  },
@@ -5610,12 +5920,12 @@
   "method": "repack_one_removed"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_iseg_maintenance_grib",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_iseg_maintenance_grib",
   "method": "check_data_overlap"
  },
@@ -5655,7 +5965,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_grib",
   "method": "tcheck_corrupted_data"
  },
@@ -5795,7 +6105,7 @@
   "method": "repack_one_removed"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_iseg_maintenance_grib_dirs",
   "method": "check_dataexists"
  },
@@ -5835,7 +6145,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_grib_dirs",
   "method": "tcheck_corrupted_data"
  },
@@ -5985,12 +6295,12 @@
   "method": "repack_one_removed"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_iseg_maintenance_bufr",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_iseg_maintenance_bufr",
   "method": "check_data_overlap"
  },
@@ -6030,7 +6340,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_bufr",
   "method": "tcheck_corrupted_data"
  },
@@ -6170,7 +6480,7 @@
   "method": "repack_one_removed"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_iseg_maintenance_bufr_dirs",
   "method": "check_dataexists"
  },
@@ -6210,7 +6520,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_bufr_dirs",
   "method": "tcheck_corrupted_data"
  },
@@ -6360,12 +6670,12 @@
   "method": "repack_one_removed"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_iseg_maintenance_vm2",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_iseg_maintenance_vm2",
   "method": "check_data_overlap"
  },
@@ -6405,7 +6715,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_vm2",
   "method": "tcheck_corrupted_data"
  },
@@ -6545,7 +6855,7 @@
   "method": "repack_one_removed"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_iseg_maintenance_vm2_dirs",
   "method": "check_dataexists"
  },
@@ -6585,7 +6895,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_vm2_dirs",
   "method": "tcheck_corrupted_data"
  },
@@ -6725,7 +7035,7 @@
   "method": "repack_one_removed"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_iseg_maintenance_odimh5",
   "method": "check_dataexists"
  },
@@ -6765,7 +7075,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_odimh5",
   "method": "tcheck_corrupted_data"
  },
@@ -7055,12 +7365,12 @@
   "method": "repack_one_removed"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_grib",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_grib",
   "method": "check_data_overlap"
  },
@@ -7105,7 +7415,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_grib",
   "method": "tcheck_corrupted_data"
  },
@@ -7260,12 +7570,12 @@
   "method": "repack_one_removed"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
   "method": "check_data_overlap"
  },
@@ -7310,7 +7620,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
   "method": "tcheck_corrupted_data"
  },
@@ -7475,12 +7785,12 @@
   "method": "repack_one_removed"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_bufr",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_bufr",
   "method": "check_data_overlap"
  },
@@ -7525,7 +7835,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_bufr",
   "method": "tcheck_corrupted_data"
  },
@@ -7680,12 +7990,12 @@
   "method": "repack_one_removed"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
   "method": "check_data_overlap"
  },
@@ -7730,7 +8040,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
   "method": "tcheck_corrupted_data"
  },
@@ -7895,12 +8205,12 @@
   "method": "repack_one_removed"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_vm2",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_vm2",
   "method": "check_data_overlap"
  },
@@ -7945,7 +8255,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_vm2",
   "method": "tcheck_corrupted_data"
  },
@@ -8100,12 +8410,12 @@
   "method": "repack_one_removed"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
   "method": "check_data_overlap"
  },
@@ -8150,7 +8460,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
   "method": "tcheck_corrupted_data"
  },
@@ -8305,12 +8615,12 @@
   "method": "repack_one_removed"
  },
  {
-  "doc": "- all data known by the index for this segment must be present on disk [unaligned]",
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_odimh5",
   "method": "check_dataexists"
  },
  {
-  "doc": "- no pair of (offset, size) data spans from the index can overlap [unaligned]",
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_odimh5",
   "method": "check_data_overlap"
  },
@@ -8355,7 +8665,7 @@
   "method": "check_isordered"
  },
  {
-  "doc": "- format-specific consistency checks on the content of each file must pass [unaligned]",
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_odimh5",
   "method": "tcheck_corrupted_data"
  },

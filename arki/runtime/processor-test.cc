@@ -28,8 +28,8 @@ struct Fixture : public DatasetTest {
             unique = reftime, origin, product, level, timerange, area
         )");
 
-        testdata::GRIBData fixture;
-        wassert(import_all(fixture));
+        GRIBData fixture;
+        wassert(import_all(fixture.mds));
     }
 
     void run_maker(ProcessorMaker& pm, Matcher matcher=Matcher())

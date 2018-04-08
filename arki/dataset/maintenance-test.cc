@@ -422,25 +422,24 @@ void MaintenanceTest::register_tests()
     }
 
     add_method("check_dataexists", R"(
-        - all data known by the index for this segment must be present on disk [unaligned]
+        - all data known by the index for this segment must be present on disk [corrupted]
     )", [&](Fixture& f) {
         truncate_segment();
 
-        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_CORRUPTED));
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
     if (can_detect_overlap())
         add_method("check_data_overlap", R"(
-            - no pair of (offset, size) data spans from the index can overlap [unaligned]
+            - no pair of (offset, size) data spans from the index can overlap [corrupted]
         )", [&](Fixture& f) {
             if (segment_type == SEGMENT_DIR)
                 f.makeSegmentedChecker()->test_make_overlap(f.test_relpath, 1, 1);
             else
                 f.makeSegmentedChecker()->test_make_overlap(f.test_relpath, f.test_datum_size / 2, 1);
 
-            // TODO: should it be CORRUPTED?
-            wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
+            wassert(f.state_is(3, segment::SEGMENT_CORRUPTED));
             wassert(f.query_results({1, 3, 0, 2}));
         });
 
@@ -553,14 +552,13 @@ void MaintenanceTest::register_tests()
 
     // Optional thorough check
     add_method("tcheck_corrupted_data", R"(
-        - format-specific consistency checks on the content of each file must pass [unaligned]
+        - format-specific consistency checks on the content of each file must pass [corrupted]
     )", [&](Fixture& f) {
         corrupt_first();
 
         auto state = f.scan_state(false);
         wassert(actual(state.size()) == 3u);
-        // TODO: should it be CORRUPTED?
-        wassert(actual(state.get(f.test_relpath).state) == segment::State(segment::SEGMENT_UNALIGNED));
+        wassert(actual(state.get(f.test_relpath).state) == segment::State(segment::SEGMENT_CORRUPTED));
         wassert(f.query_results({1, 3, 0, 2}));
     });
 

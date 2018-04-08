@@ -123,7 +123,7 @@ struct ConcurrentImporter : public wibble::sys::ChildProcess
         try {
             auto ds(fixture.config().create_writer());
 
-            Metadata md = fixture.td.test_data[0].md;
+            Metadata md = fixture.td.mds[0];
 
             for (unsigned i = initial; i < 60; i += increment)
             {
@@ -250,22 +250,22 @@ class Tests : public FixtureTestCase<FixtureWriter<Data>>
     void register_tests() override;
 };
 
-Tests<testdata::GRIBData> test_concurrent_grib_ondisk2("arki_dataset_concurrent_grib_ondisk2", "type=ondisk2\n");
-Tests<testdata::GRIBData> test_concurrent_grib_simple_plain("arki_dataset_concurrent_grib_simple_plain", "type=simple\nindex_type=plain\n");
-Tests<testdata::GRIBData> test_concurrent_grib_simple_sqlite("arki_dataset_concurrent_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
-Tests<testdata::GRIBData> test_concurrent_grib_iseg("arki_dataset_concurrent_grib_iseg", "type=iseg\nformat=grib\n");
-Tests<testdata::BUFRData> test_concurrent_bufr_ondisk2("arki_dataset_concurrent_bufr_ondisk2", "type=ondisk2\n");
-Tests<testdata::BUFRData> test_concurrent_bufr_simple_plain("arki_dataset_concurrent_bufr_simple_plain", "type=simple\nindex_type=plain\n");
-Tests<testdata::BUFRData> test_concurrent_bufr_simple_sqlite("arki_dataset_concurrent_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
-Tests<testdata::BUFRData> test_concurrent_bufr_iseg("arki_dataset_concurrent_bufr_iseg", "type=iseg\nformat=bufr\n");
-Tests<testdata::VM2Data> test_concurrent_vm2_ondisk2("arki_dataset_concurrent_vm2_ondisk2", "type=ondisk2\n");
-Tests<testdata::VM2Data> test_concurrent_vm2_simple_plain("arki_dataset_concurrent_vm2_simple_plain", "type=simple\nindex_type=plain\n");
-Tests<testdata::VM2Data> test_concurrent_vm2_simple_sqlite("arki_dataset_concurrent_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
-Tests<testdata::VM2Data> test_concurrent_vm2_iseg("arki_dataset_concurrent_vm2_iseg", "type=iseg\nformat=vm2\n");
-Tests<testdata::ODIMData> test_concurrent_odim_ondisk2("arki_dataset_concurrent_odim_ondisk2", "type=ondisk2\n");
-Tests<testdata::ODIMData> test_concurrent_odim_simple_plain("arki_dataset_concurrent_odim_simple_plain", "type=simple\nindex_type=plain\n");
-Tests<testdata::ODIMData> test_concurrent_odim_simple_sqlite("arki_dataset_concurrent_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
-Tests<testdata::ODIMData> test_concurrent_odim_iseg("arki_dataset_concurrent_odim_iseg", "type=iseg\nformat=odimh5\n");
+Tests<GRIBData> test_concurrent_grib_ondisk2("arki_dataset_concurrent_grib_ondisk2", "type=ondisk2\n");
+Tests<GRIBData> test_concurrent_grib_simple_plain("arki_dataset_concurrent_grib_simple_plain", "type=simple\nindex_type=plain\n");
+Tests<GRIBData> test_concurrent_grib_simple_sqlite("arki_dataset_concurrent_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
+Tests<GRIBData> test_concurrent_grib_iseg("arki_dataset_concurrent_grib_iseg", "type=iseg\nformat=grib\n");
+Tests<BUFRData> test_concurrent_bufr_ondisk2("arki_dataset_concurrent_bufr_ondisk2", "type=ondisk2\n");
+Tests<BUFRData> test_concurrent_bufr_simple_plain("arki_dataset_concurrent_bufr_simple_plain", "type=simple\nindex_type=plain\n");
+Tests<BUFRData> test_concurrent_bufr_simple_sqlite("arki_dataset_concurrent_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
+Tests<BUFRData> test_concurrent_bufr_iseg("arki_dataset_concurrent_bufr_iseg", "type=iseg\nformat=bufr\n");
+Tests<VM2Data> test_concurrent_vm2_ondisk2("arki_dataset_concurrent_vm2_ondisk2", "type=ondisk2\n");
+Tests<VM2Data> test_concurrent_vm2_simple_plain("arki_dataset_concurrent_vm2_simple_plain", "type=simple\nindex_type=plain\n");
+Tests<VM2Data> test_concurrent_vm2_simple_sqlite("arki_dataset_concurrent_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
+Tests<VM2Data> test_concurrent_vm2_iseg("arki_dataset_concurrent_vm2_iseg", "type=iseg\nformat=vm2\n");
+Tests<ODIMData> test_concurrent_odim_ondisk2("arki_dataset_concurrent_odim_ondisk2", "type=ondisk2\n");
+Tests<ODIMData> test_concurrent_odim_simple_plain("arki_dataset_concurrent_odim_simple_plain", "type=simple\nindex_type=plain\n");
+Tests<ODIMData> test_concurrent_odim_simple_sqlite("arki_dataset_concurrent_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
+Tests<ODIMData> test_concurrent_odim_iseg("arki_dataset_concurrent_odim_iseg", "type=iseg\nformat=odimh5\n");
 
 template<class Data>
 void Tests<Data>::register_tests() {
@@ -273,7 +273,7 @@ void Tests<Data>::register_tests() {
 typedef FixtureWriter<Data> Fixture;
 
 this->add_method("read_read", [](Fixture& f) {
-    f.import_all(f.td);
+    f.import_all(f.td.mds);
 
     // Query the index and hang
     metadata::Collection mdc;
@@ -292,7 +292,7 @@ this->add_method("read_write", [](Fixture& f) {
     // Import one grib in the dataset
     {
         auto ds = f.config().create_writer();
-        wassert(actual(*ds).import(f.td.test_data[0].md));
+        wassert(actual(*ds).import(f.td.mds[0]));
         ds->flush();
     }
 
@@ -302,7 +302,7 @@ this->add_method("read_write", [](Fixture& f) {
         // Import another grib in the dataset
         {
             auto ds = f.config().create_writer();
-            wassert(actual(*ds).import(f.td.test_data[1].md));
+            wassert(actual(*ds).import(f.td.mds[1]));
             ds->flush();
         }
     });
@@ -317,7 +317,7 @@ this->add_method("read_write1", [](Fixture& f) {
     // Import one
     {
         auto writer = f.dataset_config()->create_writer();
-        wassert(actual(*writer).import(f.td.test_data[0].md));
+        wassert(actual(*writer).import(f.td.mds[0]));
     }
 
     // Query it and import during query
@@ -330,8 +330,8 @@ this->add_method("read_write1", [](Fixture& f) {
             wassert(actual(count) == 0u);
 
             auto writer = f.dataset_config()->create_writer();
-            wassert(actual(*writer).import(f.td.test_data[1].md));
-            wassert(actual(*writer).import(f.td.test_data[2].md));
+            wassert(actual(*writer).import(f.td.mds[1]));
+            wassert(actual(*writer).import(f.td.mds[2]));
         }
         ++count;
         return true;
@@ -393,10 +393,10 @@ this->add_method("write_write_different_segments", [](Fixture& f) {
 });
 
 this->add_method("read_repack", [](Fixture& f) {
-    auto orig_data = f.td.earliest_element().md.getData();
+    auto orig_data = f.td.mds[1].getData();
 
     f.reset_test("step=single");
-    f.import_all(f.td);
+    f.import_all(f.td.mds);
 
     auto reader = f.dataset_config()->create_reader();
     reader->query_data(dataset::DataQuery("", true), [&](unique_ptr<Metadata> md) {
@@ -425,12 +425,12 @@ this->add_method("write_check", [](Fixture& f) {
     {
         auto writer = f.config().create_writer();
         type = writer->type();
-        wassert(actual(*writer).import(f.td.test_data[0].md));
+        wassert(actual(*writer).import(f.td.mds[0]));
         writer->flush();
 
         // Create an error to trigger a call to the reporter that then hangs
         // the checker
-        f.makeSegmentedChecker()->test_corrupt_data(f.td.test_data[0].md.sourceBlob().filename, 0);
+        f.makeSegmentedChecker()->test_corrupt_data(f.td.mds[0].sourceBlob().filename, 0);
     }
 
     CheckForever<Fixture> cf(f);
@@ -438,17 +438,17 @@ this->add_method("write_check", [](Fixture& f) {
         if (type == "ondisk2" || type == "simple") {
             auto writer = wcallchecked(f.config().create_writer());
             try {
-                writer->acquire(f.td.test_data[2].md);
+                writer->acquire(f.td.mds[2]);
                 wassert(actual(0) == 1);
             } catch (std::runtime_error& e) {
                 wassert(actual(e.what()).contains("a write lock is already held"));
             }
         } else if (type == "iseg") {
             auto writer = wcallchecked(f.makeSegmentedWriter());
-            wassert(actual(*writer).import(f.td.test_data[2].md));
+            wassert(actual(*writer).import(f.td.mds[2]));
 
             try {
-                writer->acquire(f.td.test_data[0].md);
+                writer->acquire(f.td.mds[0]);
                 wassert(actual(0) == 1);
             } catch (std::runtime_error& e) {
                 wassert(actual(e.what()).contains("a write lock is already held"));
@@ -459,7 +459,7 @@ this->add_method("write_check", [](Fixture& f) {
 });
 
 this->add_method("read_repack2", [](Fixture& f) {
-    f.import_all(f.td);
+    f.import_all(f.td.mds);
 
     core::lock::TestWait lock_wait;
 
@@ -477,7 +477,7 @@ this->add_method("read_repack2", [](Fixture& f) {
 this->add_method("write_repack", [](Fixture& f) {
     core::lock::TestWait lock_wait;
 
-    Metadata md(f.td.test_data[1].md);
+    Metadata md(f.td.mds[1]);
     md.set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 0)));
 
     // Import a first metadata to create a segment to repack
@@ -504,7 +504,7 @@ this->add_method("write_repack", [](Fixture& f) {
 
 this->add_method("nolock_read", [](Fixture& f) {
     f.reset_test("locking=no");
-    f.import_all(f.td);
+    f.import_all(f.td.mds);
     core::lock::TestCount count;
     wassert(f.query_results(dataset::DataQuery("", true), {1, 0, 2}));
     count.measure();
@@ -516,7 +516,7 @@ this->add_method("nolock_read", [](Fixture& f) {
 this->add_method("nolock_write", [](Fixture& f) {
     f.reset_test("locking=no");
     core::lock::TestCount count;
-    f.import_all(f.td);
+    f.import_all(f.td.mds);
     count.measure();
     wassert(actual(count.ofd_setlk) == 0u);
     wassert(actual(count.ofd_setlkw) == 0u);
@@ -525,7 +525,7 @@ this->add_method("nolock_write", [](Fixture& f) {
 
 this->add_method("nolock_rescan", [](Fixture& f) {
     f.reset_test("locking=no");
-    f.import_all(f.td);
+    f.import_all(f.td.mds);
     string test_segment = "2007/07-08." + f.td.format;
     f.make_unaligned(test_segment);
 
@@ -545,7 +545,7 @@ this->add_method("nolock_rescan", [](Fixture& f) {
 
 this->add_method("nolock_repack", [](Fixture& f) {
     f.reset_test("locking=no");
-    f.import_all(f.td);
+    f.import_all(f.td.mds);
     string test_segment = "2007/07-08." + f.td.format;
     f.makeSegmentedChecker()->test_make_hole(test_segment, 10, 1);
 

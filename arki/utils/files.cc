@@ -155,6 +155,72 @@ PreserveFileTimes::~PreserveFileTimes() noexcept(false)
 }
 
 
+RenameTransaction::RenameTransaction(const std::string& tmpabspath, const std::string& abspath)
+    : tmpabspath(tmpabspath), abspath(abspath)
+{
+}
+
+RenameTransaction::~RenameTransaction()
+{
+    if (!fired) rollback_nothrow();
+}
+
+void RenameTransaction::commit()
+{
+    if (fired) return;
+    sys::rename(tmpabspath, abspath);
+    fired = true;
+}
+
+void RenameTransaction::rollback()
+{
+    if (fired) return;
+    sys::unlink(tmpabspath);
+    fired = true;
+}
+
+void RenameTransaction::rollback_nothrow() noexcept
+{
+    if (fired) return;
+    ::unlink(tmpabspath.c_str());
+    fired = true;
+}
+
+
+Rename2Transaction::Rename2Transaction(const std::string& tmpabspath1, const std::string& abspath1, const std::string& tmpabspath2, const std::string& abspath2)
+    : tmpabspath1(tmpabspath1), abspath1(abspath1), tmpabspath2(tmpabspath2), abspath2(abspath2)
+{
+}
+
+Rename2Transaction::~Rename2Transaction()
+{
+    if (!fired) rollback_nothrow();
+}
+
+void Rename2Transaction::commit()
+{
+    if (fired) return;
+    sys::rename(tmpabspath1, abspath1);
+    sys::rename(tmpabspath2, abspath2);
+    fired = true;
+}
+
+void Rename2Transaction::rollback()
+{
+    if (fired) return;
+    sys::unlink(tmpabspath1);
+    sys::unlink(tmpabspath2);
+    fired = true;
+}
+
+void Rename2Transaction::rollback_nothrow() noexcept
+{
+    if (fired) return;
+    ::unlink(tmpabspath1.c_str());
+    ::unlink(tmpabspath2.c_str());
+    fired = true;
+}
+
 }
 }
 }

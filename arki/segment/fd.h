@@ -5,6 +5,7 @@
 
 #include <arki/libconfig.h>
 #include <arki/segment.h>
+#include <arki/segment/common.h>
 #include <arki/core/file.h>
 #include <string>
 #include <vector>
@@ -16,13 +17,35 @@ namespace fd {
 /**
  * Customize in subclasses to add format-specific I/O
  */
-struct File : public arki::core::File
+struct File : public core::File
 {
-    using arki::core::File::File;
+    using core::File::File;
 
     void fdtruncate_nothrow(off_t pos) noexcept;
     virtual size_t write_data(const std::vector<uint8_t>& buf) = 0;
     virtual void test_add_padding(size_t size) = 0;
+};
+
+struct Creator : public AppendCreator
+{
+    File* out = nullptr;
+    size_t written = 0;
+
+    Creator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds);
+    ~Creator();
+    size_t append(const std::vector<uint8_t>& data) override;
+    void create();
+};
+
+struct CheckBackend : public AppendCheckBackend
+{
+    core::File data;
+    struct stat st;
+
+    CheckBackend(const std::string& abspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds);
+    void validate(Metadata& md, const types::source::Blob& source) override;
+    size_t offset_end() const override;
+    State check();
 };
 
 
@@ -52,22 +75,6 @@ class Checker : public segment::Checker
 protected:
     virtual std::unique_ptr<File> open(const std::string& pathname) = 0;
 
-    void validate(Metadata& md, const scan::Validator& v);
-
-    /**
-     * If skip_validation is true, repack will skip validating the data that is
-     * being read.
-     *
-     * This is only used during tests to support repacking files with mock data
-     * inside. The files are made of filesystem holes, so the data that is read
-     * from them is always zeroes.
-     */
-    Pending repack_impl(
-            const std::string& rootdir,
-            metadata::Collection& mds,
-            bool skip_validation=false,
-            unsigned test_flags=0);
-
     virtual std::unique_ptr<File> open_file(const std::string& pathname, int flags, mode_t mode) = 0;
     void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 
@@ -79,9 +86,8 @@ public:
     time_t timestamp() override;
     size_t size() override;
 
+    Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
     size_t remove() override;
-
-    State check_fd(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
 
     void test_truncate(size_t offset) override;
     void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;

@@ -195,6 +195,7 @@ public:
     ~GzipIndexingWriter();
 
     void add(const std::vector<uint8_t>& buf);
+    void close_entry();
 
     void flush();
 };

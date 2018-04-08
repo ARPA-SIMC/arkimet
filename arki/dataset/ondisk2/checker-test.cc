@@ -70,14 +70,14 @@ void Tests::register_tests() {
 // Test recreating a dataset from just a datafile with duplicate data and a rebuild flagfile
 add_method("reindex_with_duplicates", [](Fixture& f) {
     f.cfg.setValue("step", "monthly");
-    testdata::GRIBData data;
+    GRIBData data;
     sys::makedirs("testds/2007/07");
     // TODO: use segments also in the other tests, and instantiate a new test suite for different segment types
     {
         auto s = f.segments().get_writer("2007/07.grib");
-        s->append(data.test_data[1].md);
-        s->append(data.test_data[1].md);
-        s->append(data.test_data[0].md);
+        s->append(data.mds[1]);
+        s->append(data.mds[1]);
+        s->append(data.mds[0]);
         s->commit();
     }
 

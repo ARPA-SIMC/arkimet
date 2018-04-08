@@ -1,5 +1,6 @@
 #include <arki/metadata/tests.h>
 #include <arki/matcher.h>
+#include <arki/libconfig.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
 #include <arki/types/level.h>
@@ -20,6 +21,66 @@ using arki::core::Time;
 
 namespace arki {
 namespace tests {
+
+TestData::TestData(const std::string& format)
+    : format(format)
+{
+}
+
+GRIBData::GRIBData()
+    : TestData("grib")
+{
+#ifndef HAVE_GRIBAPI
+    throw TestSkipped();
+#endif
+    mds.scan_from_file("inbound/fixture.grib1", format, true);
+}
+
+BUFRData::BUFRData()
+    : TestData("bufr")
+{
+#ifndef HAVE_DBALLE
+    throw TestSkipped();
+#endif
+    mds.scan_from_file("inbound/fixture.bufr", format, true);
+}
+
+VM2Data::VM2Data()
+    : TestData("vm2")
+{
+#ifndef HAVE_VM2
+    throw TestSkipped();
+#endif
+    mds.scan_from_file("inbound/fixture.vm2", format, true);
+}
+
+ODIMData::ODIMData()
+    : TestData("odimh5")
+{
+#ifndef HAVE_HDF5
+    throw TestSkipped();
+#endif
+    mds.scan_from_file("inbound/fixture.h5/00.h5", format, true);
+    mds.scan_from_file("inbound/fixture.h5/01.h5", format, true);
+    mds.scan_from_file("inbound/fixture.h5/02.h5", format, true);
+}
+
+
+Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour)
+{
+    Metadata md;
+    md.set_source_inline(format, vector<uint8_t>(size));
+    md.set("origin", "GRIB1(200, 10, 100)");
+    md.set("product", "GRIB1(3, 4, 5)");
+    md.set("level", "GRIB1(1, 2)");
+    md.set("timerange", "GRIB1(4, 5s, 6s)");
+    md.set(Reftime::createPosition(Time(2014, month, day, hour, 0, 0)));
+    md.set("area", "GRIB(foo=5,bar=5000)");
+    md.set("proddef", "GRIB(foo=5,bar=5000)");
+    md.add_note("this is a test");
+    return md;
+}
+
 
 void fill(Metadata& md)
 {

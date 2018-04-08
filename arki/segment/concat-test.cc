@@ -22,15 +22,18 @@ using namespace std;
 using namespace arki;
 using namespace arki::tests;
 using namespace arki::utils;
-using namespace arki::dataset;
 
 const char* relpath = "testfile.grib";
 
-class Tests : public TestCase
+template<class Segment, class Data>
+class Tests : public SegmentTests<Segment, Data>
 {
-    using TestCase::TestCase;
+    using SegmentTests<Segment, Data>::SegmentTests;
     void register_tests() override;
-} test("arki_segment_concat");
+};
+
+Tests<segment::concat::Checker, GRIBData> test1("arki_segment_concat_grib");
+Tests<segment::concat::Checker, BUFRData> test2("arki_segment_concat_bufr");
 
 inline size_t datasize(const Metadata& md)
 {
@@ -53,10 +56,12 @@ std::shared_ptr<segment::concat::Checker> make_c()
     return std::shared_ptr<segment::concat::Checker>(new segment::concat::Checker(sys::getcwd(), relpath, abspath));
 }
 
-void Tests::register_tests() {
+template<class Segment, class Data>
+void Tests<Segment, Data>::register_tests() {
+SegmentTests<Segment, Data>::register_tests();
 
 // Try to append some data
-add_method("append", [] {
+this->add_method("append", [](Fixture& f) {
     sys::unlink_ifexists(relpath);
     metadata::TestCollection mdc("inbound/test.grib1");
     wassert(actual_file(relpath).not_exists());
@@ -90,7 +95,7 @@ add_method("append", [] {
 });
 
 // Test with large files
-add_method("large", [] {
+this->add_method("large", [](Fixture& f) {
     sys::unlink_ifexists(relpath);
     metadata::TestCollection mdc("inbound/test.grib1");
     {
@@ -119,40 +124,7 @@ add_method("large", [] {
     // process gigabytes of zeros
 });
 
-// Common segment tests
-
-add_method("check", [] {
-    struct Test : public SegmentCheckTest
-    {
-        std::shared_ptr<segment::Writer> make_writer() override
-        {
-            return std::shared_ptr<segment::Writer>(new segment::concat::Writer(root, relpath, abspath));
-        }
-        std::shared_ptr<segment::Checker> make_checker() override
-        {
-            return std::shared_ptr<segment::Checker>(new segment::concat::Checker(root, relpath, abspath));
-        }
-    } test;
-
-    wassert(test.run());
-});
-
-add_method("remove", [] {
-    struct Test : public SegmentRemoveTest
-    {
-        std::shared_ptr<segment::Writer> make_writer() override
-        {
-            return std::shared_ptr<segment::Writer>(new segment::concat::Writer(root, relpath, abspath));
-        }
-        std::shared_ptr<segment::Checker> make_checker() override
-        {
-            return std::shared_ptr<segment::Checker>(new segment::concat::Checker(root, relpath, abspath));
-        }
-    } test;
-
-    wassert(test.run());
-});
-
 }
 
 }
+#include "tests.tcc"

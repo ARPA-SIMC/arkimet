@@ -10,6 +10,31 @@
 namespace arki {
 namespace tests {
 
+template<class Segment, class Data>
+struct SegmentFixture : public Fixture
+{
+    using Fixture::Fixture;
+
+    Data td;
+    metadata::Collection seg_mds;
+    std::string root;
+    std::string relpath;
+    std::string abspath;
+
+    std::shared_ptr<Segment> create();
+
+    void test_setup();
+};
+
+template<class Segment, class Data>
+struct SegmentTests : public FixtureTestCase<SegmentFixture<Segment, Data>>
+{
+    typedef SegmentFixture<Segment, Data> Fixture;
+    using FixtureTestCase<Fixture>::FixtureTestCase;
+
+    void register_tests() override;
+};
+
 struct SegmentTest
 {
     std::string format;

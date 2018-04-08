@@ -1,6 +1,10 @@
 #include "concat.h"
 #include "arki/exceptions.h"
 #include "arki/nag.h"
+#include "arki/utils/files.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/types/source/blob.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <sstream>
@@ -96,14 +100,11 @@ std::unique_ptr<fd::File> Checker::open(const std::string& pathname)
     return std::unique_ptr<fd::File>(new File(pathname, O_RDWR, 0666));
 }
 
-State Checker::check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick)
+State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    return check_fd(reporter, ds, mds, 0, quick);
-}
-
-Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
-{
-    return fd::Checker::repack_impl(rootdir, mds, false, test_flags);
+    fd::CheckBackend checker(abspath, relpath, reporter, mds);
+    checker.accurate = !quick;
+    return checker.check();
 }
 
 
@@ -121,7 +122,33 @@ std::unique_ptr<fd::File> HoleChecker::open(const std::string& pathname)
 
 Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
-    return fd::Checker::repack_impl(rootdir, mds, true, test_flags);
+    string tmpabspath = abspath + ".repack";
+
+    Pending p(new files::RenameTransaction(tmpabspath, abspath));
+
+    fd::Creator creator(rootdir, relpath, abspath, mds);
+    creator.out = open_file(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666).release();
+    // creator.validator = &scan::Validator::by_filename(abspath);
+    creator.create();
+
+    // Make sure mds are not holding a reader on the file to repack, because it
+    // will soon be invalidated
+    for (auto& md: mds) md->sourceBlob().unlock();
+
+    return p;
+}
+
+bool Checker::can_store(const std::string& format)
+{
+    return format == "grib" || format == "bufr";
+}
+
+std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
+{
+    fd::Creator creator(rootdir, relpath, abspath, mds);
+    creator.out = new File(abspath);
+    creator.create();
+    return make_shared<Checker>(rootdir, relpath, abspath);
 }
 
 }

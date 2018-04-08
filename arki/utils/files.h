@@ -1,10 +1,9 @@
 #ifndef ARKI_UTILS_FILES_H
 #define ARKI_UTILS_FILES_H
 
-/// utils/files - arkimet-specific file functions
-
 #include <arki/defs.h>
 #include <arki/utils/sys.h>
+#include <arki/transaction.h>
 #include <string>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -94,6 +93,36 @@ struct PreserveFileTimes
 
     PreserveFileTimes(const std::string& fname);
     ~PreserveFileTimes() noexcept(false);
+};
+
+struct RenameTransaction : public Transaction
+{
+    std::string tmpabspath;
+    std::string abspath;
+    bool fired = false;
+
+    RenameTransaction(const std::string& tmpabspath, const std::string& abspath);
+    virtual ~RenameTransaction();
+
+    void commit() override;
+    void rollback() override;
+    void rollback_nothrow() noexcept override;
+};
+
+struct Rename2Transaction : public Transaction
+{
+    std::string tmpabspath1;
+    std::string abspath1;
+    std::string tmpabspath2;
+    std::string abspath2;
+    bool fired = false;
+
+    Rename2Transaction(const std::string& tmpabspath1, const std::string& abspath1, const std::string& tmpabspath2, const std::string& abspath2);
+    virtual ~Rename2Transaction();
+
+    void commit() override;
+    void rollback() override;
+    void rollback_nothrow() noexcept override;
 };
 
 }

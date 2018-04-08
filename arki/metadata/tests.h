@@ -3,11 +3,39 @@
 
 #include <arki/types/tests.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 
 namespace arki {
-class Metadata;
-
 namespace tests {
+
+struct TestData
+{
+    std::string format;
+    metadata::TestCollection mds;
+    TestData(const std::string& format);
+};
+
+struct GRIBData : TestData
+{
+    GRIBData();
+};
+
+struct BUFRData : TestData
+{
+    BUFRData();
+};
+
+struct VM2Data : TestData
+{
+    VM2Data();
+};
+
+struct ODIMData : TestData
+{
+    ODIMData();
+};
+
+Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour=0);
 
 void fill(Metadata& md);
 

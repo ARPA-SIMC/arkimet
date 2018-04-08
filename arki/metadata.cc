@@ -73,7 +73,7 @@ Metadata::Metadata()
 {
 }
 Metadata::Metadata(const Metadata& o)
-    : ItemSet(o), m_notes(o.m_notes), m_source(o.m_source ? o.m_source->clone() : 0), m_data(o.m_data)
+    : ItemSet(o), m_notes(o.m_notes), m_source(o.m_source ? o.m_source->clone() : nullptr), m_data(o.m_data)
 {
 }
 Metadata::~Metadata()

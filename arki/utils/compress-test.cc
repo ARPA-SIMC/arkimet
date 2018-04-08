@@ -132,6 +132,7 @@ add_method("gzipindexingwriter", [] {
     {
         data[0] = i;
         wassert(writer.add(data));
+        wassert(writer.close_entry());
     }
     wassert(writer.flush());
     fd.close();

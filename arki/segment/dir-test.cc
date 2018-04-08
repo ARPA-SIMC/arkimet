@@ -23,15 +23,20 @@ using namespace std;
 using namespace arki;
 using namespace arki::tests;
 using namespace arki::utils;
-using namespace arki::dataset;
 
 const char* relpath = "testfile.grib";
 
-class Tests : public TestCase
+template<class Segment, class Data>
+class Tests : public SegmentTests<Segment, Data>
 {
-    using TestCase::TestCase;
+    using SegmentTests<Segment, Data>::SegmentTests;
     void register_tests() override;
-} test("arki_segment_dir");
+};
+
+Tests<segment::dir::Checker, GRIBData> test1("arki_segment_dir_grib");
+Tests<segment::dir::Checker, BUFRData> test2("arki_segment_dir_bufr");
+Tests<segment::dir::Checker, ODIMData> test3("arki_segment_dir_odim");
+Tests<segment::dir::Checker, VM2Data>  test4("arki_segment_dir_vm2");
 
 inline size_t datasize(const Metadata& md)
 {
@@ -49,11 +54,17 @@ std::shared_ptr<segment::dir::Writer> make_w()
     return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer("grib", sys::getcwd(), relpath, abspath));
 }
 
-void Tests::register_tests() {
+
+template<class Segment, class Data>
+void Tests<Segment, Data>::register_tests() {
+SegmentTests<Segment, Data>::register_tests();
 
 // Try to append some data
-add_method("append", [] {
-    sys::rmtree_ifexists(relpath);
+this->add_method("append", [](Fixture& f) {
+    if (sys::isdir(relpath))
+        sys::rmtree_ifexists(relpath);
+    else
+        sys::unlink_ifexists(relpath);
     metadata::TestCollection mdc("inbound/test.grib1");
     wassert(actual_file(relpath).not_exists());
     {
@@ -142,40 +153,7 @@ add_method("append", [] {
     wassert(actual(mdc1[1]).is_similar(mdc[2]));
 });
 
-// Common segment tests
-
-add_method("check", [] {
-    struct Test : public SegmentCheckTest
-    {
-        std::shared_ptr<segment::Writer> make_writer() override
-        {
-            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relpath, abspath));
-        }
-        std::shared_ptr<segment::Checker> make_checker() override
-        {
-            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relpath, abspath));
-        }
-    } test;
-
-    wassert(test.run());
-});
-
-add_method("remove", [] {
-    struct Test : public SegmentRemoveTest
-    {
-        std::shared_ptr<segment::Writer> make_writer() override
-        {
-            return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relpath, abspath));
-        }
-        std::shared_ptr<segment::Checker> make_checker() override
-        {
-            return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relpath, abspath));
-        }
-    } test;
-
-    wassert(test.run());
-});
-
 }
 
 }
+#include "tests.tcc"

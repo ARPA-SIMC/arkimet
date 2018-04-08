@@ -55,11 +55,6 @@ struct Checker;
 }
 }
 
-namespace testdata {
-struct Fixture;
-struct Element;
-}
-
 namespace tests {
 
 // Return the number of days passed from the given date until today
@@ -167,28 +162,28 @@ public:
     std::string idxfname(const ConfigFile* wcfg = 0) const;
 
     /**
-     * Return the segment pathname in the current dataset where el is expected
+     * Return the segment pathname in the current dataset where md is expected
      * to have been imported
      */
-    std::string destfile(const testdata::Element& el) const;
+    std::string destfile(const Metadata& md) const;
 
     /**
-     * Return the segment pathname in the current dataset where el is expected
+     * Return the segment pathname in the current dataset where md is expected
      * to have been archived
      */
-    std::string archive_destfile(const testdata::Element& el) const;
+    std::string archive_destfile(const Metadata& md) const;
 
     /**
      * Return all the distinct segment pathnames in the current dataset after f
      * has been imported
      */
-    std::set<std::string> destfiles(const testdata::Fixture& f) const;
+    std::set<std::string> destfiles(const metadata::Collection& mds) const;
 
     /**
      * Return the number of distinct dataset segments created by importing f in
      * the test dataset
      */
-    unsigned count_dataset_files(const testdata::Fixture& f) const;
+    unsigned count_dataset_files(const metadata::Collection& f) const;
 
     /// Scan the dataset and return its state
     State scan_state(bool quick=true);
@@ -228,8 +223,8 @@ public:
     /// Test the state of all segments in the local dataset is clean
     void all_clean(size_t segment_count);
 
-    void import_all(const testdata::Fixture& fixture);
-    void import_all_packed(const testdata::Fixture& fixture);
+    void import_all(const metadata::Collection& mds);
+    void import_all_packed(const metadata::Collection& mds);
     void repack();
 
     /// Equivalent to calling query_results with an empty query
@@ -251,61 +246,6 @@ public:
 };
 
 }
-
-namespace testdata {
-
-struct Element
-{
-    Metadata md;
-    core::Time time;
-    Matcher matcher;
-
-    Element() : time(0, 0, 0) {}
-
-    void set(const Metadata& md, const std::string& matcher);
-    std::string data();
-};
-
-struct Fixture
-{
-    std::string format;
-    Element test_data[3];
-    /// Date that falls somewhere inbetween files in the dataset
-    core::Time selective_cutoff;
-
-    // Value for "archive age" or "delete age" that would work on part of the
-    // dataset, but not all of it
-    unsigned selective_days_since() const;
-    void finalise_init();
-
-    // Return the element with the earliest reftime
-    Element& earliest_element();
-};
-
-struct GRIBData : Fixture
-{
-    GRIBData();
-};
-
-struct BUFRData : Fixture
-{
-    BUFRData();
-};
-
-struct VM2Data : Fixture
-{
-    VM2Data();
-};
-
-struct ODIMData : Fixture
-{
-    ODIMData();
-};
-
-Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour=0);
-
-}
-
 
 namespace tests {
 

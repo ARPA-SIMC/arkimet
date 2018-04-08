@@ -42,7 +42,7 @@ public:
     time_t timestamp() override;
     size_t size() override;
 
-    State check(dataset::Reporter& reporter, const std::string& ds, const metadata::Collection& mds, bool quick=true) override;
+    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
 
@@ -51,13 +51,9 @@ public:
     void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
     void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
 
-    /**
-     * Create a gz segment with the data in mds
-     */
-    static void create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static std::shared_ptr<Checker> create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static bool can_store(const std::string& format);
 };
-
-bool can_store(const std::string& format);
 
 }
 
@@ -68,13 +64,13 @@ class Checker : public gz::Checker
 public:
     using gz::Checker::Checker;
 
-    /**
-     * Create a gz lines segment with the data in mds
-     */
-    static void create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
+
+    static std::shared_ptr<Checker> create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static bool can_store(const std::string& format);
 };
 
-bool can_store(const std::string& format);
 
 }
 
