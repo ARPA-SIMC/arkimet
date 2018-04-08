@@ -24,18 +24,17 @@ struct AppendCreator
 {
     const std::string& root;
     const std::string& relpath;
-    const std::string& abspath;
     metadata::Collection& mds;
     const scan::Validator* validator = nullptr;
 
-    AppendCreator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds);
+    AppendCreator(const std::string& root, const std::string& relpath, metadata::Collection& mds);
     virtual ~AppendCreator();
 
     /// Append data to the segment, returning the offset at which it has been written
     virtual Span append_md(Metadata& md);
 
     /// Append data to the segment, returning the offset at which it has been written
-    virtual size_t append(const std::vector<uint8_t>& data) = 0;
+    virtual size_t append(const std::vector<uint8_t>& data);
 
     /// Perform segment creation
     void create();

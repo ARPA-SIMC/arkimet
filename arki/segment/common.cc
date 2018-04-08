@@ -12,13 +12,18 @@ using namespace std;
 namespace arki {
 namespace segment {
 
-AppendCreator::AppendCreator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
-    : root(root), relpath(relpath), abspath(abspath), mds(mds)
+AppendCreator::AppendCreator(const std::string& root, const std::string& relpath, metadata::Collection& mds)
+    : root(root), relpath(relpath), mds(mds)
 {
 }
 
 AppendCreator::~AppendCreator()
 {
+}
+
+size_t AppendCreator::append(const std::vector<uint8_t>& data)
+{
+    throw std::runtime_error("append of buffers not implemented for this segment");
 }
 
 Span AppendCreator::append_md(Metadata& md)

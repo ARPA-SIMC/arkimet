@@ -115,8 +115,7 @@ bool Checker::can_store(const std::string& format)
 
 std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
 {
-    fd::Creator creator(rootdir, relpath, abspath, mds);
-    creator.out = new File(abspath);
+    fd::Creator creator(rootdir, relpath, mds, std::unique_ptr<fd::File>(new File(abspath)));
     creator.create();
     return make_shared<Checker>(rootdir, relpath, abspath);
 }
