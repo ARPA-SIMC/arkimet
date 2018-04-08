@@ -17,6 +17,7 @@ namespace metadata {
  */
 class LibarchiveOutput
 {
+protected:
 #ifdef HAVE_LIBARCHIVE
     struct ::archive* a = nullptr;
     struct ::archive_entry* entry = nullptr;
@@ -24,16 +25,26 @@ class LibarchiveOutput
     char filename_buf[255];
 #endif
 
+    void write_buffer(const std::vector<uint8_t>& buf);
+    void append_metadata();
+
 public:
     std::string format;
     core::NamedFileDescriptor& out;
+    std::string subdir;
+    bool with_metadata = true;
 
     LibarchiveOutput(const std::string& format, core::NamedFileDescriptor& out);
 #ifdef HAVE_LIBARCHIVE
     ~LibarchiveOutput();
 #endif
 
-    void append(const Metadata& md);
+    /**
+     * Append a metadata to the archive.
+     *
+     * @returns the index used to generate the file name
+     */
+    size_t append(const Metadata& md);
     void flush();
 };
 
