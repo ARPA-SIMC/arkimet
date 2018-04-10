@@ -201,24 +201,22 @@ public:
             // right thing depending on what's available in the system, and
             // potentially also handles retries
             off_t offset = 0;
-            ssize_t res = sendfile(out, file_fd, &offset, src.size);
-            if (res < 0)
+            while ((unsigned)offset < src.size)
             {
-                stringstream msg;
-                msg << "cannot stream " << src.size << " bytes of " << src.format << " data from " << file_fd.name() << ":"
-                    << src.offset;
-                throw_system_error(msg.str());
-            } else if ((size_t)res != src.size) {
-                // TODO: retry instead
-                stringstream msg;
-                msg << "cannot read " << src.size << " bytes of " << src.format << " data from " << file_fd.name() << ":"
-                    << src.offset << ": only " << res << "/" << src.size << " bytes have been read";
-                throw std::runtime_error(msg.str());
+                size_t size = src.size - offset;
+                ssize_t res = sendfile(out, file_fd, &offset, size);
+                if (res < 0)
+                {
+                    stringstream msg;
+                    msg << "cannot stream " << size << " bytes of " << src.format << " data from " << file_fd.name() << ":"
+                        << src.offset << "+" << offset;
+                    throw_system_error(msg.str());
+                }
             }
 
             acct::plain_data_read_count.incr();
             iotrace::trace_file(dirfd.name(), src.offset, src.size, "streamed data");
-            return res;
+            return offset;
         }
     }
 };
