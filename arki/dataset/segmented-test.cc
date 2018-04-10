@@ -83,9 +83,9 @@ add_method("compressed", [](Fixture& f) {
     {
         auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
-        wassert(actual(state.get("2007/07-08.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
-        wassert(actual(state.get("2007/10-09.grib").state) == segment::State(segment::SEGMENT_OK));
+        wassert(actual(state.get("testds:2007/07-07.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
+        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
+        wassert(actual(state.get("testds:2007/10-09.grib").state) == segment::State(segment::SEGMENT_OK));
     }
 
     // Perform packing and check that things are still ok afterwards
@@ -166,9 +166,9 @@ add_method("tarred", [](Fixture& f) {
     {
         auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("2007/07-07.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
-        wassert(actual(state.get("2007/07-08.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
-        wassert(actual(state.get("2007/10-09.grib").state) == segment::State(segment::SEGMENT_OK));
+        wassert(actual(state.get("testds:2007/07-07.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
+        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
+        wassert(actual(state.get("testds:2007/10-09.grib").state) == segment::State(segment::SEGMENT_OK));
     }
 
     // Perform packing and check that things are still ok afterwards

@@ -26,6 +26,12 @@ struct Fixture : public arki::tests::DatasetTest
      */
     void state_is(unsigned segment_count, unsigned test_relpath_state);
 
+    /**
+     * Compute the dataset state and assert that it contains `segment_count`
+     * segments, and that the segment test_relpath has the given state.
+     */
+    void accurate_state_is(unsigned segment_count, unsigned test_relpath_state);
+
     void test_setup();
 };
 
