@@ -217,7 +217,9 @@ State DatasetTest::scan_state(bool quick)
     CheckerConfig opts;
     auto checker = makeSegmentedChecker();
     State res;
-    checker->segments(opts, [&](segmented::CheckerSegment& segment) { res.insert(make_pair(segment.path_relative(), segment.scan(*opts.reporter, quick))); });
+    checker->segments_recursive(opts, [&](segmented::Checker& checker, segmented::CheckerSegment& segment) {
+        res.insert(make_pair(checker.name() + ":" + segment.path_relative(), segment.scan(*opts.reporter, quick)));
+    });
     return res;
 }
 

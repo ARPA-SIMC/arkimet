@@ -35,8 +35,8 @@ struct Creator : public AppendCreator
     size_t idx = 0;
     char fname[100];
 
-    Creator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
-        : AppendCreator(root, relpath, abspath, mds), out(abspath + ".tar"), tarout(out)
+    Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath)
+        : AppendCreator(root, relpath, mds), out(dest_abspath), tarout(out)
     {
         if (!mds.empty())
             format = mds[0].source().format;
@@ -170,8 +170,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
     Pending p(new files::RenameTransaction(tmpabspath, tarabspath));
 
-    Creator creator(rootdir, relpath, abspath, mds);
-    creator.out = sys::File(tmpabspath);
+    Creator creator(rootdir, relpath, mds, tmpabspath);
     creator.validator = &scan::Validator::by_filename(abspath);
     creator.create();
 
@@ -184,7 +183,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
 std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
 {
-    Creator creator(rootdir, relpath, abspath, mds);
+    Creator creator(rootdir, relpath, mds, abspath + ".tar");
     creator.create();
     return make_shared<Checker>(rootdir, relpath, abspath);
 }

@@ -3,6 +3,7 @@
 #include "segment/lines.h"
 #include "segment/dir.h"
 #include "segment/tar.h"
+#include "segment/zip.h"
 #include "segment/gz.h"
 #include "segment/gzidx.h"
 #include "arki/configfile.h"
@@ -265,6 +266,16 @@ std::shared_ptr<Checker> Checker::for_pathname(const std::string& format, const 
                     "getting checker for " + format + " file " + relpath,
                     "cannot handle a directory with a .tar extension");
         res.reset(new segment::tar::Checker(root, relpath, abspath));
+    }
+
+    st = sys::stat(abspath + ".zip");
+    if (st.get())
+    {
+        if (S_ISDIR(st->st_mode))
+            throw_consistency_error(
+                    "getting checker for " + format + " file " + relpath,
+                    "cannot handle a directory with a .tar extension");
+        res.reset(new segment::zip::Checker(root, relpath, abspath));
     }
 
     return res;

@@ -35,8 +35,8 @@ struct Creator : public AppendCreator
     compress::GzipIndexingWriter gzout;
     size_t written = 0;
 
-    Creator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
-        : AppendCreator(root, relpath, abspath, mds), out(abspath + ".gz"), outidx(abspath + ".gz.idx"), gzout(out, outidx)
+    Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath, const std::string& dest_abspath_idx)
+        : AppendCreator(root, relpath, mds), out(dest_abspath), outidx(dest_abspath_idx), gzout(out, outidx)
     {
     }
 
@@ -148,9 +148,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
     Pending p(new files::Rename2Transaction(tmpabspath, gzabspath, tmpidxabspath, gzidxabspath));
 
-    Creator creator(rootdir, relpath, abspath, mds);
-    creator.out = sys::File(tmpabspath);
-    creator.outidx = sys::File(tmpidxabspath);
+    Creator creator(rootdir, relpath, mds, tmpabspath, tmpidxabspath);
     creator.validator = &scan::Validator::by_filename(abspath);
     creator.create();
 
@@ -163,7 +161,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
 std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
 {
-    Creator creator(rootdir, relpath, abspath, mds);
+    Creator creator(rootdir, relpath, mds, abspath + ".gz", abspath + ".gz.idx");
     creator.create();
     return make_shared<Checker>(rootdir, relpath, abspath);
 }
@@ -244,10 +242,8 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
     Pending p(new files::Rename2Transaction(tmpabspath, gzabspath, tmpidxabspath, gzidxabspath));
 
-    gzidx::Creator creator(rootdir, relpath, abspath, mds);
+    gzidx::Creator creator(rootdir, relpath, mds, tmpabspath, tmpidxabspath);
     creator.padding.push_back('\n');
-    creator.out = sys::File(tmpabspath);
-    creator.outidx = sys::File(tmpidxabspath);
     creator.validator = &scan::Validator::by_filename(abspath);
     creator.create();
 
@@ -260,7 +256,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
 std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
 {
-    gzidx::Creator creator(rootdir, relpath, abspath, mds);
+    gzidx::Creator creator(rootdir, relpath, mds, abspath + ".gz", abspath + ".gz.idx");
     creator.padding.push_back('\n');
     creator.create();
     return make_shared<Checker>(rootdir, relpath, abspath);

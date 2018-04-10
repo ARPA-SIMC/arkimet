@@ -34,14 +34,9 @@ void File::fdtruncate_nothrow(off_t pos) noexcept
         nag::warning("truncating %s to previous size %zd (rollback of append operation): %m", name().c_str(), pos);
 }
 
-Creator::Creator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
-    : AppendCreator(root, relpath, abspath, mds)
+Creator::Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, std::unique_ptr<File> out)
+    : AppendCreator(root, relpath, mds), out(std::move(out))
 {
-}
-
-Creator::~Creator()
-{
-    delete out;
 }
 
 void Creator::create()
@@ -184,8 +179,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
     Pending p(new files::RenameTransaction(tmpabspath, abspath));
 
-    Creator creator(rootdir, relpath, abspath, mds);
-    creator.out = open_file(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666).release();
+    Creator creator(rootdir, relpath, mds, open_file(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666));
     creator.validator = &scan::Validator::by_filename(abspath);
     creator.create();
 

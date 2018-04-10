@@ -157,6 +157,9 @@ add_method("remove_all", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib").not_exists());
     wassert(actual_file("testds/2007/07-07.grib").not_exists());
     wassert(actual_file("testds/2007/10-09.grib").not_exists());
+
+    wassert(f.ensure_localds_clean(0, 0));
+    wassert(f.query_results({}));
 });
 
 add_method("remove_all_filtered", [](Fixture& f) {
@@ -191,6 +194,9 @@ add_method("remove_all_filtered", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib").not_exists());
     wassert(actual_file("testds/2007/07-07.grib").exists());
     wassert(actual_file("testds/2007/10-09.grib").exists());
+
+    wassert(f.ensure_localds_clean(2, 2));
+    wassert(f.query_results({1, 2}));
 });
 
 add_method("archive", [](Fixture& f) {
@@ -395,6 +401,10 @@ add_method("tar", [](Fixture& f) {
     wassert(actual_file("testds/.archive/last/2007/07-07.odimh5.tar").exists());
     wassert(actual_file("testds/2007/07-08.odimh5").exists());
     wassert(actual_file("testds/2007/10-09.odimh5").exists());
+
+    wassert(f.ensure_localds_clean(3, 3));
+    wassert(f.ensure_localds_clean(3, 3, false));
+    wassert(f.query_results({1, 0, 2}));
 });
 
 add_method("compress", [](Fixture& f) {
@@ -456,6 +466,10 @@ add_method("compress", [](Fixture& f) {
     wassert(actual_file("testds/.archive/last/2007/07-07.grib.gz.idx").exists());
     wassert(actual_file("testds/2007/07-08.grib").exists());
     wassert(actual_file("testds/2007/10-09.grib").exists());
+
+    wassert(f.ensure_localds_clean(3, 3));
+    wassert(f.ensure_localds_clean(3, 3, false));
+    wassert(f.query_results({1, 0, 2}));
 });
 
 add_method("scan", [](Fixture& f) {
@@ -591,6 +605,9 @@ add_method("remove_old", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.odimh5").not_exists());
     wassert(actual_file("testds/2007/07-08.odimh5.tar").not_exists());
     wassert(actual_file("testds/2007/10-09.odimh5").exists());
+
+    wassert(f.ensure_localds_clean(2, 2));
+    wassert(f.query_results({1, 2}));
 });
 
 }

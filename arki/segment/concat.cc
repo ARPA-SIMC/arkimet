@@ -126,8 +126,8 @@ Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& md
 
     Pending p(new files::RenameTransaction(tmpabspath, abspath));
 
-    fd::Creator creator(rootdir, relpath, abspath, mds);
-    creator.out = open_file(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666).release();
+    fd::Creator creator(rootdir, relpath, mds, open_file(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666));
+    // Skip validation, since all data reads as zeroes
     // creator.validator = &scan::Validator::by_filename(abspath);
     creator.create();
 
@@ -145,8 +145,7 @@ bool Checker::can_store(const std::string& format)
 
 std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
 {
-    fd::Creator creator(rootdir, relpath, abspath, mds);
-    creator.out = new File(abspath);
+    fd::Creator creator(rootdir, relpath, mds, std::unique_ptr<fd::File>(new File(abspath)));
     creator.create();
     return make_shared<Checker>(rootdir, relpath, abspath);
 }

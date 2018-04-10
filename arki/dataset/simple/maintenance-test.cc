@@ -36,20 +36,14 @@ void Tests::register_tests()
         - find data files not known by the index [unaligned]
     )", [&](Fixture& f) {
         remove_index();
-
-        auto state = f.scan_state();
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get(f.test_relpath).state) == segment::State(segment::SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
     add_method("check_unaligned", R"(
         - the segment must not be newer than the index [unaligned]
     )", [&](Fixture& f) {
         make_unaligned();
-
-        auto state = f.scan_state();
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get(f.test_relpath).state) == segment::State(segment::SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
     add_method("check_empty_metadata", R"(
@@ -57,7 +51,6 @@ void Tests::register_tests()
     )", [](Fixture& f) {
         sys::File mdf("testds/" + f.test_relpath + ".metadata", O_RDWR);
         mdf.ftruncate(0);
-
         wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
@@ -65,7 +58,6 @@ void Tests::register_tests()
     - `.metadata` file must not be older than the data [unaligned]
     )", [&](Fixture& f) {
         sys::touch("testds/" + f.test_relpath + ".metadata", 1496167200);
-
         wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
@@ -73,7 +65,6 @@ void Tests::register_tests()
     - `.summary` file must not be older than the `.metadata` file [unaligned]
     )", [&](Fixture& f) {
         sys::touch("testds/" + f.test_relpath + ".summary", 1496167200);
-
         wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 

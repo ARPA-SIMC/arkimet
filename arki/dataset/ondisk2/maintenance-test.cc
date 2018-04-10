@@ -40,7 +40,6 @@ void Tests::register_tests()
           entire content has been removed [deleted]
     )", [&](Fixture& f) {
         remove_index();
-
         wassert(f.state_is(3, segment::SEGMENT_DELETED));
     });
 

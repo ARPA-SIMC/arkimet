@@ -34,8 +34,8 @@ struct Creator : public AppendCreator
     compress::GzipWriter gzout;
     size_t written = 0;
 
-    Creator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
-        : AppendCreator(root, relpath, abspath, mds), out(abspath + ".gz"), gzout(out)
+    Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath)
+        : AppendCreator(root, relpath, mds), out(dest_abspath), gzout(out)
     {
     }
 
@@ -139,8 +139,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
     Pending p(new files::RenameTransaction(tmpabspath, abspath));
 
-    Creator creator(rootdir, relpath, abspath, mds);
-    creator.out = sys::File(tmpabspath);
+    Creator creator(rootdir, relpath, mds, tmpabspath);
     creator.validator = &scan::Validator::by_filename(abspath);
     creator.create();
 
@@ -153,7 +152,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
 std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
 {
-    Creator creator(rootdir, relpath, abspath, mds);
+    Creator creator(rootdir, relpath, mds, abspath + ".gz");
     creator.create();
     return make_shared<Checker>(rootdir, relpath, abspath);
 }
@@ -234,8 +233,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     files::RenameTransaction* rename;
     Pending p(rename = new files::RenameTransaction(tmpabspath, abspath));
 
-    gz::Creator creator(rootdir, relpath, abspath, mds);
-    creator.out = sys::File(tmpabspath);
+    gz::Creator creator(rootdir, relpath, mds, tmpabspath);
     creator.validator = &scan::Validator::by_filename(abspath);
     creator.padding.push_back('\n');
     creator.create();
@@ -249,7 +247,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
 std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
 {
-    gz::Creator creator(rootdir, relpath, abspath, mds);
+    gz::Creator creator(rootdir, relpath, mds, abspath + ".gz");
     creator.padding.push_back('\n');
     creator.create();
     return make_shared<Checker>(rootdir, relpath, abspath);

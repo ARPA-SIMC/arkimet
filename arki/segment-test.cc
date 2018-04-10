@@ -40,6 +40,7 @@ void make_dir(const std::string& name)
 
 void make_samples()
 {
+    // FIXME: move these into a subdir, which makes setup/cleanup operations easier
     make_file("testfile.grib");
     make_file("testfile.bufr");
     make_file("testfile.vm2");

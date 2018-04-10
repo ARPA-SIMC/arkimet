@@ -91,6 +91,11 @@
  },
  {
   "doc": "",
+  "group": "arki_utils_zip",
+  "method": "read"
+ },
+ {
+  "doc": "",
   "group": "arki_utils_files",
   "method": "dontpack"
  },
@@ -2042,6 +2047,86 @@
  {
   "doc": "",
   "group": "arki_segment_tar_vm2",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_grib",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_grib",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_grib",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_grib",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_bufr",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_bufr",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_bufr",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_bufr",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_odim",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_odim",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_odim",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_odim",
+  "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_vm2",
+  "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_vm2",
+  "method": "repack"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_vm2",
+  "method": "check"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_vm2",
   "method": "remove"
  },
  {

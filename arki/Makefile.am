@@ -2,7 +2,7 @@
 
 SUBDIRS = .
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(LIBARCHIVE_CFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(LIBARCHIVE_CFLAGS) $(LIBZIP_CFLAGS)
 if FILE_OFFSET_BITS_64
 AM_CPPFLAGS += -D_FILE_OFFSET_BITS=64
 endif
@@ -131,6 +131,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		segment/lines.h \
 		segment/dir.h \
 		segment/tar.h \
+		segment/zip.h \
 		segment/gz.h \
 		segment/gzidx.h \
 		segment/seqfile.h \
@@ -187,6 +188,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/sys.h \
 		utils/yaml.h \
 		utils/tar.h \
+		utils/zip.h \
 		utils/commandline/core.h \
 		utils/commandline/doc.h \
 		utils/commandline/engine.h \
@@ -217,7 +219,7 @@ noinst_LTLIBRARIES = libarkimet-test.la
 # Build these incrementally
 libarkimet_la_CPPFLAGS = $(AM_CPPFLAGS) -Werror
 libarkimet_la_SOURCES =
-libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(LIBARCHIVE_LIBS) $(DEVEL_LIBS) -lpthread
+libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(LIBARCHIVE_LIBS) $(LIBZIP_LIBS) $(DEVEL_LIBS) -lpthread
 libarkimet_test_la_SOURCES = tests/main.cpp
 tests_arki_test_SOURCES =
 tests_arki_test_LDADD =
@@ -248,6 +250,7 @@ libarkimet_la_SOURCES += \
 		utils/sys.cc \
 		utils/yaml.cc \
 		utils/tar.cc \
+		utils/zip.cc \
 		utils/commandline/core.cpp \
 		utils/commandline/options.cpp \
 		utils/commandline/doc.cpp \
@@ -323,6 +326,7 @@ tests_arki_test_SOURCES += \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \
 		utils/tar-test.cc \
+		utils/zip-test.cc \
 		utils/files-test.cc \
 		utils/process-test.cc \
 		utils/regexp-test.cc \
@@ -417,6 +421,7 @@ libarkimet_la_SOURCES += \
 		segment/lines.cc \
 		segment/dir.cc \
 		segment/tar.cc \
+		segment/zip.cc \
 		segment/gz.cc \
 		segment/gzidx.cc \
 		segment/seqfile.cc \
@@ -471,6 +476,7 @@ tests_arki_test_SOURCES += \
 		segment/seqfile-test.cc \
 		segment/dir-test.cc \
 		segment/tar-test.cc \
+		segment/zip-test.cc \
 		segment/gz-test.cc \
 		segment/gzidx-test.cc \
 		segment/tests.cc \
@@ -670,7 +676,7 @@ check-local:
 		$(TESTS_ENVIRONMENT) $$test ; \
 	done
 
-tests_arki_test_LDADD += libarkimet.la libarkimet-test.la $(SQLITE3_LDFLAGS) $(LIBARCHIVE_LIBS) $(DEVEL_LIBS) -lpthread
+tests_arki_test_LDADD += libarkimet.la libarkimet-test.la $(SQLITE3_LDFLAGS) $(LIBARCHIVE_LIBS) $(LIBZIP_LIBS) $(DEVEL_LIBS) -lpthread
 
 tests/testdata.json: tests/arki-test
 	$(top_srcdir)/doc/update --testsuite=$< --cache-testsuite=$@

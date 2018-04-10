@@ -34,20 +34,14 @@ void Tests::register_tests()
         - find data files not known by the index [unaligned]
     )", [&](Fixture& f) {
         remove_index();
-
-        auto state = f.scan_state();
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get(f.test_relpath).state) == segment::State(segment::SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
     add_method("check_unaligned", R"(
         - segments found in the dataset without a `.index` file are marked for rescanning [unaligned]
     )", [&](Fixture& f) {
         make_unaligned();
-
-        auto state = f.scan_state();
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get(f.test_relpath).state) == segment::State(segment::SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
     add_method("repack_unaligned", R"(
@@ -60,9 +54,7 @@ void Tests::register_tests()
         e.report.emplace_back("testds", "repack", "2 files ok");
         wassert(actual(writer.get()).repack(e, true));
 
-        auto state = f.scan_state();
-        wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get(f.test_relpath).state) == segment::State(segment::SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 }
 

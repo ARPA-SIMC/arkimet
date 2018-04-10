@@ -28,11 +28,10 @@ struct File : public core::File
 
 struct Creator : public AppendCreator
 {
-    File* out = nullptr;
+    std::unique_ptr<File> out;
     size_t written = 0;
 
-    Creator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds);
-    ~Creator();
+    Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, std::unique_ptr<File> out);
     size_t append(const std::vector<uint8_t>& data) override;
     void create();
 };

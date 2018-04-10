@@ -39,16 +39,11 @@ struct Creator : public AppendCreator
     size_t current_pos = 0;
     bool hardlink = false;
 
-    Creator(const std::string& root, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
-        : AppendCreator(root, relpath, abspath, mds), dest_abspath(abspath)
+    Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath)
+        : AppendCreator(root, relpath, mds), dest_abspath(dest_abspath)
     {
         if (!mds.empty())
             format = mds[0].source().format;
-    }
-
-    size_t append(const std::vector<uint8_t>& data) override
-    {
-        throw std::runtime_error("append on dir creator should never be called");
     }
 
     Span append_md(Metadata& md) override
@@ -500,8 +495,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
     Pending p(new Rename(tmpabspath, abspath));
 
-    Creator creator(rootdir, relpath, abspath, mds);
-    creator.dest_abspath = tmpabspath;
+    Creator creator(rootdir, relpath, mds, tmpabspath);
     creator.hardlink = true;
     creator.validator = &scan::Validator::by_filename(abspath);
     creator.create();
@@ -577,7 +571,7 @@ void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 
 std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
 {
-    Creator creator(rootdir, relpath, abspath, mds);
+    Creator creator(rootdir, relpath, mds, abspath);
     creator.create();
     return make_shared<Checker>(creator.format, rootdir, relpath, abspath);
 }
