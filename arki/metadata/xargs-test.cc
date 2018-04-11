@@ -122,6 +122,22 @@ add_method("issue124", [] {
     wassert(actual(contents.size()) == 0u);
 });
 
+// Check that xargs exit withour error when the command remove the tmp file
+add_method("check_tmpfile_exist", [] {
+    metadata::TestCollection mdc("inbound/test.grib1");
+    sys::unlink_ifexists("tmp-xargs");
+    metadata::Xargs xargs;
+    xargs.set_interval("day");
+    xargs.command.push_back("/bin/sh");
+    xargs.command.push_back("-c");
+    xargs.command.push_back("rm $ARKI_XARGS_FILENAME");
+    xargs.filename_argument = 1000; // Do not pass the file name
+
+    xargs.eat(wrap(mdc[0]));
+    xargs.eat(wrap(mdc[1]));
+    xargs.eat(wrap(mdc[2]));
+    xargs.flush();
+});
 }
 
 }
