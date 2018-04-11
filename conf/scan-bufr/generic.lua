@@ -5,4 +5,5 @@ function scan(msg, md)
     if area then md:set(arki_area.grib(area)) end
     if proddef then md:set(arki_proddef.grib(proddef)) end
     if report then md:set(md.product:addValues{t=report:enqc()}) end
+    md:set(bufr_scan_forecast(msg))
 end
