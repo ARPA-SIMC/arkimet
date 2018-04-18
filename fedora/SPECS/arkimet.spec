@@ -10,13 +10,27 @@ Source1: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/
 Source2: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.sysconfig
 Source3: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}-logrotate.conf
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
-%if 0%{?rhel} == 7
-%define python3_vers python34
+
+# On fedora, we don't need systemd to build. But we do on centos.
+%{?el7:BuildRequires: systemd}
+
+# Python 3 package names
+%{?el7:%define python3_vers python34}
+%{?fedora:%define python3_vers python3}
+
+%if 0%{?fedora} <= 24
+# grib_api is used only on older fedoras
+%define grib_sw grib_api
 %else
-%define python3_vers python3
+%define grib_sw eccodes
 %endif
-BuildRequires: libtool, doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl, curl-devel, geos-devel, popt-devel, help2man, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 3.0, flex, bison, meteo-vm2-devel >= 0.12, hdf5-devel, %{python3_vers}, %{python3_vers}-devel, %{python3_vers}-werkzeug, %{python3_vers}-setproctitle, %{python3_vers}-nose, %{python3_vers}-jinja2
-Requires: hdf5, meteo-vm2 >= 0.12, grib_api, %{python3_vers}, %{python3_vers}-werkzeug, %{python3_vers}-setproctitle, libdballe6, systemd
+
+# expliciting eccodes for centos7
+%{?el7:%define grib_sw eccodes}
+
+
+BuildRequires: libtool, doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, %{grib_sw}-devel, sqlite-devel >= 3.6, curl, curl-devel, geos-devel, popt-devel, help2man, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 3.0, flex, bison, meteo-vm2-devel >= 0.12, hdf5-devel, %{python3_vers}, %{python3_vers}-devel, %{python3_vers}-werkzeug, %{python3_vers}-setproctitle, %{python3_vers}-nose, %{python3_vers}-jinja2
+Requires: hdf5, meteo-vm2 >= 0.12, %{grib_sw}, %{python3_vers}, %{python3_vers}-werkzeug, %{python3_vers}-setproctitle, libdballe6, systemd
 
 %{!?python3_sitelib: %define python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %{!?python3_sitearch: %define python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
@@ -45,7 +59,7 @@ currently offline.
 %package  -n arkimet-devel
 Summary:  Arkimet developement library
 Group:    Applications/Meteo
-Requires: libdballe-devel, grib_api-devel, libwreport-devel, %{python3_vers}-devel, meteo-vm2-devel, hdf5-devel, sqlite-devel, curl-devel
+Requires: libdballe-devel, %{grib_sw}-devel, libwreport-devel, %{python3_vers}-devel, meteo-vm2-devel, hdf5-devel, sqlite-devel, curl-devel
 
 %description -n arkimet-devel
  Arkimet developement library
@@ -55,16 +69,27 @@ Requires: libdballe-devel, grib_api-devel, libwreport-devel, %{python3_vers}-dev
 sh autogen.sh
 
 %build
+
+# arpae definition available only on grib_api at the moment
+%{?fc20:%define arpae_tests 1}
+%{?fc24:%define arpae_tests 1}
+
+%if 0%{?arpae_tests}
+
+
 %configure --enable-arpae-tests
 make
-
-# unit tests arki_dataset_concurrent_* fail on f20 because of the fallback on
-# per-process locks instead of per-file-descriptor locks.
-# See issue https://github.com/ARPAE-SIMC/arkimet/issues/60
-%if 0%{?fedora} >= 24
 make check
-%endif
 
+%else
+
+%configure
+make
+# tests are passing only on f24 at the moment
+# waiting for incoming fix for ODF locks and tmpfs tests
+#make check
+
+%endif
 
 %install
 [ "%{buildroot}" != / ] && rm -rf %{buildroot}
