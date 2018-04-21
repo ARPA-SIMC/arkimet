@@ -70,12 +70,13 @@ add_method("compressed", [](Fixture& f) {
     f.cfg.setValue("archive age", days_since(2007, 9, 1));
     f.test_reread_config();
 
-    scan::compress("testds/2007/07-07.grib", std::make_shared<core::lock::Null>());
-    scan::compress("testds/2007/07-08.grib", std::make_shared<core::lock::Null>());
-    scan::compress("testds/2007/10-09.grib", std::make_shared<core::lock::Null>());
-    sys::unlink_ifexists("testds/2007/07-07.grib");
-    sys::unlink_ifexists("testds/2007/07-08.grib");
-    sys::unlink_ifexists("testds/2007/10-09.grib");
+    // Compress segments
+    {
+        auto checker(f.makeSegmentedChecker());
+        checker->segments_tracked([&](segmented::CheckerSegment& seg) {
+            seg.compress();
+        });
+    }
 
     // Test that querying returns all items
     wassert(f.query_results({1, 0, 2}));
