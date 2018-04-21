@@ -384,6 +384,8 @@ std::shared_ptr<Reader> Reader::create_new(const std::string& abspath, std::shar
         return std::make_shared<reader::IdxZlibFileReader>(abspath, lock);
     else if (sys::exists(abspath + ".gz"))
         return std::make_shared<reader::ZlibFileReader>(abspath, lock);
+    else if (sys::exists(abspath + ".tar"))
+        return std::make_shared<reader::FileReader>(abspath + ".tar", lock);
     else
         return make_shared<reader::MissingFileReader>(abspath);
 }

@@ -42,6 +42,11 @@ struct Creator : public AppendCreator
             format = mds[0].source().format;
     }
 
+    std::unique_ptr<types::Source> create_source(const Metadata& md, const Span& span) override
+    {
+        return types::Source::createBlobUnlocked(md.source().format, root, relpath + ".tar", span.offset, span.size);
+    }
+
     size_t append(const std::vector<uint8_t>& data) override
     {
         // Append it to the new file

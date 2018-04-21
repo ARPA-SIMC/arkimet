@@ -188,7 +188,7 @@ public:
         {
             const source::Blob& source = (*i)->sourceBlob();
             if (idx().index(**i, source.offset))
-                throw std::runtime_error("duplicate detected while reordering segment");
+                throw std::runtime_error("duplicate detected while tarring segment");
         }
 
         // Remove the .metadata file if present, because we are shuffling the
@@ -227,7 +227,7 @@ public:
         {
             const source::Blob& source = (*i)->sourceBlob();
             if (idx().index(**i, source.offset))
-                throw std::runtime_error("duplicate detected while reordering segment");
+                throw std::runtime_error("duplicate detected while zipping segment");
         }
 
         // Remove the .metadata file if present, because we are shuffling the
@@ -268,7 +268,7 @@ public:
         {
             const source::Blob& source = (*i)->sourceBlob();
             if (idx().index(**i, source.offset))
-                throw std::runtime_error("duplicate detected while reordering segment");
+                throw std::runtime_error("duplicate detected while compressing segment");
         }
 
         // Remove the .metadata file if present, because we are shuffling the
