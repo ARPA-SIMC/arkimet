@@ -45,10 +45,12 @@ struct Creator : public AppendCreator
             format = mds[0].source().format;
     }
 
+#if 0
     std::unique_ptr<types::Source> create_source(const Metadata& md, const Span& span) override
     {
         return types::Source::createBlobUnlocked(md.source().format, root, relpath + ".zip", span.offset, span.size);
     }
+#endif
 
     Span append_md(Metadata& md)
     {
