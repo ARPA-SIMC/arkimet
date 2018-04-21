@@ -1,4 +1,5 @@
 #include "tests.h"
+#include "arki/segment/tests.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/dataset/local.h"
@@ -485,6 +486,19 @@ void DatasetTest::make_unaligned(const std::string& segment)
     } else {
         throw std::runtime_error("make_unaligned called on unsupported dataset type " + checker->type());
     }
+}
+
+void DatasetTest::online_segment_exists(const std::string& relpath, const std::vector<std::string>& extensions)
+{
+    auto cfg = local_config();
+    if (std::dynamic_pointer_cast<const simple::Config>(cfg))
+    {
+        std::vector<std::string> exts(extensions);
+        exts.push_back(".metadata");
+        exts.push_back(".summary");
+        actual_segment(str::joinpath(cfg->path, relpath)).exists(exts);
+    } else
+        actual_segment(str::joinpath(cfg->path, relpath)).exists(extensions);
 }
 
 }
