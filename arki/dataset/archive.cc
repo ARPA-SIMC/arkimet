@@ -395,6 +395,15 @@ void ArchivesChecker::tar(CheckerConfig& opts)
     });
 }
 
+void ArchivesChecker::zip(CheckerConfig& opts)
+{
+    if (!opts.offline) return;
+    archives->iter([&](Checker& a) {
+        a.zip(opts);
+        return true;
+    });
+}
+
 void ArchivesChecker::compress(CheckerConfig& opts)
 {
     if (!opts.offline) return;

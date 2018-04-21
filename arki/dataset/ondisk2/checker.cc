@@ -234,6 +234,43 @@ public:
         p.commit();
     }
 
+    void zip() override
+    {
+        if (sys::exists(segment->abspath + ".zip"))
+            return;
+
+        auto lock = checker.lock->write_lock();
+        Pending p = checker.idx->begin_transaction();
+
+        // Rescan file
+        metadata::Collection mds;
+        checker.idx->scan_file(segment->relpath, mds.inserter_func(), "reftime, offset");
+
+        // Create the .tar segment
+        segment = segment->zip(mds);
+
+        // Reindex the new metadata
+        checker.idx->reset(segment->relpath);
+        for (auto& md: mds)
+        {
+            const source::Blob& source = md->sourceBlob();
+            checker.idx->index(*md, segment->relpath, source.offset);
+        }
+
+        // Remove the .metadata file if present, because we are shuffling the
+        // data file and it will not be valid anymore
+        string mdpathname = segment->abspath + ".metadata";
+        if (sys::exists(mdpathname))
+            if (unlink(mdpathname.c_str()) < 0)
+            {
+                stringstream ss;
+                ss << "cannot remove obsolete metadata file " << mdpathname;
+                throw std::system_error(errno, std::system_category(), ss.str());
+            }
+
+        p.commit();
+    }
+
     size_t compress() override
     {
         if (sys::exists(segment->abspath + ".gz") || sys::exists(segment->abspath + ".gz.idx"))

@@ -428,7 +428,10 @@ struct Checker : public dataset::Base
     /// Convert directory segments into tar segments
     virtual void tar(CheckerConfig& opts) = 0;
 
-    /// Convert directory segments into tar segments
+    /// Convert directory segments into zip segments
+    virtual void zip(CheckerConfig& opts) = 0;
+
+    /// Convert directory segments into .gz/.gz.idx segments
     virtual void compress(CheckerConfig& opts) = 0;
 
     /// Send the dataset state to the reporter

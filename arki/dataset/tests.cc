@@ -501,6 +501,15 @@ void DatasetTest::online_segment_exists(const std::string& relpath, const std::v
         actual_segment(str::joinpath(cfg->path, relpath)).exists(extensions);
 }
 
+void DatasetTest::archived_segment_exists(const std::string& relpath, const std::vector<std::string>& extensions)
+{
+    auto cfg = local_config();
+    std::vector<std::string> exts(extensions);
+    exts.push_back(".metadata");
+    exts.push_back(".summary");
+    actual_segment(str::joinpath(cfg->path, ".archive", relpath)).exists(exts);
+}
+
 }
 
 namespace tests {

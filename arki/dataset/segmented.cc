@@ -357,6 +357,22 @@ void Checker::tar(CheckerConfig& opts)
     LocalChecker::tar(opts);
 }
 
+void Checker::zip(CheckerConfig& opts)
+{
+    segments(opts, [&](CheckerSegment& segment) {
+        if (segment.segment->single_file()) return;
+        if (opts.readonly)
+            opts.reporter->segment_tar(name(), segment.path_relative(), "should be zipped");
+        else
+        {
+            segment.zip();
+            opts.reporter->segment_tar(name(), segment.path_relative(), "zipped");
+        }
+    });
+
+    LocalChecker::zip(opts);
+}
+
 void Checker::compress(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {

@@ -250,6 +250,12 @@ public:
      * datasets.
      */
     void online_segment_exists(const std::string& relpath, const std::vector<std::string>& extensions);
+
+    /**
+     * Check if the segment exists online on this dataset, with the given
+     * extensions. ".metadata" and ".summary" are added automatically.
+     */
+    void archived_segment_exists(const std::string& relpath, const std::vector<std::string>& extensions);
 };
 
 }

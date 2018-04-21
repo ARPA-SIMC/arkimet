@@ -232,6 +232,12 @@ void LocalChecker::tar(CheckerConfig& opts)
         archive().tar(opts);
 }
 
+void LocalChecker::zip(CheckerConfig& opts)
+{
+    if (opts.offline && hasArchive())
+        archive().zip(opts);
+}
+
 void LocalChecker::compress(CheckerConfig& opts)
 {
     if (opts.offline && hasArchive())

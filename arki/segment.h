@@ -212,6 +212,12 @@ public:
     virtual std::shared_ptr<Checker> tar(metadata::Collection& mds);
 
     /**
+     * Replace this segment with a zip segment, updating the metadata in mds to
+     * point to the right locations inside the tarball
+     */
+    virtual std::shared_ptr<Checker> zip(metadata::Collection& mds);
+
+    /**
      * Replace this segment with a compressed segment, updating the metadata in
      * mds to point to the right locations if needed
      */

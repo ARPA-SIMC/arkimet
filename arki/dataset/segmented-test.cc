@@ -199,7 +199,6 @@ add_method("tarred", [](Fixture& f) {
     wassert(f.query_results({1, 0, 2}));
 });
 
-#if 0
 add_method("zipped", [](Fixture& f) {
     // Import and compress all the files
     f.clean_and_import();
@@ -243,7 +242,7 @@ add_method("zipped", [](Fixture& f) {
     wassert(actual_segment("testds/.archive/last/2007/10-09.grib").not_exists());
     wassert(actual_segment("testds/2007/07-07.grib").not_exists());
     wassert(actual_segment("testds/2007/07-08.grib").not_exists());
-    wassert(actual_segment("testds/2007/10-09.grib").exists({".zip"}));
+    wassert(f.online_segment_exists("2007/10-09.grib", {".zip"}));
 
     // Maintenance should now show a normal situation
     {
@@ -268,7 +267,6 @@ add_method("zipped", [](Fixture& f) {
     // Test that querying returns all items
     wassert(f.query_results({1, 0, 2}));
 });
-#endif
 
 add_method("query_archived", [](Fixture& f) {
     // Test querying with archived data

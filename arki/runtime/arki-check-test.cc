@@ -1,4 +1,5 @@
 #include "arki/dataset/tests.h"
+#include "arki/segment/tests.h"
 #include "arki/dataset/time.h"
 #include "arki/runtime/tests.h"
 #include "arki/exceptions.h"
@@ -407,6 +408,74 @@ add_method("tar", [](Fixture& f) {
     wassert(f.query_results({1, 0, 2}));
 });
 
+add_method("zip", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+
+    f.cfg.setValue("format", "odimh5");
+    f.test_reread_config();
+    f.clean_and_import("inbound/fixture.h5/00.h5");
+    f.import("inbound/fixture.h5/01.h5");
+    f.import("inbound/fixture.h5/02.h5");
+
+    auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
+    f.cfg.setValue("archive age", "1");
+    f.test_reread_config();
+    f.repack();
+
+    wassert(actual_file("testds/.archive/last/2007/07-07.odimh5").exists());
+    wassert(actual_file("testds/2007/07-08.odimh5").exists());
+    wassert(actual_file("testds/2007/10-09.odimh5").exists());
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "testds", });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
+            "testds.archives.last:2007/07-07.odimh5: should be zipped\n"
+        );
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "--offline", "testds", });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
+            "testds.archives.last:2007/07-07.odimh5: should be zipped\n"
+        );
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "--online", "testds", });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
+            "testds:2007/07-08.odimh5: should be zipped\n"
+            "testds:2007/10-09.odimh5: should be zipped\n"
+        );
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "testds", "-f" });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(sys::read_file(co.file_stdout.name())) ==
+            "testds.archives.last:2007/07-07.odimh5: zipped\n"
+        );
+        wassert(actual(res) == 0);
+    }
+
+    wassert(f.archived_segment_exists("last/2007/07-07.odimh5", {".zip"}));
+    wassert(f.online_segment_exists("2007/07-08.odimh5", {""}));
+    wassert(f.online_segment_exists("2007/10-09.odimh5", {""}));
+
+    wassert(f.ensure_localds_clean(3, 3));
+    wassert(f.ensure_localds_clean(3, 3, false));
+    wassert(f.query_results({1, 0, 2}));
+});
+
 add_method("compress", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
@@ -601,10 +670,9 @@ add_method("remove_old", [](Fixture& f) {
         wassert(actual(res) == 0);
     }
 
-    wassert(actual_file("testds/.archive/last/2007/07-07.odimh5").exists());
-    wassert(actual_file("testds/2007/07-08.odimh5").not_exists());
-    wassert(actual_file("testds/2007/07-08.odimh5.tar").not_exists());
-    wassert(actual_file("testds/2007/10-09.odimh5").exists());
+    wassert(f.archived_segment_exists("last/2007/07-07.odimh5", {""}));
+    wassert(actual_segment("testds/2007/07-08.odimh5").not_exists());
+    wassert(f.online_segment_exists("2007/10-09.odimh5", {""}));
 
     wassert(f.ensure_localds_clean(2, 2));
     wassert(f.query_results({1, 2}));

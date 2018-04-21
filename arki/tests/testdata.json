@@ -2827,6 +2827,11 @@
  {
   "doc": "",
   "group": "arki_dataset_segmented_ondisk2",
+  "method": "zipped"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segmented_ondisk2",
   "method": "query_archived"
  },
  {
@@ -2872,6 +2877,11 @@
  {
   "doc": "",
   "group": "arki_dataset_segmented_simple_plain",
+  "method": "zipped"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segmented_simple_plain",
   "method": "query_archived"
  },
  {
@@ -2913,6 +2923,11 @@
   "doc": "",
   "group": "arki_dataset_segmented_simple_sqlite",
   "method": "tarred"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segmented_simple_sqlite",
+  "method": "zipped"
  },
  {
   "doc": "",
@@ -2958,6 +2973,11 @@
   "doc": "",
   "group": "arki_dataset_segmented_iseg",
   "method": "tarred"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_segmented_iseg",
+  "method": "zipped"
  },
  {
   "doc": "",
@@ -12182,6 +12202,11 @@
  {
   "doc": "",
   "group": "arki_runtime_arkicheck_ondisk2",
+  "method": "zip"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_ondisk2",
   "method": "compress"
  },
  {
@@ -12232,6 +12257,11 @@
  {
   "doc": "",
   "group": "arki_runtime_arkicheck_simple_plain",
+  "method": "zip"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_plain",
   "method": "compress"
  },
  {
@@ -12282,6 +12312,11 @@
  {
   "doc": "",
   "group": "arki_runtime_arkicheck_simple_sqlite",
+  "method": "zip"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_sqlite",
   "method": "compress"
  },
  {
@@ -12328,6 +12363,11 @@
   "doc": "",
   "group": "arki_runtime_arkicheck_iseg",
   "method": "tar"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_iseg",
+  "method": "zip"
  },
  {
   "doc": "",
