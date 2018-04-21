@@ -133,7 +133,7 @@ public:
     /**
      * Send the metadata of all data items known by the index
      */
-    void scan(metadata_dest_func consumer, const std::string& order_by="offset") const;
+    void scan(SegmentManager& segs, metadata_dest_func consumer, const std::string& order_by="offset") const;
 
     /**
      * Query data sending the results to the given consumer.
@@ -141,7 +141,7 @@ public:
      * Returns true if dest returned true all the time, false if generation
      * stopped because dest returned false.
      */
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest);
+    bool query_data(const dataset::DataQuery& q, SegmentManager& segs, metadata_dest_func dest);
 
     /**
      * Query this index, returning a summary
@@ -156,7 +156,7 @@ public:
     /**
      * Get the metadata for this segment
      */
-    void query_segment(metadata_dest_func) const;
+    void query_segment(SegmentManager& segs, metadata_dest_func) const;
 };
 
 class RIndex : public Index

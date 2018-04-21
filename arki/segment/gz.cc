@@ -12,9 +12,12 @@
 #include "arki/utils/tar.h"
 #include "arki/utils.h"
 #include "arki/nag.h"
+#include "arki/utils/accounting.h"
+#include "arki/iotrace.h"
 #include <fcntl.h>
 #include <vector>
 #include <algorithm>
+#include <sys/uio.h>
 
 using namespace std;
 using namespace arki::core;
@@ -90,6 +93,59 @@ struct CheckBackend : public AppendCheckBackend
 };
 
 }
+
+
+Reader::Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    : segment::Reader(root, relpath, abspath, lock), fd(abspath + ".gz", "rb")
+{
+}
+
+const char* Reader::type() const { return "gz"; }
+bool Reader::single_file() const { return true; }
+
+std::vector<uint8_t> Reader::read(const types::source::Blob& src)
+{
+    vector<uint8_t> buf;
+    buf.resize(src.size);
+
+    if (src.offset != last_ofs)
+    {
+        fd.seek(src.offset, SEEK_SET);
+
+        if (src.offset >= last_ofs)
+            acct::gzip_forward_seek_bytes.incr(src.offset - last_ofs);
+        else
+            acct::gzip_forward_seek_bytes.incr(src.offset);
+    }
+
+    fd.read_all_or_throw(buf.data(), src.size);
+    last_ofs = src.offset + src.size;
+
+    acct::gzip_data_read_count.incr();
+    iotrace::trace_file(abspath, src.offset, src.size, "read data");
+
+    return buf;
+}
+
+size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor& out)
+{
+    vector<uint8_t> buf = read(src);
+    if (src.format == "vm2")
+    {
+        struct iovec todo[2] = {
+            { (void*)buf.data(), buf.size() },
+            { (void*)"\n", 1 },
+        };
+        ssize_t res = ::writev(out, todo, 2);
+        if (res < 0 || (unsigned)res != buf.size() + 1)
+            throw_system_error("cannot write " + to_string(buf.size() + 1) + " bytes to " + out.name());
+        return buf.size() + 1;
+    } else {
+        out.write_all_or_throw(buf);
+        return buf.size();
+    }
+}
+
 
 Checker::Checker(const std::string& root, const std::string& relpath, const std::string& abspath)
     : segment::Checker(root, relpath, abspath), gzabspath(abspath + ".gz")

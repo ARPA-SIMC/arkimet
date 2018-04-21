@@ -10,6 +10,8 @@
 #include "arki/utils/sys.h"
 #include "arki/scan/any.h"
 #include "arki/utils/string.h"
+#include "arki/utils/accounting.h"
+#include "arki/iotrace.h"
 #include "arki/nag.h"
 #include <cerrno>
 #include <cstring>
@@ -20,6 +22,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/uio.h>
+#include <sys/sendfile.h>
 
 using namespace std;
 using namespace arki::types;
@@ -230,6 +234,89 @@ struct CheckBackend : public AppendCheckBackend
     }
 };
 
+}
+
+
+Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    : segment::Reader(root, relpath, abspath, lock), format(format), dirfd(abspath, O_DIRECTORY)
+{
+}
+
+const char* Reader::type() const { return "dir"; }
+bool Reader::single_file() const { return false; }
+
+sys::File Reader::open_src(const types::source::Blob& src)
+{
+    char dataname[32];
+    snprintf(dataname, 32, "%06zd.%s", (size_t)src.offset, format.c_str());
+    sys::File file_fd(dirfd.openat(dataname, O_RDONLY | O_CLOEXEC), str::joinpath(dirfd.name(), dataname));
+
+    if (posix_fadvise(file_fd, 0, src.size, POSIX_FADV_DONTNEED) != 0)
+        nag::debug("fadvise on %s failed: %m", file_fd.name().c_str());
+
+    return file_fd;
+}
+
+std::vector<uint8_t> Reader::read(const types::source::Blob& src)
+{
+    vector<uint8_t> buf;
+    buf.resize(src.size);
+
+    sys::File file_fd = open_src(src);
+
+    ssize_t res = file_fd.pread(buf.data(), src.size, 0);
+    if ((size_t)res != src.size)
+    {
+        stringstream msg;
+        msg << "cannot read " << src.size << " bytes of " << src.format << " data from " << abspath << ":"
+            << src.offset << ": only " << res << "/" << src.size << " bytes have been read";
+        throw std::runtime_error(msg.str());
+    }
+
+    acct::plain_data_read_count.incr();
+    iotrace::trace_file(dirfd.name(), src.offset, src.size, "read data");
+
+    return buf;
+}
+
+size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor& out)
+{
+    if (src.format == "vm2")
+    {
+        vector<uint8_t> buf = read(src);
+
+        struct iovec todo[2] = {
+            { (void*)buf.data(), buf.size() },
+            { (void*)"\n", 1 },
+        };
+        ssize_t res = ::writev(out, todo, 2);
+        if (res < 0 || (unsigned)res != buf.size() + 1)
+            throw_system_error("cannot write " + to_string(buf.size() + 1) + " bytes to " + out.name());
+        return buf.size() + 1;
+    } else {
+        sys::File file_fd = open_src(src);
+
+        // TODO: add a stream method to sys::FileDescriptor that does the
+        // right thing depending on what's available in the system, and
+        // potentially also handles retries
+        off_t offset = 0;
+        while ((unsigned)offset < src.size)
+        {
+            size_t size = src.size - offset;
+            ssize_t res = sendfile(out, file_fd, &offset, size);
+            if (res < 0)
+            {
+                stringstream msg;
+                msg << "cannot stream " << size << " bytes of " << src.format << " data from " << file_fd.name() << ":"
+                    << src.offset << "+" << offset;
+                throw_system_error(msg.str());
+            }
+        }
+
+        acct::plain_data_read_count.incr();
+        iotrace::trace_file(dirfd.name(), src.offset, src.size, "streamed data");
+        return offset;
+    }
 }
 
 

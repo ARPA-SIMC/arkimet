@@ -12,9 +12,12 @@
 #include "arki/utils/tar.h"
 #include "arki/utils.h"
 #include "arki/nag.h"
+#include "arki/utils/accounting.h"
+#include "arki/iotrace.h"
 #include <fcntl.h>
 #include <vector>
 #include <algorithm>
+#include <sys/uio.h>
 
 using namespace std;
 using namespace arki::core;
@@ -94,6 +97,88 @@ struct CheckBackend : public AppendCheckBackend
     }
 };
 
+}
+
+
+Reader::Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    : segment::Reader(root, relpath, abspath, lock), fd(abspath + ".gz", O_RDONLY), gzfd(fd.name())
+{
+    // Read index
+    idx.read(fd.name() + ".idx");
+}
+
+const char* Reader::type() const { return "gzidx"; }
+bool Reader::single_file() const { return true; }
+
+void Reader::reposition(off_t ofs)
+{
+    size_t block = idx.lookup(ofs);
+    if (block != last_block || gzfd == NULL)
+    {
+        off_t res = fd.lseek(idx.ofs_comp[block], SEEK_SET);
+        if ((size_t)res != idx.ofs_comp[block])
+        {
+            stringstream ss;
+            ss << fd.name() << ": seeking to offset " << idx.ofs_comp[block] << " reached offset " << res << " instead";
+            throw std::runtime_error(ss.str());
+        }
+
+        // (Re)open the compressed file
+        int fd1 = fd.dup();
+        gzfd.fdopen(fd1, "rb");
+        last_block = block;
+        acct::gzip_idx_reposition_count.incr();
+    }
+
+    // Seek inside the compressed chunk
+    gzfd.seek(ofs - idx.ofs_unc[block], SEEK_SET);
+    acct::gzip_forward_seek_bytes.incr(ofs - idx.ofs_unc[block]);
+}
+
+
+std::vector<uint8_t> Reader::read(const types::source::Blob& src)
+{
+    vector<uint8_t> buf;
+    buf.resize(src.size);
+
+    if (gzfd == NULL || src.offset != last_ofs)
+    {
+        if (gzfd != NULL && src.offset > last_ofs && src.offset < last_ofs + 4096)
+        {
+            // Just skip forward
+            gzfd.seek(src.offset - last_ofs, SEEK_CUR);
+            acct::gzip_forward_seek_bytes.incr(src.offset - last_ofs);
+        } else {
+            // We need to seek
+            reposition(src.offset);
+        }
+    }
+
+    gzfd.read_all_or_throw(buf.data(), src.size);
+    last_ofs = src.offset + src.size;
+    acct::gzip_data_read_count.incr();
+    iotrace::trace_file(abspath, src.offset, src.size, "read data");
+
+    return buf;
+}
+
+size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor& out)
+{
+    vector<uint8_t> buf = read(src);
+    if (src.format == "vm2")
+    {
+        struct iovec todo[2] = {
+            { (void*)buf.data(), buf.size() },
+            { (void*)"\n", 1 },
+        };
+        ssize_t res = ::writev(out, todo, 2);
+        if (res < 0 || (unsigned)res != buf.size() + 1)
+            throw_system_error("cannot write " + to_string(buf.size() + 1) + " bytes to " + out.name());
+        return buf.size() + 1;
+    } else {
+        out.write_all_or_throw(buf);
+        return buf.size();
+    }
 }
 
 

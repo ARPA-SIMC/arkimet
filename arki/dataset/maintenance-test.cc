@@ -5,7 +5,6 @@
 #include "arki/dataset/segmented.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/time.h"
-#include "arki/reader.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/files.h"

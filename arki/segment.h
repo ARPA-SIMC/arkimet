@@ -9,6 +9,7 @@
 #include <arki/types/fwd.h>
 #include <arki/scan/fwd.h>
 #include <arki/metadata/fwd.h>
+#include <arki/reader.h>
 #include <arki/transaction.h>
 #include <string>
 #include <iosfwd>
@@ -131,6 +132,17 @@ public:
 
 
 namespace segment {
+
+struct Reader : public Segment, public arki::Reader
+{
+    std::shared_ptr<core::Lock> lock;
+
+    Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+
+    /// Instantiate the right Segment implementation for a segment that already
+    /// exists
+    static std::shared_ptr<Reader> for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+};
 
 struct Writer : public Segment, Transaction
 {

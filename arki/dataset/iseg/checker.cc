@@ -7,7 +7,6 @@
 #include "arki/dataset/time.h"
 #include "arki/dataset/lock.h"
 #include "arki/types/source/blob.h"
-#include "arki/reader.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
 #include "arki/matcher.h"
@@ -87,7 +86,7 @@ public:
 
     void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
     {
-        idx().scan(mds.inserter_func(), "reftime, offset");
+        idx().scan(checker.segment_manager(), mds.inserter_func(), "reftime, offset");
     }
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
@@ -119,7 +118,7 @@ public:
 #endif
 
         metadata::Collection mds;
-        idx().scan(mds.inserter_func(), "reftime, offset");
+        idx().scan(checker.segment_manager(), mds.inserter_func(), "reftime, offset");
         segment::State state = segment::SEGMENT_OK;
 
         // Compute the span of reftimes inside the segment
@@ -177,7 +176,7 @@ public:
 
         // Rescan file
         metadata::Collection mds;
-        idx().scan(mds.inserter_func(), "reftime, offset");
+        idx().scan(checker.segment_manager(), mds.inserter_func(), "reftime, offset");
 
         // Create the .tar segment
         segment = segment->tar(mds);
@@ -216,7 +215,7 @@ public:
 
         // Rescan file
         metadata::Collection mds;
-        idx().scan(mds.inserter_func(), "reftime, offset");
+        idx().scan(checker.segment_manager(), mds.inserter_func(), "reftime, offset");
 
         // Create the .tar segment
         segment = segment->zip(mds);
@@ -255,7 +254,7 @@ public:
 
         // Rescan file
         metadata::Collection mds;
-        idx().scan(mds.inserter_func(), "reftime, offset");
+        idx().scan(checker.segment_manager(), mds.inserter_func(), "reftime, offset");
 
         // Create the .tar segment
         size_t old_size = segment->size();
@@ -298,7 +297,7 @@ public:
         Pending p = idx().begin_transaction();
 
         metadata::Collection mds;
-        idx().scan(mds.inserter_func(), "reftime, offset");
+        idx().scan(checker.segment_manager(), mds.inserter_func(), "reftime, offset");
 
         auto res = reorder_segment_backend(p, mds, test_flags);
 
@@ -540,7 +539,7 @@ void Checker::check_issue51(CheckerConfig& opts)
         auto lock = config().check_lock_segment(relpath);
         CIndex idx(m_config, relpath, lock);
         metadata::Collection mds;
-        idx.scan(mds.inserter_func(), "reftime, offset");
+        idx.scan(segment_manager(), mds.inserter_func(), "reftime, offset");
         if (mds.empty()) return;
         File datafile(str::joinpath(config().path, relpath), O_RDONLY);
         // Iterate all metadata in the segment
@@ -632,7 +631,7 @@ void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_siz
     auto wrlock = lock->write_lock();
     CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
-    idx.query_segment(mds.inserter_func());
+    idx.query_segment(segment_manager(), mds.inserter_func());
     segment_manager().get_checker(relpath)->test_make_overlap(mds, overlap_size, data_idx);
     idx.test_make_overlap(overlap_size, data_idx);
 }
@@ -643,7 +642,7 @@ void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, uns
     auto wrlock = lock->write_lock();
     CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
-    idx.query_segment(mds.inserter_func());
+    idx.query_segment(segment_manager(), mds.inserter_func());
     segment_manager().get_checker(relpath)->test_make_hole(mds, hole_size, data_idx);
     idx.test_make_hole(hole_size, data_idx);
 }
@@ -654,7 +653,7 @@ void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
     auto wrlock = lock->write_lock();
     CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
-    idx.query_segment(mds.inserter_func());
+    idx.query_segment(segment_manager(), mds.inserter_func());
     segment_manager().get_checker(relpath)->test_corrupt(mds, data_idx);
 }
 
@@ -664,7 +663,7 @@ void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
     auto wrlock = lock->write_lock();
     CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
-    idx.query_segment(mds.inserter_func());
+    idx.query_segment(segment_manager(), mds.inserter_func());
     segment_manager().get_checker(relpath)->test_truncate(mds, data_idx);
 }
 
@@ -674,7 +673,7 @@ void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsign
     metadata::Collection mds;
     {
         CIndex idx(m_config, relpath, lock);
-        idx.scan(mds.inserter_func(), "offset");
+        idx.scan(segment_manager(), mds.inserter_func(), "offset");
         std::swap(mds[d1_idx], mds[d2_idx]);
     }
     segment_prelocked(relpath, lock)->reorder(mds);
@@ -696,7 +695,7 @@ void Checker::test_change_metadata(const std::string& relpath, Metadata& md, uns
     auto wrlock = lock->write_lock();
     CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
-    idx.query_segment(mds.inserter_func());
+    idx.query_segment(segment_manager(), mds.inserter_func());
     md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
     md.sourceBlob().unlock();
     mds[data_idx] = md;

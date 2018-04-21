@@ -4,7 +4,6 @@
 #include "arki/dataset/segment.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
-#include "arki/reader.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/configfile.h"

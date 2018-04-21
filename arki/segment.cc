@@ -34,6 +34,54 @@ Segment::~Segment()
 
 namespace segment {
 
+Reader::Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    : Segment(root, relpath, abspath), lock(lock)
+{
+}
+
+std::shared_ptr<Reader> Reader::for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+{
+    std::shared_ptr<segment::Reader> res;
+
+    std::unique_ptr<struct stat> st = sys::stat(abspath);
+    if (st.get())
+    {
+        if (S_ISDIR(st->st_mode))
+        {
+            res.reset(new segment::dir::Reader(format, root, relpath, abspath, lock));
+        } else {
+            res.reset(new segment::fd::Reader(root, relpath, abspath, lock));
+        }
+        return res;
+    }
+
+    st = sys::stat(abspath + ".gz");
+    if (st.get())
+    {
+        if (S_ISDIR(st->st_mode))
+            throw std::runtime_error(
+                    "cannot get a reader for " + format + " directory " + relpath + ": cannot handle a directory with a .gz extension");
+        else
+        {
+            if (sys::exists(abspath + ".gz.idx"))
+                res.reset(new segment::gzidx::Reader(root, relpath, abspath, lock));
+            else
+                res.reset(new segment::gz::Reader(root, relpath, abspath, lock));
+        }
+    }
+
+    st = sys::stat(abspath + ".tar");
+    if (st.get())
+        throw std::runtime_error("getting reader for " + format + " .tar file " + relpath + " is not yet implemented");
+
+    st = sys::stat(abspath + ".zip");
+    if (st.get())
+        throw std::runtime_error("getting reader for " + format + " .zip file " + relpath + " is not yet implemented");
+
+    return res;
+}
+
+
 Writer::PendingMetadata::PendingMetadata(Metadata& md, std::unique_ptr<types::source::Blob> new_source)
     : md(md), new_source(new_source.release())
 {

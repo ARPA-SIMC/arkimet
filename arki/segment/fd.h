@@ -48,6 +48,20 @@ struct CheckBackend : public AppendCheckBackend
 };
 
 
+struct Reader : public segment::Reader
+{
+    core::File fd;
+
+    Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+
+    const char* type() const override;
+    bool single_file() const override;
+
+    std::vector<uint8_t> read(const types::source::Blob& src) override;
+    size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) override;
+};
+
+
 struct Writer : public segment::Writer
 {
     File* fd = nullptr;

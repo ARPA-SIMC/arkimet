@@ -2,7 +2,6 @@
 #include "index.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/configfile.h"
-#include "arki/reader.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
@@ -165,7 +164,7 @@ void Index::setup_pragmas()
     m_db.exec("PRAGMA legacy_file_format = 0");
 }
 
-void Index::scan(metadata_dest_func dest, const std::string& order_by) const
+void Index::scan(SegmentManager& segs, metadata_dest_func dest, const std::string& order_by) const
 {
     string query = "SELECT m.offset, m.size, m.notes, m.reftime";
     if (m_uniques) query += ", m.uniq";
@@ -177,7 +176,8 @@ void Index::scan(metadata_dest_func dest, const std::string& order_by) const
     Query mdq("scan_file_md", m_db);
     mdq.compile(query);
 
-    auto reader = arki::Reader::create_new(data_pathname, lock);
+    // TODO: pass format and abspath since we have them
+    auto reader = segs.get_reader(data_relpath, lock);
 
     while (mdq.step())
     {
@@ -188,9 +188,9 @@ void Index::scan(metadata_dest_func dest, const std::string& order_by) const
     }
 }
 
-void Index::query_segment(metadata_dest_func dest) const
+void Index::query_segment(SegmentManager& segs, metadata_dest_func dest) const
 {
-    scan(dest);
+    scan(segs, dest);
 }
 
 static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begin, unique_ptr<Time>& end)
@@ -325,7 +325,7 @@ void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::Reader> reade
     }
 }
 
-bool Index::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Index::query_data(const dataset::DataQuery& q, SegmentManager& segs, metadata_dest_func dest)
 {
     string query = "SELECT m.offset, m.size, m.notes, m.reftime";
 
@@ -348,9 +348,10 @@ bool Index::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     nag::verbose("Running query %s", query.c_str());
 
     metadata::Collection mdbuf;
-    std::shared_ptr<arki::Reader> reader;
+    std::shared_ptr<arki::segment::Reader> reader;
     if (q.with_data)
-        reader = arki::Reader::create_new(data_pathname, lock);
+        // TODO: pass format and abspath as well, since we have them somewhere
+        reader = segs.get_reader(data_relpath, lock);
 
     // Limited scope for mdq, so we finalize the query before starting to
     // emit results
