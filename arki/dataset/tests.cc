@@ -450,7 +450,7 @@ void DatasetTest::repack()
 
 void DatasetTest::query_results(const std::vector<int>& expected)
 {
-    query_results(Matcher(), expected);
+    query_results(DataQuery(Matcher(), true), expected);
 }
 
 void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<int>& expected)
@@ -465,6 +465,8 @@ void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<i
             found.push_back(-1);
         else
             found.push_back(idx);
+        if (q.with_data)
+            md->getData();
         return true;
     });
 
