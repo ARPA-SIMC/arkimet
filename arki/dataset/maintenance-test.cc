@@ -281,7 +281,8 @@ void MaintenanceTest::register_tests_dir()
         sys::write_file("testds/" + f.test_relpath, "");
 
         wassert(f.state_is(3, segment::SEGMENT_MISSING));
-        wassert(f.query_results({1, 3, 0, 2}));
+        auto e = wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
+        wassert(actual(e.what()).contains("cannot read"));
     });
 
     add_method("check_datasize", R"(
@@ -335,7 +336,8 @@ void MaintenanceTest::register_tests()
         rm_r("testds/" + f.test_relpath);
 
         wassert(f.state_is(3, segment::SEGMENT_MISSING));
-        wassert(f.query_results({1, 3, 0, 2}));
+        auto e = wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
+        wassert(actual(e.what()).contains("cannot get reader for nonexisting segment"));
     });
 
     if (can_delete_data())
@@ -426,7 +428,7 @@ void MaintenanceTest::register_tests()
         truncate_segment();
 
         wassert(f.state_is(3, segment::SEGMENT_CORRUPTED));
-        wassert(f.query_results({1, 3, 0, 2}));
+        wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
     });
 
     if (can_detect_overlap())

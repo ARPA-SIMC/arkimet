@@ -78,7 +78,7 @@ std::shared_ptr<Reader> Reader::for_pathname(const std::string& format, const st
     if (st.get())
         throw std::runtime_error("getting reader for " + format + " .zip file " + relpath + " is not yet implemented");
 
-    return res;
+    throw std::runtime_error("cannot get reader for nonexisting segment " + relpath + " (tried also .gz, .tar, .zip)");
 }
 
 
