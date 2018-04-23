@@ -13,9 +13,12 @@
 #include "arki/utils/zip.h"
 #include "arki/utils.h"
 #include "arki/nag.h"
+#include "arki/utils/accounting.h"
+#include "arki/iotrace.h"
 #include <fcntl.h>
 #include <vector>
 #include <algorithm>
+#include <sys/uio.h>
 
 using namespace std;
 using namespace arki::core;
@@ -204,6 +207,42 @@ struct CheckBackend : public AppendCheckBackend
     }
 };
 
+}
+
+
+Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    : segment::Reader(root, relpath, abspath, lock), zip(format, core::File(abspath + ".zip", O_RDONLY | O_CLOEXEC))
+{
+}
+
+const char* Reader::type() const { return "zip"; }
+bool Reader::single_file() const { return true; }
+
+std::vector<uint8_t> Reader::read(const types::source::Blob& src)
+{
+    vector<uint8_t> buf = zip.get(Span(src.offset, src.size));
+    acct::plain_data_read_count.incr();
+    iotrace::trace_file(zip.zipname, src.offset, src.size, "read data");
+    return buf;
+}
+
+size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor& out)
+{
+    vector<uint8_t> buf = read(src);
+    if (src.format == "vm2")
+    {
+        struct iovec todo[2] = {
+            { (void*)buf.data(), buf.size() },
+            { (void*)"\n", 1 },
+        };
+        ssize_t res = ::writev(out, todo, 2);
+        if (res < 0 || (unsigned)res != buf.size() + 1)
+            throw_system_error("cannot write " + to_string(buf.size() + 1) + " bytes to " + out.name());
+        return buf.size() + 1;
+    } else {
+        out.write_all_or_throw(buf);
+        return buf.size();
+    }
 }
 
 

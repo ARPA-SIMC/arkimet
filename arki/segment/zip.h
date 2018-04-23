@@ -6,6 +6,7 @@
 #include <arki/libconfig.h>
 #include <arki/segment.h>
 #include <arki/core/file.h>
+#include <arki/utils/zip.h>
 #include <string>
 
 namespace arki {
@@ -13,6 +14,20 @@ struct Reader;
 
 namespace segment {
 namespace zip {
+
+struct Reader : public segment::Reader
+{
+    utils::ZipReader zip;
+
+    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+
+    const char* type() const override;
+    bool single_file() const override;
+
+    std::vector<uint8_t> read(const types::source::Blob& src) override;
+    size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) override;
+};
+
 
 class Checker : public segment::Checker
 {

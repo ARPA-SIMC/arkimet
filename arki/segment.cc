@@ -81,7 +81,10 @@ std::shared_ptr<Reader> Reader::for_pathname(const std::string& format, const st
 
     st = sys::stat(abspath + ".zip");
     if (st.get())
-        throw std::runtime_error("getting reader for " + format + " .zip file " + relpath + " is not yet implemented");
+    {
+        res.reset(new segment::zip::Reader(format, root, relpath, abspath, lock));
+        return res;
+    }
 
     res.reset(new segment::missing::Reader(root, relpath, abspath, lock));
     return res;
