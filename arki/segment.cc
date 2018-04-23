@@ -72,7 +72,7 @@ std::shared_ptr<Reader> Reader::for_pathname(const std::string& format, const st
 
     st = sys::stat(abspath + ".tar");
     if (st.get())
-        throw std::runtime_error("getting reader for " + format + " .tar file " + relpath + " is not yet implemented");
+        res.reset(new segment::tar::Reader(root, relpath, abspath, lock));
 
     st = sys::stat(abspath + ".zip");
     if (st.get())
