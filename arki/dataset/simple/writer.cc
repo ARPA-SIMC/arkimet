@@ -61,6 +61,8 @@ struct AppendSegment
 
         // Replace the pathname with its basename
         unique_ptr<Metadata> copy(md.clone());
+        if (!config->smallfiles)
+            copy->unset(TYPE_VALUE);
         copy->set_source(Source::createBlobUnlocked(source.format, dir.name(), basename, source.offset, source.size));
         sum.add(*copy);
         mds.acquire(move(copy));

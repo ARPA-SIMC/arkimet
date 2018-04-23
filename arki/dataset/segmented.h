@@ -45,6 +45,13 @@ public:
      */
     bool offline = false;
 
+    /**
+     * If true, try to store the content of small files in the index if
+     * possible, to avoid extra I/O when querying
+     */
+    bool smallfiles = false;
+
+
     Config(const ConfigFile& cfg);
     ~Config();
 

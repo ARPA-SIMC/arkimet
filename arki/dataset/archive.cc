@@ -50,6 +50,7 @@ static ConfigFile make_config(const std::string& dir)
     cfg.setValue("path", dir);
     cfg.setValue("step", "monthly");
     cfg.setValue("offline", "true");
+    cfg.setValue("smallfiles", "true");
     return cfg;
 }
 

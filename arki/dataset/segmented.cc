@@ -60,7 +60,8 @@ Config::Config(const ConfigFile& cfg)
       step_name(str::lower(cfg.value("step"))),
       force_dir_segments(cfg.value("segments") == "dir"),
       mock_data(cfg.value("mockdata") == "true"),
-      offline(cfg.value("offline") == "true")
+      offline(cfg.value("offline") == "true"),
+      smallfiles(ConfigFile::boolValue(cfg.value("smallfiles")))
 {
     if (step_name.empty())
         throw std::runtime_error("Dataset " + name + " misses step= configuration");

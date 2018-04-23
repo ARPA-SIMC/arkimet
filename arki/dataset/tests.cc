@@ -363,6 +363,7 @@ void DatasetTest::import(const std::string& testfile)
             wassert(actual(e->result) == ACQ_OK);
             import_results.push_back(e->md);
             import_results.back().sourceBlob().unlock();
+            //fprintf(stderr, "IDX %s %zd: %s\n", testfile.c_str(), import_results.size(), e->md.sourceBlob().to_string().c_str());
         }
     }
 

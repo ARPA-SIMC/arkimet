@@ -514,7 +514,7 @@ void MaintenanceTest::register_tests()
       implied by the segment file name (FIXME: should this be disabled for
       archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
     )", [&](Fixture& f) {
-        Metadata md = f.import_results[0];
+        Metadata md = f.import_results[1];
         md.set("reftime", "2007-07-06 00:00:00");
         checker()->test_change_metadata(f.test_relpath, md, 0);
 
@@ -617,7 +617,7 @@ void MaintenanceTest::register_tests()
         - [corrupted] segments can only be fixed by manual intervention. They
           are reported and left untouched
     )", [&](Fixture& f) {
-        Metadata md = f.import_results[0];
+        Metadata md = f.import_results[1];
         md.set("reftime", "2007-07-06 00:00:00");
         checker()->test_change_metadata(f.test_relpath, md, 0);
 
@@ -713,7 +713,7 @@ void MaintenanceTest::register_tests()
     add_method("repack_corrupted", R"(
         - [corrupted] segments are not touched
     )", [&](Fixture& f) {
-        Metadata md = f.import_results[0];
+        Metadata md = f.import_results[1];
         md.set("reftime", "2007-07-06 00:00:00");
         checker()->test_change_metadata(f.test_relpath, md, 0);
 
