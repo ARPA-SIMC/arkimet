@@ -6,6 +6,7 @@
 #include <arki/transaction.h>
 #include <arki/utils/sqlite.h>
 #include <arki/types/fwd.h>
+#include <arki/segment/fwd.h>
 #include <arki/dataset/iseg.h>
 #include <arki/dataset/index/attr.h>
 #include <arki/dataset/index/aggregate.h>
@@ -20,7 +21,6 @@ namespace arki {
 class Metadata;
 class Matcher;
 class ConfigFile;
-class Reader;
 
 namespace dataset {
 struct Lock;
@@ -106,7 +106,7 @@ protected:
      * The rows should be:
      * m.offset, m.size, m.notes, m.reftime[, uniq][, other]
      */
-    void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::Reader> reader) const;
+    void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::segment::Reader> reader) const;
 
     Index(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
 

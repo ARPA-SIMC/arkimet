@@ -1,8 +1,9 @@
 #include "arki/libconfig.h"
 #include "arki/scan/any.h"
 #include "arki/metadata.h"
-#include "arki/reader.h"
+#include "arki/segment.h"
 #include "arki/types/source/blob.h"
+#include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/utils/compress.h"
 #include "arki/utils/sys.h"
@@ -34,7 +35,7 @@ namespace scan {
 
 static void scan_metadata(const std::string& pathname, const std::string& md_pathname, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
 {
-    auto reader = Reader::create_new(pathname, lock);
+    auto reader = segment::Reader::for_pathname(utils::get_format(pathname), str::dirname(pathname), str::basename(pathname), pathname, lock);
     Metadata::read_file(md_pathname, [&](unique_ptr<Metadata> md) {
         md->sourceBlob().lock(reader);
         return dest(move(md));

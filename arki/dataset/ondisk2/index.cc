@@ -427,7 +427,7 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
     return true;
 }
 
-void Contents::build_md(Query& q, Metadata& md, std::shared_ptr<arki::Reader> reader) const
+void Contents::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::Reader> reader) const
 {
     // Rebuild the Metadata
     md.set_source(Source::createBlob(
@@ -489,7 +489,7 @@ bool Contents::query_data(const dataset::DataQuery& q, SegmentManager& segs, met
 
     metadata::Collection mdbuf;
     string last_fname;
-    std::shared_ptr<arki::Reader> reader;
+    std::shared_ptr<arki::segment::Reader> reader;
 
     // This keeps the index locked for a potentially long time, if dest is slow
     // in processing data. Use iseg datasets if this is a problem.

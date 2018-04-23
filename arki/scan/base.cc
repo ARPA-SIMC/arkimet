@@ -1,6 +1,7 @@
 #include "base.h"
-#include "arki/reader.h"
+#include "arki/segment.h"
 #include "arki/core/file.h"
+#include "arki/utils.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
 
@@ -20,7 +21,7 @@ void Scanner::open(const std::string& filename, const std::string& basedir, cons
     this->filename = filename;
     this->basedir = basedir;
     this->relpath = relpath;
-    reader = Reader::create_new(filename, lock);
+    reader = segment::Reader::for_pathname(utils::get_format(filename), basedir, relpath, filename, lock);
 }
 
 void Scanner::close()

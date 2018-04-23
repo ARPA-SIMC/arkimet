@@ -1,6 +1,6 @@
 #include "arki/libconfig.h"
 #include "arki/types/tests.h"
-#include "arki/reader.h"
+#include "arki/segment.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/utils.h"
@@ -64,7 +64,7 @@ add_method("compression", [] {
     utils::acct::gzip_data_read_count.reset();
     utils::acct::gzip_forward_seek_bytes.reset();
     utils::acct::gzip_idx_reposition_count.reset();
-    auto reader = Reader::create_new(tf.name(), std::make_shared<core::lock::Null>());
+    auto reader = segment::Reader::for_pathname("bufr", ".", "compressed.bufr", "compressed.bufr", std::make_shared<core::lock::Null>());
     for (int i = 0; i < repeats; ++i)
     {
         c[i].sourceBlob().lock(reader);
@@ -87,7 +87,7 @@ add_method("compression", [] {
     utils::acct::gzip_data_read_count.reset();
     utils::acct::gzip_forward_seek_bytes.reset();
     utils::acct::gzip_idx_reposition_count.reset();
-    reader = Reader::create_new(tf.name(), std::make_shared<core::lock::Null>());
+    reader = segment::Reader::for_pathname("bufr", ".", "compressed.bufr", "compressed.bufr", std::make_shared<core::lock::Null>());
     for (int i = repeats-1; i >= 0; --i)
     {
         c[i].sourceBlob().lock(reader);
@@ -109,7 +109,7 @@ add_method("compression", [] {
     utils::acct::gzip_data_read_count.reset();
     utils::acct::gzip_forward_seek_bytes.reset();
     utils::acct::gzip_idx_reposition_count.reset();
-    reader = Reader::create_new(tf.name(), std::make_shared<core::lock::Null>());
+    reader = segment::Reader::for_pathname("bufr", ".", "compressed.bufr", "compressed.bufr", std::make_shared<core::lock::Null>());
     for (int i = 0; i < repeats; i += 2)
     {
         c[i].sourceBlob().lock(reader);

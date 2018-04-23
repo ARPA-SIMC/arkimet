@@ -9,11 +9,11 @@
 #include <arki/types/fwd.h>
 #include <arki/scan/fwd.h>
 #include <arki/metadata/fwd.h>
-#include <arki/reader.h>
 #include <arki/transaction.h>
 #include <string>
 #include <iosfwd>
 #include <memory>
+#include <vector>
 
 namespace arki {
 class Segment;
@@ -133,11 +133,14 @@ public:
 
 namespace segment {
 
-struct Reader : public Segment, public arki::Reader
+struct Reader : public Segment
 {
     std::shared_ptr<core::Lock> lock;
 
     Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+
+    virtual std::vector<uint8_t> read(const types::source::Blob& src) = 0;
+    virtual size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) = 0;
 
     /// Instantiate the right Segment implementation for a segment that already
     /// exists

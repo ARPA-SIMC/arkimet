@@ -285,7 +285,7 @@ void Index::add_joins_and_constraints(const Matcher& m, std::string& query) cons
         query += " WHERE " + str::join(" AND ", constraints.begin(), constraints.end());
 }
 
-void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::Reader> reader) const
+void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::Reader> reader) const
 {
     // Rebuild the Metadata
     if (reader)

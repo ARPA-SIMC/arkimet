@@ -1,5 +1,6 @@
 #include "blob.h"
 #include "arki/binary.h"
+#include "arki/segment.h"
 #include "arki/core/file.h"
 #include "arki/utils/lua.h"
 #include "arki/utils/string.h"
@@ -7,7 +8,6 @@
 #include "arki/emitter.h"
 #include "arki/emitter/memory.h"
 #include "arki/exceptions.h"
-#include "arki/reader.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -104,7 +104,7 @@ Blob* Blob::clone() const
     return new Blob(*this);
 }
 
-std::unique_ptr<Blob> Blob::create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<Reader> reader)
+std::unique_ptr<Blob> Blob::create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader)
 {
     auto res = create_unlocked(format, basedir, filename, offset, size);
     res->lock(reader);
@@ -159,7 +159,7 @@ std::string Blob::absolutePathname() const
     return str::joinpath(basedir, filename);
 }
 
-void Blob::lock(std::shared_ptr<Reader> reader)
+void Blob::lock(std::shared_ptr<segment::Reader> reader)
 {
     this->reader = reader;
 }

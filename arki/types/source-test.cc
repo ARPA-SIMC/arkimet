@@ -1,11 +1,11 @@
 #include "tests.h"
 #include "source.h"
 #include "source/blob.h"
+#include "arki/segment.h"
 #include "arki/emitter/json.h"
 #include "arki/emitter/memory.h"
 #include "arki/core/file.h"
 #include "arki/binary.h"
-#include "arki/reader.h"
 #include "arki/utils/sys.h"
 
 namespace {
@@ -116,7 +116,7 @@ add_method("blob_pathnames_encode", [] {
 });
 
 add_method("blob_stream", [] {
-    auto reader = Reader::create_new("inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = segment::Reader::for_pathname("grib", "inbound", "test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     unique_ptr<source::Blob> o = source::Blob::create("test", "inbound", "test.grib1", 7218, 34960, reader);
     sys::unlink_ifexists("test.grib");
     File out("test.grib", O_WRONLY | O_CREAT | O_TRUNC);

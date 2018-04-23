@@ -5,6 +5,7 @@
 
 #include <arki/dataset/index.h>
 #include <arki/transaction.h>
+#include <arki/segment/fwd.h>
 #include <arki/utils/sqlite.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/index/attr.h>
@@ -20,7 +21,6 @@ namespace arki {
 class Metadata;
 class Matcher;
 class ConfigFile;
-class Reader;
 
 namespace dataset {
 struct DataQuery;
@@ -88,7 +88,7 @@ protected:
      * The rows should be:
      * m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime[, uniq][, other]
      */
-    void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::Reader> reader) const;
+    void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::segment::Reader> reader) const;
 
     Contents(std::shared_ptr<const ondisk2::Config> config);
 

@@ -1231,26 +1231,6 @@
  },
  {
   "doc": "",
-  "group": "arki_reader",
-  "method": "uncompressed"
- },
- {
-  "doc": "",
-  "group": "arki_reader",
-  "method": "uncompressed_noidx"
- },
- {
-  "doc": "",
-  "group": "arki_reader",
-  "method": "uncompressed_idx"
- },
- {
-  "doc": "",
-  "group": "arki_reader",
-  "method": "missing"
- },
- {
-  "doc": "",
   "group": "arki_summary",
   "method": "stats"
  },
