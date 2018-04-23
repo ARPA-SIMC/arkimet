@@ -422,6 +422,9 @@ struct Path : public ManagedNamedFileDescriptor
 
     int openat(const char* pathname, int flags, mode_t mode=0777);
 
+    /// Same as openat, but returns -1 if the file does not exist
+    int openat_ifexists(const char* pathname, int flags, mode_t mode=0777);
+
     bool faccessat(const char* pathname, int mode, int flags=0);
 
     void fstatat(const char* pathname, struct stat& st);
