@@ -139,6 +139,7 @@ struct Reader : public Segment
 
     Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
 
+    virtual bool scan(metadata_dest_func dest) = 0;
     virtual std::vector<uint8_t> read(const types::source::Blob& src) = 0;
     virtual size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) = 0;
 

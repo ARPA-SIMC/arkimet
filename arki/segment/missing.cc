@@ -20,6 +20,11 @@ Reader::Reader(const std::string& root, const std::string& relpath, const std::s
 const char* Reader::type() const { return "missing"; }
 bool Reader::single_file() const { return true; }
 
+bool Reader::scan(metadata_dest_func dest)
+{
+    throw std::runtime_error("cannot scan " + abspath + ": segment has disappeared");
+}
+
 std::vector<uint8_t> Reader::read(const types::source::Blob& src)
 {
     stringstream ss;

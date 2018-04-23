@@ -26,6 +26,7 @@ struct Reader : public segment::Reader
     const char* type() const override;
     bool single_file() const override;
 
+    bool scan(metadata_dest_func dest) override;
     utils::sys::File open_src(const types::source::Blob& src);
     std::vector<uint8_t> read(const types::source::Blob& src) override;
     size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) override;

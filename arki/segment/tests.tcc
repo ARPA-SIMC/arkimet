@@ -37,6 +37,18 @@ this->add_method("create", [](Fixture& f) {
     wassert_true(checker->exists_on_disk());
 });
 
+this->add_method("scan", [](Fixture& f) {
+    std::shared_ptr<Segment> checker = f.create();
+    auto reader = segment::Reader::for_pathname(f.td.format, checker->root, checker->relpath, checker->abspath, std::make_shared<arki::core::lock::Null>());
+    metadata::Collection mds;
+    reader->scan(mds.inserter_func());
+    wassert(actual(mds.size()) == f.seg_mds.size());
+    wassert(actual(mds[0]).is_similar(f.seg_mds[0]));
+    wassert(actual(mds[1]).is_similar(f.seg_mds[1]));
+    wassert(actual(mds[2]).is_similar(f.seg_mds[2]));
+    wassert(actual(mds.size()) == 3u);
+});
+
 this->add_method("read", [](Fixture& f) {
     wassert_true(Segment::can_store(f.td.format));
     std::shared_ptr<Segment> checker = f.create();

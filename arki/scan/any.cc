@@ -1,5 +1,6 @@
 #include "arki/libconfig.h"
 #include "arki/scan/any.h"
+#include "arki/scan/base.h"
 #include "arki/metadata.h"
 #include "arki/segment.h"
 #include "arki/types/source/blob.h"
@@ -13,17 +14,11 @@
 #include <utime.h>
 #include <fcntl.h>
 
-#ifdef HAVE_GRIBAPI
-#include <arki/scan/grib.h>
-#endif
 #ifdef HAVE_DBALLE
-#include <arki/scan/bufr.h>
-#endif
-#ifdef HAVE_HDF5
-#include <arki/scan/odimh5.h>
+#include "arki/scan/bufr.h"
 #endif
 #ifdef HAVE_VM2
-#include <arki/scan/vm2.h>
+#include "arki/scan/vm2.h"
 #endif
 
 using namespace std;
@@ -33,10 +28,10 @@ using namespace arki::types;
 namespace arki {
 namespace scan {
 
-static void scan_metadata(const std::string& pathname, const std::string& md_pathname, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+static bool scan_metadata(const std::string& pathname, const std::string& md_pathname, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
 {
     auto reader = segment::Reader::for_pathname(utils::get_format(pathname), str::dirname(pathname), str::basename(pathname), pathname, lock);
-    Metadata::read_file(md_pathname, [&](unique_ptr<Metadata> md) {
+    return Metadata::read_file(md_pathname, [&](unique_ptr<Metadata> md) {
         md->sourceBlob().lock(reader);
         return dest(move(md));
     });
@@ -58,72 +53,15 @@ static bool scan_file(
     if (!st)
         throw std::runtime_error("cannot scan " + relpath + ": file does not exist");
 
-#ifdef HAVE_GRIBAPI
-    if (format == "grib" || format == "grib1" || format == "grib2")
+    auto scanner = scan::Scanner::get_scanner(format);
+    scanner->open(pathname, basedir, relpath, lock);
+    while (true)
     {
-        // An empty file is valid, and we can return without instantiating read
-        // locks and parsing structures
-        if (st->st_size == 0) return true;
-
-        scan::Grib scanner;
-        scanner.open(pathname, basedir, relpath, lock);
-        while (true)
-        {
-            unique_ptr<Metadata> md(new Metadata);
-            if (!scanner.next(*md)) break;
-            if (!dest(move(md))) break;
-        }
-        return true;
+        unique_ptr<Metadata> md(new Metadata);
+        if (!scanner->next(*md)) break;
+        if (!dest(move(md))) return false;
     }
-#endif
-#ifdef HAVE_DBALLE
-    if (format == "bufr") {
-        // An empty file is valid, and we can return without instantiating read
-        // locks and parsing structures
-        if (st->st_size == 0) return true;
-
-        scan::Bufr scanner;
-        scanner.open(pathname, basedir, relpath, lock);
-        while (true)
-        {
-            unique_ptr<Metadata> md(new Metadata);
-            if (!scanner.next(*md)) break;
-            if (!dest(move(md))) break;
-        }
-        return true;
-    }
-#endif
-#ifdef HAVE_HDF5
-    if ((format == "h5") || (format == "odim") || (format == "odimh5")) {
-        scan::OdimH5 scanner;
-        scanner.open(pathname, basedir, relpath, lock);
-        while (true)
-        {
-            unique_ptr<Metadata> md(new Metadata);
-            if (!scanner.next(*md)) break;
-            if (!dest(move(md))) break;
-        }
-        return true;
-    }
-#endif
-#ifdef HAVE_VM2
-    if (format == "vm2") {
-        // An empty file is valid, and we can return without instantiating read
-        // locks and parsing structures
-        if (st->st_size == 0) return true;
-
-        scan::Vm2 scanner;
-        scanner.open(pathname, basedir, relpath, lock);
-        while (true)
-        {
-            unique_ptr<Metadata> md(new Metadata);
-            if (!scanner.next(*md)) break;
-            if (!dest(move(md))) break;
-        }
-        return true;
-    }
-#endif
-    return false;
+    return true;
 }
 
 static bool dir_segment_fnames_lt(const std::string& a, const std::string& b)
@@ -151,12 +89,11 @@ static bool scan_dir(const std::string& pathname, const std::string& basedir, co
     {
         //cerr << "SCAN " << *i << " " << pathname << " " << basedir << " " << relpath << endl;
         pos = strtoul(i->c_str(), 0, 10);
-        if (!scan_file(str::joinpath(pathname, *i), basedir, relpath, format, lock, [&](unique_ptr<Metadata> md) {
-                   const source::Blob& i = md->sourceBlob();
-                   md->set_source(Source::createBlob(i.format, i.basedir, relpath, pos, i.size, i.reader));
-                   return dest(move(md));
-                }))
-            return false;
+        scan_file(str::joinpath(pathname, *i), basedir, relpath, format, lock, [&](unique_ptr<Metadata> md) {
+           const source::Blob& i = md->sourceBlob();
+           md->set_source(Source::createBlob(i.format, i.basedir, relpath, pos, i.size, i.reader));
+           return dest(move(md));
+        });
 
     }
 
@@ -178,7 +115,8 @@ bool scan(const std::string& basedir, const std::string& relpath, std::shared_pt
     std::string format = guess_format(basedir, relpath);
 
     // If we cannot detect a format, fail
-    if (format.empty()) return false;
+    if (format.empty())
+        throw std::runtime_error("unknown format: '" + format + "'");
     return scan(basedir, relpath, lock, format, dest);
 }
 
@@ -208,8 +146,7 @@ bool scan(const std::string& basedir, const std::string& relpath, std::shared_pt
     if (st_md.get() and st_md->st_mtime >= st_file->st_mtime)
     {
         // If there is a usable metadata file, use it to save time
-        scan_metadata(pathname, md_pathname, lock, dest);
-        return true;
+        return scan_metadata(pathname, md_pathname, lock, dest);
     } else if (S_ISDIR(st_file->st_mode)) {
         return scan_dir(pathname, basedir, relpath, format, lock, dest);
     } else {
@@ -298,51 +235,12 @@ void Validator::throw_check_error(const std::string& msg) const
 
 const Validator& Validator::by_filename(const std::string& filename)
 {
-    // Get the file extension
-    size_t pos = filename.rfind('.');
-    if (pos == string::npos)
-        // No extension, we do not know what it is
-        throw runtime_error("cannot find a validator for " + filename + ": file name has no extension");
-    string ext = str::lower(filename.substr(pos+1));
-
-#ifdef HAVE_GRIBAPI
-	if (ext == "grib" || ext == "grib1" || ext == "grib2")
-		return grib::validator();
-#endif
-#ifdef HAVE_DBALLE
-	if (ext == "bufr")
-		return bufr::validator();
-#endif
-#ifdef HAVE_HDF5
-	if ((ext == "h5") || (ext == "odimh5") || (ext == "odim"))
-		return odimh5::validator();
-#endif
-#ifdef HAVE_VM2
-   if (ext == "vm2")
-       return vm2::validator();
-#endif
-    throw runtime_error("cannot find a validator for " + filename + ": no validator available");
+    return by_format(get_format(filename));
 }
 
 const Validator& Validator::by_format(const std::string& format)
 {
-#ifdef HAVE_GRIBAPI
-    if (format == "grib")
-        return grib::validator();
-#endif
-#ifdef HAVE_DBALLE
-    if (format == "bufr")
-        return bufr::validator();
-#endif
-#ifdef HAVE_HDF5
-    if (format == "odimh5")
-        return odimh5::validator();
-#endif
-#ifdef HAVE_VM2
-   if (format == "vm2")
-       return vm2::validator();
-#endif
-    throw runtime_error("cannot find a validator for " + format + " format");
+    return scan::Scanner::get_validator(format);
 }
 
 bool update_sequence_number(const types::source::Blob& source, int& usn)

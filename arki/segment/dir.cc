@@ -9,6 +9,7 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/scan/any.h"
+#include "arki/scan/base.h"
 #include "arki/utils/string.h"
 #include "arki/utils/accounting.h"
 #include "arki/iotrace.h"
@@ -24,6 +25,7 @@
 #include <fcntl.h>
 #include <sys/uio.h>
 #include <sys/sendfile.h>
+#include <algorithm>
 
 using namespace std;
 using namespace arki::types;
@@ -244,6 +246,40 @@ Reader::Reader(const std::string& format, const std::string& root, const std::st
 
 const char* Reader::type() const { return "dir"; }
 bool Reader::single_file() const { return false; }
+
+bool Reader::scan(metadata_dest_func dest)
+{
+    // Collect all file names in the directory
+    std::vector<std::pair<size_t, std::string>> fnames;
+    sys::Path dir(abspath);
+    for (sys::Path::iterator di = dir.begin(); di != dir.end(); ++di)
+        if (di.isreg() && str::endswith(di->d_name, format))
+        {
+            char* endptr;
+            size_t pos = strtoull(di->d_name, &endptr, 10);
+            if (endptr == di->d_name) continue;
+            if (*endptr != '.') continue;
+            fnames.emplace_back(make_pair(pos, di->d_name));
+        }
+
+    // Sort them numerically
+    std::sort(fnames.begin(), fnames.end());
+
+    // Scan them one by one
+    auto scanner = scan::Scanner::get_scanner(format);
+    size_t pos = 0;
+    for (const auto& i : fnames)
+    {
+        if (!scanner->scan_file(root, relpath, str::joinpath(abspath, i.second), lock, [&](unique_ptr<Metadata> md) {
+                   const source::Blob& i = md->sourceBlob();
+                   md->set_source(Source::createBlob(format, root, relpath, pos, i.size, i.reader));
+                   return dest(move(md));
+                }))
+            return false;
+    }
+
+    return true;
+}
 
 sys::File Reader::open_src(const types::source::Blob& src)
 {

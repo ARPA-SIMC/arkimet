@@ -331,8 +331,7 @@ public:
 
         // Collect the scan results in a metadata::Collector
         metadata::Collection mds;
-        if (!scan::scan(segment->abspath, lock, mds.inserter_func()))
-            throw std::runtime_error("cannot rescan " + segment->abspath + ": file format unknown");
+        scan::scan(segment->abspath, lock, mds.inserter_func());
         //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
 
         // Lock away writes and reads

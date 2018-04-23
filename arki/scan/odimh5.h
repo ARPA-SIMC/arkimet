@@ -26,27 +26,9 @@ public:
 	OdimH5();
 	virtual ~OdimH5();
 
-    /**
-     * Access a file with ODIMH5 data  - alternate version with explicit
-     * basedir/relpath separation
-     */
     void open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock) override;
-
-    /**
-     * Close the input file.
-     *
-     * This is optional: the file will be closed by the destructor if needed.
-     */
     void close() override;
-
-	/**
-	 * Scan the next ODIMH5 in the file.
-	 *
-	 * @returns
-	 *   true if it found a ODIMH5 message,
-	 *   false if there are no more ODIMH5 messages in the file
-	 */
-	bool next(Metadata& md);
+    bool next(Metadata& md) override;
 
 protected:
     hid_t h5file;

@@ -158,11 +158,11 @@ struct TestCollection : public Collection
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    bool scan_from_file(const std::string& pathname, bool with_data);
+    void scan_from_file(const std::string& pathname, bool with_data);
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    bool scan_from_file(const std::string& pathname, const std::string& format, bool with_data);
+    void scan_from_file(const std::string& pathname, const std::string& format, bool with_data);
 };
 
 }

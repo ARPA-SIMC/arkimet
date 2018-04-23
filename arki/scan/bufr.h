@@ -45,24 +45,10 @@ public:
 	Bufr();
 	~Bufr();
 
-    /// Alternate version with explicit basedir/relpath separation
     void open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock) override;
 
-    /**
-     * Close the input file.
-     *
-     * This is optional: the file will be closed by the destructor if needed.
-     */
     void close() override;
-
-	/**
-	 * Scan the next BUFR in the file.
-	 *
-	 * @returns
-	 *   true if it found a BUFR message,
-	 *   false if there are no more BUFR messages in the file
-	 */
-	bool next(Metadata& md);
+    bool next(Metadata& md) override;
 
     /// Return the update sequence number for a BUFR
     static int update_sequence_number(const std::string& buf);

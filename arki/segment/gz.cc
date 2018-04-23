@@ -103,6 +103,11 @@ Reader::Reader(const std::string& root, const std::string& relpath, const std::s
 const char* Reader::type() const { return "gz"; }
 bool Reader::single_file() const { return true; }
 
+bool Reader::scan(metadata_dest_func dest)
+{
+    throw std::runtime_error(string(type()) + " scanning is not yet implemented");
+}
+
 std::vector<uint8_t> Reader::read(const types::source::Blob& src)
 {
     vector<uint8_t> buf;

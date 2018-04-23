@@ -8,6 +8,7 @@
 
 namespace arki {
 namespace scan {
+struct Validator;
 
 struct Scanner
 {
@@ -20,6 +21,20 @@ struct Scanner
 
     virtual void open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock);
 
+    /**
+     * Scan the next data in the file.
+     *
+     * @returns
+     *   true if it found a new data item
+     *   false if there are no more data items in the file
+     */
+    virtual bool next(Metadata& md) = 0;
+
+    /**
+     * Close the input file.
+     *
+     * This is optional: the file will be closed by the destructor if needed.
+     */
     virtual void close();
 
     /**
@@ -29,6 +44,20 @@ struct Scanner
      * valid in normal code
      */
     void test_open(const std::string& filename);
+
+    /**
+     * Open a file, scan it, send results to dest, and close it.
+     *
+     * Returns true if dest always returned true, else false.
+     */
+    bool scan_file(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock, metadata_dest_func dest);
+
+    /**
+     * Create a scanner for the given format
+     */
+    static std::unique_ptr<Scanner> get_scanner(const std::string& format);
+
+    static const Validator& get_validator(const std::string& format);
 };
 
 }

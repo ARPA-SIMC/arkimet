@@ -342,14 +342,14 @@ TestCollection::TestCollection(const std::string& pathname, bool with_data)
     scan_from_file(pathname, with_data);
 }
 
-bool TestCollection::scan_from_file(const std::string& pathname, bool with_data)
+void TestCollection::scan_from_file(const std::string& pathname, bool with_data)
 {
-    return scan::scan(pathname, std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata> md) { acquire(move(md), with_data); return true; });
+    scan::scan(pathname, std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata> md) { acquire(move(md), with_data); return true; });
 }
 
-bool TestCollection::scan_from_file(const std::string& pathname, const std::string& format, bool with_data)
+void TestCollection::scan_from_file(const std::string& pathname, const std::string& format, bool with_data)
 {
-    return scan::scan(pathname, std::make_shared<core::lock::Null>(), format, [&](unique_ptr<Metadata> md) { acquire(move(md), with_data); return true; });
+    scan::scan(pathname, std::make_shared<core::lock::Null>(), format, [&](unique_ptr<Metadata> md) { acquire(move(md), with_data); return true; });
 }
 
 

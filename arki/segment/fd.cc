@@ -4,6 +4,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/scan/any.h"
+#include "arki/scan/base.h"
 #include "arki/utils/compress.h"
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
@@ -95,6 +96,13 @@ Reader::Reader(const std::string& root, const std::string& relpath, const std::s
 
 const char* Reader::type() const { return "file"; }
 bool Reader::single_file() const { return true; }
+
+bool Reader::scan(metadata_dest_func dest)
+{
+    std::string format = get_format(abspath);
+    auto scanner = scan::Scanner::get_scanner(format);
+    return scanner->scan_file(root, relpath, abspath, lock, dest);
+}
 
 std::vector<uint8_t> Reader::read(const types::source::Blob& src)
 {

@@ -218,6 +218,11 @@ Reader::Reader(const std::string& format, const std::string& root, const std::st
 const char* Reader::type() const { return "zip"; }
 bool Reader::single_file() const { return true; }
 
+bool Reader::scan(metadata_dest_func dest)
+{
+    throw std::runtime_error(string(type()) + " scanning is not yet implemented");
+}
+
 std::vector<uint8_t> Reader::read(const types::source::Blob& src)
 {
     vector<uint8_t> buf = zip.get(Span(src.offset, src.size));

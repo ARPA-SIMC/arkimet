@@ -204,12 +204,7 @@ void Manifest::rescanSegment(const std::string& dir, const std::string& relpath)
 
     // Scan the file
     metadata::Collection mds;
-    if (!scan::scan(pathname, lock.lock(), mds.inserter_func()))
-    {
-        stringstream ss;
-        ss << "cannot rescan " << pathname << ": it does not look like a file we can scan";
-        throw runtime_error(ss.str());
-    }
+    scan::scan(pathname, lock.lock(), mds.inserter_func());
 
     // Iterate the metadata, computing the summary and making the data
     // paths relative

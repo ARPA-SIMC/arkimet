@@ -84,7 +84,7 @@ this->add_method("append", [](Fixture& f) {
     metadata::TestCollection mdc1;
 
     // Scan the file we created
-    wassert(actual(mdc1.scan_from_file(relpath, false)).istrue());
+    wassert(mdc1.scan_from_file(relpath, false));
 
     // Check that it only contains the 1st and 3rd data
     wassert(actual(mdc1.size()) == 2u);

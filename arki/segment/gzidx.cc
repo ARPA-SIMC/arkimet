@@ -110,6 +110,11 @@ Reader::Reader(const std::string& root, const std::string& relpath, const std::s
 const char* Reader::type() const { return "gzidx"; }
 bool Reader::single_file() const { return true; }
 
+bool Reader::scan(metadata_dest_func dest)
+{
+    throw std::runtime_error(string(type()) + " scanning is not yet implemented");
+}
+
 void Reader::reposition(off_t ofs)
 {
     size_t block = idx.lookup(ofs);
