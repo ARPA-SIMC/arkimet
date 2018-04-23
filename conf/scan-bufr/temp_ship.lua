@@ -3,6 +3,4 @@ function scan(msg, md)
     local proddef = bufr_read_proddef(msg)
     if area then md:set(arki_area.grib(area)) end
     if proddef then md:set(arki_proddef.grib(proddef)) end
-
-    md:set(bufr_scan_forecast(msg))
 end

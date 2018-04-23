@@ -69,7 +69,7 @@ void Xargs::flush_batch()
     }
 
     tempfile.close();
-    sys::unlink(tempfile.name());
+    sys::unlink_ifexists(tempfile.name());
     metadata::Clusterer::flush_batch();
 
     if (res != 0)

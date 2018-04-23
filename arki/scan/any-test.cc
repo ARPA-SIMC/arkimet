@@ -99,7 +99,7 @@ add_method("grib_compact", [] {
 add_method("bufr_compact", [] {
     metadata::Collection mdc;
 #ifndef HAVE_DBALLE
-    ensure(not scan::scan("inbound/test.bufr", mdc.inserter_func()));
+    ensure(not scan::scan("inbound/test.bufr", std::make_shared<core::lock::Null>(), mdc.inserter_func()));
 #else
     vector<uint8_t> buf;
 
