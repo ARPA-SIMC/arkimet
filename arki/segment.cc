@@ -1,4 +1,5 @@
 #include "segment.h"
+#include "segment/missing.h"
 #include "segment/concat.h"
 #include "segment/lines.h"
 #include "segment/dir.h"
@@ -68,17 +69,22 @@ std::shared_ptr<Reader> Reader::for_pathname(const std::string& format, const st
             else
                 res.reset(new segment::gz::Reader(root, relpath, abspath, lock));
         }
+        return res;
     }
 
     st = sys::stat(abspath + ".tar");
     if (st.get())
+    {
         res.reset(new segment::tar::Reader(root, relpath, abspath, lock));
+        return res;
+    }
 
     st = sys::stat(abspath + ".zip");
     if (st.get())
         throw std::runtime_error("getting reader for " + format + " .zip file " + relpath + " is not yet implemented");
 
-    throw std::runtime_error("cannot get reader for nonexisting segment " + relpath + " (tried also .gz, .tar, .zip)");
+    res.reset(new segment::missing::Reader(root, relpath, abspath, lock));
+    return res;
 }
 
 

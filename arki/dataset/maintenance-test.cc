@@ -337,7 +337,7 @@ void MaintenanceTest::register_tests()
 
         wassert(f.state_is(3, segment::SEGMENT_MISSING));
         auto e = wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
-        wassert(actual(e.what()).contains("cannot get reader for nonexisting segment"));
+        wassert(actual(e.what()).contains("the segment has disappeared"));
     });
 
     if (can_delete_data())
