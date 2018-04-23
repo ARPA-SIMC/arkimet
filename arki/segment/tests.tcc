@@ -1,4 +1,5 @@
 #include "arki/segment/tests.h"
+#include "arki/core/file.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/types/source/blob.h"
@@ -34,6 +35,29 @@ this->add_method("create", [](Fixture& f) {
     wassert_true(Segment::can_store(f.td.format));
     std::shared_ptr<Segment> checker = f.create();
     wassert_true(checker->exists_on_disk());
+});
+
+this->add_method("read", [](Fixture& f) {
+    wassert_true(Segment::can_store(f.td.format));
+    std::shared_ptr<Segment> checker = f.create();
+    auto reader = segment::Reader::for_pathname(f.td.format, checker->root, checker->relpath, checker->abspath, std::make_shared<arki::core::lock::Null>());
+    size_t pad_size = f.td.format == "vm2" ? 1 : 0;
+    for (auto& md: f.seg_mds)
+    {
+        std::vector<uint8_t> buf = wcallchecked(reader->read(md->sourceBlob()));
+        wassert(actual(buf.size()) == md->sourceBlob().size);
+
+        sys::File out("stream.out", O_WRONLY | O_CREAT | O_TRUNC);
+        size_t size = wcallchecked(reader->stream(md->sourceBlob(), out));
+        wassert(actual(size) == md->sourceBlob().size + pad_size);
+        out.close();
+
+        std::string str0(buf.begin(), buf.end());
+        if (f.td.format == "vm2") str0 += "\n";
+        std::string str1 = sys::read_file("stream.out");
+        wassert(actual(str1) == str0);
+        //wassert_true(std::equal(buf.begin(), buf.end(), buf1.begin(), buf1.end()));
+    }
 });
 
 this->add_method("repack", [](Fixture& f) {

@@ -1787,6 +1787,11 @@
  {
   "doc": "",
   "group": "arki_segment_concat_grib",
+  "method": "read"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_concat_grib",
   "method": "repack"
  },
  {
@@ -1813,6 +1818,11 @@
   "doc": "",
   "group": "arki_segment_concat_bufr",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_concat_bufr",
+  "method": "read"
  },
  {
   "doc": "",
@@ -1843,6 +1853,11 @@
   "doc": "",
   "group": "arki_segment_lines_vm2",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_lines_vm2",
+  "method": "read"
  },
  {
   "doc": "",
@@ -1882,6 +1897,11 @@
  {
   "doc": "",
   "group": "arki_segment_dir_grib",
+  "method": "read"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_grib",
   "method": "repack"
  },
  {
@@ -1903,6 +1923,11 @@
   "doc": "",
   "group": "arki_segment_dir_bufr",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_bufr",
+  "method": "read"
  },
  {
   "doc": "",
@@ -1928,6 +1953,11 @@
   "doc": "",
   "group": "arki_segment_dir_odim",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_odim",
+  "method": "read"
  },
  {
   "doc": "",
@@ -1953,6 +1983,11 @@
   "doc": "",
   "group": "arki_segment_dir_vm2",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_vm2",
+  "method": "read"
  },
  {
   "doc": "",
@@ -1978,6 +2013,11 @@
   "doc": "",
   "group": "arki_segment_tar_grib",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_grib",
+  "method": "read"
  },
  {
   "doc": "",
@@ -1998,6 +2038,11 @@
   "doc": "",
   "group": "arki_segment_tar_bufr",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_bufr",
+  "method": "read"
  },
  {
   "doc": "",
@@ -2018,6 +2063,11 @@
   "doc": "",
   "group": "arki_segment_tar_odim",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_odim",
+  "method": "read"
  },
  {
   "doc": "",
@@ -2038,6 +2088,11 @@
   "doc": "",
   "group": "arki_segment_tar_vm2",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_vm2",
+  "method": "read"
  },
  {
   "doc": "",
@@ -2058,6 +2113,11 @@
   "doc": "",
   "group": "arki_segment_zip_grib",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_grib",
+  "method": "read"
  },
  {
   "doc": "",
@@ -2078,6 +2138,11 @@
   "doc": "",
   "group": "arki_segment_zip_bufr",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_bufr",
+  "method": "read"
  },
  {
   "doc": "",
@@ -2098,6 +2163,11 @@
   "doc": "",
   "group": "arki_segment_zip_odim",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_odim",
+  "method": "read"
  },
  {
   "doc": "",
@@ -2118,6 +2188,11 @@
   "doc": "",
   "group": "arki_segment_zip_vm2",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_zip_vm2",
+  "method": "read"
  },
  {
   "doc": "",
@@ -2138,6 +2213,11 @@
   "doc": "",
   "group": "arki_segment_gz_grib",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_grib",
+  "method": "read"
  },
  {
   "doc": "",
@@ -2158,6 +2238,11 @@
   "doc": "",
   "group": "arki_segment_gz_bufr",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_bufr",
+  "method": "read"
  },
  {
   "doc": "",
@@ -2178,6 +2263,11 @@
   "doc": "",
   "group": "arki_segment_gzlines_vm2",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzlines_vm2",
+  "method": "read"
  },
  {
   "doc": "",
@@ -2198,6 +2288,11 @@
   "doc": "",
   "group": "arki_segment_gzidx_grib",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx_grib",
+  "method": "read"
  },
  {
   "doc": "",
@@ -2218,6 +2313,11 @@
   "doc": "",
   "group": "arki_segment_gzidx_bufr",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidx_bufr",
+  "method": "read"
  },
  {
   "doc": "",
@@ -2238,6 +2338,11 @@
   "doc": "",
   "group": "arki_segment_gzidxlines_vm2",
   "method": "create"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzidxlines_vm2",
+  "method": "read"
  },
  {
   "doc": "",

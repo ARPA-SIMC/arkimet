@@ -80,7 +80,7 @@ struct AppendSegment
         }
     }
 
-    WriterAcquireResult acquire_replace_higher_usn(Metadata& md, index::SummaryCache& scache)
+    WriterAcquireResult acquire_replace_higher_usn(Metadata& md, SegmentManager& segs, index::SummaryCache& scache)
     {
         Pending p_idx = idx.begin_transaction();
 
@@ -96,7 +96,7 @@ struct AppendSegment
                     return ACQ_ERROR_DUPLICATE;
 
                 // Read the update sequence number of the old BUFR
-                auto reader = arki::Reader::create_new(old->absolutePathname(), append_lock);
+                auto reader = segs.get_reader(old->filename, append_lock);
                 old->lock(reader);
                 int old_usn;
                 if (!scan::update_sequence_number(*old, old_usn))
@@ -175,7 +175,7 @@ struct AppendSegment
         p_idx.commit();
     }
 
-    void acquire_batch_replace_higher_usn(WriterBatch& batch, index::SummaryCache& scache)
+    void acquire_batch_replace_higher_usn(WriterBatch& batch, SegmentManager& segs, index::SummaryCache& scache)
     {
         Pending p_idx = idx.begin_transaction();
 
@@ -198,7 +198,7 @@ struct AppendSegment
                 }
 
                 // Read the update sequence number of the old BUFR
-                auto reader = arki::Reader::create_new(old->absolutePathname(), append_lock);
+                auto reader = segs.get_reader(old->filename, append_lock);
                 old->lock(reader);
                 int old_usn;
                 if (!scan::update_sequence_number(*old, old_usn))
@@ -282,7 +282,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     {
         case REPLACE_NEVER: return segment->acquire_replace_never(md, scache);
         case REPLACE_ALWAYS: return segment->acquire_replace_always(md, scache);
-        case REPLACE_HIGHER_USN: return segment->acquire_replace_higher_usn(md, scache);
+        case REPLACE_HIGHER_USN: return segment->acquire_replace_higher_usn(md, segment_manager(), scache);
         default:
         {
             stringstream ss;
@@ -318,7 +318,7 @@ void Writer::acquire_batch(WriterBatch& batch, ReplaceStrategy replace)
                 segment->acquire_batch_replace_always(s.second, scache);
                 break;
             case REPLACE_HIGHER_USN:
-                segment->acquire_batch_replace_higher_usn(s.second, scache);
+                segment->acquire_batch_replace_higher_usn(s.second, segment_manager(), scache);
                 break;
             default: throw std::runtime_error("programming error: unsupported replace value " + std::to_string(replace));
         }
