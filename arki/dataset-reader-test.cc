@@ -307,7 +307,7 @@ this->add_method("read_missing_segment", [](Fixture& f) {
             md->getData();
             ++count_ok;
         } catch (std::runtime_error& e) {
-            wassert(actual(e.what()).contains("the file has disappeared"));
+            wassert(actual(e.what()).contains("the segment has disappeared"));
             ++count_err;
         }
         return true;
@@ -344,7 +344,7 @@ this->add_method("read_data_missing_segment", [](Fixture& f) {
             md->getData();
             ++count_ok;
         } catch (std::runtime_error& e) {
-            wassert(actual(e.what()).contains("the file has disappeared"));
+            wassert(actual(e.what()).contains("the segment has disappeared"));
             ++count_err;
         }
         return true;

@@ -5,7 +5,6 @@
 #include "arki/dataset/segmented.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/time.h"
-#include "arki/reader.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
@@ -207,7 +206,8 @@ void MaintenanceTest::register_tests_concat()
         sys::makedirs("testds/" + fixture->test_relpath);
 
         wassert(f.state_is(3, segment::SEGMENT_MISSING));
-        wassert(f.query_results({1, 3, 0, 2}));
+        auto e = wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
+        wassert(actual(e.what()).contains("does not exist in directory segment"));
     });
 
     add_method("check_hugefile", [&](Fixture& f) {
@@ -281,7 +281,8 @@ void MaintenanceTest::register_tests_dir()
         sys::write_file("testds/" + f.test_relpath, "");
 
         wassert(f.state_is(3, segment::SEGMENT_MISSING));
-        wassert(f.query_results({1, 3, 0, 2}));
+        auto e = wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
+        wassert(actual(e.what()).contains("cannot read"));
     });
 
     add_method("check_datasize", R"(
@@ -335,7 +336,8 @@ void MaintenanceTest::register_tests()
         rm_r("testds/" + f.test_relpath);
 
         wassert(f.state_is(3, segment::SEGMENT_MISSING));
-        wassert(f.query_results({1, 3, 0, 2}));
+        auto e = wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
+        wassert(actual(e.what()).contains("the segment has disappeared"));
     });
 
     if (can_delete_data())
@@ -426,7 +428,7 @@ void MaintenanceTest::register_tests()
         truncate_segment();
 
         wassert(f.state_is(3, segment::SEGMENT_CORRUPTED));
-        wassert(f.query_results({1, 3, 0, 2}));
+        wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
     });
 
     if (can_detect_overlap())
@@ -512,7 +514,7 @@ void MaintenanceTest::register_tests()
       implied by the segment file name (FIXME: should this be disabled for
       archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
     )", [&](Fixture& f) {
-        Metadata md = f.import_results[0];
+        Metadata md = f.import_results[1];
         md.set("reftime", "2007-07-06 00:00:00");
         checker()->test_change_metadata(f.test_relpath, md, 0);
 
@@ -615,7 +617,7 @@ void MaintenanceTest::register_tests()
         - [corrupted] segments can only be fixed by manual intervention. They
           are reported and left untouched
     )", [&](Fixture& f) {
-        Metadata md = f.import_results[0];
+        Metadata md = f.import_results[1];
         md.set("reftime", "2007-07-06 00:00:00");
         checker()->test_change_metadata(f.test_relpath, md, 0);
 
@@ -711,7 +713,7 @@ void MaintenanceTest::register_tests()
     add_method("repack_corrupted", R"(
         - [corrupted] segments are not touched
     )", [&](Fixture& f) {
-        Metadata md = f.import_results[0];
+        Metadata md = f.import_results[1];
         md.set("reftime", "2007-07-06 00:00:00");
         checker()->test_change_metadata(f.test_relpath, md, 0);
 

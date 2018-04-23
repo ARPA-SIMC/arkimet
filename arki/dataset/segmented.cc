@@ -60,7 +60,8 @@ Config::Config(const ConfigFile& cfg)
       step_name(str::lower(cfg.value("step"))),
       force_dir_segments(cfg.value("segments") == "dir"),
       mock_data(cfg.value("mockdata") == "true"),
-      offline(cfg.value("offline") == "true")
+      offline(cfg.value("offline") == "true"),
+      smallfiles(ConfigFile::boolValue(cfg.value("smallfiles")))
 {
     if (step_name.empty())
         throw std::runtime_error("Dataset " + name + " misses step= configuration");
@@ -355,6 +356,22 @@ void Checker::tar(CheckerConfig& opts)
     });
 
     LocalChecker::tar(opts);
+}
+
+void Checker::zip(CheckerConfig& opts)
+{
+    segments(opts, [&](CheckerSegment& segment) {
+        if (segment.segment->single_file()) return;
+        if (opts.readonly)
+            opts.reporter->segment_tar(name(), segment.path_relative(), "should be zipped");
+        else
+        {
+            segment.zip();
+            opts.reporter->segment_tar(name(), segment.path_relative(), "zipped");
+        }
+    });
+
+    LocalChecker::zip(opts);
 }
 
 void Checker::compress(CheckerConfig& opts)

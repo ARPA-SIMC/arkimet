@@ -50,6 +50,7 @@ static ConfigFile make_config(const std::string& dir)
     cfg.setValue("path", dir);
     cfg.setValue("step", "monthly");
     cfg.setValue("offline", "true");
+    cfg.setValue("smallfiles", "true");
     return cfg;
 }
 
@@ -391,6 +392,15 @@ void ArchivesChecker::tar(CheckerConfig& opts)
     if (!opts.offline) return;
     archives->iter([&](Checker& a) {
         a.tar(opts);
+        return true;
+    });
+}
+
+void ArchivesChecker::zip(CheckerConfig& opts)
+{
+    if (!opts.offline) return;
+    archives->iter([&](Checker& a) {
+        a.zip(opts);
         return true;
     });
 }

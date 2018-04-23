@@ -2,7 +2,6 @@
 #include "source/blob.h"
 #include "source/inline.h"
 #include "source/url.h"
-#include "arki/reader.h"
 #include "arki/binary.h"
 #include "arki/exceptions.h"
 #include "arki/types/utils.h"
@@ -172,7 +171,7 @@ bool Source::lua_lookup(lua_State* L, const std::string& name) const
 }
 #endif
 
-unique_ptr<Source> Source::createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<Reader> reader)
+unique_ptr<Source> Source::createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader)
 {
     return upcast<Source>(source::Blob::create(format, basedir, filename, offset, size, reader));
 }

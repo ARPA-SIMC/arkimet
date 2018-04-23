@@ -7,6 +7,7 @@
 #include <arki/segment.h>
 #include <arki/segment/seqfile.h>
 #include <arki/core/file.h>
+#include <arki/utils/sys.h>
 #include <vector>
 
 namespace arki {
@@ -14,6 +15,21 @@ class Metadata;
 
 namespace segment {
 namespace dir {
+
+struct Reader : public segment::Reader
+{
+    std::string format;
+    utils::sys::Path dirfd;
+
+    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+
+    const char* type() const override;
+    bool single_file() const override;
+
+    utils::sys::File open_src(const types::source::Blob& src);
+    std::vector<uint8_t> read(const types::source::Blob& src) override;
+    size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) override;
+};
 
 
 struct Writer : public segment::Writer

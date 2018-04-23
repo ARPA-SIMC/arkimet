@@ -126,6 +126,7 @@ public:
     void remove_all(CheckerConfig& opts) override;
     void check_issue51(CheckerConfig& opts) override;
     void tar(CheckerConfig& opts) override;
+    void zip(CheckerConfig& opts) override;
     void compress(CheckerConfig& opts) override;
     void state(CheckerConfig& opts) override;
 };

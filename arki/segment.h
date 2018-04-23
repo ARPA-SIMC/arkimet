@@ -13,6 +13,7 @@
 #include <string>
 #include <iosfwd>
 #include <memory>
+#include <vector>
 
 namespace arki {
 class Segment;
@@ -132,6 +133,20 @@ public:
 
 namespace segment {
 
+struct Reader : public Segment
+{
+    std::shared_ptr<core::Lock> lock;
+
+    Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+
+    virtual std::vector<uint8_t> read(const types::source::Blob& src) = 0;
+    virtual size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) = 0;
+
+    /// Instantiate the right Segment implementation for a segment that already
+    /// exists
+    static std::shared_ptr<Reader> for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+};
+
 struct Writer : public Segment, Transaction
 {
     using Segment::Segment;
@@ -210,6 +225,12 @@ public:
      * point to the right locations inside the tarball
      */
     virtual std::shared_ptr<Checker> tar(metadata::Collection& mds);
+
+    /**
+     * Replace this segment with a zip segment, updating the metadata in mds to
+     * point to the right locations inside the tarball
+     */
+    virtual std::shared_ptr<Checker> zip(metadata::Collection& mds);
 
     /**
      * Replace this segment with a compressed segment, updating the metadata in

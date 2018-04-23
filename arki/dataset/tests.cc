@@ -1,4 +1,5 @@
 #include "tests.h"
+#include "arki/segment/tests.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/dataset/local.h"
@@ -362,6 +363,7 @@ void DatasetTest::import(const std::string& testfile)
             wassert(actual(e->result) == ACQ_OK);
             import_results.push_back(e->md);
             import_results.back().sourceBlob().unlock();
+            //fprintf(stderr, "IDX %s %zd: %s\n", testfile.c_str(), import_results.size(), e->md.sourceBlob().to_string().c_str());
         }
     }
 
@@ -449,7 +451,7 @@ void DatasetTest::repack()
 
 void DatasetTest::query_results(const std::vector<int>& expected)
 {
-    query_results(Matcher(), expected);
+    query_results(DataQuery(Matcher(), true), expected);
 }
 
 void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<int>& expected)
@@ -464,6 +466,8 @@ void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<i
             found.push_back(-1);
         else
             found.push_back(idx);
+        if (q.with_data)
+            md->getData();
         return true;
     });
 
@@ -485,6 +489,28 @@ void DatasetTest::make_unaligned(const std::string& segment)
     } else {
         throw std::runtime_error("make_unaligned called on unsupported dataset type " + checker->type());
     }
+}
+
+void DatasetTest::online_segment_exists(const std::string& relpath, const std::vector<std::string>& extensions)
+{
+    auto cfg = local_config();
+    if (std::dynamic_pointer_cast<const simple::Config>(cfg))
+    {
+        std::vector<std::string> exts(extensions);
+        exts.push_back(".metadata");
+        exts.push_back(".summary");
+        actual_segment(str::joinpath(cfg->path, relpath)).exists(exts);
+    } else
+        actual_segment(str::joinpath(cfg->path, relpath)).exists(extensions);
+}
+
+void DatasetTest::archived_segment_exists(const std::string& relpath, const std::vector<std::string>& extensions)
+{
+    auto cfg = local_config();
+    std::vector<std::string> exts(extensions);
+    exts.push_back(".metadata");
+    exts.push_back(".summary");
+    actual_segment(str::joinpath(cfg->path, ".archive", relpath)).exists(exts);
 }
 
 }

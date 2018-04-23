@@ -287,6 +287,37 @@ public:
         checker.m_mft->acquire(segment->relpath, mtime, sum);
     }
 
+    void zip() override
+    {
+        if (sys::exists(segment->abspath + ".zip"))
+            return;
+
+        auto lock = checker.lock->write_lock();
+
+        metadata::Collection mds;
+        scan::scan(segment->abspath, lock, mds.inserter_func());
+
+        // Remove existing cached metadata, since we scramble their order
+        sys::unlink_ifexists(segment->abspath + ".metadata");
+        sys::unlink_ifexists(segment->abspath + ".summary");
+
+        // Create the .tar segment
+        segment = segment->zip(mds);
+
+        // Write out the new metadata
+        mds.writeAtomically(segment->abspath + ".metadata");
+
+        // Regenerate the summary. It is unchanged, really, but its timestamp
+        // has become obsolete by now
+        Summary sum;
+        mds.add_to_summary(sum);
+        sum.writeAtomically(segment->abspath + ".summary");
+
+        // Reindex with the new file information
+        time_t mtime = segment->timestamp();
+        checker.m_mft->acquire(segment->relpath, mtime, sum);
+    }
+
     size_t compress() override
     {
         if (sys::exists(segment->abspath + ".gz") || sys::exists(segment->abspath + ".gz.idx"))

@@ -4,6 +4,7 @@
 /// Base class for unix fd based read/write functions
 
 #include <arki/segment.h>
+#include <arki/utils/gzip.h>
 #include <string>
 
 namespace arki {
@@ -11,6 +12,20 @@ struct Reader;
 
 namespace segment {
 namespace gz {
+
+struct Reader : public segment::Reader
+{
+    utils::gzip::File fd;
+    uint64_t last_ofs = 0;
+
+    Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+
+    const char* type() const override;
+    bool single_file() const override;
+
+    std::vector<uint8_t> read(const types::source::Blob& src) override;
+    size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) override;
+};
 
 class Checker : public segment::Checker
 {

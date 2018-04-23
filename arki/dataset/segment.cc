@@ -30,6 +30,16 @@ SegmentManager::~SegmentManager()
 {
 }
 
+std::shared_ptr<segment::Reader> SegmentManager::get_reader(const std::string& relpath, std::shared_ptr<core::Lock> lock)
+{
+    return get_reader(utils::get_format(relpath), relpath, lock);
+}
+
+std::shared_ptr<segment::Reader> SegmentManager::get_reader(const std::string& format, const std::string& relpath, std::shared_ptr<core::Lock> lock)
+{
+    return segment::Reader::for_pathname(format, root, relpath, str::joinpath(root, relpath), lock);
+}
+
 std::shared_ptr<segment::Writer> SegmentManager::get_writer(const std::string& relpath)
 {
     return get_writer(utils::get_format(relpath), relpath);

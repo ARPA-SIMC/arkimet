@@ -2,12 +2,11 @@
 #define ARKI_SCAN_BASE_H
 
 #include <arki/core/fwd.h>
+#include <arki/segment/fwd.h>
 #include <string>
 #include <memory>
 
 namespace arki {
-struct Reader;
-
 namespace scan {
 
 struct Scanner
@@ -15,7 +14,7 @@ struct Scanner
     std::string filename;
     std::string basedir;
     std::string relpath;
-    std::shared_ptr<Reader> reader;
+    std::shared_ptr<segment::Reader> reader;
 
     virtual ~Scanner();
 

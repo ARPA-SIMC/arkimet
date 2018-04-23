@@ -138,7 +138,7 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 	summary_restrict = outputOpts->add<StringOption>("summary-restrict", 0, "summary-restrict", "types",
 			"summarise using only the given metadata types (comma-separated list)");
     archive = outputOpts->add<OptvalStringOption>("archive", 0, "archive", "format",
-            "output an archive with the given format (default: tar, supported tar, tar.gz, tar.xz, zip)");
+            "output an archive with the given format (default: tar, supported: tar, tar.gz, tar.xz, zip)");
 	sort = outputOpts->add<StringOption>("sort", 0, "sort", "period:order",
 			"sort order.  Period can be year, month, day, hour or minute."
 			" Order can be a list of one or more metadata"

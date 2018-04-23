@@ -243,6 +243,19 @@ public:
      * This is done in a dataset-dependent way
      */
     void make_unaligned(const std::string& segment);
+
+    /**
+     * Check if the segment exists online on this dataset, with the given
+     * extensions. ".metadata" and ".summary" are added in case of "simple"
+     * datasets.
+     */
+    void online_segment_exists(const std::string& relpath, const std::vector<std::string>& extensions);
+
+    /**
+     * Check if the segment exists online on this dataset, with the given
+     * extensions. ".metadata" and ".summary" are added automatically.
+     */
+    void archived_segment_exists(const std::string& relpath, const std::vector<std::string>& extensions);
 };
 
 }

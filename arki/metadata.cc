@@ -12,7 +12,6 @@
 #include "emitter/memory.h"
 #include "iotrace.h"
 #include "scan/any.h"
-#include "reader.h"
 #include "utils/string.h"
 #include "utils/yaml.h"
 #include <unistd.h>

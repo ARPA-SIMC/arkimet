@@ -26,9 +26,11 @@ struct zip_error : public std::runtime_error
 
 class ZipReader
 {
-protected:
+public:
     std::string format;
     std::string zipname;
+
+protected:
 #ifdef HAVE_LIBZIP
     zip_t* zip = nullptr;
 

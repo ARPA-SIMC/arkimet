@@ -36,6 +36,9 @@ public:
     SegmentManager(const std::string& root);
     virtual ~SegmentManager();
 
+    std::shared_ptr<segment::Reader> get_reader(const std::string& relpath, std::shared_ptr<core::Lock> lock);
+    std::shared_ptr<segment::Reader> get_reader(const std::string& format, const std::string& relpath, std::shared_ptr<core::Lock> lock);
+
     std::shared_ptr<segment::Writer> get_writer(const std::string& relpath);
     std::shared_ptr<segment::Writer> get_writer(const std::string& format, const std::string& relpath);
 

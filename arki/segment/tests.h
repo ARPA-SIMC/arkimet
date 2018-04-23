@@ -85,6 +85,17 @@ struct SegmentRemoveTest : public SegmentTest
 void test_append_transaction_ok(segment::Writer* dw, Metadata& md, int append_amount_adjust=0);
 void test_append_transaction_rollback(segment::Writer* dw, Metadata& md, int append_amount_adjust=0);
 
+struct ActualSegment: public arki::utils::tests::Actual<std::string>
+{
+    using Actual<std::string>::Actual;
+
+    void exists();
+    void exists(const std::vector<std::string>& extensions);
+    void not_exists();
+};
+
+inline ActualSegment actual_segment(const std::string& path) { return ActualSegment(path); }
+
 }
 }
 #endif

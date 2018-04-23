@@ -2,7 +2,6 @@
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
 #include "arki/core/file.h"
-#include "arki/reader.h"
 #include "arki/dataset.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/metadata.h"
@@ -65,7 +64,7 @@ void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
     }
 }
 
-bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Manifest::query_data(const dataset::DataQuery& q, SegmentManager& segs, metadata_dest_func dest)
 {
     if (lock.expired())
         throw std::runtime_error("cannot query_data while there is no lock held");
@@ -92,9 +91,9 @@ bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         string abspath = str::joinpath(absdir, *i);
         string fullpath = abspath + ".metadata";
         if (!sys::exists(fullpath)) continue;
-        std::shared_ptr<arki::Reader> reader;
+        std::shared_ptr<arki::segment::Reader> reader;
         if (q.with_data)
-            reader = arki::Reader::create_new(abspath, lock.lock());
+            reader = segs.get_reader(*i, lock.lock());
         // This generates filenames relative to the metadata
         // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
         Metadata::read_file(fullpath, [&](unique_ptr<Metadata> md) {
@@ -154,14 +153,14 @@ bool Manifest::query_summary(const Matcher& matcher, Summary& summary)
     return true;
 }
 
-void Manifest::query_segment(const std::string& relpath, metadata_dest_func dest) const
+void Manifest::query_segment(const std::string& relpath, SegmentManager& segs, metadata_dest_func dest) const
 {
     if (lock.expired())
         throw std::runtime_error("cannot query_segment while there is no lock held");
     string absdir = sys::abspath(m_path);
     string prepend_fname = str::dirname(relpath);
     string abspath = str::joinpath(m_path, relpath);
-    auto reader = arki::Reader::create_new(abspath, lock.lock());
+    auto reader = segs.get_reader(relpath, lock.lock());
     Metadata::read_file(abspath + ".metadata", [&](unique_ptr<Metadata> md) {
         // Tweak Blob sources replacing the file name with relpath
         if (const source::Blob* s = md->has_source_blob())

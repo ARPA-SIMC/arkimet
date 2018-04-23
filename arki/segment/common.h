@@ -2,6 +2,7 @@
 #define ARKI_SEGMENT_COMMON_H
 
 #include <arki/segment.h>
+#include <arki/types/fwd.h>
 #include <arki/metadata/fwd.h>
 #include <arki/scan/fwd.h>
 #include <string>
@@ -20,6 +21,9 @@ struct AppendCreator
 
     AppendCreator(const std::string& root, const std::string& relpath, metadata::Collection& mds);
     virtual ~AppendCreator();
+
+    /// Create a source for md as imported into this segment at the given Span
+    virtual std::unique_ptr<types::Source> create_source(const Metadata& md, const Span& span);
 
     /// Append data to the segment, returning the offset at which it has been written
     virtual Span append_md(Metadata& md);

@@ -7,6 +7,7 @@ namespace arki {
 struct Segment;
 
 namespace segment {
+struct Reader;
 struct Writer;
 struct Checker;
 struct CheckerSegment;

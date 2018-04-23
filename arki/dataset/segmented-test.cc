@@ -1,4 +1,5 @@
 #include "tests.h"
+#include "arki/segment/tests.h"
 #include "segmented.h"
 #include "indexed.h"
 #include "maintenance.h"
@@ -61,7 +62,7 @@ Tests test_iseg("arki_dataset_segmented_iseg", "type=iseg\nformat=grib");
 
 void Tests::register_tests() {
 
-add_method("compressed", [](Fixture& f) {
+add_method("gz", [](Fixture& f) {
     // Import and compress all the files
     f.clean_and_import();
 
@@ -69,12 +70,14 @@ add_method("compressed", [](Fixture& f) {
     f.cfg.setValue("archive age", days_since(2007, 9, 1));
     f.test_reread_config();
 
-    scan::compress("testds/2007/07-07.grib", std::make_shared<core::lock::Null>());
-    scan::compress("testds/2007/07-08.grib", std::make_shared<core::lock::Null>());
-    scan::compress("testds/2007/10-09.grib", std::make_shared<core::lock::Null>());
-    sys::unlink_ifexists("testds/2007/07-07.grib");
-    sys::unlink_ifexists("testds/2007/07-08.grib");
-    sys::unlink_ifexists("testds/2007/10-09.grib");
+    // Compress segments
+    {
+        auto checker(f.makeSegmentedChecker());
+        checker->segments_tracked([&](segmented::CheckerSegment& seg) {
+            seg.compress();
+            sys::unlink(seg.segment->abspath + ".gz.idx");
+        });
+    }
 
     // Test that querying returns all items
     wassert(f.query_results({1, 0, 2}));
@@ -98,26 +101,81 @@ add_method("compressed", [](Fixture& f) {
     }
 
     // Check that the files have been moved to the archive
-    ensure(!sys::exists("testds/.archive/last/2007/07-07.grib"));
-    ensure(sys::exists("testds/.archive/last/2007/07-07.grib.gz"));
-    ensure(sys::exists("testds/.archive/last/2007/07-07.grib.gz.idx"));
-    ensure(sys::exists("testds/.archive/last/2007/07-07.grib.metadata"));
-    ensure(sys::exists("testds/.archive/last/2007/07-07.grib.summary"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib"));
-    ensure(sys::exists("testds/.archive/last/2007/07-08.grib.gz"));
-    ensure(sys::exists("testds/.archive/last/2007/07-08.grib.gz.idx"));
-    ensure(sys::exists("testds/.archive/last/2007/07-08.grib.metadata"));
-    ensure(sys::exists("testds/.archive/last/2007/07-08.grib.summary"));
-    ensure(!sys::exists("testds/2007/07-07.grib"));
-    ensure(!sys::exists("testds/2007/07-07.grib.gz"));
-    ensure(!sys::exists("testds/2007/07-07.grib.gz.idx"));
-    ensure(!sys::exists("testds/2007/07-07.grib.metadata"));
-    ensure(!sys::exists("testds/2007/07-07.grib.summary"));
-    ensure(!sys::exists("testds/2007/07-08.grib"));
-    ensure(!sys::exists("testds/2007/07-08.grib.gz"));
-    ensure(!sys::exists("testds/2007/07-08.grib.gz.idx"));
-    ensure(!sys::exists("testds/2007/07-08.grib.metadata"));
-    ensure(!sys::exists("testds/2007/07-08.grib.summary"));
+    wassert(actual_segment("testds/.archive/last/2007/07-07.grib").exists({".gz", ".metadata", ".summary"}));
+    wassert(actual_segment("testds/.archive/last/2007/07-08.grib").exists({".gz", ".metadata", ".summary"}));
+    wassert(actual_segment("testds/.archive/last/2007/10-09.grib").not_exists());
+    wassert(actual_segment("testds/2007/07-07.grib").not_exists());
+    wassert(actual_segment("testds/2007/07-08.grib").not_exists());
+    wassert(f.online_segment_exists("2007/10-09.grib", {".gz"}));
+
+    // Maintenance should now show a normal situation
+    {
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "1 file ok");
+        e.report.emplace_back("testds.archives.last", "check", "2 files ok");
+        wassert(actual(writer.get()).check(e, false));
+    }
+
+    // Perform full maintenance and check that things are still ok afterwards
+    {
+        auto writer(f.makeSegmentedChecker());
+        wassert(actual(writer.get()).check_clean(true, true));
+
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "1 file ok");
+        e.report.emplace_back("testds.archives.last", "check", "2 files ok");
+        wassert(actual(writer.get()).check(e, false));
+    }
+
+    // Test that querying returns all items
+    wassert(f.query_results({1, 0, 2}));
+});
+
+add_method("gzidx", [](Fixture& f) {
+    // Import and compress all the files
+    f.clean_and_import();
+
+    // Test moving into archive data that have been compressed
+    f.cfg.setValue("archive age", days_since(2007, 9, 1));
+    f.test_reread_config();
+
+    // Compress segments
+    {
+        auto checker(f.makeSegmentedChecker());
+        checker->segments_tracked([&](segmented::CheckerSegment& seg) {
+            seg.compress();
+        });
+    }
+
+    // Test that querying returns all items
+    wassert(f.query_results({1, 0, 2}));
+
+    // Check if files to archive are detected
+    {
+        auto state = f.scan_state();
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("testds:2007/07-07.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
+        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
+        wassert(actual(state.get("testds:2007/10-09.grib").state) == segment::State(segment::SEGMENT_OK));
+    }
+
+    // Perform packing and check that things are still ok afterwards
+    {
+        auto checker(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.archived.emplace_back("testds", "2007/07-07.grib");
+        e.archived.emplace_back("testds", "2007/07-08.grib");
+        wassert(actual(checker.get()).repack(e, true));
+    }
+
+    // Check that the files have been moved to the archive
+    wassert(actual_segment("testds/.archive/last/2007/07-07.grib").exists({".gz", ".gz.idx", ".metadata", ".summary"}));
+    wassert(actual_segment("testds/.archive/last/2007/07-08.grib").exists({".gz", ".gz.idx", ".metadata", ".summary"}));
+    wassert(actual_segment("testds/.archive/last/2007/10-09.grib").not_exists());
+    wassert(actual_segment("testds/2007/07-07.grib").not_exists());
+    wassert(actual_segment("testds/2007/07-08.grib").not_exists());
+    wassert(f.online_segment_exists("2007/10-09.grib", {".gz", ".gz.idx"}));
 
     // Maintenance should now show a normal situation
     {
@@ -181,42 +239,81 @@ add_method("tarred", [](Fixture& f) {
     }
 
     // Check that the files have been moved to the archive
-    wassert(actual_file("testds/.archive/last/2007/07-07.grib").not_exists());
-    wassert(actual_file("testds/.archive/last/2007/07-07.grib.gz").not_exists());
-    wassert(actual_file("testds/.archive/last/2007/07-07.grib.gz.idx").not_exists());
-    wassert(actual_file("testds/.archive/last/2007/07-07.grib.tar").exists());
-    wassert(actual_file("testds/.archive/last/2007/07-07.grib.metadata").exists());
-    wassert(actual_file("testds/.archive/last/2007/07-07.grib.summary").exists());
-    wassert(actual_file("testds/.archive/last/2007/07-08.grib").not_exists());
-    wassert(actual_file("testds/.archive/last/2007/07-08.grib.gz").not_exists());
-    wassert(actual_file("testds/.archive/last/2007/07-08.grib.gz.idx").not_exists());
-    wassert(actual_file("testds/.archive/last/2007/07-08.grib.tar").exists());
-    wassert(actual_file("testds/.archive/last/2007/07-08.grib.metadata").exists());
-    wassert(actual_file("testds/.archive/last/2007/07-08.grib.summary").exists());
-    wassert(actual_file("testds/.archive/last/2007/10-09.grib").not_exists());
-    wassert(actual_file("testds/.archive/last/2007/10-09.grib.gz").not_exists());
-    wassert(actual_file("testds/.archive/last/2007/10-09.grib.gz.idx").not_exists());
-    wassert(actual_file("testds/.archive/last/2007/10-09.grib.tar").not_exists());
-    wassert(actual_file("testds/.archive/last/2007/10-09.grib.metadata").not_exists());
-    wassert(actual_file("testds/.archive/last/2007/10-09.grib.summary").not_exists());
-    wassert(actual_file("testds/2007/07-07.grib").not_exists());
-    wassert(actual_file("testds/2007/07-07.grib.tar").not_exists());
-    wassert(actual_file("testds/2007/07-07.grib.gz").not_exists());
-    wassert(actual_file("testds/2007/07-07.grib.gz.idx").not_exists());
-    wassert(actual_file("testds/2007/07-07.grib.metadata").not_exists());
-    wassert(actual_file("testds/2007/07-07.grib.summary").not_exists());
-    wassert(actual_file("testds/2007/07-08.grib").not_exists());
-    wassert(actual_file("testds/2007/07-08.grib.tar").not_exists());
-    wassert(actual_file("testds/2007/07-08.grib.gz").not_exists());
-    wassert(actual_file("testds/2007/07-08.grib.gz.idx").not_exists());
-    wassert(actual_file("testds/2007/07-08.grib.metadata").not_exists());
-    wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
-    wassert(actual_file("testds/2007/10-09.grib").not_exists());
-    wassert(actual_file("testds/2007/10-09.grib.tar").exists());
-    wassert(actual_file("testds/2007/10-09.grib.gz").not_exists());
-    wassert(actual_file("testds/2007/10-09.grib.gz.idx").not_exists());
-    //wassert(actual_file("testds/2007/10-09.grib.metadata").not_exists());
-    //wassert(actual_file("testds/2007/10-09.grib.summary").not_exists());
+    wassert(actual_segment("testds/.archive/last/2007/07-07.grib").exists({".tar", ".metadata", ".summary"}));
+    wassert(actual_segment("testds/.archive/last/2007/07-08.grib").exists({".tar", ".metadata", ".summary"}));
+    wassert(actual_segment("testds/.archive/last/2007/10-09.grib").not_exists());
+    wassert(actual_segment("testds/2007/07-07.grib").not_exists());
+    wassert(actual_segment("testds/2007/07-08.grib").not_exists());
+    wassert(f.online_segment_exists("2007/10-09.grib", {".tar"}));
+
+    // Maintenance should now show a normal situation
+    {
+        auto writer(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "1 file ok");
+        e.report.emplace_back("testds.archives.last", "check", "2 files ok");
+        wassert(actual(writer.get()).check(e, false));
+    }
+
+    // Perform full maintenance and check that things are still ok afterwards
+    {
+        auto writer(f.makeSegmentedChecker());
+        wassert(actual(writer.get()).check_clean(true, true));
+
+        ReporterExpected e;
+        e.report.emplace_back("testds", "check", "1 file ok");
+        e.report.emplace_back("testds.archives.last", "check", "2 files ok");
+        wassert(actual(writer.get()).check(e, false));
+    }
+
+    // Test that querying returns all items
+    wassert(f.query_results({1, 0, 2}));
+});
+
+add_method("zipped", [](Fixture& f) {
+    // Import and compress all the files
+    f.clean_and_import();
+
+    // Test moving into archive data that have been tarred
+    f.cfg.setValue("archive age", days_since(2007, 9, 1));
+    f.test_reread_config();
+
+    // tar segments
+    {
+        auto checker(f.makeSegmentedChecker());
+        checker->segments_tracked([&](segmented::CheckerSegment& seg) {
+            seg.zip();
+        });
+    }
+
+    // Test that querying returns all items
+    wassert(f.query_results({1, 0, 2}));
+
+    // Check if files to archive are detected
+    {
+        auto state = f.scan_state();
+        wassert(actual(state.size()) == 3u);
+        wassert(actual(state.get("testds:2007/07-07.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
+        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
+        wassert(actual(state.get("testds:2007/10-09.grib").state) == segment::State(segment::SEGMENT_OK));
+    }
+
+    // Perform packing and check that things are still ok afterwards
+    {
+        auto checker(f.makeSegmentedChecker());
+        ReporterExpected e;
+        e.archived.emplace_back("testds", "2007/07-07.grib");
+        e.archived.emplace_back("testds", "2007/07-08.grib");
+        wassert(actual(checker.get()).repack(e, true));
+    }
+
+    // Check that the files have been moved to the archive
+    wassert(actual_segment("testds/.archive/last/2007/07-07.grib").exists({".zip", ".metadata", ".summary"}));
+    wassert(actual_segment("testds/.archive/last/2007/07-08.grib").exists({".zip", ".metadata", ".summary"}));
+    wassert(actual_segment("testds/.archive/last/2007/10-09.grib").not_exists());
+    wassert(actual_segment("testds/2007/07-07.grib").not_exists());
+    wassert(actual_segment("testds/2007/07-08.grib").not_exists());
+    wassert(f.online_segment_exists("2007/10-09.grib", {".zip"}));
 
     // Maintenance should now show a normal situation
     {

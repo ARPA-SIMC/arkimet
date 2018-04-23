@@ -13,10 +13,6 @@
 struct lua_State;
 
 namespace arki {
-namespace reader {
-struct Reader;
-}
-
 namespace metadata {
 
 struct ReadContext

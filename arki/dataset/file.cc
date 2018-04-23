@@ -1,7 +1,7 @@
 #include "arki/libconfig.h"
 #include "arki/dataset/file.h"
 #include "arki/types/source/blob.h"
-#include "arki/reader.h"
+#include "arki/segment.h"
 #include "arki/core/file.h"
 #include "arki/metadata/consumer.h"
 #include "arki/configfile.h"
@@ -205,7 +205,10 @@ bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
         if (!Metadata::read_file(*fd, [&](unique_ptr<Metadata>&& md) {
                     if (md->has_source_blob())
                     {
-                        auto reader = arki::Reader::create_new(md->sourceBlob().absolutePathname(), std::make_shared<core::lock::Null>());
+                        const auto& blob = md->sourceBlob();
+                        auto reader = segment::Reader::for_pathname(
+                                blob.format, blob.basedir, blob.filename, blob.absolutePathname(),
+                                std::make_shared<core::lock::Null>());
                         md->sourceBlob().lock(reader);
                     }
                     return dest(move(md));

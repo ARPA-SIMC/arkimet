@@ -36,6 +36,11 @@ Span AppendCreator::append_md(Metadata& md)
     return Span(append(buf), buf.size());
 }
 
+std::unique_ptr<types::Source> AppendCreator::create_source(const Metadata& md, const Span& span)
+{
+    return types::Source::createBlobUnlocked(md.source().format, root, relpath, span.offset, span.size);
+}
+
 void AppendCreator::create()
 {
     // Fill the temp file with all the data in the right order
@@ -43,13 +48,13 @@ void AppendCreator::create()
     {
         bool had_cached_data = md->has_cached_data();
         Span span = append_md(*md);
-        auto new_source = types::Source::createBlobUnlocked(md->source().format, root, relpath, span.offset, span.size);
         // Update the source information in the metadata
-        md->set_source(std::move(new_source));
+        md->set_source(create_source(*md, span));
         // Drop the cached data, to prevent accidentally loading the whole segment in memory
         if (!had_cached_data) md->drop_cached_data();
     }
 }
+
 
 AppendCheckBackend::AppendCheckBackend(std::function<void(const std::string&)> reporter, const std::string& relpath, const metadata::Collection& mds)
     : relpath(relpath), reporter(reporter), mds(mds)

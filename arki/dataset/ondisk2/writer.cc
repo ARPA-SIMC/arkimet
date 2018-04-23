@@ -4,7 +4,6 @@
 #include "arki/dataset/segment.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
-#include "arki/reader.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/configfile.h"
@@ -87,7 +86,7 @@ struct AppendSegment
         }
     }
 
-    WriterAcquireResult acquire_replace_higher_usn(Metadata& md)
+    WriterAcquireResult acquire_replace_higher_usn(Metadata& md, SegmentManager& segs)
     {
         Pending p_idx = idx.begin_transaction();
 
@@ -103,7 +102,7 @@ struct AppendSegment
                     return ACQ_ERROR_DUPLICATE;
 
                 // Read the update sequence number of the old BUFR
-                auto reader = arki::Reader::create_new(old->absolutePathname(), lock);
+                auto reader = segs.get_reader(old->filename, lock);
                 old->lock(reader);
                 int old_usn;
                 if (!scan::update_sequence_number(*old, old_usn))
@@ -176,7 +175,7 @@ struct AppendSegment
         p_idx.commit();
     }
 
-    void acquire_batch_replace_higher_usn(WriterBatch& batch)
+    void acquire_batch_replace_higher_usn(WriterBatch& batch, SegmentManager& segs)
     {
         Pending p_idx = idx.begin_transaction();
 
@@ -199,7 +198,7 @@ struct AppendSegment
                 }
 
                 // Read the update sequence number of the old BUFR
-                auto reader = arki::Reader::create_new(old->absolutePathname(), lock);
+                auto reader = segs.get_reader(old->filename, lock);
                 old->lock(reader);
                 int old_usn;
                 if (!scan::update_sequence_number(*old, old_usn))
@@ -281,7 +280,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     {
         case REPLACE_NEVER: return w->acquire_replace_never(md);
         case REPLACE_ALWAYS: return w->acquire_replace_always(md);
-        case REPLACE_HIGHER_USN: return w->acquire_replace_higher_usn(md);
+        case REPLACE_HIGHER_USN: return w->acquire_replace_higher_usn(md, segment_manager());
         default:
         {
             stringstream ss;
@@ -310,7 +309,7 @@ void Writer::acquire_batch(WriterBatch& batch, ReplaceStrategy replace)
                 seg->acquire_batch_replace_always(s.second);
                 break;
             case REPLACE_HIGHER_USN:
-                seg->acquire_batch_replace_higher_usn(s.second);
+                seg->acquire_batch_replace_higher_usn(s.second, segment_manager());
                 break;
             default: throw std::runtime_error("programming error: unsupported replace value " + std::to_string(replace));
         }
@@ -363,6 +362,7 @@ void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostrea
 
     // Refuse if md is before "archive age"
     std::shared_ptr<const ondisk2::Config> config(new ondisk2::Config(cfg));
+    auto segs = config->create_segment_manager();
     for (auto& e: batch)
     {
         auto age_check = config->check_acquire_age(e->md);
@@ -422,7 +422,7 @@ void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostrea
         }
 
         // Read the update sequence number of the old BUFR
-        auto reader = arki::Reader::create_new(old->absolutePathname(), lock);
+        auto reader = segs->get_reader(old->filename, lock);
         old->lock(reader);
         int old_usn;
         if (!scan::update_sequence_number(*old, old_usn))

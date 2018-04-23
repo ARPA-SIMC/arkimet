@@ -4,7 +4,6 @@
 #include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
-#include "arki/reader.h"
 #include "arki/matcher.h"
 #include "arki/matcher/reftime.h"
 #include "arki/dataset.h"
@@ -282,7 +281,7 @@ bool Contents::has_segment(const std::string& relpath) const
     return res;
 }
 
-void Contents::scan_file(const std::string& relpath, metadata_dest_func dest, const std::string& order_by) const
+void Contents::scan_file(SegmentManager& segs, const std::string& relpath, metadata_dest_func dest, const std::string& order_by) const
 {
     if (lock.expired())
         throw std::runtime_error("cannot scan_file while there is no lock held");
@@ -297,9 +296,7 @@ void Contents::scan_file(const std::string& relpath, metadata_dest_func dest, co
     mdq.compile(query);
     mdq.bind(1, relpath);
 
-    string abspath = str::joinpath(config().path, relpath);
-    auto reader = arki::Reader::create_new(abspath, lock.lock());
-
+    auto reader = segs.get_reader(relpath, lock.lock());
     while (mdq.step())
     {
         // Rebuild the Metadata
@@ -309,9 +306,9 @@ void Contents::scan_file(const std::string& relpath, metadata_dest_func dest, co
     }
 }
 
-void Contents::query_segment(const std::string& relpath, metadata_dest_func dest) const
+void Contents::query_segment(const std::string& relpath, SegmentManager& segs, metadata_dest_func dest) const
 {
-    scan_file(relpath, dest);
+    scan_file(segs, relpath, dest);
 }
 
 bool Contents::segment_timespan(const std::string& relpath, Time& start_time, Time& end_time) const
@@ -430,7 +427,7 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
     return true;
 }
 
-void Contents::build_md(Query& q, Metadata& md, std::shared_ptr<arki::Reader> reader) const
+void Contents::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::Reader> reader) const
 {
     // Rebuild the Metadata
     md.set_source(Source::createBlob(
@@ -465,7 +462,7 @@ void Contents::build_md(Query& q, Metadata& md, std::shared_ptr<arki::Reader> re
     }
 }
 
-bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Contents::query_data(const dataset::DataQuery& q, SegmentManager& segs, metadata_dest_func dest)
 {
     if (lock.expired())
         throw std::runtime_error("cannot query_data while there is no lock held");
@@ -492,7 +489,7 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 
     metadata::Collection mdbuf;
     string last_fname;
-    std::shared_ptr<arki::Reader> reader;
+    std::shared_ptr<arki::segment::Reader> reader;
 
     // This keeps the index locked for a potentially long time, if dest is slow
     // in processing data. Use iseg datasets if this is a problem.
@@ -507,10 +504,7 @@ bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         if (srcname != last_fname)
         {
             if (q.with_data)
-            {
-                std::string abspath = str::joinpath(config().path, srcname);
-                reader = arki::Reader::create_new(abspath, lock.lock());
-            }
+                reader = segs.get_reader(srcname, lock.lock());
 
             if (!mdbuf.empty())
             {

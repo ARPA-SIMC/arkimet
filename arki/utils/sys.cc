@@ -538,6 +538,18 @@ int Path::openat(const char* pathname, int flags, mode_t mode)
     return res;
 }
 
+int Path::openat_ifexists(const char* pathname, int flags, mode_t mode)
+{
+    int res = ::openat(fd, pathname, flags, mode);
+    if (res == -1)
+    {
+        if (errno == ENOENT)
+            return -1;
+        throw_error("cannot openat");
+    }
+    return res;
+}
+
 bool Path::faccessat(const char* pathname, int mode, int flags)
 {
     return ::faccessat(fd, pathname, mode, flags) == 0;

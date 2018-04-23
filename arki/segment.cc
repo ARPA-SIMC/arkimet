@@ -1,4 +1,5 @@
 #include "segment.h"
+#include "segment/missing.h"
 #include "segment/concat.h"
 #include "segment/lines.h"
 #include "segment/dir.h"
@@ -33,6 +34,62 @@ Segment::~Segment()
 
 
 namespace segment {
+
+Reader::Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    : Segment(root, relpath, abspath), lock(lock)
+{
+}
+
+std::shared_ptr<Reader> Reader::for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+{
+    std::shared_ptr<segment::Reader> res;
+
+    std::unique_ptr<struct stat> st = sys::stat(abspath);
+    if (st.get())
+    {
+        if (S_ISDIR(st->st_mode))
+        {
+            res.reset(new segment::dir::Reader(format, root, relpath, abspath, lock));
+        } else {
+            res.reset(new segment::fd::Reader(root, relpath, abspath, lock));
+        }
+        return res;
+    }
+
+    st = sys::stat(abspath + ".gz");
+    if (st.get())
+    {
+        if (S_ISDIR(st->st_mode))
+            throw std::runtime_error(
+                    "cannot get a reader for " + format + " directory " + relpath + ": cannot handle a directory with a .gz extension");
+        else
+        {
+            if (sys::exists(abspath + ".gz.idx"))
+                res.reset(new segment::gzidx::Reader(root, relpath, abspath, lock));
+            else
+                res.reset(new segment::gz::Reader(root, relpath, abspath, lock));
+        }
+        return res;
+    }
+
+    st = sys::stat(abspath + ".tar");
+    if (st.get())
+    {
+        res.reset(new segment::tar::Reader(root, relpath, abspath, lock));
+        return res;
+    }
+
+    st = sys::stat(abspath + ".zip");
+    if (st.get())
+    {
+        res.reset(new segment::zip::Reader(format, root, relpath, abspath, lock));
+        return res;
+    }
+
+    res.reset(new segment::missing::Reader(root, relpath, abspath, lock));
+    return res;
+}
+
 
 Writer::PendingMetadata::PendingMetadata(Metadata& md, std::unique_ptr<types::source::Blob> new_source)
     : md(md), new_source(new_source.release())
@@ -124,6 +181,12 @@ std::shared_ptr<Writer> Writer::for_pathname(const std::string& format, const st
                 "getting writer for " + format + " file " + relpath,
                 "cannot write to .tar segments");
 
+    st = sys::stat(abspath + ".zip");
+    if (st.get())
+        throw_consistency_error(
+                "getting writer for " + format + " file " + relpath,
+                "cannot write to .zip segments");
+
     return res;
 }
 
@@ -133,6 +196,13 @@ std::shared_ptr<segment::Checker> Checker::tar(metadata::Collection& mds)
     segment::tar::Checker::create(root, relpath, abspath, mds);
     remove();
     return make_shared<segment::tar::Checker>(root, relpath, abspath);
+}
+
+std::shared_ptr<segment::Checker> Checker::zip(metadata::Collection& mds)
+{
+    segment::zip::Checker::create(root, relpath, abspath, mds);
+    remove();
+    return make_shared<segment::zip::Checker>(root, relpath, abspath);
 }
 
 std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds)
@@ -147,7 +217,7 @@ void Checker::move(const std::string& new_root, const std::string& new_relpath, 
     sys::makedirs(str::dirname(new_abspath));
 
     // Sanity checks: avoid conflicts
-    if (sys::exists(new_abspath) || sys::exists(new_abspath + ".tar") || sys::exists(new_abspath + ".gz"))
+    if (sys::exists(new_abspath) || sys::exists(new_abspath + ".tar") || sys::exists(new_abspath + ".gz") || sys::exists(new_abspath + ".zip"))
     {
         stringstream ss;
         ss << "cannot archive " << abspath << " to " << new_abspath << " because the destination already exists";
@@ -266,6 +336,7 @@ std::shared_ptr<Checker> Checker::for_pathname(const std::string& format, const 
                     "getting checker for " + format + " file " + relpath,
                     "cannot handle a directory with a .tar extension");
         res.reset(new segment::tar::Checker(root, relpath, abspath));
+        return res;
     }
 
     st = sys::stat(abspath + ".zip");
@@ -274,8 +345,9 @@ std::shared_ptr<Checker> Checker::for_pathname(const std::string& format, const 
         if (S_ISDIR(st->st_mode))
             throw_consistency_error(
                     "getting checker for " + format + " file " + relpath,
-                    "cannot handle a directory with a .tar extension");
+                    "cannot handle a directory with a .zip extension");
         res.reset(new segment::zip::Checker(root, relpath, abspath));
+        return res;
     }
 
     return res;

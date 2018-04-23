@@ -1,8 +1,9 @@
 #include "arki/libconfig.h"
 #include "arki/scan/any.h"
 #include "arki/metadata.h"
-#include "arki/reader.h"
+#include "arki/segment.h"
 #include "arki/types/source/blob.h"
+#include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/utils/compress.h"
 #include "arki/utils/sys.h"
@@ -34,7 +35,7 @@ namespace scan {
 
 static void scan_metadata(const std::string& pathname, const std::string& md_pathname, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
 {
-    auto reader = Reader::create_new(pathname, lock);
+    auto reader = segment::Reader::for_pathname(utils::get_format(pathname), str::dirname(pathname), str::basename(pathname), pathname, lock);
     Metadata::read_file(md_pathname, [&](unique_ptr<Metadata> md) {
         md->sourceBlob().lock(reader);
         return dest(move(md));
@@ -194,9 +195,11 @@ bool scan(const std::string& basedir, const std::string& relpath, std::shared_pt
     if (!st_file.get())
         st_file = sys::stat(pathname + ".tar");
     if (!st_file.get())
+        st_file = sys::stat(pathname + ".zip");
+    if (!st_file.get())
         st_file = sys::stat(pathname + ".gz");
     if (!st_file.get())
-        throw runtime_error(pathname + " or " + pathname + ".gz or " + pathname + ".tar not found");
+        throw runtime_error(pathname + " or " + pathname + ".gz or " + pathname + ".tar or " + pathname = ".zip not found");
 
     // stat the metadata file, if it exists
     string md_pathname = pathname + ".metadata";
@@ -239,7 +242,7 @@ bool exists(const std::string& file)
 
 bool isCompressed(const std::string& file)
 {
-    return !sys::exists(file) && sys::exists(file + ".gz");
+    return !sys::exists(file) && (sys::exists(file + ".gz") || sys::exists(file + ".tar") || sys::exists(file + ".zip"));
 }
 
 time_t timestamp(const std::string& file)

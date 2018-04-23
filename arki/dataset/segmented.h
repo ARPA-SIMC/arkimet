@@ -45,6 +45,13 @@ public:
      */
     bool offline = false;
 
+    /**
+     * If true, try to store the content of small files in the index if
+     * possible, to avoid extra I/O when querying
+     */
+    bool smallfiles = false;
+
+
     Config(const ConfigFile& cfg);
     ~Config();
 
@@ -141,6 +148,9 @@ public:
 
     /// Convert the segment into a tar segment
     virtual void tar() = 0;
+
+    /// Convert the segment into a zip segment
+    virtual void zip() = 0;
 
     /**
      * Compress the segment
@@ -283,6 +293,7 @@ public:
     void remove_old(CheckerConfig& opts) override;
     void remove_all(CheckerConfig& opts) override;
     void tar(CheckerConfig& config) override;
+    void zip(CheckerConfig& config) override;
     void compress(CheckerConfig& config) override;
     void state(CheckerConfig& config) override;
 

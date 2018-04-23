@@ -1,7 +1,7 @@
 #include "arki/metadata/tests.h"
 #include "arki/exceptions.h"
 #include "arki/dataset.h"
-#include "arki/reader.h"
+#include "arki/dataset/segment.h"
 #include "arki/core/file.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -82,7 +82,8 @@ Metadata make_md1()
 
 void query_index(WIndex& idx, const dataset::DataQuery& q, metadata::Collection& dest)
 {
-    idx.query_data(q, dest.inserter_func());
+    auto segs = dataset::SegmentManager::get(".");
+    idx.query_data(q, *segs, dest.inserter_func());
 }
 
 struct ReadHang : public wibble::sys::ChildProcess
@@ -100,10 +101,11 @@ struct ReadHang : public wibble::sys::ChildProcess
         try {
             auto config = dataset::ondisk2::Config::create(cfg);
             auto lock = make_shared<core::lock::Null>();
+            auto segs = config->create_segment_manager();
             RIndex idx(config);
             idx.lock = lock;
             idx.open();
-            idx.query_data(Matcher::parse("origin:GRIB1"), [&](unique_ptr<Metadata> md) {
+            idx.query_data(Matcher::parse("origin:GRIB1"), *segs, [&](unique_ptr<Metadata> md) {
                 fputs("H\n", stdout);
                 fflush(stdout);
                 usleep(100000);
@@ -354,7 +356,8 @@ add_method("query_file", [] {
 
     // Get the metadata corresponding to one file
     metadata::Collection mdc;
-    test->scan_file("inbound/padded.grib1", mdc.inserter_func());
+    auto segs = dataset::SegmentManager::get(".");
+    test->scan_file(*segs, "inbound/padded.grib1", mdc.inserter_func());
     ensure_equals(mdc.size(), 2u);
 
     // Check that the metadata came out fine
@@ -522,7 +525,7 @@ add_method("smallfiles", [] {
 
         // I/O should happen here
         mdc[0].drop_cached_data();
-        mdc[0].sourceBlob().lock(Reader::create_new("inbound/test.vm2", std::shared_ptr<core::lock::Null>()));
+        mdc[0].sourceBlob().lock(segment::Reader::for_pathname("vm2", "inbound", "test.vm2", "inbound/test.vm2", std::shared_ptr<core::lock::Null>()));
         const auto& buf = mdc[0].getData();
         wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
         wassert(actual(collector.events.size()) == 1u);
