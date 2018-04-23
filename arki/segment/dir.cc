@@ -249,7 +249,14 @@ sys::File Reader::open_src(const types::source::Blob& src)
 {
     char dataname[32];
     snprintf(dataname, 32, "%06zd.%s", (size_t)src.offset, format.c_str());
-    sys::File file_fd(dirfd.openat(dataname, O_RDONLY | O_CLOEXEC), str::joinpath(dirfd.name(), dataname));
+    int fd = dirfd.openat_ifexists(dataname, O_RDONLY | O_CLOEXEC);
+    if (fd == -1)
+    {
+        stringstream msg;
+        msg << dataname << " does not exist in directory segment " << dirfd.name();
+        throw std::runtime_error(msg.str());
+    }
+    sys::File file_fd(fd, str::joinpath(dirfd.name(), dataname));
 
     if (posix_fadvise(file_fd, 0, src.size, POSIX_FADV_DONTNEED) != 0)
         nag::debug("fadvise on %s failed: %m", file_fd.name().c_str());

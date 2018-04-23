@@ -206,7 +206,8 @@ void MaintenanceTest::register_tests_concat()
         sys::makedirs("testds/" + fixture->test_relpath);
 
         wassert(f.state_is(3, segment::SEGMENT_MISSING));
-        wassert(f.query_results({1, 3, 0, 2}));
+        auto e = wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
+        wassert(actual(e.what()).contains("does not exist in directory segment"));
     });
 
     add_method("check_hugefile", [&](Fixture& f) {
