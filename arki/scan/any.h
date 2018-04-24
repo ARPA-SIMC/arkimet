@@ -58,43 +58,6 @@ time_t timestamp(const std::string& file);
 std::vector<uint8_t> reconstruct(const std::string& format, const Metadata& md, const std::string& value);
 
 /**
- * Validate data
- */
-struct Validator
-{
-    virtual ~Validator() {}
-
-    /// Return the format checked by this validator
-    virtual std::string format() const = 0;
-
-    // Validate data found in a file
-    virtual void validate_file(core::NamedFileDescriptor& fd, off_t offset, size_t size) const = 0;
-
-    // Validate a memory buffer
-    virtual void validate_buf(const void* buf, size_t size) const = 0;
-
-	/**
-	 * Get the validator for a given file name
-	 *
-	 * @returns
-	 *   a pointer to a static object, which should not be deallocated.
-	 */
-	static const Validator& by_filename(const std::string& filename);
-
-    /**
-     * Get the validator for a given foramt
-     *
-     * @returns
-     *   a pointer to a static object, which should not be deallocated.
-     */
-    static const Validator& by_format(const std::string& format);
-
-protected:
-    [[noreturn]] void throw_check_error(core::NamedFileDescriptor& fd, off_t offset, const std::string& msg) const;
-    [[noreturn]] void throw_check_error(const std::string& msg) const;
-};
-
-/**
  * Return the update sequence number for this data
  *
  * The data associated to the metadata is read and scanned if needed.

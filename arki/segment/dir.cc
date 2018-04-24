@@ -8,7 +8,7 @@
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/scan/any.h"
+#include "arki/scan/validator.h"
 #include "arki/scan/base.h"
 #include "arki/utils/string.h"
 #include "arki/utils/accounting.h"
@@ -633,7 +633,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
 
     Creator creator(rootdir, relpath, mds, tmpabspath);
     creator.hardlink = true;
-    creator.validator = &scan::Validator::by_filename(abspath);
+    creator.validator = &scan::Validator::by_format(format);
     creator.create();
 
     // Make sure mds are not holding a reader on the file to repack, because it

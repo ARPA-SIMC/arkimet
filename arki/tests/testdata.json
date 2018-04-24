@@ -1716,6 +1716,11 @@
  },
  {
   "doc": "",
+  "group": "arki_scan_validator",
+  "method": "empty"
+ },
+ {
+  "doc": "",
   "group": "arki_scan_any",
   "method": "grib_compact"
  },

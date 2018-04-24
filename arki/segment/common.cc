@@ -1,7 +1,7 @@
 #include "common.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
-#include "arki/scan/any.h"
+#include "arki/scan/validator.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
 #include <algorithm>

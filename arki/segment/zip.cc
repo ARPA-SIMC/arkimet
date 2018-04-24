@@ -5,7 +5,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/metadata/libarchive.h"
 #include "arki/types/source/blob.h"
-#include "arki/scan/any.h"
+#include "arki/scan/validator.h"
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"

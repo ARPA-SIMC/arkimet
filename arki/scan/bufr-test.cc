@@ -1,7 +1,7 @@
 #include "arki/metadata/tests.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
-#include "arki/scan/any.h"
+#include "arki/scan/validator.h"
 #include "arki/scan/bufr.h"
 #include "arki/utils/sys.h"
 #include "arki/types/reftime.h"
