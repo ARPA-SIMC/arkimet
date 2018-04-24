@@ -6,7 +6,6 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
-#include "arki/scan/any.h"
 #include "arki/configfile.h"
 #include "arki/matcher.h"
 #include "arki/summary.h"
