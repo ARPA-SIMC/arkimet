@@ -18,12 +18,13 @@ struct Reader : public segment::Reader
 {
     core::File fd;
 
-    Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
 
     const char* type() const override;
     bool single_file() const override;
+    time_t timestamp() override;
 
-    bool scan(metadata_dest_func dest) override;
+    bool scan_data(metadata_dest_func dest) override;
     std::vector<uint8_t> read(const types::source::Blob& src) override;
     size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) override;
 };
@@ -60,6 +61,7 @@ public:
     time_t timestamp() override;
     size_t size() override;
 
+    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) override;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;

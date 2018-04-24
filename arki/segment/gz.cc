@@ -5,6 +5,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/scan/any.h"
+#include "arki/scan/base.h"
 #include "arki/utils/compress.h"
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
@@ -95,17 +96,25 @@ struct CheckBackend : public AppendCheckBackend
 }
 
 
-Reader::Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::Reader(root, relpath, abspath, lock), fd(abspath + ".gz", "rb")
+Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    : segment::Reader(format, root, relpath, abspath, lock), fd(abspath + ".gz", "rb")
 {
 }
 
 const char* Reader::type() const { return "gz"; }
 bool Reader::single_file() const { return true; }
+time_t Reader::timestamp() { return sys::timestamp(abspath + ".gz"); }
 
-bool Reader::scan(metadata_dest_func dest)
+
+bool Reader::scan_data(metadata_dest_func dest)
 {
-    throw std::runtime_error(string(type()) + " scanning is not yet implemented");
+    auto scanner = scan::Scanner::get_scanner(format);
+    compress::TempUnzip uncompressed(abspath);
+    return scanner->scan_file(abspath, static_pointer_cast<segment::Reader>(shared_from_this()), [&](unique_ptr<Metadata> md) {
+       const source::Blob& i = md->sourceBlob();
+       md->set_source(Source::createBlob(format, root, relpath, i.offset, i.size, i.reader));
+       return dest(move(md));
+    });
 }
 
 std::vector<uint8_t> Reader::read(const types::source::Blob& src)
@@ -173,6 +182,13 @@ time_t Checker::timestamp()
 size_t Checker::size()
 {
     return sys::size(gzabspath);
+}
+
+std::shared_ptr<segment::Reader> Checker::reader(std::shared_ptr<core::Lock> lock)
+{
+    // TODO: store format in checker
+    std::string format = require_format(relpath);
+    return make_shared<Reader>(format, root, relpath, abspath, lock);
 }
 
 void Checker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)

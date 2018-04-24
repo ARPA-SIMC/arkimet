@@ -29,20 +29,16 @@ Scanner::~Scanner()
 {
 }
 
-void Scanner::open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock)
+void Scanner::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
 {
     close();
     this->filename = filename;
-    this->basedir = basedir;
-    this->relpath = relpath;
-    reader = segment::Reader::for_pathname(utils::get_format(filename), basedir, relpath, filename, lock);
+    this->reader = reader;
 }
 
 void Scanner::close()
 {
     filename.clear();
-    basedir.clear();
-    relpath.clear();
     reader.reset();
 }
 
@@ -50,12 +46,12 @@ void Scanner::test_open(const std::string& filename)
 {
     string basedir, relpath;
     utils::files::resolve_path(filename, basedir, relpath);
-    open(sys::abspath(filename), basedir, relpath, make_shared<core::lock::Null>());
+    open(sys::abspath(filename), segment::Reader::for_pathname(require_format(filename), basedir, relpath, filename, make_shared<core::lock::Null>()));
 }
 
-bool Scanner::scan_file(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+bool Scanner::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
 {
-    open(abspath, root, relpath, lock);
+    open(abspath, reader);
     while (true)
     {
         unique_ptr<Metadata> md(new Metadata);

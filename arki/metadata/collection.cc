@@ -5,8 +5,10 @@
 #include "arki/types/reftime.h"
 #include "arki/utils/compress.h"
 #include "arki/binary.h"
-#include "arki/utils/sys.h"
+#include "arki/segment.h"
 #include "arki/utils.h"
+#include "arki/utils/files.h"
+#include "arki/utils/sys.h"
 #include "arki/summary.h"
 #include "arki/sort.h"
 #include "arki/postprocess.h"
@@ -344,12 +346,21 @@ TestCollection::TestCollection(const std::string& pathname, bool with_data)
 
 void TestCollection::scan_from_file(const std::string& pathname, bool with_data)
 {
-    scan::scan(pathname, std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata> md) { acquire(move(md), with_data); return true; });
+    string format = require_format(pathname);
+    string basedir;
+    string relpath;
+    utils::files::resolve_path(pathname, basedir, relpath);
+    auto reader = segment::Reader::for_pathname(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
+    reader->scan([&](unique_ptr<Metadata> md) { acquire(move(md), with_data); return true; });
 }
 
 void TestCollection::scan_from_file(const std::string& pathname, const std::string& format, bool with_data)
 {
-    scan::scan(pathname, std::make_shared<core::lock::Null>(), format, [&](unique_ptr<Metadata> md) { acquire(move(md), with_data); return true; });
+    string basedir;
+    string relpath;
+    utils::files::resolve_path(pathname, basedir, relpath);
+    auto reader = segment::Reader::for_pathname(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
+    reader->scan([&](unique_ptr<Metadata> md) { acquire(move(md), with_data); return true; });
 }
 
 

@@ -77,7 +77,7 @@ add_method("countbytes", [] {
     p.flush();
     out.close();
 
-    wassert(actual(sys::read_file(out.name())) == "44961\n");
+    wassert(actual(sys::read_file(out.name())) == "44937\n");
 });
 
 add_method("cat", [] {
@@ -119,7 +119,7 @@ add_method("countbytes_large", [] {
     p.flush();
     out.close();
 
-    wassert(actual(sys::read_file(out.name())) == "5755008\n");
+    wassert(actual(sys::read_file(out.name())) == "5751936\n");
 });
 
 add_method("zeroes_arg", [] {

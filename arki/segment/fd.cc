@@ -85,8 +85,8 @@ State CheckBackend::check()
 }
 
 
-Reader::Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::Reader(root, relpath, abspath, lock), fd(abspath, O_RDONLY
+Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    : segment::Reader(format, root, relpath, abspath, lock), fd(abspath, O_RDONLY
 #ifdef linux
                 | O_CLOEXEC
 #endif
@@ -96,12 +96,18 @@ Reader::Reader(const std::string& root, const std::string& relpath, const std::s
 
 const char* Reader::type() const { return "file"; }
 bool Reader::single_file() const { return true; }
-
-bool Reader::scan(metadata_dest_func dest)
+time_t Reader::timestamp()
 {
-    std::string format = get_format(abspath);
+    struct stat st;
+    sys::stat(abspath, st);
+    return st.st_mtime;
+}
+
+
+bool Reader::scan_data(metadata_dest_func dest)
+{
     auto scanner = scan::Scanner::get_scanner(format);
-    return scanner->scan_file(root, relpath, abspath, lock, dest);
+    return scanner->scan_file(abspath, static_pointer_cast<segment::Reader>(shared_from_this()), dest);
 }
 
 std::vector<uint8_t> Reader::read(const types::source::Blob& src)
@@ -259,6 +265,13 @@ size_t Checker::remove()
     size_t size = sys::size(abspath);
     sys::unlink(abspath.c_str());
     return size;
+}
+
+std::shared_ptr<segment::Reader> Checker::reader(std::shared_ptr<core::Lock> lock)
+{
+    // TODO: store format in checker
+    std::string format = require_format(relpath);
+    return make_shared<Reader>(format, root, relpath, abspath, lock);
 }
 
 Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)

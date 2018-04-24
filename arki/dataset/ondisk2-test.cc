@@ -253,11 +253,8 @@ add_method("acquire_compressed", [](Fixture& f) {
 
     // Compress what is imported so far
     {
-        metadata::Collection c = f.query(Matcher());
-        wassert(actual(c.size()) == 1u);
-        string dest = c.ensureContiguousData("metadata file testds/20/2007.grib");
-        scan::compress(dest, std::make_shared<core::lock::Null>(), 1024);
-        sys::unlink_ifexists("testds/20/2007.grib");
+        auto checker = f.makeSegmentedChecker();
+        checker->segment("20/2007.grib")->compress();
     }
     wassert(actual_file("testds/20/2007.grib").not_exists());
 

@@ -26,7 +26,7 @@ public:
 	OdimH5();
 	virtual ~OdimH5();
 
-    void open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock) override;
+    void open(const std::string& filename, std::shared_ptr<segment::Reader> reader) override;
     void close() override;
     bool next(Metadata& md) override;
 

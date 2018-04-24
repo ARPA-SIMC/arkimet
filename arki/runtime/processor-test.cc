@@ -51,7 +51,7 @@ class Tests : public FixtureTestCase<Fixture>
     using FixtureTestCase::FixtureTestCase;
 
     void register_tests() override;
-} test("arki_processor");
+} test("arki_runtime_processor");
 
 void Tests::register_tests() {
 

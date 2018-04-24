@@ -8,6 +8,7 @@
 #include <wreport/bulletin.h>
 #include <wreport/options.h>
 #include "arki/metadata.h"
+#include "arki/segment.h"
 #include "arki/types/source.h"
 #include "arki/types/origin.h"
 #include "arki/types/product.h"
@@ -97,9 +98,9 @@ Bufr::~Bufr()
 #endif
 }
 
-void Bufr::open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock)
+void Bufr::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
 {
-    Scanner::open(filename, basedir, relpath, lock);
+    Scanner::open(filename, reader);
     if (filename == "-")
         file = dballe::File::create(dballe::File::BUFR, stdin, false, "standard input").release();
     else
@@ -247,8 +248,7 @@ bool Bufr::do_scan(Metadata& md)
     if (false)
         md.set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
     else {
-        unique_ptr<Source> source = Source::createBlob("bufr", basedir, relpath, rmsg.offset, rmsg.data.size(), reader);
-        md.set_source(move(source));
+        md.set_source(Source::createBlob("bufr", reader, rmsg.offset, rmsg.data.size()));
         md.set_cached_data(vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
     }
 

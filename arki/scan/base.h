@@ -13,13 +13,11 @@ struct Validator;
 struct Scanner
 {
     std::string filename;
-    std::string basedir;
-    std::string relpath;
     std::shared_ptr<segment::Reader> reader;
 
     virtual ~Scanner();
 
-    virtual void open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock);
+    virtual void open(const std::string& filename, std::shared_ptr<segment::Reader> reader);
 
     /**
      * Scan the next data in the file.
@@ -50,7 +48,7 @@ struct Scanner
      *
      * Returns true if dest always returned true, else false.
      */
-    bool scan_file(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock, metadata_dest_func dest);
+    bool scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest);
 
     /**
      * Create a scanner for the given format

@@ -180,10 +180,10 @@ OdimH5::~OdimH5()
     delete L;
 }
 
-void OdimH5::open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock)
+void OdimH5::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
 {
     using namespace arki::utils::h5;
-    Scanner::open(filename, basedir, relpath, lock);
+    Scanner::open(filename, reader);
 
     // Open H5 file
     read = false;
@@ -242,10 +242,10 @@ void OdimH5::setSource(Metadata& md)
     in.close();
 
     stringstream note;
-    note << "Scanned from " << relpath << ":0+" << buf.size();
+    note << "Scanned from " << str::basename(filename) << ":0+" << buf.size();
     md.add_note(note.str());
 
-    md.set_source(Source::createBlob("odimh5", basedir, relpath, 0, buf.size(), reader));
+    md.set_source(Source::createBlob("odimh5", reader, 0, buf.size()));
     md.set_cached_data(move(buf));
 }
 

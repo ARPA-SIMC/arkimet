@@ -187,10 +187,11 @@ struct CheckBackend : public AppendCheckBackend
         // Check files on disk that were not accounted for
         for (const auto& di: on_disk)
         {
+            auto scanner = scan::Scanner::get_scanner(format);
             auto idx = di.first;
             if (accurate)
             {
-                string fname = str::joinpath(abspath, SequenceFile::data_fname(idx, format));
+                string fname = SequenceFile::data_fname(idx, format);
                 metadata::Collection mds;
                 try {
                     scan::scan(fname, std::make_shared<core::lock::Null>(), format, [&](unique_ptr<Metadata> md) {
@@ -240,14 +241,18 @@ struct CheckBackend : public AppendCheckBackend
 
 
 Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::Reader(root, relpath, abspath, lock), format(format), dirfd(abspath, O_DIRECTORY)
+    : segment::Reader(format, root, relpath, abspath, lock), dirfd(abspath, O_DIRECTORY)
 {
 }
 
 const char* Reader::type() const { return "dir"; }
 bool Reader::single_file() const { return false; }
+time_t Reader::timestamp()
+{
+    return sys::timestamp(str::joinpath(abspath, ".sequence"));
+}
 
-bool Reader::scan(metadata_dest_func dest)
+bool Reader::scan_data(metadata_dest_func dest)
 {
     // Collect all file names in the directory
     std::vector<std::pair<size_t, std::string>> fnames;
@@ -267,12 +272,11 @@ bool Reader::scan(metadata_dest_func dest)
 
     // Scan them one by one
     auto scanner = scan::Scanner::get_scanner(format);
-    size_t pos = 0;
-    for (const auto& i : fnames)
+    for (const auto& fi : fnames)
     {
-        if (!scanner->scan_file(root, relpath, str::joinpath(abspath, i.second), lock, [&](unique_ptr<Metadata> md) {
+        if (!scanner->scan_file(str::joinpath(abspath, fi.second), static_pointer_cast<segment::Reader>(shared_from_this()), [&](unique_ptr<Metadata> md) {
                    const source::Blob& i = md->sourceBlob();
-                   md->set_source(Source::createBlob(format, root, relpath, pos, i.size, i.reader));
+                   md->set_source(Source::createBlob(format, root, relpath, fi.first, i.size, i.reader));
                    return dest(move(md));
                 }))
             return false;
@@ -487,6 +491,11 @@ size_t Checker::size()
         res += st.st_size;
     }
     return res;
+}
+
+std::shared_ptr<segment::Reader> Checker::reader(std::shared_ptr<core::Lock> lock)
+{
+    return make_shared<Reader>(format, root, relpath, abspath, lock);
 }
 
 void Checker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)

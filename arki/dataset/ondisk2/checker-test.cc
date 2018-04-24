@@ -195,8 +195,8 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
         metadata::Collection mdc = f.query(Matcher::parse("origin:GRIB1,200"));
         wassert(actual(mdc.size()) == 1u);
         string dest = mdc.ensureContiguousData("metadata file testds/2007/07-08.grib");
-        scan::compress(dest, std::make_shared<core::lock::Null>(), 1024);
-        sys::unlink_ifexists("testds/2007/07-08.grib");
+        auto checker = f.makeSegmentedChecker();
+        checker->segment("2007/07-08.grib")->compress();
     }
 
     // The dataset should still be clean

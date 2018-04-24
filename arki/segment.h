@@ -106,7 +106,7 @@ struct Span
  * each data item in a different file, for formats like HDF5 that cannot be
  * trivially concatenated in the same file.
  */
-class Segment
+class Segment : public std::enable_shared_from_this<Segment>
 {
 public:
     std::string root;
@@ -135,11 +135,36 @@ namespace segment {
 
 struct Reader : public Segment
 {
+    std::string format;
     std::shared_ptr<core::Lock> lock;
 
-    Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
 
-    virtual bool scan(metadata_dest_func dest) = 0;
+    /**
+     * Get the last modification timestamp of the segment
+     */
+    virtual time_t timestamp() = 0;
+
+    /**
+     * Scan the segment contents, and sends the resulting metadata to \a dest.
+     *
+     * If a .metadata file exists for this segment and its timestamp is the
+     * same than the segment or newer, it will be used instead performing the
+     * scan.
+     *
+     * Returns true if dest always returned true.
+     */
+    bool scan(metadata_dest_func dest);
+
+    /**
+     * Scan the segment contents ignoring all existing metadata (if any).
+     *
+     * Sends the resulting metadata to \a dest
+     *
+     * Returns true if dest always returned true.
+     */
+    virtual bool scan_data(metadata_dest_func dest) = 0;
+
     virtual std::vector<uint8_t> read(const types::source::Blob& src) = 0;
     virtual size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) = 0;
 
@@ -200,6 +225,7 @@ protected:
 public:
     using Segment::Segment;
 
+    virtual std::shared_ptr<Reader> reader(std::shared_ptr<core::Lock> lock) = 0;
     virtual segment::State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
     virtual size_t size() = 0;
@@ -210,9 +236,14 @@ public:
     virtual bool exists_on_disk() = 0;
 
     /**
-     * Get the last modification timestamp for the segment
+     * Get the last modification timestamp of the segment
      */
     virtual time_t timestamp() = 0;
+
+    /**
+     * Rescan the segment, using Reader::scan_data of the right reader for this segment
+     */
+    bool scan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func dest);
 
     /**
      * Rewrite this segment so that the data are in the same order as in `mds`.

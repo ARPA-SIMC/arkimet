@@ -12,15 +12,19 @@ namespace arki {
 namespace segment {
 namespace missing {
 
-Reader::Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-   : segment::Reader(root, relpath, abspath, lock)
+Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+   : segment::Reader(format, root, relpath, abspath, lock)
 {
 }
 
 const char* Reader::type() const { return "missing"; }
 bool Reader::single_file() const { return true; }
+time_t Reader::timestamp()
+{
+    throw std::runtime_error("cannot get mtime of " + abspath + ": segment has disappeared");
+}
 
-bool Reader::scan(metadata_dest_func dest)
+bool Reader::scan_data(metadata_dest_func dest)
 {
     throw std::runtime_error("cannot scan " + abspath + ": segment has disappeared");
 }

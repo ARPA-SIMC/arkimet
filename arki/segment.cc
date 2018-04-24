@@ -35,9 +35,25 @@ Segment::~Segment()
 
 namespace segment {
 
-Reader::Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : Segment(root, relpath, abspath), lock(lock)
+Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    : Segment(root, relpath, abspath), format(format), lock(lock)
 {
+}
+
+bool Reader::scan(metadata_dest_func dest)
+{
+    // stat the metadata file, if it exists
+    string md_abspath = abspath + ".metadata";
+    unique_ptr<struct stat> st_md = sys::stat(md_abspath);
+    // If it exists and it looks new enough, use it
+    if (st_md.get() && st_md->st_mtime >= timestamp())
+        return Metadata::read_file(md_abspath, [&](unique_ptr<Metadata> md) {
+            md->sourceBlob().lock(static_pointer_cast<segment::Reader>(shared_from_this()));
+            return dest(move(md));
+        });
+
+    // Else scan the file as usual
+    return scan_data(dest);
 }
 
 std::shared_ptr<Reader> Reader::for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
@@ -51,7 +67,7 @@ std::shared_ptr<Reader> Reader::for_pathname(const std::string& format, const st
         {
             res.reset(new segment::dir::Reader(format, root, relpath, abspath, lock));
         } else {
-            res.reset(new segment::fd::Reader(root, relpath, abspath, lock));
+            res.reset(new segment::fd::Reader(format, root, relpath, abspath, lock));
         }
         return res;
     }
@@ -65,9 +81,9 @@ std::shared_ptr<Reader> Reader::for_pathname(const std::string& format, const st
         else
         {
             if (sys::exists(abspath + ".gz.idx"))
-                res.reset(new segment::gzidx::Reader(root, relpath, abspath, lock));
+                res.reset(new segment::gzidx::Reader(format, root, relpath, abspath, lock));
             else
-                res.reset(new segment::gz::Reader(root, relpath, abspath, lock));
+                res.reset(new segment::gz::Reader(format, root, relpath, abspath, lock));
         }
         return res;
     }
@@ -75,7 +91,7 @@ std::shared_ptr<Reader> Reader::for_pathname(const std::string& format, const st
     st = sys::stat(abspath + ".tar");
     if (st.get())
     {
-        res.reset(new segment::tar::Reader(root, relpath, abspath, lock));
+        res.reset(new segment::tar::Reader(format, root, relpath, abspath, lock));
         return res;
     }
 
@@ -86,7 +102,7 @@ std::shared_ptr<Reader> Reader::for_pathname(const std::string& format, const st
         return res;
     }
 
-    res.reset(new segment::missing::Reader(root, relpath, abspath, lock));
+    res.reset(new segment::missing::Reader(format, root, relpath, abspath, lock));
     return res;
 }
 
@@ -190,6 +206,12 @@ std::shared_ptr<Writer> Writer::for_pathname(const std::string& format, const st
     return res;
 }
 
+
+bool Checker::scan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+{
+    auto reader = this->reader(lock);
+    return reader->scan_data(dest);
+}
 
 std::shared_ptr<segment::Checker> Checker::tar(metadata::Collection& mds)
 {
