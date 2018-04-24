@@ -70,13 +70,6 @@ bool scan(const std::string& file, std::shared_ptr<core::Lock> lock, const std::
     return scan(basedir, relpath, lock, format, dest);
 }
 
-bool exists(const std::string& file)
-{
-    if (sys::exists(file)) return true;
-    if (sys::exists(file + ".gz")) return true;
-    return false;
-}
-
 bool isCompressed(const std::string& file)
 {
     return !sys::exists(file) && (sys::exists(file + ".gz") || sys::exists(file + ".tar") || sys::exists(file + ".zip"));

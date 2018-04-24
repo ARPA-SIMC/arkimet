@@ -38,11 +38,6 @@ bool scan(const std::string& file, std::shared_ptr<core::Lock> lock, metadata_de
 bool scan(const std::string& file, std::shared_ptr<core::Lock> lock, const std::string& format, metadata_dest_func dest);
 
 /**
- * Return true if the file exists, either uncompressed or compressed
- */
-bool exists(const std::string& file);
-
-/**
  * Return true if the file exists, and is compressed
  */
 bool isCompressed(const std::string& file);
