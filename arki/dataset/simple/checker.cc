@@ -383,7 +383,19 @@ public:
         sys::unlink_ifexists(segment->abspath + ".metadata");
         sys::unlink_ifexists(segment->abspath + ".summary");
 
-        checker.m_mft->rescanSegment(checker.config().path, segment->relpath);
+        metadata::Collection mds;
+        segment->scan_data(lock, mds.inserter_func());
+
+        Summary sum;
+        for (const auto& md: mds)
+            sum.add(*md);
+
+        // Regenerate .metadata and .summary
+        mds.writeAtomically(segment->abspath + ".metadata");
+        sum.writeAtomically(segment->abspath + ".summary");
+
+        // Add to manifest
+        checker.m_mft->acquire(segment->relpath, segment->timestamp(), sum);
         checker.m_mft->flush();
     }
 

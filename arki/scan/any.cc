@@ -6,7 +6,6 @@
 #include "arki/types/source/blob.h"
 #include "arki/utils.h"
 #include "arki/utils/files.h"
-#include "arki/utils/compress.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include <sstream>
@@ -99,25 +98,6 @@ time_t timestamp(const std::string& file)
 
     // Directory segment, check the timestamp of the sequence file instead
     return sys::timestamp(str::joinpath(file, ".sequence"), 0);
-}
-
-void compress(const std::string& file, std::shared_ptr<core::Lock> lock, size_t groupsize)
-{
-    utils::compress::DataCompressor compressor(file, groupsize);
-    scan(file, lock, [&](unique_ptr<Metadata> md) {
-        return compressor.eat(move(md));
-    });
-    compressor.flush();
-
-    // Set the same timestamp as the uncompressed file
-    std::unique_ptr<struct stat> st = sys::stat(file);
-    struct utimbuf times;
-    times.actime = st->st_atime;
-    times.modtime = st->st_mtime;
-    utime((file + ".gz").c_str(), &times);
-    utime((file + ".gz.idx").c_str(), &times);
-
-	// TODO: delete uncompressed version
 }
 
 void Validator::throw_check_error(utils::sys::NamedFileDescriptor& fd, off_t offset, const std::string& msg) const

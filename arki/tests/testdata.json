@@ -1147,12 +1147,7 @@
  {
   "doc": "",
   "group": "arki_metadata_collection",
-  "method": "compression"
- },
- {
-  "doc": "",
-  "group": "arki_metadata_collection",
-  "method": "uncompressible"
+  "method": "empty"
  },
  {
   "doc": "",
@@ -1728,11 +1723,6 @@
   "doc": "",
   "group": "arki_scan_any",
   "method": "bufr_compact"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "compress"
  },
  {
   "doc": "",

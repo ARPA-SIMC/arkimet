@@ -69,11 +69,6 @@ bool isCompressed(const std::string& file);
 time_t timestamp(const std::string& file);
 
 /**
- * Compress the given file
- */
-void compress(const std::string& file, std::shared_ptr<core::Lock> lock, size_t groupsize=512);
-
-/**
  * Reconstruct raw data based on a metadata and a value
  */
 std::vector<uint8_t> reconstruct(const std::string& format, const Metadata& md, const std::string& value);

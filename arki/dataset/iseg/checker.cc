@@ -387,7 +387,6 @@ public:
     {
         metadata::Collection mds;
         segment->scan_data(lock, mds.inserter_func());
-        //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
 
         // Lock away writes and reads
         auto write_lock = lock->write_lock();

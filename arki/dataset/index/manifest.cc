@@ -14,7 +14,6 @@
 #include "arki/matcher.h"
 #include "arki/utils/sqlite.h"
 #include "arki/utils/files.h"
-#include "arki/utils/compress.h"
 #include "arki/sort.h"
 #include "arki/scan/any.h"
 #include "arki/nag.h"
@@ -178,52 +177,6 @@ void Manifest::invalidate_summary(const std::string& relpath)
 {
     sys::unlink_ifexists(str::joinpath(m_path, relpath) + ".summary");
     invalidate_summary();
-}
-
-void Manifest::rescanSegment(const std::string& dir, const std::string& relpath)
-{
-    if (lock.expired())
-        throw std::runtime_error("cannot rescan a segment while there is no lock held");
-    string pathname = str::joinpath(dir, relpath);
-
-    // Temporarily uncompress the file for scanning
-    unique_ptr<utils::compress::TempUnzip> tu;
-    if (scan::isCompressed(pathname))
-        tu.reset(new utils::compress::TempUnzip(pathname));
-
-    // Read the timestamp
-    time_t mtime = scan::timestamp(pathname);
-
-    // Invalidate summary
-    invalidate_summary(pathname);
-
-    // Invalidate metadata if older than data
-    time_t ts_md = sys::timestamp(pathname + ".metadata", 0);
-    if (ts_md < mtime)
-        sys::unlink_ifexists(pathname + ".metadata");
-
-    // Scan the file
-    metadata::Collection mds;
-    scan::scan(pathname, lock.lock(), mds.inserter_func());
-
-    // Iterate the metadata, computing the summary and making the data
-    // paths relative
-    Summary sum;
-    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
-    {
-        const source::Blob& s = (*i)->sourceBlob();
-        (*i)->set_source(upcast<Source>(s.fileOnly()));
-        sum.add(**i);
-    }
-
-    // Regenerate .metadata
-    mds.writeAtomically(pathname + ".metadata");
-
-    // Regenerate .summary
-    sum.writeAtomically(pathname + ".summary");
-
-    // Add to manifest
-    acquire(relpath, mtime, sum);
 }
 
 void Manifest::test_deindex(const std::string& relpath)

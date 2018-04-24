@@ -5,7 +5,6 @@
 #include "arki/types/source.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
-#include "arki/utils/compress.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <sstream>
@@ -166,24 +165,6 @@ add_method("bufr_compact", [] {
     // Check run
     ensure(not mdc[2].has(TYPE_RUN));
 #endif
-});
-
-// Test compression
-add_method("compress", [] {
-    // Create a test file with 9 gribs inside
-    system("cat inbound/test.grib1 inbound/test.grib1 inbound/test.grib1 > a.grib1");
-    system("cp a.grib1 b.grib1");
-
-    // Compress
-    scan::compress("b.grib1", std::make_shared<core::lock::Null>(), 5);
-    sys::unlink_ifexists("b.grib1");
-
-    {
-        utils::compress::TempUnzip tu("b.grib1");
-        unsigned count = 0;
-        scan::scan("b.grib1", std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata>) { ++count; return true; });
-        ensure_equals(count, 9u);
-    }
 });
 
 // Test reading update sequence numbers
