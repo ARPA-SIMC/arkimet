@@ -119,8 +119,12 @@ bool Vm2::next(Metadata& md)
     size_t size = line.size();
 
     md.clear();
-    md.set_source(Source::createBlob("vm2", reader, offset, size));
-    md.set_cached_data(vector<uint8_t>(line.begin(), line.end()));
+    if (reader)
+    {
+        md.set_source(Source::createBlob("vm2", reader, offset, size));
+        md.set_cached_data(vector<uint8_t>(line.begin(), line.end()));
+    } else
+        md.set_source_inline("bufr", vector<uint8_t>(line.begin(), line.end()));
     md.add_note("Scanned from " + str::basename(filename));
     md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
     md.set(Area::createVM2(value.station_id));

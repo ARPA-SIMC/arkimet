@@ -245,8 +245,12 @@ void OdimH5::setSource(Metadata& md)
     note << "Scanned from " << str::basename(filename) << ":0+" << buf.size();
     md.add_note(note.str());
 
-    md.set_source(Source::createBlob("odimh5", reader, 0, buf.size()));
-    md.set_cached_data(move(buf));
+    if (reader)
+    {
+        md.set_source(Source::createBlob("odimh5", reader, 0, buf.size()));
+        md.set_cached_data(move(buf));
+    } else
+        md.set_source_inline("bufr", move(buf));
 }
 
 bool OdimH5::scanLua(Metadata& md)

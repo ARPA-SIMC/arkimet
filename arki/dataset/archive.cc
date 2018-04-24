@@ -12,7 +12,6 @@
 #include "arki/matcher.h"
 #include "arki/metadata/collection.h"
 #include "arki/nag.h"
-#include "arki/scan/any.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source/blob.h"

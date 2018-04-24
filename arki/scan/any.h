@@ -26,14 +26,6 @@ namespace scan {
 bool scan(const std::string& file, std::shared_ptr<core::Lock> lock, metadata_dest_func dest);
 
 /**
- * Alternate version with explicit base dir.
- *
- * The source information in the metadata will point to \a relpath only, with
- * \a basedir as context.
- */
-bool scan(const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock, metadata_dest_func dest);
-
-/**
  * Scan the given file without format autodetection, sending its metadata to a
  * consumer.
  *
@@ -44,14 +36,6 @@ bool scan(const std::string& basedir, const std::string& relpath, std::shared_pt
  * that is not supported or recognised.
  */
 bool scan(const std::string& file, std::shared_ptr<core::Lock> lock, const std::string& format, metadata_dest_func dest);
-
-/**
- * Alternate version with explicit base dir.
- *
- * The source information in the metadata will point to \a relpath only, with
- * \a basedir as context.
- */
-bool scan(const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock, const std::string& format, metadata_dest_func dest);
 
 /**
  * Return true if the file exists, either uncompressed or compressed

@@ -559,15 +559,13 @@ void Grib::setSource(Metadata& md)
     off_t offset = ftello(in);
     offset -= size;
 
-    if (false)
-    {
-        md.set_source_inline("grib", vector<uint8_t>(vbuf, vbuf + size));
-    }
-    else
+    if (reader)
     {
         md.set_source(Source::createBlob("grib", reader, offset, size));
         md.set_cached_data(vector<uint8_t>(vbuf, vbuf + size));
     }
+    else
+        md.set_source_inline("grib", vector<uint8_t>(vbuf, vbuf + size));
     stringstream note;
     note << "Scanned from " << str::basename(filename) << ":" << offset << "+" << size;
     md.add_note(note.str());

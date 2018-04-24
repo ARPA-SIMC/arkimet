@@ -425,8 +425,7 @@ add_method("cosmo_nudging", [] {
     ARKI_UTILS_TEST_INFO(info);
 
     {
-        metadata::Collection mdc;
-        wassert(scan::scan("inbound/cosmonudging-t2.grib1", std::make_shared<core::lock::Null>(), mdc.inserter_func()));
+        metadata::TestCollection mdc("inbound/cosmonudging-t2.grib1");
         wassert(actual(mdc.size()) == 35u);
         for (unsigned i = 0; i < 5; ++i)
             wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
@@ -446,8 +445,7 @@ add_method("cosmo_nudging", [] {
             wassert(actual(mdc[i]).contains("timerange", "Timedef(0s, 0, 12h)"));
     }
     {
-        metadata::Collection mdc;
-        wassert(scan::scan("inbound/cosmonudging-t201.grib1", std::make_shared<core::lock::Null>(), mdc.inserter_func()));
+        metadata::TestCollection mdc("inbound/cosmonudging-t201.grib1");
         wassert(actual(mdc.size()) == 33u);
         wassert(actual(mdc[0]).contains("timerange", "Timedef(0s, 0, 12h)"));
         wassert(actual(mdc[1]).contains("timerange", "Timedef(0s, 0, 12h)"));
@@ -463,8 +461,7 @@ add_method("cosmo_nudging", [] {
             wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
     }
     {
-        metadata::Collection mdc;
-        wassert(scan::scan("inbound/cosmonudging-t202.grib1", std::make_shared<core::lock::Null>(), mdc.inserter_func()));
+        metadata::TestCollection mdc("inbound/cosmonudging-t202.grib1");
         wassert(actual(mdc.size()) == 11u);
         for (unsigned i = 0; i < 11; ++i)
             wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
@@ -481,8 +478,7 @@ add_method("cosmo_nudging", [] {
         void read(const char* fname)
         {
             arki_utils_test_location_info() << "Sample: " << fname;
-            metadata::Collection mdc;
-            wassert(scan::scan(fname, std::make_shared<core::lock::Null>(), mdc.inserter_func()));
+            metadata::TestCollection mdc(fname);
             wassert(actual(mdc.size()) == 1u);
             md = wcallchecked(mdc[0]);
         }

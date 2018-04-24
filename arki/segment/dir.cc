@@ -194,10 +194,7 @@ struct CheckBackend : public AppendCheckBackend
                 string fname = SequenceFile::data_fname(idx, format);
                 metadata::Collection mds;
                 try {
-                    scan::scan(fname, std::make_shared<core::lock::Null>(), format, [&](unique_ptr<Metadata> md) {
-                        mds.acquire(std::move(md));
-                        return true;
-                    });
+                    scanner->scan_metadata(fname, mds.inserter_func());
                 } catch (std::exception& e) {
                     stringstream out;
                     out << "unexpected data file " << idx << " fails to scan (" << e.what() << ")";

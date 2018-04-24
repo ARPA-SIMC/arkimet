@@ -3,7 +3,6 @@
 #include "arki/metadata/tests.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
-#include "arki/scan/any.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include <fcntl.h>
@@ -83,10 +82,9 @@ this->add_method("append", [](Fixture& f) {
     }
 
     // Data writer goes out of scope, file is closed and flushed
-    metadata::Collection mdc1;
-
     // Scan the file we created
-    wassert(actual(scan::scan(relpath, std::make_shared<core::lock::Null>(), mdc1.inserter_func())).istrue());
+    metadata::TestCollection mdc1;
+    wassert(mdc1.scan_from_file(relpath, false));
 
     // Check that it only contains the 1st and 3rd data
     wassert(actual(mdc1.size()) == 2u);

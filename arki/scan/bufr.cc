@@ -245,12 +245,12 @@ bool Bufr::do_scan(Metadata& md)
     if (!rmsg) return false;
 
     // Set source
-    if (false)
-        md.set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
-    else {
+    if (reader)
+    {
         md.set_source(Source::createBlob("bufr", reader, rmsg.offset, rmsg.data.size()));
         md.set_cached_data(vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
-    }
+    } else
+        md.set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
 
     Harvest harvest(*importer);
     harvest.harvest_from_dballe(rmsg, md);

@@ -37,7 +37,14 @@ static std::string guess_format(const std::string& basedir, const std::string& f
     return str::lower(file.substr(pos+1));
 }
 
-bool scan(const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+static bool scan(const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock, const std::string& format, metadata_dest_func dest)
+{
+    string pathname = str::joinpath(basedir, relpath);
+    auto reader = segment::Reader::for_pathname(format, basedir, relpath, pathname, lock);
+    return reader->scan(dest);
+}
+
+static bool scan(const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
 {
     std::string format = guess_format(basedir, relpath);
 
@@ -45,13 +52,6 @@ bool scan(const std::string& basedir, const std::string& relpath, std::shared_pt
     if (format.empty())
         throw std::runtime_error("unknown format: '" + format + "'");
     return scan(basedir, relpath, lock, format, dest);
-}
-
-bool scan(const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock, const std::string& format, metadata_dest_func dest)
-{
-    string pathname = str::joinpath(basedir, relpath);
-    auto reader = segment::Reader::for_pathname(format, basedir, relpath, pathname, lock);
-    return reader->scan(dest);
 }
 
 bool scan(const std::string& file, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)

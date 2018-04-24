@@ -51,6 +51,15 @@ struct Scanner
     bool scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest);
 
     /**
+     * Open a file, scan it, send results to dest, and close it.
+     *
+     * Scanned metadata will have inline sources
+     *
+     * Returns true if dest always returned true, else false.
+     */
+    bool scan_metadata(const std::string& abspath, metadata_dest_func dest);
+
+    /**
      * Create a scanner for the given format
      */
     static std::unique_ptr<Scanner> get_scanner(const std::string& format);

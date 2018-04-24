@@ -61,6 +61,18 @@ bool Scanner::scan_file(const std::string& abspath, std::shared_ptr<segment::Rea
     return true;
 }
 
+bool Scanner::scan_metadata(const std::string& abspath, metadata_dest_func dest)
+{
+    open(abspath, std::shared_ptr<segment::Reader>());
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        if (!next(*md)) break;
+        if (!dest(move(md))) return false;
+    }
+    return true;
+}
+
 std::unique_ptr<Scanner> Scanner::get_scanner(const std::string& format)
 {
 #ifdef HAVE_GRIBAPI

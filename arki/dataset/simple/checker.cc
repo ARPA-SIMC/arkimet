@@ -116,12 +116,6 @@ public:
         //scan_file(m_path, i.file, state, v);
         //void scan_file(const std::string& root, const std::string& relpath, segment::State state, segment::contents_func dest)
 
-#if 0
-        // If the segment file is compressed, create a temporary uncompressed copy
-        unique_ptr<utils::compress::TempUnzip> tu;
-        if (!quick && scan::isCompressed(abspath))
-            tu.reset(new utils::compress::TempUnzip(abspath));
-#endif
         // TODO: turn this into a Segment::exists/Segment::scan
         metadata::Collection contents;
         if (sys::exists(segment->abspath + ".metadata"))
