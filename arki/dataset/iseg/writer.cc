@@ -12,7 +12,6 @@
 #include "arki/nag.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include "arki/utils/compress.h"
 #include <system_error>
 #include <algorithm>
 

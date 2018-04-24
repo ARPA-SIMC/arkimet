@@ -12,7 +12,6 @@
 #include "arki/scan/any.h"
 #include "arki/utils.h"
 #include "arki/utils/files.h"
-#include "arki/utils/compress.h"
 #include "arki/nag.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"

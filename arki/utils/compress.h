@@ -124,14 +124,6 @@ struct SeekIndex
 	bool read(const std::string& fname);
 };
 
-/**
- * Return the uncompressed size of a file
- *
- * @param fnam
- *   Refers to the uncompressed file name (i.e. without the trailing .gz)
- */
-off_t filesize(const std::string& file);
-
 class GzipWriter
 {
 protected:
@@ -200,46 +192,8 @@ public:
     void flush();
 };
 
-
-class DataCompressor
-{
-protected:
-	// Number of data items in a compressed block
-	size_t groupsize;
-    // Compressed output
-    core::File outfd;
-    // Index output
-    core::File outidx;
-	// Compressor
-	ZlibCompressor compressor;
-	// Output buffer for the compressor
-    std::vector<uint8_t> outbuf;
-	// Offset of end of last uncompressed data read
-	off_t unc_ofs;
-	// Offset of end of last uncompressed block written
-	off_t last_unc_ofs;
-	// Offset of end of last compressed data written
-	off_t last_ofs;
-	// Number of data compressed so far
-	size_t count;
-
-    // End one compressed block
-    void endBlock(bool is_final=false);
-
-public:
-    DataCompressor(const std::string& outfile, size_t groupsize = 512);
-    ~DataCompressor();
-
-    bool eat(std::unique_ptr<Metadata>&& md);
-
-    void add(const std::vector<uint8_t>& buf);
-
-    void flush();
-};
-
 }
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif

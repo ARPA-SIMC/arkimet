@@ -237,36 +237,6 @@ void SeekIndex::read(sys::File& fd)
 	}
 }
 
-off_t filesize(const std::string& file)
-{
-    // First try the uncompressed version
-    std::unique_ptr<struct stat> st = sys::stat(file);
-    if (st.get() != NULL)
-        return st->st_size;
-
-    // Then try the gzipped version
-    st = sys::stat(file + ".gz");
-    if (st.get() != NULL)
-    {
-		// Try to get the uncompressed size via the index
-		SeekIndex idx;
-		if (idx.read(file + ".gz.idx"))
-		{
-			// Try to get the uncompressed size via the index
-			return idx.ofs_unc.back();
-        } else {
-            // Seek through the whole file (ouch, slow)
-            // for now, just throw an exception
-            stringstream ss;
-            ss << "cannot compute file size of " << file << ".gz: compressed file has no index; to compute its uncompressed size it needs to be fully uncompressed. Please do it by hand and then recompress generating its .gz.idx index";
-            throw std::runtime_error(ss.str());
-        }
-    }
-
-	// If everything fails, return 0
-	return 0;
-}
-
 
 GzipWriter::GzipWriter(core::NamedFileDescriptor& out)
     : out(out), outbuf(4096 * 2)
@@ -360,80 +330,6 @@ void GzipIndexingWriter::flush()
 {
     if (unc_ofs > 0 && last_unc_ofs != unc_ofs)
         end_block(true);
-}
-
-
-DataCompressor::DataCompressor(const std::string& outfile, size_t groupsize)
-    : groupsize(groupsize),
-      outfd(outfile + ".gz", O_WRONLY | O_CREAT | O_EXCL, 0666),
-      outidx(outfile + ".gz.idx", O_WRONLY | O_CREAT | O_EXCL, 0666),
-      outbuf(4096*2), unc_ofs(0), last_unc_ofs(0), last_ofs(0), count(0)
-{
-}
-
-DataCompressor::~DataCompressor()
-{
-	flush();
-}
-
-bool DataCompressor::eat(unique_ptr<Metadata>&& md)
-{
-    add(md->getData());
-    return true;
-}
-
-void DataCompressor::add(const std::vector<uint8_t>& buf)
-{
-    // Compress data
-    compressor.feed_data(buf.data(), buf.size());
-    while (true)
-    {
-        size_t len = compressor.get(outbuf, false);
-        if (len > 0)
-            outfd.write_all_or_throw(outbuf.data(), len);
-        if (len < outbuf.size())
-            break;
-    }
-
-    unc_ofs += buf.size();
-
-	if (count > 0 && (count % groupsize) == 0)
-		endBlock();
-
-	++count;
-}
-
-void DataCompressor::endBlock(bool is_final)
-{
-    while (true)
-    {
-        size_t len = compressor.get(outbuf, true);
-        if (len > 0)
-            outfd.write_all_or_throw(outbuf.data(), len);
-        if (len < outbuf.size())
-            break;
-    }
-
-    // Write last block size to the index
-    off_t cur = lseek(outfd, 0, SEEK_CUR);
-    uint32_t ofs = htonl(unc_ofs - last_unc_ofs);
-    uint32_t last_size = htonl(cur - last_ofs);
-    outidx.write_all_or_throw(&ofs, sizeof(ofs));
-    outidx.write_all_or_throw(&last_size, sizeof(last_size));
-    last_ofs = cur;
-    last_unc_ofs = unc_ofs;
-
-    if (!is_final) compressor.restart();
-}
-
-void DataCompressor::flush()
-{
-	if (outfd != -1 && outidx != -1)
-		if (unc_ofs > 0 && last_unc_ofs != unc_ofs)
-			endBlock(true);
-
-    outfd.close();
-    outidx.close();
 }
 
 }

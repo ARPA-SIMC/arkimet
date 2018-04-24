@@ -16,7 +16,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
-#include "arki/utils/compress.h"
 #include "arki/configfile.h"
 #include <algorithm>
 #include <system_error>
@@ -247,18 +246,9 @@ void CheckerSegment::unarchive()
 {
     string arcrelpath = str::joinpath("last", segment->relpath);
     archives().release_segment(arcrelpath, segment->root, segment->relpath, segment->abspath);
-
-    bool compressed = scan::isCompressed(segment->abspath);
-
-    // Acquire in the achive
+    auto reader = segment->reader(lock);
     metadata::Collection mdc;
-    if (sys::exists(segment->abspath + ".metadata"))
-        mdc.read_from_file(segment->abspath + ".metadata");
-    else if (compressed) {
-        utils::compress::TempUnzip tu(segment->abspath);
-        scan::scan(segment->abspath, lock, mdc.inserter_func());
-    } else
-        scan::scan(segment->abspath, lock, mdc.inserter_func());
+    reader->scan(mdc.inserter_func());
     index(move(mdc));
 }
 

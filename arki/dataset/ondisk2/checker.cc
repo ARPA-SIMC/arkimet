@@ -15,7 +15,6 @@
 #include "arki/scan/any.h"
 #include "arki/utils.h"
 #include "arki/utils/files.h"
-#include "arki/utils/compress.h"
 #include "arki/summary.h"
 #include "arki/nag.h"
 #include "arki/utils/string.h"
@@ -324,15 +323,8 @@ public:
 
     void rescan() override
     {
-        // Temporarily uncompress the file for scanning
-        unique_ptr<utils::compress::TempUnzip> tu;
-        if (scan::isCompressed(segment->abspath))
-            tu.reset(new utils::compress::TempUnzip(segment->abspath));
-
-        // Collect the scan results in a metadata::Collector
         metadata::Collection mds;
-        scan::scan(segment->abspath, lock, mds.inserter_func());
-        //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
+        segment->scan_data(lock, mds.inserter_func());
 
         // Lock away writes and reads
         Pending p = checker.idx->begin_transaction();
