@@ -1,14 +1,5 @@
 #include "arki/metadata/tests.h"
-#include "arki/libconfig.h"
-#include "arki/scan/any.h"
-#include "arki/core/file.h"
-#include "arki/types/source.h"
-#include "arki/metadata.h"
-#include "arki/metadata/collection.h"
-#include "arki/utils/string.h"
-#include "arki/utils/sys.h"
-#include <sstream>
-#include <iostream>
+#include "validator.h"
 
 namespace {
 using namespace std;

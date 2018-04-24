@@ -5,7 +5,6 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/utils.h"
-#include "arki/scan/any.h"
 #include "segment.h"
 #include "segment/lines.h"
 #include <algorithm>

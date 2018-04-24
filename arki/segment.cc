@@ -9,7 +9,6 @@
 #include "segment/gzidx.h"
 #include "arki/configfile.h"
 #include "arki/exceptions.h"
-#include "arki/scan/any.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"

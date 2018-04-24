@@ -1,13 +1,5 @@
 #include "zip.h"
 #include "tests.h"
-#include "arki/metadata/tests.h"
-#include "arki/metadata/collection.h"
-#include "arki/types/source/blob.h"
-#include "arki/scan/any.h"
-#include "arki/utils/files.h"
-#include "arki/utils/sys.h"
-#include <fcntl.h>
-#include <sstream>
 
 namespace {
 using namespace std;
