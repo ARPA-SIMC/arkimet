@@ -43,7 +43,7 @@ class TestDatasetReader(unittest.TestCase):
             ds.query_data(on_metadata=stream_results)
             fd.seek(0)
             queried = fd.read()
-        self.assertEquals(len(queried), 612)
+        self.assertEquals(len(queried), 588)
 
         def query_reftimes(matcher=None, sort=None):
             res = []
@@ -140,7 +140,7 @@ class TestDatasetReader(unittest.TestCase):
             queried = fd.read()
         # This is bigger than 44412 because postprocessors are also sent
         # metadata, so that arki-xargs can work.
-        self.assertEqual(queried, b"44961\n")
+        self.assertEqual(queried, b"44937\n")
 
         # metadata_report
         with tempfile.TemporaryFile() as fd:

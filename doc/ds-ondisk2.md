@@ -46,8 +46,8 @@ with a full check and rescan of all the data in the dataset.
   identified as to be repacked [dirty]
 - segments that only contain data that has been removed are
   identified as fully deleted [deleted]
-- all data known by the index for this segment must be present on disk [unaligned]
-- no pair of (offset, size) data spans from the index can overlap [unaligned]
+- all data known by the index for this segment must be present on disk [corrupted]
+- no pair of (offset, size) data spans from the index can overlap [corrupted]
 - data must start at the beginning of the segment [dirty]
 - there must be no gaps between data in the segment [dirty]
 - data must end at the end of the segment [dirty]
@@ -76,7 +76,7 @@ with a full check and rescan of all the data in the dataset.
 
 ### During --accurate check
 
-- format-specific consistency checks on the content of each file must pass [unaligned]
+- format-specific consistency checks on the content of each file must pass [corrupted]
 
 ### During fix
 
@@ -124,8 +124,8 @@ with a full check and rescan of all the data in the dataset.
   identified as to be repacked [dirty]
 - segments that only contain data that has been removed are
   identified as fully deleted [deleted]
-- all data known by the index for this segment must be present on disk [unaligned]
-- no pair of (offset, size) data spans from the index can overlap [unaligned]
+- all data known by the index for this segment must be present on disk [corrupted]
+- no pair of (offset, size) data spans from the index can overlap [corrupted]
 - data must start at the beginning of the segment [dirty]
 - there must be no gaps between data in the segment [dirty]
 - data must end at the end of the segment [dirty]
@@ -154,7 +154,7 @@ with a full check and rescan of all the data in the dataset.
 
 ### During --accurate check
 
-- format-specific consistency checks on the content of each file must pass [unaligned]
+- format-specific consistency checks on the content of each file must pass [corrupted]
 
 ### During fix
 
