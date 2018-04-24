@@ -6,8 +6,9 @@
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/utils/files.h"
-#include "arki/scan/any.h"
 #include "arki/nag.h"
+#include "arki/scan/any.h"
+#include "arki/utils.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/metadata.h"
@@ -48,7 +49,8 @@ struct AppendSegment
             return;
 
         // Read the metadata
-        scan::scan(segment->abspath, lock, mds.inserter_func());
+        auto reader = segment::Reader::for_pathname(require_format(segment->relpath), segment->root, segment->relpath, segment->abspath, lock);
+        reader->scan(mds.inserter_func());
 
         // Read the summary
         if (!mds.empty())
