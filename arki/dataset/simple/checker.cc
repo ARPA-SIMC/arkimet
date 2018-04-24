@@ -11,7 +11,6 @@
 #include "arki/matcher.h"
 #include "arki/metadata/collection.h"
 #include "arki/utils/files.h"
-#include "arki/scan/any.h"
 #include "arki/sort.h"
 #include "arki/nag.h"
 #include "arki/utils/sys.h"
@@ -69,17 +68,8 @@ public:
 
     void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
     {
-        scan::scan(segment->abspath, lock, mds.inserter_func());
-        /*
-        bool compressed = scan::isCompressed(new_abspath);
-        if (sys::exists(new_abspath + ".metadata"))
-            mdc.read_from_file(new_abspath + ".metadata");
-        else if (compressed) {
-            utils::compress::TempUnzip tu(new_abspath);
-            scan::scan(new_abspath, lock, mdc.inserter_func());
-        } else
-            scan::scan(new_abspath, lock, mdc.inserter_func());
-        */
+        auto reader = segment->reader(lock);
+        reader->scan(mds.inserter_func());
     }
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
@@ -204,7 +194,7 @@ public:
 
         // Read the metadata
         metadata::Collection mds;
-        scan::scan(segment->abspath, lock, mds.inserter_func());
+        get_metadata(lock, mds);
 
         // Sort by reference time and offset
         RepackSort cmp;
@@ -264,7 +254,7 @@ public:
         auto lock = checker.lock->write_lock();
 
         metadata::Collection mds;
-        scan::scan(segment->abspath, lock, mds.inserter_func());
+        get_metadata(lock, mds);
 
         // Remove existing cached metadata, since we scramble their order
         sys::unlink_ifexists(segment->abspath + ".metadata");
@@ -295,7 +285,7 @@ public:
         auto lock = checker.lock->write_lock();
 
         metadata::Collection mds;
-        scan::scan(segment->abspath, lock, mds.inserter_func());
+        get_metadata(lock, mds);
 
         // Remove existing cached metadata, since we scramble their order
         sys::unlink_ifexists(segment->abspath + ".metadata");
@@ -326,7 +316,7 @@ public:
         auto lock = checker.lock->write_lock();
 
         metadata::Collection mds;
-        scan::scan(segment->abspath, lock, mds.inserter_func());
+        get_metadata(lock, mds);
 
         // Remove existing cached metadata, since we scramble their order
         sys::unlink_ifexists(segment->abspath + ".metadata");
