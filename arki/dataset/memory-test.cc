@@ -23,7 +23,7 @@ void Tests::register_tests() {
 
 // Test querying
 add_method("query", [] {
-    auto reader = segment::Reader::for_pathname("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = Segment::make_reader("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     dataset::Memory c;
     reader->scan(c.inserter_func());
 
@@ -45,7 +45,7 @@ add_method("query", [] {
 
 // Test querying the summary
 add_method("query_summary", [] {
-    auto reader = segment::Reader::for_pathname("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = Segment::make_reader("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     dataset::Memory c;
     reader->scan(c.inserter_func());
 
@@ -56,7 +56,7 @@ add_method("query_summary", [] {
 
 // Test querying the summary by reftime
 add_method("query_summary_reftime", [] {
-    auto reader = segment::Reader::for_pathname("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = Segment::make_reader("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     dataset::Memory c;
     reader->scan(c.inserter_func());
 

@@ -23,7 +23,7 @@ AutoManager::AutoManager(const std::string& root, bool mockdata)
 
 std::shared_ptr<segment::Writer> AutoManager::create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
 {
-    auto res(segment::Writer::for_pathname(format, root, relpath, abspath, mockdata));
+    auto res(Segment::make_writer(format, root, relpath, abspath, mockdata));
     if (res) return res;
 
     if (format == "grib" || format == "grib1" || format == "grib2")
@@ -57,7 +57,7 @@ std::shared_ptr<segment::Writer> AutoManager::create_writer_for_format(const std
 
 std::shared_ptr<segment::Checker> AutoManager::create_checker_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
 {
-    auto res(segment::Checker::for_pathname(format, root, relpath, abspath, mockdata));
+    auto res(Segment::make_checker(format, root, relpath, abspath, mockdata));
     if (res) return res;
 
     if (format == "grib" || format == "grib1" || format == "grib2")
@@ -145,7 +145,7 @@ ForceDirManager::ForceDirManager(const std::string& root) : BaseManager(root) {}
 
 std::shared_ptr<segment::Writer> ForceDirManager::create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
 {
-    auto res(segment::Writer::for_pathname(format, root, relpath, abspath, mockdata));
+    auto res(Segment::make_writer(format, root, relpath, abspath, mockdata));
     if (res) return res;
     return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relpath, abspath));
 }

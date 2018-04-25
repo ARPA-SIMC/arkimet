@@ -66,10 +66,10 @@ add_method("auto_instantiate_existing", [] {
     make_samples();
 
     auto get_writer = [&](const char* name) {
-        return segment::Writer::for_pathname(utils::get_format(name), ".", name, sys::abspath(name));
+        return Segment::make_writer(utils::get_format(name), ".", name, sys::abspath(name));
     };
     auto get_checker = [&](const char* name) {
-        return segment::Checker::for_pathname(utils::get_format(name), ".", name, sys::abspath(name));
+        return Segment::make_checker(utils::get_format(name), ".", name, sys::abspath(name));
     };
 
     wassert(actual(get_writer("testfile.grib")->type()) == "concat");

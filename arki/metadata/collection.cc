@@ -350,7 +350,7 @@ void TestCollection::scan_from_file(const std::string& pathname, bool with_data)
     string basedir;
     string relpath;
     utils::files::resolve_path(pathname, basedir, relpath);
-    auto reader = segment::Reader::for_pathname(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
+    auto reader = Segment::make_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
     reader->scan([&](unique_ptr<Metadata> md) { acquire(move(md), with_data); return true; });
 }
 
@@ -359,7 +359,7 @@ void TestCollection::scan_from_file(const std::string& pathname, const std::stri
     string basedir;
     string relpath;
     utils::files::resolve_path(pathname, basedir, relpath);
-    auto reader = segment::Reader::for_pathname(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
+    auto reader = Segment::make_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
     reader->scan([&](unique_ptr<Metadata> md) { acquire(move(md), with_data); return true; });
 }
 

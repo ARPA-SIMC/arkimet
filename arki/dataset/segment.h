@@ -21,7 +21,6 @@ class Validator;
 
 namespace dataset {
 class Reporter;
-class Segment;
 
 /// Manage instantiating the right readers/writers for a dataset
 class SegmentManager

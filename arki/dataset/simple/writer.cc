@@ -49,7 +49,7 @@ struct AppendSegment
             return;
 
         // Read the metadata
-        auto reader = segment::Reader::for_pathname(require_format(segment->relpath), segment->root, segment->relpath, segment->abspath, lock);
+        auto reader = Segment::make_reader(require_format(segment->relpath), segment->root, segment->relpath, segment->abspath, lock);
         reader->scan(mds.inserter_func());
 
         // Read the summary

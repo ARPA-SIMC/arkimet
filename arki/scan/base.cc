@@ -46,7 +46,7 @@ void Scanner::test_open(const std::string& filename)
 {
     string basedir, relpath;
     utils::files::resolve_path(filename, basedir, relpath);
-    open(sys::abspath(filename), segment::Reader::for_pathname(require_format(filename), basedir, relpath, filename, make_shared<core::lock::Null>()));
+    open(sys::abspath(filename), Segment::make_reader(require_format(filename), basedir, relpath, filename, make_shared<core::lock::Null>()));
 }
 
 bool Scanner::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)

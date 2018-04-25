@@ -9,6 +9,7 @@
 #include <arki/types/fwd.h>
 #include <arki/scan/fwd.h>
 #include <arki/metadata/fwd.h>
+#include <arki/segment/fwd.h>
 #include <arki/transaction.h>
 #include <string>
 #include <iosfwd>
@@ -16,8 +17,6 @@
 #include <vector>
 
 namespace arki {
-class Segment;
-
 namespace segment {
 
 static const unsigned SEGMENT_OK          = 0;
@@ -128,6 +127,15 @@ public:
      * Return true if the segment stores everything in a single file
      */
     virtual bool single_file() const = 0;
+
+    /// Instantiate the right Reader implementation for a segment that already exists
+    static std::shared_ptr<segment::Reader> make_reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+
+    /// Instantiate the right Writer implementation for a segment that already exists
+    static std::shared_ptr<segment::Writer> make_writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
+
+    /// Instantiate the right Checker implementation for a segment that already exists
+    static std::shared_ptr<segment::Checker> make_checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
 };
 
 
@@ -167,10 +175,6 @@ struct Reader : public Segment
 
     virtual std::vector<uint8_t> read(const types::source::Blob& src) = 0;
     virtual size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) = 0;
-
-    /// Instantiate the right Segment implementation for a segment that already
-    /// exists
-    static std::shared_ptr<Reader> for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
 };
 
 struct Writer : public Segment, Transaction
@@ -210,10 +214,6 @@ struct Writer : public Segment, Transaction
      * commit
      */
     virtual const types::source::Blob& append(Metadata& md) = 0;
-
-    /// Instantiate the right Segment implementation for a segment that already
-    /// exists
-    static std::shared_ptr<Writer> for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
 };
 
 
@@ -308,10 +308,6 @@ public:
      * with the value 0.
      */
     virtual void test_corrupt(const metadata::Collection& mds, unsigned data_idx) = 0;
-
-    /// Instantiate the right Segment implementation for a segment that already
-    /// exists
-    static std::shared_ptr<Checker> for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
 };
 
 }

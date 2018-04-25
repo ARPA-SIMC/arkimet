@@ -39,7 +39,7 @@ this->add_method("create", [](Fixture& f) {
 
 this->add_method("scan", [](Fixture& f) {
     std::shared_ptr<Segment> checker = f.create();
-    auto reader = segment::Reader::for_pathname(f.td.format, checker->root, checker->relpath, checker->abspath, std::make_shared<arki::core::lock::Null>());
+    auto reader = Segment::make_reader(f.td.format, checker->root, checker->relpath, checker->abspath, std::make_shared<arki::core::lock::Null>());
     metadata::Collection mds;
     reader->scan(mds.inserter_func());
     wassert(actual(mds.size()) == f.seg_mds.size());
@@ -52,7 +52,7 @@ this->add_method("scan", [](Fixture& f) {
 this->add_method("read", [](Fixture& f) {
     wassert_true(Segment::can_store(f.td.format));
     std::shared_ptr<Segment> checker = f.create();
-    auto reader = segment::Reader::for_pathname(f.td.format, checker->root, checker->relpath, checker->abspath, std::make_shared<arki::core::lock::Null>());
+    auto reader = Segment::make_reader(f.td.format, checker->root, checker->relpath, checker->abspath, std::make_shared<arki::core::lock::Null>());
     size_t pad_size = f.td.format == "vm2" ? 1 : 0;
     for (auto& md: f.seg_mds)
     {
