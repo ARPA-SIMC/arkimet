@@ -180,34 +180,38 @@ OdimH5::~OdimH5()
     delete L;
 }
 
-void OdimH5::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
+void OdimH5::scan_file(const std::string& filename, Metadata& md)
 {
     using namespace arki::utils::h5;
-    Scanner::open(filename, reader);
+    MuteErrors h5e;
+    if ((h5file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT)) < 0)
+        throw std::runtime_error(filename + " is not an hdf5 file");
 
-    // Open H5 file
-    read = false;
-    if (sys::stat(filename)->st_size == 0) {
-        // If the file is empty, don't open it
-        read = true;
-    } else {
-        MuteErrors h5e;
-        if ((h5file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT)) < 0)
-            // If the file is not HDF5, don't open it
-            read = true;
-            //h5e.throw_error("opening file " + filename);
+    /* NOTA: per ora la next estrare un metadato unico per un intero file */
+    try {
+        scanLua(md);
+    } catch (const std::exception& e) {
+        H5Fclose(h5file);
+        h5file = -1;
+        throw std::runtime_error("cannot scan file " + filename + ": " + e.what());
     }
-}
 
-void OdimH5::close()
-{
-    Scanner::close();
-    read = false;
     if (h5file >= 0)
     {
         H5Fclose(h5file);
         h5file = -1;
     }
+}
+
+void OdimH5::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
+{
+    Scanner::open(filename, reader);
+
+    // Open H5 file
+    read = false;
+    if (sys::stat(filename)->st_size == 0)
+        // If the file is empty, don't open it
+        read = true;
 }
 
 bool OdimH5::next(Metadata& md)
@@ -216,21 +220,31 @@ bool OdimH5::next(Metadata& md)
     md.clear();
     setSource(md);
 
-    /* NOTA: per ora la next estrare un metadato unico per un intero file */
-    try {
-        scanLua(md);
-    } catch (const std::exception& e) {
-        throw std::runtime_error("cannot scan file " + filename + ": " + e.what());
-    }
+    scan_file(filename, md);
 
     read = true;
-
     return true;
 }
 
 std::unique_ptr<Metadata> OdimH5::scan_data(const std::vector<uint8_t>& data)
 {
-    throw std::runtime_error("scanning HDF5 from memory is not yet implemented");
+    sys::File tmpfd = sys::File::mkstemp("");
+    tmpfd.write_all_or_throw(data.data(), data.size());
+    tmpfd.close();
+
+    std::unique_ptr<Metadata> md(new Metadata);
+    md->set_source_inline("odimh5", std::vector<uint8_t>(data));
+
+    try {
+        scan_file(tmpfd.name(), *md);
+    } catch (...) {
+        sys::unlink(tmpfd.name());
+        throw;
+    }
+
+    sys::unlink(tmpfd.name());
+
+    return md;
 }
 
 void OdimH5::setSource(Metadata& md)
