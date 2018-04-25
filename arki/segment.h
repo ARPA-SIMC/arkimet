@@ -105,7 +105,7 @@ struct Span
  * each data item in a different file, for formats like HDF5 that cannot be
  * trivially concatenated in the same file.
  */
-class Segment : public std::enable_shared_from_this<Segment>
+class Segment
 {
 public:
     std::string format;
@@ -129,6 +129,7 @@ public:
      */
     virtual bool single_file() const = 0;
 
+
     /// Instantiate the right Reader implementation for a segment that already exists
     static std::shared_ptr<segment::Reader> make_reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
 
@@ -142,11 +143,13 @@ public:
 
 namespace segment {
 
-struct Reader : public Segment
+struct Reader : protected Segment, public std::enable_shared_from_this<Reader>
 {
     std::shared_ptr<core::Lock> lock;
 
     Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+
+    virtual const Segment& segment() const;
 
     /**
      * Get the last modification timestamp of the segment

@@ -273,6 +273,8 @@ Reader::Reader(const std::string& format, const std::string& root, const std::st
 {
 }
 
+const Segment& Reader::segment() const { return *this; }
+
 bool Reader::scan(metadata_dest_func dest)
 {
     // stat the metadata file, if it exists
@@ -281,7 +283,7 @@ bool Reader::scan(metadata_dest_func dest)
     // If it exists and it looks new enough, use it
     if (st_md.get() && st_md->st_mtime >= timestamp())
         return Metadata::read_file(md_abspath, [&](unique_ptr<Metadata> md) {
-            md->sourceBlob().lock(static_pointer_cast<segment::Reader>(shared_from_this()));
+            md->sourceBlob().lock(shared_from_this());
             return dest(move(md));
         });
 
