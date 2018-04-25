@@ -10,6 +10,7 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/zip.h"
+#include "arki/scan.h"
 #include "arki/nag.h"
 #include "arki/utils/accounting.h"
 #include "arki/iotrace.h"
@@ -242,7 +243,23 @@ Reader::Reader(const std::string& format, const std::string& root, const std::st
 
 bool Reader::scan_data(metadata_dest_func dest)
 {
-    throw std::runtime_error(string(m_segment.type()) + " scanning is not yet implemented");
+    // Collect all file names in the directory
+    std::vector<Span> spans = zip.list_data();
+
+    // Sort them numerically
+    std::sort(spans.begin(), spans.end());
+
+    // Scan them one by one
+    auto scanner = scan::Scanner::get_scanner(m_segment.format);
+    for (const auto& span : spans)
+    {
+        std::vector<uint8_t> data = zip.get(span);
+        auto md = scanner->scan_data(data);
+        if (!dest(move(md)))
+            return false;
+    }
+
+    return true;
 }
 
 std::vector<uint8_t> Reader::read(const types::source::Blob& src)

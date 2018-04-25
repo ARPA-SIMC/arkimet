@@ -237,21 +237,8 @@ public:
 }
 
 
-bool Bufr::do_scan(Metadata& md)
+void Bufr::do_scan(BinaryMessage& rmsg, Metadata& md)
 {
-    md.clear();
-
-    BinaryMessage rmsg = file->read();
-    if (!rmsg) return false;
-
-    // Set source
-    if (reader)
-    {
-        md.set_source(Source::createBlob(reader, rmsg.offset, rmsg.data.size()));
-        md.set_cached_data(vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
-    } else
-        md.set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
-
     Harvest harvest(*importer);
     harvest.harvest_from_dballe(rmsg, md);
 
@@ -286,13 +273,32 @@ bool Bufr::do_scan(Metadata& md)
     if (timedef)
         if (const reftime::Position* p = md.get<types::reftime::Position>())
             md.set(timedef->validity_time_to_emission_time(*p));
-
-    return true;
 }
 
 bool Bufr::next(Metadata& md)
 {
-    return do_scan(md);
+    md.clear();
+    BinaryMessage rmsg = file->read();
+    if (!rmsg) return false;
+    // Set source
+    if (reader)
+    {
+        md.set_source(Source::createBlob(reader, rmsg.offset, rmsg.data.size()));
+        md.set_cached_data(vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
+    } else
+        md.set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
+    do_scan(rmsg, md);
+    return true;
+}
+
+std::unique_ptr<Metadata> Bufr::scan_data(const std::vector<uint8_t>& data)
+{
+    std::unique_ptr<Metadata> md(new Metadata);
+    md->set_source_inline("grib", std::vector<uint8_t>(data));
+    BinaryMessage rmsg(File::BUFR);
+    rmsg.data = std::string(data.begin(), data.end());
+    do_scan(rmsg, *md);
+    return md;
 }
 
 static inline void inplace_tolower(std::string& buf)

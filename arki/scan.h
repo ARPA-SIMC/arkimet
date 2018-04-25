@@ -53,6 +53,13 @@ struct Scanner
     bool scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest);
 
     /**
+     * Scan a memory buffer.
+     *
+     * Returns a Metadata with inline source.
+     */
+    virtual std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) = 0;
+
+    /**
      * Open a file, scan it, send results to dest, and close it.
      *
      * Scanned metadata will have inline sources

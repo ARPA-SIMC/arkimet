@@ -227,7 +227,7 @@ template<typename Segment>
 void Checker<Segment>::test_truncate(size_t offset)
 {
     if (!sys::exists(this->segment().abspath))
-        utils::createFlagfile(this->segment().abspath);
+        sys::write_file(this->segment().abspath, "");
 
     if (offset % 512 != 0)
         offset += 512 - (offset % 512);

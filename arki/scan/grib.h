@@ -59,6 +59,8 @@ protected:
 	static int arkilua_lookup_gribs(lua_State* L);
 	static int arkilua_lookup_gribd(lua_State* L);
 
+    void scan_handle(Metadata& md);
+
 public:
 	Grib(const std::string& grib1code = std::string(), const std::string& grib2code = std::string());
 	virtual ~Grib();
@@ -66,6 +68,7 @@ public:
     void open(const std::string& filename, std::shared_ptr<segment::Reader> reader) override;
     void close() override;
     bool next(Metadata& md) override;
+    std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
 
     friend class GribLua;
 };

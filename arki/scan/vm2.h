@@ -11,6 +11,7 @@
 namespace meteo {
 namespace vm2 {
 class Parser;
+class Value;
 }
 }
 
@@ -31,6 +32,7 @@ protected:
     unsigned lineno;
 
     meteo::vm2::Parser* parser;
+    void scan_string(meteo::vm2::Value& value, const std::string& data, Metadata& md);
 
 public:
     Vm2();
@@ -40,6 +42,7 @@ public:
 
     void close() override;
     bool next(Metadata& md) override;
+    std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
 
     /// Reconstruct a VM2 based on metadata and a string value
     static std::vector<uint8_t> reconstruct(const Metadata& md, const std::string& value);

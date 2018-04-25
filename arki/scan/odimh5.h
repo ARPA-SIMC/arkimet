@@ -29,6 +29,7 @@ public:
     void open(const std::string& filename, std::shared_ptr<segment::Reader> reader) override;
     void close() override;
     bool next(Metadata& md) override;
+    std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
 
 protected:
     hid_t h5file;

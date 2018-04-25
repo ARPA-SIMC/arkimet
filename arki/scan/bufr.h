@@ -7,6 +7,7 @@
 
 namespace dballe {
 struct File;
+struct BinaryMessage;
 
 namespace msg {
 struct Importer;
@@ -39,7 +40,7 @@ class Bufr : public Scanner
 	void read_info_fixed(char* buf, Metadata& md);
 	void read_info_mobile(char* buf, Metadata& md);
 
-    bool do_scan(Metadata& md);
+    void do_scan(dballe::BinaryMessage& rmsg, Metadata& md);
 
 public:
 	Bufr();
@@ -49,6 +50,8 @@ public:
 
     void close() override;
     bool next(Metadata& md) override;
+
+    std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
 
     /// Return the update sequence number for a BUFR
     static int update_sequence_number(const std::string& buf);

@@ -498,6 +498,30 @@ void Grib::close()
     }
 }
 
+std::unique_ptr<Metadata> Grib::scan_data(const std::vector<uint8_t>& data)
+{
+    // If there's still a grib_handle around (for example, if a previous call
+    // to next() threw an exception), deallocate it here to prevent a leak
+    if (gh)
+    {
+        check_grib_error(grib_handle_delete(gh), "closing GRIB message");
+        gh = 0;
+    }
+
+    gh = grib_handle_new_from_message(context, data.data(), data.size());
+    if (gh == 0)
+        throw std::runtime_error("GRIB memory buffer failed to scan");
+
+    std::unique_ptr<Metadata> md(new Metadata);
+    md->set_source_inline("grib", std::vector<uint8_t>(data));
+    scan_handle(*md);
+
+    check_grib_error(grib_handle_delete(gh), "closing GRIB message");
+    gh = 0;
+
+    return md;
+}
+
 bool Grib::next(Metadata& md)
 {
 	int griberror;
@@ -518,27 +542,30 @@ bool Grib::next(Metadata& md)
 		return false;
 
     md.clear();
-
-	setSource(md);
-
-	long edition;
-	check_grib_error(grib_get_long(gh, "editionNumber", &edition), "reading edition number");
-	switch (edition)
-	{
-		case 1: scanGrib1(md); break;
-		case 2: scanGrib2(md); break;
-		default:
-        {
-            stringstream ss;
-            ss << "cannot read grib message: GRIB edition " << edition << " is not supported";
-            throw std::runtime_error(ss.str());
-        }
-    }
+    setSource(md);
+    scan_handle(md);
 
 	check_grib_error(grib_handle_delete(gh), "closing GRIB message");
 	gh = 0;
 
 	return true;
+}
+
+void Grib::scan_handle(Metadata& md)
+{
+    long edition;
+    check_grib_error(grib_get_long(gh, "editionNumber", &edition), "reading edition number");
+    switch (edition)
+    {
+        case 1: scanGrib1(md); break;
+        case 2: scanGrib2(md); break;
+        default:
+                {
+            stringstream ss;
+            ss << "cannot read grib message: GRIB edition " << edition << " is not supported";
+            throw std::runtime_error(ss.str());
+        }
+    }
 }
 
 void Grib::setSource(Metadata& md)

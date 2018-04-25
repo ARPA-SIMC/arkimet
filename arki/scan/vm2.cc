@@ -141,6 +141,11 @@ bool Vm2::next(Metadata& md)
     return true;
 }
 
+std::unique_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
+{
+    throw std::runtime_error("scanning VM2 from memory is not yet implemented");
+}
+
 vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& value)
 {
     stringstream res;

@@ -228,6 +228,11 @@ bool OdimH5::next(Metadata& md)
     return true;
 }
 
+std::unique_ptr<Metadata> OdimH5::scan_data(const std::vector<uint8_t>& data)
+{
+    throw std::runtime_error("scanning HDF5 from memory is not yet implemented");
+}
+
 void OdimH5::setSource(Metadata& md)
 {
     // for ODIMH5 files the source is the entire file
