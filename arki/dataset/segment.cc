@@ -1,17 +1,6 @@
 #include "segment.h"
 #include "segment/managers.h"
-#include "arki/segment/concat.h"
-#include "arki/segment/lines.h"
-#include "arki/segment/dir.h"
-#include "arki/segment/tar.h"
-#include "arki/configfile.h"
 #include "arki/exceptions.h"
-#include "arki/scan/any.h"
-#include "arki/metadata/collection.h"
-#include "arki/metadata.h"
-#include "arki/types/source/blob.h"
-#include "arki/utils.h"
-#include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 
@@ -30,19 +19,9 @@ SegmentManager::~SegmentManager()
 {
 }
 
-std::shared_ptr<segment::Reader> SegmentManager::get_reader(const std::string& relpath, std::shared_ptr<core::Lock> lock)
-{
-    return get_reader(utils::get_format(relpath), relpath, lock);
-}
-
 std::shared_ptr<segment::Reader> SegmentManager::get_reader(const std::string& format, const std::string& relpath, std::shared_ptr<core::Lock> lock)
 {
     return Segment::make_reader(format, root, relpath, str::joinpath(root, relpath), lock);
-}
-
-std::shared_ptr<segment::Writer> SegmentManager::get_writer(const std::string& relpath)
-{
-    return get_writer(utils::get_format(relpath), relpath);
 }
 
 std::shared_ptr<segment::Writer> SegmentManager::get_writer(const std::string& format, const std::string& relpath)
@@ -52,11 +31,6 @@ std::shared_ptr<segment::Writer> SegmentManager::get_writer(const std::string& f
     sys::makedirs(str::dirname(abspath));
 
     return create_writer_for_format(format, relpath, abspath);
-}
-
-std::shared_ptr<segment::Checker> SegmentManager::get_checker(const std::string& relpath)
-{
-    return get_checker(utils::get_format(relpath), relpath);
 }
 
 std::shared_ptr<segment::Checker> SegmentManager::get_checker(const std::string& format, const std::string& relpath)

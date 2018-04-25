@@ -1,7 +1,7 @@
 #ifndef ARKI_SCAN_ODIMH5_H
 #define ARKI_SCAN_ODIMH5_H
 
-#include <arki/scan/base.h>
+#include <arki/scan.h>
 #include <arki/utils/h5.h>
 #include <string>
 #include <vector>

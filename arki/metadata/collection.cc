@@ -4,10 +4,10 @@
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/utils/compress.h"
+#include "arki/utils/files.h"
 #include "arki/binary.h"
 #include "arki/segment.h"
-#include "arki/utils.h"
-#include "arki/utils/files.h"
+#include "arki/scan.h"
 #include "arki/utils/sys.h"
 #include "arki/summary.h"
 #include "arki/sort.h"
@@ -346,7 +346,7 @@ TestCollection::TestCollection(const std::string& pathname, bool with_data)
 
 void TestCollection::scan_from_file(const std::string& pathname, bool with_data)
 {
-    string format = require_format(pathname);
+    string format = scan::Scanner::format_from_filename(pathname);
     string basedir;
     string relpath;
     utils::files::resolve_path(pathname, basedir, relpath);

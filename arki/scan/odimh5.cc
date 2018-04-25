@@ -247,7 +247,7 @@ void OdimH5::setSource(Metadata& md)
 
     if (reader)
     {
-        md.set_source(Source::createBlob("odimh5", reader, 0, buf.size()));
+        md.set_source(Source::createBlob(reader, 0, buf.size()));
         md.set_cached_data(move(buf));
     } else
         md.set_source_inline("bufr", move(buf));

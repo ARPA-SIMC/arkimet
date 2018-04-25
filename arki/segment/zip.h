@@ -15,14 +15,23 @@ struct Reader;
 namespace segment {
 namespace zip {
 
+struct Segment : public arki::Segment
+{
+    using arki::Segment::Segment;
+
+    const char* type() const override;
+    bool single_file() const override;
+};
+
+
 struct Reader : public segment::Reader
 {
+    Segment m_segment;
     utils::ZipReader zip;
 
     Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
 
-    const char* type() const override;
-    bool single_file() const override;
+    const Segment& segment() const override;
     time_t timestamp() override;
 
     bool scan_data(metadata_dest_func dest) override;

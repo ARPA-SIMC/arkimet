@@ -1,5 +1,5 @@
 #include "validator.h"
-#include "base.h"
+#include "arki/scan.h"
 #include "arki/core/file.h"
 #include "arki/utils.h" // TODO: deprecate
 #include <sstream>
@@ -24,7 +24,7 @@ void Validator::throw_check_error(const std::string& msg) const
 const Validator& Validator::by_filename(const std::string& filename)
 {
     // TODO: deprecate
-    return by_format(utils::get_format(filename));
+    return by_format(Scanner::format_from_filename(filename));
 }
 
 const Validator& Validator::by_format(const std::string& format)

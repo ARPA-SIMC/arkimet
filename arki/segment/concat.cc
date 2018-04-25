@@ -1,6 +1,7 @@
 #include "concat.h"
 #include "arki/exceptions.h"
 #include "arki/nag.h"
+#include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -62,6 +63,17 @@ struct HoleFile : public fd::File
 
 }
 
+const char* Segment::type() const { return "concat"; }
+bool Segment::single_file() const { return true; }
+
+
+Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    : fd::Reader(abspath, lock), m_segment(format, root, relpath, abspath)
+{
+}
+
+const Segment& Reader::segment() const { return m_segment; }
+
 
 Writer::Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
     : fd::Writer(format, root, relpath, open_file(abspath, O_WRONLY | O_CREAT | mode, 0666))
@@ -98,6 +110,11 @@ std::unique_ptr<fd::File> Checker::open_file(const std::string& pathname, int fl
 std::unique_ptr<fd::File> Checker::open(const std::string& pathname)
 {
     return std::unique_ptr<fd::File>(new File(pathname, O_RDWR, 0666));
+}
+
+std::shared_ptr<segment::Reader> Checker::reader(std::shared_ptr<core::Lock> lock)
+{
+    return make_shared<Reader>(format, root, relpath, abspath, lock);
 }
 
 State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)

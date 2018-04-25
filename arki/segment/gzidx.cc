@@ -5,7 +5,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/scan/validator.h"
-#include "arki/scan/base.h"
+#include "arki/scan.h"
 #include "arki/utils/compress.h"
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
@@ -101,30 +101,24 @@ struct CheckBackend : public AppendCheckBackend
 }
 
 
-Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::Reader(format, root, relpath, abspath, lock), fd(abspath + ".gz", O_RDONLY), gzfd(fd.name())
+Reader::Reader(const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    : segment::Reader(lock), fd(abspath + ".gz", O_RDONLY), gzfd(fd.name())
 {
     // Read index
     idx.read(fd.name() + ".idx");
 }
 
-const char* Reader::type() const { return "gzidx"; }
-bool Reader::single_file() const { return true; }
 time_t Reader::timestamp()
 {
-    return max(sys::timestamp(abspath + ".gz"), sys::timestamp(abspath + ".gz.idx"));
+    return max(sys::timestamp(segment().abspath + ".gz"), sys::timestamp(segment().abspath + ".gz.idx"));
 }
 
 
 bool Reader::scan_data(metadata_dest_func dest)
 {
-    auto scanner = scan::Scanner::get_scanner(format);
-    compress::TempUnzip uncompressed(abspath);
-    return scanner->scan_file(abspath, static_pointer_cast<segment::Reader>(shared_from_this()), [&](unique_ptr<Metadata> md) {
-       const source::Blob& i = md->sourceBlob();
-       md->set_source(Source::createBlob(format, root, relpath, i.offset, i.size, i.reader));
-       return dest(move(md));
-    });
+    auto scanner = scan::Scanner::get_scanner(segment().format);
+    compress::TempUnzip uncompressed(segment().abspath);
+    return scanner->scan_file(segment().abspath, shared_from_this(), dest);
 }
 
 
@@ -175,7 +169,7 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
     gzfd.read_all_or_throw(buf.data(), src.size);
     last_ofs = src.offset + src.size;
     acct::gzip_data_read_count.incr();
-    iotrace::trace_file(abspath, src.offset, src.size, "read data");
+    iotrace::trace_file(segment().abspath, src.offset, src.size, "read data");
 
     return buf;
 }
@@ -223,13 +217,6 @@ size_t Checker::size()
     return sys::size(gzabspath) + sys::size(gzidxabspath);
 }
 
-std::shared_ptr<segment::Reader> Checker::reader(std::shared_ptr<core::Lock> lock)
-{
-    // TODO: store format in checker
-    std::string format = require_format(relpath);
-    return make_shared<Reader>(format, root, relpath, abspath, lock);
-}
-
 void Checker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
     sys::rename(gzabspath, new_abspath + ".gz");
@@ -269,13 +256,6 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     return p;
 }
 
-std::shared_ptr<Checker> Checker::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
-{
-    Creator creator(rootdir, relpath, mds, abspath + ".gz", abspath + ".gz.idx");
-    creator.create();
-    return make_shared<Checker>(format, rootdir, relpath, abspath);
-}
-
 void Checker::test_truncate(size_t offset)
 {
     if (!sys::exists(abspath))
@@ -312,16 +292,55 @@ void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
     fd.write_all_or_throw("\0", 1);
 }
 
+}
+
+namespace gzidxconcat {
+
+const char* Segment::type() const { return "gzidxconcat"; }
+bool Segment::single_file() const { return true; }
+
+
+Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    : gzidx::Reader(abspath, lock), m_segment(format, root, relpath, abspath)
+{
+}
+
+const Segment& Reader::segment() const { return m_segment; }
+
+
+std::shared_ptr<segment::Reader> Checker::reader(std::shared_ptr<core::Lock> lock)
+{
+    return make_shared<Reader>(format, root, relpath, abspath, lock);
+}
+
+std::shared_ptr<Checker> Checker::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+{
+    gzidx::Creator creator(rootdir, relpath, mds, abspath + ".gz", abspath + ".gz.idx");
+    creator.create();
+    return make_shared<Checker>(format, rootdir, relpath, abspath);
+}
 
 bool Checker::can_store(const std::string& format)
 {
     return format == "grib" || format == "grib1" || format == "grib2"
-        || format == "bufr" || format == "vm2";
+        || format == "bufr";
 }
 
 }
 
 namespace gzidxlines {
+
+const char* Segment::type() const { return "gzidxlines"; }
+bool Segment::single_file() const { return true; }
+
+
+Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    : gzidx::Reader(abspath, lock), m_segment(format, root, relpath, abspath)
+{
+}
+
+const Segment& Reader::segment() const { return m_segment; }
+
 
 namespace {
 
@@ -337,6 +356,11 @@ struct CheckBackend : public gzidx::CheckBackend
 
 }
 
+
+std::shared_ptr<segment::Reader> Checker::reader(std::shared_ptr<core::Lock> lock)
+{
+    return make_shared<Reader>(format, root, relpath, abspath, lock);
+}
 
 State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {

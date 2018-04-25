@@ -1,6 +1,7 @@
 #include "lines.h"
 #include "gzidx.h"
 #include "arki/exceptions.h"
+#include "arki/utils.h"
 #include "arki/nag.h"
 #include <system_error>
 #include <sys/types.h>
@@ -55,6 +56,17 @@ struct File : public fd::File
 }
 
 
+const char* Segment::type() const { return "concat"; }
+bool Segment::single_file() const { return true; }
+
+
+Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    : fd::Reader(abspath, lock), m_segment(format, root, relpath, abspath)
+{
+}
+
+const Segment& Reader::segment() const { return m_segment; }
+
 
 Writer::Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
     : fd::Writer(format, root, relpath, open_file(abspath, O_WRONLY | O_CREAT | mode, 0666))
@@ -94,18 +106,16 @@ struct CheckBackend : public fd::CheckBackend
 
 }
 
+std::shared_ptr<segment::Reader> Checker::reader(std::shared_ptr<core::Lock> lock)
+{
+    return make_shared<Reader>(format, root, relpath, abspath, lock);
+}
+
 State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
     CheckBackend checker(abspath, relpath, reporter, mds);
     checker.accurate = !quick;
     return checker.check();
-}
-
-std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds)
-{
-    segment::gzidxlines::Checker::create(format, root, relpath + ".tar", abspath + ".tar", mds);
-    remove();
-    return make_shared<segment::gzidxlines::Checker>(format, root, relpath, abspath);
 }
 
 bool Checker::can_store(const std::string& format)

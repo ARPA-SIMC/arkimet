@@ -1,10 +1,12 @@
-#include "base.h"
+#include "scan.h"
 #include "arki/libconfig.h"
 #include "arki/segment.h"
 #include "arki/metadata.h"
 #include "arki/core/file.h"
+#include "arki/types/source/blob.h"
 #include "arki/utils.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 #include "arki/utils/files.h"
 #ifdef HAVE_GRIBAPI
 #include "arki/scan/grib.h"
@@ -46,7 +48,7 @@ void Scanner::test_open(const std::string& filename)
 {
     string basedir, relpath;
     utils::files::resolve_path(filename, basedir, relpath);
-    open(sys::abspath(filename), Segment::make_reader(require_format(filename), basedir, relpath, filename, make_shared<core::lock::Null>()));
+    open(sys::abspath(filename), Segment::make_reader(format_from_filename(filename), basedir, relpath, filename, make_shared<core::lock::Null>()));
 }
 
 bool Scanner::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
@@ -113,6 +115,71 @@ const Validator& Scanner::get_validator(const std::string& format)
        return vm2::validator();
 #endif
     throw std::runtime_error("No validator available for format '" + format + "'");
+}
+
+std::string Scanner::normalise_format(const std::string& format)
+{
+    std::string f = str::lower(format);
+    if (f == "metadata") return "arkimet";
+    if (f == "grib1") return "grib";
+    if (f == "grib2") return "grib";
+    if (f == "bufr") return "bufr";
+    if (f == "vm2") return "vm2";
+#ifdef HAVE_HDF5
+    if (f == "h5")     return "odimh5";
+    if (f == "hdf5")   return "odimh5";
+    if (f == "odim")   return "odimh5";
+    if (f == "odimh5") return "odimh5";
+#endif
+    throw std::runtime_error("unsupported format `" + format + "`");
+}
+
+std::string Scanner::format_from_filename(const std::string& fname, const char* default_format)
+{
+    // Extract the extension
+    size_t epos = fname.rfind('.');
+    if (epos != string::npos)
+        return normalise_format(fname.substr(epos + 1));
+    else if (default_format)
+        return default_format;
+    else
+    {
+        stringstream ss;
+        ss << "cannot auto-detect format from file name " << fname << ": file extension not recognised";
+        throw std::runtime_error(ss.str());
+    }
+}
+
+bool Scanner::update_sequence_number(const types::source::Blob& source, int& usn)
+{
+#ifdef HAVE_DBALLE
+    // Update Sequence Numbers are only supported by BUFR
+    if (source.format != "bufr")
+        return false;
+
+    auto data = source.read_data();
+    string buf((const char*)data.data(), data.size());
+    usn = Bufr::update_sequence_number(buf);
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool Scanner::update_sequence_number(Metadata& md, int& usn)
+{
+#ifdef HAVE_DBALLE
+    // Update Sequence Numbers are only supported by BUFR
+    if (md.source().format != "bufr")
+        return false;
+
+    const auto& data = md.getData();
+    string buf((const char*)data.data(), data.size());
+    usn = Bufr::update_sequence_number(buf);
+    return true;
+#else
+    return false;
+#endif
 }
 
 }

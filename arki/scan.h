@@ -1,14 +1,15 @@
-#ifndef ARKI_SCAN_BASE_H
-#define ARKI_SCAN_BASE_H
+#ifndef ARKI_SCAN_H
+#define ARKI_SCAN_H
 
 #include <arki/core/fwd.h>
 #include <arki/segment/fwd.h>
+#include <arki/scan/fwd.h>
+#include <arki/types/fwd.h>
 #include <string>
 #include <memory>
 
 namespace arki {
 namespace scan {
-struct Validator;
 
 struct Scanner
 {
@@ -65,6 +66,51 @@ struct Scanner
     static std::unique_ptr<Scanner> get_scanner(const std::string& format);
 
     static const Validator& get_validator(const std::string& format);
+
+    /**
+     * Normalise a file format string using the most widely used version
+     *
+     * This currently normalises:
+     *  - grib1 and grib2 to grib
+     *  - all of h5, hdf5, odim and odimh5 to odimh5
+     *
+     * An exception is thrown if the format is unsupported
+     */
+    static std::string normalise_format(const std::string& format);
+
+    /**
+     * Guess a file format from its extension.
+     *
+     * If defaut_format is nullptr, it throws an exception if the file has no
+     * extension, or an unknown extension
+     */
+    static std::string format_from_filename(const std::string& fname, const char* default_format=nullptr);
+
+    /**
+     * Return the update sequence number for this data
+     *
+     * The data associated to the metadata is read and scanned if needed.
+     *
+     * @retval
+     *   The update sequence number found. This is left untouched if the function
+     *   returns false.
+     * @returns
+     *   true if the update sequence number could be found, else false
+     *
+     */
+    static bool update_sequence_number(Metadata& md, int& usn);
+
+    /**
+     * Return the update sequence number for this data
+     *
+     * @retval
+     *   The update sequence number found. This is left untouched if the function
+     *   returns false.
+     * @returns
+     *   true if the update sequence number could be found, else false
+     *
+     */
+    static bool update_sequence_number(const types::source::Blob& source, int& usn);
 };
 
 }

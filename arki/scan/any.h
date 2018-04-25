@@ -27,32 +27,6 @@ time_t timestamp(const std::string& file);
  */
 std::vector<uint8_t> reconstruct(const std::string& format, const Metadata& md, const std::string& value);
 
-/**
- * Return the update sequence number for this data
- *
- * The data associated to the metadata is read and scanned if needed.
- *
- * @retval
- *   The update sequence number found. This is left untouched if the function
- *   returns false.
- * @returns
- *   true if the update sequence number could be found, else false
- *
- */
-bool update_sequence_number(Metadata& md, int& usn);
-
-/**
- * Return the update sequence number for this data
- *
- * @retval
- *   The update sequence number found. This is left untouched if the function
- *   returns false.
- * @returns
- *   true if the update sequence number could be found, else false
- *
- */
-bool update_sequence_number(const types::source::Blob& source, int& usn);
-
 }
 }
 #endif

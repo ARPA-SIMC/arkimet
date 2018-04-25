@@ -16,9 +16,7 @@ class Tests : public TestCase
 
 void Tests::register_tests() {
 
-add_method("get_format", [] {
-    wassert(actual(get_format("z.grib")) == "grib");
-    wassert(actual(get_format("z.grib.tar")) == "tar");
+add_method("empty", [] {
 });
 
 }

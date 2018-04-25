@@ -8,7 +8,7 @@
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
 #include "arki/utils/files.h"
-#include "arki/scan/any.h"
+#include "arki/scan.h"
 #include "arki/nag.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
@@ -91,14 +91,14 @@ struct AppendSegment
 
                 // Read the update sequence number of the new BUFR
                 int new_usn;
-                if (!scan::update_sequence_number(md, new_usn))
+                if (!scan::Scanner::update_sequence_number(md, new_usn))
                     return ACQ_ERROR_DUPLICATE;
 
                 // Read the update sequence number of the old BUFR
-                auto reader = segs.get_reader(old->filename, append_lock);
+                auto reader = segs.get_reader(config->format, old->filename, append_lock);
                 old->lock(reader);
                 int old_usn;
-                if (!scan::update_sequence_number(*old, old_usn))
+                if (!scan::Scanner::update_sequence_number(*old, old_usn))
                 {
                     md.add_note("Failed to store in dataset '" + config->name + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
                     return ACQ_ERROR;
@@ -189,7 +189,7 @@ struct AppendSegment
 
                 // Read the update sequence number of the new BUFR
                 int new_usn;
-                if (!scan::update_sequence_number(e->md, new_usn))
+                if (!scan::Scanner::update_sequence_number(e->md, new_usn))
                 {
                     e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relpath + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
                     e->result = ACQ_ERROR_DUPLICATE;
@@ -197,10 +197,10 @@ struct AppendSegment
                 }
 
                 // Read the update sequence number of the old BUFR
-                auto reader = segs.get_reader(old->filename, append_lock);
+                auto reader = segs.get_reader(config->format, old->filename, append_lock);
                 old->lock(reader);
                 int old_usn;
-                if (!scan::update_sequence_number(*old, old_usn))
+                if (!scan::Scanner::update_sequence_number(*old, old_usn))
                 {
                     e->md.add_note("Failed to store in dataset '" + config->name + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
                     e->result = ACQ_ERROR;

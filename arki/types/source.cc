@@ -172,9 +172,9 @@ bool Source::lua_lookup(lua_State* L, const std::string& name) const
 }
 #endif
 
-std::unique_ptr<Source> Source::createBlob(const std::string& format, std::shared_ptr<segment::Reader> reader, uint64_t offset, uint64_t size)
+std::unique_ptr<Source> Source::createBlob(std::shared_ptr<segment::Reader> reader, uint64_t offset, uint64_t size)
 {
-    return upcast<Source>(source::Blob::create(format, reader, offset, size));
+    return upcast<Source>(source::Blob::create(reader, offset, size));
 }
 
 unique_ptr<Source> Source::createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader)

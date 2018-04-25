@@ -9,7 +9,7 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/scan/validator.h"
-#include "arki/scan/base.h"
+#include "arki/scan.h"
 #include "arki/utils/string.h"
 #include "arki/utils/accounting.h"
 #include "arki/iotrace.h"
@@ -237,25 +237,29 @@ struct CheckBackend : public AppendCheckBackend
 }
 
 
+const char* Segment::type() const { return "dir"; }
+bool Segment::single_file() const { return false; }
+
+
 Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::Reader(format, root, relpath, abspath, lock), dirfd(abspath, O_DIRECTORY)
+    : segment::Reader(lock), m_segment(format, root, relpath, abspath), dirfd(abspath, O_DIRECTORY)
 {
 }
 
-const char* Reader::type() const { return "dir"; }
-bool Reader::single_file() const { return false; }
+const Segment& Reader::segment() const { return m_segment; }
+
 time_t Reader::timestamp()
 {
-    return sys::timestamp(str::joinpath(abspath, ".sequence"));
+    return sys::timestamp(str::joinpath(m_segment.abspath, ".sequence"));
 }
 
 bool Reader::scan_data(metadata_dest_func dest)
 {
     // Collect all file names in the directory
     std::vector<std::pair<size_t, std::string>> fnames;
-    sys::Path dir(abspath);
+    sys::Path dir(m_segment.abspath);
     for (sys::Path::iterator di = dir.begin(); di != dir.end(); ++di)
-        if (di.isreg() && str::endswith(di->d_name, format))
+        if (di.isreg() && str::endswith(di->d_name, m_segment.format))
         {
             char* endptr;
             size_t pos = strtoull(di->d_name, &endptr, 10);
@@ -268,12 +272,12 @@ bool Reader::scan_data(metadata_dest_func dest)
     std::sort(fnames.begin(), fnames.end());
 
     // Scan them one by one
-    auto scanner = scan::Scanner::get_scanner(format);
+    auto scanner = scan::Scanner::get_scanner(m_segment.format);
     for (const auto& fi : fnames)
     {
-        if (!scanner->scan_file(str::joinpath(abspath, fi.second), static_pointer_cast<segment::Reader>(shared_from_this()), [&](unique_ptr<Metadata> md) {
+        if (!scanner->scan_file(str::joinpath(m_segment.abspath, fi.second), static_pointer_cast<segment::Reader>(shared_from_this()), [&](unique_ptr<Metadata> md) {
                    const source::Blob& i = md->sourceBlob();
-                   md->set_source(Source::createBlob(format, root, relpath, fi.first, i.size, i.reader));
+                   md->set_source(Source::createBlob(shared_from_this(), fi.first, i.size));
                    return dest(move(md));
                 }))
             return false;
@@ -285,7 +289,7 @@ bool Reader::scan_data(metadata_dest_func dest)
 sys::File Reader::open_src(const types::source::Blob& src)
 {
     char dataname[32];
-    snprintf(dataname, 32, "%06zd.%s", (size_t)src.offset, format.c_str());
+    snprintf(dataname, 32, "%06zd.%s", (size_t)src.offset, m_segment.format.c_str());
     int fd = dirfd.openat_ifexists(dataname, O_RDONLY | O_CLOEXEC);
     if (fd == -1)
     {
@@ -312,7 +316,7 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
     if ((size_t)res != src.size)
     {
         stringstream msg;
-        msg << "cannot read " << src.size << " bytes of " << src.format << " data from " << abspath << ":"
+        msg << "cannot read " << src.size << " bytes of " << src.format << " data from " << m_segment.abspath << ":"
             << src.offset << ": only " << res << "/" << src.size << " bytes have been read";
         throw std::runtime_error(msg.str());
     }
@@ -536,8 +540,6 @@ void Checker::foreach_datafile(std::function<void(const char*)> f)
 
 size_t Checker::remove()
 {
-    std::string format = utils::require_format(abspath);
-
     size_t size = 0;
     foreach_datafile([&](const char* name) {
         string pathname = str::joinpath(abspath, name);
@@ -648,7 +650,6 @@ void Checker::test_truncate(size_t offset)
     utils::files::PreserveFileTimes pft(abspath);
 
     // Truncate dir segment
-    string format = utils::require_format(abspath);
     foreach_datafile([&](const char* name) {
         if (strtoul(name, 0, 10) >= offset)
             sys::unlink(str::joinpath(abspath, name));

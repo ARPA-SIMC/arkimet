@@ -10,7 +10,7 @@
 #include "arki/postprocess.h"
 #include "arki/sort.h"
 #include "arki/utils/files.h"
-#include "arki/scan/any.h"
+#include "arki/scan.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <sys/types.h>
@@ -95,7 +95,7 @@ void File::readConfig(const std::string& fname, ConfigFile& cfg)
         if (sys::exists(fname))
         {
             section.setValue("path", sys::abspath(fname));
-            section.setValue("format", files::format_from_ext(fname, "arkimet"));
+            section.setValue("format", scan::Scanner::format_from_filename(fname, "arkimet"));
             string name = str::basename(fname);
             section.setValue("name", name);
         } else {
@@ -106,7 +106,7 @@ void File::readConfig(const std::string& fname, ConfigFile& cfg)
                 ss << "dataset file " << fname << " does not exist";
                 throw runtime_error(ss.str());
             }
-            section.setValue("format", files::normaliseFormat(fname.substr(0, fpos)));
+            section.setValue("format", scan::Scanner::format_from_filename(fname.substr(0, fpos)));
 
             string fname1 = fname.substr(fpos+1);
             if (!sys::exists(fname1))

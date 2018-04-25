@@ -561,7 +561,7 @@ void Grib::setSource(Metadata& md)
 
     if (reader)
     {
-        md.set_source(Source::createBlob("grib", reader, offset, size));
+        md.set_source(Source::createBlob(reader, offset, size));
         md.set_cached_data(vector<uint8_t>(vbuf, vbuf + size));
     }
     else

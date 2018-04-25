@@ -48,14 +48,21 @@ struct CheckBackend : public AppendCheckBackend
 };
 
 
+struct Segment : public arki::Segment
+{
+    using arki::Segment::Segment;
+};
+
+
 struct Reader : public segment::Reader
 {
+    using segment::Reader::Reader;
+
     core::File fd;
 
-    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+    Reader(const std::string& abspath, std::shared_ptr<core::Lock> lock);
 
-    const char* type() const override;
-    bool single_file() const override;
+    const Segment& segment() const override = 0;
     time_t timestamp() override;
 
     bool scan_data(metadata_dest_func dest) override;
@@ -101,7 +108,6 @@ public:
     time_t timestamp() override;
     size_t size() override;
 
-    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
     size_t remove() override;
 

@@ -1,4 +1,5 @@
 #include "config.h"
+#include "arki/libconfig.h"
 #include "arki/utils.h"
 #include "files.h"
 #include "sys.h"
@@ -66,36 +67,6 @@ void resolve_path(const std::string& pathname, std::string& basedir, std::string
     relpath = str::normpath(pathname);
 }
 
-string normaliseFormat(const std::string& format)
-{
-    string f = str::lower(format);
-    if (f == "metadata") return "arkimet";
-    if (f == "grib1") return "grib";
-    if (f == "grib2") return "grib";
-#ifdef HAVE_HDF5
-    if (f == "h5")     return "odimh5";
-    if (f == "hdf5")   return "odimh5";
-    if (f == "odim")   return "odimh5";
-    if (f == "odimh5") return "odimh5";
-#endif
-    return f;
-}
-
-std::string format_from_ext(const std::string& fname, const char* default_format)
-{
-    // Extract the extension
-    size_t epos = fname.rfind('.');
-    if (epos != string::npos)
-        return normaliseFormat(fname.substr(epos + 1));
-    else if (default_format)
-        return default_format;
-    else
-    {
-        stringstream ss;
-        ss << "cannot auto-detect format from file name " << fname << ": file extension not recognised";
-        throw std::runtime_error(ss.str());
-    }
-}
 
 PathWalk::PathWalk(const std::string& root, Consumer consumer)
     : root(root), consumer(consumer)

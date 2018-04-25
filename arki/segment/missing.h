@@ -12,12 +12,22 @@ namespace arki {
 namespace segment {
 namespace missing {
 
-struct Reader : public segment::Reader
+struct Segment : public arki::Segment
 {
-    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+    using arki::Segment::Segment;
 
     const char* type() const override;
     bool single_file() const override;
+};
+
+
+struct Reader : public segment::Reader
+{
+    Segment m_segment;
+
+    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+
+    const Segment& segment() const override;
     time_t timestamp() override;
 
     bool scan_data(metadata_dest_func dest) override;

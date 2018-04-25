@@ -9,7 +9,7 @@
 #include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
-#include "arki/scan/any.h"
+#include "arki/scan.h"
 #include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/nag.h"
@@ -97,14 +97,14 @@ struct AppendSegment
 
                 // Read the update sequence number of the new BUFR
                 int new_usn;
-                if (!scan::update_sequence_number(md, new_usn))
+                if (!scan::Scanner::update_sequence_number(md, new_usn))
                     return ACQ_ERROR_DUPLICATE;
 
                 // Read the update sequence number of the old BUFR
-                auto reader = segs.get_reader(old->filename, lock);
+                auto reader = segs.get_reader(scan::Scanner::format_from_filename(old->filename), old->filename, lock);
                 old->lock(reader);
                 int old_usn;
-                if (!scan::update_sequence_number(*old, old_usn))
+                if (!scan::Scanner::update_sequence_number(*old, old_usn))
                 {
                     md.add_note("Failed to store in dataset '" + config->name + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
                     return ACQ_ERROR;
@@ -189,7 +189,7 @@ struct AppendSegment
 
                 // Read the update sequence number of the new BUFR
                 int new_usn;
-                if (!scan::update_sequence_number(e->md, new_usn))
+                if (!scan::Scanner::update_sequence_number(e->md, new_usn))
                 {
                     e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relpath + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
                     e->result = ACQ_ERROR_DUPLICATE;
@@ -197,10 +197,10 @@ struct AppendSegment
                 }
 
                 // Read the update sequence number of the old BUFR
-                auto reader = segs.get_reader(old->filename, lock);
+                auto reader = segs.get_reader(segment->format, old->filename, lock);
                 old->lock(reader);
                 int old_usn;
-                if (!scan::update_sequence_number(*old, old_usn))
+                if (!scan::Scanner::update_sequence_number(*old, old_usn))
                 {
                     e->md.add_note("Failed to store in dataset '" + config->name + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
                     e->result = ACQ_ERROR;
@@ -262,7 +262,7 @@ std::unique_ptr<AppendSegment> Writer::segment(const std::string& relpath)
 {
     sys::makedirs(str::dirname(str::joinpath(config().path, relpath)));
     auto lock = config().append_lock_dataset();
-    auto segment = segment_manager().get_writer(relpath);
+    auto segment = segment_manager().get_writer(scan::Scanner::format_from_filename(relpath), relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segment));
 }
 
@@ -413,7 +413,7 @@ void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostrea
 
         // Read the update sequence number of the new BUFR
         int new_usn;
-        if (!scan::update_sequence_number(e->md, new_usn))
+        if (!scan::Scanner::update_sequence_number(e->md, new_usn))
         {
             e->result = ACQ_ERROR_DUPLICATE;
             e->dataset_name.clear();
@@ -421,10 +421,10 @@ void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostrea
         }
 
         // Read the update sequence number of the old BUFR
-        auto reader = segs->get_reader(old->filename, lock);
+        auto reader = segs->get_reader(scan::Scanner::format_from_filename(old->filename), old->filename, lock);
         old->lock(reader);
         int old_usn;
-        if (!scan::update_sequence_number(*old, old_usn))
+        if (!scan::Scanner::update_sequence_number(*old, old_usn))
         {
             out << "cannot acquire into dataset: insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
             e->result = ACQ_ERROR;

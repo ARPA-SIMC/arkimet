@@ -1,7 +1,7 @@
 #ifndef ARKI_SCAN_BUFR_H
 #define ARKI_SCAN_BUFR_H
 
-#include <arki/scan/base.h>
+#include <arki/scan.h>
 #include <string>
 #include <map>
 

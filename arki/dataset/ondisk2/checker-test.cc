@@ -71,7 +71,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     sys::makedirs("testds/2007/07");
     // TODO: use segments also in the other tests, and instantiate a new test suite for different segment types
     {
-        auto s = f.segments().get_writer("2007/07.grib");
+        auto s = f.segments().get_writer("grib", "2007/07.grib");
         s->append(data.mds[1]);
         s->append(data.mds[1]);
         s->append(data.mds[0]);

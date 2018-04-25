@@ -296,7 +296,7 @@ this->add_method("interrupted_read", [](Fixture& f) {
 
 this->add_method("read_missing_segment", [](Fixture& f) {
     // Delete a segment, leaving it in the index
-    f.segments().get_checker(f.import_results[0].sourceBlob().filename)->remove();
+    f.segments().get_checker(f.td.format, f.import_results[0].sourceBlob().filename)->remove();
 
     unsigned count_ok = 0;
     unsigned count_err = 0;

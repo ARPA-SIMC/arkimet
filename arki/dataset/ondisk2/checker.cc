@@ -16,6 +16,7 @@
 #include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/summary.h"
+#include "arki/scan.h"
 #include "arki/nag.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -65,7 +66,7 @@ public:
     CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
         : segmented::CheckerSegment(lock), checker(checker)
     {
-        segment = checker.segment_manager().get_checker(relpath);
+        segment = checker.segment_manager().get_checker(scan::Scanner::format_from_filename(relpath), relpath);
     }
 
     std::string path_relative() const override { return segment->relpath; }

@@ -247,7 +247,7 @@ bool Bufr::do_scan(Metadata& md)
     // Set source
     if (reader)
     {
-        md.set_source(Source::createBlob("bufr", reader, rmsg.offset, rmsg.data.size()));
+        md.set_source(Source::createBlob(reader, rmsg.offset, rmsg.data.size()));
         md.set_cached_data(vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
     } else
         md.set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));

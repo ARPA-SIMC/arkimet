@@ -3,7 +3,7 @@
 
 /// scan/grib - Scan a GRIB (version 1 or 2) file for metadata
 
-#include <arki/scan/base.h>
+#include <arki/scan.h>
 #include <string>
 #include <vector>
 

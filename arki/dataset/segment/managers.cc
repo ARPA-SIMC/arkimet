@@ -4,7 +4,7 @@
 #include "arki/segment/dir.h"
 #include "arki/segment/tar.h"
 #include "arki/exceptions.h"
-#include "arki/utils.h"
+#include "arki/scan.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
@@ -116,7 +116,7 @@ void AutoManager::scan_dir(std::function<void(const std::string& relpath)> dest)
             if (sub.fstatat_ifexists(".sequence", seq_st))
             {
                 // Directory segment
-                string format = utils::get_format(name);
+                string format = scan::Scanner::format_from_filename(name);
                 if (segment::dir::Checker::can_store(format))
                     dest(str::joinpath(relpath, name));
                 return false;
@@ -131,7 +131,7 @@ void AutoManager::scan_dir(std::function<void(const std::string& relpath)> dest)
 
             // Check whether the file format (from the extension) could be
             // stored in this kind of segment
-            string format = utils::get_format(name);
+            string format = scan::Scanner::format_from_filename(name);
             if (segment::fd::can_store(format))
                 dest(str::joinpath(relpath, name));
             return false;
@@ -185,7 +185,7 @@ void ForceDirManager::scan_dir(std::function<void(const std::string& relpath)> d
 
         // Check whether the file format (from the extension) could be
         // stored in this kind of segment
-        string format = utils::get_format(name);
+        string format = scan::Scanner::format_from_filename(name);
         if (segment::dir::Checker::can_store(format))
             dest(str::joinpath(relpath, name));
         return false;

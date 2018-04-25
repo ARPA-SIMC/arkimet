@@ -8,9 +8,8 @@
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
 #include "arki/matcher.h"
-#include "arki/scan/any.h"
+#include "arki/scan.h"
 #include "arki/core/file.h"
-#include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/types/reftime.h"
 #include "arki/wibble/sys/childprocess.h"
@@ -309,7 +308,7 @@ add_method("acquire_replace_usn", [](Fixture& f) {
         metadata::Collection mdc_read = f.query(dataset::DataQuery("origin:BUFR", true));
         wassert(actual(mdc_read.size()) == 1u);
         int usn;
-        wassert(actual(scan::update_sequence_number(mdc_read[0], usn)).istrue());
+        wassert(actual(scan::Scanner::update_sequence_number(mdc_read[0], usn)).istrue());
         wassert(actual(usn) == 2);
     }
 });

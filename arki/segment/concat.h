@@ -9,6 +9,24 @@ namespace arki {
 namespace segment {
 namespace concat {
 
+struct Segment : public fd::Segment
+{
+    using fd::Segment::Segment;
+
+    const char* type() const override;
+    bool single_file() const override;
+};
+
+class Reader : public fd::Reader
+{
+protected:
+    Segment m_segment;
+
+public:
+    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+    const Segment& segment() const override;
+};
+
 class Writer : public fd::Writer
 {
 public:
@@ -26,6 +44,7 @@ protected:
 public:
     using fd::Checker::Checker;
     const char* type() const override;
+    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) override;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     static bool can_store(const std::string& format);
     static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds);

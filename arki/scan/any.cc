@@ -1,6 +1,6 @@
 #include "arki/libconfig.h"
 #include "arki/scan/any.h"
-#include "arki/scan/base.h"
+#include "arki/scan.h"
 #include "arki/metadata.h"
 #include "arki/segment.h"
 #include "arki/types/source/blob.h"
@@ -43,38 +43,6 @@ time_t timestamp(const std::string& file)
 
     // Directory segment, check the timestamp of the sequence file instead
     return sys::timestamp(str::joinpath(file, ".sequence"), 0);
-}
-
-bool update_sequence_number(const types::source::Blob& source, int& usn)
-{
-#ifdef HAVE_DBALLE
-    // Update Sequence Numbers are only supported by BUFR
-    if (source.format != "bufr")
-        return false;
-
-    auto data = source.read_data();
-    string buf((const char*)data.data(), data.size());
-    usn = Bufr::update_sequence_number(buf);
-    return true;
-#else
-    return false;
-#endif
-}
-
-bool update_sequence_number(Metadata& md, int& usn)
-{
-#ifdef HAVE_DBALLE
-    // Update Sequence Numbers are only supported by BUFR
-    if (md.source().format != "bufr")
-        return false;
-
-    const auto& data = md.getData();
-    string buf((const char*)data.data(), data.size());
-    usn = Bufr::update_sequence_number(buf);
-    return true;
-#else
-    return false;
-#endif
 }
 
 std::vector<uint8_t> reconstruct(const std::string& format, const Metadata& md, const std::string& value)

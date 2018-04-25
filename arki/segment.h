@@ -143,13 +143,14 @@ public:
 
 namespace segment {
 
-struct Reader : protected Segment, public std::enable_shared_from_this<Reader>
+struct Reader : public std::enable_shared_from_this<Reader>
 {
     std::shared_ptr<core::Lock> lock;
 
-    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+    Reader(std::shared_ptr<core::Lock> lock);
+    virtual ~Reader();
 
-    virtual const Segment& segment() const;
+    virtual const Segment& segment() const = 0;
 
     /**
      * Get the last modification timestamp of the segment

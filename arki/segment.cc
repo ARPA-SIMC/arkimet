@@ -42,7 +42,18 @@ std::shared_ptr<segment::Reader> Segment::make_reader(const std::string& format,
         {
             res.reset(new segment::dir::Reader(format, root, relpath, abspath, lock));
         } else {
-            res.reset(new segment::fd::Reader(format, root, relpath, abspath, lock));
+            if (format == "grib" || format == "bufr")
+            {
+                res.reset(new segment::concat::Reader(format, root, relpath, abspath, lock));
+            } else if (format == "vm2") {
+                res.reset(new segment::lines::Reader(format, root, relpath, abspath, lock));
+            } else if (format == "odimh5") {
+                throw_consistency_error("segment is a file, but odimh5 data can only be stored into directory segments");
+            } else {
+                throw_consistency_error(
+                        "getting segment for " + format + " file " + relpath,
+                        "format not supported");
+            }
         }
         return res;
     }
@@ -55,10 +66,24 @@ std::shared_ptr<segment::Reader> Segment::make_reader(const std::string& format,
                     "cannot get a reader for " + format + " directory " + relpath + ": cannot handle a directory with a .gz extension");
         else
         {
-            if (sys::exists(abspath + ".gz.idx"))
-                res.reset(new segment::gzidx::Reader(format, root, relpath, abspath, lock));
-            else
-                res.reset(new segment::gz::Reader(format, root, relpath, abspath, lock));
+            if (format == "grib")
+            {
+                if (sys::exists(abspath + ".gz.idx"))
+                    res.reset(new segment::gzidxconcat::Reader(format, root, relpath, abspath, lock));
+                else
+                    res.reset(new segment::gzconcat::Reader(format, root, relpath, abspath, lock));
+            } else if (format == "vm2") {
+                if (sys::exists(abspath + ".gz.idx"))
+                    res.reset(new segment::gzidxconcat::Reader(format, root, relpath, abspath, lock));
+                else
+                    res.reset(new segment::gzlines::Reader(format, root, relpath, abspath, lock));
+            } else if (format == "odimh5") {
+                throw_consistency_error("segment is a file, but odimh5 data can only be stored into directory segments");
+            } else {
+                throw_consistency_error(
+                        "getting segment for " + format + " file " + relpath,
+                        "format not supported");
+            }
         }
         return res;
     }
@@ -102,13 +127,8 @@ std::shared_ptr<segment::Writer> Segment::make_writer(const std::string& format,
                         "format not supported");
             }
         } else {
-            if (format == "grib" || format == "grib1" || format == "grib2")
+            if (format == "grib")
             {
-                if (mock_data)
-                    res.reset(new segment::concat::HoleWriter(format, root, relpath, abspath));
-                else
-                    res.reset(new segment::concat::Writer(format, root, relpath, abspath));
-            } else if (format == "bufr") {
                 if (mock_data)
                     res.reset(new segment::concat::HoleWriter(format, root, relpath, abspath));
                 else
@@ -118,7 +138,7 @@ std::shared_ptr<segment::Writer> Segment::make_writer(const std::string& format,
                     throw_consistency_error("mock_data single-file line-based segments are not implemented");
                 else
                     res.reset(new segment::lines::Writer(format, root, relpath, abspath));
-            } else if (format == "odimh5" || format == "h5" || format == "odim") {
+            } else if (format == "odimh5") {
                 throw_consistency_error("segment is a file, but odimh5 data can only be stored into directory segments");
             } else {
                 throw_consistency_error(
@@ -178,13 +198,8 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
                         "format not supported");
             }
         } else {
-            if (format == "grib" || format == "grib1" || format == "grib2")
+            if (format == "grib")
             {
-                if (mock_data)
-                    res.reset(new segment::concat::HoleChecker(format, root, relpath, abspath));
-                else
-                    res.reset(new segment::concat::Checker(format, root, relpath, abspath));
-            } else if (format == "bufr") {
                 if (mock_data)
                     res.reset(new segment::concat::HoleChecker(format, root, relpath, abspath));
                 else
@@ -194,7 +209,7 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
                     throw_consistency_error("mockdata single-file line-based segments not implemented");
                 else
                     res.reset(new segment::lines::Checker(format, root, relpath, abspath));
-            } else if (format == "odimh5" || format == "h5" || format == "odim") {
+            } else if (format == "odimh5") {
                 // If it's a file and we need a directory, still get a checker
                 // so it can deal with it
                 if (mock_data)
@@ -218,18 +233,18 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
                     "getting checker for " + format + " file " + relpath,
                     "cannot handle a directory with a .gz extension");
 
-        if (format == "grib" || format == "grib1" || format == "grib2" || format == "bufr")
+        if (format == "grib")
         {
             if (sys::exists(abspath + ".gz.idx"))
-                res.reset(new segment::gzidx::Checker(format, root, relpath, abspath));
+                res.reset(new segment::gzidxconcat::Checker(format, root, relpath, abspath));
             else
-                res.reset(new segment::gz::Checker(format, root, relpath, abspath));
+                res.reset(new segment::gzconcat::Checker(format, root, relpath, abspath));
         } else if (format == "vm2") {
             if (sys::exists(abspath + ".gz.idx"))
                 res.reset(new segment::gzidxlines::Checker(format, root, relpath, abspath));
             else
                 res.reset(new segment::gzlines::Checker(format, root, relpath, abspath));
-        } else if (format == "odimh5" || format == "h5" || format == "odim") {
+        } else if (format == "odimh5") {
             throw_consistency_error(
                     "getting checker for " + format + " file " + relpath,
                     "cannot handle a gzipped odim file as a segment");
@@ -268,17 +283,19 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
 
 namespace segment {
 
-Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : Segment(format, root, relpath, abspath), lock(lock)
+Reader::Reader(std::shared_ptr<core::Lock> lock)
+    : lock(lock)
 {
 }
 
-const Segment& Reader::segment() const { return *this; }
+Reader::~Reader()
+{
+}
 
 bool Reader::scan(metadata_dest_func dest)
 {
     // stat the metadata file, if it exists
-    string md_abspath = abspath + ".metadata";
+    string md_abspath = segment().abspath + ".metadata";
     unique_ptr<struct stat> st_md = sys::stat(md_abspath);
     // If it exists and it looks new enough, use it
     if (st_md.get() && st_md->st_mtime >= timestamp())
@@ -339,9 +356,13 @@ std::shared_ptr<segment::Checker> Checker::zip(metadata::Collection& mds)
 
 std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds)
 {
-    segment::gzidx::Checker::create(format, root, relpath, abspath, mds);
+    std::shared_ptr<segment::Checker> res;
+    if (format == "vm2")
+        res = segment::gzidxlines::Checker::create(format, root, relpath, abspath, mds);
+    else
+        res = segment::gzidxconcat::Checker::create(format, root, relpath, abspath, mds);
     remove();
-    return make_shared<segment::gzidx::Checker>(format, root, relpath, abspath);
+    return res;
 }
 
 void Checker::move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)

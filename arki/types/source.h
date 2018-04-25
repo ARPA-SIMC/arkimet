@@ -60,7 +60,7 @@ struct Source : public types::StyledType<Source>
     // Register this type with the type system
     static void init();
 
-    static std::unique_ptr<Source> createBlob(const std::string& format, std::shared_ptr<segment::Reader> reader, uint64_t offset, uint64_t size);
+    static std::unique_ptr<Source> createBlob(std::shared_ptr<segment::Reader> reader, uint64_t offset, uint64_t size);
     static std::unique_ptr<Source> createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader);
     static std::unique_ptr<Source> createBlobUnlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Source> createInline(const std::string& format, uint64_t size);

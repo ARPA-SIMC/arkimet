@@ -73,40 +73,5 @@ void hexdump(const char* name, const unsigned char* str, int len)
 	fprintf(stderr, "\n");
 }
 
-
-MoveToTempDir::MoveToTempDir(const std::string& pattern)
-{
-    old_dir = sys::getcwd();
-    char buf[pattern.size() + 1];
-    memcpy(buf, pattern.c_str(), pattern.size() + 1);
-    if (mkdtemp(buf) == NULL)
-        throw_system_error("cannot create temporary directory");
-    tmp_dir = buf;
-    wibble::sys::process::chdir(tmp_dir);
-}
-
-MoveToTempDir::~MoveToTempDir()
-{
-    wibble::sys::process::chdir(old_dir);
-    sys::rmtree(tmp_dir);
-}
-
-std::string get_format(const std::string& fname)
-{
-    std::string fmt;
-    size_t pos;
-    if ((pos = fname.rfind('.')) != std::string::npos)
-        fmt = fname.substr(pos + 1);
-    return fmt;
-}
-
-std::string require_format(const std::string& fname)
-{
-    std::string res = get_format(fname);
-    if (res.empty())
-        throw std::runtime_error("cannot get extension from file name " + fname + ": file name has no extension");
-    return res;
-}
-
 }
 }

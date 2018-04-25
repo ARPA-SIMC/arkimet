@@ -3,7 +3,7 @@
 
 /// Scan a VM2 file for metadata
 
-#include <arki/scan/base.h>
+#include <arki/scan.h>
 #include <string>
 #include <vector>
 #include <unistd.h>

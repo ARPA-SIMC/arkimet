@@ -7,6 +7,7 @@
 #include "arki/types/reftime.h"
 #include "arki/utils/files.h"
 #include "arki/nag.h"
+#include "arki/scan.h"
 #include "arki/scan/any.h"
 #include "arki/utils.h"
 #include "arki/utils/sys.h"
@@ -49,7 +50,7 @@ struct AppendSegment
             return;
 
         // Read the metadata
-        auto reader = Segment::make_reader(require_format(segment->relpath), segment->root, segment->relpath, segment->abspath, lock);
+        auto reader = Segment::make_reader(segment->format, segment->root, segment->relpath, segment->abspath, lock);
         reader->scan(mds.inserter_func());
 
         // Read the summary
@@ -149,7 +150,7 @@ std::unique_ptr<AppendSegment> Writer::file(const std::string& relpath)
 {
     sys::makedirs(str::dirname(str::joinpath(config().path, relpath)));
     auto lock = config().append_lock_dataset();
-    auto segment = segment_manager().get_writer(relpath);
+    auto segment = segment_manager().get_writer(scan::Scanner::format_from_filename(relpath), relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segment));
 }
 

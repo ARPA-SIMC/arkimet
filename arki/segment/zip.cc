@@ -10,7 +10,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/zip.h"
-#include "arki/utils.h"
 #include "arki/nag.h"
 #include "arki/utils/accounting.h"
 #include "arki/iotrace.h"
@@ -208,19 +207,21 @@ struct CheckBackend : public AppendCheckBackend
 
 }
 
+const char* Segment::type() const { return "zip"; }
+bool Segment::single_file() const { return true; }
+
 
 Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::Reader(format, root, relpath, abspath, lock), zip(format, core::File(abspath + ".zip", O_RDONLY | O_CLOEXEC))
+    : segment::Reader(lock), m_segment(format, root, relpath, abspath), zip(format, core::File(abspath + ".zip", O_RDONLY | O_CLOEXEC))
 {
 }
 
-const char* Reader::type() const { return "zip"; }
-bool Reader::single_file() const { return true; }
-time_t Reader::timestamp() { return sys::timestamp(abspath + ".zip"); }
+const Segment& Reader::segment() const { return m_segment; }
+time_t Reader::timestamp() { return sys::timestamp(m_segment.abspath + ".zip"); }
 
 bool Reader::scan_data(metadata_dest_func dest)
 {
-    throw std::runtime_error(string(type()) + " scanning is not yet implemented");
+    throw std::runtime_error(string(m_segment.type()) + " scanning is not yet implemented");
 }
 
 std::vector<uint8_t> Reader::read(const types::source::Blob& src)
@@ -276,8 +277,6 @@ size_t Checker::size()
 
 std::shared_ptr<segment::Reader> Checker::reader(std::shared_ptr<core::Lock> lock)
 {
-    // TODO: store format in checker
-    std::string format = require_format(relpath);
     return make_shared<Reader>(format, root, relpath, abspath, lock);
 }
 
@@ -353,7 +352,7 @@ std::shared_ptr<Checker> Checker::create(const std::string& format, const std::s
 void Checker::test_truncate(size_t offset)
 {
     if (!sys::exists(abspath))
-        utils::createFlagfile(abspath);
+        sys::write_file(abspath, "");
 
     if (offset % 512 != 0)
         offset += 512 - (offset % 512);

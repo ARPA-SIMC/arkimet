@@ -52,7 +52,7 @@
  {
   "doc": "",
   "group": "arki_utils",
-  "method": "get_format"
+  "method": "empty"
  },
  {
   "doc": "",
@@ -103,11 +103,6 @@
   "doc": "",
   "group": "arki_utils_files",
   "method": "resolve_path"
- },
- {
-  "doc": "",
-  "group": "arki_utils_files",
-  "method": "format_from_ext"
  },
  {
   "doc": "",
@@ -1716,13 +1711,18 @@
  },
  {
   "doc": "",
-  "group": "arki_scan_validator",
-  "method": "empty"
+  "group": "arki_scan_any",
+  "method": "format_from_filename"
  },
  {
   "doc": "",
   "group": "arki_scan_any",
   "method": "usn"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan_validator",
+  "method": "empty"
  },
  {
   "doc": "",

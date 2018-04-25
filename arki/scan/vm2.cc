@@ -121,7 +121,7 @@ bool Vm2::next(Metadata& md)
     md.clear();
     if (reader)
     {
-        md.set_source(Source::createBlob("vm2", reader, offset, size));
+        md.set_source(Source::createBlob(reader, offset, size));
         md.set_cached_data(vector<uint8_t>(line.begin(), line.end()));
     } else
         md.set_source_inline("bufr", vector<uint8_t>(line.begin(), line.end()));
