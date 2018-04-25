@@ -129,6 +129,10 @@ public:
      */
     virtual bool single_file() const = 0;
 
+    /**
+     * Return the segment path for this pathname, stripping .gz, .tar, and .zip extensions
+     */
+    static std::string basename(const std::string& pathname);
 
     /// Instantiate the right Reader implementation for a segment that already exists
     static std::shared_ptr<segment::Reader> make_reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);

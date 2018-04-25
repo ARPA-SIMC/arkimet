@@ -74,9 +74,10 @@ struct Scanner
      *  - grib1 and grib2 to grib
      *  - all of h5, hdf5, odim and odimh5 to odimh5
      *
-     * An exception is thrown if the format is unsupported
+     * If the format is unsupported, it throws an exception if defaut_format is
+     * nullptr. Else it returns default_format.
      */
-    static std::string normalise_format(const std::string& format);
+    static std::string normalise_format(const std::string& format, const char* default_format=nullptr);
 
     /**
      * Guess a file format from its extension.

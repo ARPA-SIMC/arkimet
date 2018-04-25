@@ -31,6 +31,17 @@ Segment::~Segment()
 {
 }
 
+std::string Segment::basename(const std::string& pathname)
+{
+    if (str::endswith(pathname, ".gz"))
+        return pathname.substr(0, pathname.size() - 3);
+    if (str::endswith(pathname, ".tar"))
+        return pathname.substr(0, pathname.size() - 4);
+    if (str::endswith(pathname, ".zip"))
+        return pathname.substr(0, pathname.size() - 4);
+    return pathname;
+}
+
 std::shared_ptr<segment::Reader> Segment::make_reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
 {
     std::shared_ptr<segment::Reader> res;
@@ -48,7 +59,7 @@ std::shared_ptr<segment::Reader> Segment::make_reader(const std::string& format,
             } else if (format == "vm2") {
                 res.reset(new segment::lines::Reader(format, root, relpath, abspath, lock));
             } else if (format == "odimh5") {
-                throw_consistency_error("segment is a file, but odimh5 data can only be stored into directory segments");
+                res.reset(new segment::concat::Reader(format, root, relpath, abspath, lock));
             } else {
                 throw_consistency_error(
                         "getting segment for " + format + " file " + relpath,
@@ -66,7 +77,7 @@ std::shared_ptr<segment::Reader> Segment::make_reader(const std::string& format,
                     "cannot get a reader for " + format + " directory " + relpath + ": cannot handle a directory with a .gz extension");
         else
         {
-            if (format == "grib")
+            if (format == "grib" || format == "bufr")
             {
                 if (sys::exists(abspath + ".gz.idx"))
                     res.reset(new segment::gzidxconcat::Reader(format, root, relpath, abspath, lock));
@@ -78,7 +89,7 @@ std::shared_ptr<segment::Reader> Segment::make_reader(const std::string& format,
                 else
                     res.reset(new segment::gzlines::Reader(format, root, relpath, abspath, lock));
             } else if (format == "odimh5") {
-                throw_consistency_error("segment is a file, but odimh5 data can only be stored into directory segments");
+                res.reset(new segment::gzidxconcat::Reader(format, root, relpath, abspath, lock));
             } else {
                 throw_consistency_error(
                         "getting segment for " + format + " file " + relpath,
@@ -127,7 +138,7 @@ std::shared_ptr<segment::Writer> Segment::make_writer(const std::string& format,
                         "format not supported");
             }
         } else {
-            if (format == "grib")
+            if (format == "grib" || format == "bufr")
             {
                 if (mock_data)
                     res.reset(new segment::concat::HoleWriter(format, root, relpath, abspath));
@@ -198,7 +209,7 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
                         "format not supported");
             }
         } else {
-            if (format == "grib")
+            if (format == "grib" || format == "bufr")
             {
                 if (mock_data)
                     res.reset(new segment::concat::HoleChecker(format, root, relpath, abspath));
@@ -233,7 +244,7 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
                     "getting checker for " + format + " file " + relpath,
                     "cannot handle a directory with a .gz extension");
 
-        if (format == "grib")
+        if (format == "grib" || format == "bufr")
         {
             if (sys::exists(abspath + ".gz.idx"))
                 res.reset(new segment::gzidxconcat::Checker(format, root, relpath, abspath));

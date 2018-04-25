@@ -102,38 +102,33 @@ void AutoManager::scan_dir(std::function<void(const std::string& relpath)> dest)
         if (entry->d_name[0] == '.')
             return false;
 
+        // Skip files with extensions we do not know about
         string name = entry->d_name;
-
-        // Skip compressed data index files
-        if (str::endswith(name, ".gz.idx"))
-            return false;
+        string basename = Segment::basename(name);
+        string format = scan::Scanner::format_from_filename(basename, "");
 
         bool is_dir = S_ISDIR(st.st_mode);
         if (is_dir)
         {
             sys::Path sub(entry.open_path());
             struct stat seq_st;
-            if (sub.fstatat_ifexists(".sequence", seq_st))
+            if (!format.empty() && sub.fstatat_ifexists(".sequence", seq_st))
             {
                 // Directory segment
-                string format = scan::Scanner::format_from_filename(name);
                 if (segment::dir::Checker::can_store(format))
-                    dest(str::joinpath(relpath, name));
+                    dest(str::joinpath(relpath, basename));
                 return false;
             }
             else
                 // Normal subdirectory, recurse into it
                 return true;
+        } else if (format.empty()) {
+            return false;
         } else {
-            // Concat segment
-            if (str::endswith(name, ".gz"))
-                name = name.substr(0, name.size() - 3);
-
             // Check whether the file format (from the extension) could be
             // stored in this kind of segment
-            string format = scan::Scanner::format_from_filename(name);
             if (segment::fd::can_store(format))
-                dest(str::joinpath(relpath, name));
+                dest(str::joinpath(relpath, basename));
             return false;
         }
     };

@@ -117,10 +117,10 @@ const Validator& Scanner::get_validator(const std::string& format)
     throw std::runtime_error("No validator available for format '" + format + "'");
 }
 
-std::string Scanner::normalise_format(const std::string& format)
+std::string Scanner::normalise_format(const std::string& format, const char* default_format)
 {
     std::string f = str::lower(format);
-    if (f == "metadata") return "arkimet";
+    if (f == "grib") return "grib";
     if (f == "grib1") return "grib";
     if (f == "grib2") return "grib";
     if (f == "bufr") return "bufr";
@@ -131,6 +131,9 @@ std::string Scanner::normalise_format(const std::string& format)
     if (f == "odim")   return "odimh5";
     if (f == "odimh5") return "odimh5";
 #endif
+    if (f == "yaml") return "yaml";
+    if (f == "metadata") return "arkimet";
+    if (default_format) return default_format;
     throw std::runtime_error("unsupported format `" + format + "`");
 }
 
@@ -139,7 +142,7 @@ std::string Scanner::format_from_filename(const std::string& fname, const char* 
     // Extract the extension
     size_t epos = fname.rfind('.');
     if (epos != string::npos)
-        return normalise_format(fname.substr(epos + 1));
+        return normalise_format(str::lower(fname.substr(epos + 1)), default_format);
     else if (default_format)
         return default_format;
     else

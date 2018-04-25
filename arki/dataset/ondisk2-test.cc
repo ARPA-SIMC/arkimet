@@ -264,7 +264,7 @@ add_method("acquire_compressed", [](Fixture& f) {
             writer->acquire(mdc[1]);
             wassert(actual(false).istrue());
         } catch (std::exception& e) {
-            wassert(actual(e.what()).contains("cannot update compressed data files"));
+            wassert(actual(e.what()).contains("cannot write to .gz segments"));
         }
     }
     wassert(actual_file("testds/20/2007.grib").not_exists());

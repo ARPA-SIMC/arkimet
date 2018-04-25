@@ -43,24 +43,7 @@ std::unique_ptr<Reader> FileConfig::create_reader() const
         return std::unique_ptr<Reader>(new ArkimetFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
     if (format == "yaml")
         return std::unique_ptr<Reader>(new YamlFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
-#ifdef HAVE_GRIBAPI
-    if (format == "grib")
-        return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
-#endif
-#ifdef HAVE_DBALLE
-    if (format == "bufr")
-        return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
-#endif
-#ifdef HAVE_HDF5
-    if (format == "odimh5")
-        return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
-#endif
-#ifdef HAVE_VM2
-    if (format == "vm2")
-        return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
-#endif
-
-    throw runtime_error(pathname + ": unknown file format \"" + format + "\"");
+    return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
 }
 
 bool File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
@@ -106,7 +89,7 @@ void File::readConfig(const std::string& fname, ConfigFile& cfg)
                 ss << "dataset file " << fname << " does not exist";
                 throw runtime_error(ss.str());
             }
-            section.setValue("format", scan::Scanner::format_from_filename(fname.substr(0, fpos)));
+            section.setValue("format", scan::Scanner::normalise_format(fname.substr(0, fpos)));
 
             string fname1 = fname.substr(fpos+1);
             if (!sys::exists(fname1))
@@ -124,37 +107,6 @@ void File::readConfig(const std::string& fname, ConfigFile& cfg)
     cfg.mergeInto(section.value("name"), section);
 }
 
-#if 0
-File* File::create(const ConfigFile& cfg)
-{
-    string format = str::lower(cfg.value("format"));
-
-    if (format == "arkimet")
-        return new ArkimetFile(cfg);
-    if (format == "yaml")
-        return new YamlFile(cfg);
-#ifdef HAVE_GRIBAPI
-    if (format == "grib")
-        return new RawFile(cfg);
-#endif
-#ifdef HAVE_DBALLE
-    if (format == "bufr")
-        return new RawFile(cfg);
-#endif
-#ifdef HAVE_HDF5
-    if (format == "odimh5")
-        return new RawFile(cfg);
-#endif
-#ifdef HAVE_VM2
-    if (format == "vm2")
-        return new RawFile(cfg);
-#endif
-
-    stringstream ss;
-    ss << "cannot create a dataset for the unknown file format \"" << format << "\"";
-    throw runtime_error(ss.str());
-}
-#endif
 
 FdFile::FdFile(std::shared_ptr<const FileConfig> config)
     : m_config(config)

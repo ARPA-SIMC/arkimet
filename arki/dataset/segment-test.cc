@@ -56,6 +56,9 @@ add_method("scan_dir_dir1", [] {
     mkdir("dirscanner/2008", 0777);
     sys::write_file("dirscanner/2008/a.grib", "");
     sys::write_file("dirscanner/2008/b.grib", "");
+    sys::write_file("dirscanner/2008/c.grib.gz", "");
+    sys::write_file("dirscanner/2008/d.grib.tar", "");
+    sys::write_file("dirscanner/2008/e.grib.zip", "");
     mkdir("dirscanner/2008/temp", 0777);
     mkdir("dirscanner/2009", 0777);
     sys::write_file("dirscanner/2009/a.grib", "");
@@ -68,13 +71,16 @@ add_method("scan_dir_dir1", [] {
         auto sm = SegmentManager::get("dirscanner", false);
         std::vector<std::string> res;
         sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
-        wassert(actual(res.size()) == 4u);
+        wassert(actual(res.size()) == 7u);
         std::sort(res.begin(), res.end());
 
         wassert(actual(res[0]) == "2008/a.grib");
         wassert(actual(res[1]) == "2008/b.grib");
-        wassert(actual(res[2]) == "2009/a.grib");
-        wassert(actual(res[3]) == "2009/b.grib");
+        wassert(actual(res[2]) == "2008/c.grib");
+        wassert(actual(res[3]) == "2008/d.grib");
+        wassert(actual(res[4]) == "2008/e.grib");
+        wassert(actual(res[5]) == "2009/a.grib");
+        wassert(actual(res[6]) == "2009/b.grib");
     }
 
     {
