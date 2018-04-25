@@ -4,6 +4,7 @@
 /// Base class for unix fd based read/write functions
 
 #include <arki/segment.h>
+#include <arki/segment/base.h>
 #include <arki/utils/gzip.h>
 #include <string>
 
@@ -19,12 +20,13 @@ struct Segment : public arki::Segment
     time_t timestamp() const override;
 };
 
-struct Reader : public segment::Reader
+template<typename Segment>
+struct Reader : public segment::BaseReader<Segment>
 {
     utils::gzip::File fd;
     uint64_t last_ofs = 0;
 
-    Reader(const std::string& abspath, std::shared_ptr<core::Lock> lock);
+    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
 
     bool scan_data(metadata_dest_func dest) override;
     std::vector<uint8_t> read(const types::source::Blob& src) override;
@@ -84,14 +86,9 @@ struct Segment : public gz::Segment
     static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
 };
 
-class Reader : public gz::Reader
+struct Reader : public gz::Reader<Segment>
 {
-protected:
-    Segment m_segment;
-
-public:
-    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
-    const Segment& segment() const override;
+    using gz::Reader<Segment>::Reader;
 };
 
 class Checker : public gz::Checker
@@ -124,14 +121,9 @@ struct Segment : public gz::Segment
 };
 
 
-class Reader : public gz::Reader
+struct Reader : public gz::Reader<Segment>
 {
-protected:
-    Segment m_segment;
-
-public:
-    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
-    const Segment& segment() const override;
+    using gz::Reader<Segment>::Reader;
 };
 
 

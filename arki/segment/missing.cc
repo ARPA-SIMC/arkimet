@@ -25,7 +25,7 @@ std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> loc
 }
 std::shared_ptr<segment::Checker> Segment::checker() const
 {
-    return Segment::make_checker(format, root, relpath, abspath);
+    return Segment::detect_checker(format, root, relpath, abspath);
 }
 
 

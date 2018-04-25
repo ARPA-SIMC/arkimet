@@ -5,6 +5,7 @@
 
 #include <arki/libconfig.h>
 #include <arki/segment.h>
+#include <arki/segment/base.h>
 #include <arki/core/file.h>
 #include <string>
 
@@ -29,14 +30,11 @@ struct Segment : public arki::Segment
 };
 
 
-struct Reader : public segment::Reader
+struct Reader : public segment::BaseReader<Segment>
 {
-    Segment m_segment;
     core::File fd;
 
     Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
-
-    const Segment& segment() const override;
 
     bool scan_data(metadata_dest_func dest) override;
     std::vector<uint8_t> read(const types::source::Blob& src) override;

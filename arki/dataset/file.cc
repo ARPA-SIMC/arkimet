@@ -158,7 +158,7 @@ bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
                     if (md->has_source_blob())
                     {
                         const auto& blob = md->sourceBlob();
-                        auto reader = Segment::make_reader(
+                        auto reader = Segment::detect_reader(
                                 blob.format, blob.basedir, blob.filename, blob.absolutePathname(),
                                 std::make_shared<core::lock::Null>());
                         md->sourceBlob().lock(reader);
@@ -211,7 +211,7 @@ bool RawFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
     string basedir, relpath;
     files::resolve_path(config().pathname, basedir, relpath);
     auto sorter = wrap_with_query(q, dest);
-    auto reader = Segment::make_reader(config().format, basedir, relpath, config().pathname, std::make_shared<core::lock::Null>());
+    auto reader = Segment::detect_reader(config().format, basedir, relpath, config().pathname, std::make_shared<core::lock::Null>());
     if (!reader->scan(dest))
         return false;
     if (sorter) return sorter->flush();

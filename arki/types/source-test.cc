@@ -116,7 +116,7 @@ add_method("blob_pathnames_encode", [] {
 });
 
 add_method("blob_stream", [] {
-    auto reader = Segment::make_reader("grib", "inbound", "test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = Segment::detect_reader("grib", "inbound", "test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     unique_ptr<source::Blob> o = source::Blob::create("test", "inbound", "test.grib1", 7218, 34960, reader);
     sys::unlink_ifexists("test.grib");
     File out("test.grib", O_WRONLY | O_CREAT | O_TRUNC);

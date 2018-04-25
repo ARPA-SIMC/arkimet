@@ -1,8 +1,6 @@
 #include "managers.h"
-#include "arki/segment/concat.h"
-#include "arki/segment/lines.h"
+#include "arki/segment/fd.h"
 #include "arki/segment/dir.h"
-#include "arki/segment/tar.h"
 #include "arki/exceptions.h"
 #include "arki/scan.h"
 #include "arki/utils/files.h"
@@ -23,7 +21,7 @@ AutoManager::AutoManager(const std::string& root, bool mockdata)
 
 std::shared_ptr<segment::Writer> AutoManager::create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
 {
-    auto res(Segment::make_writer(format, root, relpath, abspath, mockdata));
+    auto res(Segment::detect_writer(format, root, relpath, abspath, mockdata));
     if (res) return res;
 
     if (format == "grib" || format == "grib1" || format == "grib2")
@@ -57,7 +55,7 @@ std::shared_ptr<segment::Writer> AutoManager::create_writer_for_format(const std
 
 std::shared_ptr<segment::Checker> AutoManager::create_checker_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
 {
-    auto res(Segment::make_checker(format, root, relpath, abspath, mockdata));
+    auto res(Segment::detect_checker(format, root, relpath, abspath, mockdata));
     if (res) return res;
 
     if (format == "grib" || format == "grib1" || format == "grib2")
@@ -140,7 +138,7 @@ ForceDirManager::ForceDirManager(const std::string& root) : BaseManager(root) {}
 
 std::shared_ptr<segment::Writer> ForceDirManager::create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
 {
-    auto res(Segment::make_writer(format, root, relpath, abspath, mockdata));
+    auto res(Segment::detect_writer(format, root, relpath, abspath, mockdata));
     if (res) return res;
     return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relpath, abspath));
 }

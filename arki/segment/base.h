@@ -30,11 +30,31 @@ public:
 template<typename Segment>
 struct BaseWriter : public segment::Writer
 {
+protected:
+    Segment m_segment;
+
+public:
+    BaseWriter(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+        : m_segment(format, root, relpath, abspath)
+    {
+    }
+
+    const Segment& segment() const override { return m_segment; }
 };
 
 template<typename Segment>
 struct BaseChecker : public segment::Checker
 {
+protected:
+    Segment m_segment;
+
+public:
+    BaseChecker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+        : m_segment(format, root, relpath, abspath)
+    {
+    }
+
+    const Segment& segment() const override { return m_segment; }
     // std::shared_ptr<segment::Checker> checker_moved(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) const override;
 };
 

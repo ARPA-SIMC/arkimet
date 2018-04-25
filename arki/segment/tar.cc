@@ -138,15 +138,13 @@ std::shared_ptr<segment::Checker> Segment::create(const std::string& format, con
 
 
 Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::Reader(lock), m_segment(format, root, relpath, abspath), fd(abspath + ".tar", O_RDONLY
+    : segment::BaseReader<Segment>(format, root, relpath, abspath, lock), fd(abspath + ".tar", O_RDONLY
 #ifdef linux
                 | O_CLOEXEC
 #endif
             )
 {
 }
-
-const Segment& Reader::segment() const { return m_segment; }
 
 bool Reader::scan_data(metadata_dest_func dest)
 {

@@ -98,19 +98,23 @@ struct CheckBackend : public AppendCheckBackend
 time_t Segment::timestamp() const { return sys::timestamp(abspath + ".gz"); }
 
 
-Reader::Reader(const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::Reader(lock), fd(abspath + ".gz", "rb")
+template<typename Segment>
+Reader<Segment>::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    : BaseReader<Segment>(format, root, relpath, abspath, lock), fd(abspath + ".gz", "rb")
 {
 }
 
-bool Reader::scan_data(metadata_dest_func dest)
+template<typename Segment>
+bool Reader<Segment>::scan_data(metadata_dest_func dest)
 {
-    auto scanner = scan::Scanner::get_scanner(segment().format);
-    compress::TempUnzip uncompressed(segment().abspath);
-    return scanner->scan_file(segment().abspath, static_pointer_cast<segment::Reader>(shared_from_this()), dest);
+    const auto& segment = this->segment();
+    auto scanner = scan::Scanner::get_scanner(segment.format);
+    compress::TempUnzip uncompressed(segment.abspath);
+    return scanner->scan_file(segment.abspath, static_pointer_cast<segment::Reader>(this->shared_from_this()), dest);
 }
 
-std::vector<uint8_t> Reader::read(const types::source::Blob& src)
+template<typename Segment>
+std::vector<uint8_t> Reader<Segment>::read(const types::source::Blob& src)
 {
     vector<uint8_t> buf;
     buf.resize(src.size);
@@ -129,12 +133,13 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
     last_ofs = src.offset + src.size;
 
     acct::gzip_data_read_count.incr();
-    iotrace::trace_file(segment().abspath, src.offset, src.size, "read data");
+    iotrace::trace_file(this->segment().abspath, src.offset, src.size, "read data");
 
     return buf;
 }
 
-size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor& out)
+template<typename Segment>
+size_t Reader<Segment>::stream(const types::source::Blob& src, core::NamedFileDescriptor& out)
 {
     vector<uint8_t> buf = read(src);
     if (src.format == "vm2")
@@ -271,14 +276,6 @@ std::shared_ptr<segment::Checker> Segment::create(const std::string& format, con
 }
 
 
-Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : gz::Reader(abspath, lock), m_segment(format, root, relpath, abspath)
-{
-}
-
-const Segment& Reader::segment() const { return m_segment; }
-
-
 Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
     : gz::Checker(abspath), m_segment(format, root, relpath, abspath)
 {
@@ -316,13 +313,6 @@ std::shared_ptr<segment::Checker> Segment::create(const std::string& format, con
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
 
-
-Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : gz::Reader(abspath, lock), m_segment(format, root, relpath, abspath)
-{
-}
-
-const Segment& Reader::segment() const { return m_segment; }
 
 namespace {
 

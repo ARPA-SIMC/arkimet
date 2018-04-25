@@ -1,10 +1,9 @@
 #ifndef ARKI_SEGMENT_FD_H
 #define ARKI_SEGMENT_FD_H
 
-/// Base class for unix fd based read/write functions
-
 #include <arki/libconfig.h>
 #include <arki/segment.h>
+#include <arki/segment/base.h>
 #include <arki/segment/common.h>
 #include <arki/core/file.h>
 #include <string>
@@ -26,27 +25,6 @@ struct File : public core::File
     virtual void test_add_padding(size_t size) = 0;
 };
 
-struct Creator : public AppendCreator
-{
-    std::unique_ptr<File> out;
-    size_t written = 0;
-
-    Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, std::unique_ptr<File> out);
-    size_t append(const std::vector<uint8_t>& data) override;
-    void create();
-};
-
-struct CheckBackend : public AppendCheckBackend
-{
-    core::File data;
-    struct stat st;
-
-    CheckBackend(const std::string& abspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds);
-    void validate(Metadata& md, const types::source::Blob& source) override;
-    size_t offset_end() const override;
-    State check();
-};
-
 
 struct Segment : public arki::Segment
 {
@@ -56,33 +34,30 @@ struct Segment : public arki::Segment
 };
 
 
-struct Reader : public segment::Reader
+/// Base class for unix fd based read/write functions
+template<typename Segment>
+struct Reader : public segment::BaseReader<Segment>
 {
-    using segment::Reader::Reader;
-
     core::File fd;
 
-    Reader(const std::string& abspath, std::shared_ptr<core::Lock> lock);
-
-    const Segment& segment() const override = 0;
+    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
 
     bool scan_data(metadata_dest_func dest) override;
     std::vector<uint8_t> read(const types::source::Blob& src) override;
     size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) override;
 };
 
-
-struct Writer : public segment::Writer
+template<typename Segment, typename File>
+struct Writer : public segment::BaseWriter<Segment>
 {
-    File* fd = nullptr;
+    File fd;
     off_t initial_size;
     off_t current_pos;
-    std::vector<PendingMetadata> pending;
+    std::vector<segment::Writer::PendingMetadata> pending;
 
-    Writer(std::unique_ptr<File> fd);
+    Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode=0);
     ~Writer();
 
-    virtual std::unique_ptr<File> open_file(const std::string& pathname, int flags, mode_t mode) = 0;
     size_t next_offset() const override;
     const types::source::Blob& append(Metadata& md) override;
 
@@ -92,16 +67,14 @@ struct Writer : public segment::Writer
 };
 
 
-class Checker : public segment::Checker
+template<typename Segment, typename File>
+class Checker : public segment::BaseChecker<Segment>
 {
 protected:
-    virtual std::unique_ptr<File> open(const std::string& pathname) = 0;
-
-    virtual std::unique_ptr<File> open_file(const std::string& pathname, int flags, mode_t mode) = 0;
     void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 
 public:
-    using segment::Checker::Checker;
+    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
 
     bool exists_on_disk() override;
     size_t size() override;
@@ -118,6 +91,133 @@ public:
 bool can_store(const std::string& format);
 
 }
+
+namespace concat {
+
+struct File : public fd::File
+{
+    using fd::File::File;
+    size_t write_data(const std::vector<uint8_t>& buf) override;
+    void test_add_padding(size_t size) override;
+};
+
+struct HoleFile : public fd::File
+{
+    using fd::File::File;
+    size_t write_data(const std::vector<uint8_t>& buf) override;
+    void test_add_padding(size_t size) override;
+};
+
+
+struct Segment : public fd::Segment
+{
+    using fd::Segment::Segment;
+
+    const char* type() const override;
+    bool single_file() const override;
+    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
+    std::shared_ptr<segment::Checker> checker() const override;
+
+    static std::shared_ptr<segment::Writer> make_writer(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
+    static std::shared_ptr<segment::Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
+    static std::shared_ptr<segment::Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds);
+    static bool can_store(const std::string& format);
+
+    static const unsigned padding = 0;
+};
+
+
+struct HoleSegment : public Segment
+{
+    using Segment::Segment;
+
+    const char* type() const override;
+    bool single_file() const override;
+    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
+    std::shared_ptr<segment::Checker> checker() const override;
+    static std::shared_ptr<segment::Writer> make_writer(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
+    static std::shared_ptr<segment::Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
+};
+
+
+struct Reader : public fd::Reader<Segment>
+{
+    using fd::Reader<Segment>::Reader;
+};
+
+struct Writer : public fd::Writer<Segment, File>
+{
+    using fd::Writer<Segment, File>::Writer;
+};
+
+class Checker : public fd::Checker<Segment, File>
+{
+public:
+    using fd::Checker<Segment, File>::Checker;
+    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
+};
+
+struct HoleWriter : public fd::Writer<HoleSegment, HoleFile>
+{
+    using fd::Writer<HoleSegment, HoleFile>::Writer;
+};
+
+class HoleChecker : public fd::Checker<HoleSegment, HoleFile>
+{
+public:
+    using fd::Checker<HoleSegment, HoleFile>::Checker;
+    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
+};
+
+}
+
+namespace lines {
+
+struct File : public fd::File
+{
+    using fd::File::File;
+
+    size_t write_data(const std::vector<uint8_t>& buf) override;
+    void test_add_padding(size_t size) override;
+};
+
+struct Segment : public fd::Segment
+{
+    using fd::Segment::Segment;
+
+    const char* type() const override;
+    bool single_file() const override;
+    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
+    std::shared_ptr<segment::Checker> checker() const override;
+
+    static std::shared_ptr<Writer> make_writer(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
+    static std::shared_ptr<Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
+    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds);
+    static bool can_store(const std::string& format);
+
+    static const unsigned padding = 1;
+};
+
+struct Reader : public fd::Reader<Segment>
+{
+    using fd::Reader<Segment>::Reader;
+};
+
+struct Writer : public fd::Writer<Segment, File>
+{
+    using fd::Writer<Segment, File>::Writer;
+};
+
+class Checker : public fd::Checker<Segment, File>
+{
+public:
+    using fd::Checker<Segment, File>::Checker;
+    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
+};
+
+}
+
 }
 }
 #endif

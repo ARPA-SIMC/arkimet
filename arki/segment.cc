@@ -1,7 +1,6 @@
 #include "segment.h"
 #include "segment/missing.h"
-#include "segment/concat.h"
-#include "segment/lines.h"
+#include "segment/fd.h"
 #include "segment/dir.h"
 #include "segment/tar.h"
 #include "segment/zip.h"
@@ -42,7 +41,7 @@ std::string Segment::basename(const std::string& pathname)
     return pathname;
 }
 
-std::shared_ptr<segment::Reader> Segment::make_reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+std::shared_ptr<segment::Reader> Segment::detect_reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
 {
     std::shared_ptr<segment::Reader> res;
 
@@ -117,7 +116,7 @@ std::shared_ptr<segment::Reader> Segment::make_reader(const std::string& format,
     return res;
 }
 
-std::shared_ptr<segment::Writer> Segment::make_writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data)
+std::shared_ptr<segment::Writer> Segment::detect_writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data)
 {
     std::shared_ptr<segment::Writer> res;
 
@@ -188,7 +187,7 @@ std::shared_ptr<segment::Writer> Segment::make_writer(const std::string& format,
     return res;
 }
 
-std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data)
+std::shared_ptr<segment::Checker> Segment::detect_checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data)
 {
     std::shared_ptr<segment::Checker> res;
 

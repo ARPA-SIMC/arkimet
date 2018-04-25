@@ -6,7 +6,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils.h"
 #include "segment.h"
-#include "segment/lines.h"
 #include <algorithm>
 
 namespace {
@@ -66,10 +65,10 @@ add_method("auto_instantiate_existing", [] {
     make_samples();
 
     auto get_writer = [&](const char* format, const char* name) {
-        return Segment::make_writer(format, ".", name, sys::abspath(name));
+        return Segment::detect_writer(format, ".", name, sys::abspath(name));
     };
     auto get_checker = [&](const char* format, const char* name) {
-        return Segment::make_checker(format, ".", name, sys::abspath(name));
+        return Segment::detect_checker(format, ".", name, sys::abspath(name));
     };
 
     wassert(actual(get_writer("grib", "testfile.grib")->segment().type()) == "concat");

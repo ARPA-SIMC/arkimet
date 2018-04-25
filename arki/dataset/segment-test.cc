@@ -8,7 +8,6 @@
 #include "arki/scan/any.h"
 #include "segment.h"
 #include "segmented.h"
-#include "arki/segment/lines.h"
 #include <algorithm>
 
 namespace {

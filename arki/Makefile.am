@@ -129,8 +129,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		segment/common.h \
 		segment/missing.h \
 		segment/fd.h \
-		segment/concat.h \
-		segment/lines.h \
 		segment/dir.h \
 		segment/tar.h \
 		segment/zip.h \
@@ -419,8 +417,6 @@ libarkimet_la_SOURCES += \
 		segment/common.cc \
 		segment/missing.cc \
 		segment/fd.cc \
-		segment/concat.cc \
-		segment/lines.cc \
 		segment/dir.cc \
 		segment/tar.cc \
 		segment/zip.cc \
@@ -475,8 +471,6 @@ tests_arki_test_SOURCES += \
 		segment/common-test.cc \
 		segment/missing-test.cc \
 		segment/fd-test.cc \
-		segment/concat-test.cc \
-		segment/lines-test.cc \
 		segment/seqfile-test.cc \
 		segment/dir-test.cc \
 		segment/tar-test.cc \

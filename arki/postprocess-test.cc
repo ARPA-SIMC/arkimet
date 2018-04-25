@@ -20,7 +20,7 @@ using namespace arki::utils;
 
 void produceGRIB(Postprocess& p)
 {
-    auto reader = Segment::make_reader("grib", ".", "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = Segment::detect_reader("grib", ".", "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     reader->scan([&](unique_ptr<Metadata> md) { return p.process(move(md)); });
 }
 
@@ -82,7 +82,7 @@ add_method("countbytes", [] {
 });
 
 add_method("cat", [] {
-    auto reader = Segment::make_reader("grib", ".", "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = Segment::detect_reader("grib", ".", "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
 
     // Get the normal data
     vector<uint8_t> plain;

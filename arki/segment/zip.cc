@@ -236,11 +236,9 @@ std::shared_ptr<segment::Checker> Segment::create(const std::string& format, con
 
 
 Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::Reader(lock), m_segment(format, root, relpath, abspath), zip(format, core::File(abspath + ".zip", O_RDONLY | O_CLOEXEC))
+    : segment::BaseReader<Segment>(format, root, relpath, abspath, lock), zip(format, core::File(abspath + ".zip", O_RDONLY | O_CLOEXEC))
 {
 }
-
-const Segment& Reader::segment() const { return m_segment; }
 
 bool Reader::scan_data(metadata_dest_func dest)
 {

@@ -1741,11 +1741,6 @@
  },
  {
   "doc": "",
-  "group": "arki_segment_fd",
-  "method": "empty"
- },
- {
-  "doc": "",
   "group": "arki_segment_concat_grib",
   "method": "create"
  },

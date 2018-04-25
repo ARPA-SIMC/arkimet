@@ -150,13 +150,13 @@ public:
     static std::string basename(const std::string& pathname);
 
     /// Instantiate the right Reader implementation for a segment that already exists
-    static std::shared_ptr<segment::Reader> make_reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+    static std::shared_ptr<segment::Reader> detect_reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
 
     /// Instantiate the right Writer implementation for a segment that already exists
-    static std::shared_ptr<segment::Writer> make_writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
+    static std::shared_ptr<segment::Writer> detect_writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
 
     /// Instantiate the right Checker implementation for a segment that already exists
-    static std::shared_ptr<segment::Checker> make_checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
+    static std::shared_ptr<segment::Checker> detect_checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
 };
 
 
