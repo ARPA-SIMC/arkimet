@@ -13,7 +13,6 @@
 #include "arki/sort.h"
 #include "arki/postprocess.h"
 #include "arki/dataset.h"
-#include "arki/scan/any.h"
 #include <algorithm>
 #include <memory>
 #include <fcntl.h>

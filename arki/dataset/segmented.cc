@@ -10,7 +10,6 @@
 #include "arki/dataset/lock.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
-#include "arki/scan/any.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/utils/string.h"

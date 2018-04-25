@@ -4,7 +4,6 @@
 #include <arki/metadata/xargs.h>
 #include <arki/types/reftime.h>
 #include <arki/types/timerange.h>
-#include <arki/scan/any.h>
 #include <arki/runtime.h>
 #include <arki/utils/sys.h>
 #include <arki/utils/commandline/parser.h>

@@ -7,6 +7,7 @@
 #include <arki/types/fwd.h>
 #include <string>
 #include <memory>
+#include <vector>
 
 namespace arki {
 namespace scan {
@@ -112,6 +113,12 @@ struct Scanner
      *
      */
     static bool update_sequence_number(const types::source::Blob& source, int& usn);
+
+    /**
+     * Reconstruct raw data based on a metadata and a value
+     */
+    static std::vector<uint8_t> reconstruct(const std::string& format, const Metadata& md, const std::string& value);
+
 };
 
 }

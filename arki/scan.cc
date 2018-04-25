@@ -185,5 +185,16 @@ bool Scanner::update_sequence_number(Metadata& md, int& usn)
 #endif
 }
 
+std::vector<uint8_t> Scanner::reconstruct(const std::string& format, const Metadata& md, const std::string& value)
+{
+#ifdef HAVE_VM2
+    if (format == "vm2")
+    {
+        return scan::Vm2::reconstruct(md, value);
+    }
+#endif
+    throw runtime_error("cannot reconstruct " + format + " data: format not supported");
+}
+
 }
 }

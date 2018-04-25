@@ -8,7 +8,6 @@
 #include "arki/utils/files.h"
 #include "arki/nag.h"
 #include "arki/scan.h"
-#include "arki/scan/any.h"
 #include "arki/utils.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
@@ -83,7 +82,7 @@ struct AppendSegment
             const types::source::Blob& new_source = segment->append(md);
             add(md, new_source);
             segment->commit();
-            time_t ts = scan::timestamp(segment->segment().abspath);
+            time_t ts = segment->segment().timestamp();
             mft->acquire(segment->segment().relpath, ts, sum);
             mds.writeAtomically(segment->segment().abspath + ".metadata");
             sum.writeAtomically(segment->segment().abspath + ".summary");
@@ -112,7 +111,7 @@ struct AppendSegment
         }
 
         segment->commit();
-        time_t ts = scan::timestamp(segment->segment().abspath);
+        time_t ts = segment->segment().timestamp();
         mft->acquire(segment->segment().relpath, ts, sum);
         mds.writeAtomically(segment->segment().abspath + ".metadata");
         sum.writeAtomically(segment->segment().abspath + ".summary");

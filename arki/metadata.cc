@@ -11,7 +11,7 @@
 #include "emitter.h"
 #include "emitter/memory.h"
 #include "iotrace.h"
-#include "scan/any.h"
+#include "scan.h"
 #include "utils/string.h"
 #include "utils/yaml.h"
 #include <unistd.h>
@@ -534,7 +534,7 @@ const vector<uint8_t>& Metadata::getData()
 
     // If we don't have it in cache, try reconstructing it from the Value metadata
     if (const Value* value = get<types::Value>())
-        m_data = arki::scan::reconstruct(m_source->format, *this, value->buffer);
+        m_data = scan::Scanner::reconstruct(m_source->format, *this, value->buffer);
     if (!m_data.empty()) return m_data;
 
     // If we don't have it in cache and we don't have a source, we cannot know
@@ -588,7 +588,7 @@ size_t Metadata::stream_data(NamedFileDescriptor& out)
 
     // If we don't have it in cache, try reconstructing it from the Value metadata
     if (const Value* value = get<types::Value>())
-        m_data = arki::scan::reconstruct(m_source->format, *this, value->buffer);
+        m_data = scan::Scanner::reconstruct(m_source->format, *this, value->buffer);
     if (!m_data.empty()) return stream_buf(source().format, m_data, out);
 
     // If we don't have it in cache and we don't have a source, we cannot know
