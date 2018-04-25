@@ -27,11 +27,6 @@ using namespace arki::types;
 namespace arki {
 namespace scan {
 
-bool isCompressed(const std::string& file)
-{
-    return !sys::exists(file) && (sys::exists(file + ".gz") || sys::exists(file + ".tar") || sys::exists(file + ".zip"));
-}
-
 time_t timestamp(const std::string& file)
 {
     auto st = sys::stat(file);

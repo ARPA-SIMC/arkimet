@@ -47,18 +47,10 @@ std::shared_ptr<segment::Writer> SegmentManager::get_writer(const std::string& r
 
 std::shared_ptr<segment::Writer> SegmentManager::get_writer(const std::string& format, const std::string& relpath)
 {
-    // Ensure that the directory for 'relpath' exists
+    // Ensure that the directory containing the segment exists
     string abspath = str::joinpath(root, relpath);
-    size_t pos = abspath.rfind('/');
-    if (pos != string::npos)
-        sys::makedirs(abspath.substr(0, pos));
+    sys::makedirs(str::dirname(abspath));
 
-    // Refuse to write to compressed files
-    if (scan::isCompressed(abspath))
-        throw_consistency_error("accessing data file " + relpath,
-                "cannot update compressed data files: please manually uncompress it first");
-
-    // Else we need to create an appropriate one
     return create_writer_for_format(format, relpath, abspath);
 }
 

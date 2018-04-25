@@ -18,11 +18,6 @@ class Metadata;
 namespace scan {
 
 /**
- * Return true if the file exists, and is compressed
- */
-bool isCompressed(const std::string& file);
-
-/**
  * Return the file mtime, whether it is compressed or not
  */
 time_t timestamp(const std::string& file);
