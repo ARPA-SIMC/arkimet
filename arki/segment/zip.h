@@ -43,10 +43,9 @@ struct Reader : public segment::BaseReader<Segment>
 };
 
 
-class Checker : public segment::Checker
+class Checker : public segment::BaseChecker<Segment>
 {
 protected:
-    Segment m_segment;
     std::string zipabspath;
     void validate(Metadata& md, const scan::Validator& v);
 
@@ -67,7 +66,6 @@ protected:
 
 public:
     Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
-    const Segment& segment() const override;
 
     bool exists_on_disk() override;
     size_t size() override;

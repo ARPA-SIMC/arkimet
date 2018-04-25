@@ -1,9 +1,8 @@
 #ifndef ARKI_SEGMENT_GZIDX_H
 #define ARKI_SEGMENT_GZIDX_H
 
-/// Base class for unix fd based read/write functions
-
 #include <arki/segment.h>
+#include <arki/segment/base.h>
 #include <arki/utils/compress.h>
 #include <arki/utils/gzip.h>
 #include <string>
@@ -21,7 +20,8 @@ struct Segment : public arki::Segment
 };
 
 
-struct Reader : public segment::Reader
+template<typename Segment>
+struct Reader : public segment::BaseReader<Segment>
 {
     utils::compress::SeekIndex idx;
     size_t last_block = 0;
@@ -29,7 +29,7 @@ struct Reader : public segment::Reader
     utils::gzip::File gzfd;
     uint64_t last_ofs = 0;
 
-    Reader(const std::string& abspath, std::shared_ptr<core::Lock> lock);
+    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
 
     bool scan_data(metadata_dest_func dest) override;
     void reposition(off_t ofs);
@@ -38,7 +38,8 @@ struct Reader : public segment::Reader
 };
 
 
-class Checker : public segment::Checker
+template<typename Segment>
+class Checker : public segment::BaseChecker<Segment>
 {
 protected:
     std::string gzabspath;
@@ -60,7 +61,7 @@ protected:
     void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 
 public:
-    Checker(const std::string& abspath);
+    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
 
     bool exists_on_disk() override;
     size_t size() override;
@@ -89,31 +90,19 @@ struct Segment : public gzidx::Segment
     static bool can_store(const std::string& format);
     static std::shared_ptr<Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
     static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static const unsigned padding = 0;
 };
 
 
-class Reader : public gzidx::Reader
+struct Reader : public gzidx::Reader<Segment>
 {
-protected:
-    Segment m_segment;
-
-public:
-    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
-    const Segment& segment() const override;
+    using gzidx::Reader<Segment>::Reader;
 };
 
 
-class Checker : public gzidx::Checker
+struct Checker : public gzidx::Checker<Segment>
 {
-protected:
-    Segment m_segment;
-
-public:
-    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
-
-    const Segment& segment() const override;
-
-    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    using gzidx::Checker<Segment>::Checker;
 };
 
 }
@@ -130,29 +119,19 @@ struct Segment : public gzidx::Segment
     static bool can_store(const std::string& format);
     static std::shared_ptr<Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
     static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static const unsigned padding = 1;
 };
 
 
-class Reader : public gzidx::Reader
+struct Reader : public gzidx::Reader<Segment>
 {
-protected:
-    Segment m_segment;
-
-public:
-    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
-    const Segment& segment() const override;
+    using gzidx::Reader<Segment>::Reader;
 };
 
 
-class Checker : public gzidx::Checker
+struct Checker : public gzidx::Checker<Segment>
 {
-protected:
-    Segment m_segment;
-
-public:
-    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
-
-    const Segment& segment() const override;
+    using gzidx::Checker<Segment>::Checker;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
 };

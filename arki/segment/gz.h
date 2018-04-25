@@ -1,8 +1,6 @@
 #ifndef ARKI_SEGMENT_GZ_H
 #define ARKI_SEGMENT_GZ_H
 
-/// Base class for unix fd based read/write functions
-
 #include <arki/segment.h>
 #include <arki/segment/base.h>
 #include <arki/utils/gzip.h>
@@ -33,7 +31,8 @@ struct Reader : public segment::BaseReader<Segment>
     size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) override;
 };
 
-class Checker : public segment::Checker
+template<typename Segment>
+class Checker : public segment::BaseChecker<Segment>
 {
 protected:
     std::string gzabspath;
@@ -54,7 +53,7 @@ protected:
     void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 
 public:
-    Checker(const std::string& abspath);
+    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
 
     bool exists_on_disk() override;
     size_t size() override;
@@ -84,6 +83,7 @@ struct Segment : public gz::Segment
     static bool can_store(const std::string& format);
     static std::shared_ptr<Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
     static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static const unsigned padding = 0;
 };
 
 struct Reader : public gz::Reader<Segment>
@@ -91,15 +91,9 @@ struct Reader : public gz::Reader<Segment>
     using gz::Reader<Segment>::Reader;
 };
 
-class Checker : public gz::Checker
+struct Checker : public gz::Checker<Segment>
 {
-protected:
-    Segment m_segment;
-
-public:
-    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
-
-    const Segment& segment() const override;
+    using gz::Checker<Segment>::Checker;
 };
 
 
@@ -118,6 +112,7 @@ struct Segment : public gz::Segment
     static bool can_store(const std::string& format);
     static std::shared_ptr<Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
     static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static const unsigned padding = 1;
 };
 
 
@@ -127,16 +122,9 @@ struct Reader : public gz::Reader<Segment>
 };
 
 
-class Checker : public gz::Checker
+class Checker : public gz::Checker<Segment>
 {
-protected:
-    Segment m_segment;
-
-public:
-    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
-
-    const Segment& segment() const override;
-    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
+    using gz::Checker<Segment>::Checker;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
 };
 

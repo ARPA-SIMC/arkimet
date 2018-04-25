@@ -63,6 +63,7 @@ struct Creator : public AppendCreator
     }
 };
 
+template<typename Segment>
 struct CheckBackend : public AppendCheckBackend
 {
     const std::string& gzabspath;
@@ -71,6 +72,11 @@ struct CheckBackend : public AppendCheckBackend
     CheckBackend(const std::string& gzabspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
         : AppendCheckBackend(reporter, relpath, mds), gzabspath(gzabspath)
     {
+    }
+
+    size_t actual_end(off_t offset, size_t size) const override
+    {
+        return offset + size + Segment::padding;
     }
 
     void validate(Metadata& md, const types::source::Blob& source) override
@@ -159,48 +165,55 @@ size_t Reader<Segment>::stream(const types::source::Blob& src, core::NamedFileDe
 }
 
 
-Checker::Checker(const std::string& abspath)
-    : gzabspath(abspath + ".gz")
+template<typename Segment>
+Checker<Segment>::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+    : BaseChecker<Segment>(format, root, relpath, abspath), gzabspath(abspath + ".gz")
 {
 }
 
-bool Checker::exists_on_disk()
+template<typename Segment>
+bool Checker<Segment>::exists_on_disk()
 {
     return sys::exists(gzabspath);
 }
 
-size_t Checker::size()
+template<typename Segment>
+size_t Checker<Segment>::size()
 {
     return sys::size(gzabspath);
 }
 
-void Checker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
+template<typename Segment>
+void Checker<Segment>::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
     sys::rename(gzabspath, new_abspath + ".gz");
 }
 
-State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
+template<typename Segment>
+State Checker<Segment>::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    CheckBackend checker(gzabspath, segment().relpath, reporter, mds);
+    CheckBackend<Segment> checker(gzabspath, this->segment().relpath, reporter, mds);
     checker.accurate = !quick;
     return checker.check();
 }
 
-size_t Checker::remove()
+template<typename Segment>
+size_t Checker<Segment>::remove()
 {
     size_t size = sys::size(gzabspath);
     sys::unlink(gzabspath);
     return size;
 }
 
-Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+template<typename Segment>
+Pending Checker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
     string tmpabspath = gzabspath + ".repack";
 
-    Pending p(new files::RenameTransaction(tmpabspath, segment().abspath));
+    Pending p(new files::RenameTransaction(tmpabspath, this->segment().abspath));
 
-    Creator creator(rootdir, segment().relpath, mds, tmpabspath);
-    creator.validator = &scan::Validator::by_filename(segment().abspath);
+    Creator creator(rootdir, this->segment().relpath, mds, tmpabspath);
+    creator.validator = &scan::Validator::by_filename(this->segment().abspath);
     creator.create();
 
     // Make sure mds are not holding a reader on the file to repack, because it
@@ -210,37 +223,41 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     return p;
 }
 
-void Checker::test_truncate(size_t offset)
+template<typename Segment>
+void Checker<Segment>::test_truncate(size_t offset)
 {
-    if (!sys::exists(segment().abspath))
-        utils::createFlagfile(segment().abspath);
+    if (!sys::exists(this->segment().abspath))
+        utils::createFlagfile(this->segment().abspath);
 
     if (offset % 512 != 0)
         offset += 512 - (offset % 512);
 
-    utils::files::PreserveFileTimes pft(segment().abspath);
-    if (::truncate(segment().abspath.c_str(), offset) < 0)
+    utils::files::PreserveFileTimes pft(this->segment().abspath);
+    if (::truncate(this->segment().abspath.c_str(), offset) < 0)
     {
         stringstream ss;
-        ss << "cannot truncate " << segment().abspath << " at " << offset;
+        ss << "cannot truncate " << this->segment().abspath << " at " << offset;
         throw std::system_error(errno, std::system_category(), ss.str());
     }
 }
 
-void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
+template<typename Segment>
+void Checker<Segment>::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_hole not implemented");
 }
 
-void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
+template<typename Segment>
+void Checker<Segment>::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_overlap not implemented");
 }
 
-void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+template<typename Segment>
+void Checker<Segment>::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
-    sys::File fd(segment().abspath, O_RDWR);
+    sys::File fd(this->segment().abspath, O_RDWR);
     sys::PreserveFileTimes pt(fd);
     fd.lseek(s.offset);
     fd.write_all_or_throw("\0", 1);
@@ -275,14 +292,6 @@ std::shared_ptr<segment::Checker> Segment::create(const std::string& format, con
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
 
-
-Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
-    : gz::Checker(abspath), m_segment(format, root, relpath, abspath)
-{
-}
-
-const Segment& Checker::segment() const { return m_segment; }
-
 }
 
 namespace gzlines {
@@ -313,35 +322,6 @@ std::shared_ptr<segment::Checker> Segment::create(const std::string& format, con
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
 
-
-namespace {
-
-struct CheckBackend : public gz::CheckBackend
-{
-    using gz::CheckBackend::CheckBackend;
-
-    size_t actual_end(off_t offset, size_t size) const override
-    {
-        return offset + size + 1;
-    }
-};
-
-}
-
-Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
-    : gz::Checker(abspath), m_segment(format, root, relpath, abspath)
-{
-}
-
-const Segment& Checker::segment() const { return m_segment; }
-
-State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
-{
-    CheckBackend checker(gzabspath, segment().relpath, reporter, mds);
-    checker.accurate = !quick;
-    return checker.check();
-}
-
 Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
     string tmpabspath = gzabspath + ".repack";
@@ -361,6 +341,13 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     return p;
 }
 
+}
+
+namespace gz {
+template class Reader<gzlines::Segment>;
+template class Checker<gzlines::Segment>;
+template class Reader<gzconcat::Segment>;
+template class Checker<gzconcat::Segment>;
 }
 
 }

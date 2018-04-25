@@ -274,11 +274,9 @@ size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor&
 
 
 Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
-    : m_segment(format, root, relpath, abspath), zipabspath(abspath + ".zip")
+    : BaseChecker<Segment>(format, root, relpath, abspath), zipabspath(abspath + ".zip")
 {
 }
-
-const Segment& Checker::segment() const { return m_segment; }
 
 bool Checker::exists_on_disk()
 {

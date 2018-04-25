@@ -51,14 +51,15 @@ struct Reader : public segment::BaseReader<Segment>
 };
 
 
-struct BaseWriter : public segment::Writer
+template<typename Segment>
+struct BaseWriter : public segment::BaseWriter<Segment>
 {
     SequenceFile seqfile;
     std::vector<std::string> written;
-    std::vector<PendingMetadata> pending;
+    std::vector<segment::Writer::PendingMetadata> pending;
     size_t current_pos;
 
-    BaseWriter(const std::string& abspath);
+    BaseWriter(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
     ~BaseWriter();
 
     virtual void write_file(Metadata& md, core::NamedFileDescriptor& fd) = 0;
@@ -72,31 +73,24 @@ struct BaseWriter : public segment::Writer
 };
 
 
-struct Writer : public BaseWriter
+struct Writer : public BaseWriter<Segment>
 {
-protected:
-    Segment m_segment;
-
-public:
-    Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
-    const Segment& segment() const override;
+    using BaseWriter<Segment>::BaseWriter;
     void write_file(Metadata& md, core::NamedFileDescriptor& fd) override;
 };
 
-struct HoleWriter: public BaseWriter
+struct HoleWriter: public BaseWriter<HoleSegment>
 {
-protected:
-    HoleSegment m_segment;
-
-public:
-    HoleWriter(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
-    const Segment& segment() const override;
+    using BaseWriter<HoleSegment>::BaseWriter;
     void write_file(Metadata& md, core::NamedFileDescriptor& fd) override;
 };
 
 
-struct BaseChecker : public segment::Checker
+template<typename Segment>
+struct BaseChecker : public segment::BaseChecker<Segment>
 {
+    using segment::BaseChecker<Segment>::BaseChecker;
+
     /// Call f for each nnnnnn.format file in the directory segment, passing the file name
     void foreach_datafile(std::function<void(const char*)> f);
     void validate(Metadata& md, const scan::Validator& v);
@@ -115,14 +109,9 @@ struct BaseChecker : public segment::Checker
 };
 
 
-class Checker : public BaseChecker
+struct Checker : public BaseChecker<Segment>
 {
-protected:
-    Segment m_segment;
-
-public:
-    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
-    const Segment& segment() const override;
+    using BaseChecker<Segment>::BaseChecker;
 };
 
 
@@ -131,11 +120,9 @@ public:
  * original size but that take up no blocks in the file system. This is used
  * only for testing.
  */
-class HoleChecker : public Checker
+struct HoleChecker : public BaseChecker<HoleSegment>
 {
-public:
-    using Checker::Checker;
-
+    using BaseChecker<HoleSegment>::BaseChecker;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
 };
 

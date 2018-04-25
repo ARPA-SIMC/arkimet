@@ -391,8 +391,9 @@ size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor&
 }
 
 
-BaseWriter::BaseWriter(const std::string& abspath)
-    : seqfile(abspath)
+template<typename Segment>
+BaseWriter<Segment>::BaseWriter(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+    : segment::BaseWriter<Segment>(format, root, relpath, abspath), seqfile(abspath)
 {
     // Ensure that the directory 'abspath' exists
     sys::makedirs(abspath);
@@ -400,20 +401,23 @@ BaseWriter::BaseWriter(const std::string& abspath)
     current_pos = seqfile.read_sequence();
 }
 
-BaseWriter::~BaseWriter()
+template<typename Segment>
+BaseWriter<Segment>::~BaseWriter()
 {
 }
 
-size_t BaseWriter::next_offset() const
+template<typename Segment>
+size_t BaseWriter<Segment>::next_offset() const
 {
     return current_pos;
 }
 
-const types::source::Blob& BaseWriter::append(Metadata& md)
+template<typename Segment>
+const types::source::Blob& BaseWriter<Segment>::append(Metadata& md)
 {
-    fired = false;
+    this->fired = false;
 
-    File fd(str::joinpath(segment().abspath, SequenceFile::data_fname(current_pos, segment().format)),
+    File fd(str::joinpath(this->segment().abspath, SequenceFile::data_fname(current_pos, this->segment().format)),
                 O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
     try {
         write_file(md, fd);
@@ -423,49 +427,45 @@ const types::source::Blob& BaseWriter::append(Metadata& md)
     }
     written.push_back(fd.name());
     fd.close();
-    pending.emplace_back(md, source::Blob::create_unlocked(md.source().format, segment().root, segment().relpath, current_pos, md.data_size()));
+    pending.emplace_back(md, source::Blob::create_unlocked(md.source().format, this->segment().root, this->segment().relpath, current_pos, md.data_size()));
     ++current_pos;
     return *pending.back().new_source;
 }
 
-void BaseWriter::commit()
+template<typename Segment>
+void BaseWriter<Segment>::commit()
 {
-    if (fired) return;
+    if (this->fired) return;
     seqfile.write_sequence(current_pos);
     for (auto& p: pending)
         p.set_source();
     pending.clear();
     written.clear();
-    fired = true;
+    this->fired = true;
 }
 
-void BaseWriter::rollback()
+template<typename Segment>
+void BaseWriter<Segment>::rollback()
 {
-    if (fired) return;
+    if (this->fired) return;
     for (auto fn: written)
         sys::unlink(fn);
     pending.clear();
     written.clear();
-    fired = true;
+    this->fired = true;
 }
 
-void BaseWriter::rollback_nothrow() noexcept
+template<typename Segment>
+void BaseWriter<Segment>::rollback_nothrow() noexcept
 {
-    if (fired) return;
+    if (this->fired) return;
     for (auto fn: written)
         ::unlink(fn.c_str());
     pending.clear();
     written.clear();
-    fired = true;
+    this->fired = true;
 }
 
-
-Writer::Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
-    : BaseWriter(abspath), m_segment(format, root, relpath, abspath)
-{
-}
-
-const Segment& Writer::segment() const { return m_segment; }
 
 void Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
@@ -480,32 +480,29 @@ void Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
 }
 
 
-HoleWriter::HoleWriter(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
-    : BaseWriter(abspath), m_segment(format, root, relpath, abspath)
-{
-}
-const Segment& HoleWriter::segment() const { return m_segment; }
-
 void HoleWriter::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
     if (ftruncate(fd, md.data_size()) == -1)
         fd.throw_error("cannot set file size");
 }
 
-bool BaseChecker::exists_on_disk()
+
+template<typename Segment>
+bool BaseChecker<Segment>::exists_on_disk()
 {
-    if (!sys::isdir(segment().abspath)) return false;
-    return sys::exists(str::joinpath(segment().abspath, ".sequence"));
+    if (!sys::isdir(this->segment().abspath)) return false;
+    return sys::exists(str::joinpath(this->segment().abspath, ".sequence"));
 }
 
-size_t BaseChecker::size()
+template<typename Segment>
+size_t BaseChecker<Segment>::size()
 {
     size_t res = 0;
-    sys::Path dir(segment().abspath);
+    sys::Path dir(this->segment().abspath);
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
         if (!i.isreg()) continue;
-        if (!str::endswith(i->d_name, segment().format)) continue;
+        if (!str::endswith(i->d_name, this->segment().format)) continue;
         struct stat st;
         i.path->fstatat(i->d_name, st);
         res += st.st_size;
@@ -513,25 +510,28 @@ size_t BaseChecker::size()
     return res;
 }
 
-void BaseChecker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
+template<typename Segment>
+void BaseChecker<Segment>::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
-    sys::rename(segment().abspath.c_str(), new_abspath.c_str());
+    sys::rename(this->segment().abspath.c_str(), new_abspath.c_str());
 }
 
-State BaseChecker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
+template<typename Segment>
+State BaseChecker<Segment>::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    CheckBackend checker(segment().format, segment().abspath, segment().relpath, reporter, mds);
+    CheckBackend checker(this->segment().format, this->segment().abspath, this->segment().relpath, reporter, mds);
     checker.accurate = !quick;
     return checker.check();
 }
 
-void BaseChecker::validate(Metadata& md, const scan::Validator& v)
+template<typename Segment>
+void BaseChecker<Segment>::validate(Metadata& md, const scan::Validator& v)
 {
     if (const types::source::Blob* blob = md.has_source_blob()) {
-        if (blob->filename != segment().relpath)
+        if (blob->filename != this->segment().relpath)
             throw std::runtime_error("metadata to validate does not appear to be from this segment");
 
-        string fname = str::joinpath(segment().abspath, SequenceFile::data_fname(blob->offset, blob->format));
+        string fname = str::joinpath(this->segment().abspath, SequenceFile::data_fname(blob->offset, blob->format));
         sys::File fd(fname, O_RDONLY);
         v.validate_file(fd, 0, blob->size);
         return;
@@ -540,35 +540,38 @@ void BaseChecker::validate(Metadata& md, const scan::Validator& v)
     v.validate_buf(buf.data(), buf.size());
 }
 
-void BaseChecker::foreach_datafile(std::function<void(const char*)> f)
+template<typename Segment>
+void BaseChecker<Segment>::foreach_datafile(std::function<void(const char*)> f)
 {
-    sys::Path dir(segment().abspath);
+    sys::Path dir(this->segment().abspath);
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
         if (!i.isreg()) continue;
         if (strcmp(i->d_name, ".sequence") == 0) continue;
-        if (!str::endswith(i->d_name, segment().format)) continue;
+        if (!str::endswith(i->d_name, this->segment().format)) continue;
         f(i->d_name);
     }
 }
 
-size_t BaseChecker::remove()
+template<typename Segment>
+size_t BaseChecker<Segment>::remove()
 {
     size_t size = 0;
     foreach_datafile([&](const char* name) {
-        string pathname = str::joinpath(segment().abspath, name);
+        string pathname = str::joinpath(this->segment().abspath, name);
         size += sys::size(pathname);
         sys::unlink(pathname);
     });
-    sys::unlink_ifexists(str::joinpath(segment().abspath, ".sequence"));
-    sys::unlink_ifexists(str::joinpath(segment().abspath, ".write-lock"));
-    sys::unlink_ifexists(str::joinpath(segment().abspath, ".repack-lock"));
+    sys::unlink_ifexists(str::joinpath(this->segment().abspath, ".sequence"));
+    sys::unlink_ifexists(str::joinpath(this->segment().abspath, ".write-lock"));
+    sys::unlink_ifexists(str::joinpath(this->segment().abspath, ".repack-lock"));
     // Also remove the directory if it is empty
-    rmdir(segment().abspath.c_str());
+    rmdir(this->segment().abspath.c_str());
     return size;
 }
 
-Pending BaseChecker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+template<typename Segment>
+Pending BaseChecker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
     struct Rename : public Transaction
     {
@@ -642,14 +645,14 @@ Pending BaseChecker::repack(const std::string& rootdir, metadata::Collection& md
         }
     };
 
-    string tmprelpath = segment().relpath + ".repack";
-    string tmpabspath = segment().abspath + ".repack";
+    string tmprelpath = this->segment().relpath + ".repack";
+    string tmpabspath = this->segment().abspath + ".repack";
 
-    Pending p(new Rename(tmpabspath, segment().abspath));
+    Pending p(new Rename(tmpabspath, this->segment().abspath));
 
-    Creator creator(rootdir, segment().relpath, mds, tmpabspath);
+    Creator creator(rootdir, this->segment().relpath, mds, tmpabspath);
     creator.hardlink = true;
-    creator.validator = &scan::Validator::by_format(segment().format);
+    creator.validator = &scan::Validator::by_format(this->segment().format);
     creator.create();
 
     // Make sure mds are not holding a reader on the file to repack, because it
@@ -659,20 +662,22 @@ Pending BaseChecker::repack(const std::string& rootdir, metadata::Collection& md
     return p;
 }
 
-void BaseChecker::test_truncate(size_t offset)
+template<typename Segment>
+void BaseChecker<Segment>::test_truncate(size_t offset)
 {
-    utils::files::PreserveFileTimes pft(segment().abspath);
+    utils::files::PreserveFileTimes pft(this->segment().abspath);
 
     // Truncate dir segment
     foreach_datafile([&](const char* name) {
         if (strtoul(name, 0, 10) >= offset)
-            sys::unlink(str::joinpath(segment().abspath, name));
+            sys::unlink(str::joinpath(this->segment().abspath, name));
     });
 }
 
-void BaseChecker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
+template<typename Segment>
+void BaseChecker<Segment>::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
-    SequenceFile seqfile(segment().abspath);
+    SequenceFile seqfile(this->segment().abspath);
     seqfile.open();
     sys::PreserveFileTimes pf(seqfile);
     size_t pos = seqfile.read_sequence();
@@ -680,7 +685,7 @@ void BaseChecker::test_make_hole(metadata::Collection& mds, unsigned hole_size, 
     {
         for (unsigned i = 0; i < hole_size; ++i)
         {
-            File fd(str::joinpath(segment().abspath, SequenceFile::data_fname(pos, segment().format)),
+            File fd(str::joinpath(this->segment().abspath, SequenceFile::data_fname(pos, this->segment().format)),
                 O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
             fd.close();
             ++pos;
@@ -700,7 +705,8 @@ void BaseChecker::test_make_hole(metadata::Collection& mds, unsigned hole_size, 
     seqfile.write_sequence(pos);
 }
 
-void BaseChecker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
+template<typename Segment>
+void BaseChecker<Segment>::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
 {
     for (unsigned i = data_idx; i < mds.size(); ++i)
     {
@@ -713,7 +719,8 @@ void BaseChecker::test_make_overlap(metadata::Collection& mds, unsigned overlap_
     }
 }
 
-void BaseChecker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+template<typename Segment>
+void BaseChecker<Segment>::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
     File fd(str::joinpath(s.absolutePathname(), SequenceFile::data_fname(s.offset, s.format)), O_WRONLY);
@@ -721,18 +728,16 @@ void BaseChecker::test_corrupt(const metadata::Collection& mds, unsigned data_id
 }
 
 
-Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
-    : m_segment(format, root, relpath, abspath)
-{
-}
-
-const Segment& Checker::segment() const { return m_segment; }
-
 State HoleChecker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
     // Force quick, since the file contents are fake
     return BaseChecker::check(reporter, mds, true);
 }
+
+template class BaseWriter<Segment>;
+template class BaseWriter<HoleSegment>;
+template class BaseChecker<Segment>;
+template class BaseChecker<HoleSegment>;
 
 }
 }

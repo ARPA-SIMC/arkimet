@@ -107,22 +107,25 @@ time_t Segment::timestamp() const
 }
 
 
-Reader::Reader(const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::Reader(lock), fd(abspath + ".gz", O_RDONLY), gzfd(fd.name())
+template<typename Segment>
+Reader<Segment>::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    : segment::BaseReader<Segment>(format, root, relpath, abspath, lock), fd(abspath + ".gz", O_RDONLY), gzfd(fd.name())
 {
     // Read index
     idx.read(fd.name() + ".idx");
 }
 
-bool Reader::scan_data(metadata_dest_func dest)
+template<typename Segment>
+bool Reader<Segment>::scan_data(metadata_dest_func dest)
 {
-    auto scanner = scan::Scanner::get_scanner(segment().format);
-    compress::TempUnzip uncompressed(segment().abspath);
-    return scanner->scan_file(segment().abspath, shared_from_this(), dest);
+    auto scanner = scan::Scanner::get_scanner(this->segment().format);
+    compress::TempUnzip uncompressed(this->segment().abspath);
+    return scanner->scan_file(this->segment().abspath, this->shared_from_this(), dest);
 }
 
 
-void Reader::reposition(off_t ofs)
+template<typename Segment>
+void Reader<Segment>::reposition(off_t ofs)
 {
     size_t block = idx.lookup(ofs);
     if (block != last_block || gzfd == NULL)
@@ -147,8 +150,8 @@ void Reader::reposition(off_t ofs)
     acct::gzip_forward_seek_bytes.incr(ofs - idx.ofs_unc[block]);
 }
 
-
-std::vector<uint8_t> Reader::read(const types::source::Blob& src)
+template<typename Segment>
+std::vector<uint8_t> Reader<Segment>::read(const types::source::Blob& src)
 {
     vector<uint8_t> buf;
     buf.resize(src.size);
@@ -169,12 +172,13 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
     gzfd.read_all_or_throw(buf.data(), src.size);
     last_ofs = src.offset + src.size;
     acct::gzip_data_read_count.incr();
-    iotrace::trace_file(segment().abspath, src.offset, src.size, "read data");
+    iotrace::trace_file(this->segment().abspath, src.offset, src.size, "read data");
 
     return buf;
 }
 
-size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor& out)
+template<typename Segment>
+size_t Reader<Segment>::stream(const types::source::Blob& src, core::NamedFileDescriptor& out)
 {
     vector<uint8_t> buf = read(src);
     if (src.format == "vm2")
@@ -194,35 +198,41 @@ size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor&
 }
 
 
-Checker::Checker(const std::string& abspath)
-    : gzabspath(abspath + ".gz"), gzidxabspath(abspath + ".gz.idx")
+template<typename Segment>
+Checker<Segment>::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+    : BaseChecker<Segment>(format, root, relpath, abspath), gzabspath(abspath + ".gz"), gzidxabspath(abspath + ".gz.idx")
 {
 }
 
-bool Checker::exists_on_disk()
+template<typename Segment>
+bool Checker<Segment>::exists_on_disk()
 {
     return sys::exists(gzabspath) && sys::exists(gzidxabspath);
 }
 
-size_t Checker::size()
+template<typename Segment>
+size_t Checker<Segment>::size()
 {
     return sys::size(gzabspath) + sys::size(gzidxabspath);
 }
 
-void Checker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
+template<typename Segment>
+void Checker<Segment>::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
     sys::rename(gzabspath, new_abspath + ".gz");
     sys::rename(gzidxabspath, new_abspath + ".gz.idx");
 }
 
-State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
+template<typename Segment>
+State Checker<Segment>::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    CheckBackend checker(gzabspath, segment().relpath, reporter, mds);
+    CheckBackend checker(gzabspath, this->segment().relpath, reporter, mds);
     checker.accurate = !quick;
     return checker.check();
 }
 
-size_t Checker::remove()
+template<typename Segment>
+size_t Checker<Segment>::remove()
 {
     size_t res = size();
     sys::unlink(gzabspath);
@@ -230,15 +240,16 @@ size_t Checker::remove()
     return res;
 }
 
-Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+template<typename Segment>
+Pending Checker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
     string tmpabspath = gzabspath + ".repack";
     string tmpidxabspath = gzidxabspath + ".repack";
 
     Pending p(new files::Rename2Transaction(tmpabspath, gzabspath, tmpidxabspath, gzidxabspath));
 
-    Creator creator(rootdir, segment().relpath, mds, tmpabspath, tmpidxabspath);
-    creator.validator = &scan::Validator::by_filename(segment().abspath);
+    Creator creator(rootdir, this->segment().relpath, mds, tmpabspath, tmpidxabspath);
+    creator.validator = &scan::Validator::by_filename(this->segment().abspath);
     creator.create();
 
     // Make sure mds are not holding a reader on the file to repack, because it
@@ -248,37 +259,41 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     return p;
 }
 
-void Checker::test_truncate(size_t offset)
+template<typename Segment>
+void Checker<Segment>::test_truncate(size_t offset)
 {
-    if (!sys::exists(segment().abspath))
-        utils::createFlagfile(segment().abspath);
+    if (!sys::exists(this->segment().abspath))
+        utils::createFlagfile(this->segment().abspath);
 
     if (offset % 512 != 0)
         offset += 512 - (offset % 512);
 
-    utils::files::PreserveFileTimes pft(segment().abspath);
-    if (::truncate(segment().abspath.c_str(), offset) < 0)
+    utils::files::PreserveFileTimes pft(this->segment().abspath);
+    if (::truncate(this->segment().abspath.c_str(), offset) < 0)
     {
         stringstream ss;
-        ss << "cannot truncate " << segment().abspath << " at " << offset;
+        ss << "cannot truncate " << this->segment().abspath << " at " << offset;
         throw std::system_error(errno, std::system_category(), ss.str());
     }
 }
 
-void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
+template<typename Segment>
+void Checker<Segment>::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_hole not implemented");
 }
 
-void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
+template<typename Segment>
+void Checker<Segment>::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_overlap not implemented");
 }
 
-void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+template<typename Segment>
+void Checker<Segment>::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
-    sys::File fd(segment().abspath, O_RDWR);
+    sys::File fd(this->segment().abspath, O_RDWR);
     sys::PreserveFileTimes pt(fd);
     fd.lseek(s.offset);
     fd.write_all_or_throw("\0", 1);
@@ -313,23 +328,6 @@ std::shared_ptr<segment::Checker> Segment::create(const std::string& format, con
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
 
-
-Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : gzidx::Reader(abspath, lock), m_segment(format, root, relpath, abspath)
-{
-}
-
-const Segment& Reader::segment() const { return m_segment; }
-
-
-const Segment& Checker::segment() const { return m_segment; }
-
-
-Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
-    : gzidx::Checker(abspath), m_segment(format, root, relpath, abspath)
-{
-}
-
 }
 
 namespace gzidxlines {
@@ -361,14 +359,6 @@ std::shared_ptr<segment::Checker> Segment::create(const std::string& format, con
 }
 
 
-Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : gzidx::Reader(abspath, lock), m_segment(format, root, relpath, abspath)
-{
-}
-
-const Segment& Reader::segment() const { return m_segment; }
-
-
 namespace {
 
 struct CheckBackend : public gzidx::CheckBackend
@@ -382,13 +372,6 @@ struct CheckBackend : public gzidx::CheckBackend
 };
 
 }
-
-Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
-    : gzidx::Checker(abspath), m_segment(format, root, relpath, abspath)
-{
-}
-
-const Segment& Checker::segment() const { return m_segment; }
 
 State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
@@ -416,6 +399,13 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     return p;
 }
 
+}
+
+namespace gzidx {
+template class Reader<gzidxlines::Segment>;
+template class Checker<gzidxlines::Segment>;
+template class Reader<gzidxconcat::Segment>;
+template class Checker<gzidxconcat::Segment>;
 }
 
 }
