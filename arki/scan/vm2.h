@@ -23,16 +23,16 @@ struct Validator;
 
 namespace vm2 {
 const Validator& validator();
+
+struct Input;
 }
 
 class Vm2 : public Scanner
 {
 protected:
-    std::istream* in;
+    vm2::Input* input = nullptr;
     unsigned lineno;
-
-    meteo::vm2::Parser* parser;
-    void scan_string(meteo::vm2::Value& value, const std::string& data, Metadata& md);
+    bool scan_stream(vm2::Input& in, Metadata& md);
 
 public:
     Vm2();

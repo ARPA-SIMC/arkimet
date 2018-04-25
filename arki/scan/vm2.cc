@@ -70,9 +70,38 @@ static VM2Validator vm_validator;
 
 const Validator& validator() { return vm_validator; }
 
+struct Input
+{
+    std::istream* in = nullptr;
+    meteo::vm2::Parser* parser = nullptr;
+    bool close = false;
+
+    Input(const std::string& abspath)
+        : close(true)
+    {
+        in = new std::ifstream(abspath.c_str());
+        if (!in->good())
+            throw_file_error(abspath, "cannot open file for reading");
+        parser = new meteo::vm2::Parser(*in);
+    }
+
+    Input(std::istream& st)
+        : in(&st), close(false)
+    {
+        parser = new meteo::vm2::Parser(*in);
+    }
+
+    ~Input()
+    {
+        delete parser;
+        if (close)
+            delete in;
+    }
+};
+
 }
 
-Vm2::Vm2() : in(0), parser(0) {}
+Vm2::Vm2() {}
 
 Vm2::~Vm2()
 {
@@ -82,22 +111,19 @@ Vm2::~Vm2()
 void Vm2::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
 {
     Scanner::open(filename, reader);
-    this->in = new std::ifstream(filename.c_str());
-    if (!in->good())
-        throw_file_error(filename, "cannot open file for reading");
-    parser = new meteo::vm2::Parser(*in);
+    delete input;
+    input = nullptr;
+    input = new vm2::Input(filename);
 }
 
 void Vm2::close()
 {
     Scanner::close();
-    delete in;
-    if (parser) delete parser;
-    in = 0;
-    parser = 0;
+    delete input;
+    input = nullptr;
 }
 
-bool Vm2::next(Metadata& md)
+bool Vm2::scan_stream(vm2::Input& input, Metadata& md)
 {
     meteo::vm2::Value value;
     std::string line;
@@ -105,9 +131,9 @@ bool Vm2::next(Metadata& md)
     off_t offset = 0;
     while (true)
     {
-        offset = in->tellg();
+        offset = input.in->tellg();
         try {
-            if (!parser->next(value, line))
+            if (!input.parser->next(value, line))
                 return false;
             else
                 break;
@@ -141,9 +167,19 @@ bool Vm2::next(Metadata& md)
     return true;
 }
 
+bool Vm2::next(Metadata& md)
+{
+    return scan_stream(*input, md);
+}
+
 std::unique_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
 {
-    throw std::runtime_error("scanning VM2 from memory is not yet implemented");
+    std::istringstream str(std::string(data.begin(), data.end()));
+    vm2::Input input(str);
+    std::unique_ptr<Metadata> md(new Metadata);
+    if (!scan_stream(input, *md))
+        throw std::runtime_error("input line did not look like a VM2 line");
+    return md;
 }
 
 vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& value)
