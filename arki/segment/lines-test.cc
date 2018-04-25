@@ -31,7 +31,7 @@ class Tests : public SegmentTests<Segment, Data>
     void register_tests() override;
 };
 
-Tests<segment::lines::Checker, VM2Data> test1("arki_segment_lines_vm2");
+Tests<segment::lines::Segment, VM2Data> test1("arki_segment_lines_vm2");
 
 inline size_t datasize(const Metadata& md)
 {

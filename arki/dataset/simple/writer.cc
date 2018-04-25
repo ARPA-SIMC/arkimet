@@ -42,15 +42,15 @@ struct AppendSegment
 
     AppendSegment(std::shared_ptr<const simple::Config> config, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
         : config(config), lock(lock), segment(segment),
-          dir(str::dirname(segment->abspath)),
-          basename(str::basename(segment->abspath))
+          dir(str::dirname(segment->segment().abspath)),
+          basename(str::basename(segment->segment().abspath))
     {
         struct stat st_data;
         if (!dir.fstatat_ifexists(basename.c_str(), st_data))
             return;
 
         // Read the metadata
-        auto reader = Segment::make_reader(segment->format, segment->root, segment->relpath, segment->abspath, lock);
+        auto reader = segment->segment().reader(lock);
         reader->scan(mds.inserter_func());
 
         // Read the summary
@@ -83,10 +83,10 @@ struct AppendSegment
             const types::source::Blob& new_source = segment->append(md);
             add(md, new_source);
             segment->commit();
-            time_t ts = scan::timestamp(segment->abspath);
-            mft->acquire(segment->relpath, ts, sum);
-            mds.writeAtomically(segment->abspath + ".metadata");
-            sum.writeAtomically(segment->abspath + ".summary");
+            time_t ts = scan::timestamp(segment->segment().abspath);
+            mft->acquire(segment->segment().relpath, ts, sum);
+            mds.writeAtomically(segment->segment().abspath + ".metadata");
+            sum.writeAtomically(segment->segment().abspath + ".summary");
             mft->flush();
             return ACQ_OK;
         } catch (std::exception& e) {
@@ -112,10 +112,10 @@ struct AppendSegment
         }
 
         segment->commit();
-        time_t ts = scan::timestamp(segment->abspath);
-        mft->acquire(segment->relpath, ts, sum);
-        mds.writeAtomically(segment->abspath + ".metadata");
-        sum.writeAtomically(segment->abspath + ".summary");
+        time_t ts = scan::timestamp(segment->segment().abspath);
+        mft->acquire(segment->segment().relpath, ts, sum);
+        mds.writeAtomically(segment->segment().abspath + ".metadata");
+        sum.writeAtomically(segment->segment().abspath + ".summary");
         mft->flush();
     }
 };

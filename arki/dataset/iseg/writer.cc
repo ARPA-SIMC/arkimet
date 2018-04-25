@@ -44,7 +44,7 @@ struct AppendSegment
         try {
             if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->next_offset()))
             {
-                md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relpath + ":" + std::to_string(old->offset));
+                md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset));
                 return ACQ_ERROR_DUPLICATE;
             }
             // Invalidate the summary cache for this month
@@ -139,7 +139,7 @@ struct AppendSegment
 
             if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->next_offset()))
             {
-                e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relpath + ":" + std::to_string(old->offset));
+                e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset));
                 e->result = ACQ_ERROR_DUPLICATE;
                 continue;
             }
@@ -191,7 +191,7 @@ struct AppendSegment
                 int new_usn;
                 if (!scan::Scanner::update_sequence_number(e->md, new_usn))
                 {
-                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relpath + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
+                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
                     e->result = ACQ_ERROR_DUPLICATE;
                     continue;
                 }
@@ -210,7 +210,7 @@ struct AppendSegment
                 // If the new element has no higher Update Sequence Number, report a duplicate
                 if (old_usn > new_usn)
                 {
-                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->relpath + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
+                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
                     e->result = ACQ_ERROR_DUPLICATE;
                     continue;
                 }

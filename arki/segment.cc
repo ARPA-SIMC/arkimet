@@ -126,7 +126,7 @@ std::shared_ptr<segment::Writer> Segment::make_writer(const std::string& format,
     {
         if (S_ISDIR(st->st_mode))
         {
-            if (segment::dir::Checker::can_store(format))
+            if (segment::dir::Segment::can_store(format))
             {
                 if (mock_data)
                     res.reset(new segment::dir::HoleWriter(format, root, relpath, abspath));
@@ -197,7 +197,7 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
     {
         if (S_ISDIR(st->st_mode))
         {
-            if (segment::dir::Checker::can_store(format))
+            if (segment::dir::Segment::can_store(format))
             {
                 if (mock_data)
                     res.reset(new segment::dir::HoleChecker(format, root, relpath, abspath));
@@ -309,7 +309,7 @@ bool Reader::scan(metadata_dest_func dest)
     string md_abspath = segment().abspath + ".metadata";
     unique_ptr<struct stat> st_md = sys::stat(md_abspath);
     // If it exists and it looks new enough, use it
-    if (st_md.get() && st_md->st_mtime >= timestamp())
+    if (st_md.get() && st_md->st_mtime >= segment().timestamp())
         return Metadata::read_file(md_abspath, [&](unique_ptr<Metadata> md) {
             md->sourceBlob().lock(shared_from_this());
             return dest(move(md));
@@ -347,36 +347,36 @@ void Writer::PendingMetadata::set_source()
 
 bool Checker::scan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
 {
-    auto reader = this->reader(lock);
+    auto reader = this->segment().reader(lock);
     return reader->scan_data(dest);
 }
 
 std::shared_ptr<segment::Checker> Checker::tar(metadata::Collection& mds)
 {
-    segment::tar::Checker::create(format, root, relpath, abspath, mds);
+    segment::tar::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds);
     remove();
-    return make_shared<segment::tar::Checker>(format, root, relpath, abspath);
+    return make_shared<segment::tar::Checker>(segment().format, segment().root, segment().relpath, segment().abspath);
 }
 
 std::shared_ptr<segment::Checker> Checker::zip(metadata::Collection& mds)
 {
-    segment::zip::Checker::create(format, root, relpath, abspath, mds);
+    segment::zip::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds);
     remove();
-    return make_shared<segment::zip::Checker>(format, root, relpath, abspath);
+    return make_shared<segment::zip::Checker>(segment().format, segment().root, segment().relpath, segment().abspath);
 }
 
 std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds)
 {
     std::shared_ptr<segment::Checker> res;
-    if (format == "vm2")
-        res = segment::gzidxlines::Checker::create(format, root, relpath, abspath, mds);
+    if (segment().format == "vm2")
+        res = segment::gzidxlines::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds);
     else
-        res = segment::gzidxconcat::Checker::create(format, root, relpath, abspath, mds);
+        res = segment::gzidxconcat::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds);
     remove();
     return res;
 }
 
-void Checker::move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
+std::shared_ptr<Checker> Checker::move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
     sys::makedirs(str::dirname(new_abspath));
 
@@ -384,7 +384,7 @@ void Checker::move(const std::string& new_root, const std::string& new_relpath, 
     if (sys::exists(new_abspath) || sys::exists(new_abspath + ".tar") || sys::exists(new_abspath + ".gz") || sys::exists(new_abspath + ".zip"))
     {
         stringstream ss;
-        ss << "cannot archive " << abspath << " to " << new_abspath << " because the destination already exists";
+        ss << "cannot archive " << segment().abspath << " to " << new_abspath << " because the destination already exists";
         throw runtime_error(ss.str());
     }
 
@@ -395,12 +395,15 @@ void Checker::move(const std::string& new_root, const std::string& new_relpath, 
     move_data(new_root, new_relpath, new_abspath);
 
     // Move metadata to archive
-    sys::rename_ifexists(abspath + ".metadata", new_abspath + ".metadata");
-    sys::rename_ifexists(abspath + ".summary", new_abspath + ".summary");
+    sys::rename_ifexists(segment().abspath + ".metadata", new_abspath + ".metadata");
+    sys::rename_ifexists(segment().abspath + ".summary", new_abspath + ".summary");
 
-    root = new_root;
-    relpath = new_relpath;
-    abspath = new_abspath;
+    // TODO: we currently lack a method to instantiate "same of self, but
+    // there", so returning an empty shared_ptr so that if someone tries to use
+    // the result they get a predictable segfault instead of an unpredictable
+    // behaviour
+    return std::shared_ptr<Checker>();
+    //return checker_moved(new_root, new_relpath, new_abspath);
 }
 
 void Checker::test_truncate(const metadata::Collection& mds, unsigned data_idx)

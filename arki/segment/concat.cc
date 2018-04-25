@@ -65,6 +65,44 @@ struct HoleFile : public fd::File
 
 const char* Segment::type() const { return "concat"; }
 bool Segment::single_file() const { return true; }
+std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+{
+    return make_shared<Reader>(format, root, relpath, abspath, lock);
+}
+std::shared_ptr<segment::Checker> Segment::checker() const
+{
+    return make_shared<Checker>(format, root, relpath, abspath);
+}
+std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath)
+{
+    return make_shared<Checker>(format, rootdir, relpath, abspath);
+}
+std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
+{
+    fd::Creator creator(rootdir, relpath, mds, std::unique_ptr<fd::File>(new File(abspath)));
+    creator.create();
+    return make_shared<Checker>(format, rootdir, relpath, abspath);
+}
+bool Segment::can_store(const std::string& format)
+{
+    return format == "grib" || format == "bufr";
+}
+
+
+const char* HoleSegment::type() const { return "hole_concat"; }
+bool HoleSegment::single_file() const { return true; }
+std::shared_ptr<segment::Reader> HoleSegment::reader(std::shared_ptr<core::Lock> lock) const
+{
+    return make_shared<Reader>(format, root, relpath, abspath, lock);
+}
+std::shared_ptr<segment::Checker> HoleSegment::checker() const
+{
+    return make_shared<HoleChecker>(format, root, relpath, abspath);
+}
+std::shared_ptr<segment::Checker> HoleSegment::make_checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+{
+    return make_shared<HoleChecker>(format, root, relpath, abspath);
+}
 
 
 Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
@@ -76,11 +114,11 @@ const Segment& Reader::segment() const { return m_segment; }
 
 
 Writer::Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
-    : fd::Writer(format, root, relpath, open_file(abspath, O_WRONLY | O_CREAT | mode, 0666))
+    : fd::Writer(open_file(abspath, O_WRONLY | O_CREAT | mode, 0666)), m_segment(format, root, relpath, abspath)
 {
 }
 
-const char* Writer::type() const { return "concat"; }
+const Segment& Writer::segment() const { return m_segment; }
 
 std::unique_ptr<fd::File> Writer::open_file(const std::string& pathname, int flags, mode_t mode)
 {
@@ -88,11 +126,11 @@ std::unique_ptr<fd::File> Writer::open_file(const std::string& pathname, int fla
 }
 
 HoleWriter::HoleWriter(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
-    : fd::Writer(format, root, relpath, open_file(abspath, O_WRONLY | O_CREAT | mode, 0666))
+    : fd::Writer(open_file(abspath, O_WRONLY | O_CREAT | mode, 0666)), m_segment(format, root, relpath, abspath)
 {
 }
 
-const char* HoleWriter::type() const { return "hole_concat"; }
+const Segment& HoleWriter::segment() const { return m_segment; }
 
 std::unique_ptr<fd::File> HoleWriter::open_file(const std::string& pathname, int flags, mode_t mode)
 {
@@ -100,7 +138,12 @@ std::unique_ptr<fd::File> HoleWriter::open_file(const std::string& pathname, int
 }
 
 
-const char* Checker::type() const { return "concat"; }
+Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+    : m_segment(format, root, relpath, abspath)
+{
+}
+
+const Segment& Checker::segment() const { return m_segment; }
 
 std::unique_ptr<fd::File> Checker::open_file(const std::string& pathname, int flags, mode_t mode)
 {
@@ -112,20 +155,20 @@ std::unique_ptr<fd::File> Checker::open(const std::string& pathname)
     return std::unique_ptr<fd::File>(new File(pathname, O_RDWR, 0666));
 }
 
-std::shared_ptr<segment::Reader> Checker::reader(std::shared_ptr<core::Lock> lock)
-{
-    return make_shared<Reader>(format, root, relpath, abspath, lock);
-}
-
 State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    fd::CheckBackend checker(abspath, relpath, reporter, mds);
+    fd::CheckBackend checker(segment().abspath, segment().relpath, reporter, mds);
     checker.accurate = !quick;
     return checker.check();
 }
 
 
-const char* HoleChecker::type() const { return "hole_concat"; }
+HoleChecker::HoleChecker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+    : m_segment(format, root, relpath, abspath)
+{
+}
+
+const Segment& HoleChecker::segment() const { return m_segment; }
 
 std::unique_ptr<fd::File> HoleChecker::open_file(const std::string& pathname, int flags, mode_t mode)
 {
@@ -137,13 +180,20 @@ std::unique_ptr<fd::File> HoleChecker::open(const std::string& pathname)
     return std::unique_ptr<fd::File>(new HoleFile(pathname, O_RDWR, 0666));
 }
 
+State HoleChecker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
+{
+    fd::CheckBackend checker(segment().abspath, segment().relpath, reporter, mds);
+    checker.accurate = !quick;
+    return checker.check();
+}
+
 Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
-    string tmpabspath = abspath + ".repack";
+    string tmpabspath = segment().abspath + ".repack";
 
-    Pending p(new files::RenameTransaction(tmpabspath, abspath));
+    Pending p(new files::RenameTransaction(tmpabspath, segment().abspath));
 
-    fd::Creator creator(rootdir, relpath, mds, open_file(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666));
+    fd::Creator creator(rootdir, segment().relpath, mds, open_file(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666));
     // Skip validation, since all data reads as zeroes
     // creator.validator = &scan::Validator::by_filename(abspath);
     creator.create();
@@ -153,18 +203,6 @@ Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& md
     for (auto& md: mds) md->sourceBlob().unlock();
 
     return p;
-}
-
-bool Checker::can_store(const std::string& format)
-{
-    return format == "grib" || format == "bufr";
-}
-
-std::shared_ptr<Checker> Checker::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
-{
-    fd::Creator creator(rootdir, relpath, mds, std::unique_ptr<fd::File>(new File(abspath)));
-    creator.create();
-    return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
 
 }

@@ -15,19 +15,19 @@ namespace missing {
 
 const char* Segment::type() const { return "missing"; }
 bool Segment::single_file() const { return true; }
-
-
-Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-   : segment::Reader(lock), m_segment(format, root, relpath, abspath)
+time_t Segment::timestamp() const
 {
+    throw std::runtime_error("cannot get mtime of " + abspath + ": segment has disappeared");
+}
+std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+{
+    return make_shared<Reader>(format, root, relpath, abspath, lock);
+}
+std::shared_ptr<segment::Checker> Segment::checker() const
+{
+    return Segment::make_checker(format, root, relpath, abspath);
 }
 
-const Segment& Reader::segment() const { return m_segment; }
-
-time_t Reader::timestamp()
-{
-    throw std::runtime_error("cannot get mtime of " + m_segment.abspath + ": segment has disappeared");
-}
 
 bool Reader::scan_data(metadata_dest_func dest)
 {

@@ -31,8 +31,8 @@ class Tests : public SegmentTests<Segment, Data>
     void register_tests() override;
 };
 
-Tests<segment::concat::Checker, GRIBData> test1("arki_segment_concat_grib");
-Tests<segment::concat::Checker, BUFRData> test2("arki_segment_concat_bufr");
+Tests<segment::concat::Segment, GRIBData> test1("arki_segment_concat_grib");
+Tests<segment::concat::Segment, BUFRData> test2("arki_segment_concat_bufr");
 
 inline size_t datasize(const Metadata& md)
 {

@@ -58,6 +58,28 @@ struct File : public fd::File
 
 const char* Segment::type() const { return "concat"; }
 bool Segment::single_file() const { return true; }
+std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+{
+    return make_shared<Reader>(format, root, relpath, abspath, lock);
+}
+std::shared_ptr<segment::Checker> Segment::checker() const
+{
+    return make_shared<Checker>(format, root, relpath, abspath);
+}
+std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath)
+{
+    return make_shared<Checker>(format, rootdir, relpath, abspath);
+}
+std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
+{
+    fd::Creator creator(rootdir, relpath, mds, std::unique_ptr<fd::File>(new File(abspath)));
+    creator.create();
+    return make_shared<Checker>(format, rootdir, relpath, abspath);
+}
+bool Segment::can_store(const std::string& format)
+{
+    return format == "vm2";
+}
 
 
 Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
@@ -69,18 +91,23 @@ const Segment& Reader::segment() const { return m_segment; }
 
 
 Writer::Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
-    : fd::Writer(format, root, relpath, open_file(abspath, O_WRONLY | O_CREAT | mode, 0666))
+    : fd::Writer(open_file(abspath, O_WRONLY | O_CREAT | mode, 0666)), m_segment(format, root, relpath, abspath)
 {
 }
 
-const char* Writer::type() const { return "lines"; }
+const Segment& Writer::segment() const { return m_segment; }
 
 std::unique_ptr<fd::File> Writer::open_file(const std::string& pathname, int flags, mode_t mode)
 {
     return unique_ptr<fd::File>(new File(pathname, flags, mode));
 }
 
-const char* Checker::type() const { return "lines"; }
+Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+    : m_segment(format, root, relpath, abspath)
+{
+}
+
+const Segment& Checker::segment() const { return m_segment; }
 
 std::unique_ptr<fd::File> Checker::open_file(const std::string& pathname, int flags, mode_t mode)
 {
@@ -106,28 +133,11 @@ struct CheckBackend : public fd::CheckBackend
 
 }
 
-std::shared_ptr<segment::Reader> Checker::reader(std::shared_ptr<core::Lock> lock)
-{
-    return make_shared<Reader>(format, root, relpath, abspath, lock);
-}
-
 State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    CheckBackend checker(abspath, relpath, reporter, mds);
+    CheckBackend checker(segment().abspath, segment().relpath, reporter, mds);
     checker.accurate = !quick;
     return checker.check();
-}
-
-bool Checker::can_store(const std::string& format)
-{
-    return format == "vm2";
-}
-
-std::shared_ptr<Checker> Checker::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
-{
-    fd::Creator creator(rootdir, relpath, mds, std::unique_ptr<fd::File>(new File(abspath)));
-    creator.create();
-    return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
 
 }

@@ -21,9 +21,9 @@ class Tests : public SegmentTests<Segment, Data>
     void register_tests() override;
 };
 
-Tests<segment::gzidxconcat::Checker, GRIBData> test1("arki_segment_gzidx_grib");
-Tests<segment::gzidxconcat::Checker, BUFRData> test2("arki_segment_gzidx_bufr");
-Tests<segment::gzidxlines::Checker, VM2Data> test3("arki_segment_gzidxlines_vm2");
+Tests<segment::gzidxconcat::Segment, GRIBData> test1("arki_segment_gzidx_grib");
+Tests<segment::gzidxconcat::Segment, BUFRData> test2("arki_segment_gzidx_bufr");
+Tests<segment::gzidxlines::Segment, VM2Data> test3("arki_segment_gzidxlines_vm2");
 
 template<class Segment, class Data>
 void Tests<Segment, Data>::register_tests() {

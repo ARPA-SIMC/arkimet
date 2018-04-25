@@ -51,6 +51,8 @@ struct CheckBackend : public AppendCheckBackend
 struct Segment : public arki::Segment
 {
     using arki::Segment::Segment;
+
+    time_t timestamp() const override;
 };
 
 
@@ -63,7 +65,6 @@ struct Reader : public segment::Reader
     Reader(const std::string& abspath, std::shared_ptr<core::Lock> lock);
 
     const Segment& segment() const override = 0;
-    time_t timestamp() override;
 
     bool scan_data(metadata_dest_func dest) override;
     std::vector<uint8_t> read(const types::source::Blob& src) override;
@@ -78,10 +79,9 @@ struct Writer : public segment::Writer
     off_t current_pos;
     std::vector<PendingMetadata> pending;
 
-    Writer(const std::string& format, const std::string& root, const std::string& relpath, std::unique_ptr<File> fd);
+    Writer(std::unique_ptr<File> fd);
     ~Writer();
 
-    bool single_file() const override;
     virtual std::unique_ptr<File> open_file(const std::string& pathname, int flags, mode_t mode) = 0;
     size_t next_offset() const override;
     const types::source::Blob& append(Metadata& md) override;
@@ -103,9 +103,7 @@ protected:
 public:
     using segment::Checker::Checker;
 
-    bool single_file() const override;
     bool exists_on_disk() override;
-    time_t timestamp() override;
     size_t size() override;
 
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;

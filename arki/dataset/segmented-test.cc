@@ -74,7 +74,7 @@ add_method("gz", [](Fixture& f) {
         auto checker(f.makeSegmentedChecker());
         checker->segments_tracked([&](segmented::CheckerSegment& seg) {
             seg.compress();
-            sys::unlink(seg.segment->abspath + ".gz.idx");
+            sys::unlink(seg.segment->segment().abspath + ".gz.idx");
         });
     }
 

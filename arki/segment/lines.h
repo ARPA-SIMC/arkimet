@@ -16,6 +16,12 @@ struct Segment : public fd::Segment
 
     const char* type() const override;
     bool single_file() const override;
+    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
+    std::shared_ptr<segment::Checker> checker() const override;
+
+    static std::shared_ptr<Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
+    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds);
+    static bool can_store(const std::string& format);
 };
 
 class Reader : public fd::Reader
@@ -30,25 +36,26 @@ public:
 
 class Writer : public fd::Writer
 {
+protected:
+    Segment m_segment;
+
 public:
     Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode=0);
-    const char* type() const override;
+    const Segment& segment() const override;
     std::unique_ptr<fd::File> open_file(const std::string& pathname, int flags, mode_t mode) override;
 };
 
 class Checker : public fd::Checker
 {
 protected:
+    Segment m_segment;
     std::unique_ptr<fd::File> open_file(const std::string& pathname, int flags, mode_t mode) override;
     std::unique_ptr<fd::File> open(const std::string& pathname) override;
 
 public:
-    using fd::Checker::Checker;
-    const char* type() const override;
-    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) override;
+    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
+    const Segment& segment() const override;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
-    static bool can_store(const std::string& format);
-    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds);
 };
 
 }

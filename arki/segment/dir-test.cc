@@ -32,10 +32,10 @@ class Tests : public SegmentTests<Segment, Data>
     void register_tests() override;
 };
 
-Tests<segment::dir::Checker, GRIBData> test1("arki_segment_dir_grib");
-Tests<segment::dir::Checker, BUFRData> test2("arki_segment_dir_bufr");
-Tests<segment::dir::Checker, ODIMData> test3("arki_segment_dir_odim");
-Tests<segment::dir::Checker, VM2Data>  test4("arki_segment_dir_vm2");
+Tests<segment::dir::Segment, GRIBData> test1("arki_segment_dir_grib");
+Tests<segment::dir::Segment, BUFRData> test2("arki_segment_dir_bufr");
+Tests<segment::dir::Segment, ODIMData> test3("arki_segment_dir_odim");
+Tests<segment::dir::Segment, VM2Data>  test4("arki_segment_dir_vm2");
 
 inline size_t datasize(const Metadata& md)
 {
@@ -84,14 +84,14 @@ this->add_method("append", [](Fixture& f) {
             // Start the append transaction, the file is written
             const types::source::Blob& new_source = w->append(md);
             wassert(actual((size_t)new_source.offset) == 0u);
-            wassert(actual(sys::size(str::joinpath(w->abspath, "000000.grib"))) == data_size);
+            wassert(actual(sys::size(str::joinpath(w->segment().abspath, "000000.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Commit
             w->commit();
 
             // After commit, metadata is updated
-            wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), w->relpath, 0, data_size));
+            wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), w->segment().relpath, 0, data_size));
         }
 
 
@@ -106,14 +106,14 @@ this->add_method("append", [](Fixture& f) {
             // Start the append transaction, the file is written
             const types::source::Blob& new_source = w->append(md);
             wassert(actual((size_t)new_source.offset) == 1u);
-            wassert(actual(sys::size(str::joinpath(w->abspath, "000001.grib"))) == data_size);
+            wassert(actual(sys::size(str::joinpath(w->segment().abspath, "000001.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Rollback
             w->rollback();
 
             // After rollback, the file has been deleted
-            wassert(actual(sys::exists(str::joinpath(w->abspath, "000001.grib"))).isfalse());
+            wassert(actual(sys::exists(str::joinpath(w->segment().abspath, "000001.grib"))).isfalse());
             wassert(actual_type(md.source()) == *orig_source);
         }
 
@@ -129,14 +129,14 @@ this->add_method("append", [](Fixture& f) {
             // Rolling back a transaction does leave a gap in the sequence
             const types::source::Blob& new_source = w->append(md);
             wassert(actual((size_t)new_source.offset) == 2u);
-            wassert(actual(sys::size(str::joinpath(w->abspath, "000002.grib"))) == data_size);
+            wassert(actual(sys::size(str::joinpath(w->segment().abspath, "000002.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Commit
             w->commit();
 
             // After commit, metadata is updated
-            wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), w->relpath, 2, data_size));
+            wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), w->segment().relpath, 2, data_size));
         }
     }
 

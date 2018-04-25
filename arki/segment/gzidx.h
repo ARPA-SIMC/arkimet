@@ -17,6 +17,7 @@ namespace gzidx {
 struct Segment : public arki::Segment
 {
     using arki::Segment::Segment;
+    time_t timestamp() const override;
 };
 
 
@@ -29,8 +30,6 @@ struct Reader : public segment::Reader
     uint64_t last_ofs = 0;
 
     Reader(const std::string& abspath, std::shared_ptr<core::Lock> lock);
-
-    time_t timestamp() override;
 
     bool scan_data(metadata_dest_func dest) override;
     void reposition(off_t ofs);
@@ -61,13 +60,9 @@ protected:
     void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 
 public:
-    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
-
-    const char* type() const override;
-    bool single_file() const override;
+    Checker(const std::string& abspath);
 
     bool exists_on_disk() override;
-    time_t timestamp() override;
     size_t size() override;
 
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
@@ -89,6 +84,11 @@ struct Segment : public gzidx::Segment
     using gzidx::Segment::Segment;
     const char* type() const override;
     bool single_file() const override;
+    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
+    std::shared_ptr<segment::Checker> checker() const override;
+    static bool can_store(const std::string& format);
+    static std::shared_ptr<Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
+    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
 };
 
 
@@ -105,13 +105,15 @@ public:
 
 class Checker : public gzidx::Checker
 {
-public:
-    using gzidx::Checker::Checker;
+protected:
+    Segment m_segment;
 
-    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) override;
+public:
+    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
+
+    const Segment& segment() const override;
 
     static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
-    static bool can_store(const std::string& format);
 };
 
 }
@@ -123,6 +125,11 @@ struct Segment : public gzidx::Segment
     using gzidx::Segment::Segment;
     const char* type() const override;
     bool single_file() const override;
+    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
+    std::shared_ptr<segment::Checker> checker() const override;
+    static bool can_store(const std::string& format);
+    static std::shared_ptr<Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
+    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
 };
 
 
@@ -139,19 +146,15 @@ public:
 
 class Checker : public gzidx::Checker
 {
-public:
-    using gzidx::Checker::Checker;
+protected:
+    Segment m_segment;
 
-    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) override;
+public:
+    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
+
+    const Segment& segment() const override;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
-
-    /**
-     * Create a gz lines segment with the data in mds
-     */
-    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
-
-    static bool can_store(const std::string& format);
 };
 
 }

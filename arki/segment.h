@@ -130,6 +130,21 @@ public:
     virtual bool single_file() const = 0;
 
     /**
+     * Get the last modification timestamp of the segment
+     */
+    virtual time_t timestamp() const = 0;
+
+    /**
+     * Instantiate a reader for this segment
+     */
+    virtual std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const = 0;
+
+    /**
+     * Instantiate a checker for this segment
+     */
+    virtual std::shared_ptr<segment::Checker> checker() const = 0;
+
+    /**
      * Return the segment path for this pathname, stripping .gz, .tar, and .zip extensions
      */
     static std::string basename(const std::string& pathname);
@@ -157,11 +172,6 @@ struct Reader : public std::enable_shared_from_this<Reader>
     virtual const Segment& segment() const = 0;
 
     /**
-     * Get the last modification timestamp of the segment
-     */
-    virtual time_t timestamp() = 0;
-
-    /**
      * Scan the segment contents, and sends the resulting metadata to \a dest.
      *
      * If a .metadata file exists for this segment and its timestamp is the
@@ -185,10 +195,8 @@ struct Reader : public std::enable_shared_from_this<Reader>
     virtual size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) = 0;
 };
 
-struct Writer : public Segment, Transaction
+struct Writer : public Transaction, public std::enable_shared_from_this<Writer>
 {
-    using Segment::Segment;
-
     struct PendingMetadata
     {
         Metadata& md;
@@ -205,6 +213,8 @@ struct Writer : public Segment, Transaction
     };
 
     bool fired = false;
+
+    virtual const Segment& segment() const = 0;
 
     /**
      * Return the write offset for the next append operation
@@ -225,15 +235,13 @@ struct Writer : public Segment, Transaction
 };
 
 
-class Checker : public Segment
+class Checker : public std::enable_shared_from_this<Checker>
 {
 protected:
     virtual void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) = 0;
 
 public:
-    using Segment::Segment;
-
-    virtual std::shared_ptr<Reader> reader(std::shared_ptr<core::Lock> lock) = 0;
+    virtual const Segment& segment() const = 0;
     virtual segment::State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
     virtual size_t size() = 0;
@@ -242,11 +250,6 @@ public:
      * Check if the segment exists on disk
      */
     virtual bool exists_on_disk() = 0;
-
-    /**
-     * Get the last modification timestamp of the segment
-     */
-    virtual time_t timestamp() = 0;
 
     /**
      * Rescan the segment, using Reader::scan_data of the right reader for this segment
@@ -279,9 +282,19 @@ public:
     virtual std::shared_ptr<Checker> compress(metadata::Collection& mds);
 
     /**
-     * Move this segment to a new location
+     * Move this segment to a new location.
+     *
+     * Using the segment after moving it can have unpredictable effects.
+     *
+     * Returns a Checker pointing to the new location
      */
-    void move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath);
+    std::shared_ptr<Checker> move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath);
+
+    /**
+     * After this segment has been moved, create a checker for the one in the
+     * new location
+     */
+    //virtual std::shared_ptr<Checker> checker_moved(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) const = 0;
 
     /**
      * Truncate the segment at the given offset

@@ -1,10 +1,9 @@
 #ifndef ARKI_SEGMENT_DIR_H
 #define ARKI_SEGMENT_DIR_H
 
-/// Directory based data collection
-
 #include <arki/defs.h>
 #include <arki/segment.h>
+#include <arki/segment/base.h>
 #include <arki/segment/seqfile.h>
 #include <arki/core/file.h>
 #include <arki/utils/sys.h>
@@ -22,18 +21,28 @@ struct Segment : public arki::Segment
 
     const char* type() const override;
     bool single_file() const override;
+    time_t timestamp() const override;
+    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
+    std::shared_ptr<segment::Checker> checker() const override;
+    static std::shared_ptr<Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
+    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static bool can_store(const std::string& format);
 };
 
 
-struct Reader : public segment::Reader
+struct HoleSegment : public Segment
 {
-    Segment m_segment;
+    using Segment::Segment;
+
+    const char* type() const override;
+};
+
+
+struct Reader : public segment::BaseReader<Segment>
+{
     utils::sys::Path dirfd;
 
     Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
-
-    const Segment& segment() const override;
-    time_t timestamp() override;
 
     bool scan_data(metadata_dest_func dest) override;
     utils::sys::File open_src(const types::source::Blob& src);
@@ -42,70 +51,78 @@ struct Reader : public segment::Reader
 };
 
 
-struct Writer : public segment::Writer
+struct BaseWriter : public segment::Writer
 {
     SequenceFile seqfile;
     std::vector<std::string> written;
     std::vector<PendingMetadata> pending;
     size_t current_pos;
 
-    Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
-    ~Writer();
+    BaseWriter(const std::string& abspath);
+    ~BaseWriter();
 
-    const char* type() const override;
-    bool single_file() const override;
+    virtual void write_file(Metadata& md, core::NamedFileDescriptor& fd) = 0;
 
     size_t next_offset() const override;
     const types::source::Blob& append(Metadata& md) override;
-
-    virtual void write_file(Metadata& md, core::NamedFileDescriptor& fd);
 
     void commit() override;
     void rollback() override;
     void rollback_nothrow() noexcept override;
 };
 
-struct HoleWriter: public Writer
+
+struct Writer : public BaseWriter
 {
-    using Writer::Writer;
+protected:
+    Segment m_segment;
 
-    const char* type() const override;
+public:
+    Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
+    const Segment& segment() const override;
+    void write_file(Metadata& md, core::NamedFileDescriptor& fd) override;
+};
 
+struct HoleWriter: public BaseWriter
+{
+protected:
+    HoleSegment m_segment;
+
+public:
+    HoleWriter(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
+    const Segment& segment() const override;
     void write_file(Metadata& md, core::NamedFileDescriptor& fd) override;
 };
 
 
-class Checker : public segment::Checker
+struct BaseChecker : public segment::Checker
 {
-public:
+    /// Call f for each nnnnnn.format file in the directory segment, passing the file name
+    void foreach_datafile(std::function<void(const char*)> f);
     void validate(Metadata& md, const scan::Validator& v);
     void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
-
-public:
-    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
-
-    const char* type() const override;
-    bool single_file() const override;
-
     bool exists_on_disk() override;
-    time_t timestamp() override;
     size_t size() override;
 
-    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) override;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
-
-    /// Call f for each nnnnnn.format file in the directory segment, passing the file name
-    void foreach_datafile(std::function<void(const char*)> f);
 
     void test_truncate(size_t offset) override;
     void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
     void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
     void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
+};
 
-    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
-    static bool can_store(const std::string& format);
+
+class Checker : public BaseChecker
+{
+protected:
+    Segment m_segment;
+
+public:
+    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
+    const Segment& segment() const override;
 };
 
 
@@ -118,8 +135,6 @@ class HoleChecker : public Checker
 {
 public:
     using Checker::Checker;
-
-    const char* type() const override;
 
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
 };
