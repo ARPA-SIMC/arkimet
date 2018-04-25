@@ -27,49 +27,6 @@ using namespace arki::types;
 namespace arki {
 namespace scan {
 
-static std::string guess_format(const std::string& basedir, const std::string& file)
-{
-    // Get the file extension
-    size_t pos = file.rfind('.');
-    if (pos == string::npos)
-        // No extension, we do not know what it is
-        return std::string();
-    return str::lower(file.substr(pos+1));
-}
-
-static bool scan(const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock, const std::string& format, metadata_dest_func dest)
-{
-    string pathname = str::joinpath(basedir, relpath);
-    auto reader = segment::Reader::for_pathname(format, basedir, relpath, pathname, lock);
-    return reader->scan(dest);
-}
-
-static bool scan(const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
-{
-    std::string format = guess_format(basedir, relpath);
-
-    // If we cannot detect a format, fail
-    if (format.empty())
-        throw std::runtime_error("unknown format: '" + format + "'");
-    return scan(basedir, relpath, lock, format, dest);
-}
-
-bool scan(const std::string& file, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
-{
-    string basedir;
-    string relpath;
-    utils::files::resolve_path(file, basedir, relpath);
-    return scan(basedir, relpath, lock, dest);
-}
-
-bool scan(const std::string& file, std::shared_ptr<core::Lock> lock, const std::string& format, metadata_dest_func dest)
-{
-    string basedir;
-    string relpath;
-    utils::files::resolve_path(file, basedir, relpath);
-    return scan(basedir, relpath, lock, format, dest);
-}
-
 bool isCompressed(const std::string& file)
 {
     return !sys::exists(file) && (sys::exists(file + ".gz") || sys::exists(file + ".tar") || sys::exists(file + ".zip"));

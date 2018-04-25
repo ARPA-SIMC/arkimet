@@ -256,8 +256,11 @@ RawFile::~RawFile() {}
 
 bool RawFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
+    string basedir, relpath;
+    files::resolve_path(config().pathname, basedir, relpath);
     auto sorter = wrap_with_query(q, dest);
-    if (!scan::scan(config().pathname, std::make_shared<core::lock::Null>(), config().format, dest))
+    auto reader = segment::Reader::for_pathname(config().format, basedir, relpath, config().pathname, std::make_shared<core::lock::Null>());
+    if (!reader->scan(dest))
         return false;
     if (sorter) return sorter->flush();
     return true;

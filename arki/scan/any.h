@@ -18,26 +18,6 @@ class Metadata;
 namespace scan {
 
 /**
- * Scan the given file, sending its metadata to a consumer.
- *
- * If `filename`.metadata exists and its timestamp is the same of the file or
- * newer, it will be used instead of the file.
- */
-bool scan(const std::string& file, std::shared_ptr<core::Lock> lock, metadata_dest_func dest);
-
-/**
- * Scan the given file without format autodetection, sending its metadata to a
- * consumer.
- *
- * If `filename`.metadata exists and its timestamp is the same of the file or
- * newer, it will be used instead of the file.
- *
- * @return true if the file has been scanned, false if the file is in a format
- * that is not supported or recognised.
- */
-bool scan(const std::string& file, std::shared_ptr<core::Lock> lock, const std::string& format, metadata_dest_func dest);
-
-/**
  * Return true if the file exists, and is compressed
  */
 bool isCompressed(const std::string& file);

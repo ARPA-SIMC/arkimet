@@ -1722,16 +1722,6 @@
  {
   "doc": "",
   "group": "arki_scan_any",
-  "method": "grib_compact"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
-  "method": "bufr_compact"
- },
- {
-  "doc": "",
-  "group": "arki_scan_any",
   "method": "usn"
  },
  {
