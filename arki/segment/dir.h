@@ -36,7 +36,6 @@ struct Reader : public segment::Reader
 struct Writer : public segment::Writer
 {
     SequenceFile seqfile;
-    std::string format;
     std::vector<std::string> written;
     std::vector<PendingMetadata> pending;
     size_t current_pos;
@@ -70,8 +69,6 @@ struct HoleWriter: public Writer
 class Checker : public segment::Checker
 {
 public:
-    std::string format;
-
     void validate(Metadata& md, const scan::Validator& v);
     void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 
@@ -98,7 +95,7 @@ public:
     void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
     void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
 
-    static std::shared_ptr<Checker> create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
     static bool can_store(const std::string& format);
 };
 

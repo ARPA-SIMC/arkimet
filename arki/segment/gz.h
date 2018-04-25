@@ -50,7 +50,7 @@ protected:
     void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 
 public:
-    Checker(const std::string& root, const std::string& relpath, const std::string& abspath);
+    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
 
     const char* type() const override;
     bool single_file() const override;
@@ -69,7 +69,7 @@ public:
     void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
     void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
 
-    static std::shared_ptr<Checker> create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
     static bool can_store(const std::string& format);
 };
 
@@ -85,7 +85,7 @@ public:
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
 
-    static std::shared_ptr<Checker> create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
     static bool can_store(const std::string& format);
 };
 

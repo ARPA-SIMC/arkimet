@@ -200,8 +200,8 @@ size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor&
 }
 
 
-Checker::Checker(const std::string& root, const std::string& relpath, const std::string& abspath)
-    : segment::Checker(root, relpath, abspath), gzabspath(abspath + ".gz"), gzidxabspath(abspath + ".gz.idx")
+Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+    : segment::Checker(format, root, relpath, abspath), gzabspath(abspath + ".gz"), gzidxabspath(abspath + ".gz.idx")
 {
 }
 
@@ -269,11 +269,11 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     return p;
 }
 
-std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+std::shared_ptr<Checker> Checker::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
 {
     Creator creator(rootdir, relpath, mds, abspath + ".gz", abspath + ".gz.idx");
     creator.create();
-    return make_shared<Checker>(rootdir, relpath, abspath);
+    return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
 
 void Checker::test_truncate(size_t offset)
@@ -364,12 +364,12 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     return p;
 }
 
-std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+std::shared_ptr<Checker> Checker::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
 {
     gzidx::Creator creator(rootdir, relpath, mds, abspath + ".gz", abspath + ".gz.idx");
     creator.padding.push_back('\n');
     creator.create();
-    return make_shared<Checker>(rootdir, relpath, abspath);
+    return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
 
 bool Checker::can_store(const std::string& format)

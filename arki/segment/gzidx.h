@@ -57,7 +57,7 @@ protected:
     void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 
 public:
-    Checker(const std::string& root, const std::string& relpath, const std::string& abspath);
+    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
 
     const char* type() const override;
     bool single_file() const override;
@@ -79,7 +79,7 @@ public:
     /**
      * Create a gz segment with the data in mds
      */
-    static std::shared_ptr<Checker> create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
 
     static bool can_store(const std::string& format);
 };
@@ -99,7 +99,7 @@ public:
     /**
      * Create a gz lines segment with the data in mds
      */
-    static std::shared_ptr<Checker> create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
+    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0);
 
     static bool can_store(const std::string& format);
 };

@@ -22,8 +22,8 @@ using namespace arki::utils;
 
 namespace arki {
 
-Segment::Segment(const std::string& root, const std::string& relpath, const std::string& abspath)
-    : root(root), relpath(relpath), abspath(abspath)
+Segment::Segment(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+    : format(format), root(root), relpath(relpath), abspath(abspath)
 {
 }
 
@@ -105,19 +105,19 @@ std::shared_ptr<segment::Writer> Segment::make_writer(const std::string& format,
             if (format == "grib" || format == "grib1" || format == "grib2")
             {
                 if (mock_data)
-                    res.reset(new segment::concat::HoleWriter(root, relpath, abspath));
+                    res.reset(new segment::concat::HoleWriter(format, root, relpath, abspath));
                 else
-                    res.reset(new segment::concat::Writer(root, relpath, abspath));
+                    res.reset(new segment::concat::Writer(format, root, relpath, abspath));
             } else if (format == "bufr") {
                 if (mock_data)
-                    res.reset(new segment::concat::HoleWriter(root, relpath, abspath));
+                    res.reset(new segment::concat::HoleWriter(format, root, relpath, abspath));
                 else
-                    res.reset(new segment::concat::Writer(root, relpath, abspath));
+                    res.reset(new segment::concat::Writer(format, root, relpath, abspath));
             } else if (format == "vm2") {
                 if (mock_data)
                     throw_consistency_error("mock_data single-file line-based segments are not implemented");
                 else
-                    res.reset(new segment::lines::Writer(root, relpath, abspath));
+                    res.reset(new segment::lines::Writer(format, root, relpath, abspath));
             } else if (format == "odimh5" || format == "h5" || format == "odim") {
                 throw_consistency_error("segment is a file, but odimh5 data can only be stored into directory segments");
             } else {
@@ -181,19 +181,19 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
             if (format == "grib" || format == "grib1" || format == "grib2")
             {
                 if (mock_data)
-                    res.reset(new segment::concat::HoleChecker(root, relpath, abspath));
+                    res.reset(new segment::concat::HoleChecker(format, root, relpath, abspath));
                 else
-                    res.reset(new segment::concat::Checker(root, relpath, abspath));
+                    res.reset(new segment::concat::Checker(format, root, relpath, abspath));
             } else if (format == "bufr") {
                 if (mock_data)
-                    res.reset(new segment::concat::HoleChecker(root, relpath, abspath));
+                    res.reset(new segment::concat::HoleChecker(format, root, relpath, abspath));
                 else
-                    res.reset(new segment::concat::Checker(root, relpath, abspath));
+                    res.reset(new segment::concat::Checker(format, root, relpath, abspath));
             } else if (format == "vm2") {
                 if (mock_data)
                     throw_consistency_error("mockdata single-file line-based segments not implemented");
                 else
-                    res.reset(new segment::lines::Checker(root, relpath, abspath));
+                    res.reset(new segment::lines::Checker(format, root, relpath, abspath));
             } else if (format == "odimh5" || format == "h5" || format == "odim") {
                 // If it's a file and we need a directory, still get a checker
                 // so it can deal with it
@@ -221,14 +221,14 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
         if (format == "grib" || format == "grib1" || format == "grib2" || format == "bufr")
         {
             if (sys::exists(abspath + ".gz.idx"))
-                res.reset(new segment::gzidx::Checker(root, relpath, abspath));
+                res.reset(new segment::gzidx::Checker(format, root, relpath, abspath));
             else
-                res.reset(new segment::gz::Checker(root, relpath, abspath));
+                res.reset(new segment::gz::Checker(format, root, relpath, abspath));
         } else if (format == "vm2") {
             if (sys::exists(abspath + ".gz.idx"))
-                res.reset(new segment::gzidxlines::Checker(root, relpath, abspath));
+                res.reset(new segment::gzidxlines::Checker(format, root, relpath, abspath));
             else
-                res.reset(new segment::gzlines::Checker(root, relpath, abspath));
+                res.reset(new segment::gzlines::Checker(format, root, relpath, abspath));
         } else if (format == "odimh5" || format == "h5" || format == "odim") {
             throw_consistency_error(
                     "getting checker for " + format + " file " + relpath,
@@ -247,7 +247,7 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
             throw_consistency_error(
                     "getting checker for " + format + " file " + relpath,
                     "cannot handle a directory with a .tar extension");
-        res.reset(new segment::tar::Checker(root, relpath, abspath));
+        res.reset(new segment::tar::Checker(format, root, relpath, abspath));
         return res;
     }
 
@@ -258,7 +258,7 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
             throw_consistency_error(
                     "getting checker for " + format + " file " + relpath,
                     "cannot handle a directory with a .zip extension");
-        res.reset(new segment::zip::Checker(root, relpath, abspath));
+        res.reset(new segment::zip::Checker(format, root, relpath, abspath));
         return res;
     }
 
@@ -269,7 +269,7 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
 namespace segment {
 
 Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : Segment(root, relpath, abspath), format(format), lock(lock)
+    : Segment(format, root, relpath, abspath), lock(lock)
 {
 }
 
@@ -323,23 +323,23 @@ bool Checker::scan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func des
 
 std::shared_ptr<segment::Checker> Checker::tar(metadata::Collection& mds)
 {
-    segment::tar::Checker::create(root, relpath, abspath, mds);
+    segment::tar::Checker::create(format, root, relpath, abspath, mds);
     remove();
-    return make_shared<segment::tar::Checker>(root, relpath, abspath);
+    return make_shared<segment::tar::Checker>(format, root, relpath, abspath);
 }
 
 std::shared_ptr<segment::Checker> Checker::zip(metadata::Collection& mds)
 {
-    segment::zip::Checker::create(root, relpath, abspath, mds);
+    segment::zip::Checker::create(format, root, relpath, abspath, mds);
     remove();
-    return make_shared<segment::zip::Checker>(root, relpath, abspath);
+    return make_shared<segment::zip::Checker>(format, root, relpath, abspath);
 }
 
 std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds)
 {
-    segment::gzidx::Checker::create(root, relpath, abspath, mds);
+    segment::gzidx::Checker::create(format, root, relpath, abspath, mds);
     remove();
-    return make_shared<segment::gzidx::Checker>(root, relpath, abspath);
+    return make_shared<segment::gzidx::Checker>(format, root, relpath, abspath);
 }
 
 void Checker::move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)

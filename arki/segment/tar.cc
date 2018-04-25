@@ -193,8 +193,8 @@ size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor&
 }
 
 
-Checker::Checker(const std::string& root, const std::string& relpath, const std::string& abspath)
-    : segment::Checker(root, relpath, abspath), tarabspath(abspath + ".tar")
+Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+    : segment::Checker(format, root, relpath, abspath), tarabspath(abspath + ".tar")
 {
 }
 
@@ -280,11 +280,11 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     return p;
 }
 
-std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+std::shared_ptr<Checker> Checker::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
 {
     Creator creator(rootdir, relpath, mds, abspath + ".tar");
     creator.create();
-    return make_shared<Checker>(rootdir, relpath, abspath);
+    return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
 
 void Checker::test_truncate(size_t offset)

@@ -365,7 +365,7 @@ size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor&
 
 
 Writer::Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
-    : segment::Writer(root, relpath, abspath), seqfile(abspath), format(format)
+    : segment::Writer(format, root, relpath, abspath), seqfile(abspath)
 {
     // Ensure that the directory 'abspath' exists
     sys::makedirs(abspath);
@@ -457,7 +457,7 @@ void HoleWriter::write_file(Metadata& md, NamedFileDescriptor& fd)
 
 
 Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
-    : segment::Checker(root, relpath, abspath), format(format)
+    : segment::Checker(format, root, relpath, abspath)
 {
 }
 
@@ -705,11 +705,11 @@ void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
     fd.write_all_or_throw("\0", 1);
 }
 
-std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+std::shared_ptr<Checker> Checker::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
 {
     Creator creator(rootdir, relpath, mds, abspath);
     creator.create();
-    return make_shared<Checker>(creator.format, rootdir, relpath, abspath);
+    return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
 
 const char* HoleChecker::type() const { return "hole_dir"; }

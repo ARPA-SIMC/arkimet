@@ -23,7 +23,7 @@ void SegmentFixture<Segment, Data>::test_setup()
 template<class Segment, class Data>
 std::shared_ptr<Segment> SegmentFixture<Segment, Data>::create()
 {
-    return Segment::create(root, relpath, abspath, seg_mds);
+    return Segment::create(td.format, root, relpath, abspath, seg_mds);
 }
 
 template<class Segment, class Data>

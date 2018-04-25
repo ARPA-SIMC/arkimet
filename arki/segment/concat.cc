@@ -63,8 +63,8 @@ struct HoleFile : public fd::File
 }
 
 
-Writer::Writer(const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
-    : fd::Writer(root, relpath, open_file(abspath, O_WRONLY | O_CREAT | mode, 0666))
+Writer::Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
+    : fd::Writer(format, root, relpath, open_file(abspath, O_WRONLY | O_CREAT | mode, 0666))
 {
 }
 
@@ -75,8 +75,8 @@ std::unique_ptr<fd::File> Writer::open_file(const std::string& pathname, int fla
     return unique_ptr<fd::File>(new File(pathname, flags, mode));
 }
 
-HoleWriter::HoleWriter(const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
-    : fd::Writer(root, relpath, open_file(abspath, O_WRONLY | O_CREAT | mode, 0666))
+HoleWriter::HoleWriter(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
+    : fd::Writer(format, root, relpath, open_file(abspath, O_WRONLY | O_CREAT | mode, 0666))
 {
 }
 
@@ -143,11 +143,11 @@ bool Checker::can_store(const std::string& format)
     return format == "grib" || format == "bufr";
 }
 
-std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
+std::shared_ptr<Checker> Checker::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
 {
     fd::Creator creator(rootdir, relpath, mds, std::unique_ptr<fd::File>(new File(abspath)));
     creator.create();
-    return make_shared<Checker>(rootdir, relpath, abspath);
+    return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
 
 }

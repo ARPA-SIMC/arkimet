@@ -173,8 +173,8 @@ size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor&
 }
 
 
-Writer::Writer(const std::string& root, const std::string& relpath, std::unique_ptr<File> fd)
-    : segment::Writer(root, relpath, fd->name()), fd(fd.release())
+Writer::Writer(const std::string& format, const std::string& root, const std::string& relpath, std::unique_ptr<File> fd)
+    : segment::Writer(format, root, relpath, fd->name()), fd(fd.release())
 {
     initial_size = this->fd->lseek(0, SEEK_END);
     current_pos = initial_size;

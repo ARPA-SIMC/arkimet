@@ -29,14 +29,14 @@ std::shared_ptr<segment::Writer> AutoManager::create_writer_for_format(const std
     if (format == "grib" || format == "grib1" || format == "grib2")
     {
         if (mockdata)
-            res.reset(new segment::concat::HoleWriter(root, relpath, abspath));
+            res.reset(new segment::concat::HoleWriter(format, root, relpath, abspath));
         else
-            res.reset(new segment::concat::Writer(root, relpath, abspath));
+            res.reset(new segment::concat::Writer(format, root, relpath, abspath));
     } else if (format == "bufr") {
         if (mockdata)
-            res.reset(new segment::concat::HoleWriter(root, relpath, abspath));
+            res.reset(new segment::concat::HoleWriter(format, root, relpath, abspath));
         else
-            res.reset(new segment::concat::Writer(root, relpath, abspath));
+            res.reset(new segment::concat::Writer(format, root, relpath, abspath));
     } else if (format == "odimh5" || format == "h5" || format == "odim") {
         if (mockdata)
             res.reset(new segment::dir::HoleWriter(format, root, relpath, abspath));
@@ -46,7 +46,7 @@ std::shared_ptr<segment::Writer> AutoManager::create_writer_for_format(const std
         if (mockdata)
             throw_consistency_error("mockdata single-file line-based segments not implemented");
         else
-            res.reset(new segment::lines::Writer(root, relpath, abspath));
+            res.reset(new segment::lines::Writer(format, root, relpath, abspath));
     } else {
         throw_consistency_error(
                 "getting writer for " + format + " file " + relpath,
@@ -63,14 +63,14 @@ std::shared_ptr<segment::Checker> AutoManager::create_checker_for_format(const s
     if (format == "grib" || format == "grib1" || format == "grib2")
     {
         if (mockdata)
-            res.reset(new segment::concat::HoleChecker(root, relpath, abspath));
+            res.reset(new segment::concat::HoleChecker(format, root, relpath, abspath));
         else
-            res.reset(new segment::concat::Checker(root, relpath, abspath));
+            res.reset(new segment::concat::Checker(format, root, relpath, abspath));
     } else if (format == "bufr") {
         if (mockdata)
-            res.reset(new segment::concat::HoleChecker(root, relpath, abspath));
+            res.reset(new segment::concat::HoleChecker(format, root, relpath, abspath));
         else
-            res.reset(new segment::concat::Checker(root, relpath, abspath));
+            res.reset(new segment::concat::Checker(format, root, relpath, abspath));
     } else if (format == "odimh5" || format == "h5" || format == "odim") {
         if (mockdata)
             res.reset(new segment::dir::HoleChecker(format, root, relpath, abspath));
@@ -80,7 +80,7 @@ std::shared_ptr<segment::Checker> AutoManager::create_checker_for_format(const s
         if (mockdata)
             throw_consistency_error("mockdata single-file line-based segments not implemented");
         else
-            res.reset(new segment::lines::Checker(root, relpath, abspath));
+            res.reset(new segment::lines::Checker(format, root, relpath, abspath));
     } else {
         throw_consistency_error(
                 "getting writer for " + format + " file " + relpath,

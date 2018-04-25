@@ -108,11 +108,12 @@ struct Span
 class Segment : public std::enable_shared_from_this<Segment>
 {
 public:
+    std::string format;
     std::string root;
     std::string relpath;
     std::string abspath;
 
-    Segment(const std::string& root, const std::string& relpath, const std::string& abspath);
+    Segment(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
     virtual ~Segment();
 
     /**
@@ -143,7 +144,6 @@ namespace segment {
 
 struct Reader : public Segment
 {
-    std::string format;
     std::shared_ptr<core::Lock> lock;
 
     Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);

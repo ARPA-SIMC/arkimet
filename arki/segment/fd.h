@@ -71,7 +71,7 @@ struct Writer : public segment::Writer
     off_t current_pos;
     std::vector<PendingMetadata> pending;
 
-    Writer(const std::string& root, const std::string& relpath, std::unique_ptr<File> fd);
+    Writer(const std::string& format, const std::string& root, const std::string& relpath, std::unique_ptr<File> fd);
     ~Writer();
 
     bool single_file() const override;

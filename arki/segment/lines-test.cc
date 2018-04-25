@@ -42,15 +42,15 @@ inline size_t datasize(const Metadata& md)
  * return the data::Writer so that we manage the writer lifetime, but also
  * the underlying implementation so we can test it.
  */
-std::shared_ptr<segment::lines::Writer> make_w()
+std::shared_ptr<segment::lines::Writer> make_w(const std::string& format)
 {
     string abspath = sys::abspath(relpath);
-    return std::shared_ptr<segment::lines::Writer>(new segment::lines::Writer(sys::getcwd(), relpath, abspath));
+    return std::shared_ptr<segment::lines::Writer>(new segment::lines::Writer(format, sys::getcwd(), relpath, abspath));
 }
-std::shared_ptr<segment::lines::Checker> make_c()
+std::shared_ptr<segment::lines::Checker> make_c(const std::string& format)
 {
     string abspath = sys::abspath(relpath);
-    return std::shared_ptr<segment::lines::Checker>(new segment::lines::Checker(sys::getcwd(), relpath, abspath));
+    return std::shared_ptr<segment::lines::Checker>(new segment::lines::Checker(format, sys::getcwd(), relpath, abspath));
 }
 
 template<class Segment, class Data>
@@ -63,7 +63,7 @@ this->add_method("append", [](Fixture& f) {
     metadata::TestCollection mdc("inbound/test.grib1");
     wassert(actual_file(relpath).not_exists());
     {
-        auto w(make_w());
+        auto w(make_w("grib"));
 
         // It should exist but be empty
         //wassert(actual(fname).fileexists());
@@ -98,12 +98,12 @@ this->add_method("large", [](Fixture& f) {
     {
         // Make a file that looks HUGE, so that appending will make its size
         // not fit in a 32bit off_t
-        make_c()->test_truncate(0x7FFFFFFF);
+        make_c("grib")->test_truncate(0x7FFFFFFF);
         wassert(actual(sys::size(relpath)) == 0x7FFFFFFFu);
     }
 
     {
-        auto dw(make_w());
+        auto dw(make_w("grib"));
 
         // Try a successful transaction
         wassert(test_append_transaction_ok(dw.get(), mdc[0], 1));

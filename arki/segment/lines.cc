@@ -56,8 +56,8 @@ struct File : public fd::File
 
 
 
-Writer::Writer(const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
-    : fd::Writer(root, relpath, open_file(abspath, O_WRONLY | O_CREAT | mode, 0666))
+Writer::Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
+    : fd::Writer(format, root, relpath, open_file(abspath, O_WRONLY | O_CREAT | mode, 0666))
 {
 }
 
@@ -103,9 +103,9 @@ State Checker::check(std::function<void(const std::string&)> reporter, const met
 
 std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds)
 {
-    segment::gzidxlines::Checker::create(root, relpath + ".tar", abspath + ".tar", mds);
+    segment::gzidxlines::Checker::create(format, root, relpath + ".tar", abspath + ".tar", mds);
     remove();
-    return make_shared<segment::gzidxlines::Checker>(root, relpath, abspath);
+    return make_shared<segment::gzidxlines::Checker>(format, root, relpath, abspath);
 }
 
 bool Checker::can_store(const std::string& format)
@@ -113,11 +113,11 @@ bool Checker::can_store(const std::string& format)
     return format == "vm2";
 }
 
-std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
+std::shared_ptr<Checker> Checker::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
 {
     fd::Creator creator(rootdir, relpath, mds, std::unique_ptr<fd::File>(new File(abspath)));
     creator.create();
-    return make_shared<Checker>(rootdir, relpath, abspath);
+    return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
 
 }

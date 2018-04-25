@@ -12,7 +12,7 @@ namespace concat {
 class Writer : public fd::Writer
 {
 public:
-    Writer(const std::string& root, const std::string& relpath, const std::string& abspath, int mode=0);
+    Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode=0);
     const char* type() const override;
     std::unique_ptr<fd::File> open_file(const std::string& pathname, int flags, mode_t mode) override;
 };
@@ -28,13 +28,13 @@ public:
     const char* type() const override;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     static bool can_store(const std::string& format);
-    static std::shared_ptr<Checker> create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds);
+    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds);
 };
 
 class HoleWriter : public fd::Writer
 {
 public:
-    HoleWriter(const std::string& root, const std::string& relpath, const std::string& abspath, int mode=0);
+    HoleWriter(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode=0);
     const char* type() const override;
     std::unique_ptr<fd::File> open_file(const std::string& pathname, int flags, mode_t mode) override;
 };
