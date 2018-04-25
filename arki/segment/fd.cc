@@ -68,6 +68,7 @@ struct Creator : public AppendCreator
 };
 
 
+template<typename Segment>
 struct CheckBackend : public AppendCheckBackend
 {
     core::File data;
@@ -76,6 +77,10 @@ struct CheckBackend : public AppendCheckBackend
     CheckBackend(const std::string& abspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
         : AppendCheckBackend(reporter, relpath, mds), data(abspath)
     {
+    }
+    size_t actual_end(off_t offset, size_t size) const override
+    {
+        return offset + size + Segment::padding;
     }
     void validate(Metadata& md, const types::source::Blob& source) override
     {
@@ -272,6 +277,14 @@ size_t Checker<Segment, File>::size()
     struct stat st;
     sys::stat(this->segment().abspath, st);
     return st.st_size;
+}
+
+template<typename Segment, typename File>
+State Checker<Segment, File>::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
+{
+    CheckBackend<Segment> checker(this->segment().abspath, this->segment().relpath, reporter, mds);
+    checker.accurate = !quick;
+    return checker.check();
 }
 
 template<typename Segment, typename File>
@@ -472,20 +485,6 @@ std::shared_ptr<segment::Checker> HoleSegment::make_checker(const std::string& f
     return make_shared<HoleChecker>(format, root, relpath, abspath);
 }
 
-State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
-{
-    fd::CheckBackend checker(segment().abspath, segment().relpath, reporter, mds);
-    checker.accurate = !quick;
-    return checker.check();
-}
-
-State HoleChecker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
-{
-    fd::CheckBackend checker(segment().abspath, segment().relpath, reporter, mds);
-    checker.accurate = !quick;
-    return checker.check();
-}
-
 Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
     string tmpabspath = segment().abspath + ".repack";
@@ -563,27 +562,6 @@ std::shared_ptr<segment::Checker> Segment::create(const std::string& format, con
 bool Segment::can_store(const std::string& format)
 {
     return format == "vm2";
-}
-
-namespace {
-
-struct CheckBackend : public fd::CheckBackend
-{
-    using fd::CheckBackend::CheckBackend;
-
-    size_t actual_end(off_t offset, size_t size) const override
-    {
-        return offset + size + 1;
-    }
-};
-
-}
-
-State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
-{
-    CheckBackend checker(segment().abspath, segment().relpath, reporter, mds);
-    checker.accurate = !quick;
-    return checker.check();
 }
 
 }

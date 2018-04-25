@@ -79,6 +79,7 @@ public:
     bool exists_on_disk() override;
     size_t size() override;
 
+    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
     size_t remove() override;
 
@@ -150,11 +151,9 @@ struct Writer : public fd::Writer<Segment, File>
     using fd::Writer<Segment, File>::Writer;
 };
 
-class Checker : public fd::Checker<Segment, File>
+struct Checker : public fd::Checker<Segment, File>
 {
-public:
     using fd::Checker<Segment, File>::Checker;
-    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
 };
 
 struct HoleWriter : public fd::Writer<HoleSegment, HoleFile>
@@ -166,7 +165,6 @@ class HoleChecker : public fd::Checker<HoleSegment, HoleFile>
 {
 public:
     using fd::Checker<HoleSegment, HoleFile>::Checker;
-    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
 };
 
@@ -209,11 +207,9 @@ struct Writer : public fd::Writer<Segment, File>
     using fd::Writer<Segment, File>::Writer;
 };
 
-class Checker : public fd::Checker<Segment, File>
+struct Checker : public fd::Checker<Segment, File>
 {
-public:
     using fd::Checker<Segment, File>::Checker;
-    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
 };
 
 }
