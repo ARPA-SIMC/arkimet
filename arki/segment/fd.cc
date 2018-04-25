@@ -535,7 +535,7 @@ void File::test_add_padding(size_t size)
         write("\n", 1);
 }
 
-const char* Segment::type() const { return "concat"; }
+const char* Segment::type() const { return "lines"; }
 bool Segment::single_file() const { return true; }
 std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
 {
@@ -579,3 +579,4 @@ template class fd::Checker<lines::Segment, lines::File>;
 
 }
 }
+#include "base.tcc"

@@ -375,36 +375,6 @@ std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds)
     return res;
 }
 
-std::shared_ptr<Checker> Checker::move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
-{
-    sys::makedirs(str::dirname(new_abspath));
-
-    // Sanity checks: avoid conflicts
-    if (sys::exists(new_abspath) || sys::exists(new_abspath + ".tar") || sys::exists(new_abspath + ".gz") || sys::exists(new_abspath + ".zip"))
-    {
-        stringstream ss;
-        ss << "cannot archive " << segment().abspath << " to " << new_abspath << " because the destination already exists";
-        throw runtime_error(ss.str());
-    }
-
-    // Remove stale metadata and summaries that may have been left around
-    sys::unlink_ifexists(new_abspath + ".metadata");
-    sys::unlink_ifexists(new_abspath + ".summary");
-
-    move_data(new_root, new_relpath, new_abspath);
-
-    // Move metadata to archive
-    sys::rename_ifexists(segment().abspath + ".metadata", new_abspath + ".metadata");
-    sys::rename_ifexists(segment().abspath + ".summary", new_abspath + ".summary");
-
-    // TODO: we currently lack a method to instantiate "same of self, but
-    // there", so returning an empty shared_ptr so that if someone tries to use
-    // the result they get a predictable segfault instead of an unpredictable
-    // behaviour
-    return std::shared_ptr<Checker>();
-    //return checker_moved(new_root, new_relpath, new_abspath);
-}
-
 void Checker::test_truncate(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();

@@ -410,3 +410,4 @@ template class Checker<gzidxconcat::Segment>;
 
 }
 }
+#include "base.tcc"

@@ -352,5 +352,4 @@ template class Checker<gzconcat::Segment>;
 
 }
 }
-
-
+#include "base.tcc"

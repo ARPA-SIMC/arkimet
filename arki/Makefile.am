@@ -126,6 +126,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		segment.h \
 		segment/fwd.h \
 		segment/base.h \
+		segment/base.tcc \
 		segment/common.h \
 		segment/missing.h \
 		segment/fd.h \

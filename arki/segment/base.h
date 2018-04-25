@@ -56,6 +56,8 @@ public:
 
     const Segment& segment() const override { return m_segment; }
     // std::shared_ptr<segment::Checker> checker_moved(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) const override;
+
+    std::shared_ptr<Checker> move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 };
 
 }

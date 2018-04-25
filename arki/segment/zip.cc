@@ -386,3 +386,4 @@ void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 }
 }
 }
+#include "base.tcc"

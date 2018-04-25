@@ -742,3 +742,4 @@ template class BaseChecker<HoleSegment>;
 }
 }
 }
+#include "base.tcc"

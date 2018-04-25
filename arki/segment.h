@@ -288,7 +288,7 @@ public:
      *
      * Returns a Checker pointing to the new location
      */
-    std::shared_ptr<Checker> move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath);
+    virtual std::shared_ptr<Checker> move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) = 0;
 
     /**
      * After this segment has been moved, create a checker for the one in the
