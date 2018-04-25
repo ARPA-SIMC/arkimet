@@ -8,9 +8,6 @@
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/configfile.h"
-#include "arki/scan/grib.h"
-#include "arki/scan/bufr.h"
-#include "arki/scan/any.h"
 #include "arki/core/file.h"
 #include "arki/utils.h"
 #include "arki/core/file.h"
@@ -74,7 +71,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     sys::makedirs("testds/2007/07");
     // TODO: use segments also in the other tests, and instantiate a new test suite for different segment types
     {
-        auto s = f.segments().get_writer("2007/07.grib");
+        auto s = f.segments().get_writer("grib", "2007/07.grib");
         s->append(data.mds[1]);
         s->append(data.mds[1]);
         s->append(data.mds[0]);
@@ -195,8 +192,8 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
         metadata::Collection mdc = f.query(Matcher::parse("origin:GRIB1,200"));
         wassert(actual(mdc.size()) == 1u);
         string dest = mdc.ensureContiguousData("metadata file testds/2007/07-08.grib");
-        scan::compress(dest, std::make_shared<core::lock::Null>(), 1024);
-        sys::unlink_ifexists("testds/2007/07-08.grib");
+        auto checker = f.makeSegmentedChecker();
+        checker->segment("2007/07-08.grib")->compress();
     }
 
     // The dataset should still be clean

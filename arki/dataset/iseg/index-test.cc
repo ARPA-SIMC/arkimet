@@ -339,13 +339,12 @@ def_test(4)
     ensure(test.get() != 0);
     Pending p;
 
-    metadata::Collection src;
-    scan::scan("inbound/test.grib1", src.inserter_func());
-    ensure_equals(src.size(), 3u);
+    metadata::TestCollection src("inbound/test.grib1");
+    wassert(actual(src.size()) == 3u);
 
     test->open();
     p = test->beginTransaction();
-    
+
     // Index two metadata in one file
     test->index(md, "test-md", 0);
     test->index(md1, "test-md", 10);
@@ -477,8 +476,7 @@ def_test(6)
 // Test smallfiles support
 def_test(7)
 {
-    metadata::Collection src;
-    scan::scan("inbound/test.vm2", src.inserter_func());
+    metadata::TestCollection src("inbound/test.vm2");
 
     // Remove index if it exists
     unlink("file1");

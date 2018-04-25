@@ -1,6 +1,5 @@
-#include "config.h"
-#include <arki/tests/tests.h>
-#include <arki/utils.h>
+#include "arki/metadata/tests.h"
+#include "validator.h"
 
 namespace {
 using namespace std;
@@ -12,7 +11,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_utils");
+} test("arki_scan_validator");
 
 void Tests::register_tests() {
 

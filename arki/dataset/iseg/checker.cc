@@ -12,12 +12,10 @@
 #include "arki/matcher.h"
 #include "arki/metadata/collection.h"
 #include "arki/utils/files.h"
-#include "arki/scan/any.h"
 #include "arki/sort.h"
 #include "arki/nag.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include "arki/utils/compress.h"
 #include "arki/binary.h"
 #include <system_error>
 #include <algorithm>
@@ -80,7 +78,7 @@ public:
             m_idx = new CIndex(checker.m_config, path_relative(), lock);
         return *m_idx;
     }
-    std::string path_relative() const override { return segment->relpath; }
+    std::string path_relative() const override { return segment->segment().relpath; }
     const iseg::Config& config() const override { return checker.config(); }
     dataset::ArchivesChecker& archives() const { return checker.archive(); }
 
@@ -94,10 +92,10 @@ public:
         if (!segment->exists_on_disk())
             return segmented::SegmentState(segment::SEGMENT_MISSING);
 
-        if (!sys::stat(str::joinpath(checker.config().path, segment->relpath + ".index")))
+        if (!sys::stat(str::joinpath(checker.config().path, segment->segment().relpath + ".index")))
         {
             //bool untrusted_index = files::hasDontpackFlagfile(checker.config().path);
-            reporter.segment_info(checker.name(), segment->relpath, "segment found on disk with no associated index data");
+            reporter.segment_info(checker.name(), segment->segment().relpath, "segment found on disk with no associated index data");
             //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
             return segmented::SegmentState(segment::SEGMENT_UNALIGNED);
         }
@@ -126,14 +124,14 @@ public:
         unique_ptr<core::Time> md_until;
         if (mds.empty())
         {
-            reporter.segment_info(checker.name(), segment->relpath, "index knows of this segment but contains no data for it");
+            reporter.segment_info(checker.name(), segment->segment().relpath, "index knows of this segment but contains no data for it");
             md_begin.reset(new core::Time(0, 0, 0));
             md_until.reset(new core::Time(0, 0, 0));
             state = segment::SEGMENT_DELETED;
         } else {
             if (!mds.expand_date_range(md_begin, md_until))
             {
-                reporter.segment_info(checker.name(), segment->relpath, "index data for this segment has no reference time information");
+                reporter.segment_info(checker.name(), segment->segment().relpath, "index data for this segment has no reference time information");
                 state = segment::SEGMENT_CORRUPTED;
                 md_begin.reset(new core::Time(0, 0, 0));
                 md_until.reset(new core::Time(0, 0, 0));
@@ -141,34 +139,34 @@ public:
                 // Ensure that the reftime span fits inside the segment step
                 core::Time seg_begin;
                 core::Time seg_until;
-                if (checker.config().step().path_timespan(segment->relpath, seg_begin, seg_until))
+                if (checker.config().step().path_timespan(segment->segment().relpath, seg_begin, seg_until))
                 {
                     if (*md_begin < seg_begin || *md_until > seg_until)
                     {
-                        reporter.segment_info(checker.name(), segment->relpath, "segment contents do not fit inside the step of this dataset");
+                        reporter.segment_info(checker.name(), segment->segment().relpath, "segment contents do not fit inside the step of this dataset");
                         state = segment::SEGMENT_CORRUPTED;
                     }
                     // Expand segment timespan to the full possible segment timespan
                     *md_begin = seg_begin;
                     *md_until = seg_until;
                 } else {
-                    reporter.segment_info(checker.name(), segment->relpath, "segment name does not fit the step of this dataset");
+                    reporter.segment_info(checker.name(), segment->segment().relpath, "segment name does not fit the step of this dataset");
                     state = segment::SEGMENT_CORRUPTED;
                 }
             }
         }
 
         if (state.is_ok())
-            state = segment->check([&](const std::string& msg) { reporter.segment_info(checker.name(), segment->relpath, msg); }, mds, quick);
+            state = segment->check([&](const std::string& msg) { reporter.segment_info(checker.name(), segment->segment().relpath, msg); }, mds, quick);
 
         auto res = segmented::SegmentState(state, *md_begin, *md_until);
-        res.check_age(segment->relpath, checker.config(), reporter);
+        res.check_age(segment->segment().relpath, checker.config(), reporter);
         return res;
     }
 
     void tar() override
     {
-        if (sys::exists(segment->abspath + ".tar"))
+        if (sys::exists(segment->segment().abspath + ".tar"))
             return;
 
         auto write_lock = lock->write_lock();
@@ -192,7 +190,7 @@ public:
 
         // Remove the .metadata file if present, because we are shuffling the
         // data file and it will not be valid anymore
-        string mdpathname = segment->abspath + ".metadata";
+        string mdpathname = segment->segment().abspath + ".metadata";
         if (sys::exists(mdpathname))
             if (unlink(mdpathname.c_str()) < 0)
             {
@@ -207,7 +205,7 @@ public:
 
     void zip() override
     {
-        if (sys::exists(segment->abspath + ".zip"))
+        if (sys::exists(segment->segment().abspath + ".zip"))
             return;
 
         auto write_lock = lock->write_lock();
@@ -231,7 +229,7 @@ public:
 
         // Remove the .metadata file if present, because we are shuffling the
         // data file and it will not be valid anymore
-        string mdpathname = segment->abspath + ".metadata";
+        string mdpathname = segment->segment().abspath + ".metadata";
         if (sys::exists(mdpathname))
             if (unlink(mdpathname.c_str()) < 0)
             {
@@ -246,7 +244,7 @@ public:
 
     size_t compress() override
     {
-        if (sys::exists(segment->abspath + ".gz") || sys::exists(segment->abspath + ".gz.idx"))
+        if (sys::exists(segment->segment().abspath + ".gz") || sys::exists(segment->segment().abspath + ".gz.idx"))
             return 0;
 
         auto write_lock = lock->write_lock();
@@ -272,7 +270,7 @@ public:
 
         // Remove the .metadata file if present, because we are shuffling the
         // data file and it will not be valid anymore
-        string mdpathname = segment->abspath + ".metadata";
+        string mdpathname = segment->segment().abspath + ".metadata";
         if (sys::exists(mdpathname))
             if (unlink(mdpathname.c_str()) < 0)
             {
@@ -331,11 +329,11 @@ public:
                 throw std::runtime_error("duplicate detected while reordering segment");
         }
 
-        size_t size_pre = sys::isdir(segment->abspath) ? 0 : sys::size(segment->abspath);
+        size_t size_pre = sys::isdir(segment->segment().abspath) ? 0 : sys::size(segment->segment().abspath);
 
         // Remove the .metadata file if present, because we are shuffling the
         // data file and it will not be valid anymore
-        string mdpathname = segment->abspath + ".metadata";
+        string mdpathname = segment->segment().abspath + ".metadata";
         if (sys::exists(mdpathname))
             if (unlink(mdpathname.c_str()) < 0)
             {
@@ -350,14 +348,14 @@ public:
         // Commit the changes in the database
         p.commit();
 
-        size_t size_post = sys::isdir(segment->abspath) ? 0 : sys::size(segment->abspath);
+        size_t size_post = sys::isdir(segment->segment().abspath) ? 0 : sys::size(segment->segment().abspath);
 
         return size_pre - size_post;
     }
 
     size_t remove(bool with_data) override
     {
-        string idx_abspath = str::joinpath(segment->abspath + ".index");
+        string idx_abspath = str::joinpath(segment->segment().abspath + ".index");
         size_t res = 0;
         if (sys::exists(idx_abspath))
         {
@@ -379,22 +377,14 @@ public:
         p_idx.commit();
 
         // Remove .metadata and .summary files
-        sys::unlink_ifexists(segment->abspath + ".metadata");
-        sys::unlink_ifexists(segment->abspath + ".summary");
+        sys::unlink_ifexists(segment->segment().abspath + ".metadata");
+        sys::unlink_ifexists(segment->segment().abspath + ".summary");
     }
 
     void rescan() override
     {
-        // Temporarily uncompress the file for scanning
-        unique_ptr<utils::compress::TempUnzip> tu;
-        if (scan::isCompressed(segment->abspath))
-            tu.reset(new utils::compress::TempUnzip(segment->abspath));
-
-        // Collect the scan results in a metadata::Collector
         metadata::Collection mds;
-        if (!scan::scan(segment->abspath, lock, mds.inserter_func()))
-            throw std::runtime_error("cannot rescan " + segment->abspath + ": file format unknown");
-        //fprintf(stderr, "SCANNED %s: %zd\n", pathname.c_str(), mds.size());
+        segment->scan_data(lock, mds.inserter_func());
 
         // Lock away writes and reads
         auto write_lock = lock->write_lock();
@@ -422,14 +412,14 @@ public:
         // cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
 
         // Send the remaining metadata to the reindexer
-        std::string basename = str::basename(segment->relpath);
+        std::string basename = str::basename(segment->segment().relpath);
         for (const auto& i: finddupes)
         {
             const Metadata& md = *i.second;
             const source::Blob& blob = md.sourceBlob();
             try {
                 if (str::basename(blob.filename) != basename)
-                    throw std::runtime_error("cannot rescan " + segment->relpath + ": metadata points to the wrong file: " + blob.filename);
+                    throw std::runtime_error("cannot rescan " + segment->segment().relpath + ": metadata points to the wrong file: " + blob.filename);
                 if (std::unique_ptr<types::source::Blob> old = idx().index(md, blob.offset))
                 {
                     stringstream ss;
@@ -457,8 +447,8 @@ public:
 
     void release(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override
     {
-        sys::unlink_ifexists(str::joinpath(checker.config().path, segment->relpath + ".index"));
-        segment->move(new_root, new_relpath, new_abspath);
+        sys::unlink_ifexists(str::joinpath(checker.config().path, segment->segment().relpath + ".index"));
+        segment = segment->move(new_root, new_relpath, new_abspath);
     }
 };
 
@@ -632,7 +622,7 @@ void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_siz
     CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(segment_manager(), mds.inserter_func());
-    segment_manager().get_checker(relpath)->test_make_overlap(mds, overlap_size, data_idx);
+    segment_manager().get_checker(config().format, relpath)->test_make_overlap(mds, overlap_size, data_idx);
     idx.test_make_overlap(overlap_size, data_idx);
 }
 
@@ -643,7 +633,7 @@ void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, uns
     CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(segment_manager(), mds.inserter_func());
-    segment_manager().get_checker(relpath)->test_make_hole(mds, hole_size, data_idx);
+    segment_manager().get_checker(config().format, relpath)->test_make_hole(mds, hole_size, data_idx);
     idx.test_make_hole(hole_size, data_idx);
 }
 
@@ -654,7 +644,7 @@ void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
     CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(segment_manager(), mds.inserter_func());
-    segment_manager().get_checker(relpath)->test_corrupt(mds, data_idx);
+    segment_manager().get_checker(config().format, relpath)->test_corrupt(mds, data_idx);
 }
 
 void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
@@ -664,7 +654,7 @@ void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
     CIndex idx(m_config, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(segment_manager(), mds.inserter_func());
-    segment_manager().get_checker(relpath)->test_truncate(mds, data_idx);
+    segment_manager().get_checker(config().format, relpath)->test_truncate(mds, data_idx);
 }
 
 void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)

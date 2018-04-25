@@ -59,8 +59,6 @@ public:
     void list_segments_filtered(const Matcher& matcher, std::function<void(const std::string&)> dest) override = 0;
     virtual time_t segment_mtime(const std::string& relpath) const = 0;
 
-    void rescanSegment(const std::string& dir, const std::string& relpath);
-
     /// Check if the given directory contains a manifest file
     static bool exists(const std::string& dir);
     static std::unique_ptr<Manifest> create(const std::string& dir, const core::lock::Policy* lock_policy, const std::string& index_type=std::string());

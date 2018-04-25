@@ -10,7 +10,7 @@
 #include "arki/postprocess.h"
 #include "arki/sort.h"
 #include "arki/utils/files.h"
-#include "arki/scan/any.h"
+#include "arki/scan.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <sys/types.h>
@@ -43,24 +43,7 @@ std::unique_ptr<Reader> FileConfig::create_reader() const
         return std::unique_ptr<Reader>(new ArkimetFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
     if (format == "yaml")
         return std::unique_ptr<Reader>(new YamlFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
-#ifdef HAVE_GRIBAPI
-    if (format == "grib")
-        return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
-#endif
-#ifdef HAVE_DBALLE
-    if (format == "bufr")
-        return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
-#endif
-#ifdef HAVE_HDF5
-    if (format == "odimh5")
-        return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
-#endif
-#ifdef HAVE_VM2
-    if (format == "vm2")
-        return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
-#endif
-
-    throw runtime_error(pathname + ": unknown file format \"" + format + "\"");
+    return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const FileConfig>(shared_from_this())));
 }
 
 bool File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
@@ -95,7 +78,7 @@ void File::readConfig(const std::string& fname, ConfigFile& cfg)
         if (sys::exists(fname))
         {
             section.setValue("path", sys::abspath(fname));
-            section.setValue("format", files::format_from_ext(fname, "arkimet"));
+            section.setValue("format", scan::Scanner::format_from_filename(fname, "arkimet"));
             string name = str::basename(fname);
             section.setValue("name", name);
         } else {
@@ -106,7 +89,7 @@ void File::readConfig(const std::string& fname, ConfigFile& cfg)
                 ss << "dataset file " << fname << " does not exist";
                 throw runtime_error(ss.str());
             }
-            section.setValue("format", files::normaliseFormat(fname.substr(0, fpos)));
+            section.setValue("format", scan::Scanner::normalise_format(fname.substr(0, fpos)));
 
             string fname1 = fname.substr(fpos+1);
             if (!sys::exists(fname1))
@@ -124,37 +107,6 @@ void File::readConfig(const std::string& fname, ConfigFile& cfg)
     cfg.mergeInto(section.value("name"), section);
 }
 
-#if 0
-File* File::create(const ConfigFile& cfg)
-{
-    string format = str::lower(cfg.value("format"));
-
-    if (format == "arkimet")
-        return new ArkimetFile(cfg);
-    if (format == "yaml")
-        return new YamlFile(cfg);
-#ifdef HAVE_GRIBAPI
-    if (format == "grib")
-        return new RawFile(cfg);
-#endif
-#ifdef HAVE_DBALLE
-    if (format == "bufr")
-        return new RawFile(cfg);
-#endif
-#ifdef HAVE_HDF5
-    if (format == "odimh5")
-        return new RawFile(cfg);
-#endif
-#ifdef HAVE_VM2
-    if (format == "vm2")
-        return new RawFile(cfg);
-#endif
-
-    stringstream ss;
-    ss << "cannot create a dataset for the unknown file format \"" << format << "\"";
-    throw runtime_error(ss.str());
-}
-#endif
 
 FdFile::FdFile(std::shared_ptr<const FileConfig> config)
     : m_config(config)
@@ -206,7 +158,7 @@ bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
                     if (md->has_source_blob())
                     {
                         const auto& blob = md->sourceBlob();
-                        auto reader = segment::Reader::for_pathname(
+                        auto reader = Segment::detect_reader(
                                 blob.format, blob.basedir, blob.filename, blob.absolutePathname(),
                                 std::make_shared<core::lock::Null>());
                         md->sourceBlob().lock(reader);
@@ -256,8 +208,11 @@ RawFile::~RawFile() {}
 
 bool RawFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
+    string basedir, relpath;
+    files::resolve_path(config().pathname, basedir, relpath);
     auto sorter = wrap_with_query(q, dest);
-    if (!scan::scan(config().pathname, std::make_shared<core::lock::Null>(), config().format, dest))
+    auto reader = Segment::detect_reader(config().format, basedir, relpath, config().pathname, std::make_shared<core::lock::Null>());
+    if (!reader->scan(dest))
         return false;
     if (sorter) return sorter->flush();
     return true;

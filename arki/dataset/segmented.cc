@@ -10,13 +10,11 @@
 #include "arki/dataset/lock.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
-#include "arki/scan/any.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
-#include "arki/utils/compress.h"
 #include "arki/configfile.h"
 #include <algorithm>
 #include <system_error>
@@ -219,15 +217,15 @@ void CheckerSegment::archive()
     auto wlock = lock->write_lock();
 
     // Get the format for this relpath
-    size_t pos = segment->relpath.rfind(".");
+    size_t pos = segment->segment().relpath.rfind(".");
     if (pos == string::npos)
-        throw std::runtime_error("cannot archive segment " + segment->abspath + " because it does not have a format extension");
-    string format = segment->relpath.substr(pos + 1);
+        throw std::runtime_error("cannot archive segment " + segment->segment().abspath + " because it does not have a format extension");
+    string format = segment->segment().relpath.substr(pos + 1);
 
     // Get the time range for this relpath
     core::Time start_time, end_time;
-    if (!config().relpath_timespan(segment->relpath, start_time, end_time))
-        throw std::runtime_error("cannot archive segment " + segment->abspath + " because its name does not match the dataset step");
+    if (!config().relpath_timespan(segment->segment().relpath, start_time, end_time))
+        throw std::runtime_error("cannot archive segment " + segment->segment().abspath + " because its name does not match the dataset step");
 
     // Get the contents of this segment
     metadata::Collection mdc;
@@ -245,20 +243,11 @@ void CheckerSegment::archive()
 
 void CheckerSegment::unarchive()
 {
-    string arcrelpath = str::joinpath("last", segment->relpath);
-    archives().release_segment(arcrelpath, segment->root, segment->relpath, segment->abspath);
-
-    bool compressed = scan::isCompressed(segment->abspath);
-
-    // Acquire in the achive
+    string arcrelpath = str::joinpath("last", segment->segment().relpath);
+    archives().release_segment(arcrelpath, segment->segment().root, segment->segment().relpath, segment->segment().abspath);
+    auto reader = segment->segment().reader(lock);
     metadata::Collection mdc;
-    if (sys::exists(segment->abspath + ".metadata"))
-        mdc.read_from_file(segment->abspath + ".metadata");
-    else if (compressed) {
-        utils::compress::TempUnzip tu(segment->abspath);
-        scan::scan(segment->abspath, lock, mdc.inserter_func());
-    } else
-        scan::scan(segment->abspath, lock, mdc.inserter_func());
+    reader->scan(mdc.inserter_func());
     index(move(mdc));
 }
 
@@ -345,7 +334,7 @@ void Checker::remove_all(CheckerConfig& opts)
 void Checker::tar(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        if (segment.segment->single_file()) return;
+        if (segment.segment->segment().single_file()) return;
         if (opts.readonly)
             opts.reporter->segment_tar(name(), segment.path_relative(), "should be tarred");
         else
@@ -361,7 +350,7 @@ void Checker::tar(CheckerConfig& opts)
 void Checker::zip(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        if (segment.segment->single_file()) return;
+        if (segment.segment->segment().single_file()) return;
         if (opts.readonly)
             opts.reporter->segment_tar(name(), segment.path_relative(), "should be zipped");
         else
@@ -377,7 +366,7 @@ void Checker::zip(CheckerConfig& opts)
 void Checker::compress(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        if (!segment.segment->single_file()) return;
+        if (!segment.segment->segment().single_file()) return;
         if (opts.readonly)
             opts.reporter->segment_compress(name(), segment.path_relative(), "should be compressed");
         else

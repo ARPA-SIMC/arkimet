@@ -6,8 +6,9 @@
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/utils/files.h"
-#include "arki/scan/any.h"
 #include "arki/nag.h"
+#include "arki/scan.h"
+#include "arki/utils.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/metadata.h"
@@ -40,15 +41,16 @@ struct AppendSegment
 
     AppendSegment(std::shared_ptr<const simple::Config> config, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
         : config(config), lock(lock), segment(segment),
-          dir(str::dirname(segment->abspath)),
-          basename(str::basename(segment->abspath))
+          dir(str::dirname(segment->segment().abspath)),
+          basename(str::basename(segment->segment().abspath))
     {
         struct stat st_data;
         if (!dir.fstatat_ifexists(basename.c_str(), st_data))
             return;
 
         // Read the metadata
-        scan::scan(segment->abspath, lock, mds.inserter_func());
+        auto reader = segment->segment().reader(lock);
+        reader->scan(mds.inserter_func());
 
         // Read the summary
         if (!mds.empty())
@@ -80,10 +82,10 @@ struct AppendSegment
             const types::source::Blob& new_source = segment->append(md);
             add(md, new_source);
             segment->commit();
-            time_t ts = scan::timestamp(segment->abspath);
-            mft->acquire(segment->relpath, ts, sum);
-            mds.writeAtomically(segment->abspath + ".metadata");
-            sum.writeAtomically(segment->abspath + ".summary");
+            time_t ts = segment->segment().timestamp();
+            mft->acquire(segment->segment().relpath, ts, sum);
+            mds.writeAtomically(segment->segment().abspath + ".metadata");
+            sum.writeAtomically(segment->segment().abspath + ".summary");
             mft->flush();
             return ACQ_OK;
         } catch (std::exception& e) {
@@ -109,10 +111,10 @@ struct AppendSegment
         }
 
         segment->commit();
-        time_t ts = scan::timestamp(segment->abspath);
-        mft->acquire(segment->relpath, ts, sum);
-        mds.writeAtomically(segment->abspath + ".metadata");
-        sum.writeAtomically(segment->abspath + ".summary");
+        time_t ts = segment->segment().timestamp();
+        mft->acquire(segment->segment().relpath, ts, sum);
+        mds.writeAtomically(segment->segment().abspath + ".metadata");
+        sum.writeAtomically(segment->segment().abspath + ".summary");
         mft->flush();
     }
 };
@@ -147,7 +149,7 @@ std::unique_ptr<AppendSegment> Writer::file(const std::string& relpath)
 {
     sys::makedirs(str::dirname(str::joinpath(config().path, relpath)));
     auto lock = config().append_lock_dataset();
-    auto segment = segment_manager().get_writer(relpath);
+    auto segment = segment_manager().get_writer(scan::Scanner::format_from_filename(relpath), relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segment));
 }
 

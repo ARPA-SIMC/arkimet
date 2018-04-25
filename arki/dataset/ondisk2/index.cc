@@ -15,6 +15,7 @@
 #include "arki/summary/stats.h"
 #include "arki/utils/files.h"
 #include "arki/sort.h"
+#include "arki/scan.h"
 #include "arki/nag.h"
 #include "arki/runtime/io.h"
 #include "arki/utils/string.h"
@@ -296,7 +297,7 @@ void Contents::scan_file(SegmentManager& segs, const std::string& relpath, metad
     mdq.compile(query);
     mdq.bind(1, relpath);
 
-    auto reader = segs.get_reader(relpath, lock.lock());
+    auto reader = segs.get_reader(scan::Scanner::format_from_filename(relpath), relpath, lock.lock());
     while (mdq.step())
     {
         // Rebuild the Metadata
@@ -504,7 +505,7 @@ bool Contents::query_data(const dataset::DataQuery& q, SegmentManager& segs, met
         if (srcname != last_fname)
         {
             if (q.with_data)
-                reader = segs.get_reader(srcname, lock.lock());
+                reader = segs.get_reader(scan::Scanner::format_from_filename(srcname), srcname, lock.lock());
 
             if (!mdbuf.empty())
             {

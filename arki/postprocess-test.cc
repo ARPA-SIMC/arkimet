@@ -1,6 +1,6 @@
 #include "arki/tests/tests.h"
+#include "arki/segment.h"
 #include "core/file.h"
-#include "scan/any.h"
 #include "utils/sys.h"
 #include "configfile.h"
 #include "metadata.h"
@@ -20,7 +20,8 @@ using namespace arki::utils;
 
 void produceGRIB(Postprocess& p)
 {
-    scan::scan("inbound/test.grib1", std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata> md) { return p.process(move(md)); });
+    auto reader = Segment::detect_reader("grib", ".", "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    reader->scan([&](unique_ptr<Metadata> md) { return p.process(move(md)); });
 }
 
 class Tests : public TestCase
@@ -77,15 +78,17 @@ add_method("countbytes", [] {
     p.flush();
     out.close();
 
-    wassert(actual(sys::read_file(out.name())) == "44961\n");
+    wassert(actual(sys::read_file(out.name())) == "44937\n");
 });
 
 add_method("cat", [] {
+    auto reader = Segment::detect_reader("grib", ".", "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+
     // Get the normal data
     vector<uint8_t> plain;
     {
         BinaryEncoder enc(plain);
-        scan::scan("inbound/test.grib1", std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata> md) {
+        reader->scan([&](unique_ptr<Metadata> md) {
             md->makeInline();
             md->encodeBinary(enc);
             const auto& data = md->getData();
@@ -99,7 +102,7 @@ add_method("cat", [] {
     Postprocess p("cat");
     p.set_output(out);
     p.start();
-    scan::scan("inbound/test.grib1", std::make_shared<core::lock::Null>(), [&](unique_ptr<Metadata> md) { return p.process(move(md)); });
+    reader->scan([&](unique_ptr<Metadata> md) { return p.process(move(md)); });
     p.flush();
     out.close();
 
@@ -119,7 +122,7 @@ add_method("countbytes_large", [] {
     p.flush();
     out.close();
 
-    wassert(actual(sys::read_file(out.name())) == "5755008\n");
+    wassert(actual(sys::read_file(out.name())) == "5751936\n");
 });
 
 add_method("zeroes_arg", [] {

@@ -119,16 +119,16 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/arki-query.h \
 		runtime/arki-check.h \
 		runtime/arki-scan.h \
+		scan.h \
 		scan/fwd.h \
-		scan/base.h \
-		scan/any.h \
+		scan/validator.h \
 		segment.h \
 		segment/fwd.h \
+		segment/base.h \
+		segment/base.tcc \
 		segment/common.h \
 		segment/missing.h \
 		segment/fd.h \
-		segment/concat.h \
-		segment/lines.h \
 		segment/dir.h \
 		segment/tar.h \
 		segment/zip.h \
@@ -417,8 +417,6 @@ libarkimet_la_SOURCES += \
 		segment/common.cc \
 		segment/missing.cc \
 		segment/fd.cc \
-		segment/concat.cc \
-		segment/lines.cc \
 		segment/dir.cc \
 		segment/tar.cc \
 		segment/zip.cc \
@@ -429,8 +427,8 @@ libarkimet_la_SOURCES += \
 		formatter.cc \
 		validator.cc \
 		postprocess.cc \
-		scan/base.cc \
-		scan/any.cc
+		scan.cc \
+		scan/validator.cc
 
 tests_arki_test_SOURCES += \
 		metadata/tests.cc \
@@ -466,13 +464,12 @@ tests_arki_test_SOURCES += \
 		matcher/source-test.cc \
 		matcher/task-test.cc \
 		matcher/quantity-test.cc \
-		scan/any-test.cc \
+		scan-test.cc \
+		scan/validator-test.cc \
 		segment-test.cc \
 		segment/common-test.cc \
 		segment/missing-test.cc \
 		segment/fd-test.cc \
-		segment/concat-test.cc \
-		segment/lines-test.cc \
 		segment/seqfile-test.cc \
 		segment/dir-test.cc \
 		segment/tar-test.cc \

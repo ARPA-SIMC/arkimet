@@ -9,6 +9,7 @@
 #include <arki/types/fwd.h>
 #include <arki/scan/fwd.h>
 #include <arki/metadata/fwd.h>
+#include <arki/segment/fwd.h>
 #include <arki/transaction.h>
 #include <string>
 #include <iosfwd>
@@ -16,8 +17,6 @@
 #include <vector>
 
 namespace arki {
-class Segment;
-
 namespace segment {
 
 static const unsigned SEGMENT_OK          = 0;
@@ -109,11 +108,12 @@ struct Span
 class Segment
 {
 public:
+    std::string format;
     std::string root;
     std::string relpath;
     std::string abspath;
 
-    Segment(const std::string& root, const std::string& relpath, const std::string& abspath);
+    Segment(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
     virtual ~Segment();
 
     /**
@@ -128,29 +128,75 @@ public:
      * Return true if the segment stores everything in a single file
      */
     virtual bool single_file() const = 0;
+
+    /**
+     * Get the last modification timestamp of the segment
+     */
+    virtual time_t timestamp() const = 0;
+
+    /**
+     * Instantiate a reader for this segment
+     */
+    virtual std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const = 0;
+
+    /**
+     * Instantiate a checker for this segment
+     */
+    virtual std::shared_ptr<segment::Checker> checker() const = 0;
+
+    /**
+     * Return the segment path for this pathname, stripping .gz, .tar, and .zip extensions
+     */
+    static std::string basename(const std::string& pathname);
+
+    /// Instantiate the right Reader implementation for a segment that already exists
+    static std::shared_ptr<segment::Reader> detect_reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+
+    /// Instantiate the right Writer implementation for a segment that already exists
+    static std::shared_ptr<segment::Writer> detect_writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
+
+    /// Instantiate the right Checker implementation for a segment that already exists
+    static std::shared_ptr<segment::Checker> detect_checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
 };
 
 
 namespace segment {
 
-struct Reader : public Segment
+struct Reader : public std::enable_shared_from_this<Reader>
 {
     std::shared_ptr<core::Lock> lock;
 
-    Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+    Reader(std::shared_ptr<core::Lock> lock);
+    virtual ~Reader();
+
+    virtual const Segment& segment() const = 0;
+
+    /**
+     * Scan the segment contents, and sends the resulting metadata to \a dest.
+     *
+     * If a .metadata file exists for this segment and its timestamp is the
+     * same than the segment or newer, it will be used instead performing the
+     * scan.
+     *
+     * Returns true if dest always returned true.
+     */
+    bool scan(metadata_dest_func dest);
+
+    /**
+     * Scan the segment contents ignoring all existing metadata (if any).
+     *
+     * Sends the resulting metadata to \a dest
+     *
+     * Returns true if dest always returned true.
+     */
+    virtual bool scan_data(metadata_dest_func dest) = 0;
 
     virtual std::vector<uint8_t> read(const types::source::Blob& src) = 0;
     virtual size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) = 0;
-
-    /// Instantiate the right Segment implementation for a segment that already
-    /// exists
-    static std::shared_ptr<Reader> for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
 };
 
-struct Writer : public Segment, Transaction
+struct Writer : public Transaction, public std::enable_shared_from_this<Writer>
 {
-    using Segment::Segment;
-
     struct PendingMetadata
     {
         Metadata& md;
@@ -168,6 +214,8 @@ struct Writer : public Segment, Transaction
 
     bool fired = false;
 
+    virtual const Segment& segment() const = 0;
+
     /**
      * Return the write offset for the next append operation
      */
@@ -184,21 +232,16 @@ struct Writer : public Segment, Transaction
      * commit
      */
     virtual const types::source::Blob& append(Metadata& md) = 0;
-
-    /// Instantiate the right Segment implementation for a segment that already
-    /// exists
-    static std::shared_ptr<Writer> for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
 };
 
 
-class Checker : public Segment
+class Checker : public std::enable_shared_from_this<Checker>
 {
 protected:
     virtual void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) = 0;
 
 public:
-    using Segment::Segment;
-
+    virtual const Segment& segment() const = 0;
     virtual segment::State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
     virtual size_t size() = 0;
@@ -209,9 +252,9 @@ public:
     virtual bool exists_on_disk() = 0;
 
     /**
-     * Get the last modification timestamp for the segment
+     * Rescan the segment, using Reader::scan_data of the right reader for this segment
      */
-    virtual time_t timestamp() = 0;
+    bool scan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func dest);
 
     /**
      * Rewrite this segment so that the data are in the same order as in `mds`.
@@ -239,9 +282,19 @@ public:
     virtual std::shared_ptr<Checker> compress(metadata::Collection& mds);
 
     /**
-     * Move this segment to a new location
+     * Move this segment to a new location.
+     *
+     * Using the segment after moving it can have unpredictable effects.
+     *
+     * Returns a Checker pointing to the new location
      */
-    void move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath);
+    virtual std::shared_ptr<Checker> move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) = 0;
+
+    /**
+     * After this segment has been moved, create a checker for the one in the
+     * new location
+     */
+    //virtual std::shared_ptr<Checker> checker_moved(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) const = 0;
 
     /**
      * Truncate the segment at the given offset
@@ -276,10 +329,6 @@ public:
      * with the value 0.
      */
     virtual void test_corrupt(const metadata::Collection& mds, unsigned data_idx) = 0;
-
-    /// Instantiate the right Segment implementation for a segment that already
-    /// exists
-    static std::shared_ptr<Checker> for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
 };
 
 }

@@ -7,10 +7,8 @@
 #include <arki/dataset/reporter.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
-#include <arki/utils/compress.h>
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
-#include <arki/scan/any.h>
 #include <arki/sort.h>
 #include <arki/nag.h>
 #include <algorithm>

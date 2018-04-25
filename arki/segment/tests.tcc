@@ -1,3 +1,6 @@
+#ifndef ARKI_SEGMENT_TESTS_TCC
+#define ARKI_SEGMENT_TESTS_TCC
+
 #include "arki/segment/tests.h"
 #include "arki/core/file.h"
 #include "arki/utils/sys.h"
@@ -21,9 +24,9 @@ void SegmentFixture<Segment, Data>::test_setup()
 }
 
 template<class Segment, class Data>
-std::shared_ptr<Segment> SegmentFixture<Segment, Data>::create()
+std::shared_ptr<segment::Checker> SegmentFixture<Segment, Data>::create()
 {
-    return Segment::create(root, relpath, abspath, seg_mds);
+    return Segment::create(td.format, root, relpath, abspath, seg_mds);
 }
 
 template<class Segment, class Data>
@@ -33,14 +36,28 @@ using namespace arki::utils;
 
 this->add_method("create", [](Fixture& f) {
     wassert_true(Segment::can_store(f.td.format));
-    std::shared_ptr<Segment> checker = f.create();
+    std::shared_ptr<segment::Checker> checker = f.create();
     wassert_true(checker->exists_on_disk());
+});
+
+this->add_method("scan", [](Fixture& f) {
+    auto checker = f.create();
+    auto reader = checker->segment().reader(std::make_shared<arki::core::lock::Null>());
+    if (strcmp(reader->segment().type(), "tar") == 0)
+        throw TestSkipped();
+    metadata::Collection mds;
+    reader->scan(mds.inserter_func());
+    wassert(actual(mds.size()) == f.seg_mds.size());
+    wassert(actual(mds[0]).is_similar(f.seg_mds[0]));
+    wassert(actual(mds[1]).is_similar(f.seg_mds[1]));
+    wassert(actual(mds[2]).is_similar(f.seg_mds[2]));
+    wassert(actual(mds.size()) == 3u);
 });
 
 this->add_method("read", [](Fixture& f) {
     wassert_true(Segment::can_store(f.td.format));
-    std::shared_ptr<Segment> checker = f.create();
-    auto reader = segment::Reader::for_pathname(f.td.format, checker->root, checker->relpath, checker->abspath, std::make_shared<arki::core::lock::Null>());
+    auto checker = f.create();
+    auto reader = checker->segment().reader(std::make_shared<arki::core::lock::Null>());
     size_t pad_size = f.td.format == "vm2" ? 1 : 0;
     for (auto& md: f.seg_mds)
     {
@@ -61,7 +78,7 @@ this->add_method("read", [](Fixture& f) {
 });
 
 this->add_method("repack", [](Fixture& f) {
-    std::shared_ptr<Segment> checker = f.create();
+    auto checker = f.create();
     Pending p = wcallchecked(checker->repack(f.root, f.seg_mds));
     wassert(p.commit());
     auto rep = [](const std::string& msg) {
@@ -71,7 +88,7 @@ this->add_method("repack", [](Fixture& f) {
 });
 
 this->add_method("check", [](Fixture& f) {
-    std::shared_ptr<Segment> checker = f.create();
+    auto checker = f.create();
 
     segment::State state;
 
@@ -145,7 +162,7 @@ this->add_method("check", [](Fixture& f) {
 });
 
 this->add_method("remove", [](Fixture& f) {
-    std::shared_ptr<Segment> checker = f.create();
+    auto checker = f.create();
     size_t size = wcallchecked(checker->size());
 
     wassert(actual(checker->exists_on_disk()).istrue());
@@ -157,3 +174,4 @@ this->add_method("remove", [](Fixture& f) {
 
 }
 }
+#endif

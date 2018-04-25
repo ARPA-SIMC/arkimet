@@ -5,7 +5,6 @@
 #include "arki/summary.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
-#include "arki/scan/any.h"
 #include "arki/configfile.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
@@ -162,7 +161,7 @@ this->add_method("querybytes", [](Fixture& f) {
 
         // Rescan the file
         metadata::TestCollection tmp;
-        wassert(actual(tmp.scan_from_file("testdata", f.td.mds[i].source().format, false)).istrue());
+        wassert(tmp.scan_from_file("testdata", f.td.mds[i].source().format, false));
 
         // Ensure that what we rescanned is what was imported
         wassert(actual(tmp.size()) == 1u);
@@ -236,7 +235,7 @@ this->add_method("querybytes_integrity", [](Fixture& f) {
 
     // Check that they can be scanned again
     metadata::TestCollection mdc;
-    wassert(actual(mdc.scan_from_file("tempdata", f.td.format, false)).istrue());
+    wassert(mdc.scan_from_file("tempdata", f.td.format, false));
 
     sys::unlink("tempdata");
 });
@@ -297,7 +296,7 @@ this->add_method("interrupted_read", [](Fixture& f) {
 
 this->add_method("read_missing_segment", [](Fixture& f) {
     // Delete a segment, leaving it in the index
-    f.segments().get_checker(f.import_results[0].sourceBlob().filename)->remove();
+    f.segments().get_checker(f.td.format, f.import_results[0].sourceBlob().filename)->remove();
 
     unsigned count_ok = 0;
     unsigned count_err = 0;

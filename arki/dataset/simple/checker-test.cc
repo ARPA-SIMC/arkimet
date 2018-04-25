@@ -8,7 +8,6 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
-#include "arki/scan/any.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
@@ -135,32 +134,17 @@ add_method("scan_missing_summary", [](Fixture& f) {
 
 // Test maintenance scan on compressed archives
 add_method("scan_compressed", [](Fixture& f) {
-    struct Setup {
-        void operator() ()
-        {
-            // Compress one file
-            metadata::Collection mdc;
-            mdc.read_from_file("testds/2007/07-08.grib.metadata");
-            ensure_equals(mdc.size(), 1u);
-            string dest = mdc.ensureContiguousData("metadata file testds/2007/07-08.grib.metadata");
-            scan::compress(dest, std::make_shared<core::lock::Null>(), 1024);
-            sys::unlink_ifexists("testds/2007/07-08.grib");
+    auto setup = [&] {
+        auto checker = f.makeSegmentedChecker();
+        checker->segment("2007/07-08.grib")->compress();
+    };
 
-            ensure(!sys::exists("testds/2007/07-08.grib"));
-            ensure(sys::exists("testds/2007/07-08.grib.gz"));
-            ensure(sys::exists("testds/2007/07-08.grib.gz.idx"));
-            ensure(sys::exists("testds/2007/07-08.grib.metadata"));
-            ensure(sys::exists("testds/2007/07-08.grib.summary"));
-        }
-
-        void removemd()
-        {
-            sys::unlink_ifexists("testds/2007/07-08.grib.metadata");
-            sys::unlink_ifexists("testds/2007/07-08.grib.summary");
-            ensure(!sys::exists("testds/2007/07-08.grib.metadata"));
-            ensure(!sys::exists("testds/2007/07-08.grib.summary"));
-        }
-    } setup;
+    auto removemd = []{
+        sys::unlink_ifexists("testds/2007/07-08.grib.metadata");
+        sys::unlink_ifexists("testds/2007/07-08.grib.summary");
+        wassert(actual_file("testds/2007/07-08.grib.metadata").not_exists());
+        wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
+    };
 
     f.clean_and_import();
     setup();
@@ -170,7 +154,7 @@ add_method("scan_compressed", [](Fixture& f) {
     wassert(f.ensure_localds_clean(3, 3));
 
     // Try removing summary and metadata
-    setup.removemd();
+    removemd();
 
     // Cannot query anymore
     {
@@ -221,7 +205,7 @@ add_method("scan_compressed", [](Fixture& f) {
     setup();
     files::removeDontpackFlagfile("testds");
     ensure(sys::exists("testds/" + f.idxfname()));
-    setup.removemd();
+    removemd();
 
     // Repack here should act as if the dataset were empty
     {

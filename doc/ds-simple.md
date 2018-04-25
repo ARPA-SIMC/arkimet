@@ -40,8 +40,8 @@ an empty `.metadata` file will always be rescanned.
 
 - the segment must be a file
 - the segment must exist [missing]
-- all data known by the index for this segment must be present on disk [unaligned]
-- no pair of (offset, size) data spans from the index can overlap [unaligned]
+- all data known by the index for this segment must be present on disk [corrupted]
+- no pair of (offset, size) data spans from the index can overlap [corrupted]
 - data must start at the beginning of the segment [dirty]
 - there must be no gaps between data in the segment [dirty]
 - data must end at the end of the segment [dirty]
@@ -69,7 +69,7 @@ an empty `.metadata` file will always be rescanned.
 
 ### During --accurate check
 
-- format-specific consistency checks on the content of each file must pass [unaligned]
+- format-specific consistency checks on the content of each file must pass [corrupted]
 
 ### During fix
 
@@ -109,8 +109,8 @@ an empty `.metadata` file will always be rescanned.
   so it is ignored. The modification time of the sequence file is used
   instead.
 - the segment must exist [missing]
-- all data known by the index for this segment must be present on disk [unaligned]
-- no pair of (offset, size) data spans from the index can overlap [unaligned]
+- all data known by the index for this segment must be present on disk [corrupted]
+- no pair of (offset, size) data spans from the index can overlap [corrupted]
 - data must start at the beginning of the segment [dirty]
 - there must be no gaps between data in the segment [dirty]
 - data must end at the end of the segment [dirty]
@@ -138,7 +138,7 @@ an empty `.metadata` file will always be rescanned.
 
 ### During --accurate check
 
-- format-specific consistency checks on the content of each file must pass [unaligned]
+- format-specific consistency checks on the content of each file must pass [corrupted]
 
 ### During fix
 

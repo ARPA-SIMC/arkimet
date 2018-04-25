@@ -8,13 +8,14 @@
 #include <wreport/bulletin.h>
 #include <wreport/options.h>
 #include "arki/metadata.h"
+#include "arki/segment.h"
 #include "arki/types/source.h"
 #include "arki/types/origin.h"
 #include "arki/types/product.h"
 #include "arki/types/reftime.h"
 #include "arki/types/run.h"
 #include "arki/types/timerange.h"
-#include "arki/scan/any.h"
+#include "arki/scan/validator.h"
 #include "arki/utils/sys.h"
 #include <sstream>
 #include <cstring>
@@ -97,9 +98,9 @@ Bufr::~Bufr()
 #endif
 }
 
-void Bufr::open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock)
+void Bufr::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
 {
-    Scanner::open(filename, basedir, relpath, lock);
+    Scanner::open(filename, reader);
     if (filename == "-")
         file = dballe::File::create(dballe::File::BUFR, stdin, false, "standard input").release();
     else
@@ -236,22 +237,8 @@ public:
 }
 
 
-bool Bufr::do_scan(Metadata& md)
+void Bufr::do_scan(BinaryMessage& rmsg, Metadata& md)
 {
-    md.clear();
-
-    BinaryMessage rmsg = file->read();
-    if (!rmsg) return false;
-
-    // Set source
-    if (false)
-        md.set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
-    else {
-        unique_ptr<Source> source = Source::createBlob("bufr", basedir, relpath, rmsg.offset, rmsg.data.size(), reader);
-        md.set_source(move(source));
-        md.set_cached_data(vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
-    }
-
     Harvest harvest(*importer);
     harvest.harvest_from_dballe(rmsg, md);
 
@@ -286,13 +273,32 @@ bool Bufr::do_scan(Metadata& md)
     if (timedef)
         if (const reftime::Position* p = md.get<types::reftime::Position>())
             md.set(timedef->validity_time_to_emission_time(*p));
-
-    return true;
 }
 
 bool Bufr::next(Metadata& md)
 {
-    return do_scan(md);
+    md.clear();
+    BinaryMessage rmsg = file->read();
+    if (!rmsg) return false;
+    // Set source
+    if (reader)
+    {
+        md.set_source(Source::createBlob(reader, rmsg.offset, rmsg.data.size()));
+        md.set_cached_data(vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
+    } else
+        md.set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
+    do_scan(rmsg, md);
+    return true;
+}
+
+std::unique_ptr<Metadata> Bufr::scan_data(const std::vector<uint8_t>& data)
+{
+    std::unique_ptr<Metadata> md(new Metadata);
+    md->set_source_inline("grib", std::vector<uint8_t>(data));
+    BinaryMessage rmsg(File::BUFR);
+    rmsg.data = std::string(data.begin(), data.end());
+    do_scan(rmsg, *md);
+    return md;
 }
 
 static inline void inplace_tolower(std::string& buf)

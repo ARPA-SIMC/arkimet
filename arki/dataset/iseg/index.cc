@@ -176,8 +176,7 @@ void Index::scan(SegmentManager& segs, metadata_dest_func dest, const std::strin
     Query mdq("scan_file_md", m_db);
     mdq.compile(query);
 
-    // TODO: pass format and abspath since we have them
-    auto reader = segs.get_reader(data_relpath, lock);
+    auto reader = segs.get_reader(config().format, data_relpath, lock);
 
     while (mdq.step())
     {
@@ -350,8 +349,7 @@ bool Index::query_data(const dataset::DataQuery& q, SegmentManager& segs, metada
     metadata::Collection mdbuf;
     std::shared_ptr<arki::segment::Reader> reader;
     if (q.with_data)
-        // TODO: pass format and abspath as well, since we have them somewhere
-        reader = segs.get_reader(data_relpath, lock);
+        reader = segs.get_reader(config().format, data_relpath, lock);
 
     // Limited scope for mdq, so we finalize the query before starting to
     // emit results
@@ -737,7 +735,7 @@ void WIndex::test_make_hole(unsigned hole_size, unsigned data_idx)
 }
 
 AIndex::AIndex(std::shared_ptr<const iseg::Config> config, std::shared_ptr<segment::Writer> segment, std::shared_ptr<dataset::AppendLock> lock)
-    : WIndex(config, segment->relpath, lock)
+    : WIndex(config, segment->segment().relpath, lock)
 {
 }
 

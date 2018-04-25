@@ -12,7 +12,6 @@
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
 #include "arki/summary.h"
-#include "arki/scan/any.h"
 #include "arki/utils/files.h"
 #include "arki/utils/accounting.h"
 #include "arki/types/area.h"
@@ -75,7 +74,7 @@ add_method("gz", [](Fixture& f) {
         auto checker(f.makeSegmentedChecker());
         checker->segments_tracked([&](segmented::CheckerSegment& seg) {
             seg.compress();
-            sys::unlink(seg.segment->abspath + ".gz.idx");
+            sys::unlink(seg.segment->segment().abspath + ".gz.idx");
         });
     }
 

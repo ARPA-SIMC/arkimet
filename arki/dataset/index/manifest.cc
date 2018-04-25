@@ -14,13 +14,12 @@
 #include "arki/matcher.h"
 #include "arki/utils/sqlite.h"
 #include "arki/utils/files.h"
-#include "arki/utils/compress.h"
 #include "arki/sort.h"
-#include "arki/scan/any.h"
 #include "arki/nag.h"
 #include "arki/iotrace.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
+#include "arki/scan.h"
 #include <algorithm>
 #include <unistd.h>
 #include <fcntl.h>
@@ -93,7 +92,7 @@ bool Manifest::query_data(const dataset::DataQuery& q, SegmentManager& segs, met
         if (!sys::exists(fullpath)) continue;
         std::shared_ptr<arki::segment::Reader> reader;
         if (q.with_data)
-            reader = segs.get_reader(*i, lock.lock());
+            reader = segs.get_reader(scan::Scanner::format_from_filename(*i), *i, lock.lock());
         // This generates filenames relative to the metadata
         // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
         Metadata::read_file(fullpath, [&](unique_ptr<Metadata> md) {
@@ -160,7 +159,7 @@ void Manifest::query_segment(const std::string& relpath, SegmentManager& segs, m
     string absdir = sys::abspath(m_path);
     string prepend_fname = str::dirname(relpath);
     string abspath = str::joinpath(m_path, relpath);
-    auto reader = segs.get_reader(relpath, lock.lock());
+    auto reader = segs.get_reader(scan::Scanner::format_from_filename(relpath), relpath, lock.lock());
     Metadata::read_file(abspath + ".metadata", [&](unique_ptr<Metadata> md) {
         // Tweak Blob sources replacing the file name with relpath
         if (const source::Blob* s = md->has_source_blob())
@@ -178,57 +177,6 @@ void Manifest::invalidate_summary(const std::string& relpath)
 {
     sys::unlink_ifexists(str::joinpath(m_path, relpath) + ".summary");
     invalidate_summary();
-}
-
-void Manifest::rescanSegment(const std::string& dir, const std::string& relpath)
-{
-    if (lock.expired())
-        throw std::runtime_error("cannot rescan a segment while there is no lock held");
-    string pathname = str::joinpath(dir, relpath);
-
-    // Temporarily uncompress the file for scanning
-    unique_ptr<utils::compress::TempUnzip> tu;
-    if (scan::isCompressed(pathname))
-        tu.reset(new utils::compress::TempUnzip(pathname));
-
-    // Read the timestamp
-    time_t mtime = scan::timestamp(pathname);
-
-    // Invalidate summary
-    invalidate_summary(pathname);
-
-    // Invalidate metadata if older than data
-    time_t ts_md = sys::timestamp(pathname + ".metadata", 0);
-    if (ts_md < mtime)
-        sys::unlink_ifexists(pathname + ".metadata");
-
-    // Scan the file
-    metadata::Collection mds;
-    if (!scan::scan(pathname, lock.lock(), mds.inserter_func()))
-    {
-        stringstream ss;
-        ss << "cannot rescan " << pathname << ": it does not look like a file we can scan";
-        throw runtime_error(ss.str());
-    }
-
-    // Iterate the metadata, computing the summary and making the data
-    // paths relative
-    Summary sum;
-    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
-    {
-        const source::Blob& s = (*i)->sourceBlob();
-        (*i)->set_source(upcast<Source>(s.fileOnly()));
-        sum.add(**i);
-    }
-
-    // Regenerate .metadata
-    mds.writeAtomically(pathname + ".metadata");
-
-    // Regenerate .summary
-    sum.writeAtomically(pathname + ".summary");
-
-    // Add to manifest
-    acquire(relpath, mtime, sum);
 }
 
 void Manifest::test_deindex(const std::string& relpath)

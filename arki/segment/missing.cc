@@ -12,18 +12,32 @@ namespace arki {
 namespace segment {
 namespace missing {
 
-Reader::Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-   : segment::Reader(root, relpath, abspath, lock)
+
+const char* Segment::type() const { return "missing"; }
+bool Segment::single_file() const { return true; }
+time_t Segment::timestamp() const
 {
+    throw std::runtime_error("cannot get mtime of " + abspath + ": segment has disappeared");
+}
+std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+{
+    return make_shared<Reader>(format, root, relpath, abspath, lock);
+}
+std::shared_ptr<segment::Checker> Segment::checker() const
+{
+    return Segment::detect_checker(format, root, relpath, abspath);
 }
 
-const char* Reader::type() const { return "missing"; }
-bool Reader::single_file() const { return true; }
+
+bool Reader::scan_data(metadata_dest_func dest)
+{
+    throw std::runtime_error("cannot scan " + m_segment.abspath + ": segment has disappeared");
+}
 
 std::vector<uint8_t> Reader::read(const types::source::Blob& src)
 {
     stringstream ss;
-    ss << "cannot read " << src.size << " bytes of " << src.format << " data from " << abspath << ":"
+    ss << "cannot read " << src.size << " bytes of " << src.format << " data from " << m_segment.abspath << ":"
        << src.offset << ": the segment has disappeared";
     throw std::runtime_error(ss.str());
 }
@@ -31,7 +45,7 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
 size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor& out)
 {
     stringstream ss;
-    ss << "cannot stream " << src.size << " bytes of " << src.format << " data from " << abspath << ":"
+    ss << "cannot stream " << src.size << " bytes of " << src.format << " data from " << m_segment.abspath << ":"
        << src.offset << ": the segment has disappeared";
     throw std::runtime_error(ss.str());
 }

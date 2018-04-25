@@ -5,13 +5,12 @@
 #include "arki/metadata/collection.h"
 #include "arki/metadata/libarchive.h"
 #include "arki/types/source/blob.h"
-#include "arki/scan/any.h"
-#include "arki/utils/compress.h"
+#include "arki/scan/validator.h"
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/zip.h"
-#include "arki/utils.h"
+#include "arki/scan.h"
 #include "arki/nag.h"
 #include "arki/utils/accounting.h"
 #include "arki/iotrace.h"
@@ -209,14 +208,59 @@ struct CheckBackend : public AppendCheckBackend
 
 }
 
+const char* Segment::type() const { return "zip"; }
+bool Segment::single_file() const { return true; }
+time_t Segment::timestamp() const { return sys::timestamp(abspath + ".zip"); }
+std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+{
+    return make_shared<Reader>(format, root, relpath, abspath, lock);
+}
+std::shared_ptr<segment::Checker> Segment::checker() const
+{
+    return make_shared<Checker>(format, root, relpath, abspath);
+}
+bool Segment::can_store(const std::string& format)
+{
+    return true;
+}
+std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath)
+{
+    return make_shared<Checker>(format, rootdir, relpath, abspath);
+}
+std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+{
+    Creator creator(rootdir, relpath, mds, abspath + ".zip");
+    creator.create();
+    return make_shared<Checker>(format, rootdir, relpath, abspath);
+}
+
+
 
 Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::Reader(root, relpath, abspath, lock), zip(format, core::File(abspath + ".zip", O_RDONLY | O_CLOEXEC))
+    : segment::BaseReader<Segment>(format, root, relpath, abspath, lock), zip(format, core::File(abspath + ".zip", O_RDONLY | O_CLOEXEC))
 {
 }
 
-const char* Reader::type() const { return "zip"; }
-bool Reader::single_file() const { return true; }
+bool Reader::scan_data(metadata_dest_func dest)
+{
+    // Collect all file names in the directory
+    std::vector<Span> spans = zip.list_data();
+
+    // Sort them numerically
+    std::sort(spans.begin(), spans.end());
+
+    // Scan them one by one
+    auto scanner = scan::Scanner::get_scanner(m_segment.format);
+    for (const auto& span : spans)
+    {
+        std::vector<uint8_t> data = zip.get(span);
+        auto md = scanner->scan_data(data);
+        if (!dest(move(md)))
+            return false;
+    }
+
+    return true;
+}
 
 std::vector<uint8_t> Reader::read(const types::source::Blob& src)
 {
@@ -246,22 +290,14 @@ size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor&
 }
 
 
-Checker::Checker(const std::string& root, const std::string& relpath, const std::string& abspath)
-    : segment::Checker(root, relpath, abspath), zipabspath(abspath + ".zip")
+Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+    : BaseChecker<Segment>(format, root, relpath, abspath), zipabspath(abspath + ".zip")
 {
 }
-
-const char* Checker::type() const { return "zip"; }
-bool Checker::single_file() const { return true; }
 
 bool Checker::exists_on_disk()
 {
     return sys::exists(zipabspath);
-}
-
-time_t Checker::timestamp()
-{
-    return sys::timestamp(zipabspath);
 }
 
 size_t Checker::size()
@@ -282,11 +318,7 @@ void Checker::move_data(const std::string& new_root, const std::string& new_relp
 
 State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    // TODO: require format as a checker constructor argument, like we have with dir
-    string format;
-    if (!mds.empty())
-        format = mds[0].source().format;
-    CheckBackend checker(format, zipabspath, relpath, reporter, mds);
+    CheckBackend checker(segment().format, zipabspath, segment().relpath, reporter, mds);
     checker.accurate = !quick;
     return checker.check();
 }
@@ -295,7 +327,7 @@ void Checker::validate(Metadata& md, const scan::Validator& v)
 {
     if (const types::source::Blob* blob = md.has_source_blob())
     {
-        if (blob->filename != relpath)
+        if (blob->filename != segment().relpath)
             throw std::runtime_error("metadata to validate does not appear to be from this segment");
 
         sys::File fd(zipabspath, O_RDONLY);
@@ -315,13 +347,13 @@ size_t Checker::remove()
 
 Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
 {
-    string tmpabspath = abspath + ".repack";
+    string tmpabspath = segment().abspath + ".repack";
 
     Pending p(new files::RenameTransaction(tmpabspath, zipabspath));
 
-    Creator creator(rootdir, relpath, mds, abspath + ".zip");
+    Creator creator(rootdir, segment().relpath, mds, segment().abspath + ".zip");
     creator.out = sys::File(tmpabspath);
-    creator.validator = &scan::Validator::by_filename(abspath);
+    creator.validator = &scan::Validator::by_filename(segment().abspath);
     creator.create();
 
     // Make sure mds are not holding a reader on the file to repack, because it
@@ -331,26 +363,19 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, u
     return p;
 }
 
-std::shared_ptr<Checker> Checker::create(const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
-{
-    Creator creator(rootdir, relpath, mds, abspath + ".zip");
-    creator.create();
-    return make_shared<Checker>(rootdir, relpath, abspath);
-}
-
 void Checker::test_truncate(size_t offset)
 {
-    if (!sys::exists(abspath))
-        utils::createFlagfile(abspath);
+    if (!sys::exists(segment().abspath))
+        sys::write_file(segment().abspath, "");
 
     if (offset % 512 != 0)
         offset += 512 - (offset % 512);
 
-    utils::files::PreserveFileTimes pft(abspath);
-    if (::truncate(abspath.c_str(), offset) < 0)
+    utils::files::PreserveFileTimes pft(segment().abspath);
+    if (::truncate(segment().abspath.c_str(), offset) < 0)
     {
         stringstream ss;
-        ss << "cannot truncate " << abspath << " at " << offset;
+        ss << "cannot truncate " << segment().abspath << " at " << offset;
         throw std::system_error(errno, std::system_category(), ss.str());
     }
 }
@@ -368,18 +393,14 @@ void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size
 void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
-    sys::File fd(abspath, O_RDWR);
+    sys::File fd(segment().abspath, O_RDWR);
     sys::PreserveFileTimes pt(fd);
     fd.lseek(s.offset);
     fd.write_all_or_throw("\0", 1);
 }
 
 
-bool Checker::can_store(const std::string& format)
-{
-    return true;
-}
-
 }
 }
 }
+#include "base.tcc"

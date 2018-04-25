@@ -3,7 +3,7 @@
 #include "arki/types/source.h"
 #include "arki/metadata.h"
 #include "arki/summary.h"
-#include "arki/scan/any.h"
+#include "arki/segment.h"
 #include "arki/utils/sys.h"
 #include "memory.h"
 
@@ -23,8 +23,9 @@ void Tests::register_tests() {
 
 // Test querying
 add_method("query", [] {
+    auto reader = Segment::detect_reader("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     dataset::Memory c;
-    scan::scan("inbound/test.grib1", std::make_shared<core::lock::Null>(), c.inserter_func());
+    reader->scan(c.inserter_func());
 
     metadata::Collection mdc(c, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 1u);
@@ -44,8 +45,9 @@ add_method("query", [] {
 
 // Test querying the summary
 add_method("query_summary", [] {
+    auto reader = Segment::detect_reader("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     dataset::Memory c;
-    scan::scan("inbound/test.grib1", std::make_shared<core::lock::Null>(), c.inserter_func());
+    reader->scan(c.inserter_func());
 
     Summary summary;
     c.query_summary(Matcher::parse("origin:GRIB1,200"), summary);
@@ -54,8 +56,9 @@ add_method("query_summary", [] {
 
 // Test querying the summary by reftime
 add_method("query_summary_reftime", [] {
+    auto reader = Segment::detect_reader("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     dataset::Memory c;
-    scan::scan("inbound/test.grib1", std::make_shared<core::lock::Null>(), c.inserter_func());
+    reader->scan(c.inserter_func());
 
     Summary summary;
     //system("bash");

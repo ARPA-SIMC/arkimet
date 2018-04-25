@@ -61,23 +61,6 @@ add_method("resolve_path", [] {
     wassert(actual(relpath) == "foo/baz");
 });
 
-// Test format_from_ext
-add_method("format_from_ext", [] {
-    using namespace arki::utils::files;
-
-    wassert(actual(format_from_ext("test.grib")) == "grib");
-    wassert(actual(format_from_ext("test.grib1")) == "grib");
-    wassert(actual(format_from_ext("test.grib2")) == "grib");
-    wassert(actual(format_from_ext("test.bufr")) == "bufr");
-#ifdef HAVE_HDF5
-    wassert(actual(format_from_ext("test.h5")) == "odimh5");
-    wassert(actual(format_from_ext("test.hdf5")) == "odimh5");
-    wassert(actual(format_from_ext("test.odim")) == "odimh5");
-    wassert(actual(format_from_ext("test.odimh5")) == "odimh5");
-#endif
-
-});
-
 }
 
 }

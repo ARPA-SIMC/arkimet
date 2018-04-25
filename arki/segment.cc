@@ -1,7 +1,6 @@
 #include "segment.h"
 #include "segment/missing.h"
-#include "segment/concat.h"
-#include "segment/lines.h"
+#include "segment/fd.h"
 #include "segment/dir.h"
 #include "segment/tar.h"
 #include "segment/zip.h"
@@ -9,7 +8,6 @@
 #include "segment/gzidx.h"
 #include "arki/configfile.h"
 #include "arki/exceptions.h"
-#include "arki/scan/any.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
@@ -23,8 +21,8 @@ using namespace arki::utils;
 
 namespace arki {
 
-Segment::Segment(const std::string& root, const std::string& relpath, const std::string& abspath)
-    : root(root), relpath(relpath), abspath(abspath)
+Segment::Segment(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+    : format(format), root(root), relpath(relpath), abspath(abspath)
 {
 }
 
@@ -32,15 +30,18 @@ Segment::~Segment()
 {
 }
 
-
-namespace segment {
-
-Reader::Reader(const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : Segment(root, relpath, abspath), lock(lock)
+std::string Segment::basename(const std::string& pathname)
 {
+    if (str::endswith(pathname, ".gz"))
+        return pathname.substr(0, pathname.size() - 3);
+    if (str::endswith(pathname, ".tar"))
+        return pathname.substr(0, pathname.size() - 4);
+    if (str::endswith(pathname, ".zip"))
+        return pathname.substr(0, pathname.size() - 4);
+    return pathname;
 }
 
-std::shared_ptr<Reader> Reader::for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+std::shared_ptr<segment::Reader> Segment::detect_reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
 {
     std::shared_ptr<segment::Reader> res;
 
@@ -51,7 +52,18 @@ std::shared_ptr<Reader> Reader::for_pathname(const std::string& format, const st
         {
             res.reset(new segment::dir::Reader(format, root, relpath, abspath, lock));
         } else {
-            res.reset(new segment::fd::Reader(root, relpath, abspath, lock));
+            if (format == "grib" || format == "bufr")
+            {
+                res.reset(new segment::concat::Reader(format, root, relpath, abspath, lock));
+            } else if (format == "vm2") {
+                res.reset(new segment::lines::Reader(format, root, relpath, abspath, lock));
+            } else if (format == "odimh5") {
+                res.reset(new segment::concat::Reader(format, root, relpath, abspath, lock));
+            } else {
+                throw_consistency_error(
+                        "getting segment for " + format + " file " + relpath,
+                        "format not supported");
+            }
         }
         return res;
     }
@@ -64,10 +76,24 @@ std::shared_ptr<Reader> Reader::for_pathname(const std::string& format, const st
                     "cannot get a reader for " + format + " directory " + relpath + ": cannot handle a directory with a .gz extension");
         else
         {
-            if (sys::exists(abspath + ".gz.idx"))
-                res.reset(new segment::gzidx::Reader(root, relpath, abspath, lock));
-            else
-                res.reset(new segment::gz::Reader(root, relpath, abspath, lock));
+            if (format == "grib" || format == "bufr")
+            {
+                if (sys::exists(abspath + ".gz.idx"))
+                    res.reset(new segment::gzidxconcat::Reader(format, root, relpath, abspath, lock));
+                else
+                    res.reset(new segment::gzconcat::Reader(format, root, relpath, abspath, lock));
+            } else if (format == "vm2") {
+                if (sys::exists(abspath + ".gz.idx"))
+                    res.reset(new segment::gzidxconcat::Reader(format, root, relpath, abspath, lock));
+                else
+                    res.reset(new segment::gzlines::Reader(format, root, relpath, abspath, lock));
+            } else if (format == "odimh5") {
+                res.reset(new segment::gzidxconcat::Reader(format, root, relpath, abspath, lock));
+            } else {
+                throw_consistency_error(
+                        "getting segment for " + format + " file " + relpath,
+                        "format not supported");
+            }
         }
         return res;
     }
@@ -75,7 +101,7 @@ std::shared_ptr<Reader> Reader::for_pathname(const std::string& format, const st
     st = sys::stat(abspath + ".tar");
     if (st.get())
     {
-        res.reset(new segment::tar::Reader(root, relpath, abspath, lock));
+        res.reset(new segment::tar::Reader(format, root, relpath, abspath, lock));
         return res;
     }
 
@@ -86,35 +112,11 @@ std::shared_ptr<Reader> Reader::for_pathname(const std::string& format, const st
         return res;
     }
 
-    res.reset(new segment::missing::Reader(root, relpath, abspath, lock));
+    res.reset(new segment::missing::Reader(format, root, relpath, abspath, lock));
     return res;
 }
 
-
-Writer::PendingMetadata::PendingMetadata(Metadata& md, std::unique_ptr<types::source::Blob> new_source)
-    : md(md), new_source(new_source.release())
-{
-}
-
-Writer::PendingMetadata::PendingMetadata(PendingMetadata&& o)
-    : md(o.md), new_source(o.new_source)
-{
-    o.new_source = nullptr;
-}
-
-Writer::PendingMetadata::~PendingMetadata()
-{
-    delete new_source;
-}
-
-void Writer::PendingMetadata::set_source()
-{
-    std::unique_ptr<types::source::Blob> source(new_source);
-    new_source = 0;
-    md.set_source(move(source));
-}
-
-std::shared_ptr<Writer> Writer::for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data)
+std::shared_ptr<segment::Writer> Segment::detect_writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data)
 {
     std::shared_ptr<segment::Writer> res;
 
@@ -123,7 +125,7 @@ std::shared_ptr<Writer> Writer::for_pathname(const std::string& format, const st
     {
         if (S_ISDIR(st->st_mode))
         {
-            if (segment::dir::Checker::can_store(format))
+            if (segment::dir::Segment::can_store(format))
             {
                 if (mock_data)
                     res.reset(new segment::dir::HoleWriter(format, root, relpath, abspath));
@@ -135,23 +137,18 @@ std::shared_ptr<Writer> Writer::for_pathname(const std::string& format, const st
                         "format not supported");
             }
         } else {
-            if (format == "grib" || format == "grib1" || format == "grib2")
+            if (format == "grib" || format == "bufr")
             {
                 if (mock_data)
-                    res.reset(new segment::concat::HoleWriter(root, relpath, abspath));
+                    res.reset(new segment::concat::HoleWriter(format, root, relpath, abspath));
                 else
-                    res.reset(new segment::concat::Writer(root, relpath, abspath));
-            } else if (format == "bufr") {
-                if (mock_data)
-                    res.reset(new segment::concat::HoleWriter(root, relpath, abspath));
-                else
-                    res.reset(new segment::concat::Writer(root, relpath, abspath));
+                    res.reset(new segment::concat::Writer(format, root, relpath, abspath));
             } else if (format == "vm2") {
                 if (mock_data)
                     throw_consistency_error("mock_data single-file line-based segments are not implemented");
                 else
-                    res.reset(new segment::lines::Writer(root, relpath, abspath));
-            } else if (format == "odimh5" || format == "h5" || format == "odim") {
+                    res.reset(new segment::lines::Writer(format, root, relpath, abspath));
+            } else if (format == "odimh5") {
                 throw_consistency_error("segment is a file, but odimh5 data can only be stored into directory segments");
             } else {
                 throw_consistency_error(
@@ -190,62 +187,7 @@ std::shared_ptr<Writer> Writer::for_pathname(const std::string& format, const st
     return res;
 }
 
-
-std::shared_ptr<segment::Checker> Checker::tar(metadata::Collection& mds)
-{
-    segment::tar::Checker::create(root, relpath, abspath, mds);
-    remove();
-    return make_shared<segment::tar::Checker>(root, relpath, abspath);
-}
-
-std::shared_ptr<segment::Checker> Checker::zip(metadata::Collection& mds)
-{
-    segment::zip::Checker::create(root, relpath, abspath, mds);
-    remove();
-    return make_shared<segment::zip::Checker>(root, relpath, abspath);
-}
-
-std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds)
-{
-    segment::gzidx::Checker::create(root, relpath, abspath, mds);
-    remove();
-    return make_shared<segment::gzidx::Checker>(root, relpath, abspath);
-}
-
-void Checker::move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
-{
-    sys::makedirs(str::dirname(new_abspath));
-
-    // Sanity checks: avoid conflicts
-    if (sys::exists(new_abspath) || sys::exists(new_abspath + ".tar") || sys::exists(new_abspath + ".gz") || sys::exists(new_abspath + ".zip"))
-    {
-        stringstream ss;
-        ss << "cannot archive " << abspath << " to " << new_abspath << " because the destination already exists";
-        throw runtime_error(ss.str());
-    }
-
-    // Remove stale metadata and summaries that may have been left around
-    sys::unlink_ifexists(new_abspath + ".metadata");
-    sys::unlink_ifexists(new_abspath + ".summary");
-
-    move_data(new_root, new_relpath, new_abspath);
-
-    // Move metadata to archive
-    sys::rename_ifexists(abspath + ".metadata", new_abspath + ".metadata");
-    sys::rename_ifexists(abspath + ".summary", new_abspath + ".summary");
-
-    root = new_root;
-    relpath = new_relpath;
-    abspath = new_abspath;
-}
-
-void Checker::test_truncate(const metadata::Collection& mds, unsigned data_idx)
-{
-    const auto& s = mds[data_idx].sourceBlob();
-    test_truncate(s.offset);
-}
-
-std::shared_ptr<Checker> Checker::for_pathname(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data)
+std::shared_ptr<segment::Checker> Segment::detect_checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data)
 {
     std::shared_ptr<segment::Checker> res;
 
@@ -254,7 +196,7 @@ std::shared_ptr<Checker> Checker::for_pathname(const std::string& format, const 
     {
         if (S_ISDIR(st->st_mode))
         {
-            if (segment::dir::Checker::can_store(format))
+            if (segment::dir::Segment::can_store(format))
             {
                 if (mock_data)
                     res.reset(new segment::dir::HoleChecker(format, root, relpath, abspath));
@@ -266,23 +208,18 @@ std::shared_ptr<Checker> Checker::for_pathname(const std::string& format, const 
                         "format not supported");
             }
         } else {
-            if (format == "grib" || format == "grib1" || format == "grib2")
+            if (format == "grib" || format == "bufr")
             {
                 if (mock_data)
-                    res.reset(new segment::concat::HoleChecker(root, relpath, abspath));
+                    res.reset(new segment::concat::HoleChecker(format, root, relpath, abspath));
                 else
-                    res.reset(new segment::concat::Checker(root, relpath, abspath));
-            } else if (format == "bufr") {
-                if (mock_data)
-                    res.reset(new segment::concat::HoleChecker(root, relpath, abspath));
-                else
-                    res.reset(new segment::concat::Checker(root, relpath, abspath));
+                    res.reset(new segment::concat::Checker(format, root, relpath, abspath));
             } else if (format == "vm2") {
                 if (mock_data)
                     throw_consistency_error("mockdata single-file line-based segments not implemented");
                 else
-                    res.reset(new segment::lines::Checker(root, relpath, abspath));
-            } else if (format == "odimh5" || format == "h5" || format == "odim") {
+                    res.reset(new segment::lines::Checker(format, root, relpath, abspath));
+            } else if (format == "odimh5") {
                 // If it's a file and we need a directory, still get a checker
                 // so it can deal with it
                 if (mock_data)
@@ -306,18 +243,18 @@ std::shared_ptr<Checker> Checker::for_pathname(const std::string& format, const 
                     "getting checker for " + format + " file " + relpath,
                     "cannot handle a directory with a .gz extension");
 
-        if (format == "grib" || format == "grib1" || format == "grib2" || format == "bufr")
+        if (format == "grib" || format == "bufr")
         {
             if (sys::exists(abspath + ".gz.idx"))
-                res.reset(new segment::gzidx::Checker(root, relpath, abspath));
+                res.reset(new segment::gzidxconcat::Checker(format, root, relpath, abspath));
             else
-                res.reset(new segment::gz::Checker(root, relpath, abspath));
+                res.reset(new segment::gzconcat::Checker(format, root, relpath, abspath));
         } else if (format == "vm2") {
             if (sys::exists(abspath + ".gz.idx"))
-                res.reset(new segment::gzidxlines::Checker(root, relpath, abspath));
+                res.reset(new segment::gzidxlines::Checker(format, root, relpath, abspath));
             else
-                res.reset(new segment::gzlines::Checker(root, relpath, abspath));
-        } else if (format == "odimh5" || format == "h5" || format == "odim") {
+                res.reset(new segment::gzlines::Checker(format, root, relpath, abspath));
+        } else if (format == "odimh5") {
             throw_consistency_error(
                     "getting checker for " + format + " file " + relpath,
                     "cannot handle a gzipped odim file as a segment");
@@ -335,7 +272,7 @@ std::shared_ptr<Checker> Checker::for_pathname(const std::string& format, const 
             throw_consistency_error(
                     "getting checker for " + format + " file " + relpath,
                     "cannot handle a directory with a .tar extension");
-        res.reset(new segment::tar::Checker(root, relpath, abspath));
+        res.reset(new segment::tar::Checker(format, root, relpath, abspath));
         return res;
     }
 
@@ -346,11 +283,102 @@ std::shared_ptr<Checker> Checker::for_pathname(const std::string& format, const 
             throw_consistency_error(
                     "getting checker for " + format + " file " + relpath,
                     "cannot handle a directory with a .zip extension");
-        res.reset(new segment::zip::Checker(root, relpath, abspath));
+        res.reset(new segment::zip::Checker(format, root, relpath, abspath));
         return res;
     }
 
     return res;
+}
+
+
+namespace segment {
+
+Reader::Reader(std::shared_ptr<core::Lock> lock)
+    : lock(lock)
+{
+}
+
+Reader::~Reader()
+{
+}
+
+bool Reader::scan(metadata_dest_func dest)
+{
+    // stat the metadata file, if it exists
+    string md_abspath = segment().abspath + ".metadata";
+    unique_ptr<struct stat> st_md = sys::stat(md_abspath);
+    // If it exists and it looks new enough, use it
+    if (st_md.get() && st_md->st_mtime >= segment().timestamp())
+        return Metadata::read_file(md_abspath, [&](unique_ptr<Metadata> md) {
+            md->sourceBlob().lock(shared_from_this());
+            return dest(move(md));
+        });
+
+    // Else scan the file as usual
+    return scan_data(dest);
+}
+
+
+
+Writer::PendingMetadata::PendingMetadata(Metadata& md, std::unique_ptr<types::source::Blob> new_source)
+    : md(md), new_source(new_source.release())
+{
+}
+
+Writer::PendingMetadata::PendingMetadata(PendingMetadata&& o)
+    : md(o.md), new_source(o.new_source)
+{
+    o.new_source = nullptr;
+}
+
+Writer::PendingMetadata::~PendingMetadata()
+{
+    delete new_source;
+}
+
+void Writer::PendingMetadata::set_source()
+{
+    std::unique_ptr<types::source::Blob> source(new_source);
+    new_source = 0;
+    md.set_source(move(source));
+}
+
+
+bool Checker::scan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+{
+    auto reader = this->segment().reader(lock);
+    return reader->scan_data(dest);
+}
+
+std::shared_ptr<segment::Checker> Checker::tar(metadata::Collection& mds)
+{
+    segment::tar::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds);
+    remove();
+    return make_shared<segment::tar::Checker>(segment().format, segment().root, segment().relpath, segment().abspath);
+}
+
+std::shared_ptr<segment::Checker> Checker::zip(metadata::Collection& mds)
+{
+    segment::zip::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds);
+    remove();
+    return make_shared<segment::zip::Checker>(segment().format, segment().root, segment().relpath, segment().abspath);
+}
+
+std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds)
+{
+    std::shared_ptr<segment::Checker> res;
+    if (segment().format == "vm2")
+        res = segment::gzidxlines::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds);
+    else
+        res = segment::gzidxconcat::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds);
+    remove();
+    return res;
+}
+
+void Checker::test_truncate(const metadata::Collection& mds, unsigned data_idx)
+{
+    const auto& s = mds[data_idx].sourceBlob();
+    test_truncate(s.offset);
 }
 
 std::string State::to_string() const

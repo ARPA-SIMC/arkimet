@@ -8,7 +8,6 @@
 #include "arki/metadata.h"
 #include "arki/utils/files.h"
 #include "arki/configfile.h"
-#include "arki/scan/any.h"
 #include "arki/runtime/io.h"
 #include "arki/metadata/consumer.h"
 #include "arki/metadata/collection.h"

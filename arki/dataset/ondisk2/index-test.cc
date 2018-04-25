@@ -6,7 +6,6 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
-#include "arki/scan/any.h"
 #include "arki/configfile.h"
 #include "arki/matcher.h"
 #include "arki/summary.h"
@@ -525,7 +524,7 @@ add_method("smallfiles", [] {
 
         // I/O should happen here
         mdc[0].drop_cached_data();
-        mdc[0].sourceBlob().lock(segment::Reader::for_pathname("vm2", "inbound", "test.vm2", "inbound/test.vm2", std::shared_ptr<core::lock::Null>()));
+        mdc[0].sourceBlob().lock(Segment::detect_reader("vm2", "inbound", "test.vm2", "inbound/test.vm2", std::shared_ptr<core::lock::Null>()));
         const auto& buf = mdc[0].getData();
         wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
         wassert(actual(collector.events.size()) == 1u);

@@ -3,7 +3,7 @@
 
 /// scan/grib - Scan a GRIB (version 1 or 2) file for metadata
 
-#include <arki/scan/base.h>
+#include <arki/scan.h>
 #include <string>
 #include <vector>
 
@@ -59,52 +59,19 @@ protected:
 	static int arkilua_lookup_gribs(lua_State* L);
 	static int arkilua_lookup_gribd(lua_State* L);
 
+    void scan_handle(Metadata& md);
+
 public:
 	Grib(const std::string& grib1code = std::string(), const std::string& grib2code = std::string());
 	virtual ~Grib();
 
-    /// Alternate version with explicit basedir/relpath separation
-    void open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock) override;
-
-    /**
-     * Close the input file.
-     *
-     * This is optional: the file will be closed by the destructor if needed.
-     */
+    void open(const std::string& filename, std::shared_ptr<segment::Reader> reader) override;
     void close() override;
+    bool next(Metadata& md) override;
+    std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
 
-	/**
-	 * Scan the next GRIB in the file.
-	 *
-	 * @returns
-	 *   true if it found a GRIB message,
-	 *   false if there are no more GRIB messages in the file
-	 */
-	bool next(Metadata& md);
-
-	friend class GribLua;
+    friend class GribLua;
 };
-
-#if 0
-class MultiGrib : public Grib
-{
-protected:
-    std::string tmpfilename;
-    std::ostream& tmpfile;
-
-    /**
-     * Set the source information in the metadata.
-     *
-     * In the case of multigribs, we need to first copy the data to a temporary
-     * file, then use that as the source.  This rebuilds a scattered multigrib
-     * into a single blob of data.
-     */
-    void setSource(Metadata& md) override;
-
-public:
-    MultiGrib(const std::string& tmpfilename, std::ostream& tmpfile);
-};
-#endif
 
 }
 }

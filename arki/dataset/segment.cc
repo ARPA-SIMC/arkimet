@@ -1,17 +1,6 @@
 #include "segment.h"
 #include "segment/managers.h"
-#include "arki/segment/concat.h"
-#include "arki/segment/lines.h"
-#include "arki/segment/dir.h"
-#include "arki/segment/tar.h"
-#include "arki/configfile.h"
 #include "arki/exceptions.h"
-#include "arki/scan/any.h"
-#include "arki/metadata/collection.h"
-#include "arki/metadata.h"
-#include "arki/types/source/blob.h"
-#include "arki/utils.h"
-#include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 
@@ -30,41 +19,18 @@ SegmentManager::~SegmentManager()
 {
 }
 
-std::shared_ptr<segment::Reader> SegmentManager::get_reader(const std::string& relpath, std::shared_ptr<core::Lock> lock)
-{
-    return get_reader(utils::get_format(relpath), relpath, lock);
-}
-
 std::shared_ptr<segment::Reader> SegmentManager::get_reader(const std::string& format, const std::string& relpath, std::shared_ptr<core::Lock> lock)
 {
-    return segment::Reader::for_pathname(format, root, relpath, str::joinpath(root, relpath), lock);
-}
-
-std::shared_ptr<segment::Writer> SegmentManager::get_writer(const std::string& relpath)
-{
-    return get_writer(utils::get_format(relpath), relpath);
+    return Segment::detect_reader(format, root, relpath, str::joinpath(root, relpath), lock);
 }
 
 std::shared_ptr<segment::Writer> SegmentManager::get_writer(const std::string& format, const std::string& relpath)
 {
-    // Ensure that the directory for 'relpath' exists
+    // Ensure that the directory containing the segment exists
     string abspath = str::joinpath(root, relpath);
-    size_t pos = abspath.rfind('/');
-    if (pos != string::npos)
-        sys::makedirs(abspath.substr(0, pos));
+    sys::makedirs(str::dirname(abspath));
 
-    // Refuse to write to compressed files
-    if (scan::isCompressed(abspath))
-        throw_consistency_error("accessing data file " + relpath,
-                "cannot update compressed data files: please manually uncompress it first");
-
-    // Else we need to create an appropriate one
     return create_writer_for_format(format, relpath, abspath);
-}
-
-std::shared_ptr<segment::Checker> SegmentManager::get_checker(const std::string& relpath)
-{
-    return get_checker(utils::get_format(relpath), relpath);
 }
 
 std::shared_ptr<segment::Checker> SegmentManager::get_checker(const std::string& format, const std::string& relpath)

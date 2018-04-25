@@ -1,7 +1,7 @@
 #ifndef ARKI_SCAN_ODIMH5_H
 #define ARKI_SCAN_ODIMH5_H
 
-#include <arki/scan/base.h>
+#include <arki/scan.h>
 #include <arki/utils/h5.h>
 #include <string>
 #include <vector>
@@ -26,27 +26,11 @@ public:
 	OdimH5();
 	virtual ~OdimH5();
 
-    /**
-     * Access a file with ODIMH5 data  - alternate version with explicit
-     * basedir/relpath separation
-     */
-    void open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock) override;
+    void scan_file(const std::string& filename, Metadata& md);
 
-    /**
-     * Close the input file.
-     *
-     * This is optional: the file will be closed by the destructor if needed.
-     */
-    void close() override;
-
-	/**
-	 * Scan the next ODIMH5 in the file.
-	 *
-	 * @returns
-	 *   true if it found a ODIMH5 message,
-	 *   false if there are no more ODIMH5 messages in the file
-	 */
-	bool next(Metadata& md);
+    void open(const std::string& filename, std::shared_ptr<segment::Reader> reader) override;
+    bool next(Metadata& md) override;
+    std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
 
 protected:
     hid_t h5file;

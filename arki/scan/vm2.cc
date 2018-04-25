@@ -10,7 +10,7 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/regexp.h"
 #include "arki/utils/lua.h"
-#include "arki/scan/any.h"
+#include "arki/scan/validator.h"
 #include "arki/types/area.h"
 #include "arki/types/reftime.h"
 #include "arki/types/product.h"
@@ -70,39 +70,60 @@ static VM2Validator vm_validator;
 
 const Validator& validator() { return vm_validator; }
 
+struct Input
+{
+    std::istream* in = nullptr;
+    meteo::vm2::Parser* parser = nullptr;
+    bool close = false;
+
+    Input(const std::string& abspath)
+        : close(true)
+    {
+        in = new std::ifstream(abspath.c_str());
+        if (!in->good())
+            throw_file_error(abspath, "cannot open file for reading");
+        parser = new meteo::vm2::Parser(*in);
+    }
+
+    Input(std::istream& st)
+        : in(&st), close(false)
+    {
+        parser = new meteo::vm2::Parser(*in);
+    }
+
+    ~Input()
+    {
+        delete parser;
+        if (close)
+            delete in;
+    }
+};
+
 }
 
-Vm2::Vm2() : in(0), parser(0) {}
+Vm2::Vm2() {}
 
 Vm2::~Vm2()
 {
     close();
 }
 
-void Vm2::open(const std::string& filename, const std::string& basedir, const std::string& relpath, std::shared_ptr<core::Lock> lock)
+void Vm2::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
 {
-    Scanner::open(filename, basedir, relpath, lock);
-    if (relpath == "-") {
-        this->in = &std::cin;
-    } else {
-        this->in = new std::ifstream(filename.c_str());
-    }
-    if (!in->good())
-        throw_file_error(filename, "cannot open file for reading");
-    parser = new meteo::vm2::Parser(*in);
+    Scanner::open(filename, reader);
+    delete input;
+    input = nullptr;
+    input = new vm2::Input(filename);
 }
 
 void Vm2::close()
 {
     Scanner::close();
-    if (in && relpath != "-")
-        delete in;
-    if (parser) delete parser;
-    in = 0;
-    parser = 0;
+    delete input;
+    input = nullptr;
 }
 
-bool Vm2::next(Metadata& md)
+bool Vm2::scan_stream(vm2::Input& input, Metadata& md)
 {
     meteo::vm2::Value value;
     std::string line;
@@ -110,9 +131,9 @@ bool Vm2::next(Metadata& md)
     off_t offset = 0;
     while (true)
     {
-        offset = in->tellg();
+        offset = input.in->tellg();
         try {
-            if (!parser->next(value, line))
+            if (!input.parser->next(value, line))
                 return false;
             else
                 break;
@@ -124,10 +145,13 @@ bool Vm2::next(Metadata& md)
     size_t size = line.size();
 
     md.clear();
-    unique_ptr<source::Blob> source(source::Blob::create("vm2", basedir, relpath, offset, size, reader));
-    md.set_cached_data(vector<uint8_t>(line.begin(), line.end()));
-    md.set_source(upcast<Source>(move(source)));
-    md.add_note("Scanned from " + relpath);
+    if (reader)
+    {
+        md.set_source(Source::createBlob(reader, offset, size));
+        md.set_cached_data(vector<uint8_t>(line.begin(), line.end()));
+    } else
+        md.set_source_inline("bufr", vector<uint8_t>(line.begin(), line.end()));
+    md.add_note("Scanned from " + str::basename(filename));
     md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
     md.set(Area::createVM2(value.station_id));
     md.set(Product::createVM2(value.variable_id));
@@ -141,6 +165,21 @@ bool Vm2::next(Metadata& md)
     md.set(types::Value::create(line.substr(pos+1)));
 
     return true;
+}
+
+bool Vm2::next(Metadata& md)
+{
+    return scan_stream(*input, md);
+}
+
+std::unique_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
+{
+    std::istringstream str(std::string(data.begin(), data.end()));
+    vm2::Input input(str);
+    std::unique_ptr<Metadata> md(new Metadata);
+    if (!scan_stream(input, *md))
+        throw std::runtime_error("input line did not look like a VM2 line");
+    return md;
 }
 
 vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& value)

@@ -27,11 +27,11 @@ add_method("read", [] {
     {
         sys::File outfd("test.zip", O_WRONLY | O_TRUNC | O_CREAT);
         metadata::LibarchiveOutput writer("zip", outfd);
-        writer.subdir.clear();
-        writer.append(mds[0]);
-        writer.append(mds[1]);
-        writer.append(mds[2]);
-        writer.flush();
+        wassert(writer.subdir.clear());
+        wassert(writer.append(mds[0]));
+        wassert(writer.append(mds[1]));
+        wassert(writer.append(mds[2]));
+        wassert(writer.flush());
     }
 
     sys::File infd("test.zip", O_RDONLY);

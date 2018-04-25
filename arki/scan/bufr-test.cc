@@ -1,7 +1,7 @@
 #include "arki/metadata/tests.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
-#include "arki/scan/any.h"
+#include "arki/scan/validator.h"
 #include "arki/scan/bufr.h"
 #include "arki/utils/sys.h"
 #include "arki/types/reftime.h"
@@ -49,12 +49,12 @@ add_method("contiguous", [] {
     wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
     wassert(actual(md).contains("reftime", "2005-12-01T18:00:00Z"));
 
-	// Check run
-	ensure(not md.has(TYPE_RUN));
+    // Check run
+    wassert_true(not md.has(TYPE_RUN));
 
 
-	// Next bufr
-	ensure(scanner.next(md));
+    // Next bufr
+    wassert_true(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 194, 220));
@@ -72,12 +72,12 @@ add_method("contiguous", [] {
     //wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
     wassert(actual(md).contains("reftime", "2004-11-30T12:00:00Z"));
 
-	// Check run
-	ensure(not md.has(TYPE_RUN));
+    // Check run
+    wassert_false(md.has(TYPE_RUN));
 
 
-	// Last bufr
-	ensure(scanner.next(md));
+    // Last bufr
+    wassert_true(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 414, 220));
@@ -95,12 +95,11 @@ add_method("contiguous", [] {
     //wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
     wassert(actual(md).contains("reftime", "2004-11-30T12:00:00Z"));
 
-	// Check run
-	ensure(not md.has(TYPE_RUN));
+    // Check run
+    wassert_false(md.has(TYPE_RUN));
 
-
-	// No more bufrs
-	ensure(not scanner.next(md));
+    // No more bufrs
+    wassert_false(scanner.next(md));
 });
 
 // Scan a well-known bufr file, with extra padding data between messages
@@ -111,8 +110,8 @@ add_method("padded", [] {
 
     scanner.test_open("inbound/padded.bufr");
 
-	// See how we scan the first BUFR
-	ensure(scanner.next(md));
+    // See how we scan the first BUFR
+    wassert_true(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/padded.bufr", 100, 194));
@@ -130,12 +129,12 @@ add_method("padded", [] {
     wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
     wassert(actual(md).contains("reftime", "2005-12-01T18:00:00Z"));
 
-	// Check run
-	ensure(not md.has(TYPE_RUN));
+    // Check run
+    wassert_false(md.has(TYPE_RUN));
 
 
-	// Next bufr
-	ensure(scanner.next(md));
+    // Next bufr
+    wassert_true(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/padded.bufr", 394, 220));
@@ -153,12 +152,12 @@ add_method("padded", [] {
     //wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
     wassert(actual(md).contains("reftime", "2004-11-30T12:00:00Z"));
 
-	// Check run
-	ensure(not md.has(TYPE_RUN));
+    // Check run
+    wassert_false(md.has(TYPE_RUN));
 
 
-	// Last bufr
-	ensure(scanner.next(md));
+    // Last bufr
+    wassert_true(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/padded.bufr", 714, 220));
@@ -176,11 +175,11 @@ add_method("padded", [] {
     //wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
     wassert(actual(md).contains("reftime", "2004-11-30T12:00:00Z"));
 
-	// Check run
-	ensure(not md.has(TYPE_RUN));
+    // Check run
+    wassert_false(md.has(TYPE_RUN));
 
-	// No more bufrs
-	ensure(not scanner.next(md));
+    // No more bufrs
+    wassert_false(scanner.next(md));
 });
 
 // Test validation
@@ -195,22 +194,21 @@ add_method("validate", [] {
     v.validate_file(fd, 194, 220);
     v.validate_file(fd, 414, 220);
 
-#define ensure_throws(x) do { try { x; ensure(false); } catch (std::exception& e) { } } while (0)
-    ensure_throws(v.validate_file(fd, 1, 193));
-    ensure_throws(v.validate_file(fd, 0, 193));
-    ensure_throws(v.validate_file(fd, 0, 195));
-    ensure_throws(v.validate_file(fd, 193, 221));
-    ensure_throws(v.validate_file(fd, 414, 221));
-    ensure_throws(v.validate_file(fd, 634, 0));
-    ensure_throws(v.validate_file(fd, 634, 10));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 1, 193));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 0, 193));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 0, 195));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 193, 221));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 414, 221));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 634, 0));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 634, 10));
     fd.close();
 
     metadata::TestCollection mdc("inbound/test.bufr");
     buf = mdc[0].getData();
 
     wassert(v.validate_buf(buf.data(), buf.size()));
-    ensure_throws(v.validate_buf((const char*)buf.data()+1, buf.size()-1));
-    ensure_throws(v.validate_buf(buf.data(), buf.size()-1));
+    wassert_throws(std::runtime_error, v.validate_buf((const char*)buf.data()+1, buf.size()-1));
+    wassert_throws(std::runtime_error, v.validate_buf(buf.data(), buf.size()-1));
 });
 
 // Test scanning a BUFR file that can only be decoded partially
@@ -222,8 +220,8 @@ add_method("partial", [] {
 
     scanner.test_open("inbound/C23000.bufr");
 
-	// See how we scan the first BUFR
-	ensure(scanner.next(md));
+    // See how we scan the first BUFR
+    wassert_true(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/C23000.bufr", 0, 2206));
@@ -241,15 +239,15 @@ add_method("partial", [] {
     //wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
     wassert(actual(md).contains("reftime", "2010-07-21T23:00:00Z"));
 
-	// Check area
-	ensure(md.has(TYPE_AREA));
+    // Check area
+    wassert_true(md.has(TYPE_AREA));
 
-	// Check run
-	ensure(not md.has(TYPE_RUN));
+    // Check run
+    wassert_false(md.has(TYPE_RUN));
 
 
-	// No more bufrs
-	ensure(not scanner.next(md));
+    // No more bufrs
+    wassert_false(scanner.next(md));
 });
 
 // Test scanning a pollution BUFR file
@@ -260,8 +258,8 @@ add_method("pollution", [] {
 
     scanner.test_open("inbound/pollution.bufr");
 
-	// See how we scan the first BUFR
-	ensure(scanner.next(md));
+    // See how we scan the first BUFR
+    wassert_true(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/pollution.bufr", 0, 178));
@@ -279,12 +277,12 @@ add_method("pollution", [] {
     wassert(actual(md).contains("proddef", "GRIB(gems=IT0002, name=NO_3118_PIEVEVERGONTE)"));
     wassert(actual(md).contains("reftime", "2010-08-08T23:00:00Z"));
 
-	// Check run
-	ensure(not md.has(TYPE_RUN));
+    // Check run
+    wassert_false(md.has(TYPE_RUN));
 
 
-	// No more bufrs
-	ensure(not scanner.next(md));
+    // No more bufrs
+    wassert_false(scanner.next(md));
 });
 
 // Test scanning a BUFR file with undefined dates
@@ -375,14 +373,14 @@ add_method("temp_reftime", [] {
     Metadata md;
     scan::Bufr scanner;
     scanner.test_open("inbound/tempforecast.bufr");
-    ensure(scanner.next(md));
+    wassert_true(scanner.next(md));
     wassert(actual(md).contains("reftime", "2009-02-13 12:00:00"));
 
     // BUFR has datetime 2013-04-06 00:00:00 (validity time, in this case), timerange 254,259200,0 (+72h)
     // and should be archived with its emission time
     scanner.test_open("inbound/tempforecast1.bufr");
-    ensure(scanner.next(md));
-    wassert(actual(md).contains("reftime", "2013-04-03 00:00:00"));
+    wassert_true(scanner.next(md));
+    wassert(actual(md).contains("reftime", "2013-04-06 00:00:00"));
 });
 
 // Test scanning a bufr with all sorts of wrong dates

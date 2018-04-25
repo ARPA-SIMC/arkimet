@@ -21,7 +21,7 @@ struct SegmentFixture : public Fixture
     std::string relpath;
     std::string abspath;
 
-    std::shared_ptr<Segment> create();
+    std::shared_ptr<segment::Checker> create();
 
     void test_setup();
 };

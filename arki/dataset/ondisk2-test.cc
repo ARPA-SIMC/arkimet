@@ -8,9 +8,8 @@
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
 #include "arki/matcher.h"
-#include "arki/scan/any.h"
+#include "arki/scan.h"
 #include "arki/core/file.h"
-#include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/types/reftime.h"
 #include "arki/wibble/sys/childprocess.h"
@@ -253,11 +252,8 @@ add_method("acquire_compressed", [](Fixture& f) {
 
     // Compress what is imported so far
     {
-        metadata::Collection c = f.query(Matcher());
-        wassert(actual(c.size()) == 1u);
-        string dest = c.ensureContiguousData("metadata file testds/20/2007.grib");
-        scan::compress(dest, std::make_shared<core::lock::Null>(), 1024);
-        sys::unlink_ifexists("testds/20/2007.grib");
+        auto checker = f.makeSegmentedChecker();
+        checker->segment("20/2007.grib")->compress();
     }
     wassert(actual_file("testds/20/2007.grib").not_exists());
 
@@ -268,7 +264,7 @@ add_method("acquire_compressed", [](Fixture& f) {
             writer->acquire(mdc[1]);
             wassert(actual(false).istrue());
         } catch (std::exception& e) {
-            wassert(actual(e.what()).contains("cannot update compressed data files"));
+            wassert(actual(e.what()).contains("cannot write to .gz segments"));
         }
     }
     wassert(actual_file("testds/20/2007.grib").not_exists());
@@ -312,7 +308,7 @@ add_method("acquire_replace_usn", [](Fixture& f) {
         metadata::Collection mdc_read = f.query(dataset::DataQuery("origin:BUFR", true));
         wassert(actual(mdc_read.size()) == 1u);
         int usn;
-        wassert(actual(scan::update_sequence_number(mdc_read[0], usn)).istrue());
+        wassert(actual(scan::Scanner::update_sequence_number(mdc_read[0], usn)).istrue());
         wassert(actual(usn) == 2);
     }
 });
