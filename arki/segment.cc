@@ -364,7 +364,7 @@ std::shared_ptr<segment::Checker> Checker::zip(metadata::Collection& mds)
     return make_shared<segment::zip::Checker>(segment().format, segment().root, segment().relpath, segment().abspath);
 }
 
-std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds)
+std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds, unsigned groupsize)
 {
     std::shared_ptr<segment::Checker> res;
     if (segment().format == "vm2")

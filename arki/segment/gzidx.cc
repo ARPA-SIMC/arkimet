@@ -40,8 +40,8 @@ struct Creator : public AppendCreator
     compress::GzipIndexingWriter gzout;
     size_t written = 0;
 
-    Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath, const std::string& dest_abspath_idx)
-        : AppendCreator(root, relpath, mds), out(dest_abspath), outidx(dest_abspath_idx), gzout(out, outidx)
+    Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath, const std::string& dest_abspath_idx, unsigned groupsize)
+        : AppendCreator(root, relpath, mds), out(dest_abspath), outidx(dest_abspath_idx), gzout(out, outidx, groupsize)
     {
     }
 
@@ -322,9 +322,9 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags, unsigned groupsize)
 {
-    gzidx::Creator creator(rootdir, relpath, mds, abspath + ".gz", abspath + ".gz.idx");
+    gzidx::Creator creator(rootdir, relpath, mds, abspath + ".gz", abspath + ".gz.idx", groupsize);
     creator.create();
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
@@ -351,9 +351,9 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags, unsigned groupsize)
 {
-    gzidx::Creator creator(rootdir, relpath, mds, abspath + ".gz", abspath + ".gz.idx");
+    gzidx::Creator creator(rootdir, relpath, mds, abspath + ".gz", abspath + ".gz.idx", groupsize);
     creator.padding.push_back('\n');
     creator.create();
     return make_shared<Checker>(format, rootdir, relpath, abspath);

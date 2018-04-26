@@ -279,7 +279,7 @@ public:
      * Replace this segment with a compressed segment, updating the metadata in
      * mds to point to the right locations if needed
      */
-    virtual std::shared_ptr<Checker> compress(metadata::Collection& mds);
+    virtual std::shared_ptr<Checker> compress(metadata::Collection& mds, unsigned groupsize);
 
     /**
      * Move this segment to a new location.

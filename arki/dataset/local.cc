@@ -237,10 +237,10 @@ void LocalChecker::zip(CheckerConfig& opts)
         archive().zip(opts);
 }
 
-void LocalChecker::compress(CheckerConfig& opts)
+void LocalChecker::compress(CheckerConfig& opts, unsigned groupsize)
 {
     if (opts.offline && hasArchive())
-        archive().compress(opts);
+        archive().compress(opts, groupsize);
 }
 
 void LocalChecker::check_issue51(CheckerConfig& opts)

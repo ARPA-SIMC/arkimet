@@ -303,7 +303,7 @@ public:
         checker.m_mft->acquire(segment->segment().relpath, mtime, sum);
     }
 
-    size_t compress() override
+    size_t compress(unsigned groupsize) override
     {
         if (sys::exists(segment->segment().abspath + ".gz") || sys::exists(segment->segment().abspath + ".gz.idx"))
             return 0;
@@ -319,7 +319,7 @@ public:
 
         // Create the .tar segment
         size_t old_size = segment->size();
-        segment = segment->compress(mds);
+        segment = segment->compress(mds, groupsize);
         size_t new_size = segment->size();
 
         // Write out the new metadata
