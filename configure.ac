@@ -134,7 +134,7 @@ else
 fi
 AM_CONDITIONAL([READLINE], [test x"$have_readline" = x"yes"])
 
-PKG_CHECK_EXISTS([libarchive], [have_libarchive=yes], [have_libarchive=no])
+PKG_CHECK_EXISTS([libarchive > 3.2.0], [have_libarchive=yes], [have_libarchive=no])
 if test $have_libarchive = yes
 then
 	AC_DEFINE([HAVE_LIBARCHIVE], 1, [libarchive functions are available])
