@@ -17,6 +17,13 @@ namespace arki {
 namespace utils {
 namespace files {
 
+/**
+ * Check if a directory is on a filesystem that supports holes in files, by
+ * writing a temporary file with holes on that directory and checking how much
+ * disk has actually been allocated.
+ */
+bool filesystem_has_holes(const std::string& dir);
+
 // Flagfile handling
 
 /// Create an empty file, succeeding if it already exists

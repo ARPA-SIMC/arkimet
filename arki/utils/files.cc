@@ -21,6 +21,16 @@ namespace arki {
 namespace utils {
 namespace files {
 
+bool filesystem_has_holes(const std::string& dir)
+{
+    sys::File fd = sys::File::mkstemp(dir);
+    sys::unlink(fd.name());
+    fd.ftruncate(512 * 10);
+    struct stat st;
+    fd.fstat(st);
+    return st.st_blocks == 0;
+}
+
 void createDontpackFlagfile(const std::string& dir)
 {
 	utils::createFlagfile(str::joinpath(dir, FLAGFILE_DONTPACK));
