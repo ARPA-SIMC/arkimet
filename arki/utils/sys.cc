@@ -353,7 +353,7 @@ bool FileDescriptor::ofd_setlk(struct flock& lk)
     if (fcntl(fd, F_SETLK, &lk) != -1)
 #endif
         return true;
-    if (errno != EAGAIN)
+    if (errno != EAGAIN && errno != EACCES)
         throw_error("cannot acquire lock");
     return false;
 }
@@ -368,7 +368,7 @@ bool FileDescriptor::ofd_setlkw(struct flock& lk, bool retry_on_signal)
         if (fcntl(fd, F_SETLKW, &lk) != -1)
 #endif
             return true;
-        if (errno != EAGAIN)
+        if (errno != EINTR)
             throw_error("cannot acquire lock");
         if (!retry_on_signal)
             return false;
