@@ -10,7 +10,6 @@ SUBDIRS += src doc test
 
 man_MANS = \
 	arki-dump.1 \
-	arki-gzip.1 \
 	arki-query.1 \
 	arki-check.1 \
 	arki-mergeconf.1 \

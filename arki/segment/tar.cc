@@ -17,6 +17,8 @@
 #include <algorithm>
 #include <sys/uio.h>
 #include <sys/sendfile.h>
+#include <system_error>
+
 
 using namespace std;
 using namespace arki::core;
