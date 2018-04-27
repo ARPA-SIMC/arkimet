@@ -45,7 +45,7 @@ void TarHeader::set_size(size_t size)
 {
     if (size > 8589934592)
         throw std::runtime_error("Data size " + std::to_string(size) + " is too big for this tar writer");
-    snprintf(data + 124, 12, "%11zo", size);
+    snprintf(data + 124, 13, "%11zo", size);
 }
 
 void TarHeader::set_mtime(time_t mtime)
