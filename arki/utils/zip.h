@@ -8,7 +8,9 @@
 #include <vector>
 #include <stdexcept>
 #include <set>
+#ifdef HAVE_LIBZIP
 #include <zip.h>
+#endif
 
 namespace arki {
 namespace utils {
