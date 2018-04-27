@@ -143,7 +143,7 @@ else
 	AC_MSG_WARN([compiling without libarchive])
 fi
 
-PKG_CHECK_EXISTS([libzip], [have_libzip=yes], [have_libzip=no])
+PKG_CHECK_EXISTS([libzip >= 1.1], [have_libzip=yes], [have_libzip=no])
 if test $have_libzip = yes
 then
 	AC_DEFINE([HAVE_LIBZIP], 1, [libzip functions are available])
