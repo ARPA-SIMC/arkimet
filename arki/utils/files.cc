@@ -31,6 +31,32 @@ bool filesystem_has_holes(const std::string& dir)
     return st.st_blocks == 0;
 }
 
+bool filesystem_has_ofd_locks(const std::string& dir)
+{
+    sys::File fd1 = sys::File::mkstemp(dir);
+    sys::File fd2(fd1.name());
+    try {
+        fd2.open(O_RDWR);
+    } catch (...) {
+        sys::unlink(fd1.name());
+        throw;
+    }
+    sys::unlink(fd1.name());
+
+    struct flock lock;
+    memset(&lock, 0, sizeof(struct ::flock));
+    lock.l_type = F_WRLCK;
+    lock.l_whence = SEEK_SET;
+    lock.l_start = 0;
+    lock.l_len = 1;
+    lock.l_pid = 0;
+
+    bool res1 = fd1.ofd_setlk(lock);
+    bool res2 = fd2.ofd_setlk(lock);
+
+    return res1 && !res2;
+}
+
 void createDontpackFlagfile(const std::string& dir)
 {
 	utils::createFlagfile(str::joinpath(dir, FLAGFILE_DONTPACK));

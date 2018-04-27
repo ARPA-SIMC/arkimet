@@ -11,6 +11,7 @@
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/files.h"
 #include "arki/exceptions.h"
 #include "wibble/sys/childprocess.h"
 #include <sys/fcntl.h>
@@ -392,6 +393,8 @@ this->add_method("write_write_different_segments", [](Fixture& f) {
 });
 
 this->add_method("read_repack", [](Fixture& f) {
+    if (!files::filesystem_has_ofd_locks("."))
+        throw TestSkipped();
     auto orig_data = f.td.mds[1].getData();
 
     f.reset_test("step=single");

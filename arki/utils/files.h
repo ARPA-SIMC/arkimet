@@ -24,6 +24,12 @@ namespace files {
  */
 bool filesystem_has_holes(const std::string& dir);
 
+/**
+ * Check if a directory is on a filesystem that supports Open File Descriptor
+ * locks, locking a file twice and seeing if the second lock attempt fails.
+ */
+bool filesystem_has_ofd_locks(const std::string& dir);
+
 // Flagfile handling
 
 /// Create an empty file, succeeding if it already exists
