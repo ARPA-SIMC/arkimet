@@ -6,8 +6,10 @@
 #include "arki/utils/string.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
+#ifdef HAVE_LIBARCHIVE
 #include <archive.h>
 #include <archive_entry.h>
+#endif
 #include <cstring>
 
 using namespace arki::utils;
