@@ -19,6 +19,7 @@
 #include <vector>
 #include <algorithm>
 #include <sys/uio.h>
+#include <system_error>
 
 using namespace std;
 using namespace arki::core;
