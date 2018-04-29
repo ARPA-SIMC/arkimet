@@ -78,17 +78,11 @@ std::shared_ptr<segment::Reader> Segment::detect_reader(const std::string& forma
         {
             if (format == "grib" || format == "bufr")
             {
-                if (sys::exists(abspath + ".gz.idx"))
-                    res.reset(new segment::gzidxconcat::Reader(format, root, relpath, abspath, lock));
-                else
-                    res.reset(new segment::gzconcat::Reader(format, root, relpath, abspath, lock));
+                res.reset(new segment::gzconcat::Reader(format, root, relpath, abspath, lock));
             } else if (format == "vm2") {
-                if (sys::exists(abspath + ".gz.idx"))
-                    res.reset(new segment::gzidxconcat::Reader(format, root, relpath, abspath, lock));
-                else
-                    res.reset(new segment::gzlines::Reader(format, root, relpath, abspath, lock));
+                res.reset(new segment::gzlines::Reader(format, root, relpath, abspath, lock));
             } else if (format == "odimh5") {
-                res.reset(new segment::gzidxconcat::Reader(format, root, relpath, abspath, lock));
+                res.reset(new segment::gzconcat::Reader(format, root, relpath, abspath, lock));
             } else {
                 throw_consistency_error(
                         "getting segment for " + format + " file " + relpath,

@@ -3,7 +3,8 @@
 
 #include <arki/segment.h>
 #include <arki/segment/base.h>
-#include <arki/utils/gzip.h>
+#include <arki/utils/sys.h>
+#include <arki/utils/compress.h>
 #include <string>
 
 namespace arki {
@@ -21,12 +22,13 @@ struct Segment : public arki::Segment
 template<typename Segment>
 struct Reader : public segment::BaseReader<Segment>
 {
-    utils::gzip::File fd;
-    uint64_t last_ofs = 0;
+    core::File fd;
+    utils::compress::SeekIndexReader reader;
 
     Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
 
     bool scan_data(metadata_dest_func dest) override;
+    void reposition(off_t ofs);
     std::vector<uint8_t> read(const types::source::Blob& src) override;
     size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) override;
 };

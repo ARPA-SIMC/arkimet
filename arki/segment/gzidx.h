@@ -21,21 +21,6 @@ struct Segment : public arki::Segment
 
 
 template<typename Segment>
-struct Reader : public segment::BaseReader<Segment>
-{
-    core::File fd;
-    utils::compress::SeekIndexReader reader;
-
-    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
-
-    bool scan_data(metadata_dest_func dest) override;
-    void reposition(off_t ofs);
-    std::vector<uint8_t> read(const types::source::Blob& src) override;
-    size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) override;
-};
-
-
-template<typename Segment>
 class Checker : public segment::BaseChecker<Segment>
 {
 protected:
@@ -91,12 +76,6 @@ struct Segment : public gzidx::Segment
 };
 
 
-struct Reader : public gzidx::Reader<Segment>
-{
-    using gzidx::Reader<Segment>::Reader;
-};
-
-
 struct Checker : public gzidx::Checker<Segment>
 {
     using gzidx::Checker<Segment>::Checker;
@@ -117,12 +96,6 @@ struct Segment : public gzidx::Segment
     static std::shared_ptr<Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
     static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags=0, unsigned groupsize=512);
     static const unsigned padding = 1;
-};
-
-
-struct Reader : public gzidx::Reader<Segment>
-{
-    using gzidx::Reader<Segment>::Reader;
 };
 
 

@@ -102,46 +102,35 @@ struct CheckBackend : public AppendCheckBackend
 
 }
 
-time_t Segment::timestamp() const { return sys::timestamp(abspath + ".gz"); }
+time_t Segment::timestamp() const
+{
+    return max(sys::timestamp(abspath + ".gz"), sys::timestamp(abspath + ".gz.idx", 0));
+}
 
 
 template<typename Segment>
 Reader<Segment>::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : BaseReader<Segment>(format, root, relpath, abspath, lock), fd(abspath + ".gz", "rb")
+    : BaseReader<Segment>(format, root, relpath, abspath, lock), fd(abspath + ".gz", O_RDONLY), reader(fd)
 {
+    // Read index
+    std::string idxfname = fd.name() + ".idx";
+    if (sys::exists(idxfname))
+        reader.idx.read(idxfname);
 }
 
 template<typename Segment>
 bool Reader<Segment>::scan_data(metadata_dest_func dest)
 {
-    const auto& segment = this->segment();
-    auto scanner = scan::Scanner::get_scanner(segment.format);
-    compress::TempUnzip uncompressed(segment.abspath);
-    return scanner->scan_file(segment.abspath, static_pointer_cast<segment::Reader>(this->shared_from_this()), dest);
+    auto scanner = scan::Scanner::get_scanner(this->segment().format);
+    compress::TempUnzip uncompressed(this->segment().abspath);
+    return scanner->scan_file(this->segment().abspath, this->shared_from_this(), dest);
 }
 
 template<typename Segment>
 std::vector<uint8_t> Reader<Segment>::read(const types::source::Blob& src)
 {
-    vector<uint8_t> buf;
-    buf.resize(src.size);
-
-    if (src.offset != last_ofs)
-    {
-        fd.seek(src.offset, SEEK_SET);
-
-        if (src.offset >= last_ofs)
-            acct::gzip_forward_seek_bytes.incr(src.offset - last_ofs);
-        else
-            acct::gzip_forward_seek_bytes.incr(src.offset);
-    }
-
-    fd.read_all_or_throw(buf.data(), src.size);
-    last_ofs = src.offset + src.size;
-
-    acct::gzip_data_read_count.incr();
+    vector<uint8_t> buf = reader.read(src.offset, src.size);
     iotrace::trace_file(this->segment().abspath, src.offset, src.size, "read data");
-
     return buf;
 }
 

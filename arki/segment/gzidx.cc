@@ -1,4 +1,5 @@
 #include "gzidx.h"
+#include "gz.h"
 #include "common.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
@@ -106,51 +107,6 @@ struct CheckBackend : public AppendCheckBackend
 time_t Segment::timestamp() const
 {
     return max(sys::timestamp(abspath + ".gz"), sys::timestamp(abspath + ".gz.idx"));
-}
-
-
-template<typename Segment>
-Reader<Segment>::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::BaseReader<Segment>(format, root, relpath, abspath, lock), fd(abspath + ".gz", O_RDONLY), reader(fd)
-{
-    // Read index
-    reader.idx.read(fd.name() + ".idx");
-}
-
-template<typename Segment>
-bool Reader<Segment>::scan_data(metadata_dest_func dest)
-{
-    auto scanner = scan::Scanner::get_scanner(this->segment().format);
-    compress::TempUnzip uncompressed(this->segment().abspath);
-    return scanner->scan_file(this->segment().abspath, this->shared_from_this(), dest);
-}
-
-template<typename Segment>
-std::vector<uint8_t> Reader<Segment>::read(const types::source::Blob& src)
-{
-    vector<uint8_t> buf = reader.read(src.offset, src.size);
-    iotrace::trace_file(this->segment().abspath, src.offset, src.size, "read data");
-    return buf;
-}
-
-template<typename Segment>
-size_t Reader<Segment>::stream(const types::source::Blob& src, core::NamedFileDescriptor& out)
-{
-    vector<uint8_t> buf = read(src);
-    if (src.format == "vm2")
-    {
-        struct iovec todo[2] = {
-            { (void*)buf.data(), buf.size() },
-            { (void*)"\n", 1 },
-        };
-        ssize_t res = ::writev(out, todo, 2);
-        if (res < 0 || (unsigned)res != buf.size() + 1)
-            throw_system_error("cannot write " + to_string(buf.size() + 1) + " bytes to " + out.name());
-        return buf.size() + 1;
-    } else {
-        out.write_all_or_throw(buf);
-        return buf.size();
-    }
 }
 
 
@@ -263,7 +219,7 @@ const char* Segment::type() const { return "gzidxconcat"; }
 bool Segment::single_file() const { return true; }
 std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
 {
-    return make_shared<Reader>(format, root, relpath, abspath, lock);
+    return make_shared<gzconcat::Reader>(format, root, relpath, abspath, lock);
 }
 std::shared_ptr<segment::Checker> Segment::checker() const
 {
@@ -292,7 +248,7 @@ const char* Segment::type() const { return "gzidxlines"; }
 bool Segment::single_file() const { return true; }
 std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
 {
-    return make_shared<Reader>(format, root, relpath, abspath, lock);
+    return make_shared<gzlines::Reader>(format, root, relpath, abspath, lock);
 }
 std::shared_ptr<segment::Checker> Segment::checker() const
 {
@@ -358,9 +314,7 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, c
 }
 
 namespace gzidx {
-template class Reader<gzidxlines::Segment>;
 template class Checker<gzidxlines::Segment>;
-template class Reader<gzidxconcat::Segment>;
 template class Checker<gzidxconcat::Segment>;
 }
 
