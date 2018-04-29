@@ -991,6 +991,11 @@
  },
  {
   "doc": "",
+  "group": "arki_utils_compress",
+  "method": "seekindexreader_noindex"
+ },
+ {
+  "doc": "",
   "group": "arki_utils_sqlite",
   "method": "oneshot"
  },

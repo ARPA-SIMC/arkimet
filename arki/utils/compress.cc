@@ -265,7 +265,7 @@ std::vector<uint8_t> SeekIndexReader::read(size_t offset, size_t size)
         // Open the compressed chunk
         int fd1 = fd.dup();
         utils::gzip::File gzfd(fd.name(), fd1, "rb");
-        last_group_offset = gz_offset;
+        last_group_offset = idx.ofs_unc[block];
         acct::gzip_idx_reposition_count.incr();
 
         if (block + 1 >= idx.ofs_comp.size())
@@ -279,8 +279,10 @@ std::vector<uint8_t> SeekIndexReader::read(size_t offset, size_t size)
             gzfd.read_all_or_throw(last_group.data(), last_group.size());
         }
     }
-    auto begin = last_group.begin() + offset - last_group_offset;
-    return std::vector<uint8_t>(begin, begin + size);
+    size_t group_offset = offset - last_group_offset;
+    if (group_offset + size > last_group.size())
+        throw std::runtime_error("requested read of offset past the end of gzip file");
+    return std::vector<uint8_t>(last_group.begin() + group_offset, last_group.begin() + group_offset + size);
 }
 
 

@@ -87,7 +87,6 @@ add_method("seekindex_lookup", [] {
     SeekIndex idx;
 
 	// Some simple test data for a 4000bytes file compressed 50% exactly
-	idx.ofs_unc.push_back(   0); idx.ofs_comp.push_back(   0);
 	idx.ofs_unc.push_back(1000); idx.ofs_comp.push_back( 500);
 	idx.ofs_unc.push_back(2000); idx.ofs_comp.push_back(1000);
 	idx.ofs_unc.push_back(3000); idx.ofs_comp.push_back(1500);
@@ -164,6 +163,25 @@ add_method("seekindexreader", [] {
     sys::File fd("test.gz", O_RDONLY);
     SeekIndexReader reader(fd);
     reader.idx.read("test.gz.idx");
+    std::vector<uint8_t> buf;
+    buf = reader.read(0, 10);
+    wassert(actual(buf) == "0ttttttttt");
+    buf = reader.read(4096, 10);
+    wassert(actual(buf) == "1ttttttttt");
+    buf = reader.read(4096 * 7, 10);
+    wassert(actual(buf) == "7ttttttttt");
+    buf = reader.read(4096 * 8, 10);
+    wassert(actual(buf) == "8ttttttttt");
+    buf = reader.read(4096 * 9, 10);
+    wassert(actual(buf) == "9ttttttttt");
+    auto e = wassert_throws(std::runtime_error, reader.read(4096 * 10, 10));
+    wassert(actual(e.what()).contains("past the end of gzip file"));
+});
+
+add_method("seekindexreader_noindex", [] {
+    write_compressed_test(10, 8);
+    sys::File fd("test.gz", O_RDONLY);
+    SeekIndexReader reader(fd);
     std::vector<uint8_t> buf;
     buf = reader.read(0, 10);
     wassert(actual(buf) == "0ttttttttt");
