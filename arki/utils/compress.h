@@ -1,11 +1,10 @@
 #ifndef ARKI_UTILS_COMPRESS_H
 #define ARKI_UTILS_COMPRESS_H
 
-/// Compression/decompression utilities
-
 #include <arki/libconfig.h>
 #include <arki/core/fwd.h>
 #include <arki/utils/sys.h>
+#include <arki/binary.h>
 #include <sys/types.h>
 #include <string>
 #include <vector>
@@ -124,6 +123,60 @@ struct SeekIndex
 	bool read(const std::string& fname);
 };
 
+struct IndexWriter
+{
+    /// Number of data items in a compressed block
+    size_t groupsize;
+    /// Index data to be written
+    std::vector<uint8_t> outbuf;
+    /// Binary encoder to write to outbuf
+    BinaryEncoder enc;
+    /// Offset of end of last uncompressed data read
+    off_t unc_ofs = 0;
+    /// Offset of end of last uncompressed block written
+    off_t last_unc_ofs = 0;
+    /// Offset of end of last compressed data written
+    off_t ofs = 0;
+    /// Offset of end of last compressed block written
+    off_t last_ofs = 0;
+    /// Number of data compressed so far
+    size_t count = 0;
+
+    IndexWriter(size_t groupsize=512);
+
+    /**
+     * Update the index to track the addition of a chunk of data.
+     *
+     * size is the uncompressed size of the data added
+     * gz_size is the compressed size of the data added
+     */
+    void append(size_t size, size_t gz_size);
+
+    /**
+     * Signal the end of a data entry. Returns true if groupsize has been
+     * reached and a new compressed block should begin
+     */
+    bool close_entry();
+
+    /**
+     * Mark the end of a data block.
+     *
+     * gz_size is the size of data that has been written while flushing the
+     * compressor
+     */
+    void close_block(size_t gz_size);
+
+    /**
+     * Return true if data has been appended since the last close_block()
+     */
+    bool has_trailing_data() const;
+
+    /**
+     * Write out the index
+     */
+    void write(core::NamedFileDescriptor& outidx);
+};
+
 class GzipWriter
 {
 protected:
@@ -164,27 +217,13 @@ public:
 class GzipIndexingWriter : public GzipWriter
 {
 protected:
-    /// Number of data items in a compressed block
-    size_t groupsize;
-    /// Index output
-    core::NamedFileDescriptor& outidx;
-    /// Offset of end of last uncompressed data read
-    off_t unc_ofs = 0;
-    /// Offset of end of last uncompressed block written
-    off_t last_unc_ofs = 0;
-    /// Offset of end of last compressed data written
-    off_t ofs = 0;
-    /// Offset of end of last compressed block written
-    off_t last_ofs = 0;
-    /// Number of data compressed so far
-    size_t count = 0;
-
     // End one compressed block
     void end_block(bool is_final=false);
 
 public:
-    GzipIndexingWriter(core::NamedFileDescriptor& out, core::NamedFileDescriptor& outidx, size_t groupsize=512);
-    ~GzipIndexingWriter();
+    IndexWriter idx;
+
+    GzipIndexingWriter(core::NamedFileDescriptor& out, size_t groupsize=512);
 
     void add(const std::vector<uint8_t>& buf);
     void close_entry();

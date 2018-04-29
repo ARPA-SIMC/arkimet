@@ -126,7 +126,7 @@ add_method("gzipwriter", [] {
 add_method("gzipindexingwriter", [] {
     sys::File fd("test.gz", O_WRONLY | O_CREAT | O_TRUNC);
     sys::File idxfd("test.idx.gz", O_WRONLY | O_CREAT | O_TRUNC);
-    GzipIndexingWriter writer(fd, idxfd, 8);
+    GzipIndexingWriter writer(fd, 8);
     std::vector<uint8_t> data(4096, 't');
     for (unsigned i = 0; i < 10; ++i)
     {
@@ -135,6 +135,7 @@ add_method("gzipindexingwriter", [] {
         wassert(writer.close_entry());
     }
     wassert(writer.flush());
+    wassert(writer.idx.write(idxfd));
     fd.close();
     idxfd.close();
 

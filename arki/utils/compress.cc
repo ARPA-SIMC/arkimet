@@ -223,18 +223,60 @@ void SeekIndex::read(sys::File& fd)
 {
     struct stat st;
     fd.fstat(st);
-    size_t idxcount = st.st_size / sizeof(uint32_t) / 2;
-    vector<uint32_t> diskidx(idxcount * 2);
-    fd.read_all_or_throw(diskidx.data(), diskidx.size() * sizeof(uint32_t));
-	ofs_unc.reserve(idxcount + 1);
-	ofs_comp.reserve(idxcount + 1);
-	ofs_unc.push_back(0);
-	ofs_comp.push_back(0);
-	for (size_t i = 0; i < idxcount; ++i)
-	{
-		ofs_unc.push_back(ofs_unc[i] + ntohl(diskidx[i * 2]));
-		ofs_comp.push_back(ofs_comp[i] + ntohl(diskidx[i * 2 + 1]));
-	}
+    size_t idxcount = st.st_size / 8 / 2;
+    vector<uint8_t> diskidx(st.st_size);
+    fd.read_all_or_throw(diskidx.data(), diskidx.size());
+    ofs_unc.reserve(idxcount + 1);
+    ofs_comp.reserve(idxcount + 1);
+    ofs_unc.push_back(0);
+    ofs_comp.push_back(0);
+    BinaryDecoder dec(diskidx);
+    for (size_t i = 0; i < idxcount; ++i)
+    {
+        ofs_unc.push_back(ofs_unc[i] + dec.pop_uint(8, "uncompressed index"));
+        ofs_comp.push_back(ofs_comp[i] + dec.pop_uint(8, "compressed index"));
+    }
+}
+
+
+IndexWriter::IndexWriter(size_t groupsize)
+    : groupsize(groupsize), enc(outbuf)
+{
+}
+
+void IndexWriter::append(size_t size, size_t gz_size)
+{
+    ofs += gz_size;
+    unc_ofs += size;
+}
+
+bool IndexWriter::close_entry()
+{
+    ++count;
+    return (count % groupsize) == 0;
+}
+
+void IndexWriter::close_block(size_t gz_size)
+{
+    ofs += gz_size;
+
+    // Write last block size to the index
+    size_t unc_size = unc_ofs - last_unc_ofs;
+    size_t size = ofs - last_ofs;
+    enc.add_unsigned(unc_size, 8);
+    enc.add_unsigned(size, 8);
+    last_ofs = ofs;
+    last_unc_ofs = unc_ofs;
+}
+
+bool IndexWriter::has_trailing_data() const
+{
+    return unc_ofs > 0 && last_unc_ofs != unc_ofs;
+}
+
+void IndexWriter::write(core::NamedFileDescriptor& outidx)
+{
+    outidx.write_all_or_throw(outbuf.data(), outbuf.size());
 }
 
 
@@ -289,46 +331,33 @@ void GzipWriter::flush()
 }
 
 
-GzipIndexingWriter::GzipIndexingWriter(core::NamedFileDescriptor& out, core::NamedFileDescriptor& outidx, size_t groupsize)
-    : GzipWriter(out), groupsize(groupsize), outidx(outidx)
-{
-}
-
-GzipIndexingWriter::~GzipIndexingWriter()
+GzipIndexingWriter::GzipIndexingWriter(core::NamedFileDescriptor& out, size_t groupsize)
+    : GzipWriter(out), idx(groupsize)
 {
 }
 
 void GzipIndexingWriter::add(const std::vector<uint8_t>& buf)
 {
-    ofs += GzipWriter::add(buf);
-    unc_ofs += buf.size();
+    size_t gz_size = GzipWriter::add(buf);
+    idx.append(buf.size(), gz_size);
 }
 
 void GzipIndexingWriter::close_entry()
 {
-    ++count;
-    if ((count % groupsize) == 0)
+    if (idx.close_entry())
         end_block();
 }
 
 void GzipIndexingWriter::end_block(bool is_final)
 {
-    ofs += GzipWriter::flush_compressor();
-
-    // Write last block size to the index
-    uint32_t unc_size = htonl(unc_ofs - last_unc_ofs);
-    uint32_t size = htonl(ofs - last_ofs);
-    outidx.write_all_or_throw(&unc_size, sizeof(unc_size));
-    outidx.write_all_or_throw(&size, sizeof(size));
-    last_ofs = ofs;
-    last_unc_ofs = unc_ofs;
-
+    size_t gz_size = GzipWriter::flush_compressor();
+    idx.close_block(gz_size);
     if (!is_final) compressor.restart();
 }
 
 void GzipIndexingWriter::flush()
 {
-    if (unc_ofs > 0 && last_unc_ofs != unc_ofs)
+    if (idx.has_trailing_data())
         end_block(true);
 }
 

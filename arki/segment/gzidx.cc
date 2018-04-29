@@ -41,7 +41,7 @@ struct Creator : public AppendCreator
     size_t written = 0;
 
     Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath, const std::string& dest_abspath_idx, unsigned groupsize)
-        : AppendCreator(root, relpath, mds), out(dest_abspath), outidx(dest_abspath_idx), gzout(out, outidx, groupsize)
+        : AppendCreator(root, relpath, mds), out(dest_abspath), outidx(dest_abspath_idx), gzout(out, groupsize)
     {
     }
 
@@ -62,6 +62,7 @@ struct Creator : public AppendCreator
         outidx.open(O_WRONLY | O_CREAT | O_TRUNC, 0666);
         AppendCreator::create();
         gzout.flush();
+        gzout.idx.write(outidx);
         out.fdatasync();
         outidx.fdatasync();
         out.close();
