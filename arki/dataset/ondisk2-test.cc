@@ -253,7 +253,7 @@ add_method("acquire_compressed", [](Fixture& f) {
     // Compress what is imported so far
     {
         auto checker = f.makeSegmentedChecker();
-        checker->segment("20/2007.grib")->compress();
+        checker->segment("20/2007.grib")->compress(512);
     }
     wassert(actual_file("testds/20/2007.grib").not_exists());
 

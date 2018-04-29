@@ -318,7 +318,10 @@ public:
     {
         // Make a copy of the file with the right data in it, sorted by
         // reftime, and update the offsets in the index
-        Pending p_repack = segment->repack(checker.config().path, mds, test_flags);
+        segment::RepackConfig repack_config;
+        repack_config.gz_group_size = config().gz_group_size;
+        repack_config.test_flags = test_flags;
+        Pending p_repack = segment->repack(checker.config().path, mds, repack_config);
 
         // Reindex mds
         idx().reset();

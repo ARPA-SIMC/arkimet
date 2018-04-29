@@ -207,7 +207,7 @@ size_t Checker<Segment>::remove()
 }
 
 template<typename Segment>
-Pending Checker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+Pending Checker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = gzabspath + ".repack";
 
@@ -323,7 +323,7 @@ std::shared_ptr<segment::Checker> Segment::create(const std::string& format, con
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
 
-Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = gzabspath + ".repack";
 

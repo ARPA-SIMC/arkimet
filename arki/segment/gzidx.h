@@ -57,7 +57,7 @@ protected:
             const std::string& rootdir,
             metadata::Collection& mds,
             bool skip_validation=false,
-            unsigned test_flags=0);
+            const RepackConfig& cfg=RepackConfig());
     void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 
 public:
@@ -68,7 +68,7 @@ public:
 
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
-    Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
 
     void test_truncate(size_t offset) override;
     void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
@@ -133,7 +133,7 @@ struct Checker : public gzidx::Checker<Segment>
 {
     using gzidx::Checker<Segment>::Checker;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
-    Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
 };
 
 }

@@ -242,14 +242,14 @@ size_t Checker<Segment>::remove()
 }
 
 template<typename Segment>
-Pending Checker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+Pending Checker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = gzabspath + ".repack";
     string tmpidxabspath = gzidxabspath + ".repack";
 
     Pending p(new files::Rename2Transaction(tmpabspath, gzabspath, tmpidxabspath, gzidxabspath));
 
-    Creator creator(rootdir, this->segment().relpath, mds, tmpabspath, tmpidxabspath);
+    Creator creator(rootdir, this->segment().relpath, mds, tmpabspath, tmpidxabspath, cfg.gz_group_size);
     creator.validator = &scan::Validator::by_filename(this->segment().abspath);
     creator.create();
 
@@ -381,14 +381,14 @@ State Checker::check(std::function<void(const std::string&)> reporter, const met
     return checker.check();
 }
 
-Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = gzabspath + ".repack";
     string tmpidxabspath = gzidxabspath + ".repack";
 
     Pending p(new files::Rename2Transaction(tmpabspath, gzabspath, tmpidxabspath, gzidxabspath));
 
-    gzidx::Creator creator(rootdir, segment().relpath, mds, tmpabspath, tmpidxabspath);
+    gzidx::Creator creator(rootdir, segment().relpath, mds, tmpabspath, tmpidxabspath, cfg.gz_group_size);
     creator.padding.push_back('\n');
     creator.validator = &scan::Validator::by_filename(segment().abspath);
     creator.create();

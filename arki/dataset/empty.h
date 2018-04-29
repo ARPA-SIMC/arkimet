@@ -92,7 +92,7 @@ public:
     void remove_all(CheckerConfig& opts) override {}
     void tar(CheckerConfig&) override {}
     void zip(CheckerConfig&) override {}
-    void compress(CheckerConfig&) override {}
+    void compress(CheckerConfig&, unsigned groupsize) override {}
     void repack(CheckerConfig&, unsigned test_flags=0) override {}
     void check(CheckerConfig&) override {}
     void state(CheckerConfig&) override {}

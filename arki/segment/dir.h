@@ -100,7 +100,7 @@ struct BaseChecker : public segment::BaseChecker<Segment>
 
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
-    Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
 
     void test_truncate(size_t offset) override;
     void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;

@@ -571,7 +571,7 @@ size_t BaseChecker<Segment>::remove()
 }
 
 template<typename Segment>
-Pending BaseChecker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+Pending BaseChecker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     struct Rename : public Transaction
     {

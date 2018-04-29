@@ -51,6 +51,13 @@ public:
      */
     bool smallfiles = false;
 
+    /**
+     * Maximum number of data items compressed together in gzipped segments.
+     *
+     * Use 0 to disable grouping and indexing of compressed segments.
+     */
+    unsigned gz_group_size = 512;
+
 
     Config(const ConfigFile& cfg);
     ~Config();

@@ -272,7 +272,7 @@ size_t Checker::remove()
     return size;
 }
 
-Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = segment().abspath + ".repack";
 

@@ -302,7 +302,7 @@ size_t Checker<Segment, File>::remove()
 }
 
 template<typename Segment, typename File>
-Pending Checker<Segment, File>::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+Pending Checker<Segment, File>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = this->segment().abspath + ".repack";
 
@@ -485,7 +485,7 @@ std::shared_ptr<segment::Checker> HoleSegment::make_checker(const std::string& f
     return make_shared<HoleChecker>(format, root, relpath, abspath);
 }
 
-Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = segment().abspath + ".repack";
 

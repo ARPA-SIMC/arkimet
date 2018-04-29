@@ -76,6 +76,10 @@ Config::Config(const ConfigFile& cfg)
 
     std::string shard = cfg.value("shard");
     m_step = Step::create(step_name);
+
+    std::string gz_group_size = cfg.value("gz group size");
+    if (!gz_group_size.empty())
+        this->gz_group_size = std::stoul(gz_group_size);
 }
 
 Config::~Config()

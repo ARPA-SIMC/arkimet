@@ -136,7 +136,7 @@ add_method("scan_missing_summary", [](Fixture& f) {
 add_method("scan_compressed", [](Fixture& f) {
     auto setup = [&] {
         auto checker = f.makeSegmentedChecker();
-        checker->segment("2007/07-08.grib")->compress();
+        checker->segment("2007/07-08.grib")->compress(512);
     };
 
     auto removemd = []{

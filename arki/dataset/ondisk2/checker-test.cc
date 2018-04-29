@@ -193,7 +193,7 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
         wassert(actual(mdc.size()) == 1u);
         string dest = mdc.ensureContiguousData("metadata file testds/2007/07-08.grib");
         auto checker = f.makeSegmentedChecker();
-        checker->segment("2007/07-08.grib")->compress();
+        checker->segment("2007/07-08.grib")->compress(512);
     }
 
     // The dataset should still be clean

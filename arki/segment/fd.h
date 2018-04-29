@@ -80,7 +80,7 @@ public:
     size_t size() override;
 
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
-    Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
     size_t remove() override;
 
     void test_truncate(size_t offset) override;
@@ -165,7 +165,7 @@ class HoleChecker : public fd::Checker<HoleSegment, HoleFile>
 {
 public:
     using fd::Checker<HoleSegment, HoleFile>::Checker;
-    Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
 };
 
 }

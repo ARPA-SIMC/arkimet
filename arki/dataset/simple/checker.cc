@@ -201,7 +201,10 @@ public:
     size_t reorder(metadata::Collection& mds, unsigned test_flags) override
     {
         // Write out the data with the new order
-        Pending p_repack = segment->repack(checker.config().path, mds, test_flags);
+        segment::RepackConfig repack_config;
+        repack_config.gz_group_size = config().gz_group_size;
+        repack_config.test_flags = test_flags;
+        Pending p_repack = segment->repack(checker.config().path, mds, repack_config);
 
         // Strip paths from mds sources
         mds.strip_source_paths();
