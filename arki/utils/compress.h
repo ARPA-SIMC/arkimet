@@ -104,8 +104,10 @@ struct TempUnzip
 
 struct SeekIndex
 {
-	std::vector<size_t> ofs_unc;
-	std::vector<size_t> ofs_comp;
+    std::vector<size_t> ofs_unc;
+    std::vector<size_t> ofs_comp;
+
+    SeekIndex();
 
 	/// Return the index of the block containing the given uncompressed
 	/// offset
@@ -121,6 +123,18 @@ struct SeekIndex
 	 * exists, throws an exception in case of other errors
 	 */
 	bool read(const std::string& fname);
+};
+
+struct SeekIndexReader
+{
+    core::NamedFileDescriptor& fd;
+    SeekIndex idx;
+    std::vector<uint8_t> last_group;
+    size_t last_group_offset = 0;
+
+    SeekIndexReader(core::NamedFileDescriptor& fd);
+
+    std::vector<uint8_t> read(size_t offset, size_t size);
 };
 
 struct IndexWriter

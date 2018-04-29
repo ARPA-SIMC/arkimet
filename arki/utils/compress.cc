@@ -1,9 +1,10 @@
 #include "config.h"
-#include <arki/utils/compress.h>
-#include <arki/utils/string.h>
-#include <arki/utils/sys.h>
-#include <arki/utils/gzip.h>
-#include <arki/metadata.h>
+#include "arki/utils/compress.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/gzip.h"
+#include "arki/metadata.h"
+#include "arki/utils/accounting.h"
 #include <algorithm>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -205,6 +206,14 @@ TempUnzip::~TempUnzip()
 	::unlink(fname.c_str());
 }
 
+
+
+SeekIndex::SeekIndex()
+{
+    ofs_unc.push_back(0);
+    ofs_comp.push_back(0);
+}
+
 size_t SeekIndex::lookup(size_t unc) const
 {
 	vector<size_t>::const_iterator i = upper_bound(ofs_unc.begin(), ofs_unc.end(), unc);
@@ -228,14 +237,50 @@ void SeekIndex::read(sys::File& fd)
     fd.read_all_or_throw(diskidx.data(), diskidx.size());
     ofs_unc.reserve(idxcount + 1);
     ofs_comp.reserve(idxcount + 1);
-    ofs_unc.push_back(0);
-    ofs_comp.push_back(0);
     BinaryDecoder dec(diskidx);
     for (size_t i = 0; i < idxcount; ++i)
     {
         ofs_unc.push_back(ofs_unc[i] + dec.pop_uint(8, "uncompressed index"));
         ofs_comp.push_back(ofs_comp[i] + dec.pop_uint(8, "compressed index"));
     }
+}
+
+
+SeekIndexReader::SeekIndexReader(core::NamedFileDescriptor& fd)
+    : fd(fd)
+{
+}
+
+std::vector<uint8_t> SeekIndexReader::read(size_t offset, size_t size)
+{
+    if (offset < last_group_offset || offset + size > last_group_offset + last_group.size())
+    {
+        size_t block = idx.lookup(offset);
+        if (block >= idx.ofs_comp.size())
+            throw std::runtime_error("requested read of offset past the end of gzip file");
+
+        size_t gz_offset = idx.ofs_comp[block];
+        fd.lseek(gz_offset, SEEK_SET);
+
+        // Open the compressed chunk
+        int fd1 = fd.dup();
+        utils::gzip::File gzfd(fd.name(), fd1, "rb");
+        last_group_offset = gz_offset;
+        acct::gzip_idx_reposition_count.incr();
+
+        if (block + 1 >= idx.ofs_comp.size())
+        {
+            // Decompress until the end of the file
+            last_group = gzfd.read_all();
+        } else {
+            // Read and uncompress the compressed chunk
+            size_t unc_size = idx.ofs_unc[block + 1] - idx.ofs_unc[block];
+            last_group.resize(unc_size);
+            gzfd.read_all_or_throw(last_group.data(), last_group.size());
+        }
+    }
+    auto begin = last_group.begin() + offset - last_group_offset;
+    return std::vector<uint8_t>(begin, begin + size);
 }
 
 

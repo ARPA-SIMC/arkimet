@@ -23,11 +23,8 @@ struct Segment : public arki::Segment
 template<typename Segment>
 struct Reader : public segment::BaseReader<Segment>
 {
-    utils::compress::SeekIndex idx;
-    size_t last_block = 0;
     core::File fd;
-    utils::gzip::File gzfd;
-    uint64_t last_ofs = 0;
+    utils::compress::SeekIndexReader reader;
 
     Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
 

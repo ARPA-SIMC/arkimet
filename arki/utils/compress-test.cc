@@ -3,13 +3,6 @@
 #include "compress.h"
 #include <iostream>
 
-namespace std {
-static ostream& operator<<(ostream& out, const vector<uint8_t>& buf)
-{
-    return out.write((const char*)buf.data(), buf.size());
-}
-}
-
 namespace {
 using namespace std;
 using namespace arki;
@@ -21,6 +14,24 @@ static void fill(vector<uint8_t>& buf, const std::string& pattern)
 {
     for (size_t i = 0; i < buf.size(); ++i)
         buf[i] = pattern[i % pattern.size()];
+}
+
+static void write_compressed_test(unsigned blocks, unsigned groupsize)
+{
+    sys::File fd("test.gz", O_WRONLY | O_CREAT | O_TRUNC);
+    GzipWriter writer(fd, groupsize);
+    std::vector<uint8_t> data(4096, 't');
+    for (unsigned i = 0; i < blocks; ++i)
+    {
+        data[0] = '0' + i;
+        wassert(writer.add(data));
+        wassert(writer.close_entry());
+    }
+    wassert(writer.flush());
+    fd.close();
+    sys::File idxfd("test.gz.idx", O_WRONLY | O_CREAT | O_TRUNC);
+    wassert(writer.idx.write(idxfd));
+    idxfd.close();
 }
 
 class Tests : public TestCase
@@ -36,8 +47,8 @@ add_method("incompressible", [] {
     vector<uint8_t> orig = { 'c', 'i', 'a', 'o' };
     vector<uint8_t> comp = lzo(orig.data(), orig.size());
 
-    wassert(actual(comp.size()) == orig.size());
-    wassert(actual(comp) == orig);
+    wassert(actual(comp.size()) == 4u);
+    wassert(actual(comp) == "ciao");
 });
 
 // Test a compression/decompression cycle
@@ -124,32 +135,19 @@ add_method("gzipwriter", [] {
 });
 
 add_method("gzipindexingwriter", [] {
-    sys::File fd("test.gz", O_WRONLY | O_CREAT | O_TRUNC);
-    sys::File idxfd("test.idx.gz", O_WRONLY | O_CREAT | O_TRUNC);
-    GzipWriter writer(fd, 8);
-    std::vector<uint8_t> data(4096, 't');
-    for (unsigned i = 0; i < 10; ++i)
-    {
-        data[0] = i;
-        wassert(writer.add(data));
-        wassert(writer.close_entry());
-    }
-    wassert(writer.flush());
-    wassert(writer.idx.write(idxfd));
-    fd.close();
-    idxfd.close();
+    write_compressed_test(10, 8);
 
     std::vector<uint8_t> d = gunzip("test.gz");
     wassert(actual(d.size()) == 40960u);
     for (unsigned i = 0; i < d.size(); ++i)
     {
         if ((i % 4096) == 0)
-            wassert(actual(d[i]) == i / 4096);
+            wassert(actual(d[i]) == '0' + i / 4096);
         else
             wassert(actual(d[i]) == 't');
     }
 
-    idxfd.open(O_RDONLY);
+    sys::File idxfd("test.gz.idx", O_RDONLY);
     SeekIndex idx;
     idx.read(idxfd);
     wassert(actual(idx.lookup(4096 * 0)) == 0u);
@@ -159,6 +157,22 @@ add_method("gzipindexingwriter", [] {
     wassert(actual(idx.lookup(4096 * 9)) == 1u);
 
     // TODO: read at various offsets to see if the data is right
+});
+
+add_method("seekindexreader", [] {
+    write_compressed_test(10, 8);
+    sys::File fd("test.gz", O_RDONLY);
+    SeekIndexReader reader(fd);
+    reader.idx.read("test.gz.idx");
+    std::vector<uint8_t> buf;
+    buf = reader.read(0, 10);
+    wassert(actual(buf) == "0ttttttttt");
+    buf = reader.read(4096, 10);
+    wassert(actual(buf) == "1ttttttttt");
+    buf = reader.read(4096 * 9, 10);
+    wassert(actual(buf) == "9ttttttttt");
+    auto e = wassert_throws(std::runtime_error, reader.read(4096 * 10, 10));
+    wassert(actual(e.what()).contains("past the end of gzip file"));
 });
 
 }

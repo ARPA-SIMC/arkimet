@@ -111,10 +111,10 @@ time_t Segment::timestamp() const
 
 template<typename Segment>
 Reader<Segment>::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::BaseReader<Segment>(format, root, relpath, abspath, lock), fd(abspath + ".gz", O_RDONLY), gzfd(fd.name())
+    : segment::BaseReader<Segment>(format, root, relpath, abspath, lock), fd(abspath + ".gz", O_RDONLY), reader(fd)
 {
     // Read index
-    idx.read(fd.name() + ".idx");
+    reader.idx.read(fd.name() + ".idx");
 }
 
 template<typename Segment>
@@ -125,57 +125,11 @@ bool Reader<Segment>::scan_data(metadata_dest_func dest)
     return scanner->scan_file(this->segment().abspath, this->shared_from_this(), dest);
 }
 
-
-template<typename Segment>
-void Reader<Segment>::reposition(off_t ofs)
-{
-    size_t block = idx.lookup(ofs);
-    if (block != last_block || gzfd == NULL)
-    {
-        off_t res = fd.lseek(idx.ofs_comp[block], SEEK_SET);
-        if ((size_t)res != idx.ofs_comp[block])
-        {
-            stringstream ss;
-            ss << fd.name() << ": seeking to offset " << idx.ofs_comp[block] << " reached offset " << res << " instead";
-            throw std::runtime_error(ss.str());
-        }
-
-        // (Re)open the compressed file
-        int fd1 = fd.dup();
-        gzfd.fdopen(fd1, "rb");
-        last_block = block;
-        acct::gzip_idx_reposition_count.incr();
-    }
-
-    // Seek inside the compressed chunk
-    gzfd.seek(ofs - idx.ofs_unc[block], SEEK_SET);
-    acct::gzip_forward_seek_bytes.incr(ofs - idx.ofs_unc[block]);
-}
-
 template<typename Segment>
 std::vector<uint8_t> Reader<Segment>::read(const types::source::Blob& src)
 {
-    vector<uint8_t> buf;
-    buf.resize(src.size);
-
-    if (gzfd == NULL || src.offset != last_ofs)
-    {
-        if (gzfd != NULL && src.offset > last_ofs && src.offset < last_ofs + 4096)
-        {
-            // Just skip forward
-            gzfd.seek(src.offset - last_ofs, SEEK_CUR);
-            acct::gzip_forward_seek_bytes.incr(src.offset - last_ofs);
-        } else {
-            // We need to seek
-            reposition(src.offset);
-        }
-    }
-
-    gzfd.read_all_or_throw(buf.data(), src.size);
-    last_ofs = src.offset + src.size;
-    acct::gzip_data_read_count.incr();
+    vector<uint8_t> buf = reader.read(src.offset, src.size);
     iotrace::trace_file(this->segment().abspath, src.offset, src.size, "read data");
-
     return buf;
 }
 

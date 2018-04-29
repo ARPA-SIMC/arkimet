@@ -6,6 +6,7 @@
 #include <arki/libconfig.h>
 #include <string>
 #include <zlib.h>
+#include <vector>
 
 namespace arki {
 namespace utils {
@@ -56,6 +57,9 @@ public:
 
     /// Call read and throw runtime_error if the read was incomplete
     void read_all_or_throw(void* buf, unsigned len);
+
+    /// Read until the end of the file
+    std::vector<uint8_t> read_all();
 
     /// Wrapper around gzseek
     z_off_t seek(z_off_t offset, int whence);

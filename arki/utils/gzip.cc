@@ -112,6 +112,25 @@ void File::read_all_or_throw(void* buf, unsigned len)
         throw_runtime_error("incomplete read");
 }
 
+std::vector<uint8_t> File::read_all()
+{
+    std::vector<uint8_t> buf;
+    const unsigned blocksize = 4096;
+
+    while (true)
+    {
+        buf.resize(buf.size() + blocksize);
+        unsigned read = this->read(buf.data() + buf.size() - blocksize, blocksize);
+        if (read < blocksize)
+        {
+            buf.resize(buf.size() - blocksize + read);
+            break;
+        }
+    }
+
+    return buf;
+}
+
 }
 }
 }

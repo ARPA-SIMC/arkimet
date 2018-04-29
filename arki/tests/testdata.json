@@ -66,6 +66,11 @@
  },
  {
   "doc": "",
+  "group": "arki_utils_gzip",
+  "method": "read_all"
+ },
+ {
+  "doc": "",
   "group": "arki_utils_yaml",
   "method": "parse"
  },
@@ -978,6 +983,11 @@
   "doc": "",
   "group": "arki_utils_compress",
   "method": "gzipindexingwriter"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_compress",
+  "method": "seekindexreader"
  },
  {
   "doc": "",
