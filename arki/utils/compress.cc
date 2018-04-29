@@ -253,6 +253,7 @@ void IndexWriter::append(size_t size, size_t gz_size)
 bool IndexWriter::close_entry()
 {
     ++count;
+    if (!groupsize) return false;
     return (count % groupsize) == 0;
 }
 
@@ -280,8 +281,8 @@ void IndexWriter::write(core::NamedFileDescriptor& outidx)
 }
 
 
-GzipWriter::GzipWriter(core::NamedFileDescriptor& out)
-    : out(out), outbuf(4096 * 2)
+GzipWriter::GzipWriter(core::NamedFileDescriptor& out, size_t groupsize)
+    : out(out), outbuf(4096 * 2), idx(groupsize)
 {
 }
 
@@ -304,6 +305,8 @@ size_t GzipWriter::add(const std::vector<uint8_t>& buf)
         if (len < outbuf.size())
             break;
     }
+
+    idx.append(buf.size(), written);
     return written;
 }
 
@@ -327,38 +330,21 @@ size_t GzipWriter::flush_compressor()
 
 void GzipWriter::flush()
 {
-    flush_compressor();
+    if (idx.has_trailing_data())
+        end_block(true);
 }
 
-
-GzipIndexingWriter::GzipIndexingWriter(core::NamedFileDescriptor& out, size_t groupsize)
-    : GzipWriter(out), idx(groupsize)
-{
-}
-
-void GzipIndexingWriter::add(const std::vector<uint8_t>& buf)
-{
-    size_t gz_size = GzipWriter::add(buf);
-    idx.append(buf.size(), gz_size);
-}
-
-void GzipIndexingWriter::close_entry()
+void GzipWriter::close_entry()
 {
     if (idx.close_entry())
         end_block();
 }
 
-void GzipIndexingWriter::end_block(bool is_final)
+void GzipWriter::end_block(bool is_final)
 {
     size_t gz_size = GzipWriter::flush_compressor();
     idx.close_block(gz_size);
     if (!is_final) compressor.restart();
-}
-
-void GzipIndexingWriter::flush()
-{
-    if (idx.has_trailing_data())
-        end_block(true);
 }
 
 }

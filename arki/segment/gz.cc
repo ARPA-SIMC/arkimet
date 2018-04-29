@@ -40,7 +40,7 @@ struct Creator : public AppendCreator
     size_t written = 0;
 
     Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath)
-        : AppendCreator(root, relpath, mds), out(dest_abspath), gzout(out)
+        : AppendCreator(root, relpath, mds), out(dest_abspath), gzout(out, 0)
     {
     }
 

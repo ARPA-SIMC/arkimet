@@ -37,7 +37,7 @@ struct Creator : public AppendCreator
     std::vector<uint8_t> padding;
     File out;
     File outidx;
-    compress::GzipIndexingWriter gzout;
+    compress::GzipWriter gzout;
     size_t written = 0;
 
     Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath, const std::string& dest_abspath_idx, unsigned groupsize)

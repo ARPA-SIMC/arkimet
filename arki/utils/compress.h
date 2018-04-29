@@ -177,6 +177,14 @@ struct IndexWriter
     void write(core::NamedFileDescriptor& outidx);
 };
 
+
+/**
+ * Create a file with a compressed version of the data described by the
+ * metadata that it receives.
+ *
+ * It also creates a compressed file index for faster seeking in the compressed
+ * file, that can be optionally written out
+ */
 class GzipWriter
 {
 protected:
@@ -193,8 +201,13 @@ protected:
      */
     size_t flush_compressor();
 
+    // End one compressed block
+    void end_block(bool is_final=false);
+
 public:
-    GzipWriter(core::NamedFileDescriptor& out);
+    IndexWriter idx;
+
+    GzipWriter(core::NamedFileDescriptor& out, size_t groupsize=512);
     ~GzipWriter();
 
     /**
@@ -203,29 +216,6 @@ public:
      * Returns the number of bytes written
      */
     size_t add(const std::vector<uint8_t>& buf);
-
-    void flush();
-};
-
-/**
- * Create a file with a compressed version of the data described by the
- * metadata that it receives.
- *
- * It also creates a compressed file index for faster seeking in the compressed
- * file.
- */
-class GzipIndexingWriter : public GzipWriter
-{
-protected:
-    // End one compressed block
-    void end_block(bool is_final=false);
-
-public:
-    IndexWriter idx;
-
-    GzipIndexingWriter(core::NamedFileDescriptor& out, size_t groupsize=512);
-
-    void add(const std::vector<uint8_t>& buf);
     void close_entry();
 
     void flush();
