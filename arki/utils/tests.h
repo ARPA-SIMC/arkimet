@@ -137,6 +137,10 @@ struct TestFailed : public std::exception
  */
 struct TestSkipped : public std::exception
 {
+    std::string reason;
+
+    TestSkipped();
+    TestSkipped(const std::string& reason);
 };
 
 /**
@@ -455,6 +459,9 @@ struct TestMethodResult
 
     /// True if the test has been skipped
     bool skipped = false;
+
+    /// If the test has been skipped, this is an optional reason
+    std::string skipped_reason;
 
 
     TestMethodResult(const std::string& test_case, const std::string& test_method)
@@ -883,6 +890,22 @@ public:
     {
         return TestCase::add_method(name, doc, [=]() { test_function(*fixture); });
     }
+};
+
+struct TestResultStats
+{
+    const std::vector<TestCaseResult>& results;
+    unsigned methods_ok = 0;
+    unsigned methods_failed = 0;
+    unsigned methods_skipped = 0;
+    unsigned test_cases_ok = 0;
+    unsigned test_cases_failed = 0;
+    bool success = false;
+
+    TestResultStats(const std::vector<TestCaseResult>& results);
+
+    void print_results(FILE* out);
+    void print_stats(FILE* out);
 };
 
 }
