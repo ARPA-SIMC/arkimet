@@ -67,15 +67,15 @@ add_method("gz", [](Fixture& f) {
 
     // Test moving into archive data that have been compressed
     f.cfg.setValue("archive age", days_since(2007, 9, 1));
+    f.cfg.setValue("gz group size", 0);
     f.test_reread_config();
 
     // Compress segments
     {
+        dataset::CheckerConfig cfg;
+        cfg.online = cfg.offline = true; cfg.readonly = false;
         auto checker(f.makeSegmentedChecker());
-        checker->segments_tracked([&](segmented::CheckerSegment& seg) {
-            seg.compress(512);
-            sys::unlink(seg.segment->segment().abspath + ".gz.idx");
-        });
+        checker->compress(cfg, 0);
     }
 
     // Test that querying returns all items
@@ -134,21 +134,31 @@ add_method("gz", [](Fixture& f) {
 add_method("gzidx", [](Fixture& f) {
     // Import and compress all the files
     f.clean_and_import();
+    // Do an extra round of import to have at least the two data per segment needed to trigger indexing
+    metadata::TestCollection mds("inbound/fixture.grib1");
+    for (auto& md: mds)
+    {
+        Time t = md->get<types::reftime::Position>()->time;
+        t.se = 30;
+        md->set(types::reftime::Position(t));
+    }
+    f.import(mds);
 
     // Test moving into archive data that have been compressed
     f.cfg.setValue("archive age", days_since(2007, 9, 1));
+    f.cfg.setValue("gz group size", 1);
     f.test_reread_config();
 
     // Compress segments
     {
+        dataset::CheckerConfig cfg;
+        cfg.online = cfg.offline = true; cfg.readonly = false;
         auto checker(f.makeSegmentedChecker());
-        checker->segments_tracked([&](segmented::CheckerSegment& seg) {
-            seg.compress(512);
-        });
+        checker->compress(cfg, 1);
     }
 
     // Test that querying returns all items
-    wassert(f.query_results({1, 0, 2}));
+    wassert(f.query_results({1, 4, 0, 3, 2, 5}));
 
     // Check if files to archive are detected
     {
@@ -197,7 +207,7 @@ add_method("gzidx", [](Fixture& f) {
     }
 
     // Test that querying returns all items
-    wassert(f.query_results({1, 0, 2}));
+    wassert(f.query_results({1, 4, 0, 3, 2, 5}));
 });
 
 add_method("tarred", [](Fixture& f) {

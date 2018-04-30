@@ -73,6 +73,41 @@ add_method("roundtrip_large", [] {
     wassert(actual(unlzo(comp.data(), comp.size(), orig.size())) == orig);
 });
 
+add_method("indexwriter", [] {
+    IndexWriter idx(2);
+
+    wassert_false(idx.has_trailing_data());
+    wassert_true(idx.only_one_group());
+
+    idx.append(2, 1);
+    wassert_false(idx.close_entry());
+    wassert_true(idx.has_trailing_data());
+    wassert_true(idx.only_one_group());
+
+    idx.append(2, 1);
+    wassert_true(idx.close_entry());
+    wassert_true(idx.has_trailing_data());
+    wassert_true(idx.only_one_group());
+
+    idx.close_block(1);
+    wassert_false(idx.has_trailing_data());
+    wassert_true(idx.only_one_group());
+
+    idx.append(2, 1);
+    wassert_false(idx.close_entry());
+    wassert_true(idx.has_trailing_data());
+    wassert_false(idx.only_one_group());
+
+    idx.append(2, 1);
+    wassert_true(idx.close_entry());
+    wassert_true(idx.has_trailing_data());
+    wassert_false(idx.only_one_group());
+
+    idx.close_block(1);
+    wassert_false(idx.has_trailing_data());
+    wassert_false(idx.only_one_group());
+});
+
 // Test SeekIndex
 add_method("seekindex", [] {
     SeekIndex idx;

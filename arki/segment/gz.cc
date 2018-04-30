@@ -67,7 +67,7 @@ struct Creator : public AppendCreator
         gzout.flush();
         out.fdatasync();
         out.close();
-        if (!dest_abspath_idx.empty())
+        if (!(dest_abspath_idx.empty() || gzout.idx.only_one_group()))
         {
             sys::File outidx(dest_abspath_idx, O_WRONLY | O_CREAT | O_TRUNC, 0666);
             gzout.idx.write(outidx);
@@ -234,7 +234,8 @@ Pending Checker<Segment>::repack(const std::string& rootdir, metadata::Collectio
         finalize->tmpfiles.push_back(tmpidxabspath);
         finalize->on_commit = [&](const std::vector<std::string>& tmpfiles) {
             sys::rename(tmpfiles[0], this->segment().abspath);
-            sys::rename(tmpfiles[1], gzidxabspath);
+            if (!sys::rename_ifexists(tmpfiles[1], gzidxabspath))
+                sys::unlink_ifexists(gzidxabspath);
         };
 
         Creator creator(rootdir, this->segment().relpath, mds, tmpabspath, tmpidxabspath, cfg.gz_group_size);

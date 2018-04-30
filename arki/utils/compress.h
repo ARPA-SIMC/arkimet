@@ -185,6 +185,9 @@ struct IndexWriter
      */
     bool has_trailing_data() const;
 
+    /// Return true if this index contains only one group
+    bool only_one_group() const;
+
     /**
      * Write out the index
      */

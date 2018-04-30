@@ -967,6 +967,11 @@
  {
   "doc": "",
   "group": "arki_utils_compress",
+  "method": "indexwriter"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_compress",
   "method": "seekindex"
  },
  {

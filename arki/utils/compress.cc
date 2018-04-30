@@ -322,6 +322,11 @@ bool IndexWriter::has_trailing_data() const
     return unc_ofs > 0 && last_unc_ofs != unc_ofs;
 }
 
+bool IndexWriter::only_one_group() const
+{
+    return outbuf.empty() || (!has_trailing_data() && outbuf.size() == 16);
+}
+
 void IndexWriter::write(core::NamedFileDescriptor& outidx)
 {
     outidx.write_all_or_throw(outbuf.data(), outbuf.size());
