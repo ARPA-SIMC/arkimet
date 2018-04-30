@@ -30,6 +30,12 @@ std::shared_ptr<segment::Checker> SegmentFixture<Segment, Data>::create()
 }
 
 template<class Segment, class Data>
+std::shared_ptr<segment::Checker> SegmentFixture<Segment, Data>::create(const segment::RepackConfig& cfg)
+{
+    return Segment::create(td.format, root, relpath, abspath, seg_mds, cfg);
+}
+
+template<class Segment, class Data>
 void SegmentTests<Segment, Data>::register_tests()
 {
 using namespace arki::utils;

@@ -2291,6 +2291,21 @@
  },
  {
   "doc": "",
+  "group": "arki_segment_gz_grib_nogroup",
+  "method": "noidx"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_grib_nogroup",
+  "method": "idx"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_grib_nogroup",
+  "method": "onegroup"
+ },
+ {
+  "doc": "",
   "group": "arki_segment_gz_bufr_nogroup",
   "method": "create"
  },
@@ -2321,6 +2336,21 @@
  },
  {
   "doc": "",
+  "group": "arki_segment_gz_bufr_nogroup",
+  "method": "noidx"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_bufr_nogroup",
+  "method": "idx"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_bufr_nogroup",
+  "method": "onegroup"
+ },
+ {
+  "doc": "",
   "group": "arki_segment_gzlines_vm2_nogroup",
   "method": "create"
  },
@@ -2351,6 +2381,21 @@
  },
  {
   "doc": "",
+  "group": "arki_segment_gzlines_vm2_nogroup",
+  "method": "noidx"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzlines_vm2_nogroup",
+  "method": "idx"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzlines_vm2_nogroup",
+  "method": "onegroup"
+ },
+ {
+  "doc": "",
   "group": "arki_segment_gz_grib",
   "method": "create"
  },
@@ -2381,6 +2426,21 @@
  },
  {
   "doc": "",
+  "group": "arki_segment_gz_grib",
+  "method": "noidx"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_grib",
+  "method": "idx"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_grib",
+  "method": "onegroup"
+ },
+ {
+  "doc": "",
   "group": "arki_segment_gz_bufr",
   "method": "create"
  },
@@ -2411,6 +2471,21 @@
  },
  {
   "doc": "",
+  "group": "arki_segment_gz_bufr",
+  "method": "noidx"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_bufr",
+  "method": "idx"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_bufr",
+  "method": "onegroup"
+ },
+ {
+  "doc": "",
   "group": "arki_segment_gzlines_vm2",
   "method": "create"
  },
@@ -2438,6 +2513,21 @@
   "doc": "",
   "group": "arki_segment_gzlines_vm2",
   "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzlines_vm2",
+  "method": "noidx"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzlines_vm2",
+  "method": "idx"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzlines_vm2",
+  "method": "onegroup"
  },
  {
   "doc": "",

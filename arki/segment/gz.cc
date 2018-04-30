@@ -214,22 +214,32 @@ template<typename Segment>
 Pending Checker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = gzabspath + ".repack";
-    Pending p;
+    files::FinalizeTempfilesTransaction* finalize;
+    Pending p = finalize = new files::FinalizeTempfilesTransaction;
+    finalize->tmpfiles.push_back(tmpabspath);
 
     if (cfg.gz_group_size == 0)
     {
-        p = new files::RenameTransaction(tmpabspath, this->segment().abspath);
+        finalize->on_commit = [&](const std::vector<std::string>& tmpfiles) {
+            sys::rename(tmpfiles[0], gzabspath);
+            sys::unlink_ifexists(gzabspath + ".idx");
+        };
 
         Creator creator(rootdir, this->segment().relpath, mds, tmpabspath);
         creator.validator = &scan::Validator::by_filename(this->segment().abspath);
+        if (Segment::padding == 1) creator.padding.push_back('\n');
         creator.create();
     } else {
         string tmpidxabspath = gzidxabspath + ".repack";
-
-        p = new files::Rename2Transaction(tmpabspath, gzabspath, tmpidxabspath, gzidxabspath);
+        finalize->tmpfiles.push_back(tmpidxabspath);
+        finalize->on_commit = [&](const std::vector<std::string>& tmpfiles) {
+            sys::rename(tmpfiles[0], this->segment().abspath);
+            sys::rename(tmpfiles[1], gzidxabspath);
+        };
 
         Creator creator(rootdir, this->segment().relpath, mds, tmpabspath, tmpidxabspath, cfg.gz_group_size);
         creator.validator = &scan::Validator::by_filename(this->segment().abspath);
+        if (Segment::padding == 1) creator.padding.push_back('\n');
         creator.create();
     }
 
@@ -352,37 +362,6 @@ std::shared_ptr<segment::Checker> Segment::create(const std::string& format, con
         creator.create();
         return make_shared<Checker>(format, rootdir, relpath, abspath);
     }
-}
-
-Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
-{
-    string tmpabspath = gzabspath + ".repack";
-    Pending p;
-
-    if (cfg.gz_group_size == 0)
-    {
-        p = new files::RenameTransaction(tmpabspath, segment().abspath);
-
-        gz::Creator creator(rootdir, segment().relpath, mds, tmpabspath);
-        creator.validator = &scan::Validator::by_filename(segment().abspath);
-        creator.padding.push_back('\n');
-        creator.create();
-    } else {
-        string tmpidxabspath = gzidxabspath + ".repack";
-
-        p = new files::Rename2Transaction(tmpabspath, gzabspath, tmpidxabspath, gzidxabspath);
-
-        gz::Creator creator(rootdir, segment().relpath, mds, tmpabspath, tmpidxabspath, cfg.gz_group_size);
-        creator.validator = &scan::Validator::by_filename(segment().abspath);
-        creator.padding.push_back('\n');
-        creator.create();
-    }
-
-    // Make sure mds are not holding a reader on the file to repack, because it
-    // will soon be invalidated
-    for (auto& md: mds) md->sourceBlob().unlock();
-
-    return p;
 }
 
 }

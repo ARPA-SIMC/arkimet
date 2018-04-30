@@ -11,6 +11,7 @@ template<class Segment, class Data>
 class Tests : public SegmentTests<Segment, Data>
 {
     using SegmentTests<Segment, Data>::SegmentTests;
+    typedef typename SegmentTests<Segment, Data>::Fixture Fixture;
     void register_tests() override;
 };
 
@@ -24,6 +25,55 @@ Tests<segment::gzlines::Segment, VM2Data> test6("arki_segment_gzlines_vm2", segm
 template<class Segment, class Data>
 void Tests<Segment, Data>::register_tests() {
 SegmentTests<Segment, Data>::register_tests();
+
+this->add_method("noidx", [&](Fixture& f) {
+    auto checker = f.create(segment::RepackConfig(0));
+    wassert(actual_file(f.abspath + ".gz").exists());
+    wassert(actual_file(f.abspath + ".gz.idx").not_exists());
+
+    Pending p = wcallchecked(checker->repack(f.root, f.seg_mds, segment::RepackConfig(0)));
+    wassert(p.commit());
+    wassert(actual_file(f.abspath + ".gz").exists());
+    wassert(actual_file(f.abspath + ".gz.idx").not_exists());
+
+    p = wcallchecked(checker->repack(f.root, f.seg_mds, segment::RepackConfig(1)));
+    wassert(p.commit());
+    wassert(actual_file(f.abspath + ".gz").exists());
+    wassert(actual_file(f.abspath + ".gz.idx").exists());
+});
+
+this->add_method("idx", [&](Fixture& f) {
+    auto checker = f.create(segment::RepackConfig(1));
+    wassert(actual_file(f.abspath + ".gz").exists());
+    wassert(actual_file(f.abspath + ".gz.idx").exists());
+
+    Pending p = wcallchecked(checker->repack(f.root, f.seg_mds, segment::RepackConfig(1)));
+    wassert(p.commit());
+    wassert(actual_file(f.abspath + ".gz").exists());
+    wassert(actual_file(f.abspath + ".gz.idx").exists());
+
+    p = wcallchecked(checker->repack(f.root, f.seg_mds, segment::RepackConfig(0)));
+    wassert(p.commit());
+    wassert(actual_file(f.abspath + ".gz").exists());
+    wassert(actual_file(f.abspath + ".gz.idx").not_exists());
+});
+
+this->add_method("onegroup", [&](Fixture& f) {
+    auto checker = f.create(segment::RepackConfig(1024));
+    wassert(actual_file(f.abspath + ".gz").exists());
+    wassert(actual_file(f.abspath + ".gz.idx").not_exists());
+
+    Pending p = wcallchecked(checker->repack(f.root, f.seg_mds, segment::RepackConfig(1024)));
+    wassert(p.commit());
+    wassert(actual_file(f.abspath + ".gz").exists());
+    wassert(actual_file(f.abspath + ".gz.idx").not_exists());
+
+    p = wcallchecked(checker->repack(f.root, f.seg_mds, segment::RepackConfig(0)));
+    wassert(p.commit());
+    wassert(actual_file(f.abspath + ".gz").exists());
+    wassert(actual_file(f.abspath + ".gz.idx").not_exists());
+});
+
 
 }
 #if 0

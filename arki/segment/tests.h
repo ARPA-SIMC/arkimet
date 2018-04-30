@@ -21,6 +21,7 @@ struct SegmentFixture : public Fixture
     std::string abspath;
 
     std::shared_ptr<segment::Checker> create();
+    std::shared_ptr<segment::Checker> create(const segment::RepackConfig& cfg);
 
     SegmentFixture(const segment::RepackConfig& cfg=segment::RepackConfig())
         : repack_config(cfg) {}

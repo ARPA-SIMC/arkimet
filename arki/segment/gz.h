@@ -40,19 +40,6 @@ protected:
     std::string gzabspath;
     std::string gzidxabspath;
 
-    /**
-     * If skip_validation is true, repack will skip validating the data that is
-     * being read.
-     *
-     * This is only used during tests to support repacking files with mock data
-     * inside. The files are made of filesystem holes, so the data that is read
-     * from them is always zeroes.
-     */
-    Pending repack_impl(
-            const std::string& rootdir,
-            metadata::Collection& mds,
-            bool skip_validation=false,
-            const RepackConfig& cfg=RepackConfig());
     void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
 
 public:
@@ -125,10 +112,9 @@ struct Reader : public gz::Reader<Segment>
 };
 
 
-class Checker : public gz::Checker<Segment>
+struct Checker : public gz::Checker<Segment>
 {
     using gz::Checker<Segment>::Checker;
-    Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
 };
 
 
