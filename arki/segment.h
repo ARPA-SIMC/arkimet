@@ -247,6 +247,9 @@ struct RepackConfig
 
     /// During repack, move all data to a different location than it was before
     static const unsigned TEST_MISCHIEF_MOVE_DATA = 1;
+
+    RepackConfig();
+    RepackConfig(unsigned gz_group_size, unsigned test_flags=0);
 };
 
 
@@ -304,12 +307,6 @@ public:
      * Returns a Checker pointing to the new location
      */
     virtual std::shared_ptr<Checker> move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) = 0;
-
-    /**
-     * After this segment has been moved, create a checker for the one in the
-     * new location
-     */
-    //virtual std::shared_ptr<Checker> checker_moved(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) const = 0;
 
     /**
      * Truncate the segment at the given offset

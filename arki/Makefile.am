@@ -133,7 +133,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		segment/tar.h \
 		segment/zip.h \
 		segment/gz.h \
-		segment/gzidx.h \
 		segment/seqfile.h \
 		segment/tests.h \
 		segment/tests.tcc \
@@ -421,7 +420,6 @@ libarkimet_la_SOURCES += \
 		segment/tar.cc \
 		segment/zip.cc \
 		segment/gz.cc \
-		segment/gzidx.cc \
 		segment/seqfile.cc \
 		sort.cc \
 		formatter.cc \
@@ -475,7 +473,6 @@ tests_arki_test_SOURCES += \
 		segment/tar-test.cc \
 		segment/zip-test.cc \
 		segment/gz-test.cc \
-		segment/gzidx-test.cc \
 		segment/tests.cc \
 		runtime/io-test.cc \
 		runtime/inputs-test.cc \
