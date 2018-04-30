@@ -1,4 +1,5 @@
 #include <arki/utils/tests.h>
+#include <arki/utils/testrunner.h>
 #include <arki/types-init.h>
 #include <arki/iotrace.h>
 #include <arki/core/file.h>

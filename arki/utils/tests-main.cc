@@ -1,4 +1,5 @@
 #include "tests.h"
+#include "testrunner.h"
 #include <signal.h>
 #include <cstdlib>
 #include <cstring>
