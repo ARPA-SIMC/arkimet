@@ -25,6 +25,13 @@ add_method("read", []() {
     wassert(actual(buf) == "testtest");
 });
 
+add_method("read_all", []() {
+    system("echo testtest | gzip > test.gz");
+    gzip::File out("test.gz", "r");
+    auto buf = out.read_all();
+    wassert(actual(buf) == "testtest\n");
+});
+
 }
 
 }

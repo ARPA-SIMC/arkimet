@@ -302,7 +302,7 @@ size_t Checker<Segment, File>::remove()
 }
 
 template<typename Segment, typename File>
-Pending Checker<Segment, File>::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+Pending Checker<Segment, File>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = this->segment().abspath + ".repack";
 
@@ -454,7 +454,7 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
+std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
     fd::Creator<File> creator(rootdir, relpath, mds, abspath);
     creator.create();
@@ -485,7 +485,7 @@ std::shared_ptr<segment::Checker> HoleSegment::make_checker(const std::string& f
     return make_shared<HoleChecker>(format, root, relpath, abspath);
 }
 
-Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = segment().abspath + ".repack";
 
@@ -553,7 +553,7 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds)
+std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
     fd::Creator<File> creator(rootdir, relpath, mds, abspath);
     creator.create();

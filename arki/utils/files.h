@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <memory>
 #include <set>
+#include <vector>
 
 #define FLAGFILE_INDEX "index-out-of-sync"
 #define FLAGFILE_DONTPACK "needs-check-do-not-pack"
@@ -109,16 +110,18 @@ struct RenameTransaction : public Transaction
     void rollback_nothrow() noexcept override;
 };
 
-struct Rename2Transaction : public Transaction
+/**
+ * On commit, call on_commit(tmpfiles).
+ *
+ * On rollback, unlink all tmpfiles
+ */
+struct FinalizeTempfilesTransaction : public Transaction
 {
-    std::string tmpabspath1;
-    std::string abspath1;
-    std::string tmpabspath2;
-    std::string abspath2;
+    std::vector<std::string> tmpfiles;
+    std::function<void(const std::vector<std::string>& tmpfiles)> on_commit;
     bool fired = false;
 
-    Rename2Transaction(const std::string& tmpabspath1, const std::string& abspath1, const std::string& tmpabspath2, const std::string& abspath2);
-    virtual ~Rename2Transaction();
+    virtual ~FinalizeTempfilesTransaction();
 
     void commit() override;
     void rollback() override;

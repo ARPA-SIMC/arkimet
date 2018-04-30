@@ -38,9 +38,14 @@ struct Creator : public AppendCreator
     File out;
     compress::GzipWriter gzout;
     size_t written = 0;
+    std::string dest_abspath_idx;
 
     Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath)
-        : AppendCreator(root, relpath, mds), out(dest_abspath), gzout(out)
+        : AppendCreator(root, relpath, mds), out(dest_abspath), gzout(out, 0)
+    {
+    }
+    Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath, const std::string& dest_abspath_idx, unsigned groupsize)
+        : AppendCreator(root, relpath, mds), out(dest_abspath), gzout(out, groupsize), dest_abspath_idx(dest_abspath_idx)
     {
     }
 
@@ -50,6 +55,7 @@ struct Creator : public AppendCreator
         gzout.add(data);
         if (!padding.empty())
             gzout.add(padding);
+        gzout.close_entry();
         written += data.size() + padding.size();
         return wrpos;
     }
@@ -61,6 +67,13 @@ struct Creator : public AppendCreator
         gzout.flush();
         out.fdatasync();
         out.close();
+        if (!(dest_abspath_idx.empty() || gzout.idx.only_one_group()))
+        {
+            sys::File outidx(dest_abspath_idx, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            gzout.idx.write(outidx);
+            outidx.fdatasync();
+            outidx.close();
+        }
     }
 };
 
@@ -102,46 +115,35 @@ struct CheckBackend : public AppendCheckBackend
 
 }
 
-time_t Segment::timestamp() const { return sys::timestamp(abspath + ".gz"); }
+time_t Segment::timestamp() const
+{
+    return max(sys::timestamp(abspath + ".gz"), sys::timestamp(abspath + ".gz.idx", 0));
+}
 
 
 template<typename Segment>
 Reader<Segment>::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : BaseReader<Segment>(format, root, relpath, abspath, lock), fd(abspath + ".gz", "rb")
+    : BaseReader<Segment>(format, root, relpath, abspath, lock), fd(abspath + ".gz", O_RDONLY), reader(fd)
 {
+    // Read index
+    std::string idxfname = fd.name() + ".idx";
+    if (sys::exists(idxfname))
+        reader.idx.read(idxfname);
 }
 
 template<typename Segment>
 bool Reader<Segment>::scan_data(metadata_dest_func dest)
 {
-    const auto& segment = this->segment();
-    auto scanner = scan::Scanner::get_scanner(segment.format);
-    compress::TempUnzip uncompressed(segment.abspath);
-    return scanner->scan_file(segment.abspath, static_pointer_cast<segment::Reader>(this->shared_from_this()), dest);
+    auto scanner = scan::Scanner::get_scanner(this->segment().format);
+    compress::TempUnzip uncompressed(this->segment().abspath);
+    return scanner->scan_file(this->segment().abspath, this->shared_from_this(), dest);
 }
 
 template<typename Segment>
 std::vector<uint8_t> Reader<Segment>::read(const types::source::Blob& src)
 {
-    vector<uint8_t> buf;
-    buf.resize(src.size);
-
-    if (src.offset != last_ofs)
-    {
-        fd.seek(src.offset, SEEK_SET);
-
-        if (src.offset >= last_ofs)
-            acct::gzip_forward_seek_bytes.incr(src.offset - last_ofs);
-        else
-            acct::gzip_forward_seek_bytes.incr(src.offset);
-    }
-
-    fd.read_all_or_throw(buf.data(), src.size);
-    last_ofs = src.offset + src.size;
-
-    acct::gzip_data_read_count.incr();
+    vector<uint8_t> buf = reader.read(src.offset, src.size);
     iotrace::trace_file(this->segment().abspath, src.offset, src.size, "read data");
-
     return buf;
 }
 
@@ -168,7 +170,7 @@ size_t Reader<Segment>::stream(const types::source::Blob& src, core::NamedFileDe
 
 template<typename Segment>
 Checker<Segment>::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
-    : BaseChecker<Segment>(format, root, relpath, abspath), gzabspath(abspath + ".gz")
+    : BaseChecker<Segment>(format, root, relpath, abspath), gzabspath(abspath + ".gz"), gzidxabspath(abspath + ".gz.idx")
 {
 }
 
@@ -181,13 +183,14 @@ bool Checker<Segment>::exists_on_disk()
 template<typename Segment>
 size_t Checker<Segment>::size()
 {
-    return sys::size(gzabspath);
+    return sys::size(gzabspath) + sys::size(gzidxabspath, 0);
 }
 
 template<typename Segment>
 void Checker<Segment>::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
     sys::rename(gzabspath, new_abspath + ".gz");
+    sys::rename_ifexists(gzidxabspath, new_abspath + ".gz.idx");
 }
 
 template<typename Segment>
@@ -201,21 +204,45 @@ State Checker<Segment>::check(std::function<void(const std::string&)> reporter, 
 template<typename Segment>
 size_t Checker<Segment>::remove()
 {
-    size_t size = sys::size(gzabspath);
+    size_t size = this->size();
     sys::unlink(gzabspath);
+    sys::unlink_ifexists(gzidxabspath);
     return size;
 }
 
 template<typename Segment>
-Pending Checker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+Pending Checker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = gzabspath + ".repack";
+    files::FinalizeTempfilesTransaction* finalize;
+    Pending p = finalize = new files::FinalizeTempfilesTransaction;
+    finalize->tmpfiles.push_back(tmpabspath);
 
-    Pending p(new files::RenameTransaction(tmpabspath, this->segment().abspath));
+    if (cfg.gz_group_size == 0)
+    {
+        finalize->on_commit = [&](const std::vector<std::string>& tmpfiles) {
+            sys::rename(tmpfiles[0], gzabspath);
+            sys::unlink_ifexists(gzabspath + ".idx");
+        };
 
-    Creator creator(rootdir, this->segment().relpath, mds, tmpabspath);
-    creator.validator = &scan::Validator::by_filename(this->segment().abspath);
-    creator.create();
+        Creator creator(rootdir, this->segment().relpath, mds, tmpabspath);
+        creator.validator = &scan::Validator::by_filename(this->segment().abspath);
+        if (Segment::padding == 1) creator.padding.push_back('\n');
+        creator.create();
+    } else {
+        string tmpidxabspath = gzidxabspath + ".repack";
+        finalize->tmpfiles.push_back(tmpidxabspath);
+        finalize->on_commit = [&](const std::vector<std::string>& tmpfiles) {
+            sys::rename(tmpfiles[0], this->segment().abspath);
+            if (!sys::rename_ifexists(tmpfiles[1], gzidxabspath))
+                sys::unlink_ifexists(gzidxabspath);
+        };
+
+        Creator creator(rootdir, this->segment().relpath, mds, tmpabspath, tmpidxabspath, cfg.gz_group_size);
+        creator.validator = &scan::Validator::by_filename(this->segment().abspath);
+        if (Segment::padding == 1) creator.padding.push_back('\n');
+        creator.create();
+    }
 
     // Make sure mds are not holding a reader on the file to repack, because it
     // will soon be invalidated
@@ -286,11 +313,18 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    gz::Creator creator(rootdir, relpath, mds, abspath + ".gz");
-    creator.create();
-    return make_shared<Checker>(format, rootdir, relpath, abspath);
+    if (cfg.gz_group_size == 0)
+    {
+        gz::Creator creator(rootdir, relpath, mds, abspath + ".gz");
+        creator.create();
+        return make_shared<Checker>(format, rootdir, relpath, abspath);
+    } else {
+        gz::Creator creator(rootdir, relpath, mds, abspath + ".gz", abspath + ".gz.idx", cfg.gz_group_size);
+        creator.create();
+        return make_shared<Checker>(format, rootdir, relpath, abspath);
+    }
 }
 
 }
@@ -315,31 +349,20 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    gz::Creator creator(rootdir, relpath, mds, abspath + ".gz");
-    creator.padding.push_back('\n');
-    creator.create();
-    return make_shared<Checker>(format, rootdir, relpath, abspath);
-}
-
-Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
-{
-    string tmpabspath = gzabspath + ".repack";
-
-    files::RenameTransaction* rename;
-    Pending p(rename = new files::RenameTransaction(tmpabspath, segment().abspath));
-
-    gz::Creator creator(rootdir, segment().relpath, mds, tmpabspath);
-    creator.validator = &scan::Validator::by_filename(segment().abspath);
-    creator.padding.push_back('\n');
-    creator.create();
-
-    // Make sure mds are not holding a reader on the file to repack, because it
-    // will soon be invalidated
-    for (auto& md: mds) md->sourceBlob().unlock();
-
-    return p;
+    if (cfg.gz_group_size == 0)
+    {
+        gz::Creator creator(rootdir, relpath, mds, abspath + ".gz");
+        creator.padding.push_back('\n');
+        creator.create();
+        return make_shared<Checker>(format, rootdir, relpath, abspath);
+    } else {
+        gz::Creator creator(rootdir, relpath, mds, abspath + ".gz", abspath + ".gz.idx", cfg.gz_group_size);
+        creator.padding.push_back('\n');
+        creator.create();
+        return make_shared<Checker>(format, rootdir, relpath, abspath);
+    }
 }
 
 }

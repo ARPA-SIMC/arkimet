@@ -843,6 +843,9 @@ metadato::
 - `locking`: settato a `no`, disabilita il locking nelle operazioni sul dataset
 - `trace_sql`: settato a yes stampa su standard error una traccia di tutte le
   query SQL fatte all'indice (usato per debugging, solo su dataset iseg)
+- `gz group size`: quanti dati raggruppare assieme quando si comprimono i
+  segmenti in formato `gz`. 0 comprime sempre tutto in uno stream unico.
+  Default: 512
 - `__`: (doppio underscore) prefisso per inserire campi custom (che arkimet non
   interpreta)
 

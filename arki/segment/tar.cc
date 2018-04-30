@@ -46,13 +46,6 @@ struct Creator : public AppendCreator
             format = mds[0].source().format;
     }
 
-#if 0
-    std::unique_ptr<types::Source> create_source(const Metadata& md, const Span& span) override
-    {
-        return types::Source::createBlobUnlocked(md.source().format, root, relpath + ".tar", span.offset, span.size);
-    }
-#endif
-
     size_t append(const std::vector<uint8_t>& data) override
     {
         // Append it to the new file
@@ -130,7 +123,7 @@ std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& forma
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, unsigned test_flags)
+std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
     Creator creator(rootdir, relpath, mds, abspath + ".tar");
     creator.create();
@@ -272,7 +265,7 @@ size_t Checker::remove()
     return size;
 }
 
-Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags)
+Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = segment().abspath + ".repack";
 

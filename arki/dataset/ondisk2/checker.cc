@@ -161,7 +161,10 @@ public:
         // Lock away writes and reads
         Pending p = checker.idx->begin_transaction();
 
-        Pending p_repack = segment->repack(checker.config().path, mds, test_flags);
+        segment::RepackConfig repack_config;
+        repack_config.gz_group_size = config().gz_group_size;
+        repack_config.test_flags = test_flags;
+        Pending p_repack = segment->repack(checker.config().path, mds, repack_config);
 
         // Reindex mds
         checker.idx->reset(segment->segment().relpath);
@@ -269,7 +272,7 @@ public:
         p.commit();
     }
 
-    size_t compress() override
+    size_t compress(unsigned groupsize) override
     {
         if (sys::exists(segment->segment().abspath + ".gz") || sys::exists(segment->segment().abspath + ".gz.idx"))
             return 0;
@@ -283,7 +286,7 @@ public:
 
         // Create the .tar segment
         size_t old_size = segment->size();
-        segment = segment->compress(mds);
+        segment = segment->compress(mds, groupsize);
         size_t new_size = segment->size();
 
         // Reindex the new metadata

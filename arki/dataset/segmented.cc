@@ -76,6 +76,10 @@ Config::Config(const ConfigFile& cfg)
 
     std::string shard = cfg.value("shard");
     m_step = Step::create(step_name);
+
+    std::string gz_group_size = cfg.value("gz group size");
+    if (!gz_group_size.empty())
+        this->gz_group_size = std::stoul(gz_group_size);
 }
 
 Config::~Config()
@@ -363,7 +367,7 @@ void Checker::zip(CheckerConfig& opts)
     LocalChecker::zip(opts);
 }
 
-void Checker::compress(CheckerConfig& opts)
+void Checker::compress(CheckerConfig& opts, unsigned groupsize)
 {
     segments(opts, [&](CheckerSegment& segment) {
         if (!segment.segment->segment().single_file()) return;
@@ -371,12 +375,12 @@ void Checker::compress(CheckerConfig& opts)
             opts.reporter->segment_compress(name(), segment.path_relative(), "should be compressed");
         else
         {
-            auto freed = segment.compress();
+            size_t freed = segment.compress(groupsize);
             opts.reporter->segment_compress(name(), segment.path_relative(), "compressed (" + std::to_string(freed) + " freed)");
         }
     });
 
-    LocalChecker::compress(opts);
+    LocalChecker::compress(opts, groupsize);
 }
 
 void Checker::state(CheckerConfig& opts)

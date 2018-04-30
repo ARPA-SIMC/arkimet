@@ -432,7 +432,7 @@ struct Checker : public dataset::Base
     virtual void zip(CheckerConfig& opts) = 0;
 
     /// Convert directory segments into .gz/.gz.idx segments
-    virtual void compress(CheckerConfig& opts) = 0;
+    virtual void compress(CheckerConfig& opts, unsigned groupsize) = 0;
 
     /// Send the dataset state to the reporter
     virtual void state(CheckerConfig& opts) = 0;

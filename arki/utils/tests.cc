@@ -310,6 +310,16 @@ void ActualCString::not_contains(const std::string& expected) const
     assert_not_contains(_actual, expected);
 }
 
+void ActualStdString::operator==(const std::vector<uint8_t>& expected) const
+{
+    return operator==(std::string(expected.begin(), expected.end()));
+}
+
+void ActualStdString::operator!=(const std::vector<uint8_t>& expected) const
+{
+    return operator!=(std::string(expected.begin(), expected.end()));
+}
+
 void ActualStdString::startswith(const std::string& expected) const
 {
     assert_startswith(_actual, expected);

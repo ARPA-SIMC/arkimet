@@ -1,9 +1,10 @@
 #include "config.h"
-#include <arki/utils/compress.h>
-#include <arki/utils/string.h>
-#include <arki/utils/sys.h>
-#include <arki/utils/gzip.h>
-#include <arki/metadata.h>
+#include "arki/utils/compress.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/gzip.h"
+#include "arki/metadata.h"
+#include "arki/utils/accounting.h"
 #include <algorithm>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -205,6 +206,14 @@ TempUnzip::~TempUnzip()
 	::unlink(fname.c_str());
 }
 
+
+
+SeekIndex::SeekIndex()
+{
+    ofs_unc.push_back(0);
+    ofs_comp.push_back(0);
+}
+
 size_t SeekIndex::lookup(size_t unc) const
 {
 	vector<size_t>::const_iterator i = upper_bound(ofs_unc.begin(), ofs_unc.end(), unc);
@@ -223,23 +232,109 @@ void SeekIndex::read(sys::File& fd)
 {
     struct stat st;
     fd.fstat(st);
-    size_t idxcount = st.st_size / sizeof(uint32_t) / 2;
-    vector<uint32_t> diskidx(idxcount * 2);
-    fd.read_all_or_throw(diskidx.data(), diskidx.size() * sizeof(uint32_t));
-	ofs_unc.reserve(idxcount + 1);
-	ofs_comp.reserve(idxcount + 1);
-	ofs_unc.push_back(0);
-	ofs_comp.push_back(0);
-	for (size_t i = 0; i < idxcount; ++i)
-	{
-		ofs_unc.push_back(ofs_unc[i] + ntohl(diskidx[i * 2]));
-		ofs_comp.push_back(ofs_comp[i] + ntohl(diskidx[i * 2 + 1]));
-	}
+    size_t idxcount = st.st_size / 8 / 2;
+    vector<uint8_t> diskidx(st.st_size);
+    fd.read_all_or_throw(diskidx.data(), diskidx.size());
+    ofs_unc.reserve(idxcount + 1);
+    ofs_comp.reserve(idxcount + 1);
+    BinaryDecoder dec(diskidx);
+    for (size_t i = 0; i < idxcount; ++i)
+    {
+        ofs_unc.push_back(ofs_unc[i] + dec.pop_uint(8, "uncompressed index"));
+        ofs_comp.push_back(ofs_comp[i] + dec.pop_uint(8, "compressed index"));
+    }
 }
 
 
-GzipWriter::GzipWriter(core::NamedFileDescriptor& out)
-    : out(out), outbuf(4096 * 2)
+SeekIndexReader::SeekIndexReader(core::NamedFileDescriptor& fd)
+    : fd(fd)
+{
+}
+
+std::vector<uint8_t> SeekIndexReader::read(size_t offset, size_t size)
+{
+    if (offset < last_group_offset || offset + size > last_group_offset + last_group.size())
+    {
+        size_t block = idx.lookup(offset);
+        if (block >= idx.ofs_comp.size())
+            throw std::runtime_error("requested read of offset past the end of gzip file");
+
+        size_t gz_offset = idx.ofs_comp[block];
+        fd.lseek(gz_offset, SEEK_SET);
+
+        // Open the compressed chunk
+        int fd1 = fd.dup();
+        utils::gzip::File gzfd(fd.name(), fd1, "rb");
+        last_group_offset = idx.ofs_unc[block];
+        acct::gzip_idx_reposition_count.incr();
+
+        if (block + 1 >= idx.ofs_comp.size())
+        {
+            // Decompress until the end of the file
+            last_group = gzfd.read_all();
+        } else {
+            // Read and uncompress the compressed chunk
+            size_t unc_size = idx.ofs_unc[block + 1] - idx.ofs_unc[block];
+            last_group.resize(unc_size);
+            gzfd.read_all_or_throw(last_group.data(), last_group.size());
+        }
+    }
+    size_t group_offset = offset - last_group_offset;
+    if (group_offset + size > last_group.size())
+        throw std::runtime_error("requested read of offset past the end of gzip file");
+    return std::vector<uint8_t>(last_group.begin() + group_offset, last_group.begin() + group_offset + size);
+}
+
+
+IndexWriter::IndexWriter(size_t groupsize)
+    : groupsize(groupsize), enc(outbuf)
+{
+}
+
+void IndexWriter::append(size_t size, size_t gz_size)
+{
+    ofs += gz_size;
+    unc_ofs += size;
+}
+
+bool IndexWriter::close_entry()
+{
+    ++count;
+    if (!groupsize) return false;
+    return (count % groupsize) == 0;
+}
+
+void IndexWriter::close_block(size_t gz_size)
+{
+    ofs += gz_size;
+
+    // Write last block size to the index
+    size_t unc_size = unc_ofs - last_unc_ofs;
+    size_t size = ofs - last_ofs;
+    enc.add_unsigned(unc_size, 8);
+    enc.add_unsigned(size, 8);
+    last_ofs = ofs;
+    last_unc_ofs = unc_ofs;
+}
+
+bool IndexWriter::has_trailing_data() const
+{
+    return unc_ofs > 0 && last_unc_ofs != unc_ofs;
+}
+
+bool IndexWriter::only_one_group() const
+{
+    return outbuf.empty() || (!has_trailing_data() && outbuf.size() == 16);
+}
+
+void IndexWriter::write(core::NamedFileDescriptor& outidx)
+{
+    outidx.write_all_or_throw(outbuf.data(), outbuf.size());
+}
+
+
+GzipWriter::GzipWriter(core::NamedFileDescriptor& out, size_t groupsize)
+    : out(out), outbuf(4096 * 2), idx(groupsize)
 {
 }
 
@@ -262,6 +357,8 @@ size_t GzipWriter::add(const std::vector<uint8_t>& buf)
         if (len < outbuf.size())
             break;
     }
+
+    idx.append(buf.size(), written);
     return written;
 }
 
@@ -285,51 +382,21 @@ size_t GzipWriter::flush_compressor()
 
 void GzipWriter::flush()
 {
-    flush_compressor();
+    if (idx.has_trailing_data())
+        end_block(true);
 }
 
-
-GzipIndexingWriter::GzipIndexingWriter(core::NamedFileDescriptor& out, core::NamedFileDescriptor& outidx, size_t groupsize)
-    : GzipWriter(out), groupsize(groupsize), outidx(outidx)
+void GzipWriter::close_entry()
 {
-}
-
-GzipIndexingWriter::~GzipIndexingWriter()
-{
-}
-
-void GzipIndexingWriter::add(const std::vector<uint8_t>& buf)
-{
-    ofs += GzipWriter::add(buf);
-    unc_ofs += buf.size();
-}
-
-void GzipIndexingWriter::close_entry()
-{
-    ++count;
-    if ((count % groupsize) == 0)
+    if (idx.close_entry())
         end_block();
 }
 
-void GzipIndexingWriter::end_block(bool is_final)
+void GzipWriter::end_block(bool is_final)
 {
-    ofs += GzipWriter::flush_compressor();
-
-    // Write last block size to the index
-    uint32_t unc_size = htonl(unc_ofs - last_unc_ofs);
-    uint32_t size = htonl(ofs - last_ofs);
-    outidx.write_all_or_throw(&unc_size, sizeof(unc_size));
-    outidx.write_all_or_throw(&size, sizeof(size));
-    last_ofs = ofs;
-    last_unc_ofs = unc_ofs;
-
+    size_t gz_size = GzipWriter::flush_compressor();
+    idx.close_block(gz_size);
     if (!is_final) compressor.restart();
-}
-
-void GzipIndexingWriter::flush()
-{
-    if (unc_ofs > 0 && last_unc_ofs != unc_ofs)
-        end_block(true);
 }
 
 }

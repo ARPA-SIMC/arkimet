@@ -28,8 +28,6 @@ static const unsigned SEGMENT_CORRUPTED   = 1 << 4; /// File is broken in a way 
 static const unsigned SEGMENT_ARCHIVE_AGE = 1 << 5; /// File is old enough to be archived
 static const unsigned SEGMENT_DELETE_AGE  = 1 << 6; /// File is old enough to be deleted
 
-static const unsigned TEST_MISCHIEF_MOVE_DATA = 1; /// During repack, move all data to a different location than it was before
-
 
 /**
  * State of a segment
@@ -235,6 +233,26 @@ struct Writer : public Transaction, public std::enable_shared_from_this<Writer>
 };
 
 
+struct RepackConfig
+{
+    /**
+     * When repacking gzidx segments, how many data items are compressed together.
+     */
+    unsigned gz_group_size = 512;
+
+    /**
+     * Turn on perturbating repack behaviour during tests
+     */
+    unsigned test_flags = 0;
+
+    /// During repack, move all data to a different location than it was before
+    static const unsigned TEST_MISCHIEF_MOVE_DATA = 1;
+
+    RepackConfig();
+    RepackConfig(unsigned gz_group_size, unsigned test_flags=0);
+};
+
+
 class Checker : public std::enable_shared_from_this<Checker>
 {
 protected:
@@ -261,7 +279,7 @@ public:
      *
      * `rootdir` is the directory to use as root for the Blob sources in `mds`.
      */
-    virtual Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) = 0;
+    virtual Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) = 0;
 
     /**
      * Replace this segment with a tar segment, updating the metadata in mds to
@@ -279,7 +297,7 @@ public:
      * Replace this segment with a compressed segment, updating the metadata in
      * mds to point to the right locations if needed
      */
-    virtual std::shared_ptr<Checker> compress(metadata::Collection& mds);
+    virtual std::shared_ptr<Checker> compress(metadata::Collection& mds, unsigned groupsize);
 
     /**
      * Move this segment to a new location.
@@ -289,12 +307,6 @@ public:
      * Returns a Checker pointing to the new location
      */
     virtual std::shared_ptr<Checker> move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) = 0;
-
-    /**
-     * After this segment has been moved, create a checker for the one in the
-     * new location
-     */
-    //virtual std::shared_ptr<Checker> checker_moved(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) const = 0;
 
     /**
      * Truncate the segment at the given offset

@@ -350,12 +350,11 @@ void DatasetTest::clean()
     import_results.clear();
 }
 
-void DatasetTest::import(const std::string& testfile)
+void DatasetTest::import(metadata::Collection& mds)
 {
     {
         std::unique_ptr<Writer> writer(config().create_writer());
-        metadata::TestCollection data(testfile);
-        auto batch = data.make_import_batch();
+        auto batch = mds.make_import_batch();
         writer->acquire_batch(batch);
         for (const auto& e: batch)
         {
@@ -370,12 +369,17 @@ void DatasetTest::import(const std::string& testfile)
     utils::files::removeDontpackFlagfile(ds_root);
 }
 
+void DatasetTest::import(const std::string& testfile)
+{
+    metadata::TestCollection data(testfile);
+    import(data);
+}
+
 void DatasetTest::import(Metadata& md, dataset::WriterAcquireResult expected_result)
 {
     import_results.push_back(md);
     std::unique_ptr<Writer> writer(config().create_writer());
     WriterAcquireResult res = writer->acquire(import_results.back());
-    wassert(actual(res) == expected_result);
 }
 
 void DatasetTest::clean_and_import(const std::string& testfile)

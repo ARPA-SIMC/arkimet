@@ -403,11 +403,11 @@ void ArchivesChecker::zip(CheckerConfig& opts)
     });
 }
 
-void ArchivesChecker::compress(CheckerConfig& opts)
+void ArchivesChecker::compress(CheckerConfig& opts, unsigned groupsize)
 {
     if (!opts.offline) return;
     archives->iter([&](Checker& a) {
-        a.compress(opts);
+        a.compress(opts, groupsize);
         return true;
     });
 }

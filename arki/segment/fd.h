@@ -80,7 +80,7 @@ public:
     size_t size() override;
 
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
-    Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
     size_t remove() override;
 
     void test_truncate(size_t offset) override;
@@ -121,7 +121,7 @@ struct Segment : public fd::Segment
 
     static std::shared_ptr<segment::Writer> make_writer(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
     static std::shared_ptr<segment::Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
-    static std::shared_ptr<segment::Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds);
+    static std::shared_ptr<segment::Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
     static bool can_store(const std::string& format);
 
     static const unsigned padding = 0;
@@ -165,7 +165,7 @@ class HoleChecker : public fd::Checker<HoleSegment, HoleFile>
 {
 public:
     using fd::Checker<HoleSegment, HoleFile>::Checker;
-    Pending repack(const std::string& rootdir, metadata::Collection& mds, unsigned test_flags=0) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
 };
 
 }
@@ -191,7 +191,7 @@ struct Segment : public fd::Segment
 
     static std::shared_ptr<Writer> make_writer(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
     static std::shared_ptr<Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
-    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds);
+    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
     static bool can_store(const std::string& format);
 
     static const unsigned padding = 1;

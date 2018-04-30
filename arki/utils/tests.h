@@ -318,6 +318,10 @@ struct ActualStdString : public Actual<std::string>
 {
     ActualStdString(const std::string& s) : Actual<std::string>(s) {}
 
+    using Actual<std::string>::operator==;
+    void operator==(const std::vector<uint8_t>& expected) const;
+    using Actual<std::string>::operator!=;
+    void operator!=(const std::vector<uint8_t>& expected) const;
     void startswith(const std::string& expected) const;
     void endswith(const std::string& expected) const;
     void contains(const std::string& expected) const;
@@ -339,6 +343,7 @@ inline Actual<A> actual(const A& actual) { return Actual<A>(actual); }
 inline ActualCString actual(const char* actual) { return ActualCString(actual); }
 inline ActualCString actual(char* actual) { return ActualCString(actual); }
 inline ActualStdString actual(const std::string& actual) { return ActualStdString(actual); }
+inline ActualStdString actual(const std::vector<uint8_t>& actual) { return ActualStdString(std::string(actual.begin(), actual.end())); }
 inline ActualDouble actual(double actual) { return ActualDouble(actual); }
 
 struct ActualFunction : public Actual<std::function<void()>>

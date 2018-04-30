@@ -5,7 +5,6 @@
 #include "segment/tar.h"
 #include "segment/zip.h"
 #include "segment/gz.h"
-#include "segment/gzidx.h"
 #include "arki/configfile.h"
 #include "arki/exceptions.h"
 #include "arki/metadata/collection.h"
@@ -78,17 +77,11 @@ std::shared_ptr<segment::Reader> Segment::detect_reader(const std::string& forma
         {
             if (format == "grib" || format == "bufr")
             {
-                if (sys::exists(abspath + ".gz.idx"))
-                    res.reset(new segment::gzidxconcat::Reader(format, root, relpath, abspath, lock));
-                else
-                    res.reset(new segment::gzconcat::Reader(format, root, relpath, abspath, lock));
+                res.reset(new segment::gzconcat::Reader(format, root, relpath, abspath, lock));
             } else if (format == "vm2") {
-                if (sys::exists(abspath + ".gz.idx"))
-                    res.reset(new segment::gzidxconcat::Reader(format, root, relpath, abspath, lock));
-                else
-                    res.reset(new segment::gzlines::Reader(format, root, relpath, abspath, lock));
+                res.reset(new segment::gzlines::Reader(format, root, relpath, abspath, lock));
             } else if (format == "odimh5") {
-                res.reset(new segment::gzidxconcat::Reader(format, root, relpath, abspath, lock));
+                res.reset(new segment::gzconcat::Reader(format, root, relpath, abspath, lock));
             } else {
                 throw_consistency_error(
                         "getting segment for " + format + " file " + relpath,
@@ -245,15 +238,9 @@ std::shared_ptr<segment::Checker> Segment::detect_checker(const std::string& for
 
         if (format == "grib" || format == "bufr")
         {
-            if (sys::exists(abspath + ".gz.idx"))
-                res.reset(new segment::gzidxconcat::Checker(format, root, relpath, abspath));
-            else
-                res.reset(new segment::gzconcat::Checker(format, root, relpath, abspath));
+            res.reset(new segment::gzconcat::Checker(format, root, relpath, abspath));
         } else if (format == "vm2") {
-            if (sys::exists(abspath + ".gz.idx"))
-                res.reset(new segment::gzidxlines::Checker(format, root, relpath, abspath));
-            else
-                res.reset(new segment::gzlines::Checker(format, root, relpath, abspath));
+            res.reset(new segment::gzlines::Checker(format, root, relpath, abspath));
         } else if (format == "odimh5") {
             throw_consistency_error(
                     "getting checker for " + format + " file " + relpath,
@@ -344,6 +331,13 @@ void Writer::PendingMetadata::set_source()
 }
 
 
+RepackConfig::RepackConfig() {}
+RepackConfig::RepackConfig(unsigned gz_group_size, unsigned test_flags)
+    : gz_group_size(gz_group_size), test_flags(test_flags)
+{
+}
+
+
 bool Checker::scan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
 {
     auto reader = this->segment().reader(lock);
@@ -364,13 +358,13 @@ std::shared_ptr<segment::Checker> Checker::zip(metadata::Collection& mds)
     return make_shared<segment::zip::Checker>(segment().format, segment().root, segment().relpath, segment().abspath);
 }
 
-std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds)
+std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds, unsigned groupsize)
 {
     std::shared_ptr<segment::Checker> res;
     if (segment().format == "vm2")
-        res = segment::gzidxlines::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds);
+        res = segment::gzlines::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds, RepackConfig(groupsize));
     else
-        res = segment::gzidxconcat::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds);
+        res = segment::gzconcat::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds, RepackConfig(groupsize));
     remove();
     return res;
 }

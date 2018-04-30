@@ -39,7 +39,7 @@ struct Options : public BaseCommandLine
     commandline::BoolOption* remove_old;
     commandline::BoolOption* tar;
     commandline::BoolOption* zip;
-    commandline::BoolOption* compress;
+    commandline::OptvalIntOption* compress;
     commandline::BoolOption* op_state;
     commandline::BoolOption* op_issue51;
     commandline::StringOption* op_remove;
@@ -77,8 +77,10 @@ struct Options : public BaseCommandLine
             "Convert directory segments into tar files");
         zip = add<BoolOption>("zip", 0, "zip", "",
             "Convert directory segments into zip files");
-        compress = add<BoolOption>("compress", 0, "compress", "",
-            "Compress file segments");
+        compress = add<OptvalIntOption>("compress", 0, "compress", "group_size",
+            "Compress file segments, group_size data elements in each"
+            " compressed block. Default is 512, use 0 for plain gzip without"
+            " index.");
         op_remove = add<StringOption>("remove", 0, "remove", "file",
             "Given metadata extracted from one or more datasets, remove it from the datasets where it is stored");
         op_unarchive = add<StringOption>("unarchive", 0, "unarchive", "file",
@@ -237,11 +239,13 @@ struct Zipper : public WorkerWithConfig
 
 struct Compress : public WorkerWithConfig
 {
-    using WorkerWithConfig::WorkerWithConfig;
+    unsigned groupsize;
+
+    Compress(dataset::CheckerConfig& opts, unsigned groupsize) : WorkerWithConfig(opts), groupsize(groupsize) {}
 
     void operator()(dataset::Checker& w) override
     {
-        w.compress(opts);
+        w.compress(opts, groupsize);
     }
 
     void done() {}
@@ -411,10 +415,13 @@ int arki_check(int argc, const char* argv[])
                 opts.set_checker_config(config, true, false);
                 worker.reset(new Zipper(config));
             }
-            else if (opts.compress->boolValue())
+            else if (opts.compress->isSet())
             {
+                unsigned groupsize = 512;
+                if (opts.compress->hasValue())
+                    groupsize = opts.compress->value();
                 opts.set_checker_config(config, true, false);
-                worker.reset(new Compress(config));
+                worker.reset(new Compress(config, groupsize));
             }
             else if (opts.op_unarchive->boolValue())
                 worker.reset(new Unarchiver(opts.op_unarchive->stringValue()));

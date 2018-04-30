@@ -6,8 +6,9 @@ Arkimet is a set of tools to organize, archive and distribute data files. It
 currently supports data in GRIB, BUFR, HDF5 and VM2 formats.
 
 Arkimet manages a set of [datasets](doc/datasets.md), each of which contains
-omogeneous data. It exploits the commonalities between the data in a dataset to
-implement a fast, powerful and space-efficient indexing system.
+omogeneous data stored in [segments](doc/segments.md). It exploits the
+commonalities between the data in a dataset to implement a fast, powerful and
+space-efficient indexing system.
 
 When data is ingested into arkimet, it is scanned and annotated with metadata,
 such as reference time and product information, then it is dispatched to one of

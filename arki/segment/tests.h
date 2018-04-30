@@ -13,15 +13,18 @@ namespace tests {
 template<class Segment, class Data>
 struct SegmentFixture : public Fixture
 {
-    using Fixture::Fixture;
-
     Data td;
+    segment::RepackConfig repack_config;
     metadata::Collection seg_mds;
     std::string root;
     std::string relpath;
     std::string abspath;
 
     std::shared_ptr<segment::Checker> create();
+    std::shared_ptr<segment::Checker> create(const segment::RepackConfig& cfg);
+
+    SegmentFixture(const segment::RepackConfig& cfg=segment::RepackConfig())
+        : repack_config(cfg) {}
 
     void test_setup();
 };

@@ -482,6 +482,7 @@ add_method("compress", [](Fixture& f) {
     f.clean_and_import("inbound/fixture.grib1");
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
     f.cfg.setValue("archive age", "1");
+    f.cfg.setValue("gz group size", "0");
     f.test_reread_config();
     f.repack();
 
@@ -530,11 +531,9 @@ add_method("compress", [](Fixture& f) {
         wassert(actual(res) == 0);
     }
 
-    wassert(actual_file("testds/.archive/last/2007/07-07.grib").not_exists());
-    wassert(actual_file("testds/.archive/last/2007/07-07.grib.gz").exists());
-    wassert(actual_file("testds/.archive/last/2007/07-07.grib.gz.idx").exists());
-    wassert(actual_file("testds/2007/07-08.grib").exists());
-    wassert(actual_file("testds/2007/10-09.grib").exists());
+    wassert(actual_segment("testds/.archive/last/2007/07-07.grib").exists({".gz", ".metadata", ".summary"}));
+    wassert(f.online_segment_exists("2007/07-08.grib", {""}));
+    wassert(f.online_segment_exists("2007/10-09.grib", {""}));
 
     wassert(f.ensure_localds_clean(3, 3));
     wassert(f.ensure_localds_clean(3, 3, false));

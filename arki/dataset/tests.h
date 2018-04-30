@@ -210,6 +210,9 @@ public:
     // Import a file
     void import(const std::string& testfile="inbound/test.grib1");
 
+    // Import a metadata collection
+    void import(metadata::Collection& mds);
+
     // Import a datum
     void import(Metadata& md, dataset::WriterAcquireResult expected_result=dataset::ACQ_OK);
 
