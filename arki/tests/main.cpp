@@ -19,21 +19,33 @@ void signal_to_exception(int)
 
 struct ArkiRunner
 {
-    arki::utils::tests::SimpleTestController controller;
+    arki::utils::tests::FilteringTestController* controller = nullptr;
     bool run_all = true;
+
+    ArkiRunner()
+    {
+        if (getenv("TEST_VERBOSE"))
+            controller = new arki::utils::tests::VerboseTestController();
+        else
+            controller = new arki::utils::tests::SimpleTestController();
+    }
+    ~ArkiRunner()
+    {
+        delete controller;
+    }
 
     bool setup()
     {
         if (const char* whitelist = getenv("TEST_WHITELIST"))
         {
             run_all = false;
-            controller.whitelist = whitelist;
+            controller->whitelist = whitelist;
         }
 
         if (const char* blacklist = getenv("TEST_BLACKLIST"))
         {
             run_all = false;
-            controller.blacklist = blacklist;
+            controller->blacklist = blacklist;
         }
         return false;
     }
@@ -58,7 +70,7 @@ struct ArkiRunner
     {
         using namespace arki::utils::tests;
         auto& tests = arki::utils::tests::TestRegistry::get();
-        auto all_results = tests.run_tests(controller);
+        auto all_results = tests.run_tests(*controller);
         TestResultStats rstats(all_results);
         rstats.print_results(stderr);
         rstats.print_stats(stderr);
