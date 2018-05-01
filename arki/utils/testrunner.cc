@@ -26,12 +26,22 @@ void TestMethodResult::set_failed(TestFailed& e)
         error_message = "test failed with an empty error message";
 }
 
+void TestMethodResult::print_failure_details(FILE* out) const
+{
+    if (exception_typeid.empty())
+        fprintf(out, "%s.%s: %s\n", test_case.c_str(), test_method.c_str(), error_message.c_str());
+    else
+        fprintf(out, "%s.%s:[%s] %s\n", test_case.c_str(), test_method.c_str(), exception_typeid.c_str(), error_message.c_str());
+    for (const auto& frame : *error_stack)
+        fprintf(out, "  %s", frame.format().c_str());
+}
+
 
 /*
- * SimpleTestController
+ * FilteringTestController
  */
 
-bool SimpleTestController::test_method_should_run(const std::string& fullname) const
+bool FilteringTestController::test_method_should_run(const std::string& fullname) const
 {
     if (!whitelist.empty() && fnmatch(whitelist.c_str(), fullname.c_str(), 0) == FNM_NOMATCH)
         return false;
@@ -42,6 +52,11 @@ bool SimpleTestController::test_method_should_run(const std::string& fullname) c
     return true;
 }
 
+
+/*
+ * SimpleTestController
+ */
+
 bool SimpleTestController::test_case_begin(const TestCase& test_case, const TestCaseResult& test_case_result)
 {
     // Skip test case if all its methods should not run
@@ -50,8 +65,8 @@ bool SimpleTestController::test_case_begin(const TestCase& test_case, const Test
         should_run |= test_method_should_run(test_case.name + "." + m.name);
     if (!should_run) return false;
 
-    fprintf(stdout, "%s: ", test_case.name.c_str());
-    fflush(stdout);
+    fprintf(output, "%s: ", test_case.name.c_str());
+    fflush(output);
     return true;
 }
 
@@ -60,10 +75,10 @@ void SimpleTestController::test_case_end(const TestCase& test_case, const TestCa
     if (test_case_result.skipped)
         ;
     else if (test_case_result.is_success())
-        fprintf(stdout, "\n");
+        fprintf(output, "\n");
     else
-        fprintf(stdout, "\n");
-    fflush(stdout);
+        fprintf(output, "\n");
+    fflush(output);
 }
 
 bool SimpleTestController::test_method_begin(const TestMethod& test_method, const TestMethodResult& test_method_result)
@@ -75,12 +90,63 @@ bool SimpleTestController::test_method_begin(const TestMethod& test_method, cons
 void SimpleTestController::test_method_end(const TestMethod& test_method, const TestMethodResult& test_method_result)
 {
     if (test_method_result.skipped)
-        putc('s', stdout);
+        putc('s', output);
     else if (test_method_result.is_success())
-        putc('.', stdout);
+        putc('.', output);
     else
-        putc('x', stdout);
-    fflush(stdout);
+        putc('x', output);
+    fflush(output);
+}
+
+
+/*
+ * VerboseTestController
+ */
+
+bool VerboseTestController::test_case_begin(const TestCase& test_case, const TestCaseResult& test_case_result)
+{
+    // Skip test case if all its methods should not run
+    bool should_run = false;
+    for (const auto& m : test_case.methods)
+        should_run |= test_method_should_run(test_case.name + "." + m.name);
+    if (!should_run) return false;
+
+    fprintf(output, "%s: setup\n", test_case.name.c_str());
+    return true;
+}
+
+void VerboseTestController::test_case_end(const TestCase& test_case, const TestCaseResult& test_case_result)
+{
+    if (test_case_result.skipped)
+        ;
+    else if (test_case_result.is_success())
+        fprintf(output, "%s: ✔\n", test_case.name.c_str());
+    else
+        fprintf(output, "%s: ✘\n", test_case.name.c_str());
+}
+
+bool VerboseTestController::test_method_begin(const TestMethod& test_method, const TestMethodResult& test_method_result)
+{
+    string name = test_method_result.test_case + "." + test_method.name;
+    return test_method_should_run(name);
+}
+
+void VerboseTestController::test_method_end(const TestMethod& test_method, const TestMethodResult& test_method_result)
+{
+    if (test_method_result.skipped)
+    {
+        if (test_method_result.skipped_reason.empty())
+            fprintf(output, "%s.%s: skipped.\n", test_method_result.test_case.c_str(), test_method.name.c_str());
+        else
+            fprintf(output, "%s.%s: skipped: %s\n", test_method_result.test_case.c_str(), test_method.name.c_str(), test_method_result.skipped_reason.c_str());
+    }
+    else if (test_method_result.is_success())
+        fprintf(output, "%s.%s: ✔\n", test_method_result.test_case.c_str(), test_method.name.c_str());
+    else
+    {
+        fprintf(output, "%s.%s: ✘\n", test_method_result.test_case.c_str(), test_method.name.c_str());
+        test_method_result.print_failure_details(output);
+    }
 }
 
 
@@ -161,21 +227,16 @@ void TestResultStats::print_results(FILE* out)
     for (const auto& tc_res: results)
     {
         if (!tc_res.fail_setup.empty())
-            fprintf(stderr, "%s: %s\n", tc_res.test_case.c_str(), tc_res.fail_setup.c_str());
+            fprintf(out, "%s: %s\n", tc_res.test_case.c_str(), tc_res.fail_setup.c_str());
         else {
             if (!tc_res.fail_teardown.empty())
-                fprintf(stderr, "%s: %s\n", tc_res.test_case.c_str(), tc_res.fail_teardown.c_str());
+                fprintf(out, "%s: %s\n", tc_res.test_case.c_str(), tc_res.fail_teardown.c_str());
 
             for (const auto& tm_res: tc_res.methods)
             {
                 if (tm_res.skipped || tm_res.is_success()) continue;
-                fprintf(stderr, "\n");
-                if (tm_res.exception_typeid.empty())
-                    fprintf(stderr, "%s.%s: %s\n", tm_res.test_case.c_str(), tm_res.test_method.c_str(), tm_res.error_message.c_str());
-                else
-                    fprintf(stderr, "%s.%s:[%s] %s\n", tm_res.test_case.c_str(), tm_res.test_method.c_str(), tm_res.exception_typeid.c_str(), tm_res.error_message.c_str());
-                for (const auto& frame : *tm_res.error_stack)
-                    fprintf(stderr, "  %s", frame.format().c_str());
+                fprintf(out, "\n");
+                tm_res.print_failure_details(out);
             }
         }
     }

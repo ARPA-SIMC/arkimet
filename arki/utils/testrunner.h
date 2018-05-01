@@ -79,6 +79,8 @@ struct TestMethodResult
     {
         return error_message.empty();
     }
+
+    void print_failure_details(FILE* out) const;
 };
 
 /**
@@ -174,12 +176,10 @@ struct TestController
 };
 
 /**
- * Simple default implementation of TestController.
- *
- * It does progress printing to stdout and basic glob-based test method
- * filtering.
+ * Test controller that filters tests via a blacklist/whitelist system
+ * containing glob patterns on testcase.testmethod names
  */
-struct SimpleTestController : public TestController
+struct FilteringTestController : public TestController
 {
     /// Any method not matching this glob expression will not be run
     std::string whitelist;
@@ -187,12 +187,43 @@ struct SimpleTestController : public TestController
     /// Any method matching this glob expression will not be run
     std::string blacklist;
 
+    bool test_method_should_run(const std::string& fullname) const;
+};
+
+
+/**
+ * Simple default implementation of TestController.
+ *
+ * It does progress printing to stdout and basic glob-based test method
+ * filtering.
+ */
+struct SimpleTestController : public FilteringTestController
+{
+    /// Output stream
+    FILE* output = stdout;
+
     bool test_case_begin(const TestCase& test_case, const TestCaseResult& test_case_result) override;
     void test_case_end(const TestCase& test_case, const TestCaseResult& test_case_result) override;
     bool test_method_begin(const TestMethod& test_method, const TestMethodResult& test_method_result) override;
     void test_method_end(const TestMethod& test_method, const TestMethodResult& test_method_result) override;
+};
 
-    bool test_method_should_run(const std::string& fullname) const;
+
+/**
+ * Verbose implementation of TestController.
+ *
+ * It does progress printing to stdout and basic glob-based test method
+ * filtering.
+ */
+struct VerboseTestController : public FilteringTestController
+{
+    /// Output stream
+    FILE* output = stdout;
+
+    bool test_case_begin(const TestCase& test_case, const TestCaseResult& test_case_result) override;
+    void test_case_end(const TestCase& test_case, const TestCaseResult& test_case_result) override;
+    bool test_method_begin(const TestMethod& test_method, const TestMethodResult& test_method_result) override;
+    void test_method_end(const TestMethod& test_method, const TestMethodResult& test_method_result) override;
 };
 
 

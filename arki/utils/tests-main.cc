@@ -19,7 +19,8 @@ int main(int argc,const char* argv[])
 
     auto& tests = TestRegistry::get();
 
-    SimpleTestController controller;
+    //SimpleTestController controller;
+    VerboseTestController controller;
 
     if (const char* whitelist = getenv("TEST_WHITELIST"))
         controller.whitelist = whitelist;

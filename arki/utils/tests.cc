@@ -79,7 +79,7 @@ TestFailed::TestFailed(const std::exception& e)
  * TestSkipped
  */
 
-TestSkipped::TestSkipped() : reason("skipped") {}
+TestSkipped::TestSkipped() {}
 TestSkipped::TestSkipped(const std::string& reason) : reason(reason) {}
 
 
@@ -440,25 +440,27 @@ TestCaseResult TestCase::run_tests(TestController& controller)
         return res;
     }
 
-    string skip_all;
+    bool skip_all = false;
+    string skip_all_reason;
     try {
         setup();
     } catch (TestSkipped& e) {
-        skip_all = e.reason;
+        skip_all = true;
+        skip_all_reason = e.reason;
     } catch (std::exception& e) {
         res.set_setup_failed(e);
         controller.test_case_end(*this, res);
         return res;
     }
 
-    if (!skip_all.empty())
+    if (skip_all)
     {
         for (auto& method: methods)
         {
             TestMethodResult tmr(name, method.name);
             controller.test_method_begin(method, tmr);
             tmr.skipped = true;
-            tmr.skipped_reason = skip_all;
+            tmr.skipped_reason = skip_all_reason;
             controller.test_method_end(method, tmr);
             res.add_test_method(move(tmr));
         }
