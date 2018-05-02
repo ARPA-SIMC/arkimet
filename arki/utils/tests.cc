@@ -153,6 +153,7 @@ namespace {
 struct Regexp
 {
     regex_t compiled;
+    regmatch_t matches[2];
 
     Regexp(const char* regex)
     {
@@ -166,7 +167,7 @@ struct Regexp
 
     bool search(const char* s)
     {
-        return regexec(&compiled, s, 0, nullptr, 0) != REG_NOMATCH;
+        return regexec(&compiled, s, 2, matches, 0) != REG_NOMATCH;
     }
 
     void raise_error(int code)
@@ -409,6 +410,103 @@ void ActualFile::startswith(const std::string& data) const
     *((char*)buf.data() + buf.size()) = 0;
     if (buf != data)
         throw TestFailed("file " + _actual + " starts with '" + str::encode_cstring(buf) + "' instead of '" + str::encode_cstring(data) + "'");
+}
+
+void ActualFile::empty() const
+{
+    size_t size = sys::size(_actual);
+    if (size > 0)
+        throw TestFailed("file " + _actual + " is " + std::to_string(size) + "b instead of being empty");
+}
+
+void ActualFile::not_empty() const
+{
+    size_t size = sys::size(_actual);
+    if (size == 0)
+        throw TestFailed("file " + _actual + " is empty and it should not be");
+}
+
+void ActualFile::contents_equal(const std::string& data) const
+{
+    std::string content = sys::read_file(_actual);
+    if (content != data)
+        throw TestFailed("file " + _actual + " contains '" + str::encode_cstring(content) + "' instead of '" + str::encode_cstring(data) + "'");
+}
+
+void ActualFile::contents_equal(const std::vector<uint8_t>& data) const
+{
+    return contents_equal(std::string(data.begin(), data.end()));
+}
+
+void ActualFile::contents_equal(const std::initializer_list<std::string>& lines) const
+{
+    std::vector<std::string> actual_lines;
+    std::string content = str::rstrip(sys::read_file(_actual));
+
+    str::Split splitter(content, "\n");
+    std::copy(splitter.begin(), splitter.end(), back_inserter(actual_lines));
+
+    if (actual_lines.size() != lines.size())
+        throw TestFailed("file " + _actual + " contains " + std::to_string(actual_lines.size()) + " lines ('" + str::encode_cstring(content) + "') instead of " + std::to_string(lines.size()) + "lines ('" + str::encode_cstring(content) + "')");
+
+    auto ai = actual_lines.begin();
+    auto ei = lines.begin();
+    for (unsigned i = 0; i < actual_lines.size(); ++i, ++ai, ++ei)
+    {
+        string actual_line = str::rstrip(*ai);
+        string expected_line = str::rstrip(*ei);
+        if (*ai != *ei)
+            throw TestFailed("file " + _actual + " actual contents differ from expected at line #" + std::to_string(i + 1) + " ('" + str::encode_cstring(actual_line) + "' instead of '" + str::encode_cstring(expected_line) + "')");
+
+    }
+}
+
+void ActualFile::contents_match(const std::string& data_re) const
+{
+    std::string content = sys::read_file(_actual);
+
+    Regexp re(data_re.c_str());
+    if (re.search(content.c_str())) return;
+    std::stringstream ss;
+    ss << "file " + _actual << " contains " << str::encode_cstring(content)
+       << " which does not match " << data_re;
+    throw TestFailed(ss.str());
+}
+
+void ActualFile::contents_match(const std::initializer_list<std::string>& lines_re) const
+{
+    std::vector<std::string> actual_lines;
+    std::string content = str::rstrip(sys::read_file(_actual));
+
+    str::Split splitter(content, "\n");
+    std::copy(splitter.begin(), splitter.end(), back_inserter(actual_lines));
+
+    auto ai = actual_lines.begin();
+    auto ei = lines_re.begin();
+    unsigned lineno = 1;
+    while (ei != lines_re.end())
+    {
+        Regexp re(ei->c_str());
+        string actual_line = ai == actual_lines.end() ? "" : str::rstrip(*ai);
+        if (re.search(content.c_str()))
+        {
+            if (re.matches[0].rm_so == re.matches[0].rm_eo)
+                ++ei;
+            else
+            {
+                if (ai != actual_lines.end()) ++ai;
+                ++ei;
+                ++lineno;
+            }
+            continue;
+        }
+
+        std::stringstream ss;
+        ss << "file " << _actual << " actual contents differ from expected at line #" << lineno
+           << " ('" << str::encode_cstring(actual_line)
+           << "' does not match '" << str::encode_cstring(*ai) << "')";
+        throw TestFailed(ss.str());
+    }
 }
 
 
