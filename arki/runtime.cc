@@ -293,7 +293,7 @@ void CommandLine::setupProcessing()
         if (exprfile->isSet())
         {
             // Read the entire file into memory and parse it as an expression
-            strquery = files::read_file(exprfile->stringValue());
+            strquery = runtime::read_file(exprfile->stringValue());
         } else {
             // Read from the first commandline argument
             if (!hasNext())

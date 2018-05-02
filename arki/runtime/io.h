@@ -58,6 +58,13 @@ public:
     void unlink();
 };
 
+
+/**
+ * Same as sys::read_file, but if \a file is "-" then reads all from
+ * stdin
+ */
+std::string read_file(const std::string &file);
+
 }
 }
 #endif

@@ -79,5 +79,25 @@ void Tempfile::unlink()
     sys::unlink(name());
 }
 
+std::string read_file(const std::string &file)
+{
+    if (file == "-")
+    {
+        static const size_t bufsize = 4096;
+        char buf[bufsize];
+        std::string res;
+        sys::NamedFileDescriptor in(0, "(stdin)");
+        while (true)
+        {
+            size_t count = in.read(buf, bufsize);
+            if (count == 0) break;
+            res.append(buf, count);
+        }
+        return res;
+    }
+    else
+        return sys::read_file(file);
+}
+
 }
 }

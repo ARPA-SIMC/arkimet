@@ -4,7 +4,6 @@
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
 #include "arki/utils.h"
-#include "arki/utils/files.h"
 #include "arki/matcher.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -354,7 +353,7 @@ std::string readRcDir(const std::string& nameInConfdir, const std::string& nameI
 	string res;
 	for (vector<string>::const_iterator i = files.begin();
 			i != files.end(); ++i)
-		res += files::read_file(*i);
+		res += runtime::read_file(*i);
 	return res;
 }
 
@@ -367,7 +366,7 @@ SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::stri
 	for (vector<string>::const_iterator i = files.begin();
 			i != files.end(); ++i)
 	{
-		string tmp = files::read_file(*i);
+		string tmp = runtime::read_file(*i);
 		res.push_back(FileInfo(*i, tmp.size()));
 		res.code += tmp;
 	}
