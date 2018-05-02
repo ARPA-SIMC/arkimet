@@ -1,5 +1,6 @@
 #include <arki/utils/tests.h>
 #include <arki/utils/testrunner.h>
+#include <arki/utils/term.h>
 #include <arki/types-init.h>
 #include <arki/iotrace.h>
 #include <arki/core/file.h>
@@ -19,12 +20,14 @@ void signal_to_exception(int)
 
 struct ArkiRunner
 {
+    arki::utils::term::Terminal output;
     arki::utils::tests::FilteringTestController* controller = nullptr;
     bool run_all = true;
     bool verbose = false;
     bool stats = false;
 
     ArkiRunner()
+        : output(stdout)
     {
         if (getenv("TEST_VERBOSE"))
         {
@@ -36,9 +39,9 @@ struct ArkiRunner
             stats = true;
 
         if (verbose)
-            controller = new arki::utils::tests::VerboseTestController();
+            controller = new arki::utils::tests::VerboseTestController(output);
         else
-            controller = new arki::utils::tests::SimpleTestController();
+            controller = new arki::utils::tests::SimpleTestController(output);
     }
     ~ArkiRunner()
     {
@@ -83,10 +86,10 @@ struct ArkiRunner
         auto& tests = arki::utils::tests::TestRegistry::get();
         auto all_results = tests.run_tests(*controller);
         TestResultStats rstats(all_results);
-        rstats.print_results(stderr);
+        rstats.print_results(output);
         if (stats)
-            rstats.print_stats(stderr);
-        rstats.print_summary(stderr);
+            rstats.print_stats(output);
+        rstats.print_summary(output);
         return rstats.success;
     }
 };

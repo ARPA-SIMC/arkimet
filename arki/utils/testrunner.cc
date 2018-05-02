@@ -1,5 +1,6 @@
 #include "testrunner.h"
 #include "tests.h"
+#include "term.h"
 #include <fnmatch.h>
 #include <map>
 #include <algorithm>
@@ -67,6 +68,15 @@ bool FilteringTestController::test_method_should_run(const std::string& fullname
  * SimpleTestController
  */
 
+static const char* mark_success = "✔";
+static const char* mark_fail = "✘";
+
+
+SimpleTestController::SimpleTestController(arki::utils::term::Terminal& output)
+    : output(output)
+{
+}
+
 bool SimpleTestController::test_case_begin(const TestCase& test_case, const TestCaseResult& test_case_result)
 {
     // Skip test case if all its methods should not run
@@ -104,7 +114,10 @@ void SimpleTestController::test_method_end(const TestMethod& test_method, const 
     else if (test_method_result.is_success())
         putc('.', output);
     else
-        putc('x', output);
+    {
+        auto restore = output.set_color_fg(term::Terminal::bright | term::Terminal::red);
+        fputs(mark_fail, output);
+    }
     fflush(output);
 }
 
@@ -112,6 +125,9 @@ void SimpleTestController::test_method_end(const TestMethod& test_method, const 
 /*
  * VerboseTestController
  */
+
+VerboseTestController::VerboseTestController(arki::utils::term::Terminal& output)
+    : output(output) {}
 
 static void format_elapsed(char* buf, size_t size, unsigned long long elapsed_ns)
 {
@@ -133,7 +149,7 @@ bool VerboseTestController::test_case_begin(const TestCase& test_case, const Tes
         should_run |= test_method_should_run(test_case.name + "." + m.name);
     if (!should_run) return false;
 
-    fprintf(output, "%s: setup\n", test_case.name.c_str());
+    fprintf(output, "%s: setup\n", output.color_fg(term::Terminal::bright, test_case.name).c_str());
     return true;
 }
 
@@ -144,10 +160,12 @@ void VerboseTestController::test_case_end(const TestCase& test_case, const TestC
 
     char elapsed[32];
     format_elapsed(elapsed, 32, test_case_result.elapsed_ns());
+    string mark;
     if (test_case_result.is_success())
-        fprintf(output, "%s: ✔ (%s)\n", test_case.name.c_str(), elapsed);
+        mark = output.color_fg(term::Terminal::bright | term::Terminal::green, "success");
     else
-        fprintf(output, "%s: ✘ (%s)\n", test_case.name.c_str(), elapsed);
+        mark = output.color_fg(term::Terminal::bright | term::Terminal::red, "failed");
+    fprintf(output, "%s: %s (%s)\n", output.color_fg(term::Terminal::bright, test_case.name).c_str(), mark.c_str(), elapsed);
 }
 
 bool VerboseTestController::test_method_begin(const TestMethod& test_method, const TestMethodResult& test_method_result)
@@ -169,10 +187,14 @@ void VerboseTestController::test_method_end(const TestMethod& test_method, const
             fprintf(output, "%s.%s: skipped: %s\n", test_method_result.test_case.c_str(), test_method.name.c_str(), test_method_result.skipped_reason.c_str());
     }
     else if (test_method_result.is_success())
-        fprintf(output, "%s.%s: ✔ (%s)\n", test_method_result.test_case.c_str(), test_method.name.c_str(), elapsed);
+    {
+        string mark = output.color_fg(term::Terminal::bright | term::Terminal::green, mark_success);
+        fprintf(output, "%s.%s: %s (%s)\n", test_method_result.test_case.c_str(), test_method.name.c_str(), mark.c_str(), elapsed);
+    }
     else
     {
-        fprintf(output, "%s.%s: ✘ (%s)\n", test_method_result.test_case.c_str(), test_method.name.c_str(), elapsed);
+        string mark = output.color_fg(term::Terminal::bright | term::Terminal::red, mark_fail);
+        fprintf(output, "%s.%s: %s (%s)\n", test_method_result.test_case.c_str(), test_method.name.c_str(), mark.c_str(), elapsed);
         test_method_result.print_failure_details(output);
     }
 }
@@ -218,6 +240,39 @@ std::vector<TestCaseResult> TestRegistry::run_tests(TestController& controller)
 }
 
 
+namespace {
+
+struct Title
+{
+    arki::utils::term::Terminal& output;
+    std::string title;
+    bool printed = false;
+
+    Title(arki::utils::term::Terminal& output, const std::string& title)
+        : output(output), title(output.color_fg(term::Terminal::bright, title))
+    {
+    }
+
+    bool maybe_print()
+    {
+        if (printed) return false;
+        fputs("\n * ", output);
+        fputs(title.c_str(), output);
+        fputs("\n\n", output);
+        printed = true;
+        return true;
+    }
+
+    void maybe_print_or_separator()
+    {
+        if (!maybe_print())
+            fputs("\n", output);
+    }
+};
+
+}
+
+
 /*
  * TestResultStats
  */
@@ -250,27 +305,34 @@ TestResultStats::TestResultStats(const std::vector<TestCaseResult>& results)
     success = methods_ok && !test_cases_failed && !methods_failed;
 }
 
-void TestResultStats::print_results(FILE* out)
+void TestResultStats::print_results(arki::utils::term::Terminal& out)
 {
+    Title title(out, "Test failures");
+
     for (const auto& tc_res: results)
     {
         if (!tc_res.fail_setup.empty())
+        {
+            title.maybe_print();
             fprintf(out, "%s: %s\n", tc_res.test_case.c_str(), tc_res.fail_setup.c_str());
-        else {
+        } else {
             if (!tc_res.fail_teardown.empty())
+            {
+                title.maybe_print();
                 fprintf(out, "%s: %s\n", tc_res.test_case.c_str(), tc_res.fail_teardown.c_str());
+            }
 
             for (const auto& tm_res: tc_res.methods)
             {
                 if (tm_res.skipped || tm_res.is_success()) continue;
-                fprintf(out, "\n");
+                title.maybe_print_or_separator();
                 tm_res.print_failure_details(out);
             }
         }
     }
 }
 
-void TestResultStats::print_stats(FILE* out)
+void TestResultStats::print_stats(arki::utils::term::Terminal& out)
 {
     //const long long unsigned slow_threshold = 10;
     const long long unsigned slow_threshold = 100000000;
@@ -298,72 +360,85 @@ void TestResultStats::print_stats(FILE* out)
         }
     }
 
-    bool title_printed = false;
-    auto maybe_print_title = [&]() {
-        if (title_printed) return;
-        fprintf(out, "\n * Test run statistics\n");
-        title_printed = true;
-    };
+    Title title(out, "Test run statistics");
 
     if (!skipped_by_reason.empty())
     {
-        maybe_print_title();
-        fprintf(out, "\n    * Number of tests skipped, by reason:\n\n");
+        title.maybe_print_or_separator();
+        fprintf(out, "Number of tests skipped, by reason:\n\n");
         std::vector<std::pair<unsigned, std::string>> sorted;
         for (const auto& i: skipped_by_reason)
             sorted.emplace_back(make_pair(i.second, i.first));
         std::sort(sorted.begin(), sorted.end());
         for (const auto& i: sorted)
-            fprintf(out, "        %2d: %s\n", i.first, i.second.c_str());
+            fprintf(out, "  %2dx %s\n", i.first, i.second.c_str());
         if (skipped_no_reason)
-            fprintf(out, "        %2d: (no reason given)\n", skipped_no_reason);
+            fprintf(out, "  %2dx (no reason given)\n", skipped_no_reason);
     }
 
     if (!slow_test_cases.empty())
     {
-        maybe_print_title();
+        title.maybe_print_or_separator();
         std::sort(slow_test_cases.begin(), slow_test_cases.end(), [](const TestCaseResult* a, const TestCaseResult* b) { return b->elapsed_ns() < a->elapsed_ns(); });
         size_t count = min((size_t)10, slow_test_cases.size());
-        fprintf(out, "\n    * %zu slowest test cases:\n\n", count);
+        fprintf(out, "%zu slowest test cases:\n\n", count);
         for (size_t i = 0; i < count; ++i)
         {
             char elapsed[32];
             format_elapsed(elapsed, 32, slow_test_cases[i]->elapsed_ns());
-            fprintf(out, "        %s: %s\n", slow_test_cases[i]->test_case.c_str(), elapsed);
+            fprintf(out, "  %s: %s\n", slow_test_cases[i]->test_case.c_str(), elapsed);
         }
     }
 
     if (!slow_test_methods.empty())
     {
-        maybe_print_title();
+        title.maybe_print_or_separator();
         std::sort(slow_test_methods.begin(), slow_test_methods.end(), [](const TestMethodResult* a, const TestMethodResult* b) { return b->elapsed_ns < a->elapsed_ns; });
         size_t count = min((size_t)10, slow_test_methods.size());
-        fprintf(out, "\n    * %zu slowest test methods:\n\n", count);
+        fprintf(out, "%zu slowest test methods:\n\n", count);
         for (size_t i = 0; i < count; ++i)
         {
             char elapsed[32];
             format_elapsed(elapsed, 32, slow_test_methods[i]->elapsed_ns);
-            fprintf(out, "        %s.%s: %s\n", slow_test_methods[i]->test_case.c_str(), slow_test_methods[i]->test_method.c_str(), elapsed);
+            fprintf(out, "  %s.%s: %s\n", slow_test_methods[i]->test_case.c_str(), slow_test_methods[i]->test_method.c_str(), elapsed);
         }
     }
-
-    if (title_printed)
-        fprintf(out, "\n");
 }
 
-void TestResultStats::print_summary(FILE* out)
+void TestResultStats::print_summary(arki::utils::term::Terminal& out)
 {
+    Title title(out, "Result summary");
+
     if (test_cases_failed)
-        fprintf(stderr, "%u/%u test cases had issues initializing or cleaning up\n",
+    {
+        title.maybe_print();
+        fprintf(out, "%u/%u test cases had issues initializing or cleaning up\n",
                 test_cases_failed, test_cases_ok + test_cases_failed);
+    }
 
     if (methods_failed)
-        fprintf(stderr, "%u/%u tests failed\n", methods_failed, methods_ok + methods_failed);
+    {
+        title.maybe_print();
+        string failed = out.color_fg(term::Terminal::red | term::Terminal::bright, "failed");
+        fprintf(out, "%u/%u tests %s\n", methods_failed, methods_ok + methods_failed, failed.c_str());
+    }
 
     if (methods_skipped)
-        fprintf(stderr, "%u tests skipped\n", methods_skipped);
+    {
+        title.maybe_print();
+        fprintf(out, "%u tests skipped\n", methods_skipped);
+    }
 
-    fprintf(stderr, "%u tests succeeded\n", methods_ok);
+    if (methods_ok)
+    {
+        title.maybe_print();
+        string succeeded = out.color_fg(term::Terminal::green | term::Terminal::bright, "succeeded");
+        fprintf(out, "%u tests %s\n", methods_ok, succeeded.c_str());
+    } else {
+        title.maybe_print();
+        string no = out.color_fg(term::Terminal::red | term::Terminal::bright, "no");
+        fprintf(out, "%s tests succeeded\n", no.c_str());
+    }
 }
 
 }

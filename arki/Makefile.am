@@ -194,6 +194,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/commandline/options.h \
 		utils/commandline/parser.h \
 		utils/commandline/wordwrap.h \
+		utils/term.h \
 		utils/tests.h \
 		utils/testrunner.h \
 		values.h
@@ -251,6 +252,7 @@ libarkimet_la_SOURCES += \
 		utils/yaml.cc \
 		utils/tar.cc \
 		utils/zip.cc \
+		utils/term.cc \
 		utils/commandline/core.cpp \
 		utils/commandline/options.cpp \
 		utils/commandline/doc.cpp \

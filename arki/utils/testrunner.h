@@ -8,6 +8,11 @@
 
 namespace arki {
 namespace utils {
+
+namespace term {
+struct Terminal;
+}
+
 namespace tests {
 
 struct TestFailed;
@@ -204,8 +209,9 @@ struct FilteringTestController : public TestController
  */
 struct SimpleTestController : public FilteringTestController
 {
-    /// Output stream
-    FILE* output = stdout;
+    arki::utils::term::Terminal& output;
+
+    SimpleTestController(arki::utils::term::Terminal& output);
 
     bool test_case_begin(const TestCase& test_case, const TestCaseResult& test_case_result) override;
     void test_case_end(const TestCase& test_case, const TestCaseResult& test_case_result) override;
@@ -222,8 +228,9 @@ struct SimpleTestController : public FilteringTestController
  */
 struct VerboseTestController : public FilteringTestController
 {
-    /// Output stream
-    FILE* output = stdout;
+    arki::utils::term::Terminal& output;
+
+    VerboseTestController(arki::utils::term::Terminal& output);
 
     bool test_case_begin(const TestCase& test_case, const TestCaseResult& test_case_result) override;
     void test_case_end(const TestCase& test_case, const TestCaseResult& test_case_result) override;
@@ -281,9 +288,9 @@ struct TestResultStats
 
     TestResultStats(const std::vector<TestCaseResult>& results);
 
-    void print_results(FILE* out);
-    void print_stats(FILE* out);
-    void print_summary(FILE* out);
+    void print_results(arki::utils::term::Terminal& out);
+    void print_stats(arki::utils::term::Terminal& out);
+    void print_summary(arki::utils::term::Terminal& out);
 };
 
 }
