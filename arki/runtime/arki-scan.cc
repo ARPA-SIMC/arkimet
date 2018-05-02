@@ -36,25 +36,13 @@ int arki_scan(int argc, const char* argv[])
 
         opts.setupProcessing();
 
-        bool all_successful = true;
-        for (const ConfigFile& cfg: opts.inputs)
-        {
-            unique_ptr<dataset::Reader> ds = opts.openSource(cfg);
-            bool success = true;
-            try {
-                success = opts.processSource(*ds, cfg.value("path"));
-            } catch (std::exception& e) {
-                // FIXME: this is a quick experiment: a better message can
-                // print some of the stats to document partial imports
-                cerr << cfg.value("path") << " failed: " << e.what() << endl;
-                success = false;
-            }
-
-            opts.closeSource(move(ds), success);
-
-            // Take note if something went wrong
-            if (!success) all_successful = false;
-        }
+        bool all_successful = opts.foreach_source([&](runtime::Source& source) {
+            if (opts.dispatcher)
+                source.dispatch(*opts.dispatcher);
+            else
+                source.process(*opts.processor);
+            return true;
+        });
 
         opts.doneProcessing();
 

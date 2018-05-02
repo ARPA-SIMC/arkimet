@@ -12476,6 +12476,16 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkiquery",
+  "method": "query_merged"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkiquery",
+  "method": "query_qmacro"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime_arkicheck_ondisk2",
   "method": "clean"
  },

@@ -501,38 +501,122 @@ static std::string moveFile(const dataset::Reader& ds, const std::string& target
         return string();
 }
 
-std::unique_ptr<dataset::Reader> CommandLine::openSource(const ConfigFile& info)
+bool CommandLine::foreach_source(std::function<bool(Source&)> dest)
 {
-    ConfigFile src(info);
+    bool all_successful = true;
 
-    if (movework && movework->isSet() && src.value("type") == "file")
-        src.setValue("path", moveFile(src.value("path"), movework->stringValue()));
+    if (merged && merged->boolValue())
+    {
+        throw std::runtime_error("TODO: merged dataset sources not yet refactored");
+#if 0
+        dataset::Merged merger;
 
-    return unique_ptr<dataset::Reader>(dataset::Reader::create(src));
+        // Instantiate the datasets and add them to the merger
+        string names;
+        for (const auto& cfg: opts.inputs)
+        {
+            merger.add_dataset(opts.openSource(cfg));
+            if (names.empty())
+                names = cfg.value("name");
+            else
+                names += "," + cfg.value("name");
+        }
+
+        // Perform the query
+        all_successful = opts.processSource(merger, names);
+
+        for (size_t i = 0; i < merger.datasets.size(); ++i)
+        {
+            unique_ptr<dataset::Reader> ds(merger.datasets[i]);
+            merger.datasets[i] = 0;
+            opts.closeSource(move(ds), all_successful);
+        }
+#endif
+    } else if (qmacro && qmacro->isSet()) {
+        throw std::runtime_error("TODO: qmacro dataset sources not yet refactored");
+#if 0
+        // Create the virtual qmacro dataset
+        ConfigFile cfg;
+        unique_ptr<dataset::Reader> ds = runtime::make_qmacro_dataset(
+                cfg,
+                opts.inputs.as_config(),
+                opts.qmacro->stringValue(),
+                opts.strquery);
+
+        // Perform the query
+        all_successful = opts.processSource(*ds, opts.qmacro->stringValue());
+#endif
+    } else {
+        // Query all the datasets in sequence
+        for (const auto& cfg: inputs)
+        {
+            FileSource source(*this, cfg);
+            nag::verbose("Processing %s...", source.name().c_str());
+            source.open();
+            bool success;
+            try {
+                success = dest(source);
+            } catch (std::exception& e) {
+                nag::warning("%s failed: %s", source.name().c_str(), e.what());
+                success = false;
+            }
+            source.close(success);
+            if (!success) all_successful = false;
+        }
+    }
+
+    return all_successful;
 }
 
-bool CommandLine::processSource(dataset::Reader& ds, const std::string& name)
+/*
+ * Source
+ */
+
+Source::~Source() {}
+
+FileSource::FileSource(CommandLine& args, const ConfigFile& info)
+    : cfg(info)
 {
-    if (dispatcher)
-        return dispatcher->process(ds, name);
-    processor->process(ds, name);
+    if (args.movework && args.movework->isSet())
+        movework = args.movework->stringValue();
+    if (args.moveok && args.moveok->isSet())
+        moveok = args.moveok->stringValue();
+    if (args.moveko && args.moveko->isSet())
+        moveko = args.moveko->stringValue();
+}
+
+std::string FileSource::name() const { return cfg.value("path"); }
+
+void FileSource::open()
+{
+    if (!movework.empty() && cfg.value("type") == "file")
+        cfg.setValue("path", moveFile(cfg.value("path"), movework));
+    reader = dataset::Reader::create(cfg);
+}
+
+void FileSource::close(bool successful)
+{
+    if (successful && !moveok.empty())
+        moveFile(*reader, moveok);
+    else if (!successful && !moveko.empty())
+        moveFile(*reader, moveko);
+    reader = std::shared_ptr<dataset::Reader>();
+}
+
+bool FileSource::process(DatasetProcessor& processor)
+{
+    processor.process(*reader, name());
     return true;
 }
 
-void CommandLine::closeSource(std::unique_ptr<dataset::Reader> ds, bool successful)
+bool FileSource::dispatch(MetadataDispatch& dispatcher)
 {
-	if (successful && moveok && moveok->isSet())
-	{
-		moveFile(*ds, moveok->stringValue());
-	}
-	else if (!successful && moveko && moveko->isSet())
-	{
-		moveFile(*ds, moveko->stringValue());
-	}
-	// TODO: print status
-
-	// ds will be automatically deallocated here
+    return dispatcher.process(*reader, name());
 }
+
+/*
+ * Dispatch
+ */
 
 MetadataDispatch::MetadataDispatch(const ConfigFile& cfg, DatasetProcessor& next, bool test)
 	: cfg(cfg), dispatcher(0), next(next), ignore_duplicates(false), reportStatus(false),

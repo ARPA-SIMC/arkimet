@@ -72,6 +72,13 @@ add_method("query_metadata", [](Fixture& f) {
     wassert(actual(sys::read_file(co.file_stdout.name())).startswith("GRIB"));
 });
 
+add_method("query_merged", [](Fixture& f) {
+    throw std::runtime_error("TODO: test arki-query --merged");
+});
+
+add_method("query_qmacro", [](Fixture& f) {
+    throw std::runtime_error("TODO: test arki-query --qmacro");
+});
 
 }
 
