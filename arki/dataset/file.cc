@@ -60,47 +60,32 @@ void File::readConfig(const std::string& fname, ConfigFile& cfg)
 {
     ConfigFile section;
 
-    if (fname == "-")
+    section.setValue("type", "file");
+    if (sys::exists(fname))
     {
-        // If the input is stdin, make hardcoded assumptions
-        section.setValue("name", "stdin");
-        section.setValue("path", "-");
-        section.setValue("type", "file");
-        section.setValue("format", "arkimet");
-    } else if (str::endswith(fname, ":-")) {
-        // If the input is stdin, make hardcoded assumptions
-        section.setValue("name", "stdin");
-        section.setValue("path", "-");
-        section.setValue("type", "file");
-        section.setValue("format", fname.substr(0, fname.size()-2));
+        section.setValue("path", sys::abspath(fname));
+        section.setValue("format", scan::Scanner::format_from_filename(fname, "arkimet"));
+        string name = str::basename(fname);
+        section.setValue("name", name);
     } else {
-        section.setValue("type", "file");
-        if (sys::exists(fname))
+        size_t fpos = fname.find(':');
+        if (fpos == string::npos)
         {
-            section.setValue("path", sys::abspath(fname));
-            section.setValue("format", scan::Scanner::format_from_filename(fname, "arkimet"));
-            string name = str::basename(fname);
-            section.setValue("name", name);
-        } else {
-            size_t fpos = fname.find(':');
-            if (fpos == string::npos)
-            {
-                stringstream ss;
-                ss << "dataset file " << fname << " does not exist";
-                throw runtime_error(ss.str());
-            }
-            section.setValue("format", scan::Scanner::normalise_format(fname.substr(0, fpos)));
-
-            string fname1 = fname.substr(fpos+1);
-            if (!sys::exists(fname1))
-            {
-                stringstream ss;
-                ss << "dataset file " << fname1 << " does not exist";
-                throw runtime_error(ss.str());
-            }
-            section.setValue("path", sys::abspath(fname1));
-            section.setValue("name", str::basename(fname1));
+            stringstream ss;
+            ss << "dataset file " << fname << " does not exist";
+            throw runtime_error(ss.str());
         }
+        section.setValue("format", scan::Scanner::normalise_format(fname.substr(0, fpos)));
+
+        string fname1 = fname.substr(fpos+1);
+        if (!sys::exists(fname1))
+        {
+            stringstream ss;
+            ss << "dataset file " << fname1 << " does not exist";
+            throw runtime_error(ss.str());
+        }
+        section.setValue("path", sys::abspath(fname1));
+        section.setValue("name", str::basename(fname1));
     }
 
     // Merge into cfg
@@ -109,18 +94,12 @@ void File::readConfig(const std::string& fname, ConfigFile& cfg)
 
 
 FdFile::FdFile(std::shared_ptr<const FileConfig> config)
-    : m_config(config)
+    : m_config(config), fd(config->pathname, O_RDONLY)
 {
-    const std::string& path = config->pathname;
-    if (path == "-")
-        fd = new Stdin;
-    else
-        fd = new core::File(path, O_RDONLY);
 }
 
 FdFile::~FdFile()
 {
-    delete fd;
 }
 
 
@@ -151,10 +130,10 @@ bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
     auto sorter = wrap_with_query(q, dest);
     if (!q.with_data)
     {
-        if (!Metadata::read_file(*fd, dest))
+        if (!Metadata::read_file(fd, dest))
             return false;
     } else {
-        if (!Metadata::read_file(*fd, [&](unique_ptr<Metadata>&& md) {
+        if (!Metadata::read_file(fd, [&](unique_ptr<Metadata>&& md) {
                     if (md->has_source_blob())
                     {
                         const auto& blob = md->sourceBlob();
@@ -174,7 +153,7 @@ bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 
 
 YamlFile::YamlFile(std::shared_ptr<const FileConfig> config)
-    : FdFile(config), reader(LineReader::from_fd(*fd).release()) {}
+    : FdFile(config), reader(LineReader::from_fd(fd).release()) {}
 
 YamlFile::~YamlFile() { delete reader; }
 
@@ -185,7 +164,7 @@ bool YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
     while (true)
     {
         unique_ptr<Metadata> md(new Metadata);
-        if (!md->readYaml(*reader, fd->name()))
+        if (!md->readYaml(*reader, fd.name()))
             break;
         if (!q.matcher(*md))
             continue;

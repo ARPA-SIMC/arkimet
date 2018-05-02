@@ -4,7 +4,7 @@
 /// dataset/file - Dataset on a single file
 
 #include <arki/defs.h>
-#include <arki/core/fwd.h>
+#include <arki/core/file.h>
 #include <arki/dataset.h>
 #include <string>
 
@@ -50,7 +50,7 @@ class FdFile : public File
 {
 protected:
     std::shared_ptr<const FileConfig> m_config;
-    core::NamedFileDescriptor* fd = nullptr;
+    core::File fd;
 
 public:
     FdFile(std::shared_ptr<const FileConfig> config);
