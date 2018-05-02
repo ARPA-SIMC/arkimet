@@ -759,13 +759,14 @@ add_method("issue103", [](Fixture& f) {
 #ifndef HAVE_VM2
     throw TestSkipped();
 #endif
-    struct rlimit limits;
-    if (getrlimit(RLIMIT_NOFILE, &limits) == -1)
-        throw_system_error("getrlimit failed");
+    static const int max_files = 100;
+    sys::OverrideRlimit(RLIMIT_NOFILE, max_files);
+
+    // TODO: speed up by lowering RLIMIT_NOFILE for the duration of this test
 
     File sample("inbound/issue103.vm2", O_CREAT | O_WRONLY);
     time_t base = 1507917600;
-    for (unsigned i = 0; i < limits.rlim_max + 1; ++i)
+    for (unsigned i = 0; i < max_files + 1; ++i)
     {
         time_t step = base + i * 86400;
         struct tm t;
@@ -792,7 +793,7 @@ add_method("issue103", [](Fixture& f) {
     auto reader = f.config().create_reader();
     metadata::Collection mdc;
     wassert(mdc.add(*reader, Matcher::parse("")));
-    wassert(actual(mdc.size()) == limits.rlim_max + 1);
+    wassert(actual(mdc.size()) == max_files + 1);
     wassert(actual(mdc[0].sourceBlob().reader).isfalse());
 
     // Query with data, without storing all the results on a collection
@@ -802,7 +803,7 @@ add_method("issue103", [](Fixture& f) {
         wassert(actual(md->sourceBlob().reader).istrue());
         ++count; return true;
     }));
-    wassert(actual(count) == limits.rlim_max + 1);
+    wassert(actual(count) == max_files + 1);
 
     // Query with data, sorting, without storing all the results on a collection
     dq.sorter = sort::Compare::parse("level");
@@ -811,7 +812,7 @@ add_method("issue103", [](Fixture& f) {
         wassert(actual(md->sourceBlob().reader).istrue());
         ++count; return true;
     }));
-    wassert(actual(count) == limits.rlim_max + 1);
+    wassert(actual(count) == max_files + 1);
 });
 
 }
