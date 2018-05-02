@@ -12716,6 +12716,11 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkiscan",
+  "method": "scan_stdin"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime",
   "method": "files"
  },

@@ -72,7 +72,7 @@ void File::readConfig(const std::string& fname, ConfigFile& cfg)
         if (fpos == string::npos)
         {
             stringstream ss;
-            ss << "dataset file " << fname << " does not exist";
+            ss << "file " << fname << " does not exist";
             throw runtime_error(ss.str());
         }
         section.setValue("format", scan::Scanner::normalise_format(fname.substr(0, fpos)));
@@ -81,7 +81,7 @@ void File::readConfig(const std::string& fname, ConfigFile& cfg)
         if (!sys::exists(fname1))
         {
             stringstream ss;
-            ss << "dataset file " << fname1 << " does not exist";
+            ss << "file " << fname1 << " does not exist";
             throw runtime_error(ss.str());
         }
         section.setValue("path", sys::abspath(fname1));
