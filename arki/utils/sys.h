@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/resource.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <fcntl.h>
@@ -638,6 +639,29 @@ struct Clock
      * updated
      */
     unsigned long long elapsed();
+};
+
+/**
+ * rlimit wrappers
+ */
+
+/// Call getrlimit, raising an exception if it fails
+void getrlimit(int resource, struct ::rlimit& rlim);
+
+/// Call setrlimit, raising an exception if it fails
+void setrlimit(int resource, const struct ::rlimit& rlim);
+
+/// Override a soft resource limit during the lifetime of the object
+struct OverrideRlimit
+{
+    int resource;
+    struct ::rlimit orig;
+
+    OverrideRlimit(int resource, rlim_t rlim);
+    ~OverrideRlimit();
+
+    /// Change the limit value again
+    void set(rlim_t rlim);
 };
 
 }

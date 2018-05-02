@@ -1088,6 +1088,42 @@ unsigned long long Clock::elapsed()
     return timesec_elapsed(ts, cur_ts);
 }
 
+
+/*
+ * rlimit
+ */
+
+void getrlimit(int resource, struct ::rlimit& rlim)
+{
+    if (::getrlimit(resource, &rlim) == -1)
+        throw std::system_error(errno, std::system_category(), "getrlimit failed");
+}
+
+void setrlimit(int resource, const struct ::rlimit& rlim)
+{
+    if (::setrlimit(resource, &rlim) == -1)
+        throw std::system_error(errno, std::system_category(), "setrlimit failed");
+}
+
+OverrideRlimit::OverrideRlimit(int resource, rlim_t rlim)
+    : resource(resource)
+{
+    getrlimit(resource, orig);
+    set(rlim);
+}
+
+OverrideRlimit::~OverrideRlimit()
+{
+    setrlimit(resource, orig);
+}
+
+void OverrideRlimit::set(rlim_t rlim)
+{
+    struct rlimit newval(orig);
+    newval.rlim_cur = rlim;
+    setrlimit(resource, newval);
+}
+
 }
 }
 }
