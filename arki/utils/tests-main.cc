@@ -32,5 +32,6 @@ int main(int argc,const char* argv[])
     TestResultStats rstats(all_results);
     rstats.print_results(stderr);
     rstats.print_stats(stderr);
+    rstats.print_summary(stderr);
     return rstats.success ? 0 : 1;
 }

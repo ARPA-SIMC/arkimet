@@ -283,6 +283,7 @@ struct TestResultStats
 
     void print_results(FILE* out);
     void print_stats(FILE* out);
+    void print_summary(FILE* out);
 };
 
 }

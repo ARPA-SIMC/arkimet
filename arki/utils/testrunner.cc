@@ -1,6 +1,8 @@
 #include "testrunner.h"
 #include "tests.h"
 #include <fnmatch.h>
+#include <map>
+#include <algorithm>
 
 using namespace std;
 using namespace arki::utils;
@@ -269,6 +271,87 @@ void TestResultStats::print_results(FILE* out)
 }
 
 void TestResultStats::print_stats(FILE* out)
+{
+    //const long long unsigned slow_threshold = 10;
+    const long long unsigned slow_threshold = 100000000;
+    std::map<string, unsigned> skipped_by_reason;
+    unsigned skipped_no_reason = 0;
+    std::vector<const TestCaseResult*> slow_test_cases;
+    std::vector<const TestMethodResult*> slow_test_methods;
+
+    for (const auto& tc_res: results)
+    {
+        if (tc_res.elapsed_ns() > slow_threshold)
+            slow_test_cases.push_back(&tc_res);
+
+        for (const auto& tm_res: tc_res.methods)
+        {
+            if (tm_res.skipped)
+            {
+                if (tm_res.skipped_reason.empty())
+                    ++skipped_no_reason;
+                else
+                    skipped_by_reason[tm_res.skipped_reason] += 1;
+            }
+            if (tm_res.elapsed_ns > slow_threshold)
+                slow_test_methods.push_back(&tm_res);
+        }
+    }
+
+    bool title_printed = false;
+    auto maybe_print_title = [&]() {
+        if (title_printed) return;
+        fprintf(out, "\n * Test run statistics\n");
+        title_printed = true;
+    };
+
+    if (!skipped_by_reason.empty())
+    {
+        maybe_print_title();
+        fprintf(out, "\n    * Number of tests skipped, by reason:\n\n");
+        std::vector<std::pair<unsigned, std::string>> sorted;
+        for (const auto& i: skipped_by_reason)
+            sorted.emplace_back(make_pair(i.second, i.first));
+        std::sort(sorted.begin(), sorted.end());
+        for (const auto& i: sorted)
+            fprintf(out, "        %2d: %s\n", i.first, i.second.c_str());
+        if (skipped_no_reason)
+            fprintf(out, "        %2d: (no reason given)\n", skipped_no_reason);
+    }
+
+    if (!slow_test_cases.empty())
+    {
+        maybe_print_title();
+        std::sort(slow_test_cases.begin(), slow_test_cases.end(), [](const TestCaseResult* a, const TestCaseResult* b) { return b->elapsed_ns() < a->elapsed_ns(); });
+        size_t count = min((size_t)10, slow_test_cases.size());
+        fprintf(out, "\n    * %zu slowest test cases:\n\n", count);
+        for (size_t i = 0; i < count; ++i)
+        {
+            char elapsed[32];
+            format_elapsed(elapsed, 32, slow_test_cases[i]->elapsed_ns());
+            fprintf(out, "        %s: %s\n", slow_test_cases[i]->test_case.c_str(), elapsed);
+        }
+    }
+
+    if (!slow_test_methods.empty())
+    {
+        maybe_print_title();
+        std::sort(slow_test_methods.begin(), slow_test_methods.end(), [](const TestMethodResult* a, const TestMethodResult* b) { return b->elapsed_ns < a->elapsed_ns; });
+        size_t count = min((size_t)10, slow_test_methods.size());
+        fprintf(out, "\n    * %zu slowest test methods:\n\n", count);
+        for (size_t i = 0; i < count; ++i)
+        {
+            char elapsed[32];
+            format_elapsed(elapsed, 32, slow_test_methods[i]->elapsed_ns);
+            fprintf(out, "        %s.%s: %s\n", slow_test_methods[i]->test_case.c_str(), slow_test_methods[i]->test_method.c_str(), elapsed);
+        }
+    }
+
+    if (title_printed)
+        fprintf(out, "\n");
+}
+
+void TestResultStats::print_summary(FILE* out)
 {
     if (test_cases_failed)
         fprintf(stderr, "%u/%u test cases had issues initializing or cleaning up\n",
