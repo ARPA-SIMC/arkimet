@@ -156,7 +156,7 @@ path = duplicates
 
 add_method("issue68", [] {
 #ifndef HAVE_VM2
-    throw TestSkipped();
+    throw TestSkipped("VM2 support not available");
 #endif
     for (auto path: { "issue68" })
         if (sys::exists(path))

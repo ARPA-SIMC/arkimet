@@ -53,7 +53,7 @@ add_method("scan_grib", [](Fixture& f) {
 add_method("scan_bufr", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 #ifndef HAVE_DBALLE
-    throw TestSkipped();
+    throw TestSkipped("BUFR support not available");
 #endif
     runtime::tests::CatchOutput co;
     int res = run_cmdline(runtime::arki_scan, {
@@ -69,7 +69,7 @@ add_method("scan_bufr", [](Fixture& f) {
 add_method("scan_bufr_multiple", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 #ifndef HAVE_DBALLE
-    throw TestSkipped;
+    throw TestSkipped("BUFR support not available");
 #endif
     runtime::tests::CatchOutput co;
     int res = run_cmdline(runtime::arki_scan, {

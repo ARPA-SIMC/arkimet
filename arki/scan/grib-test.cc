@@ -374,7 +374,7 @@ add_method("cleps", [] {
 // Scan a GRIB2 with experimental UTM areas
 add_method("utm_areas", [] {
 #ifndef ARPAE_TESTS
-    throw TestSkipped();
+    throw TestSkipped("ARPAE GRIB support not available");
 #endif
     Metadata md;
     scan::Grib scanner;
@@ -397,7 +397,7 @@ add_method("utm_areas", [] {
 // Check scanning of some Timedef cases
 add_method("ninfa", [] {
 #ifndef ARPAE_TESTS
-    throw TestSkipped();
+    throw TestSkipped("ARPAE GRIB support not available");
 #endif
     {
         Metadata md;
@@ -420,7 +420,7 @@ add_method("ninfa", [] {
 // Check scanning COSMO nudging timeranges
 add_method("cosmo_nudging", [] {
 #ifndef ARPAE_TESTS
-    throw TestSkipped();
+    throw TestSkipped("ARPAE GRIB support not available");
 #endif
     ARKI_UTILS_TEST_INFO(info);
 

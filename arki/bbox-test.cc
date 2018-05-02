@@ -69,7 +69,7 @@ add_method("2", [] {
     wassert(actual(cs->getAt(4).x) == 12.00);
     wassert(actual(cs->getAt(4).y) == 40.00);
 #else
-    throw TestSkipped();
+    throw TestSkipped("GEOS not available");
 #endif
 });
 
@@ -112,7 +112,7 @@ add_method("3", [] {
 
     //ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
 #else
-    throw TestSkipped();
+    throw TestSkipped("GEOS not available");
 #endif
 });
 
@@ -174,7 +174,7 @@ add_method("4", [] {
     wassert(actual(cs->getAt(27).x).almost_equal( 6.0124, 4)); wassert(actual(cs->getAt(27).y).almost_equal(35.4723, 4));
     //ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
 #else
-    throw TestSkipped();
+    throw TestSkipped("GEOS not available");
 #endif
 });
 
@@ -214,7 +214,7 @@ add_method("5", [] {
     wassert(actual(cs->getAt(4).x) ==  2.40000);
     wassert(actual(cs->getAt(4).y) == 49.20000);
 #else
-    throw TestSkipped();
+    throw TestSkipped("GEOS not available");
 #endif
 });
 
@@ -250,7 +250,7 @@ add_method("6", [] {
     wassert(actual(cs->getAt(4).x) == 11.0);
     wassert(actual(cs->getAt(4).y) == 45.0);
 #else
-    throw TestSkipped();
+    throw TestSkipped("GEOS not available");
 #endif
 });
 
@@ -282,7 +282,7 @@ add_method("7", [] {
     wassert(actual(cs->getAt(4).x).almost_equal(13.996, 3));
     wassert(actual(cs->getAt(4).y).almost_equal(43.718, 3));
 #else
-    throw TestSkipped();
+    throw TestSkipped("GEOS not available");
 #endif
 });
 

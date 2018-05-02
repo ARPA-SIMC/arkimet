@@ -479,7 +479,7 @@ add_method("largefile", [] {
 // Test smallfiles support
 add_method("smallfiles", [] {
 #ifndef HAVE_VM2
-    throw TestSkipped();
+    throw TestSkipped("VM2 support not available");
 #endif
     auto md = make_md();
     auto md1 = make_md1();

@@ -92,7 +92,7 @@ add_method("simple", [] {
 // Test a case where dispatch is known to fail
 add_method("regression01", [] {
 #ifndef HAVE_DBALLE
-    throw TestSkipped();
+    throw TestSkipped("BUFR support not available");
 #endif
     // In-memory dataset configuration
     sys::rmtree_ifexists("lami_temp");

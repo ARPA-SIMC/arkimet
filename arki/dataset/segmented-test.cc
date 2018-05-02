@@ -757,7 +757,7 @@ void Tests103::register_tests() {
 // Test datasets with more segments than the number of open files allowed
 add_method("issue103", [](Fixture& f) {
 #ifndef HAVE_VM2
-    throw TestSkipped();
+    throw TestSkipped("VM2 support not available");
 #endif
     static const int max_files = 100;
     sys::OverrideRlimit(RLIMIT_NOFILE, max_files);

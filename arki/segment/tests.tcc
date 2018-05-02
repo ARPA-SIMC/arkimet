@@ -50,7 +50,7 @@ this->add_method("scan", [](Fixture& f) {
     auto checker = f.create();
     auto reader = checker->segment().reader(std::make_shared<arki::core::lock::Null>());
     if (strcmp(reader->segment().type(), "tar") == 0)
-        throw TestSkipped();
+        throw TestSkipped("scanning .tar segments is not yet supported");
     metadata::Collection mds;
     reader->scan(mds.inserter_func());
     wassert(actual(mds.size()) == f.seg_mds.size());

@@ -87,7 +87,7 @@ add_method("summary_invalidate", [](Fixture& f) {
 // imported with USN handling
 add_method("regression_0", [](Fixture& f) {
 #ifndef HAVE_DBALLE
-    throw TestSkipped();
+    throw TestSkipped("BUFR support not available");
 #endif
     ConfigFile cfg;
     cfg.setValue("path", "gts_temp");
@@ -108,7 +108,7 @@ add_method("regression_0", [](Fixture& f) {
 // Test removal of VM2 data
 add_method("issue57", [](Fixture& f) {
 #ifndef HAVE_VM2
-    throw TestSkipped();
+    throw TestSkipped("VM2 support not available");
 #endif
     f.cfg.setValue("unique", "reftime, area, product");
 

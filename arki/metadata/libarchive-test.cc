@@ -18,7 +18,7 @@ void Tests::register_tests() {
 
 add_method("tar", [] {
 #ifndef HAVE_LIBARCHIVE
-    throw TestSkipped();
+    throw TestSkipped("libarchive not available");
 #endif
     metadata::TestCollection mds("inbound/test.grib1");
     sys::File out("test.tar", O_WRONLY | O_CREAT | O_TRUNC);
@@ -40,7 +40,7 @@ add_method("tar", [] {
 
 add_method("targz", [] {
 #ifndef HAVE_LIBARCHIVE
-    throw TestSkipped();
+    throw TestSkipped("libarchive not available");
 #endif
     metadata::TestCollection mds("inbound/test.grib1");
     sys::File out("test.tar.gz", O_WRONLY | O_CREAT | O_TRUNC);
@@ -62,7 +62,7 @@ add_method("targz", [] {
 
 add_method("tarxz", [] {
 #ifndef HAVE_LIBARCHIVE
-    throw TestSkipped();
+    throw TestSkipped("libarchive not available");
 #endif
     metadata::TestCollection mds("inbound/test.grib1");
     sys::File out("test.tar.xz", O_WRONLY | O_CREAT | O_TRUNC);
@@ -84,7 +84,7 @@ add_method("tarxz", [] {
 
 add_method("zip", [] {
 #ifndef HAVE_LIBARCHIVE
-    throw TestSkipped();
+    throw TestSkipped("libarchive not available");
 #endif
     metadata::TestCollection mds("inbound/test.grib1");
     sys::File out("test.zip", O_WRONLY | O_CREAT | O_TRUNC);

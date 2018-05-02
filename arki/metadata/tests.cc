@@ -31,7 +31,7 @@ GRIBData::GRIBData()
     : TestData("grib")
 {
 #ifndef HAVE_GRIBAPI
-    throw TestSkipped();
+    throw TestSkipped("GRIB support not available");
 #endif
     mds.scan_from_file("inbound/fixture.grib1", format, true);
 }
@@ -40,7 +40,7 @@ BUFRData::BUFRData()
     : TestData("bufr")
 {
 #ifndef HAVE_DBALLE
-    throw TestSkipped();
+    throw TestSkipped("BUFR support not available");
 #endif
     mds.scan_from_file("inbound/fixture.bufr", format, true);
 }
@@ -49,7 +49,7 @@ VM2Data::VM2Data()
     : TestData("vm2")
 {
 #ifndef HAVE_VM2
-    throw TestSkipped();
+    throw TestSkipped("VM2 support not available");
 #endif
     mds.scan_from_file("inbound/fixture.vm2", format, true);
 }
@@ -58,7 +58,7 @@ ODIMData::ODIMData()
     : TestData("odimh5")
 {
 #ifndef HAVE_HDF5
-    throw TestSkipped();
+    throw TestSkipped("ODIMH5 support not available");
 #endif
     mds.scan_from_file("inbound/fixture.h5/00.h5", format, true);
     mds.scan_from_file("inbound/fixture.h5/01.h5", format, true);

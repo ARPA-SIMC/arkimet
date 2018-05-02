@@ -48,7 +48,7 @@ add_generic_test(
 // Test VM2 derived values
 add_method("vm2_derived", [] {
 #ifndef HAVE_VM2
-    throw TestSkipped();
+    throw TestSkipped("VM2 support not available");
 #endif
     ValueBag vb1 = ValueBag::parse("lon=1207738,lat=4460016,rep=locali");
     wassert(actual(types::area::VM2::create(1)->derived_values() == vb1).istrue());

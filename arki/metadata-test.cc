@@ -318,7 +318,7 @@ add_method("lua", [](Fixture& f) {
 
 add_method("stream_grib", [](Fixture& f) {
 #ifndef HAVE_GRIBAPI
-    throw TestSkipped();
+    throw TestSkipped("GRIB support not available");
 #endif
     metadata::TestCollection grib("inbound/test.grib1");
     File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
@@ -329,7 +329,7 @@ add_method("stream_grib", [](Fixture& f) {
 
 add_method("stream_bufr", [](Fixture& f) {
 #ifndef HAVE_DBALLE
-    throw TestSkipped();
+    throw TestSkipped("BUFR support not available");
 #endif
     metadata::TestCollection bufr("inbound/test.bufr");
     File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
@@ -340,7 +340,7 @@ add_method("stream_bufr", [](Fixture& f) {
 
 add_method("stream_vm2", [](Fixture& f) {
 #ifndef HAVE_VM2
-    throw TestSkipped();
+    throw TestSkipped("VM2 support not available");
 #endif
     metadata::TestCollection vm2("inbound/test.vm2");
     File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
@@ -351,7 +351,7 @@ add_method("stream_vm2", [](Fixture& f) {
 
 add_method("stream_odim", [](Fixture& f) {
 #ifndef HAVE_HDF5
-    throw TestSkipped();
+    throw TestSkipped("ODIMH5 support not available");
 #endif
     metadata::TestCollection odim("inbound/odimh5/XSEC_v21.h5");
     File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);

@@ -80,7 +80,7 @@ add_method("bufr", [] {
 // Try matching VM2 product
 add_method("vm2", [] {
 #ifndef HAVE_VM2
-    throw TestSkipped();
+    throw TestSkipped("VM2 support not available");
 #endif
     Metadata md;
     arki::tests::fill(md);

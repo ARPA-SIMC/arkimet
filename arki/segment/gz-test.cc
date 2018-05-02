@@ -87,7 +87,7 @@ SegmentTests<Segment, Data>::register_tests();
 // Test compression
 add_method("compression", [] {
 #ifndef HAVE_DBALLE
-    throw TestSkipped();
+    throw TestSkipped("BUFR support not available");
 #else
     static const int repeats = 1024;
 
@@ -181,7 +181,7 @@ add_method("compression", [] {
 // Test compression when the data don't compress
 add_method("uncompressible", [] {
 #ifndef HAVE_DBALLE
-    throw TestSkipped();
+        throw TestSkipped("BUFR support not available");
 #else
     // Create a collector with only one small metadata inside
     metadata::TestCollection c("inbound/test.bufr");

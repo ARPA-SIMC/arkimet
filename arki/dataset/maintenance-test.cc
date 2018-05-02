@@ -37,7 +37,7 @@ Fixture::Fixture(const std::string& format, const std::string& cfg_instance)
     if (format == "grib")
     {
 #ifndef HAVE_GRIBAPI
-        throw TestSkipped();
+        throw TestSkipped("GRIB support not available");
 #endif
         import_files = { "inbound/mainttest.grib" };
         test_relpath = "2007/07-07.grib";
@@ -47,7 +47,7 @@ Fixture::Fixture(const std::string& format, const std::string& cfg_instance)
     else if (format == "bufr")
     {
 #ifndef HAVE_DBALLE
-        throw TestSkipped();
+        throw TestSkipped("BUFR support not available");
 #endif
         import_files = { "inbound/mainttest.bufr" };
         test_relpath = "2007/07-07.bufr";
@@ -57,7 +57,7 @@ Fixture::Fixture(const std::string& format, const std::string& cfg_instance)
     else if (format == "vm2")
     {
 #ifndef HAVE_VM2
-        throw TestSkipped();
+        throw TestSkipped("VM2 support not available");
 #endif
         import_files = { "inbound/mainttest.vm2" };
         test_relpath = "2007/07-07.vm2";
@@ -67,7 +67,7 @@ Fixture::Fixture(const std::string& format, const std::string& cfg_instance)
     else if (format == "odimh5")
     {
 #ifndef HAVE_HDF5
-        throw TestSkipped();
+        throw TestSkipped("ODIMH5 support not available");
 #endif
         import_files = {
             "inbound/mainttest.h5/00.h5",
@@ -177,7 +177,7 @@ void MaintenanceTest::rm_r(const std::string& pathname)
 void MaintenanceTest::make_hugefile()
 {
     if (!files::filesystem_has_holes("."))
-        throw TestSkipped();
+        throw TestSkipped("Filesystem does not support holes in files");
 
     // Pretend that the test segment is 6G already
     {

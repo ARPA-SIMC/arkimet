@@ -20,7 +20,7 @@ void Tests::register_tests() {
 
 add_method("read", [] {
 #ifndef HAVE_LIBZIP
-    throw TestSkipped();
+    throw TestSkipped("libzip not available");
 #endif
 
     metadata::TestCollection mds("inbound/fixture.grib1");

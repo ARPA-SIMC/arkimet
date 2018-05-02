@@ -295,7 +295,7 @@ add_method("archive", [](Fixture& f) {
 
 add_method("issue57", [](Fixture& f) {
 #ifndef HAVE_VM2
-    throw TestSkipped();
+    throw TestSkipped("VM2 support not available");
 #endif
     using runtime::tests::run_cmdline;
 
