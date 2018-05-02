@@ -21,10 +21,21 @@ struct ArkiRunner
 {
     arki::utils::tests::FilteringTestController* controller = nullptr;
     bool run_all = true;
+    bool verbose = false;
+    bool stats = false;
 
     ArkiRunner()
     {
         if (getenv("TEST_VERBOSE"))
+        {
+            verbose = true;
+            stats = true;
+        }
+
+        if (getenv("TEST_STATS"))
+            stats = true;
+
+        if (verbose)
             controller = new arki::utils::tests::VerboseTestController();
         else
             controller = new arki::utils::tests::SimpleTestController();
@@ -73,7 +84,9 @@ struct ArkiRunner
         auto all_results = tests.run_tests(*controller);
         TestResultStats rstats(all_results);
         rstats.print_results(stderr);
-        rstats.print_stats(stderr);
+        if (stats)
+            rstats.print_stats(stderr);
+        rstats.print_summary(stderr);
         return rstats.success;
     }
 };
