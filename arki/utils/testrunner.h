@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <memory>
 
 namespace arki {
 namespace utils {
@@ -30,7 +31,7 @@ struct TestMethodResult
     std::string error_message;
 
     /// Stack frame of where the error happened
-    TestStack* error_stack = nullptr;
+    std::shared_ptr<TestStack> error_stack;
 
     /// If non-empty, the test threw an exception and this is its type ID
     std::string exception_typeid;
@@ -41,10 +42,12 @@ struct TestMethodResult
     /// If the test has been skipped, this is an optional reason
     std::string skipped_reason;
 
+    /// Time in nanoseconds it took the test to run
+    unsigned long long elapsed_ns = 0;
+
 
     TestMethodResult(const std::string& test_case, const std::string& test_method)
         : test_case(test_case), test_method(test_method) {}
-    ~TestMethodResult();
 
     void set_failed(TestFailed& e);
 
@@ -137,6 +140,8 @@ struct TestCaseResult
                 return false;
         return true;
     }
+
+    unsigned long long elapsed_ns() const;
 };
 
 

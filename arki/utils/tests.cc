@@ -499,6 +499,9 @@ TestMethodResult TestCase::run_test(TestController& controller, TestMethod& meth
         return res;
     }
 
+    // Take time now for measuring elapsed time of the test method
+    sys::Clock timer(CLOCK_MONOTONIC);
+
     try {
         method_setup(res);
     } catch (TestSkipped& e) {
@@ -535,6 +538,8 @@ TestMethodResult TestCase::run_test(TestController& controller, TestMethod& meth
     } catch (std::exception& e) {
         res.set_teardown_exception(e);
     }
+
+    res.elapsed_ns = timer.elapsed();
 
     controller.test_method_end(method, res);
     return res;

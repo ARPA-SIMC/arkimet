@@ -386,7 +386,7 @@ bool FileDescriptor::ofd_getlk(struct flock& lk)
     return lk.l_type == F_UNLCK;
 }
 
-void FileDescriptor::futimens(const struct timespec ts[2])
+void FileDescriptor::futimens(const struct ::timespec ts[2])
 {
     if (::futimens(fd, ts) == -1)
         throw_error("cannot change file timestamps");
@@ -1046,14 +1046,48 @@ bool rmtree_ifexists(const std::string& pathname)
     return true;
 }
 
-#if 0
-std::string mkdtemp( std::string tmpl )
+void clock_gettime(::clockid_t clk_id, struct ::timespec& ts)
 {
-    char *_tmpl = reinterpret_cast< char * >( alloca( tmpl.size() + 1 ) );
-    strcpy( _tmpl, tmpl.c_str() );
-    return ::mkdtemp( _tmpl );
+    int res = ::clock_gettime(clk_id, &ts);
+    if (res == -1)
+        throw std::system_error(errno, std::system_category(), "clock_gettime failed on clock " + std::to_string(clk_id));
 }
-#endif
+
+unsigned long long timesec_elapsed(const struct ::timespec& begin, const struct ::timespec& until)
+{
+    if (begin.tv_sec > until.tv_sec)
+        return 0;
+
+    if (begin.tv_sec == until.tv_sec)
+    {
+        if (begin.tv_nsec > until.tv_nsec)
+            return 0;
+        return until.tv_nsec - begin.tv_nsec;
+    }
+
+    if (until.tv_nsec < begin.tv_nsec)
+        return (until.tv_sec - begin.tv_sec - 1) * 1000000000 + (until.tv_nsec + 1000000000 - begin.tv_nsec);
+    else
+        return (until.tv_sec - begin.tv_sec) * 1000000000 + until.tv_nsec - begin.tv_nsec;
+}
+
+/*
+ * Clock
+ */
+
+Clock::Clock(clockid_t clk_id)
+    : clk_id(clk_id)
+{
+    clock_gettime(clk_id, ts);
+}
+
+unsigned long long Clock::elapsed()
+{
+    struct timespec cur_ts;
+    clock_gettime(clk_id, cur_ts);
+    return timesec_elapsed(ts, cur_ts);
+}
+
 }
 }
 }
