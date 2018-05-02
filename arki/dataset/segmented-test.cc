@@ -142,7 +142,7 @@ add_method("gzidx", [](Fixture& f) {
         t.se = 30;
         md->set(types::reftime::Position(t));
     }
-    f.import(mds);
+    wassert(f.import(mds));
 
     // Test moving into archive data that have been compressed
     f.cfg.setValue("archive age", days_since(2007, 9, 1));
@@ -462,11 +462,7 @@ add_method("query_lots", [](Fixture& f) {
 
     f.clean();
     {
-        auto writer = f.config().create_writer();
-
-        // Reverse order of import, so we can check if things get sorted properly when querying
-        // TODO: speed up using batch import? Though in the future it might also optimize sorting metadata by reftime
-        // TODO: speed up here, and check sorting in a reader test
+        metadata::Collection mds;
         for (int month = 12; month >= 1; --month)
             for (int day = 28; day >= 1; --day)
                 for (int hour = 21; hour >= 0; hour -= 3)
@@ -474,19 +470,21 @@ add_method("query_lots", [](Fixture& f) {
                         for (int varid = 3; varid >= 1; --varid)
                         {
                             int value = month + day + hour + station + varid;
-                            Metadata md;
+                            std::unique_ptr<Metadata> md(new Metadata);
                             char buf[40];
                             int len = snprintf(buf, 40, "2013%02d%02d%02d00,%d,%d,%d,,,000000000",
                                     month, day, hour, station, varid, value);
-                            md.set_source_inline("vm2", vector<uint8_t>(buf, buf+len));
-                            md.add_note("Generated from memory");
-                            md.set(Reftime::createPosition(Time(2013, month, day, hour, 0, 0)));
-                            md.set(Area::createVM2(station));
-                            md.set(Product::createVM2(varid));
+                            md->set_source_inline("vm2", vector<uint8_t>(buf, buf+len));
+                            md->add_note("Generated from memory");
+                            md->set(Reftime::createPosition(Time(2013, month, day, hour, 0, 0)));
+                            md->set(Area::createVM2(station));
+                            md->set(Product::createVM2(varid));
                             snprintf(buf, 40, "%d,,,000000000", value);
-                            md.set(types::Value::create(buf));
-                            wassert(actual(*writer).import(md));
+                            md->set(types::Value::create(buf));
+                            mds.acquire(std::move(md));
                         }
+
+        wassert(f.import(mds));
     }
 
     utils::files::removeDontpackFlagfile(f.cfg.value("path"));
@@ -784,8 +782,7 @@ add_method("issue103", [](Fixture& f) {
     // Dispatch
     {
         metadata::TestCollection mds("inbound/issue103.vm2");
-        auto writer = f.makeSegmentedWriter();
-        wassert(actual(*writer).import(mds));
+        wassert(f.import(mds));
     }
 
     // Check

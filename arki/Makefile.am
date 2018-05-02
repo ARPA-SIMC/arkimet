@@ -195,6 +195,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/commandline/parser.h \
 		utils/commandline/wordwrap.h \
 		utils/tests.h \
+		utils/testrunner.h \
 		values.h
 
 reftime_parser_built_sources = \
@@ -313,7 +314,8 @@ libarkimet_test_la_SOURCES += \
 		tests/tests.cc \
 		core/tests.cc \
 		types/tests.cc \
-		utils/tests.cc
+		utils/tests.cc \
+		utils/testrunner.cc
 
 tests_arki_test_SOURCES += \
 		tests/tests-test.cc \

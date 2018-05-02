@@ -5,15 +5,15 @@
  * @author Enrico Zini <enrico@enricozini.org>
  * @brief Operating system functions
  *
- * Copyright (C) 2007--2015  Enrico Zini <enrico@debian.org>
+ * Copyright (C) 2007--2018  Enrico Zini <enrico@debian.org>
  */
 
 #include <string>
-//#include <iosfwd>
 #include <memory>
 #include <iterator>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <fcntl.h>
@@ -178,7 +178,7 @@ public:
     void fstat(struct stat& st);
     void fchmod(mode_t mode);
 
-    void futimens(const struct timespec ts[2]);
+    void futimens(const struct ::timespec ts[2]);
 
     void fsync();
     void fdatasync();
@@ -274,7 +274,7 @@ class PreserveFileTimes
 {
 protected:
     FileDescriptor fd;
-    struct timespec ts[2];
+    struct ::timespec ts[2];
 
 public:
     PreserveFileTimes(FileDescriptor fd);
@@ -610,63 +610,36 @@ void rename(const std::string& src_pathname, const std::string& dst_pathname);
  */
 void touch(const std::string& pathname, time_t ts);
 
-#if 0
-/// Nicely wrap access to directories
-class Directory
+/**
+ * Call clock_gettime, raising an exception if it fails
+ */
+void clock_gettime(::clockid_t clk_id, struct ::timespec& ts);
+
+/**
+ * Return the time elapsed between two timesec structures, in nanoseconds
+ */
+unsigned long long timesec_elapsed(const struct ::timespec& begin, const struct ::timespec& until);
+
+/**
+ * Access to clock_gettime
+ */
+struct Clock
 {
-protected:
-    /// Directory pathname
-    std::string m_path;
+    ::clockid_t clk_id;
+    struct ::timespec ts;
 
-public:
-    class const_iterator
-    {
-        /// Directory we are iterating
-        const Directory* dir;
-        /// DIR* pointer
-        void* dirp;
-        /// dirent structure used for iterating entries
-        struct dirent* direntbuf;
+    /**
+     * Initialize ts with the value of the given clock
+     */
+    Clock(::clockid_t clk_id);
 
-    public:
-        // Create an end iterator
-        const_iterator();
-        // Create a begin iterator
-        const_iterator(const Directory& dir);
-        // Cleanup properly
-        ~const_iterator();
-
-        /// auto_ptr style copy semantics
-        const_iterator(const const_iterator& i);
-        const_iterator& operator=(const const_iterator& i);
-
-        /// Move to the next directory entry
-        const_iterator& operator++();
-
-        /// @return the current file name
-        std::string operator*() const;
-
-        bool operator==(const const_iterator& iter) const;
-        bool operator!=(const const_iterator& iter) const;
-    };
-
-    Directory(const std::string& path);
-    ~Directory();
-
-    /// Pathname of the directory
-    const std::string& path() const { return m_path; }
-
-    /// Check if the directory exists
-    bool exists() const;
-
-    /// Begin iterator
-    const_iterator begin() const;
-
-    /// End iterator
-    const_iterator end() const;
+    /**
+     * Return the number of nanoseconds elapsed since the last time ts was
+     * updated
+     */
+    unsigned long long elapsed();
 };
 
-#endif
 }
 }
 }

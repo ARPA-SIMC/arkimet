@@ -7,9 +7,9 @@
  */
 
 #include "tests.h"
+#include "testrunner.h"
 #include "string.h"
 #include "sys.h"
-#include <fnmatch.h>
 #include <cmath>
 #include <iomanip>
 #include <sys/types.h>
@@ -73,6 +73,14 @@ TestFailed::TestFailed(const std::exception& e)
    message += ": ";
    message += e.what();
 }
+
+
+/*
+ * TestSkipped
+ */
+
+TestSkipped::TestSkipped() {}
+TestSkipped::TestSkipped(const std::string& reason) : reason(reason) {}
 
 
 #if 0
@@ -403,39 +411,15 @@ void ActualFile::startswith(const std::string& data) const
         throw TestFailed("file " + _actual + " starts with '" + str::encode_cstring(buf) + "' instead of '" + str::encode_cstring(data) + "'");
 }
 
-TestRegistry& TestRegistry::get()
-{
-    static TestRegistry* instance = 0;
-    if (!instance)
-        instance = new TestRegistry();
-    return *instance;
-}
 
-void TestRegistry::register_test_case(TestCase& test_case)
-{
-    entries.emplace_back(&test_case);
-}
+/*
+ * TestCase
+ */
 
-void TestRegistry::iterate_test_methods(std::function<void(const TestCase&, const TestMethod&)> f)
+TestCase::TestCase(const std::string& name)
+    : name(name)
 {
-    for (auto& e: entries)
-    {
-        e->register_tests_once();
-        for (const auto& m: e->methods)
-            f(*e, m);
-    }
-}
-
-std::vector<TestCaseResult> TestRegistry::run_tests(TestController& controller)
-{
-    std::vector<TestCaseResult> res;
-    for (auto& e: entries)
-    {
-        e->register_tests_once();
-        // TODO: filter on e.name
-        res.emplace_back(std::move(e->run_tests(controller)));
-    }
-    return res;
+    TestRegistry::get().register_test_case(*this);
 }
 
 void TestCase::register_tests_once()
@@ -457,10 +441,12 @@ TestCaseResult TestCase::run_tests(TestController& controller)
     }
 
     bool skip_all = false;
+    string skip_all_reason;
     try {
         setup();
-    } catch (TestSkipped) {
+    } catch (TestSkipped& e) {
         skip_all = true;
+        skip_all_reason = e.reason;
     } catch (std::exception& e) {
         res.set_setup_failed(e);
         controller.test_case_end(*this, res);
@@ -474,6 +460,7 @@ TestCaseResult TestCase::run_tests(TestController& controller)
             TestMethodResult tmr(name, method.name);
             controller.test_method_begin(method, tmr);
             tmr.skipped = true;
+            tmr.skipped_reason = skip_all_reason;
             controller.test_method_end(method, tmr);
             res.add_test_method(move(tmr));
         }
@@ -512,10 +499,14 @@ TestMethodResult TestCase::run_test(TestController& controller, TestMethod& meth
         return res;
     }
 
+    // Take time now for measuring elapsed time of the test method
+    sys::Clock timer(CLOCK_MONOTONIC);
+
     try {
         method_setup(res);
-    } catch (TestSkipped) {
+    } catch (TestSkipped& e) {
         res.skipped = true;
+        res.skipped_reason = e.reason;
         controller.test_method_end(method, res);
         return res;
     } catch (std::exception& e) {
@@ -527,8 +518,9 @@ TestMethodResult TestCase::run_test(TestController& controller, TestMethod& meth
     {
         try {
             method.test_function();
-        } catch (TestSkipped) {
+        } catch (TestSkipped& e) {
             res.skipped = true;
+            res.skipped_reason = e.reason;
         } catch (TestFailed& e) {
             // Location::fail_test() was called
             res.set_failed(e);
@@ -547,60 +539,10 @@ TestMethodResult TestCase::run_test(TestController& controller, TestMethod& meth
         res.set_teardown_exception(e);
     }
 
+    res.elapsed_ns = timer.elapsed();
+
     controller.test_method_end(method, res);
     return res;
-}
-
-bool SimpleTestController::test_method_should_run(const std::string& fullname) const
-{
-    if (!whitelist.empty() && fnmatch(whitelist.c_str(), fullname.c_str(), 0) == FNM_NOMATCH)
-        return false;
-
-    if (!blacklist.empty() && fnmatch(blacklist.c_str(), fullname.c_str(), 0) != FNM_NOMATCH)
-        return false;
-
-    return true;
-}
-
-bool SimpleTestController::test_case_begin(const TestCase& test_case, const TestCaseResult& test_case_result)
-{
-    // Skip test case if all its methods should not run
-    bool should_run = false;
-    for (const auto& m : test_case.methods)
-        should_run |= test_method_should_run(test_case.name + "." + m.name);
-    if (!should_run) return false;
-
-    fprintf(stdout, "%s: ", test_case.name.c_str());
-    fflush(stdout);
-    return true;
-}
-
-void SimpleTestController::test_case_end(const TestCase& test_case, const TestCaseResult& test_case_result)
-{
-    if (test_case_result.skipped)
-        ;
-    else if (test_case_result.is_success())
-        fprintf(stdout, "\n");
-    else
-        fprintf(stdout, "\n");
-    fflush(stdout);
-}
-
-bool SimpleTestController::test_method_begin(const TestMethod& test_method, const TestMethodResult& test_method_result)
-{
-    string name = test_method_result.test_case + "." + test_method.name;
-    return test_method_should_run(name);
-}
-
-void SimpleTestController::test_method_end(const TestMethod& test_method, const TestMethodResult& test_method_result)
-{
-    if (test_method_result.skipped)
-        putc('s', stdout);
-    else if (test_method_result.is_success())
-        putc('.', stdout);
-    else
-        putc('x', stdout);
-    fflush(stdout);
 }
 
 }

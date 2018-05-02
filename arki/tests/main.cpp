@@ -1,4 +1,5 @@
 #include <arki/utils/tests.h>
+#include <arki/utils/testrunner.h>
 #include <arki/types-init.h>
 #include <arki/iotrace.h>
 #include <arki/core/file.h>
@@ -18,27 +19,44 @@ void signal_to_exception(int)
 
 struct ArkiRunner
 {
-    arki::utils::tests::SimpleTestController controller;
-    unsigned methods_ok = 0;
-    unsigned methods_failed = 0;
-    unsigned methods_skipped = 0;
-    unsigned test_cases_ok = 0;
-    unsigned test_cases_failed = 0;
+    arki::utils::tests::FilteringTestController* controller = nullptr;
     bool run_all = true;
-    bool success = true;
+    bool verbose = false;
+    bool stats = false;
+
+    ArkiRunner()
+    {
+        if (getenv("TEST_VERBOSE"))
+        {
+            verbose = true;
+            stats = true;
+        }
+
+        if (getenv("TEST_STATS"))
+            stats = true;
+
+        if (verbose)
+            controller = new arki::utils::tests::VerboseTestController();
+        else
+            controller = new arki::utils::tests::SimpleTestController();
+    }
+    ~ArkiRunner()
+    {
+        delete controller;
+    }
 
     bool setup()
     {
         if (const char* whitelist = getenv("TEST_WHITELIST"))
         {
             run_all = false;
-            controller.whitelist = whitelist;
+            controller->whitelist = whitelist;
         }
 
         if (const char* blacklist = getenv("TEST_BLACKLIST"))
         {
             run_all = false;
-            controller.blacklist = blacklist;
+            controller->blacklist = blacklist;
         }
         return false;
     }
@@ -59,61 +77,17 @@ struct ArkiRunner
         out.end_list();
     }
 
-    void run()
+    bool run()
     {
+        using namespace arki::utils::tests;
         auto& tests = arki::utils::tests::TestRegistry::get();
-        auto all_results = tests.run_tests(controller);
-
-        for (const auto& tc_res: all_results)
-        {
-            if (!tc_res.fail_setup.empty())
-            {
-                fprintf(stderr, "%s: %s\n", tc_res.test_case.c_str(), tc_res.fail_setup.c_str());
-                ++test_cases_failed;
-            } else {
-                if (!tc_res.fail_teardown.empty())
-                {
-                    fprintf(stderr, "%s: %s\n", tc_res.test_case.c_str(), tc_res.fail_teardown.c_str());
-                    ++test_cases_failed;
-                }
-                else
-                    ++test_cases_ok;
-
-                for (const auto& tm_res: tc_res.methods)
-                {
-                    if (tm_res.skipped)
-                        ++methods_skipped;
-                    else if (tm_res.is_success())
-                        ++methods_ok;
-                    else
-                    {
-                        fprintf(stderr, "\n");
-                        if (tm_res.exception_typeid.empty())
-                            fprintf(stderr, "%s.%s: %s\n", tm_res.test_case.c_str(), tm_res.test_method.c_str(), tm_res.error_message.c_str());
-                        else
-                            fprintf(stderr, "%s.%s:[%s] %s\n", tm_res.test_case.c_str(), tm_res.test_method.c_str(), tm_res.exception_typeid.c_str(), tm_res.error_message.c_str());
-                        for (const auto& frame : tm_res.error_stack)
-                            fprintf(stderr, "  %s", frame.format().c_str());
-                        ++methods_failed;
-                    }
-                }
-            }
-        }
-
-        if (test_cases_failed)
-        {
-            success = false;
-            fprintf(stderr, "\n%u/%u test cases had issues initializing or cleaning up\n",
-                    test_cases_failed, test_cases_ok + test_cases_failed);
-        }
-
-        if (methods_failed)
-        {
-            success = false;
-            fprintf(stderr, "\n%u/%u tests failed\n", methods_failed, methods_ok + methods_failed);
-        }
-        else
-            fprintf(stderr, "%u tests succeeded\n", methods_ok);
+        auto all_results = tests.run_tests(*controller);
+        TestResultStats rstats(all_results);
+        rstats.print_results(stderr);
+        if (stats)
+            rstats.print_stats(stderr);
+        rstats.print_summary(stderr);
+        return rstats.success;
     }
 };
 
@@ -138,8 +112,7 @@ int main(int argc, const char* argv[])
         return 0;
     }
 
-    arki_runner.run();
+    bool success = arki_runner.run();
 
-    if (!arki_runner.success) return 1;
-    return 0;
+    return success ? 0 : 1;
 }
