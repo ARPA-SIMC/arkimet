@@ -85,9 +85,7 @@ make check
 
 %configure
 make
-# tests are passing only on f24 at the moment
-# waiting for incoming fix for ODF locks and tmpfs tests
-#make check
+make check TEST_VERBOSE=1
 
 %endif
 
