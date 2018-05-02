@@ -55,6 +55,13 @@ public:
 inline arki::tests::ActualTime actual_time(const arki::core::Time& actual) { return arki::tests::ActualTime(actual); }
 inline arki::tests::ActualTime actual(const arki::core::Time& actual) { return arki::tests::ActualTime(actual); }
 
+void skip_unless_libzip();
+void skip_unless_libarchive();
+void skip_unless_grib();
+void skip_unless_bufr();
+void skip_unless_vm2();
+void skip_unless_odimh5();
+
 }
 }
 #endif

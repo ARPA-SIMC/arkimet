@@ -380,6 +380,7 @@ void DatasetTest::import(Metadata& md, dataset::WriterAcquireResult expected_res
     import_results.push_back(md);
     std::unique_ptr<Writer> writer(config().create_writer());
     WriterAcquireResult res = writer->acquire(import_results.back());
+    wassert(actual(res) == expected_result);
 }
 
 void DatasetTest::clean_and_import(const std::string& testfile)

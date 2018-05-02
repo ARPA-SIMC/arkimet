@@ -1,4 +1,4 @@
-#include "arki/tests/tests.h"
+#include "arki/core/tests.h"
 #include "libarchive.h"
 #include "arki/utils/sys.h"
 
@@ -12,14 +12,15 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
+    void setup() {
+        TestCase::setup();
+        skip_unless_libarchive();
+    }
 } test("arki_metadata_libarchive");
 
 void Tests::register_tests() {
 
 add_method("tar", [] {
-#ifndef HAVE_LIBARCHIVE
-    throw TestSkipped("libarchive not available");
-#endif
     metadata::TestCollection mds("inbound/test.grib1");
     sys::File out("test.tar", O_WRONLY | O_CREAT | O_TRUNC);
     metadata::LibarchiveOutput arc_out("tar", out);
@@ -39,9 +40,6 @@ add_method("tar", [] {
 });
 
 add_method("targz", [] {
-#ifndef HAVE_LIBARCHIVE
-    throw TestSkipped("libarchive not available");
-#endif
     metadata::TestCollection mds("inbound/test.grib1");
     sys::File out("test.tar.gz", O_WRONLY | O_CREAT | O_TRUNC);
     metadata::LibarchiveOutput arc_out("tar.gz", out);
@@ -61,9 +59,6 @@ add_method("targz", [] {
 });
 
 add_method("tarxz", [] {
-#ifndef HAVE_LIBARCHIVE
-    throw TestSkipped("libarchive not available");
-#endif
     metadata::TestCollection mds("inbound/test.grib1");
     sys::File out("test.tar.xz", O_WRONLY | O_CREAT | O_TRUNC);
     metadata::LibarchiveOutput arc_out("tar.xz", out);
@@ -83,9 +78,6 @@ add_method("tarxz", [] {
 });
 
 add_method("zip", [] {
-#ifndef HAVE_LIBARCHIVE
-    throw TestSkipped("libarchive not available");
-#endif
     metadata::TestCollection mds("inbound/test.grib1");
     sys::File out("test.zip", O_WRONLY | O_CREAT | O_TRUNC);
     metadata::LibarchiveOutput arc_out("zip", out);

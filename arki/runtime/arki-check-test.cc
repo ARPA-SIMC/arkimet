@@ -47,35 +47,36 @@ add_method("clean", [](Fixture& f) {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", });
         wassert(actual(res) == 0);
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "testds: check 3 files ok\n");
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: check 3 files ok"}));
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--fix" });
         wassert(actual(res) == 0);
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "testds: check 3 files ok\n");
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: check 3 files ok"}));
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack" });
         wassert(actual(res) == 0);
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "testds: repack 3 files ok\n");
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: repack 3 files ok"}));
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack", "--fix" });
         wassert(actual(res) == 0);
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())).matches(
-                "(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?\n)?"
-                "(testds: repack: rebuilding the summary cache\n)?"
-                "testds: repack 3 files ok\n"));
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_match({
+            "(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?)?",
+            "(testds: repack: rebuilding the summary cache)?",
+            "testds: repack 3 files ok",
+        }));
     }
 });
 
@@ -90,32 +91,31 @@ add_method("clean_filtered", [](Fixture& f) {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--filter=reftime:>=2007-07-08" });
         wassert(actual(res) == 0);
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "testds: check 2 files ok\n");
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: check 2 files ok"}));
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--fix", "--filter=reftime:>=2007-07-08" });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "testds: check 2 files ok\n");
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: check 2 files ok"}));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack", "--filter=reftime:>=2007-07-08" });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "testds: repack 2 files ok\n");
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: repack 2 files ok"}));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack", "--fix", "--filter=reftime:>=2007-07-08" });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-                "testds: repack 2 files ok\n");
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: repack 2 files ok"}));
         wassert(actual(res) == 0);
     }
 });
@@ -133,11 +133,12 @@ add_method("remove_all", [](Fixture& f) {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--remove-all" });
         wassert(actual(res) == 0);
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds:2007/07-07.grib: should be deleted\n"
-            "testds:2007/07-08.grib: should be deleted\n"
-            "testds:2007/10-09.grib: should be deleted\n");
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds:2007/07-07.grib: should be deleted",
+            "testds:2007/07-08.grib: should be deleted",
+            "testds:2007/10-09.grib: should be deleted",
+        }));
     }
 
     wassert(actual_file("testds/2007/07-08.grib").exists());
@@ -148,11 +149,12 @@ add_method("remove_all", [](Fixture& f) {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--remove-all", "-f" });
         wassert(actual(res) == 0);
-        wassert(actual(sys::read_file(co.file_stdout.name())).matches(
-            "testds:2007/07-07.grib: deleted \\([0-9]+ freed\\)\n"
-            "testds:2007/07-08.grib: deleted \\([0-9]+ freed\\)\n"
-            "testds:2007/10-09.grib: deleted \\([0-9]+ freed\\)\n"));
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_match({
+            "testds:2007/07-07.grib: deleted \\([0-9]+ freed\\)",
+            "testds:2007/07-08.grib: deleted \\([0-9]+ freed\\)",
+            "testds:2007/10-09.grib: deleted \\([0-9]+ freed\\)",
+        }));
     }
 
     wassert(actual_file("testds/2007/07-08.grib").not_exists());
@@ -175,8 +177,8 @@ add_method("remove_all_filtered", [](Fixture& f) {
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--remove-all", "--filter=reftime:=2007-07-08" });
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "testds:2007/07-08.grib: should be deleted\n");
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({"testds:2007/07-08.grib: should be deleted"}));
         wassert(actual(res) == 0);
     }
 
@@ -187,8 +189,8 @@ add_method("remove_all_filtered", [](Fixture& f) {
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--remove-all", "--filter=reftime:=2007-07-08", "-f" });
-        wassert(actual(sys::read_file(co.file_stdout.name())).matches("testds:2007/07-08.grib: deleted \\([0-9]+ freed\\)\n"));
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_match({"testds:2007/07-08.grib: deleted \\([0-9]+ freed\\)"}));
         wassert(actual(res) == 0);
     }
 
@@ -212,62 +214,62 @@ add_method("archive", [](Fixture& f) {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", });
         wassert(actual(res) == 0);
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds:2007/07-07.grib: segment old enough to be archived\n"
-            "testds:2007/07-08.grib: segment old enough to be archived\n"
-            "testds:2007/10-09.grib: segment old enough to be archived\n"
-            "testds: check 0 files ok\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds:2007/07-07.grib: segment old enough to be archived",
+            "testds:2007/07-08.grib: segment old enough to be archived",
+            "testds:2007/10-09.grib: segment old enough to be archived",
+            "testds: check 0 files ok",
+        }));
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--fix" });
         wassert(actual(res) == 0);
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds:2007/07-07.grib: segment old enough to be archived\n"
-            "testds:2007/07-08.grib: segment old enough to be archived\n"
-            "testds:2007/10-09.grib: segment old enough to be archived\n"
-            "testds: check 0 files ok\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds:2007/07-07.grib: segment old enough to be archived",
+            "testds:2007/07-08.grib: segment old enough to be archived",
+            "testds:2007/10-09.grib: segment old enough to be archived",
+            "testds: check 0 files ok",
+        }));
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack" });
         wassert(actual(res) == 0);
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds:2007/07-07.grib: segment old enough to be archived\n"
-            "testds:2007/07-07.grib: should be archived\n"
-            "testds:2007/07-08.grib: segment old enough to be archived\n"
-            "testds:2007/07-08.grib: should be archived\n"
-            "testds:2007/10-09.grib: segment old enough to be archived\n"
-            "testds:2007/10-09.grib: should be archived\n"
-            "testds: repack 0 files ok, 3 files should be archived\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds:2007/07-07.grib: segment old enough to be archived",
+            "testds:2007/07-07.grib: should be archived",
+            "testds:2007/07-08.grib: segment old enough to be archived",
+            "testds:2007/07-08.grib: should be archived",
+            "testds:2007/10-09.grib: segment old enough to be archived",
+            "testds:2007/10-09.grib: should be archived",
+            "testds: repack 0 files ok, 3 files should be archived",
+        }));
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack", "--fix", "--online", "--offline" });
         wassert(actual(res) == 0);
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())).matches(
-            "testds:2007/07-07.grib: segment old enough to be archived\n"
-            "testds:2007/07-07.grib: archived\n"
-            "testds:2007/07-08.grib: segment old enough to be archived\n"
-            "testds:2007/07-08.grib: archived\n"
-            "testds:2007/10-09.grib: segment old enough to be archived\n"
-            "testds:2007/10-09.grib: archived\n"
-            "(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?\n)?"
-            "(testds: repack: rebuilding the summary cache\n)?"
-            "testds: repack 0 files ok, 3 files archived\n"
-            "testds.archives.last: repack: running VACUUM ANALYZE on the dataset index, if applicable\n"
-            "testds.archives.last: repack 3 files ok\n")
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_match({
+            "testds:2007/07-07.grib: segment old enough to be archived",
+            "testds:2007/07-07.grib: archived",
+            "testds:2007/07-08.grib: segment old enough to be archived",
+            "testds:2007/07-08.grib: archived",
+            "testds:2007/10-09.grib: segment old enough to be archived",
+            "testds:2007/10-09.grib: archived",
+            "(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?)?",
+            "(testds: repack: rebuilding the summary cache)?",
+            "testds: repack 0 files ok, 3 files archived",
+            "testds.archives.last: repack: running VACUUM ANALYZE on the dataset index, if applicable",
+            "testds.archives.last: repack 3 files ok",
+        }));
     }
 
     wassert(actual_file("testds/.archive/last/2007/07-08.grib").exists());
@@ -281,8 +283,8 @@ add_method("archive", [](Fixture& f) {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--unarchive=2007/07-08.grib" });
         wassert(actual(res) == 0);
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).empty());
     }
 
     wassert(actual_file("testds/.archive/last/2007/07-08.grib").not_exists());
@@ -312,11 +314,12 @@ add_method("issue57", [](Fixture& f) {
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "-f", "testds" });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds:2016/10-05.vm2: segment found on disk with no associated index data\n"
-            "testds:2016/10-05.vm2: rescanned\n"
-            "testds: check 0 files ok, 1 file rescanned\n");
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds:2016/10-05.vm2: segment found on disk with no associated index data",
+            "testds:2016/10-05.vm2: rescanned",
+            "testds: check 0 files ok, 1 file rescanned",
+        }));
         wassert(actual(res) == 0);
     }
 
@@ -330,8 +333,8 @@ add_method("issue57", [](Fixture& f) {
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--remove=testds/todelete.md" });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).empty());
         wassert(actual(res) == 0);
     }
 
@@ -360,41 +363,41 @@ add_method("tar", [](Fixture& f) {
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "testds", });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds.archives.last:2007/07-07.odimh5: should be tarred\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds.archives.last:2007/07-07.odimh5: should be tarred",
+        }));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "--offline", "testds", });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds.archives.last:2007/07-07.odimh5: should be tarred\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds.archives.last:2007/07-07.odimh5: should be tarred",
+        }));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "--online", "testds", });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds:2007/07-08.odimh5: should be tarred\n"
-            "testds:2007/10-09.odimh5: should be tarred\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds:2007/07-08.odimh5: should be tarred",
+            "testds:2007/10-09.odimh5: should be tarred",
+        }));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "testds", "-f" });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds.archives.last:2007/07-07.odimh5: tarred\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds.archives.last:2007/07-07.odimh5: tarred",
+        }));
         wassert(actual(res) == 0);
     }
 
@@ -429,41 +432,41 @@ add_method("zip", [](Fixture& f) {
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "testds", });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds.archives.last:2007/07-07.odimh5: should be zipped\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds.archives.last:2007/07-07.odimh5: should be zipped",
+        }));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "--offline", "testds", });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds.archives.last:2007/07-07.odimh5: should be zipped\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds.archives.last:2007/07-07.odimh5: should be zipped",
+        }));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "--online", "testds", });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds:2007/07-08.odimh5: should be zipped\n"
-            "testds:2007/10-09.odimh5: should be zipped\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds:2007/07-08.odimh5: should be zipped",
+            "testds:2007/10-09.odimh5: should be zipped",
+        }));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "testds", "-f" });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds.archives.last:2007/07-07.odimh5: zipped\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds.archives.last:2007/07-07.odimh5: zipped",
+        }));
         wassert(actual(res) == 0);
     }
 
@@ -493,41 +496,41 @@ add_method("compress", [](Fixture& f) {
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--compress", "testds", });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds.archives.last:2007/07-07.grib: should be compressed\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds.archives.last:2007/07-07.grib: should be compressed",
+        }));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--compress", "--offline", "testds", });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds.archives.last:2007/07-07.grib: should be compressed\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds.archives.last:2007/07-07.grib: should be compressed",
+        }));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--compress", "--online", "testds", });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds:2007/07-08.grib: should be compressed\n"
-            "testds:2007/10-09.grib: should be compressed\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds:2007/07-08.grib: should be compressed",
+            "testds:2007/10-09.grib: should be compressed",
+        }));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--compress", "testds", "-f" });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())).matches(
-            "testds.archives.last:2007/07-07.grib: compressed \\([0-9]+ freed\\)\n"
-        ));
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_match({
+            "testds.archives.last:2007/07-07.grib: compressed \\([0-9]+ freed\\)",
+        }));
         wassert(actual(res) == 0);
     }
 
@@ -561,33 +564,33 @@ add_method("scan", [](Fixture& f) {
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--state", "testds", });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z\n"
-            "testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-09 23:59:59Z\n"
-            "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-07-31 23:59:59Z\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z",
+            "testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-09 23:59:59Z",
+            "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-07-31 23:59:59Z",
+        }));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--state", "--offline", "testds", });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-07-31 23:59:59Z\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-07-31 23:59:59Z",
+        }));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--state", "--online", "testds", });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z\n"
-            "testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-09 23:59:59Z\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z",
+            "testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-09 23:59:59Z",
+        }));
         wassert(actual(res) == 0);
     }
 });
@@ -616,56 +619,56 @@ add_method("remove_old", [](Fixture& f) {
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--remove-old", "testds", });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds:2007/07-08.odimh5: segment old enough to be deleted\n"
-            "testds:2007/07-08.odimh5: should be deleted\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds:2007/07-08.odimh5: segment old enough to be deleted",
+            "testds:2007/07-08.odimh5: should be deleted",
+        }));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--remove-old", "--offline", "testds", });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
             // "testds.archives.last:2007/07-07.odimh5: segment old enough to be deleted\n"
-            "testds.archives.last:2007/07-07.odimh5: should be deleted\n"
-        );
+            "testds.archives.last:2007/07-07.odimh5: should be deleted"
+        }));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--remove-old", "--online", "testds", });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds:2007/07-08.odimh5: segment old enough to be deleted\n"
-            "testds:2007/07-08.odimh5: should be deleted\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds:2007/07-08.odimh5: segment old enough to be deleted",
+            "testds:2007/07-08.odimh5: should be deleted",
+        }));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--remove-old", "--offline", "--online", "testds" });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())) ==
-            "testds:2007/07-08.odimh5: segment old enough to be deleted\n"
-            "testds:2007/07-08.odimh5: should be deleted\n"
-            "testds.archives.last:2007/07-07.odimh5: should be deleted\n"
-        );
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds:2007/07-08.odimh5: segment old enough to be deleted",
+            "testds:2007/07-08.odimh5: should be deleted",
+            "testds.archives.last:2007/07-07.odimh5: should be deleted",
+        }));
         wassert(actual(res) == 0);
     }
 
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "--remove-old", "testds", "-f" });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
-        wassert(actual(sys::read_file(co.file_stdout.name())).matches(
-            "testds:2007/07-08.odimh5: segment old enough to be deleted\n"
-            "testds:2007/07-08.odimh5: deleted \\([0-9]+ freed\\)\n"
-        ));
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_match({
+            "testds:2007/07-08.odimh5: segment old enough to be deleted",
+            "testds:2007/07-08.odimh5: deleted \\([0-9]+ freed\\)",
+        }));
         wassert(actual(res) == 0);
     }
 

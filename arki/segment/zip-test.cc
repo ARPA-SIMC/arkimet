@@ -1,5 +1,6 @@
 #include "zip.h"
 #include "tests.h"
+#include "arki/libconfig.h"
 
 namespace {
 using namespace std;
@@ -12,6 +13,13 @@ class Tests : public SegmentTests<Segment, Data>
 {
     using SegmentTests<Segment, Data>::SegmentTests;
     void register_tests() override;
+
+    void setup()
+    {
+        SegmentTests<Segment, Data>::setup();
+        skip_unless_libzip();
+        skip_unless_libarchive();
+    }
 };
 
 Tests<segment::zip::Segment, GRIBData> test1("arki_segment_zip_grib");

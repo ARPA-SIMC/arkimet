@@ -3,6 +3,7 @@
 #include "arki/emitter/json.h"
 #include "arki/emitter/memory.h"
 #include "arki/exceptions.h"
+#include "arki/libconfig.h"
 #include <cstdlib>
 
 using namespace std;
@@ -116,6 +117,44 @@ void ActualTime::is(int ye, int mo, int da, int ho, int mi, int se)
     wassert(actual(_actual.ho) == ho);
     wassert(actual(_actual.mi) == mi);
     wassert(actual(_actual.se) == se);
+}
+
+void skip_unless_libzip()
+{
+#ifndef HAVE_LIBZIP
+    throw TestSkipped("libzip not available");
+#endif
+}
+void skip_unless_libarchive()
+{
+#ifndef HAVE_LIBARCHIVE
+    throw TestSkipped("libarchive not available");
+#endif
+}
+void skip_unless_grib()
+{
+#ifndef HAVE_GRIBAPI
+    throw TestSkipped("GRIB support not available");
+#endif
+
+}
+void skip_unless_bufr()
+{
+#ifndef HAVE_DBALLE
+    throw TestSkipped("BUFR support not available");
+#endif
+}
+void skip_unless_vm2()
+{
+#ifndef HAVE_VM2
+    throw TestSkipped("VM2 support not available");
+#endif
+}
+void skip_unless_odimh5()
+{
+#ifndef HAVE_HDF5
+    throw TestSkipped("ODIMH5 support not available");
+#endif
 }
 
 }

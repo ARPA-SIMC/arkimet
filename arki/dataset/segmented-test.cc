@@ -759,7 +759,7 @@ add_method("issue103", [](Fixture& f) {
 #ifndef HAVE_VM2
     throw TestSkipped("VM2 support not available");
 #endif
-    static const int max_files = 100;
+    static const unsigned max_files = 100;
     sys::OverrideRlimit(RLIMIT_NOFILE, max_files);
 
     // TODO: speed up by lowering RLIMIT_NOFILE for the duration of this test
