@@ -30,7 +30,6 @@ struct File : public core::File
  * If there is a commandline parameter available in the parser, use that as a
  * file name; else use the standard input.
  */
-std::unique_ptr<core::NamedFileDescriptor> make_input(utils::commandline::Parser& opts);
 std::unique_ptr<core::NamedFileDescriptor> make_output(utils::commandline::Parser& opts);
 std::unique_ptr<core::NamedFileDescriptor> make_output(utils::commandline::StringOption& opt);
 

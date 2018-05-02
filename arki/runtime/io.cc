@@ -22,18 +22,6 @@ InputFile::InputFile(const std::string& pathname)
 {
 }
 
-std::unique_ptr<utils::sys::NamedFileDescriptor> make_input(utils::commandline::Parser& opts)
-{
-    if (!opts.hasNext())
-        return std::unique_ptr<utils::sys::NamedFileDescriptor>(new Stdin);
-
-    string pathname = opts.next();
-    if (pathname == "-")
-        return std::unique_ptr<utils::sys::NamedFileDescriptor>(new Stdin);
-
-    return std::unique_ptr<utils::sys::NamedFileDescriptor>(new InputFile(pathname));
-}
-
 File::File(const std::string pathname, bool append)
     : sys::File(pathname, O_WRONLY | O_CREAT | (append ? O_APPEND : O_TRUNC), 0666)
 {
