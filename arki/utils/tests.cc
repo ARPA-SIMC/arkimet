@@ -447,7 +447,7 @@ void ActualFile::contents_equal(const std::initializer_list<std::string>& lines)
     std::copy(splitter.begin(), splitter.end(), back_inserter(actual_lines));
 
     if (actual_lines.size() != lines.size())
-        throw TestFailed("file " + _actual + " contains " + std::to_string(actual_lines.size()) + " lines ('" + str::encode_cstring(content) + "') instead of " + std::to_string(lines.size()) + "lines ('" + str::encode_cstring(content) + "')");
+        throw TestFailed("file " + _actual + " contains " + std::to_string(actual_lines.size()) + " lines ('" + str::encode_cstring(content) + "') instead of " + std::to_string(lines.size()) + " lines ('" + str::encode_cstring(content) + "')");
 
     auto ai = actual_lines.begin();
     auto ei = lines.begin();
@@ -504,7 +504,7 @@ void ActualFile::contents_match(const std::initializer_list<std::string>& lines_
         std::stringstream ss;
         ss << "file " << _actual << " actual contents differ from expected at line #" << lineno
            << " ('" << str::encode_cstring(actual_line)
-           << "' does not match '" << str::encode_cstring(*ai) << "')";
+           << "' does not match '" << str::encode_cstring(*ei) << "')";
         throw TestFailed(ss.str());
     }
 }
