@@ -140,6 +140,18 @@ add_method("scan_stdin", [](Fixture& f) {
         wassert(actual(res) == 1);
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
     }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_scan, {
+            "arki-scan",
+            "--dispatch=testds/config",
+            "-",
+        });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "file - does not exist\n");
+        wassert(actual(res) == 1);
+        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
+    }
 });
 
 }
