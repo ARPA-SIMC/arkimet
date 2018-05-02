@@ -40,5 +40,5 @@ then
 else
     autoreconf -ifv
     ./configure
-    make check
+    make check TEST_VERBOSE=1
 fi
