@@ -85,9 +85,9 @@ ZipReader::ZipReader(const std::string& format, core::NamedFileDescriptor&& fd)
 #ifndef HAVE_LIBZIP
     throw std::runtime_error("cannot read .zip files: libzip was not available at compile time");
 #else
-    int err;
+    int err = 0;
     zip = zip_fdopen(fd, 0, &err);
-    if (!err)
+    if (!zip)
     {
         fd.close();
         throw zip_error(err, "cannot open zip file " + fd.name());
