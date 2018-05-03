@@ -30,8 +30,9 @@ void TestMethodResult::print_failure_details(FILE* out) const
         fprintf(out, "%s.%s: %s\n", test_case.c_str(), test_method.c_str(), error_message.c_str());
     else
         fprintf(out, "%s.%s:[%s] %s\n", test_case.c_str(), test_method.c_str(), exception_typeid.c_str(), error_message.c_str());
-    for (const auto& frame : *error_stack)
-        fprintf(out, "  %s", frame.format().c_str());
+    if (error_stack)
+        for (const auto& frame : *error_stack)
+            fprintf(out, "  %s", frame.format().c_str());
 }
 
 
