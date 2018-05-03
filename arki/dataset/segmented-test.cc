@@ -280,6 +280,9 @@ add_method("tarred", [](Fixture& f) {
 });
 
 add_method("zipped", [](Fixture& f) {
+    skip_unless_libzip();
+    skip_unless_libarchive();
+
     // Import and compress all the files
     f.clean_and_import();
 
