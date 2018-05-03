@@ -23,7 +23,7 @@ protected:
     std::shared_ptr<const Config> m_config;
 
 public:
-    std::vector<Reader*> datasets;
+    std::vector<std::shared_ptr<Reader>> datasets;
 
     Merged();
     virtual ~Merged();
@@ -32,7 +32,7 @@ public:
     std::string type() const override;
 
     /// Add a dataset to the group of datasets to merge
-    void add_dataset(std::unique_ptr<Reader>&& ds);
+    void add_dataset(std::shared_ptr<Reader> ds);
 
     /// Add a dataset to the group of datasets to merge
     void add_dataset(const ConfigFile& cfg);

@@ -16,6 +16,7 @@ struct WriterBatch;
 struct Checker;
 struct Reporter;
 struct SegmentManager;
+struct Merged;
 
 }
 }

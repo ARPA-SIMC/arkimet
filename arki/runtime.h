@@ -9,6 +9,7 @@
 #include <arki/runtime/processor.h>
 #include <arki/runtime/inputs.h>
 #include <arki/metadata.h>
+#include <arki/dataset/fwd.h>
 #include <arki/dataset/memory.h>
 #include <arki/matcher.h>
 #include <arki/configfile.h>
@@ -144,16 +145,17 @@ struct Source
 {
     virtual ~Source();
     virtual std::string name() const = 0;
+    virtual dataset::Reader& reader() const = 0;
     virtual void open() = 0;
     virtual void close(bool successful) = 0;
-    virtual bool process(DatasetProcessor& processor) = 0;
-    virtual bool dispatch(MetadataDispatch& dispatcher) = 0;
+    virtual bool process(DatasetProcessor& processor);
+    virtual bool dispatch(MetadataDispatch& dispatcher);
 };
 
 struct FileSource : public Source
 {
     ConfigFile cfg;
-    std::shared_ptr<dataset::Reader> reader;
+    std::shared_ptr<dataset::Reader> m_reader;
     std::string movework;
     std::string moveok;
     std::string moveko;
@@ -161,10 +163,23 @@ struct FileSource : public Source
     FileSource(CommandLine& args, const ConfigFile& info);
 
     std::string name() const override;
+    dataset::Reader& reader() const override;
     void open() override;
     void close(bool successful) override;
-    bool process(DatasetProcessor& processor) override;
-    bool dispatch(MetadataDispatch& dispatch) override;
+};
+
+struct MergedSource : public Source
+{
+    std::vector<std::shared_ptr<FileSource>> sources;
+    std::shared_ptr<dataset::Merged> m_reader;
+    std::string m_name;
+
+    MergedSource(CommandLine& args);
+
+    std::string name() const override;
+    dataset::Reader& reader() const override;
+    void open() override;
+    void close(bool successful) override;
 };
 
 /// Dispatch metadata

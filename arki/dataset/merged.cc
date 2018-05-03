@@ -163,15 +163,13 @@ Merged::Merged()
 
 Merged::~Merged()
 {
-    for (auto ds: datasets)
-        delete ds;
 }
 
 std::string Merged::type() const { return "merged"; }
 
-void Merged::add_dataset(std::unique_ptr<Reader>&& ds)
+void Merged::add_dataset(std::shared_ptr<Reader> ds)
 {
-    datasets.emplace_back(ds.release());
+    datasets.emplace_back(ds);
 }
 
 void Merged::add_dataset(const ConfigFile& cfg)

@@ -12,6 +12,7 @@
 #include "arki/dataset/file.h"
 #include "arki/dataset/http.h"
 #include "arki/dataset/index/base.h"
+#include "arki/dataset/merged.h"
 #include "arki/dispatcher.h"
 #include "arki/targetfile.h"
 #include "arki/formatter.h"
@@ -507,31 +508,16 @@ bool CommandLine::foreach_source(std::function<bool(Source&)> dest)
 
     if (merged && merged->boolValue())
     {
-        throw std::runtime_error("TODO: merged dataset sources not yet refactored");
-#if 0
-        dataset::Merged merger;
-
-        // Instantiate the datasets and add them to the merger
-        string names;
-        for (const auto& cfg: opts.inputs)
-        {
-            merger.add_dataset(opts.openSource(cfg));
-            if (names.empty())
-                names = cfg.value("name");
-            else
-                names += "," + cfg.value("name");
+        MergedSource source(*this);
+        nag::verbose("Processing %s...", source.name().c_str());
+        source.open();
+        try {
+            all_successful = dest(source);
+        } catch (std::exception& e) {
+            nag::warning("%s failed: %s", source.name().c_str(), e.what());
+            all_successful = false;
         }
-
-        // Perform the query
-        all_successful = opts.processSource(merger, names);
-
-        for (size_t i = 0; i < merger.datasets.size(); ++i)
-        {
-            unique_ptr<dataset::Reader> ds(merger.datasets[i]);
-            merger.datasets[i] = 0;
-            opts.closeSource(move(ds), all_successful);
-        }
-#endif
+        source.close(all_successful);
     } else if (qmacro && qmacro->isSet()) {
         throw std::runtime_error("TODO: qmacro dataset sources not yet refactored");
 #if 0
@@ -574,6 +560,18 @@ bool CommandLine::foreach_source(std::function<bool(Source&)> dest)
 
 Source::~Source() {}
 
+bool Source::process(DatasetProcessor& processor)
+{
+    processor.process(reader(), name());
+    return true;
+}
+
+bool Source::dispatch(MetadataDispatch& dispatcher)
+{
+    return dispatcher.process(reader(), name());
+}
+
+
 FileSource::FileSource(CommandLine& args, const ConfigFile& info)
     : cfg(info)
 {
@@ -586,32 +584,54 @@ FileSource::FileSource(CommandLine& args, const ConfigFile& info)
 }
 
 std::string FileSource::name() const { return cfg.value("path"); }
+dataset::Reader& FileSource::reader() const { return *m_reader; }
 
 void FileSource::open()
 {
     if (!movework.empty() && cfg.value("type") == "file")
         cfg.setValue("path", moveFile(cfg.value("path"), movework));
-    reader = dataset::Reader::create(cfg);
+    m_reader = dataset::Reader::create(cfg);
 }
 
 void FileSource::close(bool successful)
 {
     if (successful && !moveok.empty())
-        moveFile(*reader, moveok);
+        moveFile(reader(), moveok);
     else if (!successful && !moveko.empty())
-        moveFile(*reader, moveko);
-    reader = std::shared_ptr<dataset::Reader>();
+        moveFile(reader(), moveko);
+    m_reader = std::shared_ptr<dataset::Reader>();
 }
 
-bool FileSource::process(DatasetProcessor& processor)
+MergedSource::MergedSource(CommandLine& args)
+    : m_reader(make_shared<dataset::Merged>())
 {
-    processor.process(*reader, name());
-    return true;
+    for (const auto& cfg: args.inputs)
+    {
+        sources.push_back(make_shared<FileSource>(args, cfg));
+        if (m_name.empty())
+            m_name = sources.back()->name();
+        else
+            m_name += "," + sources.back()->name();
+    }
 }
 
-bool FileSource::dispatch(MetadataDispatch& dispatcher)
+std::string MergedSource::name() const { return m_name; }
+dataset::Reader& MergedSource::reader() const { return *m_reader; }
+
+void MergedSource::open()
 {
-    return dispatcher.process(*reader, name());
+    // Instantiate the datasets and add them to the merger
+    for (const auto& source: sources)
+    {
+        source->open();
+        m_reader->add_dataset(source->m_reader);
+    }
+}
+
+void MergedSource::close(bool successful)
+{
+    for (auto& source: sources)
+        source->close(successful);
 }
 
 /*
