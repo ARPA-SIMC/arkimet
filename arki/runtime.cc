@@ -12,6 +12,7 @@
 #include "arki/dataset/file.h"
 #include "arki/dataset/http.h"
 #include "arki/dataset/index/base.h"
+#include "arki/dataset/merged.h"
 #include "arki/dispatcher.h"
 #include "arki/targetfile.h"
 #include "arki/formatter.h"
@@ -293,7 +294,7 @@ void CommandLine::setupProcessing()
         if (exprfile->isSet())
         {
             // Read the entire file into memory and parse it as an expression
-            strquery = files::read_file(exprfile->stringValue());
+            strquery = runtime::read_file(exprfile->stringValue());
         } else {
             // Read from the first commandline argument
             if (!hasNext())
@@ -501,38 +502,156 @@ static std::string moveFile(const dataset::Reader& ds, const std::string& target
         return string();
 }
 
-std::unique_ptr<dataset::Reader> CommandLine::openSource(const ConfigFile& info)
+bool CommandLine::foreach_source(std::function<bool(Source&)> dest)
 {
-    ConfigFile src(info);
+    bool all_successful = true;
 
-    if (movework && movework->isSet() && src.value("type") == "file")
-        src.setValue("path", moveFile(src.value("path"), movework->stringValue()));
+    if (merged && merged->boolValue())
+    {
+        MergedSource source(*this);
+        nag::verbose("Processing %s...", source.name().c_str());
+        source.open();
+        try {
+            all_successful = dest(source);
+        } catch (std::exception& e) {
+            nag::warning("%s failed: %s", source.name().c_str(), e.what());
+            all_successful = false;
+        }
+        source.close(all_successful);
+    } else if (qmacro && qmacro->isSet()) {
+        QmacroSource source(*this);
+        nag::verbose("Processing %s...", source.name().c_str());
+        source.open();
+        try {
+            all_successful = dest(source);
+        } catch (std::exception& e) {
+            nag::warning("%s failed: %s", source.name().c_str(), e.what());
+            all_successful = false;
+        }
+        source.close(all_successful);
+    } else {
+        // Query all the datasets in sequence
+        for (const auto& cfg: inputs)
+        {
+            FileSource source(*this, cfg);
+            nag::verbose("Processing %s...", source.name().c_str());
+            source.open();
+            bool success;
+            try {
+                success = dest(source);
+            } catch (std::exception& e) {
+                nag::warning("%s failed: %s", source.name().c_str(), e.what());
+                success = false;
+            }
+            source.close(success);
+            if (!success) all_successful = false;
+        }
+    }
 
-    return unique_ptr<dataset::Reader>(dataset::Reader::create(src));
+    return all_successful;
 }
 
-bool CommandLine::processSource(dataset::Reader& ds, const std::string& name)
+/*
+ * Source
+ */
+
+Source::~Source() {}
+
+bool Source::process(DatasetProcessor& processor)
 {
-    if (dispatcher)
-        return dispatcher->process(ds, name);
-    processor->process(ds, name);
+    processor.process(reader(), name());
     return true;
 }
 
-void CommandLine::closeSource(std::unique_ptr<dataset::Reader> ds, bool successful)
+bool Source::dispatch(MetadataDispatch& dispatcher)
 {
-	if (successful && moveok && moveok->isSet())
-	{
-		moveFile(*ds, moveok->stringValue());
-	}
-	else if (!successful && moveko && moveko->isSet())
-	{
-		moveFile(*ds, moveko->stringValue());
-	}
-	// TODO: print status
-
-	// ds will be automatically deallocated here
+    return dispatcher.process(reader(), name());
 }
+
+
+FileSource::FileSource(CommandLine& args, const ConfigFile& info)
+    : cfg(info)
+{
+    if (args.movework && args.movework->isSet())
+        movework = args.movework->stringValue();
+    if (args.moveok && args.moveok->isSet())
+        moveok = args.moveok->stringValue();
+    if (args.moveko && args.moveko->isSet())
+        moveko = args.moveko->stringValue();
+}
+
+std::string FileSource::name() const { return cfg.value("path"); }
+dataset::Reader& FileSource::reader() const { return *m_reader; }
+
+void FileSource::open()
+{
+    if (!movework.empty() && cfg.value("type") == "file")
+        cfg.setValue("path", moveFile(cfg.value("path"), movework));
+    m_reader = dataset::Reader::create(cfg);
+}
+
+void FileSource::close(bool successful)
+{
+    if (successful && !moveok.empty())
+        moveFile(reader(), moveok);
+    else if (!successful && !moveko.empty())
+        moveFile(reader(), moveko);
+    m_reader = std::shared_ptr<dataset::Reader>();
+}
+
+MergedSource::MergedSource(CommandLine& args)
+    : m_reader(make_shared<dataset::Merged>())
+{
+    for (const auto& cfg: args.inputs)
+    {
+        sources.push_back(make_shared<FileSource>(args, cfg));
+        if (m_name.empty())
+            m_name = sources.back()->name();
+        else
+            m_name += "," + sources.back()->name();
+    }
+}
+
+std::string MergedSource::name() const { return m_name; }
+dataset::Reader& MergedSource::reader() const { return *m_reader; }
+
+void MergedSource::open()
+{
+    // Instantiate the datasets and add them to the merger
+    for (const auto& source: sources)
+    {
+        source->open();
+        m_reader->add_dataset(source->m_reader);
+    }
+}
+
+void MergedSource::close(bool successful)
+{
+    for (auto& source: sources)
+        source->close(successful);
+}
+
+
+QmacroSource::QmacroSource(CommandLine& args)
+{
+    // Create the virtual qmacro dataset
+    m_reader = runtime::make_qmacro_dataset(
+            cfg,
+            args.inputs.as_config(),
+            args.qmacro->stringValue(),
+            args.strquery);
+    m_name = args.qmacro->stringValue();
+}
+
+std::string QmacroSource::name() const { return m_name; }
+dataset::Reader& QmacroSource::reader() const { return *m_reader; }
+void QmacroSource::open() {}
+void QmacroSource::close(bool successful) {}
+
+
+/*
+ * Dispatch
+ */
 
 MetadataDispatch::MetadataDispatch(const ConfigFile& cfg, DatasetProcessor& next, bool test)
 	: cfg(cfg), dispatcher(0), next(next), ignore_duplicates(false), reportStatus(false),

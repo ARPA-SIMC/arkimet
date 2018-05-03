@@ -74,26 +74,6 @@ bool hasDontpackFlagfile(const std::string& dir)
     return sys::exists(str::joinpath(dir, FLAGFILE_DONTPACK));
 }
 
-std::string read_file(const std::string &file)
-{
-    if (file == "-")
-    {
-        static const size_t bufsize = 4096;
-        char buf[bufsize];
-        std::string res;
-        sys::NamedFileDescriptor in(0, "(stdin)");
-        while (true)
-        {
-            size_t count = in.read(buf, bufsize);
-            if (count == 0) break;
-            res.append(buf, count);
-        }
-        return res;
-    }
-    else
-        return sys::read_file(file);
-}
-
 void resolve_path(const std::string& pathname, std::string& basedir, std::string& relpath)
 {
     if (pathname[0] == '/')

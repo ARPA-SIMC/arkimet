@@ -9,6 +9,7 @@
 #include <arki/runtime/processor.h>
 #include <arki/runtime/inputs.h>
 #include <arki/metadata.h>
+#include <arki/dataset/fwd.h>
 #include <arki/dataset/memory.h>
 #include <arki/matcher.h>
 #include <arki/configfile.h>
@@ -23,8 +24,10 @@ class Dispatcher;
 class Formatter;
 class Targetfile;
 class Validator;
+class Querymacro;
 
 namespace runtime {
+class Source;
 class MetadataDispatch;
 
 /**
@@ -132,29 +135,78 @@ struct CommandLine : public BaseCommandLine
 	void doneProcessing();
 
     /**
-     * Open the next data source to process
+     * Instantiate all sources requested on command line.
      *
-     * @return the pointer to the datasource, or 0 for no more datasets
+     * Return true if dest returned true (successful) on all sources.
      */
-    std::unique_ptr<dataset::Reader> openSource(const ConfigFile& info);
+    bool foreach_source(std::function<bool(Source&)> dest);
+};
 
-    /**
-     * Process one data source
-     *
-     * If everything went perfectly well, returns true, else false. It can
-     * still throw an exception if things go wrong.
-     */
-    bool processSource(dataset::Reader& ds, const std::string& name);
+/**
+ * Generic interface for data sources configured via the command line
+ */
+struct Source
+{
+    virtual ~Source();
+    virtual std::string name() const = 0;
+    virtual dataset::Reader& reader() const = 0;
+    virtual void open() = 0;
+    virtual void close(bool successful) = 0;
+    virtual bool process(DatasetProcessor& processor);
+    virtual bool dispatch(MetadataDispatch& dispatcher);
+};
 
-    /**
-     * Done working with one data source
-     *
-     * @param successful
-     *   true if everything went well, false if there were issues
-     * FIXME: put something that contains a status report instead, for
-     * FIXME: --status, as well as a boolean for moveok/moveko
-     */
-    void closeSource(std::unique_ptr<dataset::Reader> ds, bool successful = true);
+/**
+ * Data source from the path to a file or dataset
+ */
+struct FileSource : public Source
+{
+    ConfigFile cfg;
+    std::shared_ptr<dataset::Reader> m_reader;
+    std::string movework;
+    std::string moveok;
+    std::string moveko;
+
+    FileSource(CommandLine& args, const ConfigFile& info);
+
+    std::string name() const override;
+    dataset::Reader& reader() const override;
+    void open() override;
+    void close(bool successful) override;
+};
+
+/**
+ * Data source from --merged
+ */
+struct MergedSource : public Source
+{
+    std::vector<std::shared_ptr<FileSource>> sources;
+    std::shared_ptr<dataset::Merged> m_reader;
+    std::string m_name;
+
+    MergedSource(CommandLine& args);
+
+    std::string name() const override;
+    dataset::Reader& reader() const override;
+    void open() override;
+    void close(bool successful) override;
+};
+
+/**
+ * Data source from --qmacro
+ */
+struct QmacroSource : public Source
+{
+    ConfigFile cfg;
+    std::shared_ptr<dataset::Reader> m_reader;
+    std::string m_name;
+
+    QmacroSource(CommandLine& args);
+
+    std::string name() const override;
+    dataset::Reader& reader() const override;
+    void open() override;
+    void close(bool successful) override;
 };
 
 /// Dispatch metadata

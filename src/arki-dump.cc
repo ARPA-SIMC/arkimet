@@ -81,6 +81,19 @@ struct Options : public StandardParserWithManpage
 
 namespace {
 
+std::unique_ptr<utils::sys::NamedFileDescriptor> make_input(utils::commandline::Parser& opts)
+{
+    if (!opts.hasNext())
+        return std::unique_ptr<utils::sys::NamedFileDescriptor>(new Stdin);
+
+    string pathname = opts.next();
+    if (pathname == "-")
+        return std::unique_ptr<utils::sys::NamedFileDescriptor>(new Stdin);
+
+    return std::unique_ptr<utils::sys::NamedFileDescriptor>(new runtime::InputFile(pathname));
+}
+
+
 struct YamlPrinter
 {
     NamedFileDescriptor& out;
@@ -275,7 +288,7 @@ int main(int argc, const char* argv[])
         if (opts.bbox->boolValue())
         {
             // Open the input file
-            auto in = runtime::make_input(opts);
+            auto in = make_input(opts);
 
             // Read everything into a single summary
             Summary summary;
@@ -308,7 +321,7 @@ int main(int argc, const char* argv[])
         }
 
         // Open the input file
-        auto in = runtime::make_input(opts);
+        auto in = make_input(opts);
 
         // Open the output channel
         unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));

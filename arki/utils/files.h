@@ -46,12 +46,6 @@ void removeDontpackFlagfile(const std::string& dir);
 bool hasDontpackFlagfile(const std::string& dir);
 
 /**
- * Same as sys::read_file, but if \a file is "-" then reads all from
- * stdin
- */
-std::string read_file(const std::string &file);
-
-/**
  * Normalise a pathname and resolve it in the file system.
  *
  * @param pathname

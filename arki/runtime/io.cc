@@ -22,18 +22,6 @@ InputFile::InputFile(const std::string& pathname)
 {
 }
 
-std::unique_ptr<utils::sys::NamedFileDescriptor> make_input(utils::commandline::Parser& opts)
-{
-    if (!opts.hasNext())
-        return std::unique_ptr<utils::sys::NamedFileDescriptor>(new Stdin);
-
-    string pathname = opts.next();
-    if (pathname == "-")
-        return std::unique_ptr<utils::sys::NamedFileDescriptor>(new Stdin);
-
-    return std::unique_ptr<utils::sys::NamedFileDescriptor>(new InputFile(pathname));
-}
-
 File::File(const std::string pathname, bool append)
     : sys::File(pathname, O_WRONLY | O_CREAT | (append ? O_APPEND : O_TRUNC), 0666)
 {
@@ -77,6 +65,26 @@ void Tempfile::unlink_on_exit(bool val)
 void Tempfile::unlink()
 {
     sys::unlink(name());
+}
+
+std::string read_file(const std::string &file)
+{
+    if (file == "-")
+    {
+        static const size_t bufsize = 4096;
+        char buf[bufsize];
+        std::string res;
+        sys::NamedFileDescriptor in(0, "(stdin)");
+        while (true)
+        {
+            size_t count = in.read(buf, bufsize);
+            if (count == 0) break;
+            res.append(buf, count);
+        }
+        return res;
+    }
+    else
+        return sys::read_file(file);
 }
 
 }

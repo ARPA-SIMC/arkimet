@@ -101,10 +101,7 @@ Bufr::~Bufr()
 void Bufr::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
 {
     Scanner::open(filename, reader);
-    if (filename == "-")
-        file = dballe::File::create(dballe::File::BUFR, stdin, false, "standard input").release();
-    else
-        file = dballe::File::create(dballe::File::BUFR, filename.c_str(), "r").release();
+    file = dballe::File::create(dballe::File::BUFR, filename.c_str(), "r").release();
 }
 
 void Bufr::close()
