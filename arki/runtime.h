@@ -24,6 +24,7 @@ class Dispatcher;
 class Formatter;
 class Targetfile;
 class Validator;
+class Querymacro;
 
 namespace runtime {
 class Source;
@@ -141,6 +142,9 @@ struct CommandLine : public BaseCommandLine
     bool foreach_source(std::function<bool(Source&)> dest);
 };
 
+/**
+ * Generic interface for data sources configured via the command line
+ */
 struct Source
 {
     virtual ~Source();
@@ -152,6 +156,9 @@ struct Source
     virtual bool dispatch(MetadataDispatch& dispatcher);
 };
 
+/**
+ * Data source from the path to a file or dataset
+ */
 struct FileSource : public Source
 {
     ConfigFile cfg;
@@ -168,6 +175,9 @@ struct FileSource : public Source
     void close(bool successful) override;
 };
 
+/**
+ * Data source from --merged
+ */
 struct MergedSource : public Source
 {
     std::vector<std::shared_ptr<FileSource>> sources;
@@ -175,6 +185,23 @@ struct MergedSource : public Source
     std::string m_name;
 
     MergedSource(CommandLine& args);
+
+    std::string name() const override;
+    dataset::Reader& reader() const override;
+    void open() override;
+    void close(bool successful) override;
+};
+
+/**
+ * Data source from --qmacro
+ */
+struct QmacroSource : public Source
+{
+    ConfigFile cfg;
+    std::shared_ptr<dataset::Reader> m_reader;
+    std::string m_name;
+
+    QmacroSource(CommandLine& args);
 
     std::string name() const override;
     dataset::Reader& reader() const override;

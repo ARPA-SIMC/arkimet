@@ -88,7 +88,18 @@ add_method("query_merged", [](Fixture& f) {
 });
 
 add_method("query_qmacro", [](Fixture& f) {
-    throw std::runtime_error("TODO: test arki-query --qmacro");
+    using runtime::tests::run_cmdline;
+    f.clean_and_import("inbound/fixture.grib1");
+    runtime::tests::CatchOutput co;
+    int res = run_cmdline(runtime::arki_query, {
+        "arki-query",
+        "--qmacro=noop", "--data",
+        "testds",
+        "testds",
+    });
+    wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+    wassert(actual(res) == 0);
+    wassert(actual(sys::read_file(co.file_stdout.name())).startswith("GRIB"));
 });
 
 }
