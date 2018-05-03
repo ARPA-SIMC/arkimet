@@ -157,7 +157,7 @@ struct Regexp
 
     Regexp(const char* regex)
     {
-        if (int err = regcomp(&compiled, regex, REG_EXTENDED | REG_NOSUB))
+        if (int err = regcomp(&compiled, regex, REG_EXTENDED))
             raise_error(err);
     }
     ~Regexp()
