@@ -1,3 +1,6 @@
+# Note: define _srcarchivename in Travis build only.
+%{!?_srcarchivename: %global _srcarchivename %{name}-%{version}-%{release}}
+
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.6
@@ -5,11 +8,10 @@ Release: 3
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
-Source0: https://github.com/arpa-simc/%{name}/archive/v%{version}-%{release}.tar.gz#/%{name}-%{version}-%{release}.tar.gz
+Source0: https://github.com/arpa-simc/%{name}/archive/v%{version}-%{release}.tar.gz#/%{_srcarchivename}.tar.gz
 Source1: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.service
 Source2: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.sysconfig
 Source3: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}-logrotate.conf
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 # On fedora, we don't need systemd to build. But we do on centos.
 %{?el7:BuildRequires: systemd}
@@ -65,7 +67,7 @@ Requires: libdballe-devel, %{grib_sw}-devel, libwreport-devel, %{python3_vers}-d
  Arkimet developement library
 
 %prep
-%setup -q -n %{name}-%{version}-%{release}
+%setup -q -n %{_srcarchivename}
 sh autogen.sh
 
 %build
