@@ -51,6 +51,12 @@ LDFLAGS = {
     "sette": _common_ldflags,
 }
 
+TEST_WORKAREA = {
+    "venti": "/tmp",
+    "ventiquattro": "/tmp",
+    "sette": "/home/makerpm/testarea",
+}
+
 
 def cmd(*args):
     return " ".join(shlex_quote(a) for a in args)
@@ -69,6 +75,7 @@ def _test(name):
         "CXXFLAGS=" + cxxflags,
         "LDFLAGS=" + ldflags,
     ]
+    test_workarea = TEST_WORKAREA[name]
 
     local(cmd("git", "push", "--force", name, "HEAD"))
     with cd(remote_dir):
@@ -78,7 +85,8 @@ def _test(name):
         run(cmd("autoreconf", "-if"))
         run(cmd(*configure_cmd))
         run(cmd("make"))
-        run(cmd("make", "check", "TEST_VERBOSE=1"))
+        with shell_env(TMPDIR=test_workarea):
+            run(cmd("make", "check", "TEST_VERBOSE=1"))
 
 
 @hosts("venti")
