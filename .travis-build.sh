@@ -8,21 +8,21 @@ then
     pkgcmd="yum"
     builddep="yum-builddep"
     sed -i '/^tsflags=/d' /etc/yum.conf
-    yum install -y epel-release
-    yum install -y @buildsys-build
-    yum install -y yum-utils
-    yum install -y yum-plugin-copr
-    yum install -y git
-    yum copr enable -y simc/stable
+    yum install -q -y epel-release
+    yum install -q -y @buildsys-build
+    yum install -q -y yum-utils
+    yum install -q -y yum-plugin-copr
+    yum install -q -y git
+    yum copr enable -q -y simc/stable
 elif [[ $image =~ ^fedora: ]]
 then
     pkgcmd="dnf"
     builddep="dnf builddep"
     sed -i '/^tsflags=/d' /etc/dnf/dnf.conf
-    dnf install -y @buildsys-build
-    dnf install -y 'dnf-command(builddep)'
-    dnf install -y git
-    dnf copr enable -y simc/stable
+    dnf install -q -y @buildsys-build
+    dnf install -q -y 'dnf-command(builddep)'
+    dnf install -q -y git
+    dnf copr enable -q -y simc/stable
 fi
 
 $builddep -y fedora/SPECS/arkimet.spec
