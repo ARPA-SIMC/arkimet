@@ -413,6 +413,8 @@ add_method("tar", [](Fixture& f) {
 
 add_method("zip", [](Fixture& f) {
     using runtime::tests::run_cmdline;
+    skip_unless_libzip();
+    skip_unless_libarchive();
 
     f.cfg.setValue("format", "odimh5");
     f.test_reread_config();
