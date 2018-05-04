@@ -168,8 +168,7 @@ void MaintenanceTest::rm_r(const std::string& pathname)
 
 void MaintenanceTest::make_hugefile()
 {
-    if (!files::filesystem_has_holes("."))
-        throw TestSkipped("Filesystem does not support holes in files");
+    skip_unless_filesystem_has_holes(".");
 
     // Pretend that the test segment is 6G already
     {

@@ -84,6 +84,8 @@ void Tests::register_tests() {
 
 // Test a dataset with very large mock files in it
 add_method("import_largefile", [](Fixture& f) {
+    skip_unless_filesystem_has_holes(".");
+
     // A dataset with hole files
     f.cfg.setValue("step", "daily");
     f.cfg.setValue("segments", "dir");

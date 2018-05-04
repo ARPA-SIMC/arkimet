@@ -4,6 +4,7 @@
 #include "arki/emitter/memory.h"
 #include "arki/exceptions.h"
 #include "arki/libconfig.h"
+#include "arki/utils/files.h"
 #include <cstdlib>
 
 using namespace std;
@@ -155,6 +156,18 @@ void skip_unless_odimh5()
 #ifndef HAVE_HDF5
     throw TestSkipped("ODIMH5 support not available");
 #endif
+}
+
+void skip_unless_filesystem_has_holes(const std::string& path)
+{
+    if (!utils::files::filesystem_has_holes(path))
+        throw TestSkipped("Filesystem does not support holes in files");
+}
+
+void skip_unless_filesystem_has_ofd_locks(const std::string& path)
+{
+    if (!utils::files::filesystem_has_ofd_locks(path))
+        throw TestSkipped("OFD locks not supported");
 }
 
 }

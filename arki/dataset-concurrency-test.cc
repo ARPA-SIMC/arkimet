@@ -393,8 +393,8 @@ this->add_method("write_write_different_segments", [](Fixture& f) {
 });
 
 this->add_method("read_repack", [](Fixture& f) {
-    if (!files::filesystem_has_ofd_locks("."))
-        throw TestSkipped("OFD locks not supported");
+    skip_unless_filesystem_has_ofd_locks(".");
+
     auto orig_data = f.td.mds[1].getData();
 
     f.reset_test("step=single");
