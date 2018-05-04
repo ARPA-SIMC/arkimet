@@ -152,12 +152,14 @@ namespace {
 
 struct Regexp
 {
+    std::string regex;
     regex_t compiled;
     regmatch_t matches[2];
 
     Regexp(const char* regex)
+        : regex(regex)
     {
-        if (int err = regcomp(&compiled, regex, REG_EXTENDED))
+        if (int err = regcomp(&compiled, this->regex.c_str(), REG_EXTENDED))
             raise_error(err);
     }
     ~Regexp()
@@ -464,7 +466,6 @@ void ActualFile::contents_equal(const std::initializer_list<std::string>& lines)
 void ActualFile::contents_match(const std::string& data_re) const
 {
     std::string content = sys::read_file(_actual);
-
     Regexp re(data_re.c_str());
     if (re.search(content.c_str())) return;
     std::stringstream ss;
