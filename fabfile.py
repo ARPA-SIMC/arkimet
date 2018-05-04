@@ -8,94 +8,93 @@ import git
 import re
 from six.moves import shlex_quote
 
-env.hosts = ["venti", "ventiquattro"]
+env.hosts = ["venti", "ventiquattro", "sette"]
 env.use_ssh_config = True
+
+_common_configure_args = [
+        "--enable-arpae-tests",
+        "--build=x86_64-redhat-linux-gnu",
+        "--host=x86_64-redhat-linux-gnu",
+        "--program-prefix=",
+        "--prefix=/usr",
+        "--exec-prefix=/usr",
+        "--bindir=/usr/bin",
+        "--sbindir=/usr/sbin",
+        "--sysconfdir=/etc",
+        "--datadir=/usr/share",
+        "--includedir=/usr/include",
+        "--libdir=/usr/lib64",
+        "--libexecdir=/usr/libexec",
+        "--localstatedir=/var",
+        "--sharedstatedir=/var/lib",
+        "--mandir=/usr/share/man",
+        "--infodir=/usr/share/info",
+        "--disable-dependency-tracking",
+]
+CONFIGURE_ARGS = {
+    "venti": _common_configure_args,
+    "ventiquattro": _common_configure_args,
+    "sette": _common_configure_args,
+}
+
+_common_cxxflags = "-O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong"\
+                   " --param=ssp-buffer-size=4 -grecord-gcc-switches  -m64 -mtune=generic"
+CXXFLAGS = {
+    "venti": _common_cxxflags,
+    "ventiquattro": _common_cxxflags + "-Werror=format-security -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1",
+    "sette": _common_cxxflags,
+}
+
+_common_ldflags = "-Wl,-z,relro"
+LDFLAGS = {
+    "venti": _common_ldflags,
+    "ventiquattro": _common_ldflags + " -specs=/usr/lib/rpm/redhat/redhat-hardened-ld",
+    "sette": _common_ldflags,
+}
+
 
 def cmd(*args):
     return " ".join(shlex_quote(a) for a in args)
 
-@hosts("venti")
-def test_venti():
-    fedora_cxxflags = "-O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong"\
-                      " --param=ssp-buffer-size=4 -grecord-gcc-switches  -m64 -mtune=generic"
-    fedora_ldflags = "-Wl,-z,relro"
+
+def _test(name):
+    cxxflags = CXXFLAGS[name]
+    ldflags = LDFLAGS[name]
 
     repo = git.Repo()
-    remote = repo.remote("venti")
+    remote = repo.remote(name)
     push_url = remote.config_reader.get("url")
     remote_dir = re.sub(r"^ssh://[^/]+", "", push_url)
+    configure_cmd = ["./configure"] + CONFIGURE_ARGS[name] + [
+        "CFLAGS=" + cxxflags,
+        "CXXFLAGS=" + cxxflags,
+        "LDFLAGS=" + ldflags,
+    ]
 
-    local(cmd("git", "push", "--force", "venti", "HEAD"))
+    local(cmd("git", "push", "--force", name, "HEAD"))
     with cd(remote_dir):
         run(cmd("git", "reset", "--hard"))
         run(cmd("git", "clean", "-fx"))
-        run(cmd("git", "checkout", "-B", "test_venti", repo.head.commit.hexsha))
+        run(cmd("git", "checkout", "-B", "test_" + name, repo.head.commit.hexsha))
         run(cmd("autoreconf", "-if"))
-        run(cmd("./configure",
-                "--enable-arpae-tests",
-                "--build=x86_64-redhat-linux-gnu",
-                "--host=x86_64-redhat-linux-gnu",
-                "--program-prefix=",
-                "--prefix=/usr",
-                "--exec-prefix=/usr",
-                "--bindir=/usr/bin",
-                "--sbindir=/usr/sbin",
-                "--sysconfdir=/etc",
-                "--datadir=/usr/share",
-                "--includedir=/usr/include",
-                "--libdir=/usr/lib64",
-                "--libexecdir=/usr/libexec",
-                "--localstatedir=/var",
-                "--sharedstatedir=/var/lib",
-                "--mandir=/usr/share/man",
-                "--infodir=/usr/share/info",
-                "CFLAGS=" + fedora_cxxflags,
-                "CXXFLAGS=" + fedora_cxxflags,
-                "LDFLAGS=" + fedora_ldflags))
+        run(cmd(*configure_cmd))
         run(cmd("make"))
-        run(cmd("make", "check"))
+        run(cmd("make", "check", "TEST_VERBOSE=1"))
+
+
+@hosts("venti")
+def test_venti():
+    _test("venti")
+
 
 @hosts("ventiquattro")
 def test_ventiquattro():
-    fedora_cxxflags = "-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong"\
-                      " --param=ssp-buffer-size=4 -grecord-gcc-switches -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -m64 -mtune=generic"
-    fedora_ldflags = "-Wl,-z,relro -specs=/usr/lib/rpm/redhat/redhat-hardened-ld"
+    _test("ventiquattro")
 
-    repo = git.Repo()
-    remote = repo.remote("ventiquattro")
-    push_url = remote.config_reader.get("url")
-    remote_dir = re.sub(r"^ssh://[^/]+", "", push_url)
 
-    local(cmd("git", "push", "--force", "ventiquattro", "HEAD"))
-    with cd(remote_dir):
-        run(cmd("git", "reset", "--hard"))
-        run(cmd("git", "clean", "-fx"))
-        run(cmd("git", "checkout", "-B", "test_venti", repo.head.commit.hexsha))
-        run(cmd("autoreconf", "-if"))
-        run(cmd("./configure",
-                "--enable-arpae-tests",
-                "--build=x86_64-redhat-linux-gnu",
-                "--host=x86_64-redhat-linux-gnu",
-                "--program-prefix=",
-                "--disable-dependency-tracking",
-                "--prefix=/usr",
-                "--exec-prefix=/usr",
-                "--bindir=/usr/bin",
-                "--sbindir=/usr/sbin",
-                "--sysconfdir=/etc",
-                "--datadir=/usr/share",
-                "--includedir=/usr/include",
-                "--libdir=/usr/lib64",
-                "--libexecdir=/usr/libexec",
-                "--localstatedir=/var",
-                "--sharedstatedir=/var/lib",
-                "--mandir=/usr/share/man",
-                "--infodir=/usr/share/info",
-                "CFLAGS=" + fedora_cxxflags,
-                "CXXFLAGS=" + fedora_cxxflags,
-                "LDFLAGS=" + fedora_ldflags))
-        run(cmd("make"))
-        run(cmd("make", "check"))
+@hosts("makerpm@sette")
+def test_sette():
+    _test("sette")
 
 
 def test():
