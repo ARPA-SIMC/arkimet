@@ -12,7 +12,6 @@ env.hosts = ["venti", "ventiquattro", "sette"]
 env.use_ssh_config = True
 
 _common_configure_args = [
-        "--enable-arpae-tests",
         "--build=x86_64-redhat-linux-gnu",
         "--host=x86_64-redhat-linux-gnu",
         "--program-prefix=",
@@ -32,8 +31,8 @@ _common_configure_args = [
         "--disable-dependency-tracking",
 ]
 CONFIGURE_ARGS = {
-    "venti": _common_configure_args,
-    "ventiquattro": _common_configure_args,
+    "venti": _common_configure_args + ["--enable-arpae-tests"],
+    "ventiquattro": _common_configure_args + ["--enable-arpae-tests"],
     "sette": _common_configure_args,
 }
 
