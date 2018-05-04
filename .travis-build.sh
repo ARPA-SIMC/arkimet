@@ -29,13 +29,13 @@ $builddep -y fedora/SPECS/arkimet.spec
 
 if [[ $image =~ ^fedora: || $image =~ ^centos: ]]
 then
-    pkgname=arkimet-$(git describe --abbrev=0 --tags --match='v*' | sed -e 's,^v,,g')
+    pkgname=arkimet-master
     mkdir -p ~/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
     cp fedora/SPECS/arkimet.spec ~/rpmbuild/SPECS/arkimet.spec
     cp fedora/SOURCES/* ~/rpmbuild/SOURCES/
     git archive --prefix=$pkgname/ --format=tar HEAD | gzip -c > ~/rpmbuild/SOURCES/$pkgname.tar.gz
-    rpmbuild -ba ~/rpmbuild/SPECS/arkimet.spec
-    find ~/rpmbuild/{RPMS,SRPMS}/ -name "${pkgname}*rpm" -exec cp -v {} . \;
+    rpmbuild -ba --define "_srcarchivename $pkgname" ~/rpmbuild/SPECS/arkimet.spec
+    find ~/rpmbuild/{RPMS,SRPMS}/ -name "*rpm" -exec cp -v {} . \;
     # TODO upload ${pkgname}*.rpm to github release on deploy stage
 else
     autoreconf -ifv
