@@ -311,7 +311,6 @@ libarkimet_la_SOURCES += \
 		runtime/config.cc \
 		runtime/inputs.cc \
 		runtime/io.cc \
-		runtime/tests.cc \
 		types-init.cc
 
 libarkimet_test_la_SOURCES += \
@@ -632,6 +631,7 @@ tests_arki_test_SOURCES += \
 		querymacro-test.cc \
 		datasets-test.cc \
 		dispatcher-test.cc \
+		runtime/tests.cc \
 		runtime/processor-test.cc \
 		runtime/source-test.cc \
 		runtime/dispatch-test.cc \

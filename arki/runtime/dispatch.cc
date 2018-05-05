@@ -91,9 +91,9 @@ MetadataDispatch::MetadataDispatch(const ScanCommandLine& args, DatasetProcessor
         }
     }
 
-    if (args.copyok && args.copyok->isSet())
+    if (args.copyok->isSet())
         dir_copyok = args.copyok->stringValue();
-    if (args.copyko && args.copyko->isSet())
+    if (args.copyko->isSet())
         dir_copyko = args.copyko->stringValue();
 }
 

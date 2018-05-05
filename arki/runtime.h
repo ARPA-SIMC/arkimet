@@ -69,12 +69,9 @@ struct CommandLine : public BaseCommandLine
     utils::commandline::BoolOption* yaml = nullptr;
     utils::commandline::BoolOption* json = nullptr;
     utils::commandline::BoolOption* annotate = nullptr;
-    utils::commandline::BoolOption* dataInline = nullptr;
-    utils::commandline::BoolOption* dataOnly = nullptr;
     utils::commandline::BoolOption* summary = nullptr;
     utils::commandline::BoolOption* summary_short = nullptr;
     utils::commandline::BoolOption* merged = nullptr;
-    utils::commandline::BoolOption* ignore_duplicates = nullptr;
     utils::commandline::StringOption* restr = nullptr;
     utils::commandline::StringOption* exprfile = nullptr;
     utils::commandline::StringOption* qmacro = nullptr;
@@ -85,14 +82,9 @@ struct CommandLine : public BaseCommandLine
     utils::commandline::OptvalStringOption* archive = nullptr;
     utils::commandline::StringOption* sort = nullptr;
     utils::commandline::StringOption* files = nullptr;
-    utils::commandline::StringOption* copyok = nullptr;
-    utils::commandline::StringOption* copyko = nullptr;
     utils::commandline::StringOption* summary_restrict = nullptr;
-    utils::commandline::StringOption* validate = nullptr;
     utils::commandline::VectorOption<utils::commandline::ExistingFile>* postproc_data = nullptr;
     utils::commandline::VectorOption<utils::commandline::String>* cfgfiles = nullptr;
-    utils::commandline::VectorOption<utils::commandline::String>* dispatch = nullptr;
-    utils::commandline::VectorOption<utils::commandline::String>* testdispatch = nullptr;
 
     Inputs inputs;
     std::string strquery;
@@ -130,6 +122,12 @@ struct ScanCommandLine : public CommandLine
     utils::commandline::StringOption* moveok = nullptr;
     utils::commandline::StringOption* moveko = nullptr;
     utils::commandline::StringOption* movework = nullptr;
+    utils::commandline::StringOption* copyok = nullptr;
+    utils::commandline::StringOption* copyko = nullptr;
+    utils::commandline::BoolOption* ignore_duplicates = nullptr;
+    utils::commandline::StringOption* validate = nullptr;
+    utils::commandline::VectorOption<utils::commandline::String>* dispatch = nullptr;
+    utils::commandline::VectorOption<utils::commandline::String>* testdispatch = nullptr;
 
     ScanCommandLine(const std::string& name, int mansection=1);
 
@@ -138,6 +136,9 @@ struct ScanCommandLine : public CommandLine
 
 struct QueryCommandLine : public CommandLine
 {
+    utils::commandline::BoolOption* dataInline = nullptr;
+    utils::commandline::BoolOption* dataOnly = nullptr;
+
     QueryCommandLine(const std::string& name, int mansection=1);
 
     bool parse(int argc, const char* argv[]);

@@ -477,8 +477,8 @@ std::unique_ptr<DatasetProcessor> create(ScanCommandLine& args, const Matcher& q
     pmaker.yaml = args.yaml->boolValue();
     pmaker.json = args.json->boolValue();
     pmaker.annotate = args.annotate->boolValue();
-    pmaker.data_only = args.dataOnly ? args.dataOnly->boolValue() : false;
-    pmaker.data_inline = args.dataInline ? args.dataInline->boolValue() : false;
+    pmaker.data_only = false;
+    pmaker.data_inline = false;
     if (args.postprocess) pmaker.postprocess = args.postprocess->stringValue();
     pmaker.report = args.report->stringValue();
     pmaker.summary_restrict = args.summary_restrict->stringValue();
@@ -516,10 +516,6 @@ static void _verify_option_consistency(CommandLine& args)
             throw commandline::BadOption("--annotate conflicts with --report");
         //if (summary->boolValue())
         //  return "--summary conflicts with --report";
-        if (args.dataInline && args.dataInline->isSet())
-            throw commandline::BadOption("--inline conflicts with --report");
-        if (args.dataOnly && args.dataOnly->isSet())
-            throw commandline::BadOption("--report conflicts with --data");
         if (args.postprocess && args.postprocess->isSet())
             throw commandline::BadOption("--postprocess conflicts with --report");
         if (args.sort->isSet())
@@ -532,10 +528,6 @@ static void _verify_option_consistency(CommandLine& args)
     {
         if (args.json->isSet())
             throw commandline::BadOption("--dump/--yaml conflicts with --json");
-        if (args.dataInline && args.dataInline->isSet())
-            throw commandline::BadOption("--dump/--yaml conflicts with --inline");
-        if (args.dataOnly && args.dataOnly->isSet())
-            throw commandline::BadOption("--dump/--yaml conflicts with --data");
         if (args.postprocess && args.postprocess->isSet())
             throw commandline::BadOption("--dump/--yaml conflicts with --postprocess");
         if (args.archive->isSet())
@@ -543,10 +535,6 @@ static void _verify_option_consistency(CommandLine& args)
     }
     if (args.annotate->isSet())
     {
-        if (args.dataInline && args.dataInline->isSet())
-            throw commandline::BadOption("--annotate conflicts with --inline");
-        if (args.dataOnly && args.dataOnly->isSet())
-            throw commandline::BadOption("--annotate conflicts with --data");
         if (args.postprocess && args.postprocess->isSet())
             throw commandline::BadOption("--annotate conflicts with --postprocess");
         if (args.archive->isSet())
@@ -554,10 +542,6 @@ static void _verify_option_consistency(CommandLine& args)
     }
     if (args.summary->isSet())
     {
-        if (args.dataInline && args.dataInline->isSet())
-            throw commandline::BadOption("--summary conflicts with --inline");
-        if (args.dataOnly && args.dataOnly->isSet())
-            throw commandline::BadOption("--summary conflicts with --data");
         if (args.summary_short->isSet())
             throw commandline::BadOption("--summary conflicts with --summary-short");
         if (args.postprocess && args.postprocess->isSet())
@@ -570,10 +554,6 @@ static void _verify_option_consistency(CommandLine& args)
         throw commandline::BadOption("--summary-restrict only makes sense with --summary");
     if (args.summary_short->isSet())
     {
-        if (args.dataInline && args.dataInline->isSet())
-            throw commandline::BadOption("--summary-short conflicts with --inline");
-        if (args.dataOnly && args.dataOnly->isSet())
-            throw commandline::BadOption("--summary-short conflicts with --data");
         if (args.postprocess && args.postprocess->isSet())
             throw commandline::BadOption("--summary-short conflicts with --postprocess");
         if (args.sort->isSet())
@@ -581,26 +561,10 @@ static void _verify_option_consistency(CommandLine& args)
         if (args.archive->isSet())
             throw commandline::BadOption("--summary-short conflicts with --archive");
     }
-    if (args.dataInline && args.dataInline->isSet())
-    {
-        if (args.dataOnly && args.dataOnly->isSet())
-            throw commandline::BadOption("--inline conflicts with --data");
-        if (args.postprocess && args.postprocess->isSet())
-            throw commandline::BadOption("--inline conflicts with --postprocess");
-        if (args.archive->isSet())
-            throw commandline::BadOption("--inline conflicts with --archive");
-    }
     if (args.postprocess && args.postprocess->isSet())
     {
-        if (args.dataOnly && args.dataOnly->isSet())
-            throw commandline::BadOption("--postprocess conflicts with --data");
         if (args.archive->isSet())
             throw commandline::BadOption("--postprocess conflicts with --archive");
-    }
-    if (args.dataOnly && args.dataOnly->isSet())
-    {
-        if (args.archive->isSet())
-            throw commandline::BadOption("--data conflicts with --archive");
     }
 }
 
@@ -623,6 +587,43 @@ void verify_option_consistency(ScanCommandLine& args)
 
 void verify_option_consistency(QueryCommandLine& args)
 {
+    if (args.dataInline->isSet())
+    {
+        if (args.report->isSet())
+            throw commandline::BadOption("--inline conflicts with --report");
+        if (args.yaml->isSet())
+            throw commandline::BadOption("--dump/--yaml conflicts with --inline");
+        if (args.annotate->isSet())
+            throw commandline::BadOption("--annotate conflicts with --inline");
+        if (args.summary->isSet())
+            throw commandline::BadOption("--summary conflicts with --inline");
+        if (args.summary_short->isSet())
+            throw commandline::BadOption("--summary-short conflicts with --inline");
+        if (args.dataOnly->isSet())
+            throw commandline::BadOption("--inline conflicts with --data");
+        if (args.postprocess && args.postprocess->isSet())
+            throw commandline::BadOption("--inline conflicts with --postprocess");
+        if (args.archive->isSet())
+            throw commandline::BadOption("--inline conflicts with --archive");
+    }
+
+    if (args.dataOnly->isSet())
+    {
+        if (args.report->isSet())
+            throw commandline::BadOption("--report conflicts with --data");
+        if (args.archive->isSet())
+            throw commandline::BadOption("--data conflicts with --archive");
+        if (args.yaml->isSet())
+            throw commandline::BadOption("--dump/--yaml conflicts with --data");
+        if (args.annotate->isSet())
+            throw commandline::BadOption("--annotate conflicts with --data");
+        if (args.summary->isSet())
+            throw commandline::BadOption("--summary conflicts with --data");
+        if (args.summary_short->isSet())
+            throw commandline::BadOption("--summary-short conflicts with --data");
+        if (args.postprocess->isSet())
+            throw commandline::BadOption("--postprocess conflicts with --data");
+    }
     _verify_option_consistency(args);
 }
 

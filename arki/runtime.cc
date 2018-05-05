@@ -157,25 +157,7 @@ ScanCommandLine::ScanCommandLine(const std::string& name, int mansection)
             "move input files here before opening them. This is useful to "
             "catch the cases where arki-scan crashes without having a "
             "chance to handle errors.");
-}
 
-QueryCommandLine::QueryCommandLine(const std::string& name, int mansection)
-    : CommandLine(name, mansection)
-{
-    using namespace arki::utils::commandline;
-}
-
-CommandLine::~CommandLine()
-{
-    if (output) delete output;
-}
-
-void CommandLine::add_scan_options()
-{
-    using namespace arki::utils::commandline;
-
-    files = inputOpts->add<StringOption>("files", 0, "files", "file",
-            "read the list of files to scan from the given file instead of the command line");
     copyok = inputOpts->add<StringOption>("copyok", 0, "copyok", "directory",
             "copy the data from input files that was imported successfully to the given directory");
     copyko = inputOpts->add<StringOption>("copyko", 0, "copyko", "directory",
@@ -194,7 +176,30 @@ void CommandLine::add_scan_options()
     testdispatch = dispatchOpts->add< VectorOption<String> >("testdispatch", 0, "testdispatch", "conffile",
             "simulate dispatching the files right after scanning, using the given configuration file "
             "or dataset directory (can be specified multiple times)");
+}
 
+QueryCommandLine::QueryCommandLine(const std::string& name, int mansection)
+    : CommandLine(name, mansection)
+{
+    using namespace arki::utils::commandline;
+    dataInline = outputOpts->add<BoolOption>("inline", 0, "inline", "",
+            "output the binary metadata together with the data (pipe through "
+            " arki-dump or arki-grep to estract the data afterwards)");
+    dataOnly = outputOpts->add<BoolOption>("data", 0, "data", "",
+            "output only the data");
+}
+
+CommandLine::~CommandLine()
+{
+    if (output) delete output;
+}
+
+void CommandLine::add_scan_options()
+{
+    using namespace arki::utils::commandline;
+
+    files = inputOpts->add<StringOption>("files", 0, "files", "file",
+            "read the list of files to scan from the given file instead of the command line");
 }
 
 void CommandLine::add_query_options()
@@ -206,11 +211,6 @@ void CommandLine::add_query_options()
     exprfile = inputOpts->add<StringOption>("file", 'f', "file", "file",
             "read the expression from the given file");
 
-    dataInline = outputOpts->add<BoolOption>("inline", 0, "inline", "",
-            "output the binary metadata together with the data (pipe through "
-            " arki-dump or arki-grep to estract the data afterwards)");
-    dataOnly = outputOpts->add<BoolOption>("data", 0, "data", "",
-            "output only the data");
     postprocess = outputOpts->add<StringOption>("postproc", 'p', "postproc", "command",
             "output only the data, postprocessed with the given filter");
     merged = outputOpts->add<BoolOption>("merged", 0, "merged", "",
