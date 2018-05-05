@@ -170,12 +170,11 @@ struct DataProcessor : public SingleOutputProcessor
     vector<string> description_attrs;
     bool data_inline;
     bool server_side;
-    std::function<void(NamedFileDescriptor&)> data_start_hook;
     bool any_output_generated = false;
 
     DataProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out, bool data_inline=false)
         : SingleOutputProcessor(out), printer(create_metadata_printer(maker, output)), query(q, data_inline),
-          data_inline(data_inline), server_side(maker.server_side), data_start_hook(maker.data_start_hook)
+          data_inline(data_inline), server_side(maker.server_side)
     {
         description_attrs.push_back("query=" + q.toString());
         description_attrs.push_back("printer=" + describe_printer(maker));
@@ -204,7 +203,6 @@ struct DataProcessor : public SingleOutputProcessor
     {
         if (!any_output_generated)
         {
-            if (data_start_hook) data_start_hook(output);
             any_output_generated = true;
         }
     }
@@ -255,10 +253,9 @@ struct SummaryProcessor : public SingleOutputProcessor
     string summary_restrict;
     Summary summary;
     vector<string> description_attrs;
-    std::function<void(NamedFileDescriptor&)> data_start_hook;
 
     SummaryProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out)
-        : SingleOutputProcessor(out), matcher(q), printer(create_summary_printer(maker, output)), data_start_hook(maker.data_start_hook)
+        : SingleOutputProcessor(out), matcher(q), printer(create_summary_printer(maker, output))
     {
         description_attrs.push_back("query=" + q.toString());
         if (!maker.summary_restrict.empty())
@@ -295,7 +292,6 @@ struct SummaryProcessor : public SingleOutputProcessor
 
     void do_output(const Summary& s)
     {
-        if (data_start_hook) data_start_hook(output);
         printer(s);
     }
 };
@@ -305,14 +301,12 @@ struct SummaryShortProcessor : public SingleOutputProcessor
     Matcher matcher;
     summary_print_func printer;
     Summary summary;
-    std::function<void(NamedFileDescriptor&)> data_start_hook;
     bool annotate;
     bool json;
 
     SummaryShortProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out)
         : SingleOutputProcessor(out), matcher(q),
           printer(create_summary_printer(maker, output)),
-          data_start_hook(maker.data_start_hook),
           annotate(maker.annotate),
           json(maker.json)
     {
@@ -332,7 +326,6 @@ struct SummaryShortProcessor : public SingleOutputProcessor
 
     void end() override
     {
-        if (data_start_hook) data_start_hook(output);
         summary::Short c;
         summary.visit(c);
 
@@ -387,7 +380,6 @@ struct BinaryProcessor : public SingleOutputProcessor
             description_attrs.push_back("sort=" + maker.sort);
             query.sorter = sort::Compare::parse(maker.sort);
         }
-        query.data_start_hook = maker.data_start_hook;
     }
 
     std::string describe() const override

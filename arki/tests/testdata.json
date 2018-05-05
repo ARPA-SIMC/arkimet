@@ -12461,11 +12461,6 @@
  },
  {
   "doc": "",
-  "group": "arki_runtime_processor",
-  "method": "start_hook"
- },
- {
-  "doc": "",
   "group": "arki_runtime_source",
   "method": "empty"
  },

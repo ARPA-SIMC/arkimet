@@ -68,8 +68,6 @@ struct ProcessorMaker
     std::string summary_restrict;
     std::string sort;
 
-    std::function<void(core::NamedFileDescriptor&)> data_start_hook;
-
     /// Create the processor maker for this configuration
     std::unique_ptr<DatasetProcessor> make(Matcher query, utils::sys::NamedFileDescriptor& out);
 

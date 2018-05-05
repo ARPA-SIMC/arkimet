@@ -101,18 +101,6 @@ add_method("data_binary", [](Fixture& f) {
     wassert(actual_type(mdc[2].source()).is_source_blob("grib", sys::abspath("."), "pm-out", 34960 + 7218, 2234));
 });
 
-// Reproduce https://github.com/ARPAE-SIMC/arkimet/issues/26
-add_method("start_hook", [](Fixture& f) {
-    auto start_hook = [](NamedFileDescriptor& out) { out.write_all_or_throw(string("test")); };
-    ProcessorMaker pm;
-    pm.data_only = true;
-    pm.data_start_hook = start_hook;
-    wassert(f.run_maker(pm));
-
-    string content = sys::read_file("pm-out");
-    wassert(actual(content).startswith("testGRIB"));
-});
-
 }
 
 }
