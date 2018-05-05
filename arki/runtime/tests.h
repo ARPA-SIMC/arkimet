@@ -22,6 +22,11 @@ struct CatchOutput
 
     int save(int src, int tgt);
     void restore(int src, int tgt);
+
+    /**
+     * Throw an exception if res is non-zero or stderr is not empty
+     */
+    void check_success(int res);
 };
 
 

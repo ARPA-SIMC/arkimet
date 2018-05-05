@@ -1,5 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/runtime/tests.h"
+#include "arki/types/source/blob.h"
 #include "arki/libconfig.h"
 #include "arki-scan.h"
 
@@ -19,12 +20,19 @@ struct Fixture : public DatasetTest
             type=ondisk2
             step=daily
             postprocess=cat,echo,say,checkfiles,error,outthenerr
+            filter=origin:GRIB1
         )");
-        /*
-        if (td.format == "vm2")
-            cfg.setValue("smallfiles", "true");
-        import_all_packed(td);
-        */
+
+        ConfigFile dispatch_cfg;
+        dispatch_cfg.mergeInto("testds", cfg);
+
+        auto section = dispatch_cfg.obtainSection("error");
+        section->setValue("type", "error");
+        section->setValue("step", "daily");
+        // TODO: add path
+
+        sys::File out("test-dispatch", O_WRONLY | O_CREAT | O_TRUNC);
+        out.write_all_or_throw(dispatch_cfg.serialize());
     }
 };
 
@@ -151,6 +159,28 @@ add_method("scan_stdin", [](Fixture& f) {
         wassert(actual(sys::read_file(co.file_stderr.name())) == "file - does not exist\n");
         wassert(actual(res) == 1);
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
+    }
+});
+
+add_method("dispatch_plain", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+
+    string output;
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_scan, {
+            "arki-scan",
+            "--dispatch=test-dispatch",
+            "inbound/test.grib1",
+        });
+        wassert(co.check_success(res));
+
+        metadata::Collection mds;
+        mds.read_from_file(co.file_stdout.name());
+        wassert(actual(mds.size()) == 3u);
+        wassert(actual(mds[0].sourceBlob().filename) == sys::abspath("testds/2007/07-08.grib"));
+        wassert(actual(mds[1].sourceBlob().filename) == sys::abspath("testds/2007/07-07.grib"));
+        wassert(actual(mds[2].sourceBlob().filename) == sys::abspath("testds/2007/10-09.grib"));
     }
 });
 

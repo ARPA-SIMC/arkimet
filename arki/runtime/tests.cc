@@ -1,3 +1,4 @@
+#include "arki/core/tests.h"
 #include "tests.h"
 #include "arki/exceptions.h"
 #include <string>
@@ -5,6 +6,7 @@
 
 using namespace std;
 using namespace arki::core;
+using namespace arki::tests;
 
 namespace arki {
 namespace runtime {
@@ -43,6 +45,12 @@ void CatchOutput::restore(int src, int tgt)
         throw_system_error("cannot dup2 file descriptor " + to_string(src) + " to " + to_string(tgt));
     if (::close(src) == -1)
         throw_system_error("cannot close saved file descriptor " + to_string(src));
+}
+
+void CatchOutput::check_success(int res)
+{
+    wassert(actual_file(file_stderr.name()).contents_equal(""));
+    wassert(actual(res) == 0);
 }
 
 int run_cmdline(cmdline_func func, std::initializer_list<const char*> argv)
