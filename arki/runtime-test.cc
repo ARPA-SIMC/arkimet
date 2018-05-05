@@ -39,7 +39,7 @@ add_method("files", [] {
     utils::sys::write_file("import.lst", "grib:inbound/test.grib1\n");
     utils::sys::write_file("config", "[error]\ntype=discard\n");
 
-    runtime::CommandLine opts("arki-scan");
+    runtime::ScanCommandLine opts("arki-scan");
     opts.add_scan_options();
 
     const char* argv[] = { "arki-scan", "--dispatch=config", "--dump", "--status", "--summary", "--files=import.lst", nullptr };

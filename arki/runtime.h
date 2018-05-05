@@ -59,7 +59,7 @@ struct BaseCommandLine : public utils::commandline::StandardParserWithManpage
     utils::commandline::BoolOption* verbose = nullptr;
     utils::commandline::BoolOption* debug = nullptr;
 
-    BaseCommandLine(const std::string& name, int mansection = 1);
+    BaseCommandLine(const std::string& name, int mansection=1);
 };
 
 struct CommandLine : public BaseCommandLine
@@ -88,9 +88,6 @@ struct CommandLine : public BaseCommandLine
     utils::commandline::OptvalStringOption* archive = nullptr;
     utils::commandline::StringOption* sort = nullptr;
     utils::commandline::StringOption* files = nullptr;
-    utils::commandline::StringOption* moveok = nullptr;
-    utils::commandline::StringOption* moveko = nullptr;
-    utils::commandline::StringOption* movework = nullptr;
     utils::commandline::StringOption* copyok = nullptr;
     utils::commandline::StringOption* copyko = nullptr;
     utils::commandline::StringOption* summary_restrict = nullptr;
@@ -109,7 +106,7 @@ struct CommandLine : public BaseCommandLine
     MetadataDispatch* dispatcher = nullptr;
     ProcessorMaker pmaker;
 
-    CommandLine(const std::string& name, int mansection = 1);
+    CommandLine(const std::string& name, int mansection=1);
     ~CommandLine();
 
     /// Add scan-type options (--files, --moveok, --movework, --moveko)
@@ -142,71 +139,13 @@ struct CommandLine : public BaseCommandLine
     bool foreach_source(std::function<bool(Source&)> dest);
 };
 
-/**
- * Generic interface for data sources configured via the command line
- */
-struct Source
+struct ScanCommandLine : public CommandLine
 {
-    virtual ~Source();
-    virtual std::string name() const = 0;
-    virtual dataset::Reader& reader() const = 0;
-    virtual void open() = 0;
-    virtual void close(bool successful) = 0;
-    virtual bool process(DatasetProcessor& processor);
-    virtual bool dispatch(MetadataDispatch& dispatcher);
-};
+    utils::commandline::StringOption* moveok = nullptr;
+    utils::commandline::StringOption* moveko = nullptr;
+    utils::commandline::StringOption* movework = nullptr;
 
-/**
- * Data source from the path to a file or dataset
- */
-struct FileSource : public Source
-{
-    ConfigFile cfg;
-    std::shared_ptr<dataset::Reader> m_reader;
-    std::string movework;
-    std::string moveok;
-    std::string moveko;
-
-    FileSource(CommandLine& args, const ConfigFile& info);
-
-    std::string name() const override;
-    dataset::Reader& reader() const override;
-    void open() override;
-    void close(bool successful) override;
-};
-
-/**
- * Data source from --merged
- */
-struct MergedSource : public Source
-{
-    std::vector<std::shared_ptr<FileSource>> sources;
-    std::shared_ptr<dataset::Merged> m_reader;
-    std::string m_name;
-
-    MergedSource(CommandLine& args);
-
-    std::string name() const override;
-    dataset::Reader& reader() const override;
-    void open() override;
-    void close(bool successful) override;
-};
-
-/**
- * Data source from --qmacro
- */
-struct QmacroSource : public Source
-{
-    ConfigFile cfg;
-    std::shared_ptr<dataset::Reader> m_reader;
-    std::string m_name;
-
-    QmacroSource(CommandLine& args);
-
-    std::string name() const override;
-    dataset::Reader& reader() const override;
-    void open() override;
-    void close(bool successful) override;
+    ScanCommandLine(const std::string& name, int mansection=1);
 };
 
 /// Dispatch metadata

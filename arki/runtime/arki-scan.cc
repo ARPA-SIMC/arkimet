@@ -1,5 +1,6 @@
 #include "arki/runtime/arki-scan.h"
 #include "arki/runtime.h"
+#include "arki/runtime/source.h"
 #include "arki/utils/commandline/parser.h"
 #include <iostream>
 
@@ -11,9 +12,9 @@ namespace runtime {
 
 namespace {
 
-struct Options : public runtime::CommandLine
+struct Options : public runtime::ScanCommandLine
 {
-    Options() : runtime::CommandLine("arki-scan")
+    Options() : runtime::ScanCommandLine("arki-scan")
     {
         usage = "[options] [input...]";
         description =

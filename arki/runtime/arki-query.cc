@@ -7,6 +7,7 @@
 #include "arki/utils.h"
 #include "arki/nag.h"
 #include "arki/runtime.h"
+#include "arki/runtime/source.h"
 #include "arki/libconfig.h"
 #include <cstring>
 #include <iostream>

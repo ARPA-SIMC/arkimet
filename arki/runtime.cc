@@ -1,5 +1,6 @@
 #include "config.h"
 #include "arki/runtime.h"
+#include "arki/runtime/source.h"
 #include "arki/exceptions.h"
 #include "arki/utils/string.h"
 #include "arki/configfile.h"
@@ -154,6 +155,23 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 		" to be used by the postprocessor (can be given more than once)");
 }
 
+ScanCommandLine::ScanCommandLine(const std::string& name, int mansection)
+    : CommandLine(name, mansection)
+{
+    using namespace arki::utils::commandline;
+
+    dispatchOpts = createGroup("Options controlling dispatching data to datasets");
+
+    moveok = inputOpts->add<StringOption>("moveok", 0, "moveok", "directory",
+            "move input files imported successfully to the given directory");
+    moveko = inputOpts->add<StringOption>("moveko", 0, "moveko", "directory",
+            "move input files with problems to the given directory");
+    movework = inputOpts->add<StringOption>("movework", 0, "movework", "directory",
+            "move input files here before opening them. This is useful to "
+            "catch the cases where arki-scan crashes without having a "
+            "chance to handle errors.");
+}
+
 CommandLine::~CommandLine()
 {
 	if (dispatcher) delete dispatcher;
@@ -167,20 +185,11 @@ void CommandLine::add_scan_options()
 
     files = inputOpts->add<StringOption>("files", 0, "files", "file",
             "read the list of files to scan from the given file instead of the command line");
-    moveok = inputOpts->add<StringOption>("moveok", 0, "moveok", "directory",
-            "move input files imported successfully to the given directory");
-    moveko = inputOpts->add<StringOption>("moveko", 0, "moveko", "directory",
-            "move input files with problems to the given directory");
-    movework = inputOpts->add<StringOption>("movework", 0, "movework", "directory",
-            "move input files here before opening them. This is useful to "
-            "catch the cases where arki-scan crashes without having a "
-            "chance to handle errors.");
     copyok = inputOpts->add<StringOption>("copyok", 0, "copyok", "directory",
             "copy the data from input files that was imported successfully to the given directory");
     copyko = inputOpts->add<StringOption>("copyko", 0, "copyko", "directory",
             "copy the data from input files that had problems to the given directory");
 
-    dispatchOpts = createGroup("Options controlling dispatching data to datasets");
     ignore_duplicates = dispatchOpts->add<BoolOption>("ignore-duplicates", 0, "ignore-duplicates", "",
             "do not consider the run unsuccessful in case of duplicates");
     validate = dispatchOpts->add<StringOption>("validate", 0, "validate", "checks",
@@ -486,22 +495,6 @@ void CommandLine::doneProcessing()
 		processor->end();
 }
 
-static std::string moveFile(const std::string& source, const std::string& targetdir)
-{
-    string targetFile = str::joinpath(targetdir, str::basename(source));
-    if (::rename(source.c_str(), targetFile.c_str()) == -1)
-        throw_system_error ("cannot move " + source + " to " + targetFile);
-    return targetFile;
-}
-
-static std::string moveFile(const dataset::Reader& ds, const std::string& targetdir)
-{
-    if (const dataset::File* d = dynamic_cast<const dataset::File*>(&ds))
-        return moveFile(d->config().pathname, targetdir);
-    else
-        return string();
-}
-
 bool CommandLine::foreach_source(std::function<bool(Source&)> dest)
 {
     bool all_successful = true;
@@ -550,104 +543,6 @@ bool CommandLine::foreach_source(std::function<bool(Source&)> dest)
 
     return all_successful;
 }
-
-/*
- * Source
- */
-
-Source::~Source() {}
-
-bool Source::process(DatasetProcessor& processor)
-{
-    processor.process(reader(), name());
-    return true;
-}
-
-bool Source::dispatch(MetadataDispatch& dispatcher)
-{
-    return dispatcher.process(reader(), name());
-}
-
-
-FileSource::FileSource(CommandLine& args, const ConfigFile& info)
-    : cfg(info)
-{
-    if (args.movework && args.movework->isSet())
-        movework = args.movework->stringValue();
-    if (args.moveok && args.moveok->isSet())
-        moveok = args.moveok->stringValue();
-    if (args.moveko && args.moveko->isSet())
-        moveko = args.moveko->stringValue();
-}
-
-std::string FileSource::name() const { return cfg.value("path"); }
-dataset::Reader& FileSource::reader() const { return *m_reader; }
-
-void FileSource::open()
-{
-    if (!movework.empty() && cfg.value("type") == "file")
-        cfg.setValue("path", moveFile(cfg.value("path"), movework));
-    m_reader = dataset::Reader::create(cfg);
-}
-
-void FileSource::close(bool successful)
-{
-    if (successful && !moveok.empty())
-        moveFile(reader(), moveok);
-    else if (!successful && !moveko.empty())
-        moveFile(reader(), moveko);
-    m_reader = std::shared_ptr<dataset::Reader>();
-}
-
-MergedSource::MergedSource(CommandLine& args)
-    : m_reader(make_shared<dataset::Merged>())
-{
-    for (const auto& cfg: args.inputs)
-    {
-        sources.push_back(make_shared<FileSource>(args, cfg));
-        if (m_name.empty())
-            m_name = sources.back()->name();
-        else
-            m_name += "," + sources.back()->name();
-    }
-}
-
-std::string MergedSource::name() const { return m_name; }
-dataset::Reader& MergedSource::reader() const { return *m_reader; }
-
-void MergedSource::open()
-{
-    // Instantiate the datasets and add them to the merger
-    for (const auto& source: sources)
-    {
-        source->open();
-        m_reader->add_dataset(source->m_reader);
-    }
-}
-
-void MergedSource::close(bool successful)
-{
-    for (auto& source: sources)
-        source->close(successful);
-}
-
-
-QmacroSource::QmacroSource(CommandLine& args)
-{
-    // Create the virtual qmacro dataset
-    m_reader = runtime::make_qmacro_dataset(
-            cfg,
-            args.inputs.as_config(),
-            args.qmacro->stringValue(),
-            args.strquery);
-    m_name = args.qmacro->stringValue();
-}
-
-std::string QmacroSource::name() const { return m_name; }
-dataset::Reader& QmacroSource::reader() const { return *m_reader; }
-void QmacroSource::open() {}
-void QmacroSource::close(bool successful) {}
-
 
 /*
  * Dispatch
@@ -826,4 +721,3 @@ void MetadataDispatch::setStartTime()
 
 }
 }
-// vim:set ts=4 sw=4:

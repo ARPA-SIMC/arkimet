@@ -114,6 +114,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/inputs.h \
 		runtime.h \
 		runtime/io.h \
+		runtime/source.h \
 		runtime/processor.h \
 		runtime/tests.h \
 		runtime/arki-query.h \
@@ -631,6 +632,7 @@ tests_arki_test_SOURCES += \
 		datasets-test.cc \
 		dispatcher-test.cc \
 		runtime/processor-test.cc \
+		runtime/source-test.cc \
 		runtime/arki-query-test.cc \
 		runtime/arki-check-test.cc \
 		runtime/arki-scan-test.cc \
@@ -656,6 +658,7 @@ endif
 #
 if DEVEL_DO_RUNTIME
 libarkimet_la_SOURCES += \
+		runtime/source.cc \
 		runtime/processor.cc \
 		runtime.cc
 endif
