@@ -6,7 +6,6 @@
 #include <arki/utils/commandline/parser.h>
 #include <arki/runtime/io.h>
 #include <arki/runtime/config.h>
-#include <arki/runtime/processor.h>
 #include <arki/runtime/inputs.h>
 #include <arki/metadata.h>
 #include <arki/dataset/fwd.h>
@@ -96,13 +95,9 @@ struct CommandLine : public BaseCommandLine
     utils::commandline::VectorOption<utils::commandline::String>* testdispatch = nullptr;
 
     Inputs inputs;
-    ConfigFile dispatchInfo;
     std::string strquery;
     Matcher query;
     utils::sys::NamedFileDescriptor* output = nullptr;
-    DatasetProcessor* processor = nullptr;
-    MetadataDispatch* dispatcher = nullptr;
-    ProcessorMaker pmaker;
 
     CommandLine(const std::string& name, int mansection=1);
     ~CommandLine();
@@ -113,21 +108,14 @@ struct CommandLine : public BaseCommandLine
     /// Add query-type options (--merged, --file, --cfgfiles)
     void add_query_options();
 
-	/**
-	 * Parse the command line
-	 */
-	bool parse(int argc, const char* argv[]);
+    /// Parse the command line
+    bool parse(int argc, const char* argv[]);
 
 	/**
 	 * Set up processing after the command line has been parsed and
 	 * additional tweaks have been applied
 	 */
 	void setupProcessing();
-
-	/**
-	 * End processing and flush partial data
-	 */
-	void doneProcessing();
 
     /**
      * Instantiate all sources requested on command line.
@@ -144,6 +132,15 @@ struct ScanCommandLine : public CommandLine
     utils::commandline::StringOption* movework = nullptr;
 
     ScanCommandLine(const std::string& name, int mansection=1);
+
+    bool parse(int argc, const char* argv[]);
+};
+
+struct QueryCommandLine : public CommandLine
+{
+    QueryCommandLine(const std::string& name, int mansection=1);
+
+    bool parse(int argc, const char* argv[]);
 };
 
 }

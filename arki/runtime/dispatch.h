@@ -11,17 +11,18 @@ namespace arki {
 class Dispatcher;
 
 namespace runtime {
+class ScanCommandLine;
 class DatasetProcessor;
 
 /// Dispatch metadata
 struct MetadataDispatch
 {
-    const ConfigFile& cfg;
-    Dispatcher* dispatcher;
+    ConfigFile cfg;
+    Dispatcher* dispatcher = nullptr;
     dataset::Memory results;
     DatasetProcessor& next;
-    bool ignore_duplicates;
-    bool reportStatus;
+    bool ignore_duplicates = false;
+    bool reportStatus = false;
 
     // Used for timings. Read with gettimeofday at the beginning of a task,
     // and summarySoFar will report the elapsed time
@@ -29,19 +30,19 @@ struct MetadataDispatch
 
     // Incremented when a metadata is imported in the destination dataset.
     // Feel free to reset it to 0 anytime.
-    int countSuccessful;
+    int countSuccessful = 0;
 
     // Incremented when a metadata is imported in the error dataset because it
     // had already been imported.  Feel free to reset it to 0 anytime.
-    int countDuplicates;
+    int countDuplicates = 0;
 
     // Incremented when a metadata is imported in the error dataset.  Feel free
     // to reset it to 0 anytime.
-    int countInErrorDataset;
+    int countInErrorDataset = 0;
 
     // Incremented when a metadata is not imported at all.  Feel free to reset
     // it to 0 anytime.
-    int countNotImported;
+    int countNotImported = 0;
 
     /// Directory where we store copyok files
     std::string dir_copyok;
@@ -56,7 +57,7 @@ struct MetadataDispatch
     std::unique_ptr<core::File> copyko;
 
 
-    MetadataDispatch(const ConfigFile& cfg, DatasetProcessor& next, bool test=false);
+    MetadataDispatch(const ScanCommandLine& args, DatasetProcessor& next);
     ~MetadataDispatch();
 
     /**
@@ -75,6 +76,8 @@ struct MetadataDispatch
 
     // Set startTime to the current time
     void setStartTime();
+
+    static void process_quick_actions(const ScanCommandLine& args);
 
 protected:
     void do_copyok(Metadata& md);

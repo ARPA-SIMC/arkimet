@@ -1,4 +1,5 @@
 #include "arki/runtime/arki-query.h"
+#include "arki/runtime/processor.h"
 #include "arki/utils/commandline/parser.h"
 #include "arki/configfile.h"
 #include "arki/dataset.h"
@@ -20,9 +21,9 @@ namespace runtime {
 
 namespace {
 
-struct Options : public runtime::CommandLine
+struct Options : public runtime::QueryCommandLine
 {
-    Options() : runtime::CommandLine("arki-query", 1)
+    Options() : runtime::QueryCommandLine("arki-query", 1)
     {
         usage = "[options] [expression] [configfile or directory...]";
         description =
@@ -45,12 +46,14 @@ int arki_query(int argc, const char* argv[])
 
         opts.setupProcessing();
 
+        auto processor = processor::create(opts, opts.query, *opts.output);
+
         bool all_successful = opts.foreach_source([&](runtime::Source& source) {
-            source.process(*opts.processor);
+            source.process(*processor);
             return true;
         });
 
-        opts.doneProcessing();
+        processor->end();
 
         if (all_successful)
             return 0;

@@ -12741,18 +12741,18 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkiscan",
+  "method": "dispatch_copyok"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkiscan",
+  "method": "dispatch_issue68"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime",
   "method": "files"
- },
- {
-  "doc": "",
-  "group": "arki_runtime",
-  "method": "copyok"
- },
- {
-  "doc": "",
-  "group": "arki_runtime",
-  "method": "issue68"
  },
  {
   "doc": "",

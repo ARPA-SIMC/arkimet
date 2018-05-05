@@ -1,9 +1,12 @@
 #include "dispatch.h"
 #include "processor.h"
+#include "arki/runtime.h"
 #include "arki/dispatcher.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
+#include "arki/validator.h"
+#include "arki/types/source/blob.h"
 #include <sys/time.h>
 #include <iostream>
 
@@ -26,16 +29,72 @@ using namespace arki::utils;
 namespace arki {
 namespace runtime {
 
-MetadataDispatch::MetadataDispatch(const ConfigFile& cfg, DatasetProcessor& next, bool test)
-    : cfg(cfg), dispatcher(0), next(next), ignore_duplicates(false), reportStatus(false),
-      countSuccessful(0), countDuplicates(0), countInErrorDataset(0), countNotImported(0)
+void MetadataDispatch::process_quick_actions(const ScanCommandLine& args)
+{
+    // Honour --validate=list
+    if (args.validate)
+    {
+        if (args.validate->stringValue() == "list")
+        {
+            // Print validator list and exit
+            const ValidatorRepository& vals = ValidatorRepository::get();
+            for (ValidatorRepository::const_iterator i = vals.begin();
+                    i != vals.end(); ++i)
+            {
+                cout << i->second->name << " - " << i->second->desc << endl;
+            }
+            throw HandledByCommandLineParser();
+        }
+    }
+}
+
+
+MetadataDispatch::MetadataDispatch(const ScanCommandLine& args, DatasetProcessor& next)
+    : next(next)
 {
     timerclear(&startTime);
 
-    if (test)
+    runtime::readMatcherAliasDatabase();
+
+    if (args.testdispatch && args.testdispatch->isSet())
+    {
+        for (const auto& i: args.testdispatch->values())
+            parseConfigFile(cfg, i);
         dispatcher = new TestDispatcher(cfg, cerr);
-    else
+    }
+    else if (args.dispatch && args.dispatch->isSet())
+    {
+        for (const auto& i: args.dispatch->values())
+            parseConfigFile(cfg, i);
         dispatcher = new RealDispatcher(cfg);
+    }
+    else
+        throw std::runtime_error("cannot create MetadataDispatch with no --dispatch or --testdispatch information");
+
+    reportStatus = args.status->boolValue();
+    if (args.ignore_duplicates && args.ignore_duplicates->boolValue())
+        ignore_duplicates = true;
+
+    if (args.validate)
+    {
+        const ValidatorRepository& vals = ValidatorRepository::get();
+
+        // Add validators to dispatcher
+        str::Split splitter(args.validate->stringValue(), ",");
+        for (str::Split::const_iterator iname = splitter.begin();
+                iname != splitter.end(); ++iname)
+        {
+            ValidatorRepository::const_iterator i = vals.find(*iname);
+            if (i == vals.end())
+                throw commandline::BadOption("unknown validator '" + *iname + "'. You can get a list using --validate=list.");
+            dispatcher->add_validator(*(i->second));
+        }
+    }
+
+    if (args.copyok && args.copyok->isSet())
+        dir_copyok = args.copyok->stringValue();
+    if (args.copyko && args.copyko->isSet())
+        dir_copyko = args.copyko->stringValue();
 }
 
 MetadataDispatch::~MetadataDispatch()
@@ -131,6 +190,7 @@ bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
 
 void MetadataDispatch::do_copyok(Metadata& md)
 {
+    //fprintf(stderr, "ZAZA: %s\n", md.sourceBlob().filename.c_str());
     if (copyok && copyok->is_open())
         md.stream_data(*copyok);
 }

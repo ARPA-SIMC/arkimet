@@ -2,6 +2,7 @@
 #include "arki/runtime.h"
 #include "arki/runtime/dispatch.h"
 #include "arki/runtime/source.h"
+#include "arki/runtime/processor.h"
 #include "arki/exceptions.h"
 #include "arki/dispatcher.h"
 #include "arki/utils/string.h"
@@ -24,7 +25,6 @@
 #include "arki/nag.h"
 #include "arki/iotrace.h"
 #include "arki/types-init.h"
-#include "arki/validator.h"
 #include "arki/utils/sys.h"
 #ifdef HAVE_LUA
 #include "arki/report.h"
@@ -34,7 +34,6 @@
 #include <fcntl.h>
 #include <iostream>
 #include <cstdlib>
-#include <cassert>
 
 using namespace std;
 using namespace arki::utils;
@@ -160,11 +159,15 @@ ScanCommandLine::ScanCommandLine(const std::string& name, int mansection)
             "chance to handle errors.");
 }
 
+QueryCommandLine::QueryCommandLine(const std::string& name, int mansection)
+    : CommandLine(name, mansection)
+{
+    using namespace arki::utils::commandline;
+}
+
 CommandLine::~CommandLine()
 {
-	if (dispatcher) delete dispatcher;
-	if (processor) delete processor;
-	if (output) delete output;
+    if (output) delete output;
 }
 
 void CommandLine::add_scan_options()
@@ -239,52 +242,27 @@ bool CommandLine::parse(int argc, const char* argv[])
     if (postproc_data && postprocess && postproc_data->isSet() && !postprocess->isSet())
         throw commandline::BadOption("--upload only makes sense with --postprocess");
 
-    // Initialize the processor maker
-    pmaker.summary = summary->boolValue();
-    pmaker.summary_short = summary_short->boolValue();
-    pmaker.yaml = yaml->boolValue();
-    pmaker.json = json->boolValue();
-    pmaker.annotate = annotate->boolValue();
-    pmaker.data_only = dataOnly ? dataOnly->boolValue() : false;
-    pmaker.data_inline = dataInline ? dataInline->boolValue() : false;
-    if (postprocess) pmaker.postprocess = postprocess->stringValue();
-    pmaker.report = report->stringValue();
-    pmaker.summary_restrict = summary_restrict->stringValue();
-    pmaker.sort = sort->stringValue();
-    if (archive->isSet())
-    {
-        if (archive->hasValue())
-            pmaker.archive = archive->value();
-        else
-            pmaker.archive = "tar";
-    }
+    return false;
+}
 
-    // Run here a consistency check on the processor maker configuration
-    std::string errors = pmaker.verify_option_consistency();
-    if (!errors.empty())
-        throw commandline::BadOption(errors);
+bool ScanCommandLine::parse(int argc, const char* argv[])
+{
+    if (CommandLine::parse(argc, argv))
+        return true;
+    processor::verify_option_consistency(*this);
+    return false;
+}
 
+bool QueryCommandLine::parse(int argc, const char* argv[])
+{
+    if (CommandLine::parse(argc, argv))
+        return true;
+    processor::verify_option_consistency(*this);
     return false;
 }
 
 void CommandLine::setupProcessing()
 {
-    // Honour --validate=list
-    if (validate)
-    {
-        if (validate->stringValue() == "list")
-        {
-            // Print validator list and exit
-            const ValidatorRepository& vals = ValidatorRepository::get();
-            for (ValidatorRepository::const_iterator i = vals.begin();
-                    i != vals.end(); ++i)
-            {
-                cout << i->second->name << " - " << i->second->desc << endl;
-            }
-            throw HandledByCommandLineParser();
-        }
-    }
-
     // Parse the matcher query
     if (exprfile)
     {
@@ -335,7 +313,7 @@ void CommandLine::setupProcessing()
     }
 
     // Some things cannot be done when querying multiple datasets at the same time
-    if (inputs.size() > 1 && !dispatcher && !(qmacro && qmacro->isSet()))
+    if (inputs.size() > 1 && !(qmacro && qmacro->isSet()))
     {
         if (postprocess && postprocess->boolValue())
             throw commandline::BadOption("postprocessing is not possible when querying more than one dataset at the same time");
@@ -406,68 +384,6 @@ void CommandLine::setupProcessing()
     if (!output)
         output = make_output(*outfile).release();
 
-    // Create the core processor
-    unique_ptr<DatasetProcessor> p = pmaker.make(query, *output);
-    processor = p.release();
-
-    // If targetfile is requested, wrap with the targetfile processor
-    if (targetfile->isSet())
-    {
-        SingleOutputProcessor* sop = dynamic_cast<SingleOutputProcessor*>(processor);
-        assert(sop != nullptr);
-        processor = new TargetFileProcessor(sop, targetfile->stringValue());
-    }
-
-    // Create the dispatcher if needed
-    bool op_dispatch = dispatch && dispatch->isSet();
-    bool op_testdispatch = testdispatch && testdispatch->isSet();
-    if (op_dispatch || op_testdispatch)
-    {
-        if (op_dispatch && op_testdispatch)
-            throw commandline::BadOption("you cannot use --dispatch together with --testdispatch");
-        runtime::readMatcherAliasDatabase();
-
-        if (op_testdispatch) {
-            for (const auto& i: testdispatch->values())
-                parseConfigFile(dispatchInfo, i);
-            dispatcher = new MetadataDispatch(dispatchInfo, *processor, true);
-        } else {
-            for (const auto& i: dispatch->values())
-                parseConfigFile(dispatchInfo, i);
-            dispatcher = new MetadataDispatch(dispatchInfo, *processor);
-        }
-    }
-	if (dispatcher)
-	{
-		dispatcher->reportStatus = status->boolValue();
-		if (ignore_duplicates && ignore_duplicates->boolValue())
-			dispatcher->ignore_duplicates = true;
-
-        if (validate)
-        {
-            const ValidatorRepository& vals = ValidatorRepository::get();
-
-            // Add validators to dispatcher
-            str::Split splitter(validate->stringValue(), ",");
-            for (str::Split::const_iterator iname = splitter.begin();
-                    iname != splitter.end(); ++iname)
-            {
-                ValidatorRepository::const_iterator i = vals.find(*iname);
-                if (i == vals.end())
-                    throw commandline::BadOption("unknown validator '" + *iname + "'. You can get a list using --validate=list.");
-                dispatcher->dispatcher->add_validator(*(i->second));
-            }
-        }
-
-        if (copyok && copyok->isSet())
-            dispatcher->dir_copyok = copyok->stringValue();
-        if (copyko && copyko->isSet())
-            dispatcher->dir_copyko = copyko->stringValue();
-    } else {
-        if (validate && validate->isSet())
-            throw commandline::BadOption("--validate only makes sense with --dispatch or --testdispatch");
-    }
-
     if (postproc_data && postproc_data->isSet())
     {
         // Pass files for the postprocessor in the environment
@@ -475,12 +391,6 @@ void CommandLine::setupProcessing()
         setenv("ARKI_POSTPROC_FILES", val.c_str(), 1);
     } else
         unsetenv("ARKI_POSTPROC_FILES");
-}
-
-void CommandLine::doneProcessing()
-{
-	if (processor)
-		processor->end();
 }
 
 bool CommandLine::foreach_source(std::function<bool(Source&)> dest)
