@@ -8,6 +8,7 @@
 #include "arki/dataset/segmented.h"
 #include "arki/dataset/reporter.h"
 #include "arki/metadata/consumer.h"
+#include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/nag.h"
 #include "arki/runtime.h"

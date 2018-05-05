@@ -1,12 +1,12 @@
 #include "config.h"
-
 #include <fstream>
 #include <algorithm>
-
 #include "arki/tests/tests.h"
+#include "arki/metadata/collection.h"
 #include "arki/utils/sys.h"
 #include "arki/runtime.h"
 #include "arki/runtime/processor.h"
+#include "arki/runtime/dispatch.h"
 #include "arki/dataset/file.h"
 
 namespace {

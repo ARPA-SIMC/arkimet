@@ -10,7 +10,6 @@
 #include <arki/runtime/inputs.h>
 #include <arki/metadata.h>
 #include <arki/dataset/fwd.h>
-#include <arki/dataset/memory.h>
 #include <arki/matcher.h>
 #include <arki/configfile.h>
 #include <string>
@@ -20,7 +19,6 @@
 
 namespace arki {
 class Summary;
-class Dispatcher;
 class Formatter;
 class Targetfile;
 class Validator;
@@ -147,75 +145,6 @@ struct ScanCommandLine : public CommandLine
 
     ScanCommandLine(const std::string& name, int mansection=1);
 };
-
-/// Dispatch metadata
-struct MetadataDispatch
-{
-	const ConfigFile& cfg;
-	Dispatcher* dispatcher;
-    dataset::Memory results;
-	DatasetProcessor& next;
-	bool ignore_duplicates;
-	bool reportStatus;
-
-	// Used for timings. Read with gettimeofday at the beginning of a task,
-	// and summarySoFar will report the elapsed time
-	struct timeval startTime;
-
-	// Incremented when a metadata is imported in the destination dataset.
-	// Feel free to reset it to 0 anytime.
-	int countSuccessful;
-
-	// Incremented when a metadata is imported in the error dataset because it
-	// had already been imported.  Feel free to reset it to 0 anytime.
-	int countDuplicates;
-
-	// Incremented when a metadata is imported in the error dataset.  Feel free
-	// to reset it to 0 anytime.
-	int countInErrorDataset;
-
-	// Incremented when a metadata is not imported at all.  Feel free to reset
-	// it to 0 anytime.
-	int countNotImported;
-
-    /// Directory where we store copyok files
-    std::string dir_copyok;
-
-    /// Directory where we store copyko files
-    std::string dir_copyko;
-
-    /// File to which we send data that was successfully imported
-    std::unique_ptr<core::File> copyok;
-
-    /// File to which we send data that was not successfully imported
-    std::unique_ptr<core::File> copyko;
-
-
-    MetadataDispatch(const ConfigFile& cfg, DatasetProcessor& next, bool test=false);
-    ~MetadataDispatch();
-
-    /**
-     * Dispatch the data from one source
-     *
-     * @returns true if all went well, false if any problem happend.
-     * It can still throw in case of big trouble.
-     */
-    bool process(dataset::Reader& ds, const std::string& name);
-
-	// Flush all imports done so far
-	void flush();
-
-	// Format a summary of the import statistics so far
-	std::string summarySoFar() const;
-
-	// Set startTime to the current time
-	void setStartTime();
-
-protected:
-    void do_copyok(Metadata& md);
-    void do_copyko(Metadata& md);
-};
-
 
 }
 }
