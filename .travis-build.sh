@@ -34,7 +34,7 @@ then
     cp fedora/SPECS/arkimet.spec ~/rpmbuild/SPECS/arkimet.spec
     cp fedora/SOURCES/* ~/rpmbuild/SOURCES/
     git archive --prefix=$pkgname/ --format=tar HEAD | gzip -c > ~/rpmbuild/SOURCES/$pkgname.tar.gz
-    rpmbuild -ba --define "_srcarchivename $pkgname" ~/rpmbuild/SPECS/arkimet.spec
+    rpmbuild -ba --define "srcarchivename $pkgname" ~/rpmbuild/SPECS/arkimet.spec
     find ~/rpmbuild/{RPMS,SRPMS}/ -name "*rpm" -exec cp -v {} . \;
     # TODO upload ${pkgname}*.rpm to github release on deploy stage
 else

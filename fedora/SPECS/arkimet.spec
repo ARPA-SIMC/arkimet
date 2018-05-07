@@ -1,5 +1,5 @@
-# Note: define _srcarchivename in Travis build only.
-%{!?_srcarchivename: %global _srcarchivename %{name}-%{version}-%{release}}
+# Note: define srcarchivename in Travis build only.
+%{!?srcarchivename: %global srcarchivename %{name}-%{version}-%{release}}
 
 Summary: Archive for weather information
 Name: arkimet
@@ -8,7 +8,7 @@ Release: 1
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
-Source0: https://github.com/arpa-simc/%{name}/archive/v%{version}-%{release}.tar.gz#/%{_srcarchivename}.tar.gz
+Source0: https://github.com/arpa-simc/%{name}/archive/v%{version}-%{release}.tar.gz#/%{srcarchivename}.tar.gz
 Source1: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.service
 Source2: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.sysconfig
 Source3: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}-logrotate.conf
@@ -70,7 +70,7 @@ Requires: libdballe-devel, %{grib_sw}-devel, libwreport-devel, %{python3_vers}-d
  Arkimet developement library
 
 %prep
-%setup -q -n %{_srcarchivename}
+%setup -q -n %{srcarchivename}
 sh autogen.sh
 
 %build
