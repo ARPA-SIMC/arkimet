@@ -8,6 +8,8 @@ data/data
 *.gcda
 *.gcov
 *.pyc
+*~
+\#*\#
 .deps
 .libs
 .dirstamp

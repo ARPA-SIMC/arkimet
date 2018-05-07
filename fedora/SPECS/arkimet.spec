@@ -3,8 +3,8 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.6
-Release: 3
+Version: 1.7
+Release: 1
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -25,11 +25,14 @@ Source3: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/
 %define grib_sw grib_api
 %else
 %define grib_sw eccodes
+BuildRequires: eccodes-simc
 %endif
 
 # expliciting eccodes for centos7
-%{?el7:%define grib_sw eccodes}
-
+%if 0%{?el7}
+%define grib_sw eccodes
+BuildRequires: eccodes-simc
+%endif
 
 BuildRequires: libtool, doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, %{grib_sw}-devel, sqlite-devel >= 3.6, curl, curl-devel, geos-devel, popt-devel, help2man, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 3.0, flex, bison, meteo-vm2-devel >= 0.12, hdf5-devel, %{python3_vers}, %{python3_vers}-devel, %{python3_vers}-werkzeug, %{python3_vers}-setproctitle, %{python3_vers}-nose, %{python3_vers}-jinja2, libzip-devel, libarchive-devel, bzip2-devel
 Requires: hdf5, meteo-vm2 >= 0.12, %{grib_sw}, %{python3_vers}, %{python3_vers}-werkzeug, %{python3_vers}-setproctitle, libdballe6, systemd
@@ -75,10 +78,10 @@ sh autogen.sh
 # arpae definition available only on grib_api at the moment
 %{?fc20:%define arpae_tests 1}
 %{?fc24:%define arpae_tests 1}
+%{?el7:%define arpae_tests 1}
 
 %if 0%{?arpae_tests}
-
-
+echo 'Enabling ARPAE tests'
 %configure --enable-arpae-tests
 make
 make check
@@ -160,6 +163,15 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Mon May 7 2018 Daniele Branchini <dbranchini@arpae.it> - 1.7-1%{dist}
+- implemented arki-check --remove-old (#94)
+- implemented --archive=[tar|tar.gz|tar.xz|zip] in arki-query and arki-scan (#131) (#95)
+- implemented arki-check --compress
+- implemented arki-check --zip
+- removed unused files (#133)
+- timerange metadata for generic BUFR (#125)
+- xargs unlink tmpfile if exists (#134)
+
 * Thu Feb 15 2018 Daniele Branchini <dbranchini@arpae.it> - 1.6-3%{dist}
 - fixed #124
 
