@@ -35,23 +35,27 @@ class Bufr : public Scanner
     dballe::File* file;
     dballe::msg::Importer* importer;
     bufr::BufrLua* extras;
+    std::string filename;
+    std::shared_ptr<segment::Reader> reader;
+
 
 	void read_info_base(char* buf, ValueBag& area);
 	void read_info_fixed(char* buf, Metadata& md);
 	void read_info_mobile(char* buf, Metadata& md);
 
     void do_scan(dballe::BinaryMessage& rmsg, Metadata& md);
+    bool next(Metadata& md);
+    void open(const std::string& filename, std::shared_ptr<segment::Reader> reader);
+    void close();
 
 public:
 	Bufr();
 	~Bufr();
 
-    void open(const std::string& filename, std::shared_ptr<segment::Reader> reader) override;
-
-    void close() override;
-    bool next(Metadata& md) override;
-
     std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
+    bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
+    bool scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
+    bool scan_file_inline(const std::string& abspath, metadata_dest_func dest) override;
 
     /// Return the update sequence number for a BUFR
     static int update_sequence_number(const std::string& buf);

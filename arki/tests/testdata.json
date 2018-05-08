@@ -2602,11 +2602,6 @@
  {
   "doc": "",
   "group": "arki_scan_grib",
-  "method": "bigfile"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
   "method": "issue120"
  },
  {

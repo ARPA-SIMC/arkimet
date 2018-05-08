@@ -483,14 +483,17 @@ Grib::~Grib()
 
 void Grib::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
 {
-    Scanner::open(filename, reader);
+    close();
+    this->filename = filename;
+    this->reader = reader;
     if (!(in = fopen(filename.c_str(), "rb")))
         throw_file_error(filename, "cannot open file for reading");
 }
 
 void Grib::close()
 {
-    Scanner::close();
+    filename.clear();
+    reader.reset();
     if (in)
     {
         fclose(in);
@@ -520,6 +523,56 @@ std::unique_ptr<Metadata> Grib::scan_data(const std::vector<uint8_t>& data)
     gh = 0;
 
     return md;
+}
+
+bool Grib::scan_file_inline(const std::string& abspath, metadata_dest_func dest)
+{
+    open(abspath, std::shared_ptr<segment::Reader>());
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        if (!next(*md)) break;
+        if (!dest(move(md))) return false;
+    }
+    return true;
+}
+
+bool Grib::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
+{
+    throw std::runtime_error("scan_pipe not yet implemented for GRIB");
+#if 0
+    // If there's still a grib_handle around (for example, if a previous call
+    // to next() threw an exception), deallocate it here to prevent a leak
+    if (gh)
+    {
+        check_grib_error(grib_handle_delete(gh), "closing GRIB message");
+        gh = 0;
+    }
+    int fd = in.dup();
+    FILE* fin = fdopen(fd, "rb");
+    try {
+        while (true)
+        {
+        }
+    } catch (...) {
+        fclose(fd);
+        throw;
+    }
+
+    fclose(fd);
+#endif
+}
+
+bool Grib::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+{
+    open(abspath, reader);
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        if (!next(*md)) break;
+        if (!dest(move(md))) return false;
+    }
+    return true;
 }
 
 bool Grib::next(Metadata& md)

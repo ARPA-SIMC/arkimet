@@ -205,13 +205,21 @@ void OdimH5::scan_file(const std::string& filename, Metadata& md)
 
 void OdimH5::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
 {
-    Scanner::open(filename, reader);
+    close();
+    this->filename = filename;
+    this->reader = reader;
 
     // Open H5 file
     read = false;
     if (sys::stat(filename)->st_size == 0)
         // If the file is empty, don't open it
         read = true;
+}
+
+void OdimH5::close()
+{
+    filename.clear();
+    reader.reset();
 }
 
 bool OdimH5::next(Metadata& md)
@@ -245,6 +253,35 @@ std::unique_ptr<Metadata> OdimH5::scan_data(const std::vector<uint8_t>& data)
     sys::unlink(tmpfd.name());
 
     return md;
+}
+
+bool OdimH5::scan_file_inline(const std::string& abspath, metadata_dest_func dest)
+{
+    open(abspath, std::shared_ptr<segment::Reader>());
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        if (!next(*md)) break;
+        if (!dest(move(md))) return false;
+    }
+    return true;
+}
+
+bool OdimH5::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+{
+    open(abspath, reader);
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        if (!next(*md)) break;
+        if (!dest(move(md))) return false;
+    }
+    return true;
+}
+
+bool OdimH5::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
+{
+    throw std::runtime_error("scan_pipe not yet implemented for ODIM");
 }
 
 void OdimH5::setSource(Metadata& md)

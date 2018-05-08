@@ -28,15 +28,19 @@ public:
 
     void scan_file(const std::string& filename, Metadata& md);
 
-    void open(const std::string& filename, std::shared_ptr<segment::Reader> reader) override;
-    bool next(Metadata& md) override;
     std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
+    bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
+    bool scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
+    bool scan_file_inline(const std::string& abspath, metadata_dest_func dest) override;
 
 protected:
     hid_t h5file;
     bool read;
     std::vector<int> odimh5_funcs;
     OdimH5Lua* L;
+    std::string filename;
+    std::shared_ptr<segment::Reader> reader;
+
 
 	/**
 	 * Set the source information in the metadata
@@ -47,6 +51,10 @@ protected:
      * Run Lua scanning functions on \a md
      */
     bool scanLua(Metadata& md);
+
+    bool next(Metadata& md);
+    void open(const std::string& filename, std::shared_ptr<segment::Reader> reader);
+    void close();
 
     static int arkilua_find_attr(lua_State* L);
     static int arkilua_get_groups(lua_State* L);

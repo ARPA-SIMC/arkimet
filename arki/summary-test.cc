@@ -13,6 +13,7 @@
 #include "emitter/json.h"
 #include "emitter/memory.h"
 #include "matcher.h"
+#include "metadata/collection.h"
 #include "utils.h"
 #include "utils/files.h"
 #include "utils/sys.h"
@@ -266,15 +267,10 @@ add_method("summarise_grib", [](Fixture& f) {
     Summary s1;
     Metadata md;
 
-    scan::Grib scanner;
-    scanner.test_open("inbound/test.grib1");
-    wassert(actual(scanner.next(md)).istrue());
-    s1.add(md);
-    wassert(actual(scanner.next(md)).istrue());
-    //s1.add(md);
-    wassert(actual(scanner.next(md)).istrue());
-    //s1.add(md);
-    wassert(actual(scanner.next(md)).isfalse());
+    metadata::TestCollection mds("inbound/test.grib1");
+    s1.add(mds[0]);
+    //s1.add(mds[1]);
+    //s1.add(mds[2]);
 
     // Serialisation to binary
     vector<uint8_t> encoded = s1.encode();

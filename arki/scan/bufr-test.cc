@@ -25,13 +25,13 @@ void Tests::register_tests() {
 // Scan a well-known bufr file, with no padding between BUFRs
 add_method("contiguous", [] {
     Metadata md;
-    scan::Bufr scanner;
     vector<uint8_t> buf;
+    scan::Bufr scanner;
+    metadata::Collection mds;
 
-    scanner.test_open("inbound/test.bufr");
-
-    // See how we scan the first BUFR
-    wassert(actual(scanner.next(md)).istrue());
+    scanner.test_scan_file("inbound/test.bufr", mds.inserter_func());
+    wassert(actual(mds.size()) == 3u);
+    md = mds[0];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 0, 194));
@@ -54,7 +54,7 @@ add_method("contiguous", [] {
 
 
     // Next bufr
-    wassert_true(scanner.next(md));
+    md = mds[1];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 194, 220));
@@ -77,7 +77,7 @@ add_method("contiguous", [] {
 
 
     // Last bufr
-    wassert_true(scanner.next(md));
+    md = mds[2];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 414, 220));
@@ -97,21 +97,18 @@ add_method("contiguous", [] {
 
     // Check run
     wassert_false(md.has(TYPE_RUN));
-
-    // No more bufrs
-    wassert_false(scanner.next(md));
 });
 
 // Scan a well-known bufr file, with extra padding data between messages
 add_method("padded", [] {
     Metadata md;
-    scan::Bufr scanner;
     vector<uint8_t> buf;
+    scan::Bufr scanner;
+    metadata::Collection mds;
 
-    scanner.test_open("inbound/padded.bufr");
-
-    // See how we scan the first BUFR
-    wassert_true(scanner.next(md));
+    scanner.test_scan_file("inbound/padded.bufr", mds.inserter_func());
+    wassert(actual(mds.size()) == 3u);
+    md = mds[0];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/padded.bufr", 100, 194));
@@ -134,7 +131,7 @@ add_method("padded", [] {
 
 
     // Next bufr
-    wassert_true(scanner.next(md));
+    md = mds[1];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/padded.bufr", 394, 220));
@@ -157,7 +154,7 @@ add_method("padded", [] {
 
 
     // Last bufr
-    wassert_true(scanner.next(md));
+    md = mds[2];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/padded.bufr", 714, 220));
@@ -177,9 +174,6 @@ add_method("padded", [] {
 
     // Check run
     wassert_false(md.has(TYPE_RUN));
-
-    // No more bufrs
-    wassert_false(scanner.next(md));
 });
 
 // Test validation
@@ -216,21 +210,20 @@ add_method("validate", [] {
 add_method("partial", [] {
     Metadata md;
     scan::Bufr scanner;
-    vector<uint8_t> buf;
+    metadata::Collection mds;
 
-    scanner.test_open("inbound/C23000.bufr");
-
-    // See how we scan the first BUFR
-    wassert_true(scanner.next(md));
+    scanner.test_scan_file("inbound/C23000.bufr", mds.inserter_func());
+    wassert(actual(mds.size()) == 1u);
+    md = mds[0];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/C23000.bufr", 0, 2206));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 2206u);
-	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
-	ensure_equals(string((const char*)buf.data() + 2202, 4), "7777");
+    // Check that the source can be read properly
+    auto buf = md.getData();
+    wassert(actual(buf.size()) == 2206u);
+    wassert(actual(string((const char*)buf.data(), 4)) == "BUFR");
+    wassert(actual(string((const char*)buf.data() + 2202, 4)) == "7777");
 
     // Check contents
     wassert(actual(md).contains("origin", "BUFR(98, 0)"));
@@ -244,31 +237,26 @@ add_method("partial", [] {
 
     // Check run
     wassert_false(md.has(TYPE_RUN));
-
-
-    // No more bufrs
-    wassert_false(scanner.next(md));
 });
 
 // Test scanning a pollution BUFR file
 add_method("pollution", [] {
     Metadata md;
     scan::Bufr scanner;
-    vector<uint8_t> buf;
+    metadata::Collection mds;
 
-    scanner.test_open("inbound/pollution.bufr");
-
-    // See how we scan the first BUFR
-    wassert_true(scanner.next(md));
+    scanner.test_scan_file("inbound/pollution.bufr", mds.inserter_func());
+    wassert(actual(mds.size()) == 1u);
+    md = mds[0];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/pollution.bufr", 0, 178));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 178u);
-	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
-	ensure_equals(string((const char*)buf.data() + 174, 4), "7777");
+    // Check that the source can be read properly
+    auto buf = md.getData();
+    wassert(actual(buf.size()) == 178u);
+    wassert(actual(string((const char*)buf.data(), 4)) == "BUFR");
+    wassert(actual(string((const char*)buf.data() + 174, 4)) == "7777");
 
     // Check contents
     wassert(actual(md).contains("origin", "BUFR(98, 0)"));
@@ -279,135 +267,111 @@ add_method("pollution", [] {
 
     // Check run
     wassert_false(md.has(TYPE_RUN));
-
-
-    // No more bufrs
-    wassert_false(scanner.next(md));
 });
 
 // Test scanning a BUFR file with undefined dates
 add_method("zerodate", [] {
-    Metadata md;
     scan::Bufr scanner;
-
-    scanner.test_open("inbound/zerodate.bufr");
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/zerodate.bufr", mds.inserter_func());
+    wassert(actual(mds.size()) == 1u);
 
     // Missing datetime info should lead to missing Reftime
-    wassert(actual(scanner.next(md)).istrue());
-    wassert(actual(md.get<Reftime>()).isfalse());
+    wassert(actual(mds[0].get<Reftime>()).isfalse());
 });
 
 // Test scanning a ship
 add_method("ship", [] {
-    Metadata md;
     scan::Bufr scanner;
-    scanner.test_open("inbound/ship.bufr");
-    ensure(scanner.next(md));
-    wassert(actual(md).contains("area", "GRIB(x=-11, y=37, type=mob)"));
-    wassert(actual(md).contains("proddef", "GRIB(id=DHDE)"));
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/ship.bufr", mds.inserter_func());
+    wassert(actual(mds.size()) == 1u);
+    wassert(actual(mds[0]).contains("area", "GRIB(x=-11, y=37, type=mob)"));
+    wassert(actual(mds[0]).contains("proddef", "GRIB(id=DHDE)"));
 });
 
 // Test scanning an amdar
 add_method("amdar", [] {
-    Metadata md;
     scan::Bufr scanner;
-    scanner.test_open("inbound/amdar.bufr");
-    ensure(scanner.next(md));
-    wassert(actual(md).contains("area", "GRIB(x=21, y=64, type=mob)"));
-    wassert(actual(md).contains("proddef", "GRIB(id=EU4444)"));
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/amdar.bufr", mds.inserter_func());
+    wassert(actual(mds[0]).contains("area", "GRIB(x=21, y=64, type=mob)"));
+    wassert(actual(mds[0]).contains("proddef", "GRIB(id=EU4444)"));
 });
 
 // Test scanning an airep
 add_method("airep", [] {
-    Metadata md;
     scan::Bufr scanner;
-    scanner.test_open("inbound/airep.bufr");
-    ensure(scanner.next(md));
-    wassert(actual(md).contains("area", "GRIB(x=-54, y=51, type=mob)"));
-    wassert(actual(md).contains("proddef", "GRIB(id=ACA872)"));
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/airep.bufr", mds.inserter_func());
+    wassert(actual(mds[0]).contains("area", "GRIB(x=-54, y=51, type=mob)"));
+    wassert(actual(mds[0]).contains("proddef", "GRIB(id=ACA872)"));
 });
 
 // Test scanning an acars
 add_method("acars", [] {
-    Metadata md;
     scan::Bufr scanner;
-    scanner.test_open("inbound/acars.bufr");
-    ensure(scanner.next(md));
-    wassert(actual(md).contains("area", "GRIB(x=-88, y=39, type=mob)"));
-    wassert(actual(md).contains("proddef", "GRIB(id=JBNYR3RA)"));
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/acars.bufr", mds.inserter_func());
+    wassert(actual(mds[0]).contains("area", "GRIB(x=-88, y=39, type=mob)"));
+    wassert(actual(mds[0]).contains("proddef", "GRIB(id=JBNYR3RA)"));
 });
 
 // Test scanning a GTS synop
 add_method("gts", [] {
-    Metadata md;
     scan::Bufr scanner;
-    scanner.test_open("inbound/synop-gts.bufr");
-    ensure(scanner.next(md));
-    wassert(actual(md).contains("area", "GRIB(lat=4586878, lon=717080)"));
-    wassert(actual(md).contains("proddef", "GRIB(blo=6, sta=717)"));
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/synop-gts.bufr", mds.inserter_func());
+    wassert(actual(mds[0]).contains("area", "GRIB(lat=4586878, lon=717080)"));
+    wassert(actual(mds[0]).contains("proddef", "GRIB(blo=6, sta=717)"));
 });
 
 // Test scanning a message with a different date in the header than in its contents
 add_method("date_mismatch", [] {
-    Metadata md;
     scan::Bufr scanner;
-    scanner.test_open("inbound/synop-gts-different-date-in-header.bufr");
-    ensure(scanner.next(md));
-    wassert(actual(md).contains("area", "GRIB(lat=4586878, lon=717080)"));
-    wassert(actual(md).contains("proddef", "GRIB(blo=6, sta=717)"));
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/synop-gts-different-date-in-header.bufr", mds.inserter_func());
+    wassert(actual(mds[0]).contains("area", "GRIB(lat=4586878, lon=717080)"));
+    wassert(actual(mds[0]).contains("proddef", "GRIB(blo=6, sta=717)"));
 });
 
 // Test scanning a message which raises domain errors when interpreted
 add_method("out_of_range", [] {
-    Metadata md;
     scan::Bufr scanner;
-    scanner.test_open("inbound/interpreted-range.bufr");
-    ensure(scanner.next(md));
-    wassert(actual(md).contains("Area", "GRIB(type=mob, x=10, y=53)"));
-    wassert(actual(md).contains("Proddef", "GRIB(id=DBBC)"));
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/interpreted-range.bufr", mds.inserter_func());
+    wassert(actual(mds[0]).contains("Area", "GRIB(type=mob, x=10, y=53)"));
+    wassert(actual(mds[0]).contains("Proddef", "GRIB(id=DBBC)"));
 });
 
 // Test scanning a temp forecast, to see if we got the right reftime
 add_method("temp_reftime", [] {
     // BUFR has datetime 2009-02-13 12:00:00, timerange instant
-    Metadata md;
     scan::Bufr scanner;
-    scanner.test_open("inbound/tempforecast.bufr");
-    wassert_true(scanner.next(md));
-    wassert(actual(md).contains("reftime", "2009-02-13 12:00:00"));
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/tempforecast.bufr", mds.inserter_func());
+    wassert(actual(mds[0]).contains("reftime", "2009-02-13 12:00:00"));
 
     // BUFR has datetime 2013-04-06 00:00:00 (validity time, in this case), timerange 254,259200,0 (+72h)
     // and should be archived with its emission time
-    scanner.test_open("inbound/tempforecast1.bufr");
-    wassert_true(scanner.next(md));
-    wassert(actual(md).contains("reftime", "2013-04-06 00:00:00"));
+    mds.clear();
+    scanner.test_scan_file("inbound/tempforecast1.bufr", mds.inserter_func());
+    wassert(actual(mds[0]).contains("reftime", "2013-04-06 00:00:00"));
 });
 
 // Test scanning a bufr with all sorts of wrong dates
 add_method("wrongdate", [] {
-    Metadata md;
     scan::Bufr scanner;
-    scanner.test_open("inbound/wrongdate.bufr");
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/wrongdate.bufr", mds.inserter_func());
+    wassert(actual(mds.size()) == 6u);
 
-    wassert(actual(scanner.next(md)).istrue());
-    wassert(actual(md.get<Reftime>()).isfalse());
-
-    wassert(actual(scanner.next(md)).istrue());
-    wassert(actual(md.get<Reftime>()).isfalse());
-
-    wassert(actual(scanner.next(md)).istrue());
-    wassert(actual(md.get<Reftime>()).isfalse());
-
-    wassert(actual(scanner.next(md)).istrue());
-    wassert(actual(md.get<Reftime>()).isfalse());
-
-    wassert(actual(scanner.next(md)).istrue());
-    wassert(actual(md.get<Reftime>()).isfalse());
-
-    wassert(actual(scanner.next(md)).istrue());
-    wassert(actual(md.get<Reftime>()).isfalse());
-
-    wassert(actual(scanner.next(md)).isfalse());
+    wassert(actual(mds[0].get<Reftime>()).isfalse());
+    wassert(actual(mds[1].get<Reftime>()).isfalse());
+    wassert(actual(mds[2].get<Reftime>()).isfalse());
+    wassert(actual(mds[3].get<Reftime>()).isfalse());
+    wassert(actual(mds[4].get<Reftime>()).isfalse());
+    wassert(actual(mds[5].get<Reftime>()).isfalse());
 });
 
 }

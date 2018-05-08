@@ -100,13 +100,16 @@ Bufr::~Bufr()
 
 void Bufr::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
 {
-    Scanner::open(filename, reader);
+    close();
+    this->filename = filename;
+    this->reader = reader;
     file = dballe::File::create(dballe::File::BUFR, filename.c_str(), "r").release();
 }
 
 void Bufr::close()
 {
-    Scanner::close();
+    filename.clear();
+    reader.reset();
     if (file)
     {
         delete file;
@@ -296,6 +299,35 @@ std::unique_ptr<Metadata> Bufr::scan_data(const std::vector<uint8_t>& data)
     rmsg.data = std::string(data.begin(), data.end());
     do_scan(rmsg, *md);
     return md;
+}
+
+bool Bufr::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+{
+    open(abspath, reader);
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        if (!next(*md)) break;
+        if (!dest(move(md))) return false;
+    }
+    return true;
+}
+
+bool Bufr::scan_file_inline(const std::string& abspath, metadata_dest_func dest)
+{
+    open(abspath, std::shared_ptr<segment::Reader>());
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        if (!next(*md)) break;
+        if (!dest(move(md))) return false;
+    }
+    return true;
+}
+
+bool Bufr::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
+{
+    throw std::runtime_error("scan_pipe not yet implemented for BUFR");
 }
 
 static inline void inplace_tolower(std::string& buf)

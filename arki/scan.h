@@ -19,23 +19,12 @@ struct Scanner
 
     virtual ~Scanner();
 
-    virtual void open(const std::string& filename, std::shared_ptr<segment::Reader> reader);
-
     /**
-     * Scan the next data in the file.
+     * Open a file, scan it, send results to dest, and close it.
      *
-     * @returns
-     *   true if it found a new data item
-     *   false if there are no more data items in the file
+     * Returns true if dest always returned true, else false.
      */
-    virtual bool next(Metadata& md) = 0;
-
-    /**
-     * Close the input file.
-     *
-     * This is optional: the file will be closed by the destructor if needed.
-     */
-    virtual void close();
+    virtual bool scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) = 0;
 
     /**
      * Open a pathname to scan.
@@ -43,14 +32,12 @@ struct Scanner
      * Use this only in unit tests, as it makes assumptions that might not be
      * valid in normal code
      */
-    void test_open(const std::string& filename);
+    void test_scan_file(const std::string& filename, metadata_dest_func dest);
 
     /**
-     * Open a file, scan it, send results to dest, and close it.
-     *
-     * Returns true if dest always returned true, else false.
+     * Scan data from a non-seekable pipe
      */
-    bool scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest);
+    virtual bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) = 0;
 
     /**
      * Scan a memory buffer.
@@ -66,7 +53,7 @@ struct Scanner
      *
      * Returns true if dest always returned true, else false.
      */
-    bool scan_metadata(const std::string& abspath, metadata_dest_func dest);
+    virtual bool scan_file_inline(const std::string& abspath, metadata_dest_func dest) = 0;
 
     /**
      * Create a scanner for the given format

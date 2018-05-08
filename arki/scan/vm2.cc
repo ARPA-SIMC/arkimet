@@ -110,7 +110,9 @@ Vm2::~Vm2()
 
 void Vm2::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
 {
-    Scanner::open(filename, reader);
+    close();
+    this->filename = filename;
+    this->reader = reader;
     delete input;
     input = nullptr;
     input = new vm2::Input(filename);
@@ -118,7 +120,8 @@ void Vm2::open(const std::string& filename, std::shared_ptr<segment::Reader> rea
 
 void Vm2::close()
 {
-    Scanner::close();
+    filename.clear();
+    reader.reset();
     delete input;
     input = nullptr;
 }
@@ -180,6 +183,35 @@ std::unique_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
     if (!scan_stream(input, *md))
         throw std::runtime_error("input line did not look like a VM2 line");
     return md;
+}
+
+bool Vm2::scan_file_inline(const std::string& abspath, metadata_dest_func dest)
+{
+    open(abspath, std::shared_ptr<segment::Reader>());
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        if (!next(*md)) break;
+        if (!dest(move(md))) return false;
+    }
+    return true;
+}
+
+bool Vm2::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
+{
+    throw std::runtime_error("scan_pipe not yet implemented for VM2");
+}
+
+bool Vm2::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+{
+    open(abspath, reader);
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        if (!next(*md)) break;
+        if (!dest(move(md))) return false;
+    }
+    return true;
 }
 
 vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& value)
