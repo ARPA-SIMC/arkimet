@@ -77,8 +77,6 @@ struct MetadataDispatch
     // Set startTime to the current time
     void setStartTime();
 
-    static void process_quick_actions(const ScanCommandLine& args);
-
 protected:
     void do_copyok(Metadata& md);
     void do_copyko(Metadata& md);

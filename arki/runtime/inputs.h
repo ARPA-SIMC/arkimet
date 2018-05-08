@@ -6,16 +6,23 @@
 
 namespace arki {
 namespace runtime {
-
 struct Restrict;
+struct ScanCommandLine;
+struct QueryCommandLine;
 
 struct Inputs : public std::vector<ConfigFile>
 {
+    Inputs() = default;
+    Inputs(ScanCommandLine& args);
+    Inputs(QueryCommandLine& args);
+
     void add_sections(const ConfigFile& cfg);
     void add_config_file(const std::string& pathname);
     void add_pathname(const std::string& pathname);
     void add_pathnames_from_file(const std::string& pathname);
     void remove_unallowed(const Restrict& restrict);
+
+    std::string expand_remote_query(const std::string& query);
 
     ConfigFile as_config() const;
 };

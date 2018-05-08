@@ -4,7 +4,6 @@
 #include "arki/configfile.h"
 #include "arki/dataset.h"
 #include "arki/dataset/merged.h"
-#include "arki/dataset/http.h"
 #include "arki/utils.h"
 #include "arki/nag.h"
 #include "arki/runtime.h"
@@ -29,7 +28,6 @@ struct Options : public runtime::QueryCommandLine
         description =
             "Query the datasets in the given config file for data matching the"
             " given expression, and output the matching metadata.";
-        add_query_options();
     }
 };
 
@@ -45,10 +43,17 @@ int arki_query(int argc, const char* argv[])
             return 0;
 
         opts.setupProcessing();
+        Inputs inputs(opts);
 
-        auto processor = processor::create(opts, opts.query, *opts.output);
+        Matcher query;
+        if (!opts.strquery.empty())
+            query = Matcher::parse(inputs.expand_remote_query(opts.strquery));
+        else
+            query = Matcher::parse(opts.strquery);
 
-        bool all_successful = opts.foreach_source([&](runtime::Source& source) {
+        auto processor = processor::create(opts, query, *opts.output);
+
+        bool all_successful = foreach_source(opts, inputs, [&](runtime::Source& source) {
             source.process(*processor);
             return true;
         });

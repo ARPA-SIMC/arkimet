@@ -12,6 +12,8 @@ struct DatasetProcessor;
 struct MetadataDispatch;
 struct CommandLine;
 struct ScanCommandLine;
+struct QueryCommandLine;
+struct Inputs;
 
 
 /**
@@ -57,7 +59,7 @@ struct MergedSource : public Source
     std::shared_ptr<dataset::Merged> m_reader;
     std::string m_name;
 
-    MergedSource(CommandLine& args);
+    MergedSource(QueryCommandLine& args, const Inputs& inputs);
 
     std::string name() const override;
     dataset::Reader& reader() const override;
@@ -74,7 +76,7 @@ struct QmacroSource : public Source
     std::shared_ptr<dataset::Reader> m_reader;
     std::string m_name;
 
-    QmacroSource(CommandLine& args);
+    QmacroSource(QueryCommandLine& args, const Inputs& inputs);
 
     std::string name() const override;
     dataset::Reader& reader() const override;
@@ -82,6 +84,20 @@ struct QmacroSource : public Source
     void close(bool successful) override;
 };
 
+
+/**
+ * Instantiate all sources requested on command line.
+ *
+ * Return true if dest returned true (successful) on all sources.
+ */
+bool foreach_source(ScanCommandLine& args, const Inputs& inputs, std::function<bool(Source&)> dest);
+
+/**
+ * Instantiate all sources requested on command line.
+ *
+ * Return true if dest returned true (successful) on all sources.
+ */
+bool foreach_source(QueryCommandLine& args, const Inputs& inputs, std::function<bool(Source&)> dest);
 
 }
 }

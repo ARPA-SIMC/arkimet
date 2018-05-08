@@ -22,7 +22,6 @@ struct Options : public runtime::ScanCommandLine
         description =
             "Read one or more files or datasets and process their data "
             "or import them in a dataset.";
-        add_scan_options();
     }
 };
 
@@ -38,19 +37,19 @@ int arki_scan(int argc, const char* argv[])
         runtime::init();
 
         opts.setupProcessing();
-        MetadataDispatch::process_quick_actions(opts);
+        Inputs inputs(opts);
 
         bool all_successful;
-        auto processor = processor::create(opts, opts.query, *opts.output);
+        auto processor = processor::create(opts, *opts.output);
         if (opts.dispatch->isSet() || opts.testdispatch->isSet())
         {
             MetadataDispatch dispatcher(opts, *processor);
-            all_successful = opts.foreach_source([&](runtime::Source& source) {
+            all_successful = foreach_source(opts, inputs, [&](runtime::Source& source) {
                 source.dispatch(dispatcher);
                 return true;
             });
         } else {
-            all_successful = opts.foreach_source([&](runtime::Source& source) {
+            all_successful = foreach_source(opts, inputs, [&](runtime::Source& source) {
                 source.process(*processor);
                 return true;
             });
@@ -62,8 +61,6 @@ int arki_scan(int argc, const char* argv[])
             return 0;
         else
             return 2;
-    } catch (runtime::HandledByCommandLineParser& e) {
-        return e.status;
     } catch (commandline::BadOption& e) {
         cerr << e.what() << endl;
         opts.outputHelp(cerr);

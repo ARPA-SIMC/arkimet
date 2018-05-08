@@ -29,26 +29,6 @@ using namespace arki::utils;
 namespace arki {
 namespace runtime {
 
-void MetadataDispatch::process_quick_actions(const ScanCommandLine& args)
-{
-    // Honour --validate=list
-    if (args.validate)
-    {
-        if (args.validate->stringValue() == "list")
-        {
-            // Print validator list and exit
-            const ValidatorRepository& vals = ValidatorRepository::get();
-            for (ValidatorRepository::const_iterator i = vals.begin();
-                    i != vals.end(); ++i)
-            {
-                cout << i->second->name << " - " << i->second->desc << endl;
-            }
-            throw HandledByCommandLineParser();
-        }
-    }
-}
-
-
 MetadataDispatch::MetadataDispatch(const ScanCommandLine& args, DatasetProcessor& next)
     : next(next)
 {

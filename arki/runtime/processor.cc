@@ -468,7 +468,7 @@ std::unique_ptr<DatasetProcessor> create(QueryCommandLine& args, const Matcher& 
     return std::unique_ptr<DatasetProcessor>(new TargetFileProcessor(sop, args.targetfile->stringValue()));
 }
 
-std::unique_ptr<DatasetProcessor> create(ScanCommandLine& args, const Matcher& query, core::NamedFileDescriptor& output)
+std::unique_ptr<DatasetProcessor> create(ScanCommandLine& args, core::NamedFileDescriptor& output)
 {
     ProcessorMaker pmaker;
     // Initialize the processor maker
@@ -479,7 +479,6 @@ std::unique_ptr<DatasetProcessor> create(ScanCommandLine& args, const Matcher& q
     pmaker.annotate = args.annotate->boolValue();
     pmaker.data_only = false;
     pmaker.data_inline = false;
-    if (args.postprocess) pmaker.postprocess = args.postprocess->stringValue();
     pmaker.report = args.report->stringValue();
     pmaker.summary_restrict = args.summary_restrict->stringValue();
     pmaker.sort = args.sort->stringValue();
@@ -491,7 +490,7 @@ std::unique_ptr<DatasetProcessor> create(ScanCommandLine& args, const Matcher& q
             pmaker.archive = "tar";
     }
 
-    std::unique_ptr<DatasetProcessor> res = pmaker.make(query, output);
+    std::unique_ptr<DatasetProcessor> res = pmaker.make(Matcher(), output);
 
     // If targetfile is requested, wrap with the targetfile processor
     if (!args.targetfile->isSet())
@@ -505,6 +504,9 @@ std::unique_ptr<DatasetProcessor> create(ScanCommandLine& args, const Matcher& q
 static void _verify_option_consistency(CommandLine& args)
 {
     // Check conflicts among options
+    if (args.summary && args.summary->isSet() && args.summary_short && args.summary_short->isSet())
+        throw commandline::BadOption("--summary and --summary-short cannot be used together");
+
 #ifdef HAVE_LUA
     if (args.report->isSet())
     {
@@ -516,8 +518,6 @@ static void _verify_option_consistency(CommandLine& args)
             throw commandline::BadOption("--annotate conflicts with --report");
         //if (summary->boolValue())
         //  return "--summary conflicts with --report";
-        if (args.postprocess && args.postprocess->isSet())
-            throw commandline::BadOption("--postprocess conflicts with --report");
         if (args.sort->isSet())
             throw commandline::BadOption("--sort conflicts with --report");
         if (args.archive->isSet())
@@ -528,15 +528,11 @@ static void _verify_option_consistency(CommandLine& args)
     {
         if (args.json->isSet())
             throw commandline::BadOption("--dump/--yaml conflicts with --json");
-        if (args.postprocess && args.postprocess->isSet())
-            throw commandline::BadOption("--dump/--yaml conflicts with --postprocess");
         if (args.archive->isSet())
             throw commandline::BadOption("--dump/--yaml conflicts with --archive");
     }
     if (args.annotate->isSet())
     {
-        if (args.postprocess && args.postprocess->isSet())
-            throw commandline::BadOption("--annotate conflicts with --postprocess");
         if (args.archive->isSet())
             throw commandline::BadOption("--annotate conflicts with --archive");
     }
@@ -544,8 +540,6 @@ static void _verify_option_consistency(CommandLine& args)
     {
         if (args.summary_short->isSet())
             throw commandline::BadOption("--summary conflicts with --summary-short");
-        if (args.postprocess && args.postprocess->isSet())
-            throw commandline::BadOption("--summary conflicts with --postprocess");
         if (args.sort->isSet())
             throw commandline::BadOption("--summary conflicts with --sort");
         if (args.archive->isSet())
@@ -554,17 +548,10 @@ static void _verify_option_consistency(CommandLine& args)
         throw commandline::BadOption("--summary-restrict only makes sense with --summary");
     if (args.summary_short->isSet())
     {
-        if (args.postprocess && args.postprocess->isSet())
-            throw commandline::BadOption("--summary-short conflicts with --postprocess");
         if (args.sort->isSet())
             throw commandline::BadOption("--summary-short conflicts with --sort");
         if (args.archive->isSet())
             throw commandline::BadOption("--summary-short conflicts with --archive");
-    }
-    if (args.postprocess && args.postprocess->isSet())
-    {
-        if (args.archive->isSet())
-            throw commandline::BadOption("--postprocess conflicts with --archive");
     }
 }
 
@@ -624,6 +611,23 @@ void verify_option_consistency(QueryCommandLine& args)
         if (args.postprocess->isSet())
             throw commandline::BadOption("--postprocess conflicts with --data");
     }
+
+    if (args.postprocess->isSet())
+    {
+        if (args.summary_short->isSet())
+            throw commandline::BadOption("--summary-short conflicts with --postprocess");
+        if (args.summary->isSet())
+            throw commandline::BadOption("--summary conflicts with --postprocess");
+        if (args.annotate->isSet())
+            throw commandline::BadOption("--annotate conflicts with --postprocess");
+        if (args.yaml->isSet())
+            throw commandline::BadOption("--dump/--yaml conflicts with --postprocess");
+        if (args.report->isSet())
+            throw commandline::BadOption("--postprocess conflicts with --report");
+        if (args.archive->isSet())
+            throw commandline::BadOption("--postprocess conflicts with --archive");
+    }
+
     _verify_option_consistency(args);
 }
 
