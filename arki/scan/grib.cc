@@ -508,7 +508,7 @@ std::unique_ptr<Metadata> Grib::scan_data(const std::vector<uint8_t>& data)
         gh = 0;
     }
 
-    gh = grib_handle_new_from_message(context, data.data(), data.size());
+    gh = grib_handle_new_from_message(context, (void*)data.data(), data.size());
     if (gh == 0)
         throw std::runtime_error("GRIB memory buffer failed to scan");
 
