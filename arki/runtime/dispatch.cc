@@ -236,7 +236,6 @@ bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
 
 void MetadataDispatch::do_copyok(Metadata& md)
 {
-    //fprintf(stderr, "ZAZA: %s\n", md.sourceBlob().filename.c_str());
     if (copyok && copyok->is_open())
         md.stream_data(*copyok);
 }

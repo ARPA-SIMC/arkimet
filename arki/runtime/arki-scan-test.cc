@@ -34,7 +34,7 @@ struct Fixture : public DatasetTest
         auto section = dispatch_cfg.obtainSection("error");
         section->setValue("type", "error");
         section->setValue("step", "daily");
-        // TODO: add path?
+        section->setValue("path", "error");
 
         sys::File out("test-dispatch", O_WRONLY | O_CREAT | O_TRUNC);
         out.write_all_or_throw(dispatch_cfg.serialize());
