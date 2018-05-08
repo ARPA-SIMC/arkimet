@@ -53,30 +53,6 @@ void init()
     initialized = true;
 }
 
-std::unique_ptr<dataset::Reader> make_qmacro_dataset(const ConfigFile& ds_cfg, const ConfigFile& dispatch_cfg, const std::string& qmacroname, const std::string& query, const std::string& url)
-{
-    unique_ptr<dataset::Reader> ds;
-    string baseurl = dataset::http::Reader::allSameRemoteServer(dispatch_cfg);
-    if (baseurl.empty())
-    {
-        // Create the local query macro
-        nag::verbose("Running query macro %s on local datasets", qmacroname.c_str());
-        ds.reset(new Querymacro(ds_cfg, dispatch_cfg, qmacroname, query));
-    } else {
-        // Create the remote query macro
-        nag::verbose("Running query macro %s on %s", qmacroname.c_str(), baseurl.c_str());
-        ConfigFile cfg;
-        cfg.setValue("name", qmacroname);
-        cfg.setValue("type", "remote");
-        cfg.setValue("path", baseurl);
-        cfg.setValue("qmacro", query);
-        if (!url.empty())
-            cfg.setValue("url", url);
-        ds = dataset::Reader::create(cfg);
-    }
-    return ds;
-}
-
 
 BaseCommandLine::BaseCommandLine(const std::string& name, int mansection)
     : StandardParserWithManpage(name, PACKAGE_VERSION, mansection, PACKAGE_BUGREPORT)

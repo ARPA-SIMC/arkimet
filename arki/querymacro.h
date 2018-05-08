@@ -3,7 +3,6 @@
 
 /// Macros implementing special query strategies
 
-#include <arki/utils/lua.h>
 #include <arki/dataset.h>
 #include <arki/configfile.h>
 #include <string>
@@ -12,6 +11,7 @@
 namespace arki {
 class ConfigFile;
 class Metadata;
+class Lua;
 
 namespace dataset {
 class Reader;

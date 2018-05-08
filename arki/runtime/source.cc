@@ -6,9 +6,12 @@
 #include "arki/utils/string.h"
 #include "arki/exceptions.h"
 #include "arki/dataset/file.h"
+#include "arki/dataset/http.h"
 #include "arki/dataset/merged.h"
+#include "arki/querymacro.h"
 #include "arki/nag.h"
 
+using namespace arki;
 using namespace arki::utils;
 
 namespace arki {
@@ -115,11 +118,24 @@ void MergedSource::close(bool successful)
 QmacroSource::QmacroSource(QueryCommandLine& args, const Inputs& inputs)
 {
     // Create the virtual qmacro dataset
-    m_reader = runtime::make_qmacro_dataset(
-            cfg,
-            inputs.as_config(),
-            args.qmacro->stringValue(),
-            args.qmacro_query);
+    ConfigFile inputs_cfg = inputs.as_config();
+    std::string baseurl = dataset::http::Reader::allSameRemoteServer(inputs_cfg);
+    if (baseurl.empty())
+    {
+        // Create the local query macro
+        nag::verbose("Running query macro %s on local datasets", args.qmacro->stringValue().c_str());
+        m_reader = std::make_shared<Querymacro>(cfg, inputs_cfg, args.qmacro->stringValue(), args.qmacro_query);
+    } else {
+        // Create the remote query macro
+        nag::verbose("Running query macro %s on %s", args.qmacro->stringValue().c_str(), baseurl.c_str());
+        ConfigFile cfg;
+        cfg.setValue("name", args.qmacro->stringValue());
+        cfg.setValue("type", "remote");
+        cfg.setValue("path", baseurl);
+        cfg.setValue("qmacro", args.qmacro_query);
+        m_reader = dataset::Reader::create(cfg);
+    }
+
     m_name = args.qmacro->stringValue();
 }
 
