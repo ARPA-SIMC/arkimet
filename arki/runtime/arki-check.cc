@@ -10,8 +10,11 @@
 #include "arki/metadata/consumer.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
+#include "arki/metadata.h"
 #include "arki/nag.h"
 #include "arki/runtime.h"
+#include <arki/runtime/inputs.h>
+#include <arki/runtime/config.h>
 #include "sstream"
 #include "iostream"
 #include "sys/stat.h"

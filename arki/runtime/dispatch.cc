@@ -1,6 +1,7 @@
 #include "dispatch.h"
 #include "processor.h"
 #include "arki/runtime.h"
+#include "arki/runtime/config.h"
 #include "arki/dispatcher.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -33,8 +34,6 @@ MetadataDispatch::MetadataDispatch(const ScanCommandLine& args, DatasetProcessor
     : next(next)
 {
     timerclear(&startTime);
-
-    runtime::readMatcherAliasDatabase();
 
     if (args.testdispatch && args.testdispatch->isSet())
     {

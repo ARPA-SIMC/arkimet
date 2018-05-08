@@ -1,5 +1,7 @@
 #include "arki/runtime/arki-query.h"
 #include "arki/runtime/processor.h"
+#include <arki/runtime/inputs.h>
+#include <arki/runtime/io.h>
 #include "arki/utils/commandline/parser.h"
 #include "arki/configfile.h"
 #include "arki/dataset.h"
@@ -42,8 +44,8 @@ int arki_query(int argc, const char* argv[])
         if (opts.parse(argc, argv))
             return 0;
 
-        opts.setupProcessing();
         Inputs inputs(opts);
+        auto output = make_output(*opts.outfile);
 
         Matcher query;
         if (!opts.strquery.empty())
@@ -51,7 +53,7 @@ int arki_query(int argc, const char* argv[])
         else
             query = Matcher::parse(opts.strquery);
 
-        auto processor = processor::create(opts, query, *opts.output);
+        auto processor = processor::create(opts, query, *output);
 
         bool all_successful = foreach_source(opts, inputs, [&](runtime::Source& source) {
             source.process(*processor);

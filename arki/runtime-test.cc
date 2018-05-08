@@ -47,8 +47,6 @@ add_method("files", [] {
 
     runtime::init();
 
-    opts.setupProcessing();
-
 /*
     try {
 

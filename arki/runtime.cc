@@ -1,39 +1,13 @@
 #include "config.h"
 #include "arki/runtime.h"
-#include "arki/runtime/dispatch.h"
-#include "arki/runtime/source.h"
+#include "arki/runtime/config.h"
 #include "arki/runtime/processor.h"
-#include "arki/validator.h"
-#include "arki/exceptions.h"
-#include "arki/dispatcher.h"
-#include "arki/utils/string.h"
-#include "arki/configfile.h"
-#include "arki/summary.h"
-#include "arki/matcher.h"
-#include "arki/utils.h"
-#include "arki/utils/files.h"
-#include "arki/utils/string.h"
-#include "arki/dataset.h"
-#include "arki/dataset/file.h"
-#include "arki/dataset/http.h"
-#include "arki/dataset/index/base.h"
-#include "arki/targetfile.h"
-#include "arki/formatter.h"
-#include "arki/postprocess.h"
-#include "arki/querymacro.h"
-#include "arki/sort.h"
-#include "arki/nag.h"
-#include "arki/iotrace.h"
+#include "arki/runtime/io.h"
 #include "arki/types-init.h"
-#include "arki/utils/sys.h"
-#ifdef HAVE_LUA
-#include "arki/report.h"
-#endif
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <iostream>
-#include <cstdlib>
+#include "arki/iotrace.h"
+#include "arki/nag.h"
+#include "arki/validator.h"
+#include "arki/utils/string.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -177,11 +151,6 @@ QueryCommandLine::QueryCommandLine(const std::string& name, int mansection)
         " to be used by the postprocessor (can be given more than once)");
 }
 
-CommandLine::~CommandLine()
-{
-    if (output) delete output;
-}
-
 bool CommandLine::parse(int argc, const char* argv[])
 {
     add(infoOpts);
@@ -211,9 +180,7 @@ bool ScanCommandLine::parse(int argc, const char* argv[])
         const ValidatorRepository& vals = ValidatorRepository::get();
         for (ValidatorRepository::const_iterator i = vals.begin();
                 i != vals.end(); ++i)
-        {
-            cout << i->second->name << " - " << i->second->desc << endl;
-        }
+            fprintf(stdout, "%s - %s\n", i->second->name.c_str(), i->second->desc.c_str());
         return true;
     }
 
@@ -272,14 +239,6 @@ bool QueryCommandLine::parse(int argc, const char* argv[])
     }
 
     return false;
-}
-
-void CommandLine::setupProcessing()
-{
-    // Open output stream
-
-    if (!output)
-        output = make_output(*outfile).release();
 }
 
 }

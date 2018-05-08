@@ -3,6 +3,8 @@
 #include "arki/runtime/processor.h"
 #include "arki/runtime/source.h"
 #include "arki/runtime/dispatch.h"
+#include <arki/runtime/inputs.h>
+#include <arki/runtime/io.h>
 #include "arki/utils/commandline/parser.h"
 #include <iostream>
 
@@ -36,11 +38,11 @@ int arki_scan(int argc, const char* argv[])
 
         runtime::init();
 
-        opts.setupProcessing();
         Inputs inputs(opts);
+        auto output = make_output(*opts.outfile);
 
         bool all_successful;
-        auto processor = processor::create(opts, *opts.output);
+        auto processor = processor::create(opts, *output);
         if (opts.dispatch->isSet() || opts.testdispatch->isSet())
         {
             MetadataDispatch dispatcher(opts, *processor);
