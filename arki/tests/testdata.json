@@ -1737,17 +1737,62 @@
  {
   "doc": "",
   "group": "arki_scan",
-  "method": "scan_file"
+  "method": "scan_file_grib"
  },
  {
   "doc": "",
   "group": "arki_scan",
-  "method": "scan_file_inline"
+  "method": "scan_file_inline_grib"
  },
  {
   "doc": "",
   "group": "arki_scan",
-  "method": "scan_pipe"
+  "method": "scan_pipe_grib"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_file_bufr"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_file_inline_bufr"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_pipe_bufr"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_file_vm2"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_file_inline_vm2"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_pipe_vm2"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_file_odimh5"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_file_inline_odimh5"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_pipe_odimh5"
  },
  {
   "doc": "",

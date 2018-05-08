@@ -57,38 +57,32 @@ add_method("format_from_filename", [] {
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test.grib.tar"));
 });
 
-add_method("scan_file", [&] {
-    for (auto td: test_data)
-    {
+for (auto td: test_data)
+{
+    add_method("scan_file_" + td.format, [=] {
         auto scanner = scan::Scanner::get_scanner(td.format);
         metadata::Collection mds;
         scanner->test_scan_file(td.pathname, mds.inserter_func());
         wassert(actual(mds.size()) == td.count);
         wassert(actual(mds[0].source().style()) == types::Source::BLOB);
-    }
-});
+    });
 
-add_method("scan_file_inline", [&] {
-    for (auto td: test_data)
-    {
+    add_method("scan_file_inline_" + td.format, [=] {
         auto scanner = scan::Scanner::get_scanner(td.format);
         metadata::Collection mds;
         scanner->scan_file_inline(td.pathname, mds.inserter_func());
         wassert(actual(mds.size()) == td.count);
         wassert(actual(mds[0].source().style()) == types::Source::INLINE);
-    }
-});
+    });
 
-add_method("scan_pipe", [&] {
-    for (auto td: test_data)
-    {
+    add_method("scan_pipe_" + td.format, [=] {
         auto scanner = scan::Scanner::get_scanner(td.format);
         metadata::Collection mds;
         sys::File in(td.pathname, O_RDONLY);
         scanner->scan_pipe(in, mds.inserter_func());
         wassert(actual(mds.size()) == td.count);
-    }
-});
+    });
+}
 
 // Test reading update sequence numbers
 add_method("usn", [] {
