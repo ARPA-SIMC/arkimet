@@ -117,6 +117,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/source.h \
 		runtime/dispatch.h \
 		runtime/processor.h \
+		runtime/module.h \
 		runtime/tests.h \
 		runtime/arki-query.h \
 		runtime/arki-check.h \

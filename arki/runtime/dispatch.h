@@ -1,9 +1,11 @@
 #ifndef ARKI_RUNTIME_DISPATCH_H
 #define ARKI_RUNTIME_DISPATCH_H
 
-#include <arki/dataset/fwd.h>
 #include <arki/configfile.h>
+#include <arki/dataset/fwd.h>
 #include <arki/dataset/memory.h>
+#include <arki/runtime/module.h>
+#include <arki/utils/commandline/parser.h>
 #include <string>
 #include <vector>
 
@@ -13,6 +15,32 @@ class Dispatcher;
 namespace runtime {
 class ScanCommandLine;
 class DatasetProcessor;
+
+struct DispatchOptions : public Module
+{
+    utils::commandline::OptionGroup* dispatchOpts = nullptr;
+    utils::commandline::StringOption* moveok = nullptr;
+    utils::commandline::StringOption* moveko = nullptr;
+    utils::commandline::StringOption* movework = nullptr;
+    utils::commandline::StringOption* copyok = nullptr;
+    utils::commandline::StringOption* copyko = nullptr;
+    utils::commandline::BoolOption* ignore_duplicates = nullptr;
+    utils::commandline::StringOption* validate = nullptr;
+    utils::commandline::VectorOption<utils::commandline::String>* dispatch = nullptr;
+    utils::commandline::VectorOption<utils::commandline::String>* testdispatch = nullptr;
+    utils::commandline::BoolOption* status = nullptr;
+
+    DispatchOptions(ScanCommandLine& args);
+    DispatchOptions(const DispatchOptions&) = delete;
+    DispatchOptions(DispatchOptions&&) = delete;
+    DispatchOptions& operator=(const DispatchOptions&) = delete;
+    DispatchOptions& operator=(DispatchOptions&&) = delete;
+
+    bool handle_parsed_options() override;
+
+    bool dispatch_requested() const;
+};
+
 
 /// Dispatch metadata
 struct MetadataDispatch
@@ -57,7 +85,7 @@ struct MetadataDispatch
     std::unique_ptr<core::File> copyko;
 
 
-    MetadataDispatch(const ScanCommandLine& args, DatasetProcessor& next);
+    MetadataDispatch(const DispatchOptions& args, DatasetProcessor& next);
     ~MetadataDispatch();
 
     /**

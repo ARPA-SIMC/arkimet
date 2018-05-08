@@ -43,9 +43,9 @@ int arki_scan(int argc, const char* argv[])
 
         bool all_successful;
         auto processor = processor::create(opts, *output);
-        if (opts.dispatch->isSet() || opts.testdispatch->isSet())
+        if (opts.dispatch_options->dispatch_requested())
         {
-            MetadataDispatch dispatcher(opts, *processor);
+            MetadataDispatch dispatcher(*opts.dispatch_options, *processor);
             all_successful = foreach_source(opts, inputs, [&](runtime::Source& source) {
                 source.dispatch(dispatcher);
                 return true;

@@ -52,7 +52,7 @@ FileSource::FileSource(CommandLine& args, const ConfigFile& info)
 {
 }
 
-FileSource::FileSource(ScanCommandLine& args, const ConfigFile& info)
+FileSource::FileSource(DispatchOptions& args, const ConfigFile& info)
     : cfg(info)
 {
     if (args.movework && args.movework->isSet())
@@ -153,7 +153,7 @@ bool foreach_source(ScanCommandLine& args, const Inputs& inputs, std::function<b
     // Query all the datasets in sequence
     for (const auto& cfg: inputs)
     {
-        FileSource source(args, cfg);
+        FileSource source(*args.dispatch_options, cfg);
         nag::verbose("Processing %s...", source.name().c_str());
         source.open();
         bool success;

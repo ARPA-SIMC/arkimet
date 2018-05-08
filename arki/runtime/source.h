@@ -10,6 +10,7 @@ namespace arki {
 namespace runtime {
 struct DatasetProcessor;
 struct MetadataDispatch;
+struct DispatchOptions;
 struct CommandLine;
 struct ScanCommandLine;
 struct QueryCommandLine;
@@ -42,7 +43,7 @@ struct FileSource : public Source
     std::string moveko;
 
     FileSource(CommandLine& args, const ConfigFile& info);
-    FileSource(ScanCommandLine& args, const ConfigFile& info);
+    FileSource(DispatchOptions& args, const ConfigFile& info);
 
     std::string name() const override;
     dataset::Reader& reader() const override;

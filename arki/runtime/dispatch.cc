@@ -1,5 +1,6 @@
 #include "dispatch.h"
 #include "processor.h"
+#include "module.h"
 #include "arki/runtime.h"
 #include "arki/runtime/config.h"
 #include "arki/dispatcher.h"
@@ -30,18 +31,84 @@ using namespace arki::utils;
 namespace arki {
 namespace runtime {
 
-MetadataDispatch::MetadataDispatch(const ScanCommandLine& args, DatasetProcessor& next)
+DispatchOptions::DispatchOptions(ScanCommandLine& args)
+{
+    using namespace arki::utils::commandline;
+
+    dispatchOpts = args.addGroup("Options controlling dispatching data to datasets");
+
+    moveok = dispatchOpts->add<StringOption>("moveok", 0, "moveok", "directory",
+            "move input files imported successfully to the given directory");
+    moveko = dispatchOpts->add<StringOption>("moveko", 0, "moveko", "directory",
+            "move input files with problems to the given directory");
+    movework = dispatchOpts->add<StringOption>("movework", 0, "movework", "directory",
+            "move input files here before opening them. This is useful to "
+            "catch the cases where arki-scan crashes without having a "
+            "chance to handle errors.");
+
+    copyok = dispatchOpts->add<StringOption>("copyok", 0, "copyok", "directory",
+            "copy the data from input files that was imported successfully to the given directory");
+    copyko = dispatchOpts->add<StringOption>("copyko", 0, "copyko", "directory",
+            "copy the data from input files that had problems to the given directory");
+
+    ignore_duplicates = dispatchOpts->add<BoolOption>("ignore-duplicates", 0, "ignore-duplicates", "",
+            "do not consider the run unsuccessful in case of duplicates");
+    validate = dispatchOpts->add<StringOption>("validate", 0, "validate", "checks",
+            "run the given checks on the input data before dispatching"
+            " (comma-separated list; use 'list' to get a list)");
+    dispatch = dispatchOpts->add< VectorOption<String> >("dispatch", 0, "dispatch", "conffile",
+            "dispatch the data to the datasets described in the "
+            "given configuration file (or a dataset path can also "
+            "be given), then output the metadata of the data that "
+            "has been dispatched (can be specified multiple times)");
+    testdispatch = dispatchOpts->add< VectorOption<String> >("testdispatch", 0, "testdispatch", "conffile",
+            "simulate dispatching the files right after scanning, using the given configuration file "
+            "or dataset directory (can be specified multiple times)");
+
+    status = dispatchOpts->add<BoolOption>("status", 0, "status", "",
+            "print to standard error a line per every file with a summary of how it was handled");
+}
+
+bool DispatchOptions::handle_parsed_options()
+{
+    if (dispatch->isSet() && testdispatch->isSet())
+        throw commandline::BadOption("you cannot use --dispatch together with --testdispatch");
+
+    if (validate->isSet() && !dispatch_requested())
+        throw commandline::BadOption("--validate only makes sense with --dispatch or --testdispatch");
+
+    // Honour --validate=list
+    if (validate->stringValue() == "list")
+    {
+        // Print validator list and exit
+        const ValidatorRepository& vals = ValidatorRepository::get();
+        for (ValidatorRepository::const_iterator i = vals.begin();
+                i != vals.end(); ++i)
+            fprintf(stdout, "%s - %s\n", i->second->name.c_str(), i->second->desc.c_str());
+        return true;
+    }
+
+    return false;
+}
+
+bool DispatchOptions::dispatch_requested() const
+{
+    return dispatch->isSet() || testdispatch->isSet();
+}
+
+
+MetadataDispatch::MetadataDispatch(const DispatchOptions& args, DatasetProcessor& next)
     : next(next)
 {
     timerclear(&startTime);
 
-    if (args.testdispatch && args.testdispatch->isSet())
+    if (args.testdispatch->isSet())
     {
         for (const auto& i: args.testdispatch->values())
             parseConfigFile(cfg, i);
         dispatcher = new TestDispatcher(cfg, cerr);
     }
-    else if (args.dispatch && args.dispatch->isSet())
+    else if (args.dispatch->isSet())
     {
         for (const auto& i: args.dispatch->values())
             parseConfigFile(cfg, i);

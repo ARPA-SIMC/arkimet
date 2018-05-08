@@ -558,18 +558,6 @@ static void _verify_option_consistency(CommandLine& args)
 void verify_option_consistency(ScanCommandLine& args)
 {
     _verify_option_consistency(args);
-
-    if (args.dispatch && args.dispatch->isSet())
-    {
-        if (args.testdispatch && args.testdispatch->isSet())
-            throw commandline::BadOption("you cannot use --dispatch together with --testdispatch");
-    }
-
-    if (args.validate && args.validate->isSet())
-    {
-        if (!args.testdispatch || !args.dispatch || !args.testdispatch->isSet() || !args.dispatch->isSet())
-            throw commandline::BadOption("--validate only makes sense with --dispatch or --testdispatch");
-    }
 }
 
 void verify_option_consistency(QueryCommandLine& args)

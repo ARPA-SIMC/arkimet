@@ -2,9 +2,12 @@
 #define ARKI_RUNTIME_H
 
 #include <arki/utils/commandline/parser.h>
+#include <memory>
 
 namespace arki {
 namespace runtime {
+struct Module;
+struct DispatchOptions;
 
 /**
  * Initialise the libraries that we use and parse the matcher alias database.
@@ -13,20 +16,31 @@ void init();
 
 struct BaseCommandLine : public utils::commandline::StandardParserWithManpage
 {
+    std::vector<Module*> modules;
+
     utils::commandline::OptionGroup* infoOpts = nullptr;
     utils::commandline::BoolOption* verbose = nullptr;
     utils::commandline::BoolOption* debug = nullptr;
 
     BaseCommandLine(const std::string& name, int mansection=1);
+    ~BaseCommandLine();
+
+    template<typename MODULE>
+    MODULE* add_module(std::unique_ptr<MODULE>&& module)
+    {
+        MODULE* res;
+        modules.push_back(res = module.release());
+        return res;
+    }
+
+    bool parse(int argc, const char* argv[]);
 };
 
 struct CommandLine : public BaseCommandLine
 {
     utils::commandline::OptionGroup* inputOpts = nullptr;
     utils::commandline::OptionGroup* outputOpts = nullptr;
-    utils::commandline::OptionGroup* dispatchOpts = nullptr;
 
-    utils::commandline::BoolOption* status = nullptr;
     utils::commandline::BoolOption* yaml = nullptr;
     utils::commandline::BoolOption* json = nullptr;
     utils::commandline::BoolOption* annotate = nullptr;
@@ -47,15 +61,8 @@ struct CommandLine : public BaseCommandLine
 
 struct ScanCommandLine : public CommandLine
 {
-    utils::commandline::StringOption* moveok = nullptr;
-    utils::commandline::StringOption* moveko = nullptr;
-    utils::commandline::StringOption* movework = nullptr;
-    utils::commandline::StringOption* copyok = nullptr;
-    utils::commandline::StringOption* copyko = nullptr;
-    utils::commandline::BoolOption* ignore_duplicates = nullptr;
-    utils::commandline::StringOption* validate = nullptr;
-    utils::commandline::VectorOption<utils::commandline::String>* dispatch = nullptr;
-    utils::commandline::VectorOption<utils::commandline::String>* testdispatch = nullptr;
+    DispatchOptions* dispatch_options;
+
     utils::commandline::StringOption* files = nullptr;
 
     ScanCommandLine(const std::string& name, int mansection=1);
