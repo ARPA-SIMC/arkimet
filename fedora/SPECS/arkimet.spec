@@ -75,9 +75,8 @@ sh autogen.sh
 
 %build
 
-# arpae definition available only on grib_api at the moment
-%{?fc20:%define arpae_tests 1}
-%{?fc24:%define arpae_tests 1}
+# enabling arpae tests on almost all builds
+%{?fedora:%define arpae_tests 1}
 %{?el7:%define arpae_tests 1}
 
 %if 0%{?arpae_tests}
