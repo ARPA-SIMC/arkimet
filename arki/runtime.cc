@@ -137,7 +137,7 @@ QueryCommandLine::QueryCommandLine(const std::string& name, int mansection)
             "restrict operations to only those datasets that allow one of the given (comma separated) names");
     postprocess = outputOpts->add<StringOption>("postproc", 'p', "postproc", "command",
             "output only the data, postprocessed with the given filter");
-    postproc_data = inputOpts->add< VectorOption<ExistingFile> >("postproc-data", 0, "postproc-data", "file",
+    postproc_data = outputOpts->add< VectorOption<ExistingFile> >("postproc-data", 0, "postproc-data", "file",
         "when querying a remote server with postprocessing, upload a file"
         " to be used by the postprocessor (can be given more than once)");
 }
