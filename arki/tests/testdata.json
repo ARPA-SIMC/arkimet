@@ -1731,12 +1731,27 @@
  },
  {
   "doc": "",
-  "group": "arki_scan_any",
+  "group": "arki_scan",
   "method": "format_from_filename"
  },
  {
   "doc": "",
-  "group": "arki_scan_any",
+  "group": "arki_scan",
+  "method": "scan_file"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_file_inline"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_pipe"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
   "method": "usn"
  },
  {

@@ -16,13 +16,29 @@ using namespace arki;
 using namespace arki::tests;
 using namespace arki::utils;
 
+struct TestData
+{
+    std::string pathname;
+    unsigned count;
+    std::string format;
+
+    TestData(const std::string& pathname, unsigned count)
+        : pathname(pathname), count(count), format(scan::Scanner::format_from_filename(pathname)) {}
+};
+
 class Tests : public TestCase
 {
     using TestCase::TestCase;
+    std::vector<TestData> test_data;
+
     void register_tests() override;
-} test("arki_scan_any");
+} test("arki_scan");
 
 void Tests::register_tests() {
+    test_data.emplace_back("inbound/fixture.grib1", 3);
+    test_data.emplace_back("inbound/fixture.bufr", 3);
+    test_data.emplace_back("inbound/fixture.vm2", 3);
+    test_data.emplace_back("inbound/fixture.h5/00.h5", 1);
 
 // Test format_from_ext
 add_method("format_from_filename", [] {
@@ -39,6 +55,39 @@ add_method("format_from_filename", [] {
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test"));
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test.foo"));
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test.grib.tar"));
+});
+
+add_method("scan_file", [&] {
+    for (auto td: test_data)
+    {
+        auto scanner = scan::Scanner::get_scanner(td.format);
+        metadata::Collection mds;
+        scanner->test_scan_file(td.pathname, mds.inserter_func());
+        wassert(actual(mds.size()) == td.count);
+        wassert(actual(mds[0].source().style()) == types::Source::BLOB);
+    }
+});
+
+add_method("scan_file_inline", [&] {
+    for (auto td: test_data)
+    {
+        auto scanner = scan::Scanner::get_scanner(td.format);
+        metadata::Collection mds;
+        scanner->scan_file_inline(td.pathname, mds.inserter_func());
+        wassert(actual(mds.size()) == td.count);
+        wassert(actual(mds[0].source().style()) == types::Source::INLINE);
+    }
+});
+
+add_method("scan_pipe", [&] {
+    for (auto td: test_data)
+    {
+        auto scanner = scan::Scanner::get_scanner(td.format);
+        metadata::Collection mds;
+        sys::File in(td.pathname, O_RDONLY);
+        scanner->scan_pipe(in, mds.inserter_func());
+        wassert(actual(mds.size()) == td.count);
+    }
 });
 
 // Test reading update sequence numbers

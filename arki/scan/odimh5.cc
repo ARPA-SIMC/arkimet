@@ -211,7 +211,7 @@ void OdimH5::open(const std::string& filename, std::shared_ptr<segment::Reader> 
 
     // Open H5 file
     read = false;
-    if (sys::stat(filename)->st_size == 0)
+    if (sys::size(filename, 0) == 0)
         // If the file is empty, don't open it
         read = true;
 }
