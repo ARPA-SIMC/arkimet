@@ -14,9 +14,6 @@ namespace scan {
 
 struct Scanner
 {
-    std::string filename;
-    std::shared_ptr<segment::Reader> reader;
-
     virtual ~Scanner();
 
     /**

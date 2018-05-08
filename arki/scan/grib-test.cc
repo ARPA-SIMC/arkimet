@@ -44,7 +44,7 @@ add_method("compact", [] {
     scan::Grib scanner;
     vector<uint8_t> buf;
     scanner.test_scan_file("inbound/test.grib1", mds.inserter_func());
-    wassert(actual(mds.size()) == 3);
+    wassert(actual(mds.size()) == 3u);
 
     // Check the source info
     md = mds[0];
