@@ -1,6 +1,5 @@
 #include "config.h"
 #include "bufr.h"
-#include "arki/utils/files.h"
 #include <dballe/file.h>
 #include <dballe/message.h>
 #include <dballe/msg/codec.h>
@@ -17,6 +16,7 @@
 #include "arki/types/timerange.h"
 #include "arki/scan/validator.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/files.h"
 #include <sstream>
 #include <cstring>
 #include <stdint.h>
@@ -78,7 +78,7 @@ const Validator& validator() { return bufr_validator; }
 }
 
 
-Bufr::Bufr() : file(0), importer(0), extras(0)
+Bufr::Bufr()
 {
     msg::Importer::Options opts;
     opts.simplified = true;
@@ -92,29 +92,9 @@ Bufr::Bufr() : file(0), importer(0), extras(0)
 Bufr::~Bufr()
 {
 	if (importer) delete importer;
-	if (file) delete file;
 #ifdef HAVE_LUA
 	if (extras) delete extras;
 #endif
-}
-
-void Bufr::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
-{
-    close();
-    this->filename = filename;
-    this->reader = reader;
-    file = dballe::File::create(dballe::File::BUFR, filename.c_str(), "r").release();
-}
-
-void Bufr::close()
-{
-    filename.clear();
-    reader.reset();
-    if (file)
-    {
-        delete file;
-        file = 0;
-    }
 }
 
 namespace {
@@ -275,22 +255,6 @@ void Bufr::do_scan(BinaryMessage& rmsg, Metadata& md)
             md.set(timedef->validity_time_to_emission_time(*p));
 }
 
-bool Bufr::next(Metadata& md)
-{
-    md.clear();
-    BinaryMessage rmsg = file->read();
-    if (!rmsg) return false;
-    // Set source
-    if (reader)
-    {
-        md.set_source(Source::createBlob(reader, rmsg.offset, rmsg.data.size()));
-        md.set_cached_data(vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
-    } else
-        md.set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
-    do_scan(rmsg, md);
-    return true;
-}
-
 std::unique_ptr<Metadata> Bufr::scan_data(const std::vector<uint8_t>& data)
 {
     std::unique_ptr<Metadata> md(new Metadata);
@@ -303,31 +267,49 @@ std::unique_ptr<Metadata> Bufr::scan_data(const std::vector<uint8_t>& data)
 
 bool Bufr::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
 {
-    open(abspath, reader);
+    auto file = dballe::File::create(dballe::File::BUFR, abspath.c_str(), "r");
     while (true)
     {
         unique_ptr<Metadata> md(new Metadata);
-        if (!next(*md)) break;
-        if (!dest(move(md))) return false;
+        BinaryMessage rmsg = file->read();
+        if (!rmsg) break;
+        md->set_source(Source::createBlob(reader, rmsg.offset, rmsg.data.size()));
+        md->set_cached_data(vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
+        do_scan(rmsg, *md);
+        if (!dest(std::move(md))) return false;
     }
     return true;
 }
 
 bool Bufr::scan_file_inline(const std::string& abspath, metadata_dest_func dest)
 {
-    open(abspath, std::shared_ptr<segment::Reader>());
+    auto file = dballe::File::create(dballe::File::BUFR, abspath.c_str(), "r").release();
     while (true)
     {
         unique_ptr<Metadata> md(new Metadata);
-        if (!next(*md)) break;
+        BinaryMessage rmsg = file->read();
+        if (!rmsg) break;
+        md->set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
+        do_scan(rmsg, *md);
         if (!dest(move(md))) return false;
     }
     return true;
 }
 
-bool Bufr::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
+bool Bufr::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
 {
-    throw std::runtime_error("scan_pipe not yet implemented for BUFR");
+    files::RAIIFILE in(infd, "rb");
+    auto file = dballe::File::create(dballe::File::BUFR, in, false, infd.name()).release();
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        BinaryMessage rmsg = file->read();
+        if (!rmsg) break;
+        md->set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
+        do_scan(rmsg, *md);
+        if (!dest(move(md))) return false;
+    }
+    return true;
 }
 
 static inline void inplace_tolower(std::string& buf)

@@ -569,39 +569,9 @@ std::unique_ptr<Metadata> Grib::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-namespace {
-struct RAIIFILE
-{
-    FILE* fd = nullptr;
-    RAIIFILE(const std::string& fname, const char* mode)
-    {
-        if (!(fd = fopen(fname.c_str(), mode)))
-            throw_file_error(fname, "cannot open file");
-    }
-    RAIIFILE(sys::NamedFileDescriptor& ifd, const char* mode)
-    {
-        if (!(fd = fdopen(ifd.dup(), mode)))
-            throw_file_error(ifd.name(), "cannot fdopen file");
-    }
-    RAIIFILE(const RAIIFILE&) = delete;
-    RAIIFILE(RAIIFILE&& o)
-        : fd(o.fd)
-    {
-        o.fd = nullptr;
-    }
-    RAIIFILE& operator=(const RAIIFILE&) = delete;
-    RAIIFILE& operator=(RAIIFILE&&) = delete;
-    ~RAIIFILE()
-    {
-        if (fd) fclose(fd);
-    }
-    operator FILE*() { return fd; }
-};
-}
-
 bool Grib::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
 {
-    RAIIFILE in(abspath, "rb");
+    files::RAIIFILE in(abspath, "rb");
     while (true)
     {
         unique_ptr<Metadata> md(new Metadata);
@@ -616,7 +586,7 @@ bool Grib::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader
 
 bool Grib::scan_file_inline(const std::string& abspath, metadata_dest_func dest)
 {
-    RAIIFILE in(abspath, "rb");
+    files::RAIIFILE in(abspath, "rb");
     while (true)
     {
         unique_ptr<Metadata> md(new Metadata);
@@ -634,7 +604,7 @@ bool Grib::scan_file_inline(const std::string& abspath, metadata_dest_func dest)
 
 bool Grib::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
 {
-    RAIIFILE in(infd, "rb");
+    files::RAIIFILE in(infd, "rb");
     while (true)
     {
         unique_ptr<Metadata> md(new Metadata);

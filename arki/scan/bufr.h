@@ -8,11 +8,9 @@
 namespace dballe {
 struct File;
 struct BinaryMessage;
-
 namespace msg {
 struct Importer;
 }
-
 }
 
 namespace arki {
@@ -32,11 +30,8 @@ struct BufrLua;
  */
 class Bufr : public Scanner
 {
-    dballe::File* file;
-    dballe::msg::Importer* importer;
-    bufr::BufrLua* extras;
-    std::string filename;
-    std::shared_ptr<segment::Reader> reader;
+    dballe::msg::Importer* importer = nullptr;
+    bufr::BufrLua* extras = nullptr;
 
 
 	void read_info_base(char* buf, ValueBag& area);
@@ -44,9 +39,6 @@ class Bufr : public Scanner
 	void read_info_mobile(char* buf, Metadata& md);
 
     void do_scan(dballe::BinaryMessage& rmsg, Metadata& md);
-    bool next(Metadata& md);
-    void open(const std::string& filename, std::shared_ptr<segment::Reader> reader);
-    void close();
 
 public:
 	Bufr();
@@ -63,6 +55,4 @@ public:
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif
