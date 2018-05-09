@@ -30,14 +30,9 @@ struct Input;
 class Vm2 : public Scanner
 {
 protected:
-    std::string filename;
-    std::shared_ptr<segment::Reader> reader;
-    vm2::Input* input = nullptr;
-    unsigned lineno;
-    bool scan_stream(vm2::Input& in, Metadata& md);
-    bool next(Metadata& md);
-    void open(const std::string& filename, std::shared_ptr<segment::Reader> reader);
-    void close();
+    bool scan_stream_inline(vm2::Input& in, const std::string& filename, Metadata& md);
+    bool scan_stream_blob(vm2::Input& in, std::shared_ptr<segment::Reader> reader, Metadata& md);
+    void store_value(const std::string& line, Metadata& md);
 
 public:
     Vm2();

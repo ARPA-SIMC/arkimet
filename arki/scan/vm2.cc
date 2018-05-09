@@ -1,5 +1,6 @@
 #include "arki/scan/vm2.h"
 #include "arki/exceptions.h"
+#include "arki/segment.h"
 #include "arki/core/time.h"
 #include "arki/types/source/blob.h"
 #include "arki/metadata.h"
@@ -23,6 +24,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <meteo-vm2/parser.h>
+#include <ext/stdio_filebuf.h>
 
 using namespace std;
 using namespace arki::types;
@@ -105,28 +107,36 @@ Vm2::Vm2() {}
 
 Vm2::~Vm2()
 {
-    close();
 }
 
-void Vm2::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
+bool Vm2::scan_stream_inline(vm2::Input& input, const std::string& filename, Metadata& md)
 {
-    close();
-    this->filename = filename;
-    this->reader = reader;
-    delete input;
-    input = nullptr;
-    input = new vm2::Input(filename);
+    meteo::vm2::Value value;
+    std::string line;
+
+    while (true)
+    {
+        try {
+            if (!input.parser->next(value, line))
+                return false;
+            else
+                break;
+        } catch (std::exception& e) {
+            nag::warning("Skipping VM2 line: %s", e.what());
+        }
+    }
+
+    md.clear();
+    md.set_source_inline("bufr", vector<uint8_t>(line.begin(), line.end()));
+    md.add_note("Scanned from " + str::basename(filename));
+    md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
+    md.set(Area::createVM2(value.station_id));
+    md.set(Product::createVM2(value.variable_id));
+    store_value(line, md);
+    return true;
 }
 
-void Vm2::close()
-{
-    filename.clear();
-    reader.reset();
-    delete input;
-    input = nullptr;
-}
-
-bool Vm2::scan_stream(vm2::Input& input, Metadata& md)
+bool Vm2::scan_stream_blob(vm2::Input& input, std::shared_ptr<segment::Reader> reader, Metadata& md)
 {
     meteo::vm2::Value value;
     std::string line;
@@ -148,17 +158,18 @@ bool Vm2::scan_stream(vm2::Input& input, Metadata& md)
     size_t size = line.size();
 
     md.clear();
-    if (reader)
-    {
-        md.set_source(Source::createBlob(reader, offset, size));
-        md.set_cached_data(vector<uint8_t>(line.begin(), line.end()));
-    } else
-        md.set_source_inline("bufr", vector<uint8_t>(line.begin(), line.end()));
-    md.add_note("Scanned from " + str::basename(filename));
+    md.set_source(Source::createBlob(reader, offset, size));
+    md.set_cached_data(vector<uint8_t>(line.begin(), line.end()));
+    md.add_note("Scanned from " + str::basename(reader->segment().relpath));
     md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
     md.set(Area::createVM2(value.station_id));
     md.set(Product::createVM2(value.variable_id));
+    store_value(line, md);
+    return true;
+}
 
+void Vm2::store_value(const std::string& line, Metadata& md)
+{
     // Look for the comma before the value starts
     size_t pos = 0;
     pos = line.find(',', pos);
@@ -166,13 +177,6 @@ bool Vm2::scan_stream(vm2::Input& input, Metadata& md)
     pos = line.find(',', pos + 1);
     // Store the rest as a value
     md.set(types::Value::create(line.substr(pos+1)));
-
-    return true;
-}
-
-bool Vm2::next(Metadata& md)
-{
-    return scan_stream(*input, md);
 }
 
 std::unique_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
@@ -180,18 +184,18 @@ std::unique_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
     std::istringstream str(std::string(data.begin(), data.end()));
     vm2::Input input(str);
     std::unique_ptr<Metadata> md(new Metadata);
-    if (!scan_stream(input, *md))
+    if (!scan_stream_inline(input, "memory buffer", *md))
         throw std::runtime_error("input line did not look like a VM2 line");
     return md;
 }
 
 bool Vm2::scan_file_inline(const std::string& abspath, metadata_dest_func dest)
 {
-    open(abspath, std::shared_ptr<segment::Reader>());
+    vm2::Input input(abspath);
     while (true)
     {
         unique_ptr<Metadata> md(new Metadata);
-        if (!next(*md)) break;
+        if (!scan_stream_inline(input, abspath, *md)) break;
         if (!dest(move(md))) return false;
     }
     return true;
@@ -199,16 +203,26 @@ bool Vm2::scan_file_inline(const std::string& abspath, metadata_dest_func dest)
 
 bool Vm2::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
 {
-    throw std::runtime_error("scan_pipe not yet implemented for VM2");
+    // see https://stackoverflow.com/questions/2746168/how-to-construct-a-c-fstream-from-a-posix-file-descriptor#5253726
+    __gnu_cxx::stdio_filebuf<char> filebuf(in, std::ios::in);
+    istream is(&filebuf);
+    vm2::Input input(is);
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        if (!scan_stream_inline(input, in.name(), *md)) break;
+        if (!dest(move(md))) return false;
+    }
+    return true;
 }
 
 bool Vm2::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
 {
-    open(abspath, reader);
+    vm2::Input input(abspath);
     while (true)
     {
         unique_ptr<Metadata> md(new Metadata);
-        if (!next(*md)) break;
+        if (!scan_stream_blob(input, reader, *md)) break;
         if (!dest(move(md))) return false;
     }
     return true;
