@@ -41,7 +41,7 @@ struct CommandLine : public BaseCommandLine
     utils::commandline::OptionGroup* inputOpts = nullptr;
     utils::commandline::OptionGroup* outputOpts = nullptr;
 
-    utils::commandline::BoolOption* stdin_input = nullptr;
+    utils::commandline::StringOption* stdin_input = nullptr;
     utils::commandline::BoolOption* yaml = nullptr;
     utils::commandline::BoolOption* json = nullptr;
     utils::commandline::BoolOption* annotate = nullptr;

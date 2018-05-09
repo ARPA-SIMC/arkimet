@@ -170,45 +170,9 @@ bool foreach_source(ScanCommandLine& args, const Inputs& inputs, std::function<b
 {
     bool all_successful = true;
 
-    // Query all the datasets in sequence
-    for (const auto& cfg: inputs)
+    if (args.stdin_input->isSet())
     {
-        FileSource source(*args.dispatch_options, cfg);
-        nag::verbose("Processing %s...", source.name().c_str());
-        source.open();
-        bool success;
-        try {
-            success = dest(source);
-        } catch (std::exception& e) {
-            nag::warning("%s failed: %s", source.name().c_str(), e.what());
-            success = false;
-        }
-        source.close(success);
-        if (!success) all_successful = false;
-    }
-
-    return all_successful;
-}
-
-bool foreach_source(QueryCommandLine& args, const Inputs& inputs, std::function<bool(Source&)> dest)
-{
-    bool all_successful = true;
-
-    if (args.merged->boolValue())
-    {
-        MergedSource source(args, inputs);
-        nag::verbose("Processing %s...", source.name().c_str());
-        source.open();
-        try {
-            all_successful = dest(source);
-        } catch (std::exception& e) {
-            nag::warning("%s failed: %s", source.name().c_str(), e.what());
-            all_successful = false;
-        }
-        source.close(all_successful);
-    } else if (args.qmacro->isSet()) {
-        QmacroSource source(args, inputs);
-        nag::verbose("Processing %s...", source.name().c_str());
+        StdinSource source(args, args.stdin_input->stringValue());
         source.open();
         try {
             all_successful = dest(source);
@@ -221,7 +185,7 @@ bool foreach_source(QueryCommandLine& args, const Inputs& inputs, std::function<
         // Query all the datasets in sequence
         for (const auto& cfg: inputs)
         {
-            FileSource source(args, cfg);
+            FileSource source(*args.dispatch_options, cfg);
             nag::verbose("Processing %s...", source.name().c_str());
             source.open();
             bool success;
@@ -233,6 +197,68 @@ bool foreach_source(QueryCommandLine& args, const Inputs& inputs, std::function<
             }
             source.close(success);
             if (!success) all_successful = false;
+        }
+    }
+
+    return all_successful;
+}
+
+bool foreach_source(QueryCommandLine& args, const Inputs& inputs, std::function<bool(Source&)> dest)
+{
+    bool all_successful = true;
+
+    if (args.stdin_input->isSet())
+    {
+        StdinSource source(args, args.stdin_input->stringValue());
+        source.open();
+        try {
+            all_successful = dest(source);
+        } catch (std::exception& e) {
+            nag::warning("%s failed: %s", source.name().c_str(), e.what());
+            all_successful = false;
+        }
+        source.close(all_successful);
+    } else {
+        if (args.merged->boolValue())
+        {
+            MergedSource source(args, inputs);
+            nag::verbose("Processing %s...", source.name().c_str());
+            source.open();
+            try {
+                all_successful = dest(source);
+            } catch (std::exception& e) {
+                nag::warning("%s failed: %s", source.name().c_str(), e.what());
+                all_successful = false;
+            }
+            source.close(all_successful);
+        } else if (args.qmacro->isSet()) {
+            QmacroSource source(args, inputs);
+            nag::verbose("Processing %s...", source.name().c_str());
+            source.open();
+            try {
+                all_successful = dest(source);
+            } catch (std::exception& e) {
+                nag::warning("%s failed: %s", source.name().c_str(), e.what());
+                all_successful = false;
+            }
+            source.close(all_successful);
+        } else {
+            // Query all the datasets in sequence
+            for (const auto& cfg: inputs)
+            {
+                FileSource source(args, cfg);
+                nag::verbose("Processing %s...", source.name().c_str());
+                source.open();
+                bool success;
+                try {
+                    success = dest(source);
+                } catch (std::exception& e) {
+                    nag::warning("%s failed: %s", source.name().c_str(), e.what());
+                    success = false;
+                }
+                source.close(success);
+                if (!success) all_successful = false;
+            }
         }
     }
 
