@@ -23,11 +23,12 @@ struct OdimH5Lua;
 class OdimH5 : public Scanner
 {
 public:
-	OdimH5();
-	virtual ~OdimH5();
+    OdimH5();
+    virtual ~OdimH5();
 
     void scan_file(const std::string& filename, Metadata& md);
 
+    std::string name() const override { return "odimh5"; }
     std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
     bool scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;

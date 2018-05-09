@@ -16,6 +16,9 @@ struct Scanner
 {
     virtual ~Scanner();
 
+    /// Return a name identifying this type of scanner
+    virtual std::string name() const = 0;
+
     /**
      * Open a file, scan it, send results to dest, and close it.
      *

@@ -34,16 +34,17 @@ class Bufr : public Scanner
     bufr::BufrLua* extras = nullptr;
 
 
-	void read_info_base(char* buf, ValueBag& area);
-	void read_info_fixed(char* buf, Metadata& md);
-	void read_info_mobile(char* buf, Metadata& md);
+    void read_info_base(char* buf, ValueBag& area);
+    void read_info_fixed(char* buf, Metadata& md);
+    void read_info_mobile(char* buf, Metadata& md);
 
     void do_scan(dballe::BinaryMessage& rmsg, Metadata& md);
 
 public:
-	Bufr();
-	~Bufr();
+    Bufr();
+    ~Bufr();
 
+    std::string name() const override { return "bufr"; }
     std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
     bool scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;

@@ -33,6 +33,7 @@ public:
     Grib(const std::string& grib1code=std::string(), const std::string& grib2code=std::string());
     virtual ~Grib();
 
+    std::string name() const override { return "grib"; }
     std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
     bool scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;

@@ -38,6 +38,7 @@ public:
     Vm2();
     virtual ~Vm2();
 
+    std::string name() const override { return "vm2"; }
     std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
     bool scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
