@@ -38,23 +38,14 @@ protected:
     bool read;
     std::vector<int> odimh5_funcs;
     OdimH5Lua* L;
-    std::string filename;
-    std::shared_ptr<segment::Reader> reader;
 
-
-	/**
-	 * Set the source information in the metadata
-	 */
-	virtual void setSource(Metadata& md);
+    void set_inline_source(Metadata& md, const std::string& abspath);
+    void set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader);
 
     /**
      * Run Lua scanning functions on \a md
      */
     bool scanLua(Metadata& md);
-
-    bool next(Metadata& md);
-    void open(const std::string& filename, std::shared_ptr<segment::Reader> reader);
-    void close();
 
     static int arkilua_find_attr(lua_State* L);
     static int arkilua_get_groups(lua_State* L);
