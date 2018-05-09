@@ -12546,6 +12546,11 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkiquery",
+  "method": "query_stdin"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime_arkicheck_ondisk2",
   "method": "clean"
  },
@@ -12763,6 +12768,11 @@
   "doc": "",
   "group": "arki_runtime_arkicheck_iseg",
   "method": "remove_old"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkiscan",
+  "method": "scan_stdin"
  },
  {
   "doc": "",

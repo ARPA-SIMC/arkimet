@@ -67,6 +67,8 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 
     // Used only if requested
     inputOpts = createGroup("Options controlling input data");
+    stdin_input = inputOpts->add<BoolOption>("stdin", 0, "stdin", "",
+            "read input from standard input");
 
     outputOpts = createGroup("Options controlling output style");
     yaml = outputOpts->add<BoolOption>("yaml", 0, "yaml", "",

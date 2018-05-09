@@ -50,6 +50,55 @@ class Tests : public FixtureTestCase<Fixture>
 
 void Tests::register_tests() {
 
+add_method("scan_stdin", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_scan, {
+            "arki-scan",
+            "--yaml",
+            "--stdin=grib",
+        });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(res) == 0);
+        wassert(actual(sys::read_file(co.file_stdout.name())).matches("\nOrigin:"));
+    }
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_scan, {
+            "arki-scan",
+            "--yaml",
+            "--stdin=grib",
+            "inbound/test.grib1",
+        });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "TODO");
+        wassert(actual(res) == 1);
+        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
+    }
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_scan, {
+            "arki-scan",
+            "--files=inbound/test.grib1",
+            "--stdin=grib",
+        });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "TODO");
+        wassert(actual(res) == 1);
+        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
+    }
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_scan, {
+            "arki-scan",
+            "--dispatch=/dev/null",
+            "--stdin=grib",
+        });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "TODO");
+        wassert(actual(res) == 1);
+        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
+    }
+});
+
 add_method("scan_grib", [](Fixture& f) {
     using runtime::tests::run_cmdline;
     runtime::tests::CatchOutput co;

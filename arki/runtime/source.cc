@@ -3,6 +3,7 @@
 #include "dispatch.h"
 #include "inputs.h"
 #include "arki/runtime.h"
+#include "arki/scan.h"
 #include "arki/utils/string.h"
 #include "arki/exceptions.h"
 #include "arki/dataset/file.h"
@@ -47,7 +48,26 @@ bool Source::dispatch(MetadataDispatch& dispatcher)
 }
 
 
-FileSource::FileSource(CommandLine& args, const ConfigFile& info)
+StdinSource::StdinSource(CommandLine& args, const std::string& format)
+    : scanner(scan::Scanner::get_scanner(format).release())
+{
+}
+
+StdinSource::~StdinSource()
+{
+    delete scanner;
+}
+
+std::string StdinSource::name() const { return "stdin:" + scanner->name(); }
+dataset::Reader& StdinSource::reader() const
+{
+    throw std::runtime_error("StdinSource reader not yet implemented");
+}
+void StdinSource::open() {}
+void StdinSource::close(bool successful) {}
+
+
+FileSource::FileSource(QueryCommandLine& args, const ConfigFile& info)
     : cfg(info)
 {
 }

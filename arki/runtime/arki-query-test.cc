@@ -102,6 +102,45 @@ add_method("query_qmacro", [](Fixture& f) {
     wassert(actual(sys::read_file(co.file_stdout.name())).startswith("GRIB"));
 });
 
+add_method("query_stdin", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_query, {
+            "arki-query",
+            "--stdin=grib",
+            "",
+        });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "");
+        wassert(actual(res) == 0);
+        wassert(actual(sys::read_file(co.file_stdout.name())).startswith("GRIB"));
+    }
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_query, {
+            "arki-query",
+            "--stdin=grib",
+            "",
+            "test.metadata",
+        });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "TODO");
+        wassert(actual(res) == 1);
+        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
+    }
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_query, {
+            "arki-query",
+            "--stdin=grib",
+            "--config=/dev/null",
+            "",
+        });
+        wassert(actual(sys::read_file(co.file_stderr.name())) == "TODO");
+        wassert(actual(res) == 1);
+        wassert(actual(sys::read_file(co.file_stdout.name())) == "");
+    }
+});
+
 }
 
 }

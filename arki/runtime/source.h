@@ -2,6 +2,7 @@
 #define ARKI_RUNTIME_SOURCE_H
 
 #include <arki/dataset/fwd.h>
+#include <arki/scan/fwd.h>
 #include <arki/configfile.h>
 #include <string>
 #include <vector>
@@ -22,6 +23,11 @@ struct Inputs;
  */
 struct Source
 {
+    Source() {}
+    Source(const Source&) = delete;
+    Source(Source&&) = delete;
+    Source& operator=(const Source&) = delete;
+    Source& operator=(Source&&) = delete;
     virtual ~Source();
     virtual std::string name() const = 0;
     virtual dataset::Reader& reader() const = 0;
@@ -29,6 +35,22 @@ struct Source
     virtual void close(bool successful) = 0;
     virtual bool process(DatasetProcessor& processor);
     virtual bool dispatch(MetadataDispatch& dispatcher);
+};
+
+/**
+ * Data source reading from stdin
+ */
+struct StdinSource : public Source
+{
+    scan::Scanner* scanner = nullptr;
+
+    StdinSource(CommandLine& args, const std::string& format);
+    ~StdinSource();
+
+    std::string name() const override;
+    dataset::Reader& reader() const override;
+    void open() override;
+    void close(bool successful) override;
 };
 
 /**
@@ -42,7 +64,7 @@ struct FileSource : public Source
     std::string moveok;
     std::string moveko;
 
-    FileSource(CommandLine& args, const ConfigFile& info);
+    FileSource(QueryCommandLine& args, const ConfigFile& info);
     FileSource(DispatchOptions& args, const ConfigFile& info);
 
     std::string name() const override;
