@@ -35,7 +35,6 @@ public:
 
 protected:
     hid_t h5file;
-    bool read;
     std::vector<int> odimh5_funcs;
     OdimH5Lua* L;
 

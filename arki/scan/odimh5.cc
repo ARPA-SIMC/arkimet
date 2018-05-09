@@ -170,7 +170,7 @@ struct OdimH5Lua : public Lua {
 };
 
 OdimH5::OdimH5()
-    : h5file(-1), read(false), L(new OdimH5Lua(this))
+    : h5file(-1), L(new OdimH5Lua(this))
 {
     L->load_scan_functions(runtime::Config::get().dir_scan_odimh5, odimh5_funcs);
 }
@@ -227,45 +227,46 @@ std::unique_ptr<Metadata> OdimH5::scan_data(const std::vector<uint8_t>& data)
 
 bool OdimH5::scan_file_inline(const std::string& abspath, metadata_dest_func dest)
 {
-    // Open H5 file
-    read = false;
+    // If the file is empty, skip it
     if (sys::size(abspath, 0) == 0)
-        // If the file is empty, don't open it
-        read = true;
-    while (true)
-    {
-        unique_ptr<Metadata> md(new Metadata);
-        if (read) break;
-        set_inline_source(*md, abspath);
-        scan_file(abspath, *md);
-        read = true;
-        if (!dest(std::move(md))) return false;
-    }
-    return true;
+        return true;
+
+    unique_ptr<Metadata> md(new Metadata);
+    set_inline_source(*md, abspath);
+    scan_file(abspath, *md);
+    return dest(std::move(md));
 }
 
 bool OdimH5::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
 {
-    // Open H5 file
-    read = false;
+    // If the file is empty, skip it
     if (sys::size(abspath, 0) == 0)
-        // If the file is empty, don't open it
-        read = true;
-    while (true)
-    {
-        unique_ptr<Metadata> md(new Metadata);
-        if (read) break;
-        set_blob_source(*md, reader);
-        scan_file(abspath, *md);
-        read = true;
-        if (!dest(std::move(md))) return false;
-    }
-    return true;
+        return true;
+
+    unique_ptr<Metadata> md(new Metadata);
+    set_blob_source(*md, reader);
+    scan_file(abspath, *md);
+    return dest(std::move(md));
 }
 
 bool OdimH5::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
 {
-    throw std::runtime_error("scan_pipe not yet implemented for ODIM");
+    // Read all in a buffer
+    std::vector<uint8_t> buf;
+    const unsigned blocksize = 4096;
+    while (true)
+    {
+        buf.resize(buf.size() + blocksize);
+        unsigned read = in.read(buf.data() + buf.size() - blocksize, blocksize);
+        if (read < blocksize)
+        {
+            buf.resize(buf.size() - blocksize + read);
+            break;
+        }
+    }
+
+    std::unique_ptr<Metadata> md = scan_data(buf);
+    return dest(std::move(md));
 }
 
 void OdimH5::set_inline_source(Metadata& md, const std::string& abspath)
