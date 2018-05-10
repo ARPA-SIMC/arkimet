@@ -109,6 +109,7 @@ add_method("query_stdin", [](Fixture& f) {
         int res = run_cmdline(runtime::arki_query, {
             "arki-query",
             "--stdin=grib",
+            "--data",
             "",
         });
         wassert(actual(sys::read_file(co.file_stderr.name())) == "");
@@ -123,7 +124,7 @@ add_method("query_stdin", [](Fixture& f) {
             "",
             "test.metadata",
         });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "TODO");
+        wassert(actual_file(co.file_stderr.name()).contents_match("^you cannot specify input files or datasets when using --stdin"));
         wassert(actual(res) == 1);
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
     }
@@ -135,7 +136,7 @@ add_method("query_stdin", [](Fixture& f) {
             "--config=/dev/null",
             "",
         });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "TODO");
+        wassert(actual_file(co.file_stderr.name()).contents_match("^--stdin cannot be used together with --config"));
         wassert(actual(res) == 1);
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
     }

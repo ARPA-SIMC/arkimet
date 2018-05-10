@@ -161,6 +161,12 @@ bool ScanCommandLine::parse(int argc, const char* argv[])
         return true;
     processor::verify_option_consistency(*this);
 
+    if (dispatch_options->dispatch->isSet())
+    {
+        if (stdin_input->isSet())
+            throw commandline::BadOption("--stdin cannot be used together with --dispatch");
+    }
+
     return false;
 }
 

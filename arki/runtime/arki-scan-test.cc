@@ -71,7 +71,7 @@ add_method("scan_stdin", [](Fixture& f) {
             "--stdin=grib",
             "inbound/test.grib1",
         });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "TODO");
+        wassert(actual_file(co.file_stderr.name()).contents_match("^you cannot specify input files or datasets when using --stdin"));
         wassert(actual(res) == 1);
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
     }
@@ -82,7 +82,7 @@ add_method("scan_stdin", [](Fixture& f) {
             "--files=inbound/test.grib1",
             "--stdin=grib",
         });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "TODO");
+        wassert(actual_file(co.file_stderr.name()).contents_match("^--stdin cannot be used together with --files"));
         wassert(actual(res) == 1);
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
     }
@@ -93,7 +93,7 @@ add_method("scan_stdin", [](Fixture& f) {
             "--dispatch=/dev/null",
             "--stdin=grib",
         });
-        wassert(actual(sys::read_file(co.file_stderr.name())) == "TODO");
+        wassert(actual_file(co.file_stderr.name()).contents_match("^--stdin cannot be used together with --dispatch"));
         wassert(actual(res) == 1);
         wassert(actual(sys::read_file(co.file_stdout.name())) == "");
     }
