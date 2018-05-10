@@ -294,6 +294,7 @@ void RAIICloseHandle::close()
         return;
 
     check_grib_error(grib_handle_delete(g->gh), "cannot close GRIB message");
+    g->gh = nullptr;
 }
 
 RAIICloseHandle::operator bool() const { return g->gh != nullptr; }
