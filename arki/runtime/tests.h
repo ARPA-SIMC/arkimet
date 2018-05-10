@@ -3,6 +3,7 @@
 
 #include <arki/core/file.h>
 #include <initializer_list>
+#include <vector>
 
 namespace arki {
 namespace runtime {
@@ -18,6 +19,7 @@ struct CatchOutput
     int orig_stderr;
 
     CatchOutput();
+    CatchOutput(arki::core::File&& file_stdin);
     ~CatchOutput();
 
     int save(int src, int tgt);

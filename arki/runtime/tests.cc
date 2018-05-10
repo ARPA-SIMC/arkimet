@@ -13,7 +13,17 @@ namespace runtime {
 namespace tests {
 
 CatchOutput::CatchOutput()
-    : file_stdin(File::mkstemp(".")),
+    : file_stdin("/dev/null", O_RDONLY),
+      file_stdout(File::mkstemp(".")),
+      file_stderr(File::mkstemp("."))
+{
+    orig_stdin = save(file_stdin, 0);
+    orig_stdout = save(file_stdout, 1);
+    orig_stderr = save(file_stderr, 2);
+}
+
+CatchOutput::CatchOutput(arki::core::File&& _file_stdin)
+    : file_stdin(std::move(_file_stdin)),
       file_stdout(File::mkstemp(".")),
       file_stderr(File::mkstemp("."))
 {

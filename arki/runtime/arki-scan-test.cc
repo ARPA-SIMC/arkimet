@@ -53,7 +53,7 @@ void Tests::register_tests() {
 add_method("scan_stdin", [](Fixture& f) {
     using runtime::tests::run_cmdline;
     {
-        runtime::tests::CatchOutput co;
+        runtime::tests::CatchOutput co(sys::File("inbound/fixture.grib1", O_RDONLY));
         int res = run_cmdline(runtime::arki_scan, {
             "arki-scan",
             "--yaml",

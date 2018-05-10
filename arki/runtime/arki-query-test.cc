@@ -105,7 +105,7 @@ add_method("query_qmacro", [](Fixture& f) {
 add_method("query_stdin", [](Fixture& f) {
     using runtime::tests::run_cmdline;
     {
-        runtime::tests::CatchOutput co;
+        runtime::tests::CatchOutput co(sys::File("inbound/fixture.grib1", O_RDONLY));
         int res = run_cmdline(runtime::arki_query, {
             "arki-query",
             "--stdin=grib",
