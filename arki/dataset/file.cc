@@ -51,11 +51,6 @@ bool File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     return scan(q, dest);
 }
 
-void File::query_summary(const Matcher& matcher, Summary& summary)
-{
-    scan(DataQuery(matcher), [&](unique_ptr<Metadata> md) { summary.add(*md); return true; });
-}
-
 void File::readConfig(const std::string& fname, ConfigFile& cfg)
 {
     ConfigFile section;

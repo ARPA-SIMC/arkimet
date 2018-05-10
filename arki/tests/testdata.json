@@ -9261,6 +9261,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_fromfunction",
+  "method": "read"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_testlarge",
   "method": "read"
  },

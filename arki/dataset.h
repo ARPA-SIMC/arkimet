@@ -226,7 +226,7 @@ public:
      * Add to summary the summary of the data that would be extracted with the
      * given query.
      */
-    virtual void query_summary(const Matcher& matcher, Summary& summary) = 0;
+    virtual void query_summary(const Matcher& matcher, Summary& summary);
 
     /**
      * Query the dataset obtaining a byte stream, that gets written to a file

@@ -32,7 +32,7 @@ struct Scanner
      * Use this only in unit tests, as it makes assumptions that might not be
      * valid in normal code
      */
-    void test_scan_file(const std::string& filename, metadata_dest_func dest);
+    bool test_scan_file(const std::string& filename, metadata_dest_func dest);
 
     /**
      * Scan data from a non-seekable pipe

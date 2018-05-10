@@ -41,7 +41,6 @@ public:
     const FileConfig& config() const override = 0;
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
-    void query_summary(const Matcher& matcher, Summary& summary) override;
 
     static void readConfig(const std::string& path, ConfigFile& cfg);
 };
