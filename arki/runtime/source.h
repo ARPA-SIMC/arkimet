@@ -43,6 +43,7 @@ struct Source
 struct StdinSource : public Source
 {
     scan::Scanner* scanner = nullptr;
+    std::shared_ptr<dataset::Reader> m_reader;
 
     StdinSource(CommandLine& args, const std::string& format);
     ~StdinSource();

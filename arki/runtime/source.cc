@@ -9,8 +9,10 @@
 #include "arki/dataset/file.h"
 #include "arki/dataset/http.h"
 #include "arki/dataset/merged.h"
+#include "arki/dataset/fromfunction.h"
 #include "arki/querymacro.h"
 #include "arki/nag.h"
+#include "arki/utils/sys.h"
 
 using namespace arki;
 using namespace arki::utils;
@@ -51,6 +53,18 @@ bool Source::dispatch(MetadataDispatch& dispatcher)
 StdinSource::StdinSource(CommandLine& args, const std::string& format)
     : scanner(scan::Scanner::get_scanner(format).release())
 {
+    ConfigFile cfg;
+    cfg.setValue("format", format);
+    auto config = dataset::fromfunction::Config::create(cfg);
+    auto reader = config->create_reader();
+    m_reader = std::make_shared<dataset::fromfunction::Reader>(config);
+    // TODO: pass function to constructor
+    auto ff_reader = std::dynamic_pointer_cast<dataset::fromfunction::Reader>(m_reader);
+    ff_reader->generator = [&](metadata_dest_func dest){
+        auto scanner = scan::Scanner::get_scanner(format);
+        sys::NamedFileDescriptor fd_stdin(0, "stdin");
+        return scanner->scan_pipe(fd_stdin, dest);
+    };
 }
 
 StdinSource::~StdinSource()
@@ -59,10 +73,7 @@ StdinSource::~StdinSource()
 }
 
 std::string StdinSource::name() const { return "stdin:" + scanner->name(); }
-dataset::Reader& StdinSource::reader() const
-{
-    throw std::runtime_error("StdinSource reader not yet implemented");
-}
+dataset::Reader& StdinSource::reader() const { return *m_reader; }
 void StdinSource::open() {}
 void StdinSource::close(bool successful) {}
 
