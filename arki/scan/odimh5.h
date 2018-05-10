@@ -26,8 +26,6 @@ public:
     OdimH5();
     virtual ~OdimH5();
 
-    void scan_file(const std::string& filename, Metadata& md);
-
     std::string name() const override { return "odimh5"; }
     std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
@@ -39,6 +37,7 @@ protected:
     std::vector<int> odimh5_funcs;
     OdimH5Lua* L;
 
+    void scan_file_impl(const std::string& filename, Metadata& md);
     void set_inline_source(Metadata& md, const std::string& abspath);
     void set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader);
 

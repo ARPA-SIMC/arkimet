@@ -181,7 +181,7 @@ OdimH5::~OdimH5()
     delete L;
 }
 
-void OdimH5::scan_file(const std::string& filename, Metadata& md)
+void OdimH5::scan_file_impl(const std::string& filename, Metadata& md)
 {
     using namespace arki::utils::h5;
     MuteErrors h5e;
@@ -214,7 +214,7 @@ std::unique_ptr<Metadata> OdimH5::scan_data(const std::vector<uint8_t>& data)
     md->set_source_inline("odimh5", std::vector<uint8_t>(data));
 
     try {
-        scan_file(tmpfd.name(), *md);
+        scan_file_impl(tmpfd.name(), *md);
     } catch (...) {
         sys::unlink(tmpfd.name());
         throw;
@@ -233,7 +233,7 @@ bool OdimH5::scan_file_inline(const std::string& abspath, metadata_dest_func des
 
     unique_ptr<Metadata> md(new Metadata);
     set_inline_source(*md, abspath);
-    scan_file(abspath, *md);
+    scan_file_impl(abspath, *md);
     return dest(std::move(md));
 }
 
@@ -245,7 +245,7 @@ bool OdimH5::scan_file(const std::string& abspath, std::shared_ptr<segment::Read
 
     unique_ptr<Metadata> md(new Metadata);
     set_blob_source(*md, reader);
-    scan_file(abspath, *md);
+    scan_file_impl(abspath, *md);
     return dest(std::move(md));
 }
 
