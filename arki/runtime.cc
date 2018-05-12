@@ -113,7 +113,7 @@ ScanCommandLine::ScanCommandLine(const std::string& name, int mansection)
     files = inputOpts->add<StringOption>("files", 0, "files", "file",
             "read the list of files to scan from the given file instead of the command line");
 
-    dispatch_options = add_module(std::make_unique<DispatchOptions>(*this));
+    dispatch_options = add_module(std::unique_ptr<DispatchOptions>(new DispatchOptions(*this)));
 }
 
 QueryCommandLine::QueryCommandLine(const std::string& name, int mansection)
