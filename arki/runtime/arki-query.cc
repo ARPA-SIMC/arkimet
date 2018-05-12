@@ -1,12 +1,15 @@
 #include "arki/runtime/arki-query.h"
+#include "arki/runtime/processor.h"
+#include <arki/runtime/inputs.h>
+#include <arki/runtime/io.h>
 #include "arki/utils/commandline/parser.h"
 #include "arki/configfile.h"
 #include "arki/dataset.h"
 #include "arki/dataset/merged.h"
-#include "arki/dataset/http.h"
 #include "arki/utils.h"
 #include "arki/nag.h"
 #include "arki/runtime.h"
+#include "arki/runtime/source.h"
 #include "arki/libconfig.h"
 #include <cstring>
 #include <iostream>
@@ -19,15 +22,14 @@ namespace runtime {
 
 namespace {
 
-struct Options : public runtime::CommandLine
+struct Options : public runtime::QueryCommandLine
 {
-    Options() : runtime::CommandLine("arki-query", 1)
+    Options() : runtime::QueryCommandLine("arki-query", 1)
     {
         usage = "[options] [expression] [configfile or directory...]";
         description =
             "Query the datasets in the given config file for data matching the"
             " given expression, and output the matching metadata.";
-        add_query_options();
     }
 };
 
@@ -42,14 +44,23 @@ int arki_query(int argc, const char* argv[])
         if (opts.parse(argc, argv))
             return 0;
 
-        opts.setupProcessing();
+        Inputs inputs(opts);
+        auto output = make_output(*opts.outfile);
 
-        bool all_successful = opts.foreach_source([&](runtime::Source& source) {
-            source.process(*opts.processor);
+        Matcher query;
+        if (!opts.strquery.empty())
+            query = Matcher::parse(inputs.expand_remote_query(opts.strquery));
+        else
+            query = Matcher::parse(opts.strquery);
+
+        auto processor = processor::create(opts, query, *output);
+
+        bool all_successful = foreach_source(opts, inputs, [&](runtime::Source& source) {
+            source.process(*processor);
             return true;
         });
 
-        opts.doneProcessing();
+        processor->end();
 
         if (all_successful)
             return 0;

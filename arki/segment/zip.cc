@@ -352,10 +352,12 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, c
 
     Pending p(new files::RenameTransaction(tmpabspath, zipabspath));
 
-    Creator creator(rootdir, segment().relpath, mds, segment().abspath + ".zip");
+    Creator creator(rootdir, segment().relpath, mds, tmpabspath);
     creator.out = sys::File(tmpabspath);
     creator.validator = &scan::Validator::by_filename(segment().abspath);
+
     creator.create();
+
 
     // Make sure mds are not holding a reader on the file to repack, because it
     // will soon be invalidated

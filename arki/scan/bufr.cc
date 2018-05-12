@@ -1,6 +1,5 @@
 #include "config.h"
 #include "bufr.h"
-#include "arki/utils/files.h"
 #include <dballe/file.h>
 #include <dballe/message.h>
 #include <dballe/msg/codec.h>
@@ -17,6 +16,7 @@
 #include "arki/types/timerange.h"
 #include "arki/scan/validator.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/files.h"
 #include <sstream>
 #include <cstring>
 #include <stdint.h>
@@ -78,7 +78,7 @@ const Validator& validator() { return bufr_validator; }
 }
 
 
-Bufr::Bufr() : file(0), importer(0), extras(0)
+Bufr::Bufr()
 {
     msg::Importer::Options opts;
     opts.simplified = true;
@@ -92,26 +92,9 @@ Bufr::Bufr() : file(0), importer(0), extras(0)
 Bufr::~Bufr()
 {
 	if (importer) delete importer;
-	if (file) delete file;
 #ifdef HAVE_LUA
 	if (extras) delete extras;
 #endif
-}
-
-void Bufr::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
-{
-    Scanner::open(filename, reader);
-    file = dballe::File::create(dballe::File::BUFR, filename.c_str(), "r").release();
-}
-
-void Bufr::close()
-{
-    Scanner::close();
-    if (file)
-    {
-        delete file;
-        file = 0;
-    }
 }
 
 namespace {
@@ -272,22 +255,6 @@ void Bufr::do_scan(BinaryMessage& rmsg, Metadata& md)
             md.set(timedef->validity_time_to_emission_time(*p));
 }
 
-bool Bufr::next(Metadata& md)
-{
-    md.clear();
-    BinaryMessage rmsg = file->read();
-    if (!rmsg) return false;
-    // Set source
-    if (reader)
-    {
-        md.set_source(Source::createBlob(reader, rmsg.offset, rmsg.data.size()));
-        md.set_cached_data(vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
-    } else
-        md.set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
-    do_scan(rmsg, md);
-    return true;
-}
-
 std::unique_ptr<Metadata> Bufr::scan_data(const std::vector<uint8_t>& data)
 {
     std::unique_ptr<Metadata> md(new Metadata);
@@ -296,6 +263,48 @@ std::unique_ptr<Metadata> Bufr::scan_data(const std::vector<uint8_t>& data)
     rmsg.data = std::string(data.begin(), data.end());
     do_scan(rmsg, *md);
     return md;
+}
+
+bool Bufr::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+{
+    auto file = dballe::File::create(dballe::File::BUFR, reader->segment().abspath.c_str(), "r");
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        BinaryMessage rmsg = file->read();
+        if (!rmsg) break;
+        md->set_source(Source::createBlob(reader, rmsg.offset, rmsg.data.size()));
+        md->set_cached_data(vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
+        do_scan(rmsg, *md);
+        if (!dest(std::move(md))) return false;
+    }
+    return true;
+}
+
+size_t Bufr::scan_singleton(const std::string& abspath, Metadata& md)
+{
+    auto file = dballe::File::create(dballe::File::BUFR, abspath.c_str(), "r").release();
+    md.clear();
+    BinaryMessage rmsg = file->read();
+    if (!rmsg) return 0;
+    do_scan(rmsg, md);
+    return rmsg.data.size();
+}
+
+bool Bufr::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
+{
+    files::RAIIFILE in(infd, "rb");
+    auto file = dballe::File::create(dballe::File::BUFR, in, false, infd.name()).release();
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        BinaryMessage rmsg = file->read();
+        if (!rmsg) break;
+        md->set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
+        do_scan(rmsg, *md);
+        if (!dest(move(md))) return false;
+    }
+    return true;
 }
 
 static inline void inplace_tolower(std::string& buf)

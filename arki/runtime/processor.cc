@@ -1,5 +1,6 @@
 #include "config.h"
 #include "arki/runtime/processor.h"
+#include "arki/runtime.h"
 #include "arki/runtime/io.h"
 #include "arki/metadata/libarchive.h"
 #include "arki/types/source.h"
@@ -13,6 +14,7 @@
 #include "arki/sort.h"
 #include "arki/utils/string.h"
 #include "arki/summary/stats.h"
+#include <cassert>
 
 using namespace std;
 using namespace arki::core;
@@ -170,12 +172,11 @@ struct DataProcessor : public SingleOutputProcessor
     vector<string> description_attrs;
     bool data_inline;
     bool server_side;
-    std::function<void(NamedFileDescriptor&)> data_start_hook;
     bool any_output_generated = false;
 
     DataProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out, bool data_inline=false)
         : SingleOutputProcessor(out), printer(create_metadata_printer(maker, output)), query(q, data_inline),
-          data_inline(data_inline), server_side(maker.server_side), data_start_hook(maker.data_start_hook)
+          data_inline(data_inline), server_side(maker.server_side)
     {
         description_attrs.push_back("query=" + q.toString());
         description_attrs.push_back("printer=" + describe_printer(maker));
@@ -204,7 +205,6 @@ struct DataProcessor : public SingleOutputProcessor
     {
         if (!any_output_generated)
         {
-            if (data_start_hook) data_start_hook(output);
             any_output_generated = true;
         }
     }
@@ -255,10 +255,9 @@ struct SummaryProcessor : public SingleOutputProcessor
     string summary_restrict;
     Summary summary;
     vector<string> description_attrs;
-    std::function<void(NamedFileDescriptor&)> data_start_hook;
 
     SummaryProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out)
-        : SingleOutputProcessor(out), matcher(q), printer(create_summary_printer(maker, output)), data_start_hook(maker.data_start_hook)
+        : SingleOutputProcessor(out), matcher(q), printer(create_summary_printer(maker, output))
     {
         description_attrs.push_back("query=" + q.toString());
         if (!maker.summary_restrict.empty())
@@ -295,7 +294,6 @@ struct SummaryProcessor : public SingleOutputProcessor
 
     void do_output(const Summary& s)
     {
-        if (data_start_hook) data_start_hook(output);
         printer(s);
     }
 };
@@ -305,14 +303,12 @@ struct SummaryShortProcessor : public SingleOutputProcessor
     Matcher matcher;
     summary_print_func printer;
     Summary summary;
-    std::function<void(NamedFileDescriptor&)> data_start_hook;
     bool annotate;
     bool json;
 
     SummaryShortProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out)
         : SingleOutputProcessor(out), matcher(q),
           printer(create_summary_printer(maker, output)),
-          data_start_hook(maker.data_start_hook),
           annotate(maker.annotate),
           json(maker.json)
     {
@@ -332,7 +328,6 @@ struct SummaryShortProcessor : public SingleOutputProcessor
 
     void end() override
     {
-        if (data_start_hook) data_start_hook(output);
         summary::Short c;
         summary.visit(c);
 
@@ -387,7 +382,6 @@ struct BinaryProcessor : public SingleOutputProcessor
             description_attrs.push_back("sort=" + maker.sort);
             query.sorter = sort::Compare::parse(maker.sort);
         }
-        query.data_start_hook = maker.data_start_hook;
     }
 
     std::string describe() const override
@@ -438,6 +432,194 @@ void TargetFileProcessor::process(dataset::Reader& ds, const std::string& name)
 
 void TargetFileProcessor::end() { next->end(); }
 
+namespace processor {
+
+std::unique_ptr<DatasetProcessor> create(QueryCommandLine& args, const Matcher& query, core::NamedFileDescriptor& output)
+{
+    ProcessorMaker pmaker;
+    // Initialize the processor maker
+    pmaker.summary = args.summary->boolValue();
+    pmaker.summary_short = args.summary_short->boolValue();
+    pmaker.yaml = args.yaml->boolValue();
+    pmaker.json = args.json->boolValue();
+    pmaker.annotate = args.annotate->boolValue();
+    pmaker.data_only = args.dataOnly ? args.dataOnly->boolValue() : false;
+    pmaker.data_inline = args.dataInline ? args.dataInline->boolValue() : false;
+    if (args.postprocess) pmaker.postprocess = args.postprocess->stringValue();
+    pmaker.report = args.report->stringValue();
+    pmaker.summary_restrict = args.summary_restrict->stringValue();
+    pmaker.sort = args.sort->stringValue();
+    if (args.archive->isSet())
+    {
+        if (args.archive->hasValue())
+            pmaker.archive = args.archive->value();
+        else
+            pmaker.archive = "tar";
+    }
+
+    std::unique_ptr<DatasetProcessor> res = pmaker.make(query, output);
+
+    // If targetfile is requested, wrap with the targetfile processor
+    if (!args.targetfile->isSet())
+        return res;
+
+    SingleOutputProcessor* sop = dynamic_cast<SingleOutputProcessor*>(res.release());
+    assert(sop != nullptr);
+    return std::unique_ptr<DatasetProcessor>(new TargetFileProcessor(sop, args.targetfile->stringValue()));
+}
+
+std::unique_ptr<DatasetProcessor> create(ScanCommandLine& args, core::NamedFileDescriptor& output)
+{
+    ProcessorMaker pmaker;
+    // Initialize the processor maker
+    pmaker.summary = args.summary->boolValue();
+    pmaker.summary_short = args.summary_short->boolValue();
+    pmaker.yaml = args.yaml->boolValue();
+    pmaker.json = args.json->boolValue();
+    pmaker.annotate = args.annotate->boolValue();
+    pmaker.data_only = false;
+    pmaker.data_inline = false;
+    pmaker.report = args.report->stringValue();
+    pmaker.summary_restrict = args.summary_restrict->stringValue();
+    pmaker.sort = args.sort->stringValue();
+    if (args.archive->isSet())
+    {
+        if (args.archive->hasValue())
+            pmaker.archive = args.archive->value();
+        else
+            pmaker.archive = "tar";
+    }
+
+    std::unique_ptr<DatasetProcessor> res = pmaker.make(Matcher(), output);
+
+    // If targetfile is requested, wrap with the targetfile processor
+    if (!args.targetfile->isSet())
+        return res;
+
+    SingleOutputProcessor* sop = dynamic_cast<SingleOutputProcessor*>(res.release());
+    assert(sop != nullptr);
+    return std::unique_ptr<DatasetProcessor>(new TargetFileProcessor(sop, args.targetfile->stringValue()));
+}
+
+static void _verify_option_consistency(CommandLine& args)
+{
+    // Check conflicts among options
+    if (args.summary && args.summary->isSet() && args.summary_short && args.summary_short->isSet())
+        throw commandline::BadOption("--summary and --summary-short cannot be used together");
+
+#ifdef HAVE_LUA
+    if (args.report->isSet())
+    {
+        if (args.yaml->isSet())
+            throw commandline::BadOption("--dump/--yaml conflicts with --report");
+        if (args.json->isSet())
+            throw commandline::BadOption("--json conflicts with --report");
+        if (args.annotate->isSet())
+            throw commandline::BadOption("--annotate conflicts with --report");
+        //if (summary->boolValue())
+        //  return "--summary conflicts with --report";
+        if (args.sort->isSet())
+            throw commandline::BadOption("--sort conflicts with --report");
+        if (args.archive->isSet())
+            throw commandline::BadOption("--sort conflicts with --archive");
+    }
+#endif
+    if (args.yaml->isSet())
+    {
+        if (args.json->isSet())
+            throw commandline::BadOption("--dump/--yaml conflicts with --json");
+        if (args.archive->isSet())
+            throw commandline::BadOption("--dump/--yaml conflicts with --archive");
+    }
+    if (args.annotate->isSet())
+    {
+        if (args.archive->isSet())
+            throw commandline::BadOption("--annotate conflicts with --archive");
+    }
+    if (args.summary->isSet())
+    {
+        if (args.summary_short->isSet())
+            throw commandline::BadOption("--summary conflicts with --summary-short");
+        if (args.sort->isSet())
+            throw commandline::BadOption("--summary conflicts with --sort");
+        if (args.archive->isSet())
+            throw commandline::BadOption("--summary conflicts with --archive");
+    } else if (args.summary_restrict->isSet())
+        throw commandline::BadOption("--summary-restrict only makes sense with --summary");
+    if (args.summary_short->isSet())
+    {
+        if (args.sort->isSet())
+            throw commandline::BadOption("--summary-short conflicts with --sort");
+        if (args.archive->isSet())
+            throw commandline::BadOption("--summary-short conflicts with --archive");
+    }
+}
+
+void verify_option_consistency(ScanCommandLine& args)
+{
+    _verify_option_consistency(args);
+}
+
+void verify_option_consistency(QueryCommandLine& args)
+{
+    if (args.dataInline->isSet())
+    {
+        if (args.report->isSet())
+            throw commandline::BadOption("--inline conflicts with --report");
+        if (args.yaml->isSet())
+            throw commandline::BadOption("--dump/--yaml conflicts with --inline");
+        if (args.annotate->isSet())
+            throw commandline::BadOption("--annotate conflicts with --inline");
+        if (args.summary->isSet())
+            throw commandline::BadOption("--summary conflicts with --inline");
+        if (args.summary_short->isSet())
+            throw commandline::BadOption("--summary-short conflicts with --inline");
+        if (args.dataOnly->isSet())
+            throw commandline::BadOption("--inline conflicts with --data");
+        if (args.postprocess && args.postprocess->isSet())
+            throw commandline::BadOption("--inline conflicts with --postprocess");
+        if (args.archive->isSet())
+            throw commandline::BadOption("--inline conflicts with --archive");
+    }
+
+    if (args.dataOnly->isSet())
+    {
+        if (args.report->isSet())
+            throw commandline::BadOption("--report conflicts with --data");
+        if (args.archive->isSet())
+            throw commandline::BadOption("--data conflicts with --archive");
+        if (args.yaml->isSet())
+            throw commandline::BadOption("--dump/--yaml conflicts with --data");
+        if (args.annotate->isSet())
+            throw commandline::BadOption("--annotate conflicts with --data");
+        if (args.summary->isSet())
+            throw commandline::BadOption("--summary conflicts with --data");
+        if (args.summary_short->isSet())
+            throw commandline::BadOption("--summary-short conflicts with --data");
+        if (args.postprocess->isSet())
+            throw commandline::BadOption("--postprocess conflicts with --data");
+    }
+
+    if (args.postprocess->isSet())
+    {
+        if (args.summary_short->isSet())
+            throw commandline::BadOption("--summary-short conflicts with --postprocess");
+        if (args.summary->isSet())
+            throw commandline::BadOption("--summary conflicts with --postprocess");
+        if (args.annotate->isSet())
+            throw commandline::BadOption("--annotate conflicts with --postprocess");
+        if (args.yaml->isSet())
+            throw commandline::BadOption("--dump/--yaml conflicts with --postprocess");
+        if (args.report->isSet())
+            throw commandline::BadOption("--postprocess conflicts with --report");
+        if (args.archive->isSet())
+            throw commandline::BadOption("--postprocess conflicts with --archive");
+    }
+
+    _verify_option_consistency(args);
+}
+
+}
 
 std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher query, sys::NamedFileDescriptor& out)
 {
@@ -453,107 +635,6 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher query, sys::Named
         return unique_ptr<DatasetProcessor>(new SummaryShortProcessor(*this, query, out));
     else
         return unique_ptr<DatasetProcessor>(new DataProcessor(*this, query, out, data_inline));
-}
-
-std::string ProcessorMaker::verify_option_consistency()
-{
-	// Check conflicts among options
-#ifdef HAVE_LUA
-	if (!report.empty())
-	{
-		if (yaml)
-			return "--dump/--yaml conflicts with --report";
-		if (json)
-			return "--json conflicts with --report";
-		if (annotate)
-			return "--annotate conflicts with --report";
-		//if (summary->boolValue())
-		//	return "--summary conflicts with --report";
-		if (data_inline)
-			return "--inline conflicts with --report";
-		if (!postprocess.empty())
-			return "--postprocess conflicts with --report";
-		if (!sort.empty())
-			return "--sort conflicts with --report";
-        if (!archive.empty())
-            return "--sort conflicts with --archive";
-	}
-#endif
-	if (yaml)
-	{
-		if (json)
-			return "--dump/--yaml conflicts with --json";
-		if (data_inline)
-			return "--dump/--yaml conflicts with --inline";
-		if (data_only)
-			return "--dump/--yaml conflicts with --data";
-		if (!postprocess.empty())
-			return "--dump/--yaml conflicts with --postprocess";
-        if (!archive.empty())
-            return "--dump/--yaml conflicts with --archive";
-	}
-	if (annotate)
-	{
-		if (data_inline)
-			return "--annotate conflicts with --inline";
-		if (data_only)
-			return "--annotate conflicts with --data";
-		if (!postprocess.empty())
-			return "--annotate conflicts with --postprocess";
-        if (!archive.empty())
-            return "--annotate conflicts with --archive";
-	}
-	if (summary)
-	{
-		if (data_inline)
-			return "--summary conflicts with --inline";
-		if (data_only)
-			return "--summary conflicts with --data";
-        if (summary_short)
-            return "--summary conflicts with --summary-short";
-		if (!postprocess.empty())
-			return "--summary conflicts with --postprocess";
-		if (!sort.empty())
-			return "--summary conflicts with --sort";
-        if (!archive.empty())
-            return "--summary conflicts with --archive";
-	} else if (!summary_restrict.empty())
-		return "--summary-restrict only makes sense with --summary";
-    if (summary_short)
-    {
-        if (data_inline)
-            return "--summary-short conflicts with --inline";
-        if (data_only)
-            return "--summary-short conflicts with --data";
-        if (!postprocess.empty())
-            return "--summary-short conflicts with --postprocess";
-        if (!sort.empty())
-            return "--summary-short conflicts with --sort";
-        if (!archive.empty())
-            return "--summary-short conflicts with --archive";
-    }
-	if (data_inline)
-	{
-		if (data_only)
-			return "--inline conflicts with --data";
-		if (!postprocess.empty())
-			return "--inline conflicts with --postprocess";
-        if (!archive.empty())
-            return "--inline conflicts with --archive";
-	}
-	if (!postprocess.empty())
-	{
-		if (data_only)
-			return "--postprocess conflicts with --data";
-        if (!archive.empty())
-            return "--postprocess conflicts with --archive";
-    }
-    if (data_only)
-    {
-        if (!archive.empty())
-            return "--data conflicts with --archive";
-    }
-    return std::string();
 }
 
 }

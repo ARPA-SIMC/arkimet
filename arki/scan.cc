@@ -31,48 +31,11 @@ Scanner::~Scanner()
 {
 }
 
-void Scanner::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
-{
-    close();
-    this->filename = filename;
-    this->reader = reader;
-}
-
-void Scanner::close()
-{
-    filename.clear();
-    reader.reset();
-}
-
-void Scanner::test_open(const std::string& filename)
+bool Scanner::test_scan_file(const std::string& filename, metadata_dest_func dest)
 {
     string basedir, relpath;
     utils::files::resolve_path(filename, basedir, relpath);
-    open(sys::abspath(filename), Segment::detect_reader(format_from_filename(filename), basedir, relpath, filename, make_shared<core::lock::Null>()));
-}
-
-bool Scanner::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
-{
-    open(abspath, reader);
-    while (true)
-    {
-        unique_ptr<Metadata> md(new Metadata);
-        if (!next(*md)) break;
-        if (!dest(move(md))) return false;
-    }
-    return true;
-}
-
-bool Scanner::scan_metadata(const std::string& abspath, metadata_dest_func dest)
-{
-    open(abspath, std::shared_ptr<segment::Reader>());
-    while (true)
-    {
-        unique_ptr<Metadata> md(new Metadata);
-        if (!next(*md)) break;
-        if (!dest(move(md))) return false;
-    }
-    return true;
+    return scan_segment(Segment::detect_reader(format_from_filename(filename), basedir, relpath, filename, make_shared<core::lock::Null>()), dest);
 }
 
 std::unique_ptr<Scanner> Scanner::get_scanner(const std::string& format)

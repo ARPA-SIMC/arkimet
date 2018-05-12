@@ -5,6 +5,7 @@
 #include <arki/types/reftime.h>
 #include <arki/types/timerange.h>
 #include <arki/runtime.h>
+#include <arki/runtime/io.h>
 #include <arki/utils/sys.h>
 #include <arki/utils/commandline/parser.h>
 #include <arki/wibble/sys/exec.h>

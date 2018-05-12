@@ -13,6 +13,9 @@
 #include <arki/utils/files.h>
 #include <arki/binary.h>
 #include <arki/runtime.h>
+#include <arki/runtime/io.h>
+#include <arki/runtime/config.h>
+#include <arki/configfile.h>
 #include <sstream>
 #include <iostream>
 

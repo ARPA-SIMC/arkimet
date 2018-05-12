@@ -1,5 +1,5 @@
-#ifndef ARKI_METADATA_TAR_H
-#define ARKI_METADATA_TAR_H
+#ifndef ARKI_METADATA_LIBARCHIVE_H
+#define ARKI_METADATA_LIBARCHIVE_H
 
 #include <arki/core/fwd.h>
 #include <arki/metadata/collection.h>

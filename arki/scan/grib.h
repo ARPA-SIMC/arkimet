@@ -9,7 +9,6 @@
 
 struct grib_context;
 struct grib_handle;
-struct lua_State;
 
 namespace arki {
 class Metadata;
@@ -27,48 +26,18 @@ struct GribLua;
 class Grib : public Scanner
 {
 protected:
-    FILE* in;
-    grib_context* context;
-    grib_handle* gh;
+    grib_context* context = nullptr;
     GribLua* L;
-    std::vector<int> grib1_funcs;
-    std::vector<int> grib2_funcs;
-
-	/**
-	 * Set the source information in the metadata
-	 */
-	virtual void setSource(Metadata& md);
-
-	/**
-	 * Run Lua scanning functions on \a md
-	 */
-	bool scanLua(std::vector<int> ids, Metadata& md);
-
-	/**
-	 * Read GRIB1 data from the currently open handle into md
-	 */
-	void scanGrib1(Metadata& md);
-
-	/**
-	 * Read GRIB2 data from the currently open handle into md
-	 */
-	void scanGrib2(Metadata& md);
-
-	static int arkilua_lookup_grib(lua_State* L);
-	static int arkilua_lookup_gribl(lua_State* L);
-	static int arkilua_lookup_gribs(lua_State* L);
-	static int arkilua_lookup_gribd(lua_State* L);
-
-    void scan_handle(Metadata& md);
 
 public:
-	Grib(const std::string& grib1code = std::string(), const std::string& grib2code = std::string());
-	virtual ~Grib();
+    Grib(const std::string& grib1code=std::string(), const std::string& grib2code=std::string());
+    virtual ~Grib();
 
-    void open(const std::string& filename, std::shared_ptr<segment::Reader> reader) override;
-    void close() override;
-    bool next(Metadata& md) override;
+    std::string name() const override { return "grib"; }
     std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
+    bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
+    bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
+    size_t scan_singleton(const std::string& abspath, Metadata& md) override;
 
     friend class GribLua;
 };

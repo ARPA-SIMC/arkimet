@@ -8,9 +8,13 @@
 #include "arki/dataset/segmented.h"
 #include "arki/dataset/reporter.h"
 #include "arki/metadata/consumer.h"
+#include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
+#include "arki/metadata.h"
 #include "arki/nag.h"
 #include "arki/runtime.h"
+#include <arki/runtime/inputs.h>
+#include <arki/runtime/config.h>
 #include "sstream"
 #include "iostream"
 #include "sys/stat.h"
@@ -30,8 +34,6 @@ namespace {
 struct Options : public BaseCommandLine
 {
     commandline::VectorOption<commandline::String>* cfgfiles;
-    commandline::BoolOption* verbose;
-    commandline::BoolOption* debug;
     commandline::BoolOption* fix;
     commandline::BoolOption* accurate;
     commandline::BoolOption* repack;
@@ -59,8 +61,6 @@ struct Options : public BaseCommandLine
             " read from config files), perform a maintenance run on them."
             " Corrupted metadata files will be rebuilt, data files with deleted data"
             " will be packed, outdated summaries and indices will be regenerated.";
-        debug = add<BoolOption>("debug", 0, "debug", "", "debug output");
-        verbose = add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
         cfgfiles = add< VectorOption<String> >("config", 'C', "config", "file",
             "read the configuration from the given file (can be given more than once)");
         fix = add<BoolOption>("fix", 'f', "fix", "",

@@ -125,7 +125,7 @@ bool Reader<Segment>::scan_data(metadata_dest_func dest)
 {
     const auto& segment = this->segment();
     auto scanner = scan::Scanner::get_scanner(segment.format);
-    return scanner->scan_file(segment.abspath, static_pointer_cast<segment::Reader>(this->shared_from_this()), dest);
+    return scanner->scan_segment(static_pointer_cast<segment::Reader>(this->shared_from_this()), dest);
 }
 
 template<typename Segment>

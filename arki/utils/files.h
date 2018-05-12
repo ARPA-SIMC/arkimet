@@ -3,6 +3,7 @@
 
 #include <arki/defs.h>
 #include <arki/utils/sys.h>
+#include <arki/exceptions.h>
 #include <arki/transaction.h>
 #include <string>
 #include <sys/types.h>
@@ -120,6 +121,34 @@ struct FinalizeTempfilesTransaction : public Transaction
     void commit() override;
     void rollback() override;
     void rollback_nothrow() noexcept override;
+};
+
+struct RAIIFILE
+{
+    FILE* fd = nullptr;
+    RAIIFILE(const std::string& fname, const char* mode)
+    {
+        if (!(fd = fopen(fname.c_str(), mode)))
+            throw_file_error(fname, "cannot open file");
+    }
+    RAIIFILE(sys::NamedFileDescriptor& ifd, const char* mode)
+    {
+        if (!(fd = fdopen(ifd.dup(), mode)))
+            throw_file_error(ifd.name(), "cannot fdopen file");
+    }
+    RAIIFILE(const RAIIFILE&) = delete;
+    RAIIFILE(RAIIFILE&& o)
+        : fd(o.fd)
+    {
+        o.fd = nullptr;
+    }
+    RAIIFILE& operator=(const RAIIFILE&) = delete;
+    RAIIFILE& operator=(RAIIFILE&&) = delete;
+    ~RAIIFILE()
+    {
+        if (fd) fclose(fd);
+    }
+    operator FILE*() { return fd; }
 };
 
 }

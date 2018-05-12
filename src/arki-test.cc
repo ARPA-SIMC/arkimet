@@ -5,7 +5,7 @@
 #include <arki/matcher.h>
 #include <arki/dataset.h>
 #include <arki/runtime.h>
-
+#include <arki/configfile.h>
 #include <memory>
 #include <iostream>
 #include <cstdlib>

@@ -60,9 +60,13 @@ ODIMData::ODIMData()
 #ifndef HAVE_HDF5
     throw TestSkipped("ODIMH5 support not available");
 #endif
-    mds.scan_from_file("inbound/fixture.h5/00.h5", format, true);
-    mds.scan_from_file("inbound/fixture.h5/01.h5", format, true);
-    mds.scan_from_file("inbound/fixture.h5/02.h5", format, true);
+#if 0
+    mds.scan_from_file("inbound/fixture.odimh5", format, true);
+#else
+    mds.scan_from_file("inbound/fixture.odimh5/00.odimh5", format, true);
+    mds.scan_from_file("inbound/fixture.odimh5/01.odimh5", format, true);
+    mds.scan_from_file("inbound/fixture.odimh5/02.odimh5", format, true);
+#endif
 }
 
 

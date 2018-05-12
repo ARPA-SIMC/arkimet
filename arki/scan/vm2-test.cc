@@ -29,11 +29,10 @@ void Tests::register_tests() {
 add_method("scan", []() {
     Metadata md;
     scan::Vm2 scanner;
-    vector<uint8_t> buf;
-
-    scanner.test_open("inbound/test.vm2");
-    // See how we scan the first vm2
-    ensure(scanner.next(md));
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/test.vm2", mds.inserter_func());
+    wassert(actual(mds.size()) == 4u);
+    md = mds[0];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/test.vm2", 0, 34));
@@ -47,7 +46,7 @@ add_method("scan", []() {
     // Check that the source can be read properly
     md.unset(TYPE_VALUE);
     md.drop_cached_data();
-    buf = md.getData();
+    auto buf = md.getData();
     ensure_equals(buf.size(), 34u);
     ensure_equals(string((const char*)buf.data(), 34), "198710310000,1,227,1.2,,,000000000");
 });
@@ -56,14 +55,10 @@ add_method("scan", []() {
 add_method("scan_seconds", []() {
     Metadata md;
     scan::Vm2 scanner;
-    vector<uint8_t> buf;
-
-    scanner.test_open("inbound/test.vm2");
-    // Skip the first vm2
-    wassert(actual(scanner.next(md)));
-
-    // See how we scan the second vm2
-    wassert(actual(scanner.next(md)));
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/test.vm2", mds.inserter_func());
+    wassert(actual(mds.size()) == 4u);
+    md = mds[1];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/test.vm2", 35, 35));
@@ -77,7 +72,7 @@ add_method("scan_seconds", []() {
     // Check that the source can be read properly
     md.unset(TYPE_VALUE);
     md.drop_cached_data();
-    buf = md.getData();
+    auto buf = md.getData();
     wassert(actual(buf.size()) == 35u);
     wassert(actual(string((const char*)buf.data(), 35)) == "19871031000030,1,228,.5,,,000000000");
 });

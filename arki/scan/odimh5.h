@@ -23,25 +23,23 @@ struct OdimH5Lua;
 class OdimH5 : public Scanner
 {
 public:
-	OdimH5();
-	virtual ~OdimH5();
+    OdimH5();
+    virtual ~OdimH5();
 
-    void scan_file(const std::string& filename, Metadata& md);
-
-    void open(const std::string& filename, std::shared_ptr<segment::Reader> reader) override;
-    bool next(Metadata& md) override;
+    std::string name() const override { return "odimh5"; }
     std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
+    bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
+    bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
+    size_t scan_singleton(const std::string& abspath, Metadata& md) override;
 
 protected:
     hid_t h5file;
-    bool read;
     std::vector<int> odimh5_funcs;
     OdimH5Lua* L;
 
-	/**
-	 * Set the source information in the metadata
-	 */
-	virtual void setSource(Metadata& md);
+    void scan_file_impl(const std::string& filename, Metadata& md);
+    void set_inline_source(Metadata& md, const std::string& abspath);
+    void set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader);
 
     /**
      * Run Lua scanning functions on \a md

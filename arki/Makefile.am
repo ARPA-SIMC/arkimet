@@ -36,6 +36,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/segment.h \
 		dataset/segment/managers.h \
 		dataset/empty.h \
+		dataset/fromfunction.h \
 		dataset/testlarge.h \
 		dataset/file.h \
 		dataset/gridquery.h \
@@ -114,7 +115,10 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/inputs.h \
 		runtime.h \
 		runtime/io.h \
+		runtime/source.h \
+		runtime/dispatch.h \
 		runtime/processor.h \
+		runtime/module.h \
 		runtime/tests.h \
 		runtime/arki-query.h \
 		runtime/arki-check.h \
@@ -122,6 +126,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		scan.h \
 		scan/fwd.h \
 		scan/validator.h \
+		scan/dir.h \
 		segment.h \
 		segment/fwd.h \
 		segment/base.h \
@@ -309,7 +314,6 @@ libarkimet_la_SOURCES += \
 		runtime/config.cc \
 		runtime/inputs.cc \
 		runtime/io.cc \
-		runtime/tests.cc \
 		types-init.cc
 
 libarkimet_test_la_SOURCES += \
@@ -430,7 +434,8 @@ libarkimet_la_SOURCES += \
 		validator.cc \
 		postprocess.cc \
 		scan.cc \
-		scan/validator.cc
+		scan/validator.cc \
+		scan/dir.cc
 
 tests_arki_test_SOURCES += \
 		metadata/tests.cc \
@@ -468,6 +473,7 @@ tests_arki_test_SOURCES += \
 		matcher/quantity-test.cc \
 		scan-test.cc \
 		scan/validator-test.cc \
+		scan/dir-test.cc \
 		segment-test.cc \
 		segment/common-test.cc \
 		segment/missing-test.cc \
@@ -562,6 +568,7 @@ libarkimet_la_SOURCES += \
 		dataset/outbound.cc \
 		dataset/offline.cc \
 		dataset/empty.cc \
+		dataset/fromfunction.cc \
 		dataset/testlarge.cc \
 		dataset/merged.cc \
 		dataset/gridquery.cc \
@@ -617,6 +624,7 @@ tests_arki_test_SOURCES += \
 		dataset/outbound-test.cc \
 		dataset/offline-test.cc \
 		dataset/empty-test.cc \
+		dataset/fromfunction-test.cc \
 		dataset/testlarge-test.cc \
 		dataset/merged-test.cc \
 		dataset/gridquery-test.cc \
@@ -630,7 +638,10 @@ tests_arki_test_SOURCES += \
 		querymacro-test.cc \
 		datasets-test.cc \
 		dispatcher-test.cc \
+		runtime/tests.cc \
 		runtime/processor-test.cc \
+		runtime/source-test.cc \
+		runtime/dispatch-test.cc \
 		runtime/arki-query-test.cc \
 		runtime/arki-check-test.cc \
 		runtime/arki-scan-test.cc \
@@ -656,6 +667,8 @@ endif
 #
 if DEVEL_DO_RUNTIME
 libarkimet_la_SOURCES += \
+		runtime/source.cc \
+		runtime/dispatch.cc \
 		runtime/processor.cc \
 		runtime.cc
 endif

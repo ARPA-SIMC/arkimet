@@ -1,6 +1,7 @@
 #include "odimh5.h"
 #include "arki/libconfig.h"
 #include "arki/metadata.h"
+#include "arki/segment.h"
 #include "arki/types/source.h"
 #include "arki/types/origin.h"
 #include "arki/types/reftime.h"
@@ -169,7 +170,7 @@ struct OdimH5Lua : public Lua {
 };
 
 OdimH5::OdimH5()
-    : h5file(-1), read(false), L(new OdimH5Lua(this))
+    : h5file(-1), L(new OdimH5Lua(this))
 {
     L->load_scan_functions(runtime::Config::get().dir_scan_odimh5, odimh5_funcs);
 }
@@ -180,7 +181,7 @@ OdimH5::~OdimH5()
     delete L;
 }
 
-void OdimH5::scan_file(const std::string& filename, Metadata& md)
+void OdimH5::scan_file_impl(const std::string& filename, Metadata& md)
 {
     using namespace arki::utils::h5;
     MuteErrors h5e;
@@ -203,29 +204,6 @@ void OdimH5::scan_file(const std::string& filename, Metadata& md)
     }
 }
 
-void OdimH5::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
-{
-    Scanner::open(filename, reader);
-
-    // Open H5 file
-    read = false;
-    if (sys::stat(filename)->st_size == 0)
-        // If the file is empty, don't open it
-        read = true;
-}
-
-bool OdimH5::next(Metadata& md)
-{
-    if (read) return false;
-    md.clear();
-    setSource(md);
-
-    scan_file(filename, md);
-
-    read = true;
-    return true;
-}
-
 std::unique_ptr<Metadata> OdimH5::scan_data(const std::vector<uint8_t>& data)
 {
     sys::File tmpfd = sys::File::mkstemp("");
@@ -236,7 +214,7 @@ std::unique_ptr<Metadata> OdimH5::scan_data(const std::vector<uint8_t>& data)
     md->set_source_inline("odimh5", std::vector<uint8_t>(data));
 
     try {
-        scan_file(tmpfd.name(), *md);
+        scan_file_impl(tmpfd.name(), *md);
     } catch (...) {
         sys::unlink(tmpfd.name());
         throw;
@@ -247,10 +225,54 @@ std::unique_ptr<Metadata> OdimH5::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-void OdimH5::setSource(Metadata& md)
+size_t OdimH5::scan_singleton(const std::string& abspath, Metadata& md)
+{
+    size_t size = sys::size(abspath, 0);
+    if (!size) return 0;
+    md.clear();
+    scan_file_impl(abspath, md);
+    return size;
+}
+
+bool OdimH5::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+{
+    // If the file is empty, skip it
+    auto st = sys::stat(reader->segment().abspath);
+    if (!st) return true;
+    if (S_ISDIR(st->st_mode))
+        throw std::runtime_error("OdimH5::scan_segment cannot be called on directory segments");
+    if (!st->st_size) return true;
+
+    unique_ptr<Metadata> md(new Metadata);
+    set_blob_source(*md, reader);
+    scan_file_impl(reader->segment().abspath, *md);
+    return dest(std::move(md));
+}
+
+bool OdimH5::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
+{
+    // Read all in a buffer
+    std::vector<uint8_t> buf;
+    const unsigned blocksize = 4096;
+    while (true)
+    {
+        buf.resize(buf.size() + blocksize);
+        unsigned read = in.read(buf.data() + buf.size() - blocksize, blocksize);
+        if (read < blocksize)
+        {
+            buf.resize(buf.size() - blocksize + read);
+            break;
+        }
+    }
+
+    std::unique_ptr<Metadata> md = scan_data(buf);
+    return dest(std::move(md));
+}
+
+void OdimH5::set_inline_source(Metadata& md, const std::string& abspath)
 {
     // for ODIMH5 files the source is the entire file
-    sys::File in(filename, O_RDONLY);
+    sys::File in(abspath, O_RDONLY);
 
     // calculate file size
     struct stat st;
@@ -261,15 +283,20 @@ void OdimH5::setSource(Metadata& md)
     in.close();
 
     stringstream note;
-    note << "Scanned from " << str::basename(filename) << ":0+" << buf.size();
+    note << "Scanned from " << str::basename(abspath);
     md.add_note(note.str());
 
-    if (reader)
-    {
-        md.set_source(Source::createBlob(reader, 0, buf.size()));
-        md.set_cached_data(move(buf));
-    } else
-        md.set_source_inline("bufr", move(buf));
+    md.set_source_inline("bufr", move(buf));
+}
+
+void OdimH5::set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader)
+{
+    struct stat st;
+    sys::stat(reader->segment().abspath, st);
+    stringstream note;
+    note << "Scanned from " << str::basename(reader->segment().relpath);
+    md.add_note(note.str());
+    md.set_source(Source::createBlob(reader, 0, st.st_size));
 }
 
 bool OdimH5::scanLua(Metadata& md)

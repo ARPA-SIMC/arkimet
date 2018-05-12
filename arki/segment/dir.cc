@@ -8,8 +8,9 @@
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/scan/validator.h"
 #include "arki/scan.h"
+#include "arki/scan/validator.h"
+#include "arki/scan/dir.h"
 #include "arki/utils/string.h"
 #include "arki/utils/accounting.h"
 #include "arki/iotrace.h"
@@ -192,9 +193,10 @@ struct CheckBackend : public AppendCheckBackend
             if (accurate)
             {
                 string fname = SequenceFile::data_fname(idx, format);
-                metadata::Collection mds;
+                size_t size;
+                Metadata md;
                 try {
-                    scanner->scan_metadata(fname, mds.inserter_func());
+                    size = scanner->scan_singleton(fname, md);
                 } catch (std::exception& e) {
                     stringstream out;
                     out << "unexpected data file " << idx << " fails to scan (" << e.what() << ")";
@@ -203,7 +205,7 @@ struct CheckBackend : public AppendCheckBackend
                     continue;
                 }
 
-                if (mds.size() == 0)
+                if (size == 0)
                 {
                     stringstream ss;
                     ss << "unexpected data file " << idx << " does not contain any " << format << " items";
@@ -211,7 +213,7 @@ struct CheckBackend : public AppendCheckBackend
                     dirty = true;
                     continue;
                 }
-
+#if 0
                 if (mds.size() > 1)
                 {
                     stringstream ss;
@@ -219,6 +221,7 @@ struct CheckBackend : public AppendCheckBackend
                     reporter(ss.str());
                     return SEGMENT_CORRUPTED;
                 }
+#endif
             }
         }
 
@@ -278,35 +281,8 @@ Reader::Reader(const std::string& format, const std::string& root, const std::st
 
 bool Reader::scan_data(metadata_dest_func dest)
 {
-    // Collect all file names in the directory
-    std::vector<std::pair<size_t, std::string>> fnames;
-    sys::Path dir(m_segment.abspath);
-    for (sys::Path::iterator di = dir.begin(); di != dir.end(); ++di)
-        if (di.isreg() && str::endswith(di->d_name, m_segment.format))
-        {
-            char* endptr;
-            size_t pos = strtoull(di->d_name, &endptr, 10);
-            if (endptr == di->d_name) continue;
-            if (*endptr != '.') continue;
-            fnames.emplace_back(make_pair(pos, di->d_name));
-        }
-
-    // Sort them numerically
-    std::sort(fnames.begin(), fnames.end());
-
-    // Scan them one by one
-    auto scanner = scan::Scanner::get_scanner(m_segment.format);
-    for (const auto& fi : fnames)
-    {
-        if (!scanner->scan_file(str::joinpath(m_segment.abspath, fi.second), static_pointer_cast<segment::Reader>(shared_from_this()), [&](unique_ptr<Metadata> md) {
-                   const source::Blob& i = md->sourceBlob();
-                   md->set_source(Source::createBlob(shared_from_this(), fi.first, i.size));
-                   return dest(move(md));
-                }))
-            return false;
-    }
-
-    return true;
+    scan::Dir scanner;
+    return scanner.scan_segment(static_pointer_cast<segment::Reader>(this->shared_from_this()), dest);
 }
 
 sys::File Reader::open_src(const types::source::Blob& src)

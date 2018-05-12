@@ -7,6 +7,8 @@
 #include "arki/configfile.h"
 #include "arki/runtime.h"
 #include "arki/dataset/merged.h"
+#include "arki/dataset/http.h"
+#include "arki/querymacro.h"
 #include "config.h"
 
 using namespace std;
@@ -54,7 +56,22 @@ static PyObject* arkipy_make_qmacro_dataset(arkipy_Metadata* self, PyObject *arg
     if (configfile_from_python(arg_datasets, datasets)) return nullptr;
 
     try {
-        std::unique_ptr<dataset::Reader> ds = runtime::make_qmacro_dataset(cfg, datasets, name, query);
+        unique_ptr<dataset::Reader> ds;
+        string baseurl = dataset::http::Reader::allSameRemoteServer(datasets);
+        if (baseurl.empty())
+        {
+            // Create the local query macro
+            ds.reset(new Querymacro(cfg, datasets, name, query));
+        } else {
+            // Create the remote query macro
+            ConfigFile cfg;
+            cfg.setValue("name", name);
+            cfg.setValue("type", "remote");
+            cfg.setValue("path", baseurl);
+            cfg.setValue("qmacro", query);
+            ds = dataset::Reader::create(cfg);
+        }
+
         return (PyObject*)dataset_reader_create(move(ds));
     } ARKI_CATCH_RETURN_PYO
 }

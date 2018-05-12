@@ -18,6 +18,8 @@ class Reader;
 }
 
 namespace runtime {
+struct ScanCommandLine;
+struct QueryCommandLine;
 
 struct DatasetProcessor
 {
@@ -68,18 +70,19 @@ struct ProcessorMaker
     std::string summary_restrict;
     std::string sort;
 
-    std::function<void(core::NamedFileDescriptor&)> data_start_hook;
-
     /// Create the processor maker for this configuration
     std::unique_ptr<DatasetProcessor> make(Matcher query, utils::sys::NamedFileDescriptor& out);
-
-    /**
-     * Consistency check on the maker configuration.
-     *
-     * @returns the empty string if all is ok, else an error message
-     */
-    std::string verify_option_consistency();
 };
+
+namespace processor {
+
+void verify_option_consistency(ScanCommandLine& args);
+void verify_option_consistency(QueryCommandLine& args);
+
+std::unique_ptr<DatasetProcessor> create(ScanCommandLine& args, core::NamedFileDescriptor& output);
+std::unique_ptr<DatasetProcessor> create(QueryCommandLine& args, const Matcher& query, core::NamedFileDescriptor& output);
+
+}
 
 
 }

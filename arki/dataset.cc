@@ -7,6 +7,7 @@
 #include <arki/dataset/simple/reader.h>
 #include <arki/dataset/outbound.h>
 #include <arki/dataset/empty.h>
+#include <arki/dataset/fromfunction.h>
 #include <arki/dataset/testlarge.h>
 #include <arki/dataset/reporter.h>
 #include <arki/metadata.h>
@@ -72,6 +73,8 @@ std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
         return empty::Config::create(cfg);
     if (type == "file")
         return dataset::FileConfig::create(cfg);
+    if (type == "fromfunction")
+        return fromfunction::Config::create(cfg);
     if (type == "testlarge")
         return testlarge::Config::create(cfg);
 
@@ -92,6 +95,11 @@ void Base::set_parent(Base& p)
     m_parent = &p;
 }
 
+
+void Reader::query_summary(const Matcher& matcher, Summary& summary)
+{
+    query_data(DataQuery(matcher), [&](unique_ptr<Metadata> md) { summary.add(*md); return true; });
+}
 
 void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {

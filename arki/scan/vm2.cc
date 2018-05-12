@@ -1,5 +1,6 @@
 #include "arki/scan/vm2.h"
 #include "arki/exceptions.h"
+#include "arki/segment.h"
 #include "arki/core/time.h"
 #include "arki/types/source/blob.h"
 #include "arki/metadata.h"
@@ -23,6 +24,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <meteo-vm2/parser.h>
+#include <ext/stdio_filebuf.h>
 
 using namespace std;
 using namespace arki::types;
@@ -72,12 +74,16 @@ const Validator& validator() { return vm_validator; }
 
 struct Input
 {
+    std::string md_note;
     std::istream* in = nullptr;
     meteo::vm2::Parser* parser = nullptr;
     bool close = false;
+    meteo::vm2::Value value;
+    std::string line;
+    off_t offset = 0;
 
     Input(const std::string& abspath)
-        : close(true)
+        : md_note("Scanned from " + str::basename(abspath)), close(true)
     {
         in = new std::ifstream(abspath.c_str());
         if (!in->good())
@@ -97,6 +103,73 @@ struct Input
         if (close)
             delete in;
     }
+
+    /**
+     * Read the next line/value from the input.
+     *
+     * Set value and line.
+     *
+     * Return true if a valid line was found, false on end of file.
+     */
+    bool next()
+    {
+        while (true)
+        {
+            try {
+                if (!parser->next(value, line))
+                    return false;
+                else
+                    break;
+            } catch (std::exception& e) {
+                nag::warning("Skipping VM2 line: %s", e.what());
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Read the next line/value from the input.
+     *
+     * Set offset, value and line.
+     *
+     * Return true if a valid line was found, false on end of file.
+     */
+    bool next_with_offset()
+    {
+        while (true)
+        {
+            offset = in->tellg();
+            try {
+                if (!parser->next(value, line))
+                    return false;
+                else
+                    break;
+            } catch (std::exception& e) {
+                nag::warning("Skipping VM2 line: %s", e.what());
+            }
+        }
+        return true;
+    }
+
+    void to_metadata(Metadata& md)
+    {
+        md.add_note(md_note);
+        md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
+        md.set(Area::createVM2(value.station_id));
+        md.set(Product::createVM2(value.variable_id));
+        store_value(md);
+    }
+
+    void store_value(Metadata& md)
+    {
+        // Look for the comma before the value starts
+        size_t pos = 0;
+        pos = line.find(',', pos);
+        pos = line.find(',', pos + 1);
+        pos = line.find(',', pos + 1);
+        // Store the rest as a value
+        md.set(types::Value::create(line.substr(pos+1)));
+    }
 };
 
 }
@@ -105,71 +178,6 @@ Vm2::Vm2() {}
 
 Vm2::~Vm2()
 {
-    close();
-}
-
-void Vm2::open(const std::string& filename, std::shared_ptr<segment::Reader> reader)
-{
-    Scanner::open(filename, reader);
-    delete input;
-    input = nullptr;
-    input = new vm2::Input(filename);
-}
-
-void Vm2::close()
-{
-    Scanner::close();
-    delete input;
-    input = nullptr;
-}
-
-bool Vm2::scan_stream(vm2::Input& input, Metadata& md)
-{
-    meteo::vm2::Value value;
-    std::string line;
-
-    off_t offset = 0;
-    while (true)
-    {
-        offset = input.in->tellg();
-        try {
-            if (!input.parser->next(value, line))
-                return false;
-            else
-                break;
-        } catch (std::exception& e) {
-            nag::warning("Skipping VM2 line: %s", e.what());
-        }
-    }
-
-    size_t size = line.size();
-
-    md.clear();
-    if (reader)
-    {
-        md.set_source(Source::createBlob(reader, offset, size));
-        md.set_cached_data(vector<uint8_t>(line.begin(), line.end()));
-    } else
-        md.set_source_inline("bufr", vector<uint8_t>(line.begin(), line.end()));
-    md.add_note("Scanned from " + str::basename(filename));
-    md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
-    md.set(Area::createVM2(value.station_id));
-    md.set(Product::createVM2(value.variable_id));
-
-    // Look for the comma before the value starts
-    size_t pos = 0;
-    pos = line.find(',', pos);
-    pos = line.find(',', pos + 1);
-    pos = line.find(',', pos + 1);
-    // Store the rest as a value
-    md.set(types::Value::create(line.substr(pos+1)));
-
-    return true;
-}
-
-bool Vm2::next(Metadata& md)
-{
-    return scan_stream(*input, md);
 }
 
 std::unique_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
@@ -177,9 +185,52 @@ std::unique_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
     std::istringstream str(std::string(data.begin(), data.end()));
     vm2::Input input(str);
     std::unique_ptr<Metadata> md(new Metadata);
-    if (!scan_stream(input, *md))
+    if (!input.next())
         throw std::runtime_error("input line did not look like a VM2 line");
+    input.to_metadata(*md);
+    md->set_source_inline("bufr", vector<uint8_t>(input.line.begin(), input.line.end()));
     return md;
+}
+
+size_t Vm2::scan_singleton(const std::string& abspath, Metadata& md)
+{
+    vm2::Input input(abspath);
+    if (!input.next())
+        return 0;
+    md.clear();
+    input.to_metadata(md);
+    return input.line.size();
+}
+
+bool Vm2::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
+{
+    // see https://stackoverflow.com/questions/2746168/how-to-construct-a-c-fstream-from-a-posix-file-descriptor#5253726
+    __gnu_cxx::stdio_filebuf<char> filebuf(in, std::ios::in);
+    istream is(&filebuf);
+    vm2::Input input(is);
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        if (!input.next()) break;
+        input.to_metadata(*md);
+        md->set_source_inline("vm2", vector<uint8_t>(input.line.begin(), input.line.end()));
+        if (!dest(move(md))) return false;
+    }
+    return true;
+}
+
+bool Vm2::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+{
+    vm2::Input input(reader->segment().abspath);
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        if (!input.next_with_offset()) break;
+        input.to_metadata(*md);
+        md->set_source(Source::createBlob(reader, input.offset, input.line.size()));
+        if (!dest(move(md))) return false;
+    }
+    return true;
 }
 
 vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& value)

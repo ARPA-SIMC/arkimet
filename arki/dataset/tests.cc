@@ -216,6 +216,7 @@ std::string manifest_idx_fname()
 State DatasetTest::scan_state(bool quick)
 {
     CheckerConfig opts;
+    //opts.reporter = make_shared<OstreamReporter>(cerr);
     auto checker = makeSegmentedChecker();
     State res;
     checker->segments_recursive(opts, [&](segmented::Checker& checker, segmented::CheckerSegment& segment) {
@@ -950,7 +951,7 @@ void ActualChecker<Dataset>::repack_filtered(const Matcher& matcher, const Repor
     dataset::CheckerConfig opts(reporter, !write);
     opts.segment_filter = matcher;
     wassert(this->_actual->repack(opts));
-    // reporter.dump(stderr);
+    // reporter->dump(stderr);
     wassert(reporter->check(expected));
 }
 
@@ -970,7 +971,7 @@ void ActualChecker<Dataset>::check(const ReporterExpected& expected, bool write,
     dataset::CheckerConfig opts(reporter, !write);
     opts.accurate = !quick;
     wassert(this->_actual->check(opts));
-    // reporter.dump(stderr);
+    // reporter->dump(stderr);
     wassert(reporter->check(expected));
 }
 

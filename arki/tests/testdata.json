@@ -1731,18 +1731,83 @@
  },
  {
   "doc": "",
-  "group": "arki_scan_any",
+  "group": "arki_scan",
   "method": "format_from_filename"
  },
  {
   "doc": "",
-  "group": "arki_scan_any",
+  "group": "arki_scan",
+  "method": "scan_file_grib"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_singleton_grib"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_pipe_grib"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_file_bufr"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_singleton_bufr"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_pipe_bufr"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_file_vm2"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_singleton_vm2"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_pipe_vm2"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_file_odimh5"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_singleton_odimh5"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_pipe_odimh5"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
   "method": "usn"
  },
  {
   "doc": "",
   "group": "arki_scan_validator",
   "method": "empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan_dir",
+  "method": "scan"
  },
  {
   "doc": "",
@@ -2598,11 +2663,6 @@
   "doc": "",
   "group": "arki_scan_grib",
   "method": "cosmo_nudging"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "bigfile"
  },
  {
   "doc": "",
@@ -9206,6 +9266,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_fromfunction",
+  "method": "read"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_testlarge",
   "method": "read"
  },
@@ -12461,8 +12526,13 @@
  },
  {
   "doc": "",
-  "group": "arki_runtime_processor",
-  "method": "start_hook"
+  "group": "arki_runtime_source",
+  "method": "empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_dispatch",
+  "method": "empty"
  },
  {
   "doc": "",
@@ -12486,6 +12556,11 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkiquery",
+  "method": "query_stdin"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime_arkicheck_ondisk2",
   "method": "clean"
  },
@@ -12703,6 +12778,11 @@
   "doc": "",
   "group": "arki_runtime_arkicheck_iseg",
   "method": "remove_old"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkiscan",
+  "method": "scan_stdin"
  },
  {
   "doc": "",
@@ -12731,18 +12811,23 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkiscan",
+  "method": "dispatch_plain"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkiscan",
+  "method": "dispatch_copyok"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkiscan",
+  "method": "dispatch_issue68"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime",
   "method": "files"
- },
- {
-  "doc": "",
-  "group": "arki_runtime",
-  "method": "copyok"
- },
- {
-  "doc": "",
-  "group": "arki_runtime",
-  "method": "issue68"
  },
  {
   "doc": "",

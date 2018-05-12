@@ -1,5 +1,10 @@
 #include "arki/runtime/arki-scan.h"
 #include "arki/runtime.h"
+#include "arki/runtime/processor.h"
+#include "arki/runtime/source.h"
+#include "arki/runtime/dispatch.h"
+#include <arki/runtime/inputs.h>
+#include <arki/runtime/io.h>
 #include "arki/utils/commandline/parser.h"
 #include <iostream>
 
@@ -11,15 +16,14 @@ namespace runtime {
 
 namespace {
 
-struct Options : public runtime::CommandLine
+struct Options : public runtime::ScanCommandLine
 {
-    Options() : runtime::CommandLine("arki-scan")
+    Options() : runtime::ScanCommandLine("arki-scan")
     {
         usage = "[options] [input...]";
         description =
             "Read one or more files or datasets and process their data "
             "or import them in a dataset.";
-        add_scan_options();
     }
 };
 
@@ -34,24 +38,31 @@ int arki_scan(int argc, const char* argv[])
 
         runtime::init();
 
-        opts.setupProcessing();
+        Inputs inputs(opts);
+        auto output = make_output(*opts.outfile);
 
-        bool all_successful = opts.foreach_source([&](runtime::Source& source) {
-            if (opts.dispatcher)
-                source.dispatch(*opts.dispatcher);
-            else
-                source.process(*opts.processor);
-            return true;
-        });
+        bool all_successful;
+        auto processor = processor::create(opts, *output);
+        if (opts.dispatch_options->dispatch_requested())
+        {
+            MetadataDispatch dispatcher(*opts.dispatch_options, *processor);
+            all_successful = foreach_source(opts, inputs, [&](runtime::Source& source) {
+                source.dispatch(dispatcher);
+                return true;
+            });
+        } else {
+            all_successful = foreach_source(opts, inputs, [&](runtime::Source& source) {
+                source.process(*processor);
+                return true;
+            });
+        }
 
-        opts.doneProcessing();
+        processor->end();
 
         if (all_successful)
             return 0;
         else
             return 2;
-    } catch (runtime::HandledByCommandLineParser& e) {
-        return e.status;
     } catch (commandline::BadOption& e) {
         cerr << e.what() << endl;
         opts.outputHelp(cerr);

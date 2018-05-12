@@ -1,12 +1,12 @@
 #include "config.h"
-
 #include <fstream>
 #include <algorithm>
-
 #include "arki/tests/tests.h"
+#include "arki/metadata/collection.h"
 #include "arki/utils/sys.h"
 #include "arki/runtime.h"
 #include "arki/runtime/processor.h"
+#include "arki/runtime/dispatch.h"
 #include "arki/dataset/file.h"
 
 namespace {
@@ -39,16 +39,13 @@ add_method("files", [] {
     utils::sys::write_file("import.lst", "grib:inbound/test.grib1\n");
     utils::sys::write_file("config", "[error]\ntype=discard\n");
 
-    runtime::CommandLine opts("arki-scan");
-    opts.add_scan_options();
+    runtime::ScanCommandLine opts("arki-scan");
 
     const char* argv[] = { "arki-scan", "--dispatch=config", "--dump", "--status", "--summary", "--files=import.lst", nullptr };
     int argc = sizeof(argv) / sizeof(argv[0]) - 1;
     wassert(actual(opts.parse(argc, argv)).isfalse());
 
     runtime::init();
-
-    opts.setupProcessing();
 
 /*
     try {
@@ -93,121 +90,6 @@ add_method("files", [] {
     }
 */
 });
-
-add_method("copyok", [] {
-    for (auto path: { "test200", "test80", "error", "duplicates", "copyok" })
-        if (sys::exists(path))
-            sys::rmtree(path);;
-    ConfigFile cfg(R"(
-[test200]
-type = ondisk2
-step = daily
-filter = origin: GRIB1,200
-index = origin, reftime
-name = test200
-path = test200
-
-[test80]
-type = ondisk2
-step = daily
-filter = origin: GRIB1,80
-index = origin, reftime
-name = test80
-path = test80
-
-[error]
-type = error
-step = daily
-name = error
-path = error
-
-[duplicates]
-type = duplicates
-step = daily
-name = duplicates
-path = duplicates
-    )");
-    CollectProcessor output;
-    runtime::MetadataDispatch dispatch(cfg, output);
-    dispatch.dir_copyok = "copyok/copyok";
-    dispatch.dir_copyko = "copyok/copyko";
-    sys::makedirs(dispatch.dir_copyok);
-    sys::makedirs(dispatch.dir_copyko);
-
-    ConfigFile in_cfg;
-    wassert(actual_file("inbound/test.grib1").exists());
-    dataset::File::readConfig("inbound/test.grib1", in_cfg);
-    auto in_config = dataset::FileConfig::create(*in_cfg.sectionBegin()->second);
-    auto reader = in_config->create_reader();
-
-    wassert(actual(dispatch.process(*reader, "test.grib1")).isfalse());
-
-    /*
-    for (const auto& md: output.mdc)
-        for (const auto& n: md->notes())
-            fprintf(stderr, "%s\n", n.content.c_str());
-    */
-
-    wassert(actual_file("copyok/copyok/test.grib1").exists());
-    wassert(actual(sys::size("copyok/copyok/test.grib1")) == 42178u);
-    wassert(actual_file("copyok/copyko/test.grib1").exists());
-    wassert(actual(sys::size("copyok/copyko/test.grib1")) == 2234u);
-});
-
-add_method("issue68", [] {
-#ifndef HAVE_VM2
-    throw TestSkipped("VM2 support not available");
-#endif
-    for (auto path: { "issue68" })
-        if (sys::exists(path))
-            sys::rmtree(path);;
-    ConfigFile cfg(R"(
-[issue68]
-type = ondisk2
-step = daily
-filter = area:VM2,1
-index = origin, reftime
-name = issue68
-path = issue68
-
-[error]
-type = error
-step = daily
-name = error
-path = error
-
-[duplicates]
-type = duplicates
-step = daily
-name = duplicates
-path = duplicates
-    )");
-    CollectProcessor output;
-    runtime::MetadataDispatch dispatch(cfg, output);
-    dispatch.dir_copyok = "copyok/copyok";
-    dispatch.dir_copyko = "copyok/copyko";
-    sys::makedirs(dispatch.dir_copyok);
-    sys::makedirs(dispatch.dir_copyko);
-
-    ConfigFile in_cfg;
-    wassert(actual_file("inbound/issue68.vm2").exists());
-    dataset::File::readConfig("inbound/issue68.vm2", in_cfg);
-    auto in_config = dataset::FileConfig::create(*in_cfg.sectionBegin()->second);
-    auto reader = in_config->create_reader();
-
-    wassert(actual(dispatch.process(*reader, "issue68.vm2")).isfalse());
-
-    wassert(actual_file("copyok/copyok/issue68.vm2").exists());
-    wassert(actual_file("copyok/copyko/issue68.vm2").exists());
-
-    std::ifstream infile;
-    infile.open("copyok/copyok/issue68.vm2");
-    wassert(actual(std::count(std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>(), '\n') == 2).istrue());
-    infile.close();
-    infile.open("copyok/copyko/issue68.vm2");
-    wassert(actual(std::count(std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>(), '\n') == 3).istrue());
-});
-
 
 }
 

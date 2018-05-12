@@ -40,15 +40,14 @@ void Tests::register_tests() {
 // Scan a well-known grib file, with no padding between messages
 add_method("compact", [] {
     Metadata md;
+    metadata::Collection mds;
     scan::Grib scanner;
     vector<uint8_t> buf;
-
-    scanner.test_open("inbound/test.grib1");
-
-    // See how we scan the first BUFR
-    wassert(actual(scanner.next(md)).istrue());
+    scanner.test_scan_file("inbound/test.grib1", mds.inserter_func());
+    wassert(actual(mds.size()) == 3u);
 
     // Check the source info
+    md = mds[0];
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
 
 	// Check that the source can be read properly
@@ -75,8 +74,8 @@ add_method("compact", [] {
     wassert(actual(md).contains("reftime", "2007-07-08T13:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(13:00)"));
 
-	// Next grib
-	ensure(scanner.next(md));
+    // Next grib
+    md = mds[1];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 7218, 34960));
@@ -98,8 +97,8 @@ add_method("compact", [] {
     wassert(actual(md).contains("run", "MINUTE(0)"));
 
 
-	// Last grib
-	ensure(scanner.next(md));
+    // Last grib
+    md = mds[2];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 42178, 2234));
@@ -119,22 +118,20 @@ add_method("compact", [] {
     wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
     wassert(actual(md).contains("reftime", "2007-10-09T00:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(0)"));
-
-    // No more gribs
-    ensure(not scanner.next(md));
 });
 
 
 // Scan a well-known grib file, with extra padding data between messages
 add_method("padded", [] {
     Metadata md;
+    metadata::Collection mds;
     scan::Grib scanner;
     vector<uint8_t> buf;
 
-    scanner.test_open("inbound/padded.grib1");
+    scanner.test_scan_file("inbound/padded.grib1", mds.inserter_func());
+    wassert(actual(mds.size()) == 3u);
 
-    // See how we scan the first BUFR
-    wassert(actual(scanner.next(md)).istrue());
+    md = mds[0];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/padded.grib1", 100, 7218));
@@ -155,8 +152,8 @@ add_method("padded", [] {
     wassert(actual(md).contains("reftime", "2007-07-08T13:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(13:00)"));
 
-	// Next grib
-	ensure(scanner.next(md));
+    // Next grib
+    md = mds[1];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/padded.grib1", 7418, 34960));
@@ -177,8 +174,8 @@ add_method("padded", [] {
     wassert(actual(md).contains("reftime", "2007-07-07T00:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(0)"));
 
-	// Last grib
-	ensure(scanner.next(md));
+    // Last grib
+    md = mds[2];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/padded.grib1", 42478, 2234));
@@ -198,13 +195,9 @@ add_method("padded", [] {
     wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
     wassert(actual(md).contains("reftime", "2007-10-09T00:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(0)"));
-
-    // No more gribs
-    ensure(not scanner.next(md));
 });
 
 add_method("lua_results", [] {
-    Metadata md;
     scan::Grib scanner("", R"(
 arki.year = 2008
 arki.month = 7
@@ -227,15 +220,12 @@ arki.p1 = 1
 arki.p2 = 1
 arki.bbox = { { 45.00, 11.00 }, { 46.00, 11.00 }, { 46.00, 12.00 }, { 47.00, 13.00 }, { 45.00, 12.00 } }
 )");
-    vector<uint8_t> buf;
-
-    scanner.test_open("inbound/test.grib1");
-
-    // See how we scan the first BUFR
-    wassert(actual(scanner.next(md)).istrue());
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/test.grib1", mds.inserter_func());
+    wassert(actual(mds.size()) == 3u);
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
+    wassert(actual(mds[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
 });
 
 // Test validation
@@ -273,13 +263,13 @@ add_method("validation", [] {
 // Test scanning layers instead of levels
 add_method("layers", [] {
     Metadata md;
+    metadata::Collection mds;
     scan::Grib scanner;
     vector<uint8_t> buf;
+    scanner.test_scan_file("inbound/layer.grib1", mds.inserter_func());
+    wassert(actual(mds.size()) == 1u);
 
-    scanner.test_open("inbound/layer.grib1");
-
-    // See how we scan the first BUFR
-    wassert(actual(scanner.next(md)).istrue());
+    md = mds[0];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/layer.grib1", 0, 30682));
@@ -299,9 +289,6 @@ add_method("layers", [] {
     wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
     wassert(actual(md).contains("reftime", "2009-09-02T00:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(0)"));
-
-    // No more gribs
-    ensure(not scanner.next(md));
 });
 
 // Scan a know item for which grib_api changed behaviour
@@ -309,11 +296,11 @@ add_method("proselvo", [] {
     Metadata md;
     scan::Grib scanner;
     vector<uint8_t> buf;
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/proselvo.grib1", mds.inserter_func());
+    wassert(actual(mds.size()) == 1u);
 
-    scanner.test_open("inbound/proselvo.grib1");
-
-    // See how we scan the first BUFR
-    wassert(actual(scanner.next(md)).istrue());
+    md = mds[0];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/proselvo.grib1", 0, 298));
@@ -333,9 +320,6 @@ add_method("proselvo", [] {
     wassert(actual(md).contains("proddef", "GRIB(ld=1,mt=9,nn=0,tod=1)"));
     wassert(actual(md).contains("reftime", "2010-08-11T12:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(12:00)"));
-
-    // No more gribs
-    ensure(not scanner.next(md));
 });
 
 // Scan a know item for which grib_api changed behaviour
@@ -343,11 +327,11 @@ add_method("cleps", [] {
     Metadata md;
     scan::Grib scanner;
     vector<uint8_t> buf;
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/cleps_pf16_HighPriority.grib2", mds.inserter_func());
+    wassert(actual(mds.size()) == 1u);
 
-    wassert(scanner.test_open("inbound/cleps_pf16_HighPriority.grib2"));
-
-    // See how we scan the first BUFR
-    wassert(actual(scanner.next(md)).istrue());
+    md = mds[0];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/cleps_pf16_HighPriority.grib2", 0, 432));
@@ -366,9 +350,6 @@ add_method("cleps", [] {
     wassert(actual(md).contains("proddef", "GRIB(mc=ti,mt=0,pf=16,tf=16,tod=4,ty=3)"));
     wassert(actual(md).contains("reftime", "2013-10-22T00:00:00"));
     wassert(actual(md).contains("run", "MINUTE(00:00)"));
-
-    // No more gribs
-    wassert(actual(scanner.next(md)).isfalse());
 });
 
 // Scan a GRIB2 with experimental UTM areas
@@ -378,8 +359,10 @@ add_method("utm_areas", [] {
 #endif
     Metadata md;
     scan::Grib scanner;
-    wassert(scanner.test_open("inbound/calmety_20110215.grib2"));
-    ensure(scanner.next(md));
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/calmety_20110215.grib2", mds.inserter_func());
+    wassert(actual(mds.size()) == 1u);
+    md = mds[0];
 
     wassert(actual(md).contains("origin", "GRIB2(00200, 00000, 000, 000, 203)"));
     wassert(actual(md).contains("product", "GRIB2(200, 0, 200, 33, 5, 0)"));
@@ -389,9 +372,6 @@ add_method("utm_areas", [] {
     wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
     wassert(actual(md).contains("reftime", "2011-02-15T00:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(0)"));
-
-    // No more gribs
-    ensure(not scanner.next(md));
 });
 
 // Check scanning of some Timedef cases
@@ -400,20 +380,18 @@ add_method("ninfa", [] {
     throw TestSkipped("ARPAE GRIB support not available");
 #endif
     {
-        Metadata md;
         scan::Grib scanner;
-        scanner.test_open("inbound/ninfa_ana.grib2");
-        ensure(scanner.next(md));
-
-        wassert(actual(md).contains("timerange", "Timedef(0s,254,0s)"));
+        metadata::Collection mds;
+        scanner.test_scan_file("inbound/ninfa_ana.grib2", mds.inserter_func());
+        wassert(actual(mds.size()) == 1u);
+        wassert(actual(mds[0]).contains("timerange", "Timedef(0s,254,0s)"));
     }
     {
-        Metadata md;
         scan::Grib scanner;
-        scanner.test_open("inbound/ninfa_forc.grib2");
-        ensure(scanner.next(md));
-
-        wassert(actual(md).contains("timerange", "Timedef(3h,254,0s)"));
+        metadata::Collection mds;
+        scanner.test_scan_file("inbound/ninfa_forc.grib2", mds.inserter_func());
+        wassert(actual(mds.size()) == 1u);
+        wassert(actual(mds[0]).contains("timerange", "Timedef(3h,254,0s)"));
     }
 });
 
@@ -542,7 +520,12 @@ add_method("cosmo_nudging", [] {
     wassert(actual(md.md).contains("proddef", "GRIB(tod=1)"));
 });
 
+#if 0
 // Check opening very long GRIB files for scanning
+// TODO: needs skipping of there are no holes
+// FIXME: cannot reenable it because currently there is no interface for
+// opening without scanning, and eccodes takes a long time to skip all those
+// null bytes
 add_method("bigfile", [] {
     scan::Grib scanner;
     int fd = open("bigfile.grib1", O_WRONLY | O_CREAT, 0644);
@@ -551,12 +534,15 @@ add_method("bigfile", [] {
     close(fd);
     wassert(scanner.test_open("bigfile.grib1"));
 });
+#endif
 
 add_method("issue120", [] {
     Metadata md;
     scan::Grib scanner;
-    scanner.test_open("inbound/oddunits.grib");
-    wassert(actual(scanner.next(md)).istrue());
+    metadata::Collection mds;
+    scanner.test_scan_file("inbound/oddunits.grib", mds.inserter_func());
+    wassert(actual(mds.size()) == 1u);
+    md = mds[0];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/oddunits.grib", 0, 245));
@@ -575,9 +561,6 @@ add_method("issue120", [] {
     wassert(actual(md).contains("proddef", "GRIB(tod=5)"));
     wassert(actual(md).contains("reftime", "2018-01-25T21:00:00"));
     wassert(actual(md).contains("run", "MINUTE(21:00)"));
-
-    // No more gribs
-    wassert(actual(scanner.next(md)).isfalse());
 });
 
 }
