@@ -5,6 +5,9 @@
 #include <arki/summary.h>
 #include <arki/matcher.h>
 #include <arki/runtime.h>
+#include <arki/runtime/inputs.h>
+#include <arki/runtime/config.h>
+#include <arki/runtime/io.h>
 #include <arki/utils/commandline/parser.h>
 #include <arki/utils/geos.h>
 #include <arki/utils/string.h>
