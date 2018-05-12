@@ -24,7 +24,7 @@ struct Scanner
      *
      * Returns true if dest always returned true, else false.
      */
-    virtual bool scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) = 0;
+    virtual bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) = 0;
 
     /**
      * Open a pathname to scan.
@@ -49,11 +49,11 @@ struct Scanner
     /**
      * Open a file, scan it, send results to dest, and close it.
      *
-     * Scanned metadata will have inline sources
+     * Scanned metadata will have no source set.
      *
-     * Returns true if dest always returned true, else false.
+     * Returns the size of the scanned data, or 0 if no data could be scanned.
      */
-    virtual bool scan_file_inline(const std::string& abspath, metadata_dest_func dest) = 0;
+    virtual size_t scan_singleton(const std::string& abspath, Metadata& md) = 0;
 
     /**
      * Create a scanner for the given format

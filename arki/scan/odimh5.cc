@@ -225,27 +225,27 @@ std::unique_ptr<Metadata> OdimH5::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-bool OdimH5::scan_file_inline(const std::string& abspath, metadata_dest_func dest)
+size_t OdimH5::scan_singleton(const std::string& abspath, Metadata& md)
 {
-    // If the file is empty, skip it
-    if (sys::size(abspath, 0) == 0)
-        return true;
-
-    unique_ptr<Metadata> md(new Metadata);
-    set_inline_source(*md, abspath);
-    scan_file_impl(abspath, *md);
-    return dest(std::move(md));
+    size_t size = sys::size(abspath, 0);
+    if (!size) return 0;
+    md.clear();
+    scan_file_impl(abspath, md);
+    return size;
 }
 
-bool OdimH5::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+bool OdimH5::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
 {
     // If the file is empty, skip it
-    if (sys::size(abspath, 0) == 0)
-        return true;
+    auto st = sys::stat(reader->segment().abspath);
+    if (!st) return true;
+    if (S_ISDIR(st->st_mode))
+        throw std::runtime_error("OdimH5::scan_segment cannot be called on directory segments");
+    if (!st->st_size) return true;
 
     unique_ptr<Metadata> md(new Metadata);
     set_blob_source(*md, reader);
-    scan_file_impl(abspath, *md);
+    scan_file_impl(reader->segment().abspath, *md);
     return dest(std::move(md));
 }
 

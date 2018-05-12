@@ -136,7 +136,7 @@ bool Reader<Segment>::scan_data(metadata_dest_func dest)
 {
     auto scanner = scan::Scanner::get_scanner(this->segment().format);
     compress::TempUnzip uncompressed(this->segment().abspath);
-    return scanner->scan_file(this->segment().abspath, this->shared_from_this(), dest);
+    return scanner->scan_segment(this->shared_from_this(), dest);
 }
 
 template<typename Segment>

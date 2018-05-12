@@ -35,7 +35,7 @@ bool Scanner::test_scan_file(const std::string& filename, metadata_dest_func des
 {
     string basedir, relpath;
     utils::files::resolve_path(filename, basedir, relpath);
-    return scan_file(sys::abspath(filename), Segment::detect_reader(format_from_filename(filename), basedir, relpath, filename, make_shared<core::lock::Null>()), dest);
+    return scan_segment(Segment::detect_reader(format_from_filename(filename), basedir, relpath, filename, make_shared<core::lock::Null>()), dest);
 }
 
 std::unique_ptr<Scanner> Scanner::get_scanner(const std::string& format)

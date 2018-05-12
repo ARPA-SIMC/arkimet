@@ -1742,7 +1742,7 @@
  {
   "doc": "",
   "group": "arki_scan",
-  "method": "scan_file_inline_grib"
+  "method": "scan_singleton_grib"
  },
  {
   "doc": "",
@@ -1757,7 +1757,7 @@
  {
   "doc": "",
   "group": "arki_scan",
-  "method": "scan_file_inline_bufr"
+  "method": "scan_singleton_bufr"
  },
  {
   "doc": "",
@@ -1772,7 +1772,7 @@
  {
   "doc": "",
   "group": "arki_scan",
-  "method": "scan_file_inline_vm2"
+  "method": "scan_singleton_vm2"
  },
  {
   "doc": "",
@@ -1787,7 +1787,7 @@
  {
   "doc": "",
   "group": "arki_scan",
-  "method": "scan_file_inline_odimh5"
+  "method": "scan_singleton_odimh5"
  },
  {
   "doc": "",
@@ -1803,6 +1803,11 @@
   "doc": "",
   "group": "arki_scan_validator",
   "method": "empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan_dir",
+  "method": "scan"
  },
  {
   "doc": "",

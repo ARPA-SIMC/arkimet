@@ -347,9 +347,9 @@ add_method("tar", [](Fixture& f) {
 
     f.cfg.setValue("format", "odimh5");
     f.test_reread_config();
-    f.clean_and_import("inbound/fixture.h5/00.h5");
-    f.import("inbound/fixture.h5/01.h5");
-    f.import("inbound/fixture.h5/02.h5");
+    f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
+    f.import("inbound/fixture.odimh5/01.odimh5");
+    f.import("inbound/fixture.odimh5/02.odimh5");
 
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
     f.cfg.setValue("archive age", "1");
@@ -418,9 +418,9 @@ add_method("zip", [](Fixture& f) {
 
     f.cfg.setValue("format", "odimh5");
     f.test_reread_config();
-    f.clean_and_import("inbound/fixture.h5/00.h5");
-    f.import("inbound/fixture.h5/01.h5");
-    f.import("inbound/fixture.h5/02.h5");
+    f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
+    f.import("inbound/fixture.odimh5/01.odimh5");
+    f.import("inbound/fixture.odimh5/02.odimh5");
 
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
     f.cfg.setValue("archive age", "1");
@@ -550,9 +550,9 @@ add_method("scan", [](Fixture& f) {
 
     f.cfg.setValue("format", "odimh5");
     f.test_reread_config();
-    f.clean_and_import("inbound/fixture.h5/00.h5");
-    f.import("inbound/fixture.h5/01.h5");
-    f.import("inbound/fixture.h5/02.h5");
+    f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
+    f.import("inbound/fixture.odimh5/01.odimh5");
+    f.import("inbound/fixture.odimh5/02.odimh5");
 
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
     f.cfg.setValue("archive age", "1");
@@ -602,9 +602,9 @@ add_method("remove_old", [](Fixture& f) {
 
     f.cfg.setValue("format", "odimh5");
     f.test_reread_config();
-    f.clean_and_import("inbound/fixture.h5/00.h5");
-    f.import("inbound/fixture.h5/01.h5");
-    f.import("inbound/fixture.h5/02.h5");
+    f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
+    f.import("inbound/fixture.odimh5/01.odimh5");
+    f.import("inbound/fixture.odimh5/02.odimh5");
 
     auto o = dataset::SessionTime::local_override(1184104800); // date +%s --date="2007-07-11"
     f.cfg.setValue("archive age", "2");

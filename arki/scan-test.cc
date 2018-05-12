@@ -38,7 +38,7 @@ void Tests::register_tests() {
     test_data.emplace_back("inbound/fixture.grib1", 3);
     test_data.emplace_back("inbound/fixture.bufr", 3);
     test_data.emplace_back("inbound/fixture.vm2", 3);
-    test_data.emplace_back("inbound/fixture.h5/00.h5", 1);
+    test_data.emplace_back("inbound/fixture.odimh5/00.odimh5", 1);
 
 // Test format_from_ext
 add_method("format_from_filename", [] {
@@ -67,12 +67,12 @@ for (auto td: test_data)
         wassert(actual(mds[0].source().style()) == types::Source::BLOB);
     });
 
-    add_method("scan_file_inline_" + td.format, [=] {
+    add_method("scan_singleton_" + td.format, [=] {
         auto scanner = scan::Scanner::get_scanner(td.format);
-        metadata::Collection mds;
-        scanner->scan_file_inline(td.pathname, mds.inserter_func());
-        wassert(actual(mds.size()) == td.count);
-        wassert(actual(mds[0].source().style()) == types::Source::INLINE);
+        Metadata md;
+        size_t size = scanner->scan_singleton(td.pathname, md);
+        wassert(actual(size) > 0u);
+        wassert_false(md.has_source());
     });
 
     add_method("scan_pipe_" + td.format, [=] {
@@ -81,6 +81,11 @@ for (auto td: test_data)
         sys::File in(td.pathname, O_RDONLY);
         scanner->scan_pipe(in, mds.inserter_func());
         wassert(actual(mds.size()) == td.count);
+        for (const auto& md: mds)
+        {
+            wassert(actual(md->source().style()) == types::Source::INLINE);
+            wassert(actual(md->source().format) == td.format);
+        }
     });
 }
 

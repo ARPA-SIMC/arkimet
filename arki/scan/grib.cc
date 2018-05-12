@@ -570,9 +570,9 @@ std::unique_ptr<Metadata> Grib::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-bool Grib::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+bool Grib::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
 {
-    files::RAIIFILE in(abspath, "rb");
+    files::RAIIFILE in(reader->segment().abspath, "rb");
     while (true)
     {
         unique_ptr<Metadata> md(new Metadata);
@@ -585,22 +585,22 @@ bool Grib::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader
     return true;
 }
 
-bool Grib::scan_file_inline(const std::string& abspath, metadata_dest_func dest)
+size_t Grib::scan_singleton(const std::string& abspath, Metadata& md)
 {
     files::RAIIFILE in(abspath, "rb");
-    while (true)
-    {
-        unique_ptr<Metadata> md(new Metadata);
-        auto has_grib = L->with_grib_handle_from_file(context, in);
-        if (!has_grib) break;
-        L->set_source_inline(*md);
-        stringstream note;
-        note << "Scanned from " << str::basename(abspath);
-        md->add_note(note.str());
-        L->scan_handle(*md);
-        if (!dest(move(md))) return false;
-    }
-    return true;
+    md.clear();
+    auto has_grib = L->with_grib_handle_from_file(context, in);
+    if (!has_grib) return 0;
+    stringstream note;
+    note << "Scanned from " << str::basename(abspath);
+    md.add_note(note.str());
+    L->scan_handle(md);
+
+    // Get the encoded GRIB buffer from the GRIB handle
+    const uint8_t* vbuf;
+    size_t size;
+    check_grib_error(grib_get_message(L->gh, (const void **)&vbuf, &size), "cannot access the encoded GRIB data");
+    return size;
 }
 
 bool Grib::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)

@@ -265,9 +265,9 @@ std::unique_ptr<Metadata> Bufr::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-bool Bufr::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+bool Bufr::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
 {
-    auto file = dballe::File::create(dballe::File::BUFR, abspath.c_str(), "r");
+    auto file = dballe::File::create(dballe::File::BUFR, reader->segment().abspath.c_str(), "r");
     while (true)
     {
         unique_ptr<Metadata> md(new Metadata);
@@ -281,19 +281,14 @@ bool Bufr::scan_file(const std::string& abspath, std::shared_ptr<segment::Reader
     return true;
 }
 
-bool Bufr::scan_file_inline(const std::string& abspath, metadata_dest_func dest)
+size_t Bufr::scan_singleton(const std::string& abspath, Metadata& md)
 {
     auto file = dballe::File::create(dballe::File::BUFR, abspath.c_str(), "r").release();
-    while (true)
-    {
-        unique_ptr<Metadata> md(new Metadata);
-        BinaryMessage rmsg = file->read();
-        if (!rmsg) break;
-        md->set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
-        do_scan(rmsg, *md);
-        if (!dest(move(md))) return false;
-    }
-    return true;
+    md.clear();
+    BinaryMessage rmsg = file->read();
+    if (!rmsg) return 0;
+    do_scan(rmsg, md);
+    return rmsg.data.size();
 }
 
 bool Bufr::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
