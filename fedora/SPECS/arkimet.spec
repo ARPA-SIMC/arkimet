@@ -168,10 +168,11 @@ fi
 - implemented --archive=[tar|tar.gz|tar.xz|zip] in arki-query and arki-scan (#131) (#95)
 - implemented arki-check --compress
 - implemented arki-check --zip
+- implemented arki-query/arki-scan --stdin
 - removed unused files (#133)
 - timerange metadata for generic BUFR (#125)
 - xargs unlink tmpfile if exists (#134)
-
+    
 * Thu Feb 15 2018 Daniele Branchini <dbranchini@arpae.it> - 1.6-3%{dist}
 - fixed #124
 
