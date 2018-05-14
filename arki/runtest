@@ -7,7 +7,7 @@ if [ "$1" = "NOSE" ]
 then
     # Try to find out what is the name of the nose executable today (sigh)
     NOSE=""
-    for cand in nose2-3 nosetests-3.5 nosetests-3.4 nosetests-3.3
+    for cand in nose2-3 nosetests-3.6 nosetests-3.5 nosetests-3.4 nosetests-3.3
     do
         NOSE=`which $cand 2>/dev/null` && break
     done
