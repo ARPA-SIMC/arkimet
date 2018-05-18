@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/sendfile.h>
 #include <system_error>
 #include <unistd.h>
 #include <cstdio>
@@ -23,16 +24,27 @@ namespace files {
 
 bool filesystem_has_holes(const std::string& dir)
 {
+    static const unsigned test_size = 512 * 10;
+
+    // Create a file with holes
     sys::File fd = sys::File::mkstemp(dir);
-    fd.ftruncate(512 * 10);
-    fd.close();
-    fd.open(O_RDONLY);
-    char buf[4096];
-    while (fd.read(buf, 4096) > 0)
-        ;
+    sys::unlink(fd.name());
+    fd.ftruncate(test_size);
+
     struct stat st;
     fd.fstat(st);
-    sys::unlink(fd.name());
+    if (st.st_blocks > 0)
+        return false;
+
+    sys::File out("/dev/null", O_WRONLY);
+    off_t offset = 0;
+    ssize_t res = sendfile(out, fd, &offset, test_size);
+    if (res == -1)
+        throw_system_error("cannot sendfile(2) " + std::to_string(test_size) + " bytes");
+    if (offset != test_size)
+        throw_system_error("sendfile read only " + std::to_string(offset) + "/" + std::to_string(test_size));
+
+    fd.fstat(st);
     return st.st_blocks == 0;
 }
 
