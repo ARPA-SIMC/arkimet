@@ -24,10 +24,15 @@ namespace files {
 bool filesystem_has_holes(const std::string& dir)
 {
     sys::File fd = sys::File::mkstemp(dir);
-    sys::unlink(fd.name());
     fd.ftruncate(512 * 10);
+    fd.close();
+    fd.open(O_RDONLY);
+    char buf[4096];
+    while (fd.read(buf, 4096) > 0)
+        ;
     struct stat st;
     fd.fstat(st);
+    sys::unlink(fd.name());
     return st.st_blocks == 0;
 }
 
