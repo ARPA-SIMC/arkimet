@@ -117,7 +117,14 @@ add_method("import_largefile", [](Fixture& f) {
     sys::File out("/dev/null", O_WRONLY);
     dataset::ByteQuery bq;
     bq.setData(Matcher());
+    try {
     wassert(reader->query_bytes(bq, out));
+    } catch (...) {
+        system("df");
+        system(("ls -la /proc/" + std::to_string(getpid()) + "/fd/").c_str());
+        system("ls -la /dev");
+        throw;
+    }
 });
 
 add_method("import_batch_replace_usn", [](Fixture& f) {
