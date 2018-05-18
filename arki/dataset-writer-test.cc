@@ -121,6 +121,10 @@ add_method("import_largefile", [](Fixture& f) {
     wassert(reader->query_bytes(bq, out));
     } catch (...) {
         system("df");
+        system("du -s *");
+        system("du -s testds/*");
+        system("du -s testds/2014/*");
+        system("ls -lR");
         system(("ls -la /proc/" + std::to_string(getpid()) + "/fd/").c_str());
         system("ls -la /dev");
         throw;
