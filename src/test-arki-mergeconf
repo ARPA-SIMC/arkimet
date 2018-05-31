@@ -14,8 +14,9 @@ runserver
 
 echo -n "Testing arki-mergeconf"
 
-# Try passing files to the postprocessor
 runtest "arki-mergeconf $SERVER_URL"
+runtest "arki-mergeconf $SERVER_URL > test_arki_mergeconf.conf && grep -v [error] test_arki_mergeconf.conf"
+runtest "arki-mergeconf --ignore-system-datasets $SERVER_URL > test_arki_mergeconf.conf && ! grep '\[error\]' test_arki_mergeconf.conf"
 
 testtotals
 

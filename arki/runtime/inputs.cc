@@ -140,6 +140,23 @@ void Inputs::remove_unallowed(const Restrict& restrict)
     }
 }
 
+void Inputs::remove_system_datasets()
+{
+    for (unsigned idx = 0; idx < size(); )
+    {
+        ConfigFile& cfg = (*this)[idx];
+
+        const std::string& type = cfg.value("type");
+        const std::string& name = cfg.value("name");
+
+        if (type == "error" || type == "duplicates" ||
+            (type == "remote" && (name == "error" || name == "duplicates")))
+            erase(begin() + idx);
+        else
+            ++idx;
+    }
+}
+
 ConfigFile Inputs::as_config() const
 {
     ConfigFile res;

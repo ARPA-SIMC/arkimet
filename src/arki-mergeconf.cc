@@ -29,6 +29,7 @@ struct Options : public StandardParserWithManpage
 	BoolOption* extra;
 	StringOption* restr;
 	VectorOption<String>* cfgfiles;
+    BoolOption* ignore_system_ds;
 
 	Options() : StandardParserWithManpage("arki-mergeconf", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
 	{
@@ -46,6 +47,8 @@ struct Options : public StandardParserWithManpage
 			"restrict operations to only those datasets that allow one of the given (comma separated) names");
 		cfgfiles = add< VectorOption<String> >("config", 'C', "config", "file",
 			"merge configuration from the given file (can be given more than once)");
+        ignore_system_ds = add<BoolOption>("ignore-system-datasets", 0, "ignore-system-datasets", "",
+                                           "ignore error and duplicates datasets");
 	}
 };
 
@@ -97,6 +100,10 @@ int main(int argc, const char* argv[])
         {
             runtime::Restrict rest(opts.restr->stringValue());
             inputs.remove_unallowed(rest);
+        }
+        if (opts.ignore_system_ds->boolValue())
+        {
+            inputs.remove_system_datasets();
         }
 
         if (inputs.empty())
