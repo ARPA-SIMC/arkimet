@@ -4,7 +4,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.7
-Release: 3
+Release: 4
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -169,6 +169,10 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Thu Jun 7 2018 Daniele Branchini <dbranchini@arpae.it> - 1.7-4%{dist}
+- arki-mergeconf can ignore error and duplicates datasets
+- patch for f20 compiler bug (#142)
+
 * Fri May 18 2018 Daniele Branchini <dbranchini@arpae.it> - 1.7-3%{dist}
 - skipped largefile tests for tmpfs (#140)
 
