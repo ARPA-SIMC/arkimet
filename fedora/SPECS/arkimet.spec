@@ -79,6 +79,12 @@ sh autogen.sh
 %{?fedora:%define arpae_tests 1}
 %{?el7:%define arpae_tests 1}
 
+%if 0%{?fc20}
+# see issue https://github.com/ARPA-SIMC/arkimet/issues/142
+# default value inferred from `rpm --eval %optflags`
+export CXXFLAGS="-O1 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic"
+%endif
+
 %if 0%{?arpae_tests}
 echo 'Enabling ARPAE tests'
 source %{_sysconfdir}/profile.d/eccodes-simc.sh
