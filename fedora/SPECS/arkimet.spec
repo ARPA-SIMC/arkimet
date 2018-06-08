@@ -88,7 +88,7 @@ export CXXFLAGS="-O1 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack
 %if 0%{?arpae_tests}
 
 echo 'Enabling ARPAE tests'
-%if %grib_sw = "eccodes"
+%if %grib_sw == "eccodes"
 source %{_sysconfdir}/profile.d/eccodes-simc.sh
 %endif
 %configure --enable-arpae-tests
