@@ -4,7 +4,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.7
-Release: 4
+Release: 5
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -103,6 +103,10 @@ make check TEST_VERBOSE=1
 
 %endif
 
+%check
+%if %grib_sw == "eccodes"
+
+
 %install
 [ "%{buildroot}" != / ] && rm -rf %{buildroot}
 %makeinstall
@@ -172,6 +176,10 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Wed Jul 11 2018 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.7-5
+- Fixed test syntax in spec file (grib_sw check)
+- Updated alias for "cloud liquid water content"
+
 * Thu Jun 7 2018 Daniele Branchini <dbranchini@arpae.it> - 1.7-4%{dist}
 - arki-mergeconf can ignore error and duplicates datasets
 - patch for f20 compiler bug (#142)
