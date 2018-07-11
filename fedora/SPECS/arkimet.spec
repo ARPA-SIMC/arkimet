@@ -103,10 +103,6 @@ make check TEST_VERBOSE=1
 
 %endif
 
-%check
-%if %grib_sw == "eccodes"
-
-
 %install
 [ "%{buildroot}" != / ] && rm -rf %{buildroot}
 %makeinstall
