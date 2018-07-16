@@ -172,8 +172,8 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
-* Wed Jul 11 2018 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.7-5
-- Fixed test syntax in spec file (grib_sw check)
+* Mon Jul 16 2018 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.7-5
+- Fix for internal f20/f24 grib_api arpae tests
 - Updated alias for "cloud liquid water content"
 
 * Thu Jun 7 2018 Daniele Branchini <dbranchini@arpae.it> - 1.7-4%{dist}
