@@ -80,7 +80,7 @@ const Validator& validator() { return bufr_validator; }
 
 Bufr::Bufr()
 {
-    msg::Importer::Options opts;
+    msg::ImporterOptions opts;
     opts.simplified = true;
     importer = msg::Importer::create(dballe::File::BUFR, opts).release();
 
