@@ -34,8 +34,43 @@ BuildRequires: eccodes-simc
 BuildRequires: eccodes-simc
 %endif
 
-BuildRequires: libtool, doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, %{grib_sw}-devel, sqlite-devel >= 3.6, curl, curl-devel, geos-devel, popt-devel, help2man, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 3.0, flex, bison, meteo-vm2-devel >= 0.12, hdf5-devel, %{python3_vers}, %{python3_vers}-devel, %{python3_vers}-werkzeug, %{python3_vers}-setproctitle, %{python3_vers}-nose, %{python3_vers}-jinja2, libzip-devel, libarchive-devel, bzip2-devel
-Requires: hdf5, meteo-vm2 >= 0.12, %{grib_sw}, %{python3_vers}, %{python3_vers}-werkzeug, %{python3_vers}-setproctitle, libdballe6, systemd
+BuildRequires: libtool
+BuildRequires: doxygen
+BuildRequires: libdballe-devel >= 5.19
+BuildRequires: lua-devel >= 5.1
+BuildRequires: %{grib_sw}-devel
+BuildRequires: sqlite-devel >= 3.6
+BuildRequires: curl
+BuildRequires: curl-devel
+BuildRequires: geos-devel
+BuildRequires: popt-devel
+BuildRequires: help2man
+BuildRequires: pkgconfig
+BuildRequires: readline-devel
+BuildRequires: lzo-devel
+BuildRequires: libwreport-devel >= 3.0
+BuildRequires: flex
+BuildRequires: bison
+BuildRequires: meteo-vm2-devel >= 0.12
+BuildRequires: hdf5-devel
+BuildRequires: %{python3_vers}
+BuildRequires: %{python3_vers}-devel
+BuildRequires: %{python3_vers}-werkzeug
+BuildRequires: %{python3_vers}-setproctitle
+BuildRequires: %{python3_vers}-nose
+BuildRequires: %{python3_vers}-jinja2
+BuildRequires: libzip-devel
+BuildRequires: libarchive-devel
+BuildRequires: bzip2-devel
+
+Requires: hdf5
+Requires: meteo-vm2 >= 0.12
+Requires: %{grib_sw}
+Requires: %{python3_vers}
+Requires: %{python3_vers}-werkzeug
+Requires: %{python3_vers}-setproctitle
+Requires: libdballe6
+Requires: systemd
 
 %{!?python3_sitelib: %define python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %{!?python3_sitearch: %define python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
@@ -64,7 +99,14 @@ currently offline.
 %package  -n arkimet-devel
 Summary:  Arkimet developement library
 Group:    Applications/Meteo
-Requires: libdballe-devel, %{grib_sw}-devel, libwreport-devel, %{python3_vers}-devel, meteo-vm2-devel, hdf5-devel, sqlite-devel, curl-devel
+Requires: libdballe-devel
+Requires: %{grib_sw}-devel
+Requires: libwreport-devel
+Requires: %{python3_vers}-devel
+Requires: meteo-vm2-devel
+Requires: hdf5-devel
+Requires: sqlite-devel
+Requires: curl-devel
 
 %description -n arkimet-devel
  Arkimet developement library
