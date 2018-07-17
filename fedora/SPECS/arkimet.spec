@@ -217,6 +217,8 @@ fi
 * Tue Jul 17 2018 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.7-5
 - Fix for internal f20/f24 grib_api arpae tests
 - Updated alias for "cloud liquid water content"
+- Updated dballe dependency
+- Changed Requires and BuildRequires style (one package per line)
 
 * Thu Jun 7 2018 Daniele Branchini <dbranchini@arpae.it> - 1.7-4%{dist}
 - arki-mergeconf can ignore error and duplicates datasets
