@@ -4,7 +4,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.7
-Release: 5
+Release: 6
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -107,6 +107,10 @@ Requires: meteo-vm2-devel
 Requires: hdf5-devel
 Requires: sqlite-devel
 Requires: curl-devel
+Requires: lzo-devel
+Requires: libarchive-devel
+Requires: libzip-devel
+Requires: geos-devel
 
 %description -n arkimet-devel
  Arkimet developement library
@@ -214,6 +218,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Tue Sep 18 2018 Daniele Branchini <dbranchini@arpae.it> - 1.7-6
+- Fixed dependencies for arkimet-devel package
+
 * Tue Jul 17 2018 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.7-5
 - Fix for internal f20/f24 grib_api arpae tests
 - Updated alias for "cloud liquid water content"
