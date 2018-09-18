@@ -111,6 +111,8 @@ Requires: lzo-devel
 Requires: libarchive-devel
 Requires: libzip-devel
 Requires: geos-devel
+Requires: readline-devel
+Requires: bzip2-devel
 
 %description -n arkimet-devel
  Arkimet developement library
