@@ -486,7 +486,7 @@ bool Contents::query_data(const dataset::DataQuery& q, SegmentManager& segs, met
 
     query += " ORDER BY m.reftime";
 
-    nag::verbose("Running query %s", query.c_str());
+    nag::debug("Running query %s", query.c_str());
 
     metadata::Collection mdbuf;
     string last_fname;
@@ -560,7 +560,7 @@ void Contents::querySummaryFromDB(const std::string& where, Summary& summary) co
     else if (m_others)
         query += " GROUP BY other";
 
-    nag::verbose("Running query %s", query.c_str());
+    nag::debug("Running query %s", query.c_str());
 
     Query sq("sq", m_db);
     sq.compile(query);
@@ -668,7 +668,7 @@ bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
     else if (m_others)
         query += " GROUP BY other";
 
-    nag::verbose("Running query %s", query.c_str());
+    nag::debug("Running query %s", query.c_str());
 
     Query sq("sq", m_db);
     sq.compile(query);

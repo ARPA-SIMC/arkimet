@@ -344,7 +344,7 @@ bool Index::query_data(const dataset::DataQuery& q, SegmentManager& segs, metada
 
     query += " ORDER BY m.reftime";
 
-    nag::verbose("Running query %s", query.c_str());
+    nag::debug("Running query %s", query.c_str());
 
     metadata::Collection mdbuf;
     std::shared_ptr<arki::segment::Reader> reader;
@@ -408,7 +408,7 @@ bool Index::query_summary_from_db(const Matcher& m, Summary& summary) const
     else if (m_others)
         query += " GROUP BY other";
 
-    nag::verbose("Running query %s", query.c_str());
+    nag::debug("Running query %s", query.c_str());
 
     Query sq("sq", m_db);
     sq.compile(query);
