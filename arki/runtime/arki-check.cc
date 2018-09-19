@@ -302,8 +302,6 @@ int arki_check(int argc, const char* argv[])
         if (opts.parse(argc, argv))
             return 0;
 
-        nag::init(opts.verbose->isSet(), opts.debug->isSet());
-
         runtime::init();
 
         set<string> dirs;
@@ -354,13 +352,14 @@ int arki_check(int argc, const char* argv[])
             // Datasets where each metadata comes from
             vector<std::string> dsnames;
             // Verify that all metadata items can be mapped to a dataset
-            unsigned count = 1;
+            std::map<std::string, unsigned> counts;
+            unsigned idx = 1;
             for (const auto& md: todolist)
             {
                 if (!md->has_source_blob())
                 {
                    stringstream ss;
-                   ss << "cannot remove data #" << count << ": metadata does not come from an on-disk dataset";
+                   ss << "cannot remove data #" << idx << ": metadata does not come from an on-disk dataset";
                    throw std::runtime_error(ss.str());
                 }
 
@@ -368,24 +367,32 @@ int arki_check(int argc, const char* argv[])
                 if (!ds)
                 {
                    stringstream ss;
-                   ss << "cannot remove data #" << count << " is does not come from any known dataset";
+                   ss << "cannot remove data #" << idx << " is does not come from any known dataset";
                    throw std::runtime_error(ss.str());
                 }
 
                 dsnames.push_back(ds->name);
-                ++count;
+                ++counts[ds->name];
+                ++idx;
             }
-            // Perform removals
-            count = 1;
-            for (unsigned i = 0; i < todolist.size(); ++i)
+            if (opts.fix->isSet())
             {
-                auto ds = pool.get(dsnames[i]);
-                try {
-                    ds->remove(todolist[i]);
-                } catch (std::exception& e) {
-                    cerr << "Cannot remove message #" << count << ": " << e.what() << endl;
+                // Perform removals
+                idx = 1;
+                for (unsigned i = 0; i < todolist.size(); ++i)
+                {
+                    auto ds = pool.get(dsnames[i]);
+                    try {
+                        ds->remove(todolist[i]);
+                    } catch (std::exception& e) {
+                        cerr << "Cannot remove message #" << idx << ": " << e.what() << endl;
+                    }
                 }
-                ++count;
+                for (const auto& i: counts)
+                    nag::verbose("%s: %u data deleted", i.first.c_str(), i.second);
+            } else {
+                for (const auto& i: counts)
+                    printf("%s: %u data would be deleted", i.first.c_str(), i.second);
             }
         } else {
             dataset::CheckerConfig config(make_shared<dataset::OstreamReporter>(cout), !opts.fix->boolValue());
