@@ -39,6 +39,7 @@
 
 #else
 
+#define USE_UNSTABLE_GEOS_CPP_API
 #include <geos/geom/Coordinate.h>
 #include <geos/geom/CoordinateArraySequence.h>
 #include <geos/geom/GeometryFactory.h>
@@ -47,6 +48,7 @@
 #include <geos/geom/LinearRing.h>
 #include <geos/geom/Polygon.h>
 #include <geos/io/WKTReader.h>
+#undef USE_UNSTABLE_GEOS_CPP_API
 
 #ifdef INLINE
 #undef INLINE
