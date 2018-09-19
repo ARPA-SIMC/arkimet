@@ -103,6 +103,7 @@ unique_ptr<Run> Run::decodeMapping(const emitter::memory::Mapping& val)
     }
 }
 
+#ifdef HAVE_LUA
 static int arkilua_new_minute(lua_State* L)
 {
 	int nargs = lua_gettop(L);
@@ -125,6 +126,7 @@ void Run::lua_loadlib(lua_State* L)
 	};
     utils::lua::add_global_library(L, "arki_run", lib);
 }
+#endif
 
 unique_ptr<Run> Run::createMinute(unsigned int hour, unsigned int minute)
 {

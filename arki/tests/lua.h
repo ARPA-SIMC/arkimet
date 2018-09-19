@@ -68,9 +68,8 @@ struct Lua
 	std::string run();
 };
 
+}
+}
 #endif
-
-}
-}
 
 #endif

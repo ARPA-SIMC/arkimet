@@ -166,6 +166,7 @@ unique_ptr<Origin> Origin::decodeMapping(const emitter::memory::Mapping& val)
     }
 }
 
+#ifdef HAVE_LUA
 static int arkilua_new_grib1(lua_State* L)
 {
 	int centre = luaL_checkint(L, 1);
@@ -214,6 +215,7 @@ void Origin::lua_loadlib(lua_State* L)
 	};
     utils::lua::add_global_library(L, "arki_origin", lib);
 }
+#endif
 
 unique_ptr<Origin> Origin::createGRIB1(unsigned char centre, unsigned char subcentre, unsigned char process)
 {
@@ -278,6 +280,7 @@ std::string GRIB1::exactQuery() const
 }
 const char* GRIB1::lua_type_name() const { return LUATAG_GRIB1; }
 
+#ifdef HAVE_LUA
 bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 {
 	if (name == "centre")
@@ -290,6 +293,7 @@ bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 		return Origin::lua_lookup(L, name);
 	return true;
 }
+#endif
 
 int GRIB1::compare_local(const Origin& o) const
 {
@@ -390,6 +394,7 @@ std::string GRIB2::exactQuery() const
 }
 const char* GRIB2::lua_type_name() const { return LUATAG_GRIB2; }
 
+#ifdef HAVE_LUA
 bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
 {
 	if (name == "centre")
@@ -406,6 +411,7 @@ bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
 		return Origin::lua_lookup(L, name);
 	return true;
 }
+#endif
 
 int GRIB2::compare_local(const Origin& o) const
 {
@@ -505,6 +511,7 @@ std::string BUFR::exactQuery() const
 }
 const char* BUFR::lua_type_name() const { return LUATAG_BUFR; }
 
+#ifdef HAVE_LUA
 bool BUFR::lua_lookup(lua_State* L, const std::string& name) const
 {
 	if (name == "centre")
@@ -515,6 +522,7 @@ bool BUFR::lua_lookup(lua_State* L, const std::string& name) const
 		return Origin::lua_lookup(L, name);
 	return true;
 }
+#endif
 
 int BUFR::compare_local(const Origin& o) const
 {
@@ -604,6 +612,7 @@ std::string ODIMH5::exactQuery() const
 }
 const char* ODIMH5::lua_type_name() const { return LUATAG_ODIMH5; }
 
+#ifdef HAVE_LUA
 bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
 {
 	if (name == "wmo")
@@ -616,6 +625,7 @@ bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
 		return Origin::lua_lookup(L, name);
 	return true;
 }
+#endif
 
 int ODIMH5::compare_local(const Origin& o) const
 {

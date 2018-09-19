@@ -12,7 +12,6 @@
 #include <cstdio>
 
 using namespace std;
-using namespace arki::utils;
 
 namespace arki {
 namespace core {

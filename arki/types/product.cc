@@ -195,6 +195,7 @@ unique_ptr<Product> Product::decodeMapping(const emitter::memory::Mapping& val)
     }
 }
 
+#ifdef HAVE_LUA
 static int arkilua_new_grib1(lua_State* L)
 {
 	int origin = luaL_checkint(L, 1);
@@ -261,6 +262,7 @@ void Product::lua_loadlib(lua_State* L)
 
     utils::lua::add_global_library(L, "arki_product", lib);
 }
+#endif
 
 std::unique_ptr<Product> Product::createGRIB1(unsigned char origin, unsigned char table, unsigned char product)
 {
@@ -386,6 +388,7 @@ std::vector<int> GRIB1::toIntVector() const
 	return res;
 }
 
+#ifdef HAVE_LUA
 bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 {
 	if (name == "origin")
@@ -398,6 +401,7 @@ bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 		return Product::lua_lookup(L, name);
 	return true;
 }
+#endif
 
 
 Product::Style GRIB2::style() const { return Product::GRIB2; }
@@ -537,6 +541,8 @@ std::vector<int> GRIB2::toIntVector() const
     res.push_back(m_local_table_version);
     return res;
 }
+
+#ifdef HAVE_LUA
 bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
 {
 	if (name == "centre")
@@ -555,6 +561,7 @@ bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
 		return Product::lua_lookup(L, name);
 	return true;
 }
+#endif
 
 
 Product::Style BUFR::style() const { return Product::BUFR; }
@@ -684,6 +691,7 @@ std::vector<int> BUFR::toIntVector() const
 	return vector<int>();
 }
 
+#ifdef HAVE_LUA
 bool BUFR::lua_lookup(lua_State* L, const std::string& name) const
 {
 	if (name == "type")
@@ -724,6 +732,7 @@ void BUFR::lua_register_methods(lua_State* L) const
 	};
     utils::lua::add_functions(L, lib);
 }
+#endif
 
 Product::Style ODIMH5::style() const
 {
@@ -834,6 +843,7 @@ std::vector<int> ODIMH5::toIntVector() const
 	return vector<int>();
 }
 
+#ifdef HAVE_LUA
 bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
 {
 	if (name == "object")
@@ -859,6 +869,7 @@ void ODIMH5::lua_register_methods(lua_State* L) const
 //	};
 //	luaL_register(L, NULL, lib);
 }
+#endif
 
 const ValueBag& VM2::derived_values() const {
     if (m_derived_values.get() == 0) {
@@ -924,6 +935,7 @@ bool VM2::equals(const Type& o) const
     if (!v) return false;
     return m_variable_id == v->m_variable_id;
 }
+
 #ifdef HAVE_LUA
 bool VM2::lua_lookup(lua_State* L, const std::string& name) const
 {
