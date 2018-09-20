@@ -4,7 +4,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.7
-Release: 6
+Release: 7
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -220,6 +220,11 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Thu Sep 20 2018 Daniele Branchini <dbranchini@arpae.it> - 1.7-7
+- Make arki-check --delete only work if --fix is present (#147)
+- Fixed other dependencies for arkimet-devel package
+- Updated wobble    
+
 * Tue Sep 18 2018 Daniele Branchini <dbranchini@arpae.it> - 1.7-6
 - Fixed dependencies for arkimet-devel package
 
