@@ -76,9 +76,17 @@ void Dispatcher::dispatch(dataset::WriterBatch& batch)
     std::map<std::string, dataset::WriterBatch> by_dataset;
     std::map<std::string, dataset::WriterBatch> outbound_by_dataset;
 
+    // RAII struct to drop Metadata data
+    struct MdDataRAII {
+        dataset::WriterBatchElement& e;
+        MdDataRAII(dataset::WriterBatchElement& e): e(e) {}
+        ~MdDataRAII() { e.md.drop_cached_data(); }
+    };
+
     // Choose the target dataset(s) for each element in the batch
     for (auto& e: batch)
     {
+        MdDataRAII e_raii(*e);
         // Ensure that we have a reference time
         const reftime::Position* rt = e->md.get<types::reftime::Position>();
         if (!rt)
