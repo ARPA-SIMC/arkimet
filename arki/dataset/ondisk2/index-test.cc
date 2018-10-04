@@ -227,11 +227,7 @@ add_method("remove", [] {
     mdc.clear();
 
     // Remove a nonexisting item and see that it fails
-    try {
-        test->remove("inbound/test-sorted.grib1", 1);
-        ensure(false);
-    } catch (std::runtime_error) {
-    }
+    wassert_throws(std::runtime_error, test->remove("inbound/test-sorted.grib1", 1));
 
     // Remove the first item
     wassert(test->remove("inbound/test.grib1", 0));

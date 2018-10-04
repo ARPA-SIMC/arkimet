@@ -73,6 +73,7 @@ add_method("simple", [] {
     ConfigFile config = setup1();
 
     plain_data_read_count.reset();
+    metadata::TrackedData tracked_data(metadata::DataTracker::get());
 
     metadata::TestCollection mdc("inbound/test.grib1", true);
     RealDispatcher dispatcher(config);
@@ -87,6 +88,8 @@ add_method("simple", [] {
     dispatcher.flush();
 
     wassert(actual(plain_data_read_count.val()) == 0u);
+
+    wassert(actual(tracked_data.count_used()) == 0u);
 });
 
 // Test a case where dispatch is known to fail

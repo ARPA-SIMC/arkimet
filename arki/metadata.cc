@@ -46,6 +46,55 @@ ReadContext::ReadContext(const std::string& pathname, const std::string& basedir
 {
 }
 
+
+TrackedData::TrackedData(DataTracker& tracker)
+    : tracker(tracker)
+{
+    tracker.start_tracking(this);
+}
+
+TrackedData::~TrackedData()
+{
+    tracker.stop_tracking(this);
+}
+
+unsigned TrackedData::count_used() const
+{
+    unsigned res = 0;
+    for (const auto& t: tracked)
+        if (!t.expired())
+            ++res;
+    return res;
+}
+
+
+void DataTracker::start_tracking(TrackedData* tracker)
+{
+    trackers.push_back(tracker);
+}
+
+void DataTracker::stop_tracking(TrackedData* tracker)
+{
+    trackers.remove(tracker);
+}
+
+std::shared_ptr<std::vector<uint8_t>> DataTracker::track(std::vector<uint8_t>&& data)
+{
+    auto res = std::make_shared<std::vector<uint8_t>>(std::move(data));
+
+    for (auto& tracker: trackers)
+        tracker->tracked.emplace_back(res);
+
+    return res;
+}
+
+static DataTracker data_tracker;
+
+DataTracker& DataTracker::get()
+{
+    return data_tracker;
+}
+
 }
 
 static inline void ensureSize(size_t len, size_t req, const char* what)
@@ -153,7 +202,7 @@ void Metadata::set_source(std::unique_ptr<types::Source>&& s)
 
 void Metadata::set_source_inline(const std::string& format, std::vector<uint8_t>&& buf)
 {
-    m_data = std::make_shared<std::vector<uint8_t>>(move(buf));
+    m_data = metadata::data_tracker.track(move(buf));
     set_source(Source::createInline(format, m_data->size()));
 }
 
@@ -361,7 +410,7 @@ void Metadata::read_inline_data(NamedFileDescriptor& fd)
 
     // Read the inline data
     fd.read_all_or_throw(buf.data(), s->size);
-    m_data = std::make_shared<std::vector<uint8_t>>(move(buf));
+    m_data = metadata::data_tracker.track(move(buf));
 }
 
 void Metadata::readInlineData(BinaryDecoder& dec, const std::string& filename)
@@ -372,7 +421,7 @@ void Metadata::readInlineData(BinaryDecoder& dec, const std::string& filename)
     source::Inline* s = dynamic_cast<source::Inline*>(m_source);
 
     BinaryDecoder data = dec.pop_data(s->size, "inline data");
-    m_data = std::make_shared<std::vector<uint8_t>>(data.buf, data.buf + s->size);
+    m_data = metadata::data_tracker.track(std::vector<uint8_t>(data.buf, data.buf + s->size));
 }
 
 bool Metadata::readYaml(LineReader& in, const std::string& filename)
@@ -536,7 +585,7 @@ const vector<uint8_t>& Metadata::getData()
 
     // If we don't have it in cache, try reconstructing it from the Value metadata
     if (const Value* value = get<types::Value>())
-        m_data = std::make_shared<std::vector<uint8_t>>(scan::Scanner::reconstruct(m_source->format, *this, value->buffer));
+        m_data = metadata::data_tracker.track(scan::Scanner::reconstruct(m_source->format, *this, value->buffer));
     if (m_data) return *m_data;
 
     // If we don't have it in cache and we don't have a source, we cannot know
@@ -557,7 +606,7 @@ const vector<uint8_t>& Metadata::getData()
             source::Blob& s = sourceBlob();
             if (!s.reader)
                 throw runtime_error("cannot retrieve data: BLOB source has no reader associated");
-            m_data = std::make_shared<std::vector<uint8_t>>(s.read_data());
+            m_data = metadata::data_tracker.track(s.read_data());
             return *m_data;
         }
         default:
@@ -590,7 +639,7 @@ size_t Metadata::stream_data(NamedFileDescriptor& out)
 
     // If we don't have it in cache, try reconstructing it from the Value metadata
     if (const Value* value = get<types::Value>())
-        m_data = std::make_shared<std::vector<uint8_t>>(scan::Scanner::reconstruct(m_source->format, *this, value->buffer));
+        m_data = metadata::data_tracker.track(scan::Scanner::reconstruct(m_source->format, *this, value->buffer));
     if (m_data) return stream_buf(source().format, *m_data, out);
 
     // If we don't have it in cache and we don't have a source, we cannot know
@@ -631,7 +680,7 @@ bool Metadata::has_cached_data() const
 
 void Metadata::set_cached_data(std::vector<uint8_t>&& buf)
 {
-    m_data = std::make_shared<std::vector<uint8_t>>(move(buf));
+    m_data = metadata::data_tracker.track(std::move(buf));
 }
 
 void Metadata::makeInline()
