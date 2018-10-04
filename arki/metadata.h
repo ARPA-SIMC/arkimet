@@ -8,6 +8,7 @@
 #include <arki/itemset.h>
 #include <arki/types/fwd.h>
 #include <arki/types/note.h>
+#include <memory>
 #include <string>
 
 struct lua_State;
@@ -58,10 +59,10 @@ protected:
     std::vector<uint8_t> m_notes;
 
     /// Source of this data
-    types::Source* m_source;
+    types::Source* m_source = nullptr;
 
     /// Inline data, or cached version of previously read data
-    std::vector<uint8_t> m_data;
+    std::shared_ptr<std::vector<uint8_t>> m_data;
 
 public:
     Metadata();
