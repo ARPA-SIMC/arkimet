@@ -680,6 +680,7 @@ add_method("remove_old", [](Fixture& f) {
 
 add_method("remove", [](Fixture& f) {
     using runtime::tests::run_cmdline;
+    f.skip_if_type_simple();
 
     f.cfg.setValue("format", "grib");
     f.test_reread_config();
