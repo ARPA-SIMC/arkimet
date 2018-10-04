@@ -1,9 +1,7 @@
 #include "bbox.h"
-#include "libconfig.h"
 #include "arki/types/tests.h"
 #include "arki/utils/geos.h"
 #include "arki/types/area.h"
-
 #include <cmath>
 #include <sstream>
 #include <iostream>
@@ -35,7 +33,8 @@ add_method("1", [] {
 
 // Test normal latlon areas
 add_method("2", [] {
-#ifdef HAVE_GEOS
+    skip_unless_geos();
+
 	BBox bbox;
 	ValueBag vb;
 	vb.set("Ni", Value::createInteger(97));
@@ -68,14 +67,12 @@ add_method("2", [] {
     wassert(actual(cs->getAt(3).y) == 40.00);
     wassert(actual(cs->getAt(4).x) == 12.00);
     wassert(actual(cs->getAt(4).y) == 40.00);
-#else
-    throw TestSkipped("GEOS not available");
-#endif
 });
 
 // Test UTM areas
 add_method("3", [] {
-#ifdef HAVE_GEOS
+    skip_unless_geos();
+
 	BBox bbox;
 	ValueBag vb;
 	vb.set("Ni", Value::createInteger(90));
@@ -111,14 +108,12 @@ add_method("3", [] {
     wassert(actual(cs->getAt(4).y).almost_equal(43.6864, 4)); // 43.8211
 
     //ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
-#else
-    throw TestSkipped("GEOS not available");
-#endif
 });
 
 // Test rotated latlon areas
 add_method("4", [] {
-#ifdef HAVE_GEOS
+    skip_unless_geos();
+
 	BBox bbox;
 	ValueBag vb;
 	vb.set("Ni", Value::createInteger(447));
@@ -173,14 +168,12 @@ add_method("4", [] {
     wassert(actual(cs->getAt(26).x).almost_equal( 5.8357, 4)); wassert(actual(cs->getAt(26).y).almost_equal(37.6802, 4));
     wassert(actual(cs->getAt(27).x).almost_equal( 6.0124, 4)); wassert(actual(cs->getAt(27).y).almost_equal(35.4723, 4));
     //ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
-#else
-    throw TestSkipped("GEOS not available");
-#endif
 });
 
 // Test that latlon areas are reported with the right amount of significant digits
 add_method("5", [] {
-#ifdef HAVE_GEOS
+    skip_unless_geos();
+
 	BBox bbox;
 	ValueBag vb;
 	vb.set("Ni", Value::createInteger(135));
@@ -213,14 +206,12 @@ add_method("5", [] {
     wassert(actual(cs->getAt(3).y) == 49.20000);
     wassert(actual(cs->getAt(4).x) ==  2.40000);
     wassert(actual(cs->getAt(4).y) == 49.20000);
-#else
-    throw TestSkipped("GEOS not available");
-#endif
 });
 
 // Simplified BUFR mobile station areas
 add_method("6", [] {
-#ifdef HAVE_GEOS
+    skip_unless_geos();
+
     BBox bbox;
     ValueBag vb;
     vb.set("type", Value::createString("mob"));
@@ -249,14 +240,12 @@ add_method("6", [] {
     wassert(actual(cs->getAt(3).y) == 45.0);
     wassert(actual(cs->getAt(4).x) == 11.0);
     wassert(actual(cs->getAt(4).y) == 45.0);
-#else
-    throw TestSkipped("GEOS not available");
-#endif
 });
 
 // Experimental UTM areas
 add_method("7", [] {
-#ifdef HAVE_GEOS
+    skip_unless_geos();
+
     BBox bbox;
     unique_ptr<Area> area = Area::decodeString("GRIB(fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)");
 
@@ -281,9 +270,6 @@ add_method("7", [] {
     wassert(actual(cs->getAt(3).y).almost_equal(46.005, 3));
     wassert(actual(cs->getAt(4).x).almost_equal(13.996, 3));
     wassert(actual(cs->getAt(4).y).almost_equal(43.718, 3));
-#else
-    throw TestSkipped("GEOS not available");
-#endif
 });
 
 }

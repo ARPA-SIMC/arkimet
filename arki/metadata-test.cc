@@ -284,8 +284,8 @@ add_method("decode_issue_24", [](Fixture& f) {
 
 // Test Lua functions
 add_method("lua", [](Fixture& f) {
+    skip_unless_lua();
     Metadata md;
-#ifdef HAVE_LUA
     md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
     f.fill(md);
 
@@ -313,13 +313,10 @@ add_method("lua", [](Fixture& f) {
 	);
 	test.pusharg(md);
 	ensure_equals(test.run(), "");
-#endif
 });
 
 add_method("stream_grib", [](Fixture& f) {
-#ifndef HAVE_GRIBAPI
-    throw TestSkipped("GRIB support not available");
-#endif
+    skip_unless_grib();
     metadata::TestCollection grib("inbound/test.grib1");
     File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
     wassert(actual(grib[0].stream_data(fd)) == grib[0].sourceBlob().size);
@@ -328,9 +325,7 @@ add_method("stream_grib", [](Fixture& f) {
 });
 
 add_method("stream_bufr", [](Fixture& f) {
-#ifndef HAVE_DBALLE
-    throw TestSkipped("BUFR support not available");
-#endif
+    skip_unless_bufr();
     metadata::TestCollection bufr("inbound/test.bufr");
     File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
     wassert(actual(bufr[0].stream_data(fd)) == bufr[0].sourceBlob().size);
@@ -339,9 +334,7 @@ add_method("stream_bufr", [](Fixture& f) {
 });
 
 add_method("stream_vm2", [](Fixture& f) {
-#ifndef HAVE_VM2
-    throw TestSkipped("VM2 support not available");
-#endif
+    skip_unless_vm2();
     metadata::TestCollection vm2("inbound/test.vm2");
     File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
     wassert(actual(vm2[0].stream_data(fd)) == vm2[0].sourceBlob().size + 1);
@@ -350,9 +343,7 @@ add_method("stream_vm2", [](Fixture& f) {
 });
 
 add_method("stream_odim", [](Fixture& f) {
-#ifndef HAVE_HDF5
-    throw TestSkipped("ODIMH5 support not available");
-#endif
+    skip_unless_odimh5();
     metadata::TestCollection odim("inbound/odimh5/XSEC_v21.h5");
     File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
     wassert(actual(odim[0].stream_data(fd)) == odim[0].sourceBlob().size);

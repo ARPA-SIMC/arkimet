@@ -1,4 +1,4 @@
-#include "arki/tests/tests.h"
+#include "arki/core/tests.h"
 #include "arki/metadata.h"
 #include "arki/metadata/libarchive.h"
 #include "arki/utils/sys.h"
@@ -19,9 +19,7 @@ class Tests : public TestCase
 void Tests::register_tests() {
 
 add_method("read", [] {
-#ifndef HAVE_LIBZIP
-    throw TestSkipped("libzip not available");
-#endif
+    skip_unless_libzip();
 
     metadata::TestCollection mds("inbound/fixture.grib1");
     {

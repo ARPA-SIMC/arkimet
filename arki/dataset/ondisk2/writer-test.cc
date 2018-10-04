@@ -13,7 +13,6 @@
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/summary.h"
-#include "arki/libconfig.h"
 #include "arki/nag.h"
 #include <sstream>
 #include <iostream>
@@ -86,9 +85,7 @@ add_method("summary_invalidate", [](Fixture& f) {
 // Try to reproduce a bug where two conflicting BUFR files were not properly
 // imported with USN handling
 add_method("regression_0", [](Fixture& f) {
-#ifndef HAVE_DBALLE
-    throw TestSkipped("BUFR support not available");
-#endif
+    skip_unless_bufr();
     ConfigFile cfg;
     cfg.setValue("path", "gts_temp");
     cfg.setValue("name", "gts_temp");
@@ -107,9 +104,7 @@ add_method("regression_0", [](Fixture& f) {
 
 // Test removal of VM2 data
 add_method("issue57", [](Fixture& f) {
-#ifndef HAVE_VM2
-    throw TestSkipped("VM2 support not available");
-#endif
+    skip_unless_vm2();
     f.cfg.setValue("unique", "reftime, area, product");
 
     // Import the sample file

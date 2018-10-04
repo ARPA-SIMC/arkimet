@@ -2,7 +2,6 @@
 #include "arki/matcher.h"
 #include "arki/metadata.h"
 #include "arki/types/area.h"
-#include "arki/libconfig.h"
 
 using namespace std;
 using namespace arki::tests;
@@ -63,9 +62,7 @@ add_method("grib", [] {
 
 // Try matching with "bbox equals"
 add_method("bbox_equals", [] {
-#ifndef HAVE_GEOS
-    throw TestSkipped("GEOS not available");
-#endif
+    skip_unless_geos();
     Metadata md;
     arki::tests::fill(md);
     md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
@@ -77,9 +74,7 @@ add_method("bbox_equals", [] {
 
 // Try matching with "bbox covers"
 add_method("bbox_covers", [] {
-#ifndef HAVE_GEOS
-    throw TestSkipped("GEOS not available");
-#endif
+    skip_unless_geos();
     Metadata md;
     arki::tests::fill(md);
 	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
@@ -104,9 +99,7 @@ add_method("bbox_covers", [] {
 
 // Try matching with "bbox intersects"
 add_method("bbox_intersects", [] {
-#ifndef HAVE_GEOS
-    throw TestSkipped("GEOS not available");
-#endif
+    skip_unless_geos();
     Metadata md;
     arki::tests::fill(md);
     md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
@@ -128,9 +121,7 @@ add_method("bbox_intersects", [] {
 
 // Try matching with "bbox coveredby"
 add_method("bbox_coveredby", [] {
-#ifndef HAVE_GEOS
-    throw TestSkipped("GEOS not available");
-#endif
+    skip_unless_geos();
     Metadata md;
     arki::tests::fill(md);
     md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
@@ -212,9 +203,7 @@ add_method("odimh5_octagon", [] {
 
 // Try matching Area with ODIMH5
 add_method("bbox_odimh5", [] {
-#ifndef HAVE_GEOS
-    throw TestSkipped("GEOS not available");
-#endif
+    skip_unless_geos();
 
     //Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
     Metadata md1;
@@ -233,9 +222,7 @@ add_method("bbox_odimh5", [] {
 
 // Try matching Area with VM2
 add_method("vm2", [] {
-#ifndef HAVE_VM2
-    throw TestSkipped("VM2 support not available");
-#endif
+    skip_unless_vm2();
     Metadata md;
     md.set(area::VM2::create(1));
 

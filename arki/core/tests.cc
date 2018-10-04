@@ -157,6 +157,18 @@ void skip_unless_odimh5()
     throw TestSkipped("ODIMH5 support not available");
 #endif
 }
+void skip_unless_geos()
+{
+#ifndef HAVE_GEOS
+    throw TestSkipped("GEOS support not available");
+#endif
+}
+void skip_unless_lua()
+{
+#ifndef HAVE_LUA
+    throw TestSkipped("Lua support not available");
+#endif
+}
 
 void skip_unless_filesystem_has_holes(const std::string& path)
 {

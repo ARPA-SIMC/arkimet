@@ -519,6 +519,12 @@ void DatasetTest::archived_segment_exists(const std::string& relpath, const std:
     actual_segment(str::joinpath(cfg->path, ".archive", relpath)).exists(exts);
 }
 
+void DatasetTest::skip_if_type_simple()
+{
+    if (cfg.value("type") == "simple")
+        throw TestSkipped("This test makes no sense on simple datasets");
+}
+
 }
 
 namespace tests {

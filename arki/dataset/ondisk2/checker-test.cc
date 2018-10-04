@@ -14,7 +14,6 @@
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/summary.h"
-#include "arki/libconfig.h"
 #include "arki/nag.h"
 #include <sstream>
 #include <iostream>
@@ -364,9 +363,7 @@ add_method("data_in_right_segment_rescan", [](Fixture& f) {
 
 // Test packing a dataset with VM2 data
 add_method("pack_vm2", [](Fixture& f) {
-#ifndef HAVE_VM2
-    throw TestSkipped("VM2 support not available");
-#endif
+    skip_unless_vm2();
     core::lock::TestNowait lock_nowait;
     f.clean_and_import("inbound/test.vm2");
 

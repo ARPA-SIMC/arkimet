@@ -1,4 +1,4 @@
-#include "arki/tests/tests.h"
+#include "arki/core/tests.h"
 #include "arki/dispatcher.h"
 #include "arki/dataset.h"
 #include "arki/configfile.h"
@@ -91,9 +91,7 @@ add_method("simple", [] {
 
 // Test a case where dispatch is known to fail
 add_method("regression01", [] {
-#ifndef HAVE_DBALLE
-    throw TestSkipped("BUFR support not available");
-#endif
+    skip_unless_bufr();
     // In-memory dataset configuration
     sys::rmtree_ifexists("lami_temp");
     sys::rmtree_ifexists("error");

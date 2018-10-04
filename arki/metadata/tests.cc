@@ -1,6 +1,5 @@
 #include <arki/metadata/tests.h>
 #include <arki/matcher.h>
-#include <arki/libconfig.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
 #include <arki/types/level.h>
@@ -30,36 +29,28 @@ TestData::TestData(const std::string& format)
 GRIBData::GRIBData()
     : TestData("grib")
 {
-#ifndef HAVE_GRIBAPI
-    throw TestSkipped("GRIB support not available");
-#endif
+    skip_unless_grib();
     mds.scan_from_file("inbound/fixture.grib1", format, true);
 }
 
 BUFRData::BUFRData()
     : TestData("bufr")
 {
-#ifndef HAVE_DBALLE
-    throw TestSkipped("BUFR support not available");
-#endif
+    skip_unless_bufr();
     mds.scan_from_file("inbound/fixture.bufr", format, true);
 }
 
 VM2Data::VM2Data()
     : TestData("vm2")
 {
-#ifndef HAVE_VM2
-    throw TestSkipped("VM2 support not available");
-#endif
+    skip_unless_vm2();
     mds.scan_from_file("inbound/fixture.vm2", format, true);
 }
 
 ODIMData::ODIMData()
     : TestData("odimh5")
 {
-#ifndef HAVE_HDF5
-    throw TestSkipped("ODIMH5 support not available");
-#endif
+    skip_unless_odimh5();
 #if 0
     mds.scan_from_file("inbound/fixture.odimh5", format, true);
 #else

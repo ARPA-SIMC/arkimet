@@ -155,8 +155,7 @@ def_test(3)
 
 // Test Lua functions
 add_method("lua", [] {
-    throw TestSkipped("Lua not available");
-#ifdef HAVE_LUA
+    skip_unless_lua();
     Time o(1, 2, 3, 4, 5, 6);
     tests::Lua test(R"(
         function test(o)
@@ -179,7 +178,6 @@ add_method("lua", [] {
     )");
     test.pusharg(o);
     wassert(actual(test.run()) == "");
-#endif
 });
 
 }

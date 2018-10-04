@@ -259,6 +259,11 @@ public:
      * extensions. ".metadata" and ".summary" are added automatically.
      */
     void archived_segment_exists(const std::string& relpath, const std::vector<std::string>& extensions);
+
+    /**
+     * Raise TestSkipped if the current dataset has type 'simple'
+     */
+    void skip_if_type_simple();
 };
 
 }

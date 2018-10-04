@@ -296,13 +296,9 @@ add_method("archive", [](Fixture& f) {
 });
 
 add_method("issue57", [](Fixture& f) {
-#ifndef HAVE_VM2
-    throw TestSkipped("VM2 support not available");
-#endif
     using runtime::tests::run_cmdline;
-
-    if (f.cfg.value("type") == "simple")
-        throw TestSkipped();
+    skip_unless_vm2();
+    f.skip_if_type_simple();
 
     f.cfg.setValue("format", "vm2");
     f.cfg.setValue("unique", "reftime, area, product");

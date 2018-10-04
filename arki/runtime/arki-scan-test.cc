@@ -1,7 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/runtime/tests.h"
 #include "arki/types/source/blob.h"
-#include "arki/libconfig.h"
 #include "arki-scan.h"
 
 namespace {
@@ -114,9 +113,7 @@ add_method("scan_grib", [](Fixture& f) {
 
 add_method("scan_bufr", [](Fixture& f) {
     using runtime::tests::run_cmdline;
-#ifndef HAVE_DBALLE
-    throw TestSkipped("BUFR support not available");
-#endif
+    skip_unless_bufr();
     runtime::tests::CatchOutput co;
     int res = run_cmdline(runtime::arki_scan, {
         "arki-scan",
@@ -130,9 +127,7 @@ add_method("scan_bufr", [](Fixture& f) {
 
 add_method("scan_bufr_multiple", [](Fixture& f) {
     using runtime::tests::run_cmdline;
-#ifndef HAVE_DBALLE
-    throw TestSkipped("BUFR support not available");
-#endif
+    skip_unless_bufr();
     runtime::tests::CatchOutput co;
     int res = run_cmdline(runtime::arki_scan, {
         "arki-scan",
