@@ -179,7 +179,7 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
     }
 
     for (auto& b: by_segment)
-        std::sort(b.second.begin(), b.second.end(), writer_batch_element_lt);
+        std::stable_sort(b.second.begin(), b.second.end(), writer_batch_element_lt);
 
     return by_segment;
 }
