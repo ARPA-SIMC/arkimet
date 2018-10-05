@@ -8,7 +8,9 @@
 #include <arki/itemset.h>
 #include <arki/types/fwd.h>
 #include <arki/types/note.h>
+#include <memory>
 #include <string>
+#include <list>
 
 struct lua_State;
 
@@ -44,6 +46,53 @@ struct ReadContext
     ReadContext(const std::string& pathname, const std::string& basedir);
 };
 
+
+struct DataTracker;
+
+/**
+ * Track all data elements that get cached in metadata during the lifetime of
+ * this object.
+ */
+class TrackedData
+{
+protected:
+    DataTracker& tracker;
+
+public:
+    std::vector<std::weak_ptr<std::vector<uint8_t>>> tracked;
+
+    TrackedData(DataTracker& tracker);
+    TrackedData(const TrackedData&) = delete;
+    TrackedData(TrackedData&&) = delete;
+    ~TrackedData();
+    TrackedData& operator=(const TrackedData&) = delete;
+    TrackedData& operator=(TrackedData&&) = delete;
+
+    unsigned count_used() const;
+};
+
+
+/**
+ * Track data cached in memory
+ */
+class DataTracker
+{
+protected:
+    std::list<TrackedData*> trackers;
+    bool tracking = false;
+
+    void start_tracking(TrackedData* tracker);
+    void stop_tracking(TrackedData* tracker);
+
+public:
+    /// Track a new item
+    std::shared_ptr<std::vector<uint8_t>> track(std::vector<uint8_t>&& data);
+
+    static DataTracker& get();
+
+    friend class TrackedData;
+};
+
 }
 
 class Formatter;
@@ -58,10 +107,10 @@ protected:
     std::vector<uint8_t> m_notes;
 
     /// Source of this data
-    types::Source* m_source;
+    types::Source* m_source = nullptr;
 
     /// Inline data, or cached version of previously read data
-    std::vector<uint8_t> m_data;
+    std::shared_ptr<std::vector<uint8_t>> m_data;
 
 public:
     Metadata();

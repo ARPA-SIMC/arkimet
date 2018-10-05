@@ -76,17 +76,9 @@ void Dispatcher::dispatch(dataset::WriterBatch& batch)
     std::map<std::string, dataset::WriterBatch> by_dataset;
     std::map<std::string, dataset::WriterBatch> outbound_by_dataset;
 
-    // RAII struct to drop Metadata data
-    struct MdDataRAII {
-        dataset::WriterBatchElement& e;
-        MdDataRAII(dataset::WriterBatchElement& e): e(e) {}
-        ~MdDataRAII() { e.md.drop_cached_data(); }
-    };
-
     // Choose the target dataset(s) for each element in the batch
     for (auto& e: batch)
     {
-        MdDataRAII e_raii(*e);
         // Ensure that we have a reference time
         const reftime::Position* rt = e->md.get<types::reftime::Position>();
         if (!rt)
@@ -118,17 +110,6 @@ void Dispatcher::dispatch(dataset::WriterBatch& batch)
                 error_batch.push_back(e);
                 continue;
             }
-        }
-
-        // Fetch the data into memory here, so that if problems arise we do not
-        // fail in bits of code that are more critical
-        try {
-            e->md.getData();
-        } catch (std::exception& ex) {
-            e->md.add_note(string("Failed to read the data associated with the metadata: ") + ex.what());
-            e->result = dataset::ACQ_ERROR;
-            e->dataset_name.clear();
-            continue;
         }
 
         // See what outbound datasets match this metadata

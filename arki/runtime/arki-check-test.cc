@@ -329,8 +329,16 @@ add_method("issue57", [](Fixture& f) {
     {
         runtime::tests::CatchOutput co;
         int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--remove=testds/todelete.md" });
-        wassert(actual_file(co.file_stderr.name()).empty());
-        wassert(actual_file(co.file_stdout.name()).empty());
+        wassert(actual_file(co.file_stderr.name()).contents_equal({}));
+        wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: 1 data would be deleted"}));
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--fix", "--remove=testds/todelete.md" });
+        wassert(actual_file(co.file_stderr.name()).contents_equal({}));
+        wassert(actual_file(co.file_stdout.name()).contents_equal({}));
         wassert(actual(res) == 0);
     }
 
@@ -680,6 +688,7 @@ add_method("remove_old", [](Fixture& f) {
 
 add_method("remove", [](Fixture& f) {
     using runtime::tests::run_cmdline;
+    f.skip_if_type_simple();
 
     f.cfg.setValue("format", "grib");
     f.test_reread_config();
@@ -716,7 +725,7 @@ add_method("remove", [](Fixture& f) {
     wassert(f.query_results({1, 2}));
 
     auto state = f.scan_state();
-    wassert(actual(state.size()) == 3);
+    wassert(actual(state.size()) == 3u);
 
     wassert(actual(state.get("testds:2007/07-07.grib").state) == segment::SEGMENT_OK);
     wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::SEGMENT_DELETED);
