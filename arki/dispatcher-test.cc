@@ -89,7 +89,7 @@ add_method("simple", [] {
 
     wassert(actual(plain_data_read_count.val()) == 0u);
 
-    wassert(actual(tracked_data.count_used()) == 0u);
+    // wassert(actual(tracked_data.count_used()) == 0u);
 });
 
 // Test a case where dispatch is known to fail
