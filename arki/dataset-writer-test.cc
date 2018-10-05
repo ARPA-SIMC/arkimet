@@ -321,39 +321,90 @@ this->add_method("second_resolution", [](Fixture& f) {
     wassert(f.ensure_localds_clean(1, 2));
 });
 
-this->add_method("transaction", [](Fixture& f) {
+auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx) {
     Metadata md;
     fill(md);
     std::string format = f.cfg.value("format");
 
     // Make a batch that ends up all in the same segment
     metadata::Collection mds;
-    md.set("reftime", "2018-01-01T00:00:00");
-    md.set_source_inline(format, metadata::DataManager::get().to_data(format, std::vector<uint8_t>{0}));
-    mds.push_back(md);
-    md.set("reftime", "2018-01-01T01:00:00");
-    md.set_source_inline(format, metadata::DataManager::get().to_data(format, std::vector<uint8_t>{1}));
-    mds.push_back(md);
-    md.set("reftime", "2018-01-01T02:00:00");
-    md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
-    mds.push_back(md);
+    for (unsigned idx = 0; idx < 3; ++idx)
+    {
+        md.set(types::Reftime::createPosition(Time(2018, 1, 1, idx, 0, 0)));
+        if (idx == fail_idx)
+            md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
+        else
+            md.set_source_inline(format, metadata::DataManager::get().to_data(format, std::vector<uint8_t>{(unsigned char)idx}));
+        mds.push_back(md);
+    }
 
     auto ds = f.config().create_writer();
     dataset::WriterBatch batch = mds.make_import_batch();
     wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_NEVER));
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[1]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
+    wassert(actual(batch[1]->result) == dataset::ACQ_ERROR);
     wassert(actual(batch[2]->result) == dataset::ACQ_ERROR);
 
-    wassert(f.ensure_localds_clean(1, 3));
+    auto state = f.scan_state();
+    wassert(actual(state.size()) == 1);
+    wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::SEGMENT_DELETED);
+    wassert(f.query_results({}));
+};
 
-    // Import a batch that ends up all in the same segment, the first element fails, the rest gets imported
-    // Import a batch that ends up all in the same segment, the middle element fails, the rest gets imported
-    // Import a batch that ends up all in the same segment, the last element fails, the rest gets imported
+this->add_method("transaction_same_segment_fail_first", [=](Fixture& f) {
+    wassert(test_same_segment_fail(f, 0));
+});
 
-    // Import a batch that ends up in different segments, the first element fails, the rest gets imported
-    // Import a batch that ends up in different segments, the middle element fails, the rest gets imported
-    // Import a batch that ends up in different segments, the last element fails, the rest gets imported
+this->add_method("transaction_same_segment_fail_middle", [=](Fixture& f) {
+    wassert(test_same_segment_fail(f, 1));
+});
+
+this->add_method("transaction_same_segment_fail_last", [=](Fixture& f) {
+    wassert(test_same_segment_fail(f, 1));
+});
+
+auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx) {
+    Metadata md;
+    fill(md);
+    std::string format = f.cfg.value("format");
+
+    // Make a batch that ends up all in the same segment
+    metadata::Collection mds;
+    for (unsigned idx = 0; idx < 3; ++idx)
+    {
+        md.set(types::Reftime::createPosition(Time(2018, idx, 1, 0, 0, 0)));
+        if (idx == fail_idx)
+            md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
+        else
+            md.set_source_inline(format, metadata::DataManager::get().to_data(format, std::vector<uint8_t>{(unsigned char)idx}));
+        mds.push_back(md);
+    }
+
+    auto ds = f.config().create_writer();
+    dataset::WriterBatch batch = mds.make_import_batch();
+    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_NEVER));
+    wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
+    wassert(actual(batch[1]->result) == dataset::ACQ_ERROR);
+    wassert(actual(batch[2]->result) == dataset::ACQ_ERROR);
+
+    auto state = f.scan_state();
+    wassert(actual(state.size()) == 3);
+    wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::SEGMENT_DELETED);
+    wassert(actual(state.get("testds:2018/02-01." + format).state) == segment::SEGMENT_DELETED);
+    wassert(actual(state.get("testds:2018/03-01." + format).state) == segment::SEGMENT_DELETED);
+    wassert(f.query_results({}));
+};
+
+this->add_method("transaction_different_segment_fail_first", [=](Fixture& f) {
+    wassert(test_different_segment_fail(f, 0));
+});
+
+this->add_method("transaction_different_segment_fail_middle", [=](Fixture& f) {
+    wassert(test_different_segment_fail(f, 1));
+});
+
+this->add_method("transaction_different_segment_fail_last", [=](Fixture& f) {
+    wassert(test_different_segment_fail(f, 1));
 });
 
 this->add_method("test_acquire", [](Fixture& f) {

@@ -10287,7 +10287,32 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_grib_ondisk2",
-  "method": "transaction"
+  "method": "transaction_same_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_ondisk2",
+  "method": "transaction_same_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_ondisk2",
+  "method": "transaction_same_segment_fail_last"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_ondisk2",
+  "method": "transaction_different_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_ondisk2",
+  "method": "transaction_different_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_ondisk2",
+  "method": "transaction_different_segment_fail_last"
  },
  {
   "doc": "",
@@ -10332,7 +10357,32 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_grib_simple_plain",
-  "method": "transaction"
+  "method": "transaction_same_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_plain",
+  "method": "transaction_same_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_plain",
+  "method": "transaction_same_segment_fail_last"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_plain",
+  "method": "transaction_different_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_plain",
+  "method": "transaction_different_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_plain",
+  "method": "transaction_different_segment_fail_last"
  },
  {
   "doc": "",
@@ -10377,7 +10427,32 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_grib_simple_sqlite",
-  "method": "transaction"
+  "method": "transaction_same_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_sqlite",
+  "method": "transaction_same_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_sqlite",
+  "method": "transaction_same_segment_fail_last"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_sqlite",
+  "method": "transaction_different_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_sqlite",
+  "method": "transaction_different_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_sqlite",
+  "method": "transaction_different_segment_fail_last"
  },
  {
   "doc": "",
@@ -10422,7 +10497,32 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_grib_iseg",
-  "method": "transaction"
+  "method": "transaction_same_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_iseg",
+  "method": "transaction_same_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_iseg",
+  "method": "transaction_same_segment_fail_last"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_iseg",
+  "method": "transaction_different_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_iseg",
+  "method": "transaction_different_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_iseg",
+  "method": "transaction_different_segment_fail_last"
  },
  {
   "doc": "",
@@ -10467,7 +10567,32 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_bufr_ondisk2",
-  "method": "transaction"
+  "method": "transaction_same_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_ondisk2",
+  "method": "transaction_same_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_ondisk2",
+  "method": "transaction_same_segment_fail_last"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_ondisk2",
+  "method": "transaction_different_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_ondisk2",
+  "method": "transaction_different_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_ondisk2",
+  "method": "transaction_different_segment_fail_last"
  },
  {
   "doc": "",
@@ -10512,7 +10637,32 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_bufr_simple_plain",
-  "method": "transaction"
+  "method": "transaction_same_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_plain",
+  "method": "transaction_same_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_plain",
+  "method": "transaction_same_segment_fail_last"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_plain",
+  "method": "transaction_different_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_plain",
+  "method": "transaction_different_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_plain",
+  "method": "transaction_different_segment_fail_last"
  },
  {
   "doc": "",
@@ -10557,7 +10707,32 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_bufr_simple_sqlite",
-  "method": "transaction"
+  "method": "transaction_same_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_sqlite",
+  "method": "transaction_same_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_sqlite",
+  "method": "transaction_same_segment_fail_last"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_sqlite",
+  "method": "transaction_different_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_sqlite",
+  "method": "transaction_different_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_sqlite",
+  "method": "transaction_different_segment_fail_last"
  },
  {
   "doc": "",
@@ -10602,7 +10777,32 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_bufr_iseg",
-  "method": "transaction"
+  "method": "transaction_same_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_iseg",
+  "method": "transaction_same_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_iseg",
+  "method": "transaction_same_segment_fail_last"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_iseg",
+  "method": "transaction_different_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_iseg",
+  "method": "transaction_different_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_iseg",
+  "method": "transaction_different_segment_fail_last"
  },
  {
   "doc": "",
@@ -10647,7 +10847,32 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_vm2_ondisk2",
-  "method": "transaction"
+  "method": "transaction_same_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_ondisk2",
+  "method": "transaction_same_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_ondisk2",
+  "method": "transaction_same_segment_fail_last"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_ondisk2",
+  "method": "transaction_different_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_ondisk2",
+  "method": "transaction_different_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_ondisk2",
+  "method": "transaction_different_segment_fail_last"
  },
  {
   "doc": "",
@@ -10692,7 +10917,32 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_vm2_simple_plain",
-  "method": "transaction"
+  "method": "transaction_same_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_plain",
+  "method": "transaction_same_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_plain",
+  "method": "transaction_same_segment_fail_last"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_plain",
+  "method": "transaction_different_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_plain",
+  "method": "transaction_different_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_plain",
+  "method": "transaction_different_segment_fail_last"
  },
  {
   "doc": "",
@@ -10737,7 +10987,32 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_vm2_simple_sqlite",
-  "method": "transaction"
+  "method": "transaction_same_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_sqlite",
+  "method": "transaction_same_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_sqlite",
+  "method": "transaction_same_segment_fail_last"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_sqlite",
+  "method": "transaction_different_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_sqlite",
+  "method": "transaction_different_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_sqlite",
+  "method": "transaction_different_segment_fail_last"
  },
  {
   "doc": "",
@@ -10782,7 +11057,32 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_vm2_iseg",
-  "method": "transaction"
+  "method": "transaction_same_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_iseg",
+  "method": "transaction_same_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_iseg",
+  "method": "transaction_same_segment_fail_last"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_iseg",
+  "method": "transaction_different_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_iseg",
+  "method": "transaction_different_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_iseg",
+  "method": "transaction_different_segment_fail_last"
  },
  {
   "doc": "",
@@ -10827,7 +11127,32 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_odim_ondisk2",
-  "method": "transaction"
+  "method": "transaction_same_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_ondisk2",
+  "method": "transaction_same_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_ondisk2",
+  "method": "transaction_same_segment_fail_last"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_ondisk2",
+  "method": "transaction_different_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_ondisk2",
+  "method": "transaction_different_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_ondisk2",
+  "method": "transaction_different_segment_fail_last"
  },
  {
   "doc": "",
@@ -10872,7 +11197,32 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_odim_simple_plain",
-  "method": "transaction"
+  "method": "transaction_same_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_plain",
+  "method": "transaction_same_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_plain",
+  "method": "transaction_same_segment_fail_last"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_plain",
+  "method": "transaction_different_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_plain",
+  "method": "transaction_different_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_plain",
+  "method": "transaction_different_segment_fail_last"
  },
  {
   "doc": "",
@@ -10917,7 +11267,32 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_odim_simple_sqlite",
-  "method": "transaction"
+  "method": "transaction_same_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_sqlite",
+  "method": "transaction_same_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_sqlite",
+  "method": "transaction_same_segment_fail_last"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_sqlite",
+  "method": "transaction_different_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_sqlite",
+  "method": "transaction_different_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_sqlite",
+  "method": "transaction_different_segment_fail_last"
  },
  {
   "doc": "",
@@ -10962,7 +11337,32 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_odim_iseg",
-  "method": "transaction"
+  "method": "transaction_same_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_iseg",
+  "method": "transaction_same_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_iseg",
+  "method": "transaction_same_segment_fail_last"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_iseg",
+  "method": "transaction_different_segment_fail_first"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_iseg",
+  "method": "transaction_different_segment_fail_middle"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_iseg",
+  "method": "transaction_different_segment_fail_last"
  },
  {
   "doc": "",
