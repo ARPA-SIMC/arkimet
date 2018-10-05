@@ -10277,6 +10277,11 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_grib_ondisk2",
+  "method": "transaction"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_ondisk2",
   "method": "test_acquire"
  },
  {
@@ -10312,6 +10317,11 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_grib_simple_plain",
+  "method": "transaction"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_plain",
   "method": "test_acquire"
  },
  {
@@ -10347,6 +10357,11 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_grib_simple_sqlite",
+  "method": "transaction"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_simple_sqlite",
   "method": "test_acquire"
  },
  {
@@ -10382,6 +10397,11 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_grib_iseg",
+  "method": "transaction"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_grib_iseg",
   "method": "test_acquire"
  },
  {
@@ -10417,6 +10437,11 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_bufr_ondisk2",
+  "method": "transaction"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_ondisk2",
   "method": "test_acquire"
  },
  {
@@ -10452,6 +10477,11 @@
  {
   "doc": "",
   "group": "arki_dataset_writer_bufr_simple_plain",
+  "method": "transaction"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_plain",
   "method": "test_acquire"
  },
  {
@@ -10483,6 +10513,11 @@
   "doc": "",
   "group": "arki_dataset_writer_bufr_simple_sqlite",
   "method": "second_resolution"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_simple_sqlite",
+  "method": "transaction"
  },
  {
   "doc": "",
@@ -10518,6 +10553,11 @@
   "doc": "",
   "group": "arki_dataset_writer_bufr_iseg",
   "method": "second_resolution"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_bufr_iseg",
+  "method": "transaction"
  },
  {
   "doc": "",
@@ -10553,6 +10593,11 @@
   "doc": "",
   "group": "arki_dataset_writer_vm2_ondisk2",
   "method": "second_resolution"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_ondisk2",
+  "method": "transaction"
  },
  {
   "doc": "",
@@ -10588,6 +10633,11 @@
   "doc": "",
   "group": "arki_dataset_writer_vm2_simple_plain",
   "method": "second_resolution"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_plain",
+  "method": "transaction"
  },
  {
   "doc": "",
@@ -10623,6 +10673,11 @@
   "doc": "",
   "group": "arki_dataset_writer_vm2_simple_sqlite",
   "method": "second_resolution"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_simple_sqlite",
+  "method": "transaction"
  },
  {
   "doc": "",
@@ -10658,6 +10713,11 @@
   "doc": "",
   "group": "arki_dataset_writer_vm2_iseg",
   "method": "second_resolution"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_vm2_iseg",
+  "method": "transaction"
  },
  {
   "doc": "",
@@ -10693,6 +10753,11 @@
   "doc": "",
   "group": "arki_dataset_writer_odim_ondisk2",
   "method": "second_resolution"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_ondisk2",
+  "method": "transaction"
  },
  {
   "doc": "",
@@ -10728,6 +10793,11 @@
   "doc": "",
   "group": "arki_dataset_writer_odim_simple_plain",
   "method": "second_resolution"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_plain",
+  "method": "transaction"
  },
  {
   "doc": "",
@@ -10763,6 +10833,11 @@
   "doc": "",
   "group": "arki_dataset_writer_odim_simple_sqlite",
   "method": "second_resolution"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_simple_sqlite",
+  "method": "transaction"
  },
  {
   "doc": "",
@@ -10798,6 +10873,11 @@
   "doc": "",
   "group": "arki_dataset_writer_odim_iseg",
   "method": "second_resolution"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_writer_odim_iseg",
+  "method": "transaction"
  },
  {
   "doc": "",

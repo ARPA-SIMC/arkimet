@@ -63,21 +63,21 @@ class TestsWriter : public FixtureTestCase<FixtureWriter<Data>>
     void register_tests() override;
 };
 
-TestsWriter<GRIBData> test_writer_grib_ondisk2("arki_dataset_writer_grib_ondisk2", "type=ondisk2\n");
-TestsWriter<GRIBData> test_writer_grib_simple_plain("arki_dataset_writer_grib_simple_plain", "type=simple\nindex_type=plain\n");
-TestsWriter<GRIBData> test_writer_grib_simple_sqlite("arki_dataset_writer_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsWriter<GRIBData> test_writer_grib_ondisk2("arki_dataset_writer_grib_ondisk2", "type=ondisk2\nformat=grib\n");
+TestsWriter<GRIBData> test_writer_grib_simple_plain("arki_dataset_writer_grib_simple_plain", "type=simple\nindex_type=plain\nformat=grib\n");
+TestsWriter<GRIBData> test_writer_grib_simple_sqlite("arki_dataset_writer_grib_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=grib\n");
 TestsWriter<GRIBData> test_writer_grib_iseg("arki_dataset_writer_grib_iseg", "type=iseg\nformat=grib\n");
-TestsWriter<BUFRData> test_writer_bufr_ondisk2("arki_dataset_writer_bufr_ondisk2", "type=ondisk2\n");
-TestsWriter<BUFRData> test_writer_bufr_simple_plain("arki_dataset_writer_bufr_simple_plain", "type=simple\nindex_type=plain\n");
-TestsWriter<BUFRData> test_writer_bufr_simple_sqlite("arki_dataset_writer_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsWriter<BUFRData> test_writer_bufr_ondisk2("arki_dataset_writer_bufr_ondisk2", "type=ondisk2\nformat=bufr\n");
+TestsWriter<BUFRData> test_writer_bufr_simple_plain("arki_dataset_writer_bufr_simple_plain", "type=simple\nindex_type=plain\nformat=bufr\n");
+TestsWriter<BUFRData> test_writer_bufr_simple_sqlite("arki_dataset_writer_bufr_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=bufr\n");
 TestsWriter<BUFRData> test_writer_bufr_iseg("arki_dataset_writer_bufr_iseg", "type=iseg\nformat=bufr\n");
-TestsWriter<VM2Data> test_writer_vm2_ondisk2("arki_dataset_writer_vm2_ondisk2", "type=ondisk2\n");
-TestsWriter<VM2Data> test_writer_vm2_simple_plain("arki_dataset_writer_vm2_simple_plain", "type=simple\nindex_type=plain\n");
-TestsWriter<VM2Data> test_writer_vm2_simple_sqlite("arki_dataset_writer_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsWriter<VM2Data> test_writer_vm2_ondisk2("arki_dataset_writer_vm2_ondisk2", "type=ondisk2\nformat=vm2\n");
+TestsWriter<VM2Data> test_writer_vm2_simple_plain("arki_dataset_writer_vm2_simple_plain", "type=simple\nindex_type=plain\nformat=vm2\n");
+TestsWriter<VM2Data> test_writer_vm2_simple_sqlite("arki_dataset_writer_vm2_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=vm2\n");
 TestsWriter<VM2Data> test_writer_vm2_iseg("arki_dataset_writer_vm2_iseg", "type=iseg\nformat=vm2\n");
-TestsWriter<ODIMData> test_writer_odim_ondisk2("arki_dataset_writer_odim_ondisk2", "type=ondisk2\n");
-TestsWriter<ODIMData> test_writer_odim_simple_plain("arki_dataset_writer_odim_simple_plain", "type=simple\nindex_type=plain\n");
-TestsWriter<ODIMData> test_writer_odim_simple_sqlite("arki_dataset_writer_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsWriter<ODIMData> test_writer_odim_ondisk2("arki_dataset_writer_odim_ondisk2", "type=ondisk2\nformat=odimh5\n");
+TestsWriter<ODIMData> test_writer_odim_simple_plain("arki_dataset_writer_odim_simple_plain", "type=simple\nindex_type=plain\nformat=odimh5\n");
+TestsWriter<ODIMData> test_writer_odim_simple_sqlite("arki_dataset_writer_odim_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=odimh5\n");
 TestsWriter<ODIMData> test_writer_odim_iseg("arki_dataset_writer_odim_iseg", "type=iseg\nformat=odimh5\n");
 
 void Tests::register_tests() {
@@ -304,7 +304,45 @@ this->add_method("second_resolution", [](Fixture& f) {
     wassert(f.ensure_localds_clean(1, 2));
 });
 
+this->add_method("transaction", [](Fixture& f) {
+    Metadata md;
+    fill(md);
+    std::string format = f.cfg.value("format");
+
+    throw std::runtime_error("allow to use a metadata::Data that fails on reading or writing, to simulate import failures");
+
+    // Make a batch that ends up all in the same segment
+    metadata::Collection mds;
+    md.set("reftime", "2018-01-01T00:00:00");
+    md.set_source_inline(format, std::vector<uint8_t>{0});
+    mds.push_back(md);
+    md.set("reftime", "2018-01-01T01:00:00");
+    md.set_source_inline(format, std::vector<uint8_t>{1});
+    mds.push_back(md);
+    md.set("reftime", "2018-01-01T02:00:00");
+    md.set_source_inline(format, std::vector<uint8_t>{2});
+    mds.push_back(md);
+
+    auto ds = f.config().create_writer();
+    dataset::WriterBatch batch = mds.make_import_batch();
+    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_NEVER));
+    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[1]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[2]->result) == dataset::ACQ_OK);
+
+    wassert(f.ensure_localds_clean(1, 3));
+
+    // Import a batch that ends up all in the same segment, the first element fails, the rest gets imported
+    // Import a batch that ends up all in the same segment, the middle element fails, the rest gets imported
+    // Import a batch that ends up all in the same segment, the last element fails, the rest gets imported
+
+    // Import a batch that ends up in different segments, the first element fails, the rest gets imported
+    // Import a batch that ends up in different segments, the middle element fails, the rest gets imported
+    // Import a batch that ends up in different segments, the last element fails, the rest gets imported
+});
+
 this->add_method("test_acquire", [](Fixture& f) {
+    // TODO: add tests for test_acquire
 });
 
 }
