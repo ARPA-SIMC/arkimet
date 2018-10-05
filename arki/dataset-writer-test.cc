@@ -183,6 +183,22 @@ this->add_method("import", [](Fixture& f) {
     }
 });
 
+this->add_method("import_error", [](Fixture& f) {
+    std::string format = f.cfg.value("format");
+    Metadata md;
+    fill(md);
+    md.set("reftime", "2018-01-01T00:00:00");
+    md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
+
+    auto ds = f.config().create_writer();
+    wassert(actual(ds->acquire(md, dataset::Writer::REPLACE_NEVER)) == dataset::ACQ_ERROR);
+
+    auto state = f.scan_state();
+    wassert(actual(state.size()) == 1);
+    wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::SEGMENT_DELETED);
+    wassert(f.query_results({}));
+});
+
 this->add_method("import_batch_replace_never", [](Fixture& f) {
     auto ds = f.config().create_writer();
 
@@ -310,8 +326,6 @@ this->add_method("transaction", [](Fixture& f) {
     fill(md);
     std::string format = f.cfg.value("format");
 
-    throw std::runtime_error("allow to use a metadata::Data that fails on reading or writing, to simulate import failures");
-
     // Make a batch that ends up all in the same segment
     metadata::Collection mds;
     md.set("reftime", "2018-01-01T00:00:00");
@@ -321,7 +335,7 @@ this->add_method("transaction", [](Fixture& f) {
     md.set_source_inline(format, metadata::DataManager::get().to_data(format, std::vector<uint8_t>{1}));
     mds.push_back(md);
     md.set("reftime", "2018-01-01T02:00:00");
-    md.set_source_inline(format, metadata::DataManager::get().to_data(format, std::vector<uint8_t>{2}));
+    md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
     mds.push_back(md);
 
     auto ds = f.config().create_writer();
@@ -329,7 +343,7 @@ this->add_method("transaction", [](Fixture& f) {
     wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_NEVER));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[1]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[2]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[2]->result) == dataset::ACQ_ERROR);
 
     wassert(f.ensure_localds_clean(1, 3));
 

@@ -82,8 +82,11 @@ protected:
     void stop_tracking(TrackedData* tracker);
 
 public:
-    /// Track a new item
+    /// Create a Data from a buffer
     std::shared_ptr<Data> to_data(const std::string& format, std::vector<uint8_t>&& data);
+
+    /// Create a Data that throws an error when trying to read it (used for tests)
+    std::shared_ptr<Data> to_unreadable_data(size_t size);
 
     static DataManager& get();
 

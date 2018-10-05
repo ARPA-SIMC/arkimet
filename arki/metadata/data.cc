@@ -7,6 +7,28 @@
 namespace arki {
 namespace metadata {
 
+struct DataUnreadable : public Data
+{
+    size_t m_size;
+
+    DataUnreadable(size_t size) : m_size(size) {}
+
+    size_t size() const override { return m_size; }
+    std::vector<uint8_t> read() const
+    {
+        throw std::runtime_error("DataUnreadable::read() called");
+    }
+    size_t write(core::NamedFileDescriptor& fd) const override
+    {
+        throw std::runtime_error("DataUnreadable::write() called");
+    }
+    void emit(Emitter& e) const override
+    {
+        throw std::runtime_error("DataUnreadable::emit() called");
+    }
+};
+
+
 struct DataBuffer : public Data
 {
     std::vector<uint8_t> buffer;
@@ -87,6 +109,16 @@ std::shared_ptr<Data> DataManager::to_data(const std::string& format, std::vecto
         res = std::make_shared<DataLineBuffer>(std::move(data));
     else
         res = std::make_shared<DataBuffer>(std::move(data));
+
+    for (auto& tracker: trackers)
+        tracker->tracked.emplace_back(res);
+
+    return res;
+}
+
+std::shared_ptr<Data> DataManager::to_unreadable_data(size_t size)
+{
+    std::shared_ptr<Data> res = std::make_shared<DataUnreadable>(size);
 
     for (auto& tracker: trackers)
         tracker->tracked.emplace_back(res);
