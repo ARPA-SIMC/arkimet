@@ -321,7 +321,7 @@ this->add_method("second_resolution", [](Fixture& f) {
     wassert(f.ensure_localds_clean(1, 2));
 });
 
-auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx) {
+auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Writer::ReplaceStrategy strategy) {
     Metadata md;
     fill(md);
     std::string format = f.cfg.value("format");
@@ -340,7 +340,7 @@ auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx) {
 
     auto ds = f.config().create_writer();
     dataset::WriterBatch batch = mds.make_import_batch();
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_NEVER));
+    wassert(ds->acquire_batch(batch, strategy));
     wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
     wassert(actual(batch[1]->result) == dataset::ACQ_ERROR);
     wassert(actual(batch[2]->result) == dataset::ACQ_ERROR);
@@ -352,18 +352,24 @@ auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx) {
 };
 
 this->add_method("transaction_same_segment_fail_first", [=](Fixture& f) {
-    wassert(test_same_segment_fail(f, 0));
+    wassert(test_same_segment_fail(f, 0, dataset::Writer::REPLACE_NEVER));
+    wassert(test_same_segment_fail(f, 0, dataset::Writer::REPLACE_ALWAYS));
+    wassert(test_same_segment_fail(f, 0, dataset::Writer::REPLACE_HIGHER_USN));
 });
 
 this->add_method("transaction_same_segment_fail_middle", [=](Fixture& f) {
-    wassert(test_same_segment_fail(f, 1));
+    wassert(test_same_segment_fail(f, 1, dataset::Writer::REPLACE_NEVER));
+    wassert(test_same_segment_fail(f, 1, dataset::Writer::REPLACE_ALWAYS));
+    wassert(test_same_segment_fail(f, 1, dataset::Writer::REPLACE_HIGHER_USN));
 });
 
 this->add_method("transaction_same_segment_fail_last", [=](Fixture& f) {
-    wassert(test_same_segment_fail(f, 1));
+    wassert(test_same_segment_fail(f, 2, dataset::Writer::REPLACE_NEVER));
+    wassert(test_same_segment_fail(f, 2, dataset::Writer::REPLACE_ALWAYS));
+    wassert(test_same_segment_fail(f, 2, dataset::Writer::REPLACE_HIGHER_USN));
 });
 
-auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx) {
+auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Writer::ReplaceStrategy strategy) {
     Metadata md;
     fill(md);
     std::string format = f.cfg.value("format");
@@ -382,7 +388,7 @@ auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx) {
 
     auto ds = f.config().create_writer();
     dataset::WriterBatch batch = mds.make_import_batch();
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_NEVER));
+    wassert(ds->acquire_batch(batch, strategy));
     wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
     wassert(actual(batch[1]->result) == dataset::ACQ_ERROR);
     wassert(actual(batch[2]->result) == dataset::ACQ_ERROR);
@@ -396,15 +402,21 @@ auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx) {
 };
 
 this->add_method("transaction_different_segment_fail_first", [=](Fixture& f) {
-    wassert(test_different_segment_fail(f, 0));
+    wassert(test_different_segment_fail(f, 0, dataset::Writer::REPLACE_NEVER));
+    wassert(test_different_segment_fail(f, 0, dataset::Writer::REPLACE_ALWAYS));
+    wassert(test_different_segment_fail(f, 0, dataset::Writer::REPLACE_HIGHER_USN));
 });
 
 this->add_method("transaction_different_segment_fail_middle", [=](Fixture& f) {
-    wassert(test_different_segment_fail(f, 1));
+    wassert(test_different_segment_fail(f, 1, dataset::Writer::REPLACE_NEVER));
+    wassert(test_different_segment_fail(f, 1, dataset::Writer::REPLACE_ALWAYS));
+    wassert(test_different_segment_fail(f, 1, dataset::Writer::REPLACE_HIGHER_USN));
 });
 
 this->add_method("transaction_different_segment_fail_last", [=](Fixture& f) {
-    wassert(test_different_segment_fail(f, 1));
+    wassert(test_different_segment_fail(f, 2, dataset::Writer::REPLACE_NEVER));
+    wassert(test_different_segment_fail(f, 2, dataset::Writer::REPLACE_ALWAYS));
+    wassert(test_different_segment_fail(f, 2, dataset::Writer::REPLACE_HIGHER_USN));
 });
 
 this->add_method("test_acquire", [](Fixture& f) {
