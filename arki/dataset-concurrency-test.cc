@@ -2,6 +2,7 @@
 #include "arki/dataset.h"
 #include "arki/dataset/time.h"
 #include "arki/dataset/reporter.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
@@ -395,7 +396,7 @@ this->add_method("write_write_different_segments", [](Fixture& f) {
 this->add_method("read_repack", [](Fixture& f) {
     skip_unless_filesystem_has_ofd_locks(".");
 
-    auto orig_data = f.td.mds[1].getData();
+    auto orig_data = f.td.mds[1].get_data().read();
 
     f.reset_test("step=single");
     f.import_all(f.td.mds);
@@ -412,8 +413,7 @@ this->add_method("read_repack", [](Fixture& f) {
             wassert(actual(e.what()).contains("a read lock is already held"));
         }
 
-        auto data = md->getData();
-        wassert(actual(data == orig_data).istrue());
+        wassert(actual(md->get_data().read()) == orig_data);
         return false;
     });
 });

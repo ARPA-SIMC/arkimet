@@ -1,6 +1,7 @@
 #include "fd.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/scan/validator.h"
@@ -50,7 +51,7 @@ struct Creator : public AppendCreator
     {
     }
 
-    size_t append(const std::vector<uint8_t>& data) override
+    size_t append(const metadata::Data& data) override
     {
         size_t wrpos = written;
         written += out.write_data(data);
@@ -216,9 +217,9 @@ const types::source::Blob& Writer<Segment, File>::append(Metadata& md)
 {
     const auto& segment = this->segment();
     this->fired = false;
-    const std::vector<uint8_t>& buf = md.getData();
-    pending.emplace_back(md, source::Blob::create_unlocked(segment.format, segment.root, segment.relpath, current_pos, buf.size()));
-    current_pos += fd.write_data(buf);
+    const metadata::Data& data = md.get_data();
+    pending.emplace_back(md, source::Blob::create_unlocked(segment.format, segment.root, segment.relpath, current_pos, data.size()));
+    current_pos += fd.write_data(data);
     return *pending.back().new_source;
 }
 
@@ -405,14 +406,13 @@ bool can_store(const std::string& format)
 
 namespace concat {
 
-size_t File::write_data(const std::vector<uint8_t>& buf)
+size_t File::write_data(const metadata::Data& data)
 {
     // Prevent caching (ignore function result)
     //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
 
     // Append the data
-    write_all_or_throw(buf.data(), buf.size());
-    return buf.size();
+    return data.write(*this);
 }
 
 void File::test_add_padding(size_t size)
@@ -421,15 +421,15 @@ void File::test_add_padding(size_t size)
         write("", 1);
 }
 
-size_t HoleFile::write_data(const std::vector<uint8_t>& buf)
+size_t HoleFile::write_data(const metadata::Data& data)
 {
     // Get the current file size
     off_t size = lseek(0, SEEK_END);
 
     // Enlarge its apparent size to include the size of buf
-    ftruncate(size + buf.size());
+    ftruncate(size + data.size());
 
-    return buf.size();
+    return data.size();
 }
 void HoleFile::test_add_padding(size_t size)
 {
@@ -506,28 +506,6 @@ Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& md
 }
 
 namespace lines {
-
-size_t File::write_data(const std::vector<uint8_t>& buf)
-{
-    struct iovec todo[2] = {
-        { (void*)buf.data(), buf.size() },
-        { (void*)"\n", 1 },
-    };
-
-    // Prevent caching (ignore function result)
-    //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
-
-    // Append the data
-    ssize_t res = ::writev(*this, todo, 2);
-    if (res < 0 || (unsigned)res != buf.size() + 1)
-    {
-        stringstream ss;
-        ss << "cannot write " << (buf.size() + 1) << " bytes to " << name();
-        throw std::system_error(errno, std::system_category(), ss.str());
-    }
-
-    return buf.size() + 1;
-}
 
 void File::test_add_padding(size_t size)
 {

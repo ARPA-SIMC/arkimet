@@ -1,4 +1,5 @@
 #include "metadata.h"
+#include "metadata/data.h"
 #include "metadata/collection.h"
 #include "core/file.h"
 #include "metadata/tests.h"
@@ -238,7 +239,7 @@ add_method("binary_inline", [](Fixture& f) {
     Metadata md;
     // Here is some data
     vector<uint8_t> buf = { 'c', 'i', 'a', 'o' };
-    md.set_source_inline("test", vector<uint8_t>(buf));
+    md.set_source_inline("test", metadata::DataManager::get().to_data("test", vector<uint8_t>(buf)));
 
     // Encode
     sys::File temp("testfile", O_WRONLY | O_CREAT | O_TRUNC, 0666);
@@ -251,7 +252,7 @@ add_method("binary_inline", [](Fixture& f) {
     wassert(md1.read(temp1, metadata::ReadContext("testfile"), true));
     temp1.close();
 
-    ensure(md1.getData() == buf);
+    wassert(actual(md1.get_data().read()) == buf);
 });
 
 // Serialise using unix file descriptors

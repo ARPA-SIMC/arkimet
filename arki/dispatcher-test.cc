@@ -3,6 +3,7 @@
 #include "arki/dataset.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
 #include "arki/types/source/blob.h"
@@ -73,7 +74,7 @@ add_method("simple", [] {
     ConfigFile config = setup1();
 
     plain_data_read_count.reset();
-    metadata::TrackedData tracked_data(metadata::DataTracker::get());
+    metadata::TrackedData tracked_data(metadata::DataManager::get());
 
     metadata::TestCollection mdc("inbound/test.grib1", true);
     RealDispatcher dispatcher(config);

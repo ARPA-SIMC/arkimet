@@ -473,7 +473,7 @@ void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<i
         else
             found.push_back(idx);
         if (q.with_data)
-            md->getData();
+            md->get_data();
         return true;
     });
 

@@ -2,6 +2,7 @@
 #include "common.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/libarchive.h"
 #include "arki/types/source/blob.h"
@@ -59,7 +60,7 @@ struct Creator : public AppendCreator
     {
         Span res;
         res.offset = zipout.append(md);
-        res.size = md.getData().size();
+        res.size = md.get_data().size();
         return res;
     }
 
@@ -335,8 +336,9 @@ void Checker::validate(Metadata& md, const scan::Validator& v)
         v.validate_file(fd, blob->offset, blob->size);
         return;
     }
-    const auto& buf = md.getData();
-    v.validate_buf(buf.data(), buf.size());
+    const auto& data = md.get_data();
+    auto buf = data.read();
+    v.validate_buf(buf.data(), buf.size());  // TODO: add a validate_data that takes the metadata::Data
 }
 
 size_t Checker::remove()

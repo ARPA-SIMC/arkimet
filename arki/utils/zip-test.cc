@@ -1,5 +1,6 @@
 #include "arki/core/tests.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/libarchive.h"
 #include "arki/utils/sys.h"
 #include "zip.h"
@@ -45,7 +46,7 @@ add_method("read", [] {
     wassert(actual(contents[2].size) == 2234u);
 
     std::vector<uint8_t> data = reader.get(contents[1]);
-    wassert_true(data == mds[1].getData());
+    wassert_true(data == mds[1].get_data().read());
 });
 
 }

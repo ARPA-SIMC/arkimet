@@ -1,5 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/types/reftime.h"
+#include "arki/metadata/data.h"
 #include "arki/runtime/config.h"
 #include "arki/sort.h"
 #include "querymacro.h"
@@ -203,8 +204,8 @@ add_method("expa_inline", [](Fixture& f) {
     metadata::Collection mdc(qm, dataset::DataQuery("", true));
     wassert(actual(mdc.size()) == 2u);
     // Ensure that data is reachable
-    wassert(actual(mdc[0].getData().size()) == mdc[0].data_size());
-    wassert(actual(mdc[1].getData().size()) == mdc[1].data_size());
+    wassert(actual(mdc[0].get_data().size()) == mdc[0].data_size());
+    wassert(actual(mdc[1].get_data().size()) == mdc[1].data_size());
 
     Summary s;
     qm.query_summary(Matcher::parse(""), s);

@@ -1,4 +1,5 @@
 #include "arki/metadata/tests.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source.h"
 #include "arki/types/value.h"
@@ -46,7 +47,7 @@ add_method("scan", []() {
     // Check that the source can be read properly
     md.unset(TYPE_VALUE);
     md.drop_cached_data();
-    auto buf = md.getData();
+    auto buf = md.get_data().read();
     ensure_equals(buf.size(), 34u);
     ensure_equals(string((const char*)buf.data(), 34), "198710310000,1,227,1.2,,,000000000");
 });
@@ -72,7 +73,7 @@ add_method("scan_seconds", []() {
     // Check that the source can be read properly
     md.unset(TYPE_VALUE);
     md.drop_cached_data();
-    auto buf = md.getData();
+    auto buf = md.get_data().read();
     wassert(actual(buf.size()) == 35u);
     wassert(actual(string((const char*)buf.data(), 35)) == "19871031000030,1,228,.5,,,000000000");
 });
@@ -100,7 +101,7 @@ add_method("validate", []() {
 
     metadata::TestCollection mdc("inbound/test.vm2");
     mdc[0].unset(TYPE_VALUE);
-    buf = mdc[0].getData();
+    buf = mdc[0].get_data().read();
 
     v.validate_buf(buf.data(), buf.size());
     ensure_throws(v.validate_buf((const char*)buf.data()+1, buf.size()-1));

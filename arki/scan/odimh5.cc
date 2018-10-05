@@ -1,6 +1,7 @@
 #include "odimh5.h"
 #include "arki/libconfig.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/segment.h"
 #include "arki/types/source.h"
 #include "arki/types/origin.h"
@@ -211,7 +212,7 @@ std::unique_ptr<Metadata> OdimH5::scan_data(const std::vector<uint8_t>& data)
     tmpfd.close();
 
     std::unique_ptr<Metadata> md(new Metadata);
-    md->set_source_inline("odimh5", std::vector<uint8_t>(data));
+    md->set_source_inline("odimh5", metadata::DataManager::get().to_data("odimh5", std::vector<uint8_t>(data)));
 
     try {
         scan_file_impl(tmpfd.name(), *md);
@@ -286,7 +287,7 @@ void OdimH5::set_inline_source(Metadata& md, const std::string& abspath)
     note << "Scanned from " << str::basename(abspath);
     md.add_note(note.str());
 
-    md.set_source_inline("bufr", move(buf));
+    md.set_source_inline("odimh5", metadata::DataManager::get().to_data("odimh5", move(buf)));
 }
 
 void OdimH5::set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader)

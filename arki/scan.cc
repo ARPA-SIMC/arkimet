@@ -2,6 +2,7 @@
 #include "arki/libconfig.h"
 #include "arki/segment.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/core/file.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils.h"
@@ -139,9 +140,10 @@ bool Scanner::update_sequence_number(Metadata& md, int& usn)
     if (md.source().format != "bufr")
         return false;
 
-    const auto& data = md.getData();
-    string buf((const char*)data.data(), data.size());
-    usn = Bufr::update_sequence_number(buf);
+    const auto& data = md.get_data();
+    auto buf = data.read();
+    string strbuf((const char*)buf.data(), buf.size());
+    usn = Bufr::update_sequence_number(strbuf);
     return true;
 #else
     return false;

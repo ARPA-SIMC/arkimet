@@ -169,7 +169,7 @@ void test_append_transaction_ok(segment::Writer* dw, Metadata& md, int append_am
     wassert(actual(sys::size(dw->segment().abspath)) == orig_fsize + data_size + append_amount_adjust);
 
     // And metadata is updated
-    wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), dw->segment().relpath, orig_fsize, data_size));
+    wassert(actual_type(md.source()).is_source_blob(md.source().format, sys::getcwd(), dw->segment().relpath, orig_fsize, data_size));
 }
 
 void test_append_transaction_rollback(segment::Writer* dw, Metadata& md, int append_amount_adjust)

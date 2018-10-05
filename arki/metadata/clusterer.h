@@ -46,7 +46,7 @@ protected:
      * Child classes can hook here for processing md and buf as members of the
      * current batch.
      */
-    virtual void add_to_batch(Metadata& md, const std::vector<uint8_t>& buf);
+    virtual void add_to_batch(Metadata& md);
 
     /**
      * Reset information about the current batch, and start a new one.
@@ -59,7 +59,7 @@ protected:
     bool exceeds_count(const Metadata& md) const;
 
     /// Check if adding the given data would exceed the size limits for the current batch
-    bool exceeds_size(const std::vector<uint8_t>& buf) const;
+    bool exceeds_size(size_t data_size) const;
 
     /// Check if the time of the given data is inside the range acceptable for
     /// the current batch the current batch

@@ -2,6 +2,7 @@
 #include "common.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/scan/validator.h"
@@ -46,11 +47,11 @@ struct Creator : public AppendCreator
             format = mds[0].source().format;
     }
 
-    size_t append(const std::vector<uint8_t>& data) override
+    size_t append(const metadata::Data& data) override
     {
         // Append it to the new file
         snprintf(fname, 99, "%06zd.%s", idx, format.c_str());
-        return tarout.append(fname, data);
+        return tarout.append(fname, data.read());
     }
 
     void create()
@@ -254,8 +255,9 @@ void Checker::validate(Metadata& md, const scan::Validator& v)
         v.validate_file(fd, blob->offset, blob->size);
         return;
     }
-    const auto& buf = md.getData();
-    v.validate_buf(buf.data(), buf.size());
+    const auto& data = md.get_data();
+    auto buf = data.read();
+    v.validate_buf(buf.data(), buf.size());  // TODO: add a validate_data that takes the metadata::Data
 }
 
 size_t Checker::remove()

@@ -29,7 +29,7 @@ struct AppendCreator
     virtual Span append_md(Metadata& md);
 
     /// Append data to the segment, returning the offset at which it has been written
-    virtual size_t append(const std::vector<uint8_t>& data);
+    virtual size_t append(const metadata::Data& data);
 
     /// Perform segment creation
     void create();

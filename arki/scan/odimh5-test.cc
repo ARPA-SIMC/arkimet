@@ -1,6 +1,7 @@
 #include "arki/metadata/tests.h"
 #include "arki/scan/odimh5.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/types/source.h"
 #include "arki/utils/sys.h"
 #include <iostream>
@@ -29,7 +30,7 @@ static Metadata scan_file(const std::string& pathname, size_t size)
     wassert(actual(mds[0].source().cloneType()).is_source_blob("odimh5", sys::abspath("."), pathname, 0, size));
 
     // Check that the source can be read properly
-    auto buf = mds[0].getData();
+    auto buf = mds[0].get_data().read();
     wassert(actual(buf.size()) == size);
     wassert(actual(string((const char*)buf.data(), 1, 3)) == "HDF");
 

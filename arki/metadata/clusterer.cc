@@ -1,7 +1,8 @@
 #include "clusterer.h"
-#include <arki/metadata.h>
-#include <arki/types/source.h>
-#include <arki/types/reftime.h>
+#include "data.h"
+#include "arki/metadata.h"
+#include "arki/types/source.h"
+#include "arki/types/reftime.h"
 #include <cstring>
 
 using namespace std;
@@ -32,10 +33,10 @@ bool Clusterer::exceeds_count(const Metadata& md) const
     return (max_count != 0 && count >= max_count);
 }
 
-bool Clusterer::exceeds_size(const std::vector<uint8_t>& buf) const
+bool Clusterer::exceeds_size(size_t data_size) const
 {
     if (max_bytes == 0 || size == 0) return false;
-    return size + buf.size() > max_bytes;
+    return size + data_size > max_bytes;
 }
 
 bool Clusterer::exceeds_interval(const Metadata& md) const
@@ -62,9 +63,9 @@ void Clusterer::start_batch(const std::string& new_format)
     size = 0;
 }
 
-void Clusterer::add_to_batch(Metadata& md, const std::vector<uint8_t>& buf)
+void Clusterer::add_to_batch(Metadata& md)
 {
-    size += buf.size();
+    size += md.data_size();
     ++count;
     if (cur_interval[0] == -1 && max_interval != 0)
         md_to_interval(md, cur_interval);
@@ -99,16 +100,16 @@ void Clusterer::flush()
 
 bool Clusterer::eat(unique_ptr<Metadata>&& md)
 {
-    const auto& buf = md->getData();
+    const auto& data = md->get_data();
 
     if (format.empty() || format != md->source().format ||
-        exceeds_count(*md) || exceeds_size(buf) || exceeds_interval(*md) || exceeds_timerange(*md))
+        exceeds_count(*md) || exceeds_size(data.size()) || exceeds_interval(*md) || exceeds_timerange(*md))
     {
         flush();
         start_batch(md->source().format);
     }
 
-    add_to_batch(*md, buf);
+    add_to_batch(*md);
 
     return true;
 }

@@ -1,7 +1,7 @@
 #include "validator.h"
 #include "arki/scan.h"
 #include "arki/core/file.h"
-#include "arki/utils.h" // TODO: deprecate
+#include "arki/metadata/data.h"
 #include <sstream>
 
 namespace arki {
@@ -23,13 +23,18 @@ void Validator::throw_check_error(const std::string& msg) const
 
 const Validator& Validator::by_filename(const std::string& filename)
 {
-    // TODO: deprecate
     return by_format(Scanner::format_from_filename(filename));
 }
 
 const Validator& Validator::by_format(const std::string& format)
 {
     return scan::Scanner::get_validator(format);
+}
+
+void Validator::validate_data(const metadata::Data& data) const
+{
+    auto buf = data.read();
+    validate_buf(buf.data(), buf.size());
 }
 
 }

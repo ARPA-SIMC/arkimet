@@ -2,6 +2,7 @@
 #include "common.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/scan/validator.h"
@@ -49,10 +50,10 @@ struct Creator : public AppendCreator
     {
     }
 
-    size_t append(const std::vector<uint8_t>& data) override
+    size_t append(const metadata::Data& data) override
     {
         size_t wrpos = written;
-        gzout.add(data);
+        gzout.add(data.read());
         if (!padding.empty())
             gzout.add(padding);
         gzout.close_entry();

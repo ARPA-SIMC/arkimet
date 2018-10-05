@@ -11,6 +11,7 @@
 #include "arki/types/proddef.h"
 #include "arki/types/run.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/scan/validator.h"
 #include "arki/utils/sys.h"
@@ -35,6 +36,14 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_scan_grib");
 
+void is_grib_data(Metadata& md, size_t expected_size)
+{
+    auto buf = wcallchecked(md.get_data().read());
+    wassert(actual(buf.size()) == expected_size);
+    wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
+    wassert(actual(string((const char*)buf.data() + expected_size - 4, 4)) == "7777");
+}
+
 void Tests::register_tests() {
 
 // Scan a well-known grib file, with no padding between messages
@@ -50,11 +59,8 @@ add_method("compact", [] {
     md = mds[0];
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 7218u);
-	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
-	ensure_equals(string((const char*)buf.data() + 7214, 4), "7777");
+    // Check that the source can be read properly
+    wassert(is_grib_data(md, 7218));
 
 	// Check notes
 	if (md.notes().size() != 1)
@@ -80,11 +86,8 @@ add_method("compact", [] {
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 7218, 34960));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 34960u);
-	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
-	ensure_equals(string((const char*)buf.data() + 34956, 4), "7777");
+    // Check that the source can be read properly
+    wassert(is_grib_data(md, 34960));
 
     // Check contents
     wassert(actual(md).contains("origin", "GRIB1(80, 255, 100)"));
@@ -103,11 +106,8 @@ add_method("compact", [] {
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 42178, 2234));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 2234u);
-	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
-	ensure_equals(string((const char*)buf.data() + 2230, 4), "7777");
+    // Check that the source can be read properly
+    wassert(is_grib_data(md, 2234));
 
     // Check contents
     wassert(actual(md).contains("origin", "GRIB1(98, 0, 129)"));
@@ -136,11 +136,8 @@ add_method("padded", [] {
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/padded.grib1", 100, 7218));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 7218u);
-	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
-	ensure_equals(string((const char*)buf.data() + 7214, 4), "7777");
+    // Check that the source can be read properly
+    wassert(is_grib_data(md, 7218));
 
     // Check contents
     wassert(actual(md).contains("origin", "GRIB1(200, 0, 101)"));
@@ -158,11 +155,8 @@ add_method("padded", [] {
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/padded.grib1", 7418, 34960));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 34960u);
-	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
-	ensure_equals(string((const char*)buf.data() + 34956, 4), "7777");
+    // Check that the source can be read properly
+    wassert(is_grib_data(md, 34960));
 
     // Check contents
     wassert(actual(md).contains("origin", "GRIB1(80, 255, 100)"));
@@ -180,11 +174,8 @@ add_method("padded", [] {
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/padded.grib1", 42478, 2234));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 2234u);
-	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
-	ensure_equals(string((const char*)buf.data() + 2230, 4), "7777");
+    // Check that the source can be read properly
+    wassert(is_grib_data(md, 2234));
 
     // Check contents
     wassert(actual(md).contains("origin", "GRIB1(98, 0, 129)"));
@@ -253,7 +244,7 @@ add_method("validation", [] {
     fd.close();
 
     metadata::TestCollection mdc("inbound/test.grib1");
-    buf = mdc[0].getData();
+    buf = mdc[0].get_data().read();
 
     wassert(v.validate_buf(buf.data(), buf.size()));
     ensure_throws(v.validate_buf((const char*)buf.data()+1, buf.size()-1));
@@ -274,11 +265,8 @@ add_method("layers", [] {
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/layer.grib1", 0, 30682));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 30682u);
-	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
-	ensure_equals(string((const char*)buf.data() + 30678, 4), "7777");
+    // Check that the source can be read properly
+    wassert(is_grib_data(md, 30682));
 
     // Check contents
     wassert(actual(md).contains("origin", "GRIB1(200, 255, 45)"));
@@ -305,11 +293,8 @@ add_method("proselvo", [] {
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/proselvo.grib1", 0, 298));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 298u);
-	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
-	ensure_equals(string((const char*)buf.data() + 294, 4), "7777");
+    // Check that the source can be read properly
+    wassert(is_grib_data(md, 298));
 
     // Check contents
     wassert(actual(md).contains("origin", "GRIB1(80, 98, 131)"));
@@ -337,10 +322,7 @@ add_method("cleps", [] {
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/cleps_pf16_HighPriority.grib2", 0, 432));
 
     // Check that the source can be read properly
-    buf = wcallchecked(md.getData());
-    wassert(actual(buf.size()) == 432u);
-    wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
-    wassert(actual(string((const char*)buf.data() + 428, 4)) == "7777");
+    wassert(is_grib_data(md, 432));
 
     wassert(actual(md).contains("origin", "GRIB2(250, 98, 4, 255, 131)"));
     wassert(actual(md).contains("product", "GRIB2(250, 2, 0, 0, 5, 0)"));
@@ -548,10 +530,7 @@ add_method("issue120", [] {
     wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/oddunits.grib", 0, 245));
 
     // Check that the source can be read properly
-    auto buf = wcallchecked(md.getData());
-    wassert(actual(buf.size()) == 245u);
-    wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
-    wassert(actual(string((const char*)buf.data() + 241, 4)) == "7777");
+    wassert(is_grib_data(md, 245));
 
     wassert(actual(md).contains("origin", "GRIB2(00080, 00255, 005, 255, 015)"));
     wassert(actual(md).contains("product", "GRIB2(00080, 000, 001, 052, 011, 001)"));

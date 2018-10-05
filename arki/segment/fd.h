@@ -6,6 +6,7 @@
 #include <arki/segment/base.h>
 #include <arki/segment/common.h>
 #include <arki/core/file.h>
+#include <arki/metadata/fwd.h>
 #include <string>
 #include <vector>
 
@@ -21,7 +22,7 @@ struct File : public core::File
     using core::File::File;
 
     void fdtruncate_nothrow(off_t pos) noexcept;
-    virtual size_t write_data(const std::vector<uint8_t>& buf) = 0;
+    virtual size_t write_data(const metadata::Data& data) = 0;
     virtual void test_add_padding(size_t size) = 0;
 };
 
@@ -98,14 +99,14 @@ namespace concat {
 struct File : public fd::File
 {
     using fd::File::File;
-    size_t write_data(const std::vector<uint8_t>& buf) override;
+    size_t write_data(const metadata::Data& buf) override;
     void test_add_padding(size_t size) override;
 };
 
 struct HoleFile : public fd::File
 {
     using fd::File::File;
-    size_t write_data(const std::vector<uint8_t>& buf) override;
+    size_t write_data(const metadata::Data& buf) override;
     void test_add_padding(size_t size) override;
 };
 
@@ -172,11 +173,10 @@ public:
 
 namespace lines {
 
-struct File : public fd::File
+struct File : public concat::File
 {
-    using fd::File::File;
+    using concat::File::File;
 
-    size_t write_data(const std::vector<uint8_t>& buf) override;
     void test_add_padding(size_t size) override;
 };
 

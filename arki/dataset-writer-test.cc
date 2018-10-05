@@ -1,6 +1,7 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
 #include "arki/dataset/time.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
@@ -314,13 +315,13 @@ this->add_method("transaction", [](Fixture& f) {
     // Make a batch that ends up all in the same segment
     metadata::Collection mds;
     md.set("reftime", "2018-01-01T00:00:00");
-    md.set_source_inline(format, std::vector<uint8_t>{0});
+    md.set_source_inline(format, metadata::DataManager::get().to_data(format, std::vector<uint8_t>{0}));
     mds.push_back(md);
     md.set("reftime", "2018-01-01T01:00:00");
-    md.set_source_inline(format, std::vector<uint8_t>{1});
+    md.set_source_inline(format, metadata::DataManager::get().to_data(format, std::vector<uint8_t>{1}));
     mds.push_back(md);
     md.set("reftime", "2018-01-01T02:00:00");
-    md.set_source_inline(format, std::vector<uint8_t>{2});
+    md.set_source_inline(format, metadata::DataManager::get().to_data(format, std::vector<uint8_t>{2}));
     mds.push_back(md);
 
     auto ds = f.config().create_writer();

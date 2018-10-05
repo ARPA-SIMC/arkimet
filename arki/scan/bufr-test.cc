@@ -1,5 +1,6 @@
 #include "arki/metadata/tests.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/scan/validator.h"
 #include "arki/scan/bufr.h"
@@ -20,6 +21,14 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_scan_bufr");
 
+void is_bufr_data(Metadata& md, size_t expected_size)
+{
+    auto buf = wcallchecked(md.get_data().read());
+    wassert(actual(buf.size()) == expected_size);
+    wassert(actual(string((const char*)buf.data(), 4)) == "BUFR");
+    wassert(actual(string((const char*)buf.data() + expected_size - 4, 4)) == "7777");
+}
+
 void Tests::register_tests() {
 
 // Scan a well-known bufr file, with no padding between BUFRs
@@ -36,11 +45,8 @@ add_method("contiguous", [] {
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 0, 194));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 194u);
-	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
-	ensure_equals(string((const char*)buf.data() + 190, 4), "7777");
+    // Check that the source can be read properly
+    wassert(is_bufr_data(md, 194));
 
     // Check contents
     wassert(actual(md).contains("origin", "BUFR(98, 0)"));
@@ -59,11 +65,8 @@ add_method("contiguous", [] {
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 194, 220));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 220u);
-	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
-	ensure_equals(string((const char*)buf.data() + 216, 4), "7777");
+    // Check that the source can be read properly
+    wassert(is_bufr_data(md, 220));
 
     // Check contents
     wassert(actual(md).contains("origin", "BUFR(98, 0)"));
@@ -82,11 +85,8 @@ add_method("contiguous", [] {
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 414, 220));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 220u);
-	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
-	ensure_equals(string((const char*)buf.data() + 216, 4), "7777");
+    // Check that the source can be read properly
+    wassert(is_bufr_data(md, 220));
 
     // Check contents
     wassert(actual(md).contains("origin", "BUFR(98, 0)"));
@@ -113,11 +113,8 @@ add_method("padded", [] {
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/padded.bufr", 100, 194));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 194u);
-	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
-	ensure_equals(string((const char*)buf.data() + 190, 4), "7777");
+    // Check that the source can be read properly
+    wassert(is_bufr_data(md, 194));
 
     // Check contents
     wassert(actual(md).contains("origin", "BUFR(98, 0)"));
@@ -136,11 +133,8 @@ add_method("padded", [] {
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/padded.bufr", 394, 220));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 220u);
-	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
-	ensure_equals(string((const char*)buf.data() + 216, 4), "7777");
+    // Check that the source can be read properly
+    wassert(is_bufr_data(md, 220));
 
     // Check contents
     wassert(actual(md).contains("origin", "BUFR(98, 0)"));
@@ -159,11 +153,8 @@ add_method("padded", [] {
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/padded.bufr", 714, 220));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 220u);
-	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
-	ensure_equals(string((const char*)buf.data() + 216, 4), "7777");
+    // Check that the source can be read properly
+    wassert(is_bufr_data(md, 220));
 
     // Check contents
     wassert(actual(md).contains("origin", "BUFR(98, 0)"));
@@ -198,9 +189,9 @@ add_method("validate", [] {
     fd.close();
 
     metadata::TestCollection mdc("inbound/test.bufr");
-    buf = mdc[0].getData();
+    buf = mdc[0].get_data().read();
 
-    wassert(v.validate_buf(buf.data(), buf.size()));
+    wassert(v.validate_data(mdc[0].get_data()));
     wassert_throws(std::runtime_error, v.validate_buf((const char*)buf.data()+1, buf.size()-1));
     wassert_throws(std::runtime_error, v.validate_buf(buf.data(), buf.size()-1));
 });
@@ -220,10 +211,7 @@ add_method("partial", [] {
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/C23000.bufr", 0, 2206));
 
     // Check that the source can be read properly
-    auto buf = md.getData();
-    wassert(actual(buf.size()) == 2206u);
-    wassert(actual(string((const char*)buf.data(), 4)) == "BUFR");
-    wassert(actual(string((const char*)buf.data() + 2202, 4)) == "7777");
+    wassert(is_bufr_data(md, 2206));
 
     // Check contents
     wassert(actual(md).contains("origin", "BUFR(98, 0)"));
@@ -253,10 +241,7 @@ add_method("pollution", [] {
     wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/pollution.bufr", 0, 178));
 
     // Check that the source can be read properly
-    auto buf = md.getData();
-    wassert(actual(buf.size()) == 178u);
-    wassert(actual(string((const char*)buf.data(), 4)) == "BUFR");
-    wassert(actual(string((const char*)buf.data() + 174, 4)) == "7777");
+    wassert(is_bufr_data(md, 178));
 
     // Check contents
     wassert(actual(md).contains("origin", "BUFR(98, 0)"));

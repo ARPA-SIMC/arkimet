@@ -7,6 +7,7 @@
 #include <wreport/bulletin.h>
 #include <wreport/options.h>
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/segment.h"
 #include "arki/types/source.h"
 #include "arki/types/origin.h"
@@ -258,7 +259,7 @@ void Bufr::do_scan(BinaryMessage& rmsg, Metadata& md)
 std::unique_ptr<Metadata> Bufr::scan_data(const std::vector<uint8_t>& data)
 {
     std::unique_ptr<Metadata> md(new Metadata);
-    md->set_source_inline("grib", std::vector<uint8_t>(data));
+    md->set_source_inline("grib", metadata::DataManager::get().to_data("bufr", std::vector<uint8_t>(data)));
     BinaryMessage rmsg(File::BUFR);
     rmsg.data = std::string(data.begin(), data.end());
     do_scan(rmsg, *md);
@@ -274,7 +275,7 @@ bool Bufr::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_f
         BinaryMessage rmsg = file->read();
         if (!rmsg) break;
         md->set_source(Source::createBlob(reader, rmsg.offset, rmsg.data.size()));
-        md->set_cached_data(vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
+        md->set_cached_data(metadata::DataManager::get().to_data("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
         do_scan(rmsg, *md);
         if (!dest(std::move(md))) return false;
     }
@@ -300,7 +301,7 @@ bool Bufr::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
         unique_ptr<Metadata> md(new Metadata);
         BinaryMessage rmsg = file->read();
         if (!rmsg) break;
-        md->set_source_inline("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end()));
+        md->set_source_inline("bufr", metadata::DataManager::get().to_data("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
         do_scan(rmsg, *md);
         if (!dest(move(md))) return false;
     }
