@@ -13307,6 +13307,11 @@
  {
   "doc": "",
   "group": "arki_dispatcher",
+  "method": "drop_cached_data"
+ },
+ {
+  "doc": "",
+  "group": "arki_dispatcher",
   "method": "regression01"
  },
  {

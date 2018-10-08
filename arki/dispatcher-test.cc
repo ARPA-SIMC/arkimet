@@ -79,7 +79,32 @@ add_method("simple", [] {
     metadata::TestCollection mdc("inbound/test.grib1", true);
     RealDispatcher dispatcher(config);
     auto batch = mdc.make_import_batch();
-    wassert(dispatcher.dispatch(batch));
+    wassert(dispatcher.dispatch(batch, false));
+    wassert(actual(batch[0]->dataset_name) == "test200");
+    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[1]->dataset_name) == "test80");
+    wassert(actual(batch[1]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[2]->dataset_name) == "error");
+    wassert(actual(batch[2]->result) == dataset::ACQ_OK);
+    dispatcher.flush();
+
+    wassert(actual(plain_data_read_count.val()) == 0u);
+
+    wassert(actual(tracked_data.count_used()) == 3u);
+});
+
+add_method("drop_cached_data", [] {
+    using namespace arki::utils::acct;
+
+    ConfigFile config = setup1();
+
+    plain_data_read_count.reset();
+    metadata::TrackedData tracked_data(metadata::DataManager::get());
+
+    metadata::TestCollection mdc("inbound/test.grib1", true);
+    RealDispatcher dispatcher(config);
+    auto batch = mdc.make_import_batch();
+    wassert(dispatcher.dispatch(batch, true));
     wassert(actual(batch[0]->dataset_name) == "test200");
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[1]->dataset_name) == "test80");
@@ -119,7 +144,7 @@ add_method("regression01", [] {
 
     RealDispatcher dispatcher(config);
     auto batch = source.make_import_batch();
-    wassert(dispatcher.dispatch(batch));
+    wassert(dispatcher.dispatch(batch, false));
     wassert(actual(batch[0]->dataset_name) == "lami_temp");
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     dispatcher.flush();
@@ -133,7 +158,7 @@ add_method("validation", [] {
     dispatcher.add_validator(fail_always);
     metadata::TestCollection mdc("inbound/test.grib1", true);
     auto batch = mdc.make_import_batch();
-    wassert(dispatcher.dispatch(batch));
+    wassert(dispatcher.dispatch(batch, false));
     wassert(actual(batch[0]->dataset_name) == "error");
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[1]->dataset_name) == "error");
@@ -151,7 +176,7 @@ add_method("missing_reftime", [] {
 
     RealDispatcher dispatcher(config);
     auto batch = source.make_import_batch();
-    wassert(dispatcher.dispatch(batch));
+    wassert(dispatcher.dispatch(batch, false));
     wassert(actual(batch[0]->dataset_name) == "error");
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[1]->dataset_name) == "error");

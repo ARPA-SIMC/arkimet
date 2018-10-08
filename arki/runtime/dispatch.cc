@@ -173,10 +173,12 @@ bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
         throw;
     }
 
+    bool drop_cached_data_on_commit = !(copyok || copyko);
+
     // Dispatch
     auto batch = results.make_import_batch();
     try {
-        dispatcher->dispatch(batch);
+        dispatcher->dispatch(batch, drop_cached_data_on_commit);
     } catch (std::exception& e) {
         nag::warning("%s: cannot dispatch contents: %s", name.c_str(), e.what());
         next.process(results, name);

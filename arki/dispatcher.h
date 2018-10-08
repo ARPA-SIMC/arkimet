@@ -28,9 +28,7 @@ protected:
     /// Number of failed acquires to outbound datasets
     int m_outbound_failures;
 
-    virtual void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch) = 0;
-    virtual void raw_dispatch_error(dataset::WriterBatch& batch);
-    virtual void raw_dispatch_duplicates(dataset::WriterBatch& batch);
+    virtual void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) = 0;
 
 public:
     Dispatcher(const ConfigFile& cfg);
@@ -64,7 +62,7 @@ public:
      *
      * @returns The outcome of the dispatch, one element per metadata in mds.
      */
-    virtual void dispatch(dataset::WriterBatch& batch);
+    virtual void dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit);
 
     virtual void flush() = 0;
 };
@@ -89,15 +87,7 @@ protected:
     Datasets datasets;
     WriterPool pool;
 
-    // Error dataset
-    std::shared_ptr<dataset::Writer> dserror;
-
-    // Duplicates dataset
-    std::shared_ptr<dataset::Writer> dsduplicates;
-
-    void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch) override;
-    void raw_dispatch_error(dataset::WriterBatch& batch) override;
-    void raw_dispatch_duplicates(dataset::WriterBatch& batch) override;
+    void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
 
 public:
 	RealDispatcher(const ConfigFile& cfg);
@@ -123,13 +113,13 @@ protected:
     const ConfigFile& cfg;
     std::ostream& out;
 
-    void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch) override;
+    void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
 
 public:
     TestDispatcher(const ConfigFile& cfg, std::ostream& out);
     ~TestDispatcher();
 
-    void dispatch(dataset::WriterBatch& batch) override;
+    void dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
 
     /**
      * Flush all dataset data do disk
