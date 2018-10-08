@@ -209,6 +209,7 @@ bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
             e->md.add_note("WARNING: The data failed to be imported into dataset " + e->dataset_name);
             ++countNotImported;
         }
+        e->md.drop_cached_data();
     }
 
     // Process the resulting annotated metadata as a dataset
